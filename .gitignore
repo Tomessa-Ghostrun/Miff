@@ -1,0 +1,20 @@
+# macOS / Xcode
+.DS_Store
+ios/**/xcuserdata/
+ios/**/*.xcworkspace/xcuserdata/
+ios/build/
+ios/DerivedData/
+
+# Android
+android/.gradle/
+android/build/
+android/*/build/
+android/local.properties
+android/.idea/
+
+# Secrets
+*.env
+*.p12
+*.keystore
+*.jks
+*.mobileprovision
