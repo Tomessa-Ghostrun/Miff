@@ -69,6 +69,13 @@ Pour invoquer un agent explicitement, demande par exemple : "utilise l'agent ios
 ## Intégrations externes
 Notion et Figma sont connectés via MCP (voir "Sources externes connectées" plus haut). Limite Figma : 200 appels MCP/jour (plan payant). Les specs vivent à la fois dans `docs/specs/` et dans la base Notion "Tâches développement Miff" ; l'état d'avancement de la reconstruction Figma est suivi dans `design/figma-design-system-state.json`.
 
+## Identifiants du projet (décidés le 2026-10-16)
+- **Firebase** : projet "Miff", ID `miff-3d283`. Firestore en `europe-west9` (Paris), édition Standard. Authentication : e-mail/mot de passe + Google. Google Analytics activé (avec consentement utilisateur ; jamais de position dans les événements).
+- **Projet Firebase de Ghostrun (`ghostrun-app`) présent sur le même compte Google : ne jamais le cibler.** Toute commande Firebase doit porter `--project miff-3d283`.
+- **Identifiant d'application (Android applicationId et iOS bundle ID)** : `com.tomessa.miff` — définitif une fois publié.
+- **iOS sans Mac** : aucune compilation locale possible (poste Windows). Les builds iOS passent par une CI cloud (macOS) et se testent sur iPhone via TestFlight. Android se compile et se teste en local (Android Studio).
+- **Process par ticket** : ticket Notion → challenge (`product-specs`) → validation PM → dev Android puis iOS (une branche et une PR par plateforme, jamais de push direct sur `main`) → code review en contexte neuf + revue sécurité → QA → recette PM → merge. Confirmation PM aux portes : ticket validé, début du dev, review terminée, prêt à merger.
+
 ## Dépôt Git
 Repo GitHub privé : https://github.com/Tomessa-Ghostrun/Miff (branche `main`). Totalement distinct du projet Ghostrun, qui ne doit jamais être touché depuis ce dossier.
 
