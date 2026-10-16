@@ -1,0 +1,134 @@
+{
+  "runId": "miff-ds-2026-08-30",
+  "originalFileKey": "Byi9NgQxkBPbmbhU403HSf",
+  "workingFileKey": "RbX84qKbxppvAy5iypLYP2",
+  "phase": "phase1",
+  "step": "tokens",
+  "tokensObservedInOriginal": {
+    "colors": {
+      "brand-chartreuse": "#d1d828",
+      "status-danger": "#ff5650",
+      "action-blue": "#043cd1",
+      "bg-canvas": "#f9f9f7",
+      "bg-surface": "#ffffff",
+      "border-default": "#efefef",
+      "text-secondary": "#7d7c7c",
+      "text-primary": "#000000",
+      "status-warning": "NOT YET CONFIRMED — mentioned in business rules (Update page) as an intermediate orange state, no swatch found yet"
+    },
+    "fonts": {
+      "display": "Baloo Thambi (Regular) — used for headlines (24px) and name labels (16px)",
+      "body": "Hanken Grotesk (Regular + Italic) — used for body text (16px) and captions (12px)",
+      "note": "Abel is only used for the phone status-bar mockup chrome (12:22 clock), not real app UI — excluded from the type system"
+    },
+    "shape": {
+      "cardRadius": "5px",
+      "pillRadius": "10px",
+      "avatarRadius": "full (65536px)",
+      "cardShadow": "0px 4px 4px rgba(0,0,0,0.25)"
+    }
+  },
+  "entities": {
+    "collections": { "Primitives": "VariableCollectionId:2:2", "Color": "VariableCollectionId:2:11" },
+    "primitiveVariables": {
+      "brand/chartreuse-500": "VariableID:2:3",
+      "status/red-500": "VariableID:2:4",
+      "action/blue-500": "VariableID:2:5",
+      "neutral/white": "VariableID:2:6",
+      "neutral/off-white": "VariableID:2:7",
+      "neutral/grey-100": "VariableID:2:8",
+      "neutral/grey-500": "VariableID:2:9",
+      "neutral/black": "VariableID:2:10"
+    },
+    "semanticVariables": {
+      "brand/primary": "VariableID:2:12",
+      "status/safe": "VariableID:2:13",
+      "status/danger": "VariableID:2:14",
+      "action/primary": "VariableID:2:15",
+      "bg/canvas": "VariableID:2:16",
+      "bg/surface": "VariableID:2:17",
+      "border/default": "VariableID:2:18",
+      "text/primary": "VariableID:2:19",
+      "text/secondary": "VariableID:2:20",
+      "text/on-action": "VariableID:2:21"
+    },
+    "textStyles": {
+      "display/headline": "Baloo Thambi 2 Regular 24/30",
+      "display/label": "Baloo Thambi 2 Regular 16/22",
+      "body/regular": "Hanken Grotesk Regular 16/22",
+      "body/italic": "Hanken Grotesk Italic 16/22",
+      "body/caption": "Hanken Grotesk Regular 12/16"
+    }
+  },
+  "pages": {
+    "Cover": "0:1",
+    "Fondations": "4:13",
+    "separator1": "4:14",
+    "Composants": "4:15",
+    "separator2": "4:16",
+    "Onboarding": "4:17"
+  },
+  "components": {
+    "Avatar": { "componentSetId": "5:12", "page": "4:15", "variants": ["Status=Safe", "Status=Danger", "Status=Neutral"], "status": "built and visually validated" },
+    "Button": { "componentSetId": "6:8", "page": "4:15", "variants": ["Style=Primary", "Style=Secondary"], "textProperty": "Label", "status": "built and visually validated" },
+    "Badge": { "componentSetId": "7:8", "page": "4:15", "variants": ["Status=Safe", "Status=Danger"], "textProperty": "Label", "status": "built and visually validated (fixed a 30%-opacity bug post-build)" },
+    "Tabbar": { "componentId": "12:11", "page": "4:15", "status": "reused as flattened SVG asset from original Feed screen (node 32:2416) — not rebuilt as live vector icons; consider a future pass to make icons independently recolorable" },
+    "StatusCard": { "componentId": "14:13", "page": "4:15", "composedOf": ["Avatar instance", "Badge instance"], "textFields": ["Name", "Percentage", "Timestamp"], "status": "built and visually validated (fixed an instance-opacity-override bug post-build)" }
+  },
+  "knownGotchas": [
+    "setBoundVariableForPaint on a paint that already has opacity set can silently drop the opacity — always bind the variable first, THEN set opacity on the returned paint object as a separate step.",
+    "A component INSTANCE created via createInstance() did not automatically inherit a manually-mutated fill.opacity from its main component in one case — verify instance fills explicitly after creating instances from a component whose fill was patched post-creation, don't assume live inheritance for that property."
+  ],
+  "screens": {
+    "onboarding": {
+      "pageId": "4:17",
+      "totalFramesInOriginal": 22,
+      "orderedByPosition": ["23:162","25:1264","25:1324","42:5519","42:5609","42:5694","67:113","67:200","67:280","67:369","41:5275","42:5375","59:7907","42:5778","42:5849","42:5916","42:6008","42:6080","42:6153","42:6243","42:6349","47:6440(Paywall)"],
+      "built": [
+        { "originalId": "23:162", "newId": "21:2", "name": "01 — Bienvenue (valeur)", "status": "validated + fixed", "approach": "hybrid: decorative blobs/logo/mockup reused as uploaded assets, headline rebuilt as real gradient text, button = Button/Style=Primary instance. FIXED 2026-08-30: blob shapes were resized to their post-rotation bounding box instead of natural pre-rotation size (caused wrong position/stretch) — corrected via fixBlob() pattern (see reconstructionTemplate). Pagination dots were hand-made with wrong color (chartreuse) and wrong active dot (1st instead of middle) — replaced with correct action/primary blue at 30%/100% opacity, middle dot active, matching the real Group124 asset (#043CD1)." },
+        { "originalId": "25:1264", "newId": "26:8", "name": "02 — Bienvenue (lieux de confiance)", "status": "validated + fixed", "approach": "re-cloned from fixed screen 1, reused existing mockup image node (no re-upload needed)" },
+        { "originalId": "25:1324", "newId": "26:26", "name": "03 — Bienvenue (notifications)", "status": "validated + fixed", "approach": "re-cloned from fixed screen 1, reused existing 3 notification-card nodes (no rebuild needed)" }
+      ],
+      "criticalLessonLearned": "When reproducing a CSS rotated element (outer flex container with fixed w/h containing a rotated inner element of DIFFERENT natural w/h, centered via flex), the outer container's w/h is the POST-rotation bounding box, not the node's own size. Always extract the natural pre-rotation size from the innermost sized div, set node to that natural size UNROTATED first, position its center to match the outer container's center, THEN apply rotation. Never resize a node to the outer/rotated bounding box dimensions. Also: never hand-guess colors for small multi-color assets (e.g. pagination dots) — download and inspect the actual SVG source, or reuse the asset directly, rather than approximating with a design-system token that might be visually close but wrong.",
+      "remaining": 13,
+      "built_batch2": [
+        { "originalId": "42:5519", "newId": "28:8", "name": "04 — Rejoindre (inscription)", "status": "validated", "approach": "gradient bg (f9f9f7→edefb9), real Apple/Google/back-arrow assets uploaded, underline-style inputs, Button/Primary instance at 30% opacity for disabled look, rich-text link coloring via setRangeFills" },
+        { "originalId": "67:113", "newId": "31:9", "name": "05 — Se connecter", "status": "validated", "approach": "cloned screen 4, swapped labels/links" },
+        { "originalId": "67:200", "newId": "31:37", "name": "06 — Se connecter (erreurs)", "status": "validated", "approach": "cloned screen 5, added red error texts" },
+        { "originalId": "67:280", "newId": "31:64", "name": "07 — Mot de passe oublié (email)", "status": "validated", "approach": "new bordered-box input style (distinct from underline style used in 04-06)" },
+        { "originalId": "67:369", "newId": "32:24", "name": "08 — Mot de passe oublié (nouveau mdp)", "status": "validated", "approach": "cloned screen 7, added 2nd field" },
+        { "originalId": "41:5275", "newId": "33:13", "name": "09 — Profil (photo + nom)", "status": "validated after 2 fixes", "approach": "cloned screen 7 skeleton; had to fix: (1) leftover cloned description text not removed, (2) wrong icon asset used — node 41:5358 'Group126' is actually the NEXT-button asset (60x60 blue circle+arrow), NOT the camera icon; the correct photo-picker asset (white circle+camera, pre-composed as ONE svg with drop shadow) is node 42:5436 'Group127'. LESSON: multiple similarly-named Group12X nodes exist across this file for different icons — always verify by downloading and visually checking dimensions/content before trusting a node id guessed from a similar screen, don't assume adjacent numbering matches the right icon." }
+      ],
+      "skipped": [
+        { "originalId": "42:5375", "reason": "Same screen as 41:5275 (profile setup) but with Thomas/Moudugenou photo+name already filled in — a FILLED STATE of screen 09, not a new distinct screen. Not rebuilt separately; note as a state variant if ever needed." }
+      ],
+      "built_batch3": [
+        { "originalId": "42:5916", "newId": "37:21", "name": "11 — Choisissez comment commencer (créer/rejoindre Miff)", "status": "validated (minor cosmetic: group icon slightly off-center after a layout fix)" },
+        { "originalId": "42:6153", "newId": "40:32", "name": "12 — Nouvelle Miff (setup: nom, code, proches, lieux)", "status": "validated", "approach": "used emoji glyphs (✏️🔒📍) for small section icons instead of downloading assets — faster, visually close enough; real icon assets were used for anything bigger or brand-critical (logos, blobs, dots)" }
+      ],
+      "skipped_filled_states": [
+        { "originalId": "42:5375", "of": "screen 09" },
+        { "originalId": "42:5849", "of": "screen 10" },
+        { "originalId": "42:6008", "of": "screen 11" }
+      ],
+      "built_batch4": [
+        { "originalId": "42:6243", "newId": "41:13", "name": "13 — Autoriser les notifications (primer)", "status": "validated", "approach": "modal card on simplified grey backdrop (skipped recreating the full blurred Feed background behind it — time tradeoff, the backdrop is decorative, the modal content is what matters)" },
+        { "originalId": "42:6349", "newId": "42:22", "name": "14 — Autoriser la localisation (primer) — THE key screen for the location spec", "status": "validated", "approach": "confirms the PM already designed exactly the 'primer before OS prompt' pattern recommended in docs/specs/localisation-lieux-de-confiance.md — real location-pin icon asset reused" },
+        { "originalId": "47:6440", "newId": "43:13", "name": "15 — Paywall", "status": "validated", "approach": "IMPORTANT FINDING: revealed real pricing (4,99€/mois after a 7-day free trial, cancel anytime) and 2 previously-unknown Premium features (Zones de danger, Notifications intelligentes) not in the original spec docs — specs updated: docs/specs/paywall-premium.md and the matching Notion task page" }
+      ],
+      "skipped_filled_or_error_states": [
+        { "originalId": "42:5375", "of": "screen 09 (profile)", "note": "filled state" },
+        { "originalId": "42:5849", "of": "screen 10 (phone)", "note": "filled state" },
+        { "originalId": "42:6008", "of": "screen 11 (choose create/join)", "note": "filled state" },
+        { "originalId": "42:5609", "of": "screen 04 (signup)", "note": "filled state, button becomes full-opacity blue (enabled) once fields are valid — confirms disabled/enabled button behavior" },
+        { "originalId": "59:7907", "of": "screen 09 (profile)", "note": "VALIDATION ERROR STATE, not a dup — uses bordered-box inputs (not underline!) with red '3 charactères minimum' errors under Prénom/Nom. Captured as a rule in docs/specs/inscription-connexion.md rather than built as a full extra screen." }
+      ],
+      "notBuilt_lowPriority": ["42:5694 (likely another filled/error state of an already-built screen, not yet inspected)", "42:6080 (likely a filled state of screen 11/12, not yet inspected)"],
+      "onboardingStatus": "15 of 22 original frames rebuilt as distinct screens; 7 remaining were confirmed or highly-likely filled/error STATES of already-built screens (not new distinct content) — the Onboarding flow is functionally complete in the new file.",
+      "nextUp": "Onboarding flow is essentially done. Next flow per the priority order agreed with the PM would be Feed (🫂 Feed page, already partially explored during the original audit) — see design/figma-audit.md for the other 9 pages still needing this same treatment: Update, Miff, Lieux de confiance, Réglages, Profil, Notifs, Pop ins."
+    }
+  },
+  "reconstructionTemplate": "Per screen: 1) get_design_context on original nodeId (fileKey Byi9NgQxkBPbmbhU403HSf) to get asset URLs + exact positions/colors/text. 2) For decorative/bespoke visuals (gradients, organic shapes, mockup photos): curl-download each asset URL, upload_assets (batch) into RbX84qKbxppvAy5iypLYP2, then position via use_figma using the x/y/w/h/rotation values from the design-context code. 3) For functional UI (buttons, avatars, badges, status cards): use createInstance() from the matching component in page 4:15 instead of rebuilding from scratch. 4) Validate with get_screenshot after assembly. Cost so far: ~8 MCP calls for one onboarding screen (5 downloads/uploads + 1 assembly script + 1 screenshot, plus the initial get_design_context read). Extrapolated: full ~85-frame app is roughly 500-700 MCP calls — a multi-day effort even on a 200/day plan.",
+  "completedSteps": ["phase0-discovery", "new-file-created", "phase1-color-tokens", "phase1-text-styles", "phase2-page-skeleton", "phase3-base-components-complete", "onboarding-screen-1-of-22"],
+  "blockedOn": null
+}

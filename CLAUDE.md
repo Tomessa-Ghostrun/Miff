@@ -3,14 +3,43 @@
 ## Contexte
 Projet piloté par un Product Manager (5 ans d'expérience produit, non-développeur, découvre Claude Code). Le design existe sur Figma, les premières specs sont sur Notion.
 
+## Concept produit
+Miff est une app de réassurance pour son cercle de confiance : *savoir que ses proches vont bien, sans les déranger*. On rejoint ou crée une "Miff" (groupe) via un code secret, on définit des "lieux de confiance" (geofencing iOS region monitoring / Android geofencing), et l'app signale automatiquement à son cercle qu'on va bien à l'entrée/sortie de ces lieux — sans action manuelle, sans conversation imposée.
+- Modèle freemium : gratuit = 1 lieu de confiance, 1 seule Miff à la fois ; premium = lieux et Miffs illimités.
+- 1 Miff = 1 code secret pour la rejoindre. L'onboarding n'est complet qu'une fois qu'on a créé ou rejoint une Miff.
+- Le cercle de confiance peut être familial, amical, romantique — pas limité à une relation parent-enfant, même si c'est un cas d'usage probable.
+
+## Audience & sensibilité produit
+Deux principes transverses à respecter par tous les agents, pas seulement le design :
+- **Simplicité, faible charge cognitive** : le geste central (signaler qu'on va bien) doit être automatique ou quasi instantané — parcours courts, peu de friction, pas de surcharge d'options ou de notifications.
+- **Ton bienveillant, non anxiogène** : l'app touche à l'inquiétude pour un proche — formulations rassurantes, jamais moralisatrices, culpabilisantes ou alarmistes, y compris dans les messages d'erreur et les notifications (ex: "plus de nouvelles depuis 16h" doit rassurer/informer, pas paniquer).
+- **Confiance et consentement explicites sur la localisation** : le partage de position est au cœur du produit — chaque agent (design, backend, dev, release) doit garder à l'esprit qu'un partage de localisation mal consenti ou mal expliqué est à la fois un risque de confiance utilisateur et un motif de rejet par les stores (Apple/Google exigent une justification claire de l'usage de la localisation en arrière-plan).
+
 ## Stack
 - iOS natif : Swift + SwiftUI (dossier `ios/`)
 - Android natif : Kotlin + Jetpack Compose (dossier `android/`)
+- Backend : Firebase (Firestore, Authentication, Cloud Functions si nécessaire, FCM pour le push) — schéma de référence dans `backend/`
 - Lancement simultané iOS + Android visé.
+- Choix assumé : natif séparé (pas de partage de code iOS/Android), malgré une ancienne note Notion mentionnant Kotlin Multiplatform — décision confirmée avec le PM le 2026-08-30.
+
+## Sources externes connectées
+- **Notion** : espace privé du projet, page racine "👪 Miff" (contient pitch, règles métier, to-do, base de tâches dev). Source de vérité pour les specs produit.
+- **Figma** :
+  - Fichier original "Miff - App" (fileKey `Byi9NgQxkBPbmbhU403HSf`) — **référence en lecture seule, ne jamais y écrire**. 10 pages de contenu (~85 frames), conçu par le PM (non-designer) : pas de composants, pas de tokens, quasi tous les frames nommés "Welcoming screen". Audit complet dans `design/figma-audit.md`.
+  - Fichier de travail "Miff - Claude" (fileKey `RbX84qKbxppvAy5iypLYP2`, https://www.figma.com/design/RbX84qKbxppvAy5iypLYP2) — **c'est ici que l'agent `design-system` construit** le vrai design system et reconstruit les écrans, par phases (fondations → composants → écrans flow par flow). Le fichier original reste intact et consultable si besoin de revenir en arrière.
+
+## Sécurité & maîtrise des coûts (agents ios-dev, android-dev, backend-data)
+Objectif du projet : valider si le concept plaît, avant d'investir davantage — donc minimiser les coûts d'infra tant que possible, sans jamais sacrifier la sécurité pour y arriver.
+- **La sécurité n'est jamais négociable, même pour économiser.** Pas d'exception "temporaire" : pas de règles Firestore ouvertes, pas de clé secrète côté client, pas de validation sautée, pas de désactivation d'un contrôle de sécurité pour aller plus vite ou rester dans un tier gratuit.
+- **Priorité aux solutions gratuites/généreuses tant qu'elles ne compromettent pas la sécurité ni les CGU du service.** Un contournement qui viole les conditions d'utilisation d'un service gratuit (et risque un bannissement du compte/projet) est considéré **pire** qu'un coût maîtrisé — jamais une option acceptable pour "rester gratuit".
+- **Penser à la montée en charge dès le choix initial.** Si le concept marche et que le volume d'utilisateurs explose, un changement d'échelle ne doit jamais nécessiter une réécriture complète ni casser brutalement. Préférer des services avec un modèle "gratuit puis pay-as-you-grow" progressif (Firebase en est un bon exemple) plutôt que des hacks fragiles qui s'effondrent après un certain volume.
+- **Documenter chaque choix "économique".** Tout contournement fait pour rester dans un tier gratuit (quota, service alternatif, limite technique) doit être noté avec sa limite connue et le signal qui indiquera qu'il faut basculer vers une solution payante — pour que le PM voie venir le coût avant qu'il n'explose.
+- Utiliser des mécanismes anti-abus (ex: Firebase App Check, rate limiting) dès le début : ça protège à la fois contre les failles de sécurité ET contre l'explosion de coûts liée à un usage abusif des quotas gratuits.
 
 ## Structure du projet
 - `docs/` — specs produit. `docs/specs/` = specs par fonctionnalité, `docs/qa/` = checklists et bugs connus, `docs/release/` = checklists de soumission stores.
 - `design/` — exports Figma et design system dérivé (`design/design-system.md`, `design/screens/`).
+- `backend/` — schéma de données Firestore, règles de sécurité, Cloud Functions.
 - `ios/` — code source iOS.
 - `android/` — code source Android.
 - `marketing/` — contenu ASO, fiches store, plan de lancement.
@@ -20,8 +49,9 @@ Projet piloté par un Product Manager (5 ans d'expérience produit, non-dévelop
 |---|---|---|---|
 | `product-specs` | Transforme les notes/Notion en specs structurées | `docs/` | `docs/specs/*.md` |
 | `design-system` | Transforme les exports Figma en design system écrit | `design/` | `design/design-system.md`, `design/screens/*.md` |
-| `ios-dev` | Implémente l'app iOS | `docs/specs/`, `design/` | `ios/` |
-| `android-dev` | Implémente l'app Android | `docs/specs/`, `design/` | `android/` |
+| `backend-data` | Conçoit le modèle de données Firebase et les règles de sécurité | `docs/specs/` | `backend/` |
+| `ios-dev` | Implémente l'app iOS | `docs/specs/`, `design/`, `backend/` | `ios/` |
+| `android-dev` | Implémente l'app Android | `docs/specs/`, `design/`, `backend/` | `android/` |
 | `qa-tester` | Teste et valide contre les critères d'acceptation | code + specs | `docs/qa/` |
 | `release-manager` | Prépare la soumission App Store / Play Store | tout | `docs/release/`, `marketing/store-listing-*.md` |
 | `aso-marketing` | Contenu ASO et marketing de lancement | `docs/specs/` | `marketing/` |
@@ -31,13 +61,16 @@ Pour invoquer un agent explicitement, demande par exemple : "utilise l'agent ios
 ## Workflow recommandé
 1. Déposer les notes Notion (export markdown/PDF ou copier-coller) dans `docs/`, et les exports Figma (captures, valeurs de tokens) dans `design/`.
 2. `product-specs` structure la spec de la fonctionnalité → `docs/specs/`.
-3. `design-system` traduit les écrans Figma concernés → `design/screens/`.
-4. `ios-dev` et `android-dev` implémentent en parallèle à partir des mêmes specs/design.
+3. `design-system` traduit les écrans Figma concernés → `design/screens/` ; `backend-data` dérive le modèle de données et les règles de sécurité → `backend/`.
+4. `ios-dev` et `android-dev` implémentent en parallèle à partir des mêmes specs/design/backend.
 5. `qa-tester` valide contre les critères d'acceptation.
 6. `release-manager` prépare la soumission ; `aso-marketing` prépare la fiche store et le lancement.
 
 ## Intégrations externes
-Aucun connecteur Figma/Notion n'est branché pour l'instant. En attendant, déposer manuellement les exports dans `docs/` et `design/`. À réévaluer si un connecteur devient disponible ou si le PM fournit un token API Figma/Notion.
+Notion et Figma sont connectés via MCP (voir "Sources externes connectées" plus haut). Limite Figma : 200 appels MCP/jour (plan payant). Les specs vivent à la fois dans `docs/specs/` et dans la base Notion "Tâches développement Miff" ; l'état d'avancement de la reconstruction Figma est suivi dans `design/figma-design-system-state.json`.
+
+## Dépôt Git
+Repo GitHub privé : https://github.com/Tomessa-Ghostrun/Miff (branche `main`). Totalement distinct du projet Ghostrun, qui ne doit jamais être touché depuis ce dossier.
 
 ## Règles générales
 - Ne jamais deviner une décision produit, design, ou légale non fournie — les agents doivent signaler les ambiguïtés plutôt que d'inventer.

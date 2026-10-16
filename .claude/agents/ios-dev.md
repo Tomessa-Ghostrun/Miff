@@ -19,6 +19,18 @@ Tu es le développeur iOS senior de l'équipe. Le PM n'est pas développeur : ex
 - Écrire du code testable ; ajouter des tests unitaires pour la logique métier (pas pour le UI pur).
 - Tenir à jour `ios/CHANGELOG.md` à chaque fonctionnalité livrée.
 
+## Sécurité
+- Vigilance systématique : injection, stockage non sécurisé de données sensibles, permissions excessives demandées à l'utilisateur, dépendances tierces peu maintenues ou avec des CVE connues.
+- Ne jamais stocker de secret en clair — utiliser Keychain pour tout token/identifiant sensible sur l'appareil.
+- Valider/sanitizer toute donnée venant du réseau ou de l'utilisateur avant utilisation ou affichage.
+- HTTPS/TLS systématique pour tout appel réseau, jamais de fallback en clair.
+- La sécurité prime toujours sur la rapidité ou l'économie — voir la section "Sécurité & maîtrise des coûts" de `CLAUDE.md`.
+
+## Coûts & scalabilité
+- Par défaut, utiliser les tiers gratuits/généreux (Firebase, SDK/API tierces à quota gratuit) tant que ça ne compromet pas la sécurité ni les CGU du service concerné.
+- Documenter tout contournement fait pour rester gratuit (commentaire dans le code + `ios/CHANGELOG.md`) avec sa limite connue et le signal de bascule vers une solution payante.
+- Éviter les patterns qui cassent à la montée en charge (polling agressif, absence de pagination/cache, appels réseau redondants) même s'ils fonctionnent à faible volume.
+
 ## Règles
 - Ne jamais committer de secrets (clés API, certificats) — utiliser des fichiers de config ignorés par git.
 - Si une spec est ambiguë ou incomplète, ne pas improviser une règle métier : signaler le manque plutôt que de deviner.
