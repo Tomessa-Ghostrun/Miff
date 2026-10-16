@@ -1,0 +1,468 @@
+# Miff — modèle de données Firestore (source de vérité)
+
+Projet Firebase : `miff-3d283` — Firestore `europe-west9` (Paris), édition Standard, plan Spark aujourd'hui.
+Ce document est la référence unique pour `ios-dev` et `android-dev` : même structure, mêmes noms de champs, mêmes batches. Toute évolution passe par `backend-data`.
+
+**Statut de validation** : modèle et règles (`firestore.rules`) écrits sans avoir été exécutés (aucun émulateur lancé, rien déployé). Ils doivent passer le plan de test `rules-test-plan.md` avant tout déploiement. Ce document ne prétend à aucune conformité juridique : il décrit ce que le modèle implique (§11).
+
+Spécifications sources : `docs/specs/*.md` (statut "Backlog discovery", donc non validées). Les hypothèses prises là où une spec est muette sont marquées **[Hypothèse]** et listées en §15.
+
+---
+
+## 1. Décisions de modélisation clés (en une phrase chacune)
+
+| Décision | Impact pour le PM |
+|---|---|
+| **On ne stocke jamais de coordonnées de l'utilisateur**, seulement un état ("dans la Maison", "hors lieu", "zone à risque") + horodatages. La position GPS reste sur le téléphone. | Beaucoup moins de données sensibles à protéger/justifier ; pas d'historique de trajet possible ; le feed ne coûte presque rien. |
+| **Pas d'historique** : un seul document "état courant" par membre et par Miff, écrasé à chaque événement. | Coût stable, conforme à l'esprit "sans être intrusif" (spec hors-scope : pas de journal). |
+| **Le niveau vert/orange/rouge est calculé par l'app** à partir des horodatages, pas stocké. | Fonctionne même si le téléphone du proche est éteint ; zéro Cloud Function pour afficher l'escalade. En revanche, **envoyer une notification quand l'app est fermée exige Blaze** (§13). |
+| **Consentement par membre et par Miff**, enregistré (date + version du texte), révocable ; révoquer **supprime** l'état et la photo. | Répond à l'exigence anti-stalkerware des stores et à la traçabilité du consentement. |
+| **Réciprocité** : on ne voit la position des autres que si l'on partage la sienne. | Évite la surveillance à sens unique. **[Hypothèse]** à confirmer (Q6). |
+| **Le premium vit dans `entitlements/{uid}`, écriture interdite au client.** | Impossible de se déclarer premium soi-même. Sans serveur (Spark), le PM l'accorde à la main dans la console pour les testeurs. |
+| **Limites freemium appliquées par les règles** avec des "slots" à identifiant fixe (§6), sans Cloud Function. | Marche sur Spark. Failles résiduelles listées §6. |
+| **Code secret dans `joinCodes/{code}`**, sans `list`, 12 caractères sur 31 symboles (~59 bits). | Non énumérable. Le brute force n'est pas impossible mais irréaliste ; App Check le rend encore plus coûteux (§5). |
+| **Photos stockées dans Firestore** (≤ 150 Ko, durée de vie courte), car Cloud Storage exige Blaze. | Évite Blaze pour les photos, mais c'est le poste qui consomme le plus de bande passante (§12). Décision PM (Q2). |
+
+---
+
+## 2. Arborescence et schéma
+
+```
+users/{uid}                              profil privé (soi uniquement)
+  memberships/{key}                      index "mes Miffs" + slot freemium
+  devices/{deviceId}                     jetons FCM (uniquement avec le push -> Blaze)
+entitlements/{uid}                       statut premium (lecture seule côté client)
+joinCodes/{code}                         résolution du code secret -> miffId
+miffs/{miffId}                           le cercle
+  members/{uid}                          profil (copie), rôle, CONSENTEMENT
+  status/{uid}                           ÉTAT COURANT (sensible), existe seulement si partage activé
+  photos/{uid}                           photo de la dernière update (sensible), durée de vie courte
+  places/{placeId}                       lieux : zone de confiance / zone à risque
+```
+
+Conventions : `{uid}` = UID Firebase Auth. `miffId` = ID auto Firestore (20 caractères alphanumériques, imposé par les règles). Tous les horodatages sont des `Timestamp` Firestore. **Écrire toutes les clés d'un document à chaque écriture** (valeur `null` si non applicable) : les règles exigent le jeu de clés complet et refusent les clés inconnues.
+
+### 2.1 `users/{uid}` — profil privé
+| Champ | Type | Note |
+|---|---|---|
+| `firstName`, `lastName` | string 1–50 | Obligatoires (spec inscription). La règle UX "3 caractères minimum" n'est pas imposée côté serveur (Q15). |
+| `avatar` | bytes ≤ 20 000 octets, optionnel | JPEG carré ~160×160, qualité ~70 (≈ 8–15 Ko). **Sensible** (visage). |
+| `createdAt` | timestamp | = heure serveur |
+| `termsAcceptedAt`, `termsVersion` | timestamp, string | Preuve d'acceptation des CGU/politique de confidentialité. |
+
+Lisible et modifiable **uniquement** par son propriétaire. Les autres membres voient la copie dans `members/{uid}`. Pas de champ premium ici (volontairement).
+
+### 2.2 `users/{uid}/memberships/{key}` — "mes Miffs" + slot freemium
+| Champ | Type |
+|---|---|
+| `miffId` | string (ID de Miff) |
+| `joinedAt` | timestamp (heure serveur) |
+
+`{key}` = `"free"` pour le slot gratuit (un seul possible), ou `miffId` pour un utilisateur premium. Pour lister ses Miffs : lire tous les documents de ce sous-ensemble et utiliser le champ `miffId` (jamais l'ID du document). Immuable (pas d'update). Suppression autorisée seulement si le document membre n'existe plus.
+
+### 2.3 `entitlements/{uid}` — premium (écrit par le serveur / la console uniquement)
+| Champ | Type | Note |
+|---|---|---|
+| `active` | bool | |
+| `expiresAt` | timestamp | Les règles vérifient `expiresAt > maintenant` : un abonnement expiré cesse de fonctionner sans fonction. |
+| `source` | string | `manual` / `app_store` / `google_play` (informatif) |
+| `updatedAt` | timestamp | |
+
+Le client peut lire son propre document (pour afficher l'état premium) et rien d'autre. Exemple :
+```json
+{ "active": true, "expiresAt": "2026-12-01T00:00:00Z", "source": "manual", "updatedAt": "2026-10-16T12:00:00Z" }
+```
+
+### 2.4 `joinCodes/{code}` — code secret
+`{code}` = 12 caractères parmi `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (31 symboles, sans I/L/O/0/1), généré **côté client par un générateur cryptographique** (SecRandomCopyBytes / SecureRandom, avec rejet pour éviter le biais modulo).
+| Champ | Type |
+|---|---|
+| `miffId` | string |
+| `miffName` | string 1–40 (pour afficher "Rejoindre la Miff « Famille »" avant de s'engager) |
+| `createdAt` | timestamp |
+
+Pas de `list`. `get` exige de connaître le code entier. Ne contient ni le créateur ni les membres.
+
+### 2.5 `miffs/{miffId}`
+| Champ | Type | Note |
+|---|---|---|
+| `ownerUid` | string | **Immuable.** Le créateur gère lieux, code, retraits. |
+| `name` | string 1–40 | **[Hypothèse]** : un nom existe (le sélecteur de Miff en a besoin). |
+| `joinCode` | string (12) | Visible de tous les membres **[Hypothèse]** (action "Ajouter un proche", Q7). |
+| `createdAt` | timestamp | |
+
+Lisible par les membres uniquement (`get` ; pas de `list`). Modifiable par le créateur : `name`, `joinCode` (régénération).
+
+### 2.6 `miffs/{miffId}/members/{uid}` — profil (copie), rôle, consentement
+| Champ | Type | Note |
+|---|---|---|
+| `role` | `"owner"` \| `"member"` | Immuable. |
+| `firstName`, `lastName`, `avatar` | comme `users` | **Copie** (dénormalisation : évite N lectures de profils). Le client met à jour toutes ses copies quand le profil change. |
+| `joinedAt` | timestamp | Heure serveur, immuable. |
+| `joinCode` | string | Présent seulement pour `role = member` : code utilisé pour rejoindre (preuve exigée par les règles). Immuable. |
+| `sharing.enabled` | bool | Le membre partage-t-il sa position avec CETTE Miff ? |
+| `sharing.consentedAt` | timestamp \| null | Date du consentement explicite (heure serveur). |
+| `sharing.consentVersion` | string \| null | Version du texte de consentement affiché (ex. `"2026-10-v1"`). |
+| `sharing.revokedAt` | timestamp \| null | Date de révocation, `null` si actif. |
+
+Exemple :
+```json
+{
+  "role": "member", "firstName": "Amandine", "lastName": "Roy", "joinedAt": "2026-10-16T09:00:00Z",
+  "joinCode": "K7M2QX9PDW4H",
+  "sharing": { "enabled": true, "consentedAt": "2026-10-16T09:00:00Z", "consentVersion": "2026-10-v1", "revokedAt": null }
+}
+```
+Lisible par tous les membres de la Miff (c'est la liste des membres). Un membre ne modifie que son profil et son consentement.
+
+### 2.7 `miffs/{miffId}/status/{uid}` — état courant (SENSIBLE)
+Un seul document par membre et par Miff, **écrasé**. N'existe que si `members/{uid}.sharing.enabled = true`.
+| Champ | Type | Note |
+|---|---|---|
+| `presence` | `"in_trusted"` \| `"out"` \| `"in_risk"` \| `"unknown"` | État issu des géofences, **aucune coordonnée**. |
+| `placeId` | string \| null | Lieu concerné (celui où l'on est, ou celui que l'on vient de quitter). |
+| `presenceAt` | timestamp | Heure de l'événement de géofence (horloge appareil, bornée par les règles : −24 h / +5 min). |
+| `lastUpdateAt` | timestamp | Dernier signal "tout va bien" : update manuelle OU entrée en zone de confiance. |
+| `updateText` | string ≤ 140 \| null | Légende de la dernière update. |
+| `hasPhoto` | bool | `true` si `photos/{uid}` existe. |
+| `batteryPct` | int 0–100 \| null | Écrit avec les autres champs (pas d'écriture périodique dédiée, pour limiter le coût). |
+| `locationAccess` | `"background"` \| `"foreground"` \| `"denied"` \| `"unknown"` | Permission système constatée (alimente l'état "localisation limitée"). |
+| `escalationDueAt` | timestamp \| null | Prochaine échéance d'escalade. **Inutile en Spark** ; prévu pour la fonction planifiée Blaze (§13). |
+| `updatedAt` | timestamp | Heure serveur de l'écriture ("mis à jour il y a X min"). |
+
+Exemple (membre parti de la maison à 16h02, sans update depuis) :
+```json
+{ "presence": "out", "placeId": "p1", "presenceAt": "2026-10-16T16:02:00Z", "lastUpdateAt": "2026-10-16T15:40:00Z",
+  "updateText": null, "hasPhoto": false, "batteryPct": 62, "locationAccess": "background",
+  "escalationDueAt": "2026-10-16T18:02:00Z", "updatedAt": "2026-10-16T16:02:03Z" }
+```
+
+### 2.8 `miffs/{miffId}/photos/{uid}` — photo de la dernière update (SENSIBLE)
+| Champ | Type | Note |
+|---|---|---|
+| `jpeg` | bytes ≤ 150 000 | Compresser côté client (~1024 px, qualité ~60). Un seul document : la nouvelle photo écrase l'ancienne. |
+| `createdAt` | timestamp | |
+| `expiresAt` | timestamp | ≤ +7 jours. **[Hypothèse]** durée proposée : 24 h. Le client ignore une photo expirée. Une politique TTL Firestore sur ce champ la supprimera (à activer dans la console ; disponibilité sur Spark à vérifier). |
+
+Lecture : `get` uniquement (pas de `list`), seulement pour qui partage lui-même sa position. À ne charger que si `status.hasPhoto = true`, et à re-télécharger seulement si `lastUpdateAt` a changé (sinon coût de bande passante inutile).
+
+### 2.9 `miffs/{miffId}/places/{placeId}` — lieux
+| Champ | Type | Note |
+|---|---|---|
+| `name` | string 1–60 | |
+| `type` | `"trusted"` \| `"risk"` | Immuable après création. |
+| `address` | string ≤ 200 \| null | **Sensible** (peut être un domicile). |
+| `lat`, `lng` | number | **Sensible.** 5 décimales suffisent (~1 m). |
+| `radiusM` | int 50–2000 | Les règles tolèrent 50 ; l'UI doit proposer ≥ 100 m (les géofences plus petites sont peu fiables). |
+| `priority` | int 0–999 \| null | Indice de priorité (0 = le plus important), voir §7. |
+| `createdBy`, `createdAt`, `updatedAt` | string, timestamp, timestamp | `createdBy` = créateur. |
+
+Lisible par tous les membres (ils en « héritent »). Écrit uniquement par le créateur.
+
+### 2.10 `users/{uid}/devices/{deviceId}` — jetons de push (Blaze)
+`token` (string ≤ 512), `platform` (`ios`/`android`), `updatedAt` (heure serveur). À n'implémenter que le jour où l'envoi de push existe (§13). Supprimé à la déconnexion.
+
+---
+
+## 3. Statuts : ce qui est stocké, ce qui est calculé
+
+**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*`.
+**Calculé par chaque client à l'affichage** (algorithme identique iOS/Android, paramètres en constantes partagées) :
+
+```
+ORANGE_APRES = 2 h      ROUGE_APRES = 4 h      (spec : orange à +2 h, rouge à +2 h supplémentaires)
+
+niveau(membre, statut, maintenant):
+  si !membre.sharing.enabled           -> PARTAGE_DESACTIVE      (carte neutre, jamais alarmiste)
+  si statut absent                     -> INCONNU
+  selon statut.presence:
+    in_risk     -> ZONE_A_RISQUE
+    in_trusted  -> VERT
+    unknown     -> PAS_DE_NOUVELLES_NEUTRE  [Hypothèse : pas d'escalade sans départ connu, Q10]
+    out         -> ref = max(presenceAt, lastUpdateAt)
+                   écoulé = maintenant - ref
+                   < 2 h -> VERT (parti, tout va bien)   < 4 h -> ORANGE   sinon -> ROUGE
+  en plus : si locationAccess in (denied, foreground) -> badge "localisation limitée" (mises à jour manuelles encouragées)
+```
+
+- Une **update manuelle** écrit `lastUpdateAt = maintenant` : le niveau repasse à vert, le compteur repart (spec : "update manuelle ou ré-entrée en zone ramène à vert").
+- **Rouge « toutes les heures »** : la spec ne dit pas ce qui se passe si l'update horaire manque (Q10). Le modèle fournit tout ce qu'il faut (`lastUpdateAt`) pour afficher "pas de nouvelles depuis X h" ; la relance éventuelle est une notification (Blaze).
+- Le calcul repose sur l'heure de l'appareil du lecteur : un décalage d'horloge de quelques minutes est possible. Le serveur (`updatedAt`) permet de détecter une dérive grossière.
+- Le feed n'a donc **pas besoin d'écriture serveur** pour passer orange/rouge : il suffit que l'app d'un proche soit ouverte. Ce qui est impossible sans serveur, c'est de **prévenir** quelqu'un dont l'app est fermée.
+
+**Déclencheurs de géofence** (écrits par l'appareil du membre, dans le document `status` de chaque Miff concernée) :
+| Événement | Écriture |
+|---|---|
+| Entrée zone de confiance | `presence=in_trusted`, `placeId`, `presenceAt=t`, `lastUpdateAt=t`, `escalationDueAt=null` |
+| Sortie zone de confiance | `presence=out`, `placeId` (lieu quitté), `presenceAt=t`, `escalationDueAt=t+2h` |
+| Entrée zone à risque | `presence=in_risk`, `placeId`, `presenceAt=t` (alerte immédiate = notification, Blaze) |
+| Sortie zone à risque | `presence=out`, `presenceAt=t`, `escalationDueAt=t+2h` |
+Si un lieu de confiance et une zone à risque se chevauchent, la zone à risque prime **[Hypothèse]**.
+
+---
+
+## 4. Consentement au partage de position
+
+- Par membre **et** par Miff : `members/{uid}.sharing`. Un utilisateur dans deux Miffs peut partager avec l'une et pas l'autre.
+- Activer : le client affiche l'écran d'explication (primer), puis écrit `enabled=true`, `consentedAt=maintenant`, `consentVersion="…"`, `revokedAt=null`. Les règles imposent `consentedAt = heure serveur` : impossible d'antidater un consentement.
+- Révoquer à tout moment (Réglages) : **dans un même batch** `members/{uid}.sharing` (`enabled=false`, `revokedAt=maintenant`) + suppression de `status/{uid}` + suppression de `photos/{uid}`. Les règles **refusent** la révocation si ces suppressions ne sont pas dans le batch : aucune trace de position ne survit à un retrait de consentement.
+- Les autres membres voient `sharing.enabled=false` et affichent "partage désactivé" (ton neutre). Savoir si on les **notifie** de la désactivation est une question produit (Q16).
+- "Voir ce que je partage" : l'écran Réglages affiche, pour chaque Miff, la liste des membres (`members`) et l'interrupteur de partage. Le contenu partagé = le document `status/{uid}` (à afficher tel quel à l'utilisateur).
+- Le consentement ne peut pas être donné "par défaut" : à la création/jonction, le document membre peut naître avec `enabled=false` (sans consentement) ou `true` (avec l'écran de consentement). Aucun autre chemin.
+
+---
+
+## 5. Rejoindre une Miff avec le code secret
+
+Flux : (1) le client lit `joinCodes/{CODE}` (`get`) → obtient `miffId` + `miffName` ; (2) affiche l'écran de confirmation + consentement ; (3) écrit en **un batch** `members/{uid}` (avec `joinCode`) + `users/{uid}/memberships/{key}`. Les règles vérifient que `joinCodes/{joinCode}.miffId` = la Miff visée : on ne peut pas rejoindre sans connaître le code.
+
+**Pourquoi non énumérable** : pas de `list` sur `joinCodes`, ni sur `miffs`, ni sur `users`. Un code inexistant renvoie simplement "introuvable".
+
+**Risques résiduels et mitigations**
+| Risque | Mitigation |
+|---|---|
+| Brute force du code (deviner 12 caractères). | ~7,9 × 10^17 combinaisons. À 100 tentatives/s (très au-dessus d'un client légitime), il faudrait ~250 millions d'années pour tout parcourir ; la probabilité de toucher un code existant dans une base de 100 000 Miffs reste négligeable (~10^-13 par tentative). **App Check** (à activer en mode "enforce" sur Firestore) bloque les scripts hors application officielle. |
+| Les règles ne peuvent pas limiter le nombre de tentatives par compte. | Surveiller les lectures anormales de `joinCodes` dans la console (alerte d'usage). Si un abus apparaît : fonction appelable "rejoindre" avec compteur de tentatives (Blaze, §13). |
+| Code mal généré (aléa faible). | Imposer un générateur cryptographique côté client (§2.4). Le format est vérifié par les règles, pas l'aléa. |
+| Code qui fuite (capture d'écran, ex-membre). | Régénération du code par le créateur : batch `miffs.update(joinCode)` + création du nouveau `joinCodes` + suppression de l'ancien (les règles **refusent** de garder l'ancien code valide). Le retrait d'un membre ne change pas le code automatiquement : l'ex-membre peut revenir tant que le code n'est pas régénéré (Q7). |
+| Pas de validation du créateur à l'arrivée. | Non spécifié ; tout porteur du code rejoint immédiatement. Option : file d'attente d'approbation (Q7). |
+
+---
+
+## 6. Limites freemium : comment elles sont appliquées
+
+Le client ne peut jamais s'attribuer le premium (`entitlements` en écriture interdite). Les limites sont des **slots à identifiant fixe**, vérifiés par les règles, sans compteur ni fonction :
+
+| Limite | Mécanisme | Failles / limites connues |
+|---|---|---|
+| **1 Miff à la fois (gratuit)** | L'index `users/{uid}/memberships/free` ne peut être créé qu'une fois (un second `create` devient un `update`, interdit). Un document membre n'est accepté que si un index pointant vers la Miff existe dans le même batch. Une clé autre que `free` exige `entitlements` actif. | (a) Un utilisateur qui était premium garde ses Miffs en plus du slot gratuit après expiration (au plus +1) : acceptable. (b) Si un membre est retiré, son index reste jusqu'à ce que son appli le nettoie (au lancement) : tant que ce n'est pas fait il ne peut pas rejoindre une autre Miff en gratuit. (c) Un client modifié peut ouvrir un second **compte** gratuit : propre à tout freemium. |
+| **1 lieu de confiance (gratuit)** | En gratuit, seul l'identifiant `p1` et le type `trusted` sont acceptés pour créer un lieu. Premium : identifiants libres et zones à risque. | (a) Le compte "lieux" est par Miff ; comme un compte gratuit n'a qu'une Miff, cela revient à 1 lieu. (b) Un créateur redevenu gratuit conserve ses lieux premium existants (comportement à la rétrogradation : Q3). (c) Un membre gratuit d'une Miff dont le créateur est premium bénéficie des lieux : voulu par la spec ("les membres héritent"). |
+| **Zones à risque / notifications intelligentes (premium)** | Création d'une zone `risk` : exige le premium du créateur. Les notifications intelligentes sont du ressort du serveur (Blaze). | Savoir si le premium est "par utilisateur" ou "par Miff" : Q3. |
+| **Premium actif** | `entitlements.active == true` et `expiresAt > heure serveur` (les règles évaluent l'expiration elles-mêmes). | Tant qu'aucune fonction ne valide les achats, l'octroi est **manuel** (console) : ne pas ouvrir le paywall payant au public avant d'avoir la validation serveur (Blaze, §13). |
+
+La consommation en lectures des règles (get/exists) est facturée (§12) : c'est le prix de cette approche sans Cloud Function.
+
+---
+
+## 7. Ce que le serveur expose pour choisir les géofences (iOS 20 / Android 100)
+
+Le serveur ne reçoit **jamais** la position de l'utilisateur pour décider. Il expose, pour chaque lieu : `type`, `radiusM`, `priority`, `createdAt`, `lat/lng`. Le nombre de lieux = taille de la liste `places` de chaque Miff (aucun compteur stocké).
+
+Algorithme proposé (client, en local ; priorisation exacte à valider, Q9) :
+1. Récupérer les `places` de toutes les Miffs de l'utilisateur (listener ; déjà en cache hors ligne).
+2. Fusionner les lieux quasi identiques de plusieurs Miffs (un seul géofence système, plusieurs destinataires) pour économiser les emplacements.
+3. Si le total dépasse 20 (iOS) / 100 (Android) : trier par `priority` croissante puis `createdAt`, puis préférer les lieux les plus proches de la position courante **calculée sur l'appareil** (changements significatifs de position), et ré-enregistrer les géofences au fil des déplacements.
+4. Réserver une partie du quota iOS aux zones à risque si elles existent (**[Hypothèse]**).
+5. Un lieu non surveillé à cause de la limite : état local ("Ce lieu n'est pas surveillé actuellement") ; rien à écrire côté serveur.
+
+---
+
+## 8. Ce que chaque client (iOS et Android) doit implémenter, par fonctionnalité
+
+Toutes les écritures multi-documents sont des **batches** (`WriteBatch` côté Firestore SDK), à garder courts : les règles sont limitées à 20 appels de lecture par batch.
+
+| Fonctionnalité | Lectures | Écritures (dans un batch sauf mention) |
+|---|---|---|
+| **Inscription / profil** | — | `users/{uid}` create (profil + `termsAcceptedAt` + `termsVersion`). Modif. de profil : `users/{uid}` update + `members/{uid}` update dans **chaque** Miff (liste via `memberships`). |
+| **Créer une Miff** | `entitlements/{uid}` (savoir quelle clé utiliser) ; `memberships` (si gratuit et déjà un `free` → afficher le paywall sans tenter l'écriture) | Générer `miffId` (ID auto) et `code` (aléa cryptographique). Batch de 4 : `miffs/{miffId}` create {ownerUid, name, joinCode, createdAt} ; `joinCodes/{code}` create {miffId, miffName, createdAt} ; `miffs/{miffId}/members/{uid}` create {role:"owner", profil copié, joinedAt, sharing} ; `users/{uid}/memberships/{key}` create {miffId, joinedAt} avec `key="free"` si non premium, sinon `miffId`. Collision de code (très improbable) : régénérer et réessayer. |
+| **Rejoindre une Miff** | `joinCodes/{CODE}` (get) | Après l'écran de confirmation + consentement. Batch : `members/{uid}` create {role:"member", joinCode, profil copié, joinedAt, sharing} + `memberships/{key}` create. Erreur "introuvable" ou refus : message unique et bienveillant ("Ce code ne correspond à aucune Miff"), sans distinguer les causes. Limiter les essais côté UI (ex. pause après 5 échecs). |
+| **Feed** | Listener `miffs/{id}/members` + listener `miffs/{id}/status` (seulement si mon `sharing.enabled`) + `get photos/{uid}` à la demande ; `get miffs/{id}` pour le nom et le code. | — |
+| **Sélecteur de Miff (premium)** | Documents de `users/{uid}/memberships` puis `get miffs/{id}` pour chaque nom. | — |
+| **Activer le partage** | — | `members/{uid}` update {sharing: enabled=true, consentedAt=maintenant, consentVersion, revokedAt=null} puis création de `status/{uid}`. Les deux peuvent être dans un batch. |
+| **Révoquer le partage** | — | Batch : `members/{uid}` update (sharing.enabled=false, revokedAt=maintenant) + delete `status/{uid}` + delete `photos/{uid}` (ignorer si absent). Arrêter la surveillance géofence pour cette Miff. |
+| **Événement géofence** | — | `status/{uid}` set (document complet, §3), une écriture par Miff concernée. Fonctionne hors-ligne (file d'attente Firestore) ; l'horodatage envoyé est l'heure de l'événement. **Ne pas** ajouter de throttling côté règles : la file hors-ligne rejouerait des écritures rapprochées. |
+| **Update manuelle (texte + photo optionnelle)** | — | Batch : (si photo) `photos/{uid}` set {jpeg, createdAt, expiresAt} + `status/{uid}` set {lastUpdateAt=maintenant, updateText, hasPhoto, …}. |
+| **Créer / modifier / supprimer un lieu** (créateur) | `places` | Gratuit : `places/p1` uniquement, `type="trusted"`. Premium : ID auto, `trusted` ou `risk`. L'UI doit lire `entitlements` et ouvrir le paywall *avant* l'écriture ; le refus des règles est le filet de sécurité. Modif : `name, address, lat, lng, radiusM, priority, updatedAt` ; le `type` ne se modifie pas. |
+| **Quitter une Miff** (membre) | — | Batch : delete `members/{uid}` + delete `status/{uid}` + delete `photos/{uid}` + delete `memberships/{key}`. Le créateur ne peut partir qu'en supprimant la Miff (voir ci-dessous). |
+| **Retirer un membre** (créateur) | — | Batch : delete `members/{cible}` + delete `status/{cible}` + delete `photos/{cible}`. L'index de la cible reste jusqu'à son nettoyage (voir "Nettoyage au lancement"). |
+| **Nettoyage au lancement** | `get miffs/{id}/members/{moi}` pour chaque index | Si refus/absent : j'ai été retiré ou la Miff n'existe plus → delete l'index correspondant (autorisé car je ne suis plus membre) et prévenir l'utilisateur avec bienveillance. |
+| **Régénérer le code** (créateur) | — | Batch : `miffs/{id}` update {joinCode} + create `joinCodes/{nouveau}` + delete `joinCodes/{ancien}`. |
+| **Renommer la Miff** (créateur) | — | Batch : `miffs/{id}` update {name} + `joinCodes/{code}` update {miffName}. |
+| **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre (voir ci-dessus), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `joinCodes/{code}` + delete mon `status`/`photos` + delete mon `members/{uid}` + delete `miffs/{id}` + delete mon `memberships/{key}`. Si interrompu : relancer (idempotent). Les sous-collections ne sont pas supprimées automatiquement par Firestore. |
+| **Premium (lecture)** | `get entitlements/{uid}` (peut ne pas exister = gratuit) | Aucune. L'achat store ne suffit pas : c'est le serveur (ou le PM en manuel) qui écrit `entitlements`. |
+| **Suppression de compte** | — | §10. |
+| **Push (Blaze)** | — | À chaque lancement et rafraîchissement de jeton : `users/{uid}/devices/{deviceId}` set {token, platform, updatedAt}. À la déconnexion : delete. |
+
+**App Check** : les deux apps doivent initialiser Firebase App Check (App Attest/DeviceCheck sur iOS, Play Integrity sur Android) avant toute requête Firestore ; jeton de debug pour les builds de développement. Sans cela, le PM ne pourra pas activer l'application stricte (README).
+
+---
+
+## 9. Matrice d'accès
+
+Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lui-même sa position (réciprocité), `O` = créateur de la Miff, `—` = refusé.
+
+| Chemin | get | list | create | update | delete |
+|---|---|---|---|---|---|
+| `users/{uid}` | S | — | S | S (profil, CGU) | S |
+| `users/{uid}/memberships/{key}` | S | S | S (slot) | — | S (si plus membre) |
+| `users/{uid}/devices/{id}` | S | S | S | S | S |
+| `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
+| `joinCodes/{code}` | tout compte connecté qui connaît le code | **—** | O (avec sa Miff) | O (nom) | O |
+| `miffs/{id}` | M | **—** | S (devient O) | O (nom, code) | O |
+| `miffs/{id}/members/{uid}` | M | M | S (via code ou création) | S (profil, consentement) | S (quitter) / O (retirer) |
+| `miffs/{id}/status/{uid}` | P | P | S (si partage actif) | S (si partage actif) | S / O |
+| `miffs/{id}/photos/{uid}` | P | **—** | S (si partage actif) | S | S / O |
+| `miffs/{id}/places/{pid}` | M | M | O (limites freemium) | O | O |
+| tout le reste | — | — | — | — | — |
+
+Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ainsi que `entitlements` est écrit.
+
+---
+
+## 10. Suppression de compte et durées de conservation
+
+**Ordre côté client** (tant que le compte Auth existe, car les règles exigent l'authentification) :
+1. Pour chaque Miff dont je suis membre simple : batch "Quitter" (membre + statut + photo + index).
+2. Pour chaque Miff dont je suis créateur : procédure "Supprimer une Miff" (ou transfert de propriété si le PM le décide, Q8).
+3. Supprimer `users/{uid}/devices/*`, puis `users/{uid}`.
+4. Supprimer l'utilisateur Auth (ré-authentification récente exigée par Firebase).
+
+**Non supprimable par le client** : `entitlements/{uid}` (ne contient aucune donnée personnelle hormis l'UID et l'état d'abonnement). À purger à la main ou par une fonction (Blaze). **Risque** : si l'app plante en cours de procédure, des données restent orphelines ; une fonction `onDelete` du compte (ou l'extension Firebase "Delete User Data", Blaze) rend la suppression fiable (§13).
+
+| Donnée | Conservation proposée (à valider) |
+|---|---|
+| Profil `users`, copies `members` | Jusqu'à suppression du compte ou départ de la Miff. |
+| `status` (état courant) | Pas d'historique : écrasé à chaque événement ; supprimé à la révocation du partage, au départ, au retrait. |
+| `photos` | 24 h maximum (TTL `expiresAt`) ; supprimée avec le statut. |
+| `places` (coordonnées, adresses) | Jusqu'à suppression du lieu ou de la Miff. |
+| `joinCodes` | Jusqu'à régénération ou suppression de la Miff. |
+| Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si le juriste exige une conservation de la preuve après départ, il faudra un journal séparé (Q13). |
+| `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
+| `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
+| Sauvegardes Firestore | Désactivées par défaut. Ne pas activer de sauvegarde/restauration à un instant donné sans décision du PM (elle dupliquerait les données sensibles). |
+
+---
+
+## 11. Données sensibles et points RGPD (à faire valider légalement par le PM)
+
+Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse de conformité. Les bases légales sont des **propositions** à valider avec un conseil juridique.
+
+| Donnée | Où | Sensibilité | Base légale proposée (à valider) | Conservation proposée |
+|---|---|---|---|---|
+| Présence par rapport à un lieu (`presence`, `placeId`, horodatages) = information de localisation dérivée | `status` | **Très élevée** (localisation ; révèle des habitudes et l'absence du domicile) | Consentement explicite et révocable (le modèle le trace) | État courant uniquement, supprimé à la révocation / départ |
+| Coordonnées et adresses des lieux | `places` | **Élevée** (peut être un domicile, une école) | Contrat + consentement du créateur ; information des membres | Jusqu'à suppression du lieu / de la Miff |
+| Photo de profil, photo d'update | `users`, `members`, `photos` | Élevée (image d'une personne, parfois d'un tiers ou d'un mineur) | Contrat (profil) ; consentement (update) | Profil : durée du compte ; update : 24 h |
+| Nom, prénom | `users`, `members` | Moyenne | Contrat | Durée du compte |
+| Appartenance à un cercle (lien social, familial) | `members`, `memberships` | Moyenne à élevée (révèle des relations, éventuellement parent-enfant) | Contrat | Jusqu'au départ |
+| Niveau de batterie, permission de localisation du téléphone | `status` | Faible à moyenne | Intérêt légitime / contrat | État courant |
+| Jetons de notification | `devices` | Faible (identifiant d'appareil) | Contrat | Jusqu'à déconnexion |
+| Preuve d'acceptation des CGU et du consentement | `users`, `members` | Faible | Obligation de pouvoir démontrer le consentement | Voir §10 |
+| État d'abonnement | `entitlements` | Faible | Contrat | Durée de l'abonnement |
+| Données Analytics (activé) | Google Analytics | Faible si jamais de position | Consentement | Régler la rétention GA4 au minimum dans la console |
+
+Points à faire examiner par un juriste :
+1. **Localisation** : donnée à haut risque ; le choix de ne stocker qu'un état (et non les coordonnées de la personne) réduit l'exposition mais ne la supprime pas.
+2. **Mineurs** : si des mineurs peuvent utiliser l'app (cas parent-enfant mentionné au CLAUDE.md), le RGPD prévoit un âge de consentement numérique (15 ans en France d'après la loi nationale, à vérifier) et un consentement parental en dessous. Le modèle **ne contient aucune date de naissance ni âge** (minimisation) : il n'existe donc aucun contrôle d'âge. Q12.
+3. **Analyse d'impact (AIPD)** : localisation + éventuels mineurs sont des critères qui peuvent la rendre nécessaire.
+4. **Transferts hors UE** : Firestore est en région Paris, mais Firebase Authentication, FCM et Analytics peuvent traiter des données hors UE. À vérifier avec la documentation Google et les clauses contractuelles.
+5. **Droit d'accès / portabilité / effacement** : l'effacement est réalisable (§10) ; une procédure d'export (accès/portabilité) n'est pas spécifiée (le client peut lire les documents propres à l'utilisateur ; un export formaté n'existe pas).
+6. **Consentement réciproque anti-stalkerware** : le modèle impose la réciprocité, la révocation immédiate avec suppression, et un historique nul. Les stores appliquent des règles propres : à confronter par `release-manager`.
+7. **Ex-membre qui connaît le code** : voir §5.
+
+---
+
+## 12. Coûts : quotas gratuits Spark et signal de bascule
+
+**Quotas Spark vérifiés le 2026-10-16** sur https://firebase.google.com/pricing (Firestore édition Standard) :
+- Firestore : 1 GiB stockés, **50 000 lectures/jour**, **20 000 écritures/jour**, 20 000 suppressions/jour, 10 GiB/mois de transfert sortant.
+- Authentication : 50 000 utilisateurs actifs mensuels (MAU).
+- **Cloud Functions : non disponible sur Spark** (listé "Not applicable").
+- **Cloud Storage : non disponible sur Spark** (aucune quote gratuite listée en Spark ; un article tiers indique que Storage exige Blaze depuis février 2026 : **à vérifier** dans la console avant de s'y fier).
+- FCM et App Check : sans coût, mais l'envoi de push exige un serveur (donc Blaze).
+- Les quotas gratuits sont conservés après passage en Blaze ; au-delà, facturation à l'usage (tarifs de europe-west9 **à vérifier** dans le calculateur ; ordre de grandeur indicatif : quelques centimes pour 100 000 lectures). Une budget alert Blaze prévient mais **ne plafonne pas** la dépense.
+- Au dépassement d'un quota Spark, les requêtes sont refusées jusqu'à la réinitialisation quotidienne : l'app « casse » pour tous (heure exacte de réinitialisation : à vérifier).
+
+**Estimation par utilisateur actif/jour** (Miff de 4 membres, 5 ouvertures de l'app par jour dont ~3 « à froid », 6 transitions de géofence, 1 update manuelle tous les 2 jours) — *estimations, pas des mesures* :
+| Poste | Lectures | Écritures |
+|---|---|---|
+| Ouverture à froid : memberships (1) + Miff (1) + membres (4) + statuts (4) + lieux (rarement) + entitlement (1) + lectures faites par les règles (~4) ≈ 15–20 | ~50–60 (×3) | — |
+| Changements des 3 autres membres reçus en direct (~7/jour/membre, application ouverte ~30 % du temps) | ~7 | — |
+| Photos consultées | ~2 | — |
+| Événements de géofence + updates + consentement | — | ~7 |
+| **Total** | **~60–80** | **~7** |
+
+- Lectures : 50 000 ÷ ~75 ≈ **650 utilisateurs actifs/jour** (≈ 330 si la consommation est deux fois plus forte). **Les lectures sont le premier plafond.**
+- Écritures : 20 000 ÷ 7 ≈ 2 800 utilisateurs actifs/jour (doublé de coût pour un utilisateur premium dans deux Miffs).
+- **Transfert sortant** : avatars (~15 Ko × 4 membres × 3 ouvertures) et photos (≤ 150 Ko) pèsent ; ordre de grandeur 10–15 Mo/utilisateur/mois → 10 GiB couvrent ~700–1 000 utilisateurs. Les photos sont le levier principal : taille ≤ 150 Ko, une seule consultation par update (le client met en cache).
+- Stockage : ~100–300 Ko par utilisateur (avatars en double) → 1 GiB est loin d'être le premier plafond.
+
+**Signal pour passer en Blaze** (l'un ou l'autre) :
+1. Console Firebase > Firestore > Utilisation : lectures du jour > **30 000** de façon répétée (60 % du quota), ou écritures > 12 000, ou transfert sortant du mois > 6 GiB.
+2. Besoin des notifications push, de la validation d'abonnement, des photos Storage ou d'une suppression de compte fiable (voir §13) — ce besoin arrive **avant** le plafond de volume pour le produit visé.
+Ordre de grandeur de coût à ~2 000 utilisateurs actifs/jour après bascule : quelques euros par mois (lectures et transfert au-delà du gratuit) — estimation grossière à confirmer.
+
+**Coût caché des règles** : chaque `get()/exists()` dans une règle compte comme une lecture et est facturé même si la requête est refusée. Le schéma limite ces appels (ex. `isMember` = 1 lecture par requête de lecture/écriture). Ne pas multiplier les listeners sur de petites requêtes.
+
+---
+
+## 13. Ce qui exige Blaze (Cloud Functions) et ce qui peut s'en passer
+
+Cloud Functions n'existent pas sur Spark. Aucune fonction n'est écrite à ce stade (décision du PM requise, Q1). Tableau fonction par fonction :
+
+| Fonctionnalité | Sur Spark (sans fonction) | Avec Blaze |
+|---|---|---|
+| Auth, profil, créer/rejoindre une Miff, code secret, consentement | **Oui**, règles seules | — |
+| Feed en temps réel (app ouverte), géofences, statut, update manuelle | **Oui** (écriture par le client, lecture par listeners) | — |
+| Niveau orange/rouge **affiché** | **Oui** (calculé par les clients) | — |
+| Limites freemium (1 Miff / 1 lieu), verrouillage du premium | **Oui** (slots + règles, §6) | Fonction possible pour une application plus stricte |
+| Octroi du premium | **Manuel** par le PM dans la console (testeurs) | Webhook de validation d'achat (RevenueCat ou notifications App Store/Google Play) qui écrit `entitlements` : **indispensable avant tout paywall réel**, sinon on ne peut pas prouver un achat |
+| **Notifications push** aux proches (entrée/sortie de lieu, arrivée dans une Miff) | **Non** : envoyer un push exige des identifiants serveur qu'on ne met jamais dans l'app | Fonction déclenchée à l'écriture de `status` → FCM |
+| **Escalade orange/rouge quand l'app du proche est fermée** | **Non** : le niveau n'est visible que si l'app d'un proche est ouverte | Fonction planifiée (toutes les ~10 min) qui interroge `status` où `escalationDueAt <= maintenant` (ajouter un index de groupe de collections sur ce champ), notifie, puis avance l'échéance |
+| Alerte zone à risque (premium) | Visible dans le feed seulement | Même fonction que le push |
+| Photos hébergées dans Cloud Storage | **Non** (Storage exige Blaze) → photos ≤ 150 Ko dans Firestore | Migration possible : le champ `jpeg` serait remplacé par un chemin |
+| Suppression de compte fiable (cascade) | Partielle, côté client (§10) | Extension "Delete User Data" ou fonction `onDelete` |
+| Anti brute force du code | App Check + entropie | Fonction appelable "rejoindre" avec compteur de tentatives |
+| Purge des jetons FCM périmés, TTL | Non nécessaire sans push | Fonction planifiée |
+
+**Compromis et recommandation (décision du PM)**
+- **Option A — rester sur Spark** : zéro risque de facture, suffisant pour construire et tester entre quelques personnes. Mais le produit promet de rassurer "sans ouvrir l'app" : sans push, la valeur centrale est absente, et le paywall réel est impossible.
+- **Option B — passer en Blaze avant la première bêta avec de vrais utilisateurs** : on conserve les quotas gratuits, on paie seulement le dépassement ; carte bancaire requise (action du PM) ; une alerte de budget prévient mais ne bloque pas la dépense, donc App Check est obligatoire en parallèle.
+- **Recommandation** : développer et tester sur Spark (les règles et le client n'ont pas besoin de Blaze), puis passer en Blaze au moment de la première bêta externe, avec alertes de budget et App Check activés. Les fonctions prévues (≈ 4 : notification de statut, escalade planifiée, validation d'achat, nettoyage de compte) resteraient très en dessous des 2 millions d'invocations gratuites par mois à ce volume (à vérifier). Région des fonctions : UE (europe-west9 si prise en charge, sinon europe-west1 : à vérifier).
+
+---
+
+## 14. Risques de sécurité principaux et mitigations
+
+1. **Lecture de données d'une Miff étrangère** → tout passe par `isMember`, pas de `list` sur `miffs`, `users`, `joinCodes`.
+2. **Auto-promotion premium** → aucun champ premium dans `users` ; `entitlements` en écriture interdite ; expiration contrôlée par les règles.
+3. **Prise de contrôle d'une Miff (rôle, créateur)** → `ownerUid`, `role`, `type` immuables ; création du créateur seulement si la Miff est créée dans le même batch ; seul le créateur retire un membre.
+4. **Deviner/énumérer les codes** → §5 (App Check à activer en mode strict, sinon ce risque reste ouvert).
+5. **Trace de position après retrait de consentement / départ** → suppression obligatoire dans le même batch (règles) ; mais **la suppression reste côté client** : un bug client pourrait laisser un état tant que le membre est dans la Miff (il reste lisible aux seuls membres partageants).
+6. Résiduel : abus de volume par un compte légitime (écritures en boucle, avatars) → tailles bornées, mais pas de limitation de débit en règles ; App Check + surveillance des quotas.
+
+---
+
+## 15. Décisions du PM (2026-10-16) et questions encore ouvertes
+
+### Décisions prises
+| # | Sujet | Décision |
+|---|---|---|
+| 1 | Plan Blaze | **Non pour l'instant.** On développe sur Spark ; on réévaluera au moment où une fonctionnalité l'exige (notifications push, escalade app fermée, validation d'achat). Aucune Cloud Function n'est écrite. |
+| 2 | Photos d'update | Stockées dans Firestore (≤ 150 Ko, 24 h). **La photo n'est pas obligatoire.** |
+| 3 | Premium | **Par utilisateur** (`entitlements/{uid}`), pas par Miff. |
+| 4 | Réciprocité | Réciprocité stricte retenue par défaut (on ne voit les autres que si on partage soi-même), modifiable via un ticket futur. |
+| 5 | Lieux | **Seul le créateur de la Miff** crée/modifie/supprime les lieux (confiance et danger). **Zone de danger = premium uniquement.** |
+
+Les autres questions ci-dessous seront tranchées au fil des tickets, quand la fonctionnalité concernée sera rédigée.
+
+### Questions ouvertes pour le PM (détail)
+
+1. **Blaze** : accord pour passer en Blaze (carte bancaire + alerte de budget) avant la première bêta externe ? Sinon, accepter qu'il n'y ait ni push, ni escalade app fermée, ni paywall réel.
+2. **Photos** : Firestore (≤ 150 Ko, 24 h, sans Blaze) ou Cloud Storage (meilleure qualité, exige Blaze) ? Durée de vie de la photo d'update (24 h proposé) ? La photo est-elle obligatoire dans une update ?
+3. **Premium** : par utilisateur ou par Miff ? Qui bénéficie des zones à risque et des notifications intelligentes (le créateur premium, ou tout le cercle) ? Que devient l'excédent (lieux, Miffs) à l'expiration ?
+4. **Compte du quota "1 lieu"** : la zone à risque est supposée premium ; le gratuit = 1 zone de confiance. À confirmer.
+5. **Qui définit les zones à risque** : le créateur seulement (supposé) ou chaque membre pour lui-même ? Que déclenche l'entrée (alerte immédiate à tout le cercle) ?
+6. **Réciprocité** : confirmer qu'un membre qui ne partage pas sa position ne voit pas celle des autres (supposé, pour limiter le risque de surveillance à sens unique). Un parent doit-il pouvoir voir un enfant sans partager la sienne (ce qui lèverait la réciprocité) ?
+7. **Code d'invitation** : visible par tous les membres (supposé) ou seulement le créateur ? Régénération (prévue) ? Faut-il bloquer le retour d'un membre retiré ? Validation du créateur à l'arrivée ? Taille maximale d'une Miff (coût du feed proportionnel) ?
+8. **Créateur qui part** : suppression de la Miff (supposé), transfert de propriété, ou impossible tant que d'autres membres restent ?
+9. **Géofences au-delà de la limite** : priorité manuelle (`priority`), proximité ou fréquence de visite ? Prévenir l'utilisateur qu'un lieu n'est plus surveillé ?
+10. **Escalade** : orange et/ou rouge déclenchent-ils un push ? Que fait-on d'un membre sans permission de localisation arrière-plan (aujourd'hui : pas d'escalade sans départ connu) ? Si un membre reste rouge, quelle relance ?
+11. **Update manuelle** : suffit-il de la poster pour repasser au vert, ou faut-il un geste "je vais bien" explicite ?
+12. **Mineurs** : l'app est-elle ouverte aux mineurs ? Âge minimum, consentement parental, collecte d'un âge ou d'une date de naissance (non prévue pour l'instant) ?
+13. **Juridique** : bases légales (§11), analyse d'impact, durées de conservation, conservation éventuelle de la preuve de consentement après départ, transferts hors UE, procédure d'export des données.
+14. **E-mail vérifié** : exigé avant de rejoindre/créer une Miff ? (aujourd'hui non imposé par les règles).
+15. **Nom/prénom** : conserver la règle "3 caractères minimum" des maquettes (elle exclut des prénoms réels, ex. "Li") ?
+16. **Désactivation du partage** : notifier les autres membres ? (ton à définir.)
+17. **Rayon** : bornes 50–2 000 m acceptables ? Minimum recommandé côté UI : 100 m.
+18. **Suppression de compte d'un créateur** : supprimer sa Miff et les données des autres membres associés, ou transférer ?
+19. **Fournisseur d'abonnement** : validation native (App Store / Play Billing) ou service tiers (RevenueCat) — conditionne la fonction de webhook.

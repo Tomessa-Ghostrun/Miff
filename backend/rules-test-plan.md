@@ -1,0 +1,180 @@
+# Plan de test des règles Firestore (à automatiser plus tard avec l'émulateur)
+
+À exécuter avec `@firebase/rules-unit-testing` contre l'émulateur Firestore, **jamais contre le projet réel**. Les règles (`firestore.rules`) n'ont été relues que sur le papier : ce plan est la condition pour les déployer.
+
+Légende : OK = doit être autorisé ; KO = doit être refusé (`permission-denied`).
+Un batch est noté `[a + b + c]` : toutes les écritures sont envoyées ensemble ; il réussit ou échoue en bloc.
+
+## 0. Jeu de données de départ (fixtures)
+
+Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (gratuite, membre), `dave` (premium actif), `eve` (gratuite, étrangère aux Miffs), `anon` (non connecté).
+
+- `entitlements/dave` = `{active:true, expiresAt: +30 jours, source:"manual"}` ; `entitlements/frank` = `{active:true, expiresAt: -1 jour}` (expiré).
+- Miff `M1` (ID de 20 caractères) : `ownerUid=alice`, `joinCode=K7M2QX9PDW4H`. `joinCodes/K7M2QX9PDW4H = {miffId:M1, miffName:"Famille"}`.
+- Membres de M1 : `alice` (owner, sharing actif), `bob` (member, sharing actif), `carol` (member, **sharing désactivé**).
+- Index : `users/alice/memberships/free → M1`, `users/bob/memberships/free → M1`, `users/carol/memberships/free → M1`.
+- `miffs/M1/status/alice` et `status/bob` présents. `miffs/M1/places/p1` (type trusted).
+
+## 1. Accès par défaut et lecture
+
+| # | Cas | Attendu |
+|---|---|---|
+| R1 | `anon` lit `miffs/M1`, `members`, `status`, `places`, `users/alice`, `joinCodes/K7M2QX9PDW4H` | KO partout |
+| R2 | `eve` (connectée, non membre) lit `miffs/M1` | KO |
+| R3 | `eve` lit `miffs/M1/members` (list), `members/alice`, `places`, `status`, `photos/alice` | KO partout |
+| R4 | `eve` fait `list` sur `miffs`, `users`, `joinCodes`, `entitlements`, `collectionGroup('members')`, `collectionGroup('status')` | KO partout |
+| R5 | `bob` lit `miffs/M1`, `members` (list), `places` (list) | OK |
+| R6 | `bob` lit `users/alice` | KO |
+| R7 | `alice` lit `users/alice` | OK |
+| R8 | `bob` lit `miffs/M1/status/alice` (list et get) — il partage sa position | OK |
+| R9 | `carol` (partage désactivé) lit `status/alice` et la liste `status` | **KO** (réciprocité) ; elle lit toujours `members` et `places` : OK |
+| R10 | `eve` lit `entitlements/dave` | KO ; `dave` lit le sien : OK |
+| R11 | Chemin inconnu (`foo/bar`, `miffs/M1/autre/x`) en lecture/écriture | KO |
+| R12 | `bob` lit `miffs/M1/photos/alice` (get) si `hasPhoto` ; list sur `photos` | get OK ; list KO |
+
+## 2. Création d'une Miff
+
+| # | Cas | Attendu |
+|---|---|---|
+| C1 | `eve` (gratuite, sans Miff) : batch `[miffs/NEW (ownerUid=eve, name, joinCode, createdAt=serverTime) + joinCodes/CODE + members/eve (role=owner, sharing) + memberships/free (miffId=NEW)]` | OK |
+| C2 | Même batch avec `ownerUid=alice` (usurpation) | KO |
+| C3 | Même batch sans `members/eve` | KO (Miff incomplète) |
+| C4 | Même batch sans `joinCodes/CODE` | KO |
+| C5 | `miffId` de moins/plus de 20 caractères, ou égal à `free` | KO |
+| C6 | `joinCode` de 11 ou 13 caractères, ou contenant `O`, `0`, `I`, `1`, `L`, ou minuscules | KO |
+| C7 | `createdAt` avec une date client (≠ heure serveur) | KO |
+| C8 | `alice` (déjà `free → M1`) crée une 2e Miff avec la clé `free` | KO (second create = update interdit) |
+| C9 | `alice` crée une 2e Miff avec la clé = nouveau `miffId` (gratuite) | KO |
+| C10 | `dave` (premium) crée une 2e Miff avec la clé = `miffId` | OK |
+| C11 | `frank` (premium expiré) crée une Miff avec la clé = `miffId` | KO |
+| C12 | `eve` crée un `joinCodes/CODE` pour la Miff M1 d'alice (`miffId=M1`) | KO |
+| C13 | `eve` crée `joinCodes/CODE` pour sa Miff avec `miffName` différent du nom de la Miff | KO |
+| C14 | Collision : créer `joinCodes/K7M2QX9PDW4H` (existe déjà) | KO |
+| C15 | Création de `members/eve` role=owner dans M1 (Miff existante) | KO |
+| C16 | Champ inconnu dans le document Miff / membre / code | KO |
+| C17 | Compte de plus de 20 appels de lecture de règles dans le batch de création (mesurer sur le cas premium, le plus coûteux) | OK (marge à confirmer) |
+
+## 3. Rejoindre une Miff (code secret)
+
+| # | Cas | Attendu |
+|---|---|---|
+| J1 | `eve`, `get joinCodes/K7M2QX9PDW4H` | OK (renvoie miffId + nom) |
+| J2 | `eve`, `get joinCodes/ZZZZZZZZZZZZ` (inexistant) | OK, document introuvable (pas d'erreur de permission, pas de fuite) |
+| J3 | `eve`, `get joinCodes/abc` (mauvais format) | KO |
+| J4 | `eve`, batch `[members/eve (role=member, joinCode=K7M2QX9PDW4H) + memberships/free (miffId=M1)]` | OK |
+| J5 | `eve` rejoint M1 avec un `joinCode` d'une autre Miff (ex. celui de M2) | KO |
+| J6 | `eve` rejoint M1 sans champ `joinCode` | KO |
+| J7 | `eve` rejoint M1 en connaissant `miffId` mais avec un code inventé | KO |
+| J8 | `eve` rejoint M1 avec `role="owner"` | KO |
+| J9 | `eve` rejoint sans écrire l'index `memberships` | KO |
+| J10 | `bob` (déjà `free → M1`) rejoint M2 (gratuit) avec clé `free` | KO |
+| J11 | `bob` rejoint M2 avec clé = `M2` (non premium) | KO |
+| J12 | `dave` (premium) rejoint M2 avec clé = `M2` | OK |
+| J13 | `eve` crée `members/bob` (écrire pour un autre uid) | KO |
+| J14 | `eve` rejoint avec `sharing.enabled=true` mais `consentedAt` ≠ heure serveur | KO |
+| J15 | `eve` rejoint avec `sharing.enabled=true` sans `consentVersion` | KO |
+| J16 | Après régénération du code (K7M2QX9PDW4H supprimé), `eve` tente de rejoindre avec l'ancien code | KO |
+| J17 | Énumération : tentative de `list` sur `joinCodes` (avec/sans `where`, `startAt`) | KO |
+| J18 | `eve` tente de lire `miffs/M1` avant de rejoindre (pour en lire le code) | KO |
+
+## 4. Rôles, modification, retrait, départ
+
+| # | Cas | Attendu |
+|---|---|---|
+| M1 | `bob` met à jour son `firstName` / `avatar` (≤ 20 Ko) | OK |
+| M2 | `bob` met à jour `role` en `owner` | KO |
+| M3 | `bob` modifie `joinedAt` ou `joinCode` de son document | KO |
+| M4 | `bob` modifie `members/carol` | KO |
+| M5 | `bob` met `ownerUid=bob` sur la Miff M1 | KO |
+| M6 | `alice` renomme M1 (`name`) avec batch `[miffs update + joinCodes update miffName]` | OK |
+| M7 | `alice` modifie `ownerUid` ou `createdAt` | KO |
+| M8 | `bob` renomme M1 ou supprime M1 | KO |
+| M9 | `alice` régénère le code : `[miffs update joinCode + joinCodes create nouveau + joinCodes delete ancien]` | OK |
+| M10 | `alice` change `joinCode` sans supprimer l'ancien | KO |
+| M11 | `bob` régénère le code | KO |
+| M12 | `bob` quitte : `[members/bob delete + status/bob delete + photos/bob delete + memberships/free delete]` | OK |
+| M13 | `bob` quitte en laissant `status/bob` | KO (trace de position) |
+| M14 | `bob` supprime l'index `memberships/free` sans quitter la Miff | KO (sinon 2 Miffs gratuites) |
+| M15 | `alice` retire `bob` : `[members/bob delete + status/bob delete + photos/bob delete]` | OK |
+| M16 | `alice` retire `bob` sans supprimer son statut | KO |
+| M17 | `bob` retire `carol` | KO |
+| M18 | `alice` (créatrice) quitte sans supprimer la Miff | KO ; avec `[miffs delete + joinCodes delete + members/alice delete + status/alice delete + memberships/free delete]` : OK (les autres membres doivent déjà avoir été retirés) |
+| M19 | `bob` (retiré) supprime son index orphelin `memberships/free` | OK ; avant d'être retiré : KO |
+| M20 | `bob` (retiré) relit `miffs/M1`, `members`, `status`, `places` | KO partout |
+
+## 5. Consentement et statut de position
+
+| # | Cas | Attendu |
+|---|---|---|
+| S1 | `carol` active le partage : `members/carol.sharing {enabled:true, consentedAt=serverTime, consentVersion:"v1", revokedAt:null}` | OK |
+| S2 | Même chose avec `consentedAt` client | KO |
+| S3 | `carol` active le partage sans `consentVersion` | KO |
+| S4 | `bob` désactive son partage : `[members/bob update + status/bob delete + photos/bob delete]` | OK |
+| S5 | `bob` désactive son partage sans supprimer `status/bob` | KO |
+| S6 | `bob` repasse `enabled=false` en effaçant `consentedAt` (pour effacer la preuve) | KO |
+| S7 | `carol` (partage désactivé) crée `status/carol` | KO |
+| S8 | `carol` active le partage et crée `status/carol` dans un batch | OK |
+| S9 | `bob` écrit `status/alice` | KO |
+| S10 | `bob` met à jour son statut : tous les champs, `updatedAt=serverTime` | OK |
+| S11 | Statut avec clé inconnue (ex. `lat`) ou coordonnées | KO |
+| S12 | Statut avec `presence="banane"`, `batteryPct=150`, `updateText` > 140 caractères | KO |
+| S13 | Statut avec `presenceAt` à +1 jour (futur) ou −3 jours | KO ; à −2 h : OK |
+| S14 | Statut avec `updatedAt` client | KO |
+| S15 | Statut avec une clé manquante (non nullable absente) | KO |
+| S16 | Photo : `photos/bob` ≤ 150 000 octets, `expiresAt` = +24 h | OK ; 150 001 octets ou `expiresAt` +30 jours : KO |
+| S17 | `bob` écrit `photos/alice` | KO |
+| S18 | `alice` supprime `status/bob` (purge) | OK ; `bob` supprime `status/alice` : KO |
+| S19 | Le statut et les photos d'un membre ne contiennent aucun champ de coordonnées (revue de schéma) | OK |
+
+## 6. Lieux et limites freemium
+
+| # | Cas | Attendu |
+|---|---|---|
+| P1 | `alice` (gratuite) crée `places/p1` type `trusted` dans une Miff sans lieu | OK |
+| P2 | `alice` (gratuite) crée un 2e lieu (ID auto) | KO |
+| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
+| P4 | `alice` (gratuite) crée un lieu `type="risk"` (ID `p1`) | KO |
+| P5 | `dave` (premium) crée 3 lieux (ID auto) dont 1 `risk` | OK |
+| P6 | `frank` (premium expiré) crée un 2e lieu | KO |
+| P7 | `bob` (membre) crée / modifie / supprime un lieu | KO |
+| P8 | `alice` change le `type` d'un lieu existant | KO |
+| P9 | `alice` : `radiusM=10` ou `5000`, `lat=95`, `lng=200`, nom vide | KO |
+| P10 | `alice` supprime puis recrée `p1` | OK |
+| P11 | `alice` modifie `createdBy` d'un lieu | KO |
+| P12 | Lieu avec `createdAt` client | KO |
+| P13 | `eve` lit `places` de M1 | KO |
+
+## 7. Premium et attaques de privilèges
+
+| # | Cas | Attendu |
+|---|---|---|
+| A1 | `eve` écrit `entitlements/eve = {active:true, expiresAt: +1 an}` | KO |
+| A2 | `eve` modifie / supprime `entitlements/dave` | KO |
+| A3 | `eve` ajoute un champ `premium:true` à `users/eve` | KO (clé inconnue) |
+| A4 | `eve` crée un document `users/eve` avec un champ `isPremium` | KO |
+| A5 | `eve` écrit dans `users/alice` | KO |
+| A6 | `eve` écrit `users/eve/memberships/M1` (clé premium) en étant gratuite | KO |
+| A7 | `eve` modifie une entrée `memberships` existante (réaffecter un slot) | KO |
+| A8 | `eve` écrit des documents arbitraires hors schéma (`secret/x`) | KO |
+| A9 | Contournement par deux comptes : hors périmètre des règles (documenté, §6 data-model) | — |
+| A10 | Premium expiré : `dave` avec `expiresAt` passé ne peut plus créer de Miff/lieu premium | KO |
+
+## 8. Profil, appareils, suppression
+
+| # | Cas | Attendu |
+|---|---|---|
+| U1 | `eve` crée `users/eve` avec `termsAcceptedAt` = heure serveur | OK |
+| U2 | Idem avec `firstName` vide, `avatar` > 20 Ko, clé inconnue | KO |
+| U3 | `eve` modifie `createdAt` | KO |
+| U4 | `eve` supprime `users/eve` | OK |
+| U5 | `eve` crée `users/eve/devices/d1 {token, platform:"ios", updatedAt=serverTime}` | OK ; `platform:"web"` : KO |
+| U6 | `bob` lit `users/eve/devices/d1` | KO |
+| U7 | Suppression de compte d'une membre simple (batch par Miff) | OK |
+| U8 | Suppression de compte d'une créatrice avec membres restants : suppression de la Miff sans retirer les autres membres | OK pour les règles (la Miff devient orpheline, risque documenté) ; le client doit retirer les membres d'abord |
+
+## 9. Hors règles (vérifier à part, pas avec l'émulateur de règles)
+
+- App Check appliqué en mode strict sur Firestore (console) : une requête sans jeton est refusée.
+- Nombre d'appels de lecture des règles par opération : mesurer avec les journaux de l'émulateur (limite 10 par requête simple, 20 par batch).
+- Un seul `get joinCodes` par essai côté client ; limitation d'essais dans l'UI.
+- Aucune clé de service ni secret dans le dépôt ou dans les apps.

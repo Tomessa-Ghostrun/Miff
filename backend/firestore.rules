@@ -1,0 +1,507 @@
+rules_version = '2';
+
+// =============================================================================
+// Miff — règles de sécurité Firestore (projet miff-3d283, europe-west9)
+//
+// STATUT : écrites SANS avoir pu être exécutées (aucun émulateur lancé, aucun
+// déploiement). À valider avec l'émulateur Firestore et le plan de test
+// `backend/rules-test-plan.md` AVANT tout déploiement.
+//
+// Principes :
+//  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
+//  2. Un utilisateur ne lit que les données des Miffs dont il est membre.
+//  3. Le client ne peut JAMAIS écrire son statut premium (`entitlements/*` est
+//     en écriture interdite ; seul le serveur / la console l'écrit).
+//  4. Consentement de localisation : le statut de présence d'un membre n'existe
+//     que s'il a activé le partage, et n'est lisible que par les membres qui
+//     partagent eux-mêmes (réciprocité). Révoquer = supprimer ces données.
+//  5. Limites freemium appliquées par des "slots" à identifiant fixe (voir
+//     data-model.md §6) : 1 Miff et 1 lieu en gratuit, sans Cloud Function.
+//  6. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
+//     des codes et les abus de volume sont atténués par App Check (à activer
+//     dans la console) + entropie du code (12 caractères, ~59 bits).
+//
+// Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
+// facturé comme une lecture (même si la requête est refusée) et est limité à
+// 10 appels par requête simple, 20 par batch/transaction. Les écritures
+// multi-documents (créer une Miff, rejoindre, quitter) doivent donc rester
+// des batches courts (voir data-model.md §8).
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helpers génériques
+    // -------------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function isStr(v, minLen, maxLen) {
+      return v is string && v.size() >= minLen && v.size() <= maxLen;
+    }
+
+    function isNullOrStr(v, maxLen) {
+      return v == null || (v is string && v.size() <= maxLen);
+    }
+
+    // Champ binaire optionnel (absent ou null accepté) borné en taille.
+    function optBytes(d, k, maxSize) {
+      return !(k in d) || d[k] == null || (d[k] is bytes && d[k].size() <= maxSize);
+    }
+
+    // Clés modifiées par l'écriture en cours (update uniquement).
+    function affected() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Code secret : exactement 12 caractères, alphabet de 31 symboles sans
+    // ambiguïté visuelle (pas de I, L, O, 0, 1) => 31^12 ~ 7,9e17 (~59 bits).
+    function isJoinCode(code) {
+      return code is string && code.matches('^[A-HJ-KM-NP-Z2-9]{12}$');
+    }
+
+    // Identifiant de Miff : ID auto Firestore (20 caractères alphanumériques).
+    // Empêche les collisions avec les identifiants fixes 'free' et 'p1'.
+    function isMiffId(id) {
+      return id is string && id.matches('^[A-Za-z0-9]{20}$');
+    }
+
+    // -------------------------------------------------------------------------
+    // Appartenance / rôle / premium
+    // -------------------------------------------------------------------------
+    // Membre = existence du document members/{uid} de la Miff (état AVANT écriture).
+    function isMember(miffId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid));
+    }
+
+    // Créateur de la Miff (ownerUid immuable).
+    function isOwner(miffId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/miffs/$(miffId))
+        && get(/databases/$(database)/documents/miffs/$(miffId)).data.ownerUid == request.auth.uid;
+    }
+
+    // Membre qui a lui-même activé le partage de position dans cette Miff.
+    // (get() échoue si non-membre => refus.) Sert à la réciprocité.
+    function mySharingOn(miffId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid)).data.sharing.enabled == true;
+    }
+
+    // Premium = document entitlements/{uid} écrit UNIQUEMENT par le serveur / la
+    // console, actif et non expiré (expiration vérifiée côté règles : pas besoin
+    // de Cloud Function pour "éteindre" un abonnement arrivé à échéance).
+    function isPremium(uid) {
+      return exists(/databases/$(database)/documents/entitlements/$(uid))
+        && get(/databases/$(database)/documents/entitlements/$(uid)).data.active == true
+        && get(/databases/$(database)/documents/entitlements/$(uid)).data.expiresAt > request.time;
+    }
+
+    // -------------------------------------------------------------------------
+    // Validation de forme : profil, consentement
+    // -------------------------------------------------------------------------
+    // Nom : 1..50 caractères (la règle UX "3 caractères minimum" des maquettes
+    // exclurait des prénoms réels comme "Li" ou "Jo" : voir question ouverte).
+    function validProfile(d) {
+      return isStr(d.firstName, 1, 50)
+        && isStr(d.lastName, 1, 50)
+        && optBytes(d, 'avatar', 20000);
+    }
+
+    // Consentement à la création du document membre.
+    // Les 4 clés sont TOUJOURS présentes (null si non applicable).
+    function validSharingCreate(s) {
+      return s is map
+        && s.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
+        && s.keys().hasAll(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
+        && s.revokedAt == null
+        && (
+          (s.enabled == false && s.consentedAt == null && s.consentVersion == null)
+          || (s.enabled == true && s.consentedAt == request.time && isStr(s.consentVersion, 1, 20))
+        );
+    }
+
+    // Changement de consentement (o = ancien, n = nouveau).
+    //  - activer   : consentedAt = maintenant, version du texte acceptée, revokedAt vidé
+    //  - révoquer  : revokedAt = maintenant ET statut + photo supprimés dans le même batch
+    function validSharingChange(miffId, uid, o, n) {
+      return n is map
+        && n.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
+        && n.keys().hasAll(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
+        && (
+          (o.enabled == false && n.enabled == true
+            && n.consentedAt == request.time
+            && isStr(n.consentVersion, 1, 20)
+            && n.revokedAt == null)
+          ||
+          (o.enabled == true && n.enabled == false
+            && n.revokedAt == request.time
+            && n.consentedAt == o.consentedAt
+            && n.consentVersion == o.consentVersion
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid)))
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Slot d'appartenance (limite freemium "1 Miff à la fois")
+    // L'index users/{uid}/memberships/{key} doit exister APRÈS le batch et
+    // pointer vers cette Miff. Sa propre règle de création impose key == 'free'
+    // (un seul slot gratuit) ou key == miffId avec premium actif.
+    // -------------------------------------------------------------------------
+    function indexAfterOk(uid, miffId) {
+      return (
+        existsAfter(/databases/$(database)/documents/users/$(uid)/memberships/free)
+        && getAfter(/databases/$(database)/documents/users/$(uid)/memberships/free).data.miffId == miffId
+      ) || (
+        existsAfter(/databases/$(database)/documents/users/$(uid)/memberships/$(miffId))
+        && getAfter(/databases/$(database)/documents/users/$(uid)/memberships/$(miffId)).data.miffId == miffId
+      );
+    }
+
+    // Créateur : le document Miff est créé dans le même batch (n'existe pas avant).
+    function ownerCreateOk(miffId, uid) {
+      return !exists(/databases/$(database)/documents/miffs/$(miffId))
+        && getAfter(/databases/$(database)/documents/miffs/$(miffId)).data.ownerUid == uid
+        && indexAfterOk(uid, miffId);
+    }
+
+    // Rejoindre : preuve de connaissance du code secret. Le document
+    // joinCodes/{code} doit exister et pointer vers CETTE Miff.
+    function memberJoinOk(miffId, uid, d) {
+      return isJoinCode(d.joinCode)
+        && get(/databases/$(database)/documents/joinCodes/$(d.joinCode)).data.miffId == miffId
+        && exists(/databases/$(database)/documents/miffs/$(miffId))
+        && indexAfterOk(uid, miffId);
+    }
+
+    function validMemberCreate(miffId, uid) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['role', 'firstName', 'lastName', 'avatar', 'joinedAt', 'joinCode', 'sharing'])
+        && d.keys().hasAll(['role', 'firstName', 'lastName', 'joinedAt', 'sharing'])
+        && validProfile(d)
+        && d.joinedAt == request.time
+        && validSharingCreate(d.sharing)
+        && (
+          (d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))
+          || (d.role == 'member' && memberJoinOk(miffId, uid, d))
+        );
+    }
+
+    // Un membre ne modifie que son profil (copie) et son consentement.
+    // role, joinedAt, joinCode : immuables.
+    function validMemberUpdate(miffId, uid) {
+      let d = request.resource.data;
+      return affected().hasOnly(['firstName', 'lastName', 'avatar', 'sharing'])
+        && validProfile(d)
+        && (
+          !affected().hasAny(['sharing'])
+          || validSharingChange(miffId, uid, resource.data.sharing, d.sharing)
+        );
+    }
+
+    // Quitter / être retiré : le statut et la photo doivent disparaître dans le
+    // même batch (sinon une trace de position resterait visible d'un ex-membre).
+    function memberDeleteOk(miffId, uid) {
+      return isSignedIn()
+        && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
+        && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
+        && (
+          (isSelf(uid) && resource.data.role == 'member')
+          // Le créateur ne peut partir qu'en supprimant la Miff dans le même batch.
+          || (isSelf(uid) && resource.data.role == 'owner'
+              && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)))
+          // Seul le créateur retire un autre membre (à confirmer par le PM).
+          || (!isSelf(uid) && isOwner(miffId))
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Validation de forme : Miff, code, lieux, statut, photo
+    // -------------------------------------------------------------------------
+    function validMiffCreate(miffId) {
+      let d = request.resource.data;
+      return isMiffId(miffId)
+        && d.keys().hasOnly(['ownerUid', 'name', 'joinCode', 'createdAt'])
+        && d.keys().hasAll(['ownerUid', 'name', 'joinCode', 'createdAt'])
+        && d.ownerUid == request.auth.uid
+        && isStr(d.name, 1, 40)
+        && isJoinCode(d.joinCode)
+        && d.createdAt == request.time
+        // Pas de Miff "à moitié créée" : le membre créateur et le code existent après le batch.
+        && existsAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid))
+        && existsAfter(/databases/$(database)/documents/joinCodes/$(d.joinCode));
+    }
+
+    // Renommer, ou régénérer le code. Régénérer = l'ancien code DOIT disparaître
+    // dans le même batch (sinon un ex-membre garderait un code valide).
+    function validMiffUpdate() {
+      let d = request.resource.data;
+      return affected().hasOnly(['name', 'joinCode'])
+        && isStr(d.name, 1, 40)
+        && isJoinCode(d.joinCode)
+        && (
+          !affected().hasAny(['joinCode'])
+          || (
+            existsAfter(/databases/$(database)/documents/joinCodes/$(d.joinCode))
+            && !existsAfter(/databases/$(database)/documents/joinCodes/$(resource.data.joinCode))
+          )
+        );
+    }
+
+    // joinCodes/{code} : n'expose que miffId + nom (pour l'écran "Rejoindre ...").
+    // Créé uniquement par le créateur, en cohérence avec le document Miff.
+    function validJoinCodeCreate(code) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['miffId', 'miffName', 'createdAt'])
+        && d.keys().hasAll(['miffId', 'miffName', 'createdAt'])
+        && isMiffId(d.miffId)
+        && isStr(d.miffName, 1, 40)
+        && d.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/miffs/$(d.miffId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/miffs/$(d.miffId)).data.joinCode == code
+        && getAfter(/databases/$(database)/documents/miffs/$(d.miffId)).data.name == d.miffName;
+    }
+
+    function validPlaceShape(d) {
+      return d.keys().hasOnly(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
+        && isStr(d.name, 1, 60)
+        && d.type in ['trusted', 'risk']
+        && isNullOrStr(d.address, 200)
+        && d.lat is number && d.lat >= -90 && d.lat <= 90
+        && d.lng is number && d.lng >= -180 && d.lng <= 180
+        && d.radiusM is int && d.radiusM >= 50 && d.radiusM <= 2000
+        && (d.priority == null || (d.priority is int && d.priority >= 0 && d.priority <= 999));
+    }
+
+    // Limite freemium "1 lieu" : en gratuit, SEUL l'identifiant 'p1' et le type
+    // 'trusted' sont acceptés (un second create sur 'p1' est un update => refusé
+    // pour les champs verrouillés). Premium : identifiants libres + zones à risque.
+    function validPlaceCreate(placeId) {
+      let d = request.resource.data;
+      return placeId.matches('^[A-Za-z0-9]{1,20}$')
+        && validPlaceShape(d)
+        && d.createdBy == request.auth.uid
+        && d.createdAt == request.time
+        && d.updatedAt == request.time
+        && (
+          (placeId == 'p1' && d.type == 'trusted')
+          || isPremium(request.auth.uid)
+        );
+    }
+
+    // type, createdBy, createdAt immuables (une zone de confiance ne devient pas
+    // une zone à risque, et inversement, sans repasser par la création).
+    function validPlaceUpdate() {
+      let d = request.resource.data;
+      return affected().hasOnly(['name', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])
+        && validPlaceShape(d)
+        && d.updatedAt == request.time;
+    }
+
+    // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :
+    // uniquement l'état (dans un lieu / hors lieu / zone à risque) + horodatages.
+    // Toutes les clés sont toujours présentes (null si non applicable).
+    function validStatus(miffId, uid) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
+        && d.keys().hasAll(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
+        && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']
+        && (d.placeId == null || isStr(d.placeId, 1, 40))
+        // Horodatages d'événement fournis par l'appareil (utile hors-ligne),
+        // bornés : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur.
+        && d.presenceAt is timestamp
+        && d.presenceAt >= request.time - duration.value(1, 'd')
+        && d.presenceAt <= request.time + duration.value(5, 'm')
+        && d.lastUpdateAt is timestamp
+        && d.lastUpdateAt >= request.time - duration.value(1, 'd')
+        && d.lastUpdateAt <= request.time + duration.value(5, 'm')
+        && isNullOrStr(d.updateText, 140)
+        && d.hasPhoto is bool
+        && (d.batteryPct == null || (d.batteryPct is int && d.batteryPct >= 0 && d.batteryPct <= 100))
+        && d.locationAccess in ['background', 'foreground', 'denied', 'unknown']
+        && (d.escalationDueAt == null
+            || (d.escalationDueAt is timestamp
+                && d.escalationDueAt >= request.time - duration.value(1, 'd')
+                && d.escalationDueAt <= request.time + duration.value(1, 'd')))
+        && d.updatedAt == request.time
+        // Consentement actif APRÈS le batch (le membre peut activer le partage
+        // et créer son statut dans le même batch).
+        && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+    }
+
+    // Photo de la dernière update (au plus une par membre et par Miff).
+    function validPhoto(miffId, uid) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt'])
+        && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt'])
+        && d.jpeg is bytes && d.jpeg.size() > 0 && d.jpeg.size() <= 150000
+        && d.createdAt == request.time
+        && d.expiresAt is timestamp
+        && d.expiresAt > request.time
+        && d.expiresAt <= request.time + duration.value(7, 'd')
+        && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+    }
+
+    // =========================================================================
+    // users/{uid} — profil privé (lisible uniquement par son propriétaire)
+    // Les autres membres voient une COPIE du profil dans miffs/*/members/*.
+    // =========================================================================
+    match /users/{uid} {
+      allow get: if isSelf(uid);
+      allow list: if false;
+
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
+        && request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
+        && validProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.termsAcceptedAt == request.time
+        && isStr(request.resource.data.termsVersion, 1, 20);
+
+      allow update: if isSelf(uid)
+        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'termsAcceptedAt', 'termsVersion'])
+        && validProfile(request.resource.data)
+        && (!affected().hasAny(['termsAcceptedAt']) || request.resource.data.termsAcceptedAt == request.time)
+        && isStr(request.resource.data.termsVersion, 1, 20);
+
+      // Suppression de compte : le client supprime ses données puis son compte Auth.
+      allow delete: if isSelf(uid);
+
+      // ---- Index des appartenances (liste "mes Miffs" + slot freemium) -------
+      // Clé 'free' = slot gratuit (1 seul possible) ; clé = miffId = premium.
+      match /memberships/{key} {
+        allow get, list: if isSelf(uid);
+
+        allow create: if isSelf(uid)
+          && request.resource.data.keys().hasOnly(['miffId', 'joinedAt'])
+          && request.resource.data.keys().hasAll(['miffId', 'joinedAt'])
+          && isMiffId(request.resource.data.miffId)
+          && request.resource.data.joinedAt == request.time
+          && (
+            key == 'free'
+            || (key == request.resource.data.miffId && isPremium(uid))
+          )
+          // Le document membre correspondant est créé dans le même batch.
+          && existsAfter(/databases/$(database)/documents/miffs/$(request.resource.data.miffId)/members/$(uid));
+
+        // Immuable : empêche de "recycler" un slot vers une autre Miff.
+        allow update: if false;
+
+        // Libérer le slot n'est possible que si on n'est plus membre (sinon : 2 Miffs gratuites).
+        allow delete: if isSelf(uid)
+          && !existsAfter(/databases/$(database)/documents/miffs/$(resource.data.miffId)/members/$(uid));
+      }
+
+      // ---- Jetons FCM (à n'utiliser qu'avec le push, donc Blaze) ------------
+      match /devices/{deviceId} {
+        allow get, list: if isSelf(uid);
+        allow create, update: if isSelf(uid)
+          && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['token', 'platform', 'updatedAt'])
+          && isStr(request.resource.data.token, 1, 512)
+          && request.resource.data.platform in ['ios', 'android']
+          && request.resource.data.updatedAt == request.time
+          && deviceId.matches('^[A-Za-z0-9_-]{1,64}$');
+        allow delete: if isSelf(uid);
+      }
+    }
+
+    // =========================================================================
+    // entitlements/{uid} — statut premium. LECTURE seule pour le propriétaire.
+    // Écrit uniquement par le serveur (Admin SDK) ou manuellement par le PM
+    // dans la console. Le client ne peut JAMAIS s'attribuer le premium.
+    // =========================================================================
+    match /entitlements/{uid} {
+      allow get: if isSelf(uid);
+      allow list: if false;
+      allow write: if false;
+    }
+
+    // =========================================================================
+    // joinCodes/{code} — résolution du code secret (12 caractères).
+    // PAS de `list` : impossible d'énumérer les codes. `get` exige de
+    // connaître le code complet. Brute force : voir data-model.md §5.
+    // =========================================================================
+    match /joinCodes/{code} {
+      allow get: if isSignedIn() && isJoinCode(code);
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && isJoinCode(code)
+        && validJoinCodeCreate(code);
+
+      // Seul le nom affiché peut changer (renommage de la Miff).
+      allow update: if isSignedIn()
+        && get(/databases/$(database)/documents/miffs/$(resource.data.miffId)).data.ownerUid == request.auth.uid
+        && affected().hasOnly(['miffName'])
+        && isStr(request.resource.data.miffName, 1, 40)
+        && getAfter(/databases/$(database)/documents/miffs/$(resource.data.miffId)).data.name == request.resource.data.miffName;
+
+      // À supprimer dans le même batch (ou AVANT) que la Miff : après sa
+      // suppression, le propriétaire ne serait plus vérifiable.
+      allow delete: if isSignedIn()
+        && get(/databases/$(database)/documents/miffs/$(resource.data.miffId)).data.ownerUid == request.auth.uid;
+    }
+
+    // =========================================================================
+    // miffs/{miffId} — le cercle de confiance
+    // =========================================================================
+    match /miffs/{miffId} {
+      allow get: if isMember(miffId);
+      allow list: if false;           // on arrive toujours par un identifiant connu
+
+      allow create: if isSignedIn() && validMiffCreate(miffId);
+      allow update: if isOwner(miffId) && validMiffUpdate();
+      allow delete: if isOwner(miffId);
+
+      // ---- Membres : profil (copie), rôle, consentement --------------------
+      match /members/{uid} {
+        allow get, list: if isMember(miffId);
+        allow create: if isSelf(uid) && validMemberCreate(miffId, uid);
+        allow update: if isSelf(uid) && validMemberUpdate(miffId, uid);
+        allow delete: if memberDeleteOk(miffId, uid);
+      }
+
+      // ---- État courant (sensible) : seulement si le partage est activé ----
+      // Lecture : réciprocité => il faut partager soi-même pour voir les autres.
+      match /status/{uid} {
+        allow get, list: if mySharingOn(miffId);
+        allow create, update: if isSelf(uid) && validStatus(miffId, uid);
+        // Le propriétaire de la Miff peut purger (retrait d'un membre).
+        allow delete: if isSelf(uid) || isOwner(miffId);
+      }
+
+      // ---- Photo de la dernière update (sensible) ---------------------------
+      match /photos/{uid} {
+        allow get: if mySharingOn(miffId);
+        allow list: if false;
+        allow create, update: if isSelf(uid) && validPhoto(miffId, uid);
+        allow delete: if isSelf(uid) || isOwner(miffId);
+      }
+
+      // ---- Lieux (zone de confiance / zone à risque), définis par le créateur
+      match /places/{placeId} {
+        allow get, list: if isMember(miffId);
+        allow create: if isOwner(miffId) && validPlaceCreate(placeId);
+        allow update: if isOwner(miffId) && validPlaceUpdate();
+        allow delete: if isOwner(miffId);
+      }
+    }
+
+    // =========================================================================
+    // Tout le reste : refusé.
+    // =========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
