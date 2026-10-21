@@ -1,0 +1,159 @@
+name: ios
+
+# Construit l'app iOS et lance ses tests sur simulateur, SANS signature.
+# Cout : minutes macOS (les plus chères du quota gratuit) -> filtres de chemins stricts.
+# L'archive signee et l'envoi a TestFlight sont dans ios-testflight.yml (manuel).
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Outils telecharges depuis leurs releases GitHub officielles, versions epinglees
+  # et empreintes SHA-256 verifiees (valeurs lues sur l'API GitHub le 2026-10-21 et
+  # recalculees sur les fichiers telecharges). Mise a jour : changer version + empreinte.
+  XCODEGEN_VERSION: "2.46.0" # MIT
+  XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+  SWIFTLINT_VERSION: "0.65.1" # MIT
+  SWIFTLINT_SHA256: "c1e429b0599cf1b516f369a2d9ec04eaf0e436f3c12b637df8851fa52ff694d0"
+  # Exigence du ticket INIT : Xcode 26.2 minimum.
+  XCODE_MIN_MAJOR: "26"
+  XCODE_MIN_MINOR: "2"
+
+jobs:
+  build-and-test:
+    name: Build et tests (simulateur, sans signature)
+    runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: ios
+    steps:
+      - name: Récupérer le code
+        # actions/checkout v7.0.1 (empreinte de commit verifiee via l'API GitHub le 2026-10-21)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Ouvrir le résumé et vérifier Xcode
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          xcode_version=$(xcodebuild -version | awk 'NR==1 {print $2}')
+          {
+            echo "## Build iOS - durées des étapes"
+            echo
+            echo "- Xcode : ${xcode_version} ($(xcodebuild -version | awk 'NR==2'))"
+            echo "- Image du runner : ${ImageVersion:-inconnue}"
+            echo
+            echo "| Étape | Durée | Résultat |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          major=${xcode_version%%.*}
+          rest=${xcode_version#*.}
+          minor=${rest%%.*}
+          if [ "$major" -lt "$XCODE_MIN_MAJOR" ] || { [ "$major" -eq "$XCODE_MIN_MAJOR" ] && [ "$minor" -lt "$XCODE_MIN_MINOR" ]; }; then
+            echo "::error::Xcode ${xcode_version} détecté, Xcode ${XCODE_MIN_MAJOR}.${XCODE_MIN_MINOR} minimum exigé."
+            exit 1
+          fi
+
+      - name: Installer XcodeGen et SwiftLint (versions épinglées)
+        run: |
+          set -euo pipefail
+          tools="$RUNNER_TEMP/tools"
+          mkdir -p "$tools/swiftlint"
+          curl -fsSL --retry 3 -o "$tools/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip"
+          curl -fsSL --retry 3 -o "$tools/swiftlint.zip" \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip"
+          echo "${XCODEGEN_SHA256}  $tools/xcodegen.zip" | shasum -a 256 -c -
+          echo "${SWIFTLINT_SHA256}  $tools/swiftlint.zip" | shasum -a 256 -c -
+          unzip -q "$tools/xcodegen.zip" -d "$tools"
+          unzip -q "$tools/swiftlint.zip" -d "$tools/swiftlint"
+          chmod +x "$tools/xcodegen/bin/xcodegen" "$tools/swiftlint/swiftlint"
+          # XcodeGen doit rester dans son dossier d'origine (il lit ../share/xcodegen).
+          echo "$tools/xcodegen/bin" >> "$GITHUB_PATH"
+          echo "$tools/swiftlint" >> "$GITHUB_PATH"
+
+      - name: Générer le projet Xcode
+        run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
+
+      - name: SwiftLint
+        run: bash ci/timed.sh "SwiftLint" swiftlint lint --strict
+
+      - name: Choisir un simulateur iPhone
+        run: |
+          set -euo pipefail
+          udid=$(xcrun simctl list devices available -j | jq -r '
+            [ .devices | to_entries | sort_by(.key) | reverse | .[]
+              | select(.key | test("iOS"))
+              | .value[] | select(.name | startswith("iPhone")) ][0] | .udid // empty')
+          if [ -z "$udid" ]; then
+            echo "::error::Aucun simulateur iPhone disponible sur ce runner."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "SIM_UDID=$udid" >> "$GITHUB_ENV"
+          xcrun simctl list devices available | grep "$udid" || true
+
+      - name: Compiler (build-for-testing)
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Compilation (build-for-testing)" bash -c '
+            set -o pipefail
+            xcodebuild build-for-testing \
+              -project Miff.xcodeproj -scheme Miff -configuration Debug \
+              -destination "id=$SIM_UDID" \
+              -derivedDataPath build/DerivedData \
+              CODE_SIGNING_ALLOWED=NO \
+              2>&1 | tee build/xcodebuild-build.log | xcbeautify
+          '
+
+      - name: Tests XCTest
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Tests XCTest (simulateur)" bash -c '
+            set -o pipefail
+            xcodebuild test-without-building \
+              -project Miff.xcodeproj -scheme Miff -configuration Debug \
+              -destination "id=$SIM_UDID" \
+              -derivedDataPath build/DerivedData \
+              -resultBundlePath build/Tests.xcresult \
+              CODE_SIGNING_ALLOWED=NO \
+              2>&1 | tee build/xcodebuild-test.log | xcbeautify
+          '
+
+      - name: Durée totale du job
+        if: always()
+        run: |
+          total=$(( $(date +%s) - ${JOB_START:-$(date +%s)} ))
+          {
+            echo
+            echo "**Durée totale (hors démarrage du runner) : ${total} s (~$(( (total + 59) / 60 )) min facturées).**"
+            echo
+            echo "Rappel : sur un dépôt privé, une minute macOS consomme le quota gratuit bien plus vite qu'une minute Linux (voir docs/dev/ios-spike.md)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Déposer les journaux (en cas d'échec)
+        if: failure()
+        # actions/upload-artifact v7.0.2 (empreinte de commit verifiee via l'API GitHub le 2026-10-21)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ios-logs-${{ github.run_number }}
+          path: |
+            ios/build/*.log
+            ios/build/Tests.xcresult
+          if-no-files-found: ignore
+          retention-days: 3
