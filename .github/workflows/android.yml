@@ -1,0 +1,120 @@
+name: android
+
+# Android build, lint, format and unit tests (ticket INIT, section 4.E).
+# Never use pull_request_target here: this workflow reads a repository secret.
+on:
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: android
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      # actions/setup-java v6.1.0. JDK 17 is the minimum required by Android Gradle Plugin 9.4.
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Prepare Gradle wrapper and timing file
+        run: |
+          chmod +x gradlew
+          printf '| Step | Seconds |\n|---|---|\n' > "$RUNNER_TEMP/timings.md"
+
+      - name: Decode Firebase configuration (secret, never printed)
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          set +x
+          if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
+            echo "::error title=Secret manquant::Le secret GitHub GOOGLE_SERVICES_JSON_B64 est absent. Le PM doit le creer (PowerShell) : [Convert]::ToBase64String([IO.File]::ReadAllBytes(\"chemin\\google-services.json\")) | gh secret set GOOGLE_SERVICES_JSON_B64 --repo Tomessa-Ghostrun/Miff"
+            echo "Secret GOOGLE_SERVICES_JSON_B64 absent : le PM doit le creer avec la commande indiquee dans l'annotation d'erreur ci-dessus." >&2
+            exit 1
+          fi
+          umask 077
+          if ! printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 -d > app/google-services.json 2>/dev/null; then
+            rm -f app/google-services.json
+            echo "::error title=Secret invalide::GOOGLE_SERVICES_JSON_B64 n'est pas du base64 valide. Le PM doit le recreer avec la commande de l'etape precedente."
+            exit 1
+          fi
+          if ! grep -q '"project_id": *"miff-3d283"' app/google-services.json; then
+            rm -f app/google-services.json
+            echo "::error title=Mauvais projet Firebase::Le fichier decode ne correspond pas au projet miff-3d283. Le PM doit le regenerer avec : firebase apps:sdkconfig ANDROID <APP_ID> --project miff-3d283"
+            exit 1
+          fi
+
+      - name: Format check (Spotless / ktlint)
+        run: |
+          start=$(date +%s)
+          ./gradlew spotlessCheck --console=plain -Pmiff.uploadCrashlyticsMapping=false
+          printf '| spotlessCheck | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
+
+      - name: Android Lint
+        run: |
+          start=$(date +%s)
+          ./gradlew lintDebug --console=plain -Pmiff.uploadCrashlyticsMapping=false
+          printf '| lintDebug | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
+
+      - name: Unit tests
+        run: |
+          start=$(date +%s)
+          ./gradlew testDebugUnitTest --console=plain -Pmiff.uploadCrashlyticsMapping=false
+          printf '| testDebugUnitTest | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
+
+      - name: Build debug APK
+        run: |
+          start=$(date +%s)
+          ./gradlew assembleDebug --console=plain -Pmiff.uploadCrashlyticsMapping=false
+          printf '| assembleDebug | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
+
+      - name: Build release bundle (unsigned)
+        run: |
+          start=$(date +%s)
+          ./gradlew bundleRelease --console=plain -Pmiff.uploadCrashlyticsMapping=false
+          printf '| bundleRelease (unsigned) | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
+
+      # actions/upload-artifact v7.0.2
+      - name: Upload debug APK (short retention)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: miff-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Android build"
+            echo
+            if [ -f "$RUNNER_TEMP/timings.md" ]; then cat "$RUNNER_TEMP/timings.md"; fi
+            echo
+            echo "> The debug APK artifact (kept 3 days) contains the public Firebase configuration of project miff-3d283 (google-services.json values: project and app identifiers, public API key). It is not a secret credential, but share the file only with testers."
+            echo "> Release bundle is unsigned: no signing key exists yet."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove Firebase configuration from the runner
+        if: always()
+        run: rm -f app/google-services.json
