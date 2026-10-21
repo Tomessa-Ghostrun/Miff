@@ -29,6 +29,8 @@ jobs:
       CI: 'true'
     steps:
       - name: Début du chronomètre
+        # Avant le checkout, `backend/` n'existe pas encore : on s'exécute à la racine de l'espace de travail.
+        working-directory: .
         run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
       - name: Récupération du dépôt
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
