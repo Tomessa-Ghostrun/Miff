@@ -92,6 +92,7 @@ pubsub-debug.log
 *-debug.log
 .firebase/
 backend/.emulator-cache/
+backend/test-output/
 
 # --- Caches et fichiers d'éditeurs / agents ----------------------------------
 .idea/
