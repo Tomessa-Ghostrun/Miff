@@ -13,6 +13,8 @@ Schéma de données Firestore, règles de sécurité et (plus tard) Cloud Functi
 | [`data-model.md`](data-model.md) | Source de vérité pour iOS/Android : collections, champs, statuts, consentement, code secret, limites freemium, ce que chaque client implémente, données sensibles (RGPD), quotas et coûts, Blaze vs Spark, questions ouvertes pour le PM. |
 | [`firestore.rules`](firestore.rules) | Règles de sécurité (tout refusé par défaut). **Écrites mais jamais exécutées** : à valider à l'émulateur avant déploiement. |
 | [`rules-test-plan.md`](rules-test-plan.md) | Cas de test autorisé/refusé (dont attaques) à automatiser avec l'émulateur. |
+| [`package.json`](package.json), [`tests/`](tests/) | Tests automatisés des règles (un test par identifiant du plan), garde-fou projet de démonstration, mesure des lectures de règles. Voir `../README.md` pour les lancer. |
+| [`rules-test-report.md`](rules-test-report.md) | Échecs constatés par les tests des règles (attendu, obtenu, hypothèse), à traiter par `backend-data` et le PM. |
 | [`firestore.indexes.json`](firestore.indexes.json) | Aucun index composite nécessaire ; seulement l'exclusion d'index des champs binaires (avatars, photos) pour limiter le coût d'écriture. |
 | [`firebase.json`](firebase.json), [`.firebaserc`](.firebaserc) | Configuration locale pour déployer règles et index plus tard, verrouillée sur `miff-3d283`. |
 
@@ -21,7 +23,7 @@ Pas de dossier `functions/` : aucune Cloud Function n'est écrite tant que le PM
 ## État d'avancement et prochaines étapes pour l'équipe technique
 
 1. Relecture par le PM de `data-model.md` §15 (questions ouvertes), en priorité les questions 1 (Blaze), 2 (photos), 3 (premium) et 6 (réciprocité).
-2. Test des règles à l'émulateur avec `rules-test-plan.md` (action d'un agent/dev, après accord du PM : installer `firebase-tools` et lancer l'émulateur en local, sans toucher au projet réel).
+2. Test des règles à l'émulateur avec `rules-test-plan.md` : **automatisé** (ticket INIT-1, dossier `tests/`, exécuté par la CI `firestore-rules` et en local avec `npm run test:emulator`, Java 21 requis). Résultats et échecs : `rules-test-report.md`.
 3. Revue sécurité en contexte neuf des règles (process CLAUDE.md), puis seulement ensuite déploiement.
 4. `ios-dev` et `android-dev` implémentent à partir de `data-model.md` §8 (mêmes chemins, mêmes champs, mêmes batches).
 
