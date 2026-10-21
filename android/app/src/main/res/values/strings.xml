@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ENGLISH strings = unqualified resources = fallback language (see res/resources.properties).
+    French (source language of the product copy) lives in values-fr/strings.xml. Keys are shared with iOS:
+    snake_case with a feature prefix; platform-only keys are prefixed android_.
+-->
+<resources>
+    <string name="android_app_name" translatable="false">Miff</string>
+
+    <!-- Welcome screen -->
+    <string name="home_title">Miff</string>
+    <string name="home_tagline">Know your loved ones are fine, without bothering them.</string>
+    <string name="home_logo_description">Miff logo (provisional)</string>
+
+    <!-- Diagnostic screen: header and build identity -->
+    <string name="diag_title">Internal diagnostic</string>
+    <string name="diag_subtitle">Internal screen, test builds only. Nothing here is shown to the public.</string>
+    <string name="diag_open_home">See the welcome screen</string>
+    <string name="diag_build_title">Build</string>
+    <string name="diag_build_version">Version: %1$s (build %2$d)</string>
+    <string name="diag_build_type">Configuration: %1$s</string>
+    <string name="diag_build_app_id">Application: %1$s</string>
+    <string name="diag_build_android">Android %1$s (API %2$d)</string>
+    <string name="diag_build_language">Language: %1$s</string>
+    <string name="diag_build_direction">Text direction: %1$s</string>
+    <string name="diag_direction_ltr">left to right</string>
+    <string name="diag_direction_rtl">right to left</string>
+    <string name="diag_build_project">Firebase project: %1$s</string>
+    <string name="diag_project_ok">This is the expected Miff project.</string>
+    <string name="diag_project_warning">Unexpected project (expected: %1$s). Please stop here and tell the team.</string>
+    <string name="diag_project_unknown">Project not identified. Please tell the team.</string>
+
+    <!-- Test 1 -->
+    <string name="diag_test1_title">Test 1 · Reading without signing in</string>
+    <string name="diag_test1_description">Tries to read a Miff without being signed in. The expected answer is a refusal. If you were signed in, you are signed out first.</string>
+    <string name="diag_test1_action">Run test 1</string>
+    <string name="diag_test1_running">Test in progress…</string>
+    <string name="diag_test1_ok">Rules active: OK</string>
+    <string name="diag_test1_ok_detail">The server refused the read without sign-in, as expected.</string>
+    <string name="diag_test1_open">Warning: the read worked without signing in. The rules look open. Please do not continue and tell the team.</string>
+    <string name="diag_test1_offline">No connection for now. Try again when the network is back.</string>
+    <string name="diag_test1_inconclusive">The test could not be completed this time. Try again a bit later.</string>
+
+    <!-- Test 2 -->
+    <string name="diag_test2_title">Test 2 · Reading with a test account</string>
+    <string name="diag_test2_description">Signs in with the test account created in the Firebase console, reads your profile and plan documents, then signs out. Nothing is written. The details are typed here only: they are never stored.</string>
+    <string name="diag_test2_email_label">Test account e-mail</string>
+    <string name="diag_test2_password_label">Password</string>
+    <string name="diag_test2_action">Sign in and read</string>
+    <string name="diag_test2_running">Test in progress…</string>
+    <string name="diag_test2_success">Test 2: OK</string>
+    <string name="diag_test2_profile_found">Profile: found</string>
+    <string name="diag_test2_profile_missing">No profile yet</string>
+    <string name="diag_test2_offer_classic">Plan: Classic</string>
+    <string name="diag_test2_offer_premium">Plan: Premium until %1$s</string>
+    <string name="diag_test2_read_denied">Signed in, but the rules refused the read of your own documents. Please tell the team.</string>
+    <string name="diag_test2_read_failed">Signed in, but reading the documents did not work this time. Try again a bit later.</string>
+    <string name="diag_signin_invalid">We could not sign in with these details. Please check them and try again.</string>
+    <string name="diag_signin_network">No connection for now. Try again when the network is back.</string>
+    <string name="diag_signin_too_many">Too many attempts for now. Please wait a few minutes.</string>
+    <string name="diag_signin_disabled">This test account is turned off.</string>
+    <string name="diag_signin_unknown">Sign-in did not work this time. Try again a bit later.</string>
+    <string name="diag_input_email_empty">Please enter the test account e-mail.</string>
+    <string name="diag_input_email_invalid">This e-mail address does not look right.</string>
+    <string name="diag_input_password_empty">Please enter the password.</string>
+    <string name="diag_input_too_long">This entry is too long.</string>
+
+    <!-- App Check -->
+    <string name="diag_appcheck_title">App Check</string>
+    <string name="diag_appcheck_description">Checks that the app can get an App Check token. It is not enforced yet: a missing token blocks nothing.</string>
+    <string name="diag_appcheck_action">Check</string>
+    <string name="diag_appcheck_running">Check in progress…</string>
+    <string name="diag_appcheck_ok">Token obtained</string>
+    <string name="diag_appcheck_none">No token for now. No impact yet, App Check is not enforced. In test builds, the debug token shown in Logcat can be registered in the Firebase console.</string>
+
+    <!-- Analytics and crash reports -->
+    <string name="diag_privacy_title">Analytics and crash reports</string>
+    <string name="diag_privacy_description">Both are off by default, and nothing is collected while they are off. Your choice is kept after a restart.</string>
+    <string name="diag_switch_analytics">Analytics</string>
+    <string name="diag_switch_crash">Crash reports</string>
+    <string name="diag_event_action">Send the test event</string>
+    <string name="diag_event_sent">Test event sent.</string>
+    <string name="diag_event_disabled">Analytics is off: nothing was sent.</string>
+    <string name="diag_event_refused">Event refused by the allow-list (%1$s).</string>
+    <string name="diag_event_location_action">Try to send a position (must be refused)</string>
+    <string name="diag_event_location_refused">Refused, as expected: an event with a position is never sent.</string>
+    <string name="diag_event_location_unexpected">Warning: the event with a position was not refused. Please tell the team.</string>
+    <string name="diag_crash_action">Trigger a test crash</string>
+    <string name="diag_crash_hint">Available only when crash reports are on.</string>
+
+    <!-- Design token gallery -->
+    <string name="diag_gallery_title">Design tokens</string>
+    <string name="diag_gallery_colors">Colors</string>
+    <string name="diag_gallery_text">Text styles</string>
+    <string name="diag_gallery_radii">Corner radii</string>
+    <string name="diag_gallery_shadows">Shadows</string>
+    <string name="diag_gallery_gradients">Gradients</string>
+    <string name="diag_gallery_sample">Everyone is safe</string>
+    <string name="diag_gallery_color_alpha">%1$s · %2$d%%</string>
+    <string name="diag_gallery_style_meta">%1$d / %2$d sp</string>
+    <string name="diag_gallery_radius_meta">%1$d dp</string>
+
+    <!-- Language block -->
+    <string name="diag_lang_title">Language</string>
+    <string name="diag_lang_long">This is a deliberately long sentence, to check how the layout reacts when a translated text is much longer than the original, including wrapping over several lines with a large font size.</string>
+    <string name="diag_lang_test_text">Hello Miff, 12:30, 3 friends.</string>
+    <plurals name="diag_lang_members">
+        <item quantity="one">%d member</item>
+        <item quantity="other">%d members</item>
+    </plurals>
+</resources>

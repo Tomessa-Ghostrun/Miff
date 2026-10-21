@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FRANÇAIS : langue source des textes produit. Mêmes clés que values/strings.xml (anglais = langue de repli)
+    et que le String Catalog iOS. Ton bienveillant, jamais alarmiste.
+-->
+<resources>
+    <!-- Écran d'accueil -->
+    <string name="home_title">Miff</string>
+    <string name="home_tagline">Savoir que vos proches vont bien, sans les déranger.</string>
+    <string name="home_logo_description">Logo de Miff (provisoire)</string>
+
+    <!-- Écran de diagnostic : en-tête et identité du build -->
+    <string name="diag_title">Diagnostic interne</string>
+    <string name="diag_subtitle">Écran interne, réservé aux versions de test. Rien de ceci n\'est visible du public.</string>
+    <string name="diag_open_home">Voir l\'écran d\'accueil</string>
+    <string name="diag_build_title">Version installée</string>
+    <string name="diag_build_version">Version : %1$s (build %2$d)</string>
+    <string name="diag_build_type">Configuration : %1$s</string>
+    <string name="diag_build_app_id">Application : %1$s</string>
+    <string name="diag_build_android">Android %1$s (API %2$d)</string>
+    <string name="diag_build_language">Langue : %1$s</string>
+    <string name="diag_build_direction">Sens du texte : %1$s</string>
+    <string name="diag_direction_ltr">de gauche à droite</string>
+    <string name="diag_direction_rtl">de droite à gauche</string>
+    <string name="diag_build_project">Projet Firebase : %1$s</string>
+    <string name="diag_project_ok">C\'est bien le projet Miff attendu.</string>
+    <string name="diag_project_warning">Projet inattendu (attendu : %1$s). Merci de vous arrêter ici et de prévenir l\'équipe.</string>
+    <string name="diag_project_unknown">Projet non identifié. Merci de prévenir l\'équipe.</string>
+
+    <!-- Test 1 -->
+    <string name="diag_test1_title">Test 1 · Lecture sans être connecté</string>
+    <string name="diag_test1_description">Essaie de lire une Miff sans être connecté. La réponse attendue est un refus. Si vous étiez connecté, vous êtes d\'abord déconnecté.</string>
+    <string name="diag_test1_action">Lancer le test 1</string>
+    <string name="diag_test1_running">Test en cours…</string>
+    <string name="diag_test1_ok">Règles actives : OK</string>
+    <string name="diag_test1_ok_detail">Le serveur a refusé la lecture sans connexion, comme prévu.</string>
+    <string name="diag_test1_open">Attention : la lecture a fonctionné sans être connecté. Les règles semblent ouvertes. Merci de ne pas continuer et de prévenir l\'équipe.</string>
+    <string name="diag_test1_offline">Pas de connexion pour le moment. Réessayez dès que le réseau est revenu.</string>
+    <string name="diag_test1_inconclusive">Le test n\'a pas pu aboutir cette fois. Réessayez un peu plus tard.</string>
+
+    <!-- Test 2 -->
+    <string name="diag_test2_title">Test 2 · Lecture avec un compte de test</string>
+    <string name="diag_test2_description">Se connecte avec le compte de test créé dans la console Firebase, lit le profil et l\'offre de ce compte, puis se déconnecte. Rien n\'est écrit. Les identifiants sont saisis ici uniquement : ils ne sont jamais conservés.</string>
+    <string name="diag_test2_email_label">E-mail du compte de test</string>
+    <string name="diag_test2_password_label">Mot de passe</string>
+    <string name="diag_test2_action">Se connecter et lire</string>
+    <string name="diag_test2_running">Test en cours…</string>
+    <string name="diag_test2_success">Test 2 : OK</string>
+    <string name="diag_test2_profile_found">Profil : trouvé</string>
+    <string name="diag_test2_profile_missing">Pas encore de profil</string>
+    <string name="diag_test2_offer_classic">Offre : Classic</string>
+    <string name="diag_test2_offer_premium">Offre : Premium jusqu\'au %1$s</string>
+    <string name="diag_test2_read_denied">Connecté, mais les règles ont refusé la lecture de vos propres documents. Merci de prévenir l\'équipe.</string>
+    <string name="diag_test2_read_failed">Connecté, mais la lecture des documents n\'a pas fonctionné cette fois. Réessayez un peu plus tard.</string>
+    <string name="diag_signin_invalid">Connexion impossible avec ces informations. Vérifiez-les et réessayez.</string>
+    <string name="diag_signin_network">Pas de connexion pour le moment. Réessayez dès que le réseau est revenu.</string>
+    <string name="diag_signin_too_many">Trop de tentatives pour le moment. Patientez quelques minutes.</string>
+    <string name="diag_signin_disabled">Ce compte de test est désactivé.</string>
+    <string name="diag_signin_unknown">La connexion n\'a pas fonctionné cette fois. Réessayez un peu plus tard.</string>
+    <string name="diag_input_email_empty">Saisissez l\'e-mail du compte de test.</string>
+    <string name="diag_input_email_invalid">Cette adresse e-mail ne semble pas correcte.</string>
+    <string name="diag_input_password_empty">Saisissez le mot de passe.</string>
+    <string name="diag_input_too_long">Cette saisie est trop longue.</string>
+
+    <!-- App Check -->
+    <string name="diag_appcheck_title">App Check</string>
+    <string name="diag_appcheck_description">Vérifie que l\'app peut obtenir un jeton App Check. Il n\'est pas encore exigé : un jeton absent ne bloque rien.</string>
+    <string name="diag_appcheck_action">Vérifier</string>
+    <string name="diag_appcheck_running">Vérification en cours…</string>
+    <string name="diag_appcheck_ok">Jeton obtenu</string>
+    <string name="diag_appcheck_none">Pas de jeton pour le moment. Sans conséquence, App Check n\'est pas encore exigé. Dans les versions de test, le jeton de débogage affiché dans Logcat peut être enregistré dans la console Firebase.</string>
+
+    <!-- Analytics et rapports de plantage -->
+    <string name="diag_privacy_title">Analytics et rapports de plantage</string>
+    <string name="diag_privacy_description">Les deux sont désactivés par défaut, et rien n\'est collecté tant qu\'ils le sont. Votre choix est conservé après un redémarrage.</string>
+    <string name="diag_switch_analytics">Analytics</string>
+    <string name="diag_switch_crash">Rapports de plantage</string>
+    <string name="diag_event_action">Envoyer l\'événement de test</string>
+    <string name="diag_event_sent">Événement de test envoyé.</string>
+    <string name="diag_event_disabled">Analytics est désactivé : rien n\'a été envoyé.</string>
+    <string name="diag_event_refused">Événement refusé par la liste blanche (%1$s).</string>
+    <string name="diag_event_location_action">Essayer d\'envoyer une position (doit être refusé)</string>
+    <string name="diag_event_location_refused">Refusé, comme prévu : un événement contenant une position n\'est jamais envoyé.</string>
+    <string name="diag_event_location_unexpected">Attention : l\'événement contenant une position n\'a pas été refusé. Merci de prévenir l\'équipe.</string>
+    <string name="diag_crash_action">Provoquer un plantage de test</string>
+    <string name="diag_crash_hint">Disponible seulement quand les rapports de plantage sont activés.</string>
+
+    <!-- Galerie des tokens du design system -->
+    <string name="diag_gallery_title">Tokens du design system</string>
+    <string name="diag_gallery_colors">Couleurs</string>
+    <string name="diag_gallery_text">Styles de texte</string>
+    <string name="diag_gallery_radii">Arrondis</string>
+    <string name="diag_gallery_shadows">Ombres</string>
+    <string name="diag_gallery_gradients">Dégradés</string>
+    <string name="diag_gallery_sample">Tout le monde est en sécurité</string>
+    <string name="diag_gallery_color_alpha">%1$s · %2$d %%</string>
+    <string name="diag_gallery_style_meta">%1$d / %2$d sp</string>
+    <string name="diag_gallery_radius_meta">%1$d dp</string>
+
+    <!-- Bloc langue -->
+    <string name="diag_lang_title">Langue</string>
+    <string name="diag_lang_long">Voici une phrase volontairement longue, pour vérifier comment la mise en page réagit quand un texte traduit est bien plus long que l\'original, y compris avec un retour à la ligne sur plusieurs lignes et une grande taille de police.</string>
+    <string name="diag_lang_test_text">Bonjour Miff, 12:30, 3 amis.</string>
+    <plurals name="diag_lang_members">
+        <item quantity="one">%d membre</item>
+        <item quantity="many">%d de membres</item>
+        <item quantity="other">%d membres</item>
+    </plurals>
+</resources>
