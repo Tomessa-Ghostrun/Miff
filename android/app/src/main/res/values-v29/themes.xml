@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Miff" parent="Base.Theme.Miff">
+        <!-- Opt out of the forced dark mode some manufacturer overlays apply to third-party apps. -->
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

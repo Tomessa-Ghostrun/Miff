@@ -1,3 +1,5 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -42,6 +44,11 @@ android {
             isDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Unsigned on purpose: no signing key exists yet (never commit one).
+            // No automatic upload of the R8 mapping to Firebase from a developer machine: a build must never write to
+            // the Firebase project. CI will enable it (-Pmiff.uploadCrashlyticsMapping=true) once release builds are shared.
+            (this as ExtensionAware).extensions.configure<CrashlyticsExtension>("firebaseCrashlytics") {
+                mappingFileUploadEnabled = providers.gradleProperty("miff.uploadCrashlyticsMapping").isPresent
+            }
         }
     }
 
@@ -60,6 +67,14 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+}
+
+// Release keeps only the supported languages from libraries (smaller APK; any other device language falls back to
+// English). Debug keeps everything so that the en-XA / ar-XB pseudo-locales work.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.androidResources.localeFilters.addAll("en", "fr")
     }
 }
 
