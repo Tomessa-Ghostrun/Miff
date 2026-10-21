@@ -1,20 +1,105 @@
-# macOS / Xcode
-.DS_Store
-ios/**/xcuserdata/
-ios/**/*.xcworkspace/xcuserdata/
-ios/build/
-ios/DerivedData/
+# =============================================================================
+# Miff - fichiers ignorés par git
+# Règle d'or : aucun secret, aucune clé, aucun fichier de configuration Firebase
+# dans le dépôt (voir docs/dev/secrets.md). Le job CI `hygiene` vérifie aussi
+# ces motifs : si tu modifies cette liste, mets à jour .github/workflows/hygiene.yml.
+# =============================================================================
+
+# --- Configuration Firebase (régénérée avec `firebase apps:sdkconfig`) -------
+google-services.json
+GoogleService-Info.plist
+
+# --- Clés, certificats, profils de signature ---------------------------------
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
+*.certSigningRequest
+*.jks
+*.keystore
+key.properties
+keystore.properties
+
+# --- Clés de compte de service Google / Firebase Admin -----------------------
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+service-account*.json
+
+# --- Variables d'environnement locales (on garde seulement un modèle) --------
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
+# --- Jeton de débogage App Check (ne jamais le commiter) ---------------------
+appcheck-debug-token*
+.appcheck-debug-token*
+*appcheck*debug*token*
+
+# --- Artefacts de distribution -----------------------------------------------
+*.apk
+*.aab
+*.ipa
+*.xcarchive
+*.dSYM/
+*.dSYM.zip
+
+# --- Dépendances et sorties de build -----------------------------------------
+node_modules/
+coverage/
+.nyc_output/
 
 # Android
+.gradle/
 android/.gradle/
 android/build/
 android/*/build/
+android/**/build/
 android/local.properties
+local.properties
 android/.idea/
+android/**/.cxx/
+android/**/.externalNativeBuild/
+android/captures/
+*.hprof
 
-# Secrets
-*.env
-*.p12
-*.keystore
-*.jks
-*.mobileprovision
+# iOS / macOS / Xcode
+.DS_Store
+ios/**/xcuserdata/
+ios/**/*.xcworkspace/xcuserdata/
+*.xcuserstate
+ios/build/
+ios/DerivedData/
+DerivedData/
+ios/Pods/
+.build/
+.swiftpm/
+# Projet Xcode généré par XcodeGen en CI (voir ticket INIT-3). À retirer d'ici
+# si l'équipe décide finalement de versionner le .xcodeproj.
+ios/**/*.xcodeproj/
+# Package.resolved reste VERSIONNÉ (versions figées) : ne pas l'ignorer.
+
+# --- Émulateur Firebase et journaux ------------------------------------------
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log
+*-debug.log
+.firebase/
+backend/.emulator-cache/
+
+# --- Caches et fichiers d'éditeurs / agents ----------------------------------
+.idea/
+*.iml
+.vscode/
+.fleet/
+.claude/settings.local.json
+Thumbs.db
+desktop.ini
+*.swp
+*~
