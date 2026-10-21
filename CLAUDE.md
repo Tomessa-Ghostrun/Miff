@@ -78,6 +78,15 @@ Notion et Figma sont connectés via MCP (voir "Sources externes connectées" plu
 - **iOS sans Mac** : aucune compilation locale possible (poste Windows). Les builds iOS passent par une CI cloud (macOS) et se testent sur iPhone via TestFlight. Android se compile et se teste en local (Android Studio).
 - **Process par ticket** : ticket Notion → challenge (`product-specs`) → validation PM → dev Android puis iOS (une branche et une PR par plateforme, jamais de push direct sur `main`) → code review en contexte neuf + revue sécurité → QA → recette PM → merge. Confirmation PM aux portes : ticket validé, début du dev, review terminée, prêt à merger.
 
+## Décisions complémentaires (2026-10-21)
+- **Android : natif Kotlin + Compose, minSdk 26. iOS : SwiftUI, iOS 16 minimum.** (KMP écarté.) Aucune Cloud Function tant que le plan Blaze n'est pas activé (décision PM : pas pour l'instant).
+- **Appareils de test du PM** : iPhone 11 Pro (iOS 26.5.2) et OPPO Find X5 Lite (Android 13). Les surcouches constructeur peuvent tuer les apps en arrière-plan : à surveiller pour le géofencing.
+- **Paiement** : abonnement natif (App Store / Google Play) avec couche d'abstraction ; le premium est accordé à la main tant que Blaze n'est pas activé. Le modèle premium doit gérer mensuel/annuel, démarrage, arrêt (voir `docs/tickets/initialisation-technique.md`).
+- **Langues** : français + anglais au départ, anglais en langue de repli, structure prête pour d'autres langues.
+- **Comptes développeur** : Apple (99 €/an) et Google Play (25 €) déjà existants (créés pour Ghostrun) ; Miff y est une app distincte.
+- **Environnements** : un seul projet Firebase pour l'instant ; un projet de développement séparé sera créé avant les premiers testeurs externes.
+- **Statuts du tableau Notion « Tâches développement Miff »** (ordre du circuit) : Backlog discovery → A cadrer → Spec en attente de review IA → Backlog dev IA → En dev IA → En code review IA → En recette IA → En recette (PM) → Ready pour MEP → En prod. Je ne change un statut qu'avec l'accord du PM.
+
 ## Dépôt Git
 Repo GitHub privé : https://github.com/Tomessa-Ghostrun/Miff (branche `main`). Totalement distinct du projet Ghostrun, qui ne doit jamais être touché depuis ce dossier.
 
