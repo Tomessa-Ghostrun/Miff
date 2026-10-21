@@ -2,7 +2,7 @@
 # Miff - fichiers ignorés par git
 # Règle d'or : aucun secret, aucune clé, aucun fichier de configuration Firebase
 # dans le dépôt (voir docs/dev/secrets.md). Le job CI `hygiene` vérifie aussi
-# ces motifs : si tu modifies cette liste, mets à jour .github/workflows/hygiene.yml.
+# ces motifs (liste dans scripts/check-forbidden-files.mjs) : si tu modifies cette liste, mets à jour ce script.
 # =============================================================================
 
 # --- Configuration Firebase (régénérée avec `firebase apps:sdkconfig`) -------

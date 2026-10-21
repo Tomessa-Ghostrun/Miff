@@ -1,0 +1,76 @@
+name: firestore-rules
+
+# Tests des règles de sécurité Firestore à l'émulateur (projet de démonstration demo-miff-rules).
+# Aucun secret requis, aucun accès à un vrai projet Firebase : tout reste dans le runner.
+# Jamais de pull_request_target.
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/*.yml'
+      - '.github/dependabot.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firestore-rules-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rules-tests:
+    name: Tests des règles Firestore
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      CI: 'true'
+    steps:
+      - name: Début du chronomètre
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Récupération du dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Java 21 (Temurin) pour l'émulateur Firestore
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Installer les dépendances (versions figées par package-lock.json)
+        run: npm ci --ignore-scripts
+      - name: Tests rapides sans émulateur (garde-fou, plan, workflows, mesure)
+        run: npm run test:unit
+      - name: Tests des règles dans l'émulateur
+        # Le garde-fou refuse tout projet qui n'est pas "demo-*" ; firebase emulators:exec reçoit --project demo-miff-rules.
+        run: npm run test:emulator
+      - name: Rapport par identifiant (résumé du job)
+        if: always()
+        run: |
+          for f in test-output/rules-report.md test-output/rule-reads.md; do
+            if [ -f "$f" ]; then
+              cat "$f" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Fichier absent : $f (les tests de règles n'ont pas pu produire de rapport)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+      - name: Rapport par identifiant (artefact)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rules-test-report
+          path: backend/test-output/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job rules-tests = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"
