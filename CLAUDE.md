@@ -77,6 +77,8 @@ Notion et Figma sont connectés via MCP (voir "Sources externes connectées" plu
 - **À prévoir plus tard** : empreinte SHA-1 Android (indispensable pour la connexion Google), clé APNs pour les notifications iOS, activation de la protection contre la suppression de Firestore, Firebase App Check.
 - **iOS sans Mac** : aucune compilation locale possible (poste Windows). Les builds iOS passent par une CI cloud (macOS) et se testent sur iPhone via TestFlight. Android se compile et se teste en local (Android Studio).
 - **Process par ticket** : ticket Notion → challenge (`product-specs`) → validation PM → dev Android puis iOS (une branche et une PR par plateforme, jamais de push direct sur `main`) → code review en contexte neuf + revue sécurité → QA → recette PM → merge. Confirmation PM aux portes : ticket validé, début du dev, review terminée, prêt à merger.
+- **Fusion (décidé par le PM le 2026-10-22)** : une fois la porte « prêt à merger » validée par un « oui » explicite du PM pour la PR concernée (CI verte, revues faites, recette faite), c'est Claude qui fusionne (`gh pr merge --merge`), pas le PM. Jamais de push direct sur `main`.
+- **Exception INIT-3 (spike iOS)** : `workflow_dispatch` n'étant exécutable que depuis `main`, le workflow `ios-testflight` ne peut pas être essayé avant la fusion. Le spike est donc fusionné avant l'essai TestFlight (workflow manuel, jamais déclenché par une PR), puis corrigé par de petites PR si besoin. Cette exception ne vaut pas pour le code applicatif.
 
 ## Décisions complémentaires (2026-10-21)
 - **Android : natif Kotlin + Compose, minSdk 26. iOS : SwiftUI, iOS 16 minimum.** (KMP écarté.) Aucune Cloud Function tant que le plan Blaze n'est pas activé (décision PM : pas pour l'instant).

@@ -27,7 +27,9 @@ Les noms de code ci-dessous sont ceux enregistrés dans Figma (`codeSyntax`) : l
 | Attention | `status/warning` `#ffb650` (orange) | `status/warning-tint` | Palier orange (voir `docs/specs/update-et-escalade-statut.md`) |
 | Danger | `status/danger` `#ff5650` | `status/danger-tint` | Palier rouge, zone à risque |
 
-Noms de code : `colorStatusSafe`, `colorStatusWarning`, `colorStatusDanger` et leurs `…Tint`. Le texte d'erreur de formulaire utilise `text/error` (`colorTextError`), qui pointe vers le même rouge que le statut danger.
+Noms de code : `colorStatusSafe`, `colorStatusWarning`, `colorStatusDanger` et leurs `…Tint`. Le texte d'erreur de formulaire utilise `text/error` (`colorTextError`), qui pointe vers le rouge plus foncé `status/red-700` `#d60700` (même teinte que le statut danger, contraste 5,4:1 sur blanc, au-dessus du minimum WCAG AA de 4,5:1). `#ff5650` ne sert qu'aux anneaux, fonds et pastilles, jamais au texte (3,0:1, insuffisant).
+
+> À surveiller : le texte des badges en couleur pleine sur teinte 30 % (jaune-vert `#d1d828` et rouge `#ff5650`) a lui aussi un contraste faible. Non traité ici : à arbitrer avec le PM au design des écrans qui affichent des badges.
 
 ### Fonds, textes, bordures
 | Token | Valeur | Usage |
@@ -49,7 +51,7 @@ Noms de code : `colorStatusSafe`, `colorStatusWarning`, `colorStatusDanger` et l
 | `border/action` | `#043cd1` | Contour d'accent (modale, cartes) |
 
 ### Décisions de cohérence prises avec le PM (2026-10-16)
-- **Un seul rouge** : les erreurs de formulaire (`#ea4335` dans les maquettes) passent au rouge `#ff5650` du statut danger.
+- **Un seul rouge** : les erreurs de formulaire (`#ea4335` dans les maquettes) passent au rouge `#d60700` (`text/error`), plus foncé que le rouge de statut `#ff5650` pour rester lisible (contraste AA, décision PM du 2026-10-22).
 - **Un seul jaune-vert** : `#d2d929` et `#d1d52c` (quasi identiques dans les maquettes) sont ramenés à `#d1d828`. L'écart visuel est imperceptible. La fin du dégradé de titre reste `#d1d52c` dans le style Figma tant que les maquettes ne sont pas retouchées.
 
 ---
