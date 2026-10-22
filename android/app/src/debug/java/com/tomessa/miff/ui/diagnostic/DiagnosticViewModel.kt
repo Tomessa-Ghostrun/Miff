@@ -7,6 +7,7 @@ import com.tomessa.miff.data.DiagnosticRepository
 import com.tomessa.miff.data.Test2Result
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.domain.analytics.AnalyticsContract
+import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.analytics.RefusalReason
 import com.tomessa.miff.domain.analytics.TrackResult
@@ -156,11 +157,7 @@ class DiagnosticViewModel(
     fun setCrashReportsEnabled(enabled: Boolean) = privacy.setCrashReportsEnabled(enabled)
 
     fun sendTestEvent() {
-        val result =
-            tracker.track(
-                AnalyticsContract.EVENT_DIAGNOSTIC_TEST,
-                mapOf(AnalyticsContract.PARAM_SOURCE to "diagnostic_screen"),
-            )
+        val result = tracker.track(AnalyticsEvent.DiagnosticTest)
         val feedback =
             when (result) {
                 TrackResult.Sent -> EventFeedback.Sent

@@ -1,17 +1,30 @@
 package com.tomessa.miff.domain.analytics
 
+import java.util.Locale
+
 /**
- * Analytics contract shared with iOS: an allow-list of events and parameters (name and type).
- * Anything outside the list is refused, and any parameter whose name evokes a position is refused
- * with a dedicated reason (a second safety net, in case someone adds such a parameter to the list by mistake).
+ * Analytics allow-list shared with iOS: implements docs/contracts/analytics-events.md, contract version 1.
+ * Adding or changing an event is a product decision (PR on the contract and on both platforms, PM validation).
  *
  * Pure Kotlin on purpose: unit-tested without Android.
  */
-enum class ParamType { STRING, LONG, BOOLEAN }
+sealed interface ParamSpec {
+    /** String taken from a closed list (100 characters at most, enforced by the list itself). */
+    data class Text(
+        val allowed: Set<String>,
+    ) : ParamSpec
+
+    /** Integer taken from a closed list. */
+    data class IntValue(
+        val allowed: Set<Long>,
+    ) : ParamSpec
+
+    data object Flag : ParamSpec
+}
 
 data class AnalyticsEventSpec(
     val name: String,
-    val params: Map<String, ParamType> = emptyMap(),
+    val params: Map<String, ParamSpec> = emptyMap(),
 )
 
 sealed interface AnalyticsValidation {
@@ -26,29 +39,37 @@ sealed interface AnalyticsValidation {
 enum class RefusalReason {
     UNKNOWN_EVENT,
     UNKNOWN_PARAM,
-    LOCATION_LIKE_PARAM,
-    LOCATION_LIKE_VALUE,
+    LOCATION_LIKE_NAME,
     WRONG_TYPE,
-    VALUE_TOO_LONG,
+    VALUE_NOT_ALLOWED,
 }
 
 object AnalyticsContract {
-    /** Firebase limits: event name 40 chars, string value 100 chars. */
+    const val CONTRACT_VERSION = 1
     const val MAX_STRING_VALUE_LENGTH = 100
 
-    /** Name of the internal diagnostic event (debug builds only call it). */
-    const val EVENT_DIAGNOSTIC_TEST = "diagnostic_test"
+    /** Internal diagnostic event (debug builds only call it). */
+    const val EVENT_DIAGNOSTIC_TEST = "analytics_diagnostic_test"
 
-    const val PARAM_SOURCE = "source"
+    private val signInMethods = ParamSpec.Text(setOf("email", "google", "apple"))
+    private val paywallTriggers = ParamSpec.Text(setOf("extra_miff", "extra_trusted_place"))
 
-    /** The allow-list. Adding an event here is a product decision (consent, privacy review). */
+    /** The allow-list: the nine events of contract version 1, nothing else. */
     val allowedEvents: Map<String, AnalyticsEventSpec> =
         listOf(
-            AnalyticsEventSpec(EVENT_DIAGNOSTIC_TEST, mapOf(PARAM_SOURCE to ParamType.STRING)),
+            AnalyticsEventSpec("onboarding_cta_tapped", mapOf("slide_index" to ParamSpec.IntValue(setOf(0L, 1L, 2L)))),
+            AnalyticsEventSpec("sign_up_completed", mapOf("method" to signInMethods)),
+            AnalyticsEventSpec("sign_in_completed", mapOf("method" to signInMethods)),
+            AnalyticsEventSpec("miff_created", mapOf("is_first_miff" to ParamSpec.Flag)),
+            AnalyticsEventSpec("miff_joined", mapOf("is_first_miff" to ParamSpec.Flag)),
+            AnalyticsEventSpec("onboarding_completed", mapOf("via" to ParamSpec.Text(setOf("created", "joined")))),
+            AnalyticsEventSpec("paywall_shown", mapOf("trigger" to paywallTriggers)),
+            AnalyticsEventSpec("paywall_dismissed", mapOf("trigger" to paywallTriggers)),
+            AnalyticsEventSpec(EVENT_DIAGNOSTIC_TEST),
         ).associateBy { it.name }
 
-    /** Whole words (after splitting snake_case / camelCase) that evoke a position. */
-    private val locationWords =
+    /** Words (name split on "_", case-insensitive) that make a name refused. */
+    private val forbiddenWords =
         setOf(
             "lat",
             "lng",
@@ -61,72 +82,79 @@ object AnalyticsContract {
             "coordinate",
             "coordinates",
             "address",
-            "addr",
+            "adresse",
             "place",
             "places",
+            "lieu",
             "location",
             "loc",
-            "geo",
-            "gps",
             "position",
-            "pos",
-            "street",
-            "city",
-            "zip",
-            "postcode",
-            "venue",
+            "geo",
             "geofence",
-            "radius",
+            "gps",
+            "region",
+            "zone",
+            "city",
+            "ville",
+            "street",
+            "rue",
+            "zip",
+            "postal",
+            "distance",
+            "nearby",
         )
 
-    /** Fragments refused anywhere in a name, even glued to other letters (e.g. "homeaddress"). */
-    private val locationFragments =
-        listOf("latitude", "longitude", "address", "location", "geofence", "coordinate")
+    /** Fragments refused anywhere in a name, even glued to another word (e.g. "userlatitude"). */
+    private val forbiddenFragments =
+        listOf("latitude", "longitude", "location", "address", "coordinate", "geoloc", "gps")
 
-    private val coordinatePair = Regex("""-?\d{1,3}\.\d{3,}\s*[,;/ ]\s*-?\d{1,3}\.\d{3,}""")
-
-    fun isLocationLikeName(name: String): Boolean {
-        val lower = name.lowercase()
-        if (locationFragments.any { lower.contains(it) }) return true
-        return splitWords(name).any { it in locationWords }
+    fun isForbiddenName(name: String): Boolean {
+        val lower = name.lowercase(Locale.ROOT)
+        return forbiddenFragments.any { lower.contains(it) } || lower.split('_').any { it in forbiddenWords }
     }
-
-    private fun splitWords(name: String): List<String> =
-        name
-            .replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
-            .split(Regex("[^A-Za-z0-9]+"))
-            .filter { it.isNotEmpty() }
-            .map { it.lowercase() }
 
     fun validate(
         eventName: String,
         params: Map<String, Any?> = emptyMap(),
     ): AnalyticsValidation {
         // A position-like parameter is refused first, whatever the event: it is the most important rule.
-        params.keys.firstOrNull { isLocationLikeName(it) }?.let {
-            return AnalyticsValidation.Refused(RefusalReason.LOCATION_LIKE_PARAM, it)
+        params.keys.firstOrNull { isForbiddenName(it) }?.let {
+            return AnalyticsValidation.Refused(RefusalReason.LOCATION_LIKE_NAME, it)
         }
         val spec =
             allowedEvents[eventName]
                 ?: return AnalyticsValidation.Refused(RefusalReason.UNKNOWN_EVENT, eventName)
         for ((key, value) in params) {
-            val type = spec.params[key] ?: return AnalyticsValidation.Refused(RefusalReason.UNKNOWN_PARAM, key)
-            val typeOk =
-                when (type) {
-                    ParamType.STRING -> value is String
-                    ParamType.LONG -> value is Long || value is Int
-                    ParamType.BOOLEAN -> value is Boolean
-                }
-            if (!typeOk) return AnalyticsValidation.Refused(RefusalReason.WRONG_TYPE, key)
-            if (value is String) {
-                if (value.length > MAX_STRING_VALUE_LENGTH) {
-                    return AnalyticsValidation.Refused(RefusalReason.VALUE_TOO_LONG, key)
-                }
-                if (coordinatePair.containsMatchIn(value)) {
-                    return AnalyticsValidation.Refused(RefusalReason.LOCATION_LIKE_VALUE, key)
-                }
-            }
+            val paramSpec = spec.params[key] ?: return AnalyticsValidation.Refused(RefusalReason.UNKNOWN_PARAM, key)
+            val problem = checkValue(paramSpec, value)
+            if (problem != null) return AnalyticsValidation.Refused(problem, key)
         }
         return AnalyticsValidation.Allowed
     }
+
+    private fun checkValue(
+        spec: ParamSpec,
+        value: Any?,
+    ): RefusalReason? =
+        when (spec) {
+            is ParamSpec.Text -> {
+                when {
+                    value !is String -> RefusalReason.WRONG_TYPE
+                    value.length > MAX_STRING_VALUE_LENGTH || value !in spec.allowed -> RefusalReason.VALUE_NOT_ALLOWED
+                    else -> null
+                }
+            }
+
+            is ParamSpec.IntValue -> {
+                when (value) {
+                    is Int -> if (value.toLong() in spec.allowed) null else RefusalReason.VALUE_NOT_ALLOWED
+                    is Long -> if (value in spec.allowed) null else RefusalReason.VALUE_NOT_ALLOWED
+                    else -> RefusalReason.WRONG_TYPE
+                }
+            }
+
+            ParamSpec.Flag -> {
+                if (value is Boolean) null else RefusalReason.WRONG_TYPE
+            }
+        }
 }

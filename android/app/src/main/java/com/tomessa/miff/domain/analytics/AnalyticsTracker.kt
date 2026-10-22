@@ -28,6 +28,10 @@ class AnalyticsTracker(
     private val sink: AnalyticsSink,
     private val isEnabled: () -> Boolean,
 ) {
+    /** Typed entry point for application code. */
+    fun track(event: AnalyticsEvent): TrackResult = track(event.name, event.params)
+
+    /** Untyped entry point, validated the same way. Used by tests and the QA "send a position" button. */
     fun track(
         eventName: String,
         params: Map<String, Any> = emptyMap(),
