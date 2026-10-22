@@ -8,10 +8,14 @@
 # --- Configuration Firebase (régénérée avec `firebase apps:sdkconfig`) -------
 google-services.json
 GoogleService-Info.plist
+# Variantes de téléchargement en double : « google-services (1).json », « GoogleService-Info (1).plist »...
+google-services*.json
+GoogleService-Info*.plist
 
 # --- Clés, certificats, profils de signature ---------------------------------
 *.p8
 *.p12
+*.pfx
 *.pem
 *.key
 *.mobileprovision

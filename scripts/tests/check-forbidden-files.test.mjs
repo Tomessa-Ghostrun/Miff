@@ -29,6 +29,19 @@ test('forbiddenReason : les fichiers listés au critère T1 sont interdits', () 
     'build/app-debug.apk',
     'app.ipa',
     'GOOGLE-SERVICES.JSON',
+    // Variantes de téléchargement en double
+    'GoogleService-Info (1).plist',
+    'ios/Miff/GoogleService-Info (2).plist',
+    'google-services (1).json',
+    'android/app/google-services (3).json',
+    'google-services-2.json',
+    'google-services.prod.json',
+    'GoogleService-Info copy.plist',
+    // Autres formats de clés
+    'certificat.pfx',
+    'CERT.PFX',
+    'server.key',
+    'AuthKey_ABC (1).p8',
   ];
   for (const path of forbidden) assert.ok(forbiddenReason(path), `${path} devrait être interdit`);
 });
@@ -43,6 +56,7 @@ test('forbiddenReason : fichiers ordinaires et modèles sans valeur acceptés', 
     'android/app/src/main/res/values/strings.xml',
     'ios/Miff/Localizable.xcstrings',
     'docs/dev/secrets.md',
+    'docs/google-services-notes.md',
     '.github/workflows/hygiene.yml',
     'design/figma-design-system-state.json',
   ];
@@ -115,4 +129,35 @@ test('fichier ajouté puis supprimé : toujours signalé via l\'historique', () 
 
 test('argument inconnu : code 2', () => {
   assert.equal(spawnSync(process.execPath, [script, '--nope']).status, 2);
+});
+
+test('variante de téléchargement en double commitée : code 1', () => {
+  const repo = makeRepo();
+  try {
+    repo.write('README.md');
+    repo.write('ios/Miff/GoogleService-Info (1).plist', '<plist/>');
+    repo.git('add', '-f', '.');
+    repo.git('commit', '-q', '-m', 'ajoute une copie');
+    const result = spawnSync(process.execPath, [script, '--root', repo.root], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /GoogleService-Info \(1\)\.plist/);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test('.gitignore du dépôt : variantes en double, .pfx et .key ignorés', () => {
+  const root = fileURLToPath(new URL('../../', import.meta.url));
+  const ignored = [
+    'GoogleService-Info (1).plist',
+    'ios/Miff/GoogleService-Info (2).plist',
+    'google-services (1).json',
+    'android/app/google-services (2).json',
+    'certificat.pfx',
+    'server.key',
+  ];
+  for (const path of ignored) {
+    const result = spawnSync('git', ['-C', root, 'check-ignore', '-q', '--', path]);
+    assert.equal(result.status, 0, `${path} devrait être ignoré par .gitignore`);
+  }
 });

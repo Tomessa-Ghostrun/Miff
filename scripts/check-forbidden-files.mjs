@@ -16,11 +16,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // Motifs sur le NOM du fichier (dernier segment du chemin), sans tenir compte de la casse.
 // Liste à garder alignée avec .gitignore et docs/dev/secrets.md.
 export const FORBIDDEN_NAME_PATTERNS = [
-  { regex: /^google-services\.json$/i, why: 'configuration Firebase Android' },
-  { regex: /^googleservice-info\.plist$/i, why: 'configuration Firebase iOS' },
+  // Variantes de téléchargement en double incluses : « google-services (1).json », « google-services-2.json »...
+  { regex: /^google-services\b.*\.json$/i, why: 'configuration Firebase Android (ou copie de téléchargement)' },
+  { regex: /^googleservice-info\b.*\.plist$/i, why: 'configuration Firebase iOS (ou copie de téléchargement)' },
   { regex: /\.p8$/i, why: 'clé privée Apple (App Store Connect / APNs)' },
   { regex: /\.p12$/i, why: 'certificat avec clé privée' },
   { regex: /\.pem$/i, why: 'clé ou certificat PEM' },
+  { regex: /\.pfx$/i, why: 'certificat avec clé privée (PKCS#12, format Windows)' },
+  { regex: /\.key$/i, why: 'clé privée' },
   { regex: /\.mobileprovision$/i, why: 'profil de provisionnement Apple' },
   { regex: /\.provisionprofile$/i, why: 'profil de provisionnement Apple' },
   { regex: /\.certsigningrequest$/i, why: 'demande de certificat Apple' },
