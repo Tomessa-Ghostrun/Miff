@@ -119,3 +119,28 @@ test('CLI : code de sortie 1 sur écart, 0 sur succès, 2 sur argument inconnu',
   const bad = spawnSync(process.execPath, [script, '--nope'], { encoding: 'utf8' });
   assert.equal(bad.status, 2);
 });
+
+test('run : le français est lu dans values-fr, l\'anglais de repli (values/) est ignoré', () => {
+  const { code, lines } = run({ root: fixture('ok') });
+  assert.equal(code, 0, lines.join('\n'));
+  assert.ok(!lines.join('\n').includes('diag_english_only'));
+});
+
+test('run : un values/strings.xml seul (anglais de repli) ne compte pas comme français', () => {
+  const root = mkdtempSync(join(tmpdir(), 'miff-i18n-'));
+  try {
+    const dir = join(root, 'android', 'app', 'src', 'main', 'res', 'values');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'strings.xml'), '<resources><string name="MauvaisNom">A</string></resources>');
+    const { code, lines } = run({ root });
+    assert.equal(code, 0);
+    assert.match(lines[0], /ignorée : aucun fichier de traduction/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('checkKeyNames : les préfixes home_ et diag_ sont connus', () => {
+  const { errors, warnings } = checkKeyNames(['home_title', 'diag_build_version'], 'Android');
+  assert.deepEqual([errors, warnings], [[], []]);
+});

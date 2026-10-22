@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Anglais de repli : volontairement différent du français ; le script de parité ne doit PAS le lire. -->
 <resources>
-    <!-- commentaire <string name="fantome_cle">ignoré</string> -->
-    <string name="auth_title">Texte</string>
-    <string name="miff_create">Texte</string>
-    <string name="common_ok">Texte</string>
-    <string name="android_location_rationale">Texte</string>
-    <string name="Brand" translatable="false">Miff</string>
-    <plurals name="miff_members_count">
-        <item quantity="one">%d membre</item>
-        <item quantity="other">%d membres</item>
-    </plurals>
+    <string name="auth_title">Text</string>
+    <string name="diag_english_only">Only in the fallback file</string>
 </resources>

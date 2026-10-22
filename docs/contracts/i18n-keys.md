@@ -5,11 +5,11 @@
 
 ## Principe
 
-Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. Le français est la langue source ; l'anglais est la langue de repli (décision PM du 2026-10-16). Aucune chaîne visible en dur dans le code.
+Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. Côté Android, le français vit dans `values-fr/` et l'anglais de repli dans `values/` : le contrôle de parité lit le **français** (`values-fr`). Le français est la langue source ; l'anglais est la langue de repli (décision PM du 2026-10-16). Aucune chaîne visible en dur dans le code.
 
 | Plateforme | Fichier source (français) | Autres langues |
 |---|---|---|
-| Android | `android/app/src/main/res/values/strings.xml` | `values-en/strings.xml`, etc. |
+| Android | `android/app/src/main/res/values-fr/strings.xml` | `values/strings.xml` = **anglais de repli** (ressources par défaut d'Android), `values-<langue>/` pour les autres |
 | iOS | `ios/**/Localizable.xcstrings` (String Catalog, langue source `fr`) | dans le même catalogue |
 
 ## Format d'une clé
@@ -28,6 +28,8 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | `miff_` | Créer, rejoindre, gérer une Miff, membres, code secret | Android et iOS |
 | `place_` | Lieux de confiance | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |
+| `home_` | Écran d'accueil | Android et iOS |
+| `diag_` | Écran de diagnostic interne (builds debug / TestFlight, jamais en release) | Android et iOS |
 | `ios_` | Texte propre à iOS (ex. textes de permission système) | **iOS seulement** |
 | `android_` | Texte propre à Android | **Android seulement** |
 

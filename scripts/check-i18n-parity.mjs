@@ -2,7 +2,7 @@
 // Parité des clés de traduction entre Android et iOS (critère T8, ticket « Initialisation technique »).
 //
 // Compare les clés françaises (langue source) de :
-//   - android/app/src/main/res/values/strings.xml
+//   - android/app/src/main/res/values-fr/strings.xml (le français ; values/ = anglais de repli, non lu ici)
 //   - tout fichier ios/**/Localizable.xcstrings (String Catalog)
 // en ignorant les clés propres à une plateforme : préfixe `ios_` (côté iOS) et `android_` (côté Android).
 // Convention de clés : docs/contracts/i18n-keys.md.
@@ -16,13 +16,14 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const ANDROID_STRINGS = 'android/app/src/main/res/values/strings.xml';
+// Le français (langue source) est dans values-fr ; values/ contient l'anglais de repli (décision du 2026-10-21).
+export const ANDROID_STRINGS = 'android/app/src/main/res/values-fr/strings.xml';
 export const IOS_CATALOG_NAME = 'Localizable.xcstrings';
 export const IOS_ONLY_PREFIX = 'ios_';
 export const ANDROID_ONLY_PREFIX = 'android_';
 // Préfixes de fonctionnalité connus (voir docs/contracts/i18n-keys.md) : un préfixe inconnu est signalé
 // en avertissement, sans faire échouer le contrôle (la liste s'étend par une PR sur le contrat).
-export const KNOWN_PREFIXES = ['auth', 'miff', 'place', 'common', 'ios', 'android'];
+export const KNOWN_PREFIXES = ['auth', 'miff', 'place', 'common', 'home', 'diag', 'ios', 'android'];
 export const KEY_FORMAT = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/;
 
 const SKIPPED_DIRS = new Set(['node_modules', 'Pods', 'build', 'DerivedData', '.build', '.git', '.gradle']);
