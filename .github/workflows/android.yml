@@ -52,6 +52,33 @@ jobs:
           GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
         run: |
           set +x
+          if [ -z "$GOOGLE_SERVICES_JSON_B64" ] && [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+            # Dependabot PRs cannot read repository secrets. Generate an OBVIOUSLY FAKE configuration, only so that the
+            # project compiles. It points to no real project, can never be used, and the APK built from it is NOT uploaded.
+            umask 077
+            cat > app/google-services.json <<'FAKE'
+          {
+            "project_info": {
+              "project_number": "000000000000",
+              "project_id": "fake-ci-config-do-not-use",
+              "storage_bucket": "fake-ci-config-do-not-use.invalid"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+                  "android_client_info": { "package_name": "com.tomessa.miff" }
+                },
+                "api_key": [ { "current_key": "FAKE-CI-KEY-NOT-A-REAL-KEY-DO-NOT-USE" } ]
+              }
+            ],
+            "configuration_version": "1"
+          }
+          FAKE
+            echo "FAKE_FIREBASE_CONFIG=true" >> "$GITHUB_ENV"
+            echo "Dependabot : configuration Firebase factice generee (secret indisponible pour Dependabot). Aucun APK ne sera publie."
+            exit 0
+          fi
           if [ -z "$GOOGLE_SERVICES_JSON_B64" ]; then
             echo "::error title=Secret manquant::Le secret GitHub GOOGLE_SERVICES_JSON_B64 est absent. Le PM doit le creer (PowerShell) : [Convert]::ToBase64String([IO.File]::ReadAllBytes(\"chemin\\google-services.json\")) | gh secret set GOOGLE_SERVICES_JSON_B64 --repo Tomessa-Ghostrun/Miff"
             echo "Secret GOOGLE_SERVICES_JSON_B64 absent : le PM doit le creer avec la commande indiquee dans l'annotation d'erreur ci-dessus." >&2
@@ -99,8 +126,24 @@ jobs:
           ./gradlew bundleRelease --console=plain -Pmiff.uploadCrashlyticsMapping=false
           printf '| bundleRelease (unsigned) | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
 
+      - name: Check that the release bundle contains no debug-only code
+        run: |
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          test -f "$bundle" || { echo "::error::Bundle release introuvable : $bundle"; exit 1; }
+          dex_count=$(unzip -Z1 "$bundle" | grep -c '^base/dex/.*\.dex$' || true)
+          if [ "$dex_count" -lt 1 ]; then
+            echo "::error::Aucun fichier dex dans le bundle release : verification impossible."
+            exit 1
+          fi
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck'; then
+            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE ou DebugAppCheck : l'ecran de diagnostic ou le fournisseur App Check de debug a fuite dans le build release."
+            exit 1
+          fi
+          echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
+
       # actions/upload-artifact v7.0.2
       - name: Upload debug APK (short retention)
+        if: env.FAKE_FIREBASE_CONFIG != 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: miff-debug-apk
@@ -118,6 +161,9 @@ jobs:
             echo
             echo "> The debug APK artifact (kept 3 days) contains the public Firebase configuration of project miff-3d283 (google-services.json values: project and app identifiers, public API key). It is not a secret credential, but share the file only with testers."
             echo "> Release bundle is unsigned: no signing key exists yet."
+            if [ "$FAKE_FIREBASE_CONFIG" = "true" ]; then
+              echo "> Dependabot run: built with an obviously fake Firebase configuration (the secret is not available to Dependabot). The APK was not published."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove Firebase configuration from the runner
