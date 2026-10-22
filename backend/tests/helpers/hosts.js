@@ -5,6 +5,7 @@ export const H = {
   joinCodesDelete: { match: 'match /joinCodes/{code} {', method: 'delete' },
   membershipsCreate: { match: 'match /memberships/{key} {', method: 'create' },
   membershipsDelete: { match: 'match /memberships/{key} {', method: 'delete' },
+  membersDelete: { match: 'match /members/{uid} {', method: 'delete' },
   membersCreate: { match: 'match /members/{uid} {', method: 'create' },
   statusCreate: { match: 'match /status/{uid} {', method: 'create' },
   statusUpdate: { match: 'match /status/{uid} {', method: 'update' },

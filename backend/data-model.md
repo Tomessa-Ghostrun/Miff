@@ -3,9 +3,20 @@
 Projet Firebase : `miff-3d283` — Firestore `europe-west9` (Paris), édition Standard, plan Spark aujourd'hui.
 Ce document est la référence unique pour `ios-dev` et `android-dev` : même structure, mêmes noms de champs, mêmes batches. Toute évolution passe par `backend-data`.
 
-**Statut de validation** : modèle et règles (`firestore.rules`) écrits sans avoir été exécutés (aucun émulateur lancé, rien déployé). Ils doivent passer le plan de test `rules-test-plan.md` avant tout déploiement. Ce document ne prétend à aucune conformité juridique : il décrit ce que le modèle implique (§11).
+**Statut de validation** : les règles (`firestore.rules`) sont testées dans l'émulateur Firestore (`rules-test-plan.md`, résultats dans `rules-test-report.md`) mais **rien n'est déployé** : le déploiement reste soumis à la procédure du ticket `docs/tickets/durcissement-regles-firestore.md` (§8.2 : revue de sécurité en contexte neuf, OK explicite du PM). Ce document ne prétend à aucune conformité juridique : il décrit ce que le modèle implique (§11).
 
 Spécifications sources : `docs/specs/*.md` (statut "Backlog discovery", donc non validées). Les hypothèses prises là où une spec est muette sont marquées **[Hypothèse]** et listées en §15.
+
+## Ce qui change : durcissement des règles (ticket `docs/tickets/durcissement-regles-firestore.md`)
+
+**DUR-1 (appliqué dans cette version)** : une Miff supprimée ne peut plus renaître, et son code secret disparaît avec elle.
+- Nouvelle collection **`miffsDeleted/{miffId}`** (« pierre tombale », §2.11) : créée par le créateur dans le lot qui supprime la Miff ; la création d'une Miff est refusée si la pierre tombale de son identifiant existe.
+- La suppression d'une Miff (§2.5, §8) exige, dans le **même lot**, la pierre tombale **et** la suppression de `joinCodes/{joinCode}`.
+- Constat de la mise en œuvre : le contrôle de la pierre tombale est placé sur le document `miffs/{id}` lui-même, pas seulement sur la fiche membre du créateur (le ticket l'esquissait dans `ownerCreateOk`). Un créateur qui a gardé sa fiche membre après la suppression pouvait sinon recréer la Miff sans écrire de fiche (test H1f).
+
+*Impact PM* : un lot et une écriture de plus à la suppression d'une Miff (négligeable devant les quotas gratuits) ; aucun effet visible pour l'utilisateur.
+
+**À venir (DUR-2, DUR-3), non appliqué ici** : réciprocité par statut publié, renouvellement du code à chaque retrait, durée de vie des photos, lecture refusée après suppression de la Miff, puis App Check strict et garde-fous.
 
 ---
 
@@ -33,6 +44,7 @@ users/{uid}                              profil privé (soi uniquement)
   devices/{deviceId}                     jetons FCM (uniquement avec le push -> Blaze)
 entitlements/{uid}                       statut premium (lecture seule côté client)
 joinCodes/{code}                         résolution du code secret -> miffId
+miffsDeleted/{miffId}                    pierre tombale d'une Miff supprimée (jamais lisible par un client)
 miffs/{miffId}                           le cercle
   members/{uid}                          profil (copie), rôle, CONSENTEMENT
   status/{uid}                           ÉTAT COURANT (sensible), existe seulement si partage activé
@@ -92,6 +104,8 @@ Pas de `list`. `get` exige de connaître le code entier. Ne contient ni le créa
 | `createdAt` | timestamp | |
 
 Lisible par les membres uniquement (`get` ; pas de `list`). Modifiable par le créateur : `name`, `joinCode` (régénération).
+
+**Création** : refusée si `miffsDeleted/{miffId}` existe (un identifiant supprimé ne sert plus jamais). **Suppression** (créateur) : refusée si, dans le même lot, la pierre tombale `miffsDeleted/{miffId}` n'est pas créée **ou** si `joinCodes/{joinCode}` existe encore après le lot.
 
 ### 2.6 `miffs/{miffId}/members/{uid}` — profil (copie), rôle, consentement
 | Champ | Type | Note |
@@ -161,6 +175,13 @@ Lisible par tous les membres (ils en « héritent »). Écrit uniquement par le 
 
 ### 2.10 `users/{uid}/devices/{deviceId}` — jetons de push (Blaze)
 `token` (string ≤ 512), `platform` (`ios`/`android`), `updatedAt` (heure serveur). À n'implémenter que le jour où l'envoi de push existe (§13). Supprimé à la déconnexion.
+
+### 2.11 `miffsDeleted/{miffId}` — pierre tombale d'une Miff supprimée
+| Champ | Type | Note |
+|---|---|---|
+| `deletedAt` | timestamp | **Heure serveur** (`serverTimestamp()`), jamais une date du client. |
+
+C'est le **seul** champ. Aucune donnée personnelle (ni créateur, ni nom, ni membres) : uniquement l'identifiant de la Miff supprimée (dans le chemin) et la date. Créée **uniquement** par le créateur, dans le lot qui supprime la Miff (la Miff doit avoir disparu après le lot). **Jamais lisible** (`get` et `list` refusés), **jamais modifiable ni supprimable** par un client : seules les règles la lisent (`exists`) pour refuser la recréation de l'identifiant. Conservation : indéfinie (quelques dizaines d'octets par Miff supprimée). Sert à empêcher qu'un ancien membre recrée la Miff sous le même identifiant et relise les lieux et statuts restés en base (ATK1).
 
 ---
 
@@ -278,7 +299,7 @@ Toutes les écritures multi-documents sont des **batches** (`WriteBatch` côté 
 | **Nettoyage au lancement** | `get miffs/{id}/members/{moi}` pour chaque index | Si refus/absent : j'ai été retiré ou la Miff n'existe plus → delete l'index correspondant (autorisé car je ne suis plus membre) et prévenir l'utilisateur avec bienveillance. |
 | **Régénérer le code** (créateur) | — | Batch : `miffs/{id}` update {joinCode} + create `joinCodes/{nouveau}` + delete `joinCodes/{ancien}`. |
 | **Renommer la Miff** (créateur) | — | Batch : `miffs/{id}` update {name} + `joinCodes/{code}` update {miffName}. |
-| **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre (voir ci-dessus), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `joinCodes/{code}` + delete mon `status`/`photos` + delete mon `members/{uid}` + delete `miffs/{id}` + delete mon `memberships/{key}`. Si interrompu : relancer (idempotent). Les sous-collections ne sont pas supprimées automatiquement par Firestore. |
+| **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre (voir ci-dessus), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `miffs/{id}` + **create `miffsDeleted/{id}` `{deletedAt: serverTimestamp()}`** (pierre tombale, §2.11) + delete `joinCodes/{code}` (le code actuel de la Miff, lu dans `miffs/{id}.joinCode`) + delete mon `status`/`photos` (si existent) + delete mon `members/{uid}` + delete mon `memberships/{key}`. **Le batch est refusé sans la pierre tombale ou sans la suppression du code.** Si interrompu : relancer (idempotent : si le code a déjà été supprimé dans un batch précédent, le batch final reste accepté sans lui). Les sous-collections ne sont pas supprimées automatiquement par Firestore. |
 | **Premium (lecture)** | `get entitlements/{uid}` (peut ne pas exister = gratuit) | Aucune. L'achat store ne suffit pas : c'est le serveur (ou le PM en manuel) qui écrit `entitlements`. |
 | **Suppression de compte** | — | §10. |
 | **Push (Blaze)** | — | À chaque lancement et rafraîchissement de jeton : `users/{uid}/devices/{deviceId}` set {token, platform, updatedAt}. À la déconnexion : delete. |
@@ -298,7 +319,8 @@ Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lu
 | `users/{uid}/devices/{id}` | S | S | S | S | S |
 | `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
 | `joinCodes/{code}` | tout compte connecté qui connaît le code | **—** | O (avec sa Miff) | O (nom) | O |
-| `miffs/{id}` | M | **—** | S (devient O) | O (nom, code) | O |
+| `miffsDeleted/{id}` | **—** | **—** | O (dans le lot qui supprime la Miff, champ `deletedAt` seul) | **—** | **—** |
+| `miffs/{id}` | M | **—** | S (devient O) ; refusé si `miffsDeleted/{id}` existe | O (nom, code) | O (avec pierre tombale et suppression du code dans le lot) |
 | `miffs/{id}/members/{uid}` | M | M | S (via code ou création) | S (profil, consentement) | S (quitter) / O (retirer) |
 | `miffs/{id}/status/{uid}` | P | P | S (si partage actif) | S (si partage actif) | S / O |
 | `miffs/{id}/photos/{uid}` | P | **—** | S (si partage actif) | S | S / O |
@@ -325,7 +347,8 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 | `status` (état courant) | Pas d'historique : écrasé à chaque événement ; supprimé à la révocation du partage, au départ, au retrait. |
 | `photos` | 24 h maximum (TTL `expiresAt`) ; supprimée avec le statut. |
 | `places` (coordonnées, adresses) | Jusqu'à suppression du lieu ou de la Miff. |
-| `joinCodes` | Jusqu'à régénération ou suppression de la Miff. |
+| `joinCodes` | Jusqu'à régénération ou suppression de la Miff (la suppression de la Miff exige celle du code, dans le même lot). |
+| `miffsDeleted` (pierre tombale) | Indéfinie : identifiant de Miff + date de suppression, sans donnée personnelle. À faire examiner par le juriste (§11). |
 | Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si le juriste exige une conservation de la preuve après départ, il faudra un journal séparé (Q13). |
 | `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
 | `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
@@ -358,6 +381,8 @@ Points à faire examiner par un juriste :
 5. **Droit d'accès / portabilité / effacement** : l'effacement est réalisable (§10) ; une procédure d'export (accès/portabilité) n'est pas spécifiée (le client peut lire les documents propres à l'utilisateur ; un export formaté n'existe pas).
 6. **Consentement réciproque anti-stalkerware** : le modèle impose la réciprocité, la révocation immédiate avec suppression, et un historique nul. Les stores appliquent des règles propres : à confronter par `release-manager`.
 7. **Ex-membre qui connaît le code** : voir §5.
+8. **Pierre tombale `miffsDeleted`** (DUR-1) : conservée indéfiniment, ne contient que l'identifiant d'une Miff supprimée et une date (aucune donnée personnelle à ma connaissance : un identifiant aléatoire de groupe). À faire confirmer par le juriste, avec la durée de conservation.
+9. **Données des survivants d'une Miff supprimée** : à ce stade (DUR-1), la fiche, le statut et la photo d'un membre resté après la suppression d'une Miff restent stockés tant que l'app de ce membre ne les a pas nettoyés (et restent lisibles par les anciens membres tant que le contrôle d'existence de la Miff n'est pas ajouté, prévu en DUR-2). La procédure client « retirer chaque membre avant de supprimer la Miff » (§8) limite ce cas ; la suppression de la Miff n'est pas bloquée s'il reste des membres (les règles ne peuvent pas vérifier qu'une sous-collection est vide).
 
 ---
 
@@ -428,6 +453,7 @@ Cloud Functions n'existent pas sur Spark. Aucune fonction n'est écrite à ce st
 3. **Prise de contrôle d'une Miff (rôle, créateur)** → `ownerUid`, `role`, `type` immuables ; création du créateur seulement si la Miff est créée dans le même batch ; seul le créateur retire un membre.
 4. **Deviner/énumérer les codes** → §5 (App Check à activer en mode strict, sinon ce risque reste ouvert).
 5. **Trace de position après retrait de consentement / départ** → suppression obligatoire dans le même batch (règles) ; mais **la suppression reste côté client** : un bug client pourrait laisser un état tant que le membre est dans la Miff (il reste lisible aux seuls membres partageants).
+5 bis. **Réutilisation de l'identifiant d'une Miff supprimée (ATK1) et code orphelin (ATK2)** → corrigés par DUR-1 : pierre tombale `miffsDeleted/{id}` (création de Miff refusée, §2.11) et suppression obligatoire du code dans le lot de suppression de la Miff (§2.5). Tests H1 et H2 (`rules-test-plan.md` §11), chacun prouvé par mutation.
 6. Résiduel : abus de volume par un compte légitime (écritures en boucle, avatars) → tailles bornées, mais pas de limitation de débit en règles ; App Check + surveillance des quotas.
 
 ---

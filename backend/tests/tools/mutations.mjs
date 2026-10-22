@@ -150,6 +150,79 @@ export const MUTATIONS = [
     edits: [edit(`&& !existsAfter(${DB}/miffs/$(miffId)/photos/$(uid))`, '&& true', 1, 2)],
     tests: ['X6'],
   },
+  // --- DUR-1 : pierre tombale (ATK1) et code orphelin (ATK2) ----------------------------------------
+  {
+    id: 'H1b-suppression-sans-pierre-tombale',
+    why: "la suppression de la Miff n'exige plus la création de la pierre tombale dans le lot",
+    edits: [edit(`&& existsAfter(${DB}/miffsDeleted/$(miffId))`, '&& true')],
+    tests: ['H1b'],
+  },
+  {
+    id: 'H1c-creation-ignore-pierre-tombale',
+    why: "la création d'une Miff ignore la pierre tombale (survivant qui libère sa fiche puis recrée l'identifiant)",
+    edits: [edit(`&& !exists(${DB}/miffsDeleted/$(miffId))`, '&& true')],
+    tests: ['H1c'],
+  },
+  {
+    id: 'H1f-creation-ignore-pierre-tombale',
+    why: 'même affaiblissement, vu par la créatrice qui a gardé sa fiche membre (aucune fiche membre écrite dans le lot)',
+    edits: [edit(`&& !exists(${DB}/miffsDeleted/$(miffId))`, '&& true')],
+    tests: ['H1f'],
+  },
+  {
+    id: 'H1d-tombstone-proprietaire',
+    why: "n'importe quel utilisateur connecté peut créer une pierre tombale (plus de contrôle du propriétaire)",
+    edits: [edit('allow create: if isOwner(miffId)\n        && !existsAfter(', 'allow create: if isSignedIn()\n        && !existsAfter(')],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1d-tombstone-miff-disparait',
+    why: 'la pierre tombale peut être créée alors que la Miff existe encore après le lot',
+    edits: [edit(`&& !existsAfter(${DB}/miffs/$(miffId))\n        && request.resource.data.keys().hasOnly(['deletedAt'])`, "&& request.resource.data.keys().hasOnly(['deletedAt'])")],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1d-tombstone-cles',
+    why: 'la pierre tombale accepte des champs en plus de deletedAt',
+    edits: [edit("&& request.resource.data.keys().hasOnly(['deletedAt'])", '&& true')],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1d-tombstone-date-serveur',
+    why: "deletedAt n'est plus comparé à l'heure serveur",
+    edits: [edit('&& request.resource.data.deletedAt == request.time;', '&& true;')],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1g-tombstone-lecture',
+    why: 'la pierre tombale devient lisible par un utilisateur connecté',
+    edits: [edit('allow read: if false;', 'allow read: if isSignedIn();')],
+    tests: ['H1g'],
+  },
+  {
+    id: 'H1g-tombstone-modification',
+    why: 'la pierre tombale devient modifiable par un utilisateur connecté',
+    edits: [edit('allow update, delete: if false;', 'allow update: if isSignedIn();\n      allow delete: if false;')],
+    tests: ['H1g'],
+  },
+  {
+    id: 'H1g-tombstone-suppression',
+    why: "la pierre tombale devient supprimable par un utilisateur connecté (l'identifiant redeviendrait réutilisable)",
+    edits: [edit('allow update, delete: if false;', 'allow update: if false;\n      allow delete: if isSignedIn();')],
+    tests: ['H1g'],
+  },
+  {
+    id: 'H2a-suppression-sans-suppression-du-code',
+    why: "la suppression de la Miff n'exige plus la suppression de son code secret dans le lot",
+    edits: [edit(`&& !existsAfter(${DB}/joinCodes/$(resource.data.joinCode));`, '&& true;')],
+    tests: ['H2a'],
+  },
+  {
+    id: 'H2b-rejoindre-miff-inexistante',
+    why: "memberJoinOk n'exige plus que la Miff visée existe (un code orphelin permettrait de rejoindre)",
+    edits: [edit(`&& exists(${DB}/miffs/$(miffId))\n        && indexAfterOk(uid, miffId);`, '&& indexAfterOk(uid, miffId);')],
+    tests: ['H2b'],
+  },
   // --- Lieux --------------------------------------------------------------------------------------
   {
     id: 'P7-membre-cree-lieu',
@@ -166,7 +239,7 @@ export const MUTATIONS = [
   {
     id: 'P7-membre-supprime-lieu',
     why: 'un simple membre peut supprimer un lieu',
-    edits: [edit('allow delete: if isOwner(miffId);', 'allow delete: if isMember(miffId);', 2, 2)],
+    edits: [edit('allow delete: if isOwner(miffId);', 'allow delete: if isMember(miffId);')],
     tests: ['P7'],
   },
   // --- Statut -------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 // Plan de test, section 8 : profil, appareils, suppression de compte (U1 à U8)
 import {
-  ID, CODE, T0, suite, assertFails, assertSucceeds, commit, leaveOps, del, serverTs, bytes, userDoc,
+  ID, CODE, T0, suite, assertFails, assertSucceeds, commit, leaveOps, set, del, serverTs, bytes, userDoc,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -42,11 +42,13 @@ s.tc('U7', 'suppression de compte d\'une membre simple : un batch par Miff, puis
   await assertSucceeds(commit(db('bob'), [...Object.values(leaveOps('bob')), del('users/bob')]));
 });
 
-s.tc('U8', 'créatrice avec membres restants : suppression de la Miff acceptée par les règles (Miff orpheline)', async ({ db }) => {
-  // Les règles acceptent ; c'est au client de retirer les membres d'abord (risque documenté dans data-model.md).
+s.tc('U8', 'créatrice avec membres restants : suppression de la Miff acceptée avec pierre tombale et suppression du code', async ({ db }) => {
+  // Les règles acceptent (la Miff devient orpheline mais son identifiant et son code sont morts : ATK1 et ATK2) ;
+  // c'est au client de retirer les membres d'abord (risque documenté dans data-model.md).
   await assertSucceeds(
     commit(db('alice'), [
       del(M1),
+      set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() }),
       del(`joinCodes/${CODE.M1}`),
       del(`${M1}/members/alice`),
       del(`${M1}/status/alice`),

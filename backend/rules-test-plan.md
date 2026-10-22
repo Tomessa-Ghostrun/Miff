@@ -98,7 +98,7 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | M15 | `alice` retire `bob` : `[members/bob delete + status/bob delete + photos/bob delete]` | OK |
 | M16 | `alice` retire `bob` sans supprimer son statut | KO |
 | M17 | `bob` retire `carol` | KO |
-| M18 | `alice` (créatrice) quitte sans supprimer la Miff | KO ; avec `[miffs delete + joinCodes delete + members/alice delete + status/alice delete + memberships/free delete]` : OK (les autres membres doivent déjà avoir été retirés) |
+| M18 | `alice` (créatrice) quitte sans supprimer la Miff | KO ; avec `[miffs delete + miffsDeleted create + joinCodes delete + members/alice delete + status/alice delete + memberships/free delete]` : OK (les autres membres doivent déjà avoir été retirés) ; le même lot **sans** `miffsDeleted` : KO (DUR-1, voir H1b) |
 | M19 | `bob` (retiré) supprime son index orphelin `memberships/free` | OK ; avant d'être retiré : KO |
 | M20 | `bob` (retiré) relit `miffs/M1`, `members`, `status`, `places` | KO partout |
 
@@ -170,7 +170,7 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | U5 | `eve` crée `users/eve/devices/d1 {token, platform:"ios", updatedAt=serverTime}` | OK ; `platform:"web"` : KO |
 | U6 | `bob` lit `users/eve/devices/d1` | KO |
 | U7 | Suppression de compte d'une membre simple (batch par Miff) | OK |
-| U8 | Suppression de compte d'une créatrice avec membres restants : suppression de la Miff sans retirer les autres membres | OK pour les règles (la Miff devient orpheline, risque documenté) ; le client doit retirer les membres d'abord |
+| U8 | Suppression de compte d'une créatrice avec membres restants : suppression de la Miff sans retirer les autres membres | OK pour les règles **si** le lot contient la pierre tombale `miffsDeleted/{id}` et la suppression du code (DUR-1) ; la Miff devient orpheline (risque documenté) ; le client doit retirer les membres d'abord |
 
 ## 9. Hors règles (vérifier à part, pas avec l'émulateur de règles)
 
@@ -193,3 +193,20 @@ Cas ajoutés pour que chaque protection des règles soit couverte par un test qu
 | X6 | `photos/bob` existe : départ, retrait par la créatrice et désactivation du partage sans supprimer la photo | KO ; avec la photo supprimée : OK |
 | X7 | `entitlements` avec `active:false` et `expiresAt` futur : création d'une Miff avec la clé premium | KO ; avec `active:true` : OK |
 | X8 | `bob` (simple membre) crée `places/p1` libre (type `trusted`) ; `alice` | KO ; OK |
+
+## 11. Durcissement des règles (ticket `docs/tickets/durcissement-regles-firestore.md`)
+
+Même jeu de données qu'en section 0. Chaque cas a un test dans `tests/rules/11-durcissement.test.js` **et** au moins une mutation dans `tests/tools/mutations.mjs` (le test doit passer au rouge quand la protection est retirée). Les identifiants de cette section portent une lettre minuscule (H1a, H1b...) : un cas = une ligne. « Lot final » = `[delete miffs/M1 + create miffsDeleted/M1 {deletedAt: heure serveur} + delete joinCodes/CODE_M1 + delete members/alice + delete status/alice + delete memberships/free]`.
+
+### 11.1 DUR-1 : pierre tombale (ATK1) et code orphelin (ATK2)
+
+| # | Cas | Attendu |
+|---|---|---|
+| H1a | `alice` envoie le lot final alors que `bob` et `carol` restent | OK ; ensuite la Miff n'existe plus, `miffsDeleted/M1` existe (seul champ `deletedAt`), le code est supprimé, la fiche de `bob` existe toujours |
+| H1b | Même lot final **sans** la pierre tombale | KO ; avec la pierre tombale : OK |
+| H1c | Après H1a : `bob` (survivant) libère sa fiche, son statut et son index (OK), puis tente `[miffs/M1 create + joinCodes + members/bob (owner) + memberships/free]` | **KO** (c'est ATK1) ; le même lot sous un identifiant neuf : OK |
+| H1d | Pierre tombale : créée alors que la Miff existe encore ; avec un champ en trop ; avec `deletedAt` client ; sans champ ; créée par `alice`, `eve` ou `zoe` quand la Miff n'existe plus (état injecté) | KO partout ; le lot final valide : OK |
+| H1f | `alice` supprime la Miff + pierre tombale + code **en gardant sa fiche membre**, puis recrée `[miffs/M1 create + joinCodes]` (aucune fiche membre écrite dans le lot) | **KO** (variante d'ATK1 non prévue au ticket : le contrôle de la pierre tombale est sur le document Miff lui-même) ; sous un identifiant sans pierre tombale, avec une fiche membre déjà présente : OK |
+| H1g | Pierre tombale existante : lecture (get, list) par `alice`, `bob`, `eve`, non connecté ; mise à jour et suppression par `alice`, `bob`, `eve` | KO partout |
+| H2a | Lot final **sans** suppression de `joinCodes/CODE_M1` | KO (c'est ATK2) ; code supprimé avant dans un lot séparé, puis lot final sans lui : OK |
+| H2b | État injecté : `joinCodes/CODE_M2` existe, `miffs/M2` n'existe plus ; `eve` tente de rejoindre M2 avec ce code | KO ; rejoindre M1 avec son code valide : OK |
