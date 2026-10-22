@@ -4,8 +4,16 @@
 // (jamais sur disque : backend/firestore.rules n'est pas touché) une copie des règles
 // en ajoutant, devant la condition de l'opération mesurée, k appels `exists()` sur k
 // documents distincts qui n'existent pas (collection zz_pad) ; chaque appel compte pour
-// une lecture et ne change pas le résultat (`|| true`). On cherche le plus grand k pour
-// lequel l'opération réussit encore : lectures utilisées <= limite - k.
+// une lecture et ne change pas le résultat (`!exists(...)` vaut vrai sur un document
+// absent). On cherche le plus grand k pour lequel l'opération réussit encore : lectures
+// utilisées <= limite - k.
+// Pourquoi `!exists(...)` et non `(exists(...) || true)` (version initiale, mesures
+// aléatoires « non concluantes ») : avec `|| true`, la condition est déjà vraie sans attendre
+// le résultat de la lecture ; l'émulateur peut conclure avant d'avoir compté la lecture
+// factice (hypothèse confirmée en pratique le 2026-10-22, pas lue dans une documentation :
+// avec `!exists`, 13 mesures sur 14 deviennent concluantes ; trois exécutions complètes
+// concordent à ±1 lecture près, voir backend/rules-test-report.md). `!exists` oblige l'évaluateur à attendre la lecture. Reste non concluante :
+// la lecture de la liste des statuts (requête, pas un lot).
 // Si plusieurs opérations d'un batch limitent la mesure, le résultat est une borne
 // supérieure (prudente) des lectures utilisées.
 
@@ -13,7 +21,7 @@ export const PAD_COLLECTION = 'zz_pad';
 
 export function padExpression(indices) {
   return indices
-    .map((i) => `(exists(/databases/$(database)/documents/${PAD_COLLECTION}/p${i}) || true)`)
+    .map((i) => `!exists(/databases/$(database)/documents/${PAD_COLLECTION}/p${i})`)
     .join(' && ');
 }
 
