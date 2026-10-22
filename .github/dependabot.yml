@@ -1,0 +1,29 @@
+# Mises à jour automatiques des dépendances : chaque mise à jour arrive sous
+# forme de PR et passe par la CI. Gratuit.
+#
+# ÉCART ASSUMÉ par rapport au critère T9 du ticket « Initialisation technique » :
+# les écosystèmes `gradle` (Android) et `swift` (iOS, Swift Package Manager) ne
+# sont PAS déclarés ici, car android/ et ios/ n'ont pas encore de manifeste
+# (build.gradle.kts / Package.swift ou Package.resolved) : une entrée pointant
+# vers un dossier vide fait échouer Dependabot.
+# À COMPLÉTER : ajouter `gradle` (directory: "/android") dans INIT-2 et `swift`
+# (directory: "/ios" ou le dossier qui contient Package.swift) dans INIT-4.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "backend"

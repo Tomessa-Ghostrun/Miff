@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Anglais de repli : volontairement différent du français ; le script de parité ne doit PAS le lire. -->
+<resources>
+    <string name="auth_title">Text</string>
+    <string name="diag_english_only">Only in the fallback file</string>
+</resources>
