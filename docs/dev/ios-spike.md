@@ -1,6 +1,6 @@
 # Spike iOS (INIT-3) : de GitHub à l'iPhone, sans Mac
 
-**Statut** : code prêt, **jamais exécuté** (aucun Mac disponible pour le développeur ; tout sera vérifié par la CI GitHub, puis sur votre iPhone). Les passages marqués « à vérifier » sont des points que seul le premier vrai essai peut confirmer.
+**Statut** (2026-10-22) : le workflow `ios` (build et tests sans signature) **a tourné et est vert** sur la PR #1 (run 39659012614 : génération XcodeGen, SwiftLint 0 violation, build-for-testing, 10 tests, 0 échec, 1 min 40 de job, environ 2 minutes facturées). Le workflow **`ios-testflight` (signature et envoi TestFlight) n'a, lui, jamais tourné** : tout ce qui touche à la signature, à Apple et à l'iPhone reste non vérifié. Aucun Mac n'est disponible pour le développeur ; les passages marqués « à vérifier » sont des points que seul le premier vrai essai peut confirmer.
 **Rédigé le** : 2026-10-21 (agent `ios-dev`). **Ticket** : `docs/tickets/initialisation-technique.md`, sous-ticket INIT-3.
 
 ---
@@ -47,8 +47,10 @@ https://appstoreconnect.apple.com > **Apps** > **+** > **Nouvelle app** :
 
 ### Étape 5. Créer la clé d'API App Store Connect
 1. App Store Connect > **Utilisateurs et accès** > **Intégrations** > **API App Store Connect** > onglet **Clés d'équipe**. Si la page demande de « demander l'accès » à l'API, faites-le (une seule fois, par le titulaire du compte).
-2. **+** > Nom : `Miff CI`. **Accès : Admin.**
-   - Pourquoi Admin : pour signer sans Mac, Xcode demande à Apple un certificat de distribution « géré dans le cloud ». Selon la documentation Apple, la création de ces certificats est réservée au titulaire du compte et aux Admins. **À vérifier** : un rôle plus faible (App Manager) pourrait suffire ; si on veut le tester, la clé se recrée en une minute. En attendant, voir les précautions de la section 8.
+2. **+** > Nom : `Miff CI temporaire`. **Accès : Admin.**
+   - **Attention : une clé Admin peut agir sur TOUT le compte Apple, donc aussi sur Ghostrun** (apps, certificats, utilisateurs). Elle est temporaire par conception : voir le plan ci-dessous et la section 8.
+   - Pourquoi Admin : pour signer sans Mac, Xcode demande à Apple un certificat de distribution « géré dans le cloud ». La documentation Apple réserve la création de ces certificats au titulaire du compte et aux Admins, et des retours de la communauté indiquent qu'une clé **App Manager** échoue avec « Cloud signing permission error » (**non confirmé par nous**). Une clé Admin est donc très probablement nécessaire pour le premier envoi.
+   - **Plan validé par le PM** : (1) créer cette clé Admin « Miff CI temporaire » pour le **premier** envoi ; (2) dès que le certificat de distribution cloud existe (le premier envoi a réussi), **révoquer** cette clé (App Store Connect > Clés d'équipe > Révoquer) ; (3) créer alors une clé **App Manager** et remplacer les secrets pour les envois suivants (**non vérifié** : on ne sait pas encore si App Manager suffit une fois le certificat créé). Cet écart avec le ticket (§7, point 7 : « Developer ou App Manager à confirmer par le spike ») est assumé et à retenir.
 3. Cliquez sur **Générer**, puis **Télécharger** le fichier `AuthKey_XXXXXXXXXX.p8`. **Il n'est téléchargeable qu'une seule fois.**
 4. Notez : l'**identifiant de clé** (Key ID, 10 caractères, aussi dans le nom du fichier) et l'**Issuer ID** (un long identifiant avec des tirets, affiché en haut de la page des clés).
 5. Rangez le `.p8`, le Key ID et l'Issuer ID dans votre gestionnaire de mots de passe. **Ne laissez pas le `.p8` dans le dossier du projet ni dans OneDrive.**
@@ -95,8 +97,10 @@ Il se lance **tout seul** sur une pull request qui modifie `ios/**` ou `.github/
 
 ### Le workflow `ios-testflight` (archive signée et envoi)
 **Manuel uniquement** : onglet **Actions** > **ios-testflight** > **Run workflow** > choisir la branche > **Run workflow**. Deux options :
-- `archive_mode = signed` (défaut) : à essayer en premier.
-- `archive_mode = unsigned` : plan B expérimental, à n'utiliser que si l'erreur « no devices » (section 6) bloque.
+- `archive_mode = unsigned` (**défaut**) : archive non signée, la signature se fait à l'export. Choisi par défaut parce qu'il évite de créer un certificat de développement orphelin à chaque essai (section 10). **Son fonctionnement n'est pas confirmé** (nous n'avons pas pu le tester sans Mac) ; s'il échoue, l'échec arrive vite, à l'export.
+- `archive_mode = signed` : signature automatique dès l'archive. Plan de repli si `unsigned` échoue ; c'est lui qui peut créer des certificats de développement (section 10) et provoquer l'erreur « no devices » (section 6).
+
+Avant l'archive, le workflow vérifie que l'identifiant d'app est exactement `com.tomessa.miff` (le compte Apple est partagé avec Ghostrun) ; après l'archive, une étape **bloquante** contrôle l'identifiant, la version minimale d'iOS (16.0) et le numéro de build, et annule l'envoi au moindre écart.
 
 **Important** : GitHub n'affiche le bouton « Run workflow » que pour les workflows **présents sur la branche par défaut (`main`)**. Tant que la pull request du spike n'est pas fusionnée, le workflow `ios-testflight` n'apparaît donc pas dans l'onglet Actions. Deux issues : fusionner la pull request du spike (après revue) puis lancer depuis `main`, ou, **à vérifier**, lancer depuis le terminal avec la branche choisie. Le processus du projet (recette du PM avant fusion) est ici en tension avec cette contrainte technique : c'est à vous de trancher.
 
@@ -111,7 +115,7 @@ Le numéro de build est le **numéro d'exécution du workflow** `ios-testflight`
 
 - **Page du run** (onglet Actions > cliquer le run) : la section **Summary** affiche un tableau avec la **durée de chaque étape**, la version d'Xcode utilisée et la durée totale. C'est ce qu'il faut recopier dans le tableau de la section 7.
 - **Coche verte / croix rouge** : la croix indique l'étape en échec ; cliquez dessus pour voir le message. Les messages d'erreur d'Apple sont en anglais ; la section 6 les traduit.
-- **En cas d'échec**, un **artefact** (téléchargeable en bas de la page du run, conservé 3 jours) contient les journaux complets (`.log`) et, pour TestFlight, les journaux de distribution d'Apple. Ils ne contiennent pas le contenu de la clé `.p8` ; ils peuvent contenir des identifiants (Key ID, Issuer ID, Team ID, identifiant d'app) : ne les publiez pas.
+- **En cas d'échec**, un **artefact** (téléchargeable en bas de la page du run, conservé 3 jours) contient les journaux complets (`.log`) et, pour TestFlight, les journaux de distribution d'Apple. Ils **ne devraient pas** contenir le contenu de la clé `.p8` (non vérifié : nous n'avons jamais lu ces journaux) ; ils **contiennent** très probablement des identifiants (Key ID, Issuer ID, Team ID, identifiant d'app), et les artefacts ne sont pas masqués comme le sont les secrets dans les journaux de l'écran : ne les publiez pas, et ouvrez-les avant de les partager.
 - **Côté Apple** : App Store Connect > votre app > **TestFlight** > **iOS**. Le build apparaît après quelques minutes de traitement (statut « Traitement », puis disponible).
 - **Côté iPhone** : app TestFlight > Miff > Installer.
 
@@ -130,6 +134,8 @@ Le numéro de build est le **numéro d'exécution du workflow** `ios-testflight`
 - [ ] GitHub > Settings > Billing : aucune dépense enregistrée.
 - [ ] Les durées des deux workflows sont reportées dans la section 7.
 - [ ] Le fichier `.p8` n'est ni dans le dépôt, ni dans OneDrive (recherche rapide dans le dossier).
+- [ ] La clé Admin « Miff CI temporaire » est **révoquée** après le premier envoi réussi (puis clé App Manager pour la suite, non vérifié).
+- [ ] developer.apple.com > Certificates : aucun certificat inconnu ajouté ; ceux « Created via API » du jour ont été relevés (section 10).
 
 Correspondance avec les critères du ticket : I1, I2 (workflow `ios`), I3 (workflow `ios-testflight` + installation), I4, I10 et P1 (icône, nom, installation).
 
@@ -143,8 +149,9 @@ Classées de la plus à la moins probable pour un premier essai.
 |---|---|---|
 | `Secrets GitHub manquants : ...` ou `APPLE_TEAM_ID doit contenir exactement 10 caractères` | Secret absent, mal nommé ou mal copié | Étape 7 : noms exacts, Team ID sans espace |
 | `Le secret ASC_KEY_P8_B64 ne contient pas une clé .p8 valide` | Mauvais fichier encodé, ou texte tronqué au copier-coller | Refaire l'étape 6 avec le fichier `AuthKey_XXXX.p8` d'origine et recoller |
-| `Cloud signing permission error` ou `You do not have permission to create ... certificates` (à vérifier : formulation exacte) | Rôle de la clé trop faible pour créer un certificat de distribution géré dans le cloud | Créer une nouvelle clé avec l'accès **Admin** (étape 5), remplacer `ASC_KEY_ID` et `ASC_KEY_P8_B64`, révoquer l'ancienne |
-| `Your team has no devices from which to generate a provisioning profile` | La signature automatique de l'archive crée un profil de développement, qui exige au moins un appareil enregistré chez Apple | Soit enregistrer l'iPhone : developer.apple.com > **Devices** > **+** (identifiant UDID de l'iPhone ; à vérifier : sous Windows, iTunes l'affiche quand on clique sur le numéro de série de l'appareil). Soit relancer avec `archive_mode = unsigned` (plan B, non garanti) |
+| `Cloud signing permission error` ou `You do not have permission to create ... certificates` (à vérifier : formulation exacte) | Rôle de la clé trop faible pour créer un certificat de distribution géré dans le cloud | Créer une nouvelle clé avec l'accès **Admin** (étape 5 : c'est le plan prévu pour le premier envoi), remplacer `ASC_KEY_ID` et `ASC_KEY_P8_B64`, révoquer l'ancienne |
+| `Your team has no devices from which to generate a provisioning profile` | (Mode `signed`) La signature automatique de l'archive crée un profil de développement, qui exige au moins un appareil enregistré chez Apple | Soit relancer avec `archive_mode = unsigned` (défaut ; non garanti), soit enregistrer l'iPhone : developer.apple.com > **Devices** > **+** (identifiant UDID de l'iPhone ; à vérifier : sous Windows, iTunes l'affiche quand on clique sur le numéro de série de l'appareil) |
+| `PRODUCT_BUNDLE_IDENTIFIER vaut ... au lieu de ...` ou `Identifiant de l'archive ...` (garde-fous du workflow) | L'identifiant d'app du projet n'est pas `com.tomessa.miff` | Rien n'a été envoyé : transmettre au développeur. Ne jamais contourner ce contrôle (compte partagé avec Ghostrun) |
 | `Authentication failed`, `401`, `NOT_AUTHORIZED`, `Provisioning profile ... not found` avec la clé | Key ID ou Issuer ID erroné, clé révoquée, mauvaise équipe, API non activée | Comparer avec la page des clés d'App Store Connect (étape 5), recréer les secrets |
 | `No profiles for 'com.tomessa.miff' were found` ou `Failed to register bundle identifier` | L'App ID n'existe pas ou n'est pas dans la bonne équipe | Étape 3 ; vérifier `APPLE_TEAM_ID` |
 | `Unable to process application`, `app record not found`, `No suitable application records were found` à l'envoi | La fiche app n'existe pas, ou son identifiant de bundle diffère | Étape 4 ; l'identifiant doit être exactement `com.tomessa.miff` |
@@ -172,14 +179,14 @@ Classées de la plus à la moins probable pour un premier essai.
 
 ### Ce qui est à vérifier
 - La page de facturation actuelle exprime le quota en **dollars de dépense** et ne donne plus explicitement le « multiplicateur macOS » (historiquement **x10**). Hypothèse de travail : **une minute macOS consomme environ 10 minutes du quota**, soit environ **200 minutes macOS par mois**. **À vérifier** en lisant la consommation après la première exécution.
-- Les durées réelles de nos jobs sont **inconnues** (aucune exécution à ce jour). À consigner ici après les premiers runs :
+- Durées réelles mesurées (à compléter à chaque nouveau run ; le détail par étape est dans le Summary de chaque run) :
 
-| Run | Workflow | Durée totale | Étape la plus longue |
-|---|---|---|---|
-| (à remplir) | `ios` | ? | ? |
-| (à remplir) | `ios-testflight` | ? | ? |
+| Run | Workflow | Durée totale | Facturé | Étape la plus longue |
+|---|---|---|---|---|
+| 39659012614 (PR #1) | `ios` | 1 min 40 | environ 2 min | non relevée (voir le Summary du run) |
+| (pas encore lancé) | `ios-testflight` | à mesurer | à mesurer | à mesurer |
 
-Chaque job est facturé à la minute entamée ; une exécution de N minutes consomme donc environ 10 x N minutes de quota si l'hypothèse x10 se confirme. Exemple de calcul (illustratif) : 12 minutes par exécution, soit environ 120 minutes de quota, soit une quinzaine d'exécutions par mois au maximum.
+Chaque job est facturé à la minute entamée ; une exécution de N minutes consomme donc environ 10 x N minutes de quota si l'hypothèse x10 se confirme. Avec la mesure réelle du workflow `ios` (environ 2 minutes facturées, donc environ 20 minutes de quota si x10), une centaine d'exécutions par mois tiendraient dans le quota ; l'archive et l'envoi TestFlight seront plus longs (à mesurer).
 
 ### Comment mesurer
 1. Page du run : le **Summary** indique la durée de chaque étape et la durée totale.
@@ -194,7 +201,9 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 
 ## 8. Sécurité (ce que vous devez savoir)
 
-- **La clé d'API est puissante.** Une clé d'équipe n'est pas limitée à l'app Miff : elle voit aussi **Ghostrun**, qui est sur le même compte. Rôle **Admin** = pouvoir de gérer des certificats et des accès. Précautions : ne jamais la sortir de votre gestionnaire de mots de passe sauf pour l'étape 6 ; la **révoquer** (App Store Connect > Clés d'équipe > Révoquer) si vous avez le moindre doute ou, au plus tard, quand le spike est terminé si vous préférez en recréer une pour la suite ; ne jamais coller un secret dans une conversation.
+- **La clé d'API est puissante, et la clé Admin du premier envoi l'est encore plus.** Une clé d'équipe n'est pas limitée à l'app Miff : elle voit aussi **Ghostrun**, qui est sur le même compte. Une clé **Admin** peut gérer certificats, identifiants, utilisateurs et apps de **tout le compte, Ghostrun compris**. Précautions : ne jamais la sortir de votre gestionnaire de mots de passe sauf pour l'étape 6 ; **la révoquer dès que le premier envoi a réussi** (plan de l'étape 5, puis clé App Manager pour la suite, non vérifié) ; la révoquer immédiatement au moindre doute (App Store Connect > Clés d'équipe > Révoquer) ; ne jamais coller un secret dans une conversation. Le workflow contrôle que l'app est bien `com.tomessa.miff` avant toute signature, pour qu'une erreur de configuration ne touche pas Ghostrun.
+- **Le fichier `.p8` ne doit jamais entrer dans git.** `ios/.gitignore` bloque `*.p8` (et `.p12`, `.cer`, `.mobileprovision`). Le `.gitignore` de la racine du dépôt ne le fera qu'après la fusion de la PR INIT-1 : d'ici là, n'enregistrez le fichier dans aucun dossier du projet.
+- **Note pour la suite (INIT-4)** : dans le workflow `ios-testflight`, le chemin de la clé (`ASC_KEY_PATH`) reste dans l'environnement de **toutes** les étapes suivantes du job. Aujourd'hui seules nos propres commandes tournent, donc le risque est faible. À revoir quand INIT-4 ajoutera des paquets Swift tiers (résolus et compilés pendant le build) : réduire l'exposition en écrivant la clé juste avant l'export seulement, ou en la passant uniquement à l'étape qui en a besoin.
 - **Les environnements protégés GitHub ne sont pas disponibles** pour un dépôt privé en offre gratuite (documentation GitHub). Un « environnement » est normalement le bon moyen de limiter qui peut lire les secrets (relecteur obligatoire, branches autorisées). Sans lui, **toute personne ayant le droit d'écrire dans le dépôt peut, en modifiant un workflow sur une branche, lire les secrets**. Acceptable pour un dépôt privé à un seul contributeur humain, à reconsidérer dès qu'il y en a plusieurs. Si vous passez en GitHub Pro : créez l'environnement `testflight`, déplacez-y les 4 secrets, limitez-le aux branches voulues avec un relecteur obligatoire (vous), puis décommentez la ligne `environment: testflight` dans `.github/workflows/ios-testflight.yml` (un commentaire l'indique).
 - Dans le workflow : la clé est décodée dans un fichier temporaire du runner (droits restreints, jamais affiché, pas de `set -x`), puis supprimée à la fin même en cas d'échec ; le runner est de toute façon détruit après le job. `permissions` est limité à `contents: read` ; aucune action tierce n'a accès aux secrets (les deux actions utilisées, `checkout` et `upload-artifact`, sont celles de GitHub, épinglées par empreinte de commit) ; jamais de `pull_request_target`.
 - **Le Team ID, le Key ID et l'Issuer ID ne sont pas des secrets cryptographiques** (seul le `.p8` l'est), mais ils sont traités comme des secrets par prudence.
@@ -219,9 +228,9 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 | fastlane | **Non utilisé** (préinstallé sur le runner, MIT, gardé comme plan B) | MIT | n/a | Voir la décision de signature ci-dessous |
 
 ### Décision de signature et compromis
-- **Retenu (plan A)** : signature automatique de Xcode pilotée par la clé d'API App Store Connect (`-allowProvisioningUpdates -authenticationKeyPath/ID/IssuerID`), avec export `destination: upload` (l'envoi à TestFlight est fait par `xcodebuild -exportArchive` lui-même). Avantages : aucun certificat ni profil stocké dans GitHub, une seule clé révocable, pas d'outil supplémentaire, aucun dépôt de certificats à entretenir. Apple documente ce certificat « géré dans le cloud » pour Xcode 13 et suivants quand aucun certificat local n'est trouvé.
+- **Retenu (plan A)** : signature automatique de Xcode pilotée par la clé d'API App Store Connect (`-allowProvisioningUpdates -authenticationKeyPath/ID/IssuerID`), avec export `destination: upload` (l'envoi à TestFlight est fait par `xcodebuild -exportArchive` lui-même). Le workflow essaie d'abord le mode `unsigned` (signature à l'export seulement), voir la section 3 et la section 10 (certificats orphelins). Avantages : aucun certificat ni profil stocké dans GitHub, une seule clé révocable, pas d'outil supplémentaire, aucun dépôt de certificats à entretenir. Apple documente ce certificat « géré dans le cloud » pour Xcode 13 et suivants quand aucun certificat local n'est trouvé.
 - **Non vérifié sans Mac** : (a) la création du certificat par la clé d'API sur un runner vierge ; (b) le rôle minimal de la clé ; (c) l'exigence d'un appareil enregistré pour le profil de développement de l'archive. Le spike sert précisément à les trancher.
-- **Plans de repli** : (1) `archive_mode = unsigned` (archive sans signature, signature à l'export) ; (2) **fastlane** (gratuit, MIT, déjà installé sur le runner) avec `cert` ou `match`. Compromis de fastlane : `match` demande un second dépôt privé pour stocker des certificats chiffrés, et `cert` crée de **vrais** certificats de distribution, qui sont **en nombre limité par compte** Apple (compte partagé avec Ghostrun : risque de collision, **ne jamais révoquer les certificats de Ghostrun**). C'est pourquoi le certificat géré dans le cloud est préféré.
+- **Plans de repli** : (1) `archive_mode = signed` (si le mode `unsigned`, défaut, échoue) ; (2) **fastlane** (gratuit, MIT, déjà installé sur le runner) avec `cert` ou `match`. Compromis de fastlane : `match` demande un second dépôt privé pour stocker des certificats chiffrés, et `cert` crée de **vrais** certificats de distribution, qui sont **en nombre limité par compte** Apple (compte partagé avec Ghostrun : risque de collision, **ne jamais révoquer les certificats de Ghostrun**). C'est pourquoi le certificat géré dans le cloud est préféré.
 
 ---
 
@@ -230,8 +239,23 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 | # | Risque | Où en est-on |
 |---|---|---|
 | R1 | iOS sans Mac : boucle lente, signature sans Xcode, `.xcodeproj` non éditable | Le projet est décrit en texte (XcodeGen). Chaque essai coûte un aller-retour avec la CI (quelques minutes à dizaines de minutes) : **grouper les corrections** et lire les journaux complets avant de relancer. Reste à prouver : signature et envoi (ce spike). |
-| R2 | Quota de minutes macOS | Mesure intégrée (Summary de chaque run), garde-fous en section 7, multiplicateur **à vérifier**. Aucune estimation de durée n'est avancée avant la première mesure. |
+| R2 | Quota de minutes macOS | Mesure intégrée (Summary de chaque run), garde-fous en section 7, multiplicateur **à vérifier**. Mesuré : `ios` = 1 min 40 (environ 2 min facturées) ; l'archive et l'envoi TestFlight restent à mesurer. |
 | R3 | Xcode Cloud : configuration initiale via Xcode (donc un Mac) | Non utilisé ni testé ici. Reste une option de secours (section 7), à confirmer avant de s'y engager. |
+
+### Risque : certificats « orphelins » créés à chaque essai (non vérifié, à surveiller)
+
+Avec `-allowProvisioningUpdates`, Xcode peut créer, **à chaque exécution**, un certificat de **développement** (nom du type « Created via API », ou « Apple Development: Created via API ») dans votre compte Apple. Sa clé privée reste sur le runner, qui est détruit à la fin du job : le certificat reste chez Apple, inutilisable par personne, et s'accumule. Apple limite le nombre de certificats par compte, et **ce compte est partagé avec Ghostrun** : une accumulation pourrait gêner Ghostrun. Nous n'avons pas pu confirmer ce comportement sans Mac.
+
+Consignes :
+1. **Essayer d'abord `archive_mode = unsigned`** (c'est le défaut du workflow) : l'archive n'est pas signée, donc aucun certificat de développement n'est nécessaire ; seul le certificat de distribution « géré dans le cloud » (sans clé privée à conserver, géré par Apple) intervient à l'export. Support **non confirmé** : si l'export échoue, l'échec est rapide, et le mode `signed` reste disponible.
+2. **Regarder developer.apple.com > Certificats, Identifiants et profils > Certificates avant et après chaque essai**, et noter le nombre et les dates.
+3. **Ne révoquer que ce qui est daté du jour de l'essai et nommé « Created via API ».**
+4. **Ne JAMAIS révoquer un certificat que vous ne reconnaissez pas** : il peut appartenir à Ghostrun (compte partagé), et sa révocation casserait la signature de cette app.
+5. **Plan B si les certificats s'accumulent** : créer **un** certificat de distribution dédié à Miff, l'exporter au format `.p12` (avec un mot de passe fort), et le stocker comme secret GitHub, avec le profil correspondant. C'est plus d'entretien (renouvellement annuel) et un secret de plus : à n'engager qu'en cas de besoin.
+
+### Plan B d'envoi (documenté, non automatisé, **non testé**)
+
+Si l'export avec `destination: upload` échoue alors que l'archive et la signature réussissent, on peut séparer les deux gestes : (1) passer `destination` à `export` dans `ExportOptions.plist` pour obtenir un fichier `.ipa` signé dans `build/export` ; (2) l'envoyer avec l'outil d'Apple `xcrun altool --upload-app --file <fichier.ipa> --type ios --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>` (la clé `.p8` est cherchée dans un dossier `private_keys` du répertoire courant, de `~/` ou de `~/.appstoreconnect`, nommée `AuthKey_<KEY_ID>.p8`). La syntaxe exacte et la disponibilité d'`altool` dans Xcode 26 sont **à vérifier** ; rien de cela n'est dans le workflow aujourd'hui.
 
 Autres limites connues du spike : aucun test sur iOS 16 réel (les simulateurs du runner sont en iOS 26.x ; le test `MinimumOSVersion` vérifie seulement la cible déclarée) ; iPhone uniquement (réglage `TARGETED_DEVICE_FAMILY = 1`, à confirmer) ; orientation portrait uniquement ; couleurs et textes en dur (remplacés par les tokens du design system et le String Catalog dans INIT-4).
 
