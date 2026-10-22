@@ -4,13 +4,14 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 
 ## État actuel
 
-- **Aucune exécution des tests de règles n'a encore eu lieu.** Le sous-ticket INIT-1 a écrit les tests mais n'a pas pu lancer l'émulateur Firestore sur le poste de développement : `firebase-tools` 15.34.0 refuse Java 17 (« firebase-tools no longer supports Java version before 21 »), et le seul Java disponible est celui d'Android Studio (OpenJDK 17.0.6).
-- La première exécution fera foi : workflow `firestore-rules` (Java 21 Temurin) sur la pull request INIT-1. Le tableau complet (un identifiant par ligne) est publié dans le résumé du job et dans l'artefact `rules-test-report`.
-- Ce qui a été vérifié sans émulateur : chargement et syntaxe de tous les tests, présence d'un test pour chacun des 117 identifiants des sections 1 à 8 du plan (test automatique `PLAN`), garde-fou « projet de démonstration », transformation en mémoire utilisée pour la mesure des lectures.
+- **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution : **138 tests, 137 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas). Ces 138 tests = 117 cas du plan (sections 1 à 8) + 8 cas complémentaires X1 à X8 (section 10 du plan) + 13 mesures de lectures de règles (dont C17).
+- Le tableau complet (un identifiant par ligne) est publié dans le résumé du job et dans l'artefact `rules-test-report`.
+- **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une 42 protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : 39 mutations sont détectées, 3 mutants sont documentés comme équivalents dans `tests/tools/mutations.mjs` (`hasAll` du statut, `is timestamp` de `escalationDueAt`, et la couche `ownerUid` du seul document Miff : chacune est redondante avec une autre protection qui refuse quand même). Avant renforcement, cinq tests (C3, C12, C15, J13, M17) ne détectaient pas la suppression de la règle qu'ils visaient.
+- Durcissement des règles : hors de ce lot. Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
 ## Échecs constatés
 
-Aucun pour l'instant (aucune exécution).
+Aucun : les 137 tests exécutés passent sur les règles actuelles.
 
 Format à utiliser pour chaque échec :
 
@@ -27,4 +28,4 @@ Format à utiliser pour chaque échec :
 
 ## Mesure des lectures de règles (critère T5)
 
-Méthode : l'émulateur ne fournit pas ce compteur. Les tests exécutent chaque opération avec une copie des règles, modifiée **en mémoire seulement**, où l'on ajoute k lectures factices (`exists()` sur des documents inexistants) devant la condition de l'opération ; le plus grand k accepté donne la marge restante sous la limite (10 par requête simple, 20 par batch). Pour un batch, le résultat est une **borne haute** des lectures réellement utilisées. Si l'émulateur ne compte pas ces lectures factices, la mesure est marquée « non concluante » dans le tableau. Premiers chiffres : à reporter ici après la première exécution CI.
+Méthode : l'émulateur ne fournit pas ce compteur. Les tests exécutent chaque opération avec une copie des règles, modifiée **en mémoire seulement**, où l'on ajoute k lectures factices (`exists()` sur des documents inexistants) devant la condition de l'opération ; le plus grand k accepté donne la marge restante sous la limite (10 par requête simple, 20 par batch). Pour un batch, le résultat est une **borne haute** des lectures réellement utilisées. Si l'émulateur ne compte pas ces lectures factices, la mesure est marquée « non concluante » dans le tableau. Résultat de la dernière exécution : 7 opérations mesurées (marge d'au moins 6 lectures sur 10, ou 16 sur 20 ; création de Miff premium : au plus 3 lectures sur 20), 7 mesures non concluantes (les lectures factices n'y sont pas comptées, cause non établie : ces opérations n'ont donc pas de chiffre fiable, mais toutes réussissent sous les limites). Le tableau `rule-reads.md` de l'artefact de la CI donne le détail.

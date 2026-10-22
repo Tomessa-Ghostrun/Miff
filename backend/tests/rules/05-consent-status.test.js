@@ -1,8 +1,7 @@
 // Plan de test, section 5 : consentement et statut de position (S1 à S19)
-import { readFileSync } from 'node:fs';
 import {
   ID, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp,
-  statusDoc, photoDoc, bytes, inMs, sharingOnNow, RULES_PATH,
+  statusDoc, photoDoc, bytes, inMs, sharingOnNow, readRules,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -95,9 +94,13 @@ s.tc('S14', 'updatedAt fourni par le client : refusé', async ({ db }) => {
 });
 
 s.tc('S15', 'statut avec une clé manquante : refusé', async ({ db }) => {
-  const doc = statusDoc();
-  delete doc.batteryPct;
-  await assertFails(db('bob').doc(`${M1}/status/bob`).set(doc));
+  // Chacune des dix clés, une par une. (hasAll est redondant avec la lecture de chaque clé par les règles :
+  // une clé absente est de toute façon une erreur d'évaluation => refus. Voir tests/tools/mutations.mjs.)
+  for (const key of Object.keys(statusDoc())) {
+    const doc = statusDoc();
+    delete doc[key];
+    await assertFails(db('bob').doc(`${M1}/status/bob`).set(doc));
+  }
 });
 
 s.tc('S16', 'photo : 150 000 octets / 24 h acceptée ; 150 001 octets ou +30 jours refusée', async ({ db }) => {
@@ -118,7 +121,7 @@ s.tc('S18', 'la créatrice purge le statut d\'un membre ; l\'inverse est refusé
 
 s.tc('S19', 'revue de schéma : ni le statut ni la photo n\'ont de champ de coordonnées', async ({ admin }) => {
   const forbidden = ['lat', 'lng', 'latitude', 'longitude', 'coords', 'coordinates', 'geopoint', 'position', 'address'];
-  const rules = readFileSync(RULES_PATH, 'utf8');
+  const rules = readRules();
   // 1) Les listes de clés autorisées par les règles (hasOnly) du statut et de la photo.
   for (const fn of ['validStatus', 'validPhoto']) {
     const body = rules.slice(rules.indexOf(`function ${fn}(`));

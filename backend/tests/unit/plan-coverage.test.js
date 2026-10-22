@@ -1,4 +1,4 @@
-// Critère T3 : un test (ou un test ignoré avec sa raison) pour chaque identifiant des sections 1 à 8
+// Critère T3 : un test (ou un test ignoré avec sa raison) pour chaque identifiant des sections 1 à 8 et 10
 // de backend/rules-test-plan.md, et aucun identifiant orphelin.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,8 +9,8 @@ const plan = readFileSync(fileURLToPath(new URL('../../rules-test-plan.md', impo
 const rulesDir = fileURLToPath(new URL('../rules/', import.meta.url));
 
 function planIds() {
-  const section9 = plan.indexOf('## 9.');
-  const body = section9 > 0 ? plan.slice(0, section9) : plan;
+  // La section 9 (hors émulateur) n'a pas de tableau d'identifiants : on lit tout le plan (sections 1 à 8 et 10).
+  const body = plan;
   return [...body.matchAll(/^\| ([A-Z]+\d+) \|/gm)].map((m) => m[1]);
 }
 

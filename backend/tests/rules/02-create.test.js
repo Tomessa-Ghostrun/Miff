@@ -24,7 +24,13 @@ s.tc('C2', 'usurpation : ownerUid d\'un autre utilisateur refusé', async ({ db 
 });
 
 s.tc('C3', 'sans le document membre du créateur : refusé (Miff incomplète)', async ({ db }) => {
+  // Trois variantes, chacune bloquée par UNE règle différente (sinon une règle supprimée passerait inaperçue) :
+  // (1) tout sauf le membre : refusé par la règle des index ET par validMiffCreate (redondant) ;
   await assertFails(commit(db('eve'), without(createMiffOps({ uid: 'eve' }), 'member')));
+  // (2) ni membre ni index : seule validMiffCreate (existsAfter du membre) peut refuser ;
+  await assertFails(commit(db('eve'), without(createMiffOps({ uid: 'eve' }), 'member', 'index')));
+  // (3) un index sans le document membre correspondant : seule la règle de l'index peut refuser.
+  await assertFails(commit(db('eve'), [createMiffOps({ uid: 'eve' }).index]));
 });
 
 s.tc('C4', 'sans le document joinCodes : refusé', async ({ db }) => {
@@ -83,9 +89,19 @@ s.tc('C11', 'premium expiré : création avec la clé = identifiant : refusé', 
   await assertFails(commit(db('frank'), all(createMiffOps({ uid: 'frank', key: ID.NEW }))));
 });
 
-s.tc('C12', 'créer un joinCodes pour la Miff d\'un autre : refusé', async ({ db }) => {
+s.tc('C12', 'créer un joinCodes pour la Miff d\'un autre : refusé', async ({ db, admin }) => {
+  // Cas simple : un code quelconque pour M1 (refusé aussi parce que M1 pointe vers un autre code).
   await assertFails(
     commit(db('eve'), [set(`joinCodes/${CODE.NEW}`, { miffId: ID.M1, miffName: 'Famille', createdAt: serverTs() })]),
+  );
+  // Cas isolé : le code visé EST le code courant de M1 (son document joinCodes a disparu) et le nom est exact.
+  // Seul le contrôle « propriétaire de la Miff » peut alors refuser.
+  await admin(async (f) => {
+    await f.doc(`miffs/${ID.M1}`).update({ joinCode: CODE.REGEN });
+    await f.doc(`joinCodes/${CODE.M1}`).delete();
+  });
+  await assertFails(
+    commit(db('eve'), [set(`joinCodes/${CODE.REGEN}`, { miffId: ID.M1, miffName: 'Famille', createdAt: serverTs() })]),
   );
 });
 
@@ -99,8 +115,12 @@ s.tc('C14', 'collision : créer un code qui existe déjà : refusé', async ({ d
   await assertFails(commit(db('eve'), all(createMiffOps({ uid: 'eve', code: CODE.M1 }))));
 });
 
-s.tc('C15', 'devenir "owner" d\'une Miff déjà existante : refusé', async ({ db }) => {
+s.tc('C15', 'devenir "owner" d\'une Miff déjà existante : refusé', async ({ db, admin }) => {
   const ops = createMiffOps({ uid: 'eve', miffId: ID.M1 });
+  await assertFails(commit(db('eve'), [ops.member, ops.index]));
+  // Cas isolé : eve est déjà ownerUid de M1 (sans document membre). Seule l'exigence « la Miff n'existe pas
+  // encore » (ownerCreateOk) peut alors refuser la création du membre "owner".
+  await admin((f) => f.doc(`miffs/${ID.M1}`).update({ ownerUid: 'eve' }));
   await assertFails(commit(db('eve'), [ops.member, ops.index]));
 });
 

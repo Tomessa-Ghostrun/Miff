@@ -105,6 +105,10 @@ s.tc('M16', 'retirer un membre sans supprimer son statut : refusé', async ({ db
 });
 
 s.tc('M17', 'un membre ne retire pas un autre membre', async ({ db }) => {
+  // Seule la suppression du document membre est tentée : c'est la règle memberDeleteOk (contrôle du
+  // propriétaire) qui doit refuser, et non la règle des statuts / photos.
+  await assertFails(db('bob').doc(`${M1}/members/carol`).delete());
+  // Variante complète (membre, statut, photo) : refusée aussi.
   await assertFails(commit(db('bob'), removalOps('carol')));
 });
 

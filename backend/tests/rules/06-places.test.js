@@ -64,9 +64,15 @@ s.tc('P6', 'premium expiré : second lieu refusé', async ({ db, seedMiff }) => 
   await assertFails(db('frank').collection(placesOf(ID.M4)).doc().set(placeInput('frank')));
 });
 
-s.tc('P7', 'un simple membre ne crée, ne modifie ni ne supprime un lieu', async ({ db }) => {
+s.tc('P7', 'un simple membre ne crée, ne modifie ni ne supprime un lieu', async ({ db, admin }) => {
   const bob = db('bob');
+  // Création : p1 est libre et de type "trusted", donc valide pour une gratuite. Seul le contrôle
+  // "propriétaire de la Miff" peut alors refuser (et non la limite freemium).
+  await removePlace(admin);
+  await assertFails(bob.doc(P1).set(placeInput('bob')));
   await assertFails(bob.collection(placesOf(ID.M1)).doc().set(placeInput('bob')));
+  // Modification / suppression d'un lieu existant.
+  await admin((f) => f.doc(P1).set(placeSeed()));
   await assertFails(bob.doc(P1).update({ name: 'Piraté', updatedAt: serverTs() }));
   await assertFails(bob.doc(P1).delete());
 });

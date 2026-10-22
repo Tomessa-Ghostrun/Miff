@@ -12,7 +12,9 @@
     "test:unit": "node --test --test-concurrency=1 \"tests/unit/*.test.js\"",
     "test:rules": "node tests/tools/run-rules.mjs",
     "test:emulator": "firebase emulators:exec --only firestore --project demo-miff-rules \"npm run test:rules\"",
-    "test": "npm run test:unit && npm run test:emulator"
+    "test": "npm run test:unit && npm run test:emulator",
+    "test:mutation": "firebase emulators:exec --only firestore --project demo-miff-rules \"node tests/tools/mutation-check.mjs\"",
+    "test:mutation:check": "node tests/tools/mutation-check.mjs --check"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "6.0.0",

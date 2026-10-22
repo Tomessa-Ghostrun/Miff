@@ -62,9 +62,14 @@ s.tc('J12', 'premium : rejoindre une Miff avec la clé = identifiant : accepté'
   await assertSucceeds(commit(db('dave'), all(joinOps({ uid: 'dave', miffId: ID.M2, code: CODE.M2, key: ID.M2 }))));
 });
 
-s.tc('J13', 'écrire le document membre d\'un autre utilisateur : refusé', async ({ db }) => {
+s.tc('J13', 'écrire le document membre d\'un autre utilisateur : refusé', async ({ db, admin }) => {
+  // Modification du document d'un membre existant (chemin "update").
   const ops = joinOps({ uid: 'bob' });
   await assertFails(commit(db('eve'), [ops.member]));
+  // Création du document d'un non-membre (chemin "create") : l'index de zed existe déjà et le code est le bon,
+  // donc seule la règle « on n'écrit que son propre document » peut refuser.
+  await admin((f) => f.doc('users/zed/memberships/free').set({ miffId: ID.M1, joinedAt: new Date() }));
+  await assertFails(commit(db('eve'), [joinOps({ uid: 'zed' }).member]));
 });
 
 s.tc('J14', 'partage activé avec consentedAt fourni par le client : refusé', async ({ db }) => {

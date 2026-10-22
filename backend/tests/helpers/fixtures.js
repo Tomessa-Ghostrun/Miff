@@ -15,7 +15,8 @@ export { assertSucceeds, assertFails };
 
 export const PROJECT_ID = 'demo-miff-rules';
 export const RULES_PATH = fileURLToPath(new URL('../../firestore.rules', import.meta.url));
-export const readRules = () => readFileSync(RULES_PATH, 'utf8');
+// MIFF_RULES_FILE : réservé à l'outil de mutation (tests/tools/mutation-check.mjs), qui teste des règles volontairement affaiblies.
+export const readRules = () => readFileSync(process.env.MIFF_RULES_FILE ?? RULES_PATH, 'utf8');
 
 // ---------------------------------------------------------------------------
 // Types Firestore (API "compat" utilisée par @firebase/rules-unit-testing)
