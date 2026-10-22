@@ -15,13 +15,14 @@ on:
     inputs:
       archive_mode:
         description: >-
-          signed = archive signee automatiquement (recommande, a essayer en premier).
-          unsigned = plan B experimental : archive non signee, signature faite a l'export.
+          unsigned = archive non signee, signature faite a l'export (defaut : evite de creer
+          un certificat de developpement orphelin a chaque run ; support NON CONFIRME, echec
+          rapide possible a l'export). signed = archive signee automatiquement (plan de repli).
         type: choice
         options:
-          - signed
           - unsigned
-        default: signed
+          - signed
+        default: unsigned
 
 permissions:
   contents: read
@@ -40,7 +41,7 @@ jobs:
   archive-and-upload:
     name: Archive signée et envoi TestFlight
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
-    timeout-minutes: 45
+    timeout-minutes: 20
     # PROTECTION DES SECRETS : un "environment" GitHub avec relecteur obligatoire serait
     # l'ideal, mais il n'est PAS disponible pour un depot prive en offre gratuite (GitHub Free).
     # Si le compte passe en GitHub Pro : creer l'environnement "testflight" (Settings >
@@ -122,6 +123,18 @@ jobs:
       - name: Générer le projet Xcode
         run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
 
+      - name: Garde-fou - bundle ID exact (compte Apple partagé avec Ghostrun)
+        run: |
+          set -euo pipefail
+          expected="com.tomessa.miff"
+          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Internal 2>/dev/null \
+            | awk -F' = ' '$1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ {print $2}')
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::PRODUCT_BUNDLE_IDENTIFIER vaut « ${actual} » au lieu de « ${expected} ». Arrêt avant toute signature : le compte Apple est partagé avec un autre projet."
+            exit 1
+          fi
+          echo "Bundle ID vérifié : ${actual}"
+
       - name: Préparer un trousseau temporaire et la clé d'API (jamais affichée)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -193,17 +206,40 @@ jobs:
             '
           fi
 
-      - name: Identité de l'archive (diagnostic)
+      - name: Identité de l'archive (bloquante)
         if: success()
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           set -uo pipefail
-          plist=build/Miff.xcarchive/Info.plist
-          read_key() { /usr/libexec/PlistBuddy -c "Print :ApplicationProperties:$1" "$plist" 2>/dev/null || echo "(absent)"; }
+          archive=build/Miff.xcarchive
+          app_plist="$(ls -d "$archive"/Products/Applications/*.app 2>/dev/null | head -n 1)/Info.plist"
+          read_archive() { /usr/libexec/PlistBuddy -c "Print :ApplicationProperties:$1" "$archive/Info.plist" 2>/dev/null || echo "(absent)"; }
+          read_app() { /usr/libexec/PlistBuddy -c "Print :$1" "$app_plist" 2>/dev/null || echo "(absent)"; }
+          bundle_id=$(read_archive CFBundleIdentifier)
+          version=$(read_archive CFBundleShortVersionString)
+          build=$(read_archive CFBundleVersion)
+          signing=$(read_archive SigningIdentity)
+          min_os=$(read_app MinimumOSVersion)
           {
             echo
-            echo "Archive produite : identifiant \`$(read_key CFBundleIdentifier)\`, version $(read_key CFBundleShortVersionString), build $(read_key CFBundleVersion), signature : $(read_key SigningIdentity)"
+            echo "Archive produite : identifiant \`${bundle_id}\`, version ${version}, build ${build}, iOS minimum ${min_os}, signature : ${signing}"
             echo
           } >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          if [ "$bundle_id" != "com.tomessa.miff" ]; then
+            echo "::error::Identifiant de l'archive « ${bundle_id} » au lieu de « com.tomessa.miff » : envoi annulé."
+            fail=1
+          fi
+          if [ "$min_os" != "16.0" ]; then
+            echo "::error::MinimumOSVersion « ${min_os} » au lieu de « 16.0 » : envoi annulé."
+            fail=1
+          fi
+          if [ "$build" != "$BUILD_NUMBER" ]; then
+            echo "::error::Numéro de build de l'archive « ${build} » au lieu de « ${BUILD_NUMBER} » : envoi annulé."
+            fail=1
+          fi
+          exit "$fail"
 
       - name: Exporter et envoyer à TestFlight
         env:

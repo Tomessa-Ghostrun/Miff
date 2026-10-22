@@ -34,7 +34,7 @@ jobs:
   build-and-test:
     name: Build et tests (simulateur, sans signature)
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
-    timeout-minutes: 30
+    timeout-minutes: 15
     defaults:
       run:
         shell: bash
@@ -89,6 +89,16 @@ jobs:
 
       - name: Générer le projet Xcode
         run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
+
+      - name: Garde-fou - bundle ID exact
+        run: |
+          set -euo pipefail
+          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Debug 2>/dev/null \
+            | awk -F' = ' '$1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ {print $2}')
+          if [ "$actual" != "com.tomessa.miff" ]; then
+            echo "::error::PRODUCT_BUNDLE_IDENTIFIER vaut « ${actual} » au lieu de « com.tomessa.miff »."
+            exit 1
+          fi
 
       - name: SwiftLint
         run: bash ci/timed.sh "SwiftLint" swiftlint lint --strict
