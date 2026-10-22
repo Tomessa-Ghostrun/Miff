@@ -6,7 +6,7 @@
 
 État au 2026-10-22 :
 - Workflow `ios` : **vert** sur la PR #1 (run 39659012614 : génération XcodeGen, SwiftLint 0 violation, build-for-testing, 10 tests, 0 échec ; 1 min 40 de job, environ 2 min facturées).
-- Workflow `ios-testflight` (signature et envoi TestFlight) : **jamais exécuté** (pas de Mac ; attend les actions du PM et la clé d'API). Installation sur l'iPhone non vérifiée.
+- Workflow `ios-testflight` (signature et envoi TestFlight) : **jamais exécuté** (pas de Mac ; attend les actions du PM, la clé d'API et la fusion sur `main`, car manuel). Installation sur l'iPhone non vérifiée.
 
 - Projet XcodeGen (`ios/project.yml`) : cible iOS 16.0, `com.tomessa.miff`, nom affiché « Miff », configurations `Debug`, `Internal`, `Release`, numéro de build injecté par la CI.
 - App « Hello Miff » (nom, version, build). Couleurs du design system en dur, volontairement provisoire (tokens dans INIT-4).
@@ -16,6 +16,8 @@
 - Workflow `ios` (build + tests sur simulateur sans signature, durées dans le résumé, timeout 15 min) et workflow manuel `ios-testflight` (archive via clé d'API App Store Connect, envoi TestFlight, timeout 20 min).
 - Garde-fous (compte Apple partagé avec Ghostrun) : échec si `PRODUCT_BUNDLE_IDENTIFIER` n'est pas exactement `com.tomessa.miff` (les deux workflows) ; étape « Identité de l'archive » bloquante (identifiant, `MinimumOSVersion` 16.0, numéro de build). Non testés sur CI.
 - `archive_mode` vaut `unsigned` par défaut (évite des certificats de développement orphelins « Created via API » ; support non confirmé), `signed` en repli.
+- Corrections de revue (2026-10-22) : `TARGETED_DEVICE_FAMILY = 1` posé au niveau de la cible (XcodeGen y applique « 1,2 »), test `UIDeviceFamily` ; `ITSAppUsesNonExemptEncryption = false` (décision PM) avec test ; `ios-testflight` : `archive_mode` validé, chemin de la clé non exporté (clé non écrite pour l'archive `unsigned`), artefacts d'échec assainis (Team/Key/Issuer ID masqués, pas de dossier d'export), timeouts 10 min par étape d'archive/export, avertissement si Xcode 27+, contrôle bloquant de `UIDeviceFamily` et du chiffrement.
+- Décision PM 2026-10-22 : le spike est fusionné avant l'essai TestFlight ; I3 sera prouvé depuis `main`.
 - Aucune dépendance Swift Package (pas de `Package.resolved`), pas de CocoaPods.
 
 **Choix économiques documentés** (détails et signaux de bascule dans `docs/dev/ios-spike.md`, sections 7 et 8) :

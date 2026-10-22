@@ -36,5 +36,5 @@ Mode d'emploi complet pour le PM, erreurs probables et suivi des minutes macOS :
 ## Règles
 
 - Aucun secret dans le dépôt : la clé `.p8` et les identifiants vivent dans les secrets GitHub (`.gitignore` bloque `*.p8`).
-- Aucune permission, aucune exception ATS, `ITSAppUsesNonExemptEncryption` volontairement non renseignée (déclaration à faire par le PM).
+- Aucune permission, aucune exception ATS, `ITSAppUsesNonExemptEncryption = false` (chiffrement standard uniquement, décision PM 2026-10-22), iPhone uniquement (`TARGETED_DEVICE_FAMILY` posé au niveau de la cible).
 - Couleurs et textes en dur **uniquement pour le spike** : remplacés par les tokens du design system et le String Catalog dans INIT-4.

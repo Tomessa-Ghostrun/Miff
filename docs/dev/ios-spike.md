@@ -1,6 +1,6 @@
 # Spike iOS (INIT-3) : de GitHub à l'iPhone, sans Mac
 
-**Statut** (2026-10-22) : le workflow `ios` (build et tests sans signature) **a tourné et est vert** sur la PR #1 (run 39659012614 : génération XcodeGen, SwiftLint 0 violation, build-for-testing, 10 tests, 0 échec, 1 min 40 de job, environ 2 minutes facturées). Le workflow **`ios-testflight` (signature et envoi TestFlight) n'a, lui, jamais tourné** : tout ce qui touche à la signature, à Apple et à l'iPhone reste non vérifié. Aucun Mac n'est disponible pour le développeur ; les passages marqués « à vérifier » sont des points que seul le premier vrai essai peut confirmer.
+**Statut** (2026-10-22) : le workflow `ios` (build et tests sans signature) **a tourné et est vert** sur la PR #1 (run 39659012614 : génération XcodeGen, SwiftLint 0 violation, build-for-testing, 10 tests, 0 échec, 1 min 40 de job, environ 2 minutes facturées). Le test `MinimumOSVersion` (cible iOS 16.0) y est donc **vert**. Une correction (iPhone seul, `UIDeviceFamily`) et un contrôle supplémentaire ont été ajoutés depuis ce run et passeront par une nouvelle exécution de la CI. Le workflow **`ios-testflight` (signature et envoi TestFlight) n'a, lui, jamais tourné** : tout ce qui touche à la signature, à Apple et à l'iPhone reste non vérifié. Aucun Mac n'est disponible pour le développeur ; les passages marqués « à vérifier » sont des points que seul le premier vrai essai peut confirmer.
 **Rédigé le** : 2026-10-21 (agent `ios-dev`). **Ticket** : `docs/tickets/initialisation-technique.md`, sous-ticket INIT-3.
 
 ---
@@ -79,14 +79,13 @@ Un secret GitHub ne peut plus être relu après création, seulement remplacé :
 ### Étape 8. TestFlight sur l'iPhone
 1. Installez l'app **TestFlight** (App Store) sur l'iPhone et connectez-vous avec le même identifiant Apple que celui d'App Store Connect.
 2. App Store Connect > votre app > **TestFlight** > **Test interne** > **+** pour créer un groupe (par exemple « Équipe »), et ajoutez-vous comme testeur (vous êtes déjà utilisateur App Store Connect). Un testeur interne n'a pas besoin de revue Apple.
+3. **Pour qu'un build apparaisse dans l'app TestFlight de l'iPhone, il faut l'ajouter au groupe de test interne** (App Store Connect > TestFlight > le build > Groupes > ajouter le groupe), **ou activer la « distribution automatique »** dans les réglages du groupe (les nouveaux builds lui sont alors donnés tout seuls). Sans cela, le build existe dans App Store Connect mais n'est pas proposé sur le téléphone.
 
 ### Étape 9. Lancer le workflow
 Voir la section 3.
 
-### Étape 10. Répondre à la question sur le chiffrement (première fois)
-Après l'envoi, le build apparaît dans TestFlight avec la mention **« Informations de conformité manquantes »**. Ce n'est pas une erreur : cliquez dessus et répondez au questionnaire sur le chiffrement.
-- Nous n'avons **volontairement pas renseigné** la clé `ITSAppUsesNonExemptEncryption` dans l'app : c'est une **déclaration légale qui vous revient**, nous ne la décidons pas à votre place.
-- Pour ce spike, l'app ne fait aucun accès réseau et n'embarque aucun chiffrement propre. Pour la suite (Firebase, HTTPS), le ticket prévoit l'usage du chiffrement standard fourni par iOS ; c'est à vous de valider la réponse exacte. Une fois la décision prise, une ligne dans `ios/project.yml` (ticket INIT-4) évitera que la question soit reposée à chaque build.
+### Étape 10. Conformité au chiffrement (plus d'action manuelle)
+**Décision du PM du 2026-10-22** : l'app n'utilise que le chiffrement standard (HTTPS fourni par iOS), qui est exempté. La clé `ITSAppUsesNonExemptEncryption = false` est donc **posée dans l'app** (`ios/project.yml`) et vérifiée par un test et par le workflow : App Store Connect ne pose plus la question « Informations de conformité manquantes » à chaque build. Si l'app ajoute un jour un chiffrement qui lui est propre, cette décision devra être revue.
 
 ---
 
@@ -102,7 +101,9 @@ Il se lance **tout seul** sur une pull request qui modifie `ios/**` ou `.github/
 
 Avant l'archive, le workflow vérifie que l'identifiant d'app est exactement `com.tomessa.miff` (le compte Apple est partagé avec Ghostrun) ; après l'archive, une étape **bloquante** contrôle l'identifiant, la version minimale d'iOS (16.0) et le numéro de build, et annule l'envoi au moindre écart.
 
-**Important** : GitHub n'affiche le bouton « Run workflow » que pour les workflows **présents sur la branche par défaut (`main`)**. Tant que la pull request du spike n'est pas fusionnée, le workflow `ios-testflight` n'apparaît donc pas dans l'onglet Actions. Deux issues : fusionner la pull request du spike (après revue) puis lancer depuis `main`, ou, **à vérifier**, lancer depuis le terminal avec la branche choisie. Le processus du projet (recette du PM avant fusion) est ici en tension avec cette contrainte technique : c'est à vous de trancher.
+**Important** : GitHub n'affiche le bouton « Run workflow » que pour les workflows **présents sur la branche par défaut (`main`)**. Tant que la pull request du spike n'est pas fusionnée, le workflow `ios-testflight` n'apparaît donc pas dans l'onglet Actions. **Le workflow `ios-testflight` ne peut donc pas être lancé avant d'être sur `main`** (déclencheur manuel `workflow_dispatch`, et il ne tourne jamais sur une pull request).
+
+**Décision du PM du 2026-10-22** : le spike iOS est **fusionné AVANT l'essai TestFlight**. C'est une exception assumée à « recette avant merge », car ce workflow est manuel et ne se déclenche jamais tout seul. Le critère I3 (archive signée, envoi, installation sur l'iPhone) est ensuite prouvé **depuis `main`**, avec de petites pull requests de correction si l'essai révèle des erreurs.
 
 Ne relancez pas un job déjà terminé avec « Re-run » : le numéro de build serait identique et TestFlight le refuserait (« redundant binary »). Faites toujours un nouveau « Run workflow ».
 
@@ -115,7 +116,7 @@ Le numéro de build est le **numéro d'exécution du workflow** `ios-testflight`
 
 - **Page du run** (onglet Actions > cliquer le run) : la section **Summary** affiche un tableau avec la **durée de chaque étape**, la version d'Xcode utilisée et la durée totale. C'est ce qu'il faut recopier dans le tableau de la section 7.
 - **Coche verte / croix rouge** : la croix indique l'étape en échec ; cliquez dessus pour voir le message. Les messages d'erreur d'Apple sont en anglais ; la section 6 les traduit.
-- **En cas d'échec**, un **artefact** (téléchargeable en bas de la page du run, conservé 3 jours) contient les journaux complets (`.log`) et, pour TestFlight, les journaux de distribution d'Apple. Ils **ne devraient pas** contenir le contenu de la clé `.p8` (non vérifié : nous n'avons jamais lu ces journaux) ; ils **contiennent** très probablement des identifiants (Key ID, Issuer ID, Team ID, identifiant d'app), et les artefacts ne sont pas masqués comme le sont les secrets dans les journaux de l'écran : ne les publiez pas, et ouvrez-les avant de les partager.
+- **En cas d'échec**, un **artefact** (téléchargeable en bas de la page du run, conservé 3 jours) contient les journaux complets (`.log`) et, pour TestFlight, les journaux de distribution d'Apple (`.xcdistributionlogs`). Le workflow **remplace le Team ID, le Key ID et l'Issuer ID** par « [identifiant masqué] » avant dépôt, et ne dépose pas le dossier d'export. Ils **ne devraient pas** contenir le contenu de la clé `.p8`, mais **les `.xcdistributionlogs` n'ont jamais été relus par un humain** : vérifiez-les avant de les partager, et ne les publiez pas.
 - **Côté Apple** : App Store Connect > votre app > **TestFlight** > **iOS**. Le build apparaît après quelques minutes de traitement (statut « Traitement », puis disponible).
 - **Côté iPhone** : app TestFlight > Miff > Installer.
 
@@ -163,7 +164,7 @@ Classées de la plus à la moins probable pour un premier essai.
 | `shasum: ... FAILED` pendant l'installation des outils | Fichier téléchargé différent de celui attendu | **Ne pas contourner la vérification** ; signaler au développeur (mise à jour de version ou fichier altéré) |
 | Erreur XcodeGen (`Spec validation error`, `Could not find ...`) | Erreur dans `ios/project.yml` (non testé sans Mac) | Transmettre le message au développeur |
 | Violations SwiftLint | Règle de style | Transmettre la liste au développeur |
-| Échec de `testMinimumOSVersionIsIOS16` | Hypothèse non vérifiée : Xcode ajoute `MinimumOSVersion` à l'Info.plist | Transmettre au développeur |
+| Échec de `testMinimumOSVersionIsIOS16`, `testAppIsIPhoneOnly` ou `testEncryptionExemptionIsDeclared` | Réglage du projet modifié ou hypothèse sur l'Info.plist du build | Transmettre au développeur |
 | Le job n'a pas démarré (« quota », « spending limit ») | Minutes gratuites épuisées | Section 7 ; ne pas ajouter de moyen de paiement sans décision |
 | Le workflow `ios-testflight` n'apparaît pas dans Actions | Il n'est pas encore sur `main` | Section 3 |
 
@@ -203,7 +204,7 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 
 - **La clé d'API est puissante, et la clé Admin du premier envoi l'est encore plus.** Une clé d'équipe n'est pas limitée à l'app Miff : elle voit aussi **Ghostrun**, qui est sur le même compte. Une clé **Admin** peut gérer certificats, identifiants, utilisateurs et apps de **tout le compte, Ghostrun compris**. Précautions : ne jamais la sortir de votre gestionnaire de mots de passe sauf pour l'étape 6 ; **la révoquer dès que le premier envoi a réussi** (plan de l'étape 5, puis clé App Manager pour la suite, non vérifié) ; la révoquer immédiatement au moindre doute (App Store Connect > Clés d'équipe > Révoquer) ; ne jamais coller un secret dans une conversation. Le workflow contrôle que l'app est bien `com.tomessa.miff` avant toute signature, pour qu'une erreur de configuration ne touche pas Ghostrun.
 - **Le fichier `.p8` ne doit jamais entrer dans git.** `ios/.gitignore` bloque `*.p8` (et `.p12`, `.cer`, `.mobileprovision`). Le `.gitignore` de la racine du dépôt ne le fera qu'après la fusion de la PR INIT-1 : d'ici là, n'enregistrez le fichier dans aucun dossier du projet.
-- **Note pour la suite (INIT-4)** : dans le workflow `ios-testflight`, le chemin de la clé (`ASC_KEY_PATH`) reste dans l'environnement de **toutes** les étapes suivantes du job. Aujourd'hui seules nos propres commandes tournent, donc le risque est faible. À revoir quand INIT-4 ajoutera des paquets Swift tiers (résolus et compilés pendant le build) : réduire l'exposition en écrivant la clé juste avant l'export seulement, ou en la passant uniquement à l'étape qui en a besoin.
+- **Exposition de la clé dans le workflow** : le chemin du `.p8` n'est plus exporté vers toutes les étapes (pas de `GITHUB_ENV`) ; chaque étape qui en a besoin le recalcule, et en mode `unsigned` l'archive n'a pas la clé du tout (elle n'est écrite que pour l'export). Reste que le fichier `.p8` est présent sur le disque du runner pendant l'export : à revoir quand INIT-4 ajoutera des paquets Swift tiers (code tiers résolu et compilé pendant le build) pour que la clé n'existe que pendant l'envoi.
 - **Les environnements protégés GitHub ne sont pas disponibles** pour un dépôt privé en offre gratuite (documentation GitHub). Un « environnement » est normalement le bon moyen de limiter qui peut lire les secrets (relecteur obligatoire, branches autorisées). Sans lui, **toute personne ayant le droit d'écrire dans le dépôt peut, en modifiant un workflow sur une branche, lire les secrets**. Acceptable pour un dépôt privé à un seul contributeur humain, à reconsidérer dès qu'il y en a plusieurs. Si vous passez en GitHub Pro : créez l'environnement `testflight`, déplacez-y les 4 secrets, limitez-le aux branches voulues avec un relecteur obligatoire (vous), puis décommentez la ligne `environment: testflight` dans `.github/workflows/ios-testflight.yml` (un commentaire l'indique).
 - Dans le workflow : la clé est décodée dans un fichier temporaire du runner (droits restreints, jamais affiché, pas de `set -x`), puis supprimée à la fin même en cas d'échec ; le runner est de toute façon détruit après le job. `permissions` est limité à `contents: read` ; aucune action tierce n'a accès aux secrets (les deux actions utilisées, `checkout` et `upload-artifact`, sont celles de GitHub, épinglées par empreinte de commit) ; jamais de `pull_request_target`.
 - **Le Team ID, le Key ID et l'Issuer ID ne sont pas des secrets cryptographiques** (seul le `.p8` l'est), mais ils sont traités comme des secrets par prudence.
@@ -257,7 +258,7 @@ Consignes :
 
 Si l'export avec `destination: upload` échoue alors que l'archive et la signature réussissent, on peut séparer les deux gestes : (1) passer `destination` à `export` dans `ExportOptions.plist` pour obtenir un fichier `.ipa` signé dans `build/export` ; (2) l'envoyer avec l'outil d'Apple `xcrun altool --upload-app --file <fichier.ipa> --type ios --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>` (la clé `.p8` est cherchée dans un dossier `private_keys` du répertoire courant, de `~/` ou de `~/.appstoreconnect`, nommée `AuthKey_<KEY_ID>.p8`). La syntaxe exacte et la disponibilité d'`altool` dans Xcode 26 sont **à vérifier** ; rien de cela n'est dans le workflow aujourd'hui.
 
-Autres limites connues du spike : aucun test sur iOS 16 réel (les simulateurs du runner sont en iOS 26.x ; le test `MinimumOSVersion` vérifie seulement la cible déclarée) ; iPhone uniquement (réglage `TARGETED_DEVICE_FAMILY = 1`, à confirmer) ; orientation portrait uniquement ; couleurs et textes en dur (remplacés par les tokens du design system et le String Catalog dans INIT-4).
+Autres limites connues du spike : aucun test sur iOS 16 réel (les simulateurs du runner sont en iOS 26.x ; le test `MinimumOSVersion`, vert, vérifie seulement la cible déclarée) ; iPhone uniquement (`TARGETED_DEVICE_FAMILY = 1` posé au niveau de la cible : XcodeGen applique sinon « 1,2 » ; vérifié par le test `UIDeviceFamily` et par le workflow ; l'ouverture à l'iPad reste une décision produit à confirmer) ; orientation portrait uniquement ; couleurs et textes en dur (remplacés par les tokens du design system et le String Catalog dans INIT-4).
 
 ---
 
