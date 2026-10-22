@@ -1,8 +1,8 @@
 # Ticket — Durcissement des règles de sécurité Firestore
 
-**Statut** : Brouillon pour challenge et validation PM (aucun développement lancé, `backend/firestore.rules` et les tests ne sont **pas** modifiés par ce ticket de cadrage)
-**Rédigé le** : 2026-10-22 (agent `backend-data`)
-**Origine** : revue indépendante de la PR #2 (règles + tests), dont les 4 attaques ci-dessous ont été **prouvées dans l'émulateur** par la relectrice ; décisions du PM du 2026-10-22 sur ATK3 et ATK4.
+**Statut** : Brouillon mis à jour avec les décisions du PM du 2026-10-22 (§15) ; reste à valider avant tout développement (`backend/firestore.rules` et les tests ne sont **pas** modifiés par ce ticket de cadrage)
+**Rédigé le** : 2026-10-22 (agent `backend-data`) ; mis à jour le 2026-10-22 après les réponses du PM
+**Origine** : revue indépendante de la PR #2 (règles + tests), dont les 4 attaques ci-dessous ont été **prouvées dans l'émulateur** par la relectrice ; décisions du PM du 2026-10-22 sur ATK3 et ATK4, puis sur les questions ouvertes (§15).
 **Sources lues** : `CLAUDE.md`, `backend/data-model.md` (surtout §5, §6, §8, §10, §12, §15), `backend/firestore.rules`, `backend/rules-test-plan.md`, `backend/rules-test-report.md`, `backend/tests/` (garde-fou, mesure des lectures, liste des mutations), `backend/firebase.json`, `backend/.firebaserc`, `docs/tickets/initialisation-technique.md` (format).
 **Convention** : « vérifié » = confirmé sur une source officielle le 2026-10-22. « À vérifier » = non confirmé, ne pas s'y fier. « Estimation » = raisonnement à partir des règles, pas une mesure. Les extraits de règles de ce document sont des **esquisses indicatives** (non appliquées) : la version réelle est écrite et testée au développement.
 
@@ -20,7 +20,7 @@ En une phrase par sujet :
 | **Code orphelin** | Supprimer une Miff supprime obligatoirement son code secret : un vieux code ne peut plus rouvrir une porte. |
 | **Réciprocité réelle** (décision PM) | Pour voir où en sont les autres, il faut avoir soi-même **publié son propre statut**, pas seulement avoir activé le partage. C'est un vrai « donnant-donnant ». |
 | **Membre retiré** (décision PM) | Quand le créateur retire quelqu'un, le code de la Miff est **automatiquement renouvelé** : l'ancien code ne marche plus, le créateur partage le nouveau avec qui il veut. |
-| **Avant les premiers testeurs** | Protection contre les abus de lectures (qui pourraient bloquer l'app pour tout le monde), photos réellement illisibles après 24 h, données effacées de l'appareil à la déconnexion, garde-fous contre une erreur de projet Firebase, tests plus solides. |
+| **Avant les premiers testeurs** | Protection contre les abus de lectures (qui pourraient bloquer l'app pour tout le monde), photos illisibles après 24 h et supprimées de la base (pour tous, premium ou non), données effacées de l'appareil à la déconnexion, garde-fous contre une erreur de projet Firebase, tests plus solides. |
 
 **Coût : 0 €.** Tout ce qui est proposé reste sur le plan Spark. Les options payantes (Blaze) sont présentées en §11 avec leur alternative gratuite.
 
@@ -33,7 +33,7 @@ En une phrase par sujet :
 ### Dans le périmètre
 - Correction des 4 attaques (ATK1 à ATK4) dans `backend/firestore.rules`, un test par attaque, prouvé par mutation.
 - Défense complémentaire sur la même cause que ATK1 (données de membres survivantes après suppression d'une Miff : lecture refusée si la Miff n'existe plus, voir §4.1.b).
-- Alignement de la lecture des photos sur la réciprocité réelle (ATK3) et lecture refusée après expiration (§5.2).
+- Photos : lecture refusée après expiration et nettoyage (§5.2), identique pour tous les comptes. La réciprocité par statut publié (ATK3) ne s'applique **pas** aux photos (décision PM, §3 ATK3).
 - Avant les premiers testeurs externes : App Check strict, mesure et signal d'abus de lectures, durée de vie réelle des photos, purge du cache local, garde-fous de projet, mesure des lectures de règles, trous de couverture des tests.
 - Mise à jour de `backend/data-model.md`, `backend/rules-test-plan.md` (nouvelle section 11), `backend/rules-test-report.md`, et du contrat que les apps iOS et Android doivent implémenter.
 
@@ -96,7 +96,7 @@ miffs : allow delete: if isOwner(miffId)
 
 **Mise en œuvre** :
 - `status` (get et list) : `miffAlive && mySharingOn && statusPublished`, avec `statusPublished(miffId) = exists(miffs/{id}/status/{moi})`.
-- **Même exigence pour `photos`** (get) : sinon la photo d'un proche resterait lisible avec le seul partage activé, ce qui contredirait la décision. C'est un ajout par rapport au texte de la décision, signalé ici pour validation.
+- **`photos` : pas de changement de réciprocité (décision PM du 2026-10-22).** La lecture d'une photo (get) garde la règle actuelle `mySharingOn` (partage activé), plus les ajouts de ce ticket (`miffAlive`, photo non expirée, §5.2). **Conséquence assumée par le PM** : un membre qui a activé son partage mais n'a **pas** publié son statut peut tout de même lire les photos des autres membres (il connaît leurs identifiants grâce à la liste des membres). Un membre dont le partage est désactivé ne les lit toujours pas (cas X1 du plan de test). La réciprocité « statut publié » ne protège donc que les statuts.
 - On garde `mySharingOn` **et** on ajoute l'existence du statut : l'invariant « un statut existe ⇒ le partage est actif » est aujourd'hui garanti par les règles d'écriture, mais la défense en profondeur coûte 1 lecture de règle ; à retirer seulement si la mesure (§4.3 et §5.5) montre un coût visible, en le justifiant dans la PR.
 - Conséquence naturelle : révoquer son partage (qui supprime son statut) coupe aussi sa lecture des autres.
 - Conséquence pour les apps : à l'activation du partage, **créer le statut initial dans le même lot** (voir §6.3).
@@ -139,7 +139,7 @@ Avant ce lot : suppression des lieux (≤ 5 par lot), puis **retrait de chaque a
 **Correction recommandée** : ajouter `miffAlive(miffId) = exists(miffs/{id})` aux lectures de `places`, `status`, `photos` et `members` (get/list). Coût : environ 1 lecture de règle de plus par requête (un listener = une évaluation à l'ouverture, estimation) ; à mesurer (§5.5). En contrepartie, une Miff supprimée devient illisible pour tout le monde immédiatement, même si l'app d'un ancien membre ne s'est pas encore nettoyée.
 Le `get miffs/{id}` n'est pas modifié : un survivant reçoit « introuvable », ce qui permet à son app de détecter la suppression et de se nettoyer (§6.5).
 
-**Reste vrai (limite connue, à faire valider juridiquement)** : les statuts, photos et fiches des survivants restent *physiquement stockés* jusqu'au prochain lancement de leur app (illisibles entre-temps). Sur Spark, aucune fonction ne peut les purger (voir Q6 et §10).
+**Reste vrai (limite connue, à faire valider juridiquement)** : les statuts, photos et fiches des survivants restent *physiquement stockés* jusqu'au prochain lancement de leur app (illisibles entre-temps). Sur Spark, aucune fonction ne peut les purger (décision PM Q6 : acceptable pour la bêta ; avis juridique à obtenir avant le lancement public, conservé comme risque K4).
 
 ### 4.2 ATK4 : régénération du code à chaque retrait d'un membre
 
@@ -174,7 +174,7 @@ L'index `users/{cible}/memberships/{key}` de la personne retirée n'est pas touc
 | Cas | Ce qui se passe avec les règles proposées | Recommandation / question |
 |---|---|---|
 | **Retrait par le créateur (expulsion)** | Code renouvelé dans le même lot (décision PM). | Appliqué. |
-| **Départ volontaire d'un membre** | Un membre simple **ne peut pas** renouveler le code (seul le créateur écrit `miffs`), donc l'imposer dans le lot de départ est impossible sans serveur. Le départ reste tel quel ; la personne peut revenir avec le code qu'elle connaît. | **Ne pas renouveler automatiquement ; l'app du créateur peut proposer, à l'ouverture suivante, « Un membre est parti : souhaitez-vous renouveler le code ? » sans insister** (Q1). Le renouvellement manuel existe déjà. |
+| **Départ volontaire d'un membre** | Un membre simple **ne peut pas** renouveler le code (seul le créateur écrit `miffs`), donc l'imposer dans le lot de départ est impossible sans serveur. Le départ reste tel quel ; la personne peut revenir avec le code qu'elle connaît. | **Décision PM (Q1) : aucun changement de code imposé ; l'app du créateur propose discrètement, à l'ouverture suivante, « Un membre est parti : souhaitez-vous renouveler le code ? », sans insister.** Le renouvellement manuel existe déjà. |
 | **Un membre prévenu qu'il va être retiré se « retire lui-même » juste avant** | Il garde l'ancien code (cas « départ volontaire »). Course improbable, non empêchable sans serveur. | Documenté (risque K3, §10). Le créateur peut renouveler le code à la main. |
 | **Plusieurs retraits d'affilée** | Un lot par membre : chaque retrait renouvelle le code. | Accepté ; l'app peut n'afficher que le code final. |
 | **Retrait d'un membre sans nouveau code** (client modifié ou bug) | **Refusé par les règles.** | Test H4. |
@@ -191,7 +191,7 @@ Estimation par lecture des règles, **borne haute, sans mise en cache** ; la lim
 | Suppression de Miff (lot de 6) | non concluant | ≈ 11 à 13 sur 20 |
 | Retrait d'un membre (lot de 6) | non concluant | ≈ 18 sur 20 (marge faible) |
 | Lecture de la liste des statuts | 1 | ≈ 3 (`miffAlive` + `mySharingOn` + `statusPublished`) |
-| Lecture d'une photo | 1 | ≈ 3 |
+| Lecture d'une photo | 1 | ≈ 2 (`miffAlive` + `mySharingOn` ; pas de condition de statut publié) |
 
 ---
 
@@ -206,24 +206,28 @@ Estimation par lecture des règles, **borne haute, sans mise en cache** ; la lim
 **Mitigations gratuites, par ordre d'efficacité** :
 1. **App Check en mode « appliqué »** sur Firestore : seules les vraies apps Miff (Play Integrity, App Attest) peuvent interroger la base ; un script sans app officielle est refusé. Procédure : app enregistrée ➜ mode « non appliqué » pour vérifier dans les métriques que les apps envoient bien leur jeton ➜ « appliqué ». Prérequis déjà listés (`backend/README.md`, ticket d'initialisation) : empreintes SHA-256 Android, App Attest iOS, jetons de debug pour les builds de développement, distribution par Play interne/TestFlight (une app installée hors Play échoue à Play Integrity). Un blocage par erreur se corrige en repassant le service en « non appliqué » dans la console (jusqu'à environ 15 minutes de délai, vérifié sur la documentation Firebase).
    *Limite honnête* : App Check n'arrête pas un attaquant équipé d'un vrai appareil ; il augmente son coût. **À vérifier** : si une requête refusée par App Check est comptée dans les quotas Firestore (la documentation consultée ne le précise pas).
-2. **E-mail vérifié obligatoire** pour résoudre un code et pour créer/rejoindre une Miff (`request.auth.token.email_verified == true`, gratuit, 0 lecture de règle) : un compte jetable doit au moins disposer d'une vraie boîte mail (des boîtes jetables existent : barrière partielle). Les comptes Google sont déjà vérifiés. C'est la question Q14 de `data-model.md` ; elle ajoute un peu de friction à l'inscription par e-mail (Q3 ci-dessous).
-3. **Authentification** : connexion anonyme désactivée, protection contre l'énumération d'e-mails activée (déjà prévu au ticket d'initialisation).
-4. **Surveillance avec seuil** (gratuite) : console Firebase > Firestore > Utilisation, contrôlée à chaque jour de bêta. La console ne détaille pas les lectures par collection ; l'indicateur retenu est **lectures par jour ÷ utilisateurs actifs** : l'estimation de `data-model.md` §12 est d'environ 75 ; **au-delà de 150 de façon répétée, on suspecte un abus**. Une alerte Cloud Monitoring sur le nombre de lectures serait idéale : **disponibilité sur Spark à vérifier**.
+2. **Authentification** : connexion anonyme désactivée, protection contre l'énumération d'e-mails activée (déjà prévu au ticket d'initialisation). **Décision PM (2026-10-22) : l'e-mail vérifié n'est PAS exigé** (question Q14 de `data-model.md` tranchée par la négative) ; les règles ne testent donc pas `email_verified`. Cette mitigation, qui aurait relevé le coût des comptes jetables, est écartée : les mitigations 1, 3 et 4 portent seules la protection.
+3. **Surveillance avec seuil renforcée** (gratuite) : console Firebase > Firestore > Utilisation, **contrôlée chaque jour de bêta externe** (par le PM, 1 minute). La console ne détaille pas les lectures par collection ; l'indicateur retenu est **lectures par jour ÷ utilisateurs actifs** : l'estimation de `data-model.md` §12 est d'environ 75. Deux seuils : **> 100 une journée = à examiner** ; **> 150 deux jours de suite = abus suspecté, signal de bascule** (voir plus bas). Une alerte Cloud Monitoring sur le nombre de lectures serait idéale : **disponibilité sur Spark à vérifier**. On relève aussi, dans Firebase > Authentication, le nombre de **nouveaux comptes par jour** : une rafale de créations de comptes est le signe typique d'un script.
+4. **App Check, appliqué sans exception et vérifié** : c'est désormais la mitigation principale. Avant l'ouverture aux testeurs externes : métriques App Check à ~100 % de requêtes vérifiées, puis mode « appliqué » sur Firestore **et** sur Authentication si la console le propose (réduit aussi la création de comptes par script ; **à vérifier**) ; jetons de debug uniquement sur le projet de développement.
 5. **Côté app** : limiter les essais (pause après 5 échecs) ; ce n'est pas une protection de sécurité (un attaquant n'utilise pas l'app) mais elle réduit les erreurs de saisie.
+
+**Risque résiduel laissé par le choix « pas d'e-mail vérifié » (assumé par le PM)** : un attaquant équipé d'un **vrai appareil** (qui passe App Check) peut créer des comptes jetables à volonté, sans boîte mail réelle, et boucler sur `get joinCodes`. Il peut épuiser le quota gratuit du jour et bloquer l'app pour tous (déni de service) ; il ne peut pas deviner un code (~59 bits). Effort demandé à l'attaquant : un appareil réel par flux de comptes, donc modeste mais pas nul.
+**Signal de réexamen de ce choix** : au premier des événements suivants, le PM revoit l'exigence d'e-mail vérifié (ajout d'une condition `email_verified` dans les règles, gratuit, ~1 ligne) **avant** de recourir à Blaze : (a) ratio lectures ÷ utilisateurs actifs > 150 deux jours de suite ; (b) une création de comptes très supérieure à la normale sans campagne d'acquisition (seuil chiffré à calibrer avec le volume réel de la bêta, par exemple « plus de 5 fois la moyenne des 7 jours précédents ») ; (c) un jour où le quota de lectures a été atteint. Cette alternative gratuite est ainsi gardée « en réserve ».
 
 **Mesure du débit** : (a) calcul théorique ci-dessus ; (b) mesure sur le **futur projet de développement** (prévu avant les premiers testeurs externes), jamais sur `miff-3d283` : une rafale de quelques centaines de `get joinCodes` avec un compte de test et un jeton de debug, pour relever les lectures comptées par la console et le débit réel d'un client ; réalisée avec l'accord du PM, hors CI. Elle sert aussi à vérifier si les requêtes refusées par App Check sont comptées.
 
-**Signal de bascule payante** (à écrire dans `data-model.md` §12) : un des trois suivants ➜ le PM décide de passer en Blaze (carte bancaire, alerte de budget qui prévient mais ne plafonne pas) pour disposer d'une fonction appelable « rejoindre » avec compteur de tentatives par compte :
+**Signal de bascule payante** (à écrire dans `data-model.md` §12). La décision de passer en Blaze est **reportée** : elle reste une question ouverte du PM, à trancher avant la première bêta externe (Q7). Un des trois signaux suivants ➜ le PM décide, après réexamen de l'e-mail vérifié (ci-dessus), de passer en Blaze (carte bancaire, alerte de budget qui prévient mais ne plafonne pas) pour disposer d'une fonction appelable « rejoindre » avec compteur de tentatives par compte :
 - lectures par jour > 30 000 (60 % du quota) deux jours de suite sans explication ;
 - ratio lectures ÷ utilisateurs actifs > 150 ;
 - une journée où l'app a été refusée pour quota dépassé.
 
 ### 5.2 Durée de vie réelle des photos
+**Décision PM (2026-10-22) : la photo est supprimée de la base, pour économiser la place, dans tous les cas, premium ou non. Aucune différence de durée selon l'abonnement.** Les règles et les apps appliquent donc la même durée (24 h) à tous les comptes ; aucun test, aucun critère ni aucune règle ne dépend du premium pour les photos.
 - **Constat** : `photos.expiresAt` n'est qu'**indicatif** ; rien ne supprime physiquement la photo. Les politiques de suppression automatique de Firestore (« TTL ») sont listées par Google parmi les opérations **sans quota gratuit** (`docs.cloud.google.com/firestore/quotas`, consulté le 2026-10-22) : elles sont probablement indisponibles ou payantes sur Spark. **À vérifier dans la console** (Firestore > Stratégies TTL) avant de s'y fier.
 - **Solution gratuite proposée (3 couches)** :
   1. **Les règles refusent la lecture d'une photo expirée** : `get` autorisé seulement si `resource == null || resource.data.expiresAt > request.time` (aucune lecture de règle en plus). L'effet est immédiat et ne dépend d'aucun nettoyage. À noter : le comportement d'une photo absente reste « introuvable » ; une photo expirée renvoie un refus de permission, que les apps traitent comme « pas de photo ».
   2. **Nettoyage par l'auteur** : à chaque lancement et à chaque nouvelle mise à jour, l'app supprime sa propre photo expirée (et met `hasPhoto` à `false`).
-  3. **Nettoyage opportuniste par n'importe quel membre** (recommandé, petit) : `delete` de `photos/{uid}` autorisé à un membre si `resource.data.expiresAt <= request.time` (coût : 1 lecture de règle) ; l'app qui constate une photo expirée la supprime. Évite qu'une photo reste stockée parce que son auteur n'ouvre plus l'app.
+  3. **Nettoyage opportuniste par n'importe quel membre** (retenu par le PM) : `delete` de `photos/{uid}` autorisé à un membre si `resource.data.expiresAt <= request.time` (coût : 1 lecture de règle) ; l'app qui constate une photo expirée la supprime. Évite qu'une photo reste stockée parce que son auteur n'ouvre plus l'app.
 - **Aligner les règles sur la décision du PM (photo valable 24 h)** : aujourd'hui les règles tolèrent jusqu'à **7 jours** (`firestore.rules:350`). Proposition : `expiresAt <= request.time + 25 h` (24 h + 1 h de marge, car `expiresAt` est calculé avec l'horloge du téléphone).
 - **Pour le juriste** : « 24 h maximum » (`data-model.md` §10) doit être reformulé en **« illisible après 24 h ; suppression physique au mieux »** tant que le TTL n'est pas disponible.
 - **Option payante** : TTL géré (nécessite probablement le plan Blaze). Alternative gratuite : les trois couches ci-dessus.
@@ -257,7 +261,7 @@ Contrat commun, à reporter dans les tickets « Créer/Rejoindre/Quitter une Mif
 ### 6.1 Retirer un membre (créateur)
 - Lot de 6 écritures de §4.2, **un membre par lot** ; générer le nouveau code avec le générateur cryptographique ; réessayer avec un autre code si collision.
 - Afficher ensuite le nouveau code avec l'action de partage. Texte à valider par le PM, dans le ton bienveillant : par exemple « Julie ne fait plus partie de la Miff. Voici le nouveau code, à partager avec qui vous voulez. » (jamais accusateur).
-- Après un départ volontaire, proposition discrète de renouveler le code (selon Q1).
+- Après un départ volontaire : aucun changement de code imposé (décision PM Q1) ; l'app du créateur lui propose discrètement, à l'ouverture suivante, de renouveler le code (action facultative, sans insistance ni relance).
 
 ### 6.2 Supprimer une Miff (créateur)
 Dans l'ordre, tout reprenable : (1) supprimer les `places` (≤ 5 par lot) ; (2) pour chaque autre membre, lot de retrait de §6.1 ; (3) lot final de §4.1.a avec la **pierre tombale** `miffsDeleted/{id}` et la suppression du code. Un lot final sans pierre tombale ou sans suppression du code est refusé.
@@ -265,7 +269,7 @@ Dans l'ordre, tout reprenable : (1) supprimer les `places` (≤ 5 par lot) ; (2)
 ### 6.3 Activer le partage puis lire les autres
 - Activer le partage = un lot : `members/{moi}.sharing` (consentement explicite, écran d'explication d'abord) **+ création de `status/{moi}`**.
 - Statut initial : `presence = "unknown"` (le schéma impose tous les champs ; avec `unknown` le calcul de `data-model.md` §3 affiche un état neutre, jamais un « tout va bien »), `locationAccess` = permission réelle de l'appareil, `lastUpdateAt = maintenant`. Le premier événement réel l'écrase.
-- Tant que `status/{moi}` n'existe pas, la lecture des statuts et des photos des autres est refusée : l'app l'affiche **sans alarme** (« Partage de ton statut en cours… »), jamais comme une erreur.
+- Tant que `status/{moi}` n'existe pas, la lecture des **statuts** des autres est refusée (les photos ne sont pas concernées, décision PM : elles restent lisibles avec le seul partage activé) : l'app l'affiche **sans alarme** (« Partage de ton statut en cours… »), jamais comme une erreur.
 - Si le membre révoque : le lot de révocation existant supprime son statut ; il ne voit alors plus les autres, état « partage désactivé » neutre.
 
 ### 6.4 Gestion d'accès perdu (retrait, Miff supprimée)
@@ -273,10 +277,10 @@ Dans l'ordre, tout reprenable : (1) supprimer les `places` (≤ 5 par lot) ; (2)
 - Puis nettoyage : si ma fiche `members/{moi}` existe encore (Miff supprimée), exécuter le lot « Quitter » standard ; supprimer l'index `memberships`; vider le cache local (§5.3).
 
 ### 6.5 Photos
-Ignorer toute photo dont `expiresAt` est passé ; supprimer sa propre photo expirée au lancement et à chaque mise à jour (`hasPhoto = false`) ; supprimer la photo expirée d'un autre membre si l'option §5.2.3 est retenue ; traiter « refus » et « introuvable » d'une photo comme « pas de photo ».
+Ignorer toute photo dont `expiresAt` est passé ; supprimer sa propre photo expirée au lancement et à chaque mise à jour (`hasPhoto = false`) ; supprimer la photo expirée d'un autre membre (nettoyage par tout membre, retenu par le PM) ; traiter « refus » et « introuvable » d'une photo comme « pas de photo ».
 
 ### 6.6 Transverse
-App Check initialisé avant toute requête ; erreurs App Check ou quota affichées en ton neutre (« Pas de connexion pour le moment ») ; vérification de l'e-mail avant de saisir un code si Q3 est retenue ; purge du cache (§5.3).
+App Check initialisé avant toute requête ; erreurs App Check ou quota affichées en ton neutre (« Pas de connexion pour le moment ») ; aucune vérification d'e-mail à exiger (décision PM Q3) ; purge du cache (§5.3).
 
 ---
 
@@ -294,7 +298,8 @@ Nouvelle section 11 du plan de test (même fixtures que la section 0). Chaque id
 | **H1e** | Après H1a, `bob` (survivant) lit `places`, `members`, `status`, `photos` de M1 | KO (si §4.1.b retenu) ; `get miffs/M1` : introuvable (pas d'erreur) | « `miffAlive` retiré » |
 | **H2a** | `alice` supprime M1 en laissant `joinCodes/{code}` | KO | « la suppression n'exige plus la suppression du code » |
 | **H2b** | État orphelin injecté par l'administrateur de test (code sans Miff) : `eve` tente de rejoindre avec ce code | KO | (déjà couvert par `exists(miffs)`, vérifier qu'une mutation le détecte) |
-| **H3a** | `carol` active son partage **sans** statut : lit `status` (get, list) et `photos/alice` | KO | « `statusPublished` retiré » (status) ; idem (photos) |
+| **H3a** | `carol` active son partage **sans** statut : lit `status` (get, list) ; puis lit `photos/alice` | KO pour `status` ; **OK pour la photo** (conséquence assumée par le PM : la réciprocité par statut publié ne vise que les statuts) | « `statusPublished` retiré » (status uniquement) |
+| **H3d** | `eve` ou un membre dont le partage est **désactivé** lit `photos/alice` (X1 inchangé) | KO | (X1 existant) |
 | **H3b** | `carol` active son partage **et** crée son statut dans le même lot, puis lit | OK | — |
 | **H3c** | `bob` révoque (supprime son statut) puis lit `status/alice` | KO | — |
 | **H4a** | `alice` retire `bob` **sans** changer le code (remplace la partie « OK » de M15) | **KO** | « le retrait n'exige plus un nouveau code » |
@@ -302,10 +307,11 @@ Nouvelle section 11 du plan de test (même fixtures que la section 0). Chaque id
 | **H4c** | Après H4b, `bob` supprime son index orphelin puis tente de rejoindre avec **l'ancien** code | **KO** (c'est ATK4) | « l'ancien code n'est plus supprimé » |
 | **H4d** | Après H4b, `bob` rejoint avec le **nouveau** code (comportement documenté : le créateur l'a partagé) | OK | — |
 | **H4e** | Retrait avec un « nouveau » code identique à l'ancien ; retrait par un non-propriétaire ; régénération par un non-propriétaire (M11) | KO | — |
-| **H4f** | Départ volontaire d'un membre (M12) | OK (inchangé, sous réserve de Q1) | — |
+| **H4f** | Départ volontaire d'un membre (M12) : aucun changement de code exigé (décision PM Q1) | OK (inchangé) | — |
 | **H5a** | Photo : lecture refusée si `expiresAt` est passé (document injecté par l'administrateur de test) ; photo absente ➜ introuvable | KO ; introuvable | « le contrôle d'expiration retiré » |
 | **H5b** | Photo : création avec `expiresAt` à +26 h ou +7 jours | KO ; +24 h : OK | « borne de durée élargie » |
-| **H5c** | Suppression d'une photo expirée par un autre membre ; d'une photo non expirée par un autre membre (si §5.2.3 retenu) | OK ; KO | — |
+| **H5c** | Suppression d'une photo expirée par un autre membre ; d'une photo non expirée par un autre membre (nettoyage par tout membre, retenu par le PM) | OK ; KO | — |
+| **H5d** | Mêmes règles de durée de vie et d'expiration pour un compte premium (`dave`) et un compte gratuit : aucune durée plus longue selon l'abonnement | identiques | — |
 | **H6** | Garde-fou : `.firebaserc` avec `default`, script `npm` ou workflow sans projet `demo-…`, environnement avec `GCLOUD_PROJECT=miff-3d283` | échec du test unitaire | test unitaire (pas de mutation de règles) |
 
 ### 7.2 Tests existants à adapter (conséquences des nouvelles règles)
@@ -359,19 +365,19 @@ Découpage proposé : **DUR-1** = R1 à R5 (bloquant avant tout déploiement) ; 
 - [ ] **R4** (ATK2) La suppression d'une Miff est refusée si `joinCodes/{joinCode}` existe encore après le lot.
 - [ ] **R5** Les tests H1 et H2 existent, échouent sur les règles actuelles (là où c'est attendu), passent sur les nouvelles règles, et chacun est détecté par une mutation.
 - [ ] **R6** (complément ATK1) Après suppression d'une Miff, un membre survivant ne peut plus lire `places`, `members`, `status`, `photos` (H1e), et son app détecte « Miff introuvable » (ou décision explicite de ne pas retenir ce complément, motivée dans la PR).
-- [ ] **R7** (ATK3) `status` (get et list) et `photos` (get) sont refusés tant que `status/{moi}` n'existe pas, même avec le partage activé ; autorisés dès que le statut est publié ; refusés de nouveau après révocation (H3a, H3b, H3c).
+- [ ] **R7** (ATK3) `status` (get et list) est refusé tant que `status/{moi}` n'existe pas, même avec le partage activé ; autorisé dès que le statut est publié ; refusé de nouveau après révocation (H3a, H3b, H3c). **`photos` : réciprocité inchangée** (décision PM) : un membre qui partage sans avoir publié son statut peut lire les photos ; un membre au partage désactivé ne le peut pas (H3a, H3d, X1).
 - [ ] **R8** (ATK4) Le retrait d'un membre par le créateur est refusé si le code ne change pas dans le même lot (H4a, H4e).
 - [ ] **R9** (ATK4) Après un retrait, l'ancien code ne permet plus de rejoindre, même après libération de l'index de l'ex-membre (H4c) ; le nouveau code fonctionne (H4d).
-- [ ] **R10** Le départ volontaire d'un membre reste possible et inchangé (H4f), sous réserve de la réponse à Q1.
+- [ ] **R10** Le départ volontaire d'un membre reste possible et inchangé (H4f) : aucun changement de code imposé (décision PM Q1).
 - [ ] **R11** Le lot de retrait et le lot de suppression de Miff réussissent sous les limites de lectures de règles (10 par opération, 20 par lot) avec une **marge mesurée d'au moins 2 lectures** ; sinon, mitigation du §4.2 appliquée et documentée.
-- [ ] **R12** Les photos ne sont plus lisibles après `expiresAt` (H5a) ; la durée maximale à la création est alignée sur 24 h + marge (H5b) ; la politique de nettoyage retenue est décrite dans `data-model.md` (avec la mention « illisible après 24 h ; suppression physique au mieux »).
+- [ ] **R12** Les photos ne sont plus lisibles après `expiresAt` (H5a) ; la durée maximale à la création est alignée sur 24 h + marge, **identique pour les comptes premium et gratuits** (H5b, H5d) ; le nettoyage par tout membre fonctionne (H5c) ; la politique de nettoyage retenue est décrite dans `data-model.md` (avec la mention « illisible après 24 h ; suppression physique au mieux »).
 - [ ] **R13** Les 138 tests existants (hors cas volontairement modifiés, listés dans la PR avec la raison) passent ; aucun test n'est affaibli ni mis en `skip`.
 - [ ] **R14** La liste de mutations couvre les protections du §7.3 ; aucun survivant sans test renforcé ou équivalence documentée.
 - [ ] **R15** Aucune mesure de lectures de règles « non concluante » : la cause est établie et le test échoue si une mesure ne conclut pas ; tableau à jour dans `rules-test-report.md`.
 - [ ] **R16** `.firebaserc` sans projet par défaut ; le test H6 échoue si un script ou workflow appelle `firebase` sans projet `demo-…` ; le garde-fou refuse `GCLOUD_PROJECT=miff-3d283`.
 - [ ] **R17** (clients, vérifié par le QA sur appareil) Après déconnexion puis relance hors ligne, aucune donnée de Miff n'est visible ; même constat après retrait d'un membre sur son téléphone.
-- [ ] **R18** (PM, avant testeurs externes) App Check est passé en mode « appliqué » sur Firestore après vérification en mode « non appliqué » ; une requête sans jeton valide est refusée ; les builds de développement et de test restent fonctionnels.
-- [ ] **R19** Le signal d'abus de lectures (ratio ≥ 150 lectures par utilisateur actif, > 30 000 lectures par jour) et la procédure de bascule vers Blaze sont écrits dans `data-model.md` §12 ; la mesure du débit sur le projet de développement est consignée.
+- [ ] **R18** (PM, avant testeurs externes) App Check est passé en mode « appliqué » sur Firestore (et sur Authentication si la console le propose) après vérification en mode « non appliqué » ; une requête sans jeton valide est refusée ; les builds de développement et de test restent fonctionnels.
+- [ ] **R19** Le signal d'abus de lectures (ratio > 100 = à examiner, > 150 deux jours de suite = signal, > 30 000 lectures par jour), le risque résiduel « comptes jetables » (e-mail vérifié non exigé, décision PM) avec son signal de réexamen, et la procédure de bascule vers Blaze (décision reportée avant la première bêta externe) sont écrits dans `data-model.md` §12 ; la mesure du débit sur le projet de développement est consignée.
 - [ ] **R20** `data-model.md` (section « Ce qui change », §5, §8, §9, §10, §12, §14, §15), `rules-test-plan.md` (section 11) et `rules-test-report.md` sont à jour.
 - [ ] **R21** La procédure de §8.2 est respectée : tests verts ➜ revue de sécurité en contexte neuf ➜ OK explicite du PM ➜ déploiement local (jamais depuis la CI) ➜ vérification.
 - [ ] **R22** Aucune dépense : plan Spark inchangé, aucun moyen de paiement ajouté, aucun secret ou clé dans le dépôt.
@@ -389,11 +395,11 @@ Découpage proposé : **DUR-1** = R1 à R5 (bloquant avant tout déploiement) ; 
 | K5 | Statut initial `unknown` perçu comme une « mise à jour » | Confusion d'affichage | Contrat §6.3 (état neutre, jamais « tout va bien ») ; test de recette |
 | K6 | Règles plus coûteuses en lectures (≈ +2 par lecture de statut) | Quota gratuit consommé plus vite | Mesure, retrait éventuel de `mySharingOn` si redondant, suivi du ratio lectures/utilisateur |
 | K7 | App Check strict bloque des testeurs légitimes (app hors Play/TestFlight, jeton de debug manquant) | Testeurs refusés | Mode « non appliqué » d'abord, bascule seulement quand les métriques montrent ~100 % de jetons valides, retour arrière dans la console |
-| K8 | E-mail vérifié obligatoire (si retenu) ajoute de la friction | Abandon à l'inscription | Q3 ; comptes Google déjà vérifiés |
+| K8 | Comptes jetables possibles : l'e-mail vérifié n'est pas exigé (décision PM Q3) | Abus de lectures facilité pour un attaquant équipé d'un vrai appareil (déni de service) | App Check appliqué, surveillance quotidienne, signal de réexamen de l'e-mail vérifié avant Blaze (§5.1) |
 | K9 | Maintenance des mutations fragile (motifs textuels) | Faux sentiment de sécurité si un motif ne cible plus la bonne règle | Le garde-fou `nth/of` échoue bruyamment ; revue des mutations à chaque modification des règles |
 | K10 | Comportement exact de `getAfter`/`existsAfter` sur un document supprimé dans le lot | Règle trop stricte ou trop souple | Tests H1a/H4b dans l'émulateur avant toute conclusion ; je n'ai pas exécuté ces règles dans ce ticket de cadrage |
 | K11 | Orphelins existants à la création de la pierre tombale | Aucun (rien n'est déployé, aucune donnée de production) | Sans objet aujourd'hui ; à reconsidérer si des données existent avant le déploiement |
-| K12 | L'abus de lectures reste possible avec un vrai appareil | Quota épuisé malgré App Check | Surveillance + signal de bascule Blaze (§5.1) ; c'est la limite intrinsèque d'un plan sans serveur |
+| K12 | L'abus de lectures reste possible avec un vrai appareil | Quota épuisé malgré App Check | Surveillance + signaux de §5.1 (réexamen de l'e-mail vérifié, puis Blaze) ; limite intrinsèque d'un plan sans serveur |
 
 ---
 
@@ -405,8 +411,8 @@ Découpage proposé : **DUR-1** = R1 à R5 (bloquant avant tout déploiement) ; 
 |---|---|---|---|
 | Pierre tombale, code, retrait, réciprocité | Règles Firestore + écritures supplémentaires négligeables (quelques écritures par retrait/suppression, très loin de 20 000 par jour) | — | — |
 | Lectures de règles supplémentaires | +1 à +2 lectures par ouverture de flux (estimation ; mesurée avant déploiement) | — | Si le ratio lectures/utilisateur dépasse 150 |
-| Abus de lectures | App Check appliqué, e-mail vérifié, surveillance de la console | **Plan Blaze** (carte bancaire ; paiement à l'usage au-delà des quotas gratuits ; l'alerte de budget **prévient mais ne plafonne pas**) + fonction appelable « rejoindre » avec compteur d'essais | Signal de §5.1 ; décision du PM à ce moment-là (Q7) |
-| Durée de vie des photos | Refus de lecture par les règles + nettoyage par les apps | Stratégie TTL de Firestore (sans quota gratuit selon la documentation : probablement Blaze) | Si le juriste exige une suppression physique garantie à 24 h |
+| Abus de lectures | App Check appliqué, surveillance quotidienne de la console (e-mail vérifié non exigé, gardé en réserve comme mesure gratuite supplémentaire) | **Plan Blaze** (carte bancaire ; paiement à l'usage au-delà des quotas gratuits ; l'alerte de budget **prévient mais ne plafonne pas**) + fonction appelable « rejoindre » avec compteur d'essais | Signal de §5.1 ; décision du PM reportée avant la première bêta externe (Q7) |
+| Durée de vie des photos | Refus de lecture par les règles + nettoyage par les apps et par tout membre, identique pour tous les comptes (premium ou non) | Stratégie TTL de Firestore (sans quota gratuit selon la documentation : probablement Blaze) | Si le juriste exige une suppression physique garantie à 24 h |
 | Purge du cache, garde-fous, tests | Code et CI gratuits (minutes Linux GitHub) | — | — |
 | Alerte d'usage | Console Firebase (consultation manuelle) | Alerte Cloud Monitoring (disponibilité sur Spark à vérifier) | Dès que les testeurs externes arrivent |
 
@@ -420,7 +426,7 @@ Quotas Spark rappelés (`data-model.md` §12, vérifiés le 2026-10-16) : 50 000
 |---|---|
 | Tickets Android / iOS « Créer, rejoindre, quitter, retirer, supprimer une Miff » (non encore rédigés) | Doivent implémenter les lots de §6.1 et §6.2 et la gestion d'accès perdu §6.4. **Ce ticket peut être livré avant eux** : aucun client n'utilise encore ces écritures. |
 | Tickets Android / iOS « Feed » et « Réglages / partage » | Statut initial dans le lot d'activation (§6.3), photos expirées (§6.5). |
-| Tickets Android / iOS « Inscription / connexion » | Purge du cache à la déconnexion (§5.3), vérification d'e-mail (Q3), App Check. |
+| Tickets Android / iOS « Inscription / connexion » | Purge du cache à la déconnexion (§5.3), App Check (aucune vérification d'e-mail à exiger, décision PM Q3), message neutre au membre retiré (Q2). |
 | Ticket « Initialisation technique » | App Check initialisé dans les deux apps en mode non appliqué ; écran de diagnostic « Règles actives : OK » ; workflow `firestore-rules`. |
 | Projet Firebase de développement (décision PM du 2026-10-16 : avant les premiers testeurs externes) | Répétition du déploiement, mesure du débit, tests de bout en bout. |
 | Actions du PM | Console : constater l'état actuel des règles ; vérifier la disponibilité de TTL et d'une alerte d'usage ; plus tard, passer App Check en « appliqué ». Liste précise ajoutée à `backend/README.md` au développement. |
@@ -445,28 +451,38 @@ Trois PR distinctes, dans cet ordre, chacune avec revue de code en contexte neuf
 1. **Nouvelle collection `miffsDeleted/{miffId}`** : `{ deletedAt: timestamp (heure serveur) }`. Pierre tombale ; créée uniquement dans le lot de suppression d'une Miff par son créateur ; jamais lisible, modifiable ni supprimable par un client ; lue seulement par les règles (`exists`). Ajouter à l'arborescence du §2 et à la matrice du §9 (« — » partout, création par `O`). Aucune donnée personnelle ; conservation indéfinie (quelques dizaines d'octets).
 2. **§2.5 `miffs`** : suppression conditionnée à la pierre tombale **et** à la suppression de `joinCodes/{joinCode}` dans le lot ; création refusée si `miffsDeleted/{id}` existe. `joinCode` **change à chaque retrait de membre**.
 3. **§2.6 `members`** : suppression d'un autre membre par le créateur conditionnée au changement du code dans le lot. `joinCode` de la fiche = code historique (mort après renouvellement). Les fiches des membres survivants d'une Miff supprimée restent stockées, illisibles (si `miffAlive` retenu), jusqu'au nettoyage par leur app.
-4. **§2.7 `status`, §2.8 `photos`** : lecture (get/list pour `status`, get pour `photos`) exige d'avoir **publié son propre statut** (`status/{moi}` existe) en plus du partage activé. `status/{moi}` est créé dans le même lot que l'activation du partage (valeur initiale `presence = "unknown"`).
-5. **§2.8 `photos`** : lecture refusée après `expiresAt` ; `expiresAt` ≤ création + 25 h (au lieu de 7 jours) ; suppression possible par l'auteur, le créateur, et (si retenu) tout membre une fois la photo expirée. La conservation « 24 h maximum » devient « illisible après 24 h ; suppression physique au mieux (TTL non disponible sur Spark, à vérifier) ».
+4. **§2.7 `status`, §2.8 `photos`** : lecture de `status` (get/list) exige d'avoir **publié son propre statut** (`status/{moi}` existe) en plus du partage activé. **`photos` : réciprocité inchangée** (partage activé suffit, décision PM) : un membre sans statut publié peut lire les photos des autres. `status/{moi}` est créé dans le même lot que l'activation du partage (valeur initiale `presence = "unknown"`).
+5. **§2.8 `photos`** : lecture refusée après `expiresAt` ; `expiresAt` ≤ création + 25 h (au lieu de 7 jours) ; suppression possible par l'auteur, le créateur, et tout membre une fois la photo expirée ; durée identique pour tous les comptes (premium ou non). La conservation « 24 h maximum » devient « illisible après 24 h ; suppression physique au mieux (TTL non disponible sur Spark, à vérifier) ».
 6. **§5 (rejoindre)** : la ligne « Le retrait d'un membre ne change pas le code » est remplacée par « le retrait d'un membre renouvelle le code, imposé par les règles ». Ajouter le risque d'abus de lectures sur `get joinCodes` et ses mitigations (§5.1 de ce ticket).
 7. **§8 (clients)** : lignes « Retirer un membre », « Supprimer une Miff », « Activer le partage », « Quitter » et « Nettoyage au lancement » mises à jour selon §6 ; ajout de « Purge du cache » et « Perte d'accès ».
 8. **§10 (conservation)** : photos, `joinCodes`, données des survivants d'une Miff supprimée, pierre tombale.
 9. **§11 (RGPD)** : nouveaux points à faire examiner par un juriste : (a) rétention physique des données des survivants d'une Miff supprimée jusqu'à nettoyage par leur app ; (b) suppression physique des photos non garantie à 24 h sur Spark ; (c) cache local d'un appareil après retrait ou déconnexion ; (d) pierre tombale (identifiant de groupe supprimé, sans donnée personnelle).
 10. **§12 (coûts)** : signal de bascule lié à l'abus de lectures sur `joinCodes` (§5.1), coût de lectures de règles des nouveaux lots (§4.3).
 11. **§14 (risques)** : ajout de quatre risques (réutilisation d'identifiant d'une Miff supprimée, code orphelin, réciprocité contournable, retour d'un membre retiré) avec leur correction.
-12. **§15 (questions)** : Q7 tranchée en partie (retrait ➜ renouvellement du code) ; nouvelles questions Q1 à Q8 ci-dessous.
+12. **§15 (décisions/questions)** : Q7 tranchée en partie (retrait ➜ renouvellement du code, départ volontaire sans changement de code) ; Q14 (e-mail vérifié) tranchée : non exigé ; décisions et questions restantes de la section 15 ci-dessous.
 
 ---
 
-## 15. Questions ouvertes pour le PM (réponse courte attendue)
+## 15. Décisions du PM (2026-10-22) et questions restantes
 
-1. **Départ volontaire : le code change-t-il aussi ?** Impossible à imposer sans serveur (seul le créateur peut changer le code). *Recommandation : non ; l'app du créateur propose discrètement de renouveler le code après un départ.*
-2. **Message au membre retiré** : à l'ouverture de son app, un message neutre « Tu ne fais plus partie de la Miff « X » », sans plus de détail ? (Pas de notification : elle exigerait Blaze.) *Recommandation : oui, texte à valider avec vous.*
-3. **E-mail vérifié obligatoire avant de saisir un code ou de créer une Miff ?** Réduit les comptes jetables, ajoute une étape pour l'inscription par e-mail (les comptes Google sont déjà vérifiés). *Recommandation : oui.*
-4. **Supprimer une Miff avec plusieurs membres** : acceptez-vous que l'app retire les membres un par un (quelques secondes de plus) ? *Recommandation : oui, c'est le prix de règles simples et strictes.*
-5. **Photo : valable 24 h, avec 1 h de marge technique** (25 h acceptées par les règles) ? *Recommandation : oui.* Et le nettoyage par n'importe quel membre d'une photo expirée (§5.2.3) ? *Recommandation : oui.*
-6. **Données des membres restants après suppression d'une Miff** : acceptez-vous qu'elles soient illisibles immédiatement mais effacées physiquement seulement au prochain lancement de leur app, avec point à faire valider par un juriste ? *Recommandation : oui pour la bêta, à confirmer par le juriste.*
-7. **Ligne rouge pour Blaze** : si l'usage montre un abus de lectures (§5.1), acceptez-vous de passer en Blaze (carte + alerte de budget) plutôt que de subir un arrêt de l'app ? *Recommandation : décider avant la première bêta externe ; par défaut, rester sur Spark tant que le signal n'apparaît pas.*
-8. **Réciprocité appliquée aussi aux photos** (ajout par rapport à votre décision du 2026-10-22) : voir la photo d'un proche exige d'avoir publié son statut ? *Recommandation : oui, par cohérence.*
+### Décisions prises (réponses du PM aux questions du brouillon)
+| # | Sujet | Décision | Effet sur le ticket |
+|---|---|---|---|
+| Q1 | Départ volontaire | **Aucun changement de code imposé.** L'app du créateur lui propose discrètement de renouveler le code. | §4.2 (cas limites), §6.1, R10, H4f |
+| Q2 | Membre retiré | **Message neutre** à l'ouverture de son app (« Tu ne fais plus partie de la Miff « X » »), texte final à valider avec le PM. | §6.4, dépendances clients |
+| Q3 | E-mail vérifié obligatoire | **Non.** Les règles ne testent pas `email_verified`. | §5.1 : mitigations renforcées (App Check strict, surveillance quotidienne, deux seuils), risque résiduel « comptes jetables » et signal de réexamen documentés (K8) |
+| Q4 | Suppression d'une Miff | **Oui** : les membres sont retirés un par un (quelques secondes de plus). | §4.1.a, §6.2 |
+| Q5 | Photos | **Supprimées de la base pour économiser de la place, dans tous les cas, premium ou non, sans différence de durée.** 24 h (25 h tolérées par les règles) ; nettoyage par l'auteur et par tout membre. | §5.2, H5a à H5d, R12 |
+| Q6 | Survivants d'une Miff supprimée | Données **illisibles immédiatement**, effacement physique au prochain lancement de leur app : **oui pour la bêta**. **Avis juridique avant le lancement public** (à garder en risque). | §4.1.b, K4 |
+| Q8 | Réciprocité sur les photos | **Non.** La réciprocité par statut publié ne s'applique qu'aux **statuts**. **Conséquence assumée par le PM** : un membre qui a activé son partage sans avoir publié son statut peut tout de même lire les photos des autres membres (un membre dont le partage est désactivé ne le peut pas). | §3 ATK3, H3a, H3d, R7 |
+
+Recommandations du ticket maintenues : contrôle `miffAlive` (§4.1.b), durée de vie des photos gratuite par les règles et le nettoyage (§5.2), mesure bloquante des lectures de règles (§5.5), garde-fou de projet (§5.4).
+
+### Question encore ouverte
+1. **Q7 — Ligne rouge pour Blaze** : si l'usage montre un abus de lectures (§5.1), acceptez-vous de passer en Blaze (carte bancaire + alerte de budget, qui prévient mais ne plafonne pas) plutôt que de subir un arrêt de l'app ? **Décision reportée par le PM avant la première bêta externe.** *Recommandation : trancher à ce moment-là ; d'ici là rester sur Spark, avec le signal de bascule de §5.1 (ratio lectures par utilisateur actif, quota atteint) et, avant Blaze, le réexamen de l'e-mail vérifié.*
+
+### Nouvelle question issue des décisions
+2. **Texte du message au membre retiré et au créateur (Q1, Q2)** : validez-vous les formulations bienveillantes lors de la rédaction des tickets clients ? *Recommandation : oui, sans attendre ; ce n'est pas bloquant pour les règles.*
 
 *Écarté, pour mémoire* : une liste de membres bannis (`miffs/{id}/banned/{uid}`) interdirait le retour définitif même avec le nouveau code ; non retenue car la décision du PM est le renouvellement du code, plus simple et sans nouvelle donnée personnelle. À rouvrir si le renouvellement s'avère insuffisant.
 
