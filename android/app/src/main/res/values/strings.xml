@@ -10,7 +10,7 @@
     <!-- Welcome screen -->
     <string name="home_title">Miff</string>
     <string name="home_tagline">Know your loved ones are fine, without bothering them.</string>
-    <string name="home_logo_description">Miff logo (provisional)</string>
+    <string name="home_logo_a11y">Miff logo (provisional)</string>
 
     <!-- Diagnostic screen: header and build identity -->
     <string name="diag_title">Internal diagnostic</string>

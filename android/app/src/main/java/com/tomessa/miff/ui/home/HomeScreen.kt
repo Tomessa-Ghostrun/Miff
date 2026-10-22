@@ -45,7 +45,7 @@ fun HomeScreen() {
         ) {
             Image(
                 painter = painterResource(R.drawable.ic_launcher_foreground),
-                contentDescription = stringResource(R.string.home_logo_description),
+                contentDescription = stringResource(R.string.home_logo_a11y),
                 modifier =
                     Modifier
                         .size(Spacing.logoSize)
