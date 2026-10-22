@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Modele : le workflow ios-testflight remplace __TEAM_ID__ par le secret APPLE_TEAM_ID. -->
+	<key>method</key>
+	<string>app-store-connect</string>
+	<!-- "upload" : xcodebuild -exportArchive envoie directement le build a App Store Connect. -->
+	<key>destination</key>
+	<string>upload</string>
+	<key>teamID</key>
+	<string>__TEAM_ID__</string>
+	<!-- Signature automatique : Xcode utilise un certificat de distribution gere dans le cloud
+	     par Apple et un profil cree via la cle d'API App Store Connect. -->
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>uploadSymbols</key>
+	<true/>
+	<!-- Garde notre numero de build (= numero d'execution du workflow). -->
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<!-- Le build reste reserve aux testeurs internes TestFlight (jamais d'envoi a la revue
+	     ni aux testeurs externes par erreur). Cle a verifier au premier run : si Xcode la
+	     refuse, la retirer. -->
+	<key>testFlightInternalTestingOnly</key>
+	<true/>
+</dict>
+</plist>

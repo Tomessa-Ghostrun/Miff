@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Spike INIT-3 : l'app ne collecte aucune donnee, n'effectue aucun suivi, n'a aucun
+	     acces reseau et n'utilise aucune API a "raison requise" (UserDefaults, horodatage
+	     de fichiers, espace disque, etc.). Ce manifeste devra etre mis a jour des qu'une
+	     de ces conditions change (Firebase, localisation...) : voir INIT-4. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

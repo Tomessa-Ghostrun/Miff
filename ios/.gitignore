@@ -1,0 +1,15 @@
+# Fichiers generes par XcodeGen / Xcode : ne jamais les versionner
+Miff.xcodeproj/
+Config/Info.plist
+build/
+DerivedData/
+*.xcarchive
+*.ipa
+*.xcresult
+xcuserdata/
+
+# Secrets Apple : ne jamais committer (voir docs/dev/ios-spike.md)
+*.p8
+*.p12
+*.cer
+*.mobileprovision
