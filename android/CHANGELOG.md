@@ -14,7 +14,7 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - Ecran de diagnostic interne (debug uniquement) : identité du build et projet Firebase, Test 1 (règles actives), Test 2 (compte de test, lecture seule), état App Check, interrupteurs de collecte, événement de test, tentative de position (doit être refusée), plantage de test, galerie de tokens, bloc langue. Messages neutres et bienveillants, comportement hors-ligne prévu.
 - Ecran d'accueil minimal (release) avec logo provisoire.
 - Icône adaptative **provisoire (ne pas publier)** avec couche monochrome Android 13+.
-- Tests unitaires JUnit (38 tests), Android Lint, ktlint via Spotless.
+- Tests unitaires JUnit (46 tests), Android Lint, ktlint via Spotless.
 - Sécurité : `allowBackup=false` et règles d'extraction vides, trafic en clair interdit, uniquement des permissions réseau/techniques sans demande à l'utilisateur, permissions publicitaires retirées, pas de `debuggable` en release, R8 + réduction des ressources en release (non signée).
 - `README.md` (démarrage, génération de `google-services.json`, installation sur téléphone, points de vigilance ColorOS pour le futur géofencing).
 
@@ -24,7 +24,8 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - Clé `home_logo_description` renommée `home_logo_a11y` (contrat des clés).
 - Interrupteurs du diagnostic accessibles ; e-mail de test conservé à la rotation (jamais le mot de passe).
 - Limite documentée : cache Firestore non purgé à la déconnexion.
-- Workflow CI `android.yml`.
+- Workflow CI `android.yml` (durée des jobs, contrôle du bundle release, configuration Firebase factice pour Dependabot uniquement).
+- Correction du téléversement du mapping Crashlytics (interrupteur inversé) ; suivi automatique des écrans coupé ; exception de la collecte automatique du SDK documentée dans le contrat Analytics ; événement de test retiré de la liste blanche en release ; accessibilité du diagnostic (titres, annonces des résultats) ; tests du ViewModel de diagnostic.
 
 ### Choix économiques et contournements
 - **Firebase plan Spark** : rien à payer. Limite connue : 50 000 lectures Firestore par jour. Signal de bascule : l'onglet Firestore > Utilisation approche du quota, ou besoin de Cloud Functions / Cloud Storage (plan Blaze).

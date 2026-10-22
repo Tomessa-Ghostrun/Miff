@@ -87,6 +87,8 @@ Les messages d'erreur restent neutres ("Pas de connexion pour le moment"), y com
 - Le choix de l'utilisateur est stocké sur l'appareil (`PrivacySettings`) et réappliqué à chaque lancement. Pour l'instant le seul moyen d'allumer ces collectes est l'écran de diagnostic ; l'écran de consentement viendra avec l'onboarding.
 - Tout événement passe par `AnalyticsTracker` (point d'entrée typé : `AnalyticsEvent`), qui applique la **liste blanche** de `docs/contracts/analytics-events.md` (version 1, neuf événements, valeurs issues de listes fermées) implémentée dans `domain/analytics/AnalyticsContract.kt`. Sont refusés : événement inconnu, paramètre inconnu, mauvais type, valeur hors liste et **tout nom de paramètre qui évoque une position** (mots `lat`, `lng`, `address`, `place`, `location`, `gps`, `distance`... découpés sur `_`, ou fragments comme `latitude` même collés). Ajouter un événement = PR sur le contrat **et** sur les deux plateformes, validée par le PM.
 - Les permissions publicitaires ajoutées par le SDK Analytics (`AD_ID`, `ACCESS_ADSERVICES_*`, référent d'installation) sont retirées du manifeste.
+- **Ce que la liste blanche ne couvre pas** : une fois Analytics activé, le SDK Firebase envoie lui-même des événements automatiques (`first_open`, `session_start`, `user_engagement`...) avec des informations techniques sur l'appareil, et Google déduit une **zone géographique approximative à partir de l'adresse IP**. Ce n'est pas une position précise (l'app n'a aucune permission de localisation), mais ce n'est pas « aucune information de localisation » : à dire dans la politique de confidentialité. Le suivi automatique des écrans (`screen_view`) est coupé dans le manifeste (`google_analytics_automatic_screen_reporting_enabled=false`). **Action du PM** : régler la collecte des données géographiques dans la console GA4 (détail dans `docs/contracts/analytics-events.md`).
+- L'événement de test `analytics_diagnostic_test` n'existe que dans les builds debug : il est retiré de la liste blanche en release.
 
 ## Sécurité du manifeste (critère A7)
 
@@ -121,7 +123,7 @@ app/src/main      code commun : MiffApplication, AppContainer, MainActivity,
                   ui/ (theme, components, home, navigation), domain/ (logique pure testée), data/privacy
 app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth en lecture, App Check "debug"
 app/src/release   App Check Play Integrity, aucune destination interne
-app/src/test      tests unitaires JUnit (38 tests)
+app/src/test      tests unitaires JUnit (46 tests, dont app/src/testDebug pour le ViewModel du diagnostic)
 third_party/fonts licences et provenance des polices
 ```
 
@@ -131,6 +133,8 @@ third_party/fonts licences et provenance des polices
 - Accessibilité : les interrupteurs de l'écran de diagnostic sont des éléments uniques (rôle interrupteur, libellé lu par TalkBack, zone d'au moins 48 dp). A valider au lecteur d'écran sur l'OPPO.
 
 ## Intégration continue
+
+Le workflow vérifie aussi que le bundle release ne contient aucune trace de `DIAGNOSTICPROBE` ni de `DebugAppCheck` (diagnostic ou fournisseur App Check de debug) et échoue sinon. **L'essai du build release sur un appareil (OPPO) n'est pas fait par la CI : il se fait à la recette** (installer l'APK release signé localement ou le bundle via un canal de test).
 
 `.github/workflows/android.yml` (déclenché par une PR touchant `android/**`, ou à la main) exécute `spotlessCheck`, `lintDebug`, `testDebugUnitTest`, `assembleDebug` et `bundleRelease` (non signé), et publie l'APK debug 3 jours. Il lit le secret GitHub `GOOGLE_SERVICES_JSON_B64` (voir le message d'erreur du job s'il manque).
 
@@ -173,13 +177,14 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | Firebase App Check (Play Integrity ; debug en debug seulement) | 20.0.0 | Apache 2.0 |
 | Compose UI Tooling (debug seulement) | 1.12.1 | Apache 2.0 |
 | JUnit (tests) | 4.13.2 | EPL 1.0 |
+| kotlinx-coroutines-test (tests) | 1.11.0 | Apache 2.0 |
 | Plugin Android Gradle | 9.4.1 | Apache 2.0 |
 | Plugin google-services | 4.5.0 | Apache 2.0 |
 | Plugin Firebase Crashlytics | 3.0.8 | Apache 2.0 |
 | Plugin Spotless (ktlint 1.8.0) | 8.10.4 | Apache 2.0 (ktlint : MIT) |
 | Polices Baloo Thambi 2 et Hanken Grotesk | google/fonts, commit `45e3d52` | SIL OFL 1.1 |
 
-Dependabot (ticket INIT-1) proposera les mises à jour par PR.
+Dependabot (ticket INIT-1) proposera les mises à jour par PR. Comme Dependabot n'a pas accès aux secrets GitHub, le workflow `android.yml` génère pour lui, et pour lui seul, un `google-services.json` factice (projet `fake-ci-config-do-not-use`, clé évidemment fausse) afin de compiler ; l'APK de ces exécutions n'est pas publié.
 
 ## Documentation liée
 
