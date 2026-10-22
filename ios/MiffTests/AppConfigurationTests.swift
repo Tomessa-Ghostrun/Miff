@@ -18,11 +18,23 @@ final class AppConfigurationTests: XCTestCase {
 
     func testMinimumOSVersionIsIOS16() throws {
         // Xcode ajoute cette clé à l'Info.plist du build (valeur de IPHONEOS_DEPLOYMENT_TARGET).
-        // Si ce test échoue sur l'absence de la clé, vérifier d'abord l'hypothèse (non testée
-        // sans Mac) avant de soupçonner le projet.
+        // Confirmé par la CI (test vert).
         let minimum = try XCTUnwrap(info["MinimumOSVersion"] as? String)
 
         XCTAssertEqual(minimum, "16.0")
+    }
+
+    func testAppIsIPhoneOnly() throws {
+        // 1 = iPhone, 2 = iPad. Xcode écrit UIDeviceFamily dans l'Info.plist du build à partir
+        // de TARGETED_DEVICE_FAMILY (qui doit être posé au niveau de la cible, voir project.yml).
+        let family = try XCTUnwrap(info["UIDeviceFamily"] as? [Int])
+
+        XCTAssertEqual(family, [1])
+    }
+
+    func testEncryptionExemptionIsDeclared() {
+        // Décision PM 2026-10-22 : chiffrement standard uniquement (exempté).
+        XCTAssertEqual(info["ITSAppUsesNonExemptEncryption"] as? Bool, false)
     }
 
     func testNoLocationPermissionIsDeclared() {

@@ -48,8 +48,7 @@ targets:
       # Inclut le catalogue d'actifs (icone) et PrivacyInfo.xcprivacy (copie dans l'app).
       - path: Miff
     # Info.plist genere par XcodeGen (fichier non versionne, voir ios/.gitignore).
-    # Volontairement ABSENTS : toute cle NSLocation*, NSAppTransportSecurity (ATS),
-    # et ITSAppUsesNonExemptEncryption (le PM repond a la question dans App Store Connect).
+    # Volontairement ABSENTS : toute cle NSLocation* et NSAppTransportSecurity (ATS).
     info:
       path: Config/Info.plist
       properties:
@@ -64,11 +63,18 @@ targets:
           - UIInterfaceOrientationPortrait
         # Apparence claire imposee (pas de mode sombre dans les maquettes).
         UIUserInterfaceStyle: Light
+        # Decision PM 2026-10-22 : l'app n'utilise que le chiffrement standard (HTTPS / iOS),
+        # exempte. Evite la question de conformite a chaque build TestFlight.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tomessa.miff
         PRODUCT_NAME: Miff
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # iPhone uniquement. Doit etre pose ICI (niveau cible) : XcodeGen applique '1,2'
+        # au niveau cible pour une app iOS, ce qui l'emporte sur le reglage du projet
+        # (constate dans le journal CI : icones iPad generees).
+        TARGETED_DEVICE_FAMILY: "1"
 
   MiffTests:
     type: bundle.unit-test
@@ -81,6 +87,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tomessa.miff.tests
         GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
 
 schemes:
   Miff:
