@@ -37,7 +37,11 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.LayoutDirection
@@ -96,7 +100,12 @@ fun DiagnosticScreen(
                 .padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Text(stringResource(R.string.diag_title), style = textDisplayTitle, color = colorTextPrimary)
+        Text(
+            stringResource(R.string.diag_title),
+            style = textDisplayTitle,
+            color = colorTextPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
         Text(stringResource(R.string.diag_subtitle), style = textBodyRegular14, color = colorTextDescription)
         TextButton(onClick = onOpenHome) {
             Text(stringResource(R.string.diag_open_home), style = textBodyBold14, color = colorActionPrimary)
@@ -111,10 +120,12 @@ fun DiagnosticScreen(
                 onClick = viewModel::runTest1,
                 enabled = state.test1 !is Test1State.Running,
             )
-            when (val t = state.test1) {
-                Test1State.Idle -> Unit
-                Test1State.Running -> Body(stringResource(R.string.diag_test1_running))
-                is Test1State.Done -> Test1Result(t.outcome)
+            LiveResult {
+                when (val t = state.test1) {
+                    Test1State.Idle -> Unit
+                    Test1State.Running -> Body(stringResource(R.string.diag_test1_running))
+                    is Test1State.Done -> Test1Result(t.outcome)
+                }
             }
         }
 
@@ -149,11 +160,13 @@ fun DiagnosticScreen(
                 },
                 enabled = state.test2 !is Test2State.Running,
             )
-            when (val t = state.test2) {
-                Test2State.Idle -> Unit
-                Test2State.Running -> Body(stringResource(R.string.diag_test2_running))
-                is Test2State.InputProblem -> Warning(inputProblemText(t.problem))
-                is Test2State.Done -> Test2ResultView(t.result)
+            LiveResult {
+                when (val t = state.test2) {
+                    Test2State.Idle -> Unit
+                    Test2State.Running -> Body(stringResource(R.string.diag_test2_running))
+                    is Test2State.InputProblem -> Warning(inputProblemText(t.problem))
+                    is Test2State.Done -> Test2ResultView(t.result)
+                }
             }
         }
 
@@ -164,17 +177,19 @@ fun DiagnosticScreen(
                 onClick = viewModel::checkAppCheck,
                 enabled = state.appCheck !is AppCheckState.Running,
             )
-            when (val a = state.appCheck) {
-                AppCheckState.Idle -> {}
+            LiveResult {
+                when (val a = state.appCheck) {
+                    AppCheckState.Idle -> {}
 
-                AppCheckState.Running -> {
-                    Body(stringResource(R.string.diag_appcheck_running))
-                }
+                    AppCheckState.Running -> {
+                        Body(stringResource(R.string.diag_appcheck_running))
+                    }
 
-                is AppCheckState.Done -> {
-                    when (a.outcome) {
-                        AppCheckOutcome.TokenObtained -> Strong(stringResource(R.string.diag_appcheck_ok))
-                        AppCheckOutcome.NoToken -> Body(stringResource(R.string.diag_appcheck_none))
+                    is AppCheckState.Done -> {
+                        when (a.outcome) {
+                            AppCheckOutcome.TokenObtained -> Strong(stringResource(R.string.diag_appcheck_ok))
+                            AppCheckOutcome.NoToken -> Body(stringResource(R.string.diag_appcheck_none))
+                        }
                     }
                 }
             }
@@ -200,7 +215,7 @@ fun DiagnosticScreen(
                 text = stringResource(R.string.diag_event_location_action),
                 onClick = viewModel::tryToSendPosition,
             )
-            state.eventFeedback?.let { EventFeedbackView(it) }
+            LiveResult { state.eventFeedback?.let { EventFeedbackView(it) } }
             MiffButton(
                 text = stringResource(R.string.diag_crash_action),
                 onClick = viewModel::triggerTestCrash,
@@ -376,10 +391,28 @@ internal fun SectionCard(
             modifier = Modifier.padding(Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Text(text = title, style = textBodyBold16, color = colorTextPrimary)
+            Text(
+                text = title,
+                style = textBodyBold16,
+                color = colorTextPrimary,
+                modifier = Modifier.semantics { heading() },
+            )
             content()
         }
     }
+}
+
+/**
+ * Announces its content to TalkBack when it changes (test results appear after a tap): a polite live region,
+ * so the result is read without the user having to hunt for it.
+ */
+@Composable
+private fun LiveResult(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        content = content,
+    )
 }
 
 @Composable

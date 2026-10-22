@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.theme.GradientAuthBackground
@@ -57,6 +59,7 @@ fun HomeScreen() {
                 style = textDisplayHeadline,
                 color = colorTextPrimary,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
             )
             Text(
                 text = stringResource(R.string.home_tagline),
