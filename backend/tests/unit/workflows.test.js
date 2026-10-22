@@ -23,10 +23,21 @@ test('WORKFLOWS - hygiene.yml et firestore-rules.yml existent', () => {
   assert.ok(names.includes('firestore-rules.yml'));
 });
 
+// Un envoi signé vers TestFlight ne doit pas être interrompu à mi-course par une exécution suivante :
+// ce workflow (manuel) garde cancel-in-progress: false, et lui seul.
+const KEEP_RUNNING = new Set(['ios-testflight.yml']);
+
+// Seuls ces workflows ont le droit de lire des secrets, et seulement ceux-ci (liste fermée, noms exacts).
+// Tout autre workflow, ou tout autre secret, fait échouer le test : l'ajout d'un secret doit être une décision visible en revue.
+const SECRETS_ALLOWED = {
+  'android.yml': ['GOOGLE_SERVICES_JSON_B64'],
+  'ios-testflight.yml': ['APPLE_TEAM_ID', 'ASC_ISSUER_ID', 'ASC_KEY_ID', 'ASC_KEY_P8_B64'],
+};
+
 test('WORKFLOWS - permissions minimales, annulation des exécutions obsolètes, jamais pull_request_target', () => {
   for (const { file, doc, text } of workflows) {
     assert.deepEqual(doc.permissions, { contents: 'read' }, `${file} : permissions`);
-    assert.equal(doc.concurrency?.['cancel-in-progress'], true, `${file} : concurrency`);
+    assert.equal(doc.concurrency?.['cancel-in-progress'], !KEEP_RUNNING.has(file), `${file} : concurrency`);
     assert.ok(doc.concurrency?.group, `${file} : groupe de concurrency`);
     assert.ok(!('pull_request_target' in doc.on), `${file} : pull_request_target interdit`);
     assert.ok(!stripComments(text).includes('pull_request_target'), `${file} : pull_request_target interdit (texte)`);
@@ -48,9 +59,10 @@ test('WORKFLOWS - toute action tierce est épinglée par empreinte de commit com
   }
 });
 
-test('WORKFLOWS - aucun secret requis par ces deux workflows', () => {
+test('WORKFLOWS - aucun secret, sauf liste fermée (hygiene et firestore-rules n\'en ont jamais besoin)', () => {
   for (const { file, text } of workflows) {
-    assert.ok(!/secrets\./.test(text), `${file} : référence à secrets.*`);
+    const used = [...new Set([...stripComments(text).matchAll(/secrets\.([A-Za-z0-9_]+)/g)].map((m) => m[1]))].sort();
+    assert.deepEqual(used, SECRETS_ALLOWED[file] ?? [], `${file} : secrets utilisés différents de la liste autorisée`);
   }
 });
 
