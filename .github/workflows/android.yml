@@ -25,6 +25,11 @@ jobs:
         shell: bash
         working-directory: android
     steps:
+      - name: Début du chronomètre
+        # Avant le checkout, `android/` n'existe pas encore : on s'exécute à la racine de l'espace de travail.
+        working-directory: .
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+
       # actions/checkout v7.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -118,3 +123,7 @@ jobs:
       - name: Remove Firebase configuration from the runner
         if: always()
         run: rm -f app/google-services.json
+
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job build = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"
