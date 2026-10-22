@@ -1,0 +1,12 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "auth_title" : {
+      "localizations" : { "fr" : { "stringUnit" : { "state" : "translated", "value" : "Texte" } } }
+    },
+    "miff_create" : {
+      "localizations" : { "fr" : { "stringUnit" : { "state" : "translated", "value" : "Texte" } } }
+    }
+  },
+  "version" : "1.0"
+}

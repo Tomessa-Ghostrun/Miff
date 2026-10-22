@@ -178,3 +178,18 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 - Nombre d'appels de lecture des règles par opération : mesurer avec les journaux de l'émulateur (limite 10 par requête simple, 20 par batch).
 - Un seul `get joinCodes` par essai côté client ; limitation d'essais dans l'UI.
 - Aucune clé de service ni secret dans le dépôt ou dans les apps.
+
+## 10. Cas complémentaires (revue de la PR #2, ajoutés avec les tests)
+
+Cas ajoutés pour que chaque protection des règles soit couverte par un test qui échoue si elle disparaît (voir `tests/tools/mutations.mjs` et `npm run test:mutation`). Même fixtures qu'en section 0.
+
+| # | Cas | Attendu |
+|---|---|---|
+| X1 | Lecture d'une photo : `bob` (partage activé) lit `photos/alice` ; `carol` (partage désactivé) | OK ; KO (réciprocité) |
+| X2 | `bob` ou `eve` modifie / supprime `joinCodes/K7M2QX9PDW4H` | KO |
+| X3 | `eve` ou `bob` supprime `users/alice` | KO |
+| X4 | `carol` (partage désactivé) crée `photos/carol` ; idem avec activation du partage dans le même batch | KO ; OK |
+| X5 | Statut : `lastUpdateAt` (+1 jour, -3 jours), `locationAccess` inconnu, `escalationDueAt` (+3 jours, -3 jours, texte), `hasPhoto` non booléen | KO ; valeurs valides (-2 h, `foreground`, +2 h, null, true) : OK |
+| X6 | `photos/bob` existe : départ, retrait par la créatrice et désactivation du partage sans supprimer la photo | KO ; avec la photo supprimée : OK |
+| X7 | `entitlements` avec `active:false` et `expiresAt` futur : création d'une Miff avec la clé premium | KO ; avec `active:true` : OK |
+| X8 | `bob` (simple membre) crée `places/p1` libre (type `trusted`) ; `alice` | KO ; OK |

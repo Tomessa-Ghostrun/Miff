@@ -1,0 +1,48 @@
+# Fins de ligne : LF partout dans le dépôt (poste Windows + CI Linux/macOS).
+# Sans cela, git sous Windows produit de faux changements et casse des scripts.
+* text=auto eol=lf
+
+# Exceptions : scripts Windows qui exigent CRLF dans le dossier de travail
+# (le dépôt, lui, reste en LF).
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Texte explicite
+*.md text
+*.json text
+*.yml text
+*.yaml text
+*.js text
+*.mjs text
+*.cjs text
+*.ts text
+*.rules text
+*.kt text
+*.kts text
+*.java text
+*.swift text
+*.xml text
+*.xcstrings text
+*.plist text
+*.xcprivacy text
+*.toml text
+*.sh text eol=lf
+*.svg text
+
+# Fichiers binaires : jamais modifiés par git
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.gz binary
+*.jar binary
+*.aar binary
+*.so binary
