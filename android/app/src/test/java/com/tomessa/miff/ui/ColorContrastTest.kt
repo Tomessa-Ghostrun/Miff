@@ -51,8 +51,8 @@ class ColorContrastTest {
     }
 
     @Test
-    fun statusDangerKeepsItsOwnValueAndIsNotUsedForText() {
+    fun statusDangerRedIsUnchanged() {
+        // colorStatusDanger is a status/fill color (rings, badges): it is deliberately NOT darkened.
         assertEquals(0xFFFF5650.toInt(), colorStatusDanger.toArgb())
-        assertTrue(contrast(colorStatusDanger, colorBgSurface) < 4.5)
     }
 }

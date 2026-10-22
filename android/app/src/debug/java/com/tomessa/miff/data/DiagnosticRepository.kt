@@ -83,6 +83,34 @@ class FirebaseDiagnosticRepository : DiagnosticRepository {
     override suspend fun signInAndReadOwnDocuments(
         email: String,
         password: String,
+    ): Test2Result =
+        try {
+            signInThenRead(email, password)
+        } finally {
+            // Whatever happened (success, error, timeout, cancellation), the test account session is not kept.
+            auth.signOut()
+        }
+
+    /**
+     * A sign-in request that timed out on our side may still complete later and open a session.
+     * This one-shot listener signs that session out as soon as it appears, then removes itself.
+     */
+    private fun signOutLateSignIn() {
+        val listener =
+            object : FirebaseAuth.AuthStateListener {
+                override fun onAuthStateChanged(firebaseAuth: FirebaseAuth) {
+                    if (firebaseAuth.currentUser != null) {
+                        firebaseAuth.removeAuthStateListener(this)
+                        firebaseAuth.signOut()
+                    }
+                }
+            }
+        auth.addAuthStateListener(listener)
+    }
+
+    private suspend fun signInThenRead(
+        email: String,
+        password: String,
     ): Test2Result {
         val uid: String? =
             try {
@@ -94,8 +122,10 @@ class FirebaseDiagnosticRepository : DiagnosticRepository {
                         ?.uid
                 }
             } catch (e: TimeoutCancellationException) {
+                signOutLateSignIn()
                 return Test2Result.SignInFailed(SignInFailure.NETWORK)
             } catch (e: CancellationException) {
+                signOutLateSignIn()
                 throw e
             } catch (e: Exception) {
                 return Test2Result.SignInFailed(interpretSignInError(e))
@@ -142,9 +172,6 @@ class FirebaseDiagnosticRepository : DiagnosticRepository {
             }
         } catch (e: Exception) {
             Test2Result.ReadFailed
-        } finally {
-            // The test account session is not kept on the device.
-            auth.signOut()
         }
     }
 

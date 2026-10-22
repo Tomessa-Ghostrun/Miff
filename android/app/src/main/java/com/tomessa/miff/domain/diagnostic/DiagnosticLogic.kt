@@ -48,9 +48,6 @@ fun interpretRulesProbeFailure(error: Throwable): RulesProbeOutcome =
         }
     }
 
-/** True when a Firestore failure only means "no connection for now" (shown with a calm message). */
-fun isOfflineFailure(error: Throwable): Boolean = interpretRulesProbeFailure(error) == RulesProbeOutcome.OFFLINE
-
 /** Offer shown for `entitlements/{uid}`. A missing document or an inactive/expired one means Classic (free). */
 sealed interface OfferState {
     data object Classic : OfferState
