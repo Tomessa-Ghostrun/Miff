@@ -40,8 +40,10 @@ val colorTextDescription = colorTextPrimary.copy(alpha = 0.70f)
 val colorTextMuted = colorTextPrimary.copy(alpha = 0.50f)
 val colorTextSecondary = Color(0xFF7D7C7C)
 
-// "text/error" points to the same red as the danger status.
-val colorTextError = colorStatusDanger
+// "text/error" is a darker red than the danger status (same hue and saturation) so that error TEXT reaches the
+// WCAG AA contrast of 4.5:1 (5.39:1 on white, 5.11:1 on colorBgCanvas, 4.53:1 on colorBgGradientEnd).
+// colorStatusDanger (#FF5650) is kept for status rings, badges and fills, never for body text. Checked by ColorContrastTest.
+val colorTextError = Color(0xFFD60700)
 
 // Borders
 val colorBorderDefault = Color(0xFFEFEFEF)
