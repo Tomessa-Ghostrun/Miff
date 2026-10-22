@@ -73,7 +73,7 @@ C'est la preuve que l'app parle au bon projet Firebase, avec des règles qui pro
 
 1. **Version installée** : version, build, configuration, projet Firebase (doit être `miff-3d283`, sinon avertissement), langue, sens du texte.
 2. **Test 1** : lecture d'une Miff sans être connecté. Résultat attendu : refus = "Règles actives : OK". Si la lecture réussit : avertissement clair (règles ouvertes). Ce test déconnecte d'abord l'éventuelle session.
-3. **Test 2** : saisir e-mail et mot de passe du compte de test (créé à la main dans la console Firebase). L'app se connecte, lit `users/{uid}` et `entitlements/{uid}` ("Pas encore de profil" et "Offre : Classic" sont des résultats normaux), puis se déconnecte. Le mot de passe n'est jamais conservé ni écrit dans le code.
+3. **Test 2** : saisir e-mail et mot de passe du compte de test (créé à la main dans la console Firebase). L'app se connecte, lit `users/{uid}` et `entitlements/{uid}` ("Pas encore de profil" et "Offre : Classic" sont des résultats normaux), puis se déconnecte. Le mot de passe n'est jamais conservé ni écrit dans le code ; l'e-mail saisi survit à une rotation de l'écran (état sauvegardé de l'app), pas le mot de passe.
 4. **App Check** : indique si un jeton est obtenu (non exigé pour l'instant). En debug, le SDK affiche un jeton de débogage dans Logcat (étiquette `DebugAppCheckProvider`) ; il peut être enregistré dans la console Firebase (App Check > Gérer les jetons de débogage). Ce jeton reste privé : ne jamais le commiter ni le coller dans une conversation.
 5. **Analytics et rapports de plantage** : deux interrupteurs éteints par défaut, état conservé après redémarrage, un événement de test, un bouton qui tente d'envoyer une position (doit être refusé) et un bouton de plantage de test (actif seulement si les rapports sont activés).
 6. **Galerie de tokens** : couleurs (nom de code et valeur), styles de texte, arrondis, ombres, dégradés, à comparer au Figma.
@@ -85,7 +85,7 @@ Les messages d'erreur restent neutres ("Pas de connexion pour le moment"), y com
 
 - Le manifeste désactive la collecte au démarrage (`firebase_analytics_collection_enabled=false`, `firebase_crashlytics_collection_enabled=false`, identifiant publicitaire désactivé). La clé irréversible `…_collection_deactivated` n'est **pas** utilisée.
 - Le choix de l'utilisateur est stocké sur l'appareil (`PrivacySettings`) et réappliqué à chaque lancement. Pour l'instant le seul moyen d'allumer ces collectes est l'écran de diagnostic ; l'écran de consentement viendra avec l'onboarding.
-- Tout événement passe par `AnalyticsTracker`, qui applique la **liste blanche** (`domain/analytics/AnalyticsContract.kt`) : événement inconnu, paramètre inconnu, mauvais type, texte trop long, valeur qui ressemble à des coordonnées, et **tout paramètre dont le nom évoque une position** (`lat`, `lng`, `latitude`, `longitude`, `address`, `place`, `location`, `geo`, `gps`...) sont refusés. Ajouter un événement à la liste est une décision produit à relire avec la confidentialité.
+- Tout événement passe par `AnalyticsTracker` (point d'entrée typé : `AnalyticsEvent`), qui applique la **liste blanche** de `docs/contracts/analytics-events.md` (version 1, neuf événements, valeurs issues de listes fermées) implémentée dans `domain/analytics/AnalyticsContract.kt`. Sont refusés : événement inconnu, paramètre inconnu, mauvais type, valeur hors liste et **tout nom de paramètre qui évoque une position** (mots `lat`, `lng`, `address`, `place`, `location`, `gps`, `distance`... découpés sur `_`, ou fragments comme `latitude` même collés). Ajouter un événement = PR sur le contrat **et** sur les deux plateformes, validée par le PM.
 - Les permissions publicitaires ajoutées par le SDK Analytics (`AD_ID`, `ACCESS_ADSERVICES_*`, référent d'installation) sont retirées du manifeste.
 
 ## Sécurité du manifeste (critère A7)
@@ -95,7 +95,7 @@ Permissions finales de l'APK release : `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE
 ## Traductions
 
 - **Les textes anglais sont dans `res/values/` (non qualifié) et les textes français dans `res/values-fr/`.** C'est voulu : Android utilise le dossier non qualifié quand la langue du téléphone n'est pas prise en charge, donc c'est le seul moyen d'avoir l'**anglais comme langue de repli** (un téléphone en allemand ou en arabe affiche de l'anglais). `res/resources.properties` (`unqualifiedResLocale=en-US`) déclare cette langue de référence, et `generateLocaleConfig = true` produit la liste des langues du sélecteur Android 13+ ("Langues de l'application").
-- Le français reste la **langue source** du texte produit. Les clés sont identiques à celles du String Catalog iOS : `snake_case` avec préfixe de fonctionnalité (`home_`, `diag_`...), `android_` pour ce qui est propre à Android. **Le script de parité des clés doit donc lire `res/values-fr/strings.xml`** (pas `res/values/`).
+- Le français reste la **langue source** du texte produit. Les clés suivent `docs/contracts/i18n-keys.md` : `snake_case` avec préfixe de fonctionnalité (`home_`, `diag_`...), suffixe `_a11y` pour un texte de lecteur d'écran, `android_` pour ce qui est propre à Android. `res/values/` (anglais) et `res/values-fr/` (français) ont exactement les mêmes clés (Lint l'impose) : le script de parité du dépôt, qui compare des clés, fonctionne sur `res/values/strings.xml`, même si ce fichier contient l'anglais et non le français.
 - Ajouter une langue : créer `res/values-<code>/strings.xml` avec toutes les clés (Lint échoue sinon : `MissingTranslation` en erreur), puis ajouter le code dans `localeFilters` (`app/build.gradle.kts`, bloc `androidComponents`).
 - Lint en erreur : `HardcodedText`, `MissingTranslation`, `ExtraTranslation`, `RtlHardcoded`. Limite connue : `HardcodedText` ne regarde que les fichiers XML ; les textes écrits directement dans le code Compose ne sont pas détectés par Lint (aucun dans ce socle, à surveiller en relecture).
 - Mise en page avec début/fin (`start`/`end`), jamais gauche/droite. Pseudo-langues `en-XA` (texte allongé accentué) et `ar-XB` (droite-à-gauche) disponibles dans le build debug : les ajouter dans les langues du téléphone (elles n'apparaissent que si les options pour les développeurs sont activées, selon le constructeur).
@@ -108,6 +108,7 @@ Permissions finales de l'APK release : `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE
 - Couleurs : noms de code de `design/design-system.md` (`colorBrandPrimary`, `colorActionPrimary`, `colorStatusSafe`...). Les noms non listés dans le document suivent le même schéma (`bg/canvas` devient `colorBgCanvas`) : à aligner à l'identique sur iOS.
 - Styles de texte : `textDisplayHero`, `textDisplayHeadline`, `textBodyRegular`, `textCaptionTag8`... (token `body/regular-14` devient `textBodyRegular14`). Tailles en `sp`.
 - Arrondis `RadiusMd`, `RadiusSm`, `RadiusFull` ; ombres `ShadowDefault`, `ShadowSubtle` (voir limite ci-dessous) ; dégradés `GradientBrandTitle`, `GradientAuthBackground`.
+- Texte d'erreur : `colorTextError` est `#D60700` (et non le rouge de statut `#FF5650`) pour atteindre un contraste d'au moins 4,5:1 sur les fonds de l'app ; `colorStatusDanger` reste réservé aux anneaux, badges et fonds. Un test unitaire (`ColorContrastTest`) calcule le contraste.
 - Thème **clair imposé** (le mode sombre du téléphone et le "mode sombre forcé" des surcouches constructeur sont ignorés).
 - Polices variables embarquées dans `res/font` avec leurs licences OFL (`third_party/fonts/`). Une police variable contient toutes les graisses : on ne peut pas n'embarquer que les graisses utilisées sans outil de découpage de polices (non disponible ici). Poids total des trois fichiers : environ 580 Ko.
 - Points ouverts de design (non inventés, signalés) : poids de Baloo Thambi 2 (le fichier d'état Figma dit "Regular", c'est ce qui est utilisé) ; "dégradé à 17 %" lu comme position de l'arrêt de couleur ; les espacements (`Spacing.kt`) ne sont pas des tokens Figma.
@@ -120,9 +121,18 @@ app/src/main      code commun : MiffApplication, AppContainer, MainActivity,
                   ui/ (theme, components, home, navigation), domain/ (logique pure testée), data/privacy
 app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth en lecture, App Check "debug"
 app/src/release   App Check Play Integrity, aucune destination interne
-app/src/test      tests unitaires JUnit (35 tests)
+app/src/test      tests unitaires JUnit (38 tests)
 third_party/fonts licences et provenance des polices
 ```
+
+## Limites connues
+
+- **Le cache Firestore local n'est pas purgé à la déconnexion.** Il peut contenir des états de position. Aucun écran de connexion n'existe encore ; la purge (et son test) est à traiter dans le ticket Inscription/Connexion, comme prévu au ticket INIT. L'écran de diagnostic se déconnecte seulement.
+- Accessibilité : les interrupteurs de l'écran de diagnostic sont des éléments uniques (rôle interrupteur, libellé lu par TalkBack, zone d'au moins 48 dp). A valider au lecteur d'écran sur l'OPPO.
+
+## Intégration continue
+
+`.github/workflows/android.yml` (déclenché par une PR touchant `android/**`, ou à la main) exécute `spotlessCheck`, `lintDebug`, `testDebugUnitTest`, `assembleDebug` et `bundleRelease` (non signé), et publie l'APK debug 3 jours. Il lit le secret GitHub `GOOGLE_SERVICES_JSON_B64` (voir le message d'erreur du job s'il manque).
 
 ## A surveiller plus tard : surcouches constructeur (géofencing)
 

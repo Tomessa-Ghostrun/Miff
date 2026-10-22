@@ -14,9 +14,17 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - Ecran de diagnostic interne (debug uniquement) : identité du build et projet Firebase, Test 1 (règles actives), Test 2 (compte de test, lecture seule), état App Check, interrupteurs de collecte, événement de test, tentative de position (doit être refusée), plantage de test, galerie de tokens, bloc langue. Messages neutres et bienveillants, comportement hors-ligne prévu.
 - Ecran d'accueil minimal (release) avec logo provisoire.
 - Icône adaptative **provisoire (ne pas publier)** avec couche monochrome Android 13+.
-- Tests unitaires JUnit (35 tests), Android Lint, ktlint via Spotless.
+- Tests unitaires JUnit (38 tests), Android Lint, ktlint via Spotless.
 - Sécurité : `allowBackup=false` et règles d'extraction vides, trafic en clair interdit, uniquement des permissions réseau/techniques sans demande à l'utilisateur, permissions publicitaires retirées, pas de `debuggable` en release, R8 + réduction des ressources en release (non signée).
 - `README.md` (démarrage, génération de `google-services.json`, installation sur téléphone, points de vigilance ColorOS pour le futur géofencing).
+
+### Modifié après revue (PM)
+- `colorTextError` passe à `#D60700` (contraste ≥ 4,5:1) ; `colorStatusDanger` inchangé.
+- Liste blanche Analytics alignée sur `docs/contracts/analytics-events.md` (version 1).
+- Clé `home_logo_description` renommée `home_logo_a11y` (contrat des clés).
+- Interrupteurs du diagnostic accessibles ; e-mail de test conservé à la rotation (jamais le mot de passe).
+- Limite documentée : cache Firestore non purgé à la déconnexion.
+- Workflow CI `android.yml`.
 
 ### Choix économiques et contournements
 - **Firebase plan Spark** : rien à payer. Limite connue : 50 000 lectures Firestore par jour. Signal de bascule : l'onglet Firestore > Utilisation approche du quota, ou besoin de Cloud Functions / Cloud Storage (plan Blaze).
@@ -26,6 +34,6 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 
 ### Ecarts et points ouverts
 - `compileSdk` 37 (les bibliothèques AndroidX actuelles l'exigent) ; `targetSdk` reste 36.
-- Anglais dans `res/values`, français dans `res/values-fr` (nécessaire pour le repli anglais) : le script de parité des clés doit lire `values-fr`.
+- Anglais dans `res/values`, français dans `res/values-fr` (nécessaire pour le repli anglais) : les deux dossiers ont les mêmes clés, donc le script de parité (qui compare des clés) fonctionne sur `values/`.
 - Poids des polices `display/*`, interprétation du "dégradé à 17 %", noms de code des styles de texte et des couleurs non listés dans `design-system.md` : décisions à confirmer côté design (voir README).
 - Non vérifié sur appareil dans ce ticket (aucun téléphone ni émulateur disponible) : démarrage sur Android 8.0 et récent, rendu visuel (icône en rond/carré/squircle, ombres, polices, droite-à-gauche), tests 1 et 2 contre le vrai projet, preuves Analytics/Crashlytics en console, mode avion.
