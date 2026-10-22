@@ -64,6 +64,13 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
+          case "$ARCHIVE_MODE" in
+            unsigned|signed) ;;
+            *)
+              echo "::error::archive_mode doit valoir « unsigned » ou « signed » (reçu : « ${ARCHIVE_MODE} »)."
+              exit 1
+              ;;
+          esac
           mkdir -p build
           echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
           xcode_version=$(xcodebuild -version | awk 'NR==1 {print $2}')
@@ -84,6 +91,9 @@ jobs:
           if [ "$major" -lt "$XCODE_MIN_MAJOR" ] || { [ "$major" -eq "$XCODE_MIN_MAJOR" ] && [ "$minor" -lt "$XCODE_MIN_MINOR" ]; }; then
             echo "::error::Xcode ${xcode_version} détecté, Xcode ${XCODE_MIN_MAJOR}.${XCODE_MIN_MINOR} minimum exigé."
             exit 1
+          fi
+          if [ "$major" -ge 27 ]; then
+            echo "::warning::Xcode ${xcode_version} détecté (27 ou plus) : cette chaîne a été écrite pour Xcode 26.x ; en cas d'échec, vérifier d'abord ce changement de version."
           fi
 
       - name: Vérifier que les secrets sont présents (sans les afficher)
@@ -135,15 +145,9 @@ jobs:
           fi
           echo "Bundle ID vérifié : ${actual}"
 
-      - name: Préparer un trousseau temporaire et la clé d'API (jamais affichée)
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+      - name: Préparer un trousseau temporaire
         run: |
-          # Pas de "set -x" dans cette étape : elle manipule un secret.
           set -euo pipefail
-          echo "::add-mask::$ASC_KEY_ID"
-
           # Trousseau vide et éphémère où Xcode pourra stocker ses propres clés de signature.
           # Son mot de passe vide n'est pas un secret : le runner est détruit après le job.
           keychain="$RUNNER_TEMP/miff-ci.keychain-db"
@@ -155,56 +159,57 @@ jobs:
           security default-keychain -d user -s "$keychain"
           echo "CI_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
-          # Clé d'API : décodée dans un fichier temporaire lisible par nous seuls.
-          umask 077
-          key_path="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-          printf '%s' "$ASC_KEY_P8_B64" | tr -d ' \r\n' | openssl base64 -d -A > "$key_path"
-          if ! grep -q "BEGIN PRIVATE KEY" "$key_path"; then
-            rm -f "$key_path"
-            echo "::error::Le secret ASC_KEY_P8_B64 ne contient pas une clé .p8 valide (voir docs/dev/ios-spike.md)."
-            exit 1
-          fi
-          chmod 600 "$key_path"
-          echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"
-
-      - name: Archiver (build signé, configuration Internal)
+      # Mode unsigned : l'archive n'a PAS besoin de la clé, qui n'est donc pas écrite sur le disque
+      # pendant cette étape. Le chemin de la clé n'est jamais exporté (pas de GITHUB_ENV) :
+      # chaque étape qui en a besoin le recalcule.
+      - name: Archiver (non signée, configuration Internal)
+        if: inputs.archive_mode == 'unsigned'
+        timeout-minutes: 10
         env:
-          ARCHIVE_MODE: ${{ inputs.archive_mode }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Archive (non signée)" bash -c '
+            set -o pipefail
+            xcodebuild archive \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -archivePath build/Miff.xcarchive \
+              CODE_SIGNING_ALLOWED=NO \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              2>&1 | tee build/xcodebuild-archive.log | xcbeautify
+          '
+
+      - name: Archiver (signature automatique, configuration Internal)
+        if: inputs.archive_mode == 'signed'
+        timeout-minutes: 10
+        env:
           BUILD_NUMBER: ${{ github.run_number }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -uo pipefail
           # Pas de "set -x" : la ligne de commande contient des identifiants.
-          if [ "$ARCHIVE_MODE" = "unsigned" ]; then
-            bash ci/timed.sh "Archive (non signée, plan B)" bash -c '
-              set -o pipefail
-              xcodebuild archive \
-                -project Miff.xcodeproj -scheme Miff -configuration Internal \
-                -destination "generic/platform=iOS" \
-                -archivePath build/Miff.xcarchive \
-                CODE_SIGNING_ALLOWED=NO \
-                DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-                CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-                2>&1 | tee build/xcodebuild-archive.log | xcbeautify
-            '
-          else
-            bash ci/timed.sh "Archive (signature automatique)" bash -c '
-              set -o pipefail
-              xcodebuild archive \
-                -project Miff.xcodeproj -scheme Miff -configuration Internal \
-                -destination "generic/platform=iOS" \
-                -archivePath build/Miff.xcarchive \
-                -allowProvisioningUpdates \
-                -authenticationKeyPath "$ASC_KEY_PATH" \
-                -authenticationKeyID "$ASC_KEY_ID" \
-                -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-                DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-                CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-                2>&1 | tee build/xcodebuild-archive.log | xcbeautify
-            '
-          fi
+          bash ci/write-asc-key.sh || exit 1
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          bash ci/timed.sh "Archive (signature automatique)" bash -c '
+            set -o pipefail
+            xcodebuild archive \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -archivePath build/Miff.xcarchive \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$ASC_KEY_PATH" \
+              -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              2>&1 | tee build/xcodebuild-archive.log | xcbeautify
+          '
 
       - name: Identité de l'archive (bloquante)
         if: success()
@@ -221,12 +226,23 @@ jobs:
           build=$(read_archive CFBundleVersion)
           signing=$(read_archive SigningIdentity)
           min_os=$(read_app MinimumOSVersion)
+          # PlistBuddy affiche un tableau sous la forme "Array {\n 1\n}" : on le met sur une ligne.
+          device_family=$(/usr/libexec/PlistBuddy -c "Print :UIDeviceFamily" "$app_plist" 2>/dev/null | tr -d ' \n' || true)
+          encryption=$(read_app ITSAppUsesNonExemptEncryption)
           {
             echo
-            echo "Archive produite : identifiant \`${bundle_id}\`, version ${version}, build ${build}, iOS minimum ${min_os}, signature : ${signing}"
+            echo "Archive produite : identifiant \`${bundle_id}\`, version ${version}, build ${build}, iOS minimum ${min_os}, familles d'appareils ${device_family:-(absent)}, chiffrement non exempté : ${encryption}, signature : ${signing}"
             echo
           } >> "$GITHUB_STEP_SUMMARY"
           fail=0
+          if [ "$device_family" != "Array{1}" ]; then
+            echo "::error::UIDeviceFamily « ${device_family} » au lieu de iPhone seul (1) : envoi annulé."
+            fail=1
+          fi
+          if [ "$encryption" != "false" ]; then
+            echo "::error::ITSAppUsesNonExemptEncryption « ${encryption} » au lieu de « false » : envoi annulé."
+            fail=1
+          fi
           if [ "$bundle_id" != "com.tomessa.miff" ]; then
             echo "::error::Identifiant de l'archive « ${bundle_id} » au lieu de « com.tomessa.miff » : envoi annulé."
             fail=1
@@ -242,12 +258,17 @@ jobs:
           exit "$fail"
 
       - name: Exporter et envoyer à TestFlight
+        timeout-minutes: 10
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -uo pipefail
+          # Pas de "set -x" : la ligne de commande contient des identifiants.
+          bash ci/write-asc-key.sh || exit 1
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
           sed "s/__TEAM_ID__/${APPLE_TEAM_ID}/" ci/ExportOptions.plist.template > build/ExportOptions.plist
           bash ci/timed.sh "Export signé + envoi App Store Connect" bash -c '
             set -o pipefail
@@ -274,7 +295,7 @@ jobs:
             echo "**Durée totale (hors démarrage du runner) : ${total} s (~$(( (total + 59) / 60 )) min facturées).**"
             echo
             if [ "$JOB_STATUS" = "success" ]; then
-              echo "Envoi terminé. Prochaine étape : App Store Connect > Mes apps > Miff > TestFlight. Le build ${BUILD_NUMBER} apparaît après quelques minutes de traitement par Apple (statut « Traitement », puis « Conformité à l'exportation » à renseigner une fois)."
+              echo "Envoi terminé. Prochaine étape : App Store Connect > Mes apps > Miff > TestFlight. Le build ${BUILD_NUMBER} apparaît après quelques minutes de traitement par Apple (statut « Traitement »). Pour qu'il apparaisse chez vous dans l'app TestFlight, il doit être ajouté au groupe de test interne (ou la distribution automatique du groupe doit être activée)."
             else
               echo "Le job a échoué : consulter l'étape en erreur, l'artefact \`ios-testflight-logs-${BUILD_NUMBER}\` et la section « Erreurs probables » de docs/dev/ios-spike.md. Ne pas relancer ce job (« Re-run ») si l'envoi a déjà eu lieu : le numéro de build serait refusé. Lancer plutôt une nouvelle exécution."
             fi
@@ -283,17 +304,32 @@ jobs:
       - name: Nettoyer la clé et le trousseau temporaires
         if: always()
         run: |
-          rm -f "${ASC_KEY_PATH:-}" || true
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 || true
           if [ -n "${CI_KEYCHAIN:-}" ]; then
             security delete-keychain "$CI_KEYCHAIN" || true
           fi
           rm -f build/ExportOptions.plist || true
 
-      - name: Rassembler les journaux de distribution (en cas d'échec)
+      # Les artefacts ne sont pas masqués comme les secrets de l'écran : on remplace Team ID, Key ID
+      # et Issuer ID dans les copies déposées, et on ne dépose jamais les fichiers bruts.
+      # Les journaux .xcdistributionlogs n'ont jamais été relus par un humain : leur contenu
+      # reste à vérifier avant de les partager.
+      - name: Rassembler et assainir les journaux (en cas d'échec)
         if: failure()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          mkdir -p build/dist-logs
-          cp -R "${TMPDIR:-/tmp}"/*.xcdistributionlogs build/dist-logs/ 2>/dev/null || true
+          set -uo pipefail
+          mkdir -p build/sanitized/dist-logs
+          cp build/*.log build/sanitized/ 2>/dev/null || true
+          cp -R "${TMPDIR:-/tmp}"/*.xcdistributionlogs build/sanitized/dist-logs/ 2>/dev/null || true
+          for value in "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$APPLE_TEAM_ID"; do
+            # Un identifiant vide effacerait tout le texte : on l'ignore.
+            [ -n "$value" ] || continue
+            find build/sanitized -type f -exec env LC_ALL=C sed -i '' -e "s/${value}/[identifiant masqué]/g" {} + 2>/dev/null || true
+          done
 
       - name: Déposer les journaux (en cas d'échec)
         if: failure()
@@ -301,9 +337,6 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: ios-testflight-logs-${{ github.run_number }}
-          path: |
-            ios/build/*.log
-            ios/build/export
-            ios/build/dist-logs
+          path: ios/build/sanitized
           if-no-files-found: ignore
           retention-days: 3
