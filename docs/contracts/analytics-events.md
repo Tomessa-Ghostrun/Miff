@@ -1,11 +1,11 @@
 # Contrat — événements Analytics (liste blanche)
 
 **Statut** : contrat partagé entre `android-dev` et `ios-dev`. **Proposition initiale, à valider par le PM** (et par un avis juridique pour le consentement, voir ticket « Initialisation technique », question 6). Toute modification passe par une PR qui touche ce fichier, validée par le PM.
-**Version du contrat** : 1 (2026-10-21)
+**Version du contrat** : 1 (2026-10-21), précisée le 2026-10-22 (exception de la collecte automatique du SDK, voir plus bas)
 
 ## Règles absolues
 
-1. **Aucune position, jamais.** Aucun événement ni paramètre ne porte une coordonnée, une adresse, un nom ou une catégorie de lieu, une distance à un lieu, ni aucune information déduite de la localisation d'une personne.
+1. **Aucune position dans les événements que nous définissons.** Aucun événement ni paramètre de la liste blanche ne porte une coordonnée, une adresse, un nom ou une catégorie de lieu, ni une distance à un lieu. **Exception connue et assumée : la collecte automatique du SDK, voir la section dédiée plus bas** (Google déduit lui-même une zone géographique approximative à partir de l'adresse IP).
 2. **Liste blanche stricte.** Seuls les événements et paramètres listés ci-dessous existent. Tout autre nom est **refusé par le code** (l'événement n'est pas envoyé) et testé unitairement.
 3. **Pas de donnée personnelle.** Pas d'identifiant utilisateur (`setUserId` interdit), pas d'e-mail, pas de nom, pas de nom de Miff, pas de code secret, pas d'identifiant de Miff, pas de texte libre.
 4. **Consentement d'abord.** La collecte est désactivée au démarrage et ne s'active qu'après consentement explicite de l'utilisateur (`FIREBASE_ANALYTICS_COLLECTION_ENABLED = NO` sur iOS, équivalent par le manifeste sur Android). Avant consentement : aucun événement envoyé.
@@ -32,6 +32,16 @@ Notes :
 - `extra_trusted_place` nomme la limite gratuite atteinte (un seul lieu), pas un lieu : aucun nom, type ni emplacement n'est transmis.
 - Aucun événement d'achat n'est défini ici : le paiement n'existe pas encore (voir ticket, décisions du PM). Ils s'ajouteront avec le ticket Paywall.
 - Aucun événement sur les lieux de confiance, le feed, les mises à jour de statut, les notifications ou les réglages : non spécifiés ici, et ils frôlent la localisation. À proposer plus tard, un par un, avec avis du PM.
+
+## Exception : collecte automatique du SDK Firebase Analytics
+
+La liste blanche ne contrôle que les événements envoyés **par notre code**. Une fois l'Analytics activé par l'utilisateur, le SDK envoie aussi **de lui-même** des événements automatiques (par exemple `first_open`, `session_start`, `user_engagement`, `app_update`, `os_update`), avec des informations techniques sur l'appareil (modèle, version du système, langue, version de l'app). Notre code ne peut ni les filtrer ni les refuser.
+
+- **Zone géographique** : Google déduit un pays, une région et une ville approximatifs **à partir de l'adresse IP** de l'appareil, sans que l'app n'accède à la position (aucune permission de localisation). Ce n'est pas une position précise, mais ce n'est pas non plus « aucune information de localisation » : il faut le dire tel quel dans la politique de confidentialité et dans le texte de consentement.
+- **Réglage console (action du PM, à faire)** : dans la console Google Analytics 4 du projet `miff-3d283`, désactiver la collecte des données géographiques détaillées (« Granular location and device data collection », dans Administration > Collecte et modification des données > Collecte de données) pour les régions concernées, et régler la rétention des données au minimum. Les libellés exacts peuvent varier : à vérifier dans la console.
+- **Suivi automatique des écrans désactivé** : l'événement automatique `screen_view` est coupé sur les deux plateformes (Android : `google_analytics_automatic_screen_reporting_enabled = false` dans le manifeste ; iOS : clé `FirebaseAutomaticScreenReportingEnabled = NO` dans l'Info.plist, à vérifier par `ios-dev`), pour ne transmettre aucun nom d'écran, qui pourrait un jour évoquer un lieu.
+- **Identifiant publicitaire** : non utilisé et désactivé (Android : métadonnées du manifeste et permissions retirées ; iOS : `FirebaseAnalyticsCore`).
+- Toute évolution (par exemple couper aussi les événements automatiques restants) est une décision du PM.
 
 ## Noms interdits pour un paramètre (et pour tout nouvel événement)
 

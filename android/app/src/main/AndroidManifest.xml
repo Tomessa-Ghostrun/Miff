@@ -53,6 +53,10 @@
         <meta-data
             android:name="google_analytics_ssaid_collection_enabled"
             android:value="false" />
+        <!-- No automatic screen_view events: screen names could one day evoke a place (see docs/contracts/analytics-events.md). -->
+        <meta-data
+            android:name="google_analytics_automatic_screen_reporting_enabled"
+            android:value="false" />
         <meta-data
             android:name="google_analytics_default_allow_ad_personalization_signals"
             android:value="false" />
