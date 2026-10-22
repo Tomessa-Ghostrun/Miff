@@ -1,0 +1,12 @@
+# Configuration de la recherche de secrets (gitleaks, licence MIT) - voir .github/workflows/hygiene.yml
+# On garde TOUTES les règles par défaut et on n'ajoute que des exceptions étroites et justifiées.
+title = "Miff - gitleaks"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Identifiants de fichiers Figma (fileKey) : identifiants de documents privés, accessibles seulement aux comptes autorisés, pas des secrets. Déjà cités dans CLAUDE.md. Faux positif de la règle generic-api-key."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^design/figma-design-system-state\.json$''']

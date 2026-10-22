@@ -90,6 +90,11 @@ Notion et Figma sont connectés via MCP (voir "Sources externes connectées" plu
 ## Dépôt Git
 Repo GitHub privé : https://github.com/Tomessa-Ghostrun/Miff (branche `main`). Totalement distinct du projet Ghostrun, qui ne doit jamais être touché depuis ce dossier.
 
+**Dossier de travail : `C:\dev\miff`** (hors OneDrive, depuis le 2026-10-21). L'ancien dossier `C:\Users\tomes\OneDrive\Bureau\Miff by Claude` n'est plus utilisé : ne plus y travailler (risque de corruption de `.git` et de synchronisation de fichiers de build).
+
+## Règle d'or : solutions gratuites d'abord (décision PM, 2026-10-21)
+Pour tout choix d'outil, de service, de CI ou de bibliothèque : retenir la solution **gratuite** quand elle existe et qu'elle respecte la sécurité et les conditions d'utilisation. Aucun moyen de paiement n'est ajouté (GitHub, Firebase Blaze, Xcode Cloud, etc.) sans décision explicite du PM, et toute option payante est présentée avec son coût et son alternative gratuite.
+
 ## Règles générales
 - Ne jamais deviner une décision produit, design, ou légale non fournie — les agents doivent signaler les ambiguïtés plutôt que d'inventer.
 - Aucune action de paiement, création de compte développeur, ou soumission réelle aux stores n'est effectuée par un agent — uniquement préparée.

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- commentaire <string name="fantome_cle">ignoré</string> -->
+    <string name="auth_title">Texte</string>
+    <string name="miff_create">Texte</string>
+    <string name="place_name">Texte</string>
+</resources>

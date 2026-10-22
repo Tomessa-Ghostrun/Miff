@@ -1,0 +1,101 @@
+name: hygiene
+
+# Hygiène du dépôt sur TOUTE pull request : fichiers interdits, recherche de secrets, parité des traductions.
+# Aucun secret requis. Jamais de pull_request_target (il donnerait accès aux secrets à du code de PR).
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  forbidden-files:
+    name: Fichiers interdits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Début du chronomètre
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Récupération du dépôt (historique complet)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Tests du contrôle (script de détection)
+        run: node --test "scripts/tests/check-forbidden-files.test.mjs"
+      - name: Fichiers interdits (config Firebase, clés, keystores, .env...)
+        run: node scripts/check-forbidden-files.mjs
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job forbidden-files = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"
+
+  secrets-scan:
+    name: Recherche de secrets (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      # gitleaks : licence MIT (https://github.com/gitleaks/gitleaks/blob/master/LICENSE).
+      # Binaire téléchargé depuis la release officielle, version et somme SHA-256 épinglées.
+      # Pour mettre à jour : changer les deux valeurs ensemble (somme dans gitleaks_<version>_checksums.txt
+      # de la release) et relire les notes de version.
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - name: Début du chronomètre
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Récupération du dépôt (historique complet)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Installer gitleaks (téléchargement épinglé, somme de contrôle vérifiée)
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/gitleaks.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict -
+          mkdir -p "$RUNNER_TEMP/gitleaks-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/gitleaks-bin" gitleaks
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" version
+      - name: Recherche de secrets dans tout l'historique
+        # --redact : les valeurs trouvées ne sont jamais écrites dans le journal.
+        run: >
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" git
+          --no-banner --redact --verbose --exit-code 1
+          --config .gitleaks.toml .
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job secrets-scan = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"
+
+  i18n-parity:
+    name: Parité des clés de traduction
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Début du chronomètre
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Récupération du dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Tests du script de parité
+        run: node --test "scripts/tests/check-i18n-parity.test.mjs"
+      - name: Parité des clés françaises Android / iOS
+        run: node scripts/check-i18n-parity.mjs
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job i18n-parity = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"
