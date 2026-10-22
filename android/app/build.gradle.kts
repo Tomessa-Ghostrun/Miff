@@ -47,7 +47,8 @@ android {
             // No automatic upload of the R8 mapping to Firebase from a developer machine: a build must never write to
             // the Firebase project. CI will enable it (-Pmiff.uploadCrashlyticsMapping=true) once release builds are shared.
             (this as ExtensionAware).extensions.configure<CrashlyticsExtension>("firebaseCrashlytics") {
-                mappingFileUploadEnabled = providers.gradleProperty("miff.uploadCrashlyticsMapping").isPresent
+                mappingFileUploadEnabled =
+                    providers.gradleProperty("miff.uploadCrashlyticsMapping").map { it == "true" }.getOrElse(false)
             }
         }
     }
