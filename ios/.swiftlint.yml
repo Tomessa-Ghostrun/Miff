@@ -1,0 +1,13 @@
+# Configuration SwiftLint minimale pour le spike INIT-3.
+# Lancer depuis le dossier ios/ : swiftlint lint --strict
+included:
+  - Miff
+  - MiffTests
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+
+line_length:
+  warning: 120
+  error: 160

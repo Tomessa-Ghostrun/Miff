@@ -1,0 +1,342 @@
+name: ios-testflight
+
+# MANUEL UNIQUEMENT : archive signee de l'app iOS, puis envoi a TestFlight.
+# Pas de declenchement automatique : chaque execution consomme des minutes macOS
+# et un numero de build TestFlight (qui ne peut jamais etre reutilise).
+# Mode d'emploi pas a pas : docs/dev/ios-spike.md
+#
+# Principe de signature (gratuit, sans fastlane, sans Mac) : signature automatique de Xcode
+# pilotee par une cle d'API App Store Connect (-allowProvisioningUpdates + -authenticationKey*).
+# Apple fournit alors un certificat de distribution "gere dans le cloud" : aucun certificat
+# ni profil n'est stocke dans GitHub, seule la cle d'API l'est (secret ASC_KEY_P8_B64).
+
+on:
+  workflow_dispatch:
+    inputs:
+      archive_mode:
+        description: >-
+          unsigned = archive non signee, signature faite a l'export (defaut : evite de creer
+          un certificat de developpement orphelin a chaque run ; support NON CONFIRME, echec
+          rapide possible a l'export). signed = archive signee automatiquement (plan de repli).
+        type: choice
+        options:
+          - unsigned
+          - signed
+        default: unsigned
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+env:
+  XCODEGEN_VERSION: "2.46.0" # MIT
+  XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+  XCODE_MIN_MAJOR: "26"
+  XCODE_MIN_MINOR: "2"
+
+jobs:
+  archive-and-upload:
+    name: Archive signée et envoi TestFlight
+    runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
+    timeout-minutes: 20
+    # PROTECTION DES SECRETS : un "environment" GitHub avec relecteur obligatoire serait
+    # l'ideal, mais il n'est PAS disponible pour un depot prive en offre gratuite (GitHub Free).
+    # Si le compte passe en GitHub Pro : creer l'environnement "testflight" (Settings >
+    # Environments), y deplacer les 4 secrets, restreindre les branches et decommenter :
+    # environment: testflight
+    defaults:
+      run:
+        shell: bash
+        working-directory: ios
+    steps:
+      - name: Récupérer le code
+        # actions/checkout v7.0.1 (empreinte de commit verifiee via l'API GitHub le 2026-10-21)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Ouvrir le résumé et vérifier Xcode
+        env:
+          ARCHIVE_MODE: ${{ inputs.archive_mode }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          case "$ARCHIVE_MODE" in
+            unsigned|signed) ;;
+            *)
+              echo "::error::archive_mode doit valoir « unsigned » ou « signed » (reçu : « ${ARCHIVE_MODE} »)."
+              exit 1
+              ;;
+          esac
+          mkdir -p build
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          xcode_version=$(xcodebuild -version | awk 'NR==1 {print $2}')
+          {
+            echo "## TestFlight - durées des étapes"
+            echo
+            echo "- Numéro de build : ${BUILD_NUMBER}"
+            echo "- Mode d'archive : ${ARCHIVE_MODE}"
+            echo "- Xcode : ${xcode_version} ($(xcodebuild -version | awk 'NR==2'))"
+            echo "- Image du runner : ${ImageVersion:-inconnue}"
+            echo
+            echo "| Étape | Durée | Résultat |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          major=${xcode_version%%.*}
+          rest=${xcode_version#*.}
+          minor=${rest%%.*}
+          if [ "$major" -lt "$XCODE_MIN_MAJOR" ] || { [ "$major" -eq "$XCODE_MIN_MAJOR" ] && [ "$minor" -lt "$XCODE_MIN_MINOR" ]; }; then
+            echo "::error::Xcode ${xcode_version} détecté, Xcode ${XCODE_MIN_MAJOR}.${XCODE_MIN_MINOR} minimum exigé."
+            exit 1
+          fi
+          if [ "$major" -ge 27 ]; then
+            echo "::warning::Xcode ${xcode_version} détecté (27 ou plus) : cette chaîne a été écrite pour Xcode 26.x ; en cas d'échec, vérifier d'abord ce changement de version."
+          fi
+
+      - name: Vérifier que les secrets sont présents (sans les afficher)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -n "$ASC_KEY_ID" ] || missing="$missing ASC_KEY_ID"
+          [ -n "$ASC_ISSUER_ID" ] || missing="$missing ASC_ISSUER_ID"
+          [ -n "$ASC_KEY_P8_B64" ] || missing="$missing ASC_KEY_P8_B64"
+          [ -n "$APPLE_TEAM_ID" ] || missing="$missing APPLE_TEAM_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Secrets GitHub manquants :${missing}. Voir docs/dev/ios-spike.md (étape secrets)."
+            exit 1
+          fi
+          if ! printf '%s' "$APPLE_TEAM_ID" | grep -Eq '^[A-Z0-9]{10}$'; then
+            echo "::error::APPLE_TEAM_ID doit contenir exactement 10 caractères (lettres majuscules et chiffres)."
+            exit 1
+          fi
+
+      - name: Installer XcodeGen (version épinglée)
+        run: |
+          set -euo pipefail
+          tools="$RUNNER_TEMP/tools"
+          mkdir -p "$tools"
+          curl -fsSL --retry 3 -o "$tools/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip"
+          echo "${XCODEGEN_SHA256}  $tools/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$tools/xcodegen.zip" -d "$tools"
+          chmod +x "$tools/xcodegen/bin/xcodegen"
+          echo "$tools/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Générer le projet Xcode
+        run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
+
+      - name: Garde-fou - bundle ID exact (compte Apple partagé avec Ghostrun)
+        run: |
+          set -euo pipefail
+          expected="com.tomessa.miff"
+          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Internal 2>/dev/null \
+            | awk -F' = ' '$1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ {print $2}')
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::PRODUCT_BUNDLE_IDENTIFIER vaut « ${actual} » au lieu de « ${expected} ». Arrêt avant toute signature : le compte Apple est partagé avec un autre projet."
+            exit 1
+          fi
+          echo "Bundle ID vérifié : ${actual}"
+
+      - name: Préparer un trousseau temporaire
+        run: |
+          set -euo pipefail
+          # Trousseau vide et éphémère où Xcode pourra stocker ses propres clés de signature.
+          # Son mot de passe vide n'est pas un secret : le runner est détruit après le job.
+          keychain="$RUNNER_TEMP/miff-ci.keychain-db"
+          security create-keychain -p "" "$keychain"
+          security set-keychain-settings -lut 7200 "$keychain"
+          security unlock-keychain -p "" "$keychain"
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -d user -s "$keychain"
+          echo "CI_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
+      # Mode unsigned : l'archive n'a PAS besoin de la clé, qui n'est donc pas écrite sur le disque
+      # pendant cette étape. Le chemin de la clé n'est jamais exporté (pas de GITHUB_ENV) :
+      # chaque étape qui en a besoin le recalcule.
+      - name: Archiver (non signée, configuration Internal)
+        if: inputs.archive_mode == 'unsigned'
+        timeout-minutes: 10
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Archive (non signée)" bash -c '
+            set -o pipefail
+            xcodebuild archive \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -archivePath build/Miff.xcarchive \
+              CODE_SIGNING_ALLOWED=NO \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              2>&1 | tee build/xcodebuild-archive.log | xcbeautify
+          '
+
+      - name: Archiver (signature automatique, configuration Internal)
+        if: inputs.archive_mode == 'signed'
+        timeout-minutes: 10
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          # Pas de "set -x" : la ligne de commande contient des identifiants.
+          bash ci/write-asc-key.sh || exit 1
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          bash ci/timed.sh "Archive (signature automatique)" bash -c '
+            set -o pipefail
+            xcodebuild archive \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -archivePath build/Miff.xcarchive \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$ASC_KEY_PATH" \
+              -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              2>&1 | tee build/xcodebuild-archive.log | xcbeautify
+          '
+
+      - name: Identité de l'archive (bloquante)
+        if: success()
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -uo pipefail
+          archive=build/Miff.xcarchive
+          app_plist="$(ls -d "$archive"/Products/Applications/*.app 2>/dev/null | head -n 1)/Info.plist"
+          read_archive() { /usr/libexec/PlistBuddy -c "Print :ApplicationProperties:$1" "$archive/Info.plist" 2>/dev/null || echo "(absent)"; }
+          read_app() { /usr/libexec/PlistBuddy -c "Print :$1" "$app_plist" 2>/dev/null || echo "(absent)"; }
+          bundle_id=$(read_archive CFBundleIdentifier)
+          version=$(read_archive CFBundleShortVersionString)
+          build=$(read_archive CFBundleVersion)
+          signing=$(read_archive SigningIdentity)
+          min_os=$(read_app MinimumOSVersion)
+          # PlistBuddy affiche un tableau sous la forme "Array {\n 1\n}" : on le met sur une ligne.
+          device_family=$(/usr/libexec/PlistBuddy -c "Print :UIDeviceFamily" "$app_plist" 2>/dev/null | tr -d ' \n' || true)
+          encryption=$(read_app ITSAppUsesNonExemptEncryption)
+          {
+            echo
+            echo "Archive produite : identifiant \`${bundle_id}\`, version ${version}, build ${build}, iOS minimum ${min_os}, familles d'appareils ${device_family:-(absent)}, chiffrement non exempté : ${encryption}, signature : ${signing}"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          if [ "$device_family" != "Array{1}" ]; then
+            echo "::error::UIDeviceFamily « ${device_family} » au lieu de iPhone seul (1) : envoi annulé."
+            fail=1
+          fi
+          if [ "$encryption" != "false" ]; then
+            echo "::error::ITSAppUsesNonExemptEncryption « ${encryption} » au lieu de « false » : envoi annulé."
+            fail=1
+          fi
+          if [ "$bundle_id" != "com.tomessa.miff" ]; then
+            echo "::error::Identifiant de l'archive « ${bundle_id} » au lieu de « com.tomessa.miff » : envoi annulé."
+            fail=1
+          fi
+          if [ "$min_os" != "16.0" ]; then
+            echo "::error::MinimumOSVersion « ${min_os} » au lieu de « 16.0 » : envoi annulé."
+            fail=1
+          fi
+          if [ "$build" != "$BUILD_NUMBER" ]; then
+            echo "::error::Numéro de build de l'archive « ${build} » au lieu de « ${BUILD_NUMBER} » : envoi annulé."
+            fail=1
+          fi
+          exit "$fail"
+
+      - name: Exporter et envoyer à TestFlight
+        timeout-minutes: 10
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          # Pas de "set -x" : la ligne de commande contient des identifiants.
+          bash ci/write-asc-key.sh || exit 1
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          sed "s/__TEAM_ID__/${APPLE_TEAM_ID}/" ci/ExportOptions.plist.template > build/ExportOptions.plist
+          bash ci/timed.sh "Export signé + envoi App Store Connect" bash -c '
+            set -o pipefail
+            xcodebuild -exportArchive \
+              -archivePath build/Miff.xcarchive \
+              -exportOptionsPlist build/ExportOptions.plist \
+              -exportPath build/export \
+              -allowProvisioningUpdates \
+              -authenticationKeyPath "$ASC_KEY_PATH" \
+              -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              2>&1 | tee build/xcodebuild-export.log | xcbeautify
+          '
+
+      - name: Résumé final
+        if: always()
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          total=$(( $(date +%s) - ${JOB_START:-$(date +%s)} ))
+          {
+            echo
+            echo "**Durée totale (hors démarrage du runner) : ${total} s (~$(( (total + 59) / 60 )) min facturées).**"
+            echo
+            if [ "$JOB_STATUS" = "success" ]; then
+              echo "Envoi terminé. Prochaine étape : App Store Connect > Mes apps > Miff > TestFlight. Le build ${BUILD_NUMBER} apparaît après quelques minutes de traitement par Apple (statut « Traitement »). Pour qu'il apparaisse chez vous dans l'app TestFlight, il doit être ajouté au groupe de test interne (ou la distribution automatique du groupe doit être activée)."
+            else
+              echo "Le job a échoué : consulter l'étape en erreur, l'artefact \`ios-testflight-logs-${BUILD_NUMBER}\` et la section « Erreurs probables » de docs/dev/ios-spike.md. Ne pas relancer ce job (« Re-run ») si l'envoi a déjà eu lieu : le numéro de build serait refusé. Lancer plutôt une nouvelle exécution."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Nettoyer la clé et le trousseau temporaires
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 || true
+          if [ -n "${CI_KEYCHAIN:-}" ]; then
+            security delete-keychain "$CI_KEYCHAIN" || true
+          fi
+          rm -f build/ExportOptions.plist || true
+
+      # Les artefacts ne sont pas masqués comme les secrets de l'écran : on remplace Team ID, Key ID
+      # et Issuer ID dans les copies déposées, et on ne dépose jamais les fichiers bruts.
+      # Les journaux .xcdistributionlogs n'ont jamais été relus par un humain : leur contenu
+      # reste à vérifier avant de les partager.
+      - name: Rassembler et assainir les journaux (en cas d'échec)
+        if: failure()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          mkdir -p build/sanitized/dist-logs
+          cp build/*.log build/sanitized/ 2>/dev/null || true
+          cp -R "${TMPDIR:-/tmp}"/*.xcdistributionlogs build/sanitized/dist-logs/ 2>/dev/null || true
+          for value in "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$APPLE_TEAM_ID"; do
+            # Un identifiant vide effacerait tout le texte : on l'ignore.
+            [ -n "$value" ] || continue
+            find build/sanitized -type f -exec env LC_ALL=C sed -i '' -e "s/${value}/[identifiant masqué]/g" {} + 2>/dev/null || true
+          done
+
+      - name: Déposer les journaux (en cas d'échec)
+        if: failure()
+        # actions/upload-artifact v7.0.2 (empreinte de commit verifiee via l'API GitHub le 2026-10-21)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ios-testflight-logs-${{ github.run_number }}
+          path: ios/build/sanitized
+          if-no-files-found: ignore
+          retention-days: 3
