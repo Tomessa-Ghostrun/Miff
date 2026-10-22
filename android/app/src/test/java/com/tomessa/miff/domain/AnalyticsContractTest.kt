@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain
 
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.domain.analytics.AnalyticsContract
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.analytics.AnalyticsSink
@@ -22,7 +23,7 @@ class AnalyticsContractTest {
     // 1. A listed event with correct parameters is accepted.
     @Test
     fun acceptsEveryListedEventWithCorrectParameters() {
-        val accepted =
+        val accepted: List<Pair<String, Map<String, Any>>> =
             listOf(
                 "onboarding_cta_tapped" to mapOf("slide_index" to 0),
                 "onboarding_cta_tapped" to mapOf("slide_index" to 2L),
@@ -33,17 +34,16 @@ class AnalyticsContractTest {
                 "onboarding_completed" to mapOf("via" to "joined"),
                 "paywall_shown" to mapOf("trigger" to "extra_miff"),
                 "paywall_dismissed" to mapOf("trigger" to "extra_trusted_place"),
-                "analytics_diagnostic_test" to emptyMap(),
-            )
+            ) + if (BuildConfig.DEBUG) listOf("analytics_diagnostic_test" to emptyMap()) else emptyList()
         accepted.forEach { (name, params) ->
             assertEquals("$name $params", AnalyticsValidation.Allowed, AnalyticsContract.validate(name, params))
         }
     }
 
     @Test
-    fun allowListHasExactlyTheNineEventsOfContractVersion1() {
+    fun allowListHasExactlyTheContractEventsAndTheDiagnosticEventOnlyInDebug() {
         assertEquals(1, AnalyticsContract.CONTRACT_VERSION)
-        assertEquals(
+        val productEvents =
             setOf(
                 "onboarding_cta_tapped",
                 "sign_up_completed",
@@ -53,10 +53,9 @@ class AnalyticsContractTest {
                 "onboarding_completed",
                 "paywall_shown",
                 "paywall_dismissed",
-                "analytics_diagnostic_test",
-            ),
-            AnalyticsContract.allowedEvents.keys,
-        )
+            )
+        val expected = if (BuildConfig.DEBUG) productEvents + "analytics_diagnostic_test" else productEvents
+        assertEquals(expected, AnalyticsContract.allowedEvents.keys)
     }
 
     // 2. An unknown event is refused.
@@ -70,7 +69,7 @@ class AnalyticsContractTest {
     @Test
     fun refusesUnknownParameters() {
         assertEquals(RefusalReason.UNKNOWN_PARAM, reason("miff_created", mapOf("user_name" to "Alice")))
-        assertEquals(RefusalReason.UNKNOWN_PARAM, reason("analytics_diagnostic_test", mapOf("source" to "x")))
+        assertEquals(RefusalReason.UNKNOWN_PARAM, reason("miff_joined", mapOf("source" to "x")))
     }
 
     // 4. Position-like names are refused, even on a known event.
@@ -148,7 +147,6 @@ class AnalyticsContractTest {
             AnalyticsEvent.OnboardingCompleted(AnalyticsEvent.OnboardingVia.CREATED),
             AnalyticsEvent.PaywallShown(AnalyticsEvent.PaywallTrigger.EXTRA_MIFF),
             AnalyticsEvent.PaywallDismissed(AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE),
-            AnalyticsEvent.DiagnosticTest,
         ).forEach { event ->
             assertEquals(event.name, AnalyticsValidation.Allowed, AnalyticsContract.validate(event.name, event.params))
         }
@@ -177,7 +175,7 @@ class AnalyticsContractTest {
     fun trackerSendsNothingWhileAnalyticsIsOff() {
         val sink = RecordingSink()
         val tracker = AnalyticsTracker(sink) { false }
-        assertEquals(TrackResult.Disabled, tracker.track(AnalyticsEvent.DiagnosticTest))
+        assertEquals(TrackResult.Disabled, tracker.track(AnalyticsEvent.MiffCreated(false)))
         assertTrue(sink.logged.isEmpty())
     }
 

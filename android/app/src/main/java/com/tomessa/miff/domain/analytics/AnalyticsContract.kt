@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain.analytics
 
+import com.tomessa.miff.BuildConfig
 import java.util.Locale
 
 /**
@@ -54,8 +55,8 @@ object AnalyticsContract {
     private val signInMethods = ParamSpec.Text(setOf("email", "google", "apple"))
     private val paywallTriggers = ParamSpec.Text(setOf("extra_miff", "extra_trusted_place"))
 
-    /** The allow-list: the nine events of contract version 1, nothing else. */
-    val allowedEvents: Map<String, AnalyticsEventSpec> =
+    /** The eight product events of contract version 1. */
+    private val productEvents: List<AnalyticsEventSpec> =
         listOf(
             AnalyticsEventSpec("onboarding_cta_tapped", mapOf("slide_index" to ParamSpec.IntValue(setOf(0L, 1L, 2L)))),
             AnalyticsEventSpec("sign_up_completed", mapOf("method" to signInMethods)),
@@ -65,8 +66,17 @@ object AnalyticsContract {
             AnalyticsEventSpec("onboarding_completed", mapOf("via" to ParamSpec.Text(setOf("created", "joined")))),
             AnalyticsEventSpec("paywall_shown", mapOf("trigger" to paywallTriggers)),
             AnalyticsEventSpec("paywall_dismissed", mapOf("trigger" to paywallTriggers)),
-            AnalyticsEventSpec(EVENT_DIAGNOSTIC_TEST),
-        ).associateBy { it.name }
+        )
+
+    /** The internal diagnostic event: debug builds only. */
+    private val diagnosticEvent = AnalyticsEventSpec(EVENT_DIAGNOSTIC_TEST)
+
+    /**
+     * The allow-list. `analytics_diagnostic_test` is part of it in debug builds only: release builds accept the
+     * eight product events and nothing else.
+     */
+    val allowedEvents: Map<String, AnalyticsEventSpec> =
+        (if (BuildConfig.DEBUG) productEvents + diagnosticEvent else productEvents).associateBy { it.name }
 
     /** Words (name split on "_", case-insensitive) that make a name refused. */
     private val forbiddenWords =
