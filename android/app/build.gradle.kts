@@ -68,6 +68,8 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Screen tests (Robolectric) need the app resources: they run in testDebugUnitTest only.
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -107,4 +109,9 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Screen tests on the JVM (no emulator needed, runs in CI). Test-only: nothing of this reaches the APK/AAB.
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
