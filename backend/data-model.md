@@ -3,9 +3,29 @@
 Projet Firebase : `miff-3d283` — Firestore `europe-west9` (Paris), édition Standard, plan Spark aujourd'hui.
 Ce document est la référence unique pour `ios-dev` et `android-dev` : même structure, mêmes noms de champs, mêmes batches. Toute évolution passe par `backend-data`.
 
-**Statut de validation** : modèle et règles (`firestore.rules`) écrits sans avoir été exécutés (aucun émulateur lancé, rien déployé). Ils doivent passer le plan de test `rules-test-plan.md` avant tout déploiement. Ce document ne prétend à aucune conformité juridique : il décrit ce que le modèle implique (§11).
+**Statut de validation** : les règles (`firestore.rules`) sont testées dans l'émulateur Firestore (`rules-test-plan.md`, résultats dans `rules-test-report.md`) mais **rien n'est déployé** : le déploiement reste soumis à la procédure du ticket `docs/tickets/durcissement-regles-firestore.md` (§8.2 : revue de sécurité en contexte neuf, OK explicite du PM). Ce document ne prétend à aucune conformité juridique : il décrit ce que le modèle implique (§11).
 
 Spécifications sources : `docs/specs/*.md` (statut "Backlog discovery", donc non validées). Les hypothèses prises là où une spec est muette sont marquées **[Hypothèse]** et listées en §15.
+
+## Ce qui change : durcissement des règles (ticket `docs/tickets/durcissement-regles-firestore.md`)
+
+**DUR-1 (appliqué dans cette version)** : une Miff supprimée ne peut plus renaître, et son code secret disparaît avec elle.
+- Nouvelle collection **`miffsDeleted/{miffId}`** (« pierre tombale », §2.11) : créée par le créateur dans le lot qui supprime la Miff ; la création d'une Miff est refusée si la pierre tombale de son identifiant existe.
+- La suppression d'une Miff (§2.5, §8) exige, dans le **même lot**, la pierre tombale **et** la suppression de `joinCodes/{joinCode}`.
+- Constat de la mise en œuvre : le contrôle de la pierre tombale est placé sur le document `miffs/{id}` lui-même, pas seulement sur la fiche membre du créateur (le ticket l'esquissait dans `ownerCreateOk`). Un créateur qui a gardé sa fiche membre après la suppression pouvait sinon recréer la Miff sans écrire de fiche (test H1f).
+
+*Impact PM* : un lot et une écriture de plus à la suppression d'une Miff (négligeable devant les quotas gratuits) ; aucun effet visible pour l'utilisateur.
+
+**DUR-2 (appliqué dans cette version)** : réciprocité réelle, retrait avec nouveau code, photos, Miff supprimée illisible.
+- **Statuts : il faut avoir publié son propre statut** (ATK3, décision PM) : la lecture de `status` (get et liste) exige que `status/{moi}` existe, en plus du partage activé. **Activer le partage = créer son statut dans le même lot** (valeur initiale `presence = "unknown"`, §8). **Photos : réciprocité inchangée** (décision PM) : le partage activé suffit, un membre qui n'a pas publié son statut peut donc lire les photos des autres.
+- **Retirer un membre renouvelle le code** (ATK4, décision PM) : le lot de retrait contient obligatoirement le changement de `miffs.joinCode`, la création du nouveau `joinCodes` et la suppression de l'ancien (§5, §8). Le départ volontaire ne change rien (décision PM, Q1).
+- **Miff supprimée = illisible** (complément ATK1) : `places`, `members`, `status`, `photos` ne sont plus lisibles dès que `miffs/{id}` n'existe plus, même pour un survivant dont la fiche existe encore. `get miffs/{id}` renvoie « introuvable » (pas une erreur) : c'est le signal de nettoyage pour l'app.
+- **Le code d'une Miff pointe vers cette Miff** (revue de sécurité) : à la création et au renouvellement, `joinCodes/{code}` doit exister après le lot **et** avoir `miffId` = cette Miff (on ne peut pas se donner le code d'une autre Miff). Tests H7a à H7c.
+- **Photos** : illisibles après `expiresAt` (appliqué par les règles, sans nettoyage nécessaire) ; `expiresAt` au plus +25 h (24 h + 1 h de marge) à la création, **identique pour tous les comptes, premium ou non** ; l'auteur, le créateur et **tout membre** (si la photo est expirée) peuvent la supprimer.
+
+*Impact PM* : un membre qui active son partage voit les autres dès que son propre statut est publié (instantané dans l'usage normal) ; retirer quelqu'un oblige le créateur à repartager un nouveau code ; coût : environ 1 à 2 lectures de règles de plus par ouverture de flux (§12).
+
+**À venir (DUR-3), non appliqué ici** : App Check strict, signal de bascule vers Blaze, garde-fous de projet, mesure de lectures complétée, extension des mutations.
 
 ---
 
@@ -17,7 +37,7 @@ Spécifications sources : `docs/specs/*.md` (statut "Backlog discovery", donc no
 | **Pas d'historique** : un seul document "état courant" par membre et par Miff, écrasé à chaque événement. | Coût stable, conforme à l'esprit "sans être intrusif" (spec hors-scope : pas de journal). |
 | **Le niveau vert/orange/rouge est calculé par l'app** à partir des horodatages, pas stocké. | Fonctionne même si le téléphone du proche est éteint ; zéro Cloud Function pour afficher l'escalade. En revanche, **envoyer une notification quand l'app est fermée exige Blaze** (§13). |
 | **Consentement par membre et par Miff**, enregistré (date + version du texte), révocable ; révoquer **supprime** l'état et la photo. | Répond à l'exigence anti-stalkerware des stores et à la traçabilité du consentement. |
-| **Réciprocité** : on ne voit la position des autres que si l'on partage la sienne. | Évite la surveillance à sens unique. **[Hypothèse]** à confirmer (Q6). |
+| **Réciprocité** : on ne voit les statuts des autres que si l'on a activé son partage **et publié son propre statut** (pour les photos : partage activé suffit, décision PM). | Évite la surveillance à sens unique. **[Hypothèse]** à confirmer (Q6). |
 | **Le premium vit dans `entitlements/{uid}`, écriture interdite au client.** | Impossible de se déclarer premium soi-même. Sans serveur (Spark), le PM l'accorde à la main dans la console pour les testeurs. |
 | **Limites freemium appliquées par les règles** avec des "slots" à identifiant fixe (§6), sans Cloud Function. | Marche sur Spark. Failles résiduelles listées §6. |
 | **Code secret dans `joinCodes/{code}`**, sans `list`, 12 caractères sur 31 symboles (~59 bits). | Non énumérable. Le brute force n'est pas impossible mais irréaliste ; App Check le rend encore plus coûteux (§5). |
@@ -33,6 +53,7 @@ users/{uid}                              profil privé (soi uniquement)
   devices/{deviceId}                     jetons FCM (uniquement avec le push -> Blaze)
 entitlements/{uid}                       statut premium (lecture seule côté client)
 joinCodes/{code}                         résolution du code secret -> miffId
+miffsDeleted/{miffId}                    pierre tombale d'une Miff supprimée (jamais lisible par un client)
 miffs/{miffId}                           le cercle
   members/{uid}                          profil (copie), rôle, CONSENTEMENT
   status/{uid}                           ÉTAT COURANT (sensible), existe seulement si partage activé
@@ -93,6 +114,8 @@ Pas de `list`. `get` exige de connaître le code entier. Ne contient ni le créa
 
 Lisible par les membres uniquement (`get` ; pas de `list`). Modifiable par le créateur : `name`, `joinCode` (régénération).
 
+**Création** : refusée si `miffsDeleted/{miffId}` existe (un identifiant supprimé ne sert plus jamais). **Suppression** (créateur) : refusée si, dans le même lot, la pierre tombale `miffsDeleted/{miffId}` n'est pas créée **ou** si `joinCodes/{joinCode}` existe encore après le lot.
+
 ### 2.6 `miffs/{miffId}/members/{uid}` — profil (copie), rôle, consentement
 | Champ | Type | Note |
 |---|---|---|
@@ -113,10 +136,10 @@ Exemple :
   "sharing": { "enabled": true, "consentedAt": "2026-10-16T09:00:00Z", "consentVersion": "2026-10-v1", "revokedAt": null }
 }
 ```
-Lisible par tous les membres de la Miff (c'est la liste des membres). Un membre ne modifie que son profil et son consentement.
+Lisible par tous les membres de la Miff, tant que la Miff existe (c'est la liste des membres). Un membre ne modifie que son profil et son consentement.
 
 ### 2.7 `miffs/{miffId}/status/{uid}` — état courant (SENSIBLE)
-Un seul document par membre et par Miff, **écrasé**. N'existe que si `members/{uid}.sharing.enabled = true`.
+Un seul document par membre et par Miff, **écrasé**. N'existe que si `members/{uid}.sharing.enabled = true`. **Lecture (get et liste)** : seulement si la Miff existe, que j'ai activé mon partage **et** que mon propre `status/{moi}` existe (réciprocité réelle, ATK3). Conséquence : à l'activation du partage, créer `status/{moi}` dans le même lot (§8) ; tant qu'il n'existe pas, la lecture des autres statuts est refusée et l'app l'affiche sans alarme.
 | Champ | Type | Note |
 |---|---|---|
 | `presence` | `"in_trusted"` \| `"out"` \| `"in_risk"` \| `"unknown"` | État issu des géofences, **aucune coordonnée**. |
@@ -142,9 +165,11 @@ Exemple (membre parti de la maison à 16h02, sans update depuis) :
 |---|---|---|
 | `jpeg` | bytes ≤ 150 000 | Compresser côté client (~1024 px, qualité ~60). Un seul document : la nouvelle photo écrase l'ancienne. |
 | `createdAt` | timestamp | |
-| `expiresAt` | timestamp | ≤ +7 jours. **[Hypothèse]** durée proposée : 24 h. Le client ignore une photo expirée. Une politique TTL Firestore sur ce champ la supprimera (à activer dans la console ; disponibilité sur Spark à vérifier). |
+| `expiresAt` | timestamp | > maintenant et **≤ maintenant + 25 h** (24 h de durée voulue + 1 h de marge, car la valeur vient de l'horloge du téléphone). **Même durée pour tous les comptes, premium ou non** (décision PM : photo supprimée de la base pour économiser la place). |
 
-Lecture : `get` uniquement (pas de `list`), seulement pour qui partage lui-même sa position. À ne charger que si `status.hasPhoto = true`, et à re-télécharger seulement si `lastUpdateAt` a changé (sinon coût de bande passante inutile).
+Lecture : `get` uniquement (pas de `list`), seulement si la Miff existe, pour qui a activé son partage (**pas** de condition de statut publié pour les photos : décision PM, conséquence assumée), et **seulement tant que `expiresAt` n'est pas passé** : une photo expirée renvoie un refus de permission, une photo absente renvoie « introuvable » ; l'app traite les deux comme « pas de photo ». À ne charger que si `status.hasPhoto = true`, et à re-télécharger seulement si `lastUpdateAt` a changé (sinon coût de bande passante inutile).
+
+Suppression : l'auteur, le créateur, ou **tout membre de la Miff une fois la photo expirée** (nettoyage opportuniste : l'app qui constate une photo expirée la supprime, et son auteur supprime la sienne à chaque lancement et mise à jour avec `hasPhoto = false`). **Limite connue** : sur Spark, aucune suppression automatique garantie (les politiques TTL de Firestore n'ont pas de quota gratuit selon la documentation Google, à vérifier dans la console) ; la formule exacte est donc « **illisible après 24 h ; suppression physique au mieux** », à faire valider par le juriste (§11).
 
 ### 2.9 `miffs/{miffId}/places/{placeId}` — lieux
 | Champ | Type | Note |
@@ -157,10 +182,17 @@ Lecture : `get` uniquement (pas de `list`), seulement pour qui partage lui-même
 | `priority` | int 0–999 \| null | Indice de priorité (0 = le plus important), voir §7. |
 | `createdBy`, `createdAt`, `updatedAt` | string, timestamp, timestamp | `createdBy` = créateur. |
 
-Lisible par tous les membres (ils en « héritent »). Écrit uniquement par le créateur.
+Lisible par tous les membres tant que la Miff existe (ils en « héritent »). Écrit uniquement par le créateur.
 
 ### 2.10 `users/{uid}/devices/{deviceId}` — jetons de push (Blaze)
 `token` (string ≤ 512), `platform` (`ios`/`android`), `updatedAt` (heure serveur). À n'implémenter que le jour où l'envoi de push existe (§13). Supprimé à la déconnexion.
+
+### 2.11 `miffsDeleted/{miffId}` — pierre tombale d'une Miff supprimée
+| Champ | Type | Note |
+|---|---|---|
+| `deletedAt` | timestamp | **Heure serveur** (`serverTimestamp()`), jamais une date du client. |
+
+C'est le **seul** champ. Aucune donnée personnelle (ni créateur, ni nom, ni membres) : uniquement l'identifiant de la Miff supprimée (dans le chemin) et la date. Créée **uniquement** par le créateur, dans le lot qui supprime la Miff (la Miff doit avoir disparu après le lot). **Jamais lisible** (`get` et `list` refusés), **jamais modifiable ni supprimable** par un client : seules les règles la lisent (`exists`) pour refuser la recréation de l'identifiant. Conservation : indéfinie (quelques dizaines d'octets par Miff supprimée). Sert à empêcher qu'un ancien membre recrée la Miff sous le même identifiant et relise les lieux et statuts restés en base (ATK1).
 
 ---
 
@@ -224,7 +256,7 @@ Flux : (1) le client lit `joinCodes/{CODE}` (`get`) → obtient `miffId` + `miff
 | Brute force du code (deviner 12 caractères). | ~7,9 × 10^17 combinaisons. À 100 tentatives/s (très au-dessus d'un client légitime), il faudrait ~250 millions d'années pour tout parcourir ; la probabilité de toucher un code existant dans une base de 100 000 Miffs reste négligeable (~10^-13 par tentative). **App Check** (à activer en mode "enforce" sur Firestore) bloque les scripts hors application officielle. |
 | Les règles ne peuvent pas limiter le nombre de tentatives par compte. | Surveiller les lectures anormales de `joinCodes` dans la console (alerte d'usage). Si un abus apparaît : fonction appelable "rejoindre" avec compteur de tentatives (Blaze, §13). |
 | Code mal généré (aléa faible). | Imposer un générateur cryptographique côté client (§2.4). Le format est vérifié par les règles, pas l'aléa. |
-| Code qui fuite (capture d'écran, ex-membre). | Régénération du code par le créateur : batch `miffs.update(joinCode)` + création du nouveau `joinCodes` + suppression de l'ancien (les règles **refusent** de garder l'ancien code valide). Le retrait d'un membre ne change pas le code automatiquement : l'ex-membre peut revenir tant que le code n'est pas régénéré (Q7). |
+| Code qui fuite (capture d'écran, ex-membre). | Régénération du code par le créateur : batch `miffs.update(joinCode)` + création du nouveau `joinCodes` + suppression de l'ancien (les règles **refusent** de garder l'ancien code valide). **Le retrait d'un membre par le créateur renouvelle le code, imposé par les règles** (DUR-2, décision PM) : l'ancien code cesse de fonctionner (même après libération de l'ancien emplacement gratuit de l'ex-membre), le créateur repartage le nouveau avec qui il veut. Un **départ volontaire** ne renouvelle rien (un membre simple ne peut pas écrire la Miff) : l'app du créateur lui propose discrètement, à l'ouverture suivante, de renouveler le code (facultatif). Reste possible : un membre qui se retire lui-même juste avant d'être retiré garde l'ancien code (course non empêchable sans serveur, risque K3 du ticket) ; le créateur peut renouveler le code à la main. |
 | Pas de validation du créateur à l'arrivée. | Non spécifié ; tout porteur du code rejoint immédiatement. Option : file d'attente d'approbation (Q7). |
 
 ---
@@ -266,19 +298,20 @@ Toutes les écritures multi-documents sont des **batches** (`WriteBatch` côté 
 | **Inscription / profil** | — | `users/{uid}` create (profil + `termsAcceptedAt` + `termsVersion`). Modif. de profil : `users/{uid}` update + `members/{uid}` update dans **chaque** Miff (liste via `memberships`). |
 | **Créer une Miff** | `entitlements/{uid}` (savoir quelle clé utiliser) ; `memberships` (si gratuit et déjà un `free` → afficher le paywall sans tenter l'écriture) | Générer `miffId` (ID auto) et `code` (aléa cryptographique). Batch de 4 : `miffs/{miffId}` create {ownerUid, name, joinCode, createdAt} ; `joinCodes/{code}` create {miffId, miffName, createdAt} ; `miffs/{miffId}/members/{uid}` create {role:"owner", profil copié, joinedAt, sharing} ; `users/{uid}/memberships/{key}` create {miffId, joinedAt} avec `key="free"` si non premium, sinon `miffId`. Collision de code (très improbable) : régénérer et réessayer. |
 | **Rejoindre une Miff** | `joinCodes/{CODE}` (get) | Après l'écran de confirmation + consentement. Batch : `members/{uid}` create {role:"member", joinCode, profil copié, joinedAt, sharing} + `memberships/{key}` create. Erreur "introuvable" ou refus : message unique et bienveillant ("Ce code ne correspond à aucune Miff"), sans distinguer les causes. Limiter les essais côté UI (ex. pause après 5 échecs). |
-| **Feed** | Listener `miffs/{id}/members` + listener `miffs/{id}/status` (seulement si mon `sharing.enabled`) + `get photos/{uid}` à la demande ; `get miffs/{id}` pour le nom et le code. | — |
+| **Feed** | Listener `miffs/{id}/members` + listener `miffs/{id}/status` (**n'attacher cet écouteur qu'après avoir publié son propre statut** ; il est terminé par Firestore sur `permission-denied` si le statut disparaît ou n'existe pas encore : le rattacher après chaque republication ; en attendant, état neutre « Partage de ton statut en cours… », jamais une erreur) + `get photos/{uid}` à la demande (**refus ou introuvable = « pas de photo »**, y compris pour sa propre photo expirée : une photo expirée est refusée même à son auteur ; ignorer toute photo dont `expiresAt` est passé) ; `get miffs/{id}` pour le nom et le code. Si `get miffs/{id}` est refusé ou introuvable : perte d'accès (voir « Perte d'accès »). | — |
 | **Sélecteur de Miff (premium)** | Documents de `users/{uid}/memberships` puis `get miffs/{id}` pour chaque nom. | — |
-| **Activer le partage** | — | `members/{uid}` update {sharing: enabled=true, consentedAt=maintenant, consentVersion, revokedAt=null} puis création de `status/{uid}`. Les deux peuvent être dans un batch. |
+| **Activer le partage** | — | `members/{uid}` update {sharing: enabled=true, consentedAt=maintenant, consentVersion, revokedAt=null} **dans le même batch** : création de `status/{uid}` avec le statut initial `presence = "unknown"` (le schéma impose toutes les clés ; `unknown` s'affiche en état neutre, jamais en « tout va bien »), `locationAccess` = permission réelle de l'appareil, `lastUpdateAt` = maintenant, `updatedAt` = heure serveur. Sans ce statut, la lecture des autres statuts est refusée (ATK3). Le premier événement réel l'écrase. |
 | **Révoquer le partage** | — | Batch : `members/{uid}` update (sharing.enabled=false, revokedAt=maintenant) + delete `status/{uid}` + delete `photos/{uid}` (ignorer si absent). Arrêter la surveillance géofence pour cette Miff. |
 | **Événement géofence** | — | `status/{uid}` set (document complet, §3), une écriture par Miff concernée. Fonctionne hors-ligne (file d'attente Firestore) ; l'horodatage envoyé est l'heure de l'événement. **Ne pas** ajouter de throttling côté règles : la file hors-ligne rejouerait des écritures rapprochées. |
 | **Update manuelle (texte + photo optionnelle)** | — | Batch : (si photo) `photos/{uid}` set {jpeg, createdAt, expiresAt} + `status/{uid}` set {lastUpdateAt=maintenant, updateText, hasPhoto, …}. |
 | **Créer / modifier / supprimer un lieu** (créateur) | `places` | Gratuit : `places/p1` uniquement, `type="trusted"`. Premium : ID auto, `trusted` ou `risk`. L'UI doit lire `entitlements` et ouvrir le paywall *avant* l'écriture ; le refus des règles est le filet de sécurité. Modif : `name, address, lat, lng, radiusM, priority, updatedAt` ; le `type` ne se modifie pas. |
 | **Quitter une Miff** (membre) | — | Batch : delete `members/{uid}` + delete `status/{uid}` + delete `photos/{uid}` + delete `memberships/{key}`. Le créateur ne peut partir qu'en supprimant la Miff (voir ci-dessous). |
-| **Retirer un membre** (créateur) | — | Batch : delete `members/{cible}` + delete `status/{cible}` + delete `photos/{cible}`. L'index de la cible reste jusqu'à son nettoyage (voir "Nettoyage au lancement"). |
-| **Nettoyage au lancement** | `get miffs/{id}/members/{moi}` pour chaque index | Si refus/absent : j'ai été retiré ou la Miff n'existe plus → delete l'index correspondant (autorisé car je ne suis plus membre) et prévenir l'utilisateur avec bienveillance. |
+| **Informations pour les clients (photos, codes)** | — | (iv) **Horloge du téléphone en avance de plus d'1 h** : les règles refusent `expiresAt` au-delà de maintenant + 25 h (heure serveur) ; pour rester tolérant, **borner `expiresAt` à maintenant + 23 h** côté client. (v) **Un code libéré peut être réutilisé** : une fois supprimé (renouvellement, suppression de Miff), un code redevient libre et n'importe qui peut le créer pour sa propre Miff (probabilité de collision négligeable avec 59 bits, mais le code n'est pas « brûlé »). |
+| **Retirer un membre** (créateur) | `get miffs/{id}` (code actuel) | **Un membre par batch, 6 écritures atomiques** : delete `members/{cible}` + delete `status/{cible}` + delete `photos/{cible}` (ignorer si absent) + update `miffs/{id}` `{joinCode: NOUVEAU}` + create `joinCodes/{NOUVEAU}` `{miffId, miffName, createdAt}` + delete `joinCodes/{ANCIEN}`. **Refusé si le code ne change pas dans le même batch.** Nouveau code : même générateur cryptographique que le premier (§2.4) ; collision (très improbable) : le batch échoue, regénérer et réessayer. Afficher ensuite le nouveau code avec l'action de partage (ton bienveillant, jamais accusateur ; texte à valider par le PM). L'index `memberships` de la cible n'est pas touché (voir "Nettoyage au lancement"). |
+| **Nettoyage au lancement / Perte d'accès** | `get miffs/{id}` pour chaque index (refus = retiré ; introuvable = Miff supprimée) | Message neutre (« Tu ne fais plus partie de la Miff « X » » / « La Miff « X » n'existe plus »), sans reproche. Puis, **sans pouvoir lire ma propre fiche** (sur une Miff supprimée, `get members/{moi}` est refusé par le contrôle d'existence de la Miff : on ne peut donc pas tester « ma fiche existe encore ») : **essayer d'abord le batch « Quitter » complet** (delete fiche + statut + photo + index ; la suppression d'un document absent est sans effet) ; **s'il est refusé** (retiré : la fiche n'existe plus), **en repli supprimer l'index seul** (autorisé car je ne suis plus membre) ; puis vider le cache local. Supprimer aussi ma propre photo expirée (`hasPhoto = false`) et celle d'un autre membre si je la constate expirée (autorisé à tout membre). |
 | **Régénérer le code** (créateur) | — | Batch : `miffs/{id}` update {joinCode} + create `joinCodes/{nouveau}` + delete `joinCodes/{ancien}`. |
 | **Renommer la Miff** (créateur) | — | Batch : `miffs/{id}` update {name} + `joinCodes/{code}` update {miffName}. |
-| **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre (voir ci-dessus), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `joinCodes/{code}` + delete mon `status`/`photos` + delete mon `members/{uid}` + delete `miffs/{id}` + delete mon `memberships/{key}`. Si interrompu : relancer (idempotent). Les sous-collections ne sont pas supprimées automatiquement par Firestore. |
+| **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre avec le batch de retrait ci-dessus (**un membre par batch, le code est renouvelé à chaque fois** ; un retrait dans le batch final qui supprime la Miff est refusé), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `miffs/{id}` + **create `miffsDeleted/{id}` `{deletedAt: serverTimestamp()}`** (pierre tombale, §2.11) + delete `joinCodes/{code}` (le code actuel de la Miff, lu dans `miffs/{id}.joinCode`) + delete mon `status`/`photos` (si existent) + delete mon `members/{uid}` + delete mon `memberships/{key}`. **Le batch est refusé sans la pierre tombale ou sans la suppression du code.** Si interrompu : relancer (idempotent : si le code a déjà été supprimé dans un batch précédent, le batch final reste accepté sans lui). Les sous-collections ne sont pas supprimées automatiquement par Firestore. |
 | **Premium (lecture)** | `get entitlements/{uid}` (peut ne pas exister = gratuit) | Aucune. L'achat store ne suffit pas : c'est le serveur (ou le PM en manuel) qui écrit `entitlements`. |
 | **Suppression de compte** | — | §10. |
 | **Push (Blaze)** | — | À chaque lancement et rafraîchissement de jeton : `users/{uid}/devices/{deviceId}` set {token, platform, updatedAt}. À la déconnexion : delete. |
@@ -298,11 +331,12 @@ Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lu
 | `users/{uid}/devices/{id}` | S | S | S | S | S |
 | `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
 | `joinCodes/{code}` | tout compte connecté qui connaît le code | **—** | O (avec sa Miff) | O (nom) | O |
-| `miffs/{id}` | M | **—** | S (devient O) | O (nom, code) | O |
-| `miffs/{id}/members/{uid}` | M | M | S (via code ou création) | S (profil, consentement) | S (quitter) / O (retirer) |
-| `miffs/{id}/status/{uid}` | P | P | S (si partage actif) | S (si partage actif) | S / O |
-| `miffs/{id}/photos/{uid}` | P | **—** | S (si partage actif) | S | S / O |
-| `miffs/{id}/places/{pid}` | M | M | O (limites freemium) | O | O |
+| `miffsDeleted/{id}` | **—** | **—** | O (dans le lot qui supprime la Miff, champ `deletedAt` seul) | **—** | **—** |
+| `miffs/{id}` | M | **—** | S (devient O) ; refusé si `miffsDeleted/{id}` existe | O (nom, code) | O (avec pierre tombale et suppression du code dans le lot) |
+| `miffs/{id}/members/{uid}` | M (Miff existante) | M (Miff existante) | S (via code ou création) | S (profil, consentement) | S (quitter) / O (retirer, **avec nouveau code dans le même lot**) |
+| `miffs/{id}/status/{uid}` | P + statut publié (Miff existante) | P + statut publié (Miff existante) | S (si partage actif) | S (si partage actif) | S / O |
+| `miffs/{id}/photos/{uid}` | P (Miff existante, photo non expirée) | **—** | S (si partage actif ; expiresAt ≤ +25 h) | S | S / O / tout membre si expirée |
+| `miffs/{id}/places/{pid}` | M (Miff existante) | M (Miff existante) | O (limites freemium) | O | O |
 | tout le reste | — | — | — | — | — |
 
 Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ainsi que `entitlements` est écrit.
@@ -323,9 +357,10 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 |---|---|
 | Profil `users`, copies `members` | Jusqu'à suppression du compte ou départ de la Miff. |
 | `status` (état courant) | Pas d'historique : écrasé à chaque événement ; supprimé à la révocation du partage, au départ, au retrait. |
-| `photos` | 24 h maximum (TTL `expiresAt`) ; supprimée avec le statut. |
+| `photos` | **Illisible après 24 h ; suppression physique au mieux** (nettoyage par l'auteur, le créateur ou tout membre ; pas de TTL garanti sur Spark). Même durée pour tous les comptes. Supprimée avec le statut au départ / retrait / révocation. |
 | `places` (coordonnées, adresses) | Jusqu'à suppression du lieu ou de la Miff. |
-| `joinCodes` | Jusqu'à régénération ou suppression de la Miff. |
+| `joinCodes` | Jusqu'à régénération ou suppression de la Miff (la suppression de la Miff exige celle du code, dans le même lot). |
+| `miffsDeleted` (pierre tombale) | Indéfinie : identifiant de Miff + date de suppression, sans donnée personnelle. À faire examiner par le juriste (§11). |
 | Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si le juriste exige une conservation de la preuve après départ, il faudra un journal séparé (Q13). |
 | `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
 | `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
@@ -358,6 +393,10 @@ Points à faire examiner par un juriste :
 5. **Droit d'accès / portabilité / effacement** : l'effacement est réalisable (§10) ; une procédure d'export (accès/portabilité) n'est pas spécifiée (le client peut lire les documents propres à l'utilisateur ; un export formaté n'existe pas).
 6. **Consentement réciproque anti-stalkerware** : le modèle impose la réciprocité, la révocation immédiate avec suppression, et un historique nul. Les stores appliquent des règles propres : à confronter par `release-manager`.
 7. **Ex-membre qui connaît le code** : voir §5.
+8. **Pierre tombale `miffsDeleted`** (DUR-1) : conservée indéfiniment, ne contient que l'identifiant d'une Miff supprimée et une date (aucune donnée personnelle à ma connaissance : un identifiant aléatoire de groupe). À faire confirmer par le juriste, avec la durée de conservation.
+9. **Données des survivants d'une Miff supprimée** : la fiche, le statut et la photo d'un membre resté après la suppression d'une Miff restent *physiquement stockés* tant que l'app de ce membre ne les a pas nettoyés (au prochain lancement), mais ils sont **illisibles immédiatement** (contrôle d'existence de la Miff, DUR-2). **Risque accepté par le PM (revue de sécurité de DUR-2)** : les *écritures* de statut, photo et fiche d'un survivant ne vérifient pas que la Miff existe encore ; un survivant (ou un client modifié) peut donc écrire de nouveaux documents dans une Miff morte tant que sa fiche existe. Ces données restent illisibles (stockage seulement, quota Spark) et sont nettoyées au prochain lancement de l'app ; sur Spark aucune fonction ne peut les purger (décision PM : acceptable pour la bêta ; **avis juridique à obtenir avant le lancement public**, risque K4 du ticket). La procédure client « retirer chaque membre avant de supprimer la Miff » (§8) limite ce cas ; la suppression de la Miff n'est pas bloquée s'il reste des membres (les règles ne peuvent pas vérifier qu'une sous-collection est vide).
+10. **Photos** : la formulation « 24 h maximum » est remplacée par « illisible après 24 h ; suppression physique au mieux » tant qu'une suppression automatique n'est pas disponible sur Spark (TTL de Firestore sans quota gratuit selon la documentation Google, à vérifier dans la console) : à faire valider par le juriste.
+11. **Cache local** : les SDK conservent un cache sur l'appareil (statuts, lieux) ; contrat client : vider le cache à la déconnexion, à la suppression de compte et à la perte d'accès à une Miff (ticket durcissement §5.3, traité en DUR-3).
 
 ---
 
@@ -390,6 +429,8 @@ Points à faire examiner par un juriste :
 1. Console Firebase > Firestore > Utilisation : lectures du jour > **30 000** de façon répétée (60 % du quota), ou écritures > 12 000, ou transfert sortant du mois > 6 GiB.
 2. Besoin des notifications push, de la validation d'abonnement, des photos Storage ou d'une suppression de compte fiable (voir §13) — ce besoin arrive **avant** le plafond de volume pour le produit visé.
 Ordre de grandeur de coût à ~2 000 utilisateurs actifs/jour après bascule : quelques euros par mois (lectures et transfert au-delà du gratuit) — estimation grossière à confirmer.
+
+**Lectures de règles supplémentaires du durcissement (DUR-1 et DUR-2), mesurées dans l'émulateur le 2026-10-22 (bornes hautes à ±1 près, voir `rules-test-report.md`)** : création de Miff +1 (pierre tombale) ; lecture d'un statut ≈ 3 (existence de la Miff, partage actif, statut publié) contre 1 avant ; lecture d'une photo ≈ 2 ; lecture d'un lieu ≈ 2 ; lot de suppression de Miff : base mesurée ≈ 4, pire cas recompté à la main sans cache 12 sur 20 ; lot de retrait d'un membre : base mesurée ≈ 2, pire cas 18 sur 20 (marge d'au moins 2 dans tous les cas ; les valeurs plus hautes de notre outil sont plafonnées à 10 par évaluation d'écriture et ne sont pas des totaux) ; la liste des statuts n'est pas mesurable avec la méthode actuelle. Impact (estimation, pas une mesure d'usage réel) : quelques lectures de règles de plus par ouverture à froid, sans changer l'ordre de grandeur des estimations ci-dessus. À surveiller avec le ratio lectures ÷ utilisateurs actifs.
 
 **Coût caché des règles** : chaque `get()/exists()` dans une règle compte comme une lecture et est facturé même si la requête est refusée. Le schéma limite ces appels (ex. `isMember` = 1 lecture par requête de lecture/écriture). Ne pas multiplier les listeners sur de petites requêtes.
 
@@ -428,6 +469,9 @@ Cloud Functions n'existent pas sur Spark. Aucune fonction n'est écrite à ce st
 3. **Prise de contrôle d'une Miff (rôle, créateur)** → `ownerUid`, `role`, `type` immuables ; création du créateur seulement si la Miff est créée dans le même batch ; seul le créateur retire un membre.
 4. **Deviner/énumérer les codes** → §5 (App Check à activer en mode strict, sinon ce risque reste ouvert).
 5. **Trace de position après retrait de consentement / départ** → suppression obligatoire dans le même batch (règles) ; mais **la suppression reste côté client** : un bug client pourrait laisser un état tant que le membre est dans la Miff (il reste lisible aux seuls membres partageants).
+5 bis. **Réutilisation de l'identifiant d'une Miff supprimée (ATK1) et code orphelin (ATK2)** → corrigés par DUR-1 : pierre tombale `miffsDeleted/{id}` (création de Miff refusée, §2.11) et suppression obligatoire du code dans le lot de suppression de la Miff (§2.5). Tests H1 et H2 (`rules-test-plan.md` §11), chacun prouvé par mutation.
+5 ter. **Réciprocité contournable (ATK3)**, **retour d'un membre retiré (ATK4)** → corrigés par DUR-2 : lecture des statuts exigeant d'avoir publié son propre statut ; retrait d'un membre impossible sans renouvellement du code dans le même lot. Limites connues : photos lisibles avec le seul partage activé (décision PM) ; membre qui se retire lui-même juste avant son retrait (garde l'ancien code) ; suppression physique des photos non garantie sur Spark.
+5 quater. **Écritures d'un survivant sur une Miff supprimée** (risque accepté par le PM) : voir §11 point 9 ; aucun `miffAlive` sur les écritures `status`, `photos`, `members`.
 6. Résiduel : abus de volume par un compte légitime (écritures en boucle, avatars) → tailles bornées, mais pas de limitation de débit en règles ; App Check + surveillance des quotas.
 
 ---
@@ -453,14 +497,14 @@ Les autres questions ci-dessous seront tranchées au fil des tickets, quand la f
 4. **Compte du quota "1 lieu"** : la zone à risque est supposée premium ; le gratuit = 1 zone de confiance. À confirmer.
 5. **Qui définit les zones à risque** : le créateur seulement (supposé) ou chaque membre pour lui-même ? Que déclenche l'entrée (alerte immédiate à tout le cercle) ?
 6. **Réciprocité** : confirmer qu'un membre qui ne partage pas sa position ne voit pas celle des autres (supposé, pour limiter le risque de surveillance à sens unique). Un parent doit-il pouvoir voir un enfant sans partager la sienne (ce qui lèverait la réciprocité) ?
-7. **Code d'invitation** : visible par tous les membres (supposé) ou seulement le créateur ? Régénération (prévue) ? Faut-il bloquer le retour d'un membre retiré ? Validation du créateur à l'arrivée ? Taille maximale d'une Miff (coût du feed proportionnel) ?
+7. **Code d'invitation** : visible par tous les membres (supposé) ou seulement le créateur ? Régénération (prévue) ? ~~Faut-il bloquer le retour d'un membre retiré ?~~ **Tranché le 2026-10-22 : le retrait d'un membre renouvelle le code (imposé par les règles, DUR-2) ; le départ volontaire ne change rien.** Validation du créateur à l'arrivée ? Taille maximale d'une Miff (coût du feed proportionnel) ?
 8. **Créateur qui part** : suppression de la Miff (supposé), transfert de propriété, ou impossible tant que d'autres membres restent ?
 9. **Géofences au-delà de la limite** : priorité manuelle (`priority`), proximité ou fréquence de visite ? Prévenir l'utilisateur qu'un lieu n'est plus surveillé ?
 10. **Escalade** : orange et/ou rouge déclenchent-ils un push ? Que fait-on d'un membre sans permission de localisation arrière-plan (aujourd'hui : pas d'escalade sans départ connu) ? Si un membre reste rouge, quelle relance ?
 11. **Update manuelle** : suffit-il de la poster pour repasser au vert, ou faut-il un geste "je vais bien" explicite ?
 12. **Mineurs** : l'app est-elle ouverte aux mineurs ? Âge minimum, consentement parental, collecte d'un âge ou d'une date de naissance (non prévue pour l'instant) ?
 13. **Juridique** : bases légales (§11), analyse d'impact, durées de conservation, conservation éventuelle de la preuve de consentement après départ, transferts hors UE, procédure d'export des données.
-14. **E-mail vérifié** : exigé avant de rejoindre/créer une Miff ? (aujourd'hui non imposé par les règles).
+14. **E-mail vérifié** : ~~exigé avant de rejoindre/créer une Miff ?~~ **Tranché le 2026-10-22 : non exigé** (les règles ne testent pas `email_verified`).
 15. **Nom/prénom** : conserver la règle "3 caractères minimum" des maquettes (elle exclut des prénoms réels, ex. "Li") ?
 16. **Désactivation du partage** : notifier les autres membres ? (ton à définir.)
 17. **Rayon** : bornes 50–2 000 m acceptables ? Minimum recommandé côté UI : 100 m.

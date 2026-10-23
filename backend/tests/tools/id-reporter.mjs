@@ -2,7 +2,7 @@
 // Utilisation : node --test --test-reporter=./tests/tools/id-reporter.mjs --test-reporter-destination=<fichier>
 // Le texte produit sert tel quel de résumé de job GitHub (GITHUB_STEP_SUMMARY) et d'artefact.
 
-const ID_PATTERN = /^((?:[A-Z]+\d+)|(?:READS-[a-z-]+)) - (.*)$/s;
+const ID_PATTERN = /^((?:[A-Z]+\d+[a-z]?)|(?:READS-[a-z-]+)) - (.*)$/s;
 
 const firstLine = (text) => String(text ?? '').split('\n')[0].replace(/\|/g, '/');
 

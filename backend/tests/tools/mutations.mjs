@@ -48,8 +48,27 @@ export const MUTATIONS = [
   {
     id: 'C4-miffs-exige-code',
     why: 'validMiffCreate n\'exige plus le document joinCodes',
-    edits: [edit(`&& existsAfter(${DB}/joinCodes/$(d.joinCode));`, '&& true;')],
+    edits: [edit(`&& getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId;`, '&& true;')],
     tests: ['C4'],
+  },
+  // --- Revue de sécurité de DUR-1/DUR-2 : le code d'une Miff doit pointer vers CETTE Miff ------------
+  {
+    id: 'H7a-creation-code-autre-miff',
+    why: 'la création d\'une Miff accepte le code d\'une autre Miff (seule l\'existence du code est vérifiée)',
+    edits: [edit(`&& getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId;`, `&& existsAfter(${DB}/joinCodes/$(d.joinCode));`)],
+    tests: ['H7a'],
+  },
+  {
+    id: 'H7b-renouvellement-code-autre-miff',
+    why: 'le renouvellement du code accepte le code d\'une autre Miff (seule l\'existence du code est vérifiée)',
+    edits: [edit(`getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId\n            && !existsAfter(`, `existsAfter(${DB}/joinCodes/$(d.joinCode))\n            && !existsAfter(`)],
+    tests: ['H7b'],
+  },
+  {
+    id: 'H7c-renouvellement-code-inexistant',
+    why: 'le renouvellement du code n\'exige plus que le nouveau code existe et pointe vers la Miff',
+    edits: [edit(`getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId\n            && !existsAfter(`, `true\n            && !existsAfter(`)],
+    tests: ['H7c'],
   },
   {
     id: 'C5-miffId-format',
@@ -128,9 +147,53 @@ export const MUTATIONS = [
   // --- Retrait ------------------------------------------------------------------------------------
   {
     id: 'M17-retrait-par-membre',
-    why: 'n\'importe quel membre peut retirer un autre membre (plus de contrôle du propriétaire)',
-    edits: [edit('|| (!isSelf(uid) && isOwner(miffId))', '|| (!isSelf(uid))')],
+    why: "n'importe quel membre peut retirer un autre membre (ni contrôle du propriétaire, ni code renouvelé exigé)",
+    edits: [edit('|| (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid))')],
     tests: ['M17'],
+  },
+  {
+    id: 'M17-retrait-controle-proprietaire-seul',
+    why: 'le contrôle isOwner de la branche « retrait » est retiré (codeRenewed reste exigé)',
+    edits: [edit('|| (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid) && codeRenewed(miffId))')],
+    tests: ['M17'],
+    equivalent: 'défense en profondeur : seul le propriétaire peut modifier miffs.joinCode (isOwner dans la règle de mise à jour de la Miff), donc un non-propriétaire ne peut jamais satisfaire codeRenewed dans son lot',
+  },
+  // --- DUR-2 : retrait = code renouvelé (ATK4) ----------------------------------------------------
+  {
+    id: 'H4a-retrait-sans-nouveau-code',
+    why: 'le retrait d\'un membre par la créatrice n\'exige plus que le code change dans le lot',
+    edits: [edit('|| (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid) && isOwner(miffId))')],
+    tests: ['H4a'],
+  },
+  {
+    id: 'H4b-code-renouvele-inverse',
+    why: 'codeRenewed accepte un code inchangé (la comparaison ancien / nouveau est neutralisée)',
+    edits: [edit('!= get(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode;', '== get(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode;')],
+    tests: ['H4b'],
+  },
+  {
+    id: 'H4a-ancien-code-conserve',
+    why: 'changer le code n\'exige plus la suppression de l\'ancien : un ex-membre retiré garderait un code valable',
+    edits: [edit(`&& !existsAfter(${DB}/joinCodes/$(resource.data.joinCode))\n          )`, '&& true\n          )')],
+    tests: ['H4a'],
+  },
+  {
+    id: 'M10-ancien-code-conserve',
+    why: 'même affaiblissement, vu par la régénération manuelle du code (M10)',
+    edits: [edit(`&& !existsAfter(${DB}/joinCodes/$(resource.data.joinCode))\n          )`, '&& true\n          )')],
+    tests: ['M10'],
+  },
+  {
+    id: 'H4f-depart-exige-nouveau-code',
+    why: 'le départ volontaire d\'un membre exige aussi un nouveau code (décision PM Q1 : il ne doit pas)',
+    edits: [edit("(isSelf(uid) && resource.data.role == 'member')", "(isSelf(uid) && resource.data.role == 'member' && codeRenewed(miffId))")],
+    tests: ['H4f'],
+  },
+  {
+    id: 'H4c-rejoindre-sans-verifier-le-code',
+    why: 'rejoindre ne vérifie plus que le code pointe vers la Miff (un code supprimé ne bloque plus personne)',
+    edits: [edit(`&& get(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId`, '&& true')],
+    tests: ['H4c'],
   },
   {
     id: 'X6-depart-photo-restante',
@@ -150,6 +213,79 @@ export const MUTATIONS = [
     edits: [edit(`&& !existsAfter(${DB}/miffs/$(miffId)/photos/$(uid))`, '&& true', 1, 2)],
     tests: ['X6'],
   },
+  // --- DUR-1 : pierre tombale (ATK1) et code orphelin (ATK2) ----------------------------------------
+  {
+    id: 'H1b-suppression-sans-pierre-tombale',
+    why: "la suppression de la Miff n'exige plus la création de la pierre tombale dans le lot",
+    edits: [edit(`&& existsAfter(${DB}/miffsDeleted/$(miffId))`, '&& true')],
+    tests: ['H1b'],
+  },
+  {
+    id: 'H1c-creation-ignore-pierre-tombale',
+    why: "la création d'une Miff ignore la pierre tombale (survivant qui libère sa fiche puis recrée l'identifiant)",
+    edits: [edit(`&& !exists(${DB}/miffsDeleted/$(miffId))`, '&& true')],
+    tests: ['H1c'],
+  },
+  {
+    id: 'H1f-creation-ignore-pierre-tombale',
+    why: 'même affaiblissement, vu par la créatrice qui a gardé sa fiche membre (aucune fiche membre écrite dans le lot)',
+    edits: [edit(`&& !exists(${DB}/miffsDeleted/$(miffId))`, '&& true')],
+    tests: ['H1f'],
+  },
+  {
+    id: 'H1d-tombstone-proprietaire',
+    why: "n'importe quel utilisateur connecté peut créer une pierre tombale (plus de contrôle du propriétaire)",
+    edits: [edit('allow create: if isOwner(miffId)\n        && !existsAfter(', 'allow create: if isSignedIn()\n        && !existsAfter(')],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1d-tombstone-miff-disparait',
+    why: 'la pierre tombale peut être créée alors que la Miff existe encore après le lot',
+    edits: [edit(`&& !existsAfter(${DB}/miffs/$(miffId))\n        && request.resource.data.keys().hasOnly(['deletedAt'])`, "&& request.resource.data.keys().hasOnly(['deletedAt'])")],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1d-tombstone-cles',
+    why: 'la pierre tombale accepte des champs en plus de deletedAt',
+    edits: [edit("&& request.resource.data.keys().hasOnly(['deletedAt'])", '&& true')],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1d-tombstone-date-serveur',
+    why: "deletedAt n'est plus comparé à l'heure serveur",
+    edits: [edit('&& request.resource.data.deletedAt == request.time;', '&& true;')],
+    tests: ['H1d'],
+  },
+  {
+    id: 'H1g-tombstone-lecture',
+    why: 'la pierre tombale devient lisible par un utilisateur connecté',
+    edits: [edit('allow read: if false;', 'allow read: if isSignedIn();')],
+    tests: ['H1g'],
+  },
+  {
+    id: 'H1g-tombstone-modification',
+    why: 'la pierre tombale devient modifiable par un utilisateur connecté',
+    edits: [edit('allow update, delete: if false;', 'allow update: if isSignedIn();\n      allow delete: if false;')],
+    tests: ['H1g'],
+  },
+  {
+    id: 'H1g-tombstone-suppression',
+    why: "la pierre tombale devient supprimable par un utilisateur connecté (l'identifiant redeviendrait réutilisable)",
+    edits: [edit('allow update, delete: if false;', 'allow update: if false;\n      allow delete: if isSignedIn();')],
+    tests: ['H1g'],
+  },
+  {
+    id: 'H2a-suppression-sans-suppression-du-code',
+    why: "la suppression de la Miff n'exige plus la suppression de son code secret dans le lot",
+    edits: [edit(`&& !existsAfter(${DB}/joinCodes/$(resource.data.joinCode));`, '&& true;')],
+    tests: ['H2a'],
+  },
+  {
+    id: 'H2b-rejoindre-miff-inexistante',
+    why: "memberJoinOk n'exige plus que la Miff visée existe (un code orphelin permettrait de rejoindre)",
+    edits: [edit(`&& exists(${DB}/miffs/$(miffId))\n        && indexAfterOk(uid, miffId);`, '&& indexAfterOk(uid, miffId);')],
+    tests: ['H2b'],
+  },
   // --- Lieux --------------------------------------------------------------------------------------
   {
     id: 'P7-membre-cree-lieu',
@@ -166,7 +302,7 @@ export const MUTATIONS = [
   {
     id: 'P7-membre-supprime-lieu',
     why: 'un simple membre peut supprimer un lieu',
-    edits: [edit('allow delete: if isOwner(miffId);', 'allow delete: if isMember(miffId);', 2, 2)],
+    edits: [edit('allow delete: if isOwner(miffId);', 'allow delete: if isMember(miffId);')],
     tests: ['P7'],
   },
   // --- Statut -------------------------------------------------------------------------------------
@@ -224,8 +360,87 @@ export const MUTATIONS = [
   {
     id: 'X1-photo-reciprocite',
     why: 'la lecture d\'une photo n\'exige plus de partager soi-même (réciprocité)',
-    edits: [edit('allow get: if mySharingOn(miffId);', 'allow get: if isMember(miffId);')],
+    edits: [edit('allow get: if miffAlive(miffId) && mySharingOn(miffId)\n', 'allow get: if miffAlive(miffId) && isMember(miffId)\n')],
     tests: ['X1'],
+  },
+  // --- DUR-2 : miffAlive (H1e), réciprocité par statut publié (H3), photos (H5) ---------------------
+  {
+    id: 'H1e-miffAlive-membres',
+    why: 'les membres d\'une Miff supprimée restent lisibles par un survivant',
+    edits: [edit('allow get, list: if isMember(miffId) && miffAlive(miffId);', 'allow get, list: if isMember(miffId);', 1, 2)],
+    tests: ['H1e'],
+  },
+  {
+    id: 'H1e-miffAlive-lieux',
+    why: 'les lieux (coordonnées) d\'une Miff supprimée restent lisibles par un survivant',
+    edits: [edit('allow get, list: if isMember(miffId) && miffAlive(miffId);', 'allow get, list: if isMember(miffId);', 2, 2)],
+    tests: ['H1e'],
+  },
+  {
+    id: 'H1e-miffAlive-statuts',
+    why: 'les statuts d\'une Miff supprimée restent lisibles par un survivant',
+    edits: [edit('allow get, list: if miffAlive(miffId) && mySharingOn(miffId)', 'allow get, list: if mySharingOn(miffId)')],
+    tests: ['H1e'],
+  },
+  {
+    id: 'H1e-miffAlive-photos',
+    why: 'les photos d\'une Miff supprimée restent lisibles par un survivant',
+    edits: [edit('allow get: if miffAlive(miffId) && mySharingOn(miffId)\n', 'allow get: if mySharingOn(miffId)\n')],
+    tests: ['H1e'],
+  },
+  {
+    id: 'H3a-statut-publie',
+    why: 'la lecture des statuts n\'exige plus d\'avoir publié son propre statut (réciprocité affaiblie : ATK3)',
+    edits: [edit('mySharingOn(miffId) && statusPublished(miffId);', 'mySharingOn(miffId);')],
+    tests: ['H3a'],
+  },
+  {
+    id: 'H3e-statuts-sans-partage-actif',
+    why: 'la lecture des statuts n\'exige plus que le partage soit activé (seul le statut publié compte)',
+    edits: [edit('miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId);', 'miffAlive(miffId) && statusPublished(miffId);')],
+    tests: ['H3e'],
+  },
+  {
+    id: 'H3a-photos-exigent-statut',
+    why: 'la lecture des photos exige aussi d\'avoir publié son statut (la décision du PM est de NE PAS l\'étendre aux photos)',
+    edits: [edit('allow get: if miffAlive(miffId) && mySharingOn(miffId)\n', 'allow get: if miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId)\n')],
+    tests: ['H3a'],
+  },
+  {
+    id: 'H5a-photo-expiree-lisible',
+    why: 'une photo dont expiresAt est passé reste lisible',
+    edits: [edit('\n          && (resource == null || resource.data.expiresAt > request.time);', ';')],
+    tests: ['H5a'],
+  },
+  {
+    id: 'H5a-photo-absente-erreur',
+    why: 'lire une photo absente renvoie un refus au lieu de « introuvable »',
+    edits: [edit('(resource == null || resource.data.expiresAt > request.time)', '(resource.data.expiresAt > request.time)')],
+    tests: ['H5a'],
+  },
+  {
+    id: 'H5b-duree-elargie',
+    why: 'la durée maximale d\'une photo revient à 7 jours',
+    edits: [edit("duration.value(25, 'h')", "duration.value(7, 'd')")],
+    tests: ['H5b'],
+  },
+  {
+    id: 'H5d-duree-premium',
+    why: 'les comptes premium obtiennent une durée de photo plus longue (7 jours) que les comptes gratuits',
+    edits: [edit("request.time + duration.value(25, 'h')", "request.time + (isPremium(uid) ? duration.value(7, 'd') : duration.value(25, 'h'))")],
+    tests: ['H5d'],
+  },
+  {
+    id: 'H5c-suppression-photo-valide',
+    why: 'n\'importe quel membre peut supprimer la photo VALIDE d\'un autre (plus de condition d\'expiration)',
+    edits: [edit('|| (isMember(miffId) && resource.data.expiresAt <= request.time);', '|| isMember(miffId);')],
+    tests: ['H5c'],
+  },
+  {
+    id: 'H5c-suppression-photo-hors-membre',
+    why: 'un utilisateur connecté étranger à la Miff peut supprimer une photo expirée',
+    edits: [edit('|| (isMember(miffId) && resource.data.expiresAt <= request.time);', '|| (isSignedIn() && resource.data.expiresAt <= request.time);')],
+    tests: ['H5c'],
   },
   {
     id: 'X2-code-modifie-par-non-proprietaire',

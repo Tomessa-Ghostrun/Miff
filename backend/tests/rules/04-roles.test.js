@@ -1,6 +1,6 @@
 // Plan de test, section 4 : rôles, modification, retrait, départ (M1 à M20)
 import {
-  ID, CODE, suite, assertFails, assertSucceeds, commit, leaveOps, set, update, del, serverTs, bytes,
+  ID, CODE, suite, assertFails, assertSucceeds, commit, leaveOps, removeMemberOps, set, update, del, serverTs, bytes,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -96,12 +96,13 @@ s.tc('M14', 'libérer l\'index sans quitter la Miff : refusé', async ({ db }) =
   await assertFails(db('bob').doc('users/bob/memberships/free').delete());
 });
 
-s.tc('M15', 'la créatrice retire un membre (membre, statut, photo)', async ({ db }) => {
-  await assertSucceeds(commit(db('alice'), removalOps('bob')));
+s.tc('M15', 'la créatrice retire un membre (membre, statut, photo + code renouvelé dans le même lot, DUR-2)', async ({ db }) => {
+  await assertSucceeds(commit(db('alice'), Object.values(removeMemberOps({ target: 'bob' }))));
 });
 
-s.tc('M16', 'retirer un membre sans supprimer son statut : refusé', async ({ db }) => {
-  await assertFails(commit(db('alice'), [del(`${M1}/members/bob`), del(`${M1}/photos/bob`)]));
+s.tc('M16', 'retirer un membre sans supprimer son statut : refusé (même avec le code renouvelé)', async ({ db }) => {
+  const { status, ...withoutStatus } = removeMemberOps({ target: 'bob' });
+  await assertFails(commit(db('alice'), Object.values(withoutStatus)));
 });
 
 s.tc('M17', 'un membre ne retire pas un autre membre', async ({ db }) => {
@@ -131,15 +132,17 @@ s.tc('M18', 'la créatrice ne part qu\'en supprimant la Miff dans le même batch
     }
     await batch.commit();
   });
-  await assertSucceeds(
-    commit(db('alice'), [
-      del(M1),
-      del(`joinCodes/${CODE.M1}`),
-      del(`${M1}/members/alice`),
-      del(`${M1}/status/alice`),
-      del('users/alice/memberships/free'),
-    ]),
-  );
+  // DUR-1 (ATK1, ATK2) : le lot de suppression de la Miff porte aussi la pierre tombale ; sans elle il est refusé
+  // (détail dans H1b). Les autres membres doivent déjà avoir été retirés ici (précondition du plan).
+  const lot = [
+    del(M1),
+    del(`joinCodes/${CODE.M1}`),
+    del(`${M1}/members/alice`),
+    del(`${M1}/status/alice`),
+    del('users/alice/memberships/free'),
+  ];
+  await assertFails(commit(db('alice'), lot));
+  await assertSucceeds(commit(db('alice'), [...lot, set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() })]));
 });
 
 s.tc('M19', 'un membre retiré supprime son index orphelin ; avant d\'être retiré : refusé', async ({ db, admin }) => {

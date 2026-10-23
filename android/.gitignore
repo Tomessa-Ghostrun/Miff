@@ -1,0 +1,32 @@
+# Android / Gradle build outputs
+.gradle/
+build/
+**/build/
+.kotlin/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local machine configuration
+local.properties
+.idea/
+*.iml
+
+# Firebase configuration: never committed (regenerate with the Firebase CLI, see README.md)
+google-services.json
+**/google-services.json
+
+# Signing material and secrets: never committed
+*.jks
+*.keystore
+key.properties
+keystore.properties
+*.p12
+*.pem
+*.env
+.env
+appcheck-debug-token*
