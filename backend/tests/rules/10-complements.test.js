@@ -2,7 +2,7 @@
 // Chaque cas isole UNE règle (voir tests/tools/mutations.mjs : l'outil de mutation vérifie que le test
 // devient rouge quand cette règle est affaiblie).
 import {
-  ID, CODE, DAY, HOUR, T0, suite, assertFails, assertSucceeds, commit, createMiffOps, update, set, del, serverTs,
+  ID, CODE, DAY, HOUR, T0, suite, assertFails, assertSucceeds, commit, createMiffOps, removeMemberOps, update, set, del, serverTs,
   inMs, statusDoc, photoDoc, placeInput, sharingOnNow,
 } from '../helpers/fixtures.js';
 
@@ -66,8 +66,9 @@ s.tc('X6', 'photo restante : bloque le départ, le retrait et la désactivation 
   await assertFails(
     commit(bob, [del(`${M1}/members/bob`), del(`${M1}/status/bob`), del('users/bob/memberships/free')]),
   );
-  // Retrait par la créatrice en oubliant la photo
-  await assertFails(commit(alice, [del(`${M1}/members/bob`), del(`${M1}/status/bob`)]));
+  // Retrait par la créatrice en oubliant la photo (code renouvelé dans le lot : seule la photo manque)
+  const { photo: _photo, ...withoutPhoto } = removeMemberOps({ target: 'bob' });
+  await assertFails(commit(alice, Object.values(withoutPhoto)));
   // Désactivation du partage en oubliant la photo
   const off = { enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: serverTs() };
   await assertFails(commit(bob, [update(`${M1}/members/bob`, { sharing: off }), del(`${M1}/status/bob`)]));

@@ -210,3 +210,26 @@ Même jeu de données qu'en section 0. Chaque cas a un test dans `tests/rules/11
 | H1g | Pierre tombale existante : lecture (get, list) par `alice`, `bob`, `eve`, non connecté ; mise à jour et suppression par `alice`, `bob`, `eve` | KO partout |
 | H2a | Lot final **sans** suppression de `joinCodes/CODE_M1` | KO (c'est ATK2) ; code supprimé avant dans un lot séparé, puis lot final sans lui : OK |
 | H2b | État injecté : `joinCodes/CODE_M2` existe, `miffs/M2` n'existe plus ; `eve` tente de rejoindre M2 avec ce code | KO ; rejoindre M1 avec son code valide : OK |
+
+### 11.2 DUR-2 : miffAlive, réciprocité par statut publié (ATK3), retrait avec nouveau code (ATK4), photos
+
+« Lot de retrait de `bob` » = `[delete members/bob + delete status/bob + delete photos/bob + update miffs/M1 {joinCode: NOUVEAU} + create joinCodes/NOUVEAU + delete joinCodes/ANCIEN]`. Tests dans `tests/rules/12-durcissement-dur2.test.js`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| H1e | Avant : `bob` lit `places` (liste, get), `members` (liste, get), `status` (liste, get), `photos/carol`. `alice` supprime M1 (lot final de DUR-1). Après : les mêmes lectures par `bob` (survivant) ; `get miffs/M1` ; puis `bob` quitte | Avant : OK. Après : KO partout ; `get miffs/M1` : OK, document introuvable (pas d'erreur) ; départ de `bob` : OK |
+| H3a | `carol` active son partage **sans** créer son statut, puis lit `status/alice`, `status/bob`, la liste `status` ; puis `photos/alice`, `members`, `places` | KO pour les statuts ; **OK** pour la photo (décision PM : la réciprocité par statut publié ne vise que les statuts), les membres et les lieux |
+| H3b | `carol` active son partage et crée son statut dans le même lot, puis lit `status/alice` et la liste | OK |
+| H3c | `bob` lit les statuts (OK), révoque son partage (statut et photo supprimés dans le lot), relit | OK ; puis KO |
+| H3d | `eve` (étrangère), `carol` (partage désactivé), `bob` après révocation lisent `photos/alice` | KO ; `bob` avant révocation : OK |
+| H3e | État injecté : `status/carol` existe mais `carol` a son partage désactivé ; elle lit `status/alice` (get, liste) | KO (défense en profondeur) ; avec le partage activé : OK |
+| H4a | `alice` retire `bob` : lot sans nouveau code ; lot avec seulement le nom modifié ; lot avec nouveau code créé mais ancien code laissé | **KO** (c'est ATK4) ; le lot complet : OK |
+| H4b | Lot de retrait complet de `bob` | OK ; ensuite la Miff porte le nouveau code, l'ancien code n'existe plus, le nouveau pointe vers M1, `bob` n'est plus membre |
+| H4c | Après H4b : `bob` libère son index orphelin (OK) puis tente de rejoindre avec l'**ancien** code | **KO** |
+| H4d | Après H4b : `bob` libère son index puis rejoint avec le **nouveau** code ; `carol` lit le nouveau code dans `miffs/M1` | OK |
+| H4e | `bob` (simple membre) tente le lot de retrait complet de `carol` ; suppression de la seule fiche `members/carol` par `bob` | KO |
+| H4f | Départ volontaire de `bob` (lot de départ) | OK ; le code de la Miff et `joinCodes/CODE_M1` sont inchangés (décision PM Q1) |
+| H5a | Photo : valide puis expirée (document injecté) lue par `bob` ; photo absente | OK puis KO ; absente : introuvable (OK, document inexistant) |
+| H5b | `bob` crée sa photo avec `expiresAt` à +26 h, +7 jours, +24 h59, +24 h | KO, KO, OK, OK |
+| H5c | Photo de `alice` valide : suppression par `bob`, `carol` ; expirée : par `eve`, par `bob`, par `carol` (partage désactivé) | KO, KO ; KO, OK, OK |
+| H5d | Mêmes créations (+26 h KO, +7 jours KO, +24 h OK) et même illisibilité après expiration pour `bob` (gratuit) et `dave` (premium) | Identique pour les deux comptes |

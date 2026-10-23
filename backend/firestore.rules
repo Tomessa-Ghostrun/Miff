@@ -14,7 +14,8 @@ rules_version = '2';
 //     en écriture interdite ; seul le serveur / la console l'écrit).
 //  4. Consentement de localisation : le statut de présence d'un membre n'existe
 //     que s'il a activé le partage, et n'est lisible que par les membres qui
-//     partagent eux-mêmes (réciprocité). Révoquer = supprimer ces données.
+//     partagent eux-mêmes ET ont publié leur propre statut (réciprocité), tant que
+//     la Miff existe. Révoquer = supprimer ces données.
 //  5. Limites freemium appliquées par des "slots" à identifiant fixe (voir
 //     data-model.md §6) : 1 Miff et 1 lieu en gratuit, sans Cloud Function.
 //  6. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
@@ -93,6 +94,29 @@ service cloud.firestore {
     function mySharingOn(miffId) {
       return isSignedIn()
         && get(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid)).data.sharing.enabled == true;
+    }
+
+    // La Miff existe encore. Les sous-collections d'une Miff supprimée ne sont pas effacées par
+    // Firestore : sans ce contrôle, la fiche d'un membre survivant (isMember) garderait l'accès en
+    // lecture aux lieux, membres, statuts et photos d'une Miff qui n'existe plus.
+    function miffAlive(miffId) {
+      return exists(/databases/$(database)/documents/miffs/$(miffId));
+    }
+
+    // Réciprocité réelle (ATK3) : avoir PUBLIÉ son propre statut dans cette Miff (le document
+    // status/{moi} existe), pas seulement avoir activé le partage.
+    function statusPublished(miffId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/miffs/$(miffId)/status/$(request.auth.uid));
+    }
+
+    // Retrait d'un membre (ATK4) : le code secret de la Miff CHANGE dans le même lot (l'ancien code
+    // est supprimé par validMiffUpdate), sinon l'ex-membre reviendrait avec le code qu'il connaît.
+    // getAfter échoue si la Miff est supprimée dans le lot => un retrait n'est pas possible dans le
+    // lot qui supprime la Miff (les membres sont retirés avant, un par lot).
+    function codeRenewed(miffId) {
+      return getAfter(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode
+        != get(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode;
     }
 
     // Premium = document entitlements/{uid} écrit UNIQUEMENT par le serveur / la
@@ -218,8 +242,9 @@ service cloud.firestore {
           // Le créateur ne peut partir qu'en supprimant la Miff dans le même batch.
           || (isSelf(uid) && resource.data.role == 'owner'
               && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)))
-          // Seul le créateur retire un autre membre (à confirmer par le PM).
-          || (!isSelf(uid) && isOwner(miffId))
+          // Seul le créateur retire un autre membre, ET le code de la Miff est renouvelé dans le même
+          // lot (décision PM du 2026-10-22). Le départ volontaire (ci-dessus) n'impose rien.
+          || (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))
         );
     }
 
@@ -352,7 +377,9 @@ service cloud.firestore {
         && d.createdAt == request.time
         && d.expiresAt is timestamp
         && d.expiresAt > request.time
-        && d.expiresAt <= request.time + duration.value(7, 'd')
+        // 24 h + 1 h de marge (expiresAt vient de l'horloge du téléphone). Même durée pour tous les
+        // comptes, premium ou non : aucune règle de photo ne dépend de l'abonnement.
+        && d.expiresAt <= request.time + duration.value(25, 'h')
         && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
     }
 
@@ -491,32 +518,39 @@ service cloud.firestore {
 
       // ---- Membres : profil (copie), rôle, consentement --------------------
       match /members/{uid} {
-        allow get, list: if isMember(miffId);
+        allow get, list: if isMember(miffId) && miffAlive(miffId);
         allow create: if isSelf(uid) && validMemberCreate(miffId, uid);
         allow update: if isSelf(uid) && validMemberUpdate(miffId, uid);
         allow delete: if memberDeleteOk(miffId, uid);
       }
 
       // ---- État courant (sensible) : seulement si le partage est activé ----
-      // Lecture : réciprocité => il faut partager soi-même pour voir les autres.
+      // Lecture : réciprocité => il faut partager soi-même (partage activé ET statut publié) pour voir
+      // les autres, et la Miff doit exister. Activer le partage = créer son statut dans le même lot.
       match /status/{uid} {
-        allow get, list: if mySharingOn(miffId);
+        allow get, list: if miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId);
         allow create, update: if isSelf(uid) && validStatus(miffId, uid);
         // Le propriétaire de la Miff peut purger (retrait d'un membre).
         allow delete: if isSelf(uid) || isOwner(miffId);
       }
 
       // ---- Photo de la dernière update (sensible) ---------------------------
+      // Lecture : partage activé (PAS de condition de statut publié pour les photos : décision PM du
+      // 2026-10-22), Miff existante, et photo non expirée (expiresAt est appliqué par les règles : aucun
+      // nettoyage n'est nécessaire pour qu'elle disparaisse). Photo absente : introuvable, pas une erreur.
+      // Suppression : l'auteur, le créateur, ou n'importe quel membre une fois la photo expirée.
       match /photos/{uid} {
-        allow get: if mySharingOn(miffId);
+        allow get: if miffAlive(miffId) && mySharingOn(miffId)
+          && (resource == null || resource.data.expiresAt > request.time);
         allow list: if false;
         allow create, update: if isSelf(uid) && validPhoto(miffId, uid);
-        allow delete: if isSelf(uid) || isOwner(miffId);
+        allow delete: if isSelf(uid) || isOwner(miffId)
+          || (isMember(miffId) && resource.data.expiresAt <= request.time);
       }
 
       // ---- Lieux (zone de confiance / zone à risque), définis par le créateur
       match /places/{placeId} {
-        allow get, list: if isMember(miffId);
+        allow get, list: if isMember(miffId) && miffAlive(miffId);
         allow create: if isOwner(miffId) && validPlaceCreate(placeId);
         allow update: if isOwner(miffId) && validPlaceUpdate();
         allow delete: if isOwner(miffId);

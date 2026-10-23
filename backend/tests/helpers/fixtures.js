@@ -303,3 +303,24 @@ export function suite() {
 }
 
 export { seedBase };
+
+/**
+ * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 6 écritures dans UN lot,
+ * dont le renouvellement du code secret (nouveau code créé, ancien supprimé).
+ */
+export function removeMemberOps({
+  target,
+  miffId = ID.M1,
+  oldCode = CODE.M1,
+  newCode = CODE.REGEN,
+  name = 'Famille',
+} = {}) {
+  return {
+    member: del(`miffs/${miffId}/members/${target}`),
+    status: del(`miffs/${miffId}/status/${target}`),
+    photo: del(`miffs/${miffId}/photos/${target}`),
+    miff: update(`miffs/${miffId}`, { joinCode: newCode }),
+    newCode: set(`joinCodes/${newCode}`, { miffId, miffName: name, createdAt: serverTs() }),
+    oldCode: del(`joinCodes/${oldCode}`),
+  };
+}
