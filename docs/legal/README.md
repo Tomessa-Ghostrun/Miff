@@ -22,6 +22,13 @@ Le français est la version de référence ; l'anglais en est la traduction fid�
 4. **Google Play, suppression de compte** : en plus du chemin dans l'app, Google demande une **page web** où l'on peut demander la suppression de son compte et de ses données (vérifié le 2026-10-23, aide Google Play « account deletion »). Prévoir cette page (ou une section de la page politique) avec l'e-mail de contact.
 5. **Versions** : à chaque modification, changer le numéro de version en tête de texte et celui envoyé par l'app (`termsVersion`, et `consentVersion` pour le texte de consentement à la localisation, par langue). Une modification qui touche la localisation impose de redemander le consentement.
 
+## Adresse de contact (décision PM du 2026-10-23)
+
+- **Valeur provisoire : `tomessa.mfouka@gmail.com`** (adresse personnelle, remplaçable plus tard).
+- Elle ne remplace le placeholder `[E-MAIL DE CONTACT À DÉFINIR]` des quatre textes **qu'au moment de la publication**, et pas avant : les textes du dépôt gardent le placeholder.
+- **Attention, elle deviendra publique** dès la publication : dans les CGU, la politique de confidentialité (FR et EN), les fiches stores et la page web de demande de suppression de compte exigée par Google Play.
+- **Recommandation** : créer une adresse dédiée (par exemple de type contact ou privacy) **avant la bêta externe**, pour ne pas exposer l'adresse personnelle et pour pouvoir répondre aux demandes RGPD (délai d'un mois) de façon fiable.
+
 ## 3. PLACEHOLDERS à compléter par le PM
 
 Rechercher `[` dans les quatre fichiers. Liste exacte :
