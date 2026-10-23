@@ -11,15 +11,15 @@ const rulesDir = fileURLToPath(new URL('../rules/', import.meta.url));
 function planIds() {
   // La section 9 (hors émulateur) n'a pas de tableau d'identifiants : on lit tout le plan (sections 1 à 8 et 10).
   const body = plan;
-  return [...body.matchAll(/^\| ([A-Z]+\d+) \|/gm)].map((m) => m[1]);
+  return [...body.matchAll(/^\| ([A-Z]+\d+[a-z]?) \|/gm)].map((m) => m[1]);
 }
 
 function testedIds() {
   const ids = [];
   for (const file of readdirSync(rulesDir).filter((f) => f.endsWith('.test.js'))) {
     const source = readFileSync(`${rulesDir}${file}`, 'utf8');
-    for (const m of source.matchAll(/\.(?:tc|skipped)\(\s*'([A-Z]+\d+)'/g)) ids.push(m[1]);
-    for (const m of source.matchAll(/^\s*id: '([A-Z]+\d+)',/gm)) ids.push(m[1]);
+    for (const m of source.matchAll(/\.(?:tc|skipped)\(\s*'([A-Z]+\d+[a-z]?)'/g)) ids.push(m[1]);
+    for (const m of source.matchAll(/^\s*id: '([A-Z]+\d+[a-z]?)',/gm)) ids.push(m[1]);
   }
   return ids;
 }

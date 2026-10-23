@@ -3,9 +3,9 @@ rules_version = '2';
 // =============================================================================
 // Miff — règles de sécurité Firestore (projet miff-3d283, europe-west9)
 //
-// STATUT : écrites SANS avoir pu être exécutées (aucun émulateur lancé, aucun
-// déploiement). À valider avec l'émulateur Firestore et le plan de test
-// `backend/rules-test-plan.md` AVANT tout déploiement.
+// STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
+// `npm test` dans backend/), JAMAIS déployées. Le déploiement suit la procédure
+// du ticket docs/tickets/durcissement-regles-firestore.md (§8.2).
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -229,6 +229,11 @@ service cloud.firestore {
     function validMiffCreate(miffId) {
       let d = request.resource.data;
       return isMiffId(miffId)
+        // Pierre tombale : un identifiant de Miff supprimée n'est JAMAIS réutilisable (sinon un ancien
+        // membre se déclare créateur de la Miff « ressuscitée » et relit les lieux / statuts restés en base).
+        // Le contrôle est ici (sur le document Miff lui-même) et non seulement sur la fiche membre du
+        // créateur : un créateur qui a gardé sa fiche membre créerait sinon la Miff sans écrire de fiche.
+        && !exists(/databases/$(database)/documents/miffsDeleted/$(miffId))
         && d.keys().hasOnly(['ownerUid', 'name', 'joinCode', 'createdAt'])
         && d.keys().hasAll(['ownerUid', 'name', 'joinCode', 'createdAt'])
         && d.ownerUid == request.auth.uid
@@ -453,6 +458,22 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // miffsDeleted/{miffId} — pierre tombale d'une Miff supprimée (ATK1).
+    // Aucune donnée personnelle : seulement la date. Créée par le créateur dans
+    // le lot qui supprime la Miff ; jamais lisible, modifiable ni supprimable par
+    // un client (les règles de création de Miff la lisent via exists()).
+    // =========================================================================
+    match /miffsDeleted/{miffId} {
+      allow read: if false;
+      // isOwner lit l'état d'AVANT le lot (la Miff existe encore) ; existsAfter exige qu'elle disparaisse.
+      allow create: if isOwner(miffId)
+        && !existsAfter(/databases/$(database)/documents/miffs/$(miffId))
+        && request.resource.data.keys().hasOnly(['deletedAt'])
+        && request.resource.data.deletedAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // =========================================================================
     // miffs/{miffId} — le cercle de confiance
     // =========================================================================
     match /miffs/{miffId} {
@@ -461,7 +482,12 @@ service cloud.firestore {
 
       allow create: if isSignedIn() && validMiffCreate(miffId);
       allow update: if isOwner(miffId) && validMiffUpdate();
-      allow delete: if isOwner(miffId);
+      // Suppression : dans le MÊME lot, (1) la pierre tombale miffsDeleted/{id} est créée (l'identifiant
+      // ne pourra plus servir) et (2) le code secret joinCodes/{joinCode} est supprimé (aucun code orphelin
+      // qui rouvrirait l'accès si la Miff revenait). resource.data.joinCode est lu sur le document supprimé.
+      allow delete: if isOwner(miffId)
+        && existsAfter(/databases/$(database)/documents/miffsDeleted/$(miffId))
+        && !existsAfter(/databases/$(database)/documents/joinCodes/$(resource.data.joinCode));
 
       // ---- Membres : profil (copie), rôle, consentement --------------------
       match /members/{uid} {

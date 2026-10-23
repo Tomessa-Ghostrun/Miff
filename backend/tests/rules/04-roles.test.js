@@ -131,15 +131,17 @@ s.tc('M18', 'la créatrice ne part qu\'en supprimant la Miff dans le même batch
     }
     await batch.commit();
   });
-  await assertSucceeds(
-    commit(db('alice'), [
-      del(M1),
-      del(`joinCodes/${CODE.M1}`),
-      del(`${M1}/members/alice`),
-      del(`${M1}/status/alice`),
-      del('users/alice/memberships/free'),
-    ]),
-  );
+  // DUR-1 (ATK1, ATK2) : le lot de suppression de la Miff porte aussi la pierre tombale ; sans elle il est refusé
+  // (détail dans H1b). Les autres membres doivent déjà avoir été retirés ici (précondition du plan).
+  const lot = [
+    del(M1),
+    del(`joinCodes/${CODE.M1}`),
+    del(`${M1}/members/alice`),
+    del(`${M1}/status/alice`),
+    del('users/alice/memberships/free'),
+  ];
+  await assertFails(commit(db('alice'), lot));
+  await assertSucceeds(commit(db('alice'), [...lot, set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() })]));
 });
 
 s.tc('M19', 'un membre retiré supprime son index orphelin ; avant d\'être retiré : refusé', async ({ db, admin }) => {

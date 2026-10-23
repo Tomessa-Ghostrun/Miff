@@ -73,13 +73,15 @@ const scenarios = [
   },
   {
     id: 'READS-delete-miff',
-    title: 'la créatrice supprime la Miff (batch de 5)',
-    name: 'Supprimer la Miff (batch de 5)',
+    title: 'la créatrice supprime la Miff (batch de 6, avec pierre tombale)',
+    name: 'Supprimer la Miff (batch de 6, avec pierre tombale)',
     limit: 20,
-    hosts: [H.statusDelete, H.membershipsDelete],
+    // Hôte retenu : les lectures factices sont comptées sur members/delete (pas sur status/memberships : mesure non concluante).
+    hosts: [H.membersDelete],
     run: (env) =>
       commit(db(env, 'alice'), [
         del(M1),
+        set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() }),
         del(`joinCodes/${CODE.M1}`),
         del(`${M1}/members/alice`),
         del(`${M1}/status/alice`),
