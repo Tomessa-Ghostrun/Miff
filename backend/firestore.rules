@@ -265,14 +265,16 @@ service cloud.firestore {
         && isStr(d.name, 1, 40)
         && isJoinCode(d.joinCode)
         && d.createdAt == request.time
-        // Pas de Miff "à moitié créée" : le membre créateur et le code existent après le batch.
+        // Pas de Miff "à moitié créée" : le membre créateur existe après le batch, et le code existe après le
+        // batch ET pointe vers CETTE Miff (sinon on pourrait se donner le code d'une autre Miff : getAfter
+        // échoue si le document n'existe pas => refus).
         && existsAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid))
-        && existsAfter(/databases/$(database)/documents/joinCodes/$(d.joinCode));
+        && getAfter(/databases/$(database)/documents/joinCodes/$(d.joinCode)).data.miffId == miffId;
     }
 
     // Renommer, ou régénérer le code. Régénérer = l'ancien code DOIT disparaître
     // dans le même batch (sinon un ex-membre garderait un code valide).
-    function validMiffUpdate() {
+    function validMiffUpdate(miffId) {
       let d = request.resource.data;
       return affected().hasOnly(['name', 'joinCode'])
         && isStr(d.name, 1, 40)
@@ -280,7 +282,7 @@ service cloud.firestore {
         && (
           !affected().hasAny(['joinCode'])
           || (
-            existsAfter(/databases/$(database)/documents/joinCodes/$(d.joinCode))
+            getAfter(/databases/$(database)/documents/joinCodes/$(d.joinCode)).data.miffId == miffId
             && !existsAfter(/databases/$(database)/documents/joinCodes/$(resource.data.joinCode))
           )
         );
@@ -508,7 +510,11 @@ service cloud.firestore {
       allow list: if false;           // on arrive toujours par un identifiant connu
 
       allow create: if isSignedIn() && validMiffCreate(miffId);
-      allow update: if isOwner(miffId) && validMiffUpdate();
+      // ATTENTION : ce contrôle du propriétaire est aussi la barrière du RETRAIT d'un membre (seul le
+      // propriétaire peut changer joinCode, ce que memberDeleteOk exige via codeRenewed). Si cette règle
+      // est assouplie, le retrait perd sa barrière (mutation M17-retrait-controle-proprietaire-seul,
+      // aujourd'hui équivalente, cesserait de l'être).
+      allow update: if isOwner(miffId) && validMiffUpdate(miffId);
       // Suppression : dans le MÊME lot, (1) la pierre tombale miffsDeleted/{id} est créée (l'identifiant
       // ne pourra plus servir) et (2) le code secret joinCodes/{joinCode} est supprimé (aucun code orphelin
       // qui rouvrirait l'accès si la Miff revenait). resource.data.joinCode est lu sur le document supprimé.

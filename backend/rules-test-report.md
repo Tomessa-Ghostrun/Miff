@@ -4,9 +4,9 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 
 ## État actuel (après DUR-2)
 
-- **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution locale : **166 tests, 165 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas), plus 28 tests rapides sans émulateur (`npm run test:unit`, tous réussis). Les 166 tests = 117 cas du plan (sections 1 à 8) + 8 cas complémentaires X1 à X8 (section 10) + **8 cas DUR-1** (H1a, H1b, H1c, H1d, H1f, H1g, H2a, H2b) + **16 cas DUR-2** (H1e, H3a à H3e, H4a à H4f, H5a à H5d ; section 11) + 17 mesures de lectures de règles (13 d'origine, dont C17, + 4 ajoutées). Historique : 138 tests avant DUR-1, 146 après DUR-1.
+- **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution locale : **169 tests, 168 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas), plus 28 tests rapides sans émulateur (`npm run test:unit`, tous réussis). Les 169 tests = 117 cas du plan (sections 1 à 8) + 8 cas complémentaires X1 à X8 (section 10) + **8 cas DUR-1** (H1a, H1b, H1c, H1d, H1f, H1g, H2a, H2b) + **16 cas DUR-2** (H1e, H3a à H3e, H4a à H4f, H5a à H5d ; section 11) + **3 cas issus de la revue de sécurité** (H7a à H7c) + 17 mesures de lectures de règles (13 d'origine, dont C17, + 4 ajoutées). Historique : 138 tests avant DUR-1, 146 après DUR-1.
 - Le tableau complet (un identifiant par ligne) est publié dans le résumé du job et dans l'artefact `rules-test-report`.
-- **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **74** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **70 mutations sont détectées, 4 mutants sont documentés comme équivalents** dans `tests/tools/mutations.mjs` (`hasAll` du statut, `is timestamp` de `escalationDueAt`, la couche `ownerUid` du seul document Miff, et — nouveau avec DUR-2 — le contrôle `isOwner` de la branche « retrait », redondant avec `codeRenewed` puisque seul le propriétaire peut modifier `miffs.joinCode`). DUR-1 a ajouté 12 mutations (42 -> 54), DUR-2 20 (54 -> 74), toutes détectées sauf l'équivalent cité. Le ticket (§7.3) liste d'autres protections encore sans mutation : c'est le travail de DUR-3, non fait ici.
+- **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **77** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **73 mutations sont détectées, 4 mutants sont documentés comme équivalents** dans `tests/tools/mutations.mjs` (`hasAll` du statut, `is timestamp` de `escalationDueAt`, la couche `ownerUid` du seul document Miff, et — nouveau avec DUR-2 — le contrôle `isOwner` de la branche « retrait », redondant avec `codeRenewed` puisque seul le propriétaire peut modifier `miffs.joinCode`). DUR-1 a ajouté 12 mutations (42 -> 54), DUR-2 20 (54 -> 74) puis 3 de la revue (74 -> 77), toutes détectées sauf l'équivalent cité. Le ticket (§7.3) liste d'autres protections encore sans mutation : c'est le travail de DUR-3, non fait ici.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
 ## DUR-1 : pierre tombale (ATK1) et code orphelin (ATK2)
@@ -79,9 +79,17 @@ H3b, H3c, H3d, H4d et H4e n'ont pas de mutation dédiée : cas positifs ou garde
 
 Ajouts à la mesure : `READS-read-status-get`, `READS-read-photo`, `READS-read-place`, `READS-remove-member-alt`.
 
+## Risque accepté par le PM (revue de sécurité de DUR-2)
+
+Les **écritures** de `status`, `photos` et `members` d'un survivant ne vérifient pas que la Miff existe encore (`miffAlive` n'est ajouté qu'aux lectures). Un survivant (ou un client modifié) peut donc, tant que sa fiche existe, écrire de nouveaux documents dans une Miff supprimée. Ces données sont illisibles (stockage seulement, quota Spark) et nettoyées au prochain lancement de l'app. Décision du PM : risque accepté, pas de contrôle ajouté. Documenté dans `data-model.md` §11 (point 9) et §14.
+
+## Revue de sécurité : le code pointe vers cette Miff (H7a à H7c)
+
+La relectrice a montré qu'une Miff pouvait être créée, ou son code renouvelé, avec le code **existant d'une autre Miff** (seule l'existence du code était vérifiée). Correction : `getAfter(joinCodes/code).data.miffId == miffId` à la création et au renouvellement. Sur les règles DUR-2 d'origine : **H7a et H7b rouges** (l'attaque réussit), H7c vert (garde contre la mutation « le code n'a plus à exister »). Mutations ajoutées : `H7a-creation-code-autre-miff`, `H7b-renouvellement-code-autre-miff`, `H7c-renouvellement-code-inexistant` (la mutation qui retire l'exigence d'existence, auparavant non détectée, est tuée par H7c).
+
 ## Échecs constatés
 
-Aucun : les 165 tests exécutés passent sur les règles actuelles.
+Aucun : les 168 tests exécutés passent sur les règles actuelles.
 
 Format à utiliser pour chaque échec :
 
@@ -110,8 +118,8 @@ Dernière exécution (règles DUR-1, `!exists`), lectures de règles utilisées 
 | Création de Miff gratuite (lot de 4) | 20 | 2 | 18 | 1 (+1) |
 | Rejoindre une Miff (lot de 2) | 20 | 3 | 17 | 3 |
 | Quitter une Miff (lot de 4) | 20 | 0 | 20 | 0 |
-| **Retirer un membre + nouveau code (lot de 6, avec photo)** (DUR-2) | 20 | **12** (10 à 12 selon l'exécution et l'hôte de mesure) | **8** (10 à 12 selon les essais) | lot de 3 : 3 à 4 (lot différent) |
-| **Supprimer la Miff (lot de 6, avec pierre tombale)** | 20 | **11** | **9** | non mesurable (lot différent) |
+| **Retirer un membre + nouveau code (lot de 6, avec photo)** (DUR-2) | 20 | outil : 10 à 12 (plafond de 10 par écriture, voir note) ; **base mesurée ≈ 2, pire cas 18** | au moins 2 | lot de 3 : 3 à 4 (lot différent) |
+| **Supprimer la Miff (lot de 6, avec pierre tombale)** | 20 | outil : 11 (plafond, voir note) ; **base mesurée ≈ 4, pire cas 12** | au moins 8 | non mesurable (lot différent) |
 | Régénérer le code (lot de 3) | 20 | 1 | 19 | 1 |
 | Désactiver le partage (lot de 3) | 20 | 0 | 20 | 0 |
 | Activer le partage + créer son statut (lot de 2) | 20 | 10 | 10 | 10 |
@@ -124,7 +132,9 @@ Dernière exécution (règles DUR-1, `!exists`), lectures de règles utilisées 
 | Lecture d'une photo (get) (DUR-2) | 10 | 2 | 8 | 1 (estimation) |
 | Lecture d'un lieu (get) (DUR-2) | 10 | 2 | 8 | 1 (estimation) |
 
-Note sur les valeurs « 0 » : les lectures de documents modifiés dans le même lot (`existsAfter`, `getAfter`) ne semblent pas être comptées par l'émulateur (constat, non confirmé dans la documentation) ; il faut donc lire ces chiffres comme « lectures supplémentaires hors documents du lot ». Le critère R11 (marge d'au moins 2 lectures) est satisfait par toutes les opérations mesurées, dont le lot de suppression de Miff (marge 9) et **le lot de retrait de membre avec renouvellement du code (DUR-2) : 10 à 12 lectures utilisées sur 20, marge d'au moins 8**. Recoupement : sept essais avec des hôtes de mesure différents (`members/delete`, `miffs/update`, `joinCodes/create`, `joinCodes/delete`, `status/delete`, `photos/delete`) donnent 10 (12 pour `photos/delete`, hôte moins précis). Comptage à la main du pire cas, sans aucune mise en commun d'un même document : 6 (suppression de la fiche) + 2 (statut) + 2 (photo) + 4 (mise à jour de la Miff) + 3 (création du nouveau code) + 1 (suppression de l'ancien) = **18 sur 20**, soit encore une marge de 2. Aucune limite (10 par requête, 20 par lot) n'est dépassée. Une répartition des lectures factices sur deux hôtes à la fois (`status/delete` + `photos/delete`) a donné une valeur aberrante (au plus 1) : méthode écartée pour ce lot.
+**Comment lire ces chiffres (correction après la revue de sécurité indépendante).** Les valeurs « 10 à 12 » (retrait) et « 11 » (suppression de Miff) données par notre outil **ne sont pas le nombre de lectures du lot** : l'émulateur applique un **plafond de 10 lectures par évaluation d'écriture**, et avec nos lectures factices placées sur une seule règle l'outil atteint ce plafond avant celui du lot. Ce sont des **majorants grossiers**, pas des mesures. Les bases mesurées par la relectrice (sans lectures factices) sont : **retrait d'un membre ≈ 2**, **suppression de Miff ≈ 4**, **activation du partage 0**. Le **pire cas recompté à la main sans aucun cache** (chaque appel `get`/`exists`/`getAfter`/`existsAfter` compté, même sur le même document) est de **18 sur 20 pour le retrait** (6 pour la suppression de la fiche + 2 statut + 2 photo + 4 mise à jour de la Miff + 3 création du nouveau code + 1 suppression de l'ancien) et de **12 sur 20 pour la suppression de Miff**. L'émulateur **ne compte pas deux fois le même document** (constat de la relectrice, non confirmé par la documentation), donc la consommation réelle est bien plus basse que le pire cas. Dans tous les cas, **la marge est d'au moins 2 lectures** (critère R11) et aucune limite (10 par requête, 20 par lot) n'est dépassée. Une répartition des lectures factices sur deux hôtes à la fois (`status/delete` + `photos/delete`) a donné une valeur aberrante (au plus 1) : méthode écartée.
+
+Les valeurs « 0 » (quitter, désactiver le partage) confirment que les lectures de documents du lot lui-même (`existsAfter`, `getAfter`) ne pèsent presque rien dans l'émulateur.
 
 Lecture d'un statut : 3 lectures de règles (la Miff existe, partage actif, statut publié) ; la valeur est mesurée sur un `get` ; la liste des statuts reste non concluante.
 

@@ -5,7 +5,7 @@
 //   H5  : photos (illisibles après expiresAt, 24 h + 1 h tolérée, identiques premium ou non, nettoyage par tout membre)
 // Même jeu de données qu'à la section 0 du plan. Chaque cas isole UNE protection (voir tests/tools/mutations.mjs).
 import {
-  ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, joinOps, leaveOps, removeMemberOps, set, update,
+  ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update,
   del, serverTs, statusDoc, photoDoc, inMs, sharingOnNow, sharingOnSeed,
 } from '../helpers/fixtures.js';
 
@@ -232,4 +232,34 @@ s.tc('H5d', 'photos : mêmes règles de durée et d\'expiration pour un compte p
     await admin((f) => f.doc(`${base}/photos/${uid}`).set(expiredPhoto()));
     await assertFails(ref.get());
   }
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// H7 : le code d'une Miff pointe vers CETTE Miff (revue de sécurité indépendante de DUR-1 / DUR-2)
+// ---------------------------------------------------------------------------------------------------------
+s.tc('H7a', 'le code d\x27une Miff pointe vers cette Miff : création avec le code d\x27une autre Miff refusée', async ({ db }) => {
+  const eve = db('eve');
+  // Le code de M2 existe déjà et pointe vers M2 : eve ne crée pas de joinCodes (il existe), elle essaie de le « réutiliser ».
+  const ops = createMiffOps({ uid: 'eve', code: CODE.M2 });
+  await assertFails(commit(eve, [ops.miff, ops.member, ops.index]));
+  // Contrôle : la création normale, avec son propre code créé dans le lot, est acceptée.
+  await assertSucceeds(commit(eve, all(createMiffOps({ uid: 'eve', code: CODE.NEW }))));
+});
+
+s.tc('H7b', 'le code d\x27une Miff pointe vers cette Miff : renouvellement vers le code d\x27une autre Miff refusé', async ({ db }) => {
+  const alice = db('alice');
+  // Le code de M2 (Miff de zoe) existe déjà : alice le prend pour M1 et supprime l\x27ancien.
+  await assertFails(commit(alice, [update(M1, { joinCode: CODE.M2 }), del(`joinCodes/${CODE.M1}`)]));
+  // Contrôle : le renouvellement normal (nouveau code créé pour M1) est accepté.
+  await assertSucceeds(
+    commit(alice, [
+      update(M1, { joinCode: CODE.REGEN }),
+      set(`joinCodes/${CODE.REGEN}`, { miffId: ID.M1, miffName: 'Famille', createdAt: serverTs() }),
+      del(`joinCodes/${CODE.M1}`),
+    ]),
+  );
+});
+
+s.tc('H7c', 'renouvellement vers un code qui n\x27existe pas (non créé dans le lot) : refusé', async ({ db }) => {
+  await assertFails(commit(db('alice'), [update(M1, { joinCode: CODE.REGEN }), del(`joinCodes/${CODE.M1}`)]));
 });

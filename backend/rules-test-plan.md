@@ -233,3 +233,11 @@ Même jeu de données qu'en section 0. Chaque cas a un test dans `tests/rules/11
 | H5b | `bob` crée sa photo avec `expiresAt` à +26 h, +7 jours, +24 h59, +24 h | KO, KO, OK, OK |
 | H5c | Photo de `alice` valide : suppression par `bob`, `carol` ; expirée : par `eve`, par `bob`, par `carol` (partage désactivé) | KO, KO ; KO, OK, OK |
 | H5d | Mêmes créations (+26 h KO, +7 jours KO, +24 h OK) et même illisibilité après expiration pour `bob` (gratuit) et `dave` (premium) | Identique pour les deux comptes |
+
+### 11.3 Revue de sécurité de DUR-1/DUR-2 : le code d'une Miff pointe vers cette Miff
+
+| # | Cas | Attendu |
+|---|---|---|
+| H7a | `eve` crée une Miff avec, comme `joinCode`, le code **existant d'une autre Miff** (celui de M2) | **KO** ; avec son propre code créé dans le lot : OK |
+| H7b | `alice` renouvelle le code de M1 vers le code existant de M2 (et supprime l'ancien) | **KO** ; avec un nouveau code créé pour M1 : OK |
+| H7c | `alice` renouvelle le code de M1 vers un code qui n'existe pas (non créé dans le lot) | KO |

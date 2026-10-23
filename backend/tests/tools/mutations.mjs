@@ -48,8 +48,27 @@ export const MUTATIONS = [
   {
     id: 'C4-miffs-exige-code',
     why: 'validMiffCreate n\'exige plus le document joinCodes',
-    edits: [edit(`&& existsAfter(${DB}/joinCodes/$(d.joinCode));`, '&& true;')],
+    edits: [edit(`&& getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId;`, '&& true;')],
     tests: ['C4'],
+  },
+  // --- Revue de sécurité de DUR-1/DUR-2 : le code d'une Miff doit pointer vers CETTE Miff ------------
+  {
+    id: 'H7a-creation-code-autre-miff',
+    why: 'la création d\'une Miff accepte le code d\'une autre Miff (seule l\'existence du code est vérifiée)',
+    edits: [edit(`&& getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId;`, `&& existsAfter(${DB}/joinCodes/$(d.joinCode));`)],
+    tests: ['H7a'],
+  },
+  {
+    id: 'H7b-renouvellement-code-autre-miff',
+    why: 'le renouvellement du code accepte le code d\'une autre Miff (seule l\'existence du code est vérifiée)',
+    edits: [edit(`getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId\n            && !existsAfter(`, `existsAfter(${DB}/joinCodes/$(d.joinCode))\n            && !existsAfter(`)],
+    tests: ['H7b'],
+  },
+  {
+    id: 'H7c-renouvellement-code-inexistant',
+    why: 'le renouvellement du code n\'exige plus que le nouveau code existe et pointe vers la Miff',
+    edits: [edit(`getAfter(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId\n            && !existsAfter(`, `true\n            && !existsAfter(`)],
+    tests: ['H7c'],
   },
   {
     id: 'C5-miffId-format',
