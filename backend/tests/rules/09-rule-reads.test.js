@@ -3,7 +3,7 @@
 // Résultat écrit dans backend/test-output/rule-reads.md (et .json).
 import { test, after } from 'node:test';
 import {
-  ID, CODE, commit, createMiffOps, joinOps, leaveOps, set, update, del, statusDoc, placeInput,
+  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
   serverTs, sharingOnNow, T0,
 } from '../helpers/fixtures.js';
 import { measureReads, writeReadsReport } from '../helpers/measure.js';
@@ -27,6 +27,11 @@ const seedDaveMiff = (env) =>
     b.set(f.doc('users/dave/memberships/free'), { miffId: ID.M3, joinedAt: T0 });
     await b.commit();
   });
+
+const seedBobPhoto = (env) =>
+  env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/bob`).set(photoDoc({ createdAt: T0 })));
+const seedAlicePhoto = (env) =>
+  env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0 })));
 
 const scenarios = [
   {
@@ -64,12 +69,23 @@ const scenarios = [
   },
   {
     id: 'READS-remove-member',
-    title: 'retirer un membre (batch de 3)',
-    name: 'Retirer un membre (batch de 3)',
+    title: 'retirer un membre avec renouvellement du code (batch de 6, avec photo)',
+    name: 'Retirer un membre + nouveau code (batch de 6)',
     limit: 20,
-    hosts: [H.statusDelete, H.photosDelete],
-    run: (env) =>
-      commit(db(env, 'alice'), [del(`${M1}/members/bob`), del(`${M1}/status/bob`), del(`${M1}/photos/bob`)]),
+    hosts: [H.membersDelete],
+    prepare: seedBobPhoto,
+    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
+  },
+  {
+    // Même lot, lectures factices placées sur d'autres règles du lot : recoupe la mesure précédente.
+    id: 'READS-remove-member-alt',
+    title: 'retirer un membre avec renouvellement du code (lot de 6), autre hôte de mesure',
+    name: 'Retirer un membre + nouveau code (lot de 6), hôte joinCodes/create',
+    limit: 20,
+    // Un seul hôte : répartir les lectures factices sur deux hôtes a donné une valeur aberrante (<= 1) lors des essais.
+    hosts: [H.joinCodesCreate],
+    prepare: seedBobPhoto,
+    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
   },
   {
     id: 'READS-delete-miff',
@@ -149,6 +165,31 @@ const scenarios = [
     limit: 10,
     hosts: [H.statusList],
     run: (env) => db(env, 'bob').collection(`${M1}/status`).get(),
+  },
+  {
+    id: 'READS-read-status-get',
+    title: "lecture du statut d'un autre membre (get)",
+    name: "Lecture du statut d'un membre (get)",
+    limit: 10,
+    hosts: [H.statusGet],
+    run: (env) => db(env, 'bob').doc(`${M1}/status/alice`).get(),
+  },
+  {
+    id: 'READS-read-photo',
+    title: "lecture de la photo d'un autre membre (get)",
+    name: "Lecture d'une photo (get)",
+    limit: 10,
+    hosts: [H.photosGet],
+    prepare: seedAlicePhoto,
+    run: (env) => db(env, 'bob').doc(`${M1}/photos/alice`).get(),
+  },
+  {
+    id: 'READS-read-place',
+    title: "lecture d'un lieu (get)",
+    name: "Lecture d'un lieu (get)",
+    limit: 10,
+    hosts: [H.placesGet],
+    run: (env) => db(env, 'bob').doc(`${M1}/places/p1`).get(),
   },
   {
     id: 'READS-read-miff',

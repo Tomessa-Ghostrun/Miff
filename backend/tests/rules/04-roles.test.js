@@ -1,6 +1,6 @@
 // Plan de test, section 4 : rôles, modification, retrait, départ (M1 à M20)
 import {
-  ID, CODE, suite, assertFails, assertSucceeds, commit, leaveOps, set, update, del, serverTs, bytes,
+  ID, CODE, suite, assertFails, assertSucceeds, commit, leaveOps, removeMemberOps, set, update, del, serverTs, bytes,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -96,12 +96,13 @@ s.tc('M14', 'libérer l\'index sans quitter la Miff : refusé', async ({ db }) =
   await assertFails(db('bob').doc('users/bob/memberships/free').delete());
 });
 
-s.tc('M15', 'la créatrice retire un membre (membre, statut, photo)', async ({ db }) => {
-  await assertSucceeds(commit(db('alice'), removalOps('bob')));
+s.tc('M15', 'la créatrice retire un membre (membre, statut, photo + code renouvelé dans le même lot, DUR-2)', async ({ db }) => {
+  await assertSucceeds(commit(db('alice'), Object.values(removeMemberOps({ target: 'bob' }))));
 });
 
-s.tc('M16', 'retirer un membre sans supprimer son statut : refusé', async ({ db }) => {
-  await assertFails(commit(db('alice'), [del(`${M1}/members/bob`), del(`${M1}/photos/bob`)]));
+s.tc('M16', 'retirer un membre sans supprimer son statut : refusé (même avec le code renouvelé)', async ({ db }) => {
+  const { status, ...withoutStatus } = removeMemberOps({ target: 'bob' });
+  await assertFails(commit(db('alice'), Object.values(withoutStatus)));
 });
 
 s.tc('M17', 'un membre ne retire pas un autre membre', async ({ db }) => {
