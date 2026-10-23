@@ -31,7 +31,10 @@ const KEEP_RUNNING = new Set(['ios-testflight.yml']);
 // Tout autre workflow, ou tout autre secret, fait échouer le test : l'ajout d'un secret doit être une décision visible en revue.
 const SECRETS_ALLOWED = {
   'android.yml': ['GOOGLE_SERVICES_JSON_B64'],
-  'ios-testflight.yml': ['APPLE_TEAM_ID', 'ASC_ISSUER_ID', 'ASC_KEY_ID', 'ASC_KEY_P8_B64'],
+  // ios.yml : seulement la configuration Firebase (recréée pour la compilation, supprimée en fin de job).
+  'ios.yml': ['GOOGLE_SERVICE_INFO_PLIST_B64'],
+  // ios-testflight.yml : les 4 secrets de signature + la configuration Firebase (mêmes règles que ios.yml).
+  'ios-testflight.yml': ['APPLE_TEAM_ID', 'ASC_ISSUER_ID', 'ASC_KEY_ID', 'ASC_KEY_P8_B64', 'GOOGLE_SERVICE_INFO_PLIST_B64'],
 };
 
 test('WORKFLOWS - permissions minimales, annulation des exécutions obsolètes, jamais pull_request_target', () => {

@@ -1,5 +1,4 @@
-# Configuration SwiftLint minimale pour le spike INIT-3.
-# Lancer depuis le dossier ios/ : swiftlint lint --strict
+# Configuration SwiftLint de l'app iOS (INIT-4). Lancer depuis le dossier ios/ : swiftlint lint --strict
 included:
   - Miff
   - MiffTests
@@ -8,6 +7,64 @@ opt_in_rules:
   - empty_count
   - force_unwrapping
 
+# Virgule finale : le style du projet l'autorise dans les listes sur plusieurs lignes.
+disabled_rules:
+  - trailing_comma
+
 line_length:
   warning: 120
   error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  min_length: 2
+  excluded:
+    - id
+
+type_name:
+  max_length: 50
+
+cyclomatic_complexity:
+  ignores_case_statements: true
+
+file_length:
+  warning: 500
+  error: 800
+
+type_body_length:
+  warning: 300
+  error: 500
+
+function_body_length:
+  warning: 60
+  error: 120
+
+nesting:
+  type_level: 2
+
+custom_rules:
+  # Aucune chaîne visible en dur (critère I9) : un texte statique s'écrit Text("cle_snake_case") (clé du String
+  # Catalog) ; un texte composé passe par L10n.format / Text(verbatim:). Ce modèle refuse tout littéral qui n'a
+  # pas la forme d'une clé (snake_case avec au moins un « _ »).
+  no_hardcoded_text:
+    name: "Texte visible en dur"
+    regex: '(Text|Button|Toggle|Label|TextField|SecureField|Section|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint)\(\s*"(?![a-z][a-z0-9]*(_[a-z0-9]+)+")'
+    message: "Pas de texte en dur : utiliser une clé du String Catalog (Text(\"cle_snake_case\")), L10n.format ou Text(verbatim:)."
+    severity: error
+    excluded_match_kinds:
+      - comment
+      - doc_comment
+      - doc_comment_field
+      - comment_url
+  # Aucune valeur hexadécimale de couleur hors du design system (critère A8 / I8).
+  no_color_literal_outside_tokens:
+    name: "Couleur en dur"
+    included: "Miff/(Views|Diagnostic|App)/.*\\.swift"
+    regex: 'Color\(\s*(red|\.sRGB|white|hue)|UIColor\(\s*(red|white|hue)|0x[0-9A-Fa-f]{6}'
+    message: "Utiliser un token de couleur du design system (colorBrandPrimary...), jamais une valeur en dur."
+    severity: error
+    excluded_match_kinds:
+      - comment
+      - doc_comment
+      - doc_comment_field

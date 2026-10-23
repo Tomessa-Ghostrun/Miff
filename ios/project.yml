@@ -1,7 +1,7 @@
 # Description du projet Xcode de Miff, pour XcodeGen (licence MIT).
 # Le fichier Miff.xcodeproj n'est PAS versionne : il est genere par la CI
 # (et par `xcodegen generate` sur un Mac) a partir de ce fichier.
-# Spike INIT-3 : application minimale sans Firebase ni dependance externe.
+# INIT-4 : socle complet (Firebase, design system, traductions, ecran de diagnostic).
 name: Miff
 
 options:
@@ -13,24 +13,31 @@ options:
   generateEmptyDirectories: false
 
 # Trois configurations :
-#   Debug    - developpement et tests sur simulateur (CI `ios`)
-#   Internal - build TestFlight du PM (CI `ios-testflight`), optimise
-#   Release  - futur build public (jamais utilise dans le spike)
+#   Debug    - developpement et tests sur simulateur (CI `ios`) : diagnostic + fournisseur App Check de debogage
+#   Internal - build TestFlight du PM (CI `ios-testflight`), optimise : diagnostic + App Attest
+#   Release  - futur build public : SANS diagnostic, App Attest
 configs:
   Debug: debug
   Internal: release
   Release: release
 
+# Dependances : Swift Package Manager uniquement (pas de CocoaPods). Version EXACTE, et le fichier
+# ios/Package.resolved (versionne) fige aussi toutes les dependances indirectes.
+# Mise a jour : Dependabot (ecosysteme `swift`) ou a la main, toujours par PR et CI.
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    exactVersion: 13.1.1
+
 settings:
   base:
-    # Mode de langage Swift 5 : evite les erreurs de concurrence strictes de Swift 6
-    # pour un spike. A reevaluer dans INIT-4.
+    # Mode de langage Swift 5 : evite les erreurs de concurrence strictes de Swift 6.
     SWIFT_VERSION: "5.0"
     # Version affichee. Le numero de build est ecrase par la CI avec le numero
     # d'execution du workflow (CURRENT_PROJECT_VERSION=... sur la ligne xcodebuild).
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    # iPhone uniquement pour le spike (decision a confirmer, voir ios/README.md).
+    # iPhone uniquement (decision a confirmer, voir ios/README.md).
     TARGETED_DEVICE_FAMILY: "1"
     # L'equipe de signature n'est jamais ecrite ici : la CI la fournit (secret APPLE_TEAM_ID).
     CODE_SIGN_STYLE: Automatic
@@ -45,16 +52,48 @@ targets:
     type: application
     platform: iOS
     sources:
-      # Inclut le catalogue d'actifs (icone) et PrivacyInfo.xcprivacy (copie dans l'app).
+      # Inclut le catalogue d'actifs (icone), les polices, les catalogues de chaines et PrivacyInfo.xcprivacy.
       - path: Miff
+      # Configuration Firebase : JAMAIS dans le depot (ignoree par git). La CI la recree depuis un secret
+      # avant la generation du projet ; elle n'existe pas sur un poste qui ne l'a pas generee.
+      - path: Config/GoogleService-Info.plist
+        optional: true
+    dependencies:
+      # FirebaseAnalyticsCore : Analytics SANS identifiant publicitaire (pas de GoogleAppMeasurementIdentitySupport).
+      - package: Firebase
+        product: FirebaseCore
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseAppCheck
+      - package: Firebase
+        product: FirebaseCrashlytics
+      - package: Firebase
+        product: FirebaseAnalyticsCore
+    # Envoi des symboles de plantage a Crashlytics (Internal et Release seulement ; le script ne fait
+    # rien en Debug et ne fait jamais echouer la compilation).
+    postBuildScripts:
+      - name: Crashlytics - envoi des symboles
+        path: ci/crashlytics-upload-symbols.sh
+        basedOnDependencyAnalysis: false
     # Info.plist genere par XcodeGen (fichier non versionne, voir ios/.gitignore).
     # Volontairement ABSENTS : toute cle NSLocation* et NSAppTransportSecurity (ATS).
     info:
       path: Config/Info.plist
       properties:
         CFBundleDisplayName: Miff
+        # Langue de repli = ANGLAIS : un telephone dans une langue non prise en charge affiche l'anglais.
+        # (Le francais reste la langue SOURCE des textes : sourceLanguage du catalogue.)
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations:
+          - fr
+          - en
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        # Nom de la configuration Xcode (Debug, Internal, Release), affiche par le diagnostic.
+        MiffBuildConfiguration: "$(CONFIGURATION)"
         LSRequiresIPhoneOS: true
         UILaunchScreen: {}
         UIApplicationSceneManifest:
@@ -63,9 +102,29 @@ targets:
           - UIInterfaceOrientationPortrait
         # Apparence claire imposee (pas de mode sombre dans les maquettes).
         UIUserInterfaceStyle: Light
+        # Polices embarquees (licences OFL dans ios/third_party/fonts).
+        UIAppFonts:
+          - BalooThambi2-Variable.ttf
+          - HankenGrotesk-Regular.ttf
+          - HankenGrotesk-Bold.ttf
+          - HankenGrotesk-Italic.ttf
         # Decision PM 2026-10-22 : l'app n'utilise que le chiffrement standard (HTTPS / iOS),
         # exempte. Evite la question de conformite a chaque build TestFlight.
         ITSAppUsesNonExemptEncryption: false
+        # --- Confidentialite par defaut : Analytics et Crashlytics ne collectent RIEN au demarrage. ---
+        # Ils ne s'activent qu'a l'execution, apres un choix explicite de l'utilisateur (PrivacySettings).
+        # NE PAS utiliser FIREBASE_ANALYTICS_COLLECTION_DEACTIVATED : irreversible a l'execution.
+        FIREBASE_ANALYTICS_COLLECTION_ENABLED: false
+        FirebaseCrashlyticsCollectionEnabled: false
+        # Pas d'identifiant (IDFV) pour Analytics ; pas de signaux publicitaires ; pas d'attribution publicitaire.
+        GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED: false
+        GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS: false
+        GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE: false
+        GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA: false
+        GOOGLE_ANALYTICS_REGISTRATION_WITH_AD_NETWORK_ENABLED: false
+        # Pas d'evenement automatique screen_view : un nom d'ecran pourrait un jour evoquer un lieu
+        # (voir docs/contracts/analytics-events.md).
+        FirebaseAutomaticScreenReportingEnabled: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tomessa.miff
@@ -75,6 +134,17 @@ targets:
         # au niveau cible pour une app iOS, ce qui l'emporte sur le reglage du projet
         # (constate dans le journal CI : icones iPad generees).
         TARGETED_DEVICE_FAMILY: "1"
+        # Un seul executable (pas de Miff.debug.dylib) : plus simple pour les tests heberges et les controles du binaire.
+        ENABLE_DEBUG_DYLIB: NO
+        # Le script Crashlytics lit des fichiers en dehors de la liste d'entrees declaree.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+      configs:
+        # Capacite App Attest (App Check) : seulement pour les builds qui seront signes et installes sur iPhone.
+        # En Debug (simulateur, fournisseur de debogage), aucune entitlement.
+        Internal:
+          CODE_SIGN_ENTITLEMENTS: Config/Miff.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: Config/Miff.entitlements
 
   MiffTests:
     type: bundle.unit-test

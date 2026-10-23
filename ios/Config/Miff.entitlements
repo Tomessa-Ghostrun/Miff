@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Check (App Attest). Valeur "production" : builds TestFlight et App Store (celles de la configuration
+	     Internal et Release). La capacite "App Attest" doit etre activee sur l'identifiant d'app com.tomessa.miff
+	     (signature automatique par cle d'API : normalement faite par Xcode ; sinon voir ios/README.md, plan B).
+	     Aucune autre entitlement : pas de localisation, pas de trousseau partage, pas de notifications. -->
+	<key>com.apple.developer.devicecheck.appattest-environment</key>
+	<string>production</string>
+</dict>
+</plist>

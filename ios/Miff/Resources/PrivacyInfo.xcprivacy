@@ -2,17 +2,86 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Spike INIT-3 : l'app ne collecte aucune donnee, n'effectue aucun suivi, n'a aucun
-	     acces reseau et n'utilise aucune API a "raison requise" (UserDefaults, horodatage
-	     de fichiers, espace disque, etc.). Ce manifeste devra etre mis a jour des qu'une
-	     de ces conditions change (Firebase, localisation...) : voir INIT-4. -->
+	<!-- Manifeste de confidentialité de l'APP (INIT-4). Les SDK Firebase embarquent leur propre manifeste ;
+	     celui-ci déclare ce que fait l'app elle-même. À revoir à chaque nouvelle fonctionnalité qui collecte
+	     une donnée (compte, localisation...) et par le release-manager avant la soumission : la fiche
+	     « confidentialité » d'App Store Connect doit lui correspondre.
+
+	     Position : l'app ne collecte AUCUNE position à ce stade (aucune clé NSLocation*, aucun accès à CoreLocation).
+	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
+
+	     Données collectées, SEULEMENT après un accord explicite de l'utilisateur (interrupteurs Analytics et
+	     Rapports de plantage, éteints par défaut ; jamais liées à l'identité de l'utilisateur) :
+	     - Analytics (FirebaseAnalyticsCore) : interactions avec le produit (événements de la liste blanche),
+	       identifiant d'instance de l'app, données de diagnostic techniques.
+	     - Crashlytics : rapports de plantage et données de diagnostic. -->
 	<key>NSPrivacyTracking</key>
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
-	<array/>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCrashData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
-	<array/>
+	<array>
+		<!-- UserDefaults : le choix de l'utilisateur pour Analytics et les rapports de plantage est enregistré
+		     dans le stockage de l'app elle-même (raison CA92.1 : lire et écrire des informations propres à l'app). -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

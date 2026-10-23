@@ -130,8 +130,48 @@ jobs:
           chmod +x "$tools/xcodegen/bin/xcodegen"
           echo "$tools/xcodegen/bin" >> "$GITHUB_PATH"
 
+      - name: Recréer la configuration Firebase (secret, jamais affichée)
+        # GoogleService-Info.plist n'est JAMAIS dans le depot : recree ici depuis un secret GitHub (base64) avant la
+        # generation du projet (XcodeGen l'embarque s'il existe), et supprime a la fin du job (etape de nettoyage).
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+        run: |
+          set +x
+          target="Config/GoogleService-Info.plist"
+          mkdir -p Config
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_B64" ]; then
+            echo "::error title=Secret manquant::Le secret GitHub GOOGLE_SERVICE_INFO_PLIST_B64 est absent. Le PM doit le créer (PowerShell) : [Convert]::ToBase64String([IO.File]::ReadAllBytes(\"chemin\\GoogleService-Info.plist\")) | gh secret set GOOGLE_SERVICE_INFO_PLIST_B64 --repo Tomessa-Ghostrun/Miff"
+            exit 1
+          fi
+          umask 077
+          if ! printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_B64" | base64 -d > "$target" 2>/dev/null || ! plutil -lint "$target" > /dev/null 2>&1; then
+            rm -f "$target"
+            echo "::error title=Secret invalide::GOOGLE_SERVICE_INFO_PLIST_B64 n'est pas un fichier .plist encodé en base64 valide."
+            exit 1
+          fi
+          project_id=$(/usr/libexec/PlistBuddy -c "Print :PROJECT_ID" "$target" 2>/dev/null || true)
+          bundle_id=$(/usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" "$target" 2>/dev/null || true)
+          if [ "$project_id" != "miff-3d283" ] || [ "$bundle_id" != "com.tomessa.miff" ]; then
+            rm -f "$target"
+            echo "::error title=Mauvais projet Firebase::Le fichier décodé ne correspond pas au projet miff-3d283 / à l'app com.tomessa.miff (compte Apple et Firebase partagés avec un autre projet : arrêt avant toute signature)."
+            exit 1
+          fi
+          echo "Configuration Firebase recréée (projet et identifiant d'app vérifiés)."
+
       - name: Générer le projet Xcode
         run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
+
+      - name: Figer les versions des paquets Swift (Package.resolved versionné)
+        run: |
+          set -euo pipefail
+          # Meme fichier que celui verifie par le workflow ios : l'archive utilise exactement les versions testees.
+          if [ -f Package.resolved ]; then
+            mkdir -p Miff.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+            cp Package.resolved Miff.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            echo "Package.resolved appliqué."
+          else
+            echo "::warning::ios/Package.resolved absent : les versions des paquets Swift ne sont pas figées pour cette archive."
+          fi
 
       - name: Garde-fou - bundle ID exact (compte Apple partagé avec Ghostrun)
         run: |
@@ -305,6 +345,7 @@ jobs:
         if: always()
         run: |
           rm -f "$RUNNER_TEMP"/AuthKey_*.p8 || true
+          rm -f Config/GoogleService-Info.plist || true
           if [ -n "${CI_KEYCHAIN:-}" ]; then
             security delete-keychain "$CI_KEYCHAIN" || true
           fi
