@@ -13,14 +13,14 @@
 
 En une phrase : permettre à quelqu'un d'entrer dans Miff en quelques secondes (Apple, Google ou e-mail), de revenir plus tard sans friction, et de retrouver son accès s'il oublie son mot de passe, **sans jamais lui faire peur et sans révéler si une adresse e-mail a un compte**.
 
-Ce que le challenge change par rapport aux trois tickets Notion (détails en §4, §5 et §16). Le PM a tranché les 12 questions le 2026-10-23 (§17.1) ; il reste 2 nouvelles questions (§17.2) :
+Ce que le challenge change par rapport aux trois tickets Notion (détails en §4, §5 et §16). Le PM a tranché les 12 questions et les 2 questions suivantes (N1, N2) le 2026-10-23 (§17) ; aucune question n'est plus ouverte côté PM :
 
 | # | Constat | Conséquence |
 |---|---|---|
 | 1 | Les messages d'erreur de la connexion (« Adresse email invalide » / « Mot de passe invalide ») disent **lequel des deux est faux**. C'est l'inverse de ce que demande `CLAUDE.md` (ne pas révéler si un compte existe) et Firebase ne sait pas faire cette distinction quand la protection recommandée est activée. | Un message unique et rassurant à la connexion ; « format d'adresse invalide » reste possible car il est vérifié sur le téléphone, sans interroger de compte. |
 | 2 | Le ticket « Mot de passe oublié » veut que le lien de l'e-mail **ouvre l'app** sur l'écran de nouveau mot de passe. Le service gratuit de liens qui rendait cela simple (Firebase Dynamic Links) n'existe plus (arrêt annoncé le 2025-08-25, à vérifier). Le faire marcher demande des « liens universels » (iOS) et « App Links » (Android), donc un site web et une configuration par plateforme. | Proposition : v1 avec une page web hébergée gratuitement pour choisir le nouveau mot de passe, puis lien direct vers l'app dans une version suivante (**décision PM Q4 : retenu**). |
 | 3 | « Rejoindre avec Apple / Google » : ces libellés ne sont pas autorisés par les règles de marque d'Apple et de Google, et « Rejoindre » désigne déjà l'action de rejoindre une Miff avec un code. | Boutons officiels de chaque plateforme, libellé « Continuer avec… » (même texte à l'inscription et à la connexion, puisque le geste est identique). **Décidé (Q2).** |
-| 4 | Le consentement aux CGU est aujourd'hui horodaté **quand le profil est créé** (règle Firestore), pas au moment où la personne appuie sur « Rejoindre ». L'écran de connexion n'affiche pas la phrase de consentement alors que les boutons Apple/Google y créent aussi des comptes. | **Décision PM (Q8) : deux cases distinctes sur l'écran d'inscription**, avant tout geste d'inscription (e-mail, Apple, Google) ; la version du texte accepté est conservée jusqu'à l'écriture du profil (§8). Le cas de la connexion sociale d'un nouvel utilisateur est la question N1 (§17.2). |
+| 4 | Le consentement aux CGU est aujourd'hui horodaté **quand le profil est créé** (règle Firestore), pas au moment où la personne appuie sur « Rejoindre ». L'écran de connexion n'affiche pas la phrase de consentement alors que les boutons Apple/Google y créent aussi des comptes. | **Décision PM (Q8) : deux cases distinctes sur l'écran d'inscription**, avant tout geste d'inscription (e-mail, Apple, Google) ; la version du texte accepté est conservée jusqu'à l'écriture du profil (§8). Le cas de la connexion sociale d'un nouvel utilisateur est réglé par un panneau de consentement (décision N1, §7.8). |
 | 5 | L'étape « consentement Analytics / plantages » n'existe nulle part (ni Notion, ni Figma), alors que `docs/contracts/analytics-events.md` impose un consentement **avant** tout événement, y compris `sign_up_completed`. | **Décision PM (Q8)** : le consentement statistiques / plantages devient la case facultative (b) de l'écran d'inscription, sans écran supplémentaire ; aucune donnée collectée tant qu'elle n'est pas cochée (§8). |
 | 6 | Apple Sign-In est obligatoire sur iOS dès que Google est proposé (règle App Store). Il n'est pas prévu sur Android (décision déjà actée dans le ticket Notion). | Conséquence à connaître : un compte créé avec Apple n'est pas utilisable sur un téléphone Android (§6 ; **décision PM Q1 : retenu**). |
 | 7 | La suppression de compte est exigée par **Apple et Google Play** ; l'export des données est exigé par le **RGPD**, pas par les stores (correction de la formulation du brief). | La suppression est cadrée ici (§7, §15, AUTH-5) ; l'export se fait « sur demande par e-mail » pendant la bêta (**décision PM Q10 : retenu**). |
@@ -80,7 +80,7 @@ Connexion ── « Pas encore de compte ? » ─► Inscription
 | Écran | États à couvrir | Dans les maquettes ? |
 |---|---|---|
 | **A. Inscription** | vide (bouton « Créer mon compte » grisé) ; case obligatoire (a) cochée ou non, case facultative (b) cochée ou non (décochée par défaut) ; rappel bienveillant si (a) n'est pas cochée à l'appui sur un bouton d'inscription ; rempli (bouton actif) ; mot de passe visible / masqué ; format d'e-mail invalide ; mot de passe trop court ; compte déjà existant ; chargement ; hors connexion ; erreur générique ; annulation de la fenêtre Apple/Google (aucun message) | Vide et rempli : oui. **Aucun état d'erreur d'inscription** n'est dessiné. **Les deux cases (décision Q8) ne sont pas dessinées** : la maquette porte une phrase de consentement. Chargement, hors connexion : non. |
-| **B. Connexion** | vide ; rempli ; erreur de format d'e-mail ; identifiants incorrects ; trop d'essais ; compte indisponible ; chargement ; hors connexion ; annulation Apple/Google ; e-mail déjà lié à une autre méthode | Vide (écran 05) et erreurs (écran 06) : oui, mais les textes de l'écran 06 diffèrent de Notion (§4 #2). Chargement, hors connexion : non. |
+| **B. Connexion** | vide ; rempli ; erreur de format d'e-mail ; identifiants incorrects ; trop d'essais ; compte indisponible ; chargement ; hors connexion ; annulation Apple/Google ; e-mail déjà lié à une autre méthode ; **panneau de consentement du nouvel utilisateur Apple/Google** (accepté, refusé, §7.8) | Vide (écran 05) et erreurs (écran 06) : oui, mais les textes de l'écran 06 diffèrent de Notion (§4 #2). Chargement, hors connexion : non. |
 | **C. Mot de passe oublié, e-mail** | vide (bouton « Envoyer » grisé) ; format invalide (« Email incorrect ») ; envoi en cours ; **confirmation d'envoi** ; hors connexion ; renvoi après délai | Vide et format invalide : oui. **Confirmation d'envoi : absente des tickets et des maquettes** (qu'affiche l'app après « Envoyer » ?). |
 | **D. Nouveau mot de passe** (v1 : page web hébergée, FR/EN ; écran dans l'app plus tard, décision Q4) | vide ; moins de 8 caractères ; confirmation différente ; visible / masqué ; chargement ; **lien expiré ou déjà utilisé** ; **succès** | Champs et deux erreurs : oui. Lien expiré, succès : **absents**. Le bouton s'appelle « Envoyer » dans Figma et « Confirmer » dans Notion (§4 #11). |
 | **E. Message après réinitialisation** | v1 : message de succès sur la page web avec invitation à revenir dans l'app ; message sur l'écran de connexion dans la version ultérieure | Absent. |
@@ -111,7 +111,7 @@ Rien n'est tranché ici sans le dire. Chaque point renvoie à la décision propo
 | 14 | Après la déconnexion, que devient la protection de la vie privée ? Aucun ticket ne dit que le suivi de position, les notifications et le cache local s'arrêtent à la déconnexion. | silence des tickets ; ticket durcissement §5.3 | Règles métier §7.6 et critères X10 à X13. |
 | 15 | « Si l'adresse e-mail saisie est incorrecte » (Connexion) ne distingue pas « format invalide » (vérifiable localement) et « aucun compte » (non vérifiable sans fuite). | Notion Connexion | §7.3. |
 | 16 | Les consentements Analytics / plantages n'ont aucun écran, alors que `analytics-events.md` interdit tout envoi avant consentement et définit `sign_up_completed` / `sign_in_completed`. Un événement d'inscription ne peut pas partir avant que la personne ait pu consentir. | `analytics-events.md` vs maquettes | **Décidé (Q8)** : deux cases sur l'écran d'inscription (§8). |
-| 17 | La connexion avec Google sur l'écran « Se connecter » crée aussi un compte si l'e-mail est inconnu (Notion). Une personne peut donc s'inscrire sans jamais voir la phrase de consentement. | Notion Connexion vs Figma 04 | Cases de consentement avant tout geste d'inscription ; cas du nouvel utilisateur arrivant par la connexion : §17.2 N1. |
+| 17 | La connexion avec Google sur l'écran « Se connecter » crée aussi un compte si l'e-mail est inconnu (Notion). Une personne peut donc s'inscrire sans jamais voir la phrase de consentement. | Notion Connexion vs Figma 04 | Cases de consentement avant tout geste d'inscription ; cas du nouvel utilisateur arrivant par la connexion : panneau de consentement, **décidé (N1)**, §7.8. |
 | 18 | Statuts Notion : le brief décrit « Onboarding » et « splash screen » comme « Backlog discovery » ; la lecture Notion du 2026-10-23 les donne en « Spec en attente de review IA ». Seul « Inscription / Connexion » (version unique) est en « Backlog discovery ». | brief vs Notion | À titre d'information. |
 
 ---
@@ -195,7 +195,7 @@ Règles de forme : couleur de texte d'erreur `text/error` (`colorTextError`, dé
 - Quota d'envoi d'e-mails de réinitialisation par jour sur Spark : **non lu, à vérifier** (une limite basse rendrait la réinitialisation indisponible pour tous en cas d'abus). Signal : voir §14.
 
 ### 7.5 Réinitialisation : ce que le message contient
-- Objet et corps : texte du PM (Notion), en tutoiement (Q2 décidé), à adapter à l'expéditeur **par défaut de Firebase** (Q5 décidé : pas de domaine `miff.fr`) ; la signature n'indique aucune adresse de contact tant que N2 n'est pas tranchée. Risque de délivrabilité (indésirables) : §16 R9.
+- Objet et corps : texte du PM (Notion), en tutoiement (Q2 décidé), à adapter à l'expéditeur **par défaut de Firebase** (Q5 décidé : pas de domaine `miff.fr`)  ; la signature ne reproduit aucune adresse de contact (adresse provisoire, N2). Risque de délivrabilité (indésirables) : §16 R9.
 - **v1 : le lien ouvre une page web** hébergée gratuitement (Firebase Hosting, domaine par défaut `*.web.app`, AUTH-W), en français et en anglais, où l'on choisit le nouveau mot de passe (8 caractères minimum, confirmation) ; la personne revient ensuite dans l'app et se connecte. Le lien dans l'app vient plus tard (décision Q4). À vérifier : adresse d'action personnalisable dans les modèles Firebase et langue du modèle. Le lien de réinitialisation expire (durée de validité à vérifier, de l'ordre d'une heure selon les usages courants de Firebase, non confirmé).
 - Un compte créé avec Apple ou Google (sans mot de passe) ne reçoit **aucun** message (comportement à vérifier) : d'où la phrase d'orientation du §7.3.
 - Après réinitialisation réussie, **la personne n'est pas connectée automatiquement** (Notion : redirection vers l'écran de connexion ; en v1 : retour manuel dans l'app). Les sessions existantes sur d'autres appareils peuvent rester ouvertes (comportement de Firebase à vérifier) : voir §16.
@@ -213,8 +213,36 @@ Aucune donnée de Miff ne doit rester visible hors ligne après déconnexion (cr
 - **Séquence** : `data-model.md` §10 (quitter ou supprimer chaque Miff, supprimer l'appareil et le profil, puis supprimer le compte d'authentification). Le document `entitlements/{uid}` n'est pas supprimable par le client : purge manuelle par le PM tant qu'il n'y a pas de Blaze (`data-model.md` §10).
 - **Ré-authentification** : Firebase exige une connexion récente pour supprimer un compte. L'app demande donc de se reconnecter (mot de passe, ou fenêtre Google/Apple) avant la suppression, avec un texte rassurant, jamais culpabilisant.
 - **Apple** : la suppression d'un compte créé avec Apple doit aussi **révoquer** l'autorisation Apple (guideline Apple, depuis 2022). La possibilité de le faire côté app, sans serveur, avec le SDK Firebase est **à vérifier** et peut exiger la clé Apple dans la configuration Firebase (action PM, §13).
-- **Export de données (RGPD, art. 20)** : **pas exigé par les stores**, exigé par la loi. Décision PM Q10 : sur demande par e-mail pendant la bêta (adresse de contact à définir, §17.2 N2), outil dans l'app plus tard.
+- **Export de données (RGPD, art. 20)** : **pas exigé par les stores**, exigé par la loi. Décision PM Q10 : sur demande par e-mail pendant la bêta (adresse de contact provisoire, §17.2 N2), outil dans l'app plus tard.
 - Confirmation en deux temps, ton calme : « Tu vas supprimer ton compte et tes données Miff. Ce n'est pas réversible. »
+
+### 7.8 Nouvel utilisateur arrivant par la connexion sociale (décision N1, option B)
+
+Cas : sur l'écran de connexion, « Continuer avec Google » (ou Apple sur iOS) concerne une identité sans compte Miff, ou sans profil ni acceptation (a) enregistrée sur l'appareil. L'authentification crée alors le compte d'authentification **avant** que la personne ait pu consentir : le consentement est donc demandé immédiatement, par un panneau, avant tout autre écran.
+
+**Déclenchement** : l'app constate que le compte vient d'être créé, ou qu'il n'a ni profil ni acceptation (a) enregistrée sur l'appareil (cas d'un compte abandonné avant le profil). Un compte existant avec profil ne voit jamais ce panneau.
+
+**Panneau** (même présentation que les cases de l'écran d'inscription, composant à dessiner par `design-system`) :
+- Titre et courte phrase d'accueil, bienveillants, par exemple « Bienvenue ! Une dernière chose avant de continuer. » (texte à valider par le PM).
+- Les **deux mêmes cases**, décochées : (a) obligatoire (liens vers les CGU et la politique de confidentialité) ; (b) facultative.
+- « Continuer » (inactif tant que (a) n'est pas cochée) et « Annuler ». Retour système, geste de retour et fermeture du panneau valent **refus**.
+- Aucun autre écran n'est accessible et aucune autre donnée n'est demandée ou écrite tant que le panneau n'est pas résolu.
+
+**Acceptation** : comportement identique à l'inscription (§8) : (a) et (b) sont conservées sur l'appareil jusqu'à la création du profil, puis le routage de §5 continue (étape profil). Avec (b) cochée, `sign_up_completed` part après l'acceptation.
+
+**Refus** (« Annuler », retour, fermeture) :
+1. suppression du compte d'authentification tout juste créé (la connexion est récente, la suppression est donc permise) ; la session est fermée ;
+2. **aucune donnée n'est conservée** : aucun document Firestore n'a été écrit (le profil n'existe pas encore), les cases cochées sont oubliées, le cache local est purgé (§7.6), aucun enregistrement local du choix ;
+3. **aucun événement Analytics ni rapport de plantage**, même si la case (b) avait été cochée sur le panneau (rien n'est activé avant l'acceptation) ;
+4. retour à l'écran de connexion avec un message bienveillant, par exemple « Pas de souci, ton compte n'a pas été créé. Tu pourras le créer quand tu veux. » (texte à valider par le PM) ; jamais de reproche, d'insistance ni de nouvelle demande immédiate ;
+5. l'autorisation donnée à Miff côté Google (ou Apple) peut subsister dans le compte du fournisseur : la personne peut la retirer elle-même dans les réglages de son compte Google ou Apple ; la révocation côté Apple par l'app est à vérifier (§7.7). À mentionner dans la politique de confidentialité.
+
+**Échecs et reprise** :
+- **App fermée de force pendant le panneau** : le compte existe, sans profil ni acceptation ; au lancement suivant, le panneau se réaffiche (la règle « pas de profil sans (a) enregistrée » vaut pour tous les chemins). Sans réouverture de l'app, le compte d'authentification (identifiant et adresse fournis par Google ou Apple) reste dans Firebase : risque noté (§16 R17), purge manuelle possible dans la console.
+- **Suppression impossible (hors connexion, erreur)** : message neutre de §7.3, la personne reste sur le panneau, sans accès au reste de l'app ; elle peut réessayer ou accepter. Jamais de compte utilisable sans (a).
+- **Adresse déjà liée à un compte par e-mail** (décision Q12 : un compte par adresse) : l'identité est rattachée au compte existant, qui a un profil : pas de panneau.
+
+**Ce que cela ne change pas** : l'inscription passe toujours par les cases de l'écran d'inscription avant tout geste ; le consentement à la localisation est demandé ailleurs (par Miff, `data-model.md` §4).
 
 ---
 
@@ -228,7 +256,7 @@ Décision PM du 2026-10-23 (Q8) : **deux cases distinctes** sur l'écran d'inscr
 | Case (b), **facultative, décochée par défaut** | « J'accepte de partager des statistiques d'usage et des rapports de plantage anonymes pour aider à améliorer Miff. » Précision courte : facultatif, modifiable à tout moment dans Réglages, jamais de position (contrat `analytics-events.md`, règle 1). Textes proposés, à valider par le PM. |
 | Placement | Les deux cases sont visibles et cochables **avant** tout geste d'inscription : donc avant les boutons Apple et Google comme avant le bouton e-mail. Mêmes deux cases pour les trois méthodes. La maquette 04 (une phrase sous les champs) est à redessiner par `design-system` ; le composant « case à cocher » n'existe pas encore. |
 | Appui sur un bouton sans la case (a) | Pas de bouton grisé muet : message bienveillant (§7.3), case mise en évidence, aucune création de compte. |
-| Écran de connexion | Les boutons Apple et Google y créent aussi un compte si l'identité est inconnue (Notion Connexion). Comment obtenir le consentement dans ce cas : question N1 (§17.2). Pour un compte existant, aucune case n'est demandée. |
+| Écran de connexion | Les boutons Apple et Google y créent aussi un compte si l'identité est inconnue (Notion Connexion). Consentement dans ce cas : panneau avec les deux mêmes cases avant tout usage du compte, **décision N1**, §7.8. Pour un compte existant, aucune case n'est demandée. |
 | Trace de (a) | Inchangée : `termsAcceptedAt` (heure serveur) et `termsVersion` écrits à la création du profil (`firestore.rules`, bloc `users`). L'app conserve la version affichée à l'inscription jusqu'à cette écriture. |
 | Trace de (b) (**nouvelle donnée**) | Horodatage et version du consentement « statistiques et plantages », ainsi que son état (accepté / retiré). Proposition de forme, à décider par `backend-data` : un petit bloc sur `users/{uid}` sur le modèle de `members.sharing` (état, date de consentement, version, date de retrait). Absence de valeur = pas de consentement. **Impact modèle** : voir §10 (les règles `users` n'acceptent aujourd'hui que six clés précises : une modification de règles, de tests et de `data-model.md` est nécessaire **avant** la PR AUTH-1, sous-ticket AUTH-B). Non modifié ici. |
 | Effet immédiat sur l'appareil | Le choix (b) est gardé sur l'appareil dès l'appui sur le bouton d'inscription ; la collecte n'est activée que si (b) est cochée ; **aucun événement n'est envoyé avant**. Un retrait (Réglages) coupe la collecte immédiatement et est enregistré (nouvelle date, état « retiré »). |
@@ -238,7 +266,7 @@ Décision PM du 2026-10-23 (Q8) : **deux cases distinctes** sur l'écran d'inscr
 | Écart à signaler | L'horodatage serveur de (a) et de (b) est celui de la **création du profil**, pas du clic sur le bouton ; sans profil créé, il n'existe aucune preuve serveur. À soumettre au juriste (§17.3) ; si un horodatage plus précoce est exigé, il faudra une écriture dès l'inscription (schéma et règles, `backend-data`). |
 | Nouvelle version des CGU | Hors périmètre (l'update du champ est déjà autorisé par les règles) ; ticket futur. |
 | Consentement à la localisation | **Pas ici** : demandé par Miff, avec son texte et sa version (`members.sharing.consentVersion`, `data-model.md` §4). Aucune permission de localisation dans ce ticket. |
-| Textes juridiques | **Brouillons rédigés par un autre agent dans la branche `docs/legal-drafts`**, présentés comme « brouillons à relire par un juriste avant la bêta externe ». Hébergés par une page web statique en français et en anglais (AUTH-W). La valeur de `termsVersion` désigne la version publiée de ces brouillons. Je n'ai pas lu cette branche : à vérifier qu'ils couvrent la case (b), la conservation des données, la suppression de compte, le contact (N2) et n'affirment aucun âge minimum (décision Q7, §16 R10). |
+| Textes juridiques | **Brouillons rédigés par un autre agent dans la branche `docs/legal-drafts`**, présentés comme « brouillons à relire par un juriste avant la bêta externe ». Hébergés par une page web statique en français et en anglais (AUTH-W). La valeur de `termsVersion` désigne la version publiée de ces brouillons. Je n'ai pas lu cette branche : à vérifier qu'ils couvrent la case (b), la conservation des données, la suppression de compte, le contact (ils ne recopient pas l'adresse provisoire : emplacement `[ADRESSE DE CONTACT]`, valeur unique dans ce ticket, §17.2 N2) et n'affirment aucun âge minimum (décision Q7, §16 R10). |
 
 ---
 
@@ -307,7 +335,7 @@ Aucune nouvelle collection n'est requise par l'authentification.
 18. Mode sombre du téléphone : l'app reste en thème clair (décision INIT).
 19. Retour de la flèche arrière sur l'inscription après une connexion Apple/Google annulée : revient au carrousel ou à la connexion, jamais à un état intermédiaire.
 20. Compte créé avec un e-mail mal saisi (faute de frappe, §7.2) : la personne ne peut pas récupérer son mot de passe, mais peut se réinscrire avec la bonne adresse. L'ancien compte reste, inutilisé.
-21. Nouvel utilisateur arrivant par « Continuer avec Google / Apple » sur l'écran de connexion : le consentement doit précéder l'usage du compte (question N1, §17.2).
+21. Nouvel utilisateur arrivant par « Continuer avec Google / Apple » sur l'écran de connexion : panneau de consentement, suppression du compte tout juste créé en cas de refus (décision N1, §7.8) ; app fermée pendant le panneau : il se réaffiche au lancement suivant ; suppression impossible hors connexion : la personne reste sur le panneau, sans accès au reste de l'app.
 22. Case (b) cochée puis profil jamais créé : la collecte est autorisée sur l'appareil (consentement donné), mais aucune trace serveur n'existe ; aucune collecte n'est faite si (b) n'était pas cochée (point juridique, §17.3).
 23. Case (b) décochée (ou jamais présentée, par exemple connexion d'un compte ancien) : aucun événement ni rapport de plantage, l'app fonctionne normalement.
 
@@ -330,20 +358,21 @@ Rien de ceci n'est fait par un agent (comptes, accès nominatifs). Dans l'ordre.
 ### Avant AUTH-1 (Android)
 1. **Firebase (console, projet `miff-3d283`) > Authentication** : activer les méthodes **E-mail/mot de passe** et **Google** ; vérifier que la connexion anonyme reste désactivée ; activer la protection contre l'énumération d'adresses e-mail ; consulter la politique de mot de passe (minimum configurable) et le réglage « un compte par adresse e-mail » (décision Q12).
 2. **Empreintes Android** : fournies par le dev (commande de signature), à enregistrer dans Firebase > Paramètres du projet > application Android. Régénérer le fichier de configuration après (il ne se commite pas, `CLAUDE.md`).
-3. **Adresse de contact** (N2, §17.2) : à définir, **sans l'inventer** ici. Elle sert à l'écran de consentement Google (e-mail d'assistance), aux brouillons juridiques, aux demandes de suppression et d'export, aux fiches des stores.
+3. **Adresse de contact provisoire** (décision N2, §17.2) : `tomessa.mfouka@gmail.com`, adresse personnelle du PM, **valeur à utiliser pour la bêta interne, remplaçable plus tard**. Elle sert d'e-mail d'assistance à l'écran de consentement Google, aux demandes de suppression et d'export, et, une fois publiée, aux textes légaux et aux fiches des stores. **Source de vérité unique : ce ticket** (les textes légaux de l'autre branche ne la recopient pas). Elle devient publique dès que les textes et les fiches sont publiés : à remplacer par une adresse dédiée **avant la bêta externe** (étape 8).
 4. **Google Cloud (même projet) > écran de consentement OAuth** : nom de l'app, e-mail d'assistance (l'adresse de l'étape 3), logo, adresse de la politique de confidentialité (celle de la page web d'AUTH-W). Gratuit.
 5. **Deux adresses e-mail réelles de test** (boîtes que vous pouvez ouvrir, dont l'une chez un fournisseur grand public pour constater les courriers indésirables) ; un compte Google de test.
 6. **Textes** : validation de la table de §7.3 (tutoiement) et des libellés des deux cases (§8).
 
 ### Avant la bêta externe
 7. **Relecture juridique** des brouillons (CGU, politique de confidentialité) produits dans la branche `docs/legal-drafts`, et avis sur les points de §17.3 (dont l'âge, décision Q7 : non bloquant mais à documenter).
-8. **Logo** en SVG ou PNG haute résolution (écran de consentement Google, e-mails, pages web).
-9. **Modèle d'e-mail de réinitialisation** : texte du PM (Notion) en tutoiement, à saisir dans Firebase > Authentication > Modèles. L'expéditeur reste celui **par défaut de Firebase** (pas de domaine `miff.fr`). À vérifier : options de modification du corps, du nom d'expéditeur, de l'adresse d'action et des langues.
-10. **Déploiement de la page web** (AUTH-W) : accord explicite du PM avant tout déploiement sur le projet de production, exécuté en local avec `--project miff-3d283` (jamais depuis la CI, comme pour les règles Firestore).
+8. **Adresse de contact** : remplacer l'adresse provisoire de l'étape 3 par une adresse dédiée au projet, **avant la bêta externe** (décision N2, §16 R19).
+9. **Logo** en SVG ou PNG haute résolution (écran de consentement Google, e-mails, pages web).
+10. **Modèle d'e-mail de réinitialisation** : texte du PM (Notion) en tutoiement, à saisir dans Firebase > Authentication > Modèles. L'expéditeur reste celui **par défaut de Firebase** (pas de domaine `miff.fr`). À vérifier : options de modification du corps, du nom d'expéditeur, de l'adresse d'action et des langues.
+11. **Déploiement de la page web** (AUTH-W) : accord explicite du PM avant tout déploiement sur le projet de production, exécuté en local avec `--project miff-3d283` (jamais depuis la CI, comme pour les règles Firestore).
 
 ### Avant AUTH-3 (iOS)
-11. **Apple Developer** : activer « Sign in with Apple » sur l'identifiant `com.tomessa.miff`. Si la configuration Firebase l'exige (à vérifier, voir §7.7), créer la clé d'authentification Apple (fichier `.p8`, téléchargeable une fois, à ranger dans le gestionnaire de mots de passe, **jamais** dans le dépôt ni dans une conversation) et noter son identifiant. Couvert par votre compte payant existant.
-12. **Test iOS** : prévoir de tester inscription et connexion Apple/Google sur l'iPhone via TestFlight.
+12. **Apple Developer** : activer « Sign in with Apple » sur l'identifiant `com.tomessa.miff`. Si la configuration Firebase l'exige (à vérifier, voir §7.7), créer la clé d'authentification Apple (fichier `.p8`, téléchargeable une fois, à ranger dans le gestionnaire de mots de passe, **jamais** dans le dépôt ni dans une conversation) et noter son identifiant. Couvert par votre compte payant existant.
+13. **Test iOS** : prévoir de tester inscription et connexion Apple/Google sur l'iPhone via TestFlight.
 
 ---
 
@@ -370,10 +399,10 @@ Une branche et une PR par plateforme (`CLAUDE.md`). Tailles relatives, sans dur�
 
 | # | Sous-ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
-| AUTH-0 | **Prérequis console, contact et textes** (PM) | Actions 1 à 6 de §13, validation des textes et des libellés des cases, réponses N1 et N2 (§17.2) | S | Validation de ce ticket |
-| AUTH-B | **Schéma et règles : consentement statistiques / plantages** (`backend-data`) | Nouveaux champs de `users/{uid}` (§8, §10), règles, tests du plan de test, mise à jour de `data-model.md` ; aucun déploiement sans les étapes habituelles (tests verts, revue sécurité, accord PM) | S | AUTH-0 (N1 éventuel impact) ; avant la PR AUTH-1 |
+| AUTH-0 | **Prérequis console, contact et textes** (PM) | Actions 1 à 6 de §13, validation des textes et des libellés des cases (décisions N1 et N2 déjà prises, §17.2) | S | Validation de ce ticket |
+| AUTH-B | **Schéma et règles : consentement statistiques / plantages** (`backend-data`) | Nouveaux champs de `users/{uid}` (§8, §10), règles, tests du plan de test, mise à jour de `data-model.md` ; aucun déploiement sans les étapes habituelles (tests verts, revue sécurité, accord PM) | S | AUTH-0 ; avant la PR AUTH-1 |
 | AUTH-W | **Pages web statiques FR/EN** | Hébergement gratuit Firebase Hosting, domaine par défaut `*.web.app` ; CGU et politique de confidentialité (**brouillons de la branche `docs/legal-drafts`, à relire par un juriste avant la bêta externe**), page de demande de suppression de compte, page de choix du nouveau mot de passe (8 caractères minimum, confirmation, lien expiré ou déjà utilisé, succès, texte en tutoiement, français et anglais, langue choisie d'après le paramètre de lien ou la langue du navigateur) ; l'app ouvre la version correspondant à sa langue. Une petite page web est du code web, pas du code d'application. Le déploiement attend l'accord du PM (§13). | S à M | Brouillons juridiques, AUTH-0 ; peut démarrer en parallèle d'AUTH-1 |
-| AUTH-1 | **Android : inscription et connexion** | Écrans A et B, e-mail + Google, deux cases de consentement (§8), routage au lancement (§5), session, déconnexion avec purge (§7.6), messages (§7.3), textes `auth_` FR + EN, tests unitaires (interprétation des erreurs, routage, consentement), accessibilité | L | INIT-2 (socle Android), INIT-1, AUTH-0, AUTH-B, URLs d'AUTH-W (au moins provisoires) ; DUR (purge du cache, App Check) |
+| AUTH-1 | **Android : inscription et connexion** | Écrans A et B, e-mail + Google, deux cases de consentement (§8), routage au lancement (§5), session, déconnexion avec purge (§7.6), messages (§7.3), textes `auth_` FR + EN, panneau de consentement du nouvel utilisateur Google (§7.8), tests unitaires (interprétation des erreurs, routage, consentement, refus avec suppression du compte), accessibilité | L | INIT-2 (socle Android), INIT-1, AUTH-0, AUTH-B, URLs d'AUTH-W (au moins provisoires) ; DUR (purge du cache, App Check) |
 | AUTH-2 | **Android : mot de passe oublié (v1)** | Écrans C et E (saisie de l'e-mail, confirmation d'envoi, délai de renvoi, retour dans l'app) ; **le nouveau mot de passe se choisit sur la page web d'AUTH-W** ; pas d'écran D dans l'app | S | AUTH-1, AUTH-W |
 | AUTH-3 | **iOS : inscription et connexion** | Mêmes livrables qu'AUTH-1 + Apple Sign-In ; comportement du trousseau à constater sur appareil | L | INIT-4 (socle iOS), AUTH-1 (référence de comportement), AUTH-B, actions PM iOS |
 | AUTH-4 | **iOS : mot de passe oublié (v1)** | Idem AUTH-2 | S | AUTH-3, AUTH-2 |
@@ -404,13 +433,13 @@ Ordre recommandé : AUTH-0, AUTH-B et AUTH-W en parallèle, AUTH-1, AUTH-2, puis
 | R14 | Retard de test iOS (chaque essai passe par la CI et TestFlight) | Cycle d'itération lent | Android d'abord (AUTH-1), spike iOS déjà fusionné (INIT-3) |
 | R15 | Maquettes vouvoyant alors que le tutoiement est décidé (Q2) ; traductions froides | Ton incohérent | Maquettes et textes alignés par `design-system` ; relecture par un natif pour chaque langue ajoutée |
 | R16 | Une seule case (b) pour deux finalités (statistiques d'usage et rapports de plantage) | Consentement jugé insuffisamment spécifique | Point pour le juriste (§17.3) ; séparation en deux cases possible sans refonte |
-| R17 | Compte social créé avant le consentement dans le cas de la connexion (N1) | Trace d'un compte sans consentement (a) | N1 : panneau de consentement puis suppression du compte si refus ; point pour le juriste |
+| R17 | Compte social créé avant le consentement dans le cas de la connexion (option B retenue, N1) | Compte d'authentification existant quelques secondes sans consentement (a) ; si l'app est fermée de force pendant le panneau, le compte (identifiant et adresse du fournisseur) reste jusqu'à la reprise | Panneau de consentement obligatoire avant tout usage, suppression du compte en cas de refus, aucune donnée Miff écrite avant l'acceptation (§7.8) ; la suppression technique côté Google n'est pas garantie instantanée (à vérifier) ; point pour le juriste ; signal : comptes sans profil anciens dans la console Authentication, purge manuelle |
 | R18 | Brouillons juridiques non relus par un juriste, publiés à une adresse que l'app et les stores référencent | Engagement légal fondé sur des textes non validés | Relecture avant la bêta externe ; aucune soumission aux stores avec des brouillons ; adresse stable du site par défaut (changer de domaine plus tard obligerait à mettre à jour l'app et les fiches) |
-| R19 | Adresse de contact non définie (N2) | Impossible de recevoir demandes de suppression, d'export, d'assistance ; écran de consentement Google incomplet | Question N2 ; aucune adresse inventée dans ce ticket |
+| R19 | **Adresse de contact provisoire = adresse personnelle du PM** (`tomessa.mfouka@gmail.com`, décision N2) | Elle devient **publique** dès que les textes légaux, l'écran de consentement Google et les fiches des stores sont publiés : exposition de l'adresse personnelle, mélange avec le courrier privé, adresse non transmissible | Valable pour la **bêta interne** seulement ; **à remplacer par une adresse dédiée avant la bêta externe** ; une seule source de vérité (ce ticket, §13 et §17.2), jamais recopiée dans les textes légaux de l'autre branche (emplacement `[ADRESSE DE CONTACT]`) |
 
 ---
 
-## 17. Décisions du PM (2026-10-23) et questions restantes
+## 17. Décisions du PM (2026-10-23)
 
 ### 17.1 Décisions prises (réponses aux 12 questions du challenge)
 
@@ -420,7 +449,7 @@ Ordre recommandé : AUTH-0, AUTH-B et AUTH-W en parallèle, AUTH-1, AUTH-2, puis
 | Q2 | Registre et libellés | **Tutoiement partout** ; boutons « Créer mon compte » et « Continuer avec Apple / Google » | §7.3, §3, §16 R15 |
 | Q3 | Message d'erreur de connexion | **Un seul message** | §7.3, critères C4, C6, P3, QA2 |
 | Q4 | Mot de passe oublié | **Page web gratuite en v1** (Firebase Hosting, domaine par défaut `*.web.app`) ; lien dans l'app plus tard | §3, §7.5, AUTH-W, AUTH-2/4, AUTH-6, M6, M7 |
-| Q5 | Domaine `miff.fr` | **Non acheté** : expéditeur par défaut de Firebase, aucun achat de domaine ; adresse de contact à définir | §7.5, §13, §14, §16 R9 et R19, N2 |
+| Q5 | Domaine `miff.fr` | **Non acheté** : expéditeur par défaut de Firebase, aucun achat de domaine ; adresse de contact provisoire (N2) | §7.5, §13, §14, §16 R9 et R19, N2 |
 | Q6 | Textes légaux | **Générés par un autre agent** (branche `docs/legal-drafts`), **brouillons à relire par un juriste avant la bêta externe** ; hébergés par une page web statique FR/EN | §8, AUTH-W, §13, §16 R18, X17 |
 | Q7 | Âge minimum | **Aucun âge minimum, aucune date de naissance collectée** ; risque RGPD art. 8 (15 ans en France) et règles des stores gardés dans les risques ; avis juridique avant lancement public ; **non bloquant** | §16 R10, §17.3 |
 | Q8 | Consentement statistiques | **Deux cases distinctes sur l'écran d'inscription** : (a) obligatoire (CGU et politique), (b) facultative, décochée par défaut (statistiques d'usage et rapports de plantage anonymes) ; pas d'écran supplémentaire ; modifiable dans Réglages ; aucun événement avant (b) cochée ; mêmes cases avant les boutons Apple et Google | §8, §10, AUTH-B, S1 à S13, X9, X19 à X21 |
@@ -429,17 +458,21 @@ Ordre recommandé : AUTH-0, AUTH-B et AUTH-W en parallèle, AUTH-1, AUTH-2, puis
 | Q11 | Retour et carrousel | **Pas de flèche retour sur la première étape après création du compte ; carrousel seulement à la première ouverture** | §3.1, §4 #8 et #9, §12 |
 | Q12 | Un même e-mail | **Un compte par adresse e-mail**, avec analyse de sécurité dédiée en revue | §6, §16 R6 |
 
-### 17.2 Nouvelles questions pour le PM
+### 17.2 Décisions sur les deux nouvelles questions (2026-10-23)
 
-1. **N1 : nouvel utilisateur qui arrive par « Continuer avec Google / Apple » sur l'écran de connexion.** Notion dit que ces boutons créent aussi un compte. Avec la décision Q8, le consentement doit précéder la création, mais les cases ne figurent que sur l'écran d'inscription (ajouter les mêmes cases sur la connexion alourdirait le parcours des habitués). Options : (A) les mêmes deux cases sur l'écran de connexion ; (B) si l'app constate que le compte vient d'être créé, un petit panneau de consentement (les mêmes deux cases) s'affiche avant de poursuivre ; en cas de refus, la personne est déconnectée et le compte tout juste créé est supprimé ; (C) retirer Apple et Google de l'écran de connexion (seul l'écran d'inscription crée des comptes). *Recommandation : B.* Pourquoi : aucun effort ajouté pour les habitués et un consentement avant tout usage ; limite : le compte d'authentification existe quelques secondes avant le consentement (à faire valider par le juriste, §17.3) ; A est la solution de repli si le juriste l'exige. C est incompatible avec le ticket Notion Connexion et déroutant.
-2. **N2 : adresse de contact.** Quelle adresse de contact publier (assistance, demandes de suppression et d'export, e-mail d'assistance de l'écran de consentement Google, brouillons juridiques, fiches des stores) ? `miff.fr` n'étant pas acheté, aucune adresse n'est inventée ici (placeholder explicite `[ADRESSE DE CONTACT À DÉFINIR PAR LE PM]` partout où elle est nécessaire). *Recommandation : une adresse dédiée au projet, créée chez un fournisseur gratuit, distincte de votre adresse personnelle et de celle de Ghostrun.* Pourquoi : elle devient publique (stores, textes légaux) et doit rester utilisable si le projet change de mains ; elle est gratuite.
+| # | Sujet | Décision du PM | Répercussion dans ce ticket |
+|---|---|---|---|
+| N1 | Nouvel utilisateur Google / Apple depuis l'écran de connexion | **Option B validée** : panneau de consentement avec les deux mêmes cases ; en cas de refus, suppression du compte tout juste créé. Comportement détaillé : aucune donnée conservée après refus, message bienveillant, aucun événement Analytics | §7.8, §8, §11 #21, §16 R17, critères C8 et C10 à C14, P10 |
+| N2 | Adresse de contact | **Provisoire : `tomessa.mfouka@gmail.com`** (adresse personnelle du PM, remplaçable plus tard), à utiliser **pour la bêta interne**. Elle devient publique dès que les textes légaux et les fiches des stores sont publiés ; à remplacer par une adresse dédiée **avant la bêta externe**. **Source de vérité unique : ce ticket** ; les textes légaux (autre branche) ne la recopient pas | §13 (étapes 3 et 8), §16 R19, §19 |
+
+Aucune question de ce ticket n'est plus ouverte côté PM. Restent des points pour le juriste (§17.3) et des décisions à reprendre dans les tickets voisins (§17.4).
 
 ### 17.3 Points pour le juriste (non bloquants pour la bêta fermée)
 - **Mineurs** : aucun âge minimum ni contrôle (décision Q7) ; RGPD art. 8 (15 ans en France, à vérifier), consentement parental, classification d'âge des stores.
 - **Preuve de consentement** : horodatage serveur à la création du profil (pas au clic) ; absence de preuve serveur si le profil n'est jamais créé.
 - **Consentement groupé** : une seule case (b) pour statistiques d'usage **et** rapports de plantage : suffisant, ou deux cases ?
 - **Application du choix (b) à un autre appareil** du même compte : acceptable ou nouveau consentement ?
-- **Connexion sociale d'un nouvel utilisateur** (N1) : compte créé avant le consentement.
+- **Connexion sociale d'un nouvel utilisateur** (N1, option B retenue) : compte d'authentification créé avant le consentement, puis supprimé en cas de refus (§7.8).
 - **Brouillons de CGU et de politique de confidentialité** : relecture complète avant la bêta externe, dont la justification de la localisation en arrière-plan.
 
 ### 17.4 À reporter aux challenges voisins (sans réponse nécessaire ici)
@@ -474,8 +507,13 @@ Découpage : **S** inscription, **C** connexion, **M** mot de passe oublié, **X
 - [ ] **C5** Après 5 échecs consécutifs, le message « trop d'essais » s'affiche ; le blocage temporaire de Firebase s'affiche avec le même texte, sans code technique.
 - [ ] **C6** Aucun texte, aucun comportement observable de l'écran de connexion ne permet de savoir si une adresse a un compte (vérifié par comparaison de deux saisies).
 - [ ] **C7** « Pas encore de compte ? » mène à l'inscription ; « Mot de passe oublié ? » mène à l'écran de réinitialisation ; la flèche retour revient à l'écran précédent.
-- [ ] **C8** « Continuer avec Google » (et Apple sur iOS) connecte un compte existant sans demander de case ; pour un compte nouveau, le consentement de §8 et de la question N1 s'applique (critère à préciser après la décision N1).
+- [ ] **C8** « Continuer avec Google » (et Apple sur iOS) connecte un compte existant (avec profil) sans demander de case ni afficher le panneau ; pour un compte nouveau (ou sans profil ni acceptation (a) enregistrée sur l'appareil), le panneau de consentement de §7.8 s'affiche avant tout autre écran.
 - [ ] **C9** Une adresse liée à une autre méthode produit le message d'orientation de §7.3.
+- [ ] **C10** Panneau de consentement (§7.8) : les deux cases sont décochées à l'ouverture ; « Continuer » est inactif tant que (a) n'est pas cochée ; (b) reste facultative ; aucune autre donnée n'est demandée sur ce panneau.
+- [ ] **C11** Accepter (a) mène au routage de §5 (profil) ; (a) et (b) sont conservées comme à l'inscription (§8) ; avec (b) cochée, `sign_up_completed` part après l'acceptation.
+- [ ] **C12** Refuser (bouton « Annuler », retour système, fermeture du panneau) : le compte d'authentification tout juste créé est supprimé, la session est fermée, le cache local est purgé, les cases cochées sont oubliées, on revient à l'écran de connexion avec le message bienveillant de §7.8 ; la console Firebase > Authentication ne contient plus ce compte ; aucun document Firestore n'a été écrit (ni `users`, ni autre).
+- [ ] **C13** Pendant tout le parcours d'un refus (et avant l'acceptation), aucun événement Analytics ni rapport de plantage n'est envoyé, **même si (b) avait été cochée sur le panneau** ; `sign_up_completed` et `sign_in_completed` ne partent pas.
+- [ ] **C14** Fermer l'app de force pendant le panneau : au lancement suivant, le panneau se réaffiche (le profil est inaccessible sans (a) enregistrée) ; si la suppression du compte échoue (hors connexion), la personne reste sur le panneau avec le message neutre de §7.3, sans accès au reste de l'app.
 
 ### Mot de passe oublié
 - [ ] **M1** Le bouton « Envoyer » est grisé tant que le champ e-mail est vide ; un format incorrect affiche le message de format.
@@ -538,6 +576,7 @@ Découpage : **S** inscription, **C** connexion, **M** mot de passe oublié, **X
 - [ ] **P7** Dans Firebase > Authentication, vérifier : méthodes activées (e-mail, Google, Apple si iOS), connexion anonyme désactivée, protection contre l'énumération activée.
 - [ ] **P8** Dans les consoles Firebase et GitHub, la facture reste à 0 €.
 - [ ] **P9** Sur l'écran d'inscription : les deux cases sont décochées au départ ; sans (a), aucun des trois boutons ne crée de compte ; (b) laissée décochée, l'inscription réussit et aucune donnée d'usage n'apparaît dans la console Analytics.
+- [ ] **P10** Sur l'écran de connexion, avec un compte Google de test **jamais utilisé** : « Continuer avec Google » affiche le panneau de consentement ; « Annuler » ramène à la connexion avec le message bienveillant, et le compte n'apparaît pas dans Firebase > Authentication ; en acceptant (a), on arrive à l'étape profil.
 
 ### Pour le QA (`qa-tester`)
 - [ ] **QA1** Chaque critère est rejoué et consigné dans `docs/qa/` avec preuve (capture, journal, lien CI).
@@ -547,7 +586,7 @@ Découpage : **S** inscription, **C** connexion, **M** mot de passe oublié, **X
 - [ ] **QA5** Vérification que l'ancien mot de passe ne fonctionne plus après réinitialisation et qu'un lien consommé est refusé.
 
 ### Définition de « terminé »
-Critères cochés, décisions du §17 enregistrées (dont N1 et N2), revue de code en contexte neuf, revue de sécurité (session, fusion de comptes, erreurs, App Check, journaux, secrets), QA, recette du PM, puis fusion par Claude après « oui » explicite du PM pour chaque PR. Aucun push direct sur `main`.
+Critères cochés, décisions du §17 enregistrées (dont N1 et N2, adresse de contact provisoire comprise), revue de code en contexte neuf, revue de sécurité (session, fusion de comptes, erreurs, App Check, journaux, secrets), QA, recette du PM, puis fusion par Claude après « oui » explicite du PM pour chaque PR. Aucun push direct sur `main`.
 
 ---
 
@@ -565,7 +604,7 @@ Critères cochés, décisions du §17 enregistrées (dont N1 et N2), revue de co
 | **Ticket Paywall** | `entitlements/{uid}`, statut d'abonnement : pas d'impact sur l'authentification. |
 | **Contrat `analytics-events.md`** | Événements `sign_up_completed` / `sign_in_completed` : moment d'envoi à ajuster (critère X9) par une PR distincte du contrat. |
 | **Contrat `i18n-keys.md`** | Préfixe `auth_` déjà prévu. |
-| **Branche `docs/legal-drafts`** (autre agent) | Brouillons de CGU et de politique de confidentialité hébergés par AUTH-W ; à relire par un juriste avant la bêta externe ; à aligner avec la case (b), la conservation, la suppression de compte, le contact (N2), sans âge minimum (Q7). |
+| **Branche `docs/legal-drafts`** (autre agent) | Brouillons de CGU et de politique de confidentialité hébergés par AUTH-W ; à relire par un juriste avant la bêta externe ; à aligner avec la case (b), la conservation, la suppression de compte, le contact (sans recopier l'adresse provisoire, N2), sans âge minimum (Q7). |
 | **`backend-data`** (AUTH-B) | Champs de consentement statistiques / plantages sur `users/{uid}` : règles, tests, `data-model.md` (signalé §10, non modifié ici). |
 | **Firebase Hosting** (Spark) | Pages web d'AUTH-W, domaine par défaut ; déploiement local après accord du PM. |
 | **Actions du PM** | §13. |
