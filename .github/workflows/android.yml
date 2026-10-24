@@ -35,6 +35,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # gradle/actions wrapper-validation v6.4.0 (commit of the annotated tag, checked with the GitHub API). Checks that
+      # android/gradle/wrapper/gradle-wrapper.jar is an official Gradle one (checksum list published by Gradle), BEFORE
+      # any ./gradlew run: a tampered wrapper jar would run with access to the Firebase configuration of this job.
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+
       # actions/setup-java v6.1.0. JDK 17 is the minimum required by Android Gradle Plugin 9.4.
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
         with:
