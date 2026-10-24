@@ -52,11 +52,6 @@ custom_rules:
     regex: '(Text|Button|Toggle|Label|TextField|SecureField|Section|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint)\(\s*"(?![a-z][a-z0-9]*(_[a-z0-9]+)+")'
     message: "Pas de texte en dur : utiliser une clé du String Catalog (Text(\"cle_snake_case\")), L10n.format ou Text(verbatim:)."
     severity: error
-    excluded_match_kinds:
-      - comment
-      - doc_comment
-      - doc_comment_field
-      - comment_url
   # Aucune valeur hexadécimale de couleur hors du design system (critère A8 / I8).
   no_color_literal_outside_tokens:
     name: "Couleur en dur"
@@ -64,7 +59,3 @@ custom_rules:
     regex: 'Color\(\s*(red|\.sRGB|white|hue)|UIColor\(\s*(red|white|hue)|0x[0-9A-Fa-f]{6}'
     message: "Utiliser un token de couleur du design system (colorBrandPrimary...), jamais une valeur en dur."
     severity: error
-    excluded_match_kinds:
-      - comment
-      - doc_comment
-      - doc_comment_field

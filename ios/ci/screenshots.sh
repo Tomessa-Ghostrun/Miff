@@ -43,25 +43,25 @@ shot() {
 }
 
 shot 01-fr-diagnostic 5 -AppleLanguages "(fr)" -AppleLocale fr_FR
-shot 02-en-diagnostic 4 -AppleLanguages "(en)" -AppleLocale en_US
-shot 03-de-repli-anglais 4 -AppleLanguages "(de)" -AppleLocale de_DE
-shot 04-fr-pseudo-allongee 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -NSDoubleLocalizedStrings YES
-shot 05-fr-droite-a-gauche 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffForceRTL YES
-shot 06-fr-accueil 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowHome YES
-shot 07-fr-galerie 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffScrollTo gallery
-shot 08-fr-confidentialite 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffScrollTo privacy
+shot 02-en-diagnostic 3 -AppleLanguages "(en)" -AppleLocale en_US
+shot 03-de-repli-anglais 3 -AppleLanguages "(de)" -AppleLocale de_DE
+shot 04-fr-pseudo-allongee 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -NSDoubleLocalizedStrings YES
+shot 05-fr-droite-a-gauche 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffForceRTL YES
+shot 06-fr-accueil 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowHome YES
+shot 07-fr-galerie 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffScrollTo gallery
+shot 08-fr-confidentialite 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffScrollTo privacy
 if [ "$with_test1" = "avec-test1" ]; then
-  shot 10-fr-test1 12 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffAutoTest1 YES -MiffScrollTo test1
+  shot 10-fr-test1 9 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffAutoTest1 YES -MiffScrollTo test1
 fi
 
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true
-shot 11-fr-systeme-sombre 4 -AppleLanguages "(fr)" -AppleLocale fr_FR
+shot 11-fr-systeme-sombre 3 -AppleLanguages "(fr)" -AppleLocale fr_FR
 xcrun simctl ui "$udid" appearance light > /dev/null 2>&1 || true
 
 # Très grande taille de texte (Dynamic Type, réglages d'accessibilité).
 xcrun simctl ui "$udid" content_size accessibility-extra-extra-extra-large > /dev/null 2>&1 || true
-shot 13-fr-texte-tres-grand 4 -AppleLanguages "(fr)" -AppleLocale fr_FR
+shot 13-fr-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

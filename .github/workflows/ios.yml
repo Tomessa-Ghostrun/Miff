@@ -150,16 +150,6 @@ jobs:
       - name: Générer le projet Xcode
         run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
 
-      - name: Garde-fou - bundle ID exact
-        run: |
-          set -euo pipefail
-          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Debug 2>/dev/null \
-            | awk -F' = ' '$1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ {print $2}')
-          if [ "$actual" != "com.tomessa.miff" ]; then
-            echo "::error::PRODUCT_BUNDLE_IDENTIFIER vaut « ${actual} » au lieu de « com.tomessa.miff »."
-            exit 1
-          fi
-
       - name: Restaurer le cache des paquets Swift
         id: spm-cache
         # actions/cache v6.1.0 (empreinte de commit verifiee via l'API GitHub le 2026-10-23)
@@ -174,11 +164,57 @@ jobs:
         id: resolve
         run: bash ci/timed.sh "Paquets Swift (résolution)" bash ci/resolve-packages.sh
 
+      - name: Garde-fou - bundle ID exact
+        # Place APRES la resolution des paquets : sinon xcodebuild les resout lui-meme (plus d'une minute perdue).
+        run: |
+          set -euo pipefail
+          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Debug \
+            -clonedSourcePackagesDirPath build/SourcePackages -disableAutomaticPackageResolution 2>/dev/null \
+            | awk -F' = ' '$1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ {print $2}')
+          if [ "$actual" != "com.tomessa.miff" ]; then
+            echo "::error::PRODUCT_BUNDLE_IDENTIFIER vaut « ${actual} » au lieu de « com.tomessa.miff »."
+            exit 1
+          fi
+
       - name: SwiftLint
         run: |
           set -uo pipefail
           bash ci/timed.sh "SwiftLint" swiftlint lint --strict --reporter github-actions-logging \
             || echo "LINT_FAILED=true" >> "$GITHUB_ENV"
+
+      - name: Auto-test des règles SwiftLint maison (texte et couleur en dur doivent être signalés)
+        run: |
+          set -uo pipefail
+          # Un fichier d'essai volontairement fautif : si SwiftLint ne le signale pas, les règles ne protègent rien
+          # (cas déjà vu : « Invalid configuration for rule », qui désactive la règle sans faire échouer le lint).
+          probe="$RUNNER_TEMP/lintprobe"
+          rm -rf "$probe"
+          mkdir -p "$probe/Miff/Views" "$probe/MiffTests"
+          cp .swiftlint.yml "$probe/.swiftlint.yml"
+          cat > "$probe/Miff/Views/Probe.swift" <<'SWIFT'
+          import SwiftUI
+
+          struct Probe: View {
+              var body: some View {
+                  Text("Bonjour")
+                      .foregroundColor(Color(red: 1, green: 0, blue: 0))
+              }
+          }
+          SWIFT
+          output=$(cd "$probe" && swiftlint lint --config .swiftlint.yml 2>&1 || true)
+          if echo "$output" | grep -q "Invalid configuration"; then
+            echo "::error::Une règle SwiftLint maison a une configuration invalide (elle est ignorée)."
+            echo "$output" | grep "Invalid configuration"
+            echo "LINT_FAILED=true" >> "$GITHUB_ENV"
+          fi
+          for rule in no_hardcoded_text no_color_literal_outside_tokens; do
+            if echo "$output" | grep -q "$rule"; then
+              echo "Règle ${rule} : détecte bien le fichier d'essai (OK)"
+            else
+              echo "::error::La règle ${rule} n'a pas détecté le fichier d'essai."
+              echo "LINT_FAILED=true" >> "$GITHUB_ENV"
+            fi
+          done
 
       - name: Choisir un simulateur iPhone
         run: |

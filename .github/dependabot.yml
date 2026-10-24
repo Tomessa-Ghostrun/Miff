@@ -1,9 +1,8 @@
 # Mises à jour automatiques des dépendances : chaque mise à jour arrive sous
 # forme de PR et passe par la CI. Gratuit.
 #
-# L'écosystème `gradle` (Android) est déclaré depuis INIT-2. `swift` (iOS, Swift Package Manager) reste à ajouter
-# dans INIT-4, quand un manifeste (Package.swift / Package.resolved) existera : une entrée pointant vers un
-# dossier vide ferait échouer Dependabot.
+# Écosystèmes : `gradle` (Android, depuis INIT-2) et `swift` (iOS, Swift Package Manager, depuis INIT-4, quand
+# ios/Package.resolved existe : une entrée pointant vers un dossier sans manifeste ferait échouer Dependabot).
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -44,3 +43,17 @@ updates:
         patterns:
           - "org.jetbrains.kotlin*"
           - "org.jetbrains.kotlinx*"
+
+  # iOS : Swift Package Manager (Firebase). Le projet Xcode est GÉNÉRÉ par XcodeGen et n'est pas versionné ;
+  # la source de vérité des versions est ios/project.yml + ios/Package.resolved. LIMITE CONNUE, NON VÉRIFIÉE :
+  # Dependabot lit surtout Package.swift / un .xcodeproj versionné ; il peut donc ne rien proposer ici. Si aucune
+  # PR Dependabot « ios » n'apparaît d'ici quelques semaines, la mise à jour de Firebase se fait à la main
+  # (changer exactVersion dans project.yml, le workflow `ios` fournit alors le nouveau Package.resolved).
+  - package-ecosystem: "swift"
+    directory: "/ios"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ios"

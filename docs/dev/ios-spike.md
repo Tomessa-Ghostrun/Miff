@@ -224,7 +224,7 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 | `actions/upload-artifact` | v7.0.2 (`cf430e030ddbb5b0abf93d22962f4752f3646cd9`) | MIT | Dépose les journaux en cas d'échec | Idem |
 | Runner `macos-26` | arm64, standard | Service GitHub (minutes du quota) | Exécute les jobs | README des runners |
 | Script d'icône (Node.js) | Node déjà présent ; modules intégrés uniquement | n/a | Génère l'icône provisoire | Exécuté localement, PNG vérifié (1024 x 1024, RGB sans alpha) |
-| Dépendances Swift (SwiftPM) | **Aucune** | n/a | n/a | Il n'y a donc **pas de `Package.resolved`** à ce stade ; il apparaîtra avec Firebase (INIT-4) |
+| Dépendances Swift (SwiftPM) | **Aucune pendant le spike.** Depuis INIT-4 : firebase-ios-sdk 13.1.1 et ses 12 dépendances indirectes | voir `ios/README.md` | voir `ios/README.md` | `ios/Package.resolved` est versionné. Durées de la CI avec Firebase : `ios/CHANGELOG.md` (premier run sans cache : 7 min 36 s) |
 | CocoaPods | **Non utilisé** | n/a | n/a | n/a |
 | fastlane | **Non utilisé** (préinstallé sur le runner, MIT, gardé comme plan B) | MIT | n/a | Voir la décision de signature ci-dessous |
 

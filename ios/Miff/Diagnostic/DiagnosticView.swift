@@ -57,6 +57,7 @@ struct DiagnosticView: View {
                 Text("diag_open_home")
                     .miffTextStyle(textBodyBold14)
                     .foregroundColor(colorActionPrimary.color)
+                    .multilineTextAlignment(.leading)
                     .frame(minHeight: Spacing.minTouchTarget, alignment: .leading)
             }
         }
