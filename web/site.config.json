@@ -1,0 +1,8 @@
+{
+  "_comment": "SEULE source de l'éditeur, de son adresse et du contact dans le code web. Valeurs décidées par le PM (2026-10-24) ; l'adresse e-mail est provisoire : à remplacer par une adresse dédiée avant la bêta externe (docs/tickets/authentification.md §13 étapes 3 et 8). Injectées au build dans les textes légaux, la page de suppression de compte et le pied de page.",
+  "publisher": {
+    "name": "Tomessa MFOUKA",
+    "postalAddress": "76 rue Marx Dormoy, 75018 Paris, France",
+    "contactEmail": "tomessa.mfouka@gmail.com"
+  }
+}

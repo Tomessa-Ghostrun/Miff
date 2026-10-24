@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="robots" content="index, follow">
+<meta name="referrer" content="strict-origin">
+<meta name="color-scheme" content="light">
+{{alternates}}<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip-link" href="#main">{{skip}}</a>
+<header class="site-header">
+<div class="site-header-inner">
+<a class="brand" href="{{homeUrl}}">Miff</a>
+<p class="lang-switch"><a href="{{otherUrl}}" hreflang="{{otherLang}}" lang="{{otherLang}}">{{otherLabel}}</a></p>
+</div>
+<nav class="site-nav" aria-label="{{navLabel}}">
+<ul>
+{{nav}}
+</ul>
+</nav>
+</header>
+<main id="main" tabindex="-1">
+{{content}}
+</main>
+<footer class="site-footer">
+<div class="site-footer-inner">
+<p>{{footer}}</p>
+<p>{{publisher}}</p>
+<p>{{fontsNote}}</p>
+</div>
+</footer>
+</body>
+</html>

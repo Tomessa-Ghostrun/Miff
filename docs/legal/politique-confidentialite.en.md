@@ -169,6 +169,8 @@ Miff does not use cookies. The app uses:
 
 Miff does not display advertising and does not "follow" you from one app to another. [TO BE VERIFIED by the development teams before publication: no advertising identifier is used on iOS or Android.]
 
+**The Miff website** (the pages for terms, privacy, account deletion and choosing a new password) uses no cookies and no trackers. Like any hosting service, Firebase Hosting (Google) records your IP address and the pages requested in its technical logs when you visit the site. If you choose a new password from the link in the e-mail, the page sends that new password directly to Google (Firebase Authentication), which records it to update your account; Miff does not see it and does not keep it.
+
 You can change your mind at any time in the app settings.
 
 ## 12. Changes to this policy

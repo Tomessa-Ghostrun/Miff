@@ -1,0 +1,61 @@
+name: web
+
+# Pages web statiques (AUTH-W) : construction du site depuis web/src et docs/legal, puis tests (node:test, sans dépendance).
+# Aucun secret requis, aucun accès à un vrai projet Firebase, AUCUN déploiement : le site se déploie uniquement en local,
+# après accord explicite du PM (voir web/README.md). Jamais de pull_request_target.
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'docs/legal/**'
+      - 'scripts/build-web.mjs'
+      - 'scripts/preview-web.mjs'
+      - 'scripts/web-predeploy-check.mjs'
+      - '.github/workflows/web.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  site:
+    name: Site web (build et tests)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Début du chronomètre
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Récupération du dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Construction du site (sans clé d'API, le site de CI n'est jamais publié)
+        run: node scripts/build-web.mjs
+      - name: Tests du site (les champs [À COMPLÉTER] des textes légaux sont tolérés ici)
+        # MIFF_WEB_PREVIEW=1 : tant que les textes de docs/legal ne sont pas finalisés, ce test seul est toléré.
+        # Le contrôle strict est lancé juste après, à titre d'information.
+        env:
+          MIFF_WEB_PREVIEW: '1'
+        run: node --test "web/tests/*.test.mjs"
+      - name: Textes prêts à publier ? (contrôle strict, informatif)
+        id: strict
+        continue-on-error: true
+        run: node --test --test-name-pattern="PLACEHOLDERS - aucune page" "web/tests/release.test.mjs"
+      - name: Résumé des champs restant à compléter
+        if: always()
+        run: |
+          if [ "${{ steps.strict.outcome }}" = "success" ]; then
+            echo "Textes complets : aucun champ [À COMPLÉTER] dans les pages générées." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Des champs [À COMPLÉTER] restent dans les pages générées : le déploiement serait refusé par le garde-fou (scripts/web-predeploy-check.mjs)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job site = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"

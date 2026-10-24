@@ -1,0 +1,33 @@
+{
+  "_comment": "Registre des pages localisées. kind=fragment : contenu dans web/src/<file> encadré par layout.html ; kind=legal : généré depuis docs/legal/<source> par scripts/build-web.mjs. nav=true : lien dans la navigation. Toute page existe en fr ET en en (un test le vérifie).",
+  "pages": [
+    {
+      "id": "home",
+      "kind": "fragment",
+      "nav": true,
+      "fr": { "url": "/fr/", "file": "fr/index.html", "title": "Miff", "navLabel": "Accueil", "description": "Miff : savoir que tes proches vont bien, sans les déranger." },
+      "en": { "url": "/en/", "file": "en/index.html", "title": "Miff", "navLabel": "Home", "description": "Miff: know that your loved ones are okay, without bothering them." }
+    },
+    {
+      "id": "terms",
+      "kind": "legal",
+      "nav": true,
+      "fr": { "url": "/fr/cgu", "source": "cgu.fr.md", "navLabel": "Conditions d’utilisation", "description": "Conditions générales d’utilisation de Miff." },
+      "en": { "url": "/en/terms", "source": "cgu.en.md", "navLabel": "Terms of use", "description": "Miff terms of use." }
+    },
+    {
+      "id": "privacy",
+      "kind": "legal",
+      "nav": true,
+      "fr": { "url": "/fr/confidentialite", "source": "politique-confidentialite.fr.md", "navLabel": "Confidentialité", "description": "Politique de confidentialité de Miff." },
+      "en": { "url": "/en/privacy", "source": "politique-confidentialite.en.md", "navLabel": "Privacy", "description": "Miff privacy policy." }
+    },
+    {
+      "id": "delete-account",
+      "kind": "fragment",
+      "nav": true,
+      "fr": { "url": "/fr/supprimer-mon-compte", "file": "fr/supprimer-mon-compte.html", "title": "Demander la suppression de ton compte", "navLabel": "Supprimer mon compte", "description": "Comment supprimer ton compte Miff et tes données, dans l’app ou par e-mail." },
+      "en": { "url": "/en/delete-account", "file": "en/delete-account.html", "title": "Request the deletion of your account", "navLabel": "Delete my account", "description": "How to delete your Miff account and your data, in the app or by e-mail." }
+    }
+  ]
+}
