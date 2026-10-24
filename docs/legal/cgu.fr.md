@@ -96,7 +96,7 @@ Nous faisons de notre mieux pour que Miff fonctionne bien, mais nous ne garantis
 ## 11. Responsabilité
 
 - Nous sommes responsables dans les cas où la loi l'impose, notamment pour nos fautes lourdes ou intentionnelles et pour les dommages corporels. Les droits que la loi te donne en tant que consommateur ne sont pas affectés par ces conditions.
-- **Dans les limites permises par la loi**, nous ne sommes pas responsables : des conséquences d'un statut absent, en retard ou inexact lié à ton téléphone, à ton réseau ou à tes réglages ; de l'usage que d'autres membres font de ce que tu partages avec eux ; d'une décision que toi ou tes proches prenez en vous fiant seulement à Miff ; des interruptions causées par des services tiers.
+- **Dans les limites permises par la loi**, nous ne sommes pas responsables : des conséquences d'un statut absent, en retard ou inexact lié à ton téléphone, à ton réseau ou à tes réglages ; de l'usage que d'autres membres font de ce que tu partages avec eux ; d'une décision que tu prends ou que tes proches prennent en te fiant seulement à Miff ; des interruptions causées par des services tiers.
 - Miff ne peut pas être utilisé comme unique moyen de veiller sur la sécurité d'une personne (voir l'avertissement au début).
 
 ## 12. Suspension et suppression de compte
