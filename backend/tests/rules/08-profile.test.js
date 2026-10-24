@@ -3,7 +3,7 @@ import {
   ID, CODE, T0, suite, assertFails, assertSucceeds, commit, leaveOps, set, del, serverTs, bytes, userDoc,
 } from '../helpers/fixtures.js';
 
-const s = suite();
+const s = suite({ extraProfiles: false });
 const M1 = `miffs/${ID.M1}`;
 
 s.tc('U1', 'créer son profil avec termsAcceptedAt = heure serveur : accepté', async ({ db }) => {

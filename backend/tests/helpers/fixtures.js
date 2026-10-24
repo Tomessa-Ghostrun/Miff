@@ -122,6 +122,23 @@ export const userDoc = (over = {}) => ({
   ...over,
 });
 
+// Consentement facultatif (b) « statistiques d'usage et rapports de plantage » (AUTH-B) : bloc `analyticsConsent`
+// de users/{uid}, mêmes quatre clés que `sharing` ; la version suit le format AAAA-MM-vNN (ordre lexicographique = ordre chronologique).
+export const CONSENT_V1 = '2026-10-v01';
+export const CONSENT_V2 = '2026-10-v02';
+export const consentOff = (over = {}) => ({ enabled: false, consentedAt: null, consentVersion: null, revokedAt: null, ...over });
+/** Consentement donné « maintenant » par le client : l'heure est celle du serveur. */
+export const consentOnNow = (over = {}) => ({ enabled: true, consentedAt: serverTs(), consentVersion: CONSENT_V1, revokedAt: null, ...over });
+/** Consentement déjà enregistré (état injecté avec les règles désactivées). */
+export const consentOnSeed = (over = {}) => ({ enabled: true, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: null, ...over });
+/** Consentement retiré (état injecté) : la trace du dernier consentement est conservée. */
+export const consentRevokedSeed = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V2, revokedAt: T0, ...over });
+/** Retrait tel qu'un client l'envoie, à partir d'un consentement donné : heure de retrait fournie par le serveur. */
+export const consentRevokeNow = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: serverTs(), ...over });
+/** Profil d'un utilisateur existant avec son consentement (état injecté). */
+export const userWithConsent = (uid, analyticsConsent) =>
+  userDoc({ ...profile(uid), createdAt: T0, termsAcceptedAt: T0, analyticsConsent });
+
 // ---------------------------------------------------------------------------
 // Opérations de batch : { type: 'set' | 'update' | 'delete', path, data }
 // ---------------------------------------------------------------------------
@@ -209,11 +226,14 @@ function addMiff(batch, f, { miffId, name, code, ownerUid, members, status = [],
   if (place) batch.set(f.doc(`miffs/${miffId}/places/p1`), placeSeed({ createdBy: ownerUid }));
 }
 
-async function seedBase(env) {
+// extraProfiles : eve et frank (comptes sans Miff) ont un profil avec acceptation des CGU, comme tout compte qui crée ou
+// rejoint une Miff (AUTH-B : les règles exigent le profil). Les fichiers qui testent la création de profil ou l'absence de
+// profil (07, 08, 13) le désactivent pour que eve et frank n'aient pas de profil au départ.
+async function seedBase(env, { extraProfiles = true } = {}) {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const f = ctx.firestore();
     const batch = f.batch();
-    for (const uid of ['alice', 'bob', 'carol', 'dave', 'zoe']) {
+    for (const uid of extraProfiles ? ['alice', 'bob', 'carol', 'dave', 'zoe', 'eve', 'frank'] : ['alice', 'bob', 'carol', 'dave', 'zoe']) {
       batch.set(f.doc(`users/${uid}`), userDoc({ ...profile(uid), createdAt: T0, termsAcceptedAt: T0 }));
     }
     batch.set(f.doc('entitlements/dave'), { active: true, expiresAt: inMs(30 * DAY), source: 'manual', updatedAt: T0 });
@@ -261,7 +281,7 @@ export async function adminDo(env, callback) {
 // ---------------------------------------------------------------------------
 // Suite de tests : branche l'émulateur, nettoie et recharge les données avant chaque cas
 // ---------------------------------------------------------------------------
-export function suite() {
+export function suite({ extraProfiles = true } = {}) {
   let env;
   let contexts = new Map();
 
@@ -290,7 +310,7 @@ export function suite() {
   beforeEach(async () => {
     contexts = new Map();
     await env.clearFirestore();
-    await seedBase(env);
+    await seedBase(env, { extraProfiles });
   });
   after(async () => {
     if (env) await env.cleanup();

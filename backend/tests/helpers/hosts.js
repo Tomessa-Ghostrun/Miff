@@ -16,6 +16,8 @@ export const H = {
   statusDelete: { match: 'match /status/{uid} {', method: 'delete' },
   photosDelete: { match: 'match /photos/{uid} {', method: 'delete' },
   placesCreate: { match: 'match /places/{placeId} {', method: 'create' },
+  usersCreate: { match: 'match /users/{uid} {', method: 'create' },
+  usersUpdate: { match: 'match /users/{uid} {', method: 'update' },
   miffsGet: { match: 'match /miffs/{miffId} {', method: 'get' },
   // Ajoutés par DUR-3 : une règle hôte par écriture des lots mesurés (voir measureLot dans measure.js).
   miffsCreate: { match: 'match /miffs/{miffId} {', method: 'create' },

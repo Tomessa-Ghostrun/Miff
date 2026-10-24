@@ -263,7 +263,7 @@ Cas ajoutés pour tuer les **survivants** du test par mutation étendu (`tests/t
 | C13b | Création d'une Miff avec `joinCodes.createdAt` fourni par le client | KO |
 | C14b | `alice` modifie `joinCodes/CODE_M1` : `miffId` vers M2, `createdAt`, clé inconnue ; puis renommage conforme (Miff + code) | KO ×3 ; OK |
 | M6b | `alice` renomme M1 avec un nom vide, de 41 caractères, puis de 40 | KO ; KO ; OK |
-| U1b | Profil : `termsAcceptedAt` ou `createdAt` client à la création ; `termsAcceptedAt` client à la mise à jour ; puis valeurs serveur | KO ×3 ; OK ×2 |
+| U1b | Profil : `termsAcceptedAt` ou `createdAt` client à la création ; `termsAcceptedAt` client à la mise à jour ; puis valeurs serveur | KO ×4 (dont la mise à jour avec l'heure serveur : (a) est figé, AUTH-B) ; OK ×1 |
 | U2b | Profil : nom vide ; `termsVersion` vide ou de 21 caractères (création et mise à jour) ; puis valeurs conformes | KO ×6 ; OK ×2 |
 | A5b | `eve` crée `users/mallory` | KO |
 | U5b | Appareil : clé inconnue, jeton vide ou de 513 caractères, `updatedAt` client, identifiant `a.b` ou de 65 caractères ; puis jeton de 512 et identifiant de 64 | KO ×6 ; OK ×2 |
@@ -274,3 +274,32 @@ Cas ajoutés pour tuer les **survivants** du test par mutation étendu (`tests/t
 Pas des cas de règles : ils ne figurent pas dans le tableau ci-dessus (le test de couverture du plan ne lit que les cas de règles).
 
 - **H6 (garde-fou de projet, critère R16)** : `tests/unit/project-guard.test.js` et `tests/unit/guard.test.js`. `.firebaserc` ne déclare aucun projet (un projet unique devient implicite, constaté) ; un script npm, un workflow ou un script shell qui appelle `firebase` sans `--project demo-*` ou autrement que pour l'émulateur fait échouer le test ; aucun workflow ne contient de déploiement, de jeton ni de compte de service ; le lanceur et un fichier de test refusent `GCLOUD_PROJECT=miff-3d283` et `ghostrun-app` (code 2, avant toute requête) ; le garde-fou lit le projet réellement annoncé par l'émulateur (`GCLOUD_PROJECT`, `FIREBASE_CONFIG`) et le compare à celui des tests.
+
+## 13. AUTH-B : consentement facultatif (b) « statistiques et plantages » et acceptation (a) des CGU (ticket `docs/tickets/authentification.md`, §8, §10, §15)
+
+Même jeu de données qu'en section 0 : `alice`, `bob`, `carol`, `dave`, `zoe` ont un profil `users/{uid}` à six clés sans bloc de consentement ; `eve` et `frank` n'en ont pas (dans les fichiers 07, 08 et 13 ; dans tous les autres fichiers ils en ont un, car créer ou rejoindre une Miff exige un profil depuis AB18). Le bloc s'appelle `analyticsConsent` (quatre clés `enabled`, `consentedAt`, `consentVersion`, `revokedAt`, comme `members.sharing` ; version au format `AAAA-MM-vNN`). Tests dans `tests/rules/14-consentement-statistiques.test.js` ; chaque cas a au moins une mutation dans `tests/tools/mutations.mjs`. Critères du ticket couverts entre parenthèses.
+
+| # | Cas | Attendu |
+|---|---|---|
+| AB1 | `eve` crée son profil **sans** bloc de consentement (compte sans choix enregistré) (S12, X19) | OK ; aucun consentement n'est enregistré (absence = pas de consentement) |
+| AB2 | `eve` crée son profil avec (b) refusée : `{enabled:false, consentedAt:null, consentVersion:null, revokedAt:null}` (S12, X19) | OK ; le bloc est enregistré tel quel |
+| AB3 | `eve` crée son profil avec (b) acceptée : `enabled:true`, `consentedAt` = heure serveur, `consentVersion:"2026-10-v01"`, `revokedAt:null` (X19, X13, C11) | OK ; `consentedAt` = `termsAcceptedAt` (même instant serveur) |
+| AB4 | Création avec un consentement falsifié : `consentedAt` ancien, futur ou pris sur l'horloge du client, absent ; version absente, nulle ou vide ; date de retrait renseignée ; état « non consenti » portant une date, une version ou un retrait (X19) | KO partout |
+| AB5 | Création : bloc booléen, texte, nul, vide ; clé en trop ; clé manquante ; `enabled` texte ou nombre ; version non texte, sans zéro de tête, sans `v`, au mois 13 ou trop longue (X19) | KO partout ; la forme valide est acceptée |
+| AB6 | (a) : création sans `termsAcceptedAt`, sans `termsVersion`, sans les deux (même avec (b) acceptée) ; `termsAcceptedAt` du client, nul ou sur l'horloge du client ; `termsVersion` vide, de 21 caractères ou non texte (X13, C14) | KO partout ; (a) + (b) valides : OK, `createdAt` = `termsAcceptedAt` |
+| AB7 | Création du profil d'un autre uid (`eve` vers `users/frank`, avec ou sans (b)), écrasement de `users/alice`, création sans connexion (usurpation d'uid) | KO partout |
+| AB8 | Mise à jour du consentement d'autrui : `bob`, `eve`, `alice` (créatrice de la Miff) ou un visiteur sans connexion active ou retire le consentement de `alice` ou `carol` ; `set` complet par un tiers | KO partout ; le consentement de `carol` reste intact |
+| AB9 | Activer (b) soi-même (Réglages) : `dave` (profil sans bloc) et `zoe` (bloc « non consenti ») ; falsifications (date du client, sans date, sans version, date de retrait, clé en trop, « non consenti » daté) ; activation + changement de prénom dans la même écriture (X19, X20) | OK avec heure serveur et version ; falsifications KO ; écriture combinée OK |
+| AB10 | Retirer (b) : retrait qui efface la date ou la version du consentement, les change, date de retrait du client ou absente, suppression pure du bloc, « retrait » d'un profil qui n'a jamais consenti (X20) | KO partout ; le retrait valide (`enabled:false`, `revokedAt` = heure serveur, date et version conservées) : OK |
+| AB11 | Réactiver (b) après un retrait : `revokedAt` vidé, nouvelle date serveur, version identique ou plus récente (`v09` vers `v10`, `2026-09` vers `2026-10`) (X20) | OK |
+| AB12 | Rétrogradation de la version : réactivation avec une version plus ancienne que la dernière enregistrée (`v02` vers `v01`, mois ou année antérieurs) ; réécriture d'un consentement actif sans retrait préalable (autre version, version plus récente, même version) | KO partout ; rien n'est écrit |
+| AB13 | Mise à jour : `termsAcceptedAt` (ré-horodatage, antidatage), `termsVersion` (changement, rétrogradation), les deux ensemble, `createdAt`, champs inconnus (`email`, `isPremium`, `analytics`, `phone` glissé avec une modification valide) (X13, X6) | KO partout ; `termsVersion` et `termsAcceptedAt` inchangés |
+| AB14 | Non-régression : un profil à six clés et un profil avec bloc modifient prénom, nom, avatar sans toucher au consentement ; un changement de profil ne fait pas passer un consentement falsifié | OK ; bloc identique ; falsification KO |
+| AB15 | Suppression du profil : par un tiers (`bob`, `alice`) ; par `carol` elle-même (le consentement disparaît avec) ; suppression d'un profil inexistant par `eve` (refus du panneau d'un nouvel utilisateur social : rien n'a été écrit) ; recréation ensuite (C12, C14) | KO pour les tiers ; OK pour le propriétaire et pour un profil inexistant ; recréation OK |
+| AB16 | Lecture du consentement : `carol` lit son profil ; `bob` (même Miff), `alice`, `eve`, un visiteur le lisent ; liste des profils et requête sur `analyticsConsent.enabled` | OK pour `carol` seule ; KO ailleurs |
+| AB17 | Minimisation : création avec `birthDate`, `dateOfBirth`, `age`, `ageRange`, `email`, `phone`, `lat`, `location` ; clé en trop **dans** le bloc de consentement (S13, X6, X21) | KO partout ; le profil valide est accepté |
+| AB18 | **Pas de Miff sans profil (décision PM du 2026-10-24).** `eve` (sans profil `users/eve`) crée une Miff : lot complet de 4 écritures ; idem pour `dave` (premium) dont le profil est supprimé | KO ; avec le profil présent : OK (gratuite et premium) |
+| AB19 | `eve` sans profil rejoint M1 avec le bon code (lot de 2 écritures) | KO ; avec le profil présent : OK |
+| AB20 | Profil créé **dans le même lot** (`getAfter`) : profil + Miff ; profil + adhésion. Lot dont le profil n'a pas (a) valide (sans CGU, CGU datées par le client) ou qui écrit le profil d'un autre uid | OK pour les lots valides ; KO pour les autres |
+| AB21 | Profil existant mais **sans** `termsAcceptedAt` ou sans `termsVersion` (document ancien ou injecté) : création de Miff, adhésion | KO ; une fois (a) présente : OK |
+| AB22 | Sans profil : `bob` quitte une Miff, `alice` retire `carol` (code renouvelé), `alice` supprime la Miff (lot final) | OK partout (le départ n'est jamais bloqué) |
