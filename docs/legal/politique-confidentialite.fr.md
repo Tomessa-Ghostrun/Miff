@@ -1,6 +1,6 @@
 # Politique de confidentialité de Miff
 
-**Version 0.1 — dernière mise à jour : [DATE À COMPLÉTER À LA PUBLICATION]**
+**Version 0.1 — dernière mise à jour : 1er janvier 2027**
 
 Miff est une app pour savoir que tes proches vont bien, sans les déranger. Pour que ça marche, Miff traite quelques données personnelles, dont des informations liées à ta localisation. Cette page t'explique, simplement, ce qui est collecté, pourquoi, qui peut le voir, combien de temps c'est gardé, et comment garder la main.
 
@@ -113,14 +113,14 @@ Miff ne garde pas d'historique : le statut est un « état courant », écrasé 
 | Lieux de confiance | Jusqu'à leur suppression par le créateur ou la suppression de la Miff. |
 | Code secret d'une Miff | Jusqu'à son renouvellement ou la suppression de la Miff. Quand le créateur retire un membre, le code est renouvelé automatiquement. |
 | Preuves de consentement | Tant que tu es membre de la Miff concernée (pour le consentement à la localisation) ; avec ton compte (pour les CGU). Nous ne conservons pas cette preuve après ton départ de la Miff. |
-| État de l'abonnement Premium | Pendant la durée de l'abonnement, puis suppression à la suppression de ton compte, dans un délai de [DÉLAI À COMPLÉTER]. |
+| État de l'abonnement Premium | Pendant la durée de l'abonnement, puis suppression 30 jours après la suppression de ton compte. |
 | Statistiques d'usage (si acceptées) | Durée réglée au minimum proposé par Google dans la console [À VÉRIFIER avant publication]. |
 | Rapports de plantage (si acceptés) | Durée définie par Google Crashlytics [À VÉRIFIER avant publication]. |
-| Messages envoyés à notre adresse de contact | Le temps de traiter ta demande, puis [DURÉE À COMPLÉTER]. |
+| Messages envoyés à notre adresse de contact | Le temps de traiter ta demande, puis 1 an, après quoi ils sont supprimés. |
 | Sauvegardes | Nous n'activons pas de sauvegarde de la base de données. |
 | Données stockées sur ton téléphone (copie de travail hors ligne) | Effacées quand tu te déconnectes, supprimes ton compte, ou perds l'accès à une Miff. |
 
-**Cas particulier : une Miff supprimée.** Quand un créateur supprime sa Miff, les autres membres sont retirés. Si l'app d'un ancien membre n'a pas encore été ouverte, les données qui le concernent dans cette Miff (fiche de membre, éventuel statut ou photo) deviennent illisibles pour tout le monde immédiatement, mais ne sont effacées physiquement qu'à la prochaine ouverture de son app.
+**Cas particulier : une Miff supprimée.** Quand un créateur supprime sa Miff (ou son compte, ce qui supprime aussi les Miffs qu'il a créées), les autres membres sont retirés. Si l'app d'un ancien membre n'a pas encore été ouverte, les données qui le concernent dans cette Miff (fiche de membre, éventuel statut ou photo) deviennent illisibles pour tout le monde immédiatement, mais ne sont effacées physiquement qu'à la prochaine ouverture de son app.
 
 ## 8. Tes droits et comment les exercer
 
@@ -135,7 +135,7 @@ Tu as le droit de :
 - **définir des directives** sur le sort de tes données après ton décès (loi française).
 
 **Comment faire :**
-- **Supprimer ton compte** : directement dans l'app, dans les réglages. Cela supprime ton compte et les données associées décrites ci-dessus. Si tu es le **créateur** d'une Miff, [À CONFIRMER AVANT PUBLICATION : la Miff est supprimée et ses membres en sont retirés ; chacun est informé avec bienveillance à l'ouverture de son app].
+- **Supprimer ton compte** : directement dans l'app, dans les réglages. Cela supprime ton compte et les données associées décrites ci-dessus. Si tu es le **créateur** d'une Miff, la suppression de ton compte supprime aussi cette Miff, avec ses lieux, ses statuts et ses photos. Les autres membres n'y ont alors plus accès : l'app leur indique simplement, sans alarme, que la Miff n'existe plus, et les données qui les concernent dans cette Miff, devenues illisibles, sont effacées à la prochaine ouverture de leur app. Leur propre compte n'est pas touché et ils peuvent créer ou rejoindre une autre Miff. Si tu le souhaites, préviens tes proches avant de supprimer ton compte..
 - **Arrêter le partage de ta position** : dans les réglages de l'app, Miff par Miff.
 - **Statistiques et rapports de plantage** : interrupteurs dans les réglages de l'app.
 - **Accéder à tes données ou les exporter** : pendant la phase de test (bêta), écris-nous à **tomessa.mfouka@gmail.com**. Nous te répondons avec tes données dans un format lisible.

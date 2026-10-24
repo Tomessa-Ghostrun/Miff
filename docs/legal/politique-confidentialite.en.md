@@ -1,6 +1,6 @@
 # Miff Privacy Policy
 
-**Version 0.1 — last updated: [DATE TO BE COMPLETED AT PUBLICATION]**
+**Version 0.1 — last updated: January 1, 2027**
 
 Miff is an app that lets you know your loved ones are okay, without bothering them. To make that work, Miff processes some personal data, including information related to your location. This page explains, simply, what is collected, why, who can see it, how long it is kept, and how you stay in control.
 
@@ -113,14 +113,14 @@ Miff keeps no history: the status is a "current state", overwritten at each even
 | Trusted places | Until the creator deletes them or the Miff is deleted. |
 | A Miff's secret code | Until it is renewed or the Miff is deleted. When the creator removes a member, the code is automatically renewed. |
 | Proof of consent | While you are a member of the relevant Miff (for location consent); with your account (for the Terms). We do not keep this proof after you leave the Miff. |
-| Premium subscription state | For the duration of the subscription, then deleted when your account is deleted, within [PERIOD TO BE COMPLETED]. |
+| Premium subscription state | For the duration of the subscription, then deleted 30 days after your account is deleted. |
 | Usage statistics (if accepted) | Period set to the minimum offered by Google in its console [TO BE VERIFIED before publication]. |
 | Crash reports (if accepted) | Period defined by Google Crashlytics [TO BE VERIFIED before publication]. |
-| Messages sent to our contact address | The time needed to handle your request, then [PERIOD TO BE COMPLETED]. |
+| Messages sent to our contact address | The time needed to handle your request, then 1 year, after which they are deleted. |
 | Backups | We do not enable database backups. |
 | Data stored on your phone (offline working copy) | Erased when you sign out, delete your account, or lose access to a Miff. |
 
-**Special case: a deleted Miff.** When a creator deletes their Miff, the other members are removed. If a former member's app has not been opened yet, the data about them in that Miff (member record, possible status or photo) becomes unreadable to everyone immediately, but is only physically erased the next time their app is opened.
+**Special case: a deleted Miff.** When a creator deletes their Miff (or their account, which also deletes the Miffs they created), the other members are removed. If a former member's app has not been opened yet, the data about them in that Miff (member record, possible status or photo) becomes unreadable to everyone immediately, but is only physically erased the next time their app is opened.
 
 ## 8. Your rights and how to exercise them
 
@@ -135,7 +135,7 @@ You have the right to:
 - set **directives** on what happens to your data after your death (French law).
 
 **How to do it:**
-- **Delete your account**: directly in the app, in the settings. This deletes your account and the associated data described above. If you are the **creator** of a Miff, [TO BE CONFIRMED BEFORE PUBLICATION: the Miff is deleted and its members are removed from it; each one is informed kindly when opening their app].
+- **Delete your account**: directly in the app, in the settings. This deletes your account and the associated data described above. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account..
 - **Stop sharing your location**: in the app settings, Miff by Miff.
 - **Statistics and crash reports**: switches in the app settings.
 - **Access or export your data**: during the test phase (beta), write to us at **tomessa.mfouka@gmail.com**. We reply with your data in a readable format.

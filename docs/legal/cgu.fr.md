@@ -1,6 +1,6 @@
 # Conditions Générales d'Utilisation de Miff
 
-**Version 0.1 — dernière mise à jour : [DATE À COMPLÉTER À LA PUBLICATION]**
+**Version 0.1 — dernière mise à jour : 1er janvier 2027**
 
 Bienvenue sur Miff. Ces conditions expliquent comment utiliser l'app, ce que tu peux en attendre, et ce que nous attendons de toi. Nous avons essayé de les écrire simplement. Pour savoir comment tes données sont traitées, lis aussi la [Politique de confidentialité](politique-confidentialite.fr.md).
 
@@ -85,7 +85,7 @@ Tu t'engages à ne pas :
 - **L'achat se fait via l'App Store (Apple) ou Google Play**, pas directement chez nous. Le paiement, la facturation, le renouvellement automatique, la résiliation et les remboursements sont gérés par Apple ou Google, selon leurs conditions.
 - **Résilier** : dans les réglages de ton compte Apple (iPhone) ou dans Google Play (Android), avant la fin de la période en cours, pour éviter le prochain renouvellement. Supprimer l'app ou ton compte Miff **ne résilie pas** automatiquement l'abonnement : il faut le résilier auprès du store.
 - **Remboursement** : demande-le à Apple ou à Google, selon leurs règles. Si tu es consommateur, les droits que la loi te donne (par exemple le droit de rétractation, dans les conditions prévues par la loi et par les conditions du store) restent applicables.
-- **Fin de l'abonnement** : tu repasses à la version gratuite. [À COMPLÉTER AVANT PUBLICATION : ce qu'il advient des Miffs et des lieux au-delà des limites gratuites — décision produit non prise.]
+- **Fin de l'abonnement** : tu repasses à la version gratuite. Les éléments qui dépassent les limites de la formule gratuite (une Miff et un lieu de confiance) sont alors supprimés, avec les données qui leur sont liées : ce sont les derniers ajoutés qui sont supprimés, tes premiers éléments restent. Si tu as plusieurs Miffs ou plusieurs lieux, pense à regarder ce que tu veux garder avant la fin de ton abonnement.
 - **Pendant la phase de test (bêta)**, l'équipe Miff peut accorder gratuitement l'accès Premium à certains testeurs. Cet accès peut être retiré à la fin de la bêta.
 - Nous pouvons faire évoluer les offres et les prix pour l'avenir. Un changement de prix n'affecte pas ta période déjà payée et est annoncé dans le respect des règles du store.
 
@@ -101,7 +101,7 @@ Nous faisons de notre mieux pour que Miff fonctionne bien, mais nous ne garantis
 
 ## 12. Suspension et suppression de compte
 
-- **Tu peux supprimer ton compte à tout moment dans l'app.** Cela supprime ton compte et les données associées (voir la Politique de confidentialité). Pense à résilier ton abonnement Premium auprès du store. Si tu es le **créateur** d'une Miff, [À CONFIRMER AVANT PUBLICATION : la Miff est supprimée et ses membres en sont retirés].
+- **Tu peux supprimer ton compte à tout moment dans l'app.** Cela supprime ton compte et les données associées (voir la Politique de confidentialité). Pense à résilier ton abonnement Premium auprès du store. Si tu es le **créateur** d'une Miff, la suppression de ton compte supprime aussi cette Miff, avec ses lieux, ses statuts et ses photos. Les autres membres n'y ont alors plus accès : l'app leur indique simplement, sans alarme, que la Miff n'existe plus, et les données qui les concernent dans cette Miff, devenues illisibles, sont effacées à la prochaine ouverture de leur app. Leur propre compte n'est pas touché et ils peuvent créer ou rejoindre une autre Miff. Si tu le souhaites, préviens tes proches avant de supprimer ton compte..
 - **Nous pouvons suspendre ou supprimer un compte** qui ne respecte pas ces conditions (en particulier les articles 6 et 7), ou en cas d'abus, de risque pour la sécurité d'autres personnes, ou de demande d'une autorité. Sauf urgence ou obligation légale, nous t'expliquons pourquoi et tu peux répondre à **tomessa.mfouka@gmail.com**.
 
 ## 13. Données personnelles

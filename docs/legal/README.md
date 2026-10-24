@@ -32,17 +32,17 @@ Le français est la version de référence ; l'anglais en est la traduction fid�
 - **Nom, e-mail et adresse postale deviennent publics à la publication** (CGU, politique, fiches stores, page web de suppression de compte) : l'adresse e-mail est personnelle.
 - **Ces trois informations sont provisoires et remplaçables en une opération** : rechercher « Tomessa MFOUKA (personne physique) » / « Tomessa MFOUKA (individual) », `tomessa.mfouka@gmail.com` et `76 rue Marx Dormoy, 75018 Paris, France` dans les quatre fichiers, et remplacer (par exemple par une société, une adresse dédiée, une domiciliation). Il vaut mieux le faire avant la bêta externe. L'adresse e-mail doit être consultée au moins une fois par semaine (réponse aux droits RGPD sous un mois).
 
-### Champs restant à compléter
+### Date fictive, délais et champs techniques restants
 
-Rechercher `[` dans les quatre fichiers. Ce que le PM n'a pas encore donné :
+- **Date : "1er janvier 2027" / "January 1, 2027" est une date FICTIVE provisoire** (décision PM du 2026-10-24), écrite dans les en-têtes des quatre textes. **À remplacer par la vraie date de mise en ligne** au moment de la publication.
+- **Délais de conservation acceptés par le PM (2026-10-24)** : état de l'abonnement supprimé 30 jours après la suppression du compte (aujourd'hui `entitlements` se purge à la main : le PM ou un agent doit le faire dans ce délai) ; e-mails de contact conservés 1 an après le traitement de la demande, puis supprimés.
+- **Décisions produit écrites dans les textes (2026-10-24)** : (1) la suppression du compte d'un créateur supprime les Miffs qu'il a créées ; (2) à la fin d'un abonnement Premium, les Miffs et lieux au-delà des limites gratuites (les derniers ajoutés) sont supprimés. Les apps et le ticket Premium doivent faire exactement cela (risques J19 et J20).
+- **Plus aucun champ `[À COMPLÉTER]` ne subsiste.** Il reste seulement ce qui suit.
+
+Rechercher `[` dans les quatre fichiers :
 
 | Champ | Où | Comment le renseigner |
 |---|---|---|
-| `[DATE À COMPLÉTER À LA PUBLICATION]` | en-têtes | Date du jour de mise en ligne. |
-| `[DÉLAI À COMPLÉTER]` | politique art. 7 (suppression de l'état d'abonnement après suppression du compte) | Délai réaliste : aujourd'hui `entitlements` n'est pas supprimable par l'app, la purge est manuelle (proposition : 30 jours). |
-| `[DURÉE À COMPLÉTER]` | politique art. 7 (conservation des e-mails de contact) | Durée choisie par le PM (proposition : 1 an après la fin du traitement de la demande). |
-| `[À CONFIRMER AVANT PUBLICATION : ...]` (1 par fichier, 4 au total) | suppression de compte d'un créateur de Miff (question Q18 de `data-model.md`, non tranchée) | Décision produit du PM, puis retirer les crochets. |
-| `[À COMPLÉTER AVANT PUBLICATION : ...]` (CGU art. 9, FR et EN) | fin d'abonnement : que deviennent Miffs et lieux au-delà des limites gratuites (question Q3) | Décision produit du PM. |
 | Sections `[SECTION CONDITIONNELLE ...]` et lignes `[SI PUSH ACTIVÉ ...]` (politique art. 3 et 6) | notifications push | Garder **seulement si** le push existe au lancement (il exige le plan Blaze, non activé). Sinon supprimer ces passages. Si le push existe : Firebase Cloud Messaging et APNs deviennent des prestataires à citer. |
 | `[À VÉRIFIER ...]` (politique art. 7 et 11) | rétention Analytics, durée Crashlytics, absence d'identifiant publicitaire | Agents dev / PM : vérifier dans la console et dans le code (surtout Android), puis retirer les crochets en corrigeant le texte si la réalité diffère. |
 
@@ -52,7 +52,7 @@ Le prix du Premium n'est volontairement **pas** écrit dans les CGU (il est affi
 
 ## 4. Risques juridiques connus, assumés par le PM (décision du 2026-10-23, pas de relecture juridique prévue)
 
-Rappel : **les textes sont rédigés par l'équipe d'agents et publiés sous la seule responsabilité du PM.** Ils appliquent partout la formulation la plus prudente et la plus honnête possible, mais ne remplacent pas un avis juridique. Si le projet grandit (beaucoup d'utilisateurs, mineurs, première réclamation, rejet par un store), la relecture juridique devient la première dépense à envisager. Les risques J1 à J8 sont ceux à surveiller en priorité dès la bêta externe.
+Rappel : **les textes sont rédigés par l'équipe d'agents et publiés sous la seule responsabilité du PM.** Ils appliquent partout la formulation la plus prudente et la plus honnête possible, mais ne remplacent pas un avis juridique. Si le projet grandit (beaucoup d'utilisateurs, mineurs, première réclamation, rejet par un store), la relecture juridique devient la première dépense à envisager. Les risques J1 à J8, J19 et J20 sont ceux à surveiller en priorité dès la bêta externe.
 
 | # | Risque connu | Conséquence possible | Mitigation actuelle |
 |---|---|---|---|
@@ -74,6 +74,8 @@ Rappel : **les textes sont rédigés par l'équipe d'agents et publiés sous la 
 | J16 | **Signalement de contenus** et statut d'hébergeur (LCEN, règlement sur les services numériques). | Responsabilité sur un contenu illicite. | Possibilité de signaler par e-mail et de supprimer un contenu. |
 | J17 | **Droit d'accès / portabilité** : export manuel par e-mail pendant la bêta, sans procédure formalisée (format, vérification d'identité). | Réponse tardive ou incomplète. | Délai d'un mois annoncé ; le PM doit consulter l'adresse régulièrement. |
 | J18 | **Marque « Miff »** : aucune vérification d'antériorité. | Litige de propriété intellectuelle, retrait de l'app. | Aucune ; vérification gratuite possible dans les bases de l'INPI et des stores avant le lancement public. |
+| J19 | **Perte de la Miff pour les autres membres** : quand le créateur supprime son compte, les Miffs qu'il a créées sont supprimées (lieux, statuts, photos). Les autres membres perdent l'accès à leur cercle (décision PM du 2026-10-24, question Q18). | Frustration ou inquiétude de membres qui perdent leur cercle sans l'avoir décidé ; contestation. | Risque assumé par le PM. Les CGU et la politique l'écrivent clairement ; l'app doit afficher un message neutre et bienveillant aux membres concernés et leur permettre de créer ou rejoindre une autre Miff ; pas de transfert de propriété prévu. |
+| J20 | **Suppression de données à la fin d'un abonnement Premium** : les Miffs et lieux au-delà des limites gratuites (les derniers ajoutés) sont supprimés (décision PM du 2026-10-24, question Q3). | Perte de données perçue comme brutale ; réclamation de consommateur ; sujet sensible pour les stores (information claire sur l'abonnement). | Risque assumé par le PM. Les CGU l'écrivent clairement avec un ton rassurant (les premiers éléments restent). Le détail du préavis et de la notification sera défini dans le ticket Premium. |
 
 ## 5. Cohérence avec les stores (à vérifier avant toute soumission)
 
@@ -84,7 +86,7 @@ Les textes, les formulaires des stores et l'app doivent dire **la même chose** 
 
 ## 6. Ce qui reste à faire par chacun
 
-- **PM (actions humaines)** : décider Q18 et Q3 (§3) ; adhésion à un médiateur de la consommation à reprendre au lancement du Premium (risque J13, coût à présenter avant) ; vérifier dans la console Firebase que les conditions de traitement des données sont acceptées et protéger son compte Google ; donner l'accord explicite de publication (déploiement Firebase Hosting). Aucun document légal n'est signé ni accepté par un agent.
+- **PM (actions humaines)** : adhésion à un médiateur de la consommation à reprendre au lancement du Premium (risque J13, coût à présenter avant) ; vérifier dans la console Firebase que les conditions de traitement des données sont acceptées et protéger son compte Google ; donner l'accord explicite de publication (déploiement Firebase Hosting). Aucun document légal n'est signé ni accepté par un agent.
 - **Agents dev** : liens vers les textes dans l'app, enregistrement de `termsVersion`/`consentVersion`, suppression de compte dans l'app, interrupteurs Analytics/Crashlytics, vérifier l'absence d'identifiant publicitaire (surtout Android).
 - **`release-manager`** : intégrer les URL dans les checklists et fiches store une fois les champs remplis et le PM d'accord ; ne rien déclarer « prêt à soumettre » avant la checklist QA (`docs/qa/release-checklist.md`).
 - **`aso-marketing`** : s'assurer que la fiche store ne promet rien que ces textes ne disent pas (pas de « sécurité garantie », pas de « suivi en temps réel »).

@@ -1,6 +1,6 @@
 # Miff Terms of Use
 
-**Version 0.1 — last updated: [DATE TO BE COMPLETED AT PUBLICATION]**
+**Version 0.1 — last updated: January 1, 2027**
 
 Welcome to Miff. These terms explain how to use the app, what you can expect from it, and what we expect from you. We tried to write them simply. To learn how your data is processed, also read the [Privacy Policy](politique-confidentialite.en.md).
 
@@ -85,7 +85,7 @@ You agree not to:
 - **Purchase is made through the App Store (Apple) or Google Play**, not directly with us. Payment, billing, automatic renewal, cancellation and refunds are handled by Apple or Google, under their terms.
 - **Cancelling**: in your Apple account settings (iPhone) or in Google Play (Android), before the end of the current period, to avoid the next renewal. Deleting the app or your Miff account **does not** automatically cancel the subscription: it must be cancelled with the store.
 - **Refunds**: ask Apple or Google, under their rules. If you are a consumer, the rights the law gives you (for example the right of withdrawal, under the conditions set by law and by the store's terms) still apply.
-- **End of subscription**: you go back to the free version. [TO BE COMPLETED BEFORE PUBLICATION: what happens to Miffs and places beyond the free limits — product decision not taken.]
+- **End of subscription**: you go back to the free version. Items that go beyond the limits of the free plan (one Miff and one trusted place) are then deleted, along with the data linked to them: the most recently added ones are deleted, your first items remain. If you have several Miffs or several places, remember to check what you want to keep before your subscription ends.
 - **During the test phase (beta)**, the Miff team may grant Premium access free of charge to some testers. This access may be withdrawn at the end of the beta.
 - We may change offers and prices for the future. A price change does not affect a period you have already paid and is announced in line with the store's rules.
 
@@ -101,7 +101,7 @@ We do our best to make Miff work well, but we do not guarantee an uninterrupted 
 
 ## 12. Suspension and deletion of an account
 
-- **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Premium subscription with the store. If you are the **creator** of a Miff, [TO BE CONFIRMED BEFORE PUBLICATION: the Miff is deleted and its members are removed from it].
+- **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Premium subscription with the store. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account..
 - **We may suspend or delete an account** that does not comply with these terms (in particular articles 6 and 7), or in case of abuse, risk to other people's safety, or a request from an authority. Except in an emergency or where the law requires otherwise, we explain why and you can reply at **tomessa.mfouka@gmail.com**.
 
 ## 13. Personal data
