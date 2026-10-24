@@ -1,9 +1,6 @@
-> **BROUILLON — non relu par un juriste — ne pas publier en l'état**
-> Version de travail 0.1 du 2026-10-23. Les passages entre crochets `[...]` sont à compléter ou à faire valider (liste dans `docs/legal/README.md`).
-
 # Politique de confidentialité de Miff
 
-**En vigueur à partir du : [DATE D'ENTRÉE EN VIGUEUR À COMPLÉTER]** — Version du texte : [VERSION À COMPLÉTER, ex. 2026-11-v1]
+**Version 0.1 — dernière mise à jour : [DATE À COMPLÉTER À LA PUBLICATION]**
 
 Miff est une app pour savoir que tes proches vont bien, sans les déranger. Pour que ça marche, Miff traite quelques données personnelles, dont des informations liées à ta localisation. Cette page t'explique, simplement, ce qui est collecté, pourquoi, qui peut le voir, combien de temps c'est gardé, et comment garder la main.
 
@@ -22,17 +19,17 @@ Miff est une app pour savoir que tes proches vont bien, sans les déranger. Pour
 
 Le responsable du traitement est :
 
-- **[NOM / RAISON SOCIALE À COMPLÉTER]**
-- **[ADRESSE À COMPLÉTER]**
-- **[E-MAIL DE CONTACT À DÉFINIR]**
+- **Tomessa MFOUKA (personne physique)**
+- **76 rue Marx Dormoy, 75018 Paris, France**
+- **tomessa.mfouka@gmail.com**
 
 C'est à cette adresse e-mail que tu peux poser toutes tes questions sur tes données.
 
 ## 3. Quelles données, pourquoi, et sur quelle base légale
 
-Le RGPD demande d'indiquer pour chaque usage sa « base légale », c'est-à-dire ce qui nous autorise à traiter la donnée. [À VALIDER PAR UN JURISTE : les bases légales ci-dessous sont des propositions.]
+Le RGPD demande d'indiquer pour chaque usage sa « base légale », c'est-à-dire ce qui nous autorise à traiter la donnée.
 
-| Donnée | À quoi ça sert | Base légale proposée |
+| Donnée | À quoi ça sert | Base légale |
 |---|---|---|
 | **Compte** : adresse e-mail, identifiant de compte, méthode de connexion (e-mail, Google, Apple). Ton mot de passe, s'il y en a un, est géré par le service d'authentification de Google : nous n'y avons pas accès en clair. | Créer ton compte, te connecter, récupérer l'accès | Contrat (les CGU) |
 | **Profil** : prénom, nom, photo de profil | Que tes proches te reconnaissent dans l'app | Contrat |
@@ -40,7 +37,7 @@ Le RGPD demande d'indiquer pour chaque usage sa « base légale », c'est-à-dir
 | **Lieux de confiance** : nom, adresse éventuelle, coordonnées du lieu, rayon. Ces lieux sont créés par le créateur de la Miff et visibles par ses membres. **Ce sont les coordonnées du lieu, pas les tiennes.** | Savoir quand tu arrives ou pars d'un lieu | Contrat ; consentement pour le partage de ta présence |
 | **Statut automatique** (si tu actives le partage) : « dans un lieu de confiance / hors lieu / zone à risque / inconnu », le lieu concerné, l'heure de l'événement, l'heure de la dernière mise à jour | Rassurer ton cercle sans conversation | **Consentement** explicite et révocable |
 | **Mise à jour manuelle** (facultative) : petit texte (140 caractères au plus) et photo | Donner des nouvelles quand tu en as envie | **Consentement** (c'est toi qui envoies) |
-| **État du téléphone** (si tu actives le partage) : niveau de batterie, et si la localisation est autorisée « en arrière-plan », « pendant l'utilisation » ou refusée | Que ton cercle comprenne pourquoi un statut peut être en retard (ex. batterie faible) | Contrat / intérêt légitime [À VALIDER PAR UN JURISTE] |
+| **État du téléphone** (si tu actives le partage) : niveau de batterie, et si la localisation est autorisée « en arrière-plan », « pendant l'utilisation » ou refusée | Que ton cercle comprenne pourquoi un statut peut être en retard (ex. batterie faible) | Contrat / intérêt légitime |
 | **Preuves de consentement** : date et version des CGU et du texte de consentement à la localisation | Pouvoir démontrer ton accord | Obligation de pouvoir démontrer le consentement |
 | **Abonnement Premium** : état (actif ou non), date de fin, origine (App Store, Google Play, ou accès offert par l'équipe). Nous ne recevons ni ton numéro de carte ni tes données de paiement. | Activer les fonctions Premium | Contrat |
 | **Statistiques d'usage (Google Analytics for Firebase)** — **uniquement si tu l'acceptes** : quelques événements simples (ex. inscription terminée, Miff créée ou rejointe, écran Premium affiché) et des données techniques de l'appareil. **Jamais de position, de lieu, de nom de Miff, de code ni de texte libre.** | Comprendre si l'app est claire et corriger ce qui bloque | **Consentement** |
@@ -79,7 +76,7 @@ Les membres d'une Miff voient :
 
 Pour voir le statut des autres, tu dois partager le tien. Les personnes qui ne sont pas dans la Miff ne voient rien. Une personne qui connaît le code secret d'une Miff peut la rejoindre : ne le donne qu'à des personnes de confiance.
 
-L'accès de l'équipe Miff à la base de données est limité aux personnes habilitées et à ce qui est nécessaire (maintenance, support, sécurité). [À VALIDER PAR UN JURISTE : formulation de l'accès interne.]
+L'accès de l'équipe Miff à la base de données est limité aux personnes habilitées et à ce qui est nécessaire (maintenance, support, sécurité).
 
 Nous ne vendons pas tes données et nous ne les utilisons pas pour de la publicité.
 
@@ -99,7 +96,7 @@ Miff s'appuie sur des services de **Google (Google Firebase)** et de **Apple / G
 | **App Store (Apple) / Google Play** | Téléchargement de l'app, paiement et gestion des abonnements | Selon les politiques d'Apple et de Google |
 | [SI PUSH ACTIVÉ : **Firebase Cloud Messaging, Apple Push Notification service**] | [Envoi des notifications] | [Centres de données Google / Apple] |
 
-**À propos des transferts hors UE.** Certains de ces services peuvent traiter des données en dehors de l'Union européenne, notamment aux États-Unis. Dans ce cas, la protection repose sur les mécanismes prévus par le RGPD, par exemple le cadre « EU-U.S. Data Privacy Framework » auquel Google indique adhérer, et/ou des clauses contractuelles types. Tu peux nous demander plus d'informations. [À VALIDER PAR UN JURISTE : mécanisme exact de transfert pour chaque service et contrats de sous-traitance (accord de traitement des données Firebase) acceptés ; évaluation éventuelle des risques liés aux transferts.]
+**À propos des transferts hors UE.** Certains de ces services peuvent traiter des données en dehors de l'Union européenne, notamment aux États-Unis. Dans ce cas, la protection repose sur les mécanismes prévus par le RGPD, par exemple le cadre « EU-U.S. Data Privacy Framework » auquel Google indique adhérer, et/ou des clauses contractuelles types. Tu peux nous demander plus d'informations.
 
 Ces prestataires agissent pour notre compte (sous-traitants). Google et Apple agissent aussi pour leur propre compte pour la connexion et les paiements : leurs politiques de confidentialité s'appliquent alors.
 
@@ -109,21 +106,21 @@ Miff ne garde pas d'historique : le statut est un « état courant », écrasé 
 
 | Donnée | Durée de conservation |
 |---|---|
-| Compte et profil | Jusqu'à la suppression de ton compte. [À VALIDER PAR UN JURISTE : durée avant suppression d'un compte inactif — non définie à ce jour.] |
+| Compte et profil | Jusqu'à la suppression de ton compte. Pour le moment, Miff ne supprime pas automatiquement les comptes inactifs. |
 | Statut (présence, heures, batterie, état de la localisation) | Un seul état, remplacé à chaque événement. Supprimé quand tu arrêtes le partage, quand tu quittes la Miff, quand tu es retiré de la Miff, ou quand tu supprimes ton compte. |
-| **Photo de mise à jour** | **Illisible pour les membres après 24 heures.** Elle est ensuite supprimée de nos serveurs dès que possible, par l'app de son auteur ou d'un membre de la Miff lors d'une ouverture de l'app. Elle est aussi supprimée si tu arrêtes le partage, quitte la Miff ou supprimes ton compte. [À VALIDER PAR UN JURISTE : la suppression physique exactement à 24 h n'est pas garantie tant qu'un mécanisme automatique n'est pas en place.] |
+| **Photo de mise à jour** | **Illisible pour les membres après 24 heures.** Elle est ensuite supprimée de nos serveurs dès que possible, par l'app de son auteur ou d'un membre de la Miff lors d'une ouverture de l'app. Elle est aussi supprimée si tu arrêtes le partage, quitte la Miff ou supprimes ton compte. La suppression physique exactement à la 24e heure n'est pas garantie : en attendant, la photo n'est lisible par personne. |
 | Photo et nom de profil copiés dans une Miff | Jusqu'à ce que tu quittes la Miff ou supprimes ton compte. |
 | Lieux de confiance | Jusqu'à leur suppression par le créateur ou la suppression de la Miff. |
 | Code secret d'une Miff | Jusqu'à son renouvellement ou la suppression de la Miff. Quand le créateur retire un membre, le code est renouvelé automatiquement. |
-| Preuves de consentement | Tant que tu es membre de la Miff concernée (pour le consentement à la localisation) ; avec ton compte (pour les CGU). [À VALIDER PAR UN JURISTE : faut-il conserver une preuve après ton départ, et combien de temps ?] |
-| État de l'abonnement Premium | Pendant la durée de l'abonnement, puis suppression à la suppression de ton compte, dans un délai de [DÉLAI À DÉFINIR]. |
+| Preuves de consentement | Tant que tu es membre de la Miff concernée (pour le consentement à la localisation) ; avec ton compte (pour les CGU). Nous ne conservons pas cette preuve après ton départ de la Miff. |
+| État de l'abonnement Premium | Pendant la durée de l'abonnement, puis suppression à la suppression de ton compte, dans un délai de [DÉLAI À COMPLÉTER]. |
 | Statistiques d'usage (si acceptées) | Durée réglée au minimum proposé par Google dans la console [À VÉRIFIER avant publication]. |
 | Rapports de plantage (si acceptés) | Durée définie par Google Crashlytics [À VÉRIFIER avant publication]. |
-| Messages envoyés à notre adresse de contact | Le temps de traiter ta demande, puis [DURÉE À DÉFINIR AVEC UN JURISTE]. |
+| Messages envoyés à notre adresse de contact | Le temps de traiter ta demande, puis [DURÉE À COMPLÉTER]. |
 | Sauvegardes | Nous n'activons pas de sauvegarde de la base de données. |
 | Données stockées sur ton téléphone (copie de travail hors ligne) | Effacées quand tu te déconnectes, supprimes ton compte, ou perds l'accès à une Miff. |
 
-**Cas particulier : une Miff supprimée.** Quand un créateur supprime sa Miff, les autres membres sont retirés. Si l'app d'un ancien membre n'a pas encore été ouverte, les données qui le concernent dans cette Miff (fiche de membre, éventuel statut ou photo) deviennent illisibles pour tout le monde immédiatement, mais ne sont effacées physiquement qu'à la prochaine ouverture de son app. [À VALIDER PAR UN JURISTE : acceptabilité de ce délai avant le lancement public.]
+**Cas particulier : une Miff supprimée.** Quand un créateur supprime sa Miff, les autres membres sont retirés. Si l'app d'un ancien membre n'a pas encore été ouverte, les données qui le concernent dans cette Miff (fiche de membre, éventuel statut ou photo) deviennent illisibles pour tout le monde immédiatement, mais ne sont effacées physiquement qu'à la prochaine ouverture de son app.
 
 ## 8. Tes droits et comment les exercer
 
@@ -138,11 +135,11 @@ Tu as le droit de :
 - **définir des directives** sur le sort de tes données après ton décès (loi française).
 
 **Comment faire :**
-- **Supprimer ton compte** : directement dans l'app, dans les réglages. Cela supprime ton compte et les données associées décrites ci-dessus. Si tu es le **créateur** d'une Miff, [À CONFIRMER PAR LE PM : la Miff est supprimée et ses membres en sont retirés ; chacun est informé avec bienveillance à l'ouverture de son app].
+- **Supprimer ton compte** : directement dans l'app, dans les réglages. Cela supprime ton compte et les données associées décrites ci-dessus. Si tu es le **créateur** d'une Miff, [À CONFIRMER AVANT PUBLICATION : la Miff est supprimée et ses membres en sont retirés ; chacun est informé avec bienveillance à l'ouverture de son app].
 - **Arrêter le partage de ta position** : dans les réglages de l'app, Miff par Miff.
 - **Statistiques et rapports de plantage** : interrupteurs dans les réglages de l'app.
-- **Accéder à tes données ou les exporter** : pendant la phase de test (bêta), écris-nous à **[E-MAIL DE CONTACT À DÉFINIR]**. Nous te répondons avec tes données dans un format lisible. [À VALIDER PAR UN JURISTE : procédure d'export, vérification d'identité, format.]
-- **Toute autre demande** : écris-nous à **[E-MAIL DE CONTACT À DÉFINIR]**. Nous pouvons te demander de confirmer ton identité, pour éviter qu'on se fasse passer pour toi.
+- **Accéder à tes données ou les exporter** : pendant la phase de test (bêta), écris-nous à **tomessa.mfouka@gmail.com**. Nous te répondons avec tes données dans un format lisible.
+- **Toute autre demande** : écris-nous à **tomessa.mfouka@gmail.com**. Nous pouvons te demander de confirmer ton identité, pour éviter qu'on se fasse passer pour toi.
 
 Nous répondons dans un délai d'**un mois** au plus (prolongeable dans les cas prévus par la loi).
 
@@ -150,7 +147,7 @@ Nous répondons dans un délai d'**un mois** au plus (prolongeable dans les cas 
 
 ## 9. Sécurité
 
-Nous protégeons tes données avec des mesures adaptées : règles d'accès strictes (seuls les membres d'une Miff accèdent aux informations de cette Miff), connexion chiffrée, chiffrement des données au repos assuré par Google, vérification que les requêtes viennent de la vraie app (App Check), et contrôle de l'accès aux outils d'administration [À VALIDER : authentification renforcée sur les comptes d'administration]. Aucun système n'est infaillible. En cas de violation de données susceptible de te porter préjudice, nous préviendrons la CNIL et, si nécessaire, toi, comme la loi l'exige.
+Nous protégeons tes données avec des mesures adaptées : règles d'accès strictes (seuls les membres d'une Miff accèdent aux informations de cette Miff), connexion chiffrée, chiffrement des données au repos assuré par Google, vérification que les requêtes viennent de la vraie app (App Check), et accès aux outils d'administration limité aux personnes habilitées. Aucun système n'est infaillible. En cas de violation de données susceptible de te porter préjudice, nous préviendrons la CNIL et, si nécessaire, toi, comme la loi l'exige.
 
 Pense aussi à protéger ton téléphone (code de verrouillage) et à ne partager le code secret d'une Miff qu'avec des personnes de confiance.
 
@@ -158,11 +155,11 @@ Pense aussi à protéger ton téléphone (code de verrouillage) et à ne partage
 
 Miff n'impose pas d'âge minimum et ne demande pas ton âge. Miff est conçu pour les cercles de proches (familiaux, amicaux, amoureux), ce qui peut inclure des jeunes. En France, la loi prévoit qu'**avant 15 ans**, l'accord d'un parent ou d'un titulaire de l'autorité parentale est requis pour certains services en ligne reposant sur le consentement. Miff ne peut pas vérifier l'âge de ses utilisateurs.
 
-Si tu es mineur, nous te conseillons d'utiliser Miff avec l'accord de tes parents. Si tu es parent et que tu penses que les données d'un enfant ont été collectées sans ton accord, écris à **[E-MAIL DE CONTACT À DÉFINIR]** : nous supprimerons son compte et ses données.
+Si tu es mineur, nous te conseillons d'utiliser Miff avec l'accord de tes parents. Si tu es parent et que tu penses que les données d'un enfant ont été collectées sans ton accord, écris à **tomessa.mfouka@gmail.com** : nous supprimerons son compte et ses données.
 
 Chaque membre donne lui-même son consentement au partage de sa localisation, et peut l'arrêter à tout moment.
 
-**[À VALIDER PAR UN JURISTE — POINT IMPORTANT : cette formulation ne tranche pas la question de l'âge minimum. Il faut vérifier (1) l'article 8 du RGPD et l'âge de 15 ans en droit français, (2) l'absence de contrôle d'âge, (3) la cohérence avec les questionnaires de classification d'âge d'Apple et de Google Play et leurs règles sur les mineurs, (4) la nécessité éventuelle d'une analyse d'impact (AIPD) combinant localisation et mineurs possibles.]**
+**À savoir :** Miff ne contrôle pas l'âge de ses utilisateurs. Nous ne pouvons donc pas vérifier si l'accord d'un parent a été donné quand la loi l'exige.
 
 ## 11. Traceurs, identifiants et stockage sur ton téléphone
 
@@ -183,4 +180,4 @@ Nous pouvons modifier cette politique, par exemple si l'app évolue. En cas de c
 Cette politique est régie par le **droit français** et par le RGPD. Si tu es consommateur, tu conserves la protection que t'accordent les règles impératives de ton pays de résidence.
 
 ---
-*Contact : [E-MAIL DE CONTACT À DÉFINIR] — [NOM / RAISON SOCIALE À COMPLÉTER], [ADRESSE À COMPLÉTER]*
+*Contact : tomessa.mfouka@gmail.com — Tomessa MFOUKA (personne physique), 76 rue Marx Dormoy, 75018 Paris, France*

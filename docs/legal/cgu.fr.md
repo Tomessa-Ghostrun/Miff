@@ -1,9 +1,6 @@
-> **BROUILLON — non relu par un juriste — ne pas publier en l'état**
-> Version de travail 0.1 du 2026-10-23. Les passages entre crochets `[...]` sont à compléter ou à faire valider (liste dans `docs/legal/README.md`).
-
 # Conditions Générales d'Utilisation de Miff
 
-**En vigueur à partir du : [DATE D'ENTRÉE EN VIGUEUR À COMPLÉTER]** — Version du texte : [VERSION À COMPLÉTER, ex. 2026-11-v1]
+**Version 0.1 — dernière mise à jour : [DATE À COMPLÉTER À LA PUBLICATION]**
 
 Bienvenue sur Miff. Ces conditions expliquent comment utiliser l'app, ce que tu peux en attendre, et ce que nous attendons de toi. Nous avons essayé de les écrire simplement. Pour savoir comment tes données sont traitées, lis aussi la [Politique de confidentialité](politique-confidentialite.fr.md).
 
@@ -23,9 +20,7 @@ Bienvenue sur Miff. Ces conditions expliquent comment utiliser l'app, ce que tu 
 
 ## 1. Qui sommes-nous ?
 
-Miff est édité par **[NOM / RAISON SOCIALE À COMPLÉTER]**, **[ADRESSE À COMPLÉTER]**. Contact : **[E-MAIL DE CONTACT À DÉFINIR]**.
-
-*[À COMPLÉTER AVEC UN JURISTE : mentions légales obligatoires de l'éditeur (forme juridique, immatriculation, directeur de la publication, hébergeur) — voir README.]*
+Miff est édité par **Tomessa MFOUKA (personne physique)**, **76 rue Marx Dormoy, 75018 Paris, France**. Contact : **tomessa.mfouka@gmail.com**.
 
 ## 2. À quoi sert Miff ?
 
@@ -38,7 +33,7 @@ Miff est une app pour **savoir que tes proches vont bien, sans les déranger**.
 
 En créant un compte ou en utilisant Miff, tu acceptes ces conditions. Si tu n'es pas d'accord, n'utilise pas l'app. Nous enregistrons la date et la version des conditions que tu as acceptées.
 
-Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de ton représentant légal. Miff n'impose pas d'âge minimum et ne vérifie pas l'âge. Si tu es mineur, utilise l'app avec l'accord de tes parents. [À VALIDER PAR UN JURISTE : âge minimum, consentement parental (RGPD art. 8, âge de 15 ans en France), validité de l'acceptation par un mineur, règles des stores — ce point n'est pas tranché.]
+Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de ton représentant légal. Miff n'impose pas d'âge minimum et ne vérifie pas l'âge. Si tu es mineur, utilise l'app avec l'accord de tes parents. En France, la loi demande l'accord d'un parent avant 15 ans pour certains services en ligne : si tu as moins de 15 ans, demande-lui son accord avant d'utiliser Miff. Nous ne pouvons pas vérifier cet accord.
 
 ## 4. Ton compte
 
@@ -81,7 +76,7 @@ Tu t'engages à ne pas :
 - **Les photos de mise à jour ne sont plus visibles après 24 heures** et sont supprimées ensuite (voir la Politique de confidentialité).
 - **Respecte les autres** : ne publie pas de photo où figure une personne sans son accord, et ne publie pas de photo d'un enfant dont tu n'as pas l'autorité parentale. Tu es responsable des contenus que tu envoies.
 - Un membre d'une Miff peut enregistrer ce qu'il voit (capture d'écran, par exemple). Nous ne pouvons pas l'empêcher : n'envoie que ce que tu acceptes de montrer à ton cercle.
-- Tu peux nous signaler un contenu ou un comportement problématique à **[E-MAIL DE CONTACT À DÉFINIR]**. Nous pouvons supprimer un contenu qui ne respecte pas ces conditions. [À VALIDER PAR UN JURISTE : procédure de signalement et statut d'hébergeur (LCEN / règlement sur les services numériques).]
+- Tu peux nous signaler un contenu ou un comportement problématique à **tomessa.mfouka@gmail.com**. Nous pouvons supprimer un contenu qui ne respecte pas ces conditions.
 
 ## 9. Miff gratuit et Miff Premium
 
@@ -89,8 +84,8 @@ Tu t'engages à ne pas :
 - **Premium (abonnement payant)** : plusieurs Miffs et plusieurs lieux de confiance, ainsi que les autres options présentées dans l'app au moment de l'achat (par exemple des zones à risque ou des notifications intelligentes, selon leur disponibilité). Le contenu exact, le prix, la durée et l'éventuelle période d'essai sont **affichés dans l'app et sur le store avant que tu t'abonnes**.
 - **L'achat se fait via l'App Store (Apple) ou Google Play**, pas directement chez nous. Le paiement, la facturation, le renouvellement automatique, la résiliation et les remboursements sont gérés par Apple ou Google, selon leurs conditions.
 - **Résilier** : dans les réglages de ton compte Apple (iPhone) ou dans Google Play (Android), avant la fin de la période en cours, pour éviter le prochain renouvellement. Supprimer l'app ou ton compte Miff **ne résilie pas** automatiquement l'abonnement : il faut le résilier auprès du store.
-- **Remboursement** : demande-le à Apple ou à Google, selon leurs règles. [À VALIDER PAR UN JURISTE : droit de rétractation de 14 jours pour les services numériques souscrits en ligne, renonciation éventuelle, informations précontractuelles obligatoires, rôle d'Apple/Google comme vendeur ou intermédiaire.]
-- **Fin de l'abonnement** : tu repasses à la version gratuite. [À COMPLÉTER PAR LE PM : ce qu'il advient des Miffs et des lieux au-delà des limites gratuites — décision produit non prise.]
+- **Remboursement** : demande-le à Apple ou à Google, selon leurs règles. Si tu es consommateur, les droits que la loi te donne (par exemple le droit de rétractation, dans les conditions prévues par la loi et par les conditions du store) restent applicables.
+- **Fin de l'abonnement** : tu repasses à la version gratuite. [À COMPLÉTER AVANT PUBLICATION : ce qu'il advient des Miffs et des lieux au-delà des limites gratuites — décision produit non prise.]
 - **Pendant la phase de test (bêta)**, l'équipe Miff peut accorder gratuitement l'accès Premium à certains testeurs. Cet accès peut être retiré à la fin de la bêta.
 - Nous pouvons faire évoluer les offres et les prix pour l'avenir. Un changement de prix n'affecte pas ta période déjà payée et est annoncé dans le respect des règles du store.
 
@@ -103,12 +98,11 @@ Nous faisons de notre mieux pour que Miff fonctionne bien, mais nous ne garantis
 - Nous sommes responsables dans les cas où la loi l'impose, notamment pour nos fautes lourdes ou intentionnelles et pour les dommages corporels. Les droits que la loi te donne en tant que consommateur ne sont pas affectés par ces conditions.
 - **Dans les limites permises par la loi**, nous ne sommes pas responsables : des conséquences d'un statut absent, en retard ou inexact lié à ton téléphone, à ton réseau ou à tes réglages ; de l'usage que d'autres membres font de ce que tu partages avec eux ; d'une décision que toi ou tes proches prenez en vous fiant seulement à Miff ; des interruptions causées par des services tiers.
 - Miff ne peut pas être utilisé comme unique moyen de veiller sur la sécurité d'une personne (voir l'avertissement au début).
-- [À VALIDER PAR UN JURISTE : l'ensemble de cette clause (limitations de responsabilité, clauses abusives envers les consommateurs, contexte particulier de l'inquiétude pour un proche, éventuel risque de mise en cause d'un parent ou d'un proche).]
 
 ## 12. Suspension et suppression de compte
 
-- **Tu peux supprimer ton compte à tout moment dans l'app.** Cela supprime ton compte et les données associées (voir la Politique de confidentialité). Pense à résilier ton abonnement Premium auprès du store. Si tu es le **créateur** d'une Miff, [À CONFIRMER PAR LE PM : la Miff est supprimée et ses membres en sont retirés].
-- **Nous pouvons suspendre ou supprimer un compte** qui ne respecte pas ces conditions (en particulier les articles 6 et 7), ou en cas d'abus, de risque pour la sécurité d'autres personnes, ou de demande d'une autorité. Sauf urgence ou obligation légale, nous t'expliquons pourquoi et tu peux répondre à **[E-MAIL DE CONTACT À DÉFINIR]**.
+- **Tu peux supprimer ton compte à tout moment dans l'app.** Cela supprime ton compte et les données associées (voir la Politique de confidentialité). Pense à résilier ton abonnement Premium auprès du store. Si tu es le **créateur** d'une Miff, [À CONFIRMER AVANT PUBLICATION : la Miff est supprimée et ses membres en sont retirés].
+- **Nous pouvons suspendre ou supprimer un compte** qui ne respecte pas ces conditions (en particulier les articles 6 et 7), ou en cas d'abus, de risque pour la sécurité d'autres personnes, ou de demande d'une autorité. Sauf urgence ou obligation légale, nous t'expliquons pourquoi et tu peux répondre à **tomessa.mfouka@gmail.com**.
 
 ## 13. Données personnelles
 
@@ -116,22 +110,22 @@ Nous traitons tes données comme décrit dans la [Politique de confidentialité]
 
 ## 14. Propriété intellectuelle
 
-Miff (nom, logo, design, contenus, code) appartient à **[NOM / RAISON SOCIALE À COMPLÉTER]** ou à ses concédants. Nous te donnons un droit personnel, non exclusif et non transférable d'utiliser l'app pour tes besoins personnels, tant que tu respectes ces conditions. [À VALIDER PAR UN JURISTE : titularité des droits et propriété de la marque « Miff » — vérification d'antériorité non faite.]
+Miff (nom, logo, design, contenus, code) appartient à **Tomessa MFOUKA (personne physique)** ou à ses concédants. Nous te donnons un droit personnel, non exclusif et non transférable d'utiliser l'app pour tes besoins personnels, tant que tu respectes ces conditions.
 
 ## 15. Modifier ces conditions
 
-Nous pouvons modifier ces conditions, par exemple si l'app évolue ou si la loi change. En cas de changement important, nous te prévenons dans l'app avant qu'il s'applique. Si tu continues à utiliser Miff après la date d'entrée en vigueur, tu acceptes la nouvelle version ; si tu n'es pas d'accord, tu peux supprimer ton compte. Un changement qui touche au partage de ta localisation ne s'applique à ce partage qu'avec ton accord explicite. [À VALIDER PAR UN JURISTE : mécanisme d'acceptation des modifications.]
+Nous pouvons modifier ces conditions, par exemple si l'app évolue ou si la loi change. En cas de changement important, nous te prévenons dans l'app avant qu'il s'applique. Si tu continues à utiliser Miff après la date d'entrée en vigueur, tu acceptes la nouvelle version ; si tu n'es pas d'accord, tu peux supprimer ton compte. Un changement qui touche au partage de ta localisation ne s'applique à ce partage qu'avec ton accord explicite.
 
 ## 16. Droit applicable, médiation et litiges
 
 - Ces conditions sont régies par le **droit français**. Si tu es consommateur, tu bénéficies aussi des règles impératives de protection du pays où tu vis.
-- **Écris-nous d'abord** à **[E-MAIL DE CONTACT À DÉFINIR]** : nous cherchons toujours une solution amiable.
-- Si tu es consommateur, tu peux recourir gratuitement à un médiateur de la consommation : **[MÉDIATEUR DE LA CONSOMMATION À COMPLÉTER]**. [À VALIDER PAR UN JURISTE : obligation de désigner un médiateur, tribunaux compétents.]
-- À défaut d'accord, les tribunaux compétents sont ceux prévus par la loi. [À VALIDER PAR UN JURISTE.]
+- **Écris-nous d'abord** à **tomessa.mfouka@gmail.com** : nous cherchons toujours une solution amiable.
+- Si tu es consommateur, tu peux recourir gratuitement à un médiateur de la consommation : **[MÉDIATEUR DE LA CONSOMMATION À COMPLÉTER SI APPLICABLE]**.
+- À défaut d'accord, les tribunaux compétents sont ceux prévus par la loi.
 
 ## 17. Divers
 
-Si une partie de ces conditions est jugée invalide, le reste continue de s'appliquer. En cas de différence entre la version française et la version anglaise, la version française prévaut. [À VALIDER PAR UN JURISTE.]
+Si une partie de ces conditions est jugée invalide, le reste continue de s'appliquer. En cas de différence entre la version française et la version anglaise, la version française prévaut.
 
 ---
-*Contact : [E-MAIL DE CONTACT À DÉFINIR] — [NOM / RAISON SOCIALE À COMPLÉTER], [ADRESSE À COMPLÉTER]*
+*Contact : tomessa.mfouka@gmail.com — Tomessa MFOUKA (personne physique), 76 rue Marx Dormoy, 75018 Paris, France*
