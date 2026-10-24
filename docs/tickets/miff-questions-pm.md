@@ -1,89 +1,30 @@
-# Miff — questions pour le PM (challenge du ticket « Miff »)
+# Miff — Décisions du PM (2026-10-24)
 
-**Rédigé le** : 2026-10-24 (agent `product-specs`). Ticket associé : `docs/tickets/miff.md` (les numéros QM1 à QM15 y sont repris, et ses « hypothèses par défaut » du §15 appliquent déjà les recommandations ci-dessous).
-**Comment répondre** : « QM3 : oui », « QM7 : non, plutôt… ». Une réponse courte suffit. Sans réponse, la recommandation s'applique.
+**Rédigé le** : 2026-10-24 (agent `product-specs`). Ce fichier remplace la liste de questions du challenge du ticket « Miff » (`docs/tickets/miff.md`) : le PM a répondu aux 15 questions (QM1 à QM15) le 2026-10-24. Le nom du fichier est conservé pour ne casser aucun lien. Chaque ligne rappelle la question, la recommandation de l'agent, la **décision du PM**, et ce que cela change.
 
-## Quand chaque question doit être tranchée
+Les deux décisions qui **diffèrent de la recommandation** sont QM2 et QM11 ; elles sont consignées comme **risques assumés** dans le ticket (§14).
 
-| Avant | Questions |
-|---|---|
-| Début du développement Android (MIFF-1) | QM2, QM3, QM6, QM13, QM15 |
-| Retirer / quitter / supprimer (MIFF-2) | QM1, QM8, QM9 |
-| Limites gratuites (MIFF-3) | QM7 |
-| Ticket Feed | QM10, QM11, QM12 |
-| Bêta externe | QM4, QM5, QM14 |
+| QM | Question | Recommandation de l'agent | Décision du PM | Répercussion |
+|---|---|---|---|---|
+| QM1 | Le créateur peut-il quitter sa Miff sans la supprimer ? | Non en v1 ; seule « Supprimer la Miff », texte clair | **Non : il ne peut pas quitter sans supprimer (v1).** | §5.1, §5.10, G4 |
+| QM2 | Rejoindre une Miff vaut-il partager sa position ? | Non : consentement séparé, après avoir vu les lieux, « Pas maintenant » possible | **Oui, rejoindre vaut partager son statut (écart avec la recommandation).** | Implémentation en **consentement explicite** : texte clair avant l'action (« En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. »), bouton « Rejoindre et partager », un seul lot atomique (adhésion + consentement de partage + statut initial `unknown`, profil exigé), arrêt possible à tout moment, permission de localisation du système demandée à part et jamais bloquante. Risque assumé : écart avec la recommandation et règles anti-stalkerware des stores (§5.4, §5.13, §14 R1) |
+| QM3 | Qui voit et partage le code, faut-il valider les arrivées ? | Tous les membres ; pas de validation en v1 ; visibilité des nouveaux membres | **Tous les membres voient et partagent le code ; aucune validation des arrivées en v1.** Rien d'autre (pas de « Nouveau », pas de message d'arrivée). Le retrait + code renouvelé, déjà décidé, est conservé. | §5.3, §14 R2 |
+| QM4 | Le code doit-il expirer ? | Non | **Le code n'expire pas.** | §5.3 |
+| QM5 | Taille maximale d'une Miff ? | Pas de plafond garanti ; plafond doux de 15 dans l'app | **15 membres maximum, plafond doux dans l'app.** Aucune règle serveur ne l'impose (créateur compris : lecture à confirmer). | §5.8, G9, §14 R10 |
+| QM6 | Longueur du nom d'une Miff ? | 2 à 40 caractères | **2 à 40 caractères** (la spec Notion 2–50 est alignée sur 2–40 ; compatible avec les règles déployées 1–40). | §5.2, C2, C3 |
+| QM7 | Quand afficher le paywall pour une deuxième Miff ? | À la création au toucher ; à l'entrée après reconnaissance du code ; lien « quitter ma Miff actuelle » | **Plus tard.** Non spécifié dans ce ticket ; dépendance au ticket Premium. | §5.5, §6, §17, §14 R15 |
+| QM8 | Message d'accès perdu | Message unique | **Message unique : « Tu n'as plus accès à la Miff « X ».** | §5.7, §5.10, D |
+| QM9 | « Prévenir mes proches » avant la suppression ? | Oui, facultatif | **Oui.** Sans serveur ni notifications, le bouton **propose** un message prérempli dans la feuille de partage native ; le créateur choisit les destinataires et l'envoie lui-même ; l'app ne sait pas qui l'a reçu et n'envoie rien toute seule. Faisable sur Android et iOS. | §5.6, S6 |
+| QM10 | Le Feed est-il un ticket distinct ? | Oui | **Oui.** Page Notion « FEED — Feed (cercle de confiance) » créée en « A cadrer ». | §7 |
+| QM11 | Garde-t-on « Localiser », « Message » et « Appeler » dans le Feed ? | Non, pas dans la v1 du Feed | **Non : on les garde dans la v1 du Feed (écart avec la recommandation).** Message / Appeler deviennent faisables car le téléphone est obligatoire à l'onboarding. **« Localiser » contredit le modèle (aucune coordonnée stockée) : le futur ticket Feed devra définir précisément ce qu'il fait sans coordonnées. Question ouverte, non inventée.** | §7 F1, F2, §4 #19, §14 R16 |
+| QM12 | État sans Miff et bulle verte du Feed | État vide qui invite ; bulle verte seulement si tous les statuts connus le permettent | **OK comme recommandé.** | §7 F3, F4 |
+| QM13 | Où ouvre-t-on l'écran de gestion d'une Miff ? | Pastille de Miff du Feed + « Mes Miffs » dans Réglages | **OK.** | §2, G1 |
+| QM14 | Lien de téléchargement dans le message de partage | Page statique gratuite du site d'AUTH-W | **OK.** | §5.3, §11 |
+| QM15 | Création en deux temps ? | Oui (nom, puis « Ta Miff est prête » avec le code) | **OK.** | §3.1, C1 à C6 |
 
----
+## Points restant à confirmer par le PM (non bloquants pour la rédaction)
 
-**QM1. Le créateur d'une Miff peut-il la quitter sans la supprimer ?**
-Aujourd'hui non : il ne peut que la supprimer (les autres perdent alors leur cercle). Un transfert de propriété demanderait de changer les règles de sécurité.
-*Recommandation : en v1, pas de départ ni de transfert ; le créateur voit « Supprimer la Miff » avec un texte clair. À rouvrir si des testeurs le demandent.*
-*Pourquoi : le transfert est un chantier backend (règles, tests, déploiement), et le cas (un créateur qui veut partir alors que le cercle continue) est rare au début.*
-
-**QM2. Rejoindre une Miff signifie-t-il partager sa position tout de suite ?**
-Les notes disent « code valide, puis Feed » et « Toujours autoriser est obligatoire pour utiliser l'app ». Le modèle de données sépare les deux (consentement par Miff, révocable). Et un nouvel arrivant ne peut pas voir les lieux avant d'entrer.
-*Recommandation : rejoindre ne partage rien ; juste après, l'étape de consentement montre les lieux et les proches, puis demande un « oui » explicite ; « Pas maintenant » reste possible (le Feed dit calmement « Active le partage pour voir ton cercle »).*
-*Pourquoi : c'est la promesse de confiance du produit, et un motif de refus des stores si le consentement est mal expliqué ; on ne consent pas à l'aveugle à des lieux choisis par quelqu'un d'autre.*
-
-**QM3. Qui peut voir et partager le code, et faut-il valider les arrivées ?**
-Notion donne « Ajouter un proche » à tous les membres. Il n'y a aujourd'hui aucune validation : tout porteur du code entre.
-*Recommandation : code visible et partageable par tous les membres, pas de validation en v1 ; mais une étiquette « Nouveau » pendant 7 jours, une ligne « Léa a rejoint la Miff » à l'ouverture, et le retrait renouvelle déjà le code.*
-*Pourquoi : un cercle familial veut qu'un conjoint puisse inviter une grand-mère sans passer par le créateur ; la validation demande un nouveau mécanisme backend et crée de l'attente. Le vrai risque (un inconnu avec le code) est réduit par la visibilité et le consentement séparé.*
-
-**QM4. Le code doit-il expirer ?**
-*Recommandation : non, aucune expiration en v1 ; renouvellement manuel et automatique au retrait.*
-*Pourquoi : on envoie un code par message, parfois des jours avant l'installation ; un code qui expire provoque des « ça ne marche pas » incompréhensibles, et l'expiration serait surtout contournée par le renouvellement.*
-
-**QM5. Y a-t-il une taille maximale de Miff ?**
-Les règles ne peuvent pas compter les membres, et un candidat ne voit pas la liste avant d'entrer : aucun plafond ne peut être garanti sans serveur. Le coût en lectures croît avec le nombre de membres.
-*Recommandation : pas de plafond annoncé ; plafond « doux » de 15 côté app (le bouton « Ajouter un proche » devient « Cette Miff est bien remplie ! ») et mesure pendant la bêta.*
-*Pourquoi : garde-fou de coût sans promesse que l'on ne peut pas tenir ; un vrai plafond viendra avec Blaze si besoin.*
-
-**QM6. Quelle longueur pour le nom d'une Miff ?**
-Notion : 2 à 50 caractères. Les règles déployées : 1 à 40.
-*Recommandation : 2 à 40 caractères.*
-*Pourquoi : garder 50 obligerait à modifier et redéployer les règles pour rien ; 40 est largement suffisant (« Famille Moudugenou » = 19).*
-
-**QM7. Quand afficher le paywall pour une deuxième Miff, et que proposer d'autre ?**
-Notion : « quand il souhaite créer ou rejoindre alors qu'il en a déjà une ».
-*Recommandation : pour créer, au toucher de « Créer une nouvelle Miff » ; pour rejoindre, une fois le code reconnu et avant la confirmation (« Pour rejoindre « Famille Dupont », passe à Miff + »), jamais pour un code faux ; et un lien discret « Ou quitte ta Miff actuelle pour rejoindre celle-ci ».*
-*Pourquoi : le paywall est plus convaincant quand la personne sait ce qu'elle va rejoindre ; ne jamais coincer un utilisateur gratuit protège la confiance (et les avis des stores).*
-
-**QM8. Quel message pour une personne retirée ou dont la Miff a été supprimée ?**
-Quand un créateur supprime sa Miff, ses membres sont retirés un par un avant : ils verraient « Tu ne fais plus partie de la Miff », qui sonne comme une exclusion. On ne peut pas distinguer les deux cas de façon fiable.
-*Recommandation : un seul message : « Tu n'as plus accès à la Miff « X ». Ta position n'est plus partagée avec ce cercle. »*
-*Pourquoi : il est vrai dans tous les cas, ne désigne personne, et rassure sur la position.*
-
-**QM9. Proposer « Prévenir mes proches » avant de supprimer une Miff ?**
-Aucune notification n'est possible sans serveur : les proches ne l'apprennent qu'à l'ouverture de l'app.
-*Recommandation : oui, bouton facultatif qui ouvre un message prérempli (sans code), « Je ferme notre Miff », comme pour la suppression de compte.*
-*Pourquoi : la suppression est définitive pour les autres ; c'est le seul moyen gratuit de leur éviter la surprise.*
-
-**QM10. Le Feed devient-il un ticket distinct ?**
-*Recommandation : oui, après les tickets Miff, Statut et Localisation.*
-*Pourquoi : il dépend des statuts et du consentement, et pose des questions de confidentialité (QM11, QM12) qui ne doivent pas retarder la création et l'entrée dans une Miff.*
-
-**QM11. Garde-t-on les boutons « Localiser », « Message » et « Appeler » du Feed ?**
-« Localiser » ouvre la dernière position connue : nous ne stockons aucune coordonnée, par décision. « Message » et « Appeler » demandent un numéro de téléphone que le schéma n'a pas.
-*Recommandation : pas dans la v1 du Feed. Plus tard seulement, numéro partagé de façon facultative et consentie ; pas de « Localiser » sans décision explicite de changer le modèle (et les justifications aux stores).*
-*Pourquoi : ce serait transformer l'app de réassurance en outil de suivi, et un risque de rejet par les stores.*
-
-**QM12. Que montre le Feed sans Miff, et que dit la bulle verte ?**
-Notion : « aucune Miff, on considère que tout le monde est en sécurité ».
-*Recommandation : sans Miff, un état vide qui invite (« Pas encore de Miff »), sans phrase de sécurité ; et la bulle ne dit « Tout va bien » que si tous les statuts connus le permettent (sinon « 3 sur 4 ont donné des nouvelles »).*
-*Pourquoi : l'app sait où sont les gens et quand ils ont donné des nouvelles, pas s'ils sont « en sécurité » ; une fausse assurance est pire que pas d'information.*
-
-**QM13. Où ouvre-t-on l'écran de gestion d'une Miff ?**
-Notion dit « lorsqu'on clique sur une Miff existante » sans dire où.
-*Recommandation : toucher la pastille de Miff en haut du Feed ouvre l'écran de la Miff (le menu déroulant ne sert qu'à changer de Miff en Premium) ; plus une entrée « Mes Miffs » dans Réglages.*
-*Pourquoi : un seul geste depuis l'écran principal ; la même entrée sert au créateur et aux membres.*
-
-**QM14. Quel lien de téléchargement dans le message de partage ?**
-L'app n'est pas publiée.
-*Recommandation : une page statique gratuite sur le site d'AUTH-W (« Télécharge Miff », puis les liens des stores au moment de la publication) ; le message ne contient que ce lien et le code.*
-*Pourquoi : aucun coût, une seule adresse qui ne change pas quand les stores seront prêts, aucune donnée de plus.*
-
-**QM15. Créer une Miff en deux temps ?**
-Dans Figma le code est affiché et partageable avant « Enregistrer », et deux boutons valident.
-*Recommandation : écran 1 avec le seul nom et un seul bouton ; écran 2 « Ta Miff est prête » avec le code, « Partager » et « Copier ».*
-*Pourquoi : un code partagé avant l'enregistrement et abandonné est un code mort ; moins de champs et un moment clair pour inviter.*
+1. **Extension de QM2 à la création** : le ticket applique la même mécanique de consentement explicite à la création d'une Miff (« Créer et partager »), pour que le créateur ne soit pas le seul membre à partager sans l'avoir dit. À confirmer.
+2. **« 15 membres maximum »** est lu **créateur compris**. À corriger si le PM l'entendait hors créateur.
+3. **Ticket Premium** : doit définir le comportement visible d'un compte gratuit qui tente une deuxième Miff (aucun comportement n'est inventé dans ce ticket).
+4. **Ticket Feed** : doit définir ce que fait « Localiser » sans coordonnées stockées, qui voit le numéro de téléphone (champ à ajouter au schéma) et le libellé exact de la bulle.
