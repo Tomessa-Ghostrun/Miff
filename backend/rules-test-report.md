@@ -9,6 +9,55 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 - **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **189** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **182 mutations sont détectées, 7 mutants sont documentés comme équivalents** (4 d'avant DUR-3 + 3 de DUR-3, raison écrite dans `tests/tools/mutations.mjs` et `mutations-dur3.mjs`), **0 survivant**. Durée d'une exécution complète : environ 15 minutes en local (non lancée par la CI, pour rester dans les minutes gratuites). Voir la section DUR-3 ci-dessous.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
+## AUTH-B : consentements à l'inscription (a) CGU et (b) statistiques / plantages
+
+**Totaux après fusion avec DUR-3 (exécution locale du 2026-10-24)** : **214 tests de règles, 213 réussis, 0 échoué, 1 ignoré** (A9) ; **48 tests rapides** réussis ; **225 mutations (189 de DUR-3 + 36 d'AUTH-B) : 214 détectées, 11 équivalentes documentées, 0 survivant**. Le fichier de tests d'AUTH-B est `tests/rules/14-consentement-statistiques.test.js` (22 cas AB1 à AB22, section 13 du plan).
+
+Règles : bloc facultatif `analyticsConsent` sur `users/{uid}` (création et mise à jour par le propriétaire seul), `termsAcceptedAt`/`termsVersion` figés après la création. Plan : section 12 (AB1 à AB17). Tests : `tests/rules/14-consentement-statistiques.test.js`. Aucun test existant modifié ou affaibli ; seuls ajouts à des fichiers existants : assistants de `fixtures.js`, deux hôtes de mesure (`hosts.js`) et deux mesures dans `09-rule-reads.test.js`.
+
+### Rouge puis vert (17 cas)
+
+Les 17 tests ont d'abord été lancés sur les règles de `main` : **14 rouges, 3 verts** (AB1, AB14, AB16 : cas de non-régression ou lecture, vrais avant comme après). Une première version, sans « contrôle positif » (écriture légitime identique, acceptée en fin de test), donnait 10 rouges et 7 verts, car la clé `analyticsConsent` inconnue faisait refuser les tentatives frauduleuses « pour une mauvaise raison » ; un contrôle positif a été ajouté à AB4, AB7, AB8, AB12 pour que le refus prouve la bonne cause. Sur les règles AUTH-B : **17 verts**. Deux défauts de tests trouvés et corrigés pendant la mise au vert (aucune règle modifiée pour cela) : un « antidatage » de `termsAcceptedAt` qui réécrivait la même valeur (donc sans changement), et une fausse trace de retrait (AB10) qui échouait sur la date conservée au lieu du bon motif (mutation `AB10-retrait-sans-consentement-actif` survivante, test corrigé, mutation tuée).
+
+### Mutations (32 ajoutées)
+
+| Test | Mutations qui le font passer au rouge |
+|---|---|
+| AB1 | `AB1-bloc-obligatoire` (resserrement : l'absence du bloc doit rester acceptée) |
+| AB4 | `AB4-creation-date-consentement-client`, `-version-facultative`, `-non-consenti-avec-donnees`, `-retrait-renseigne` |
+| AB5 | `AB5-version-format`, `AB5-bloc-cles-en-trop` (+ `AB4-creation-version-facultative`) ; équivalentes : `AB5-bloc-cles-manquantes`, `AB5-bloc-pas-une-map` |
+| AB6 | `AB6-cgu-horodatage-client`, `AB6-cgu-version-non-controlee` ; équivalente : `AB6-cgu-non-obligatoires` |
+| AB7 | `AB7-creation-profil-usurpation` |
+| AB8 | `AB8-consentement-modifie-par-autrui` |
+| AB9 | `AB9-activation-date-client`, `-sans-version`, `-retrait-renseigne`, `-depuis-absent-refusee`, `AB9-mise-a-jour-sans-validation` |
+| AB10 | `AB10-retrait-efface-la-date`, `-efface-la-version`, `-date-client`, `-sans-consentement-actif` |
+| AB11 | `AB11-reactivation-refusee` |
+| AB12 | `AB12-retrogradation-de-version`, `AB12-reecriture-sans-retrait` |
+| AB13 | `AB13-profil-champs-non-verrouilles`, `AB13-cgu-modifiables` |
+| AB15 | `AB15-profil-supprime-par-autre` |
+| AB16 | `AB16-profil-lisible-par-tous`, `AB16-liste-des-profils` |
+| AB17 | `AB17-creation-champs-inconnus`, `AB5-bloc-cles-en-trop` |
+
+AB14 (non-régression) n'a pas de mutation : c'est un cas positif.
+
+### Changements de comportement par rapport aux règles de `main` (non déployées de ce fait)
+
+- `termsAcceptedAt` et `termsVersion` ne sont **plus modifiables** après la création (décision PM : (a) non modifiable). Les règles précédentes l'autorisaient ; aucun test existant ne s'appuyait dessus. Un futur parcours « nouvelle version des CGU » devra rouvrir cette règle.
+- La comparaison alphabétique des versions (`>=` sur des chaînes) est validée dans l'émulateur (AB11, AB12) mais non confirmée par la documentation officielle consultée.
+
+### Lectures de règles
+
+Création du profil avec (a) et (b) : **0** lecture de règles (borne haute, marge >= 10 sur 10) ; retrait du consentement (b) : **0** (marge >= 10 sur 10). Aucune règle de `users` n'appelle `get`/`exists` : les autres chiffres ne changent pas. Ces deux mesures sont ajoutées (`READS-profile-create`, `READS-consent-stats-update`).
+
+### Pas de Miff sans profil (décision PM du 2026-10-24) : AB18 à AB22
+
+Règle : `termsAcceptedAfter(uid)` dans `validMemberCreate` (un seul point : la fiche membre est créée dans les deux cas, créateur ou adhésion ; la Miff exige déjà la fiche du créateur). `getAfter` permet « profil + Miff » ou « profil + adhésion » en un lot.
+
+- **Rouge puis vert** : sur les règles précédentes, AB18, AB19 et AB21 sont **rouges** ; AB20 (profil dans le même lot) et AB22 (le départ n'est pas bloqué) sont verts (cas positif et non-régression). Sur les nouvelles règles : 5 verts. Mutation `J13-create-membre-autre` devenue survivante (zed sans profil faisait refuser J13 pour une autre raison) : J13 seede maintenant le profil de zed, mutation tuée.
+- **Tests existants adaptés** (aucun affaibli ; U1b et U2b de DUR-3 attendaient qu'un profil se modifie après sa création : ils refusent maintenant la mise à jour de `termsAcceptedAt` et `termsVersion`, décision (a) figé ; les deux mutations `U1-termsAcceptedAt-maj-client` et `U2-termsVersion-maj` sont réécrites, la seconde devient équivalente) : `eve` et `frank` (comptes sans Miff) ont désormais un profil dans le jeu de départ de tous les fichiers sauf 07, 08 et 13 (`suite({ extraProfiles: false })`) ; sans cela, 8 tests positifs échouaient (C1, J4, J16, H2b, H7a, X7, READS-create-free, READS-join) et AB18 corrigé (identifiants distincts pour dave) et surtout des dizaines de refus auraient passé « pour une mauvaise raison ». X7 crée en plus le profil de `gina`.
+- **Mutations ajoutées (4)** : `AB18-miff-sans-profil-nulle-part`, `AB18-creation-miff-sans-profil`, `AB19-adhesion-sans-profil`, `AB21-profil-sans-acceptation`.
+- **Lectures de règles** (méthode calibrée de DUR-3, sur la limite de 20 par lot ; avant = règles de DUR-3 ci-dessous) : création de Miff gratuite 2 -> **3** ; premium 6 -> **7** ; adhésion par code 2 -> **3** (+1 chacune : un `getAfter` sur le profil) ; profil + Miff gratuite en un lot de 5 : **2** (le profil créé dans le lot ne coûte rien de plus, voire moins que sur un profil déjà présent) ; retrait d'un membre (2) et suppression de la Miff (3) : **inchangés** (le contrôle n'est pas évalué dans ces lots). **Aucune limite n'est dépassée ; marge d'au moins 13 sur 20 pour les opérations concernées** (17 pour la création gratuite et l'adhésion).
+
 ## DUR-1 : pierre tombale (ATK1) et code orphelin (ATK2)
 
 ### Les attaques reproduites sur les règles AVANT correction (états rouges)
