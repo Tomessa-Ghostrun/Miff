@@ -88,6 +88,17 @@ test('WORKFLOWS - hygiene : sur toute PR (aucun filtre de chemins), gitleaks ép
   assert.match(text, /check-i18n-parity\.mjs/);
 });
 
+test('WORKFLOWS - web : filtre web/** et docs/legal/**, tests node:test, aucun déploiement ni commande Firebase', () => {
+  const { doc, text } = workflows.find((w) => w.file === 'web.yml');
+  const paths = doc.on.pull_request.paths;
+  assert.ok(paths.includes('web/**') && paths.includes('docs/legal/**'));
+  const code = stripComments(text);
+  assert.match(code, /node scripts\/build-web\.mjs/);
+  assert.match(code, /node --test "web\/tests\/\*\.test\.mjs"/);
+  assert.ok(!/firebase|deploy/i.test(code.replace(/web\/tests|web-predeploy-check\.mjs|déploiement/gi, '')), 'web.yml ne déploie jamais et n\'appelle pas Firebase');
+  assert.ok(!text.includes('MIFF_WEB_API_KEY'), 'la clé web n\'est jamais fournie à la CI');
+});
+
 test('WORKFLOWS - la durée de chaque job est consignée dans le résumé', () => {
   for (const { file, doc } of workflows) {
     for (const [jobName, job] of Object.entries(doc.jobs)) {

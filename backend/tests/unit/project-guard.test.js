@@ -63,7 +63,7 @@ test('H6 - .firebaserc ne désigne aucun projet par défaut, ni même un projet 
   for (const id of REAL_PROJECTS) assert.ok(!text.includes(id), `.firebaserc ne doit pas mentionner ${id}`);
 });
 
-test('H6 - un seul firebase.json et un seul .firebaserc, dans backend/ (pas de configuration cachée ailleurs)', () => {
+test('H6 - firebase.json et .firebaserc : backend/ (émulateur seulement) et web/ (Hosting, verrouillé sur miff-3d283), nulle part ailleurs', () => {
   const found = [];
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
@@ -74,9 +74,16 @@ test('H6 - un seul firebase.json et un seul .firebaserc, dans backend/ (pas de c
     }
   };
   walk(root);
-  assert.deepEqual(found.sort(), ['backend/.firebaserc', 'backend/firebase.json']);
+  assert.deepEqual(found.sort(), ['backend/.firebaserc', 'backend/firebase.json', 'web/.firebaserc', 'web/firebase.json']);
   const config = readFileSync(join(backend, 'firebase.json'), 'utf8');
   for (const id of REAL_PROJECTS) assert.ok(!config.includes(id), `firebase.json ne doit pas mentionner ${id}`);
+  // Site web (AUTH-W) : seule exception, Hosting uniquement, projet miff-3d283 uniquement (jamais ghostrun-app),
+  // et déploiement protégé par le garde-fou « predeploy » (aucun champ à compléter, jamais en CI, accord du PM).
+  const webConfig = JSON.parse(readFileSync(join(root, 'web', 'firebase.json'), 'utf8'));
+  assert.deepEqual(Object.keys(webConfig), ['hosting'], 'web/firebase.json ne configure que Hosting');
+  assert.deepEqual(webConfig.hosting.predeploy, ['node ../scripts/web-predeploy-check.mjs']);
+  assert.deepEqual(JSON.parse(readFileSync(join(root, 'web', '.firebaserc'), 'utf8')), { projects: { default: 'miff-3d283' } });
+  assert.ok(!/ghostrun/i.test(readFileSync(join(root, 'web', 'firebase.json'), 'utf8')));
 });
 
 test("H6 - package.json : tout script qui appelle firebase est une commande d'émulateur sur un projet demo-*", () => {
