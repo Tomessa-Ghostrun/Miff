@@ -1,16 +1,22 @@
-// C17 et critère T5 : nombre de lectures de règles (get/exists/getAfter/existsAfter) par opération.
-// Limites Firestore : 10 par requête simple, 20 par batch. Voir tests/helpers/pads.js pour la méthode.
+// C17 et critère T5 / R15 : nombre de lectures de règles (get/exists/getAfter/existsAfter) par opération.
+// Limites Firestore documentées : 10 par requête simple, 20 par lot. Voir tests/helpers/pads.js et measure.js pour la méthode,
+// et tests/helpers/calibration.js pour les limites réellement appliquées par l'émulateur (liste : 20 au lieu de 10).
 // Résultat écrit dans backend/test-output/rule-reads.md (et .json).
+// Depuis DUR-3 (R15) : une mesure non concluante, discordante ou à marge inférieure à 2 lectures FAIT ÉCHOUER le test.
 import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
 import {
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
   serverTs, sharingOnNow, T0,
 } from '../helpers/fixtures.js';
-import { measureReads, writeReadsReport } from '../helpers/measure.js';
+import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
+import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
 import { H } from '../helpers/hosts.js';
 
-
 const M1 = `miffs/${ID.M1}`;
+
+// Marge minimale exigée entre les lectures utilisées et la limite documentée (critère R11 du ticket de durcissement).
+const MIN_MARGIN = 2;
 
 const db = (env, uid) => env.authenticatedContext(uid).firestore();
 const all = (ops) => Object.values(ops);
@@ -33,13 +39,16 @@ const seedBobPhoto = (env) =>
 const seedAlicePhoto = (env) =>
   env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0 })));
 
+// `lot: true` : plusieurs écritures dans un lot. `hosts` = UNE règle hôte par écriture du lot (mesure par écriture puis lot entier).
+// Sinon : une seule opération (get, liste, écriture simple), `hosts` = la règle mesurée.
+// `docLimit` : limite documentée quand l'émulateur en applique une autre (liste : 10 documentés, 20 dans l'émulateur).
 const scenarios = [
   {
     id: 'C17',
     title: 'création de Miff premium (batch de 4) : sous la limite de 20 lectures de règles',
     name: 'Création de Miff premium (batch de 4)',
-    limit: 20,
-    hosts: [H.joinCodesCreate, H.membershipsCreate],
+    lot: true,
+    hosts: [H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate],
     prepare: seedDaveMiff,
     run: (env) => commit(db(env, 'dave'), all(createMiffOps({ uid: 'dave', key: ID.NEW }))),
   },
@@ -47,43 +56,32 @@ const scenarios = [
     id: 'READS-create-free',
     title: 'création de Miff gratuite (batch de 4)',
     name: 'Création de Miff gratuite (batch de 4)',
-    limit: 20,
-    hosts: [H.joinCodesCreate, H.membershipsCreate],
+    lot: true,
+    hosts: [H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate],
     run: (env) => commit(db(env, 'eve'), all(createMiffOps({ uid: 'eve' }))),
   },
   {
     id: 'READS-join',
     title: 'rejoindre une Miff (batch de 2)',
     name: 'Rejoindre une Miff (batch de 2)',
-    limit: 20,
-    hosts: [H.membershipsCreate, H.membersCreate],
+    lot: true,
+    hosts: [H.membersCreate, H.membershipsCreate],
     run: (env) => commit(db(env, 'eve'), all(joinOps({ uid: 'eve' }))),
   },
   {
     id: 'READS-leave',
     title: 'quitter une Miff (batch de 4)',
     name: 'Quitter une Miff (batch de 4)',
-    limit: 20,
-    hosts: [H.statusDelete, H.photosDelete],
+    lot: true,
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.membershipsDelete],
     run: (env) => commit(db(env, 'bob'), all(leaveOps('bob'))),
   },
   {
     id: 'READS-remove-member',
     title: 'retirer un membre avec renouvellement du code (batch de 6, avec photo)',
     name: 'Retirer un membre + nouveau code (batch de 6)',
-    limit: 20,
-    hosts: [H.membersDelete],
-    prepare: seedBobPhoto,
-    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
-  },
-  {
-    // Même lot, lectures factices placées sur d'autres règles du lot : recoupe la mesure précédente.
-    id: 'READS-remove-member-alt',
-    title: 'retirer un membre avec renouvellement du code (lot de 6), autre hôte de mesure',
-    name: 'Retirer un membre + nouveau code (lot de 6), hôte joinCodes/create',
-    limit: 20,
-    // Un seul hôte : répartir les lectures factices sur deux hôtes a donné une valeur aberrante (<= 1) lors des essais.
-    hosts: [H.joinCodesCreate],
+    lot: true,
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
     prepare: seedBobPhoto,
     run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
   },
@@ -91,9 +89,8 @@ const scenarios = [
     id: 'READS-delete-miff',
     title: 'la créatrice supprime la Miff (batch de 6, avec pierre tombale)',
     name: 'Supprimer la Miff (batch de 6, avec pierre tombale)',
-    limit: 20,
-    // Hôte retenu : les lectures factices sont comptées sur members/delete (pas sur status/memberships : mesure non concluante).
-    hosts: [H.membersDelete],
+    lot: true,
+    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.membersDelete, H.statusDelete, H.membershipsDelete],
     run: (env) =>
       commit(db(env, 'alice'), [
         del(M1),
@@ -108,8 +105,8 @@ const scenarios = [
     id: 'READS-regen-code',
     title: 'régénérer le code (batch de 3)',
     name: 'Régénérer le code secret (batch de 3)',
-    limit: 20,
-    hosts: [H.joinCodesCreate, H.joinCodesDelete],
+    lot: true,
+    hosts: [H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
     run: (env) =>
       commit(db(env, 'alice'), [
         update(M1, { joinCode: CODE.REGEN }),
@@ -121,8 +118,8 @@ const scenarios = [
     id: 'READS-consent-off',
     title: 'désactiver le partage (batch de 3)',
     name: 'Désactiver le partage (batch de 3)',
-    limit: 20,
-    hosts: [H.statusDelete, H.photosDelete],
+    lot: true,
+    hosts: [H.membersUpdate, H.statusDelete, H.photosDelete],
     run: (env) =>
       commit(db(env, 'bob'), [
         update(`${M1}/members/bob`, {
@@ -136,8 +133,8 @@ const scenarios = [
     id: 'READS-consent-on',
     title: 'activer le partage et créer son statut (batch de 2)',
     name: 'Activer le partage + créer son statut (batch de 2)',
-    limit: 20,
-    hosts: [H.statusCreate],
+    lot: true,
+    hosts: [H.membersUpdate, H.statusCreate],
     run: (env) =>
       commit(db(env, 'carol'), [update(`${M1}/members/carol`, { sharing: sharingOnNow() }), set(`${M1}/status/carol`, statusDoc())]),
   },
@@ -159,10 +156,14 @@ const scenarios = [
     run: (env) => db(env, 'dave').collection(`miffs/${ID.M3}/places`).doc().set(placeInput('dave')),
   },
   {
+    // Cause de la mesure « non concluante » du premier jet (R15) : l'émulateur accepte 20 lectures de règles pour une LISTE
+    // (documentation : 10). Avec la limite de 10 de l'outil, 11 lectures factices ne suffisaient pas à faire échouer la requête.
+    // On cherche donc jusqu'à 20 (limite constatée par la calibration) et on compare à la limite documentée (10).
     id: 'READS-read-status-list',
     title: 'lecture de la liste des statuts',
     name: 'Lecture de la liste des statuts',
-    limit: 10,
+    limit: 20,
+    docLimit: 10,
     hosts: [H.statusList],
     run: (env) => db(env, 'bob').collection(`${M1}/status`).get(),
   },
@@ -211,17 +212,25 @@ const scenarios = [
 
 const results = [];
 
+test('READS-calibration - limites de lectures de règles appliquées par l\'émulateur (hypothèses de la mesure)', async () => {
+  const observed = await probeEmulatorLimits();
+  // Si l'émulateur change de comportement, les chiffres du rapport ne sont plus fiables : on s'arrête et on réexamine.
+  assert.deepEqual(observed, EXPECTED_LIMITS);
+});
+
 for (const sc of scenarios) {
   test(`${sc.id} - ${sc.title}`, async (t) => {
-    const r = await measureReads(sc);
-    results.push(r);
-    if (r.status === 'ok') {
-      t.diagnostic(`${sc.name} : <= ${r.readsUpperBound} lectures de règles sur ${r.limit} (marge >= ${r.maxExtraReads})`);
-    } else if (r.status === 'inconclusive') {
-      t.diagnostic(`${sc.name} : MESURE NON CONCLUANTE (les lectures factices ne sont pas comptées par l'émulateur)`);
-    } else {
+    const r = sc.lot ? await measureLot(sc) : await measureReads(sc);
+    const result = { ...r, ...(sc.docLimit ? { docLimit: sc.docLimit } : {}) };
+    results.push(result);
+    if (r.status === 'baseline-failed') {
       throw new Error(`${sc.name} : l'opération de référence échoue (${r.error})`);
     }
+    assert.equal(r.status, 'ok', `${sc.name} : mesure non concluante (${r.status}) ; par écriture : ${JSON.stringify(r.perOp ?? '')}`);
+    const documented = sc.docLimit ?? r.limit;
+    const margin = documented - r.readsUpperBound;
+    t.diagnostic(`${sc.name} : <= ${r.readsUpperBound} lectures de règles sur ${documented} (marge >= ${margin})`);
+    assert.ok(margin >= MIN_MARGIN, `${sc.name} : marge de ${margin} lecture(s), moins de ${MIN_MARGIN} exigées`);
   });
 }
 

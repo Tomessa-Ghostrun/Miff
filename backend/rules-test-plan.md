@@ -174,8 +174,8 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 
 ## 9. Hors règles (vérifier à part, pas avec l'émulateur de règles)
 
-- App Check appliqué en mode strict sur Firestore (console) : une requête sans jeton est refusée.
-- Nombre d'appels de lecture des règles par opération : mesurer avec les journaux de l'émulateur (limite 10 par requête simple, 20 par batch).
+- App Check appliqué en mode strict sur Firestore (console) : une requête sans jeton est refusée. Checklist du PM : `docs/dev/app-check-strict.md`.
+- Nombre d'appels de lecture des règles par opération : **automatisé depuis DUR-3** (`tests/rules/09-rule-reads.test.js`, calibration des limites de l'émulateur incluse ; un test échoue si une mesure est non concluante ou si la marge est inférieure à 2).
 - Un seul `get joinCodes` par essai côté client ; limitation d'essais dans l'UI.
 - Aucune clé de service ni secret dans le dépôt ou dans les apps.
 
@@ -241,3 +241,36 @@ Même jeu de données qu'en section 0. Chaque cas a un test dans `tests/rules/11
 | H7a | `eve` crée une Miff avec, comme `joinCode`, le code **existant d'une autre Miff** (celui de M2) | **KO** ; avec son propre code créé dans le lot : OK |
 | H7b | `alice` renouvelle le code de M1 vers le code existant de M2 (et supprime l'ancien) | **KO** ; avec un nouveau code créé pour M1 : OK |
 | H7c | `alice` renouvelle le code de M1 vers un code qui n'existe pas (non créé dans le lot) | KO |
+
+## 12. Compléments de couverture issus de l'extension des mutations (DUR-3, critère R14)
+
+Cas ajoutés pour tuer les **survivants** du test par mutation étendu (`tests/tools/mutations-dur3.mjs`) : avant eux, la protection visée pouvait être retirée de `firestore.rules` sans qu'aucun test ne passe au rouge. Tests dans `tests/rules/13-complements-dur3.test.js`, même jeu de données qu'en section 0. Chaque cas n'introduit qu'**un** défaut à la fois (sinon une autre règle refuserait à sa place) et finit par un contrôle positif quand c'est possible.
+
+| # | Cas | Attendu |
+|---|---|---|
+| M19b | `bob` est retiré (fiche et statut supprimés) ; `eve` puis `alice` tentent de supprimer `users/bob/memberships/free` ; puis `bob` | KO, KO ; OK |
+| R6b | `eve` lit `users/alice/memberships/free` ; `bob` liste `users/alice/memberships` ; `alice` lit les deux | KO, KO ; OK |
+| S1b | Rejoindre avec un consentement : `revokedAt` renseigné (désactivé, activé), clé inconnue (désactivé, activé) ; puis consentement conforme | KO ×4 ; OK |
+| S3b | `carol` active son partage avec `revokedAt` renseigné ; avec une clé inconnue ; conforme | KO ; KO ; OK |
+| S6b | `bob` révoque avec `consentVersion` effacée, changée, `revokedAt` fourni par le client, ou `revokedAt` vide ; puis révocation conforme | KO ×4 ; OK |
+| S12b | Statut : `batteryPct` −5, 50,5 ou « 80 » ; `placeId` vide ou de 41 caractères ; puis 0, 100, `null`, 40 caractères | KO ×5 ; OK |
+| S16b | Photo : vide, clé inconnue, `createdAt` client, `expiresAt` déjà passé ; puis photo valide | KO ×4 ; OK |
+| P9b | Lieu : rayon 100,5 ; lat −95 ; lng −200 ; adresse de 201 caractères ; priorité −1, 1000, 1,5, texte ; type « banane » et clé inconnue (création premium) ; puis bornes incluses | KO partout ; OK |
+| P11b | `alice` crée `p1` avec `createdBy: bob` ; puis avec `createdBy: alice` | KO ; OK |
+| P12b | Lieu `p1` : `createdAt` client, `updatedAt` client à la création, `updatedAt` client à la mise à jour ; puis valeurs serveur | KO ×3 ; OK ×2 |
+| P2b | `dave` (premium) crée un lieu dont l'identifiant est `mauvais-id` ou de 21 caractères ; puis de 20 caractères | KO ×2 ; OK |
+| C3b | `eve` crée une Miff sans l'index `memberships` ; puis le lot complet | KO ; OK |
+| C13b | Création d'une Miff avec `joinCodes.createdAt` fourni par le client | KO |
+| C14b | `alice` modifie `joinCodes/CODE_M1` : `miffId` vers M2, `createdAt`, clé inconnue ; puis renommage conforme (Miff + code) | KO ×3 ; OK |
+| M6b | `alice` renomme M1 avec un nom vide, de 41 caractères, puis de 40 | KO ; KO ; OK |
+| U1b | Profil : `termsAcceptedAt` ou `createdAt` client à la création ; `termsAcceptedAt` client à la mise à jour ; puis valeurs serveur | KO ×3 ; OK ×2 |
+| U2b | Profil : nom vide ; `termsVersion` vide ou de 21 caractères (création et mise à jour) ; puis valeurs conformes | KO ×6 ; OK ×2 |
+| A5b | `eve` crée `users/mallory` | KO |
+| U5b | Appareil : clé inconnue, jeton vide ou de 513 caractères, `updatedAt` client, identifiant `a.b` ou de 65 caractères ; puis jeton de 512 et identifiant de 64 | KO ×6 ; OK ×2 |
+| U6b | `eve` écrit `users/alice/devices/d1` ; puis `alice` | KO ; OK |
+
+### 12.1 Cas hors émulateur (tests rapides, sans émulateur)
+
+Pas des cas de règles : ils ne figurent pas dans le tableau ci-dessus (le test de couverture du plan ne lit que les cas de règles).
+
+- **H6 (garde-fou de projet, critère R16)** : `tests/unit/project-guard.test.js` et `tests/unit/guard.test.js`. `.firebaserc` ne déclare aucun projet (un projet unique devient implicite, constaté) ; un script npm, un workflow ou un script shell qui appelle `firebase` sans `--project demo-*` ou autrement que pour l'émulateur fait échouer le test ; aucun workflow ne contient de déploiement, de jeton ni de compte de service ; le lanceur et un fichier de test refusent `GCLOUD_PROJECT=miff-3d283` et `ghostrun-app` (code 2, avant toute requête) ; le garde-fou lit le projet réellement annoncé par l'émulateur (`GCLOUD_PROJECT`, `FIREBASE_CONFIG`) et le compare à celui des tests.
