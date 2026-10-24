@@ -22,6 +22,18 @@ export function readLinkParams(search) {
   };
 }
 
+export const CLEAN_ADDRESS = '/reset-password';
+
+/** Retire le code du lien (et le reste de la requête) de la barre d'adresse et de l'entrée d'historique courante. */
+export function scrubAddressBar(historyApi) {
+  try {
+    historyApi.replaceState(null, '', CLEAN_ADDRESS);
+    return true;
+  } catch {
+    return false; // jamais bloquant : la page fonctionne avec le code gardé en mémoire
+  }
+}
+
 function primaryTag(tag) {
   return String(tag ?? '')
     .trim()
@@ -99,7 +111,7 @@ export async function callResetPassword({ fetchFn, apiBase, apiKey, oobCode, new
       body: JSON.stringify(body),
       credentials: 'omit',
       cache: 'no-store',
-      referrerPolicy: 'no-referrer',
+      referrerPolicy: 'strict-origin',
     });
   } catch {
     return { ok: false, kind: 'offline' };

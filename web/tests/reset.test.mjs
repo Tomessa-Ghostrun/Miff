@@ -96,7 +96,7 @@ test('REST - vérification du lien : POST accounts:resetPassword avec { oobCode 
   assert.equal(init.method, 'POST');
   assert.deepEqual(JSON.parse(init.body), { oobCode: 'CODE1' });
   assert.equal(init.credentials, 'omit');
-  assert.equal(init.referrerPolicy, 'no-referrer');
+  assert.equal(init.referrerPolicy, 'strict-origin');
   assert.equal(init.cache, 'no-store');
   assert.equal(init.headers['Content-Type'], 'application/json');
 });
@@ -167,4 +167,29 @@ test('TEXTES - toutes les clés utilisées par la page (HTML et script) existent
   for (const m of script.matchAll(/'((?:show|hide)\w*Password)'/g)) used.add(m[1]);
   for (const key of used) assert.ok(key in STRINGS.fr, `clé « ${key} » utilisée mais absente de reset-strings.js`);
   for (const key of Object.keys(STRINGS.fr)) assert.ok(used.has(key), `clé « ${key} » jamais utilisée`);
+});
+
+test('ADRESSE - le code du lien est retiré de la barre d\'adresse dès qu\'il est lu, et reste en mémoire', async () => {
+  const { scrubAddressBar, CLEAN_ADDRESS } = await import('../src/assets/reset-logic.js');
+  const calls = [];
+  assert.equal(scrubAddressBar({ replaceState: (...args) => calls.push(args) }), true);
+  assert.deepEqual(calls, [[null, '', '/reset-password']]);
+  assert.equal(CLEAN_ADDRESS, '/reset-password');
+  assert.equal(scrubAddressBar({ replaceState: () => { throw new Error('refusé'); } }), false, 'jamais bloquant');
+  // Dans le script : la lecture du lien précède le nettoyage, et la suite utilise l'objet gardé en mémoire (pas location.search).
+  const script = read(join(WEB, 'src', 'assets', 'reset-password.js'));
+  const read1 = script.indexOf('readLinkParams(window.location.search)');
+  const scrub = script.indexOf('scrubAddressBar(window.history)');
+  assert.ok(read1 > 0 && scrub > read1, 'lire le lien AVANT de le retirer');
+  assert.equal((script.match(/location\.search/g) ?? []).length, 1, 'le code n\'est lu qu\'une fois');
+  assert.ok(script.includes('oobCode: link.oobCode'));
+});
+
+test('RÉFÉRENT - strict-origin : Google voit le site (restriction de clé) mais jamais le chemin ni le code du lien', async () => {
+  const fetchFn = fakeFetch(() => json(200, { requestType: 'PASSWORD_RESET' }));
+  await verifyCode({ fetchFn, apiBase: DEFAULT_API_BASE, apiKey: FAKE_KEY, oobCode: 'C' });
+  assert.equal(fetchFn.calls[0].init.referrerPolicy, 'strict-origin');
+  for (const file of ['reset-password.html', 'layout.html', 'index.html', '404.html']) {
+    assert.match(read(join(WEB, 'src', file)), /<meta name="referrer" content="strict-origin">/, file);
+  }
 });

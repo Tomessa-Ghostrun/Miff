@@ -118,7 +118,7 @@ test('FIREBASE - en-têtes de sécurité stricts : CSP sans unsafe-inline, frame
   assert.deepEqual(csp['connect-src'], ["'self'", 'https://identitytoolkit.googleapis.com']);
   assert.ok(!/unsafe-inline|unsafe-eval|data:|http:|\*/.test(all['Content-Security-Policy'].replace(/\bself\b/g, '')), 'CSP trop permissive');
   assert.equal(all['X-Content-Type-Options'], 'nosniff');
-  assert.equal(all['Referrer-Policy'], 'no-referrer');
+  assert.equal(all['Referrer-Policy'], 'strict-origin');
   assert.equal(all['X-Frame-Options'], 'DENY');
   assert.match(all['Permissions-Policy'], /geolocation=\(\)/);
   assert.match(all['Permissions-Policy'], /camera=\(\)/);
@@ -142,7 +142,11 @@ test('PRÉVISUALISATION - mêmes en-têtes que Hosting, adresses propres, 404, a
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-security-policy'), headersFor(config, '/fr/cgu')['Content-Security-Policy']);
     assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
-    assert.equal((await fetch(`${base}/fr/cgu.html`, { redirect: 'manual' })).status, 301);
+    const moved = await fetch(`${base}/fr/cgu.html`, { redirect: 'manual' });
+    assert.equal(moved.status, 301);
+    assert.equal(moved.headers.get('content-security-policy'), headersFor(config, '/fr/cgu.html')['Content-Security-Policy'], 'en-têtes de sécurité aussi sur la redirection');
+    assert.equal((await fetch(`${base}/%E0%A4%A`)).status, 400, 'adresse mal encodée : 400, pas de plantage');
+    assert.equal((await fetch(`${base}/fr/`)).status, 200, 'le serveur survit');
     assert.equal((await fetch(`${base}/fr/`)).status, 200);
     assert.equal((await fetch(`${base}/inexistant`)).status, 404);
     assert.equal((await fetch(`${base}/.build-info.json`)).status, 404, 'fichiers cachés non servis');

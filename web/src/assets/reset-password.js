@@ -9,6 +9,7 @@ import {
   readLinkParams,
   resolveLanguage,
   safeApiBase,
+  scrubAddressBar,
   validatePasswords,
   verifyCode,
 } from './reset-logic.js';
@@ -17,6 +18,7 @@ const $ = (selector) => document.querySelector(selector);
 const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.getAttribute('content') ?? '';
 
 const link = readLinkParams(window.location.search);
+scrubAddressBar(window.history); // le code du lien reste en mémoire seulement : plus dans la barre d'adresse ni l'historique
 const lang = resolveLanguage(link.lang, navigator.languages ?? [navigator.language]);
 const t = STRINGS[lang];
 const apiKey = meta('miff-api-key');
