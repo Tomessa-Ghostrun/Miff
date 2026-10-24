@@ -32,13 +32,64 @@ final class DiagnosticViewModelTests: XCTestCase {
         }
     }
 
+    /// Annonces vocales (VoiceOver) émises par le view model.
+    private final class Announcements {
+        var texts: [String] = []
+    }
+
     private func makeViewModel(
         _ repository: FakeRepository = FakeRepository(),
         analyticsEnabled: Bool = false,
-        sink: RecordingSink = RecordingSink()
+        sink: RecordingSink = RecordingSink(),
+        announcements: Announcements = Announcements()
     ) -> DiagnosticViewModel {
         let tracker = AnalyticsTracker(sink: sink, isEnabled: { analyticsEnabled })
-        return DiagnosticViewModel(repository: repository, tracker: tracker)
+        return DiagnosticViewModel(
+            repository: repository,
+            tracker: tracker,
+            announce: { announcements.texts.append($0) }
+        )
+    }
+
+    func testTheResultOfEachTestIsAnnouncedToVoiceOver() async {
+        let announcements = Announcements()
+        let viewModel = makeViewModel(analyticsEnabled: true, announcements: announcements)
+
+        await viewModel.runTest1()
+        await viewModel.runTest2(email: "test@example.com", password: "secret")
+        await viewModel.checkAppCheck()
+        viewModel.sendTestEvent()
+
+        XCTAssertEqual(announcements.texts.count, 4)
+        XCTAssertEqual(announcements.texts.first, L10n.string("diag_test1_ok"))
+        XCTAssertEqual(announcements.texts.last, L10n.string("diag_event_sent"))
+    }
+
+    func testNothingIsAnnouncedWhileATestIsRunningOrBeforeAnyTest() {
+        let announcements = Announcements()
+        _ = makeViewModel(announcements: announcements)
+
+        XCTAssertTrue(announcements.texts.isEmpty)
+    }
+
+    func testInvalidInputIsReportedWithoutStartingTheTestAndIsAnnounced() {
+        let announcements = Announcements()
+        let repository = FakeRepository()
+        let viewModel = makeViewModel(repository, announcements: announcements)
+
+        XCTAssertFalse(viewModel.prepareTest2(email: "pas-un-email", password: "secret"))
+
+        XCTAssertEqual(viewModel.test2, .inputProblem(.emailInvalid))
+        XCTAssertEqual(announcements.texts, [L10n.string("diag_input_email_invalid")])
+        XCTAssertTrue(repository.signInCalls.isEmpty)
+        XCTAssertTrue(viewModel.prepareTest2(email: "a@b.co", password: "x"))
+    }
+
+    func testARefusedEventNamesItsReasonInSnakeCase() {
+        let text = DiagnosticMessages.text(for: .refused(.unknownEvent))
+
+        XCTAssertTrue(text.contains("unknown_event"), text)
+        XCTAssertFalse(text.contains("unknownevent"), text)
     }
 
     func testTheProjectShownComesFromTheRepository() {

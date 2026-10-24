@@ -30,6 +30,17 @@ enum RefusalReason: String, Equatable {
     case locationLikeName
     case wrongType
     case valueNotAllowed
+
+    /// Identifiant lisible en snake_case (« unknown_event »), comme sur Android.
+    var identifier: String {
+        switch self {
+        case .unknownEvent: return "unknown_event"
+        case .unknownParam: return "unknown_param"
+        case .locationLikeName: return "location_like_name"
+        case .wrongType: return "wrong_type"
+        case .valueNotAllowed: return "value_not_allowed"
+        }
+    }
 }
 
 enum AnalyticsValidation: Equatable {

@@ -57,6 +57,8 @@ final class AppConfigurationTests: XCTestCase {
     func testAnalyticsAndCrashlyticsCollectNothingAtStartup() {
         XCTAssertEqual(info["FIREBASE_ANALYTICS_COLLECTION_ENABLED"] as? Bool, false)
         XCTAssertEqual(info["FirebaseCrashlyticsCollectionEnabled"] as? Bool, false)
+        // Filet de sécurité : collecte par défaut éteinte pour l'ensemble des SDK Firebase.
+        XCTAssertEqual(info["FirebaseDataCollectionDefaultEnabled"] as? Bool, false)
     }
 
     func testTheIrreversibleDeactivationKeyIsNotUsed() {

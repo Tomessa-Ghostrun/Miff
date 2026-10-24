@@ -27,10 +27,17 @@ enum FirebaseBootstrap {
     }
 
     static func configureIfPossible() {
-        guard !isRunningUnitTests, hasConfigurationFile, !isConfigured else {
+        guard !isRunningUnitTests, !isConfigured,
+              let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") else {
+            return
+        }
+        // Garde-fou (compte Google partagé avec un autre projet) : on ne démarre Firebase QUE si la configuration
+        // embarquée vise le projet Miff. Sinon l'app ne parle à aucun projet (le diagnostic affiche « projet non
+        // identifié »).
+        guard let options = FirebaseOptions(contentsOfFile: path), isExpectedProject(options.projectID) else {
             return
         }
         AppCheck.setAppCheckProviderFactory(AppCheckFactory.make())
-        FirebaseApp.configure()
+        FirebaseApp.configure(options: options)
     }
 }

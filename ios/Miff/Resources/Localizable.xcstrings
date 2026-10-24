@@ -789,13 +789,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Both are off by default, and nothing is collected while they are off. Your choice is kept after a restart."
+            "value": "Both are off by default: no usage or crash data is sent before you agree. Your choice is kept after a restart."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les deux sont désactivés par défaut, et rien n'est collecté tant qu'ils le sont. Votre choix est conservé après un redémarrage."
+            "value": "Les deux sont désactivés par défaut : aucune donnée d'usage ni de plantage n'est envoyée avant votre accord. Votre choix est conservé après un redémarrage."
           }
         }
       }

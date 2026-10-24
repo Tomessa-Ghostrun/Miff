@@ -66,6 +66,36 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    /// Toute clé de texte écrite dans le code existe dans le catalogue (sinon l'écran afficherait « diag_xxx »).
+    /// Seuls les préfixes de texte du contrat sont cherchés : `miff_` est volontairement absent, car les noms
+    /// d'événements Analytics (`miff_created`...) ont la même forme. À étendre quand un écran `miff_` apparaît.
+    func testEveryTextKeyUsedInTheCodeExistsInTheCatalog() throws {
+        let catalog = try loadCatalog()
+        let sources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // MiffTests
+            .deletingLastPathComponent() // ios
+            .appendingPathComponent("Miff")
+        guard let files = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil) else {
+            throw XCTSkip("Sources introuvables (\(sources.path)).")
+        }
+        let regex = try NSRegularExpression(pattern: "\"((?:diag|home|auth|place|common)_[a-z0-9_]+)\"")
+        var used = Set<String>()
+        for case let file as URL in files where file.pathExtension == "swift" {
+            let text = try String(contentsOf: file, encoding: .utf8)
+            let range = NSRange(text.startIndex..., in: text)
+            for match in regex.matches(in: text, range: range) {
+                if let keyRange = Range(match.range(at: 1), in: text) {
+                    used.insert(String(text[keyRange]))
+                }
+            }
+        }
+
+        XCTAssertGreaterThan(used.count, 60, "Presque aucune clé trouvée dans le code : motif de recherche cassé ?")
+        for key in used.sorted() {
+            XCTAssertNotNil(catalog[key], "Clé « \(key) » utilisée dans le code mais absente du catalogue")
+        }
+    }
+
     func testTheAppBundleContainsFrenchAndEnglish() {
         XCTAssertTrue(Bundle.main.localizations.contains("fr"))
         XCTAssertTrue(Bundle.main.localizations.contains("en"))

@@ -36,7 +36,7 @@ struct Test2ResultView: View {
         case .running:
             DiagLine("diag_test2_running")
         case .inputProblem(let problem):
-            DiagLine(verbatim: L10n.string(Self.inputProblemKey(problem)), .warning)
+            DiagLine(verbatim: L10n.string(DiagnosticMessages.inputProblemKey(problem)), .warning)
         case .done(let result):
             resultView(result)
         }
@@ -50,7 +50,7 @@ struct Test2ResultView: View {
             DiagLine(profileExists ? "diag_test2_profile_found" : "diag_test2_profile_missing")
             offerLine(offer)
         case .signInFailed(let failure):
-            DiagLine(verbatim: L10n.string(Self.signInFailureKey(failure)))
+            DiagLine(verbatim: L10n.string(DiagnosticMessages.signInFailureKey(failure)))
         case .readDenied:
             DiagLine("diag_test2_read_denied", .warning)
         case .readFailed:
@@ -67,25 +67,6 @@ struct Test2ResultView: View {
             // Date formatée par le système, dans la langue de l'app.
             let date = expiresAt.formatted(date: .abbreviated, time: .omitted)
             DiagLine(verbatim: L10n.format("diag_test2_offer_premium", date))
-        }
-    }
-
-    private static func inputProblemKey(_ problem: CredentialsInputProblem) -> String {
-        switch problem {
-        case .emailEmpty: return "diag_input_email_empty"
-        case .emailInvalid: return "diag_input_email_invalid"
-        case .passwordEmpty: return "diag_input_password_empty"
-        case .tooLong: return "diag_input_too_long"
-        }
-    }
-
-    private static func signInFailureKey(_ failure: SignInFailure) -> String {
-        switch failure {
-        case .invalidCredentials: return "diag_signin_invalid"
-        case .network: return "diag_signin_network"
-        case .tooManyAttempts: return "diag_signin_too_many"
-        case .accountDisabled: return "diag_signin_disabled"
-        case .unknown: return "diag_signin_unknown"
         }
     }
 }
@@ -117,7 +98,7 @@ struct EventFeedbackView: View {
         case .disabled:
             DiagLine("diag_event_disabled")
         case .refused(let reason):
-            DiagLine(verbatim: L10n.format("diag_event_refused", reason.rawValue.lowercased()))
+            DiagLine(verbatim: L10n.format("diag_event_refused", reason.identifier))
         case .locationRefused:
             DiagLine("diag_event_location_refused", .strong)
         case .locationNotRefused:

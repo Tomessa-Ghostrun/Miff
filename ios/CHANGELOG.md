@@ -18,7 +18,16 @@ Changé : `HelloView` du spike remplacé par `HomeView` ; `BuildInfo.summary` su
 
 **Durées CI macOS** (`macos-26`, Xcode 26.x) :
 - Premier run (sans cache, commit `fb9f779`) : job 7 min 36 s (XcodeGen 0 s ; garde-fou d'identifiant 68 s car il résolvait les paquets ; résolution 20 s ; SwiftLint 2 s ; compilation Debug 49 s ; tests 88 s dont 94 tests en 3,5 s ; compilation Release 62 s ; captures 124 s). Environ 8 min facturées avant multiplicateur macOS (à vérifier, probablement x10).
-- Voir le résumé de la PR pour les exécutions suivantes.
+- Deuxième run (cache des paquets, commit `fd1905e`) : job 5 min 55 s (résolution 15 s ; compilation Debug 50 s ; tests 71 s ; compilation Release 60 s ; captures 104 s).
+- Run après les corrections de revue (compilation Internal ajoutée, ~+1 min) : voir « Durées après revue » ci-dessous.
+
+**Corrections de revue (PM, 2026-10-24)** :
+- I-1 : la CI compile la configuration **Internal** (appareil, sans signature) et vérifie diagnostic présent, App Check de débogage absent, Info.plist cohérent ; `ios-testflight` contrôle après l'archive l'Info.plist, le projet Firebase embarqué, le diagnostic et les entitlements (App Attest) en plus de l'identité.
+- I-2 : `ci/crashlytics-upload-symbols.sh` ne fait plus rien en CI ni avec la clé App Store Connect dans l'environnement ; l'envoi des symboles est une étape séparée sans secret d'`ios-testflight` (non testée).
+- I-3 : délai maximal du job 30 -> 15 min ; le déclencheur ignore `ios/**/*.md` et `ios/third_party/**` et ajoute le thème Android ; compilations Release et Internal et captures seulement si l'interface, les ressources, le projet ou la CI changent.
+- I-4 (renvoyé à DUR-3) : ligne dans le README, rien n'est purgé ni exclu des sauvegardes ici.
+- I-5 : le résultat de chaque test est annoncé à VoiceOver.
+- M-1 `FirebaseDataCollectionDefaultEnabled = NO` + contrôle CI de l'Info.plist du binaire ; M-2 témoin positif en Debug et recherche de `advertisingIdentifier` ; M-3 un test ignoré fait échouer le job (sauf Dependabot) + test des clés de texte du code ; M-4 règle SwiftLint étendue (`DiagLine`, `SectionCard`, `SwitchRow`, `NavigationLink`, `ProgressView`, `Picker`, `Menu`, `.alert`, `.accessibilityValue`) ; M-6 `-onlyUsePackageVersionsFromResolvedFile` à l'archive ; M-7 mot de passe conservé si la saisie locale est invalide, raison de refus en `snake_case` (« unknown_event »), texte `diag_privacy_description` corrigé (« aucune donnée d'usage ni de plantage n'est envoyée avant votre accord ») ; M-8 options de lancement du diagnostic limitées à Debug et projet vérifié (`miff-3d283`) avant `FirebaseApp.configure` ; M-5 Dependabot `swift` laissé tel quel (noté dans le README).
 
 **Choix économiques** : cache des paquets Swift (GitHub Actions, gratuit) ; compilation Release de contrôle (environ 1 min de macOS) désactivable avec `RELEASE_CHECK: "false"` ; captures limitées à 11 images. Signal de bascule : mêmes seuils que le spike (plus de 70 % du quota avant le 20 du mois).
 

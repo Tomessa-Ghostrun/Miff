@@ -94,8 +94,11 @@ struct DiagnosticView: View {
             Button {
                 let enteredEmail = email
                 let enteredPassword = password
-                password = "" // le mot de passe ne reste jamais plus longtemps que la requête
-                Task { await viewModel.runTest2(email: enteredEmail, password: enteredPassword) }
+                // Saisie invalide : on affiche le problème et on GARDE le mot de passe (rien n'est envoyé).
+                if viewModel.prepareTest2(email: enteredEmail, password: enteredPassword) {
+                    password = "" // le mot de passe ne reste jamais plus longtemps que la requête
+                    Task { await viewModel.runTest2(email: enteredEmail, password: enteredPassword) }
+                }
             } label: {
                 Text("diag_test2_action")
             }
