@@ -1,7 +1,7 @@
 import XCTest
 
 /// Vérifie, dans l'app réellement construite, les réglages sensibles exigés par le ticket
-/// « Initialisation technique » (critères I1 et I4). Les tests de l'app tournent dans
+/// « Initialisation technique » (critères I1, I4, I5, I8). Les tests de l'app tournent dans
 /// le processus de l'app : `Bundle.main` est donc le bundle de Miff.
 final class AppConfigurationTests: XCTestCase {
     private var info: [String: Any] {
@@ -37,6 +37,13 @@ final class AppConfigurationTests: XCTestCase {
         XCTAssertEqual(info["ITSAppUsesNonExemptEncryption"] as? Bool, false)
     }
 
+    func testLightAppearanceIsForced() {
+        // Pas de mode sombre dans les maquettes : l'app reste claire même si le téléphone est en mode sombre.
+        XCTAssertEqual(info["UIUserInterfaceStyle"] as? String, "Light")
+    }
+
+    // MARK: - Confidentialité (critères I4 et I5)
+
     func testNoLocationPermissionIsDeclared() {
         let locationKeys = info.keys.filter { $0.hasPrefix("NSLocation") }
 
@@ -47,7 +54,64 @@ final class AppConfigurationTests: XCTestCase {
         XCTAssertNil(info["NSAppTransportSecurity"])
     }
 
+    func testAnalyticsAndCrashlyticsCollectNothingAtStartup() {
+        XCTAssertEqual(info["FIREBASE_ANALYTICS_COLLECTION_ENABLED"] as? Bool, false)
+        XCTAssertEqual(info["FirebaseCrashlyticsCollectionEnabled"] as? Bool, false)
+        // Filet de sécurité : collecte par défaut éteinte pour l'ensemble des SDK Firebase.
+        XCTAssertEqual(info["FirebaseDataCollectionDefaultEnabled"] as? Bool, false)
+    }
+
+    func testTheIrreversibleDeactivationKeyIsNotUsed() {
+        // La clé « DEACTIVATED » ne peut pas être annulée à l'exécution : on utilise « ENABLED = NO ».
+        XCTAssertNil(info["FIREBASE_ANALYTICS_COLLECTION_DEACTIVATED"])
+    }
+
+    func testNoAdvertisingOrIdentifierCollection() {
+        XCTAssertEqual(info["GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED"] as? Bool, false)
+        XCTAssertEqual(info["GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS"] as? Bool, false)
+        XCTAssertEqual(info["GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE"] as? Bool, false)
+        XCTAssertEqual(info["GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA"] as? Bool, false)
+        XCTAssertEqual(info["GOOGLE_ANALYTICS_REGISTRATION_WITH_AD_NETWORK_ENABLED"] as? Bool, false)
+    }
+
+    func testAutomaticScreenReportingIsOff() {
+        // Aucun nom d'écran dans Analytics (docs/contracts/analytics-events.md).
+        XCTAssertEqual(info["FirebaseAutomaticScreenReportingEnabled"] as? Bool, false)
+    }
+
     func testPrivacyManifestIsBundled() {
         XCTAssertNotNil(Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy"))
+    }
+
+    func testPrivacyManifestIsCoherent() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy"))
+        let data = try Data(contentsOf: url)
+        let manifest = try XCTUnwrap(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+
+        XCTAssertEqual(manifest["NSPrivacyTracking"] as? Bool, false)
+        XCTAssertEqual((manifest["NSPrivacyTrackingDomains"] as? [Any])?.count, 0)
+
+        // L'app enregistre le choix de consentement dans UserDefaults : API à raison requise, déclarée.
+        let apis = try XCTUnwrap(manifest["NSPrivacyAccessedAPITypes"] as? [[String: Any]])
+        let category = "NSPrivacyAccessedAPICategoryUserDefaults"
+        let userDefaults = apis.first { $0["NSPrivacyAccessedAPIType"] as? String == category }
+        XCTAssertEqual(userDefaults?["NSPrivacyAccessedAPITypeReasons"] as? [String], ["CA92.1"])
+
+        // Aucune position déclarée comme collectée.
+        let collected = try XCTUnwrap(manifest["NSPrivacyCollectedDataTypes"] as? [[String: Any]])
+        let types = collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }
+        XCTAssertFalse(types.isEmpty)
+        XCTAssertTrue(types.allSatisfy { !$0.contains("Location") }, "\(types)")
+        // Rien n'est lié à l'identité de l'utilisateur ni utilisé pour du suivi.
+        XCTAssertTrue(collected.allSatisfy { $0["NSPrivacyCollectedDataTypeLinked"] as? Bool == false })
+        XCTAssertTrue(collected.allSatisfy { $0["NSPrivacyCollectedDataTypeTracking"] as? Bool == false })
+    }
+
+    // MARK: - Langues
+
+    func testEnglishIsTheFallbackAndFrenchAndEnglishAreDeclared() {
+        XCTAssertEqual(info["CFBundleDevelopmentRegion"] as? String, "en")
+        XCTAssertEqual(Set(info["CFBundleLocalizations"] as? [String] ?? []), ["fr", "en"])
     }
 }

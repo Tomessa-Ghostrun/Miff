@@ -1,0 +1,1452 @@
+{
+  "sourceLanguage": "fr",
+  "strings": {
+    "diag_appcheck_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier"
+          }
+        }
+      }
+    },
+    "diag_appcheck_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checks that the app can get an App Check token. It is not enforced yet: a missing token blocks nothing."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifie que l'app peut obtenir un jeton App Check. Il n'est pas encore exigé : un jeton absent ne bloque rien."
+          }
+        }
+      }
+    },
+    "diag_appcheck_none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No token for now. No impact yet, App Check is not enforced. On the simulator, the debug token shown in the Xcode console can be registered in the Firebase console."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de jeton pour le moment. Sans conséquence, App Check n'est pas encore exigé. Sur simulateur, le jeton de débogage affiché dans la console Xcode peut être enregistré dans la console Firebase."
+          }
+        }
+      }
+    },
+    "diag_appcheck_ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Token obtained"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeton obtenu"
+          }
+        }
+      }
+    },
+    "diag_appcheck_running": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in progress…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification en cours…"
+          }
+        }
+      }
+    },
+    "diag_appcheck_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Check"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Check"
+          }
+        }
+      }
+    },
+    "diag_build_android": {
+      "extractionState": "manual",
+      "comment": "Clé partagée avec Android, où elle affiche « Android X (API Y) ». Sur iOS : « iOS <version> (<modèle>) ». Renommer en diag_build_os sur les deux plateformes dans une PR ultérieure.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS %1$@ (%2$@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "diag_build_app_id": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Application: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Application : %1$@"
+          }
+        }
+      }
+    },
+    "diag_build_direction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text direction: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sens du texte : %1$@"
+          }
+        }
+      }
+    },
+    "diag_build_language": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue : %1$@"
+          }
+        }
+      }
+    },
+    "diag_build_project": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firebase project: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projet Firebase : %1$@"
+          }
+        }
+      }
+    },
+    "diag_build_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version installée"
+          }
+        }
+      }
+    },
+    "diag_build_type": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuration: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configuration : %1$@"
+          }
+        }
+      }
+    },
+    "diag_build_version": {
+      "extractionState": "manual",
+      "comment": "Arguments : version marketing, numéro de build (texte).",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version: %1$@ (build %2$@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version : %1$@ (build %2$@)"
+          }
+        }
+      }
+    },
+    "diag_crash_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trigger a test crash"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provoquer un plantage de test"
+          }
+        }
+      }
+    },
+    "diag_crash_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available only when crash reports are on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponible seulement quand les rapports de plantage sont activés."
+          }
+        }
+      }
+    },
+    "diag_direction_ltr": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "left to right"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de gauche à droite"
+          }
+        }
+      }
+    },
+    "diag_direction_rtl": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "right to left"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de droite à gauche"
+          }
+        }
+      }
+    },
+    "diag_event_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send the test event"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer l'événement de test"
+          }
+        }
+      }
+    },
+    "diag_event_disabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics is off: nothing was sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics est désactivé : rien n'a été envoyé."
+          }
+        }
+      }
+    },
+    "diag_event_location_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try to send a position (must be refused)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essayer d'envoyer une position (doit être refusé)"
+          }
+        }
+      }
+    },
+    "diag_event_location_refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refused, as expected: an event with a position is never sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refusé, comme prévu : un événement contenant une position n'est jamais envoyé."
+          }
+        }
+      }
+    },
+    "diag_event_location_unexpected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warning: the event with a position was not refused. Please tell the team."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attention : l'événement contenant une position n'a pas été refusé. Merci de prévenir l'équipe."
+          }
+        }
+      }
+    },
+    "diag_event_refused": {
+      "extractionState": "manual",
+      "comment": "Argument : raison du refus (identifiant technique).",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Event refused by the allow-list (%1$@)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Événement refusé par la liste blanche (%1$@)."
+          }
+        }
+      }
+    },
+    "diag_event_sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test event sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Événement de test envoyé."
+          }
+        }
+      }
+    },
+    "diag_gallery_color_alpha": {
+      "extractionState": "manual",
+      "comment": "Arguments : valeur hexadécimale, opacité en pourcentage.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld%%"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld %%"
+          }
+        }
+      }
+    },
+    "diag_gallery_colors": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colors"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couleurs"
+          }
+        }
+      }
+    },
+    "diag_gallery_gradients": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gradients"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dégradés"
+          }
+        }
+      }
+    },
+    "diag_gallery_radii": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corner radii"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrondis"
+          }
+        }
+      }
+    },
+    "diag_gallery_radius_meta": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld pt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld pt"
+          }
+        }
+      }
+    },
+    "diag_gallery_sample": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everyone is safe"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout le monde est en sécurité"
+          }
+        }
+      }
+    },
+    "diag_gallery_shadows": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shadows"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ombres"
+          }
+        }
+      }
+    },
+    "diag_gallery_style_meta": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld pt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld pt"
+          }
+        }
+      }
+    },
+    "diag_gallery_text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text styles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styles de texte"
+          }
+        }
+      }
+    },
+    "diag_gallery_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Design tokens"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tokens du design system"
+          }
+        }
+      }
+    },
+    "diag_input_email_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter the test account e-mail."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez l'e-mail du compte de test."
+          }
+        }
+      }
+    },
+    "diag_input_email_invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This e-mail address does not look right."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette adresse e-mail ne semble pas correcte."
+          }
+        }
+      }
+    },
+    "diag_input_password_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter the password."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez le mot de passe."
+          }
+        }
+      }
+    },
+    "diag_input_too_long": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This entry is too long."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette saisie est trop longue."
+          }
+        }
+      }
+    },
+    "diag_lang_long": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a deliberately long sentence, to check how the layout reacts when a translated text is much longer than the original, including wrapping over several lines with a large font size."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voici une phrase volontairement longue, pour vérifier comment la mise en page réagit quand un texte traduit est bien plus long que l'original, y compris avec un retour à la ligne sur plusieurs lignes et une grande taille de police."
+          }
+        }
+      }
+    },
+    "diag_lang_members": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld member"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld members"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld membre"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld de membres"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld membres"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "diag_lang_test_text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello Miff, 12:30, 3 friends."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour Miff, 12:30, 3 amis."
+          }
+        }
+      }
+    },
+    "diag_lang_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue"
+          }
+        }
+      }
+    },
+    "diag_open_home": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the welcome screen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir l'écran d'accueil"
+          }
+        }
+      }
+    },
+    "diag_privacy_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both are off by default: no usage or crash data is sent before you agree. Your choice is kept after a restart."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les deux sont désactivés par défaut : aucune donnée d'usage ni de plantage n'est envoyée avant votre accord. Votre choix est conservé après un redémarrage."
+          }
+        }
+      }
+    },
+    "diag_privacy_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics and crash reports"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics et rapports de plantage"
+          }
+        }
+      }
+    },
+    "diag_project_ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is the expected Miff project."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est bien le projet Miff attendu."
+          }
+        }
+      }
+    },
+    "diag_project_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project not identified. Please tell the team."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projet non identifié. Merci de prévenir l'équipe."
+          }
+        }
+      }
+    },
+    "diag_project_warning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unexpected project (expected: %1$@). Please stop here and tell the team."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projet inattendu (attendu : %1$@). Merci de vous arrêter ici et de prévenir l'équipe."
+          }
+        }
+      }
+    },
+    "diag_signin_disabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This test account is turned off."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce compte de test est désactivé."
+          }
+        }
+      }
+    },
+    "diag_signin_invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We could not sign in with these details. Please check them and try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion impossible avec ces informations. Vérifiez-les et réessayez."
+          }
+        }
+      }
+    },
+    "diag_signin_network": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection for now. Try again when the network is back."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. Réessayez dès que le réseau est revenu."
+          }
+        }
+      }
+    },
+    "diag_signin_too_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many attempts for now. Please wait a few minutes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trop de tentatives pour le moment. Patientez quelques minutes."
+          }
+        }
+      }
+    },
+    "diag_signin_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in did not work this time. Try again a bit later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion n'a pas fonctionné cette fois. Réessayez un peu plus tard."
+          }
+        }
+      }
+    },
+    "diag_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internal screen, test builds only. Nothing here is shown to the public."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Écran interne, réservé aux versions de test. Rien de ceci n'est visible du public."
+          }
+        }
+      }
+    },
+    "diag_switch_analytics": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics"
+          }
+        }
+      }
+    },
+    "diag_switch_crash": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crash reports"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rapports de plantage"
+          }
+        }
+      }
+    },
+    "diag_test1_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run test 1"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lancer le test 1"
+          }
+        }
+      }
+    },
+    "diag_test1_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tries to read a Miff without being signed in. The expected answer is a refusal. If you were signed in, you are signed out first."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essaie de lire une Miff sans être connecté. La réponse attendue est un refus. Si vous étiez connecté, vous êtes d'abord déconnecté."
+          }
+        }
+      }
+    },
+    "diag_test1_inconclusive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The test could not be completed this time. Try again a bit later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le test n'a pas pu aboutir cette fois. Réessayez un peu plus tard."
+          }
+        }
+      }
+    },
+    "diag_test1_offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection for now. Try again when the network is back."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. Réessayez dès que le réseau est revenu."
+          }
+        }
+      }
+    },
+    "diag_test1_ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rules active: OK"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Règles actives : OK"
+          }
+        }
+      }
+    },
+    "diag_test1_ok_detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server refused the read without sign-in, as expected."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le serveur a refusé la lecture sans connexion, comme prévu."
+          }
+        }
+      }
+    },
+    "diag_test1_open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warning: the read worked without signing in. The rules look open. Please do not continue and tell the team."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attention : la lecture a fonctionné sans être connecté. Les règles semblent ouvertes. Merci de ne pas continuer et de prévenir l'équipe."
+          }
+        }
+      }
+    },
+    "diag_test1_running": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test in progress…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test en cours…"
+          }
+        }
+      }
+    },
+    "diag_test1_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test 1 · Reading without signing in"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test 1 · Lecture sans être connecté"
+          }
+        }
+      }
+    },
+    "diag_test2_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in and read"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter et lire"
+          }
+        }
+      }
+    },
+    "diag_test2_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signs in with the test account created in the Firebase console, reads your profile and plan documents, then signs out. Nothing is written. The details are typed here only: they are never stored."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecte avec le compte de test créé dans la console Firebase, lit le profil et l'offre de ce compte, puis se déconnecte. Rien n'est écrit. Les identifiants sont saisis ici uniquement : ils ne sont jamais conservés."
+          }
+        }
+      }
+    },
+    "diag_test2_email_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test account e-mail"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E-mail du compte de test"
+          }
+        }
+      }
+    },
+    "diag_test2_offer_classic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan: Classic"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre : Classic"
+          }
+        }
+      }
+    },
+    "diag_test2_offer_premium": {
+      "extractionState": "manual",
+      "comment": "Argument : date d’échéance déjà formatée par le système.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan: Premium until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre : Premium jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "diag_test2_password_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mot de passe"
+          }
+        }
+      }
+    },
+    "diag_test2_profile_found": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile: found"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil : trouvé"
+          }
+        }
+      }
+    },
+    "diag_test2_profile_missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No profile yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de profil"
+          }
+        }
+      }
+    },
+    "diag_test2_read_denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in, but the rules refused the read of your own documents. Please tell the team."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté, mais les règles ont refusé la lecture de vos propres documents. Merci de prévenir l'équipe."
+          }
+        }
+      }
+    },
+    "diag_test2_read_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in, but reading the documents did not work this time. Try again a bit later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté, mais la lecture des documents n'a pas fonctionné cette fois. Réessayez un peu plus tard."
+          }
+        }
+      }
+    },
+    "diag_test2_running": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test in progress…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test en cours…"
+          }
+        }
+      }
+    },
+    "diag_test2_success": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test 2: OK"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test 2 : OK"
+          }
+        }
+      }
+    },
+    "diag_test2_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test 2 · Reading with a test account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test 2 · Lecture avec un compte de test"
+          }
+        }
+      }
+    },
+    "diag_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internal diagnostic"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostic interne"
+          }
+        }
+      }
+    },
+    "home_logo_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff logo (provisional)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logo de Miff (provisoire)"
+          }
+        }
+      }
+    },
+    "home_tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Know your loved ones are fine, without bothering them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Savoir que vos proches vont bien, sans les déranger."
+          }
+        }
+      }
+    },
+    "home_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

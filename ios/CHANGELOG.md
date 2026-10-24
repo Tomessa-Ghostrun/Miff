@@ -2,6 +2,37 @@
 
 ## Non publié
 
+### INIT-4 - Socle complet (PR #13)
+
+Ajouté :
+- **Firebase 13.1.1** (Swift Package Manager, version exacte, `Package.resolved` versionné, 13 paquets figés) : Firestore, Auth, App Check, Crashlytics, `FirebaseAnalyticsCore` (sans identifiant publicitaire). Analytics et Crashlytics **éteints au démarrage** (`Info.plist`), activés seulement par un choix enregistré (`PrivacySettings`). App Check : fournisseur de débogage en Debug, App Attest en Internal et Release (entitlement `Config/Miff.entitlements`). Mode non appliqué.
+- Liste blanche d'événements Analytics (contrat v1) avec les mêmes cas de test qu'Android ; aucun événement ne porte de position.
+- Design system en code (mêmes noms de tokens qu'Android, comparés par un test qui lit les fichiers Android), polices Baloo Thambi 2 et Hanken Grotesk (licences OFL), Dynamic Type, apparence claire imposée.
+- String Catalog fr (source) + en (repli, `CFBundleDevelopmentRegion = en`), 83 clés communes avec Android ; SwiftLint refuse textes et couleurs en dur (avec auto-test des règles en CI).
+- Écran de diagnostic et galerie de tokens (Debug et Internal seulement) + écran d'accueil ; l'écran de diagnostic est absent du binaire Release (vérifié en CI).
+- `PrivacyInfo.xcprivacy` complet ; aucune clé de localisation ; aucune exception ATS.
+- CI `ios` : configuration Firebase recréée depuis le secret `GOOGLE_SERVICE_INFO_PLIST_B64` (factice et évidente pour Dependabot), cache des paquets, contrôles du binaire, compilation Release, captures (français, anglais, langue non prise en charge, pseudo-langue allongée, droite-à-gauche, mode sombre, grande taille de texte, test 1). `ios-testflight` : même étape de configuration, `Package.resolved` appliqué, garde-fous de signature **inchangés**.
+- 94 tests XCTest ; entrée Dependabot `swift` pour `/ios` (efficacité non vérifiée).
+
+Changé : `HelloView` du spike remplacé par `HomeView` ; `BuildInfo.summary` supprimé (texte en dur) au profit de textes du catalogue.
+
+**Durées CI macOS** (`macos-26`, Xcode 26.x) :
+- Premier run (sans cache, commit `fb9f779`) : job 7 min 36 s (XcodeGen 0 s ; garde-fou d'identifiant 68 s car il résolvait les paquets ; résolution 20 s ; SwiftLint 2 s ; compilation Debug 49 s ; tests 88 s dont 94 tests en 3,5 s ; compilation Release 62 s ; captures 124 s). Environ 8 min facturées avant multiplicateur macOS (à vérifier, probablement x10).
+- Deuxième run (cache des paquets, commit `fd1905e`) : job 5 min 55 s (résolution 15 s ; compilation Debug 50 s ; tests 71 s ; compilation Release 60 s ; captures 104 s).
+- **Durées après revue** (cache des paquets, commit `3cdeeed`, run 40103131819, 99 tests, 0 ignoré) : job **6 min 19 s** (résolution 13 s ; SwiftLint 2 s ; compilation Debug 44 s ; tests 58 s ; compilation Release 51 s ; compilation **Internal** 48 s ; captures 110 s). Une PR qui ne change ni l'interface, ni les ressources, ni le projet saute Release, Internal et captures (environ 3,5 min de moins) ; une PR qui ne touche que des `.md` ne lance plus rien. Quota : ~6,5 min facturées par exécution complète, multiplicateur macOS probable x10 (à vérifier).
+
+**Corrections de revue (PM, 2026-10-24)** :
+- I-1 : la CI compile la configuration **Internal** (appareil, sans signature) et vérifie diagnostic présent, App Check de débogage absent, Info.plist cohérent ; `ios-testflight` contrôle après l'archive l'Info.plist, le projet Firebase embarqué, le diagnostic et les entitlements (App Attest) en plus de l'identité.
+- I-2 : `ci/crashlytics-upload-symbols.sh` ne fait plus rien en CI ni avec la clé App Store Connect dans l'environnement ; l'envoi des symboles est une étape séparée sans secret d'`ios-testflight` (non testée).
+- I-3 : délai maximal du job 30 -> 15 min ; le déclencheur ignore `ios/**/*.md` et `ios/third_party/**` et ajoute le thème Android ; compilations Release et Internal et captures seulement si l'interface, les ressources, le projet ou la CI changent.
+- I-4 (renvoyé à DUR-3) : ligne dans le README, rien n'est purgé ni exclu des sauvegardes ici.
+- I-5 : le résultat de chaque test est annoncé à VoiceOver.
+- M-1 `FirebaseDataCollectionDefaultEnabled = NO` + contrôle CI de l'Info.plist du binaire ; M-2 témoin positif en Debug et recherche de `advertisingIdentifier` ; M-3 un test ignoré fait échouer le job (sauf Dependabot) + test des clés de texte du code ; M-4 règle SwiftLint étendue (`DiagLine`, `SectionCard`, `SwitchRow`, `NavigationLink`, `ProgressView`, `Picker`, `Menu`, `.alert`, `.accessibilityValue`) ; M-6 `-onlyUsePackageVersionsFromResolvedFile` à l'archive ; M-7 mot de passe conservé si la saisie locale est invalide, raison de refus en `snake_case` (« unknown_event »), texte `diag_privacy_description` corrigé (« aucune donnée d'usage ni de plantage n'est envoyée avant votre accord ») ; M-8 options de lancement du diagnostic limitées à Debug et projet vérifié (`miff-3d283`) avant `FirebaseApp.configure` ; M-5 Dependabot `swift` laissé tel quel (noté dans le README).
+
+**Choix économiques** : cache des paquets Swift (GitHub Actions, gratuit) ; compilation Release de contrôle (environ 1 min de macOS) désactivable avec `RELEASE_CHECK: "false"` ; captures limitées à 11 images. Signal de bascule : mêmes seuils que le spike (plus de 70 % du quota avant le 20 du mois).
+
+**Non vérifié (seulement possible sur iPhone ou avec un compte de test)** : Test 2 (compte de test), App Attest et signature (`ios-testflight` jamais exécuté), rendu sur iPhone réel, ombres, absence de trafic Firebase avant consentement, plantage de test visible dans Crashlytics, envoi des symboles Crashlytics, rendu en iOS 16.
+
 ### INIT-3 - Spike : build cloud, signature et TestFlight
 
 État au 2026-10-22 :

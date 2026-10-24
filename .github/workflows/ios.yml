@@ -3,12 +3,24 @@ name: ios
 # Construit l'app iOS et lance ses tests sur simulateur, SANS signature.
 # Cout : minutes macOS (les plus chères du quota gratuit) -> filtres de chemins stricts.
 # L'archive signee et l'envoi a TestFlight sont dans ios-testflight.yml (manuel).
+#
+# Principe "tout voir en une execution" : SwiftLint, les tests, les controles du binaire, la verification du build
+# Release et les captures sont executes meme si l'un d'eux echoue ; l'etape finale "Verdict" fait echouer le job.
+# Cela evite de relancer un job macOS coûteux pour decouvrir l'erreur suivante.
+# Ne jamais utiliser pull_request_target ici : ce workflow lit un secret de depot.
 
 on:
   pull_request:
     paths:
       - "ios/**"
+      # Documentation et licences : aucun build macOS pour ça.
+      - "!ios/*.md"
+      - "!ios/**/*.md"
+      - "!ios/third_party/**"
       - ".github/workflows/ios.yml"
+      # ColorTokensTests compare les tokens iOS aux fichiers de thème Android : un changement de couleur ou de style
+      # de texte côté Android doit déclencher ce contrôle.
+      - "android/app/src/main/java/com/tomessa/miff/ui/theme/**"
   workflow_dispatch:
 
 permissions:
@@ -29,11 +41,16 @@ env:
   # Exigence du ticket INIT : Xcode 26.2 minimum.
   XCODE_MIN_MAJOR: "26"
   XCODE_MIN_MINOR: "2"
+  # Compile aussi la configuration Release (simulateur) et verifie qu'elle ne contient AUCUNE trace du diagnostic
+  # (critere I13). Coût : une compilation supplementaire (duree dans le resume) ; mettre "false" si trop long.
+  RELEASE_CHECK: "true"
 
 jobs:
   build-and-test:
     name: Build et tests (simulateur, sans signature)
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
+    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) ; 15 min laisse de la marge sans
+    # laisser un job bloque consommer le quota.
     timeout-minutes: 15
     defaults:
       run:
@@ -45,6 +62,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          # 2 commits suffisent : sur une PR, HEAD est la fusion de test et son premier parent est la branche de base.
+          fetch-depth: 2
+
+      - name: Détecter les changements qui exigent les contrôles lourds
+        # Compilations Release et Internal + captures (environ 4 min de macOS) : seulement si l'apparence, les textes,
+        # le projet ou la CI ont change. Un changement purement logique (modeles, services, tests) les saute.
+        run: |
+          set -uo pipefail
+          heavy=true
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && git rev-parse -q --verify "HEAD^2" > /dev/null 2>&1; then
+            changed=$(git diff --name-only HEAD^1 HEAD)
+            if ! echo "$changed" | grep -E -q '^(ios/(Miff/(Views|Diagnostic|Resources|DesignSystem|Localization|App)/|project\.yml|Config/|ci/)|\.github/workflows/ios\.yml)'; then
+              heavy=false
+            fi
+          fi
+          echo "HEAVY_CHECKS=$heavy" >> "$GITHUB_ENV"
+          echo "Contrôles lourds (Release, Internal, captures) : ${heavy}"
 
       - name: Ouvrir le résumé et vérifier Xcode
         run: |
@@ -87,13 +121,81 @@ jobs:
           echo "$tools/xcodegen/bin" >> "$GITHUB_PATH"
           echo "$tools/swiftlint" >> "$GITHUB_PATH"
 
+      - name: Recréer la configuration Firebase (secret, jamais affichée)
+        # Le fichier GoogleService-Info.plist n'est JAMAIS dans le depot. Il est recree ici depuis un secret GitHub
+        # (base64), avant la generation du projet (XcodeGen l'embarque s'il existe), puis supprime en fin de job.
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+        run: |
+          set +x
+          target="Config/GoogleService-Info.plist"
+          mkdir -p Config
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_B64" ] && [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+            # Les PR de Dependabot ne peuvent pas lire les secrets du depot. On genere une configuration
+            # EVIDEMMENT FACTICE, uniquement pour que le projet compile : elle ne pointe vers aucun vrai projet,
+            # ne peut jamais servir, et aucune capture n'est publiee pour ce run.
+            umask 077
+            cat > "$target" <<'FAKE'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key><string>FAKE-CI-KEY-NOT-A-REAL-KEY-DO-NOT-USE</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>BUNDLE_ID</key><string>com.tomessa.miff</string>
+            <key>PROJECT_ID</key><string>fake-ci-config-do-not-use</string>
+            <key>STORAGE_BUCKET</key><string>fake-ci-config-do-not-use.invalid</string>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000</string>
+          </dict>
+          </plist>
+          FAKE
+            echo "FAKE_FIREBASE_CONFIG=true" >> "$GITHUB_ENV"
+            echo "Dependabot : configuration Firebase factice générée (secret indisponible pour Dependabot). Aucune capture ne sera publiée."
+            exit 0
+          fi
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_B64" ]; then
+            echo "::error title=Secret manquant::Le secret GitHub GOOGLE_SERVICE_INFO_PLIST_B64 est absent. Le PM doit le créer (PowerShell) : [Convert]::ToBase64String([IO.File]::ReadAllBytes(\"chemin\\GoogleService-Info.plist\")) | gh secret set GOOGLE_SERVICE_INFO_PLIST_B64 --repo Tomessa-Ghostrun/Miff"
+            echo "Secret GOOGLE_SERVICE_INFO_PLIST_B64 absent : voir l'annotation d'erreur ci-dessus." >&2
+            exit 1
+          fi
+          umask 077
+          if ! printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_B64" | base64 -d > "$target" 2>/dev/null || ! plutil -lint "$target" > /dev/null 2>&1; then
+            rm -f "$target"
+            echo "::error title=Secret invalide::GOOGLE_SERVICE_INFO_PLIST_B64 n'est pas un fichier .plist encodé en base64 valide. Le PM doit le recréer avec la commande de l'erreur « Secret manquant »."
+            exit 1
+          fi
+          project_id=$(/usr/libexec/PlistBuddy -c "Print :PROJECT_ID" "$target" 2>/dev/null || true)
+          bundle_id=$(/usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" "$target" 2>/dev/null || true)
+          if [ "$project_id" != "miff-3d283" ] || [ "$bundle_id" != "com.tomessa.miff" ]; then
+            rm -f "$target"
+            echo "::error title=Mauvais projet Firebase::Le fichier décodé ne correspond pas au projet miff-3d283 / à l'app com.tomessa.miff. Le PM doit le régénérer avec : firebase apps:sdkconfig IOS <APP_ID> --project miff-3d283"
+            exit 1
+          fi
+          echo "Configuration Firebase recréée (projet et identifiant d'app vérifiés)."
+
       - name: Générer le projet Xcode
         run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
 
+      - name: Restaurer le cache des paquets Swift
+        id: spm-cache
+        # actions/cache v6.1.0 (empreinte de commit verifiee via l'API GitHub le 2026-10-23)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ios/build/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/project.yml', 'ios/Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Résoudre les paquets Swift (Package.resolved versionné)
+        id: resolve
+        run: bash ci/timed.sh "Paquets Swift (résolution)" bash ci/resolve-packages.sh
+
       - name: Garde-fou - bundle ID exact
+        # Place APRES la resolution des paquets : sinon xcodebuild les resout lui-meme (plus d'une minute perdue).
         run: |
           set -euo pipefail
-          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Debug 2>/dev/null \
+          actual=$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Debug \
+            -clonedSourcePackagesDirPath build/SourcePackages -disableAutomaticPackageResolution 2>/dev/null \
             | awk -F' = ' '$1 ~ /^[[:space:]]*PRODUCT_BUNDLE_IDENTIFIER$/ {print $2}')
           if [ "$actual" != "com.tomessa.miff" ]; then
             echo "::error::PRODUCT_BUNDLE_IDENTIFIER vaut « ${actual} » au lieu de « com.tomessa.miff »."
@@ -101,7 +203,44 @@ jobs:
           fi
 
       - name: SwiftLint
-        run: bash ci/timed.sh "SwiftLint" swiftlint lint --strict
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "SwiftLint" swiftlint lint --strict --reporter github-actions-logging \
+            || echo "LINT_FAILED=true" >> "$GITHUB_ENV"
+
+      - name: Auto-test des règles SwiftLint maison (texte et couleur en dur doivent être signalés)
+        run: |
+          set -uo pipefail
+          # Un fichier d'essai volontairement fautif : si SwiftLint ne le signale pas, les règles ne protègent rien
+          # (cas déjà vu : « Invalid configuration for rule », qui désactive la règle sans faire échouer le lint).
+          probe="$RUNNER_TEMP/lintprobe"
+          rm -rf "$probe"
+          mkdir -p "$probe/Miff/Views" "$probe/MiffTests"
+          cp .swiftlint.yml "$probe/.swiftlint.yml"
+          cat > "$probe/Miff/Views/Probe.swift" <<'SWIFT'
+          import SwiftUI
+
+          struct Probe: View {
+              var body: some View {
+                  Text("Bonjour")
+                      .foregroundColor(Color(red: 1, green: 0, blue: 0))
+              }
+          }
+          SWIFT
+          output=$(cd "$probe" && swiftlint lint --config .swiftlint.yml 2>&1 || true)
+          if echo "$output" | grep -q "Invalid configuration"; then
+            echo "::error::Une règle SwiftLint maison a une configuration invalide (elle est ignorée)."
+            echo "$output" | grep "Invalid configuration"
+            echo "LINT_FAILED=true" >> "$GITHUB_ENV"
+          fi
+          for rule in no_hardcoded_text no_color_literal_outside_tokens; do
+            if echo "$output" | grep -q "$rule"; then
+              echo "Règle ${rule} : détecte bien le fichier d'essai (OK)"
+            else
+              echo "::error::La règle ${rule} n'a pas détecté le fichier d'essai."
+              echo "LINT_FAILED=true" >> "$GITHUB_ENV"
+            fi
+          done
 
       - name: Choisir un simulateur iPhone
         run: |
@@ -121,15 +260,24 @@ jobs:
       - name: Compiler (build-for-testing)
         run: |
           set -uo pipefail
-          bash ci/timed.sh "Compilation (build-for-testing)" bash -c '
+          bash ci/timed.sh "Compilation Debug (build-for-testing)" bash -c '
             set -o pipefail
             xcodebuild build-for-testing \
               -project Miff.xcodeproj -scheme Miff -configuration Debug \
               -destination "id=$SIM_UDID" \
               -derivedDataPath build/DerivedData \
-              CODE_SIGNING_ALLOWED=NO \
+              -clonedSourcePackagesDirPath build/SourcePackages \
+              -disableAutomaticPackageResolution \
+              CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO \
               2>&1 | tee build/xcodebuild-build.log | xcbeautify
           '
+
+      - name: Contrôles du build Debug (identifiant publicitaire, polices, manifestes)
+        run: |
+          set -uo pipefail
+          { echo; echo "Contrôles du binaire Debug :"; } >> "$GITHUB_STEP_SUMMARY"
+          bash ci/check-binaries.sh debug build/DerivedData/Build/Products/Debug-iphonesimulator/Miff.app \
+            || echo "BINARY_CHECK_FAILED=true" >> "$GITHUB_ENV"
 
       - name: Tests XCTest
         run: |
@@ -140,10 +288,108 @@ jobs:
               -project Miff.xcodeproj -scheme Miff -configuration Debug \
               -destination "id=$SIM_UDID" \
               -derivedDataPath build/DerivedData \
+              -clonedSourcePackagesDirPath build/SourcePackages \
+              -disableAutomaticPackageResolution \
+              -parallel-testing-enabled NO \
               -resultBundlePath build/Tests.xcresult \
               CODE_SIGNING_ALLOWED=NO \
               2>&1 | tee build/xcodebuild-test.log | xcbeautify
-          '
+          ' || echo "TESTS_FAILED=true" >> "$GITHUB_ENV"
+          # Décompte des tests dans le résumé (format du résultat selon la version de Xcode : tolérant).
+          if [ -d build/Tests.xcresult ]; then
+            summary=$(xcrun xcresulttool get test-results summary --path build/Tests.xcresult --compact 2> /dev/null || true)
+            echo "$summary" \
+              | jq -r '"Tests : \(.passedTests // "?") réussis, \(.failedTests // "?") en échec, \(.skippedTests // "?") ignorés (total \(.totalTestCount // "?"))"' \
+              | tee -a "$GITHUB_STEP_SUMMARY" || true
+            # Un test ignoré (XCTSkip : fichier Android ou configuration Firebase introuvable) est un contrôle qui ne
+            # contrôle plus rien : échec, sauf pour Dependabot (configuration Firebase factice, tests ignorés prévus).
+            skipped=$(echo "$summary" | jq -r '.skippedTests // 0' 2> /dev/null || echo 0)
+            if [ "${skipped:-0}" != "0" ] && [ "${FAKE_FIREBASE_CONFIG:-}" != "true" ]; then
+              echo "::error::${skipped} test(s) ignoré(s) : un contrôle ne s'est pas exécuté (voir les journaux des tests)."
+              echo "TESTS_FAILED=true" >> "$GITHUB_ENV"
+            fi
+          fi
+
+      - name: Compiler la configuration Release et vérifier l'absence du diagnostic
+        if: env.HEAVY_CHECKS == 'true' && env.RELEASE_CHECK == 'true'
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Compilation Release (simulateur)" bash -c '
+            set -o pipefail
+            xcodebuild build \
+              -project Miff.xcodeproj -scheme Miff -configuration Release \
+              -destination "id=$SIM_UDID" \
+              -derivedDataPath build/DerivedDataRelease \
+              -clonedSourcePackagesDirPath build/SourcePackages \
+              -disableAutomaticPackageResolution \
+              CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO ONLY_ACTIVE_ARCH=YES \
+              2>&1 | tee build/xcodebuild-release.log | xcbeautify
+          ' || { echo "RELEASE_BUILD_FAILED=true" >> "$GITHUB_ENV"; exit 0; }
+          { echo; echo "Contrôles du binaire Release (critère I13) :"; } >> "$GITHUB_STEP_SUMMARY"
+          bash ci/check-binaries.sh release build/DerivedDataRelease/Build/Products/Release-iphonesimulator/Miff.app \
+            || echo "BINARY_CHECK_FAILED=true" >> "$GITHUB_ENV"
+
+      - name: Compiler la configuration Internal (build TestFlight) et la contrôler
+        # Le build que le PM installe : diagnostic présent, App Attest (et NON le fournisseur de débogage), Info.plist
+        # cohérent. Compilé pour appareil (generic/platform=iOS) sans signature ; la signature est le travail d'ios-testflight.
+        if: env.HEAVY_CHECKS == 'true'
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Compilation Internal (appareil, sans signature)" bash -c '
+            set -o pipefail
+            xcodebuild build \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -derivedDataPath build/DerivedDataInternal \
+              -clonedSourcePackagesDirPath build/SourcePackages \
+              -disableAutomaticPackageResolution \
+              CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+              2>&1 | tee build/xcodebuild-internal.log | xcbeautify
+          ' || { echo "INTERNAL_BUILD_FAILED=true" >> "$GITHUB_ENV"; exit 0; }
+          { echo; echo "Contrôles du binaire Internal (TestFlight) :"; } >> "$GITHUB_STEP_SUMMARY"
+          bash ci/check-binaries.sh internal build/DerivedDataInternal/Build/Products/Internal-iphoneos/Miff.app \
+            || echo "BINARY_CHECK_FAILED=true" >> "$GITHUB_ENV"
+
+      - name: Captures d'écran (français, anglais, repli, pseudo-langue, droite-à-gauche...)
+        if: env.HEAVY_CHECKS == 'true'
+        run: |
+          set -uo pipefail
+          # Le test 1 interroge le vrai Firestore (une lecture non authentifiée) : seulement avec la vraie configuration.
+          with_test1=""
+          if [ "${FAKE_FIREBASE_CONFIG:-}" != "true" ]; then with_test1="avec-test1"; fi
+          bash ci/timed.sh "Captures d'écran (simulateur)" \
+            bash ci/screenshots.sh "$SIM_UDID" build/DerivedData/Build/Products/Debug-iphonesimulator/Miff.app build/screenshots "$with_test1" \
+            || echo "SCREENSHOTS_FAILED=true" >> "$GITHUB_ENV"
+
+      - name: Enregistrer le cache des paquets Swift
+        if: always() && steps.resolve.outcome == 'success' && steps.spm-cache.outputs.cache-hit != 'true'
+        # actions/cache v6.1.0 (meme empreinte que la restauration)
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ios/build/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/project.yml', 'ios/Package.resolved') }}
+
+      - name: Supprimer la configuration Firebase du runner
+        if: always()
+        run: rm -f Config/GoogleService-Info.plist
+
+      - name: Verdict
+        if: always()
+        run: |
+          fail=0
+          if [ "${LINT_FAILED:-}" = "true" ]; then echo "::error::SwiftLint a signalé des violations (voir l'étape SwiftLint)."; fail=1; fi
+          if [ "${TESTS_FAILED:-}" = "true" ]; then echo "::error::Des tests XCTest ont échoué (voir l'étape Tests XCTest)."; fail=1; fi
+          if [ "${BINARY_CHECK_FAILED:-}" = "true" ]; then echo "::error::Un contrôle du binaire a échoué (voir les étapes de contrôle)."; fail=1; fi
+          if [ "${RELEASE_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Release a échoué."; fail=1; fi
+          if [ "${INTERNAL_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Internal a échoué."; fail=1; fi
+          if [ "${SCREENSHOTS_FAILED:-}" = "true" ]; then echo "::error::Les captures d'écran ont échoué."; fail=1; fi
+          case "${PACKAGE_RESOLVED_STATE:-ok}" in
+            missing | stale)
+              echo "::error title=Package.resolved::ios/Package.resolved est ${PACKAGE_RESOLVED_STATE} : committer le fichier de l'artefact « ios-resolved-${{ github.run_number }} » (Package.resolved.generated) sous ios/Package.resolved."
+              fail=1
+              ;;
+          esac
+          exit "$fail"
 
       - name: Durée totale du job
         if: always()
@@ -151,14 +397,35 @@ jobs:
           total=$(( $(date +%s) - ${JOB_START:-$(date +%s)} ))
           {
             echo
-            echo "**Durée totale (hors démarrage du runner) : ${total} s (~$(( (total + 59) / 60 )) min facturées).**"
-            echo
-            echo "Rappel : sur un dépôt privé, une minute macOS consomme le quota gratuit bien plus vite qu'une minute Linux (voir docs/dev/ios-spike.md)."
+            echo "**Durée totale (hors démarrage du runner) : ${total} s (~$(( (total + 59) / 60 )) min facturées)."
+            echo "Rappel : sur un dépôt privé, une minute macOS consomme le quota gratuit bien plus vite qu'une minute Linux (voir docs/dev/ios-spike.md).**"
+            if [ "${FAKE_FIREBASE_CONFIG:-}" = "true" ]; then
+              echo
+              echo "> Exécution de Dependabot : configuration Firebase factice, aucune capture publiée."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Déposer Package.resolved généré
+        if: always()
+        # actions/upload-artifact v7.0.2 (empreinte de commit verifiee via l'API GitHub le 2026-10-21)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ios-resolved-${{ github.run_number }}
+          path: ios/build/Package.resolved.generated
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Déposer les captures d'écran
+        if: always() && env.FAKE_FIREBASE_CONFIG != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ios-screenshots-${{ github.run_number }}
+          path: ios/build/screenshots
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Déposer les journaux (en cas d'échec)
         if: failure()
-        # actions/upload-artifact v7.0.2 (empreinte de commit verifiee via l'API GitHub le 2026-10-21)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: ios-logs-${{ github.run_number }}
