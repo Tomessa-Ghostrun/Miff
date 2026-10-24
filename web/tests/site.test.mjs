@@ -350,10 +350,27 @@ test('ADRESSE - l\'e-mail et l\'adresse de l\'éditeur n\'apparaissent que via w
   const other = { publisher: { name: 'Test Éditeur', postalAddress: '1 rue de l’Exemple, 00000 Ville', contactEmail: FAKE_CONTACT } };
   writeFileSync(join(copyRoot, 'web', 'site.config.json'), JSON.stringify(other));
   const changed = buildTemp({ root: copyRoot });
-  for (const name of ['fr/cgu.html', 'en/privacy.html', 'fr/supprimer-mon-compte.html', 'en/delete-account.html']) {
+  // Pages pilotées par la config (pied de page, suppression de compte). Les textes légaux de docs/legal peuvent, eux,
+  // porter ces valeurs en dur (autre PR) : leur cohérence avec la config est vérifiée par le test suivant.
+  for (const name of ['fr/index.html', 'en/index.html', 'fr/cgu.html', 'en/terms.html', 'fr/supprimer-mon-compte.html', 'en/delete-account.html']) {
     const html = read(join(changed.out, name));
-    assert.ok(html.includes(FAKE_CONTACT) && html.includes('Test Éditeur') && html.includes('1 rue de l’Exemple'), `${name} : la config n'est pas reprise`);
+    assert.ok(html.includes(FAKE_CONTACT) && html.includes('Test Éditeur') && html.includes('1 rue de l’Exemple'), `${name} : la config n'est pas reprise (pied de page)`);
+  }
+  for (const name of ['fr/index.html', 'en/index.html', 'fr/supprimer-mon-compte.html', 'en/delete-account.html']) {
+    const html = read(join(changed.out, name));
     assert.ok(!html.includes(publisher.contactEmail) && !html.includes(publisher.postalAddress), `${name} : ancienne valeur encore présente`);
+  }
+});
+
+test('ADRESSE - les textes légaux (docs/legal) et la config disent la même chose : mêmes e-mail, nom et adresse postale', () => {
+  const { publisher } = JSON.parse(read(join(WEB, 'site.config.json')));
+  const pageText = (name) => visibleText(byName[name].html);
+  for (const name of ['fr/cgu.html', 'fr/confidentialite.html', 'en/terms.html', 'en/privacy.html']) {
+    const html = byName[name].html;
+    const emails = [...new Set([...visibleText(html).matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g)].map((m) => m[0]))];
+    assert.deepEqual(emails.filter((e) => e !== publisher.contactEmail), [], `${name} : une autre adresse e-mail que celle de site.config.json`);
+    assert.ok(pageText(name).includes(publisher.name), `${name} : nom de l'éditeur différent de site.config.json`);
+    assert.ok(pageText(name).includes(publisher.postalAddress), `${name} : adresse postale différente de site.config.json`);
   }
 });
 

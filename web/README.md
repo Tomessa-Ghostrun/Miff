@@ -26,7 +26,9 @@ Un site construit pour la prévisualisation est marqué « démonstration » : l
 
 ## 2. Où sont les informations de l'éditeur ?
 
-**Un seul endroit : `web/site.config.json`** (nom de l'éditeur, adresse postale, e-mail de contact). Le build les injecte dans les textes légaux (aux emplacements `[NOM / RAISON SOCIALE À COMPLÉTER]`, `[ADRESSE À COMPLÉTER]`, `[E-MAIL DE CONTACT À DÉFINIR]`), dans la page de suppression de compte (lien « Écrire pour demander la suppression ») et dans le pied de page. Pour changer d'adresse (par exemple une adresse dédiée avant la bêta externe, ticket authentification §13 étapes 3 et 8) : modifie ce fichier, rien d'autre. Un test vérifie que ces valeurs ne sont recopiées nulle part ailleurs dans le code web. L'adresse e-mail est **provisoire** (décision du PM, 2026-10-24) et devient publique dès la mise en ligne.
+**Un seul endroit : `web/site.config.json`** (nom de l'éditeur, adresse postale, e-mail de contact). Le build les injecte dans la page de suppression de compte (lien « Écrire pour demander la suppression ») et dans le pied de page de chaque page, et renseigne aussi les anciens emplacements des textes légaux (`[NOM / RAISON SOCIALE À COMPLÉTER]`, `[ADRESSE À COMPLÉTER]`, `[E-MAIL DE CONTACT À DÉFINIR]`) s'il en reste. Un test vérifie que ces valeurs ne sont recopiées nulle part ailleurs **dans le code web**.
+
+Attention : les textes de `docs/legal/*.md` (autre PR) portent désormais ces valeurs **en dur**. Pour changer d'adresse (par exemple une adresse dédiée avant la bêta externe, ticket authentification §13 étapes 3 et 8), il faut donc modifier `web/site.config.json` **et** `docs/legal/*.md` (la recherche de « Tomessa MFOUKA (personne physique) » dans `docs/legal/README.md` explique comment). Un test échoue si les deux ne disent plus la même chose (e-mail, nom, adresse postale). L'adresse e-mail est **provisoire** (décision du PM, 2026-10-24) et devient publique dès la mise en ligne.
 
 ## 3. Textes légaux : décision du PM du 2026-10-23
 
