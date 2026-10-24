@@ -87,7 +87,13 @@ export function startPreview({ root = REPO_ROOT, publicDir = join(root, 'web', '
   }
 
   const server = createServer((req, res) => {
-    const url = new URL(req.url, 'http://127.0.0.1');
+    let url;
+    try {
+      url = new URL(req.url, 'http://127.0.0.1');
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('Bad request');
+    }
     const send = (status, type, body, extra = {}) => {
       res.writeHead(status, { 'Content-Type': type, ...headersFor(config, url.pathname), ...extra });
       res.end(body);
@@ -112,10 +118,14 @@ export function startPreview({ root = REPO_ROOT, publicDir = join(root, 'web', '
     }
     if (url.pathname.endsWith('.html') && url.pathname !== '/404.html') {
       // Comme Firebase Hosting avec cleanUrls : l'adresse en .html redirige vers l'adresse propre.
-      res.writeHead(301, { Location: url.pathname.replace(/(\/index)?\.html$/, '') || '/' });
-      return res.end();
+      return send(301, 'text/plain; charset=utf-8', '', { Location: url.pathname.replace(/(\/index)?\.html$/, '') || '/' });
     }
-    const file = req.method === 'GET' || req.method === 'HEAD' ? resolveFile(url.pathname) : null;
+    let file = null;
+    try {
+      file = req.method === 'GET' || req.method === 'HEAD' ? resolveFile(url.pathname) : null;
+    } catch {
+      return send(400, 'text/plain; charset=utf-8', 'Bad request'); // adresse mal encodée (ex. %E0%A4%A)
+    }
     if (file) return send(200, TYPES[extname(file)] ?? 'application/octet-stream', readFileSync(file));
     const notFound = join(base, '404.html');
     return send(404, TYPES['.html'], existsSync(notFound) ? readFileSync(notFound) : 'Not found');

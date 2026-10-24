@@ -43,6 +43,7 @@ test('PAGES - les versions FR et EN sont symétriques (même structure, mêmes t
       tr: count(/<tr\b/g),
       blockquote: count(/<blockquote\b/g),
       hr: count(/<hr\b/g),
+      paragraphs: count(/<p[ >]/g),
       links: count(/<a\b/g),
     };
   };
@@ -193,10 +194,8 @@ test('MENTIONS - éditeur, adresse postale et contact viennent de web/site.confi
 
 test('TUTOIEMENT - aucune chaîne d\'interface française ne vouvoie (pages, interface, mot de passe)', () => {
   const vous = /(?<![\p{L}])(vous|votre|vos)(?![\p{L}])/iu;
-  // Exception connue et signalée : faute de rédaction dans le brouillon légal cgu.fr.md (autre PR), à corriger là-bas.
-  const knownLegalSlip = /prenez en vous fiant/;
   for (const { name, html } of pages.filter((p) => p.name.startsWith('fr/') || p.name === 'index.html' || p.name === 'reset-password.html')) {
-    const text = visibleText(html).replace(knownLegalSlip, '');
+    const text = visibleText(html);
     assert.ok(!vous.test(text), `${name} : vouvoiement détecté (« ${text.match(vous)?.[0]} »)`);
   }
   for (const [key, value] of Object.entries(ui.fr)) assert.ok(!vous.test(value), `ui.json fr.${key} : vouvoiement`);
@@ -398,4 +397,20 @@ test('INJECTION - la clé web vient de l\'environnement, jamais des sources', ()
 test('BUILD - refuse d\'écrire hors de web/ ou du dossier temporaire', () => {
   assert.throws(() => buildTemp({ out: ROOT }), /refusé/);
   assert.throws(() => buildTemp({ out: join(ROOT, 'android') }), /refusé/);
+  for (const dir of ['src', 'tests', 'src/assets', 'tests/sous-dossier']) {
+    assert.throws(() => buildTemp({ out: join(WEB, dir) }), /refusé/, `web/${dir} ne doit jamais être vidé`);
+  }
+  assert.ok(existsSync(join(WEB, 'src', 'layout.html')) && existsSync(join(WEB, 'tests', 'site.test.mjs')));
+});
+
+test('SUPPRESSION - la page dit explicitement que supprimer un compte de créateur supprime aussi ses Miffs', () => {
+  assert.match(visibleText(byName['fr/supprimer-mon-compte.html'].html), /supprimer ton compte supprime aussi les Miffs que tu as créées, avec leurs lieux, statuts et photos/);
+  assert.match(visibleText(byName['en/delete-account.html'].html), /deleting your account also deletes the Miffs you created, with their places, statuses and photos/);
+});
+
+test('CONFIDENTIALITE - la politique décrit le site web lui-même (journaux d\'hébergement, mot de passe transmis à Google, aucun cookie), en FR et en EN', () => {
+  const fr = visibleText(byName['fr/confidentialite.html'].html);
+  const en = visibleText(byName['en/privacy.html'].html);
+  for (const pattern of [/site web de Miff/, /aucun cookie ni traceur/, /Firebase Hosting/, /adresse IP/, /journaux techniques/, /nouveau mot de passe/, /transmet ce nouveau mot de passe directement à Google/]) assert.match(fr, pattern);
+  for (const pattern of [/Miff website/, /no cookies and no trackers/, /Firebase Hosting/, /IP address/, /technical logs/, /new password/, /sends that new password directly to Google/]) assert.match(en, pattern);
 });

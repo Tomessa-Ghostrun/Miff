@@ -205,7 +205,8 @@ export function markdownToHtml(markdown, context) {
     return html.join('\n');
   }
 
-  const html = parse(markdown.replace(/\r\n?/g, '\n').split('\n'));
+  // Les caractères \u0000 et \u0001 servent de marqueurs internes : on les retire de l'entrée pour qu'elle ne puisse pas les imiter.
+  const html = parse(markdown.replace(/[\u0000\u0001]/g, '').replace(/\r\n?/g, '\n').split('\n'));
   return { html, title };
 }
 
@@ -260,6 +261,11 @@ function assertSafeOut(out, root) {
   const inTmp = resolved.startsWith(resolve(tmpdir()) + sep);
   if (!inWeb && !inTmp) {
     throw new Error(`Dossier de sortie refusé (${out}) : il doit être dans web/ ou dans le dossier temporaire du système.`);
+  }
+  // Le dossier de sortie est vidé avant construction : jamais les sources ni les tests du site.
+  const protectedDirs = ['src', 'tests'].map((name) => join(root, 'web', name));
+  if (protectedDirs.some((dir) => resolved === dir || resolved.startsWith(dir + sep)) || resolved === join(root, 'web')) {
+    throw new Error(`Dossier de sortie refusé (${out}) : il contiendrait les sources ou les tests du site (web/src, web/tests).`);
   }
   return resolved;
 }
@@ -320,15 +326,17 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
   const publisher = loadSiteConfig(root).publisher;
   const contactLink = `<a href="mailto:${escapeHtml(publisher.contactEmail)}">${escapeHtml(publisher.contactEmail)}</a>`;
   const applyPublisher = (html) => {
-    let result = html
-      .replaceAll('{{CONTACT}}', contactLink)
-      .replaceAll('{{CONTACT_EMAIL}}', escapeHtml(publisher.contactEmail))
-      .replaceAll('{{PUBLISHER}}', escapeHtml(publisher.name))
-      .replaceAll('{{ADDRESS}}', escapeHtml(publisher.postalAddress));
+    // Fonctions de remplacement : une valeur contenant « $& » ou « $1 » ne doit jamais être interprétée comme un motif.
+    const swap = (text, search, value) => text.replaceAll(search, () => value);
+    let result = html;
+    result = swap(result, '{{CONTACT}}', contactLink);
+    result = swap(result, '{{CONTACT_EMAIL}}', escapeHtml(publisher.contactEmail));
+    result = swap(result, '{{PUBLISHER}}', escapeHtml(publisher.name));
+    result = swap(result, '{{ADDRESS}}', escapeHtml(publisher.postalAddress));
     // Emplacements déjà présents dans les textes légaux (docs/legal, autre PR) : renseignés ici, sans toucher aux sources.
-    for (const placeholder of LEGAL_CONTACT_PLACEHOLDERS) result = result.replaceAll(placeholder, contactLink);
-    for (const placeholder of LEGAL_PUBLISHER_PLACEHOLDERS) result = result.replaceAll(placeholder, escapeHtml(publisher.name));
-    for (const placeholder of LEGAL_ADDRESS_PLACEHOLDERS) result = result.replaceAll(placeholder, escapeHtml(publisher.postalAddress));
+    for (const placeholder of LEGAL_CONTACT_PLACEHOLDERS) result = swap(result, placeholder, contactLink);
+    for (const placeholder of LEGAL_PUBLISHER_PLACEHOLDERS) result = swap(result, placeholder, escapeHtml(publisher.name));
+    for (const placeholder of LEGAL_ADDRESS_PLACEHOLDERS) result = swap(result, placeholder, escapeHtml(publisher.postalAddress));
     return result;
   };
 
