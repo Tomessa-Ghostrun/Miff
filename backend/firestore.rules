@@ -4,8 +4,10 @@ rules_version = '2';
 // Miff — règles de sécurité Firestore (projet miff-3d283, europe-west9)
 //
 // STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
-// `npm test` dans backend/), JAMAIS déployées. Le déploiement suit la procédure
-// du ticket docs/tickets/durcissement-regles-firestore.md (§8.2).
+// `npm test` dans backend/). Les règles de `main` au 2026-10-23 (commit 1017391) ont été
+// déployées sur miff-3d283 depuis le poste du PM ; celles de la PR AUTH-B (consentements,
+// profil exigé) ne sont PAS déployées. Tout déploiement suit la procédure du ticket
+// docs/tickets/durcissement-regles-firestore.md (§8.2).
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
