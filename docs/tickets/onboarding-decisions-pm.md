@@ -19,17 +19,13 @@ Réponses du PM aux 14 questions de `docs/tickets/onboarding.md` (ce fichier rem
 | Q13 | Barre d'onglets, état « sans Miff » | Retenue : Feed / bouton central (Update) / Profil ; écran de choix plein écran sans barre quand il n'y a pas de Miff. | §6.2, §6.7 |
 | Q14 | Échappatoire pendant l'onboarding | **Aucun lien « Ce n'est pas toi ? » (contre ma recommandation)** : la déconnexion se fait depuis les Paramètres. Risque assumé : une personne qui a créé un compte par erreur doit aller au bout de l'onboarding pour pouvoir se déconnecter. | §6.3, R16, PR10 |
 
-## Question encore ouverte
+## Question N1 : tranchée (2026-10-24)
 
-**N1. Qui voit le numéro de téléphone ?** Ta décision (Q1) fait du numéro une donnée visible des proches (boutons « Appeler » et « Message » du Feed). Je ne l'ai pas inventé : voici ma proposition, à confirmer.
-- **Option A (recommandée)** : visible par **tous les membres de chaque Miff dont la personne fait partie, et par eux seuls**, via la copie dans la fiche de membre, **sans condition de partage de position**. Jamais visible du public ni d'une personne hors de ses Miffs ; la copie disparaît quand la personne quitte ou est retirée. C'est le plus simple et le plus cohérent avec l'usage.
-- Option B : visible du seul créateur de la Miff (moins d'exposition, mais les boutons ne marchent que pour lui).
-- Option C : visible seulement des membres qui partagent eux-mêmes leur position (même logique que la réciprocité des statuts ; plus complexe).
-- Option D : choix par Miff (interrupteur) : plus de contrôle, plus d'écrans.
+**N1. Qui voit le numéro de téléphone ?** Décision du PM : **option A**. Un utilisateur voit **uniquement** les numéros de téléphone des membres des Miffs auxquelles il appartient, et son propre numéro n'est vu **que** par les membres des Miffs dont il fait partie, via la copie dans la fiche de membre, **sans condition de partage de position**. Jamais visible du public ni d'une personne hors de ses Miffs ; la copie disparaît quand la personne quitte ou est retirée. Options B (créateur seul), C (membres qui partagent aussi) et D (choix par Miff) écartées.
 
-**Point de vigilance pour ta décision** : tant que toute personne qui connaît le code d'une Miff la rejoint immédiatement (sans approbation), une fuite de code est aussi une fuite des numéros de tous les membres. Atténuations existantes : le code change à chaque retrait d'un membre et le créateur peut le régénérer ; une approbation du créateur à l'arrivée serait une atténuation à reconsidérer.
-
-Tant que N1 n'est pas tranchée, ONB-B (règles de lecture et d'écriture) et les écrans de profil ne sont pas finalisés.
+- **Mention sur l'écran de saisie** (obligatoire, sous le champ ; aussi dans Réglages > Mes informations) : « Seuls les membres de tes Miffs verront ce numéro, pour pouvoir t'appeler ou t'écrire. Personne d'autre. »
+- **Impact** : ONB-B n'ajoute aucune règle de lecture (visibilité = fiche de membre, déjà lisible des membres de la Miff) ; ONB-2 et ONB-6 sont débloqués ; plus aucune question ouverte.
+- **Risque assumé conservé** : tant que toute personne qui connaît le code d'une Miff la rejoint immédiatement (sans approbation), **une fuite de code est aussi une fuite des numéros de tous les membres**. Atténuations existantes : le code change à chaque retrait d'un membre et le créateur peut le régénérer ; une approbation du créateur à l'arrivée serait une atténuation à reconsidérer (R7).
 
 ## Ce qui change dans le plan
 
