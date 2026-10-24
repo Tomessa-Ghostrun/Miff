@@ -1,6 +1,6 @@
 # Ticket — Miff : créer, rejoindre et gérer son cercle (et frontière avec le Feed)
 
-**Statut** : brouillon issu de l'étape « challenge », **mis à jour avec les décisions du PM du 2026-10-24** (`docs/tickets/miff-questions-pm.md`, §15 ci-dessous) ; reste à valider avant tout développement (aucun développement lancé). Un point reste à confirmer par le PM (§15, « Points à confirmer »).
+**Statut** : brouillon issu de l'étape « challenge », **mis à jour avec les décisions du PM du 2026-10-24** (`docs/tickets/miff-questions-pm.md`, §15 ci-dessous) ; reste à valider avant tout développement (aucun développement lancé). Les deux points restés à confirmer ont été tranchés le 2026-10-24 (§15, « Précisions du PM »).
 **Rédigé le** : 2026-10-24 (agent `product-specs`, étape « challenge » du process par ticket) ; mis à jour le 2026-10-24 après les réponses du PM aux 15 questions (les codes QM1 à QM15 renvoient à ces décisions).
 **Fusionne** : les tickets Notion « Miff » (statut Notion : « Spec en attente de review IA ») et « Miff — créer / rejoindre / gérer un groupe » (statut « Backlog discovery », miroir de `docs/specs/miff-groupes.md`, qui devient redondant : à clore ou à lier par le PM une fois ce ticket validé). Le ticket « Feed » (Notion, « Spec en attente de review IA ») et son miroir `docs/specs/feed-cercle-de-confiance.md` sont **traités comme un ticket distinct** (§7, décision QM10) ; seuls leurs constats sont consignés ici. Des pages Notion « MIFF » (parent et sous-tickets) et « FEED » sont créées à part ; aucun autre ticket Notion n'est modifié.
 **Sources lues** : Notion « Miff » (racine du projet : pitch et règles métier), « Miff » (tâche), « Miff — créer / rejoindre / gérer un groupe », « Feed », « Feed — cercle de confiance » ; en contexte : « Onboarding » (écrans création et saisie du code), « Premium », « Paywall / Premium », « Paramètre » ; `CLAUDE.md` ; `docs/tickets/authentification.md` (§5, §7.6, §7.7, §15 AUTH-5, §17 ; **non remis en cause** : suppression du compte d'un créateur = ses Miffs supprimées) ; `docs/tickets/durcissement-regles-firestore.md` (§3 à §6, §10, §15) ; `docs/tickets/initialisation-technique.md` (§3, §9, §10) ; `backend/data-model.md` (§1 à §10, §12 à §15) ; `backend/firestore.rules` ; `design/design-system.md` ; `docs/contracts/analytics-events.md` et `i18n-keys.md` ; `docs/specs/*.md`.
@@ -66,7 +66,7 @@ Ce que le challenge change par rapport aux tickets Notion (détails en §4) :
 
 ```
 Écran de choix (onboarding, ou état vide du Feed)
-  ├─ « Créer une nouvelle Miff » ─► Nouvelle Miff : nom + texte de partage + « Créer et partager » (extension de QM2, à confirmer §15)
+  ├─ « Créer une nouvelle Miff » ─► Nouvelle Miff : nom + texte de partage + « Créer et partager » (extension de QM2 à la création, confirmée par le PM)
   │        └─► Lot unique (Miff + code + fiche + index + statut initial) ─► « Ta Miff est prête » : code + Partager / Copier ─► Feed
   └─ « Rejoindre une Miff existante » ─► Saisie du code ─► [déjà membre ?]
            ─► Confirmation « Rejoindre la Miff « X » ? » + texte de partage + « Rejoindre et partager »
@@ -127,7 +127,7 @@ C, E (avec le texte de partage et le bouton « Rejoindre et partager »), G, H, 
 | 16 | **Spec locale `miff-groupes.md`** : ses 4 questions ouvertes ont maintenant une réponse (retrait : créateur seul ; historique : aucun ; transfert : non ; régénération : oui). | Spec vs décisions | À mettre à jour ou à clore par le PM après validation. |
 | 17 | **Hors ticket** : Notion Premium cite un paywall pour qui veut créer un lieu « alors qu'il en a déjà 2 » alors que le gratuit est limité à **1** lieu. | Notion Premium vs reste | À reporter au ticket Premium / Lieux. |
 | 18 | **Permission de localisation** : Notion Onboarding impose « Toujours autoriser » pour utiliser l'app ; pour **ce** ticket, le PM veut qu'elle soit demandée à part et ne bloque jamais l'entrée dans une Miff. | Notion Onboarding vs décision QM2 | À trancher dans les tickets Onboarding / Localisation (obligation d'usage de l'app) ; ici, rejoindre ne dépend jamais de la permission. |
-| 19 | **Téléphone obligatoire à l'onboarding** (décision PM, QM11) alors que le schéma n'a **aucun champ téléphone** et que le ticket AUTH recommandait de le retirer de la v1. | Notion Onboarding, décision PM vs `data-model.md` §2.1 | À traiter par les tickets Onboarding et Feed avec `backend-data` (champ, règles, visibilité aux membres, consentement). Hors de ce ticket. |
+| 19 | **Téléphone obligatoire à l'onboarding** (décision PM, QM11) alors que le schéma n'a **aucun champ téléphone** et que le ticket AUTH recommandait de le retirer de la v1. **Visibilité tranchée par le PM (2026-10-24, proposition A) : le numéro est visible des membres des Miffs de l'utilisateur, et d'eux seuls.** | Notion Onboarding, décision PM vs `data-model.md` §2.1 | À traiter par les tickets Onboarding et Feed avec `backend-data` (champ, règles, mise en œuvre). Conséquence pour ce ticket : le texte de confirmation (§5.10), qui dit aujourd'hui que les membres verront prénom et photo, devra aussi citer le numéro de téléphone (formulation à valider par le PM dans le ticket Onboarding / Feed). Hors du reste de ce ticket. |
 
 ---
 
@@ -197,7 +197,7 @@ Le blocage d'une deuxième Miff pour un compte gratuit, ses déclencheurs, l'éc
 - **Suite** : bascule vers une autre Miff, sinon état vide du Feed.
 
 ### 5.8 Taille d'une Miff (QM5)
-**15 membres maximum, créateur compris** (lecture retenue de la décision du PM ; à corriger si elle s'entendait hors créateur). C'est un **plafond doux, appliqué par l'app seulement : aucune règle serveur ne l'impose** (les règles ne comptent pas les sous-collections et un candidat ne lit pas la liste avant d'entrer). Conséquences : (a) à 15 membres, « Ajouter un proche » est remplacé par un texte calme (§5.10) ; (b) un client modifié, ou une personne qui détient déjà le code, peut entrer au-delà de 15 ; (c) l'app d'un membre n'empêche rien, elle n'affiche que le texte. Le coût des lectures croît avec le nombre de membres (`data-model.md` §12 : estimation de départ pour 4 membres). Un plafond garanti exigerait un changement de backend (Blaze) : hors v1.
+**15 membres maximum, créateur compris** (précisé par le PM le 2026-10-24). C'est un **plafond doux, appliqué par l'app seulement : aucune règle serveur ne l'impose** (les règles ne comptent pas les sous-collections et un candidat ne lit pas la liste avant d'entrer). Conséquences : (a) à 15 membres, « Ajouter un proche » est remplacé par un texte calme (§5.10) ; (b) un client modifié, ou une personne qui détient déjà le code, peut entrer au-delà de 15 ; (c) l'app d'un membre n'empêche rien, elle n'affiche que le texte. Le coût des lectures croît avec le nombre de membres (`data-model.md` §12 : estimation de départ pour 4 membres). Un plafond garanti exigerait un changement de backend (Blaze) : hors v1.
 
 ### 5.9 Vie privée et réciprocité
 - Le créateur ne voit rien de plus que les autres membres : **aucun écran de ce ticket n'affiche un statut, une position, une batterie ou une photo d'update**.
@@ -217,7 +217,7 @@ Principes : phrases courtes (deux au plus, sauf le texte de partage), rien de mo
 | **Texte de partage à l'entrée (QM2, fourni par le PM)** | « En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. » |
 | Rappel système (sous le texte de partage) | « Ton téléphone te demandera séparément l'accès à ta position. Tu peux le refuser : tu rejoins la Miff quand même. » |
 | Bouton d'entrée | « Rejoindre et partager » |
-| Bouton de création (extension, §15) | « Créer et partager » ; texte : « En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. » |
+| Bouton de création (extension de QM2, confirmée) | « Créer et partager » ; texte : « En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. » |
 | Création réussie | « Ta Miff « {nom} » est prête. Partage ce code avec tes proches pour qu'ils puissent la rejoindre. » |
 | Saisie du code (aide) | « Saisis le code que ton proche t'a donné. » |
 | Code introuvable | « On ne trouve pas de Miff avec ce code. Vérifie-le auprès de la personne qui te l'a donné. » |
@@ -284,7 +284,7 @@ Principes : phrases courtes (deux au plus, sauf le texte de partage), rien de mo
 | # | Constat | Source | Statut |
 |---|---|---|---|
 | F1 | Bouton **« Localiser »** (carte avec « les coordonnées de la dernière position connue ») et photo en grand avec « la localisation » | Notion Feed | **Gardé par le PM dans la v1 du Feed (QM11).** Il **contredit le modèle** : aucune coordonnée d'une personne n'est stockée, par décision (`data-model.md` §1) ; le modèle ne contient qu'un état et des horodatages. **Question ouverte pour le ticket Feed, non tranchée ici** : que fait précisément « Localiser » sans coordonnées stockées ? À définir avec le PM, en tenant compte du consentement et des règles des stores. |
-| F2 | Boutons **« Message »** (SMS) et **« Appeler »** | Notion Feed | **Gardés (QM11)**, faisables car le téléphone est obligatoire à l'onboarding. Mais le schéma n'a aucun champ téléphone (§4 #19) : champ, copie dans la fiche de membre, règles, **qui voit le numéro** et consentement sont à définir (tickets Onboarding / Feed avec `backend-data`). |
+| F2 | Boutons **« Message »** (SMS) et **« Appeler »** | Notion Feed | **Gardés (QM11)**, faisables car le téléphone est obligatoire à l'onboarding. Mais le schéma n'a aucun champ téléphone (§4 #19) : champ, copie dans la fiche de membre, règles, règles et consentement sont à définir (tickets Onboarding / Feed avec `backend-data`). **Visibilité décidée par le PM (2026-10-24, proposition A) : le numéro est visible des membres des Miffs de l'utilisateur, et d'eux seuls.** |
 | F3 | « Aucune Miff : on considère que tout le monde est en sécurité » | Notion Feed | **Décision QM12 : OK comme recommandé** : état vide qui invite (« Pas encore de Miff »), jamais de phrase de sécurité. |
 | F4 | Bulle « **Tout le monde est en sécurité** » | Notion Feed | **Décision QM12** : n'affirmer « Tout va bien » que si tous les statuts connus le permettent ; sinon dire combien ont donné des nouvelles (« 3 sur 4 »). Libellé exact à fixer dans le ticket Feed. |
 | F5 | « Mis à jour il y a 2 min » : « la dernière fois où on a checké » | Notion Feed, Figma | Avec un écouteur temps réel ce n'est plus vrai ; hors connexion **le cache affiche l'ancien état en vert** : prévoir un état « hors connexion, dernières informations à {heure} ». |
@@ -340,7 +340,7 @@ Principes : phrases courtes (deux au plus, sauf le texte de partage), rien de mo
 2. Ajouter le **prénom du créateur** dans `joinCodes` pour afficher « Rejoindre la Miff « X » de {prénom} ? » : améliorerait le consentement éclairé (le texte d'entrée étant donné avant de voir les membres) ; donnée de plus visible de quiconque détient le code.
 3. Plafond de taille garanti ou validation d'arrivée : non faisable proprement sans serveur ; à rouvrir avec Blaze.
 4. Transfert de propriété (`ownerUid` immuable) : hors v1.
-5. Champ téléphone (§4 #19) : ticket Onboarding / Feed.
+5. Champ téléphone (§4 #19), visible des seuls membres des Miffs de la personne : ticket Onboarding / Feed.
 6. Corriger le commentaire d'en-tête de `firestore.rules` (§4 #15).
 
 ---
@@ -379,7 +379,7 @@ Principes : phrases courtes (deux au plus, sauf le texte de partage), rien de mo
 Rien de ceci n'est fait par un agent.
 
 **Avant MIFF-1 (Android)**
-1. **Valider les textes** de §5.10 (tutoiement) et **confirmer le point ouvert** du §15 (le texte de partage s'applique-t-il aussi à la création ?).
+1. **Valider les textes** de §5.10 (tutoiement).
 2. **Confirmer dans la console** la date de publication des règles (Firestore > Règles) : DUR-1 et DUR-2 sont-elles bien actives ?
 3. **Valider les nouveaux écrans** dessinés par `design-system` (§3.3) dans le Figma « Miff - Claude ».
 4. **2 ou 3 comptes de test** et **deux appareils** pour les parcours « en direct » : Android seul permet de tout tester **sauf le temps réel entre deux personnes**, testable avec l'iPhone (après MIFF-3) ou un second Android.
@@ -469,10 +469,10 @@ Le PM a répondu aux 15 questions du challenge le 2026-10-24 (détail dans `miff
 | QM14 | Lien de partage | **OK** : page statique gratuite sur le site d'AUTH-W. | §5.3, §11 |
 | QM15 | Création | **OK** : en deux temps. | §3.1, §5.3, C1 à C6 |
 
-**Points à confirmer (non bloquants pour la rédaction)** :
-- **Extension de QM2 à la création** : le PM a décidé que *rejoindre* vaut partager. Pour rester cohérent, ce ticket applique **la même mécanique à la création** (texte « En créant cette Miff… », bouton « Créer et partager », statut initial dans le lot de création) ; à confirmer par le PM. Sans cela, le créateur serait le seul membre à partager sans l'avoir dit.
-- **« 15 membres maximum »** est lu **créateur compris** (§5.8).
-
+**Précisions du PM (2026-10-24, suite) — plus aucun point en attente** :
+- **Extension de QM2 à la création : OUI.** « Créer et partager », même texte explicite avant l'action, **un seul lot atomique** (profil exigé + Miff + code + fiche de membre + consentement de partage + `status/{moi}` initial).
+- **« 15 membres maximum » : créateur compris.**
+- **Visibilité du téléphone : proposition A** : le numéro est visible des membres des Miffs de l'utilisateur, et d'eux seuls (voir §4 #19, §7 F2). La question « visibilité du numéro » du ticket Feed est résolue ; restent à définir la mise en œuvre (champ, règles) et le texte de consentement.
 ---
 
 ## 16. Critères d'acceptation

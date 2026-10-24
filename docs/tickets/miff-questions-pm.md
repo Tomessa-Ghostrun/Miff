@@ -10,7 +10,7 @@ Les deux décisions qui **diffèrent de la recommandation** sont QM2 et QM11 ; e
 | QM2 | Rejoindre une Miff vaut-il partager sa position ? | Non : consentement séparé, après avoir vu les lieux, « Pas maintenant » possible | **Oui, rejoindre vaut partager son statut (écart avec la recommandation).** | Implémentation en **consentement explicite** : texte clair avant l'action (« En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. »), bouton « Rejoindre et partager », un seul lot atomique (adhésion + consentement de partage + statut initial `unknown`, profil exigé), arrêt possible à tout moment, permission de localisation du système demandée à part et jamais bloquante. Risque assumé : écart avec la recommandation et règles anti-stalkerware des stores (§5.4, §5.13, §14 R1) |
 | QM3 | Qui voit et partage le code, faut-il valider les arrivées ? | Tous les membres ; pas de validation en v1 ; visibilité des nouveaux membres | **Tous les membres voient et partagent le code ; aucune validation des arrivées en v1.** Rien d'autre (pas de « Nouveau », pas de message d'arrivée). Le retrait + code renouvelé, déjà décidé, est conservé. | §5.3, §14 R2 |
 | QM4 | Le code doit-il expirer ? | Non | **Le code n'expire pas.** | §5.3 |
-| QM5 | Taille maximale d'une Miff ? | Pas de plafond garanti ; plafond doux de 15 dans l'app | **15 membres maximum, plafond doux dans l'app.** Aucune règle serveur ne l'impose (créateur compris : lecture à confirmer). | §5.8, G9, §14 R10 |
+| QM5 | Taille maximale d'une Miff ? | Pas de plafond garanti ; plafond doux de 15 dans l'app | **15 membres maximum, plafond doux dans l'app.** Aucune règle serveur ne l'impose (créateur compris, confirmé). | §5.8, G9, §14 R10 |
 | QM6 | Longueur du nom d'une Miff ? | 2 à 40 caractères | **2 à 40 caractères** (la spec Notion 2–50 est alignée sur 2–40 ; compatible avec les règles déployées 1–40). | §5.2, C2, C3 |
 | QM7 | Quand afficher le paywall pour une deuxième Miff ? | À la création au toucher ; à l'entrée après reconnaissance du code ; lien « quitter ma Miff actuelle » | **Plus tard.** Non spécifié dans ce ticket ; dépendance au ticket Premium. | §5.5, §6, §17, §14 R15 |
 | QM8 | Message d'accès perdu | Message unique | **Message unique : « Tu n'as plus accès à la Miff « X ».** | §5.7, §5.10, D |
@@ -22,9 +22,13 @@ Les deux décisions qui **diffèrent de la recommandation** sont QM2 et QM11 ; e
 | QM14 | Lien de téléchargement dans le message de partage | Page statique gratuite du site d'AUTH-W | **OK.** | §5.3, §11 |
 | QM15 | Création en deux temps ? | Oui (nom, puis « Ta Miff est prête » avec le code) | **OK.** | §3.1, C1 à C6 |
 
-## Points restant à confirmer par le PM (non bloquants pour la rédaction)
+## Précisions du PM (2026-10-24, suite) — résolues
 
-1. **Extension de QM2 à la création** : le ticket applique la même mécanique de consentement explicite à la création d'une Miff (« Créer et partager »), pour que le créateur ne soit pas le seul membre à partager sans l'avoir dit. À confirmer.
-2. **« 15 membres maximum »** est lu **créateur compris**. À corriger si le PM l'entendait hors créateur.
-3. **Ticket Premium** : doit définir le comportement visible d'un compte gratuit qui tente une deuxième Miff (aucun comportement n'est inventé dans ce ticket).
-4. **Ticket Feed** : doit définir ce que fait « Localiser » sans coordonnées stockées, qui voit le numéro de téléphone (champ à ajouter au schéma) et le libellé exact de la bulle.
+1. **Extension de QM2 à la création : OUI.** « Créer et partager », même texte explicite avant l'action, un seul lot atomique (profil exigé + Miff + code + fiche de membre + consentement de partage + statut initial).
+2. **« 15 membres maximum » : créateur compris.**
+3. **Visibilité du numéro de téléphone : proposition A** : visible des membres des Miffs de l'utilisateur, et d'eux seuls. Mise en œuvre (champ, règles) et texte de consentement à définir dans les tickets Onboarding / Feed avec `backend-data`.
+
+## Points restant ouverts (hors de ce ticket)
+
+- **Ticket Premium** : doit définir le comportement visible d'un compte gratuit qui tente une deuxième Miff (aucun comportement n'est inventé dans ce ticket).
+- **Ticket Feed** : doit définir ce que fait « Localiser » sans coordonnées stockées et le libellé exact de la bulle.
