@@ -121,6 +121,23 @@ export const userDoc = (over = {}) => ({
   ...over,
 });
 
+// Consentement facultatif (b) « statistiques d'usage et rapports de plantage » (AUTH-B) : bloc `analyticsConsent`
+// de users/{uid}, mêmes quatre clés que `sharing` ; la version suit le format AAAA-MM-vNN (ordre lexicographique = ordre chronologique).
+export const CONSENT_V1 = '2026-10-v01';
+export const CONSENT_V2 = '2026-10-v02';
+export const consentOff = (over = {}) => ({ enabled: false, consentedAt: null, consentVersion: null, revokedAt: null, ...over });
+/** Consentement donné « maintenant » par le client : l'heure est celle du serveur. */
+export const consentOnNow = (over = {}) => ({ enabled: true, consentedAt: serverTs(), consentVersion: CONSENT_V1, revokedAt: null, ...over });
+/** Consentement déjà enregistré (état injecté avec les règles désactivées). */
+export const consentOnSeed = (over = {}) => ({ enabled: true, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: null, ...over });
+/** Consentement retiré (état injecté) : la trace du dernier consentement est conservée. */
+export const consentRevokedSeed = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V2, revokedAt: T0, ...over });
+/** Retrait tel qu'un client l'envoie, à partir d'un consentement donné : heure de retrait fournie par le serveur. */
+export const consentRevokeNow = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: serverTs(), ...over });
+/** Profil d'un utilisateur existant avec son consentement (état injecté). */
+export const userWithConsent = (uid, analyticsConsent) =>
+  userDoc({ ...profile(uid), createdAt: T0, termsAcceptedAt: T0, analyticsConsent });
+
 // ---------------------------------------------------------------------------
 // Opérations de batch : { type: 'set' | 'update' | 'delete', path, data }
 // ---------------------------------------------------------------------------

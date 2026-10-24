@@ -139,6 +139,58 @@ service cloud.firestore {
         && optBytes(d, 'avatar', 20000);
     }
 
+    // -------------------------------------------------------------------------
+    // Consentement facultatif (b) « statistiques d'usage et rapports de plantage anonymes » (AUTH-B).
+    // Bloc `analyticsConsent` de users/{uid} : mêmes quatre clés que members.sharing, TOUJOURS toutes
+    // présentes (null si non applicable). Absence du bloc = pas de consentement. Jamais de position.
+    // -------------------------------------------------------------------------
+    // Version du texte de consentement : AAAA-MM-vNN. Le zéro de tête et le format fixe rendent l'ordre
+    // lexicographique identique à l'ordre chronologique (utile pour refuser une rétrogradation de version).
+    function isConsentVersion(v) {
+      return v is string && v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v[0-9]{2}$');
+    }
+
+    // Les 4 clés exactes (ni plus, ni moins).
+    function hasConsentKeys(c) {
+      return c is map
+        && c.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
+        && c.keys().hasAll(['enabled', 'consentedAt', 'consentVersion', 'revokedAt']);
+    }
+
+    // À la création du profil : soit « non consenti » (case décochée : aucune date, aucune version),
+    // soit « consenti » avec l'heure du serveur (request.time) et la version du texte affiché.
+    function validAnalyticsConsentCreate(c) {
+      return hasConsentKeys(c)
+        && c.revokedAt == null
+        && (
+          (c.enabled == false && c.consentedAt == null && c.consentVersion == null)
+          || (c.enabled == true && c.consentedAt == request.time && isConsentVersion(c.consentVersion))
+        );
+    }
+
+    // Changement ultérieur (Réglages) ; o = ancien bloc (null si le profil n'en a pas), n = nouveau.
+    //  - activer / réactiver (depuis « absent » ou « non consenti ») : heure serveur, version du texte, revokedAt vidé,
+    //    et version jamais plus ancienne que la dernière enregistrée (pas de rétrogradation) ;
+    //  - retirer (depuis « consenti » uniquement) : revokedAt = heure serveur, la trace du consentement
+    //    (date et version) est conservée. Réécrire un consentement actif sans le retirer d'abord est refusé.
+    function validAnalyticsConsentChange(o, n) {
+      return hasConsentKeys(n)
+        && (
+          ((o == null || o.enabled == false)
+            && n.enabled == true
+            && n.consentedAt == request.time
+            && isConsentVersion(n.consentVersion)
+            && n.revokedAt == null
+            && (o == null || o.consentVersion == null || n.consentVersion >= o.consentVersion))
+          ||
+          (o != null && o.enabled == true
+            && n.enabled == false
+            && n.revokedAt == request.time
+            && n.consentedAt == o.consentedAt
+            && n.consentVersion == o.consentVersion)
+        );
+    }
+
     // Consentement à la création du document membre.
     // Les 4 clés sont TOUJOURS présentes (null si non applicable).
     function validSharingCreate(s) {
@@ -393,19 +445,29 @@ service cloud.firestore {
       allow get: if isSelf(uid);
       allow list: if false;
 
+      // Création = (a) acceptation des CGU et de la politique (obligatoire : sans elle, pas de profil ;
+      // heure serveur + version du texte) + (b) consentement facultatif aux statistiques (bloc facultatif :
+      // absent = pas de consentement ; sinon voir validAnalyticsConsentCreate). Aucune date de naissance,
+      // aucun âge, aucun e-mail : toute autre clé est refusée.
       allow create: if isSelf(uid)
-        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
+        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])
         && request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
         && validProfile(request.resource.data)
         && request.resource.data.createdAt == request.time
         && request.resource.data.termsAcceptedAt == request.time
-        && isStr(request.resource.data.termsVersion, 1, 20);
+        && isStr(request.resource.data.termsVersion, 1, 20)
+        && (!('analyticsConsent' in request.resource.data)
+            || validAnalyticsConsentCreate(request.resource.data.analyticsConsent));
 
+      // Mise à jour par le propriétaire : profil et consentement (b) seulement. termsAcceptedAt, termsVersion
+      // (a) et createdAt sont figés à la création (décision PM : (a) non modifiable). Le consentement (b) ne
+      // change que par une transition valide (activer, retirer, réactiver) ; supprimer le bloc est refusé.
       allow update: if isSelf(uid)
-        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'termsAcceptedAt', 'termsVersion'])
+        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])
         && validProfile(request.resource.data)
-        && (!affected().hasAny(['termsAcceptedAt']) || request.resource.data.termsAcceptedAt == request.time)
-        && isStr(request.resource.data.termsVersion, 1, 20);
+        && isStr(request.resource.data.termsVersion, 1, 20)
+        && (!affected().hasAny(['analyticsConsent'])
+            || validAnalyticsConsentChange(resource.data.get('analyticsConsent', null), request.resource.data.analyticsConsent));
 
       // Suppression de compte : le client supprime ses données puis son compte Auth.
       allow delete: if isSelf(uid);

@@ -3,6 +3,7 @@
 // Résultat écrit dans backend/test-output/rule-reads.md (et .json).
 import { test, after } from 'node:test';
 import {
+  consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
   serverTs, sharingOnNow, T0,
 } from '../helpers/fixtures.js';
@@ -198,6 +199,23 @@ const scenarios = [
     limit: 10,
     hosts: [H.miffsGet],
     run: (env) => db(env, 'bob').doc(M1).get(),
+  },
+  {
+    id: 'READS-profile-create',
+    title: 'création du profil avec (a) et (b) (écriture simple, AUTH-B)',
+    name: 'Création du profil + consentements (écriture simple)',
+    limit: 10,
+    hosts: [H.usersCreate],
+    run: (env) => db(env, 'eve').doc('users/eve').set(userDoc({ analyticsConsent: consentOnNow() })),
+  },
+  {
+    id: 'READS-consent-stats-update',
+    title: 'retrait du consentement (b) statistiques (écriture simple, AUTH-B)',
+    name: 'Retrait du consentement statistiques (écriture simple)',
+    limit: 10,
+    hosts: [H.usersUpdate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/carol').set(userWithConsent('carol', consentOnSeed()))),
+    run: (env) => db(env, 'carol').doc('users/carol').update({ analyticsConsent: consentRevokeNow() }),
   },
   {
     id: 'READS-code-lookup',

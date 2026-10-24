@@ -2,12 +2,51 @@
 
 Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `backend-data` et le PM. Les règles (`firestore.rules`) ne sont **jamais** modifiées pour faire passer un test : chaque échec est d'abord analysé (la règle est-elle fautive, ou le test, ou le plan ?) puis tranché par `backend-data` avec accord du PM.
 
-## État actuel (après DUR-2)
+## État actuel (après AUTH-B)
 
-- **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution locale : **169 tests, 168 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas), plus 28 tests rapides sans émulateur (`npm run test:unit`, tous réussis). Les 169 tests = 117 cas du plan (sections 1 à 8) + 8 cas complémentaires X1 à X8 (section 10) + **8 cas DUR-1** (H1a, H1b, H1c, H1d, H1f, H1g, H2a, H2b) + **16 cas DUR-2** (H1e, H3a à H3e, H4a à H4f, H5a à H5d ; section 11) + **3 cas issus de la revue de sécurité** (H7a à H7c) + 17 mesures de lectures de règles (13 d'origine, dont C17, + 4 ajoutées). Historique : 138 tests avant DUR-1, 146 après DUR-1.
+- **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution locale (2026-10-24, Temurin 21) : **188 tests, 187 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas ; 169 avant AUTH-B : +17 cas AB1 à AB17 +2 mesures de lectures), plus 28 tests rapides sans émulateur (`npm run test:unit`, tous réussis). Détail des 169 tests d'avant AUTH-B : 117 cas du plan (sections 1 à 8) + 8 cas complémentaires X1 à X8 (section 10) + **8 cas DUR-1** (H1a, H1b, H1c, H1d, H1f, H1g, H2a, H2b) + **16 cas DUR-2** (H1e, H3a à H3e, H4a à H4f, H5a à H5d ; section 11) + **3 cas issus de la revue de sécurité** (H7a à H7c) + 17 mesures de lectures de règles (13 d'origine, dont C17, + 4 ajoutées). Historique : 138 tests avant DUR-1, 146 après DUR-1.
+- **Solidité des tests après AUTH-B** : `npm run test:mutation` affaiblit **109** protections (77 + 32 d'AUTH-B) : **102 sont détectées, 7 mutants documentés comme équivalents** (les 4 d'avant + 3 d'AUTH-B : `hasAll` du bloc de consentement, `is map` du bloc, `hasAll` des champs CGU, tous redondants car lire une clé absente ou appeler `keys()` sur autre chose qu'une map fait échouer la règle, donc refuse).
 - Le tableau complet (un identifiant par ligne) est publié dans le résumé du job et dans l'artefact `rules-test-report`.
 - **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **77** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **73 mutations sont détectées, 4 mutants sont documentés comme équivalents** dans `tests/tools/mutations.mjs` (`hasAll` du statut, `is timestamp` de `escalationDueAt`, la couche `ownerUid` du seul document Miff, et — nouveau avec DUR-2 — le contrôle `isOwner` de la branche « retrait », redondant avec `codeRenewed` puisque seul le propriétaire peut modifier `miffs.joinCode`). DUR-1 a ajouté 12 mutations (42 -> 54), DUR-2 20 (54 -> 74) puis 3 de la revue (74 -> 77), toutes détectées sauf l'équivalent cité. Le ticket (§7.3) liste d'autres protections encore sans mutation : c'est le travail de DUR-3, non fait ici.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
+
+## AUTH-B : consentements à l'inscription (a) CGU et (b) statistiques / plantages
+
+Règles : bloc facultatif `analyticsConsent` sur `users/{uid}` (création et mise à jour par le propriétaire seul), `termsAcceptedAt`/`termsVersion` figés après la création. Plan : section 12 (AB1 à AB17). Tests : `tests/rules/13-consentement-statistiques.test.js`. Aucun test existant modifié ou affaibli ; seuls ajouts à des fichiers existants : assistants de `fixtures.js`, deux hôtes de mesure (`hosts.js`) et deux mesures dans `09-rule-reads.test.js`.
+
+### Rouge puis vert (17 cas)
+
+Les 17 tests ont d'abord été lancés sur les règles de `main` : **14 rouges, 3 verts** (AB1, AB14, AB16 : cas de non-régression ou lecture, vrais avant comme après). Une première version, sans « contrôle positif » (écriture légitime identique, acceptée en fin de test), donnait 10 rouges et 7 verts, car la clé `analyticsConsent` inconnue faisait refuser les tentatives frauduleuses « pour une mauvaise raison » ; un contrôle positif a été ajouté à AB4, AB7, AB8, AB12 pour que le refus prouve la bonne cause. Sur les règles AUTH-B : **17 verts**. Deux défauts de tests trouvés et corrigés pendant la mise au vert (aucune règle modifiée pour cela) : un « antidatage » de `termsAcceptedAt` qui réécrivait la même valeur (donc sans changement), et une fausse trace de retrait (AB10) qui échouait sur la date conservée au lieu du bon motif (mutation `AB10-retrait-sans-consentement-actif` survivante, test corrigé, mutation tuée).
+
+### Mutations (32 ajoutées)
+
+| Test | Mutations qui le font passer au rouge |
+|---|---|
+| AB1 | `AB1-bloc-obligatoire` (resserrement : l'absence du bloc doit rester acceptée) |
+| AB4 | `AB4-creation-date-consentement-client`, `-version-facultative`, `-non-consenti-avec-donnees`, `-retrait-renseigne` |
+| AB5 | `AB5-version-format`, `AB5-bloc-cles-en-trop` (+ `AB4-creation-version-facultative`) ; équivalentes : `AB5-bloc-cles-manquantes`, `AB5-bloc-pas-une-map` |
+| AB6 | `AB6-cgu-horodatage-client`, `AB6-cgu-version-non-controlee` ; équivalente : `AB6-cgu-non-obligatoires` |
+| AB7 | `AB7-creation-profil-usurpation` |
+| AB8 | `AB8-consentement-modifie-par-autrui` |
+| AB9 | `AB9-activation-date-client`, `-sans-version`, `-retrait-renseigne`, `-depuis-absent-refusee`, `AB9-mise-a-jour-sans-validation` |
+| AB10 | `AB10-retrait-efface-la-date`, `-efface-la-version`, `-date-client`, `-sans-consentement-actif` |
+| AB11 | `AB11-reactivation-refusee` |
+| AB12 | `AB12-retrogradation-de-version`, `AB12-reecriture-sans-retrait` |
+| AB13 | `AB13-profil-champs-non-verrouilles`, `AB13-cgu-modifiables` |
+| AB15 | `AB15-profil-supprime-par-autre` |
+| AB16 | `AB16-profil-lisible-par-tous`, `AB16-liste-des-profils` |
+| AB17 | `AB17-creation-champs-inconnus`, `AB5-bloc-cles-en-trop` |
+
+AB14 (non-régression) n'a pas de mutation : c'est un cas positif.
+
+### Changements de comportement par rapport aux règles de `main` (non déployées de ce fait)
+
+- `termsAcceptedAt` et `termsVersion` ne sont **plus modifiables** après la création (décision PM : (a) non modifiable). Les règles précédentes l'autorisaient ; aucun test existant ne s'appuyait dessus. Un futur parcours « nouvelle version des CGU » devra rouvrir cette règle.
+- La comparaison alphabétique des versions (`>=` sur des chaînes) est validée dans l'émulateur (AB11, AB12) mais non confirmée par la documentation officielle consultée.
+
+### Lectures de règles
+
+Création du profil avec (a) et (b) : **0** lecture de règles (borne haute, marge >= 10 sur 10) ; retrait du consentement (b) : **0** (marge >= 10 sur 10). Aucune règle de `users` n'appelle `get`/`exists` : les autres chiffres ne changent pas. Ces deux mesures sont ajoutées (`READS-profile-create`, `READS-consent-stats-update`).
 
 ## DUR-1 : pierre tombale (ATK1) et code orphelin (ATK2)
 

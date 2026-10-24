@@ -25,6 +25,14 @@ Spécifications sources : `docs/specs/*.md` (statut "Backlog discovery", donc no
 
 *Impact PM* : un membre qui active son partage voit les autres dès que son propre statut est publié (instantané dans l'usage normal) ; retirer quelqu'un oblige le créateur à repartager un nouveau code ; coût : environ 1 à 2 lectures de règles de plus par ouverture de flux (§12).
 
+**AUTH-B (consentements à l'inscription, appliqué dans cette version, ticket `docs/tickets/authentification.md` §8, §10, §15)** : deux consentements distincts sur `users/{uid}`, décidés par le PM le 2026-10-23.
+- **(a) Conditions de service et politique de confidentialité : obligatoire.** Inchangé dans son principe : `termsAcceptedAt` (heure serveur) et `termsVersion` sont écrits à la création du profil et **sans eux le profil est refusé**. Nouveauté : **ces deux champs ne sont plus modifiables après la création** (décision PM : « non modifiable »). Les règles précédentes (non déployées) autorisaient leur mise à jour ; le ticket futur « nouvelle version des CGU » devra rouvrir cette règle explicitement.
+- **(b) Statistiques d'usage et rapports de plantage anonymes : facultatif, décoché par défaut.** Nouveau bloc facultatif `analyticsConsent` (§2.1) : état, date de consentement (heure serveur), version du texte, date de retrait. **Absence du bloc = pas de consentement.** Modifiable ensuite par l'utilisateur lui-même seulement (Réglages) : activer, retirer, réactiver ; la version ne peut pas reculer.
+- Aucune date de naissance, aucun âge, aucun e-mail : toute autre clé est refusée (déjà le cas, maintenant testé : AB17).
+- Un utilisateur social qui **refuse** le panneau de consentement n'a **aucun document** : le client n'écrit rien dans Firestore avant l'acceptation, puis supprime le compte d'authentification (ticket §7.8). Les règles interdisent déjà de créer un profil sans (a).
+
+*Impact PM* : aucun coût supplémentaire (la lecture du profil qui sert au routage au lancement lit aussi le consentement ; la création ou la mise à jour du profil n'ajoute aucune lecture de règles) ; la preuve du consentement (b) est **supprimée avec le profil** (§10) ; l'horodatage serveur est celui de la **création du profil**, pas du clic (point RGPD assumé par le PM, §11).
+
 **À venir (DUR-3), non appliqué ici** : App Check strict, signal de bascule vers Blaze, garde-fous de projet, mesure de lectures complétée, extension des mutations.
 
 ---
@@ -68,10 +76,32 @@ Conventions : `{uid}` = UID Firebase Auth. `miffId` = ID auto Firestore (20 cara
 |---|---|---|
 | `firstName`, `lastName` | string 1–50 | Obligatoires (spec inscription). La règle UX "3 caractères minimum" n'est pas imposée côté serveur (Q15). |
 | `avatar` | bytes ≤ 20 000 octets, optionnel | JPEG carré ~160×160, qualité ~70 (≈ 8–15 Ko). **Sensible** (visage). |
-| `createdAt` | timestamp | = heure serveur |
-| `termsAcceptedAt`, `termsVersion` | timestamp, string | Preuve d'acceptation des CGU/politique de confidentialité. |
+| `createdAt` | timestamp | = heure serveur. **Immuable.** |
+| `termsAcceptedAt`, `termsVersion` | timestamp, string 1–20 | **(a)** Preuve d'acceptation des CGU/politique de confidentialité. **Obligatoires** à la création (pas de profil sans eux) ; `termsAcceptedAt` = heure serveur ; **immuables** après la création (décision PM, AUTH-B). `termsVersion` : identifiant de la version publiée des textes (les règles n'en imposent pas le format). |
+| `analyticsConsent` | map, **facultatif** | **(b)** Consentement aux statistiques d'usage et rapports de plantage anonymes. Absent = pas de consentement. Voir ci-dessous. |
 
-Lisible et modifiable **uniquement** par son propriétaire. Les autres membres voient la copie dans `members/{uid}`. Pas de champ premium ici (volontairement).
+Lisible et modifiable **uniquement** par son propriétaire. Les autres membres voient la copie dans `members/{uid}`. Pas de champ premium ici (volontairement). **Aucune date de naissance, aucun âge, aucun e-mail, aucun téléphone** : toute autre clé est refusée par les règles.
+
+**Bloc `analyticsConsent`** (mêmes quatre clés que `members.sharing`, §2.6 ; **toujours les quatre clés**, `null` si non applicable ; seul ce bloc et le profil changent à la mise à jour) :
+| Clé | Type | Règle |
+|---|---|---|
+| `enabled` | bool | `true` = l'utilisateur a accepté la collecte (statistiques **et** plantages : une seule case, ticket §8) ; `false` = refusé ou retiré. |
+| `consentedAt` | timestamp \| null | **Heure serveur** (`serverTimestamp()`) à l'activation ; `null` tant que jamais accepté ; **conservé tel quel au retrait** (trace du dernier consentement). |
+| `consentVersion` | string \| null | Version du **texte de la case (b)** affiché, au format `AAAA-MM-vNN` avec zéros de tête (ex. `2026-10-v01`), `null` tant que jamais accepté ; conservée au retrait. Le format fixe rend l'ordre alphabétique égal à l'ordre chronologique : **la version ne peut pas reculer** (voir transitions). Constante partagée iOS/Android, à faire évoluer avec le texte. |
+| `revokedAt` | timestamp \| null | `null` tant que le consentement est actif ou n'a jamais été donné ; **heure serveur** du retrait ensuite. |
+
+Valeurs autorisées (état = `enabled`) et transitions (tout le reste est refusé) :
+| État | Bloc | Écriture autorisée |
+|---|---|---|
+| Jamais demandé / compte ancien | **bloc absent** | création du profil sans bloc ; ou plus tard activation (ci-dessous) |
+| Refusé à l'inscription | `{enabled:false, consentedAt:null, consentVersion:null, revokedAt:null}` | à la création du profil ; activation possible ensuite |
+| Accepté à l'inscription | `{enabled:true, consentedAt:<heure serveur>, consentVersion:"AAAA-MM-vNN", revokedAt:null}` | à la création du profil, avec `termsAcceptedAt` (même instant) |
+| Activer / réactiver (depuis absent, refusé ou retiré) | idem « accepté » ; `consentVersion` **≥ la dernière version enregistrée** (égale ou plus récente, jamais plus ancienne) | `update` du profil |
+| Retirer (depuis accepté **uniquement**) | `{enabled:false, consentedAt:<inchangé>, consentVersion:<inchangée>, revokedAt:<heure serveur>}` | `update` du profil |
+| Réécrire un consentement actif (autre version, nouvelle date) sans le retirer d'abord | — | **refusé** (une nouvelle version du texte = un parcours futur, hors périmètre) |
+| Supprimer le bloc par `update` | — | **refusé** (le retrait passe par la transition de retrait, qui laisse une trace) |
+
+Qui peut écrire : **le propriétaire seul**, y compris pour la lecture (`get`) ; un autre membre, le créateur de la Miff ou un visiteur ne peuvent ni lire ni écrire ce bloc. L'état du consentement (b) est **par compte** ; l'appareil garde en plus son propre état local qui commande réellement la collecte (voir §8).
 
 ### 2.2 `users/{uid}/memberships/{key}` — "mes Miffs" + slot freemium
 | Champ | Type |
@@ -295,7 +325,10 @@ Toutes les écritures multi-documents sont des **batches** (`WriteBatch` côté 
 
 | Fonctionnalité | Lectures | Écritures (dans un batch sauf mention) |
 |---|---|---|
-| **Inscription / profil** | — | `users/{uid}` create (profil + `termsAcceptedAt` + `termsVersion`). Modif. de profil : `users/{uid}` update + `members/{uid}` update dans **chaque** Miff (liste via `memberships`). |
+| **Inscription / profil** (AUTH-B) | — | **Une seule écriture** `users/{uid}` **set** (création) avec **toutes** ces clés : `firstName`, `lastName`, `avatar` (facultatif), `createdAt` = `serverTimestamp()`, `termsAcceptedAt` = `serverTimestamp()`, `termsVersion` (version affichée à l'inscription et conservée sur l'appareil jusqu'ici), et **`analyticsConsent` écrit toujours** : case (b) cochée -> `{enabled:true, consentedAt:serverTimestamp(), consentVersion:<constante>, revokedAt:null}` ; décochée -> `{enabled:false, consentedAt:null, consentVersion:null, revokedAt:null}` (les règles acceptent aussi son absence, mais le client l'écrit toujours pour que l'état soit explicite). **Ne jamais** écrire de date du client pour ces champs (refusé), ni âge, date de naissance, e-mail, téléphone (refusés). Modif. de profil : `users/{uid}` update **limité à** `firstName`, `lastName`, `avatar` (+ `analyticsConsent`, voir ci-dessous) + `members/{uid}` update dans **chaque** Miff (liste via `memberships`). **`createdAt`, `termsAcceptedAt`, `termsVersion` ne se modifient jamais** (refusé). |
+| **Nouvel utilisateur social (Google / Apple) : panneau de consentement** (AUTH-B, ticket §7.8) | — | **Aucune écriture Firestore avant l'acceptation de (a).** Acceptation : mêmes valeurs que ci-dessus, dans l'écriture de création du profil à l'étape profil. **Refus** (Annuler, retour, fermeture) : **ne rien écrire**, supprimer le compte d'authentification tout juste créé, purger le cache local ; il n'y a aucun document `users/{uid}` à supprimer (si, par erreur, un `delete users/{uid}` est envoyé, il est accepté et sans effet). Aucun événement Analytics ni rapport de plantage, même si (b) était cochée sur le panneau. Suppression du compte impossible (hors connexion) : rester sur le panneau, sans accès au reste de l'app, jamais de profil créé. |
+| **Réglages : statistiques et plantages** (AUTH-B ; l'écran est dans le ticket Réglages) | `get users/{uid}` (déjà lu pour le routage du lancement : **aucune lecture de plus**) : lire `analyticsConsent` ; absent = désactivé | **Activer / réactiver** : `users/{uid}` update `{analyticsConsent: {enabled:true, consentedAt:serverTimestamp(), consentVersion:<constante>, revokedAt:null}}` avec une `consentVersion` **égale ou plus récente** que celle déjà enregistrée. **Retirer** : update `{analyticsConsent: {enabled:false, consentedAt:<valeur lue>, consentVersion:<valeur lue>, revokedAt:serverTimestamp()}}` (recopier à l'identique les deux valeurs lues ; ne jamais les effacer). Ne pas tenter d'« activer » un consentement déjà actif ni de « retirer » un consentement jamais donné (refusé). **Le retrait coupe la collecte sur l'appareil immédiatement, avant même la fin de l'écriture** (hors connexion, l'écriture part plus tard ; c'est l'état local qui commande la collecte). **À l'activation, la collecte ne démarre qu'après l'acceptation de l'écriture** (si elle est refusée : collecte restée coupée, message neutre, pas de nouvelle tentative en boucle). |
+| **Connexion / nouvel appareil : appliquer le choix (b)** (AUTH-B, ticket §8) | `get users/{uid}` (la lecture du routage, §5 du ticket) | La collecte reste **coupée** tant que ce document n'a pas été lu. Lu : `analyticsConsent.enabled == true` -> activer la collecte sur cet appareil ; bloc absent, `enabled == false` ou lecture impossible -> collecte coupée, `sign_in_completed` non envoyé. `sign_up_completed` : seulement si (b) cochée, après la création du profil. L'application d'un consentement donné sur un autre appareil est un point RGPD assumé par le PM (§11). |
 | **Créer une Miff** | `entitlements/{uid}` (savoir quelle clé utiliser) ; `memberships` (si gratuit et déjà un `free` → afficher le paywall sans tenter l'écriture) | Générer `miffId` (ID auto) et `code` (aléa cryptographique). Batch de 4 : `miffs/{miffId}` create {ownerUid, name, joinCode, createdAt} ; `joinCodes/{code}` create {miffId, miffName, createdAt} ; `miffs/{miffId}/members/{uid}` create {role:"owner", profil copié, joinedAt, sharing} ; `users/{uid}/memberships/{key}` create {miffId, joinedAt} avec `key="free"` si non premium, sinon `miffId`. Collision de code (très improbable) : régénérer et réessayer. |
 | **Rejoindre une Miff** | `joinCodes/{CODE}` (get) | Après l'écran de confirmation + consentement. Batch : `members/{uid}` create {role:"member", joinCode, profil copié, joinedAt, sharing} + `memberships/{key}` create. Erreur "introuvable" ou refus : message unique et bienveillant ("Ce code ne correspond à aucune Miff"), sans distinguer les causes. Limiter les essais côté UI (ex. pause après 5 échecs). |
 | **Feed** | Listener `miffs/{id}/members` + listener `miffs/{id}/status` (**n'attacher cet écouteur qu'après avoir publié son propre statut** ; il est terminé par Firestore sur `permission-denied` si le statut disparaît ou n'existe pas encore : le rattacher après chaque republication ; en attendant, état neutre « Partage de ton statut en cours… », jamais une erreur) + `get photos/{uid}` à la demande (**refus ou introuvable = « pas de photo »**, y compris pour sa propre photo expirée : une photo expirée est refusée même à son auteur ; ignorer toute photo dont `expiresAt` est passé) ; `get miffs/{id}` pour le nom et le code. Si `get miffs/{id}` est refusé ou introuvable : perte d'accès (voir « Perte d'accès »). | — |
@@ -326,7 +359,7 @@ Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lu
 
 | Chemin | get | list | create | update | delete |
 |---|---|---|---|---|---|
-| `users/{uid}` | S | — | S | S (profil, CGU) | S |
+| `users/{uid}` | S | — | S (profil, (a) CGU, (b) consentement facultatif ; heure serveur) | S (profil et consentement (b) seulement ; (a) et `createdAt` figés) | S |
 | `users/{uid}/memberships/{key}` | S | S | S (slot) | — | S (si plus membre) |
 | `users/{uid}/devices/{id}` | S | S | S | S | S |
 | `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
@@ -361,6 +394,7 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 | `places` (coordonnées, adresses) | Jusqu'à suppression du lieu ou de la Miff. |
 | `joinCodes` | Jusqu'à régénération ou suppression de la Miff (la suppression de la Miff exige celle du code, dans le même lot). |
 | `miffsDeleted` (pierre tombale) | Indéfinie : identifiant de Miff + date de suppression, sans donnée personnelle. À faire examiner par le juriste (§11). |
+| Preuve d'acceptation (a) (`termsAcceptedAt`, `termsVersion`) et consentement statistiques (b) (`analyticsConsent`) | Tant que le profil existe ; **supprimées avec `users/{uid}`** à la suppression du compte. Conserver la preuve après suppression du compte exigerait un journal séparé sans donnée personnelle (Q13) : non modélisé. Un utilisateur social qui refuse le panneau de consentement n'a **aucun** enregistrement. |
 | Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si le juriste exige une conservation de la preuve après départ, il faudra un journal séparé (Q13). |
 | `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
 | `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
@@ -381,11 +415,12 @@ Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse 
 | Appartenance à un cercle (lien social, familial) | `members`, `memberships` | Moyenne à élevée (révèle des relations, éventuellement parent-enfant) | Contrat | Jusqu'au départ |
 | Niveau de batterie, permission de localisation du téléphone | `status` | Faible à moyenne | Intérêt légitime / contrat | État courant |
 | Jetons de notification | `devices` | Faible (identifiant d'appareil) | Contrat | Jusqu'à déconnexion |
-| Preuve d'acceptation des CGU et du consentement | `users`, `members` | Faible | Obligation de pouvoir démontrer le consentement | Voir §10 |
+| Preuve d'acceptation des CGU (a) et du consentement | `users`, `members` | Faible | Obligation de pouvoir démontrer le consentement | Voir §10 |
+| Consentement (b) aux statistiques d'usage et rapports de plantage (état, date, version, retrait) | `users` (`analyticsConsent`) | Faible en soi (un booléen daté) ; **conditionne** la collecte d'une donnée à caractère personnel (identifiant d'installation, zone déduite de l'IP, journaux de plantage) | Consentement (RGPD art. 6.1.a et 7 : libre, spécifique, retirable aussi facilement que donné) | Tant que le profil existe (§10) |
 | État d'abonnement | `entitlements` | Faible | Contrat | Durée de l'abonnement |
-| Données Analytics (activé) | Google Analytics | Faible si jamais de position | Consentement | Régler la rétention GA4 au minimum dans la console |
+| Données Analytics et rapports de plantage (collectés seulement si (b) acceptée) | Google Analytics / Crashlytics (hors Firestore) | Faible si jamais de position | Consentement (b) | Régler la rétention GA4 au minimum dans la console |
 
-Points à faire examiner par un juriste :
+Points RGPD à connaître (le PM assume le risque juridique, décision du 2026-10-23 : plus d'avis de juriste demandé) :
 1. **Localisation** : donnée à haut risque ; le choix de ne stocker qu'un état (et non les coordonnées de la personne) réduit l'exposition mais ne la supprime pas.
 2. **Mineurs** : si des mineurs peuvent utiliser l'app (cas parent-enfant mentionné au CLAUDE.md), le RGPD prévoit un âge de consentement numérique (15 ans en France d'après la loi nationale, à vérifier) et un consentement parental en dessous. Le modèle **ne contient aucune date de naissance ni âge** (minimisation) : il n'existe donc aucun contrôle d'âge. Q12.
 3. **Analyse d'impact (AIPD)** : localisation + éventuels mineurs sont des critères qui peuvent la rendre nécessaire.
@@ -397,6 +432,11 @@ Points à faire examiner par un juriste :
 9. **Données des survivants d'une Miff supprimée** : la fiche, le statut et la photo d'un membre resté après la suppression d'une Miff restent *physiquement stockés* tant que l'app de ce membre ne les a pas nettoyés (au prochain lancement), mais ils sont **illisibles immédiatement** (contrôle d'existence de la Miff, DUR-2). **Risque accepté par le PM (revue de sécurité de DUR-2)** : les *écritures* de statut, photo et fiche d'un survivant ne vérifient pas que la Miff existe encore ; un survivant (ou un client modifié) peut donc écrire de nouveaux documents dans une Miff morte tant que sa fiche existe. Ces données restent illisibles (stockage seulement, quota Spark) et sont nettoyées au prochain lancement de l'app ; sur Spark aucune fonction ne peut les purger (décision PM : acceptable pour la bêta ; **avis juridique à obtenir avant le lancement public**, risque K4 du ticket). La procédure client « retirer chaque membre avant de supprimer la Miff » (§8) limite ce cas ; la suppression de la Miff n'est pas bloquée s'il reste des membres (les règles ne peuvent pas vérifier qu'une sous-collection est vide).
 10. **Photos** : la formulation « 24 h maximum » est remplacée par « illisible après 24 h ; suppression physique au mieux » tant qu'une suppression automatique n'est pas disponible sur Spark (TTL de Firestore sans quota gratuit selon la documentation Google, à vérifier dans la console) : à faire valider par le juriste.
 11. **Cache local** : les SDK conservent un cache sur l'appareil (statuts, lieux) ; contrat client : vider le cache à la déconnexion, à la suppression de compte et à la perte d'accès à une Miff (ticket durcissement §5.3, traité en DUR-3).
+12. **Deux consentements à l'inscription (AUTH-B)** : (a) CGU et politique, obligatoire ; (b) statistiques et plantages, facultatif, décoché par défaut, retirable dans Réglages (retrait enregistré avec sa date). Point RGPD, risque assumé par le PM (décision du 2026-10-23) : le caractère libre et spécifique de (b) (une seule case pour statistiques d'usage **et** rapports de plantage, risque R16 du ticket) et la formulation du texte.
+13. **Preuve de consentement** : l'horodatage serveur de (a) et de (b) est celui de la **création du profil**, pas du clic sur le bouton d'inscription ; sans profil créé, aucune preuve serveur n'existe (le choix reste seulement sur l'appareil). La preuve est **supprimée avec le profil** à la suppression du compte. Point RGPD, risque assumé par le PM (ticket §17.3).
+14. **Compte d'authentification créé avant le consentement (connexion sociale d'un nouvel utilisateur)** : en cas de refus, le compte est supprimé et **aucun document Firestore** n'est écrit ; mais l'identifiant et l'adresse fournis par Google ou Apple existent dans Firebase Authentication pendant quelques secondes, et plus longtemps si l'app est fermée de force pendant le panneau (ticket R17). Les règles Firestore n'imposent le consentement (a) que pour la création du **profil** : elles n'empêchent pas un client modifié d'écrire une fiche de membre ou une Miff sans profil (voir §14, point 7).
+15. **Mineurs** : aucun âge minimum, aucune date de naissance (décision PM Q7) ; un mineur peut accepter (a) et (b) seul. Cela relève du point 2 ci-dessus (RGPD art. 8, 15 ans en France à vérifier).
+16. **Application du choix (b) à un autre appareil** du même compte : le modèle le permet (le choix est lu sur le compte) ; acceptable ou nouveau consentement par appareil ? Point RGPD, risque assumé par le PM (ticket §17.3).
 
 ---
 
@@ -431,6 +471,8 @@ Points à faire examiner par un juriste :
 Ordre de grandeur de coût à ~2 000 utilisateurs actifs/jour après bascule : quelques euros par mois (lectures et transfert au-delà du gratuit) — estimation grossière à confirmer.
 
 **Lectures de règles supplémentaires du durcissement (DUR-1 et DUR-2), mesurées dans l'émulateur le 2026-10-22 (bornes hautes à ±1 près, voir `rules-test-report.md`)** : création de Miff +1 (pierre tombale) ; lecture d'un statut ≈ 3 (existence de la Miff, partage actif, statut publié) contre 1 avant ; lecture d'une photo ≈ 2 ; lecture d'un lieu ≈ 2 ; lot de suppression de Miff : base mesurée ≈ 4, pire cas recompté à la main sans cache 12 sur 20 ; lot de retrait d'un membre : base mesurée ≈ 2, pire cas 18 sur 20 (marge d'au moins 2 dans tous les cas ; les valeurs plus hautes de notre outil sont plafonnées à 10 par évaluation d'écriture et ne sont pas des totaux) ; la liste des statuts n'est pas mesurable avec la méthode actuelle. Impact (estimation, pas une mesure d'usage réel) : quelques lectures de règles de plus par ouverture à froid, sans changer l'ordre de grandeur des estimations ci-dessus. À surveiller avec le ratio lectures ÷ utilisateurs actifs.
+
+**Lectures de règles d'AUTH-B (mesurées dans l'émulateur le 2026-10-24)** : création du profil avec (a) et (b) = 0 lecture de règles ; mise à jour ou retrait du consentement (b) = 0. Aucune règle de `users` ne lit un autre document. La lecture du consentement au lancement est la lecture du profil déjà faite pour le routage (1 lecture, §5 du ticket authentification) : aucun surcoût.
 
 **Coût caché des règles** : chaque `get()/exists()` dans une règle compte comme une lecture et est facturé même si la requête est refusée. Le schéma limite ces appels (ex. `isMember` = 1 lecture par requête de lecture/écriture). Ne pas multiplier les listeners sur de petites requêtes.
 
@@ -472,6 +514,9 @@ Cloud Functions n'existent pas sur Spark. Aucune fonction n'est écrite à ce st
 5 bis. **Réutilisation de l'identifiant d'une Miff supprimée (ATK1) et code orphelin (ATK2)** → corrigés par DUR-1 : pierre tombale `miffsDeleted/{id}` (création de Miff refusée, §2.11) et suppression obligatoire du code dans le lot de suppression de la Miff (§2.5). Tests H1 et H2 (`rules-test-plan.md` §11), chacun prouvé par mutation.
 5 ter. **Réciprocité contournable (ATK3)**, **retour d'un membre retiré (ATK4)** → corrigés par DUR-2 : lecture des statuts exigeant d'avoir publié son propre statut ; retrait d'un membre impossible sans renouvellement du code dans le même lot. Limites connues : photos lisibles avec le seul partage activé (décision PM) ; membre qui se retire lui-même juste avant son retrait (garde l'ancien code) ; suppression physique des photos non garantie sur Spark.
 5 quater. **Écritures d'un survivant sur une Miff supprimée** (risque accepté par le PM) : voir §11 point 9 ; aucun `miffAlive` sur les écritures `status`, `photos`, `members`.
+6 bis. **Consentement (b) falsifié ou modifié par un tiers (AUTH-B)** -> corrigé par les règles : bloc lisible et modifiable par son propriétaire seul, horodatage = heure serveur (impossible d'antidater), retrait avec trace conservée, version non rétrogradable, champs (a) figés, aucune clé supplémentaire (âge, e-mail...). Tests AB1 à AB17 (`rules-test-plan.md` §12), chacun prouvé par mutation. Limites : un client modifié peut ne **pas** respecter l'état local (collecter sans consentement) : le consentement n'est pas techniquement contraignant côté appareil, il l'est seulement par le code des applications (revue de code et QA, critères X9 et C13 du ticket) ; la **version courante** du texte n'est connue que du client (les règles ne peuvent pas la comparer à une valeur de référence).
+7. **Pas de profil exigé pour créer ou rejoindre une Miff (AUTH-B, constat, non modifié)** : les règles de `miffs`, `members` et `memberships` ne vérifient pas que `users/{uid}` existe, donc qu'(a) a été enregistrée. Seuls les clients officiels imposent « pas d'usage avant (a) ». Exiger le profil dans ces lots coûterait une lecture de règles de plus par création/jonction et casserait des tests existants : **question ouverte pour le PM** (§15, question 20).
+8. **Comparaison de versions par ordre alphabétique (AUTH-B)** : la règle « pas de rétrogradation » compare deux textes. Validée dans l'émulateur Firestore ; la documentation officielle consultée ne précise pas cet opérateur sur les chaînes. En cas de refus par le serveur réel, l'échec est **fermé** (la réactivation après retrait serait refusée, aucun accès en plus) ; à reconfirmer au premier essai sur le projet de développement.
 6. Résiduel : abus de volume par un compte légitime (écritures en boucle, avatars) → tailles bornées, mais pas de limitation de débit en règles ; App Check + surveillance des quotas.
 
 ---
@@ -509,4 +554,5 @@ Les autres questions ci-dessous seront tranchées au fil des tickets, quand la f
 16. **Désactivation du partage** : notifier les autres membres ? (ton à définir.)
 17. **Rayon** : bornes 50–2 000 m acceptables ? Minimum recommandé côté UI : 100 m.
 18. **Suppression de compte d'un créateur** : supprimer sa Miff et les données des autres membres associés, ou transférer ?
+20. **Profil exigé avant de créer/rejoindre une Miff ?** (AUTH-B, §14 point 7) : faut-il que les règles refusent la création ou la jonction d'une Miff tant que `users/{uid}` n'existe pas (preuve serveur d'(a)) ? Coût : une lecture de règles de plus par lot ; effet : un client modifié ne peut plus contourner le consentement (a).
 19. **Fournisseur d'abonnement** : validation native (App Store / Play Billing) ou service tiers (RevenueCat) — conditionne la fonction de webhook.
