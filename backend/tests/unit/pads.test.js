@@ -49,3 +49,18 @@ test('PADS - un hôte inconnu fait échouer clairement', () => {
   assert.throws(() => injectPads(rules, [{ match: 'match /nope/{x} {', method: 'get' }], 1), /introuvable/);
   assert.throws(() => injectPads(rules, [{ match: 'match /places/{placeId} {', method: 'inconnue' }], 1), /aucune règle/);
 });
+
+// DUR-3 : lectures factices par hôte (mesure des lots sans dépasser la limite de 10 par écriture).
+import { injectPadCounts } from '../helpers/pads.js';
+
+test('PADS - injectPadCounts : nombre exact par hôte, indices tous distincts, règles équilibrées', () => {
+  const hosts = [H.membersDelete, H.statusDelete, H.photosDelete];
+  const out = injectPadCounts(rules, hosts, [3, 0, 5]);
+  assert.equal(out.split(PAD_COLLECTION).length - 1, 8);
+  const indices = [...out.matchAll(new RegExp(`${PAD_COLLECTION}/p([0-9]+)`, 'g'))].map((m) => m[1]);
+  assert.equal(new Set(indices).size, 8, 'indices de lectures factices en double');
+  assert.equal(balance(out, '(', ')'), balance(rules, '(', ')'));
+  assert.equal(out.split('allow ').length, rules.split('allow ').length);
+  assert.equal(injectPadCounts(rules, hosts, [0, 0, 0]), rules);
+  assert.throws(() => injectPadCounts(rules, hosts, [1, 2]), /un nombre de lectures factices par hôte/);
+});

@@ -22,6 +22,33 @@ const RELEVANT_ENV_NAME = /FIREBASE|FIRESTORE|GCLOUD|GCP|GOOGLE|CLOUDSDK|PROJECT
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
+/**
+ * Projet réellement utilisé par l'émulateur : `firebase emulators:exec --project X` pose GCLOUD_PROJECT=X et
+ * FIREBASE_CONFIG={"projectId":"X",...} dans l'environnement du script (vérifié le 2026-10-23, firebase-tools 15.34.0).
+ * Sans --project, la CLI prend le projet de .firebaserc (si un seul projet y est déclaré, il devient implicite : constaté) ou
+ * "demo-no-project" (aucun projet déclaré) : c'est pourquoi .firebaserc ne déclare plus aucun projet.
+ * Retourne les identifiants lus, sans rien supposer : c'est à assertSafeEnvironment de juger.
+ */
+export function emulatorProjectFromEnv(env = process.env) {
+  let configProjectId;
+  if (env.FIREBASE_CONFIG) {
+    try {
+      configProjectId = JSON.parse(env.FIREBASE_CONFIG).projectId;
+    } catch {
+      configProjectId = undefined;
+    }
+  }
+  return { gcloud: env.GCLOUD_PROJECT || undefined, config: configProjectId };
+}
+
+/** Identifiant de projet à utiliser dans les tests : celui que l'émulateur annonce, à défaut la valeur de démonstration. */
+export function testProjectId(env = process.env) {
+  const { gcloud, config } = emulatorProjectFromEnv(env);
+  return gcloud ?? config ?? DEFAULT_TEST_PROJECT_ID;
+}
+
+export const DEFAULT_TEST_PROJECT_ID = 'demo-miff-rules';
+
 function isDemoProject(id) {
   return typeof id === 'string' && /^demo-[a-z0-9][a-z0-9-]*$/.test(id);
 }
@@ -88,6 +115,17 @@ export function assertSafeEnvironment({ projectId, env = process.env, requireEmu
 
   // Les requêtes doivent partir vers l'émulateur local, jamais vers Google.
   if (requireEmulator) {
+    // Le projet RÉELLEMENT utilisé par l'émulateur (posé par emulators:exec), pas seulement la constante des tests :
+    // il doit être annoncé, être un projet de démonstration, et être celui que les tests utilisent.
+    const { gcloud, config } = emulatorProjectFromEnv(env);
+    if (!gcloud) {
+      problems.push('GCLOUD_PROJECT absent : le projet utilisé par l\'émulateur est inconnu (lancer via "npm run test:emulator")');
+    } else if (projectId !== gcloud) {
+      problems.push(`le projet des tests (${JSON.stringify(projectId)}) n'est pas celui de l'émulateur (GCLOUD_PROJECT=${gcloud})`);
+    }
+    if (config !== undefined && gcloud && config !== gcloud) {
+      problems.push(`FIREBASE_CONFIG (${config}) et GCLOUD_PROJECT (${gcloud}) désignent deux projets différents`);
+    }
     const emulatorHost = env.FIRESTORE_EMULATOR_HOST;
     if (!emulatorHost) {
       problems.push(

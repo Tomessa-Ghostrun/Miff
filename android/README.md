@@ -97,7 +97,7 @@ Permissions finales de l'APK release : `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE
 ## Traductions
 
 - **Les textes anglais sont dans `res/values/` (non qualifié) et les textes français dans `res/values-fr/`.** C'est voulu : Android utilise le dossier non qualifié quand la langue du téléphone n'est pas prise en charge, donc c'est le seul moyen d'avoir l'**anglais comme langue de repli** (un téléphone en allemand ou en arabe affiche de l'anglais). `res/resources.properties` (`unqualifiedResLocale=en-US`) déclare cette langue de référence, et `generateLocaleConfig = true` produit la liste des langues du sélecteur Android 13+ ("Langues de l'application").
-- Le français reste la **langue source** du texte produit. Les clés suivent `docs/contracts/i18n-keys.md` : `snake_case` avec préfixe de fonctionnalité (`home_`, `diag_`...), suffixe `_a11y` pour un texte de lecteur d'écran, `android_` pour ce qui est propre à Android. `res/values/` (anglais) et `res/values-fr/` (français) ont exactement les mêmes clés (Lint l'impose) : le script de parité du dépôt, qui compare des clés, fonctionne sur `res/values/strings.xml`, même si ce fichier contient l'anglais et non le français.
+- Le français reste la **langue source** du texte produit. Les clés suivent `docs/contracts/i18n-keys.md` : `snake_case` avec préfixe de fonctionnalité (`home_`, `diag_`...), suffixe `_a11y` pour un texte de lecteur d'écran, `android_` pour ce qui est propre à Android. `res/values/` (anglais) et `res/values-fr/` (français) ont exactement les mêmes clés (Lint l'impose) : le script de parité du dépôt (`scripts/check-i18n-parity.mjs`) lit le **français** dans `res/values-fr/strings.xml` et le compare au catalogue iOS ; `res/values/` (anglais) n'est pas lu par ce script, c'est Lint qui garantit que les deux dossiers ont les mêmes clés. Pour une clé nouvelle, c'est donc `values-fr/` que le script contrôle.
 - Ajouter une langue : créer `res/values-<code>/strings.xml` avec toutes les clés (Lint échoue sinon : `MissingTranslation` en erreur), puis ajouter le code dans `localeFilters` (`app/build.gradle.kts`, bloc `androidComponents`).
 - Lint en erreur : `HardcodedText`, `MissingTranslation`, `ExtraTranslation`, `RtlHardcoded`. Limite connue : `HardcodedText` ne regarde que les fichiers XML ; les textes écrits directement dans le code Compose ne sont pas détectés par Lint (aucun dans ce socle, à surveiller en relecture).
 - Mise en page avec début/fin (`start`/`end`), jamais gauche/droite. Pseudo-langues `en-XA` (texte allongé accentué) et `ar-XB` (droite-à-gauche) disponibles dans le build debug : les ajouter dans les langues du téléphone (elles n'apparaissent que si les options pour les développeurs sont activées, selon le constructeur).
@@ -123,7 +123,7 @@ app/src/main      code commun : MiffApplication, AppContainer, MainActivity,
                   ui/ (theme, components, home, navigation), domain/ (logique pure testée), data/privacy
 app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth en lecture, App Check "debug"
 app/src/release   App Check Play Integrity, aucune destination interne
-app/src/test      tests unitaires JUnit (46 tests, dont app/src/testDebug pour le ViewModel du diagnostic)
+app/src/test      tests unitaires JUnit (48 tests ; app/src/testDebug : ViewModel du diagnostic et test de défilement de l'écran d'accueil, via Robolectric)
 third_party/fonts licences et provenance des polices
 ```
 
@@ -137,6 +137,40 @@ third_party/fonts licences et provenance des polices
 Le workflow vérifie aussi que le bundle release ne contient aucune trace de `DIAGNOSTICPROBE` ni de `DebugAppCheck` (diagnostic ou fournisseur App Check de debug) et échoue sinon. **L'essai du build release sur un appareil (OPPO) n'est pas fait par la CI : il se fait à la recette** (installer l'APK release signé localement ou le bundle via un canal de test).
 
 `.github/workflows/android.yml` (déclenché par une PR touchant `android/**`, ou à la main) exécute `spotlessCheck`, `lintDebug`, `testDebugUnitTest`, `assembleDebug` et `bundleRelease` (non signé), et publie l'APK debug 3 jours. Il lit le secret GitHub `GOOGLE_SERVICES_JSON_B64` (voir le message d'erreur du job s'il manque).
+
+Avant tout lancement de Gradle, l'étape `gradle/actions/wrapper-validation` (épinglée par empreinte de commit) vérifie que `gradle/wrapper/gradle-wrapper.jar` est un fichier officiel de Gradle : un jar de wrapper trafiqué s'exécuterait avec accès à la configuration Firebase du job. La somme SHA-256 de la distribution Gradle (`distributionSha256Sum`) reste vérifiée en plus, en local comme en CI.
+
+### Signature de l'APK debug de la CI : situation et options (AND-002, rien d'implémenté)
+
+**Situation.** Le runner de la CI est jetable : à chaque exécution, Android Gradle Plugin y crée une clé de débogage neuve. Deux conséquences : (1) deux APK issus de deux exécutions (ou un APK de la CI puis un APK construit sur le poste) ne peuvent pas s'installer l'un par-dessus l'autre, il faut désinstaller d'abord ; (2) l'empreinte SHA-1 de l'APK change à chaque fois, alors que la connexion Google (ticket Inscription) exige une empreinte fixe déclarée dans Firebase.
+
+**Une clé de débogage n'est jamais une clé de release.** Elle ne signe que des APK de test, jamais ce qui part sur Google Play. Elle ne doit jamais être réutilisée pour la release, et la clé de release (qui n'existe pas encore) ne doit jamais être mélangée avec elle. Dans les deux cas : **jamais dans le dépôt** (le script `check-forbidden-files` refuse les `.keystore` / `.jks`).
+
+| Option | Principe | Coût | Résout (1) | Résout (2) | Limites |
+|---|---|---|---|---|---|
+| **A. Keystore de débogage partagé, secret GitHub** | Le PM génère une fois un keystore de débogage dédié à Miff, le stocke en base64 dans un secret GitHub `DEBUG_KEYSTORE_B64`. La CI le décode vers `~/.android/debug.keystore` avant `assembleDebug` (AGP l'utilise tout seul, aucun changement des fichiers Gradle). Le même fichier, copié sur le poste, donne la même empreinte en local | 0 EUR | oui, CI et poste | oui | Un secret de plus à protéger (peu sensible : il ne signe que des APK de test, mais quiconque l'a peut fabriquer un APK qui remplace le debug de ses testeurs). Les PR Dependabot et les forks n'ont pas accès aux secrets : la CI doit alors garder la clé jetable (étape à écrire avec cette condition). En cas de perte : on en recrée un et on met à jour l'empreinte dans Firebase, rien d'irréversible |
+| **B. Chacun son keystore local, pas de clé en CI** | Le PM installe l'APK construit par Android Studio sur son poste ; la CI n'est utilisée que pour vérifier. Empreinte stable par poste, à déclarer dans Firebase | 0 EUR | oui, mais il faut un poste de build | oui, pour ce poste | Chaque poste a une empreinte différente (une par développeur à déclarer). Pas d'APK de la CI installable par-dessus. A éviter pour une équipe, acceptable à une personne |
+| **C. Google Play, test interne + signature par Google (Play App Signing)** | L'AAB est envoyé dans un test interne ; Google signe avec une clé qu'il garde ; l'empreinte à déclarer dans Firebase est celle fournie par la console Play | 0 EUR (compte Play déjà payé) | oui | oui (empreinte Play) | Exige une vraie clé de téléversement (release) et une fiche Play : c'est l'étape suivante, lourde, qui concerne la distribution aux testeurs externes, pas le dépannage d'aujourd'hui. Le build debug ne passe pas par là |
+
+(Firebase App Distribution ne règle pas le problème : il distribue un APK déjà signé, avec la clé qu'on lui donne.)
+
+**Recommandation : option A**, tant que l'on teste sur l'OPPO avec des APK de la CI ; option C plus tard, au moment des testeurs externes (le projet de développement séparé prévu avant eux est le bon moment pour le décider). A est gratuite, ne change aucun fichier Gradle et résout les deux problèmes d'un coup.
+
+**Etapes pour le PM (une fois, ~10 minutes), puis une PR de l'android-dev :**
+
+1. Choisir un dossier **hors dépôt** (par exemple le dossier de secrets du poste) et y générer le keystore (PowerShell ; le JDK d'Android Studio fournit `keytool`). Les mots de passe `android` et l'alias `androiddebugkey` sont ceux que AGP attend pour une clé de débogage ; le fichier, lui, reste secret :
+
+   ```powershell
+   & "C:Program FilesAndroidAndroid Studiojbrinkeytool.exe" -genkeypair -keystore miff-debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Miff Debug,O=Miff,C=FR"
+   ```
+2. Lire l'empreinte (SHA-1 et SHA-256), à noter pour Firebase : `keytool -list -v -keystore miff-debug.keystore -alias androiddebugkey -storepass android`.
+3. Créer le secret (même méthode que `GOOGLE_SERVICES_JSON_B64`) : `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cheminmiff-debug.keystore")) | gh secret set DEBUG_KEYSTORE_B64 --repo Tomessa-Ghostrun/Miff`.
+4. Sauvegarder le fichier dans un endroit privé (gestionnaire de mots de passe ou disque chiffré). Ne jamais le coller dans une conversation ni dans le dépôt.
+5. Sur le poste, remplacer `%USERPROFILE%.androiddebug.keystore` par ce fichier (garder l'ancien à côté) : les builds locaux auront la même empreinte que la CI.
+6. Au démarrage du ticket Inscription : déclarer le SHA-1 de l'étape 2 dans la console Firebase (Paramètres du projet > application Android > Ajouter une empreinte), puis régénérer `google-services.json` (et mettre à jour le secret `GOOGLE_SERVICES_JSON_B64`).
+7. Dire à l'android-dev de passer à l'implémentation : étape de CI qui décode le secret (sans jamais l'afficher, sauté si le secret est absent), et ajout de `DEBUG_KEYSTORE_B64` à la liste fermée de `backend/tests/unit/workflows.test.js` (ce test impose qu'un nouveau secret soit une décision visible en revue). A la première installation, désinstaller une dernière fois l'ancienne version de l'application.
+
+**Signal de bascule vers C** : premiers testeurs hors équipe, ou besoin de tester l'abonnement via Google Play (la facturation Play exige un APK/AAB distribué par Play).
 
 ## A surveiller plus tard : surcouches constructeur (géofencing)
 

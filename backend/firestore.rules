@@ -168,26 +168,26 @@ service cloud.firestore {
         );
     }
 
-    // Changement ultérieur (Réglages) ; o = ancien bloc (null si le profil n'en a pas), n = nouveau.
+    // Changement ultérieur (Réglages) ; prev = ancien bloc (null si le profil n'en a pas), next = nouveau.
     //  - activer / réactiver (depuis « absent » ou « non consenti ») : heure serveur, version du texte, revokedAt vidé,
     //    et version jamais plus ancienne que la dernière enregistrée (pas de rétrogradation) ;
     //  - retirer (depuis « consenti » uniquement) : revokedAt = heure serveur, la trace du consentement
     //    (date et version) est conservée. Réécrire un consentement actif sans le retirer d'abord est refusé.
-    function validAnalyticsConsentChange(o, n) {
-      return hasConsentKeys(n)
+    function validAnalyticsConsentChange(prev, next) {
+      return hasConsentKeys(next)
         && (
-          ((o == null || o.enabled == false)
-            && n.enabled == true
-            && n.consentedAt == request.time
-            && isConsentVersion(n.consentVersion)
-            && n.revokedAt == null
-            && (o == null || o.consentVersion == null || n.consentVersion >= o.consentVersion))
+          ((prev == null || prev.enabled == false)
+            && next.enabled == true
+            && next.consentedAt == request.time
+            && isConsentVersion(next.consentVersion)
+            && next.revokedAt == null
+            && (prev == null || prev.consentVersion == null || next.consentVersion >= prev.consentVersion))
           ||
-          (o != null && o.enabled == true
-            && n.enabled == false
-            && n.revokedAt == request.time
-            && n.consentedAt == o.consentedAt
-            && n.consentVersion == o.consentVersion)
+          (prev != null && prev.enabled == true
+            && next.enabled == false
+            && next.revokedAt == request.time
+            && next.consentedAt == prev.consentedAt
+            && next.consentVersion == prev.consentVersion)
         );
     }
 

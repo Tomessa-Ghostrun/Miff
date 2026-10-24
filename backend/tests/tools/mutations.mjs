@@ -6,6 +6,8 @@
 // une modification de firestore.rules qui rendrait la mutation sans effet) ; on remplace la nième occurrence.
 // equivalent : raison pour laquelle aucun test ne PEUT voir la mutation (mutant équivalent, protection redondante).
 
+import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
+
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
 
@@ -563,25 +565,25 @@ export const MUTATIONS = [
   {
     id: 'AB9-activation-date-client',
     why: 'l\'activation du consentement (b) accepte une date fournie par le client',
-    edits: [edit('&& n.consentedAt == request.time\n            && isConsentVersion(n.consentVersion)', '&& n.consentedAt is timestamp\n            && isConsentVersion(n.consentVersion)')],
+    edits: [edit('&& next.consentedAt == request.time\n            && isConsentVersion(next.consentVersion)', '&& next.consentedAt is timestamp\n            && isConsentVersion(next.consentVersion)')],
     tests: ['AB9'],
   },
   {
     id: 'AB9-activation-sans-version',
     why: 'l\'activation du consentement (b) n\'exige plus une version valide du texte',
-    edits: [edit('&& isConsentVersion(n.consentVersion)\n            && n.revokedAt == null', '&& n.revokedAt == null')],
+    edits: [edit('&& isConsentVersion(next.consentVersion)\n            && next.revokedAt == null', '&& next.revokedAt == null')],
     tests: ['AB9'],
   },
   {
     id: 'AB9-activation-retrait-renseigne',
     why: 'l\'activation du consentement (b) accepte une date de retrait renseignée',
-    edits: [edit('&& n.revokedAt == null\n            && (o == null', '&& (o == null')],
+    edits: [edit('&& next.revokedAt == null\n            && (prev == null', '&& (prev == null')],
     tests: ['AB9'],
   },
   {
     id: 'AB9-activation-depuis-absent-refusee',
     why: 'resserrement : un profil sans bloc ne peut plus activer (b) (le test AB9 prouve que c\'est possible)',
-    edits: [edit('((o == null || o.enabled == false)', '((o != null && o.enabled == false)')],
+    edits: [edit('((prev == null || prev.enabled == false)', '((prev != null && prev.enabled == false)')],
     tests: ['AB9'],
   },
   {
@@ -593,43 +595,43 @@ export const MUTATIONS = [
   {
     id: 'AB10-retrait-efface-la-date',
     why: 'le retrait peut effacer ou changer la date du consentement (la preuve disparaît)',
-    edits: [edit('&& n.consentedAt == o.consentedAt\n            && n.consentVersion == o.consentVersion)', '&& n.consentVersion == o.consentVersion)')],
+    edits: [edit('&& next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)', '&& next.consentVersion == prev.consentVersion)')],
     tests: ['AB10'],
   },
   {
     id: 'AB10-retrait-efface-la-version',
     why: 'le retrait peut effacer ou changer la version du consentement (la preuve disparaît)',
-    edits: [edit('&& n.consentedAt == o.consentedAt\n            && n.consentVersion == o.consentVersion)', '&& n.consentedAt == o.consentedAt)')],
+    edits: [edit('&& next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)', '&& next.consentedAt == prev.consentedAt)')],
     tests: ['AB10'],
   },
   {
     id: 'AB10-retrait-date-client',
     why: 'le retrait accepte une date de retrait fournie par le client',
-    edits: [edit('&& n.enabled == false\n            && n.revokedAt == request.time\n            && n.consentedAt == o.consentedAt\n            && n.consentVersion == o.consentVersion)', '&& n.enabled == false\n            && n.revokedAt is timestamp\n            && n.consentedAt == o.consentedAt\n            && n.consentVersion == o.consentVersion)')],
+    edits: [edit('&& next.enabled == false\n            && next.revokedAt == request.time\n            && next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)', '&& next.enabled == false\n            && next.revokedAt is timestamp\n            && next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)')],
     tests: ['AB10'],
   },
   {
     id: 'AB10-retrait-sans-consentement-actif',
     why: 'un « retrait » est accepté même si le consentement n\'était pas actif (fausse trace de retrait)',
-    edits: [edit('(o != null && o.enabled == true\n', '(o != null\n')],
+    edits: [edit('(prev != null && prev.enabled == true\n', '(prev != null\n')],
     tests: ['AB10'],
   },
   {
     id: 'AB11-reactivation-refusee',
     why: 'resserrement : un consentement retiré ne peut plus être réactivé (le test AB11 prouve que c\'est possible)',
-    edits: [edit('((o == null || o.enabled == false)', '((o == null)')],
+    edits: [edit('((prev == null || prev.enabled == false)', '((prev == null)')],
     tests: ['AB11'],
   },
   {
     id: 'AB12-retrogradation-de-version',
     why: 'la réactivation du consentement (b) accepte une version plus ancienne que la dernière enregistrée',
-    edits: [edit('&& (o == null || o.consentVersion == null || n.consentVersion >= o.consentVersion))', '&& true)')],
+    edits: [edit('&& (prev == null || prev.consentVersion == null || next.consentVersion >= prev.consentVersion))', '&& true)')],
     tests: ['AB12'],
   },
   {
     id: 'AB12-reecriture-sans-retrait',
     why: 'un consentement actif peut être réécrit (nouvelle date, autre version) sans retrait préalable',
-    edits: [edit('((o == null || o.enabled == false)\n            && n.enabled == true', '(true\n            && n.enabled == true')],
+    edits: [edit('((prev == null || prev.enabled == false)\n            && next.enabled == true', '(true\n            && next.enabled == true')],
     tests: ['AB12'],
   },
   {
@@ -699,5 +701,6 @@ export const MUTATIONS = [
     edits: [edit(".data.keys().hasAll(['termsAcceptedAt', 'termsVersion']);", '.data != null;')],
     tests: ['AB21'],
   },
+  // --- DUR-3 (R14) : protections du §7.3 du ticket (voir mutations-dur3.mjs) ---
+  ...DUR3_MUTATIONS,
 ];
-

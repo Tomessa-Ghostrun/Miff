@@ -1,4 +1,4 @@
-// Plan de test, section 12 : AUTH-B, consentement facultatif (b) « statistiques d'usage et rapports de plantage »
+// Plan de test, section 13 : AUTH-B, consentement facultatif (b) « statistiques d'usage et rapports de plantage »
 // et acceptation (a) des CGU, sur users/{uid} (ticket docs/tickets/authentification.md, §8, §10, §15).
 //   AB1 à AB5   : création du profil (sans (b), (b) refusée, (b) acceptée, (b) falsifiée, forme du bloc)
 //   AB6         : (a) CGU et politique : horodatage serveur et version, impossible de créer un profil sans elles

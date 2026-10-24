@@ -9,11 +9,12 @@ import { fileURLToPath } from 'node:url';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { assertSafeEnvironment } from './guard.js';
+import { assertSafeEnvironment, testProjectId } from './guard.js';
 
 export { assertSucceeds, assertFails };
 
-export const PROJECT_ID = 'demo-miff-rules';
+// Projet annoncé par l'émulateur (GCLOUD_PROJECT posé par emulators:exec), pas une constante : le garde-fou juge le projet réellement utilisé.
+export const PROJECT_ID = testProjectId();
 export const RULES_PATH = fileURLToPath(new URL('../../firestore.rules', import.meta.url));
 // MIFF_RULES_FILE : réservé à l'outil de mutation (tests/tools/mutation-check.mjs), qui teste des règles volontairement affaiblies.
 export const readRules = () => readFileSync(process.env.MIFF_RULES_FILE ?? RULES_PATH, 'utf8');
