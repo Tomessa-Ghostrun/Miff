@@ -1,0 +1,22 @@
+{
+  "fr": {
+    "skip": "Aller au contenu",
+    "navLabel": "Pages du site",
+    "otherLabel": "English",
+    "footer": "Miff t’aide à savoir que tes proches vont bien, sans les déranger. Ce site ne dépose aucun cookie et n’utilise aucun traceur.",
+    "publisherLine": "Éditeur : {{PUBLISHER}}, {{ADDRESS}}. Contact : {{CONTACT}}.",
+    "fontsNote": "Polices Baloo Thambi 2 et Hanken Grotesk, sous licence SIL Open Font License 1.1 (textes de licence dans /assets/fonts/).",
+    "descriptionHome": "Miff : savoir que tes proches vont bien, sans les déranger.",
+    "descriptionNotFound": "Cette page n’existe pas."
+  },
+  "en": {
+    "skip": "Skip to content",
+    "navLabel": "Site pages",
+    "otherLabel": "Français",
+    "footer": "Miff helps you know that your loved ones are okay, without bothering them. This site sets no cookies and uses no trackers.",
+    "publisherLine": "Publisher: {{PUBLISHER}}, {{ADDRESS}}. Contact: {{CONTACT}}.",
+    "fontsNote": "Fonts Baloo Thambi 2 and Hanken Grotesk, licensed under the SIL Open Font License 1.1 (licence texts in /assets/fonts/).",
+    "descriptionHome": "Miff: know that your loved ones are okay, without bothering them.",
+    "descriptionNotFound": "This page does not exist."
+  }
+}
