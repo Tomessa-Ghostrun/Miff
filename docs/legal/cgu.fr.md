@@ -120,7 +120,7 @@ Nous pouvons modifier ces conditions, par exemple si l'app évolue ou si la loi 
 
 - Ces conditions sont régies par le **droit français**. Si tu es consommateur, tu bénéficies aussi des règles impératives de protection du pays où tu vis.
 - **Écris-nous d'abord** à **tomessa.mfouka@gmail.com** : nous cherchons toujours une solution amiable.
-- Si tu es consommateur, tu peux recourir gratuitement à un médiateur de la consommation : **[MÉDIATEUR DE LA CONSOMMATION À COMPLÉTER SI APPLICABLE]**.
+- Si tu souscris un abonnement Premium, tu peux recourir gratuitement à un médiateur de la consommation.
 - À défaut d'accord, les tribunaux compétents sont ceux prévus par la loi.
 
 ## 17. Divers

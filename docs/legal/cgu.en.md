@@ -120,7 +120,7 @@ We may change these terms, for example if the app evolves or the law changes. Fo
 
 - These terms are governed by **French law**. If you are a consumer, you also benefit from the mandatory protection rules of the country where you live.
 - **Write to us first** at **tomessa.mfouka@gmail.com**: we always look for an amicable solution.
-- If you are a consumer, you can use a consumer mediator free of charge: **[CONSUMER MEDIATOR TO BE COMPLETED IF APPLICABLE]**.
+- If you subscribe to Premium, you can use a consumer mediator free of charge.
 - Failing agreement, the competent courts are those provided by law.
 
 ## 17. Miscellaneous
