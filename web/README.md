@@ -64,7 +64,7 @@ Le test **« PLACEHOLDERS »** échoue tant qu'un champ `[À COMPLÉTER]` reste 
 2. **CSP plus stricte** : une seule destination réseau autorisée (`identitytoolkit.googleapis.com`), pas de script tiers ni de frame ; le SDK web charge davantage de ressources.
 3. **Gratuit** : rien à payer, aucun plan Blaze. Aucun service supplémentaire.
 4. **Testable** : l'appel est simulé en test et en prévisualisation (`/demo-api`), sans réseau.
-5. **Sûr** : le mot de passe n'est envoyé qu'une fois, en HTTPS, dans le corps de la requête (jamais dans l'adresse, ni en cookie, ni dans un stockage) ; `referrerPolicy: no-referrer`, `credentials: omit`, pas de cache. Le code du lien (`oobCode`) est à usage unique et expire ; `continueUrl` est **ignoré** (aucune redirection ouverte).
+5. **Sûr** : le mot de passe n'est envoyé qu'une fois, en HTTPS, dans le corps de la requête (jamais dans l'adresse, ni en cookie, ni dans un stockage) ; `referrerPolicy: strict-origin` (Google contrôle l'en-tête `Referer` pour la restriction de clé par site : on n'envoie que le site, jamais le chemin ni le code du lien), `credentials: omit`, pas de cache. Le code du lien (`oobCode`) est à usage unique et expire ; il est retiré de la barre d'adresse dès qu'il est lu (le code reste en mémoire) ; `continueUrl` est **ignoré** (aucune redirection ouverte).
 6. Limite connue : si Google change l'API REST, il faudra adapter ; elle est documentée et stable (`https://cloud.google.com/identity-platform/docs/reference/rest/v1/accounts/resetPassword`, à revérifier à l'implémentation de l'app).
 
 La clé web n'est **pas un secret** (elle identifie seulement le projet) mais n'est pas écrite dans le dépôt : le build la lit dans la variable `MIFF_WEB_API_KEY` et l'écrit dans une balise `<meta>` de `reset-password.html` (pas de script en ligne). Elle se **restreint** côté Google Cloud (ci-dessous).
@@ -101,6 +101,14 @@ cd web
 ```
 
 (Firebase CLI : celle de `backend/` après `npm ci`, ou une installation globale. **Toujours** `--project miff-3d283`.) Le fichier `web/firebase.json` déclenche automatiquement le garde-fou `scripts/web-predeploy-check.mjs` avant l'envoi : il **annule** le déploiement s'il reste un champ à compléter, si la clé web est absente, si le site est périmé ou construit en démonstration, si la commande vient d'une CI ou vise un autre projet que `miff-3d283`. (Ce hook n'a pas pu être essayé en vrai : aucun déploiement n'est autorisé dans ce travail ; à constater lors du premier déploiement, qui échoue de toute façon par sécurité si le hook ne s'exécute pas depuis `web/`.)
+
+### Vérification OBLIGATOIRE au premier déploiement (clé restreinte par site)
+
+La restriction de clé « par site » repose sur l'en-tête `Referer` envoyé à Google. Le site envoie `Referer: https://miff-3d283.web.app/` (politique `strict-origin`), ce qui correspond à la restriction `https://miff-3d283.web.app/*`. Cette combinaison n'a **pas pu être essayée** sans déploiement : à constater avant de dire que la page fonctionne.
+
+1. Demande un e-mail « Mot de passe oublié » pour un compte de test, ouvre le **lien réel** : la page doit afficher le formulaire (et non « On n'arrive pas à continuer »), puis choisis un mot de passe : l'écran de succès doit apparaître, et l'ancien mot de passe ne doit plus fonctionner.
+2. Refais l'essai avec un **second lien**, ouvert depuis **un autre navigateur** (autre profil ou navigation privée), pour vérifier que cela ne dépend pas d'un état local.
+3. Si la page affiche « On n'arrive pas à continuer » alors que le lien est neuf : la restriction de clé bloque (console du navigateur : erreur 403 « referer »). **Plan B** : dans Google Cloud, retirer la restriction par site et ne garder que la **restriction par API** (Identity Toolkit API seulement). La clé web n'est pas un secret ; la protection réelle est le code à usage unique du lien. Noter la décision dans le ticket.
 
 **Retour arrière** : Firebase console > Hosting > « Historique des versions » > choisir la version précédente > « Rollback » (immédiat, gratuit). On peut aussi reconstruire une version antérieure du dépôt et redéployer.
 
