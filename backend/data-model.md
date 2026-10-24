@@ -169,7 +169,7 @@ Exemple (membre parti de la maison à 16h02, sans update depuis) :
 
 Lecture : `get` uniquement (pas de `list`), seulement si la Miff existe, pour qui a activé son partage (**pas** de condition de statut publié pour les photos : décision PM, conséquence assumée), et **seulement tant que `expiresAt` n'est pas passé** : une photo expirée renvoie un refus de permission, une photo absente renvoie « introuvable » ; l'app traite les deux comme « pas de photo ». À ne charger que si `status.hasPhoto = true`, et à re-télécharger seulement si `lastUpdateAt` a changé (sinon coût de bande passante inutile).
 
-Suppression : l'auteur, le créateur, ou **tout membre de la Miff une fois la photo expirée** (nettoyage opportuniste : l'app qui constate une photo expirée la supprime, et son auteur supprime la sienne à chaque lancement et mise à jour avec `hasPhoto = false`). **Limite connue** : sur Spark, aucune suppression automatique garantie (les politiques TTL de Firestore n'ont pas de quota gratuit selon la documentation Google, à vérifier dans la console) ; la formule exacte est donc « **illisible après 24 h ; suppression physique au mieux** », à faire valider par le juriste (§11).
+Suppression : l'auteur, le créateur, ou **tout membre de la Miff une fois la photo expirée** (nettoyage opportuniste : l'app qui constate une photo expirée la supprime, et son auteur supprime la sienne à chaque lancement et mise à jour avec `hasPhoto = false`). **Limite connue** : sur Spark, aucune suppression automatique garantie (les politiques TTL de Firestore n'ont pas de quota gratuit selon la documentation Google, à vérifier dans la console) ; la formule exacte est donc « **illisible après 24 h ; suppression physique au mieux** », risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique) (§11).
 
 ### 2.9 `miffs/{miffId}/places/{placeId}` — lieux
 | Champ | Type | Note |
@@ -353,26 +353,26 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 
 **Non supprimable par le client** : `entitlements/{uid}` (ne contient aucune donnée personnelle hormis l'UID et l'état d'abonnement). À purger à la main ou par une fonction (Blaze). **Risque** : si l'app plante en cours de procédure, des données restent orphelines ; une fonction `onDelete` du compte (ou l'extension Firebase "Delete User Data", Blaze) rend la suppression fiable (§13).
 
-| Donnée | Conservation proposée (à valider) |
+| Donnée | Conservation proposée (non relue juridiquement : risque assumé, décision du 2026-10-23) |
 |---|---|
 | Profil `users`, copies `members` | Jusqu'à suppression du compte ou départ de la Miff. |
 | `status` (état courant) | Pas d'historique : écrasé à chaque événement ; supprimé à la révocation du partage, au départ, au retrait. |
 | `photos` | **Illisible après 24 h ; suppression physique au mieux** (nettoyage par l'auteur, le créateur ou tout membre ; pas de TTL garanti sur Spark). Même durée pour tous les comptes. Supprimée avec le statut au départ / retrait / révocation. |
 | `places` (coordonnées, adresses) | Jusqu'à suppression du lieu ou de la Miff. |
 | `joinCodes` | Jusqu'à régénération ou suppression de la Miff (la suppression de la Miff exige celle du code, dans le même lot). |
-| `miffsDeleted` (pierre tombale) | Indéfinie : identifiant de Miff + date de suppression, sans donnée personnelle. À faire examiner par le juriste (§11). |
-| Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si le juriste exige une conservation de la preuve après départ, il faudra un journal séparé (Q13). |
+| `miffsDeleted` (pierre tombale) | Indéfinie : identifiant de Miff + date de suppression, sans donnée personnelle. Risque connu : risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique) (§11). |
+| Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si une conservation de la preuve après départ devenait un jour nécessaire, il faudrait un journal séparé (Q13) ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique). |
 | `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
 | `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
 | Sauvegardes Firestore | Désactivées par défaut. Ne pas activer de sauvegarde/restauration à un instant donné sans décision du PM (elle dupliquerait les données sensibles). |
 
 ---
 
-## 11. Données sensibles et points RGPD (à faire valider légalement par le PM)
+## 11. Données sensibles et points RGPD (risque juridique assumé par le PM : décision du 2026-10-23, pas de relecture juridique)
 
-Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse de conformité. Les bases légales sont des **propositions** à valider avec un conseil juridique.
+Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse de conformité. Les bases légales sont des **propositions non relues par un juriste** : **risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique)**.
 
-| Donnée | Où | Sensibilité | Base légale proposée (à valider) | Conservation proposée |
+| Donnée | Où | Sensibilité | Base légale proposée (non relue : risque assumé) | Conservation proposée |
 |---|---|---|---|---|
 | Présence par rapport à un lieu (`presence`, `placeId`, horodatages) = information de localisation dérivée | `status` | **Très élevée** (localisation ; révèle des habitudes et l'absence du domicile) | Consentement explicite et révocable (le modèle le trace) | État courant uniquement, supprimé à la révocation / départ |
 | Coordonnées et adresses des lieux | `places` | **Élevée** (peut être un domicile, une école) | Contrat + consentement du créateur ; information des membres | Jusqu'à suppression du lieu / de la Miff |
@@ -385,7 +385,7 @@ Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse 
 | État d'abonnement | `entitlements` | Faible | Contrat | Durée de l'abonnement |
 | Données Analytics (activé) | Google Analytics | Faible si jamais de position | Consentement | Régler la rétention GA4 au minimum dans la console |
 
-Points à faire examiner par un juriste :
+Risques juridiques connus et assumés par le PM (décision du 2026-10-23, pas de relecture juridique) :
 1. **Localisation** : donnée à haut risque ; le choix de ne stocker qu'un état (et non les coordonnées de la personne) réduit l'exposition mais ne la supprime pas.
 2. **Mineurs** : si des mineurs peuvent utiliser l'app (cas parent-enfant mentionné au CLAUDE.md), le RGPD prévoit un âge de consentement numérique (15 ans en France d'après la loi nationale, à vérifier) et un consentement parental en dessous. Le modèle **ne contient aucune date de naissance ni âge** (minimisation) : il n'existe donc aucun contrôle d'âge. Q12.
 3. **Analyse d'impact (AIPD)** : localisation + éventuels mineurs sont des critères qui peuvent la rendre nécessaire.
@@ -393,9 +393,9 @@ Points à faire examiner par un juriste :
 5. **Droit d'accès / portabilité / effacement** : l'effacement est réalisable (§10) ; une procédure d'export (accès/portabilité) n'est pas spécifiée (le client peut lire les documents propres à l'utilisateur ; un export formaté n'existe pas).
 6. **Consentement réciproque anti-stalkerware** : le modèle impose la réciprocité, la révocation immédiate avec suppression, et un historique nul. Les stores appliquent des règles propres : à confronter par `release-manager`.
 7. **Ex-membre qui connaît le code** : voir §5.
-8. **Pierre tombale `miffsDeleted`** (DUR-1) : conservée indéfiniment, ne contient que l'identifiant d'une Miff supprimée et une date (aucune donnée personnelle à ma connaissance : un identifiant aléatoire de groupe). À faire confirmer par le juriste, avec la durée de conservation.
-9. **Données des survivants d'une Miff supprimée** : la fiche, le statut et la photo d'un membre resté après la suppression d'une Miff restent *physiquement stockés* tant que l'app de ce membre ne les a pas nettoyés (au prochain lancement), mais ils sont **illisibles immédiatement** (contrôle d'existence de la Miff, DUR-2). **Risque accepté par le PM (revue de sécurité de DUR-2)** : les *écritures* de statut, photo et fiche d'un survivant ne vérifient pas que la Miff existe encore ; un survivant (ou un client modifié) peut donc écrire de nouveaux documents dans une Miff morte tant que sa fiche existe. Ces données restent illisibles (stockage seulement, quota Spark) et sont nettoyées au prochain lancement de l'app ; sur Spark aucune fonction ne peut les purger (décision PM : acceptable pour la bêta ; **avis juridique à obtenir avant le lancement public**, risque K4 du ticket). La procédure client « retirer chaque membre avant de supprimer la Miff » (§8) limite ce cas ; la suppression de la Miff n'est pas bloquée s'il reste des membres (les règles ne peuvent pas vérifier qu'une sous-collection est vide).
-10. **Photos** : la formulation « 24 h maximum » est remplacée par « illisible après 24 h ; suppression physique au mieux » tant qu'une suppression automatique n'est pas disponible sur Spark (TTL de Firestore sans quota gratuit selon la documentation Google, à vérifier dans la console) : à faire valider par le juriste.
+8. **Pierre tombale `miffsDeleted`** (DUR-1) : conservée indéfiniment, ne contient que l'identifiant d'une Miff supprimée et une date (aucune donnée personnelle à ma connaissance : un identifiant aléatoire de groupe). Risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique), y compris la durée de conservation.
+9. **Données des survivants d'une Miff supprimée** : la fiche, le statut et la photo d'un membre resté après la suppression d'une Miff restent *physiquement stockés* tant que l'app de ce membre ne les a pas nettoyés (au prochain lancement), mais ils sont **illisibles immédiatement** (contrôle d'existence de la Miff, DUR-2). **Risque accepté par le PM (revue de sécurité de DUR-2)** : les *écritures* de statut, photo et fiche d'un survivant ne vérifient pas que la Miff existe encore ; un survivant (ou un client modifié) peut donc écrire de nouveaux documents dans une Miff morte tant que sa fiche existe. Ces données restent illisibles (stockage seulement, quota Spark) et sont nettoyées au prochain lancement de l'app ; sur Spark aucune fonction ne peut les purger (décision PM : acceptable pour la bêta ; **risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique)**, risque K4 du ticket). La procédure client « retirer chaque membre avant de supprimer la Miff » (§8) limite ce cas ; la suppression de la Miff n'est pas bloquée s'il reste des membres (les règles ne peuvent pas vérifier qu'une sous-collection est vide).
+10. **Photos** : la formulation « 24 h maximum » est remplacée par « illisible après 24 h ; suppression physique au mieux » tant qu'une suppression automatique n'est pas disponible sur Spark (TTL de Firestore sans quota gratuit selon la documentation Google, à vérifier dans la console) : risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique).
 11. **Cache local** : les SDK conservent un cache sur l'appareil (statuts, lieux) ; contrat client : vider le cache à la déconnexion, à la suppression de compte et à la perte d'accès à une Miff (ticket durcissement §5.3, traité en DUR-3).
 
 ---
@@ -503,7 +503,7 @@ Les autres questions ci-dessous seront tranchées au fil des tickets, quand la f
 10. **Escalade** : orange et/ou rouge déclenchent-ils un push ? Que fait-on d'un membre sans permission de localisation arrière-plan (aujourd'hui : pas d'escalade sans départ connu) ? Si un membre reste rouge, quelle relance ?
 11. **Update manuelle** : suffit-il de la poster pour repasser au vert, ou faut-il un geste "je vais bien" explicite ?
 12. **Mineurs** : l'app est-elle ouverte aux mineurs ? Âge minimum, consentement parental, collecte d'un âge ou d'une date de naissance (non prévue pour l'instant) ?
-13. **Juridique** : bases légales (§11), analyse d'impact, durées de conservation, conservation éventuelle de la preuve de consentement après départ, transferts hors UE, procédure d'export des données.
+13. **Juridique** (**risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique)**) : bases légales (§11), analyse d'impact, durées de conservation, conservation éventuelle de la preuve de consentement après départ, transferts hors UE, procédure d'export des données.
 14. **E-mail vérifié** : ~~exigé avant de rejoindre/créer une Miff ?~~ **Tranché le 2026-10-22 : non exigé** (les règles ne testent pas `email_verified`).
 15. **Nom/prénom** : conserver la règle "3 caractères minimum" des maquettes (elle exclut des prénoms réels, ex. "Li") ?
 16. **Désactivation du partage** : notifier les autres membres ? (ton à définir.)

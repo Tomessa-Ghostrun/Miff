@@ -1,6 +1,6 @@
 # Contrat — événements Analytics (liste blanche)
 
-**Statut** : contrat partagé entre `android-dev` et `ios-dev`. **Proposition initiale, à valider par le PM** (et par un avis juridique pour le consentement, voir ticket « Initialisation technique », question 6). Toute modification passe par une PR qui touche ce fichier, validée par le PM.
+**Statut** : contrat partagé entre `android-dev` et `ios-dev`. **Proposition initiale, à valider par le PM** (consentement : risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique), voir ticket « Initialisation technique », question 6). Toute modification passe par une PR qui touche ce fichier, validée par le PM.
 **Version du contrat** : 1 (2026-10-21), précisée le 2026-10-22 (exception de la collecte automatique du SDK, voir plus bas)
 
 ## Règles absolues
