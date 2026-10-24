@@ -313,7 +313,7 @@ Toutes les écritures multi-documents sont des **batches** (`WriteBatch` côté 
 | **Renommer la Miff** (créateur) | — | Batch : `miffs/{id}` update {name} + `joinCodes/{code}` update {miffName}. |
 | **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre avec le batch de retrait ci-dessus (**un membre par batch, le code est renouvelé à chaque fois** ; un retrait dans le batch final qui supprime la Miff est refusé), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `miffs/{id}` + **create `miffsDeleted/{id}` `{deletedAt: serverTimestamp()}`** (pierre tombale, §2.11) + delete `joinCodes/{code}` (le code actuel de la Miff, lu dans `miffs/{id}.joinCode`) + delete mon `status`/`photos` (si existent) + delete mon `members/{uid}` + delete mon `memberships/{key}`. **Le batch est refusé sans la pierre tombale ou sans la suppression du code.** Si interrompu : relancer (idempotent : si le code a déjà été supprimé dans un batch précédent, le batch final reste accepté sans lui). Les sous-collections ne sont pas supprimées automatiquement par Firestore. |
 | **Premium (lecture)** | `get entitlements/{uid}` (peut ne pas exister = gratuit) | Aucune. L'achat store ne suffit pas : c'est le serveur (ou le PM en manuel) qui écrit `entitlements`. |
-| **Suppression de compte** | — | §10. |
+| **Suppression de compte** | — | §10, séquence décidée le 2026-10-24 : confirmation bienveillante au créateur **avant** (liste de ses Miffs et nombre de membres), puis **pour chaque Miff créée** : retrait des autres membres un par un (batch de retrait ci-dessus), suppression des `places` (≤ 5 par batch), batch final de suppression de la Miff (pierre tombale + code) ; batch « Quitter » pour les Miffs rejointes ; suppression des `devices` et de `users/{uid}` ; **en dernier** suppression de l'utilisateur Auth. Reprenable (idempotent). Les autres membres perdent l'accès et l'apprennent à leur prochain lancement. |
 | **Push (Blaze)** | — | À chaque lancement et rafraîchissement de jeton : `users/{uid}/devices/{deviceId}` set {token, platform, updatedAt}. À la déconnexion : delete. |
 
 **App Check** : les deux apps doivent initialiser Firebase App Check (App Attest/DeviceCheck sur iOS, Play Integrity sur Android) avant toute requête Firestore ; jeton de debug pour les builds de développement. Sans cela, le PM ne pourra pas activer l'application stricte (README).
@@ -347,7 +347,7 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 
 **Ordre côté client** (tant que le compte Auth existe, car les règles exigent l'authentification) :
 1. Pour chaque Miff dont je suis membre simple : batch "Quitter" (membre + statut + photo + index).
-2. Pour chaque Miff dont je suis créateur : procédure "Supprimer une Miff" (ou transfert de propriété si le PM le décide, Q8).
+2. Pour chaque Miff dont je suis créateur : **elle est supprimée** (décision du PM du 2026-10-24 ; pas de transfert de propriété), après une confirmation bienveillante **avant toute suppression** qui liste ces Miffs et leur nombre de membres. Pour chacune : retrait des autres membres **un par un** (lot de retrait, le code est renouvelé à chaque fois), suppression des `places` (≤ 5 par batch), puis lot final de suppression avec pierre tombale et suppression du code (§8, « Supprimer une Miff »). Les autres membres perdent l'accès et reçoivent à leur prochain lancement le message neutre d'accès perdu.
 3. Supprimer `users/{uid}/devices/*`, puis `users/{uid}`.
 4. Supprimer l'utilisateur Auth (ré-authentification récente exigée par Firebase).
 
@@ -508,5 +508,5 @@ Les autres questions ci-dessous seront tranchées au fil des tickets, quand la f
 15. **Nom/prénom** : conserver la règle "3 caractères minimum" des maquettes (elle exclut des prénoms réels, ex. "Li") ?
 16. **Désactivation du partage** : notifier les autres membres ? (ton à définir.)
 17. **Rayon** : bornes 50–2 000 m acceptables ? Minimum recommandé côté UI : 100 m.
-18. **Suppression de compte d'un créateur** : supprimer sa Miff et les données des autres membres associés, ou transférer ?
+18. **Suppression de compte d'un créateur** : **décidé le 2026-10-24** : ses Miffs sont supprimées (lieux, statuts, photos compris), les autres membres perdent l'accès, pas de transfert (voir §8 et §10).
 19. **Fournisseur d'abonnement** : validation native (App Store / Play Billing) ou service tiers (RevenueCat) — conditionne la fonction de webhook.

@@ -45,7 +45,7 @@ Ce que le challenge change par rapport aux trois tickets Notion (détails en §4
 - Messages d'erreur, états de chargement et hors connexion de ces écrans, au ton bienveillant.
 - Session : rester connecté, routage au lancement selon l'état du compte (§5), déconnexion (comportement : purge du cache, arrêt du suivi ; le bouton lui-même est dans le futur ticket Réglages).
 - Deux cases de consentement sur l'écran d'inscription (a) CGU et politique de confidentialité, obligatoire ; (b) statistiques d'usage et rapports de plantage anonymes, facultative et décochée par défaut ; trace de leur version.
-- Cadrage de la suppression de compte côté authentification (ré-authentification, suppression de l'identifiant), à implémenter dans AUTH-5.
+- Cadrage de la suppression de compte (confirmation, ré-authentification, suppression des Miffs créées par la personne, suppression de l'identifiant), à implémenter dans AUTH-5 (§7.7).
 - Pages web statiques en français et en anglais (Firebase Hosting, domaine par défaut `*.web.app`, AUTH-W) : CGU et politique de confidentialité (**textes rédigés par l'équipe d'agents, branche `docs/legal-drafts`, publiés sous la responsabilité du PM ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique)**), page de demande de suppression de compte, page de choix du nouveau mot de passe.
 
 ### Hors périmètre
@@ -214,11 +214,20 @@ Aucune donnée de Miff ne doit rester visible hors ligne après déconnexion (cr
 
 ### 7.7 Suppression de compte (cadrage ; implémentation en AUTH-5)
 - **Exigence des stores** : Apple (guideline 5.1.1(v)) impose de pouvoir lancer la suppression **depuis l'app** ; Google Play impose la même chose **plus** une adresse web où demander la suppression, déclarée dans la fiche de sécurité des données. Aucun des deux ne l'exige pour une bêta fermée, mais les deux la vérifient à la soumission.
-- **Séquence** : `data-model.md` §10 (quitter ou supprimer chaque Miff, supprimer l'appareil et le profil, puis supprimer le compte d'authentification). Le document `entitlements/{uid}` n'est pas supprimable par le client : purge manuelle par le PM tant qu'il n'y a pas de Blaze (`data-model.md` §10).
+- **Règle (décision PM du 2026-10-24)** : la suppression du compte d'un **créateur** **supprime les Miffs dont il est le créateur**, lieux, statuts et photos compris ; **les autres membres de ces Miffs perdent l'accès**. Aucun transfert de propriété (alternative non retenue). Les Miffs dont la personne est simple membre sont quittées (§10 de `data-model.md`).
+- **Séquence** (alignée sur `data-model.md` §8 et §10) :
+  1. **Confirmation bienveillante avant toute suppression** : l'écran liste les Miffs que la personne a créées et le nombre de membres de chacune, explique ce qui va se passer (« Tes Miffs seront supprimées et leurs membres n'y auront plus accès ») et invite, sans insister, à prévenir les membres si elle le souhaite ; « Annuler » est toujours possible tant que la procédure n'a pas commencé. Une Miff sans autre membre est citée sans alarme.
+  2. **Ré-authentification** (voir plus bas), puis démarrage de la procédure.
+  3. **Pour chaque Miff dont la personne est créatrice** : (a) retrait des autres membres **un par un** avec le lot de retrait de DUR-2 (le code est renouvelé à chaque lot) ; (b) suppression des lieux (5 au plus par lot) ; (c) lot final : suppression de la Miff avec **pierre tombale** `miffsDeleted/{id}` et suppression du code, plus suppression de son propre statut, de sa photo, de sa fiche de membre et de son index.
+  4. **Pour chaque Miff dont la personne est simple membre** : lot « Quitter ».
+  5. Arrêt du suivi des lieux, suppression des appareils (`users/{uid}/devices`) puis du profil `users/{uid}`, purge du cache local.
+  6. **En dernier**, suppression du compte d'authentification (si Firebase réclame une connexion plus récente à ce stade, la personne est invitée à se reconnecter, puis la dernière étape reprend).
+  La procédure est **reprenable** : si l'app est interrompue, elle reprend à la relance tant que le compte d'authentification existe ; les membres déjà retirés ne reviennent pas. Le document `entitlements/{uid}` n'est pas supprimable par le client : purge manuelle par le PM tant qu'il n'y a pas de Blaze (`data-model.md` §10). Un abonnement acheté via App Store ou Google Play **n'est pas résilié** par la suppression du compte : la confirmation le rappelle avec un lien vers la gestion de l'abonnement du magasin (texte à valider par le PM).
+- **Côté des autres membres** : à leur prochain lancement, ils reçoivent le message neutre « La Miff « X » n'existe plus » (ticket durcissement §6.4) et leur app se nettoie ; aucune notification n'est possible sans serveur (Spark). Voir le risque §16 R20.
 - **Ré-authentification** : Firebase exige une connexion récente pour supprimer un compte. L'app demande donc de se reconnecter (mot de passe, ou fenêtre Google/Apple) avant la suppression, avec un texte rassurant, jamais culpabilisant.
 - **Apple** : la suppression d'un compte créé avec Apple doit aussi **révoquer** l'autorisation Apple (guideline Apple, depuis 2022). La possibilité de le faire côté app, sans serveur, avec le SDK Firebase est **à vérifier** et peut exiger la clé Apple dans la configuration Firebase (action PM, §13).
 - **Export de données (RGPD, art. 20)** : **pas exigé par les stores**, exigé par la loi. Décision PM Q10 : sur demande par e-mail pendant la bêta (adresse de contact provisoire, §17.2 N2), outil dans l'app plus tard.
-- Confirmation en deux temps, ton calme : « Tu vas supprimer ton compte et tes données Miff. Ce n'est pas réversible. »
+- Confirmation en deux temps, ton calme : « Tu vas supprimer ton compte et tes données Miff. Ce n'est pas réversible. » ; pour un créateur, la liste des Miffs concernées (étape 1) précède cette confirmation.
 
 ### 7.8 Nouvel utilisateur arrivant par la connexion sociale (décision N1, option B)
 
@@ -300,7 +309,7 @@ Décision PM du 2026-10-23 (Q8) : **deux cases distinctes** sur l'écran d'inscr
 | Identité (UID, e-mail, mot de passe, méthode de connexion) | Firebase Authentication ; rien dans Firestore |
 | Profil privé : prénom, nom, photo (facultative, 20 000 octets au plus), `createdAt`, `termsAcceptedAt`, `termsVersion` | `users/{uid}` (§2.1), création par le propriétaire uniquement, un seul lot de clés |
 | « Onboarding terminé » = Miff créée ou rejointe | `users/{uid}/memberships` (§2.2) : aucun champ « onboarding_done » n'est nécessaire |
-| Suppression : séquence côté client | §10 |
+| Suppression de compte : séquence côté client (Miffs du créateur supprimées, décision du 2026-10-24) | §8 et §10 de `data-model.md`, alignés le 2026-10-24 |
 | Aucune lecture des profils des autres, aucun `list` sur `users` | règles (§9) |
 
 ### Ce qui manque ou est à décider (non modifié ici, à reporter par `backend-data`)
@@ -342,6 +351,9 @@ Aucune nouvelle collection n'est requise par l'authentification.
 21. Nouvel utilisateur arrivant par « Continuer avec Google / Apple » sur l'écran de connexion : panneau de consentement, suppression du compte tout juste créé en cas de refus (décision N1, §7.8) ; app fermée pendant le panneau : il se réaffiche au lancement suivant ; suppression impossible hors connexion : la personne reste sur le panneau, sans accès au reste de l'app.
 22. Case (b) cochée puis profil jamais créé : la collecte est autorisée sur l'appareil (consentement donné), mais aucune trace serveur n'existe ; aucune collecte n'est faite si (b) n'était pas cochée (risque assumé, §17.3).
 23. Case (b) décochée (ou jamais présentée, par exemple connexion d'un compte ancien) : aucun événement ni rapport de plantage, l'app fonctionne normalement.
+24. Suppression de compte d'un créateur dont une Miff compte plusieurs membres : confirmation avec la liste des Miffs et le nombre de membres, puis retrait un par un, suppression des lieux, lot final avec pierre tombale et suppression du code ; les membres perdent l'accès (§7.7).
+25. Suppression de compte interrompue en cours de route (app fermée, réseau perdu) : reprise à la relance ; certaines Miffs peuvent déjà être supprimées, leurs membres déjà retirés (irréversible).
+26. Suppression de compte d'une personne dont l'abonnement Premium est actif : l'abonnement du magasin continue tant qu'il n'est pas résilié ; la confirmation le rappelle.
 
 ---
 
@@ -351,6 +363,7 @@ Aucune nouvelle collection n'est requise par l'authentification.
 - **Onboarding (téléphone)** : collecter un numéro non vérifié et sans usage défini contredit la minimisation (`data-model.md` §11) et ajoute une étape à l'entrée. Recommandation à porter à ce challenge : le retirer de la v1.
 - **Onboarding (retour arrière, carrousel après déconnexion)** : §4 #8 et #9, décidés par le PM (Q11) ; à répercuter dans le ticket Onboarding.
 - **Splash screen** : la vérification de session se fait pendant l'écran de lancement ; l'animation (cœur qui gonfle puis éclate) ne doit pas retarder l'ouverture au-delà de sa durée propre ni dépendre du réseau ; Android 12 et plus impose un écran de lancement système de durée courte et peu personnalisable (à vérifier), donc l'animation complète est une vue de l'app après lui ; respect du réglage « réduire les animations » ; fichier « GIF » à remplacer par une animation vectorielle ou une vidéo légère.
+- **Premium (fin d'abonnement)** : règle métier décidée par le PM le 2026-10-24, **à détailler dans le futur ticket Premium** : quand l'abonnement prend fin, les éléments en trop par rapport à la formule gratuite (lieux et Miffs, **les derniers ajoutés**) sont **supprimés**. Questions à poser au PM à ce moment-là, **non tranchées ici** : préavis, notification au ton bienveillant, choix de l'élément conservé. Frontière avec ce ticket : une Miff supprimée pour cette raison suit la même séquence que celle du §7.7 ; `data-model.md` §6 décrit encore l'inverse (l'excédent est conservé après expiration) : écart à traiter par `backend-data` dans le ticket Premium. Ici, aucune règle Premium n'est implémentée.
 - **Réglages** : boutons déconnexion, suppression, changement d'e-mail et de mot de passe. Pour un futur changement d'e-mail, Firebase impose une vérification de la nouvelle adresse (à vérifier), ce qui touche à la décision « e-mail non vérifié ».
 
 ---
@@ -410,7 +423,7 @@ Une branche et une PR par plateforme (`CLAUDE.md`). Tailles relatives, sans dur�
 | AUTH-2 | **Android : mot de passe oublié (v1)** | Écrans C et E (saisie de l'e-mail, confirmation d'envoi, délai de renvoi, retour dans l'app) ; **le nouveau mot de passe se choisit sur la page web d'AUTH-W** ; pas d'écran D dans l'app | S | AUTH-1, AUTH-W |
 | AUTH-3 | **iOS : inscription et connexion** | Mêmes livrables qu'AUTH-1 + Apple Sign-In ; comportement du trousseau à constater sur appareil | L | INIT-4 (socle iOS), AUTH-1 (référence de comportement), AUTH-B, actions PM iOS |
 | AUTH-4 | **iOS : mot de passe oublié (v1)** | Idem AUTH-2 | S | AUTH-3, AUTH-2 |
-| AUTH-5 | **Suppression de compte** (Android puis iOS) + procédure d'export sur demande par e-mail | §7.7 ; ré-authentification, révocation Apple, séquence de §10 de `data-model.md` ; dépend des lots « quitter / supprimer une Miff » ; export traité à la main pendant la bêta (décision Q10) | M | AUTH-1/3, tickets Miff (lots de retrait et de suppression), AUTH-W, N2. **Obligatoire avant soumission aux stores** |
+| AUTH-5 | **Suppression de compte** (Android puis iOS) + procédure d'export sur demande par e-mail | §7.7 : confirmation bienveillante avec la liste des Miffs créées et leur nombre de membres, ré-authentification, puis pour chaque Miff créée retrait des membres un par un (lot de retrait de DUR-2), suppression des lieux, lot final avec pierre tombale et suppression du code ; lot « Quitter » pour les Miffs rejointes ; suppression des appareils, du profil, puis de l'identifiant d'authentification ; révocation Apple ; procédure reprenable ; export traité à la main pendant la bêta (décision Q10) | M à L | AUTH-1/3, tickets Miff (lots de retrait et de suppression de DUR-2, déjà dans les règles), AUTH-W, N2. **Obligatoire avant soumission aux stores** |
 | AUTH-6 (version ultérieure) | **Mot de passe oublié dans l'app** | Écran D dans l'app et lien de l'e-mail ouvrant l'app (liens universels iOS, App Links Android, fichiers de vérification hébergés) | M | AUTH-2/4, AUTH-W ; décision du PM (Q4 : plus tard) |
 
 Ordre recommandé : AUTH-0, AUTH-B et AUTH-W en parallèle, AUTH-1, AUTH-2, puis AUTH-3 et AUTH-4, AUTH-5 avant la soumission. Chaque PR : revue de code en contexte neuf, revue sécurité (App Check, secrets, journalisation, gestion des erreurs, session, fusion de comptes), QA, recette du PM, fusion par Claude après « oui » explicite du PM (`CLAUDE.md`).
@@ -440,6 +453,7 @@ Ordre recommandé : AUTH-0, AUTH-B et AUTH-W en parallèle, AUTH-1, AUTH-2, puis
 | R17 | Compte social créé avant le consentement dans le cas de la connexion (option B retenue, N1) | Compte d'authentification existant quelques secondes sans consentement (a) ; si l'app est fermée de force pendant le panneau, le compte (identifiant et adresse du fournisseur) reste jusqu'à la reprise | Panneau de consentement obligatoire avant tout usage, suppression du compte en cas de refus, aucune donnée Miff écrite avant l'acceptation (§7.8) ; la suppression technique côté Google n'est pas garantie instantanée (à vérifier) ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique) ; signal : comptes sans profil anciens dans la console Authentication, purge manuelle |
 | R18 | **Textes juridiques (CGU, politique de confidentialité) rédigés par l'équipe d'agents et publiés sans relecture juridique** (décision PM du 2026-10-23), à une adresse que l'app et les stores référencent | Engagement légal fondé sur des textes non relus par un juriste : clauses inexactes ou manquantes, non-conformité possible au RGPD ou aux règles des stores, responsabilité du PM comme éditeur | **Risque assumé par le PM.** Les textes ne prétendent jamais avoir été relus par un juriste ; le PM complète les champs [À COMPLÉTER] et donne son accord explicite avant tout déploiement ; adresse stable du site par défaut (changer de domaine plus tard obligerait à mettre à jour l'app et les fiches) |
 | R19 | **Contact et éditeur provisoires = personne physique, adresse personnelle du PM** (Tomessa MFOUKA, valeur en §13 étape 3, décisions N2) | Ils deviennent **publics** dès que les textes légaux, l'écran de consentement Google et les fiches des stores sont publiés : exposition du nom, de l'adresse e-mail personnelle et de l'adresse postale (76 rue Marx Dormoy, 75018 Paris, France), mélange avec le courrier privé, éditeur / responsable de traitement = personne physique, adresse non transmissible ; **nom, e-mail et adresse postale deviennent publics à la publication des textes légaux et des fiches des stores** | **Risque assumé par le PM.** Provisoire et remplaçable ; à remplacer par une adresse dédiée avant la bêta externe (décision N2) ; **source de vérité unique : le fichier de configuration du code web d'AUTH-W**, dont les textes légaux et les pages tirent leurs valeurs |
+| R20 | **Perte de la Miff pour les autres membres** (suppression de compte d'un créateur, décision du 2026-10-24) | Les membres perdent leur cercle, les lieux et les statuts, sans préavis technique : leur app ne l'apprend qu'à son prochain lancement (pas de notification sur Spark) ; irréversible ; peut être partiellement exécuté si la procédure est interrompue | Confirmation bienveillante avant suppression (liste des Miffs, nombre de membres) qui invite à prévenir les membres ; message neutre côté membres (ticket durcissement §6.4) ; procédure reprenable ; transfert de propriété non retenu |
 
 ---
 
@@ -574,6 +588,17 @@ Découpage : **S** inscription, **C** connexion, **M** mot de passe oublié, **X
 - [ ] **I8** Les tests XCTest couvrent l'interprétation des erreurs d'authentification et le routage de §5 (mêmes cas que sur Android).
 - [ ] **I9** Comportement après suppression puis réinstallation de l'app : constaté sur l'iPhone, documenté (session conservée ou non) ; si elle est conservée, une règle est décidée avec le PM.
 
+### Suppression de compte (AUTH-5, à rejouer à sa livraison)
+- [ ] **D1** Avant toute suppression, l'écran liste les Miffs créées par la personne et le nombre de membres de chacune, avec un texte bienveillant ; « Annuler » laisse tout intact tant que la procédure n'a pas commencé.
+- [ ] **D2** La personne se ré-authentifie (mot de passe, Google ou Apple) avant le démarrage ; aucun texte culpabilisant.
+- [ ] **D3** Pour chaque Miff créée : après la procédure, la Miff n'existe plus, `miffsDeleted/{id}` existe, le code est supprimé et il ne reste ni lieu, ni statut, ni photo, ni fiche de membre (vérifié à l'émulateur ou sur le projet de développement, jamais sur la production).
+- [ ] **D4** Les autres membres sont retirés **un par un** avec renouvellement du code à chaque retrait ; aucun lot ne dépasse les limites de lectures de règles.
+- [ ] **D5** Les Miffs dont la personne est simple membre sont quittées ; ses profils, appareils et index sont supprimés ; le cache local est purgé et le suivi des lieux arrêté.
+- [ ] **D6** Le compte d'authentification est supprimé **en dernier** ; la même identité Google ou Apple peut ensuite se réinscrire comme un nouvel utilisateur ; aucun événement Analytics n'est envoyé.
+- [ ] **D7** Procédure interrompue puis relancée : elle reprend sans erreur et aboutit (idempotente).
+- [ ] **D8** À son prochain lancement, un membre d'une Miff supprimée voit le message neutre de §7.7 (« La Miff « X » n'existe plus »), ne peut plus lire aucune donnée de cette Miff et son app se nettoie.
+- [ ] **D9** Avec un compte Apple, l'autorisation Apple est révoquée si cela est faisable côté app (sinon limite documentée) ; le rappel de résiliation de l'abonnement du magasin s'affiche pour un compte Premium.
+
 ### Ce que le PM peut vérifier lui-même sur téléphone
 - [ ] **P1** Créer un compte avec une adresse de test, fermer l'app en plein profil, la rouvrir : on revient au profil sans avoir à se reconnecter.
 - [ ] **P2** Se déconnecter puis se reconnecter : on arrive directement au bon écran, sans carrousel.
@@ -585,6 +610,7 @@ Découpage : **S** inscription, **C** connexion, **M** mot de passe oublié, **X
 - [ ] **P8** Dans les consoles Firebase et GitHub, la facture reste à 0 €.
 - [ ] **P9** Sur l'écran d'inscription : les deux cases sont décochées au départ ; sans (a), aucun des trois boutons ne crée de compte ; (b) laissée décochée, l'inscription réussit et aucune donnée d'usage n'apparaît dans la console Analytics.
 - [ ] **P10** Sur l'écran de connexion, avec un compte Google de test **jamais utilisé** : « Continuer avec Google » affiche le panneau de consentement ; « Annuler » ramène à la connexion avec le message bienveillant, et le compte n'apparaît pas dans Firebase > Authentication ; en acceptant (a), on arrive à l'étape profil.
+- [ ] **P11** (à la livraison d'AUTH-5) Avec deux comptes de test, l'un créateur d'une Miff dont l'autre est membre : la suppression du compte créateur affiche d'abord la liste des Miffs et le nombre de membres ; après suppression, le second compte voit le message neutre « La Miff n'existe plus » à son prochain lancement.
 
 ### Pour le QA (`qa-tester`)
 - [ ] **QA1** Chaque critère est rejoué et consigné dans `docs/qa/` avec preuve (capture, journal, lien CI).
@@ -608,7 +634,7 @@ Critères cochés, décisions du §17 enregistrées (dont N1 et N2, adresse de c
 | **Ticket Onboarding** | Frontière de §5 et §12 (profil, téléphone, Miff, permissions). |
 | **Ticket splash screen** | Vérification de session pendant l'écran de lancement (§12). |
 | **Ticket Réglages** | Boutons de déconnexion et de suppression ; futur changement d'e-mail. |
-| **Tickets Miff** (créer, rejoindre, quitter, supprimer) | Les lots « quitter » et « supprimer une Miff » sont nécessaires à la suppression de compte (AUTH-5). |
+| **Tickets Miff** (créer, rejoindre, quitter, supprimer) | Les lots « retirer un membre », « quitter » et « supprimer une Miff » (DUR-2, déjà dans les règles) sont nécessaires à la suppression de compte d'un créateur (AUTH-5, §7.7). |
 | **Ticket Paywall** | `entitlements/{uid}`, statut d'abonnement : pas d'impact sur l'authentification. |
 | **Contrat `analytics-events.md`** | Événements `sign_up_completed` / `sign_in_completed` : moment d'envoi à ajuster (critère X9) par une PR distincte du contrat. |
 | **Contrat `i18n-keys.md`** | Préfixe `auth_` déjà prévu. |
