@@ -4,7 +4,7 @@
 // backend/rules-test-report.md, section DUR-3). Chaque test n'introduit qu'UN défaut à la fois : sinon une autre règle
 // pourrait refuser à sa place et la protection visée resterait non testée.
 import {
-  ID, CODE, T0, HOUR, suite, assertFails, assertSucceeds, commit, createMiffOps, joinOps, update, del, serverTs, Timestamp,
+  ID, CODE, T0, HOUR, suite, assertFails, assertSucceeds, commit, createMiffOps, joinOps, update, del, serverTs,
   statusDoc, photoDoc, bytes, inMs, sharingOnNow, sharingOff, placeInput, userDoc,
 } from '../helpers/fixtures.js';
 
@@ -65,7 +65,7 @@ s.tc('S6b', 'révocation : version effacée, date client ou revokedAt vide refus
     commit(db('bob'), [update(`${M1}/members/bob`, { sharing }), del(`${M1}/status/bob`), del(`${M1}/photos/bob`)]);
   await assertFails(revoke({ enabled: false, consentedAt: T0, consentVersion: null, revokedAt: serverTs() }));
   await assertFails(revoke({ enabled: false, consentedAt: T0, consentVersion: 'v2', revokedAt: serverTs() }));
-  await assertFails(revoke({ enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: Timestamp.now() }));
+  await assertFails(revoke({ enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: inMs(-HOUR) }));
   await assertFails(revoke({ enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: null }));
   await assertSucceeds(revoke({ enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: serverTs() }));
 });
@@ -88,7 +88,7 @@ s.tc('S16b', 'photo : vide, clé inconnue, createdAt client ou déjà expirée r
   const ref = db('bob').doc(`${M1}/photos/bob`);
   await assertFails(ref.set(photoDoc({ jpeg: bytes(0) })));
   await assertFails(ref.set(photoDoc({ legende: 'x' })));
-  await assertFails(ref.set(photoDoc({ createdAt: Timestamp.now() })));
+  await assertFails(ref.set(photoDoc({ createdAt: inMs(-HOUR) })));
   await assertFails(ref.set(photoDoc({ expiresAt: inMs(-HOUR) })));
   await assertSucceeds(ref.set(photoDoc({ jpeg: bytes(1) })));
 });
@@ -127,10 +127,10 @@ s.tc('P11b', "lieu : createdBy d'un autre utilisateur à la création refusé", 
 s.tc('P12b', 'lieu : createdAt et updatedAt fournis par le client refusés (création de p1 et mise à jour)', async ({ db, admin }) => {
   await admin((f) => f.doc(P1).delete());
   const ref = db('alice').doc(P1);
-  await assertFails(ref.set(placeInput('alice', { createdAt: Timestamp.now() })));
-  await assertFails(ref.set(placeInput('alice', { updatedAt: Timestamp.now() })));
+  await assertFails(ref.set(placeInput('alice', { createdAt: inMs(-HOUR) })));
+  await assertFails(ref.set(placeInput('alice', { updatedAt: inMs(-HOUR) })));
   await assertSucceeds(ref.set(placeInput('alice')));
-  await assertFails(ref.update({ name: 'Autre', updatedAt: Timestamp.now() }));
+  await assertFails(ref.update({ name: 'Autre', updatedAt: inMs(-HOUR) }));
   await assertSucceeds(ref.update({ name: 'Autre', updatedAt: serverTs() }));
 });
 
@@ -151,7 +151,7 @@ s.tc('C3b', "création d'une Miff sans l'index memberships du créateur : refus�
 
 s.tc('C13b', 'createdAt du code secret fourni par le client : refusé', async ({ db }) => {
   const ops = createMiffOps({ uid: 'eve' });
-  ops.code.data.createdAt = Timestamp.now();
+  ops.code.data.createdAt = inMs(-HOUR);
   await assertFails(commit(db('eve'), all(ops)));
 });
 
@@ -177,10 +177,10 @@ s.tc('M6b', 'renommer la Miff avec un nom vide ou de plus de 40 caractères : re
 
 s.tc('U1b', 'profil : createdAt et termsAcceptedAt fournis par le client refusés (création et mise à jour)', async ({ db }) => {
   const eve = db('eve').doc('users/eve');
-  await assertFails(eve.set(userDoc({ termsAcceptedAt: Timestamp.now() })));
-  await assertFails(eve.set(userDoc({ createdAt: Timestamp.now() })));
+  await assertFails(eve.set(userDoc({ termsAcceptedAt: inMs(-HOUR) })));
+  await assertFails(eve.set(userDoc({ createdAt: inMs(-HOUR) })));
   await assertSucceeds(eve.set(userDoc()));
-  await assertFails(eve.update({ termsAcceptedAt: Timestamp.now() }));
+  await assertFails(eve.update({ termsAcceptedAt: inMs(-HOUR) }));
   await assertSucceeds(eve.update({ termsAcceptedAt: serverTs() }));
 });
 
@@ -206,7 +206,7 @@ s.tc('U5b', "appareil : clé inconnue, jeton vide ou trop long, date client, ide
   await assertFails(eve('d1').set(device({ langue: 'fr' })));
   await assertFails(eve('d1').set(device({ token: '' })));
   await assertFails(eve('d1').set(device({ token: 'x'.repeat(513) })));
-  await assertFails(eve('d1').set(device({ updatedAt: Timestamp.now() })));
+  await assertFails(eve('d1').set(device({ updatedAt: inMs(-HOUR) })));
   await assertFails(eve('a.b').set(device()));
   await assertFails(eve('x'.repeat(65)).set(device()));
   await assertSucceeds(eve('d1').set(device({ token: 'x'.repeat(512) })));
