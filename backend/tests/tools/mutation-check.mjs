@@ -2,14 +2,14 @@
 // en mémoire/dans le dossier temporaire, le fichier du dépôt n'est jamais modifié), relance les tests censés la
 // protéger et exige qu'au moins un passe au rouge. Une mutation qui « survit » = un test trop faible.
 //
-// Usage (dans l'émulateur) : npm run test:mutation [-- --only <id-mutation>] ; sans émulateur : --check
+// Usage (dans l'émulateur) : npm run test:mutation [-- --only <id-mutation>[,<id>...]] ; sans émulateur : --check
 //   --check : vérifie seulement que chaque motif de mutation existe dans firestore.rules (aucun test lancé).
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { assertSafeEnvironment } from '../helpers/guard.js';
+import { assertSafeEnvironment, testProjectId } from '../helpers/guard.js';
 import { MUTATIONS } from './mutations.mjs';
 
 const backendDir = fileURLToPath(new URL('../../', import.meta.url));
@@ -30,6 +30,9 @@ export function applyMutation(rules, mutation) {
   if (out === rules) throw new Error(`${mutation.id} : la mutation ne change rien`);
   return out;
 }
+
+/** Vrai si la sortie des tests montre que l'émulateur a refusé de charger les règles mutées (erreur de syntaxe). */
+export const isInvalidMutation = (output) => /Error compiling rules/.test(output);
 
 const readRulesText = () => readFileSync(rulesPath, 'utf8').replace(/\r\n/g, '\n');
 
@@ -54,9 +57,12 @@ function runTests(ids, rulesFile) {
 }
 
 function main(argv) {
-  const only = argv.includes('--only') ? argv[argv.indexOf('--only') + 1] : null;
+  const only = argv.includes('--only') ? argv[argv.indexOf('--only') + 1].split(',') : null;
   const checkOnly = argv.includes('--check');
-  const selected = MUTATIONS.filter((m) => !only || m.id === only);
+  const selected = MUTATIONS.filter((m) => !only || only.includes(m.id));
+  if (only && selected.length !== only.length) {
+    throw new Error(`--only : mutation(s) inconnue(s) : ${only.filter((id) => !MUTATIONS.some((m) => m.id === id)).join(', ')}`);
+  }
   const rules = readRulesText();
 
   if (checkOnly) {
@@ -69,9 +75,10 @@ function main(argv) {
     return 0;
   }
 
-  assertSafeEnvironment({ projectId: 'demo-miff-rules' });
+  assertSafeEnvironment({ projectId: testProjectId() });
   const tmp = mkdtempSync(join(tmpdir(), 'miff-mutation-'));
   const problems = [];
+  const tally = { killed: 0, equivalent: 0, survivors: 0 };
   try {
     const allIds = [...new Set(selected.flatMap((m) => m.tests))];
     const baseline = runTests(allIds);
@@ -84,7 +91,17 @@ function main(argv) {
       const mutated = join(tmp, `${m.id}.rules`);
       writeFileSync(mutated, applyMutation(rules, m));
       const r = runTests(m.tests, mutated);
+      if (isInvalidMutation(r.output)) {
+        // Des règles qui ne compilent pas font échouer TOUS les tests : ce ne serait pas une détection mais une mutation cassée.
+        tally.survivors += 1;
+        problems.push(m.id);
+        console.log(`KO  ${m.id} (${m.tests.join(', ')}) : MUTATION INVALIDE : les règles mutées ne compilent pas (corriger le motif)`);
+        continue;
+      }
       const killed = r.fail > 0;
+      if (killed) tally.killed += 1;
+      else if (m.equivalent) tally.equivalent += 1;
+      else tally.survivors += 1;
       let verdict;
       if (killed) verdict = 'tué (test rouge)';
       else if (m.equivalent) verdict = `survit (mutant équivalent : ${m.equivalent})`;
@@ -101,6 +118,9 @@ function main(argv) {
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+  console.log(
+    `\nBilan : ${selected.length} mutation(s), ${tally.killed} détectée(s), ${tally.equivalent} équivalente(s) documentée(s), ${tally.survivors} survivante(s).`,
+  );
   if (problems.length > 0) {
     console.error(`\nMutations à traiter : ${problems.join(', ')}`);
     return 1;

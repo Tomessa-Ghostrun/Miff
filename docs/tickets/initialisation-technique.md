@@ -196,7 +196,7 @@ L'infrastructure accepte n'importe quelle langue ; ce qui coûte, c'est chaque l
 | 3 | Arabe | Marché large, mais impacts forts (ci-dessous) | **Élevé** : écriture droite-à-gauche, polices à ajouter |
 | 3 | Chinois, japonais, coréen, hindi, grec, russe... | Dépend de la stratégie de marché | Élevé : polices de repli, design et captures spécifiques |
 
-À chaque langue ajoutée, il faut : traduire l'interface et relire le ton avec un natif (une traduction automatique brute peut devenir froide ou alarmiste) ; **faire valider juridiquement le texte de consentement à la localisation** (traçabilité par version dans `members.sharing.consentVersion`, un texte par langue) ; traduire CGU et politique de confidentialité ; traduire la fiche store (titre et sous-titre sont très courts, mots-clés limités) ; contrôler les captures sur les deux plateformes.
+À chaque langue ajoutée, il faut : traduire l'interface et relire le ton avec un natif (une traduction automatique brute peut devenir froide ou alarmiste) ; **texte de consentement à la localisation : risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique)** (traçabilité par version dans `members.sharing.consentVersion`, un texte par langue) ; traduire CGU et politique de confidentialité ; traduire la fiche store (titre et sous-titre sont très courts, mots-clés limités) ; contrôler les captures sur les deux plateformes.
 
 Points d'attention déjà identifiables :
 - **Arabe (lecture droite-à-gauche)** : retourner la mise en page (flèche retour, barre d'onglets, pagination, carrousel de bienvenue, curseur de rayon), ne pas retourner les icônes sans direction (cœur, logo). Ni Baloo Thambi 2 ni Hanken Grotesk ne contiennent de glyphes arabes : le système utilise sa police de repli, d'où une identité visuelle différente. Le Figma n'a pas de variantes droite-à-gauche : travail de design à prévoir. **Dès ce ticket**, on construit avec « début/fin » et on teste en pseudo-langue : surcoût quasi nul, et on évite une réécriture si l'arabe arrive.
@@ -378,7 +378,7 @@ Rien de ce qui suit n'est fait par un agent : ce sont des paiements, des comptes
 | R8 | Version Firebase / Xcode qui bouge vite (Xcode 26.2 minimum pour Firebase 13) | Builds cassés par une mise à jour | Versions figées (`Package.resolved`, catalogue Gradle), mises à jour via Dependabot en PR |
 | R9 | Protection de branche indisponible en dépôt privé gratuit (à vérifier) | « Jamais de push sur `main` » repose sur la discipline | Discipline de processus ; ou GitHub Pro (Q3) |
 | R10 | Fuite de secret (clé `.p8`, jeton de débogage, config Firebase) | Accès non autorisé, coûts d'usage abusif | Secrets GitHub uniquement, scan de secrets en CI, `.gitignore`, aucune clé de compte de service dans la CI, rotation documentée |
-| R11 | Consentement : Analytics/Crashlytics mal configurés (collecte avant accord) | Risque RGPD et de confiance | Désactivés au démarrage, preuves A6/I5, test de la liste blanche, avis juridique sur Crashlytics (Q6) |
+| R11 | Consentement : Analytics/Crashlytics mal configurés (collecte avant accord) | Risque RGPD et de confiance | Désactivés au démarrage, preuves A6/I5, test de la liste blanche ; Crashlytics : risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique) (Q6) |
 | R12 | Polices sans couverture arabe/CJK/etc. | Identité visuelle différente selon la langue, surprises tard | Décision explicite par langue (§4.F), polices de repli du système |
 | R13 | Contraste des couleurs de statut : le jaune-vert `#d1d828` sur le fond `#f9f9f7` donne un ratio d'environ 1,5 pour 1 (calcul approximatif ; 3 pour 1 est le minimum usuel pour des éléments graphiques) | L'anneau « en sécurité » peut être peu visible pour certains utilisateurs | Le statut est aussi porté par un texte (badge) : ne jamais le coder par la seule couleur ; à signaler à `design-system` |
 | R14 | Consommation Spark (50 000 lectures/jour) | Sans objet à ce stade (quelques lectures de diagnostic) | Suivi de l'utilisation (P5) |
@@ -408,7 +408,7 @@ Rien de ce qui suit n'est fait par un agent : ce sont des paiements, des comptes
 3. **GitHub Pro** : acceptez-vous de passer le compte GitHub en Pro (tarif **à vérifier**) pour obtenir la protection de branche et plus de minutes, ou on s'en tient à la discipline « jamais de push sur `main` » avec le plan gratuit ?
 4. **CI iOS** : parmi (A) les minutes macOS gratuites de GitHub, en acceptant des builds peu nombreux ; (B) un moyen de paiement avec plafond de dépense à l'usage ; (C) Xcode Cloud (25 h/mois offertes) après une configuration unique sur un Mac emprunté ou loué, laquelle choisissez-vous pour démarrer ? Recommandation : (A), mesurer dans le spike, puis décider.
 5. **Écran de diagnostic dans TestFlight** : acceptez-vous qu'un écran technique interne soit visible dans les builds que vous testez (jamais dans les builds publics) ? Sans lui, il n'y a aucune preuve visible que l'app parle à Firestore.
-6. **Crashlytics et consentement** : voulez-vous Crashlytics désactivé tant que l'utilisateur n'a pas consenti (recommandé en l'attente d'un avis juridique, au prix de ne pas voir les plantages avant consentement) ?
+6. **Crashlytics et consentement** : voulez-vous Crashlytics désactivé tant que l'utilisateur n'a pas consenti (recommandé ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique) ; au prix de ne pas voir les plantages avant consentement) ?
 7. **Langues** : validez-vous les vagues proposées (§4.F) ? Dans ce ticket, quelles langues sont livrées à la place du français : **anglais seul** (recommandé) ou davantage ? Quelle langue de repli pour un téléphone dans une langue non prise en charge : français (aujourd'hui) ou anglais ?
 8. **Comptes de développeur** : le compte Apple est-il individuel ou une organisation, et êtes-vous le titulaire du compte (Account Holder) ? Avez-vous déjà un compte Google Play Console ?
 
@@ -420,7 +420,7 @@ Rien de ce qui suit n'est fait par un agent : ce sont des paiements, des comptes
 - **Pastille 8 px « Annulable à tout moment »** : taille illisible et non traduisible, à revoir côté design.
 - **Mode sombre** : les maquettes n'en ont pas, nous imposons le thème clair. Confirmer.
 - **Apple sur Android** : les maquettes affichent « Continuer avec Apple » ; sur Android, ce bouton passe par un navigateur web et demande une configuration supplémentaire. À trancher dans le ticket Inscription (le magasin Android ne l'exige pas).
-- **Preuve du consentement Analytics** : le choix est stocké sur l'appareil. Si le juriste exige une preuve côté serveur, il faudra un champ de plus (§6).
+- **Preuve du consentement Analytics** : le choix est stocké sur l'appareil. Une preuve côté serveur demanderait un champ de plus (§6) ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique).
 - **Nom de l'app dans les stores** : « Miff » est-il disponible ? À vérifier au moment de la création de la fiche (action 9).
 
 ---
