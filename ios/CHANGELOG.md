@@ -19,7 +19,7 @@ Changé : `HelloView` du spike remplacé par `HomeView` ; `BuildInfo.summary` su
 **Durées CI macOS** (`macos-26`, Xcode 26.x) :
 - Premier run (sans cache, commit `fb9f779`) : job 7 min 36 s (XcodeGen 0 s ; garde-fou d'identifiant 68 s car il résolvait les paquets ; résolution 20 s ; SwiftLint 2 s ; compilation Debug 49 s ; tests 88 s dont 94 tests en 3,5 s ; compilation Release 62 s ; captures 124 s). Environ 8 min facturées avant multiplicateur macOS (à vérifier, probablement x10).
 - Deuxième run (cache des paquets, commit `fd1905e`) : job 5 min 55 s (résolution 15 s ; compilation Debug 50 s ; tests 71 s ; compilation Release 60 s ; captures 104 s).
-- Run après les corrections de revue (compilation Internal ajoutée, ~+1 min) : voir « Durées après revue » ci-dessous.
+- **Durées après revue** (cache des paquets, commit `3cdeeed`, run 40103131819, 99 tests, 0 ignoré) : job **6 min 19 s** (résolution 13 s ; SwiftLint 2 s ; compilation Debug 44 s ; tests 58 s ; compilation Release 51 s ; compilation **Internal** 48 s ; captures 110 s). Une PR qui ne change ni l'interface, ni les ressources, ni le projet saute Release, Internal et captures (environ 3,5 min de moins) ; une PR qui ne touche que des `.md` ne lance plus rien. Quota : ~6,5 min facturées par exécution complète, multiplicateur macOS probable x10 (à vérifier).
 
 **Corrections de revue (PM, 2026-10-24)** :
 - I-1 : la CI compile la configuration **Internal** (appareil, sans signature) et vérifie diagnostic présent, App Check de débogage absent, Info.plist cohérent ; `ios-testflight` contrôle après l'archive l'Info.plist, le projet Firebase embarqué, le diagnostic et les entitlements (App Attest) en plus de l'identité.
