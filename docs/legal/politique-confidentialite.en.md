@@ -1,9 +1,6 @@
-> **DRAFT — not reviewed by a lawyer — do not publish as is**
-> Working version 0.1 of 2026-10-23. Passages in square brackets `[...]` must be completed or validated (list in `docs/legal/README.md`). This is the English version of `politique-confidentialite.fr.md`; the two must stay identical in substance.
-
 # Miff Privacy Policy
 
-**Effective from: [EFFECTIVE DATE TO BE COMPLETED]** — Text version: [VERSION TO BE COMPLETED, e.g. 2026-11-v1]
+**Version 0.1 — last updated: January 1, 2027**
 
 Miff is an app that lets you know your loved ones are okay, without bothering them. To make that work, Miff processes some personal data, including information related to your location. This page explains, simply, what is collected, why, who can see it, how long it is kept, and how you stay in control.
 
@@ -22,17 +19,17 @@ Miff is an app that lets you know your loved ones are okay, without bothering th
 
 The data controller is:
 
-- **[NAME / COMPANY NAME TO BE COMPLETED]**
-- **[ADDRESS TO BE COMPLETED]**
-- **[CONTACT E-MAIL TO BE DEFINED]**
+- **Tomessa MFOUKA (individual)**
+- **76 rue Marx Dormoy, 75018 Paris, France**
+- **tomessa.mfouka@gmail.com**
 
 You can use this e-mail address for any question about your data.
 
 ## 3. What data, why, and on what legal basis
 
-The GDPR requires us to state a "legal basis" for each use, meaning what allows us to process the data. [TO BE VALIDATED BY A LAWYER: the legal bases below are proposals.]
+The GDPR requires us to state a "legal basis" for each use, meaning what allows us to process the data.
 
-| Data | What it is used for | Proposed legal basis |
+| Data | What it is used for | Legal basis |
 |---|---|---|
 | **Account**: e-mail address, account identifier, sign-in method (e-mail, Google, Apple). Your password, if you have one, is handled by Google's authentication service: we cannot see it in clear text. | Create your account, sign you in, recover access | Contract (the Terms) |
 | **Profile**: first name, last name, profile photo | So that your loved ones recognise you in the app | Contract |
@@ -40,7 +37,7 @@ The GDPR requires us to state a "legal basis" for each use, meaning what allows 
 | **Trusted places**: name, optional address, coordinates of the place, radius. These places are created by the Miff's creator and visible to its members. **These are the coordinates of the place, not yours.** | Know when you arrive at or leave a place | Contract; consent for sharing your presence |
 | **Automatic status** (if you turn sharing on): "in a trusted place / outside a place / risk zone / unknown", the place concerned, the time of the event, the time of the last update | Reassure your circle without a conversation | Explicit and revocable **consent** |
 | **Manual update** (optional): a short text (140 characters at most) and a photo | Share news when you feel like it | **Consent** (you are the one sending it) |
-| **Phone state** (if you turn sharing on): battery level, and whether location is allowed "in the background", "while using the app", or denied | Help your circle understand why a status may be late (e.g. low battery) | Contract / legitimate interest [TO BE VALIDATED BY A LAWYER] |
+| **Phone state** (if you turn sharing on): battery level, and whether location is allowed "in the background", "while using the app", or denied | Help your circle understand why a status may be late (e.g. low battery) | Contract / legitimate interest |
 | **Proof of consent**: date and version of the Terms and of the location consent text | Be able to demonstrate your agreement | Obligation to be able to demonstrate consent |
 | **Premium subscription**: state (active or not), end date, origin (App Store, Google Play, or access granted by the team). We receive neither your card number nor your payment details. | Enable Premium features | Contract |
 | **Usage statistics (Google Analytics for Firebase)** — **only if you accept**: a few simple events (e.g. sign-up completed, Miff created or joined, Premium screen shown) and technical device data. **Never a position, a place, a Miff name, a code, or free text.** | Understand whether the app is clear and fix what blocks people | **Consent** |
@@ -79,7 +76,7 @@ The members of a Miff see:
 
 To see other people's status, you must share yours. People who are not in the Miff see nothing. Anyone who knows a Miff's secret code can join it: only give it to people you trust.
 
-The Miff team's access to the database is limited to authorised people and to what is necessary (maintenance, support, security). [TO BE VALIDATED BY A LAWYER: wording on internal access.]
+The Miff team's access to the database is limited to authorised people and to what is necessary (maintenance, support, security).
 
 We do not sell your data and we do not use it for advertising.
 
@@ -99,7 +96,7 @@ Miff relies on services from **Google (Google Firebase)** and from **Apple / Goo
 | **App Store (Apple) / Google Play** | App download, payment and subscription management | According to Apple's and Google's policies |
 | [IF PUSH IS ACTIVE: **Firebase Cloud Messaging, Apple Push Notification service**] | [Sending notifications] | [Google / Apple data centres] |
 
-**About transfers outside the EU.** Some of these services may process data outside the European Union, notably in the United States. In that case, protection relies on the mechanisms provided by the GDPR, for example the "EU-U.S. Data Privacy Framework" to which Google states it adheres, and/or standard contractual clauses. You can ask us for more information. [TO BE VALIDATED BY A LAWYER: exact transfer mechanism for each service and the data processing agreements (Firebase data processing terms) accepted; possible transfer risk assessment.]
+**About transfers outside the EU.** Some of these services may process data outside the European Union, notably in the United States. In that case, protection relies on the mechanisms provided by the GDPR, for example the "EU-U.S. Data Privacy Framework" to which Google states it adheres, and/or standard contractual clauses. You can ask us for more information.
 
 These providers act on our behalf (processors). Google and Apple also act on their own behalf for sign-in and payments: their own privacy policies then apply.
 
@@ -109,21 +106,21 @@ Miff keeps no history: the status is a "current state", overwritten at each even
 
 | Data | Retention period |
 |---|---|
-| Account and profile | Until you delete your account. [TO BE VALIDATED BY A LAWYER: period before deleting an inactive account — not defined to date.] |
+| Account and profile | Until you delete your account. For now, Miff does not automatically delete inactive accounts. |
 | Status (presence, times, battery, location state) | One single state, replaced at each event. Deleted when you stop sharing, leave the Miff, are removed from the Miff, or delete your account. |
-| **Update photo** | **Unreadable to members after 24 hours.** It is then deleted from our servers as soon as possible, by the app of its author or of a member of the Miff when the app is opened. It is also deleted if you stop sharing, leave the Miff or delete your account. [TO BE VALIDATED BY A LAWYER: physical deletion at exactly 24 h is not guaranteed until an automatic mechanism is in place.] |
+| **Update photo** | **Unreadable to members after 24 hours.** It is then deleted from our servers as soon as possible, by the app of its author or of a member of the Miff when the app is opened. It is also deleted if you stop sharing, leave the Miff or delete your account. Physical deletion at exactly the 24th hour is not guaranteed: in the meantime, the photo is readable by nobody. |
 | Profile photo and name copied into a Miff | Until you leave the Miff or delete your account. |
 | Trusted places | Until the creator deletes them or the Miff is deleted. |
 | A Miff's secret code | Until it is renewed or the Miff is deleted. When the creator removes a member, the code is automatically renewed. |
-| Proof of consent | While you are a member of the relevant Miff (for location consent); with your account (for the Terms). [TO BE VALIDATED BY A LAWYER: must proof be kept after you leave, and for how long?] |
-| Premium subscription state | For the duration of the subscription, then deleted when your account is deleted, within [PERIOD TO BE DEFINED]. |
+| Proof of consent | While you are a member of the relevant Miff (for location consent); with your account (for the Terms). We do not keep this proof after you leave the Miff. |
+| Premium subscription state | For the duration of the subscription, then deleted 30 days after your account is deleted. |
 | Usage statistics (if accepted) | Period set to the minimum offered by Google in its console [TO BE VERIFIED before publication]. |
 | Crash reports (if accepted) | Period defined by Google Crashlytics [TO BE VERIFIED before publication]. |
-| Messages sent to our contact address | The time needed to handle your request, then [PERIOD TO BE DEFINED WITH A LAWYER]. |
+| Messages sent to our contact address | The time needed to handle your request, then 1 year, after which they are deleted. |
 | Backups | We do not enable database backups. |
 | Data stored on your phone (offline working copy) | Erased when you sign out, delete your account, or lose access to a Miff. |
 
-**Special case: a deleted Miff.** When a creator deletes their Miff, the other members are removed. If a former member's app has not been opened yet, the data about them in that Miff (member record, possible status or photo) becomes unreadable to everyone immediately, but is only physically erased the next time their app is opened. [TO BE VALIDATED BY A LAWYER: acceptability of this delay before the public launch.]
+**Special case: a deleted Miff.** When a creator deletes their Miff (or their account, which also deletes the Miffs they created), the other members are removed. If a former member's app has not been opened yet, the data about them in that Miff (member record, possible status or photo) becomes unreadable to everyone immediately, but is only physically erased the next time their app is opened.
 
 ## 8. Your rights and how to exercise them
 
@@ -138,11 +135,11 @@ You have the right to:
 - set **directives** on what happens to your data after your death (French law).
 
 **How to do it:**
-- **Delete your account**: directly in the app, in the settings. This deletes your account and the associated data described above. If you are the **creator** of a Miff, [TO BE CONFIRMED BY THE PM: the Miff is deleted and its members are removed from it; each one is informed kindly when opening their app].
+- **Delete your account**: directly in the app, in the settings. This deletes your account and the associated data described above. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account..
 - **Stop sharing your location**: in the app settings, Miff by Miff.
 - **Statistics and crash reports**: switches in the app settings.
-- **Access or export your data**: during the test phase (beta), write to us at **[CONTACT E-MAIL TO BE DEFINED]**. We reply with your data in a readable format. [TO BE VALIDATED BY A LAWYER: export procedure, identity verification, format.]
-- **Any other request**: write to us at **[CONTACT E-MAIL TO BE DEFINED]**. We may ask you to confirm your identity, to prevent someone from impersonating you.
+- **Access or export your data**: during the test phase (beta), write to us at **tomessa.mfouka@gmail.com**. We reply with your data in a readable format.
+- **Any other request**: write to us at **tomessa.mfouka@gmail.com**. We may ask you to confirm your identity, to prevent someone from impersonating you.
 
 We reply within **one month** at most (extendable in the cases provided by law).
 
@@ -150,7 +147,7 @@ We reply within **one month** at most (extendable in the cases provided by law).
 
 ## 9. Security
 
-We protect your data with appropriate measures: strict access rules (only members of a Miff can access that Miff's information), encrypted connections, encryption at rest provided by Google, verification that requests come from the genuine app (App Check), and control of access to administration tools [TO BE VALIDATED: strong authentication on administrator accounts]. No system is infallible. In the event of a data breach likely to harm you, we will notify the CNIL and, if necessary, you, as the law requires.
+We protect your data with appropriate measures: strict access rules (only members of a Miff can access that Miff's information), encrypted connections, encryption at rest provided by Google, verification that requests come from the genuine app (App Check), and access to administration tools limited to authorised people. No system is infallible. In the event of a data breach likely to harm you, we will notify the CNIL and, if necessary, you, as the law requires.
 
 Also protect your phone (lock code) and only share a Miff's secret code with people you trust.
 
@@ -158,11 +155,11 @@ Also protect your phone (lock code) and only share a Miff's secret code with peo
 
 Miff does not impose a minimum age and does not ask for your age. Miff is designed for circles of loved ones (family, friends, partners), which may include young people. In France, the law provides that **below the age of 15**, the agreement of a parent or holder of parental authority is required for certain online services relying on consent. Miff cannot verify its users' age.
 
-If you are a minor, we advise you to use Miff with your parents' agreement. If you are a parent and think that a child's data was collected without your agreement, write to **[CONTACT E-MAIL TO BE DEFINED]**: we will delete their account and data.
+If you are a minor, we advise you to use Miff with your parents' agreement. If you are a parent and think that a child's data was collected without your agreement, write to **tomessa.mfouka@gmail.com**: we will delete their account and data.
 
 Each member gives their own consent to share their location, and can stop at any time.
 
-**[TO BE VALIDATED BY A LAWYER — IMPORTANT POINT: this wording does not settle the question of the minimum age. The following must be checked: (1) Article 8 GDPR and the age of 15 in French law, (2) the absence of age verification, (3) consistency with Apple's and Google Play's age-rating questionnaires and their rules on minors, (4) the possible need for a data protection impact assessment (DPIA) combining location and possible minors.]**
+**Please note:** Miff does not verify its users' age. We therefore cannot check whether a parent's agreement was given where the law requires it.
 
 ## 11. Trackers, identifiers and storage on your phone
 
@@ -183,4 +180,4 @@ We may change this policy, for example if the app evolves. For an important chan
 This policy is governed by **French law** and by the GDPR. If you are a consumer, you keep the protection given by the mandatory rules of your country of residence.
 
 ---
-*Contact: [CONTACT E-MAIL TO BE DEFINED] — [NAME / COMPANY NAME TO BE COMPLETED], [ADDRESS TO BE COMPLETED]*
+*Contact: tomessa.mfouka@gmail.com — Tomessa MFOUKA (individual), 76 rue Marx Dormoy, 75018 Paris, France*

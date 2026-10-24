@@ -1,9 +1,6 @@
-> **DRAFT — not reviewed by a lawyer — do not publish as is**
-> Working version 0.1 of 2026-10-23. Passages in square brackets `[...]` must be completed or validated (list in `docs/legal/README.md`). This is the English version of `cgu.fr.md`; the two must stay identical in substance.
-
 # Miff Terms of Use
 
-**Effective from: [EFFECTIVE DATE TO BE COMPLETED]** — Text version: [VERSION TO BE COMPLETED, e.g. 2026-11-v1]
+**Version 0.1 — last updated: January 1, 2027**
 
 Welcome to Miff. These terms explain how to use the app, what you can expect from it, and what we expect from you. We tried to write them simply. To learn how your data is processed, also read the [Privacy Policy](politique-confidentialite.en.md).
 
@@ -23,9 +20,7 @@ Welcome to Miff. These terms explain how to use the app, what you can expect fro
 
 ## 1. Who are we?
 
-Miff is published by **[NAME / COMPANY NAME TO BE COMPLETED]**, **[ADDRESS TO BE COMPLETED]**. Contact: **[CONTACT E-MAIL TO BE DEFINED]**.
-
-*[TO BE COMPLETED WITH A LAWYER: mandatory legal notices of the publisher (legal form, registration, publication director, host) — see README.]*
+Miff is published by **Tomessa MFOUKA (individual)**, **76 rue Marx Dormoy, 75018 Paris, France**. Contact: **tomessa.mfouka@gmail.com**.
 
 ## 2. What is Miff for?
 
@@ -38,7 +33,7 @@ Miff is an app to **know your loved ones are okay, without bothering them**.
 
 By creating an account or using Miff, you accept these terms. If you do not agree, do not use the app. We record the date and version of the terms you accepted.
 
-You must use Miff having the legal capacity to commit yourself, or with the agreement of your legal representative. Miff does not impose a minimum age and does not verify age. If you are a minor, use the app with your parents' agreement. [TO BE VALIDATED BY A LAWYER: minimum age, parental consent (GDPR Art. 8, age of 15 in France), validity of acceptance by a minor, store rules — this point is not settled.]
+You must use Miff having the legal capacity to commit yourself, or with the agreement of your legal representative. Miff does not impose a minimum age and does not verify age. If you are a minor, use the app with your parents' agreement. In France, the law requires a parent's agreement below the age of 15 for certain online services: if you are under 15, ask for their agreement before using Miff. We cannot verify that agreement.
 
 ## 4. Your account
 
@@ -81,7 +76,7 @@ You agree not to:
 - **Update photos are no longer visible after 24 hours** and are deleted afterwards (see the Privacy Policy).
 - **Respect others**: do not post a photo showing a person without their agreement, and do not post a photo of a child over whom you do not have parental authority. You are responsible for the content you send.
 - A member of a Miff can record what they see (a screenshot, for example). We cannot prevent it: only send what you are comfortable showing your circle.
-- You can report problematic content or behaviour to **[CONTACT E-MAIL TO BE DEFINED]**. We may remove content that does not comply with these terms. [TO BE VALIDATED BY A LAWYER: reporting procedure and hosting-provider status (LCEN / Digital Services Act).]
+- You can report problematic content or behaviour to **tomessa.mfouka@gmail.com**. We may remove content that does not comply with these terms.
 
 ## 9. Free Miff and Miff Premium
 
@@ -89,8 +84,8 @@ You agree not to:
 - **Premium (paid subscription)**: several Miffs and several trusted places, plus the other options presented in the app at the time of purchase (for example risk zones or smart notifications, depending on availability). The exact content, price, duration and any trial period are **shown in the app and on the store before you subscribe**.
 - **Purchase is made through the App Store (Apple) or Google Play**, not directly with us. Payment, billing, automatic renewal, cancellation and refunds are handled by Apple or Google, under their terms.
 - **Cancelling**: in your Apple account settings (iPhone) or in Google Play (Android), before the end of the current period, to avoid the next renewal. Deleting the app or your Miff account **does not** automatically cancel the subscription: it must be cancelled with the store.
-- **Refunds**: ask Apple or Google, under their rules. [TO BE VALIDATED BY A LAWYER: 14-day withdrawal right for digital services bought online, possible waiver, mandatory pre-contractual information, role of Apple/Google as seller or intermediary.]
-- **End of subscription**: you go back to the free version. [TO BE COMPLETED BY THE PM: what happens to Miffs and places beyond the free limits — product decision not taken.]
+- **Refunds**: ask Apple or Google, under their rules. If you are a consumer, the rights the law gives you (for example the right of withdrawal, under the conditions set by law and by the store's terms) still apply.
+- **End of subscription**: you go back to the free version. Items that go beyond the limits of the free plan (one Miff and one trusted place) are then deleted, along with the data linked to them: the most recently added ones are deleted, your first items remain. If you have several Miffs or several places, remember to check what you want to keep before your subscription ends.
 - **During the test phase (beta)**, the Miff team may grant Premium access free of charge to some testers. This access may be withdrawn at the end of the beta.
 - We may change offers and prices for the future. A price change does not affect a period you have already paid and is announced in line with the store's rules.
 
@@ -103,12 +98,11 @@ We do our best to make Miff work well, but we do not guarantee an uninterrupted 
 - We are liable in the cases where the law requires it, notably for our gross or intentional faults and for bodily injury. The rights the law gives you as a consumer are not affected by these terms.
 - **Within the limits allowed by law**, we are not liable for: the consequences of a missing, late or inaccurate status linked to your phone, your network or your settings; the use other members make of what you share with them; a decision that you or your loved ones make relying only on Miff; interruptions caused by third-party services.
 - Miff must not be used as the only means of watching over a person's safety (see the warning at the beginning).
-- [TO BE VALIDATED BY A LAWYER: this whole clause (limitations of liability, unfair terms towards consumers, the particular context of worrying about a loved one, possible risk of a parent or relative being held liable).]
 
 ## 12. Suspension and deletion of an account
 
-- **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Premium subscription with the store. If you are the **creator** of a Miff, [TO BE CONFIRMED BY THE PM: the Miff is deleted and its members are removed from it].
-- **We may suspend or delete an account** that does not comply with these terms (in particular articles 6 and 7), or in case of abuse, risk to other people's safety, or a request from an authority. Except in an emergency or where the law requires otherwise, we explain why and you can reply at **[CONTACT E-MAIL TO BE DEFINED]**.
+- **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Premium subscription with the store. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account..
+- **We may suspend or delete an account** that does not comply with these terms (in particular articles 6 and 7), or in case of abuse, risk to other people's safety, or a request from an authority. Except in an emergency or where the law requires otherwise, we explain why and you can reply at **tomessa.mfouka@gmail.com**.
 
 ## 13. Personal data
 
@@ -116,22 +110,22 @@ We process your data as described in the [Privacy Policy](politique-confidential
 
 ## 14. Intellectual property
 
-Miff (name, logo, design, content, code) belongs to **[NAME / COMPANY NAME TO BE COMPLETED]** or its licensors. We give you a personal, non-exclusive, non-transferable right to use the app for your personal needs, as long as you comply with these terms. [TO BE VALIDATED BY A LAWYER: ownership of rights and of the "Miff" trademark — no prior-rights search has been done.]
+Miff (name, logo, design, content, code) belongs to **Tomessa MFOUKA (individual)** or its licensors. We give you a personal, non-exclusive, non-transferable right to use the app for your personal needs, as long as you comply with these terms.
 
 ## 15. Changing these terms
 
-We may change these terms, for example if the app evolves or the law changes. For an important change, we tell you in the app before it applies. If you keep using Miff after the effective date, you accept the new version; if you disagree, you can delete your account. A change that affects the sharing of your location only applies to that sharing with your explicit consent. [TO BE VALIDATED BY A LAWYER: mechanism for accepting changes.]
+We may change these terms, for example if the app evolves or the law changes. For an important change, we tell you in the app before it applies. If you keep using Miff after the effective date, you accept the new version; if you disagree, you can delete your account. A change that affects the sharing of your location only applies to that sharing with your explicit consent.
 
 ## 16. Applicable law, mediation and disputes
 
 - These terms are governed by **French law**. If you are a consumer, you also benefit from the mandatory protection rules of the country where you live.
-- **Write to us first** at **[CONTACT E-MAIL TO BE DEFINED]**: we always look for an amicable solution.
-- If you are a consumer, you can use a consumer mediator free of charge: **[CONSUMER MEDIATOR TO BE COMPLETED]**. [TO BE VALIDATED BY A LAWYER: obligation to appoint a mediator, competent courts.]
-- Failing agreement, the competent courts are those provided by law. [TO BE VALIDATED BY A LAWYER.]
+- **Write to us first** at **tomessa.mfouka@gmail.com**: we always look for an amicable solution.
+- If you subscribe to Premium, you can use a consumer mediator free of charge.
+- Failing agreement, the competent courts are those provided by law.
 
 ## 17. Miscellaneous
 
-If part of these terms is held invalid, the rest continues to apply. In case of difference between the French and the English versions, the French version prevails. [TO BE VALIDATED BY A LAWYER.]
+If part of these terms is held invalid, the rest continues to apply. In case of difference between the French and the English versions, the French version prevails.
 
 ---
-*Contact: [CONTACT E-MAIL TO BE DEFINED] — [NAME / COMPANY NAME TO BE COMPLETED], [ADDRESS TO BE COMPLETED]*
+*Contact: tomessa.mfouka@gmail.com — Tomessa MFOUKA (individual), 76 rue Marx Dormoy, 75018 Paris, France*
