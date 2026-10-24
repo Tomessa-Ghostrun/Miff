@@ -6,6 +6,8 @@
 // une modification de firestore.rules qui rendrait la mutation sans effet) ; on remplace la nième occurrence.
 // equivalent : raison pour laquelle aucun test ne PEUT voir la mutation (mutant équivalent, protection redondante).
 
+import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
+
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
 
@@ -472,5 +474,6 @@ export const MUTATIONS = [
     edits: [edit(`&& get(${DB}/entitlements/$(uid)).data.active == true`, '&& true')],
     tests: ['X7'],
   },
+  // --- DUR-3 (R14) : protections du §7.3 du ticket (voir mutations-dur3.mjs) ---
+  ...DUR3_MUTATIONS,
 ];
-
