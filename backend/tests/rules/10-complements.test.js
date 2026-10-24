@@ -3,7 +3,7 @@
 // devient rouge quand cette règle est affaiblie).
 import {
   ID, CODE, DAY, HOUR, T0, suite, assertFails, assertSucceeds, commit, createMiffOps, removeMemberOps, update, set, del, serverTs,
-  inMs, statusDoc, photoDoc, placeInput, sharingOnNow,
+  inMs, userDoc, statusDoc, photoDoc, placeInput, sharingOnNow,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -79,6 +79,7 @@ s.tc('X6', 'photo restante : bloque le départ, le retrait et la désactivation 
 });
 
 s.tc('X7', 'premium : un abonnement non expiré mais active=false ne donne pas les droits premium', async ({ db, admin }) => {
+  await admin((f) => f.doc('users/gina').set(userDoc({ createdAt: T0, termsAcceptedAt: T0 })));
   await admin((f) => f.doc('entitlements/gina').set({ active: false, expiresAt: inMs(30 * DAY), source: 'manual', updatedAt: T0 }));
   await assertFails(commit(db('gina'), all(createMiffOps({ uid: 'gina', key: ID.NEW }))));
   // Contrôle : le même abonnement avec active=true est accepté.

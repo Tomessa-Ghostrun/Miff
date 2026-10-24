@@ -4,8 +4,10 @@ rules_version = '2';
 // Miff — règles de sécurité Firestore (projet miff-3d283, europe-west9)
 //
 // STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
-// `npm test` dans backend/), JAMAIS déployées. Le déploiement suit la procédure
-// du ticket docs/tickets/durcissement-regles-firestore.md (§8.2).
+// `npm test` dans backend/). Les règles de `main` au 2026-10-23 (commit 1017391) ont été
+// déployées sur miff-3d283 depuis le poste du PM ; celles de la PR AUTH-B (consentements,
+// profil exigé) ne sont PAS déployées. Tout déploiement suit la procédure du ticket
+// docs/tickets/durcissement-regles-firestore.md (§8.2).
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -139,6 +141,58 @@ service cloud.firestore {
         && optBytes(d, 'avatar', 20000);
     }
 
+    // -------------------------------------------------------------------------
+    // Consentement facultatif (b) « statistiques d'usage et rapports de plantage anonymes » (AUTH-B).
+    // Bloc `analyticsConsent` de users/{uid} : mêmes quatre clés que members.sharing, TOUJOURS toutes
+    // présentes (null si non applicable). Absence du bloc = pas de consentement. Jamais de position.
+    // -------------------------------------------------------------------------
+    // Version du texte de consentement : AAAA-MM-vNN. Le zéro de tête et le format fixe rendent l'ordre
+    // lexicographique identique à l'ordre chronologique (utile pour refuser une rétrogradation de version).
+    function isConsentVersion(v) {
+      return v is string && v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v[0-9]{2}$');
+    }
+
+    // Les 4 clés exactes (ni plus, ni moins).
+    function hasConsentKeys(c) {
+      return c is map
+        && c.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
+        && c.keys().hasAll(['enabled', 'consentedAt', 'consentVersion', 'revokedAt']);
+    }
+
+    // À la création du profil : soit « non consenti » (case décochée : aucune date, aucune version),
+    // soit « consenti » avec l'heure du serveur (request.time) et la version du texte affiché.
+    function validAnalyticsConsentCreate(c) {
+      return hasConsentKeys(c)
+        && c.revokedAt == null
+        && (
+          (c.enabled == false && c.consentedAt == null && c.consentVersion == null)
+          || (c.enabled == true && c.consentedAt == request.time && isConsentVersion(c.consentVersion))
+        );
+    }
+
+    // Changement ultérieur (Réglages) ; prev = ancien bloc (null si le profil n'en a pas), next = nouveau.
+    //  - activer / réactiver (depuis « absent » ou « non consenti ») : heure serveur, version du texte, revokedAt vidé,
+    //    et version jamais plus ancienne que la dernière enregistrée (pas de rétrogradation) ;
+    //  - retirer (depuis « consenti » uniquement) : revokedAt = heure serveur, la trace du consentement
+    //    (date et version) est conservée. Réécrire un consentement actif sans le retirer d'abord est refusé.
+    function validAnalyticsConsentChange(prev, next) {
+      return hasConsentKeys(next)
+        && (
+          ((prev == null || prev.enabled == false)
+            && next.enabled == true
+            && next.consentedAt == request.time
+            && isConsentVersion(next.consentVersion)
+            && next.revokedAt == null
+            && (prev == null || prev.consentVersion == null || next.consentVersion >= prev.consentVersion))
+          ||
+          (prev != null && prev.enabled == true
+            && next.enabled == false
+            && next.revokedAt == request.time
+            && next.consentedAt == prev.consentedAt
+            && next.consentVersion == prev.consentVersion)
+        );
+    }
+
     // Consentement à la création du document membre.
     // Les 4 clés sont TOUJOURS présentes (null si non applicable).
     function validSharingCreate(s) {
@@ -206,6 +260,14 @@ service cloud.firestore {
         && indexAfterOk(uid, miffId);
     }
 
+    // Profil (a) : pas de Miff créée ni rejointe sans un profil users/{uid} qui porte l'acceptation des CGU
+    // (termsAcceptedAt, termsVersion). getAfter : le profil peut être créé dans le MÊME lot que la Miff ou l'adhésion.
+    // Une seule fiche membre est créée dans les deux cas (créateur ou code), donc un seul point de contrôle ; la
+    // création de la Miff exige déjà la fiche du créateur (validMiffCreate). Échoue (refus) si le profil est absent.
+    function termsAcceptedAfter(uid) {
+      return getAfter(/databases/$(database)/documents/users/$(uid)).data.keys().hasAll(['termsAcceptedAt', 'termsVersion']);
+    }
+
     function validMemberCreate(miffId, uid) {
       let d = request.resource.data;
       return d.keys().hasOnly(['role', 'firstName', 'lastName', 'avatar', 'joinedAt', 'joinCode', 'sharing'])
@@ -213,6 +275,7 @@ service cloud.firestore {
         && validProfile(d)
         && d.joinedAt == request.time
         && validSharingCreate(d.sharing)
+        && termsAcceptedAfter(uid)
         && (
           (d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))
           || (d.role == 'member' && memberJoinOk(miffId, uid, d))
@@ -393,19 +456,29 @@ service cloud.firestore {
       allow get: if isSelf(uid);
       allow list: if false;
 
+      // Création = (a) acceptation des CGU et de la politique (obligatoire : sans elle, pas de profil ;
+      // heure serveur + version du texte) + (b) consentement facultatif aux statistiques (bloc facultatif :
+      // absent = pas de consentement ; sinon voir validAnalyticsConsentCreate). Aucune date de naissance,
+      // aucun âge, aucun e-mail : toute autre clé est refusée.
       allow create: if isSelf(uid)
-        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
+        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])
         && request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
         && validProfile(request.resource.data)
         && request.resource.data.createdAt == request.time
         && request.resource.data.termsAcceptedAt == request.time
-        && isStr(request.resource.data.termsVersion, 1, 20);
+        && isStr(request.resource.data.termsVersion, 1, 20)
+        && (!('analyticsConsent' in request.resource.data)
+            || validAnalyticsConsentCreate(request.resource.data.analyticsConsent));
 
+      // Mise à jour par le propriétaire : profil et consentement (b) seulement. termsAcceptedAt, termsVersion
+      // (a) et createdAt sont figés à la création (décision PM : (a) non modifiable). Le consentement (b) ne
+      // change que par une transition valide (activer, retirer, réactiver) ; supprimer le bloc est refusé.
       allow update: if isSelf(uid)
-        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'termsAcceptedAt', 'termsVersion'])
+        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])
         && validProfile(request.resource.data)
-        && (!affected().hasAny(['termsAcceptedAt']) || request.resource.data.termsAcceptedAt == request.time)
-        && isStr(request.resource.data.termsVersion, 1, 20);
+        && isStr(request.resource.data.termsVersion, 1, 20)
+        && (!affected().hasAny(['analyticsConsent'])
+            || validAnalyticsConsentChange(resource.data.get('analyticsConsent', null), request.resource.data.analyticsConsent));
 
       // Suppression de compte : le client supprime ses données puis son compte Auth.
       allow delete: if isSelf(uid);

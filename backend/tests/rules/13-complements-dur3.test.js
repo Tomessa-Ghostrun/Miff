@@ -175,16 +175,19 @@ s.tc('M6b', 'renommer la Miff avec un nom vide ou de plus de 40 caractères : re
 
 // --- Profil et appareils -----------------------------------------------------------------------------------------
 
-s.tc('U1b', 'profil : createdAt et termsAcceptedAt fournis par le client refusés (création et mise à jour)', async ({ db }) => {
+s.tc('U1b', 'profil : createdAt et termsAcceptedAt fournis par le client refusés (création et mise à jour) ; termsAcceptedAt figé ensuite', async ({ db, admin }) => {
+  await admin((f) => f.doc('users/eve').delete()); // eve a un profil dans le jeu de départ (AUTH-B) : on teste la création
   const eve = db('eve').doc('users/eve');
   await assertFails(eve.set(userDoc({ termsAcceptedAt: inMs(-HOUR) })));
   await assertFails(eve.set(userDoc({ createdAt: inMs(-HOUR) })));
   await assertSucceeds(eve.set(userDoc()));
   await assertFails(eve.update({ termsAcceptedAt: inMs(-HOUR) }));
-  await assertSucceeds(eve.update({ termsAcceptedAt: serverTs() }));
+  // AUTH-B (décision PM du 2026-10-23) : (a) est figé après la création, même avec l'heure serveur.
+  await assertFails(eve.update({ termsAcceptedAt: serverTs() }));
 });
 
-s.tc('U2b', 'profil : nom vide, version des conditions vide ou trop longue refusés (création et mise à jour)', async ({ db }) => {
+s.tc('U2b', 'profil : nom vide, version des conditions vide ou trop longue refusés (création et mise à jour)', async ({ db, admin }) => {
+  await admin((f) => f.doc('users/eve').delete()); // eve a un profil dans le jeu de départ (AUTH-B) : on teste la création
   const eve = db('eve').doc('users/eve');
   await assertFails(eve.set(userDoc({ lastName: '' })));
   await assertFails(eve.set(userDoc({ termsVersion: '' })));
@@ -193,7 +196,8 @@ s.tc('U2b', 'profil : nom vide, version des conditions vide ou trop longue refus
   await assertFails(eve.update({ lastName: '' }));
   await assertFails(eve.update({ termsVersion: '' }));
   await assertFails(eve.update({ termsVersion: 'x'.repeat(21) }));
-  await assertSucceeds(eve.update({ termsVersion: 'v2' }));
+  // AUTH-B : termsVersion est figé après la création (décision PM), même avec une valeur valide.
+  await assertFails(eve.update({ termsVersion: 'v2' }));
 });
 
 s.tc('A5b', "créer le profil d'un autre utilisateur : refusé", async ({ db }) => {
