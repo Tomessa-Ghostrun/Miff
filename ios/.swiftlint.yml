@@ -49,7 +49,7 @@ custom_rules:
   # pas la forme d'une clé (snake_case avec au moins un « _ »).
   no_hardcoded_text:
     name: "Texte visible en dur"
-    regex: '(Text|Button|Toggle|Label|TextField|SecureField|Section|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint)\(\s*"(?![a-z][a-z0-9]*(_[a-z0-9]+)+")'
+    regex: '(Text|Button|Toggle|Label|TextField|SecureField|Section|DiagLine|SectionCard|SwitchRow|NavigationLink|ProgressView|Picker|Menu|\.navigationTitle|\.accessibilityLabel|\.accessibilityHint|\.accessibilityValue|\.alert|\.confirmationDialog)\(\s*"(?![a-z][a-z0-9]*(_[a-z0-9]+)+")'
     message: "Pas de texte en dur : utiliser une clé du String Catalog (Text(\"cle_snake_case\")), L10n.format ou Text(verbatim:)."
     severity: error
   # Aucune valeur hexadécimale de couleur hors du design system (critère A8 / I8).

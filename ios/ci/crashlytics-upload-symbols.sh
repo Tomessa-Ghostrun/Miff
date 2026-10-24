@@ -17,6 +17,14 @@ esac
 if [ "${PLATFORM_NAME:-}" != "iphoneos" ]; then
   exit 0
 fi
+# En CI (GitHub Actions) ou quand la clé d'API App Store Connect est dans l'environnement : ne RIEN faire ici.
+# Cette phase s'exécute pendant la compilation, donc dans un processus qui pourrait lire la clé .p8 (mode
+# « signed » de ios-testflight) : on n'y lance aucun code tiers (le script Crashlytics/run). L'envoi des symboles
+# se fait dans une étape SÉPARÉE du workflow ios-testflight, sans secret (voir ios/README.md).
+if [ -n "${ASC_KEY_ID:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+  echo "note: envoi des symboles Crashlytics ignoré pendant la compilation en CI (fait par une étape séparée sans secret)."
+  exit 0
+fi
 
 run_script=""
 for base in "${BUILD_DIR%/Build/*}/SourcePackages" "${SRCROOT:-.}/build/SourcePackages"; do

@@ -13,7 +13,14 @@ on:
   pull_request:
     paths:
       - "ios/**"
+      # Documentation et licences : aucun build macOS pour ça.
+      - "!ios/*.md"
+      - "!ios/**/*.md"
+      - "!ios/third_party/**"
       - ".github/workflows/ios.yml"
+      # ColorTokensTests compare les tokens iOS aux fichiers de thème Android : un changement de couleur ou de style
+      # de texte côté Android doit déclencher ce contrôle.
+      - "android/app/src/main/java/com/tomessa/miff/ui/theme/**"
   workflow_dispatch:
 
 permissions:
@@ -42,7 +49,9 @@ jobs:
   build-and-test:
     name: Build et tests (simulateur, sans signature)
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
-    timeout-minutes: 30
+    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) ; 15 min laisse de la marge sans
+    # laisser un job bloque consommer le quota.
+    timeout-minutes: 15
     defaults:
       run:
         shell: bash
@@ -53,6 +62,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          # 2 commits suffisent : sur une PR, HEAD est la fusion de test et son premier parent est la branche de base.
+          fetch-depth: 2
+
+      - name: Détecter les changements qui exigent les contrôles lourds
+        # Compilations Release et Internal + captures (environ 4 min de macOS) : seulement si l'apparence, les textes,
+        # le projet ou la CI ont change. Un changement purement logique (modeles, services, tests) les saute.
+        run: |
+          set -uo pipefail
+          heavy=true
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && git rev-parse -q --verify "HEAD^2" > /dev/null 2>&1; then
+            changed=$(git diff --name-only HEAD^1 HEAD)
+            if ! echo "$changed" | grep -E -q '^(ios/(Miff/(Views|Diagnostic|Resources|DesignSystem|Localization|App)/|project\.yml|Config/|ci/)|\.github/workflows/ios\.yml)'; then
+              heavy=false
+            fi
+          fi
+          echo "HEAVY_CHECKS=$heavy" >> "$GITHUB_ENV"
+          echo "Contrôles lourds (Release, Internal, captures) : ${heavy}"
 
       - name: Ouvrir le résumé et vérifier Xcode
         run: |
@@ -271,13 +297,21 @@ jobs:
           ' || echo "TESTS_FAILED=true" >> "$GITHUB_ENV"
           # Décompte des tests dans le résumé (format du résultat selon la version de Xcode : tolérant).
           if [ -d build/Tests.xcresult ]; then
-            xcrun xcresulttool get test-results summary --path build/Tests.xcresult --compact 2> /dev/null \
+            summary=$(xcrun xcresulttool get test-results summary --path build/Tests.xcresult --compact 2> /dev/null || true)
+            echo "$summary" \
               | jq -r '"Tests : \(.passedTests // "?") réussis, \(.failedTests // "?") en échec, \(.skippedTests // "?") ignorés (total \(.totalTestCount // "?"))"' \
               | tee -a "$GITHUB_STEP_SUMMARY" || true
+            # Un test ignoré (XCTSkip : fichier Android ou configuration Firebase introuvable) est un contrôle qui ne
+            # contrôle plus rien : échec, sauf pour Dependabot (configuration Firebase factice, tests ignorés prévus).
+            skipped=$(echo "$summary" | jq -r '.skippedTests // 0' 2> /dev/null || echo 0)
+            if [ "${skipped:-0}" != "0" ] && [ "${FAKE_FIREBASE_CONFIG:-}" != "true" ]; then
+              echo "::error::${skipped} test(s) ignoré(s) : un contrôle ne s'est pas exécuté (voir les journaux des tests)."
+              echo "TESTS_FAILED=true" >> "$GITHUB_ENV"
+            fi
           fi
 
       - name: Compiler la configuration Release et vérifier l'absence du diagnostic
-        if: env.RELEASE_CHECK == 'true'
+        if: env.HEAVY_CHECKS == 'true' && env.RELEASE_CHECK == 'true'
         run: |
           set -uo pipefail
           bash ci/timed.sh "Compilation Release (simulateur)" bash -c '
@@ -295,7 +329,29 @@ jobs:
           bash ci/check-binaries.sh release build/DerivedDataRelease/Build/Products/Release-iphonesimulator/Miff.app \
             || echo "BINARY_CHECK_FAILED=true" >> "$GITHUB_ENV"
 
+      - name: Compiler la configuration Internal (build TestFlight) et la contrôler
+        # Le build que le PM installe : diagnostic présent, App Attest (et NON le fournisseur de débogage), Info.plist
+        # cohérent. Compilé pour appareil (generic/platform=iOS) sans signature ; la signature est le travail d'ios-testflight.
+        if: env.HEAVY_CHECKS == 'true'
+        run: |
+          set -uo pipefail
+          bash ci/timed.sh "Compilation Internal (appareil, sans signature)" bash -c '
+            set -o pipefail
+            xcodebuild build \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -derivedDataPath build/DerivedDataInternal \
+              -clonedSourcePackagesDirPath build/SourcePackages \
+              -disableAutomaticPackageResolution \
+              CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO \
+              2>&1 | tee build/xcodebuild-internal.log | xcbeautify
+          ' || { echo "INTERNAL_BUILD_FAILED=true" >> "$GITHUB_ENV"; exit 0; }
+          { echo; echo "Contrôles du binaire Internal (TestFlight) :"; } >> "$GITHUB_STEP_SUMMARY"
+          bash ci/check-binaries.sh internal build/DerivedDataInternal/Build/Products/Internal-iphoneos/Miff.app \
+            || echo "BINARY_CHECK_FAILED=true" >> "$GITHUB_ENV"
+
       - name: Captures d'écran (français, anglais, repli, pseudo-langue, droite-à-gauche...)
+        if: env.HEAVY_CHECKS == 'true'
         run: |
           set -uo pipefail
           # Le test 1 interroge le vrai Firestore (une lecture non authentifiée) : seulement avec la vraie configuration.
@@ -325,6 +381,7 @@ jobs:
           if [ "${TESTS_FAILED:-}" = "true" ]; then echo "::error::Des tests XCTest ont échoué (voir l'étape Tests XCTest)."; fail=1; fi
           if [ "${BINARY_CHECK_FAILED:-}" = "true" ]; then echo "::error::Un contrôle du binaire a échoué (voir les étapes de contrôle)."; fail=1; fi
           if [ "${RELEASE_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Release a échoué."; fail=1; fi
+          if [ "${INTERNAL_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Internal a échoué."; fail=1; fi
           if [ "${SCREENSHOTS_FAILED:-}" = "true" ]; then echo "::error::Les captures d'écran ont échoué."; fail=1; fi
           case "${PACKAGE_RESOLVED_STATE:-ok}" in
             missing | stale)

@@ -215,6 +215,7 @@ jobs:
             xcodebuild archive \
               -project Miff.xcodeproj -scheme Miff -configuration Internal \
               -destination "generic/platform=iOS" \
+              -onlyUsePackageVersionsFromResolvedFile \
               -archivePath build/Miff.xcarchive \
               CODE_SIGNING_ALLOWED=NO \
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
@@ -241,6 +242,7 @@ jobs:
             xcodebuild archive \
               -project Miff.xcodeproj -scheme Miff -configuration Internal \
               -destination "generic/platform=iOS" \
+              -onlyUsePackageVersionsFromResolvedFile \
               -archivePath build/Miff.xcarchive \
               -allowProvisioningUpdates \
               -authenticationKeyPath "$ASC_KEY_PATH" \
@@ -296,6 +298,85 @@ jobs:
             fail=1
           fi
           exit "$fail"
+
+      - name: Contenu de l'archive (Info.plist, entitlements, diagnostic) (bloquante)
+        if: success()
+        env:
+          ARCHIVE_MODE: ${{ inputs.archive_mode }}
+        run: |
+          set -uo pipefail
+          app="$(ls -d build/Miff.xcarchive/Products/Applications/*.app 2>/dev/null | head -n 1)"
+          if [ ! -d "$app" ]; then
+            echo "::error::Application introuvable dans l'archive : envoi annulé."
+            exit 1
+          fi
+          plist="$app/Info.plist"
+          binary="$app/Miff"
+          fail=0
+          note() { echo "$1"; echo "- $1" >> "$GITHUB_STEP_SUMMARY"; }
+          bad() { echo "::error::$1 : envoi annulé."; fail=1; }
+          { echo; echo "Contenu de l'archive :"; } >> "$GITHUB_STEP_SUMMARY"
+          # Collecte éteinte, apparence claire, configuration Internal.
+          for key in FIREBASE_ANALYTICS_COLLECTION_ENABLED FirebaseCrashlyticsCollectionEnabled FirebaseDataCollectionDefaultEnabled; do
+            value="$(plutil -extract "$key" raw -o - "$plist" 2>/dev/null || echo absent)"
+            if [ "$value" = "false" ]; then note "Info.plist : ${key} = false (OK)"; else bad "Info.plist : ${key} vaut « ${value} » au lieu de false"; fi
+          done
+          style="$(plutil -extract UIUserInterfaceStyle raw -o - "$plist" 2>/dev/null || echo absent)"
+          if [ "$style" = "Light" ]; then note "Info.plist : apparence claire (OK)"; else bad "UIUserInterfaceStyle vaut « ${style} » au lieu de Light"; fi
+          configuration="$(plutil -extract MiffBuildConfiguration raw -o - "$plist" 2>/dev/null || echo absent)"
+          if [ "$configuration" = "Internal" ]; then note "Info.plist : configuration Internal (OK)"; else bad "MiffBuildConfiguration vaut « ${configuration} » au lieu de Internal"; fi
+          if plutil -p "$plist" | grep -q -E 'NSLocation|NSAppTransportSecurity'; then
+            bad "L'Info.plist contient une clé de localisation ou une exception ATS"
+          else
+            note "Info.plist : aucune clé NSLocation*, aucune exception ATS (OK)"
+          fi
+          # Configuration Firebase embarquée = projet Miff (compte Apple et Firebase partagés avec un autre projet).
+          project_id="$(plutil -extract PROJECT_ID raw -o - "$app/GoogleService-Info.plist" 2>/dev/null || echo absent)"
+          if [ "$project_id" = "miff-3d283" ]; then note "GoogleService-Info.plist embarqué : projet miff-3d283 (OK)"; else bad "Le projet Firebase embarqué n'est pas miff-3d283"; fi
+          # Diagnostic présent (build Internal), fournisseur App Check de débogage absent, pas d'identifiant publicitaire.
+          if [ "$(strings -a "$binary" | grep -c DIAGNOSTICPROBE || true)" -eq 0 ]; then bad "Le diagnostic est absent du build Internal"; else note "Diagnostic présent (OK)"; fi
+          if [ "$(strings -a "$binary" | grep -c MiffDebugAppCheck || true)" -ne 0 ]; then bad "Le fournisseur App Check de débogage est présent"; else note "Fournisseur App Check de débogage absent (OK)"; fi
+          if [ "$(strings -a "$binary" | grep -c advertisingIdentifier || true)" -ne 0 ]; then bad "Référence à l'identifiant publicitaire dans l'exécutable"; else note "Aucune référence à l'identifiant publicitaire (OK)"; fi
+          # Entitlements : App Attest en production. Lisibles seulement si l'archive est signée.
+          entitlements="$(codesign -d --entitlements :- "$app" 2>/dev/null || true)"
+          if [ -z "$entitlements" ]; then
+            entitlements="$(cat "$app/archived-expanded-entitlements.xcent" 2>/dev/null || true)"
+          fi
+          if [ -z "$entitlements" ]; then
+            if [ "$ARCHIVE_MODE" = "signed" ]; then
+              bad "Entitlements illisibles dans une archive signée"
+            else
+              echo "::warning::Entitlements non lisibles (archive non signée) : l'entitlement App Attest ne peut pas être vérifié ici. Si App Check ne donne pas de jeton sur l'iPhone, relancer en mode signed."
+              echo "- Entitlements : non vérifiables en mode unsigned (à constater sur l'iPhone : App Check)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          elif echo "$entitlements" | grep -q "com.apple.developer.devicecheck.appattest-environment" && echo "$entitlements" | grep -q "production"; then
+            note "Entitlement App Attest (production) présent (OK)"
+          else
+            bad "L'entitlement App Attest (production) est absent de l'application"
+          fi
+          exit "$fail"
+
+      - name: Envoyer les symboles de plantage à Crashlytics (étape sans secret)
+        # Étape SÉPARÉE et sans secret : le script de phase de compilation ne le fait pas en CI (il aurait accès à la
+        # clé .p8 en mode signed). La clé est supprimée AVANT de lancer l'outil tiers ; l'export la recrée.
+        # Jamais bloquante : des symboles non envoyés donnent un rapport moins lisible, pas une app cassée.
+        if: success()
+        timeout-minutes: 5
+        run: |
+          set -uo pipefail
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 || true
+          dsyms="build/Miff.xcarchive/dSYMs"
+          tool="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path '*checkouts/firebase-ios-sdk/Crashlytics/upload-symbols' -type f 2>/dev/null | head -n 1)"
+          if [ -z "$tool" ] || [ ! -d "$dsyms" ]; then
+            echo "::warning::Outil upload-symbols ou dossier dSYMs introuvable : symboles non envoyés (rapports de plantage non symbolisés)."
+            exit 0
+          fi
+          chmod +x "$tool" || true
+          if "$tool" -gsp Config/GoogleService-Info.plist -p ios "$dsyms" > build/upload-symbols.log 2>&1; then
+            echo "Symboles envoyés à Crashlytics."
+          else
+            echo "::warning::L'envoi des symboles à Crashlytics a échoué (voir build/upload-symbols.log si l'artefact d'échec est déposé)."
+          fi
 
       - name: Exporter et envoyer à TestFlight
         timeout-minutes: 10

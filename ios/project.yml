@@ -114,6 +114,9 @@ targets:
         # --- Confidentialite par defaut : Analytics et Crashlytics ne collectent RIEN au demarrage. ---
         # Ils ne s'activent qu'a l'execution, apres un choix explicite de l'utilisateur (PrivacySettings).
         # NE PAS utiliser FIREBASE_ANALYTICS_COLLECTION_DEACTIVATED : irreversible a l'execution.
+        # Collecte par defaut des SDK Firebase (Analytics, Crashlytics...) eteinte en bloc : filet de securite en plus
+        # des deux cles ci-dessous. Chaque SDK est ensuite active explicitement apres accord (PrivacySettings).
+        FirebaseDataCollectionDefaultEnabled: false
         FIREBASE_ANALYTICS_COLLECTION_ENABLED: false
         FirebaseCrashlyticsCollectionEnabled: false
         # Pas d'identifiant (IDFV) pour Analytics ; pas de signaux publicitaires ; pas d'attribution publicitaire.
