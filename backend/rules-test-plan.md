@@ -244,7 +244,7 @@ Même jeu de données qu'en section 0. Chaque cas a un test dans `tests/rules/11
 
 ## 12. AUTH-B : consentement facultatif (b) « statistiques et plantages » et acceptation (a) des CGU (ticket `docs/tickets/authentification.md`, §8, §10, §15)
 
-Même jeu de données qu'en section 0 : `alice`, `bob`, `carol`, `dave`, `zoe` ont un profil `users/{uid}` à six clés sans bloc de consentement ; `eve` et `frank` n'en ont pas. Le bloc s'appelle `analyticsConsent` (quatre clés `enabled`, `consentedAt`, `consentVersion`, `revokedAt`, comme `members.sharing` ; version au format `AAAA-MM-vNN`). Tests dans `tests/rules/13-consentement-statistiques.test.js` ; chaque cas a au moins une mutation dans `tests/tools/mutations.mjs`. Critères du ticket couverts entre parenthèses.
+Même jeu de données qu'en section 0 : `alice`, `bob`, `carol`, `dave`, `zoe` ont un profil `users/{uid}` à six clés sans bloc de consentement ; `eve` et `frank` n'en ont pas (dans les fichiers 07, 08 et 13 ; dans tous les autres fichiers ils en ont un, car créer ou rejoindre une Miff exige un profil depuis AB18). Le bloc s'appelle `analyticsConsent` (quatre clés `enabled`, `consentedAt`, `consentVersion`, `revokedAt`, comme `members.sharing` ; version au format `AAAA-MM-vNN`). Tests dans `tests/rules/13-consentement-statistiques.test.js` ; chaque cas a au moins une mutation dans `tests/tools/mutations.mjs`. Critères du ticket couverts entre parenthèses.
 
 | # | Cas | Attendu |
 |---|---|---|
@@ -265,3 +265,8 @@ Même jeu de données qu'en section 0 : `alice`, `bob`, `carol`, `dave`, `zoe` o
 | AB15 | Suppression du profil : par un tiers (`bob`, `alice`) ; par `carol` elle-même (le consentement disparaît avec) ; suppression d'un profil inexistant par `eve` (refus du panneau d'un nouvel utilisateur social : rien n'a été écrit) ; recréation ensuite (C12, C14) | KO pour les tiers ; OK pour le propriétaire et pour un profil inexistant ; recréation OK |
 | AB16 | Lecture du consentement : `carol` lit son profil ; `bob` (même Miff), `alice`, `eve`, un visiteur le lisent ; liste des profils et requête sur `analyticsConsent.enabled` | OK pour `carol` seule ; KO ailleurs |
 | AB17 | Minimisation : création avec `birthDate`, `dateOfBirth`, `age`, `ageRange`, `email`, `phone`, `lat`, `location` ; clé en trop **dans** le bloc de consentement (S13, X6, X21) | KO partout ; le profil valide est accepté |
+| AB18 | **Pas de Miff sans profil (décision PM du 2026-10-24).** `eve` (sans profil `users/eve`) crée une Miff : lot complet de 4 écritures ; idem pour `dave` (premium) dont le profil est supprimé | KO ; avec le profil présent : OK (gratuite et premium) |
+| AB19 | `eve` sans profil rejoint M1 avec le bon code (lot de 2 écritures) | KO ; avec le profil présent : OK |
+| AB20 | Profil créé **dans le même lot** (`getAfter`) : profil + Miff ; profil + adhésion. Lot dont le profil n'a pas (a) valide (sans CGU, CGU datées par le client) ou qui écrit le profil d'un autre uid | OK pour les lots valides ; KO pour les autres |
+| AB21 | Profil existant mais **sans** `termsAcceptedAt` ou sans `termsVersion` (document ancien ou injecté) : création de Miff, adhésion | KO ; une fois (a) présente : OK |
+| AB22 | Sans profil : `bob` quitte une Miff, `alice` retire `carol` (code renouvelé), `alice` supprime la Miff (lot final) | OK partout (le départ n'est jamais bloqué) |

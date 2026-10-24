@@ -258,6 +258,14 @@ service cloud.firestore {
         && indexAfterOk(uid, miffId);
     }
 
+    // Profil (a) : pas de Miff créée ni rejointe sans un profil users/{uid} qui porte l'acceptation des CGU
+    // (termsAcceptedAt, termsVersion). getAfter : le profil peut être créé dans le MÊME lot que la Miff ou l'adhésion.
+    // Une seule fiche membre est créée dans les deux cas (créateur ou code), donc un seul point de contrôle ; la
+    // création de la Miff exige déjà la fiche du créateur (validMiffCreate). Échoue (refus) si le profil est absent.
+    function termsAcceptedAfter(uid) {
+      return getAfter(/databases/$(database)/documents/users/$(uid)).data.keys().hasAll(['termsAcceptedAt', 'termsVersion']);
+    }
+
     function validMemberCreate(miffId, uid) {
       let d = request.resource.data;
       return d.keys().hasOnly(['role', 'firstName', 'lastName', 'avatar', 'joinedAt', 'joinCode', 'sharing'])
@@ -265,6 +273,7 @@ service cloud.firestore {
         && validProfile(d)
         && d.joinedAt == request.time
         && validSharingCreate(d.sharing)
+        && termsAcceptedAfter(uid)
         && (
           (d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))
           || (d.role == 'member' && memberJoinOk(miffId, uid, d))

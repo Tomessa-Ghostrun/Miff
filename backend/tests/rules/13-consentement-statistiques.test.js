@@ -7,15 +7,17 @@
 //   AB13, AB14  : champs verrouillés ou inconnus, non-régression du profil
 //   AB15, AB16  : suppression du profil, lecture réservée au propriétaire
 //   AB17        : minimisation (aucun âge, date de naissance, e-mail, téléphone, position)
+//   AB18 à AB22 : pas de Miff créée ni rejointe sans profil portant (a) ; profil possible dans le même lot ; départ non bloqué
 // Même jeu de données qu'à la section 0 du plan (alice, bob, carol, dave, zoe ont un profil sans bloc de consentement ;
 // eve et frank n'en ont pas). Chaque cas isole UNE protection (voir tests/tools/mutations.mjs).
 import assert from 'node:assert/strict';
 import {
+  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, del,
   T0, HOUR, suite, assertFails, assertSucceeds, serverTs, inMs, bytes, Timestamp, FieldValue, userDoc, profile,
   CONSENT_V1, CONSENT_V2, consentOff, consentOnNow, consentOnSeed, consentRevokedSeed, consentRevokeNow, userWithConsent,
 } from '../helpers/fixtures.js';
 
-const s = suite();
+const s = suite({ extraProfiles: false });
 
 const omit = (obj, ...keys) => Object.fromEntries(Object.entries(obj).filter(([k]) => !keys.includes(k)));
 
@@ -334,4 +336,64 @@ s.tc('AB17', 'minimisation : aucun âge, date de naissance, e-mail, téléphone 
   // Même contrôle à l'intérieur du bloc de consentement : seules les quatre clés prévues.
   await assertFails(ref.set(userDoc({ analyticsConsent: consentOnNow({ age: 14 }) })));
   await assertSucceeds(ref.set(userDoc({ analyticsConsent: consentOnNow() })));
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// Pas de Miff sans profil (a) : décision PM du 2026-10-24 (question ouverte 20)
+// ---------------------------------------------------------------------------------------------------------
+const M1 = `miffs/${ID.M1}`;
+const all = (ops) => Object.values(ops);
+const seedProfile = (admin, uid) => admin((f) => f.doc(`users/${uid}`).set(userWithConsent(uid, consentOff())));
+
+s.tc('AB18', 'créer une Miff sans profil (a) : refusé (gratuite et premium) ; avec profil : accepté', async ({ db, admin }) => {
+  await assertFails(commit(db('eve'), all(createMiffOps({ uid: 'eve' }))));
+  await admin((f) => f.doc('users/dave').delete());
+  await assertFails(commit(db('dave'), all(createMiffOps({ uid: 'dave', miffId: ID.NEW2, code: CODE.NEW2, key: ID.NEW2 }))));
+  // Contrôle : les mêmes lots, une fois le profil présent.
+  await seedProfile(admin, 'eve');
+  await assertSucceeds(commit(db('eve'), all(createMiffOps({ uid: 'eve' }))));
+  await seedProfile(admin, 'dave');
+  await assertSucceeds(commit(db('dave'), all(createMiffOps({ uid: 'dave', miffId: ID.NEW2, code: CODE.NEW2, key: ID.NEW2 }))));
+});
+
+s.tc('AB19', 'rejoindre une Miff avec le bon code sans profil (a) : refusé ; avec profil : accepté', async ({ db, admin }) => {
+  await assertFails(commit(db('eve'), all(joinOps({ uid: 'eve' }))));
+  await seedProfile(admin, 'eve');
+  await assertSucceeds(commit(db('eve'), all(joinOps({ uid: 'eve' }))));
+});
+
+s.tc('AB20', 'profil créé dans le même lot que la Miff ou l\'adhésion : accepté ; profil invalide ou d\'un autre dans le lot : refusé', async ({ db }) => {
+  const eveProfile = (over = {}) => set('users/eve', userDoc({ analyticsConsent: consentOnNow(), ...over }));
+  await assertAllFail([
+    ['lot Miff + profil sans acceptation (a)', () => commit(db('eve'), [set('users/eve', omit(userDoc(), 'termsAcceptedAt', 'termsVersion')), ...all(createMiffOps({ uid: 'eve' }))])],
+    ['lot Miff + profil de CGU datées par le client', () => commit(db('eve'), [eveProfile({ termsAcceptedAt: T0 }), ...all(createMiffOps({ uid: 'eve' }))])],
+    ['lot adhésion + profil d\'un autre uid', () => commit(db('eve'), [set('users/frank', userDoc()), ...all(joinOps({ uid: 'eve' }))])],
+  ]);
+  await assertSucceeds(commit(db('eve'), [eveProfile(), ...all(createMiffOps({ uid: 'eve' }))]));
+  await assertSucceeds(commit(db('frank'), [set('users/frank', userDoc()), ...all(joinOps({ uid: 'frank' }))]));
+});
+
+s.tc('AB21', 'profil existant mais sans acceptation (a) (document ancien ou injecté) : création de Miff et adhésion refusées', async ({ db, admin }) => {
+  await admin((f) => f.doc('users/eve').set({ firstName: 'Eve', lastName: 'Test', createdAt: T0 }));
+  await admin((f) => f.doc('users/frank').set({ firstName: 'Frank', lastName: 'Test', createdAt: T0, termsVersion: 'v1' }));
+  await assertFails(commit(db('eve'), all(createMiffOps({ uid: 'eve' }))));
+  await assertFails(commit(db('frank'), all(joinOps({ uid: 'frank' }))));
+  await admin((f) => f.doc('users/eve').set(userWithConsent('eve', consentOff())));
+  await assertSucceeds(commit(db('eve'), all(createMiffOps({ uid: 'eve' }))));
+});
+
+s.tc('AB22', 'quitter, être retiré, retirer un membre et supprimer la Miff ne dépendent pas du profil (le départ n\'est jamais bloqué)', async ({ db, admin }) => {
+  for (const uid of ['alice', 'bob', 'carol']) await admin((f) => f.doc(`users/${uid}`).delete());
+  await assertSucceeds(commit(db('bob'), all(leaveOps('bob'))));
+  await assertSucceeds(commit(db('alice'), all(removeMemberOps({ target: 'carol' }))));
+  await assertSucceeds(
+    commit(db('alice'), [
+      del(M1),
+      set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() }),
+      del(`joinCodes/${CODE.REGEN}`),
+      del(`${M1}/members/alice`),
+      del(`${M1}/status/alice`),
+      del('users/alice/memberships/free'),
+    ]),
+  );
 });

@@ -1,6 +1,6 @@
 // Plan de test, section 3 : rejoindre une Miff avec le code secret (J1 à J18)
 import {
-  ID, CODE, suite, assertFails, assertSucceeds, commit, joinOps, FieldPath, Timestamp, serverTs,
+  ID, CODE, T0, userDoc, suite, assertFails, assertSucceeds, commit, joinOps, FieldPath, Timestamp, serverTs,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -66,8 +66,9 @@ s.tc('J13', 'écrire le document membre d\'un autre utilisateur : refusé', asyn
   // Modification du document d'un membre existant (chemin "update").
   const ops = joinOps({ uid: 'bob' });
   await assertFails(commit(db('eve'), [ops.member]));
-  // Création du document d'un non-membre (chemin "create") : l'index de zed existe déjà et le code est le bon,
+  // Création du document d'un non-membre (chemin "create") : l'index et le profil de zed existent déjà et le code est le bon,
   // donc seule la règle « on n'écrit que son propre document » peut refuser.
+  await admin((f) => f.doc('users/zed').set(userDoc({ createdAt: T0, termsAcceptedAt: T0 })));
   await admin((f) => f.doc('users/zed/memberships/free').set({ miffId: ID.M1, joinedAt: new Date() }));
   await assertFails(commit(db('eve'), [joinOps({ uid: 'zed' }).member]));
 });

@@ -668,5 +668,36 @@ export const MUTATIONS = [
     edits: [edit("request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])", 'true')],
     tests: ['AB17'],
   },
+  // --- Pas de Miff créée ni rejointe sans profil portant l'acceptation (a) (décision PM du 2026-10-24) --------------------
+  {
+    id: 'AB18-miff-sans-profil-nulle-part',
+    why: 'plus aucun contrôle du profil à la création de la fiche membre (ni création de Miff ni adhésion)',
+    edits: [edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'")],
+    tests: ['AB18', 'AB19'],
+  },
+  {
+    id: 'AB18-creation-miff-sans-profil',
+    why: 'le profil n\'est plus exigé que pour rejoindre (la création d\'une Miff est permise sans profil)',
+    edits: [
+      edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
+      edit("(d.role == 'member' && memberJoinOk(miffId, uid, d))", "(d.role == 'member' && memberJoinOk(miffId, uid, d) && termsAcceptedAfter(uid))"),
+    ],
+    tests: ['AB18'],
+  },
+  {
+    id: 'AB19-adhesion-sans-profil',
+    why: 'le profil n\'est plus exigé que pour créer une Miff (l\'adhésion par code est permise sans profil)',
+    edits: [
+      edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
+      edit("(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))", "(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid) && termsAcceptedAfter(uid))"),
+    ],
+    tests: ['AB19'],
+  },
+  {
+    id: 'AB21-profil-sans-acceptation',
+    why: 'un profil sans termsAcceptedAt / termsVersion suffit (seule son existence est contrôlée)',
+    edits: [edit(".data.keys().hasAll(['termsAcceptedAt', 'termsVersion']);", '.data != null;')],
+    tests: ['AB21'],
+  },
 ];
 

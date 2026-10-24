@@ -225,11 +225,14 @@ function addMiff(batch, f, { miffId, name, code, ownerUid, members, status = [],
   if (place) batch.set(f.doc(`miffs/${miffId}/places/p1`), placeSeed({ createdBy: ownerUid }));
 }
 
-async function seedBase(env) {
+// extraProfiles : eve et frank (comptes sans Miff) ont un profil avec acceptation des CGU, comme tout compte qui crée ou
+// rejoint une Miff (AUTH-B : les règles exigent le profil). Les fichiers qui testent la création de profil ou l'absence de
+// profil (07, 08, 13) le désactivent pour que eve et frank n'aient pas de profil au départ.
+async function seedBase(env, { extraProfiles = true } = {}) {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const f = ctx.firestore();
     const batch = f.batch();
-    for (const uid of ['alice', 'bob', 'carol', 'dave', 'zoe']) {
+    for (const uid of extraProfiles ? ['alice', 'bob', 'carol', 'dave', 'zoe', 'eve', 'frank'] : ['alice', 'bob', 'carol', 'dave', 'zoe']) {
       batch.set(f.doc(`users/${uid}`), userDoc({ ...profile(uid), createdAt: T0, termsAcceptedAt: T0 }));
     }
     batch.set(f.doc('entitlements/dave'), { active: true, expiresAt: inMs(30 * DAY), source: 'manual', updatedAt: T0 });
@@ -277,7 +280,7 @@ export async function adminDo(env, callback) {
 // ---------------------------------------------------------------------------
 // Suite de tests : branche l'émulateur, nettoie et recharge les données avant chaque cas
 // ---------------------------------------------------------------------------
-export function suite() {
+export function suite({ extraProfiles = true } = {}) {
   let env;
   let contexts = new Map();
 
@@ -306,7 +309,7 @@ export function suite() {
   beforeEach(async () => {
     contexts = new Map();
     await env.clearFirestore();
-    await seedBase(env);
+    await seedBase(env, { extraProfiles });
   });
   after(async () => {
     if (env) await env.cleanup();

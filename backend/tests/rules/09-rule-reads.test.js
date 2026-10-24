@@ -53,6 +53,15 @@ const scenarios = [
     run: (env) => commit(db(env, 'eve'), all(createMiffOps({ uid: 'eve' }))),
   },
   {
+    id: 'READS-create-with-profile',
+    title: 'profil + création de Miff gratuite dans le même lot (batch de 5, AUTH-B)',
+    name: 'Profil + création de Miff gratuite (batch de 5)',
+    limit: 20,
+    hosts: [H.joinCodesCreate, H.membershipsCreate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/eve').delete()),
+    run: (env) => commit(db(env, 'eve'), [set('users/eve', userDoc()), ...all(createMiffOps({ uid: 'eve' }))]),
+  },
+  {
     id: 'READS-join',
     title: 'rejoindre une Miff (batch de 2)',
     name: 'Rejoindre une Miff (batch de 2)',
@@ -206,6 +215,7 @@ const scenarios = [
     name: 'Création du profil + consentements (écriture simple)',
     limit: 10,
     hosts: [H.usersCreate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/eve').delete()),
     run: (env) => db(env, 'eve').doc('users/eve').set(userDoc({ analyticsConsent: consentOnNow() })),
   },
   {
