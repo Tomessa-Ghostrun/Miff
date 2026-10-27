@@ -5,9 +5,8 @@
 -->
 <resources>
     <!-- Écran d'accueil -->
-    <string name="home_title">Miff</string>
     <string name="home_tagline">Savoir que vos proches vont bien, sans les déranger.</string>
-    <string name="home_logo_a11y">Logo de Miff (provisoire)</string>
+    <string name="home_logo_a11y">Logo de Miff</string>
 
     <!-- Écran de diagnostic : en-tête et identité du build -->
     <string name="diag_title">Diagnostic interne</string>
