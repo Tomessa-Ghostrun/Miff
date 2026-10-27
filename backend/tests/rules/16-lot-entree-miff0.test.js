@@ -115,7 +115,7 @@ s.tc('EN3', 'rejoindre et partager : si UNE écriture est refusée, aucune des a
     ['statut avec une présence inconnue du schéma', bad((o) => ({ ...o, status: set(`${M1}/status/eve`, statusInitial({ presence: 'home' })) }))],
     ['statut avec une clé en trop (coordonnées)', bad((o) => ({ ...o, status: set(`${M1}/status/eve`, { ...statusInitial(), lat: 48.85, lng: 2.35 }) }))],
     ['statut avec updatedAt du client', bad((o) => ({ ...o, status: set(`${M1}/status/eve`, statusInitial({ updatedAt: T0 })) }))],
-    ['statut écrit pour un autre membre (frank)', bad((o) => ({ ...o, status: set(`${M1}/status/frank`, statusInitial()) }))],
+    ['statut initial écrit à la place de celui de bob (membre qui partage), en plus du sien', bad((o) => ({ ...o, other: set(`${M1}/status/bob`, statusInitial()) }))],
     ['fiche avec partage désactivé mais statut publié', bad((o) => ({ ...o, member: set(`${M1}/members/eve`, { ...o.member.data, sharing: sharingOff() }) }))],
     ['consentement daté par le client', bad((o) => ({ ...o, member: set(`${M1}/members/eve`, { ...o.member.data, sharing: { ...sharingOnNow(), consentedAt: T0 } }) }))],
     ['consentement sans version du texte', bad((o) => ({ ...o, member: set(`${M1}/members/eve`, { ...o.member.data, sharing: { ...sharingOnNow(), consentVersion: null } }) }))],
@@ -125,6 +125,8 @@ s.tc('EN3', 'rejoindre et partager : si UNE écriture est refusée, aucune des a
     ['numéro de la fiche différent du profil', bad((o) => ({ ...o, member: set(`${M1}/members/eve`, { ...o.member.data, phone: '+33600000042' }) }))],
   ]);
   await assertNothingWritten(admin, [...joinPaths('eve'), `${M1}/status/frank`]);
+  // Le statut de bob n'a pas été écrasé par la tentative.
+  assert.ok((await stored(admin, `${M1}/status/bob`)).updatedAt.isEqual(T0));
   // Contrôle positif : le lot corrigé passe.
   await assertSucceeds(commit(db('eve'), all(joinShareOps({ uid: 'eve' }))));
 });

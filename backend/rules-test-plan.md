@@ -303,3 +303,46 @@ Même jeu de données qu'en section 0 : `alice`, `bob`, `carol`, `dave`, `zoe` o
 | AB20 | Profil créé **dans le même lot** (`getAfter`) : profil + Miff ; profil + adhésion. Lot dont le profil n'a pas (a) valide (sans CGU, CGU datées par le client) ou qui écrit le profil d'un autre uid | OK pour les lots valides ; KO pour les autres |
 | AB21 | Profil existant mais **sans** `termsAcceptedAt` ou sans `termsVersion` (document ancien ou injecté) : création de Miff, adhésion | KO ; une fois (a) présente : OK |
 | AB22 | Sans profil : `bob` quitte une Miff, `alice` retire `carol` (code renouvelé), `alice` supprime la Miff (lot final) | OK partout (le départ n'est jamais bloqué) |
+
+## 14. ONB-B : téléphone obligatoire (`users/{uid}.phone` et copie `members/{uid}.phone`) (ticket `docs/tickets/onboarding.md`, §6.4, §8, critères B1 à B3)
+
+Décision du PM (Q1, 2026-10-24) : numéro obligatoire, pays + numéro en **E.164** sans vérification ni unicité ; visible **uniquement** des membres des Miffs de la personne, via la copie dans la fiche de membre (N1, option A : aucune règle de lecture nouvelle). La clé s'appelle `phone` (chaîne `+` suivie de 7 à 15 chiffres, premier chiffre non nul, regex `^[+][1-9][0-9]{6,14}$`). Tests dans `tests/rules/15-telephone-onb-b.test.js` ; mutations dans `tests/tools/mutations-onbb.mjs`. Même jeu de données qu'en section 0, **toutes les fiches de départ et tous les profils portent désormais `phone`** ; `eve` et `frank` n'ont pas de profil dans ce fichier. Les cas AB13 et AB17 de la section 13 sont adaptés : `phone` n'est plus une clé inconnue, mais un numéro de forme nationale reste refusé.
+
+| # | Cas | Attendu |
+|---|---|---|
+| PH1 | Création du profil avec un numéro E.164 valide (`+33612345678`, 7 chiffres `+1234567`, 15 chiffres, `+242061234567`) | OK ; valeur enregistrée telle quelle |
+| PH2 | Création du profil : numéro absent, nul, vide, sans `+`, avec zéro après `+`, 6 ou 16 chiffres, espaces, tirets, parenthèses, point, lettres, double `+`, espace ou retour à la ligne en début ou fin, chiffres arabo-indiques, 200 caractères, nombre, booléen, liste ; clés de contact en trop (`phoneCountry`, `phoneNumber`) | KO partout ; le même profil avec un numéro valide : OK |
+| PH3 | Usurpation d'uid : `eve` crée le profil de `frank`, écrase celui de `alice` ; `bob` change le numéro de `alice` ; visiteur sans connexion | KO partout ; le numéro de `alice` est intact |
+| PH4 | Mise à jour du profil : numéro modifiable par son propriétaire (avec ou sans changement de prénom) ; tous les formats invalides, suppression de la clé, valeur nulle, clé en trop | OK pour les numéros valides ; KO pour le reste, numéro inchangé |
+| PH4b | Compte antérieur à ONB-B (profil **sans** numéro) : un changement de prénom reste accepté ; l'ajout d'un numéro valide est accepté (étape 2b) ; numéro invalide, nul, ou ajout avec réécriture des CGU refusés | OK / KO comme indiqué |
+| PH5 | Lecture : `bob` lit son profil ; `carol` (même Miff), `alice` (créatrice), `eve`, un visiteur lisent celui de `bob` ; liste des profils ; recherche par numéro (collection et groupe de collections) | OK pour le propriétaire seul ; KO partout ailleurs |
+| PH6 | Création de la fiche (adhésion par code et création de Miff) avec un numéro : absent, invalide (toute la liste de PH2), valide **mais différent du profil** | KO partout, aucune fiche ni Miff écrite ; copie identique au profil : OK |
+| PH6b | Profil créé **dans le même lot** (`getAfter`) : copie identique OK, copie différente KO, profil du lot sans numéro KO ; profil injecté avec un numéro invalide + fiche identique KO ; compte antérieur sans numéro : adhésion KO, puis OK avec « ajout du numéro au profil + adhésion » dans un lot | OK / KO comme indiqué |
+| PH7 | Fiche avec une clé en trop (`phoneCountry`, `email`, `lat`) | KO ; la fiche valide : OK |
+| PH8 | Mise à jour de la fiche : numéro différent du profil, invalide, supprimé, avec changement de rôle, clé en trop ; modification par un autre membre ou par la créatrice | KO partout, numéro inchangé ; après changement du profil, la fiche peut suivre : OK ; changement de prénom seul : OK |
+| PH8b | Fiche antérieure sans numéro : prénom modifiable ; ajout d'un numéro différent du profil ou invalide KO ; ajout du numéro du profil OK | OK / KO comme indiqué |
+| PH8c | Profil injecté avec un numéro invalide : mise à jour de la fiche vers ce même numéro | KO (la forme est contrôlée en plus de l'égalité) |
+| PH9 | Mise à jour atomique profil + fiche dans un même lot : fiche avec un autre numéro, numéro invalide, profil invalide | KO, **rien n'est écrit** (profil compris) ; lot cohérent : OK |
+| PH9b | Compte premium dans 15 Miffs : profil + 15 fiches dans un lot ; une fiche incohérente dans le lot | OK pour le lot cohérent ; KO et rien d'écrit sinon |
+| PH10 | Lecture du numéro dans la fiche : `bob` (partage actif) et `carol` (partage désactivé) lisent la fiche de `alice` et la liste ; `eve`, `zoe` (autre Miff), visiteur, groupe de collections `members`, recherche d'un numéro dans toutes les Miffs | OK pour les membres ; KO pour les autres |
+| PH10b | Membre qui quitte, membre retiré (code renouvelé) : plus aucune lecture, numéros supprimés avec les fiches | KO après le départ ou le retrait |
+| PH10c | Miff supprimée : survivant (`bob`) lit la fiche ou la liste | KO (les données existent encore physiquement) |
+| PH11 | Limites assumées : divergence passagère profil/fiche acceptée ; un nouvel arrivant qui connaît le code lit tous les numéros ; aucune unicité | Comportement figé par le test |
+
+## 15. MIFF-0 : lot d'entrée « Rejoindre et partager » / « Créer et partager » (ticket `docs/tickets/miff.md`, §5.4, §9, décision QM2)
+
+Un lot atomique contient : **adhésion** `members/{moi}` (partage **activé** : `consentedAt` = heure serveur, `consentVersion`, `revokedAt` vide) + index `memberships` + **statut initial** `status/{moi}` (`presence = "unknown"`, `placeId` nul, horodatages du serveur) ; **création** : Miff + code + fiche du créateur (partage activé) + index + statut initial. Aucune modification de règle n'est nécessaire (le statut exige le partage actif **après** le lot : `getAfter`). Tests dans `tests/rules/16-lot-entree-miff0.test.js` ; mutations dans `tests/tools/mutations-onbb.mjs`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| EN1 | `eve` rejoint M1 : fiche (partage activé) + index + statut initial, un lot de 3 ; même lot dans un autre ordre (`frank`) | OK ; consentement tracé (heure serveur, version), statut `unknown`, numéro copié |
+| EN1b | Idem avec le profil créé dans le même lot (4 écritures) | OK |
+| EN2 | `eve` crée une Miff : Miff + code + fiche du créateur (partage activé) + index + statut initial, un lot de 5 | OK |
+| EN2b | Idem avec le profil dans le même lot (6 écritures) ; idem en premium (clé = identifiant de la Miff) | OK |
+| EN3 | Adhésion : statut invalide (batterie 150, présence inconnue du schéma, clé en trop, `updatedAt` du client, statut d'un autre membre) ; fiche sans partage mais statut publié ; consentement daté par le client ou sans version ; code d'une autre Miff ; index absent ou vers une autre Miff ; numéro différent du profil | KO, **aucun des documents du lot n'existe** ; le lot corrigé : OK |
+| EN3b | Lot sans statut initial : la fiche est créée (partage actif) mais la lecture des statuts est refusée (ATK3) tant que le statut n'est pas publié ; publié ensuite : OK | OK / KO comme indiqué |
+| EN4 | Création : statut invalide (`locationAccess` inconnu, texte trop long), statut d'un autre, fiche sans partage, consentement daté par le client, code absent, index absent, propriétaire usurpé, numéro différent du profil | KO, **ni Miff, ni code, ni fiche, ni index, ni statut écrits** ; le lot corrigé : OK |
+| EN5 | Les quatre valeurs de `locationAccess` sont acceptées ; une présence autre que `unknown` au premier statut est acceptée par les règles (convention du client, limite documentée) | OK |
+| EN6 | Après le lot : le nouveau membre lit les statuts, les autres lisent le sien, `carol` (partage désactivé) toujours pas ; un créateur est lu par le membre qui le suit | OK / KO comme indiqué |
+
+Lectures de règles de ces lots : voir `rules-test-report.md` (section ONB-B / MIFF-0) et `data-model.md` §12.

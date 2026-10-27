@@ -5,9 +5,11 @@ rules_version = '2';
 //
 // STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
 // `npm test` dans backend/). Les règles de `main` au 2026-10-23 (commit 1017391) ont été
-// déployées sur miff-3d283 depuis le poste du PM ; celles de la PR AUTH-B (consentements,
-// profil exigé) ne sont PAS déployées. Tout déploiement suit la procédure du ticket
-// docs/tickets/durcissement-regles-firestore.md (§8.2).
+// déployées sur miff-3d283 depuis le poste du PM ; celles d'AUTH-B (consentements, profil exigé) et
+// d'ONB-B (téléphone obligatoire, copie identique dans la fiche de membre) ne sont PAS déployées : ce fichier
+// (PR « ONB-B / MIFF-0 ») est donc PLUS STRICT que ce qui tourne en production, et les apps qui écrivent un profil ou
+// une fiche sans `phone` y seraient refusées. Tout déploiement suit la procédure du ticket
+// docs/tickets/durcissement-regles-firestore.md (§8.2) et l'accord explicite du PM.
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -20,7 +22,13 @@ rules_version = '2';
 //     la Miff existe. Révoquer = supprimer ces données.
 //  5. Limites freemium appliquées par des "slots" à identifiant fixe (voir
 //     data-model.md §6) : 1 Miff et 1 lieu en gratuit, sans Cloud Function.
-//  6. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
+//  6. Téléphone (ONB-B) : donnée de contact obligatoire, sans vérification ni unicité. Il n'est visible de quelqu'un d'autre
+//     que par la copie dans la fiche de membre (lisible des seuls membres de la Miff, sans condition de partage : décision
+//     N1 du PM) ; la copie est contrainte à être celle du profil users/{uid} après le lot. Une fuite du code d'une Miff est
+//     aussi une fuite des numéros de ses membres (risque assumé, data-model.md §11).
+//  7. Lot d'entrée (MIFF-0) : adhésion ou création + partage activé + statut initial en UN lot atomique ; aucune règle
+//     spécifique, c'est la combinaison des règles members / status / memberships (tests EN1 à EN6).
+//  8. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
 //     des codes et les abus de volume sont atténués par App Check (à activer
 //     dans la console) + entropie du code (12 caractères, ~59 bits).
 //

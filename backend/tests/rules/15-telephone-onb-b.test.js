@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict';
 import {
   ID, CODE, PHONE, PHONE_B, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, profile,
-  T0, suite, assertFails, assertSucceeds, serverTs, FieldValue, userDoc, userWithConsent, consentOff,
+  T0, suite, assertFails, assertSucceeds, FieldValue, userDoc, userWithConsent, consentOff, sharingOff,
 } from '../helpers/fixtures.js';
 
 const s = suite({ extraProfiles: false });
@@ -205,6 +205,9 @@ s.tc('PH6b', 'members, création : profil créé dans le même lot (getAfter) : 
   assert.equal(await stored(admin, 'users/eve'), undefined);
   await assertSucceeds(commit(db('eve'), [set('users/eve', userDoc({ phone: PHONE_B })), ...joinWith('eve', PHONE_B)]));
   await assertSucceeds(commit(db('frank'), [set('users/frank', userDoc({ phone: PHONE })), ...createWith('frank', PHONE)]));
+  // Défense en profondeur : même si un profil portait un numéro de forme invalide (état injecté), la fiche identique est refusée.
+  await admin((f) => f.doc('users/hugo').set(userWithConsent('hugo', consentOff(), '0612345678')));
+  await assertFails(commit(db('hugo'), joinWith('hugo', '0612345678')));
   // Compte antérieur sans numéro : ne peut pas rejoindre tant qu'il n'a pas ajouté son numéro à son profil.
   await admin((f) => f.doc('users/gina').set(omit(userWithConsent('gina', consentOff()), 'phone')));
   await assertFails(commit(db('gina'), joinWith('gina', PHONE)));
@@ -260,6 +263,13 @@ s.tc('PH8b', 'members, fiche antérieure sans numéro : restée valide (prénom 
   assert.equal((await stored(admin, `${M1}/members/carol`)).phone, PHONE);
 });
 
+s.tc('PH8c', 'members, mise à jour : même si le profil portait un numéro invalide (état injecté), la fiche identique est refusée', async ({ db, admin }) => {
+  await admin((f) => f.doc('users/bob').set(userWithConsent('bob', consentOff(), '0612345678')));
+  await assertFails(db('bob').doc(`${M1}/members/bob`).update({ phone: '0612345678' }));
+  await assertFails(commit(db('bob'), [update(`${M1}/members/bob`, { phone: '0612345678' })]));
+  assert.equal((await stored(admin, `${M1}/members/bob`)).phone, PHONE);
+});
+
 s.tc('PH9', 'mise à jour atomique : profil + fiche dans un même lot réussit ; si une fiche est refusée, rien n\'est écrit (profil compris)', async ({ db, admin }) => {
   await seedUser(admin, 'bob');
   const lot = (memberPhone) => [update('users/bob', { phone: PHONE_B }), update(`${M1}/members/bob`, { phone: memberPhone })];
@@ -273,6 +283,29 @@ s.tc('PH9', 'mise à jour atomique : profil + fiche dans un même lot réussit ;
   await assertSucceeds(commit(db('bob'), lot(PHONE_B)));
   assert.equal((await stored(admin, 'users/bob')).phone, PHONE_B);
   assert.equal((await stored(admin, `${M1}/members/bob`)).phone, PHONE_B);
+});
+
+s.tc('PH9b', 'mise à jour atomique d\'un compte premium dans 15 Miffs : profil + 15 fiches dans UN lot accepté (borne de découpage documentée)', async ({ db, admin }) => {
+  const K = 15;
+  const miffId = (i) => `Z${i}`.padEnd(20, 'x');
+  await admin(async (f) => {
+    const b = f.batch();
+    for (let i = 0; i < K; i += 1) {
+      b.set(f.doc(`miffs/${miffId(i)}`), { ownerUid: 'dave', name: 'Cercle', joinCode: CODE.M3, createdAt: T0 });
+      b.set(f.doc(`miffs/${miffId(i)}/members/dave`), {
+        role: i === 0 ? 'owner' : 'member', ...profile('dave'), joinedAt: T0, sharing: sharingOff(), ...(i === 0 ? {} : { joinCode: CODE.M3 }),
+      });
+      b.set(f.doc(`users/dave/memberships/${miffId(i)}`), { miffId: miffId(i), joinedAt: T0 });
+    }
+    await b.commit();
+  });
+  const fiches = (phone) => Array.from({ length: K }, (_, i) => update(`miffs/${miffId(i)}/members/dave`, { phone }));
+  // Une seule fiche avec un autre numéro que le profil du lot : tout le lot est refusé.
+  const mixed = [update('users/dave', { phone: PHONE_B }), ...fiches(PHONE_B).slice(0, K - 1), update(`miffs/${miffId(K - 1)}/members/dave`, { phone: '+33600000042' })];
+  await assertFails(commit(db('dave'), mixed));
+  assert.equal((await stored(admin, 'users/dave')).phone, PHONE);
+  await assertSucceeds(commit(db('dave'), [update('users/dave', { phone: PHONE_B }), ...fiches(PHONE_B)]));
+  for (let i = 0; i < K; i += 1) assert.equal((await stored(admin, `miffs/${miffId(i)}/members/dave`)).phone, PHONE_B);
 });
 
 // ---------------------------------------------------------------------------------------------------------

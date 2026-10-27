@@ -267,7 +267,9 @@ s.tc('AB13', 'mise à jour : termsAcceptedAt, termsVersion, createdAt et tout ch
     ['champ inconnu : email', () => ref.update({ email: 'alice@example.org' })],
     ['champ inconnu : isPremium', () => ref.update({ isPremium: true })],
     ['champ inconnu : analytics (mauvais nom du bloc)', () => ref.update({ analytics: consentOnNow() })],
-    ['champ inconnu glissé avec une modification de profil valide', () => ref.update({ firstName: 'Alicia', phone: '0600000000' })],
+    ['champ inconnu glissé avec une modification de profil valide', () => ref.update({ firstName: 'Alicia', phoneNumber: '+33600000000' })],
+    // ONB-B : `phone` existe désormais (E.164) ; un numéro au format national reste refusé (voir PH4).
+    ['numéro au format national glissé avec une modification de profil valide', () => ref.update({ firstName: 'Alicia', phone: '0600000000' })],
   ]);
   const doc = await stored(admin, 'users/alice');
   assert.equal(doc.termsVersion, 'v1');
@@ -320,7 +322,7 @@ s.tc('AB16', 'lecture du consentement : par son propriétaire seul, jamais par u
 // ---------------------------------------------------------------------------------------------------------
 // Minimisation
 // ---------------------------------------------------------------------------------------------------------
-s.tc('AB17', 'minimisation : aucun âge, date de naissance, e-mail, téléphone ni position dans le profil', async ({ db }) => {
+s.tc('AB17', 'minimisation : aucun âge, date de naissance, e-mail, autre clé de contact ni position dans le profil (le téléphone E.164 est la seule donnée de contact, ONB-B)', async ({ db }) => {
   const ref = db('eve').doc('users/eve');
   const attempts = Object.entries({
     birthDate: '2010-05-01',
@@ -328,7 +330,8 @@ s.tc('AB17', 'minimisation : aucun âge, date de naissance, e-mail, téléphone 
     age: 14,
     ageRange: '13-15',
     email: 'eve@example.org',
-    phone: '0600000000',
+    phoneNumber: '+33600000000', // ONB-B : la clé `phone` (E.164) est désormais autorisée ; toute autre clé de contact reste refusée
+    phone: '0600000000', // forme nationale : refusée (E.164 exigé, voir PH2)
     lat: 48.85,
     location: 'Paris',
   }).map(([key, value]) => [`champ ${key}`, () => ref.set(userDoc({ analyticsConsent: consentOnNow(), [key]: value }))]);
