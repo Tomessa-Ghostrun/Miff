@@ -117,12 +117,16 @@ a:hover {
 }
 
 .brand {
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 1.75rem;
-  line-height: 1.2;
-  color: var(--color-action-primary);
+  display: inline-block;
+  line-height: 0;
   text-decoration: none;
+}
+
+/* Mot-symbole officiel : dimensions portées par les attributs width/height du HTML (pas de décalage de mise en page). */
+.brand-logo {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 .lang-switch {

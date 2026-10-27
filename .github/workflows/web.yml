@@ -8,6 +8,7 @@ on:
     paths:
       - 'web/**'
       - 'docs/legal/**'
+      - 'design/assets/logo/**'
       - 'scripts/build-web.mjs'
       - 'scripts/preview-web.mjs'
       - 'scripts/web-predeploy-check.mjs'

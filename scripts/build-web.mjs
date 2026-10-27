@@ -48,6 +48,33 @@ export function loadSiteConfig(root = REPO_ROOT) {
   return config;
 }
 
+// Logo officiel du PM (validé le 2026-10-27), repris de design/assets/logo/ (une seule source, pas de doublon dans web/src).
+// La CSP n'autorise que 'self' : tout est servi par le site, rien n'est chargé depuis l'extérieur.
+export const LOGO_FILES = [
+  { from: 'design/assets/logo/web/favicon.svg', to: 'favicon.svg' },
+  { from: 'design/assets/logo/web/apple-touch-icon-180.png', to: 'apple-touch-icon.png' },
+  { from: 'design/assets/logo/web/icon-192.png', to: 'icon-192.png' },
+  { from: 'design/assets/logo/web/icon-512.png', to: 'icon-512.png' },
+  { from: 'design/assets/logo/web/icon-maskable-512.png', to: 'icon-maskable-512.png' },
+  { from: 'design/assets/logo/master/miff-wordmark-color.svg', to: 'assets/logo/miff-wordmark-color.svg' },
+];
+const FAVICON_PNG_32 = 'design/assets/logo/web/favicon-32.png';
+
+/** Emballe un PNG 32 x 32 dans un fichier .ico (format ICO : l'image PNG est incluse telle quelle, sans re-encodage). */
+export function pngToIco(png) {
+  const header = Buffer.alloc(22);
+  header.writeUInt16LE(0, 0); // réservé
+  header.writeUInt16LE(1, 2); // type : icône
+  header.writeUInt16LE(1, 4); // une seule image
+  header.writeUInt8(32, 6); // largeur
+  header.writeUInt8(32, 7); // hauteur
+  header.writeUInt16LE(1, 10); // plans
+  header.writeUInt16LE(32, 12); // bits par pixel
+  header.writeUInt32LE(png.length, 14); // taille des données
+  header.writeUInt32LE(22, 18); // décalage des données
+  return Buffer.concat([header, png]);
+}
+
 const FONT_FILES = [
   { from: 'android/app/src/main/res/font/baloo_thambi_2.ttf', to: 'assets/fonts/baloo_thambi_2.ttf' },
   { from: 'android/app/src/main/res/font/hanken_grotesk.ttf', to: 'assets/fonts/hanken_grotesk.ttf' },
@@ -246,6 +273,7 @@ export function computeSourceHash({ root = REPO_ROOT, legalDir } = {}) {
     join(root, 'web', 'site.config.json'),
     ...LEGAL_SOURCES.map((name) => join(legal, name)).filter((f) => existsSync(f)),
     join(root, 'scripts', 'build-web.mjs'),
+    ...[...LOGO_FILES.map((f) => f.from), FAVICON_PNG_32].map((f) => join(root, f)).filter((f) => existsSync(f)),
   ];
   for (const file of files) {
     hash.update(`${toPosix(relative(root, file))}\n`);
@@ -417,7 +445,14 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
   pagesBuilt.push({ id: 'root', lang: '*', url: '/', file: 'index.html' }, { id: 'reset-password', lang: '*', url: '/reset-password', file: 'reset-password.html' });
 
   // --- Ressources ---
-  cpSync(join(src, 'favicon.svg'), join(outDir, 'favicon.svg'));
+  for (const { from, to } of LOGO_FILES) {
+    const source = join(root, from);
+    if (!existsSync(source)) throw new Error(`Logo introuvable : ${from}. Les icônes du site sont reprises de design/assets/logo/ ; si elles ont été déplacées, mets à jour LOGO_FILES dans scripts/build-web.mjs.`);
+    mkdirSync(dirname(join(outDir, to)), { recursive: true });
+    cpSync(source, join(outDir, to));
+  }
+  if (!existsSync(join(root, FAVICON_PNG_32))) throw new Error(`Logo introuvable : ${FAVICON_PNG_32}.`);
+  write(outDir, 'favicon.ico', pngToIco(readFileSync(join(root, FAVICON_PNG_32))));
   cpSync(join(src, 'assets'), join(outDir, 'assets'), { recursive: true });
   for (const { from, to } of FONT_FILES) {
     const source = join(root, from);
