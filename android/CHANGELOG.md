@@ -2,6 +2,29 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.2.0] - 2026-10-27 : AUTH-1, inscription et connexion
+
+### Ajouté
+- Écrans d'**inscription** et de **connexion** : e-mail + mot de passe et « Continuer avec Google » (Credential Manager). Textes `auth_` en français (tutoiement) et anglais, ajoutés aussi au catalogue iOS pour la parité des clés.
+- **Deux cases de consentement** avant tout geste d'inscription : (a) CGU et politique (obligatoire, liens vers les pages web), (b) statistiques et plantages (facultative, décochée). Message bienveillant si (a) manque.
+- **Panneau de consentement** du nouvel utilisateur Google arrivé par la connexion ; refus = suppression du compte tout juste créé, purge du cache, aucun événement, aucun document.
+- **Routage au lancement** selon l'état du compte, session persistante, écran « réessayer » si le compte ne peut pas être lu.
+- **Déconnexion** : arrêt des écoutes, envoi des écritures en attente, purge du cache Firestore (terminate + clearPersistence, drapeau repris au démarrage), arrêt de la collecte. Perte de session détectée : même nettoyage, message calme.
+- **Collecte Analytics / Crashlytics** : coupée tant que `users/{uid}` n'est pas lu, puis selon le choix du compte ; `sign_up_completed` seulement avec (b) ; `sign_in_completed` seulement après lecture d'un consentement accepté.
+- `ProfileDocument` / `UserProfileRepository` : la seule écriture de création de `users/{uid}` (dates serveur, `analyticsConsent` toujours écrit), pour le ticket Onboarding.
+- CI : signature de debug stable (secret `DEBUG_KEYSTORE_B64`), contrôle de la SHA-1 de l'APK, échec explicite sans client OAuth web.
+- Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), cases et boutons d'au moins 48 dp, liens légaux focalisables, focus ramené sur la case (a) manquante, contrastes AA (`#D60700` pour les erreurs).
+
+### Dépendances
+- `androidx.credentials:credentials` et `credentials-play-services-auth` 1.6.0 (Apache 2.0), `googleid` 1.2.1 : nécessaires à la connexion Google (alternative gratuite, maintenue par Google, à l'ancien SDK Google Sign-In). Aucun coût.
+
+### Choix et limites à connaître
+- Aucun délai propre sur les appels d'authentification : une requête abandonnée par un délai pourrait aboutir plus tard et ouvrir une session que personne ne regarde ; Firebase échoue vite hors connexion. Signal de réexamen : plaintes de chargement sans fin.
+- Le mot de passe est vidé par une rotation de l'écran (seul l'e-mail est conservé), écart assumé avec le cas limite 14 du ticket.
+- Le lien « Mot de passe oublié ? » arrive avec AUTH-2 ; deux messages d'erreur le mentionnent déjà (textes validés du ticket).
+- Le « G » du bouton Google est un redessin à remplacer par l'asset officiel de Google avant publication.
+- Non vérifié sur téléphone dans ce ticket : voir la description de la PR.
+
 ## [0.1.1] - 2026-10-23 : correctifs de la recette INIT-2
 
 ### Corrigé

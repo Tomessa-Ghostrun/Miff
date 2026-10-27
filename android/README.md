@@ -1,6 +1,6 @@
 # Miff Android
 
-Application Android native (Kotlin + Jetpack Compose) de Miff. Ce dossier contient le **socle technique** (ticket INIT-2) : projet, design system en code, traductions, Firebase, écran de diagnostic interne. Aucune fonctionnalité visible par un utilisateur final n'existe encore.
+Application Android native (Kotlin + Jetpack Compose) de Miff. Ce dossier contient le **socle technique** (ticket INIT-2) et l'**inscription / connexion** (ticket AUTH-1) : projet, design system en code, traductions, Firebase, écran de diagnostic interne, écrans d'authentification.
 
 > **ICONE ET LOGO PROVISOIRES : NE PAS PUBLIER.**
 > Le logo n'a pas encore été fourni par le PM. L'icône actuelle (M blanc + coeur jaune-vert sur fond bleu `#043cd1`, avec couche monochrome Android 13+) est un dessin vectoriel simple fait pour le socle. Fichiers à remplacer dès que le vrai logo arrive : `app/src/main/res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `app/src/main/res/values/colors.xml` (`ic_launcher_background`). L'écran d'accueil réutilise le même dessin. Une icône 512 x 512 pour la fiche Play reste à préparer avec le vrai logo.
@@ -64,7 +64,7 @@ L'APK de test fait environ 20 Mo (non réduit, avec les outils de débogage) ; l
 | Code du diagnostic | présent (`src/debug`) | **absent** (preuve : aucune chaîne `Diagnostic`, `DIAGNOSTICPROBE` ni `DebugAppCheck` dans le dex de l'APK release) |
 | App Check | fournisseur "debug" | Play Integrity (mode non appliqué) |
 | Réduction du code (R8) | non | oui, avec réduction des ressources |
-| Signature | automatique (clé de débogage locale) | **non signée** : aucune clé de signature n'existe encore (ne jamais en commiter) |
+| Signature | clé de débogage : celle du poste, ou celle du secret `DEBUG_KEYSTORE_B64` en CI (voir « Authentification ») | **non signée** : aucune clé de signature n'existe encore (ne jamais en commiter) |
 | Pseudo-langues `en-XA`, `ar-XB` | oui | non |
 
 ## Ecran de diagnostic (debug uniquement)
@@ -81,10 +81,29 @@ C'est la preuve que l'app parle au bon projet Firebase, avec des règles qui pro
 
 Les messages d'erreur restent neutres ("Pas de connexion pour le moment"), y compris hors-ligne (mode avion).
 
+## Authentification (ticket AUTH-1)
+
+Code : `domain/auth` (règles pures testées), `data/auth` (Firebase Auth, lectures Firestore, purge, Credential Manager), `data/session/SessionManager` (un seul responsable de « qui est connecté et où s'ouvre l'app »), `ui/auth` (écrans et view models), `ui/navigation/AppRoot`.
+
+- **Parcours** : inscription (e-mail + mot de passe ou Google) et connexion ; **deux cases avant tout geste d'inscription** : (a) CGU et politique, obligatoire ; (b) statistiques et plantages, facultative, décochée. Sans (a), aucun compte n'est créé. Une personne nouvelle qui arrive par « Continuer avec Google » depuis la connexion voit un **panneau de consentement** ; un refus (bouton, retour système) **supprime le compte tout juste créé**, purge le cache et n'envoie aucun événement.
+- **Routage** (`resolveDestination`) : lu dans l'état du compte, jamais déduit du fait qu'on vient de se connecter : pas de session -> inscription (ou connexion si l'app a déjà servi) ; session sans profil -> panneau si (a) n'est pas enregistrée sur l'appareil, sinon profil ; profil sans Miff -> choix créer/rejoindre ; sinon fil. Les écrans profil, choix de Miff et fil sont **provisoires** (écran d'attente avec un bouton « Se déconnecter », à remplacer par le ticket Onboarding).
+- **Profil** : `ProfileDocument.forCreation` fabrique la **seule écriture** de `users/{uid}` (dates serveur, `analyticsConsent` toujours renseigné) et `UserProfileRepository.create` l'envoie ; l'écran de profil (ticket Onboarding, qui ajoutera aussi le téléphone une fois les règles étendues) les appelle. L'authentification elle-même n'écrit rien dans Firestore.
+- **Consentement et collecte** : Analytics et Crashlytics sont coupés tant que `users/{uid}` n'est pas lu à la connexion ; ensuite ils suivent le choix du compte. À l'inscription, ils ne s'allument que si (b) est cochée, et `sign_up_completed` part après. `sign_in_completed` ne part qu'après lecture d'un choix « accepté ». Versions des textes : `ConsentVersions` (CGU `0.1`, case (b) `2026-10-v01`).
+- **Déconnexion** (`SessionManager.signOut`) : arrêt des écoutes (`SessionTeardown`, aucune pour l'instant), envoi des écritures en attente (5 s), `terminate()` + `clearPersistence()` avec drapeau « purge à faire » relu au démarrage, puis `signOut()`, collecte coupée, consentement en attente effacé.
+- **Mot de passe** : jamais stocké, jamais dans un état d'écran, jamais journalisé (le test `NoSensitiveLoggingTest` interdit tout journal dans le code de l'app). Seul l'e-mail survit à une rotation (`rememberSaveable`) ; le mot de passe est vidé par une rotation.
+- **Un seul message à la connexion** pour « adresse inconnue » et « mot de passe faux », avec un délai plancher de 0,8 s sur cette réponse ; après 5 échecs de suite, pause de 30 s côté app (confort, pas une protection : la vraie protection est celle de Firebase et d'App Check).
+- **Liens légaux** : `BuildConfig.LEGAL_BASE_URL` (par défaut `https://miff-3d283.web.app`, pages AUTH-W non déployées pour l'instant) + chemins par langue (`android_legal_*_path`). Modifiable par `-Pmiff.legalBaseUrl=...`. Contact provisoire : `BuildConfig.SUPPORT_EMAIL` (`-Pmiff.supportEmail=...`).
+- **Google** : Credential Manager (« Sign in with Google ») ; il faut un client OAuth **web** dans `google-services.json` (ressource `default_web_client_id`) et la SHA-1 de la clé de signature enregistrée dans Firebase. Sans client web, le bouton affiche le message d'erreur neutre.
+- **Debug seulement** : l'écran de diagnostic reste le premier écran d'un APK de debug ; le bouton « Ouvrir l'application » mène au vrai parcours.
+
+### Signature de debug stable en CI (secret `DEBUG_KEYSTORE_B64`)
+
+Le workflow décode le secret dans `~/.android/debug.keystore` du runner (alias `androiddebugkey`, mots de passe de debug standard), sans jamais l'afficher, et le supprime en fin de job. Il compare ensuite la SHA-1 de l'APK à celles de `google-services.json` et échoue si elle n'y est pas. Sans le secret (Dependabot, fork), la clé jetable par défaut reste utilisée. Création du keystore : voir « Signature de l'APK debug de la CI » plus bas. Le workflow échoue aussi, avec un message explicite, si `google-services.json` n'a pas de client OAuth web. Sur le poste, copier le même keystore dans `%USERPROFILE%\.android\debug.keystore` donne la même empreinte.
+
 ## Confidentialité : Analytics et Crashlytics
 
 - Le manifeste désactive la collecte au démarrage (`firebase_analytics_collection_enabled=false`, `firebase_crashlytics_collection_enabled=false`, identifiant publicitaire désactivé). La clé irréversible `…_collection_deactivated` n'est **pas** utilisée.
-- Le choix de l'utilisateur est stocké sur l'appareil (`PrivacySettings`) et réappliqué à chaque lancement. Pour l'instant le seul moyen d'allumer ces collectes est l'écran de diagnostic ; l'écran de consentement viendra avec l'onboarding.
+- Le choix est stocké sur l'appareil (`PrivacySettings`) et réappliqué à chaque lancement. Il se règle par la case (b) de l'inscription (ou le panneau de consentement), puis suit le choix enregistré dans le compte (voir « Authentification ») ; l'écran de diagnostic reste un second moyen, en debug.
 - Tout événement passe par `AnalyticsTracker` (point d'entrée typé : `AnalyticsEvent`), qui applique la **liste blanche** de `docs/contracts/analytics-events.md` (version 1, neuf événements, valeurs issues de listes fermées) implémentée dans `domain/analytics/AnalyticsContract.kt`. Sont refusés : événement inconnu, paramètre inconnu, mauvais type, valeur hors liste et **tout nom de paramètre qui évoque une position** (mots `lat`, `lng`, `address`, `place`, `location`, `gps`, `distance`... découpés sur `_`, ou fragments comme `latitude` même collés). Ajouter un événement = PR sur le contrat **et** sur les deux plateformes, validée par le PM.
 - Les permissions publicitaires ajoutées par le SDK Analytics (`AD_ID`, `ACCESS_ADSERVICES_*`, référent d'installation) sont retirées du manifeste.
 - **Ce que la liste blanche ne couvre pas** : une fois Analytics activé, le SDK Firebase envoie lui-même des événements automatiques (`first_open`, `session_start`, `user_engagement`...) avec des informations techniques sur l'appareil, et Google déduit une **zone géographique approximative à partir de l'adresse IP**. Ce n'est pas une position précise (l'app n'a aucune permission de localisation), mais ce n'est pas « aucune information de localisation » : à dire dans la politique de confidentialité. Le suivi automatique des écrans (`screen_view`) est coupé dans le manifeste (`google_analytics_automatic_screen_reporting_enabled=false`). **Action du PM** : régler la collecte des données géographiques dans la console GA4 (détail dans `docs/contracts/analytics-events.md`).
@@ -129,7 +148,7 @@ third_party/fonts licences et provenance des polices
 
 ## Limites connues
 
-- **Le cache Firestore local n'est pas purgé à la déconnexion.** Il peut contenir des états de position. Aucun écran de connexion n'existe encore ; la purge (et son test) est à traiter dans le ticket Inscription/Connexion, comme prévu au ticket INIT. L'écran de diagnostic se déconnecte seulement.
+- **Purge du cache Firestore** : faite à la déconnexion, au refus du panneau de consentement et à la perte de session (voir « Authentification »). Seules les déconnexions de l'écran de diagnostic (debug) ne purgent pas.
 - Accessibilité : les interrupteurs de l'écran de diagnostic sont des éléments uniques (rôle interrupteur, libellé lu par TalkBack, zone d'au moins 48 dp). A valider au lecteur d'écran sur l'OPPO.
 
 ## Intégration continue
@@ -140,7 +159,7 @@ Le workflow vérifie aussi que le bundle release ne contient aucune trace de `DI
 
 Avant tout lancement de Gradle, l'étape `gradle/actions/wrapper-validation` (épinglée par empreinte de commit) vérifie que `gradle/wrapper/gradle-wrapper.jar` est un fichier officiel de Gradle : un jar de wrapper trafiqué s'exécuterait avec accès à la configuration Firebase du job. La somme SHA-256 de la distribution Gradle (`distributionSha256Sum`) reste vérifiée en plus, en local comme en CI.
 
-### Signature de l'APK debug de la CI : situation et options (AND-002, rien d'implémenté)
+### Signature de l'APK debug de la CI : situation et options (AND-002, option A implémentée par AUTH-1)
 
 **Situation.** Le runner de la CI est jetable : à chaque exécution, Android Gradle Plugin y crée une clé de débogage neuve. Deux conséquences : (1) deux APK issus de deux exécutions (ou un APK de la CI puis un APK construit sur le poste) ne peuvent pas s'installer l'un par-dessus l'autre, il faut désinstaller d'abord ; (2) l'empreinte SHA-1 de l'APK change à chaque fois, alors que la connexion Google (ticket Inscription) exige une empreinte fixe déclarée dans Firebase.
 
@@ -206,6 +225,8 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | kotlinx-coroutines-play-services | 1.11.0 | Apache 2.0 |
 | Firebase Firestore | 27.1.0 | Apache 2.0 |
 | Firebase Authentication | 25.0.0 | Android SDK License (Google) |
+| AndroidX Credentials (+ play-services-auth) | 1.6.0 | Apache 2.0 |
+| Google ID (googleid) | 1.2.1 | Android SDK License (Google) |
 | Firebase Analytics | 24.0.0 | Android SDK License (Google) |
 | Firebase Crashlytics | 21.0.1 | Apache 2.0 |
 | Firebase App Check (Play Integrity ; debug en debug seulement) | 20.0.0 | Apache 2.0 |
