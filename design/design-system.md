@@ -15,7 +15,7 @@ Les noms de code ci-dessous sont ceux enregistrés dans Figma (`codeSyntax`) : l
 ### Marque et actions
 | Token | Valeur | Nom de code | Usage |
 |---|---|---|---|
-| `brand/primary` | `#d1d828` (jaune-vert) | `colorBrandPrimary` | Identité, anneau d'avatar "en sécurité", cœur du logo |
+| `brand/primary` | `#d1d828` (jaune-vert) | `colorBrandPrimary` | Identité, anneau d'avatar "en sécurité", cœur du logo et de l'icône d'application |
 | `action/primary` | `#043cd1` (bleu) | `colorActionPrimary` | Boutons principaux, liens, icônes actives, bordures d'accent |
 | `action/primary-tint-5/10/20/30` | `#043cd1` à 5 / 10 / 20 / 30 % | `colorActionPrimaryTint5/10/20/30` | Fonds de pastilles d'icônes (20 %), cartes de choix (30 %), bouton désactivé (30 %) |
 | `text/on-action` | `#ffffff` | `colorTextOnAction` | Texte sur fond bleu |
@@ -135,7 +135,8 @@ Champ à soulignement, champ encadré, carte de choix (créer/rejoindre une Miff
 ## 6. Écarts connus et limites
 - **Pas de mode sombre** : les maquettes n'en prévoient pas.
 - **Espacements non tokenisés** : seuls les arrondis le sont. Les marges sont à lire sur les maquettes ou à définir lors de l'extraction des composants.
-- **Icônes** : réutilisées en vecteurs depuis le Figma original (flèche retour, appareil photo, pin de localisation, groupe, logos). À exporter proprement pour les apps ; l'icône d'application (M blanc et cœur sur fond bleu) est dans la page "Design system" du fichier original.
+- **Icônes** : réutilisées en vecteurs depuis le Figma original (flèche retour, appareil photo, pin de localisation, groupe, logos). À exporter proprement pour les apps.
+- **Logo officiel et icône d'application** : fournis par le PM le 2026-10-24 (deux visuels, seuls fichiers existants), recréés en vectoriel dans `design/assets/logo/` (voir son `README.md`). Le **logo** est le mot-symbole « Miff » bleu `#043CD1` avec un cœur jaune-vert `#D1D828` à la place du point du « i ». L'**icône d'application** est un carré arrondi bleu `#043CD1` avec un grand « M » blanc gras dont la jambe droite est un « i » (le « M » et le « i » sont soudés), surmonté du cœur jaune-vert. L'ancienne icône provisoire (M géométrique avec cœur centré, présente dans `android/` et `ios/`) est à remplacer par ces visuels ; la recréation vectorielle reste à faire valider par le PM.
 - **Fonds décoratifs** (formes organiques du carrousel de bienvenue) : importés comme vecteurs, non éditables.
 - Certaines icônes de petites sections (Nouvelle Miff, Paywall) sont des emojis provisoires dans "Miff - Claude" : à remplacer par les vraies icônes avant la phase de développement des écrans concernés.
 - **Couleurs secondaires suggérées** (lavande, rose, turquoise, image de la page "Design system" du Figma original) : non utilisées dans les écrans, donc **non incluses**. À ajouter si le PM les valide.
