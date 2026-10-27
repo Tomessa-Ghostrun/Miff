@@ -142,6 +142,29 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
+    // Téléphone (ONB-B, décision Q1 du PM) : numéro au format E.164, obligatoire à la création du profil et de la fiche de
+    // membre. « + », un premier chiffre de 1 à 9, puis 6 à 14 chiffres : 7 à 15 chiffres, 8 à 16 caractères au total, aucun
+    // espace ni séparateur (la mise en forme est faite par le client). Forme seulement : aucune vérification que la personne
+    // possède le numéro (pas de SMS sur Spark) et aucune unicité. [+] plutôt que « \+ » : pas de caractère d'échappement.
+    // -------------------------------------------------------------------------
+    function isPhone(v) {
+      return v is string && v.matches('^[+][1-9][0-9]{6,14}$');
+    }
+
+    // La clé phone du document résultant existe et est valide (un numéro ne se vide ni ne se supprime).
+    function hasValidPhone(d) {
+      return 'phone' in d && isPhone(d.phone);
+    }
+
+    // Copie du numéro dans la fiche de membre : elle doit être celle du profil users/{uid} APRÈS le lot (getAfter), donc
+    // soit le profil existant, soit le profil créé ou modifié dans le même lot. C'est le même document que termsAcceptedAfter.
+    // get('phone', null) évite une erreur d'évaluation quand le profil (compte antérieur à ONB-B) n'a pas de numéro : la
+    // comparaison est alors simplement fausse.
+    function phoneMatchesProfile(uid, phone) {
+      return getAfter(/databases/$(database)/documents/users/$(uid)).data.get('phone', null) == phone;
+    }
+
+    // -------------------------------------------------------------------------
     // Consentement facultatif (b) « statistiques d'usage et rapports de plantage anonymes » (AUTH-B).
     // Bloc `analyticsConsent` de users/{uid} : mêmes quatre clés que members.sharing, TOUJOURS toutes
     // présentes (null si non applicable). Absence du bloc = pas de consentement. Jamais de position.
@@ -270,9 +293,12 @@ service cloud.firestore {
 
     function validMemberCreate(miffId, uid) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['role', 'firstName', 'lastName', 'avatar', 'joinedAt', 'joinCode', 'sharing'])
-        && d.keys().hasAll(['role', 'firstName', 'lastName', 'joinedAt', 'sharing'])
+      // Téléphone (ONB-B) : obligatoire, E.164, et identique à celui du profil users/{uid} (profil existant ou créé dans le lot).
+      return d.keys().hasOnly(['role', 'firstName', 'lastName', 'avatar', 'phone', 'joinedAt', 'joinCode', 'sharing'])
+        && d.keys().hasAll(['role', 'firstName', 'lastName', 'phone', 'joinedAt', 'sharing'])
         && validProfile(d)
+        && hasValidPhone(d)
+        && phoneMatchesProfile(uid, d.phone)
         && d.joinedAt == request.time
         && validSharingCreate(d.sharing)
         && termsAcceptedAfter(uid)
@@ -284,10 +310,13 @@ service cloud.firestore {
 
     // Un membre ne modifie que son profil (copie) et son consentement.
     // role, joinedAt, joinCode : immuables.
+    // Téléphone (ONB-B) : si la copie change, elle reste valide, ne se supprime pas et est celle du profil users/{uid} APRÈS le
+    // lot (mise à jour atomique profil + fiches par le client). Une fiche antérieure sans numéro reste modifiable sans lui.
     function validMemberUpdate(miffId, uid) {
       let d = request.resource.data;
-      return affected().hasOnly(['firstName', 'lastName', 'avatar', 'sharing'])
+      return affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'sharing'])
         && validProfile(d)
+        && (!affected().hasAny(['phone']) || (hasValidPhone(d) && phoneMatchesProfile(uid, d.phone)))
         && (
           !affected().hasAny(['sharing'])
           || validSharingChange(miffId, uid, resource.data.sharing, d.sharing)
@@ -461,9 +490,10 @@ service cloud.firestore {
       // absent = pas de consentement ; sinon voir validAnalyticsConsentCreate). Aucune date de naissance,
       // aucun âge, aucun e-mail : toute autre clé est refusée.
       allow create: if isSelf(uid)
-        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])
-        && request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
+        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])
+        && request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion'])
         && validProfile(request.resource.data)
+        && hasValidPhone(request.resource.data)
         && request.resource.data.createdAt == request.time
         && request.resource.data.termsAcceptedAt == request.time
         && isStr(request.resource.data.termsVersion, 1, 20)
@@ -474,8 +504,9 @@ service cloud.firestore {
       // (a) et createdAt sont figés à la création (décision PM : (a) non modifiable). Le consentement (b) ne
       // change que par une transition valide (activer, retirer, réactiver) ; supprimer le bloc est refusé.
       allow update: if isSelf(uid)
-        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])
+        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])
         && validProfile(request.resource.data)
+        && (!affected().hasAny(['phone']) || hasValidPhone(request.resource.data))
         && isStr(request.resource.data.termsVersion, 1, 20)
         && (!affected().hasAny(['analyticsConsent'])
             || validAnalyticsConsentChange(resource.data.get('analyticsConsent', null), request.resource.data.analyticsConsent));
