@@ -6,7 +6,7 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 
 ### Modifié
 - **Icône adaptative officielle** (M et i soudés blancs + cœur jaune-vert sur fond `#043CD1`) à la place de l'icône provisoire, avec calque monochrome (thème d'icônes Android 13+). Avant-plan dans la zone sûre de 66 dp. L'ancienne icône et le commentaire « provisoire, ne pas publier » sont supprimés.
-- **Ecran d'accueil** : le mot-symbole « Miff » (VectorDrawable) remplace le logo provisoire ET le titre texte « Miff » (qui aurait doublonné). Il est le titre de l'écran pour les lecteurs d'écran, avec la description « Logo de Miff » / « Miff logo » (clé `home_logo_a11y`, sans « provisoire »). La clé `home_title` est supprimée (plus utilisée). Aucun autre écran n'utilise le logo (pas d'écran d'authentification sur `main` à ce jour).
+- **Ecran d'accueil** : le mot-symbole « Miff » (VectorDrawable) remplace le logo provisoire ET le titre texte « Miff » (qui aurait doublonné). Il est le titre de l'écran pour les lecteurs d'écran, avec la description « Logo de Miff » / « Miff logo » (clé `home_logo_a11y`, sans « provisoire »). La clé `home_title` est conservée (non utilisée sur Android) pour la parité des clés avec iOS ; à retirer des deux plateformes ensemble. Aucun autre écran n'utilise le logo (pas d'écran d'authentification sur `main` à ce jour).
 - `HomeScreenScrollTest` adapté : il retrouve le logo par sa description au lieu du titre texte.
 
 ### Ajouté

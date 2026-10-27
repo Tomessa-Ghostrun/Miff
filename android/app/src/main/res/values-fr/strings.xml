@@ -3,9 +3,10 @@
     FRANÇAIS : langue source des textes produit. Mêmes clés que values/strings.xml (anglais = langue de repli)
     et que le String Catalog iOS. Ton bienveillant, jamais alarmiste.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Écran d'accueil -->
     <string name="home_tagline">Savoir que vos proches vont bien, sans les déranger.</string>
+    <string name="home_title" tools:ignore="UnusedResources">Miff</string>
     <string name="home_logo_a11y">Logo de Miff</string>
 
     <!-- Écran de diagnostic : en-tête et identité du build -->
