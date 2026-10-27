@@ -109,6 +109,18 @@ Arrondis rares vus dans les maquettes (3, 15, 20) : à traiter comme des écarts
 | **StatusCard** | — | Avatar + nom + badge + % batterie + horodatage + photo. Contient des instances d'Avatar et de Badge. |
 | **Tabbar** | — | Importée telle quelle comme image vectorielle (maison / bouton central / profil). Icônes non recolorables pour l'instant. |
 
+### Composants ajoutés pour le flux Miff (2026-10-27, page « Composants », section « Flux Miff — composants (MIFF-0) »)
+Créés dans Figma, **non encore contrôlés visuellement** (quota d'appels atteint juste après la création). Détail dans `design/screens/miff-*.md`.
+| Composant | Identifiant | Variantes / propriétés |
+|---|---|---|
+| `Header` | `51:5` | Propriétés `Title`, `Retour`. 320 × 56, flèche retour + titre centré |
+| `TextField` | `51:36` | `State=Default / Focus / Filled / Error / Disabled`. Contour 1 px `border/strong`, focus 2 px `border/action`, erreur 2 px `text/error` |
+| `CodeField` | `51:57` | `State=Empty / Partial / Valid / Error`. Code par groupes de 4, lien « Coller » |
+| `Notice` | `51:70` | `Tone=Info / Offline / Error`. Erreur : fond blanc et contour (jamais de texte rouge sur teinte rouge : contraste < AA) |
+| `Toast` | `51:71` | Propriété `Text` |
+
+À créer ensuite (spécifiés dans `miff-ecran-miff.md` et `miff-dialogues.md`) : `RolePill`, `MemberRow`, `ToggleRow`, `SectionHeader`, `Dialog`.
+
 ### Pas encore des composants (présents sur les écrans, à extraire avant la phase suivante)
 Champ à soulignement, champ encadré, carte de choix (créer/rejoindre une Miff), modale d'explication de permission, en-tête avec retour et validation, ligne de fonctionnalité du Paywall, pastille de pagination, bouton rond "suivant", boutons Apple/Google (remplacés par les officiels en développement).
 
