@@ -72,6 +72,9 @@ object CredentialsInput {
     // Deliberately loose (Firebase is the real validator): something@something.tld, no spaces.
     private val emailShape = Regex("""^[^\s@]+@[^\s@]+\.[^\s@]+$""")
 
+    /** Same loose shape check as [check], reusable on its own (the sign-up and sign-in forms). */
+    fun looksLikeEmail(email: String): Boolean = emailShape.matches(email.trim())
+
     fun check(
         email: String,
         password: String,

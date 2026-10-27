@@ -12,7 +12,7 @@
     <!-- Écran de diagnostic : en-tête et identité du build -->
     <string name="diag_title">Diagnostic interne</string>
     <string name="diag_subtitle">Écran interne, réservé aux versions de test. Rien de ceci n\'est visible du public.</string>
-    <string name="diag_open_home">Voir l\'écran d\'accueil</string>
+    <string name="diag_open_home">Ouvrir l\'application</string>
     <string name="diag_build_title">Version installée</string>
     <string name="diag_build_version">Version : %1$s (build %2$d)</string>
     <string name="diag_build_type">Configuration : %1$s</string>
@@ -106,4 +106,51 @@
         <item quantity="many">%d de membres</item>
         <item quantity="other">%d membres</item>
     </plurals>
+
+    <!-- Authentification : inscription, connexion, panneau de consentement (AUTH-1) -->
+    <string name="auth_signup_title">Crée ton compte</string>
+    <string name="auth_signin_title">Content de te revoir</string>
+    <string name="auth_email_label">Adresse e-mail</string>
+    <string name="auth_password_label">Mot de passe</string>
+    <string name="auth_password_show_a11y">Afficher le mot de passe</string>
+    <string name="auth_password_hide_a11y">Masquer le mot de passe</string>
+    <string name="auth_back_a11y">Retour</string>
+    <string name="auth_signup_action">Créer mon compte</string>
+    <string name="auth_signin_action">Se connecter</string>
+    <string name="auth_google_action">Continuer avec Google</string>
+    <string name="auth_or_divider">ou</string>
+    <string name="auth_signup_have_account">Déjà un compte ?</string>
+    <string name="auth_signup_have_account_action">Se connecter</string>
+    <string name="auth_signin_no_account">Pas encore de compte ?</string>
+    <string name="auth_signin_no_account_action">Créer mon compte</string>
+    <string name="auth_consent_terms">J\'accepte les %1$s et la %2$s</string>
+    <string name="auth_consent_terms_link">Conditions de service</string>
+    <string name="auth_consent_privacy_link">Politique de protection des données</string>
+    <string name="auth_consent_analytics">J\'accepte de partager des statistiques d\'usage et des rapports de plantage anonymes pour aider à améliorer Miff.</string>
+    <string name="auth_consent_analytics_hint">Facultatif, et modifiable à tout moment dans les réglages. Miff n\'envoie jamais ta position ; une zone approximative peut être déduite de ton adresse IP.</string>
+    <string name="auth_error_email_format">Cette adresse e-mail ne semble pas correcte.</string>
+    <string name="auth_error_password_short">8 caractères minimum.</string>
+    <string name="auth_error_terms_required">Pour continuer, accepte les Conditions de service et la Politique de protection des données.</string>
+    <string name="auth_error_invalid_credentials">Cette combinaison ne fonctionne pas. Vérifie ton adresse e-mail et ton mot de passe, ou choisis « Mot de passe oublié ? ».</string>
+    <string name="auth_error_too_many">Un peu trop d\'essais pour le moment. Patiente quelques minutes ou réinitialise ton mot de passe.</string>
+    <string name="auth_error_email_in_use">Un compte existe déjà avec cette adresse. Tu peux te connecter.</string>
+    <string name="auth_error_other_method">Un compte existe déjà avec cette adresse, avec un autre mode de connexion. Essaie l\'autre option.</string>
+    <string name="auth_error_network">Pas de connexion pour le moment. Réessaie dès que tu as du réseau.</string>
+    <string name="auth_error_unknown">Quelque chose n\'a pas fonctionné. Réessaie dans un instant.</string>
+    <string name="auth_error_account_unavailable">Ce compte n\'est pas disponible pour le moment. Si tu as besoin d\'aide, écris-nous à %1$s.</string>
+    <string name="auth_lookup_failed">Nous n\'arrivons pas à ouvrir ton compte pour le moment. Réessaie dans un instant.</string>
+    <string name="auth_panel_title">Bienvenue ! Une dernière chose avant de continuer.</string>
+    <string name="auth_panel_continue">Continuer</string>
+    <string name="auth_panel_cancel">Annuler</string>
+    <string name="auth_panel_refused_notice">Pas de souci, ton compte n\'a pas été créé. Tu pourras le créer quand tu veux.</string>
+    <string name="auth_loading_a11y">Chargement en cours</string>
+    <string name="auth_retry_action">Réessayer</string>
+    <string name="auth_signout_action">Se déconnecter</string>
+
+    <!-- Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL) et écrans provisoires -->
+    <string name="android_legal_terms_path">/fr/cgu</string>
+    <string name="android_legal_privacy_path">/fr/confidentialite</string>
+    <string name="android_next_profile">Prochaine étape : ton profil (prénom, nom, photo). Cet écran arrive bientôt.</string>
+    <string name="android_next_miff_choice">Prochaine étape : créer ou rejoindre une Miff. Cet écran arrive bientôt.</string>
+    <string name="android_next_feed">Tu es connecté. Le fil de ton cercle arrive bientôt.</string>
 </resources>

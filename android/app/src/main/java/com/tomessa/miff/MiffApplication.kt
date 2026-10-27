@@ -14,5 +14,7 @@ class MiffApplication : Application() {
         container = AppContainer(this)
         // Manifest defaults are "collect nothing"; this re-applies the user's stored choices (off by default).
         container.privacySettings.applyStoredChoices()
+        // Decides where the app opens (session, account state) and purges a Firestore cache left over by a failed sign-out.
+        container.sessionManager.start()
     }
 }

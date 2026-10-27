@@ -89,4 +89,28 @@ class PrivacySettingsTest {
         assertFalse(settings.analyticsEnabled.value)
         assertTrue(settings.crashReportsEnabled.value)
     }
+
+    /** Box (b) is ONE choice for both SDKs; withdrawing it cuts both at once, before anything is written (X20). */
+    @Test
+    fun theAccountChoiceSwitchesBothCollectionsTogether_andWithdrawalCutsBothAtOnce() {
+        val store = MemoryStore()
+        val analytics = RecordingSwitch()
+        val crash = RecordingSwitch()
+        val settings = PrivacySettings(store, analytics, crash)
+
+        settings.applyAccountConsent(true)
+        assertTrue(settings.analyticsEnabled.value)
+        assertTrue(settings.crashReportsEnabled.value)
+
+        settings.applyAccountConsent(false)
+        assertFalse(settings.analyticsEnabled.value)
+        assertFalse(settings.crashReportsEnabled.value)
+        assertEquals(listOf(true, false), analytics.calls)
+        assertEquals(listOf(true, false), crash.calls)
+
+        // The withdrawal is also what the next launch sees.
+        val restarted = PrivacySettings(store, RecordingSwitch(), RecordingSwitch())
+        assertFalse(restarted.analyticsEnabled.value)
+        assertFalse(restarted.crashReportsEnabled.value)
+    }
 }

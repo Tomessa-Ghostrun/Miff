@@ -64,16 +64,32 @@ class PrivacySettings(
         crashReports.setEnabled(enabled)
     }
 
+    /**
+     * The single switch of the consent box (b) "statistics and crash reports" (one box, two SDKs): applies the choice
+     * of the ACCOUNT (read from `users/{uid}.analyticsConsent`, or ticked at sign-up) to both collections at once.
+     * `false` cuts both immediately, which is also the state at sign-out and while the account has not been read.
+     */
+    fun applyAccountConsent(enabled: Boolean) {
+        setAnalyticsEnabled(enabled)
+        setCrashReportsEnabled(enabled)
+    }
+
     companion object {
         const val KEY_ANALYTICS = "analytics_enabled"
         const val KEY_CRASH = "crash_reports_enabled"
     }
 }
 
+/**
+ * [synchronous] writes to disk before returning (`commit`), for flags that must survive a process kill right after
+ * (for example "a cache purge is pending").
+ */
 class SharedPreferencesBooleanStore(
     context: Context,
+    name: String = "miff_privacy",
+    private val synchronous: Boolean = false,
 ) : BooleanStore {
-    private val prefs = context.applicationContext.getSharedPreferences("miff_privacy", Context.MODE_PRIVATE)
+    private val prefs = context.applicationContext.getSharedPreferences(name, Context.MODE_PRIVATE)
 
     override fun get(
         key: String,
@@ -84,7 +100,7 @@ class SharedPreferencesBooleanStore(
         key: String,
         value: Boolean,
     ) {
-        prefs.edit { putBoolean(key, value) }
+        prefs.edit(commit = synchronous) { putBoolean(key, value) }
     }
 }
 
