@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import {
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, del,
   T0, HOUR, suite, assertFails, assertSucceeds, serverTs, inMs, bytes, Timestamp, FieldValue, userDoc, profile,
-  CONSENT_V1, CONSENT_V2, consentOff, consentOnNow, consentOnSeed, consentRevokedSeed, consentRevokeNow, userWithConsent,
+  PHONE, CONSENT_V1, CONSENT_V2, consentOff, consentOnNow, consentOnSeed, consentRevokedSeed, consentRevokeNow, userWithConsent,
 } from '../helpers/fixtures.js';
 
 const s = suite({ extraProfiles: false });
@@ -377,8 +377,9 @@ s.tc('AB20', 'profil créé dans le même lot que la Miff ou l\'adhésion : acce
 });
 
 s.tc('AB21', 'profil existant mais sans acceptation (a) (document ancien ou injecté) : création de Miff et adhésion refusées', async ({ db, admin }) => {
-  await admin((f) => f.doc('users/eve').set({ firstName: 'Eve', lastName: 'Test', createdAt: T0 }));
-  await admin((f) => f.doc('users/frank').set({ firstName: 'Frank', lastName: 'Test', createdAt: T0, termsVersion: 'v1' }));
+  // Depuis ONB-B, ces profils injectés portent un numéro valide : sans lui, le refus viendrait du contrôle du téléphone et non de l'absence de (a).
+  await admin((f) => f.doc('users/eve').set({ firstName: 'Eve', lastName: 'Test', phone: PHONE, createdAt: T0 }));
+  await admin((f) => f.doc('users/frank').set({ firstName: 'Frank', lastName: 'Test', phone: PHONE, createdAt: T0, termsVersion: 'v1' }));
   await assertFails(commit(db('eve'), all(createMiffOps({ uid: 'eve' }))));
   await assertFails(commit(db('frank'), all(joinOps({ uid: 'frank' }))));
   await admin((f) => f.doc('users/eve').set(userWithConsent('eve', consentOff())));

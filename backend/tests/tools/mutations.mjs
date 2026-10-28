@@ -676,7 +676,7 @@ export const MUTATIONS = [
     id: 'AB18-miff-sans-profil-nulle-part',
     why: 'plus aucun contrôle du profil à la création de la fiche membre (ni création de Miff ni adhésion)',
     edits: [edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'")],
-    tests: ['AB18', 'AB19'],
+    tests: ['AB18', 'AB19', 'AB21'],
   },
   {
     id: 'AB18-creation-miff-sans-profil',
@@ -685,7 +685,7 @@ export const MUTATIONS = [
       edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
       edit("(d.role == 'member' && memberJoinOk(miffId, uid, d))", "(d.role == 'member' && memberJoinOk(miffId, uid, d) && termsAcceptedAfter(uid))"),
     ],
-    tests: ['AB18'],
+    tests: ['AB18', 'AB21'],
   },
   {
     id: 'AB19-adhesion-sans-profil',
@@ -694,7 +694,7 @@ export const MUTATIONS = [
       edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
       edit("(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))", "(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid) && termsAcceptedAfter(uid))"),
     ],
-    tests: ['AB19'],
+    tests: ['AB19', 'AB21'],
   },
   {
     id: 'AB21-profil-sans-acceptation',
