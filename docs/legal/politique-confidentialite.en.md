@@ -11,7 +11,7 @@ Miff is an app that lets you know your loved ones are okay, without bothering th
 3. **If you stop sharing, your status and your update photo are deleted** from what your circle can see.
 4. **Only the members of your Miffs** see what you share. To see other people's status, you must share yours.
 5. **Update photos disappear after 24 hours.**
-6. **Usage statistics and crash reports are optional** and stay off until you say yes.
+6. **Usage statistics and crash reports are turned on when you click "Join"** at sign-up (there is no checkbox), and you can turn them off at any time in Settings. Before that click, nothing is sent.
 7. **No advertising, no selling of data.**
 8. **You can delete your account from the app** and write to us to exercise your rights.
 
@@ -38,14 +38,22 @@ The GDPR requires us to state a "legal basis" for each use, meaning what allows 
 | **Automatic status** (if you turn sharing on): "in a trusted place / outside a place / risk zone / unknown", the place concerned, the time of the event, the time of the last update | Reassure your circle without a conversation | Explicit and revocable **consent** |
 | **Manual update** (optional): a short text (140 characters at most) and a photo | Share news when you feel like it | **Consent** (you are the one sending it) |
 | **Phone state** (if you turn sharing on): battery level, and whether location is allowed "in the background", "while using the app", or denied | Help your circle understand why a status may be late (e.g. low battery) | Contract / legitimate interest |
-| **Proof of consent**: date and version of the Terms and of the location consent text | Be able to demonstrate your agreement | Obligation to be able to demonstrate consent |
+| **Proof of consent**: date and version of the Terms accepted by clicking "Join", date and version of the location consent text. Your choice on statistics and crashes is kept on your phone. | Be able to demonstrate your agreement | Obligation to be able to demonstrate consent |
 | **Premium subscription**: state (active or not), end date, origin (App Store, Google Play, or access granted by the team). We receive neither your card number nor your payment details. | Enable Premium features | Contract |
-| **Usage statistics (Google Analytics for Firebase)** — **only if you accept**: a few simple events (e.g. sign-up completed, Miff created or joined, Premium screen shown) and technical device data. **Never a position, a place, a Miff name, a code, or free text.** | Understand whether the app is clear and fix what blocks people | **Consent** |
-| **Crash reports (Firebase Crashlytics)** — **only if you accept**: technical information about a crash (phone model, system version, app version, app state at the time of the crash) | Fix bugs | **Consent** |
+| **Usage statistics (Google Analytics for Firebase)** — **turned on when you click "Join", can be turned off at any time**: a few simple events (e.g. sign-up completed, Miff created or joined, Premium screen shown) and technical device data. **Never a position, a place, a Miff name, a code, or free text.** | Understand whether the app is clear and fix what blocks people | **Consent** given by clicking "Join", can be withdrawn at any time (see below) |
+| **Crash reports (Firebase Crashlytics)** — **turned on when you click "Join", can be turned off at any time**: technical information about a crash (phone model, system version, app version, app state at the time of the crash) | Fix bugs | **Consent** given by clicking "Join", can be withdrawn at any time (see below) |
 | **Technical security data**: checking that a request comes from the genuine Miff app (Firebase App Check, which relies on Play Integrity on Android and App Attest on iOS), IP address and technical logs processed by Google's services | Protect the service against abuse | Legitimate interest (security) |
 | **Messages you send us** (by e-mail) | Answer your request | Legitimate interest / legal obligation for rights requests |
 
-[CONDITIONAL SECTION — KEEP ONLY IF PUSH NOTIFICATIONS ARE ACTIVE AT LAUNCH: **Notifications**: a technical identifier of your phone (notification token) is recorded to send you notifications, through Apple's and Google's notification services. It is deleted when you sign out. You can turn notifications off in your phone's settings.]
+**How your agreement is collected at sign-up (Terms and statistics).**
+- At sign-up, the button is called **"Join"**. Just above it, a sentence says: "By clicking Join, you accept our Terms of Use and our Privacy Policy, as well as the sharing of your anonymous usage statistics and crash reports (can be changed at any time in Settings)."
+- **There is no checkbox.** Your click counts both as acceptance of the Terms of Use and the Privacy Policy, and as agreement to the sharing of usage statistics and crash reports. These choices are therefore **given together, in a single gesture, and sending statistics and reports is turned on from the start**.
+- **Before this click, nothing is sent** to Google Analytics or Crashlytics.
+- **What is collected by default after the click**: the simple events and technical data described in the table above, and crash reports. They never contain your position, a place, a Miff name, a secret code or free text. The app calls them "anonymous": they contain neither your name nor your e-mail address, but they can be linked to a technical installation identifier, and we cannot promise they are anonymous in the strict sense.
+- **How to withdraw**: in the app **Settings**, you can turn off usage statistics and crash reports at any time, separately. This changes nothing about your account or your use of Miff.
+- **Effect of withdrawal**: sending stops from that moment. What has already been sent is not erased immediately: it is kept until the end of Google's retention period (see article 7).
+- **Sharing your location is not covered by this click.** It requires a separate agreement, given Miff by Miff (see article 4).
+$1 — KEEP ONLY IF PUSH NOTIFICATIONS ARE ACTIVE AT LAUNCH: **Notifications**: a technical identifier of your phone (notification token) is recorded to send you notifications, through Apple's and Google's notification services. It is deleted when you sign out. You can turn notifications off in your phone's settings.]
 
 **What Miff does not collect**: your raw GPS position, a history of your movements, your contact list, your advertising identifier for advertising. Miff does not ask for your age or date of birth.
 
@@ -59,6 +67,7 @@ This is the most sensitive part, so here is everything.
 
 **Your consent.**
 - Before any system permission request, Miff explains in the app what location is used for.
+- **This agreement is separate from your click on "Join"**: accepting the terms and statistics never shares your location.
 - Sharing with a Miff only turns on if you decide so, and it is recorded with the date and the version of the text you saw. Nobody can turn it on for you.
 - It is independent from one Miff to another: you can share with one and not with another.
 - You can **withdraw your consent at any time**, in the app settings (stop sharing), or by removing the location permission in your phone settings. Withdrawing consent has no consequence on your account. As soon as you stop sharing with a Miff, your status and your update photo for that Miff are deleted.
@@ -89,8 +98,8 @@ Miff relies on services from **Google (Google Firebase)** and from **Apple / Goo
 | **Google Firebase — Cloud Firestore** | The app's database (profile, Miffs, places, statuses, photos) | **Paris region (europe-west9)** |
 | **Google Firebase — Authentication** | Account creation and sign-in | According to Google's documentation, this service runs **from data centres located in the United States** |
 | **Google Firebase — App Check** | Check that a request comes from the genuine app | Google data centres, location not specified per service |
-| **Google Analytics for Firebase** (optional) | Usage statistics | Google data centres, possibly including outside the EU |
-| **Firebase Crashlytics** (optional) | Crash reports | Google data centres, possibly including outside the EU |
+| **Google Analytics for Firebase** (turned on by clicking "Join", can be turned off) | Usage statistics | Google data centres, possibly including outside the EU |
+| **Firebase Crashlytics** (turned on by clicking "Join", can be turned off) | Crash reports | Google data centres, possibly including outside the EU |
 | **Google Sign-In** | Sign in with your Google account (if you choose it) | According to Google's policy |
 | **Sign in with Apple** | Sign in with your Apple ID (if you choose it). With Apple, you can choose to hide your e-mail address. | According to Apple's policy |
 | **App Store (Apple) / Google Play** | App download, payment and subscription management | According to Apple's and Google's policies |
@@ -114,8 +123,8 @@ Miff keeps no history: the status is a "current state", overwritten at each even
 | A Miff's secret code | Until it is renewed or the Miff is deleted. When the creator removes a member, the code is automatically renewed. |
 | Proof of consent | While you are a member of the relevant Miff (for location consent); with your account (for the Terms). We do not keep this proof after you leave the Miff. |
 | Premium subscription state | For the duration of the subscription, then deleted 30 days after your account is deleted. |
-| Usage statistics (if accepted) | Period set to the minimum offered by Google in its console [TO BE VERIFIED before publication]. |
-| Crash reports (if accepted) | Period defined by Google Crashlytics [TO BE VERIFIED before publication]. |
+| Usage statistics (while turned on) | Period set to the minimum offered by Google in its console [TO BE VERIFIED before publication]. |
+| Crash reports (while turned on) | Period defined by Google Crashlytics [TO BE VERIFIED before publication]. |
 | Messages sent to our contact address | The time needed to handle your request, then 1 year, after which they are deleted. |
 | Backups | We do not enable database backups. |
 | Data stored on your phone (offline working copy) | Erased when you sign out, delete your account, or lose access to a Miff. |
@@ -137,7 +146,7 @@ You have the right to:
 **How to do it:**
 - **Delete your account**: directly in the app, in the settings. This deletes your account and the associated data described above. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account..
 - **Stop sharing your location**: in the app settings, Miff by Miff.
-- **Statistics and crash reports**: switches in the app settings.
+- **Statistics and crash reports**: switches in the app Settings. Turning them off stops sending from that moment; what has already been sent is kept according to the periods in article 7.
 - **Access or export your data**: during the test phase (beta), write to us at **tomessa.mfouka@gmail.com**. We reply with your data in a readable format.
 - **Any other request**: write to us at **tomessa.mfouka@gmail.com**. We may ask you to confirm your identity, to prevent someone from impersonating you.
 
@@ -165,7 +174,7 @@ Each member gives their own consent to share their location, and can stop at any
 
 Miff does not use cookies. The app uses:
 - **your phone's local storage**: sign-in session, your preferences (including your choices on statistics and crashes), and a working copy of your Miffs' data to work offline. These items are necessary for the app to work;
-- **technical Firebase identifiers** (installation identifier) to make the services work. **For statistics and crash reports, they are only used after your consent.**
+- **technical Firebase identifiers** (installation identifier) to make the services work. **For statistics and crash reports, they are only used from your click on "Join", until you turn these options off in Settings.**
 
 Miff does not display advertising and does not "follow" you from one app to another. [TO BE VERIFIED by the development teams before publication: no advertising identifier is used on iOS or Android.]
 
