@@ -16,15 +16,14 @@ import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.textBodyBold16
 
 /**
- * Consent panel of a new person who signed in with Google from the sign-in screen (ticket 7.8, criteria C10 to C14).
- * Nothing else is reachable while it is open. System back, the back gesture and "Annuler" all mean REFUSAL.
- * The two boxes start unticked; "Continuer" waits for (a); no other data is asked here.
+ * Consent panel of a new person who signed in with Google from the sign-in screen (ticket 7.8). Nothing else is
+ * reachable while it is open. No box (decision of 2026-10-28): the line above the buttons says that "Continuer" accepts
+ * the terms, the privacy policy and the statistics. System back, the back gesture and "Annuler" all mean REFUSAL
+ * (the account just created is deleted).
  */
 @Composable
 fun ConsentPanelScreen(
     state: ConsentPanelUiState,
-    onTermsChecked: (Boolean) -> Unit,
-    onAnalyticsChecked: (Boolean) -> Unit,
     onContinue: () -> Unit,
     onRefuse: () -> Unit,
 ) {
@@ -33,31 +32,13 @@ fun ConsentPanelScreen(
 
     AuthScaffold(paneTitle = stringResource(R.string.auth_panel_title), onBack = null) {
         ScreenTitle(title = stringResource(R.string.auth_panel_title))
-        ConsentCheckbox(
-            checked = state.termsChecked,
-            onCheckedChange = onTermsChecked,
-            text =
-                stringResource(
-                    R.string.auth_consent_terms,
-                    stringResource(R.string.auth_consent_terms_link),
-                    stringResource(R.string.auth_consent_privacy_link),
-                ),
-            enabled = !state.isLoading,
-        )
-        LegalLinksRow()
-        ConsentCheckbox(
-            checked = state.analyticsChecked,
-            onCheckedChange = onAnalyticsChecked,
-            text = stringResource(R.string.auth_consent_analytics),
-            hint = stringResource(R.string.auth_consent_analytics_hint),
-            enabled = !state.isLoading,
-        )
-        Spacer(Modifier.size(Spacing.m))
         AuthMessageArea(state.message)
+        ConsentNotice(sentence = R.string.auth_panel_notice)
+        Spacer(Modifier.size(Spacing.m))
         MiffButton(
             text = stringResource(R.string.auth_panel_continue),
             onClick = onContinue,
-            enabled = state.termsChecked && !state.isLoading,
+            enabled = !state.isLoading,
             modifier = Modifier.fillMaxWidth(),
         )
         TextButton(onClick = onRefuse, enabled = !state.isLoading) {

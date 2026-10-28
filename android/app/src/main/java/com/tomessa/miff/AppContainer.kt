@@ -11,6 +11,7 @@ import com.tomessa.miff.data.auth.FirestoreUserProfileRepository
 import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSink
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSwitch
 import com.tomessa.miff.data.privacy.FirebaseCrashlyticsSwitch
@@ -51,6 +52,8 @@ class AppContainer(
 
     /** Session flags written to disk before returning: "returning user", "Firestore purge pending". */
     private val sessionFlags = SharedPreferencesBooleanStore(context, name = "miff_session", synchronous = true)
+
+    val onboardingFlags: OnboardingFlags = OnboardingFlags(sessionFlags)
 
     val accountRepository: AccountRepository = FirestoreAccountRepository()
 

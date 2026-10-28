@@ -5,7 +5,9 @@ import com.tomessa.miff.data.session.SessionState
 import com.tomessa.miff.domain.auth.AppDestination
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.AuthOutcome
+import com.tomessa.miff.domain.auth.ConsentVersions
 import com.tomessa.miff.domain.auth.GoogleTokenResult
+import com.tomessa.miff.domain.auth.PendingConsent
 import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.SessionHarness
 import kotlinx.coroutines.CoroutineScope
@@ -65,43 +67,48 @@ class AuthViewModelsTest {
 
     private fun SessionHarness.destination() = (manager.state.value as? SessionState.Ready)?.destination
 
-    // --- Sign-up screen -------------------------------------------------------------------------------------
+    // --- Sign-up screen (no box to tick: the tap on "Rejoindre" is the acceptance) ----------------------------
 
     @Test
-    fun signUp_boxesAreUntickedAtStart_S8() =
-        runTest(dispatcher) {
-            val vm = SignUpViewModel(harness().manager, FakeNetwork())
-            assertFalse(vm.uiState.value.termsChecked)
-            assertFalse(vm.uiState.value.analyticsChecked)
-        }
-
-    @Test
-    fun signUp_withoutBoxA_noAccountIsCreated_andTheBoxIsHighlighted_S11() =
+    fun signUp_nothingHappensBeforeTheTap_X9() =
         runTest(dispatcher) {
             val h = harness()
-            val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.submitEmail("a@b.fr", "password-1")
-            advanceUntilIdle()
+            SignUpViewModel(h.manager, FakeNetwork())
             assertEquals(0, h.gateway.createCalls)
-            assertTrue(vm.uiState.value.termsMissing)
-            assertEquals(1, vm.uiState.value.termsMissingTick)
-            assertNull("the box is the message, not a generic error", vm.uiState.value.message)
-
-            vm.onTermsChecked(true)
-            assertFalse("ticking the box clears the highlight", vm.uiState.value.termsMissing)
+            assertTrue("no event before the tap", h.sink.events.isEmpty())
+            assertFalse(h.privacy.analyticsEnabled.value)
         }
 
     @Test
-    fun signUp_googleWithoutBoxA_doesNotEvenOpenTheGoogleDialog_S11() =
+    fun signUp_theTapIsTheAcceptance_termsAndStatistics_andNothingMoreIsAsked() =
         runTest(dispatcher) {
             val h = harness()
-            val google = FakeGoogle(GoogleTokenResult.Token("t"))
             val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.submitGoogle(google)
+            vm.submitEmail("  a@b.fr ", "password-1")
             advanceUntilIdle()
-            assertEquals(0, google.calls)
-            assertEquals(0, h.gateway.googleCalls)
-            assertTrue(vm.uiState.value.termsMissing)
+            assertEquals(1, h.gateway.createCalls)
+            assertEquals(AppDestination.PROFILE, h.destination())
+            assertEquals(
+                "(a) and (b) both recorded: the profile will be written with analyticsConsent.enabled = true",
+                PendingConsent("uid-1", ConsentVersions.TERMS, analyticsAccepted = true),
+                h.pending.stored,
+            )
+            assertTrue("collection starts with the tap", h.privacy.analyticsEnabled.value)
+            assertEquals(listOf("sign_up_completed"), h.sink.names)
+        }
+
+    @Test
+    fun signUp_googleTapIsTheSameAcceptance() =
+        runTest(dispatcher) {
+            val h = harness()
+            h.accounts.setLoaded(profileExists = false)
+            val vm = SignUpViewModel(h.manager, FakeNetwork())
+            vm.submitGoogle(FakeGoogle(GoogleTokenResult.Token("t")))
+            advanceUntilIdle()
+            assertEquals(AppDestination.PROFILE, h.destination())
+            assertEquals(true, h.pending.stored?.analyticsAccepted)
+            assertEquals("off at the moment of the read", false to false, h.collectionWhenAccountRead)
+            assertEquals(listOf("sign_up_completed"), h.sink.names)
         }
 
     @Test
@@ -109,40 +116,13 @@ class AuthViewModelsTest {
         runTest(dispatcher) {
             val h = harness()
             val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.onTermsChecked(true)
             vm.submitEmail("not-an-address", "password-1")
             vm.submitEmail("a@b.fr", "1234567")
             advanceUntilIdle()
             assertEquals(0, h.gateway.createCalls)
             assertTrue(vm.uiState.value.showFieldErrors)
             assertFalse(vm.uiState.value.isLoading)
-        }
-
-    @Test
-    fun signUp_success_createsTheAccount_andKeepsBoxBForTheProfile() =
-        runTest(dispatcher) {
-            val h = harness()
-            val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.onTermsChecked(true)
-            vm.onAnalyticsChecked(true)
-            vm.submitEmail("  a@b.fr ", "password-1")
-            advanceUntilIdle()
-            assertEquals(1, h.gateway.createCalls)
-            assertEquals(AppDestination.PROFILE, h.destination())
-            assertEquals(true, h.pending.stored?.analyticsAccepted)
-            assertEquals(listOf("sign_up_completed"), h.sink.names)
-        }
-
-    @Test
-    fun signUp_boxBLeftUnticked_isHarmless_S12() =
-        runTest(dispatcher) {
-            val h = harness()
-            val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.onTermsChecked(true)
-            vm.submitEmail("a@b.fr", "password-1")
-            advanceUntilIdle()
-            assertEquals(AppDestination.PROFILE, h.destination())
-            assertTrue(h.sink.events.isEmpty())
+            assertTrue("no acceptance without an account", h.sink.events.isEmpty())
         }
 
     @Test
@@ -151,11 +131,12 @@ class AuthViewModelsTest {
             val h = harness()
             h.gateway.createResult = AuthOutcome.Failure(AuthFailure.EMAIL_ALREADY_IN_USE)
             val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.onTermsChecked(true)
             vm.submitEmail("a@b.fr", "password-1")
             advanceUntilIdle()
             assertEquals(AuthMessage.EMAIL_IN_USE, vm.uiState.value.message)
             assertFalse(vm.uiState.value.isLoading)
+            assertNull("a failed sign-up records nothing", h.pending.stored)
+            assertTrue(h.sink.events.isEmpty())
         }
 
     @Test
@@ -163,7 +144,6 @@ class AuthViewModelsTest {
         runTest(dispatcher) {
             val h = harness()
             val vm = SignUpViewModel(h.manager, FakeNetwork(online = false))
-            vm.onTermsChecked(true)
             vm.submitEmail("a@b.fr", "password-1")
             advanceUntilIdle()
             assertEquals(AuthMessage.NETWORK, vm.uiState.value.message)
@@ -171,17 +151,17 @@ class AuthViewModelsTest {
         }
 
     @Test
-    fun signUp_closingTheGoogleDialog_saysNothing_andChangesNothing_S7() =
+    fun signUp_closingTheGoogleDialog_saysNothing_andRecordsNothing_S7() =
         runTest(dispatcher) {
             val h = harness()
             val vm = SignUpViewModel(h.manager, FakeNetwork())
-            vm.onTermsChecked(true)
             vm.submitGoogle(FakeGoogle(GoogleTokenResult.Cancelled))
             advanceUntilIdle()
             assertNull(vm.uiState.value.message)
             assertFalse(vm.uiState.value.isLoading)
-            assertTrue("the boxes stay as they were", vm.uiState.value.termsChecked)
             assertEquals(0, h.gateway.googleCalls)
+            assertNull(h.pending.stored)
+            assertTrue(h.sink.events.isEmpty())
         }
 
     // --- Sign-in screen -----------------------------------------------------------------------------------------
@@ -335,44 +315,38 @@ class AuthViewModelsTest {
             assertEquals(AuthMessage.ACCOUNT_UNAVAILABLE, vm.uiState.value.message)
         }
 
-    // --- Consent panel ---------------------------------------------------------------------------------------------
+    // --- Consent panel (no box: "Continuer" accepts, "Annuler" refuses) --------------------------------------------
 
     @Test
-    fun panel_boxesStartUnticked_andContinueNeedsBoxA_C10() =
+    fun panel_continueIsTheAcceptance_C11() =
         runTest(dispatcher) {
             val h = harness()
             h.accounts.setLoaded(profileExists = false)
             h.manager.signInWithGoogle("t", signUpConsent = null)
+            assertEquals("nothing collected nor sent while the panel is open", true, h.sink.events.isEmpty())
             val vm = ConsentPanelViewModel(h.manager)
-            assertFalse(vm.uiState.value.termsChecked)
-            assertFalse(vm.uiState.value.analyticsChecked)
 
             vm.accept()
-            assertEquals("nothing happens without (a)", AppDestination.CONSENT_PANEL, h.destination())
 
-            vm.onTermsChecked(true)
-            vm.accept()
             assertEquals(AppDestination.PROFILE, h.destination())
+            assertEquals(PendingConsent("uid-1", ConsentVersions.TERMS, analyticsAccepted = true), h.pending.stored)
+            assertEquals(listOf("sign_up_completed"), h.sink.names)
         }
 
     @Test
-    fun panel_refusal_forgetsTheBoxes_C12() =
+    fun panel_refusal_keepsNothing_andSendsNothing_C12_C13() =
         runTest(dispatcher) {
             val h = harness()
             h.accounts.setLoaded(profileExists = false)
             h.manager.signInWithGoogle("t", signUpConsent = null)
             val vm = ConsentPanelViewModel(h.manager)
-            vm.onTermsChecked(true)
-            vm.onAnalyticsChecked(true)
 
             vm.refuse(FakeGoogle(GoogleTokenResult.Unavailable))
             advanceUntilIdle()
-            vm.reset() // done by the root screen once the panel is left
 
             assertEquals(AppDestination.SIGN_IN, h.destination())
-            assertFalse(vm.uiState.value.termsChecked)
-            assertFalse(vm.uiState.value.analyticsChecked)
-            assertTrue("not a single event, although (b) was ticked on the panel", h.sink.events.isEmpty())
+            assertNull(h.pending.stored)
+            assertTrue("not a single event", h.sink.events.isEmpty())
             assertFalse(h.analyticsSwitch.calls.any { it })
         }
 

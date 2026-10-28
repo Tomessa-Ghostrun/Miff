@@ -7,8 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,6 +35,8 @@ import com.tomessa.miff.ui.auth.SignInScreen
 import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
+import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.startup.StartupSlot
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -41,12 +46,21 @@ data object SignUpRoute
 @Serializable
 data object SignInRoute
 
+@Serializable
+data object WelcomeRoute
+
 /**
  * Root of the real app: shows what the SESSION says (ticket section 5): loading, sign-up / sign-in, consent panel, or
  * the next step of the account. The decision lives in [com.tomessa.miff.data.session.SessionManager], not here.
  */
 @Composable
 fun AppRoot(container: AppContainer) {
+    // The splash comes first (extension point), then the session decides. Once per launch, kept across a rotation.
+    var startupDone by rememberSaveable { mutableStateOf(false) }
+    if (!startupDone) {
+        StartupSlot(onFinished = { startupDone = true })
+        return
+    }
     val session = container.sessionManager
     val state by session.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -85,8 +99,6 @@ fun AppRoot(container: AppContainer) {
                     val panelState by panelViewModel.uiState.collectAsStateWithLifecycle()
                     ConsentPanelScreen(
                         state = panelState,
-                        onTermsChecked = panelViewModel::onTermsChecked,
-                        onAnalyticsChecked = panelViewModel::onAnalyticsChecked,
                         onContinue = panelViewModel::accept,
                         onRefuse = { panelViewModel.refuse(googleSource) },
                     )
@@ -114,10 +126,30 @@ private fun SignedOutHost(
     val currentEntry by navController.currentBackStackEntryAsState()
     val canGoBack = currentEntry != null && navController.previousBackStackEntry != null
 
+    // The carousel only on the very first opening (no session, app never used, carousel never validated).
+    val showCarousel = remember { start == AppDestination.SIGN_UP && !container.onboardingFlags.carouselSeen }
+    val startDestination: Any =
+        when {
+            showCarousel -> WelcomeRoute
+            start == AppDestination.SIGN_IN -> SignInRoute
+            else -> SignUpRoute
+        }
     NavHost(
         navController = navController,
-        startDestination = if (start == AppDestination.SIGN_IN) SignInRoute else SignUpRoute,
+        startDestination = startDestination,
     ) {
+        composable<WelcomeRoute> {
+            WelcomeCarouselScreen(
+                onStart = {
+                    container.onboardingFlags.markCarouselSeen()
+                    navController.navigate(SignUpRoute)
+                },
+                onHaveAccount = {
+                    container.onboardingFlags.markCarouselSeen()
+                    navController.navigate(SignInRoute)
+                },
+            )
+        }
         composable<SignUpRoute> {
             val viewModel: SignUpViewModel =
                 viewModel(
@@ -130,8 +162,6 @@ private fun SignedOutHost(
             SignUpScreen(
                 state = uiState,
                 onBack = if (canGoBack) ({ navController.popBackStack() }) else null,
-                onTermsChecked = viewModel::onTermsChecked,
-                onAnalyticsChecked = viewModel::onAnalyticsChecked,
                 onSubmitEmail = viewModel::submitEmail,
                 onGoogle = { viewModel.submitGoogle(googleSource) },
                 onGoToSignIn = {

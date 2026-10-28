@@ -23,7 +23,7 @@ export const IOS_ONLY_PREFIX = 'ios_';
 export const ANDROID_ONLY_PREFIX = 'android_';
 // Préfixes de fonctionnalité connus (voir docs/contracts/i18n-keys.md) : un préfixe inconnu est signalé
 // en avertissement, sans faire échouer le contrôle (la liste s'étend par une PR sur le contrat).
-export const KNOWN_PREFIXES = ['auth', 'miff', 'place', 'common', 'home', 'diag', 'ios', 'android'];
+export const KNOWN_PREFIXES = ['auth', 'onboarding', 'miff', 'place', 'common', 'home', 'diag', 'ios', 'android'];
 export const KEY_FORMAT = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/;
 
 const SKIPPED_DIRS = new Set(['node_modules', 'Pods', 'build', 'DerivedData', '.build', '.git', '.gradle']);

@@ -27,19 +27,18 @@ import kotlinx.coroutines.launch
  */
 
 data class SignUpUiState(
-    val termsChecked: Boolean = false,
-    val analyticsChecked: Boolean = false,
     val isLoading: Boolean = false,
-    /** Show the format errors of the fields (after a first tap on a button). */
+    /** Show the format errors of the fields (after a first tap on the main button). */
     val showFieldErrors: Boolean = false,
-    /** Box (a) was missing at a tap: the box is highlighted and its message shown. */
-    val termsMissing: Boolean = false,
-    /** Changes at each tap without (a), so that the screen can move the focus to the box every time. */
-    val termsMissingTick: Int = 0,
     val message: AuthMessage? = null,
 )
 
-/** Sign-up screen (ticket section 3 A). Both boxes are decided here BEFORE any sign-up gesture. */
+/**
+ * Sign-up screen (ticket section 3 A). There is NO box to tick (PM decision of 2026-10-28, legal and store risk
+ * assumed by the PM): the line above the main button says that tapping "Rejoindre" (or "Continuer avec Google")
+ * accepts the terms, the privacy policy and the sharing of anonymous statistics. The tap itself is the acceptance,
+ * hence [ConsentChoice.IMPLICIT]; nothing is sent or collected before that tap.
+ */
 class SignUpViewModel(
     private val session: SessionManager,
     private val network: NetworkMonitor,
@@ -47,18 +46,7 @@ class SignUpViewModel(
     private val mutableState = MutableStateFlow(SignUpUiState())
     val uiState: StateFlow<SignUpUiState> = mutableState.asStateFlow()
 
-    fun onTermsChecked(checked: Boolean) =
-        mutableState.update {
-            it.copy(
-                termsChecked = checked,
-                termsMissing =
-                    it.termsMissing && !checked,
-            )
-        }
-
-    fun onAnalyticsChecked(checked: Boolean) = mutableState.update { it.copy(analyticsChecked = checked) }
-
-    /** "Créer mon compte". [password] is used once and not kept. */
+    /** "Rejoindre". [password] is used once and not kept. */
     fun submitEmail(
         email: String,
         password: String,
@@ -67,16 +55,9 @@ class SignUpViewModel(
         if (state.isLoading) return
         val cleanEmail = AuthForm.normalizeEmail(email)
         val formOk = AuthForm.isEmailFormatValid(cleanEmail) && AuthForm.isPasswordLongEnough(password)
-        if (!state.termsChecked || !formOk) {
-            // No account, no request. The person is told what is missing, kindly (criteria S2, S3, S11).
-            mutableState.update {
-                it.copy(
-                    showFieldErrors = true,
-                    termsMissing = !it.termsChecked,
-                    termsMissingTick = if (it.termsChecked) it.termsMissingTick else it.termsMissingTick + 1,
-                    message = null,
-                )
-            }
+        if (!formOk) {
+            // No account, no request. The person is told what is missing, kindly (criteria S2, S3).
+            mutableState.update { it.copy(showFieldErrors = true, message = null) }
             return
         }
         if (!network.isOnline()) {
@@ -84,34 +65,34 @@ class SignUpViewModel(
             return
         }
         mutableState.update { it.copy(isLoading = true, message = null) }
-        val consent = ConsentChoice(termsAccepted = true, analyticsAccepted = state.analyticsChecked)
         viewModelScope.launch {
-            val failure = session.createAccountWithEmail(cleanEmail, password, consent)
+            val failure = session.createAccountWithEmail(cleanEmail, password, ConsentChoice.IMPLICIT)
             mutableState.update { it.copy(isLoading = false, message = failure?.toMessage()) }
         }
     }
 
-    /** "Continuer avec Google" on the sign-up screen: (a) must be ticked first, like for the e-mail button. */
+    /** "Continuer avec Google" on the sign-up screen: a sign-up gesture, so the same implicit acceptance. */
     fun submitGoogle(source: GoogleIdTokenSource) {
-        val state = mutableState.value
-        if (state.isLoading) return
-        if (!state.termsChecked) {
-            mutableState.update {
-                it.copy(termsMissing = true, termsMissingTick = it.termsMissingTick + 1, message = null)
-            }
-            return
-        }
+        if (mutableState.value.isLoading) return
         if (!network.isOnline()) {
             mutableState.update { it.copy(message = AuthMessage.NETWORK) }
             return
         }
         mutableState.update { it.copy(isLoading = true, message = null) }
-        val consent = ConsentChoice(termsAccepted = true, analyticsAccepted = state.analyticsChecked)
         viewModelScope.launch {
             val message =
                 when (val result = source.requestIdToken()) {
-                    is GoogleTokenResult.Token -> session.signInWithGoogle(result.idToken, consent)?.toMessage()
-                    else -> result.toMessage() // closing the dialog: null, no message, the fields stay as they are
+                    is GoogleTokenResult.Token -> {
+                        session
+                            .signInWithGoogle(
+                                result.idToken,
+                                ConsentChoice.IMPLICIT,
+                            )?.toMessage()
+                    }
+
+                    else -> {
+                        result.toMessage()
+                    } // closing the dialog: null, no message, the fields stay as they are
                 }
             mutableState.update { it.copy(isLoading = false, message = message) }
         }
@@ -221,33 +202,30 @@ class SignInViewModel(
 }
 
 data class ConsentPanelUiState(
-    val termsChecked: Boolean = false,
-    val analyticsChecked: Boolean = false,
     val isLoading: Boolean = false,
     val message: AuthMessage? = null,
 )
 
-/** Consent panel of a new person who arrived through "Continuer avec Google" on the sign-in screen (ticket 7.8). */
+/**
+ * Panel of a new person who arrived through "Continuer avec Google" on the sign-in screen (ticket 7.8). No box:
+ * the line above the buttons says that "Continuer" accepts the terms, the policy and the statistics (decision of
+ * 2026-10-28). "Continuer" is the acceptance; "Annuler", system back and closing are the refusal.
+ */
 class ConsentPanelViewModel(
     private val session: SessionManager,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(ConsentPanelUiState())
     val uiState: StateFlow<ConsentPanelUiState> = mutableState.asStateFlow()
 
-    fun onTermsChecked(checked: Boolean) = mutableState.update { it.copy(termsChecked = checked) }
-
-    fun onAnalyticsChecked(checked: Boolean) = mutableState.update { it.copy(analyticsChecked = checked) }
-
-    /** Forgets the boxes (called when the panel is left): nothing ticked on a refused panel is kept. */
+    /** Forgets any message (called when the panel is left). */
     fun reset() {
         mutableState.value = ConsentPanelUiState()
     }
 
-    /** "Continuer": only possible with (a) ticked. */
+    /** "Continuer": the tap is the acceptance of (a) and (b). */
     fun accept() {
-        val state = mutableState.value
-        if (state.isLoading || !state.termsChecked) return
-        session.acceptConsentPanel(ConsentChoice(termsAccepted = true, analyticsAccepted = state.analyticsChecked))
+        if (mutableState.value.isLoading) return
+        session.acceptConsentPanel(ConsentChoice.IMPLICIT)
     }
 
     /**

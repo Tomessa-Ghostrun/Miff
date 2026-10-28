@@ -14,11 +14,19 @@ object ConsentVersions {
     const val ANALYTICS = "2026-10-v01"
 }
 
-/** The two boxes of the sign-up screen (or of the consent panel). */
+/** What the person accepted by tapping the main button of the sign-up screen (or of the consent panel). */
 data class ConsentChoice(
     val termsAccepted: Boolean,
     val analyticsAccepted: Boolean,
-)
+) {
+    companion object {
+        /**
+         * Since the PM decision of 2026-10-28 there is no box: tapping "Rejoindre" / "Continuer" accepts the terms (a)
+         * AND the sharing of anonymous statistics (b). The legal and store risk is assumed by the PM.
+         */
+        val IMPLICIT = ConsentChoice(termsAccepted = true, analyticsAccepted = true)
+    }
+}
 
 /**
  * What the device remembers between the sign-up (or the consent panel) and the creation of the profile:
