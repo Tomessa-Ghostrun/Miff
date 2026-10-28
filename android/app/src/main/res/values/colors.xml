@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme-level resources only (window background before Compose draws, adaptive icon). In-app colors live in ui/theme/Color.kt. -->
+    <!-- Theme-level resources only (window background before Compose draws, adaptive icon). In-app colors live in ui/theme/Color.kt. ic_launcher_background must equal colorActionPrimary (LogoColorsTest enforces it). -->
     <color name="window_background">#F9F9F7</color>
     <color name="ic_launcher_background">#043CD1</color>
 </resources>
