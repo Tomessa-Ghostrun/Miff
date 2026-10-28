@@ -61,7 +61,11 @@ export const sharingOff = () => ({ enabled: false, consentedAt: null, consentVer
 export const sharingOnSeed = () => ({ enabled: true, consentedAt: T0, consentVersion: 'v1', revokedAt: null });
 export const sharingOnNow = () => ({ enabled: true, consentedAt: serverTs(), consentVersion: 'v1', revokedAt: null });
 
-export const profile = (first) => ({ firstName: first, lastName: 'Test' });
+// ONB-B : le profil porte le téléphone obligatoire (E.164). Tous les comptes de test partagent PHONE par défaut (aucune unicité
+// côté règles) ; PHONE_B sert aux cas « numéro différent » / « numéro modifié ».
+export const PHONE = '+33612345678';
+export const PHONE_B = '+242061234567';
+export const profile = (first) => ({ firstName: first, lastName: 'Test', phone: PHONE });
 
 export const statusDoc = (over = {}) => ({
   presence: 'in_trusted',
@@ -119,6 +123,7 @@ export const userDoc = (over = {}) => ({
   createdAt: serverTs(),
   termsAcceptedAt: serverTs(),
   termsVersion: 'v1',
+  phone: PHONE,
   ...over,
 });
 
@@ -136,8 +141,8 @@ export const consentRevokedSeed = (over = {}) => ({ enabled: false, consentedAt:
 /** Retrait tel qu'un client l'envoie, à partir d'un consentement donné : heure de retrait fournie par le serveur. */
 export const consentRevokeNow = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: serverTs(), ...over });
 /** Profil d'un utilisateur existant avec son consentement (état injecté). */
-export const userWithConsent = (uid, analyticsConsent) =>
-  userDoc({ ...profile(uid), createdAt: T0, termsAcceptedAt: T0, analyticsConsent });
+export const userWithConsent = (uid, analyticsConsent, phone = PHONE) =>
+  userDoc({ ...profile(uid), phone, createdAt: T0, termsAcceptedAt: T0, analyticsConsent });
 
 // ---------------------------------------------------------------------------
 // Opérations de batch : { type: 'set' | 'update' | 'delete', path, data }
@@ -190,6 +195,40 @@ export function joinOps({ uid, miffId = ID.M1, code = CODE.M1, key = 'free', sha
       sharing,
     }),
     index: set(`users/${uid}/memberships/${key}`, { miffId, joinedAt: serverTs() }),
+  };
+}
+
+/**
+ * Statut initial écrit à l'entrée dans une Miff (MIFF-0) : presence = unknown, aucune coordonnée, toutes les clés présentes.
+ * Les horodatages sont ceux du serveur (le client écrit « maintenant »).
+ */
+export const statusInitial = (over = {}) => ({
+  presence: 'unknown',
+  placeId: null,
+  presenceAt: serverTs(),
+  lastUpdateAt: serverTs(),
+  updateText: null,
+  hasPhoto: false,
+  batteryPct: null,
+  locationAccess: 'unknown',
+  escalationDueAt: null,
+  updatedAt: serverTs(),
+  ...over,
+});
+
+/** « Rejoindre et partager » : fiche (partage activé), index et statut initial, 3 écritures dans UN lot. */
+export function joinShareOps({ uid, miffId = ID.M1, code = CODE.M1, key = 'free', status = statusInitial() } = {}) {
+  return {
+    ...joinOps({ uid, miffId, code, key, sharing: sharingOnNow() }),
+    status: set(`miffs/${miffId}/status/${uid}`, status),
+  };
+}
+
+/** « Créer et partager » : Miff, code, fiche du créateur (partage activé), index et statut initial, 5 écritures dans UN lot. */
+export function createShareOps({ uid, miffId = ID.NEW, code = CODE.NEW, name = 'Cercle', key = 'free', status = statusInitial() } = {}) {
+  return {
+    ...createMiffOps({ uid, miffId, code, name, key, sharing: sharingOnNow() }),
+    status: set(`miffs/${miffId}/status/${uid}`, status),
   };
 }
 

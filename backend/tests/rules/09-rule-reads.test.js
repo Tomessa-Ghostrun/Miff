@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
-  serverTs, sharingOnNow, T0,
+  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -227,6 +227,79 @@ const scenarios = [
     hosts: [H.usersUpdate],
     prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/carol').set(userWithConsent('carol', consentOnSeed()))),
     run: (env) => db(env, 'carol').doc('users/carol').update({ analyticsConsent: consentRevokeNow() }),
+  },
+  {
+    // MIFF-0 : lot d'entrée « Rejoindre et partager » (fiche avec partage activé + index + statut initial).
+    id: 'READS-join-share',
+    title: 'rejoindre et partager : fiche + index + statut initial (batch de 3, MIFF-0)',
+    name: 'Rejoindre et partager (batch de 3)',
+    lot: true,
+    hosts: [H.membersCreate, H.membershipsCreate, H.statusCreate],
+    run: (env) => commit(db(env, 'eve'), all(joinShareOps({ uid: 'eve' }))),
+  },
+  {
+    id: 'READS-create-share',
+    title: 'créer et partager : Miff + code + fiche + index + statut initial (batch de 5, MIFF-0)',
+    name: 'Créer et partager, gratuit (batch de 5)',
+    lot: true,
+    hosts: [H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate, H.statusCreate],
+    run: (env) => commit(db(env, 'eve'), all(createShareOps({ uid: 'eve' }))),
+  },
+  {
+    id: 'READS-create-share-premium',
+    title: 'créer et partager en premium (batch de 5, MIFF-0)',
+    name: 'Créer et partager, premium (batch de 5)',
+    lot: true,
+    hosts: [H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate, H.statusCreate],
+    prepare: seedDaveMiff,
+    run: (env) => commit(db(env, 'dave'), all(createShareOps({ uid: 'dave', key: ID.NEW }))),
+  },
+  {
+    id: 'READS-create-share-profile',
+    title: 'profil + créer et partager dans le même lot (batch de 6, MIFF-0 + AUTH-B + ONB-B)',
+    name: 'Profil + créer et partager (batch de 6)',
+    lot: true,
+    hosts: [H.usersCreate, H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate, H.statusCreate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/eve').delete()),
+    run: (env) => commit(db(env, 'eve'), [set('users/eve', userDoc()), ...all(createShareOps({ uid: 'eve' }))]),
+  },
+  {
+    id: 'READS-join-share-profile',
+    title: 'profil + rejoindre et partager dans le même lot (batch de 4, MIFF-0 + AUTH-B + ONB-B)',
+    name: 'Profil + rejoindre et partager (batch de 4)',
+    lot: true,
+    hosts: [H.usersCreate, H.membersCreate, H.membershipsCreate, H.statusCreate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/eve').delete()),
+    run: (env) => commit(db(env, 'eve'), [set('users/eve', userDoc()), ...all(joinShareOps({ uid: 'eve' }))]),
+  },
+  {
+    // ONB-B : modification du numéro = profil + fiche de chaque Miff dans un même lot (ici une Miff).
+    id: 'READS-phone-update',
+    title: 'modifier son numéro : profil + fiche de la Miff (batch de 2, ONB-B)',
+    name: 'Modifier le numéro : profil + fiche (batch de 2)',
+    lot: true,
+    hosts: [H.usersUpdate, H.membersUpdate],
+    run: (env) =>
+      commit(db(env, 'bob'), [update('users/bob', { phone: PHONE_B }), update(`${M1}/members/bob`, { phone: PHONE_B })]),
+  },
+  {
+    // Le profil a déjà été mis à jour dans un lot précédent (cas d'un compte premium dans plus de 15 Miffs, ou nouvelle tentative) :
+    // la fiche est alors comparée au profil déjà enregistré (une lecture de règles de plus que dans le lot commun).
+    id: 'READS-phone-member-only',
+    title: 'modifier le numéro de la fiche seule, le profil étant déjà à jour (écriture simple, ONB-B)',
+    name: 'Modifier le numéro de la fiche seule (écriture simple)',
+    limit: 10,
+    hosts: [H.membersUpdate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc('users/bob').update({ phone: PHONE_B })),
+    run: (env) => db(env, 'bob').doc(`${M1}/members/bob`).update({ phone: PHONE_B }),
+  },
+  {
+    id: 'READS-phone-user-only',
+    title: 'modifier son numéro dans le profil seul (écriture simple, ONB-B)',
+    name: 'Modifier le numéro du profil seul (écriture simple)',
+    limit: 10,
+    hosts: [H.usersUpdate],
+    run: (env) => db(env, 'bob').doc('users/bob').update({ phone: PHONE_B }),
   },
   {
     id: 'READS-code-lookup',
