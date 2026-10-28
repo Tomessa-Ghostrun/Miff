@@ -31,7 +31,13 @@ Miff est une app pour **savoir que tes proches vont bien, sans les déranger**.
 
 ## 3. Accepter ces conditions
 
-En créant un compte ou en utilisant Miff, tu acceptes ces conditions. Si tu n'es pas d'accord, n'utilise pas l'app. Nous enregistrons la date et la version des conditions que tu as acceptées.
+À l'inscription, tu touches le bouton **« Rejoindre »**. Juste au-dessus, une phrase te dit : « En cliquant sur Rejoindre, tu acceptes nos Conditions d'utilisation et notre Politique de confidentialité, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). »
+
+Concrètement :
+- **Il n'y a pas de case à cocher** : ton clic sur « Rejoindre » vaut acceptation de ces conditions et de la Politique de confidentialité. Si tu n'es pas d'accord, ne clique pas et n'utilise pas l'app.
+- **Le même clic active le partage de statistiques d'usage et de rapports de plantage** (voir la Politique de confidentialité). C'est activé d'emblée, mais **tu peux le désactiver à tout moment dans les Réglages**, sans conséquence sur ton compte ni sur ton usage de Miff.
+- **Le partage de ta localisation n'est pas concerné** : il demande un accord distinct, donné Miff par Miff (article 6).
+- Nous enregistrons la date et la version des conditions que tu as acceptées.
 
 Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de ton représentant légal. Miff n'impose pas d'âge minimum et ne vérifie pas l'âge. Si tu es mineur, utilise l'app avec l'accord de tes parents. En France, la loi demande l'accord d'un parent avant 15 ans pour certains services en ligne : si tu as moins de 15 ans, demande-lui son accord avant d'utiliser Miff. Nous ne pouvons pas vérifier cet accord.
 
@@ -53,7 +59,7 @@ Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de to
 
 Le cœur de Miff est le partage de ton statut lié aux lieux de confiance. Voici nos engagements et les tiens.
 
-- **Ce n'est jamais automatique à ton insu.** Le partage avec une Miff ne démarre qu'après ton accord explicite, donné Miff par Miff. Personne ne peut l'activer à ta place.
+- **Ce n'est jamais automatique à ton insu.** Le partage avec une Miff ne démarre qu'après ton accord explicite, donné Miff par Miff, distinct de ton clic sur « Rejoindre ». Personne ne peut l'activer à ta place.
 - **Tu peux l'arrêter à tout moment**, sans te justifier, dans les réglages de l'app. L'arrêt supprime ton statut et ta photo de mise à jour pour cette Miff. Tes proches voient alors simplement « partage désactivé », sans message d'alerte.
 - **Miff ne stocke pas ta position GPS** ni d'historique de trajets : seul un statut (par exemple « à la Maison »), avec l'heure, est partagé. Les détails sont dans la Politique de confidentialité.
 - **Réciprocité** : pour voir le statut des autres, tu dois partager le tien.
