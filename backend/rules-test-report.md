@@ -11,7 +11,7 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 
 ## ONB-B (téléphone obligatoire) et MIFF-0 (lot d'entrée avec statut initial)
 
-**Totaux (exécution locale du 2026-10-28)** : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis ; **273 mutations (225 d'avant + 48 d'ONB-B / MIFF-0) : 253 détectées, 16 équivalentes documentées, 0 survivante** (exécution complète du 2026-10-28, puis ré-exécution des 6 mutations touchées ensuite). Nouveaux fichiers : `tests/rules/15-telephone-onb-b.test.js` (18 cas PH1 à PH11, section 14 du plan), `tests/rules/16-lot-entree-miff0.test.js` (9 cas EN1 à EN6, section 15), `tests/tools/mutations-onbb.mjs` (48 mutations) ; 8 mesures de lectures ajoutées à `09-rule-reads.test.js`.
+**Totaux (exécution locale du 2026-10-28)** : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis ; **273 mutations (225 d'avant + 48 d'ONB-B / MIFF-0) : 257 détectées, 16 équivalentes documentées, 0 survivante** (exécution complète du 2026-10-28, puis ré-exécution des 6 mutations touchées ensuite). Nouveaux fichiers : `tests/rules/15-telephone-onb-b.test.js` (18 cas PH1 à PH11, section 14 du plan), `tests/rules/16-lot-entree-miff0.test.js` (9 cas EN1 à EN6, section 15), `tests/tools/mutations-onbb.mjs` (48 mutations) ; 8 mesures de lectures ajoutées à `09-rule-reads.test.js`.
 
 Règles : clé `phone` (E.164) obligatoire et validée sur `users/{uid}` et `members/{uid}`, copie de la fiche égale au profil après le lot (`getAfter`) ; **aucune règle de lecture ni du lot d'entrée n'a été modifiée** (le lot d'entrée fonctionnait déjà).
 
@@ -39,7 +39,7 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
  redondantes car `matches()` compare le texte entier), création et mise à jour du profil (9 dont 1 équivalente), création et mise à jour de la fiche (15 dont 2 équivalentes), lecture (6, dont l'appartenance déduite de l'index : un membre retiré dont l'index n'est pas touché continuerait de lire), lot d'entrée (8). Équivalentes (5) : `PH2-regex-sans-ancre-debut`, `PH2-regex-sans-ancre-fin`, `PH2-users-creation-hasAll-seul`, `PH6-members-creation-hasAll-seul` (la présence de la clé est déjà exigée par `hasValidPhone`), `PH8-members-copie-profil-constante` (même refus avec ou sans `get('phone', null)`).
 
 ### Lectures de règles
-Voir `data-model.md` §12 : le téléphone n'ajoute **aucune** lecture mesurée ; « Créer et partager » en premium est la marge la plus faible (7 mesurées au plus, **18 appels sur 20 au pire sans cache, marge de 2**). Le test `09-rule-reads` échoue si une marge mesurée passe sous 2.
+Voir `data-model.md` §12 : le téléphone n'ajoute **aucune** lecture mesurée ; « Créer et partager » en premium est la marge la plus faible (7 mesurées au plus, **19 appels sur 20 au pire sans cache, marge de 1**, voir data-model.md §12 ; tout appel de règle ajouté à ce lot le fait dépasser 20). Le test `09-rule-reads` échoue si une marge mesurée passe sous 2.
 
 ### Limites de ces tests
 - Les mesures de lectures sont celles de l'émulateur (cache, comportement de `getAfter` sur un document écrit dans le même lot non établi : voir DUR-3) ; la colonne « pire cas sans cache » de `data-model.md` §12 est un comptage manuel, non une mesure.
