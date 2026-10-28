@@ -7,14 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -22,16 +21,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.theme.GradientAuthBackground
-import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
-import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorTextDescription
-import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.textBodyRegular
-import com.tomessa.miff.ui.theme.textDisplayHeadline
 
 /**
- * Minimal welcome screen (what the release build shows). The logo is PROVISIONAL, see android/README.md.
+ * Minimal welcome screen (what the release build shows). The logo is the official wordmark (design/assets/logo).
  *
  * The content is vertically centered when it fits, and scrolls when it does not (largest system font, landscape,
  * split screen): nothing may be cut off without a way to reach it (AND-003).
@@ -51,21 +46,14 @@ fun HomeScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.m, Alignment.CenterVertically),
     ) {
+        // The wordmark spells "Miff": it replaces the former text title and is the heading of the screen.
         Image(
-            painter = painterResource(R.drawable.ic_launcher_foreground),
+            painter = painterResource(R.drawable.miff_wordmark_color),
             contentDescription = stringResource(R.string.home_logo_a11y),
             modifier =
                 Modifier
-                    .size(Spacing.logoSize)
-                    .clip(ShapeMd)
-                    .background(colorActionPrimary),
-        )
-        Text(
-            text = stringResource(R.string.home_title),
-            style = textDisplayHeadline,
-            color = colorTextPrimary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.semantics { heading() },
+                    .width(Spacing.logoWidth)
+                    .semantics { heading() },
         )
         Text(
             text = stringResource(R.string.home_tagline),

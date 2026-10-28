@@ -2,8 +2,7 @@
 
 Application Android native (Kotlin + Jetpack Compose) de Miff. Ce dossier contient le **socle technique** (ticket INIT-2) : projet, design system en code, traductions, Firebase, écran de diagnostic interne. Aucune fonctionnalité visible par un utilisateur final n'existe encore.
 
-> **ICONE ET LOGO PROVISOIRES : NE PAS PUBLIER.**
-> Le logo n'a pas encore été fourni par le PM. L'icône actuelle (M blanc + coeur jaune-vert sur fond bleu `#043cd1`, avec couche monochrome Android 13+) est un dessin vectoriel simple fait pour le socle. Fichiers à remplacer dès que le vrai logo arrive : `app/src/main/res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `app/src/main/res/values/colors.xml` (`ic_launcher_background`). L'écran d'accueil réutilise le même dessin. Une icône 512 x 512 pour la fiche Play reste à préparer avec le vrai logo.
+> **Logo et icône OFFICIELS (PM, validés le 2026-10-27).** Source de vérité : `design/assets/logo/` (recréation vectorielle des deux visuels fournis par le PM ; le PM doit encore confirmer ses droits sur le dessin avant publication). Dans l'app : icône adaptative (`mipmap-anydpi-v26/ic_launcher*.xml` : fond `ic_launcher_background` = `#043CD1`, avant-plan `drawable/ic_launcher_foreground.xml`, calque monochrome `ic_launcher_monochrome.xml`) et mot-symbole `drawable/miff_wordmark_color.xml` sur l'écran d'accueil (description accessible "Logo de Miff"). Les couleurs de ces dessins sont des copies des tokens (`colorActionPrimary`, `colorBrandPrimary`, `colorTextOnAction`) : `LogoColorsTest` échoue si elles divergent. L'icône 512 x 512 de la fiche Google Play est dans `app/src/main/play/` (hors ressources : jamais embarquée dans l'APK). Pas d'écran de démarrage personnalisé : Android 12+ affiche l'icône de l'app automatiquement.
 
 ## Identité technique
 
@@ -60,7 +59,7 @@ L'APK de test fait environ 20 Mo (non réduit, avec les outils de débogage) ; l
 
 | | `debug` | `release` |
 |---|---|---|
-| Ecran affiché au démarrage | **Diagnostic interne** (peut ouvrir l'écran d'accueil) | Ecran d'accueil minimal avec le logo provisoire |
+| Ecran affiché au démarrage | **Diagnostic interne** (peut ouvrir l'écran d'accueil) | Ecran d'accueil minimal avec le mot-symbole officiel |
 | Code du diagnostic | présent (`src/debug`) | **absent** (preuve : aucune chaîne `Diagnostic`, `DIAGNOSTICPROBE` ni `DebugAppCheck` dans le dex de l'APK release) |
 | App Check | fournisseur "debug" | Play Integrity (mode non appliqué) |
 | Réduction du code (R8) | non | oui, avec réduction des ressources |

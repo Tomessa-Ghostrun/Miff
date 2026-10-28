@@ -245,7 +245,7 @@ test('ACCESSIBILITE - langue, titre, viewport, repères, titres ordonnés, liens
       assert.ok(t.attrs.id, `${name} : champ sans id`);
       assert.ok(new RegExp(`<label[^>]*for="${t.attrs.id}"`).test(html), `${name} : champ #${t.attrs.id} sans label`);
     }
-    for (const m of html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)) assert.ok(visibleText(m[1]).length > 0 || /aria-label=/.test(m[0]), `${name} : lien sans nom`);
+    for (const m of html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)) assert.ok(visibleText(m[1]).length > 0 || /aria-label=/.test(m[0]) || /<img\b[^>]*\balt="[^"]+"/.test(m[1]), `${name} : lien sans nom`);
     for (const t of tags(html, 'img')) assert.ok('alt' in t.attrs, `${name} : image sans alt`);
     for (const t of tags(html, 'th')) assert.equal(t.attrs.scope, 'col', `${name} : <th> sans scope`);
     for (const t of tags(html, 'button')) assert.ok(t.attrs.type, `${name} : bouton sans type`);
@@ -344,6 +344,7 @@ test('ADRESSE - l\'e-mail et l\'adresse de l\'éditeur n\'apparaissent que via w
   cpSync(join(ROOT, 'docs', 'legal'), join(copyRoot, 'docs', 'legal'), { recursive: true });
   cpSync(join(ROOT, 'android', 'app', 'src', 'main', 'res', 'font'), join(copyRoot, 'android', 'app', 'src', 'main', 'res', 'font'), { recursive: true });
   cpSync(join(ROOT, 'android', 'third_party', 'fonts'), join(copyRoot, 'android', 'third_party', 'fonts'), { recursive: true });
+  cpSync(join(ROOT, 'design', 'assets', 'logo'), join(copyRoot, 'design', 'assets', 'logo'), { recursive: true });
   mkdirSync(join(copyRoot, 'scripts'));
   cpSync(join(ROOT, 'scripts', 'build-web.mjs'), join(copyRoot, 'scripts', 'build-web.mjs'));
   const other = { publisher: { name: 'Test Éditeur', postalAddress: '1 rue de l’Exemple, 00000 Ville', contactEmail: FAKE_CONTACT } };
