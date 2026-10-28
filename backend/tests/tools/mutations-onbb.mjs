@@ -146,7 +146,10 @@ export const ONBB_MUTATIONS = [
     ['PH10c']),
   mut('PH10-members-lecture-reservee-aux-partageants', 'la lecture des fiches exige le partage de position (contraire à la décision N1)',
     [edit('allow get, list: if isMember(miffId) && miffAlive(miffId);', 'allow get, list: if isMember(miffId) && miffAlive(miffId) && mySharingOn(miffId);', 1, 2)],
-    ['PH10']),
+    ['PH10', 'PH11']),
+  mut('PH10b-appartenance-deduite-de-l-index', "l'appartenance (donc la lecture des numéros) est déduite de l'index memberships au lieu de la fiche : un membre retiré, dont l'index n'est pas touché, continue de lire",
+    [edit("&& exists(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid));", "&& exists(/databases/$(database)/documents/users/$(request.auth.uid)/memberships/free);")],
+    ['PH10b']),
 
   // --- MIFF-0 : lot d'entrée -----------------------------------------------------------------------
   mut('EN3-statut-sans-partage-actif', 'un statut peut être publié sans que la fiche ait le partage activé dans le lot',
