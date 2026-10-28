@@ -39,8 +39,9 @@ fun SignInScreen(
 
     val showEmailError = (emailTouched || state.showFieldErrors) && emailFieldError(email)
 
-    AuthScaffold(onBack = onBack) {
-        AuthHeader(title = stringResource(R.string.auth_signin_title))
+    AuthScaffold(paneTitle = stringResource(R.string.auth_signin_title), onBack = onBack) {
+        GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
+        OrText()
 
         if (state.showAccountNotCreatedNote) {
             // A reassurance, not an error: neutral colour.
@@ -66,7 +67,7 @@ fun SignInScreen(
             onImeAction = { if (AuthForm.hasBothFields(email, password)) onSubmitEmail(email, password) },
             isPassword = true,
         )
-        Spacer(Modifier.size(Spacing.m))
+        Spacer(Modifier.size(Spacing.l))
 
         // One message, under the fields, for "unknown address" and "wrong password" alike (criteria C4 and C6).
         AuthMessageArea(state.message)
@@ -78,13 +79,6 @@ fun SignInScreen(
             modifier = Modifier.fillMaxWidth(),
         )
         if (state.isLoading) LoadingIndicator()
-        OrDivider()
-        GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
-        Spacer(Modifier.size(Spacing.m))
-        QuestionWithAction(
-            question = stringResource(R.string.auth_signin_no_account),
-            action = stringResource(R.string.auth_signin_no_account_action),
-            onAction = onGoToSignUp,
-        )
+        UnderlinedLink(text = stringResource(R.string.auth_signin_no_account), onClick = onGoToSignUp)
     }
 }

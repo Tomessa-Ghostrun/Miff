@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -173,7 +174,7 @@ class AuthScreensTest {
         }
         composeRule.onNodeWithText(text(R.string.auth_signup_action)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.auth_google_action)).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.auth_signup_have_account_action)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.auth_signup_have_account)).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -223,8 +224,40 @@ class AuthScreensTest {
     fun frenchScreens_showTheTutoiementTexts() {
         signUp()
         shoot("signup-fr")
-        composeRule.onNodeWithText("Crée ton compte").assertExists()
         composeRule.onNodeWithText("Continuer avec Google").performScrollTo().assertExists()
+        composeRule.onNodeWithText("Ou :").assertExists()
         composeRule.onNodeWithText("Créer mon compte").assertExists()
+        composeRule.onNodeWithText("Déjà un compte ?").assertExists()
+    }
+
+    /** Mockups 04 to 06: wordmark header, no visible title, "Ou :", underlined link; the screen is still named for TalkBack. */
+    @Test
+    fun signUpAndSignIn_followTheMockupStructure() {
+        signUp()
+        composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.auth_signup_title)).assertCountEquals(0) // no visible title
+        composeRule.onNodeWithText(text(R.string.auth_or_divider)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_signup_have_account)).assertHasClickAction()
+        val google = composeRule.onNodeWithText(text(R.string.auth_google_action)).getUnclippedBoundsInRoot()
+        val or = composeRule.onNodeWithText(text(R.string.auth_or_divider)).getUnclippedBoundsInRoot()
+        val email = composeRule.onNodeWithText(text(R.string.auth_email_label)).getUnclippedBoundsInRoot()
+        assertTrue("social button, then Ou :, then the fields", google.top < or.top && or.top < email.top)
+        val pane =
+            composeRule
+                .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+                .fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.PaneTitle] }
+        assertTrue("screen named for the screen reader: $pane", pane.contains(text(R.string.auth_signup_title)))
+    }
+
+    @Test
+    fun signIn_followsTheMockupStructure() {
+        show {
+            SignInScreen(SignInUiState(), onBack = {}, onSubmitEmail = { _, _ -> }, onGoogle = {}, onGoToSignUp = {})
+        }
+        shoot("signin-empty")
+        composeRule.onNodeWithContentDescription(text(R.string.auth_back_a11y)).assertHasClickAction()
+        composeRule.onNodeWithText(text(R.string.auth_signin_no_account)).assertHasClickAction()
+        composeRule.onNodeWithText(text(R.string.auth_signin_action)).assertIsNotEnabled()
     }
 }

@@ -7,9 +7,13 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,19 +25,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +53,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -59,6 +64,7 @@ import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -68,6 +74,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomessa.miff.BuildConfig
@@ -111,11 +118,13 @@ object LegalLinks {
 }
 
 /**
- * Common frame of the authentication screens: auth gradient, system bars respected, scrolls when the content is taller
- * than the screen (largest font, landscape, keyboard), optional back arrow.
+ * Common frame of the authentication screens (mockups 04 to 06): auth gradient, system bars respected, scrolls when the
+ * content is taller than the screen (largest font, landscape, keyboard). The header is the back arrow at the start and
+ * the official wordmark centred. The mockups show no title: [paneTitle] names the screen for the screen reader only.
  */
 @Composable
 fun AuthScaffold(
+    paneTitle: String,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
@@ -127,12 +136,15 @@ fun AuthScaffold(
                 .background(GradientAuthBackground)
                 .safeDrawingPadding()
                 .verticalScroll(rememberScrollState())
+                .semantics { this.paneTitle = paneTitle }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget)) {
+        Box(
+            modifier = Modifier.fillMaxWidth().heightIn(min = AuthHeaderHeight),
+            contentAlignment = Alignment.Center,
+        ) {
             if (onBack != null) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.auth_back_a11y),
@@ -140,36 +152,38 @@ fun AuthScaffold(
                     )
                 }
             }
+            Image(
+                painter = painterResource(R.drawable.miff_wordmark_color),
+                contentDescription = stringResource(R.string.home_logo_a11y),
+                modifier = Modifier.width(Spacing.logoWidth / 2).semantics { heading() },
+            )
         }
+        Spacer(Modifier.size(Spacing.l))
         content()
     }
 }
 
-/** Provisional logo (see README) above the title of the screen; the title is a heading for the screen reader. */
+private val AuthHeaderHeight = 56.dp
+
+/** A visible title (the consent panel only: the sign-up and sign-in mockups have none). */
 @Composable
-fun AuthHeader(title: String) {
-    // Official wordmark (design/assets/logo), decorative here: the title right below names the screen.
-    Image(
-        painter = painterResource(R.drawable.miff_wordmark_color),
-        contentDescription = null,
-        modifier = Modifier.width(Spacing.logoWidth / 2),
-    )
-    Spacer(Modifier.size(Spacing.m))
+fun ScreenTitle(title: String) {
     Text(
         text = title,
         style = textDisplayHeadline,
         color = colorTextForm,
         textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().semantics { heading() },
+        modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.l).semantics { heading() },
     )
-    Spacer(Modifier.size(Spacing.l))
 }
 
 /**
- * Underlined field of the sign-up and sign-in screens (design 04 to 06). The error is text under the field, announced
- * by the screen reader, never colour alone. [onBlur] is called when the field loses the focus after having it.
+ * Underlined field of the sign-up and sign-in screens (mockups 04 to 06): the label sits where the placeholder is in the
+ * mockup and floats up when the field is filled (the screen reader always has the label), the text starts at the left
+ * margin of the screen. The error is text under the field, announced by the screen reader, never colour alone.
+ * [onBlur] is called when the field loses the focus after having it.
  */
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AuthTextField(
     value: String,
@@ -186,6 +200,7 @@ fun AuthTextField(
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
     var hadFocus by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
     val fieldContentType =
         when {
             isPassword && newPassword -> ContentType.NewPassword
@@ -193,73 +208,40 @@ fun AuthTextField(
             else -> ContentType.EmailAddress + ContentType.Username
         }
     val hiddenOrPlain =
-        if (isPassword &&
-            !passwordVisible
-        ) {
-            PasswordVisualTransformation()
-        } else {
-            VisualTransformation.None
-        }
+        if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None
     val keyboardOptions =
         KeyboardOptions(keyboardType = keyboardType, autoCorrectEnabled = false, imeAction = imeAction)
+    val keyboardActions =
+        KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }, onGo = { onImeAction() })
+    val eyeIcon = if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility
+    val colors =
+        TextFieldDefaults.colors(
+            focusedTextColor = colorTextForm,
+            unfocusedTextColor = colorTextForm,
+            errorTextColor = colorTextForm,
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            errorContainerColor = Color.Transparent,
+            cursorColor = colorActionPrimary,
+            errorCursorColor = colorTextError,
+            focusedIndicatorColor = colorBorderAction,
+            unfocusedIndicatorColor = colorBorderStrong,
+            errorIndicatorColor = colorTextError,
+            focusedLabelColor = colorActionPrimary,
+            unfocusedLabelColor = colorTextDescription, // darker than the mockup grey: AA contrast
+            errorLabelColor = colorTextError,
+        )
     Column(modifier = modifier.fillMaxWidth()) {
-        TextField(
+        BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text(label, style = textBodyRegular) },
             singleLine = true,
-            isError = errorText != null,
+            textStyle = textBodyRegular.copy(color = colorTextForm),
+            cursorBrush = SolidColor(if (errorText != null) colorTextError else colorActionPrimary),
             visualTransformation = hiddenOrPlain,
             keyboardOptions = keyboardOptions,
-            keyboardActions =
-                KeyboardActions(
-                    onNext = { onImeAction() },
-                    onDone = { onImeAction() },
-                    onGo = { onImeAction() },
-                ),
-            textStyle = textBodyRegular,
-            trailingIcon =
-                if (isPassword && value.isNotEmpty()) {
-                    {
-                        // The "eye" appears with the first character (criterion S4).
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                painter =
-                                    painterResource(
-                                        if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility,
-                                    ),
-                                contentDescription =
-                                    stringResource(
-                                        if (passwordVisible) {
-                                            R.string.auth_password_hide_a11y
-                                        } else {
-                                            R.string.auth_password_show_a11y
-                                        },
-                                    ),
-                                tint = colorTextForm,
-                            )
-                        }
-                    }
-                } else {
-                    null
-                },
-            colors =
-                TextFieldDefaults.colors(
-                    focusedTextColor = colorTextForm,
-                    unfocusedTextColor = colorTextForm,
-                    errorTextColor = colorTextForm,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    errorContainerColor = Color.Transparent,
-                    cursorColor = colorActionPrimary,
-                    errorCursorColor = colorTextError,
-                    focusedIndicatorColor = colorBorderAction,
-                    unfocusedIndicatorColor = colorBorderStrong,
-                    errorIndicatorColor = colorTextError,
-                    focusedLabelColor = colorActionPrimary,
-                    unfocusedLabelColor = colorTextDescription,
-                    errorLabelColor = colorTextError,
-                ),
+            keyboardActions = keyboardActions,
+            interactionSource = interactionSource,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -274,14 +256,46 @@ fun AuthTextField(
                             onBlur()
                         }
                     },
+            decorationBox = { innerTextField ->
+                TextFieldDefaults.DecorationBox(
+                    value = value,
+                    innerTextField = innerTextField,
+                    enabled = true,
+                    singleLine = true,
+                    visualTransformation = hiddenOrPlain,
+                    interactionSource = interactionSource,
+                    isError = errorText != null,
+                    label = { Text(label, style = textBodyRegular) },
+                    trailingIcon =
+                        if (isPassword && value.isNotEmpty()) {
+                            {
+                                // The "eye" appears with the first character (criterion S4); slashed = visible, tap to hide.
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        painter = painterResource(eyeIcon),
+                                        contentDescription =
+                                            stringResource(
+                                                if (passwordVisible) {
+                                                    R.string.auth_password_hide_a11y
+                                                } else {
+                                                    R.string.auth_password_show_a11y
+                                                },
+                                            ),
+                                        tint = colorTextForm,
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
+                    colors = colors,
+                    contentPadding = TextFieldDefaults.contentPaddingWithLabel(start = 0.dp, end = 0.dp),
+                )
+            },
         )
         if (errorText != null) {
             // Under the field, not on the underline (the mockup superposes them: a design flaw not reproduced).
-            MessageText(
-                text = errorText,
-                isError = true,
-                modifier = Modifier.padding(start = Spacing.m, top = Spacing.xs),
-            )
+            MessageText(text = errorText, isError = true, modifier = Modifier.padding(top = Spacing.xs))
         }
     }
 }
@@ -357,12 +371,13 @@ fun ConsentCheckbox(
 
 /** The two "read the text" links of the consent (a): separate, focusable, 48 dp high, reachable with TalkBack. */
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun LegalLinksRow(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    Row(
+    FlowRow(
         modifier = modifier.fillMaxWidth().padding(start = Spacing.xl + Spacing.s),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.Center,
     ) {
         TextButton(onClick = { LegalLinks.open(context, LegalLinks.termsUrl(context)) }) {
             Text(stringResource(R.string.auth_consent_terms_link), style = textBodyBold14, color = colorActionPrimary)
@@ -426,18 +441,16 @@ fun GoogleButton(
     }
 }
 
-/** "ou" between the e-mail form and the Google button. */
+/** "Ou :" between the social button and the e-mail form (mockups: bold, centred, no rule). */
 @Composable
-fun OrDivider(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.fillMaxWidth().padding(vertical = Spacing.s),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-    ) {
-        HorizontalDivider(modifier = Modifier.weight(1f), color = colorBorderStrong)
-        Text(stringResource(R.string.auth_or_divider), style = textBodyRegular14, color = colorTextDescription)
-        HorizontalDivider(modifier = Modifier.weight(1f), color = colorBorderStrong)
-    }
+fun OrText(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.auth_or_divider),
+        style = textBodyBold16,
+        color = colorTextForm,
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth().padding(vertical = Spacing.m),
+    )
 }
 
 /** Busy indicator announced by the screen reader. Replaces nothing: the screen stays visible behind it. */
@@ -456,18 +469,20 @@ fun LoadingIndicator(modifier: Modifier = Modifier) {
     )
 }
 
-/** A link-like button in a flow: a sentence, then the action under it. */
+/** The bold underlined link under the main button ("Déjà un compte ?", "Pas encore de compte ?"). */
 @Composable
-fun QuestionWithAction(
-    question: String,
-    action: String,
-    onAction: () -> Unit,
+fun UnderlinedLink(
+    text: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = question, style = textBodyRegular, color = colorTextDescription, textAlign = TextAlign.Center)
-        TextButton(onClick = onAction) {
-            Text(text = action, style = textBodyBold16, color = colorActionPrimary)
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        TextButton(onClick = onClick) {
+            Text(
+                text = text,
+                style = textBodyBold16.copy(textDecoration = TextDecoration.Underline),
+                color = colorActionPrimary,
+            )
         }
     }
 }

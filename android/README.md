@@ -97,6 +97,22 @@ Code : `domain/auth` (règles pures testées), `data/auth` (Firebase Auth, lectu
 - **Bouton Google** : respecte les règles de marque (fond blanc, bordure `#747775` 1 dp, texte `#1F1F1F` Roboto Medium 14 sp, aucune ombre ajoutée). **À remplacer avant le dépôt sur Google Play** : le « G » (`res/drawable/ic_google_g.xml`) est un redessin, pas le fichier officiel ; à remplacer par l'asset des directives de marque de Google (https://developers.google.com/identity/branding-guidelines), puis revérifier espacement, taille et libellé sur la page de ces directives.
 - **Debug seulement** : l'écran de diagnostic reste le premier écran d'un APK de debug ; le bouton « Ouvrir l'application » mène au vrai parcours.
 
+### Fidélité au design (maquettes du PM, écrans « Welcoming screen -7 » à « -13 »)
+
+Les écrans d'inscription et de connexion reprennent les maquettes : fond dégradé `gradient/auth-background`, flèche retour à gauche et mot-symbole officiel « Miff » centré en haut, bouton Google pleine largeur (arrondi 10), « Ou : » en gras centré, champs à **soulignement** dont le libellé est à la place du texte indicatif, erreurs en rouge sous le champ, bouton principal bleu (grisé à 30 % tant que les champs sont vides, libellé `body/large`), lien gras souligné « Déjà un compte ? » / « Pas encore de compte ? » sous le bouton, œil du mot de passe à droite (barré = visible). Polices Baloo Thambi 2 / Hanken Grotesk, couleurs et arrondis des tokens. Captures de contrôle générées par `AuthScreensTest` dans `app/build/screenshots/` (non commitées).
+
+**Écarts conscients design / implémentation** (décisions du PM, du ticket, de la plateforme ou de l'accessibilité) :
+1. Tutoiement partout (les maquettes vouvoient) ; libellés « Créer mon compte » / « Continuer avec Google » (ticket §7.3) au lieu de « Rejoindre ».
+2. Deux cases de consentement (a obligatoire, b facultative) **en haut de l'écran d'inscription, avant le bouton Google**, au lieu de la phrase unique sous les champs (ticket §8, décision Q8 : consentement avant tout geste d'inscription). Les deux liens « Conditions de service » / « Politique… » sont des boutons séparés sous la case (a) (atteignables au lecteur d'écran, 48 dp).
+3. Pas de bouton Apple sur Android (décision Q1).
+4. Message d'erreur **unique** à la connexion, sous les champs, à la place de « Adresse email invalide » / « Mot de passe invalide » (ticket §7.3, décision Q3). Texte d'erreur en `#D60700` (AA) et non `#ea4335`.
+5. Pas de lien « Mot de passe oublié ? » sous le mot de passe : il arrive avec AUTH-2.
+6. Libellés des champs : flottants (ils remontent en petit au-dessus du texte saisi) au lieu de disparaître ; le lecteur d'écran garde ainsi le nom du champ. Couleur du libellé plus foncée que le gris des maquettes (contraste AA).
+7. Bouton Google aux règles de marque de Google (Roboto Medium 14 sp, texte `#1F1F1F`, bordure `#747775`, **sans ombre**) et non en Ubuntu Bold avec l'ombre `shadow/subtle` des maquettes (`design-system.md` : composants officiels des plateformes).
+8. Aucune phrase de titre visible (comme les maquettes) : le nom de l'écran est donné au lecteur d'écran (`paneTitle`). Le panneau de consentement, absent des maquettes, a un titre visible.
+9. Cases et boutons de 48 dp minimum, texte des cases en 14 sp (les 11 sp de la maquette sont trop petits), précision de la case (b) sous la case.
+10. Le mot de passe est vidé par une rotation de l'écran (déjà noté).
+
 ### Signature de debug stable en CI (secret `DEBUG_KEYSTORE_B64`)
 
 Le workflow décode le secret dans `~/.android/debug.keystore` du runner (alias `androiddebugkey`, mots de passe de debug standard), sans jamais l'afficher, et le supprime en fin de job. Il compare ensuite la SHA-1 de l'APK à celles de `google-services.json` et échoue si elle n'y est pas. Sans le secret (Dependabot, fork), la clé jetable par défaut reste utilisée. Création du keystore : voir « Signature de l'APK debug de la CI » plus bas. Le workflow échoue aussi, avec un message explicite, si `google-services.json` n'a pas de client OAuth web. Sur le poste, copier le même keystore dans `%USERPROFILE%\.android\debug.keystore` donne la même empreinte.

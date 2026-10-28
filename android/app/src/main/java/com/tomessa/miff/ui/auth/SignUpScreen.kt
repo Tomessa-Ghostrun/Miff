@@ -58,33 +58,9 @@ fun SignUpScreen(
     val showPasswordError =
         (passwordTouched || state.showFieldErrors) && password.isNotEmpty() && !AuthForm.isPasswordLongEnough(password)
 
-    AuthScaffold(onBack = onBack) {
-        AuthHeader(title = stringResource(R.string.auth_signup_title))
-
-        AuthTextField(
-            value = email,
-            onValueChange = { email = AuthForm.limitEmailInput(it) },
-            label = stringResource(R.string.auth_email_label),
-            errorText = if (showEmailError) stringResource(R.string.auth_error_email_format) else null,
-            keyboardType = KeyboardType.Email,
-            onBlur = { emailTouched = true },
-        )
-        Spacer(Modifier.size(Spacing.s))
-        AuthTextField(
-            value = password,
-            onValueChange = { password = AuthForm.limitPasswordInput(it) },
-            label = stringResource(R.string.auth_password_label),
-            errorText = if (showPasswordError) stringResource(R.string.auth_error_password_short) else null,
-            keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done,
-            onImeAction = { if (AuthForm.hasBothFields(email, password)) onSubmitEmail(email, password) },
-            isPassword = true,
-            newPassword = true,
-            onBlur = { passwordTouched = true },
-        )
-        Spacer(Modifier.size(Spacing.m))
-
-        // Both boxes come BEFORE any sign-up button (e-mail or Google), decided by the ticket (Q8).
+    AuthScaffold(paneTitle = stringResource(R.string.auth_signup_title), onBack = onBack) {
+        // Both boxes come BEFORE any sign-up button (Google, e-mail), decided by the ticket (Q8): this is the one
+        // difference of order with mockup 04, where the single consent sentence sits under the fields.
         ConsentCheckbox(
             checked = state.termsChecked,
             onCheckedChange = onTermsChecked,
@@ -108,6 +84,32 @@ fun SignUpScreen(
         )
         Spacer(Modifier.size(Spacing.m))
 
+        GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
+        OrText()
+
+        AuthTextField(
+            value = email,
+            onValueChange = { email = AuthForm.limitEmailInput(it) },
+            label = stringResource(R.string.auth_email_label),
+            errorText = if (showEmailError) stringResource(R.string.auth_error_email_format) else null,
+            keyboardType = KeyboardType.Email,
+            onBlur = { emailTouched = true },
+        )
+        Spacer(Modifier.size(Spacing.s))
+        AuthTextField(
+            value = password,
+            onValueChange = { password = AuthForm.limitPasswordInput(it) },
+            label = stringResource(R.string.auth_password_label),
+            errorText = if (showPasswordError) stringResource(R.string.auth_error_password_short) else null,
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            onImeAction = { if (AuthForm.hasBothFields(email, password)) onSubmitEmail(email, password) },
+            isPassword = true,
+            newPassword = true,
+            onBlur = { passwordTouched = true },
+        )
+        Spacer(Modifier.size(Spacing.l))
+
         AuthMessageArea(state.message, onGoToSignIn = onGoToSignIn)
 
         MiffButton(
@@ -117,14 +119,7 @@ fun SignUpScreen(
             modifier = Modifier.fillMaxWidth(),
         )
         if (state.isLoading) LoadingIndicator()
-        OrDivider()
-        GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
-        Spacer(Modifier.size(Spacing.m))
-        QuestionWithAction(
-            question = stringResource(R.string.auth_signup_have_account),
-            action = stringResource(R.string.auth_signup_have_account_action),
-            onAction = onGoToSignIn,
-        )
+        UnderlinedLink(text = stringResource(R.string.auth_signup_have_account), onClick = onGoToSignIn)
     }
 }
 

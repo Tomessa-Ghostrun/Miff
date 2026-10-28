@@ -121,11 +121,10 @@
     <string name="auth_signup_action">Create my account</string>
     <string name="auth_signin_action">Sign in</string>
     <string name="auth_google_action">Continue with Google</string>
-    <string name="auth_or_divider">or</string>
+    <string name="auth_or_divider">Or:</string>
     <string name="auth_signup_have_account">Already have an account?</string>
     <string name="auth_signup_have_account_action">Sign in</string>
     <string name="auth_signin_no_account">No account yet?</string>
-    <string name="auth_signin_no_account_action">Create my account</string>
     <string name="auth_consent_terms">I accept the %1$s and the %2$s</string>
     <string name="auth_consent_terms_link">Terms of Service</string>
     <string name="auth_consent_privacy_link">Privacy Policy</string>

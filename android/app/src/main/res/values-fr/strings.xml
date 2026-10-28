@@ -118,11 +118,10 @@
     <string name="auth_signup_action">Créer mon compte</string>
     <string name="auth_signin_action">Se connecter</string>
     <string name="auth_google_action">Continuer avec Google</string>
-    <string name="auth_or_divider">ou</string>
+    <string name="auth_or_divider">Ou :</string>
     <string name="auth_signup_have_account">Déjà un compte ?</string>
     <string name="auth_signup_have_account_action">Se connecter</string>
     <string name="auth_signin_no_account">Pas encore de compte ?</string>
-    <string name="auth_signin_no_account_action">Créer mon compte</string>
     <string name="auth_consent_terms">J\'accepte les %1$s et la %2$s</string>
     <string name="auth_consent_terms_link">Conditions de service</string>
     <string name="auth_consent_privacy_link">Politique de protection des données</string>

@@ -31,8 +31,8 @@ fun ConsentPanelScreen(
     // Always consume "back" (even while busy): leaving the app on this panel would skip the refusal.
     BackHandler { if (!state.isLoading) onRefuse() }
 
-    AuthScaffold(onBack = null) {
-        AuthHeader(title = stringResource(R.string.auth_panel_title))
+    AuthScaffold(paneTitle = stringResource(R.string.auth_panel_title), onBack = null) {
+        ScreenTitle(title = stringResource(R.string.auth_panel_title))
         ConsentCheckbox(
             checked = state.termsChecked,
             onCheckedChange = onTermsChecked,

@@ -347,13 +347,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "or"
+            "value": "Or:"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ou"
+            "value": "Ou :"
           }
         }
       }
@@ -524,23 +524,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas encore de compte ?"
-          }
-        }
-      }
-    },
-    "auth_signin_no_account_action": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create my account"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Créer mon compte"
           }
         }
       }

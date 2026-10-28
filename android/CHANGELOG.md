@@ -15,6 +15,10 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - CI : signature de debug stable (secret `DEBUG_KEYSTORE_B64`), contrôle de la SHA-1 de l'APK, échec explicite sans client OAuth web.
 - Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), cases et boutons d'au moins 48 dp, liens légaux focalisables, focus ramené sur la case (a) manquante, contrastes AA (`#D60700` pour les erreurs).
 
+### Modifié : fidélité aux maquettes
+- Écrans d'inscription et de connexion alignés sur les maquettes du PM (en-tête avec flèche et mot-symbole officiel, bouton Google, « Ou : », champs soulignés, bouton principal, lien souligné, œil du mot de passe). Écarts conscients listés dans le README (tutoiement, deux cases avant les boutons, pas d'Apple sur Android, message unique, pas de « Mot de passe oublié ? » avant AUTH-2, règles de marque Google, accessibilité).
+- Libellé du bouton principal en `body/large` (design system). Clé `auth_signin_no_account_action` supprimée (le lien entier est « Pas encore de compte ? »). « Ou : » remplace « ou ».
+
 ### Corrigé après la revue indépendante
 - **Google en release** : la ressource `default_web_client_id` (lue par son nom) était supprimée par le réducteur de ressources du build release ; `res/raw/keep.xml` la conserve.
 - **Collecte au démarrage** : Analytics et Crashlytics restent coupés tant que `users/{uid}` n'a pas été lu (le choix stocké sur l'appareil n'est plus réappliqué au lancement) ; tests dont un qui tue la suppression de la coupure à la connexion.
