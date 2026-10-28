@@ -7,6 +7,7 @@
 // equivalent : raison pour laquelle aucun test ne PEUT voir la mutation (mutant équivalent, protection redondante).
 
 import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
+import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -528,7 +529,7 @@ export const MUTATIONS = [
   {
     id: 'AB1-bloc-obligatoire',
     why: 'resserrement : le bloc de consentement devient obligatoire à la création (le test AB1 prouve que son absence est acceptée)',
-    edits: [edit("request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion'])", "request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])")],
+    edits: [edit("request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion'])", "request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])")],
     tests: ['AB1'],
   },
   {
@@ -540,7 +541,7 @@ export const MUTATIONS = [
   {
     id: 'AB6-cgu-non-obligatoires',
     why: 'un profil peut être créé sans termsAcceptedAt ni termsVersion',
-    edits: [edit("request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt', 'termsAcceptedAt', 'termsVersion'])", "request.resource.data.keys().hasAll(['firstName', 'lastName', 'createdAt'])")],
+    edits: [edit("request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion'])", "request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt'])")],
     tests: ['AB6'],
     equivalent: 'défense en profondeur : lire termsAcceptedAt ou termsVersion absents fait échouer la règle (refus) ; la clé est lue juste après',
   },
@@ -559,7 +560,7 @@ export const MUTATIONS = [
   {
     id: 'AB8-consentement-modifie-par-autrui',
     why: 'n\'importe quel utilisateur connecté peut mettre à jour le profil (donc le consentement) d\'un autre',
-    edits: [edit("allow update: if isSelf(uid)\n        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])", "allow update: if isSignedIn()\n        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])")],
+    edits: [edit("allow update: if isSelf(uid)\n        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])", "allow update: if isSignedIn()\n        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])")],
     tests: ['AB8'],
   },
   {
@@ -637,13 +638,13 @@ export const MUTATIONS = [
   {
     id: 'AB13-profil-champs-non-verrouilles',
     why: 'la mise à jour du profil accepte n\'importe quelle clé (termsAcceptedAt, termsVersion, createdAt, champs inconnus)',
-    edits: [edit("&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])", '&& true')],
+    edits: [edit("&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])", '&& true')],
     tests: ['AB13'],
   },
   {
     id: 'AB13-cgu-modifiables',
     why: 'termsAcceptedAt et termsVersion redeviennent modifiables après la création',
-    edits: [edit("&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent'])", "&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'analyticsConsent', 'termsAcceptedAt', 'termsVersion'])")],
+    edits: [edit("&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])", "&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent', 'termsAcceptedAt', 'termsVersion'])")],
     tests: ['AB13'],
   },
   {
@@ -667,7 +668,7 @@ export const MUTATIONS = [
   {
     id: 'AB17-creation-champs-inconnus',
     why: 'la création du profil accepte n\'importe quelle clé (âge, date de naissance, e-mail, position...)',
-    edits: [edit("request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])", 'true')],
+    edits: [edit("request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])", 'true')],
     tests: ['AB17'],
   },
   // --- Pas de Miff créée ni rejointe sans profil portant l'acceptation (a) (décision PM du 2026-10-24) --------------------
@@ -675,7 +676,7 @@ export const MUTATIONS = [
     id: 'AB18-miff-sans-profil-nulle-part',
     why: 'plus aucun contrôle du profil à la création de la fiche membre (ni création de Miff ni adhésion)',
     edits: [edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'")],
-    tests: ['AB18', 'AB19'],
+    tests: ['AB18', 'AB19', 'AB21'],
   },
   {
     id: 'AB18-creation-miff-sans-profil',
@@ -684,7 +685,7 @@ export const MUTATIONS = [
       edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
       edit("(d.role == 'member' && memberJoinOk(miffId, uid, d))", "(d.role == 'member' && memberJoinOk(miffId, uid, d) && termsAcceptedAfter(uid))"),
     ],
-    tests: ['AB18'],
+    tests: ['AB18', 'AB21'],
   },
   {
     id: 'AB19-adhesion-sans-profil',
@@ -693,7 +694,7 @@ export const MUTATIONS = [
       edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
       edit("(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))", "(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid) && termsAcceptedAfter(uid))"),
     ],
-    tests: ['AB19'],
+    tests: ['AB19', 'AB21'],
   },
   {
     id: 'AB21-profil-sans-acceptation',
@@ -703,4 +704,6 @@ export const MUTATIONS = [
   },
   // --- DUR-3 (R14) : protections du §7.3 du ticket (voir mutations-dur3.mjs) ---
   ...DUR3_MUTATIONS,
+  // --- ONB-B (téléphone) et MIFF-0 (lot d'entrée) : voir mutations-onbb.mjs ---
+  ...ONBB_MUTATIONS,
 ];
