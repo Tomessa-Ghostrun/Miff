@@ -25,6 +25,20 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - Le « G » du bouton Google est un redessin à remplacer par l'asset officiel de Google avant publication.
 - Non vérifié sur téléphone dans ce ticket : voir la description de la PR.
 
+## [Non publié] : logo et icône officiels
+
+### Modifié
+- **Icône adaptative officielle** (M et i soudés blancs + cœur jaune-vert sur fond `#043CD1`) à la place de l'icône provisoire, avec calque monochrome (thème d'icônes Android 13+). Avant-plan dans la zone sûre de 66 dp. L'ancienne icône et le commentaire « provisoire, ne pas publier » sont supprimés.
+- **Ecran d'accueil** : le mot-symbole « Miff » (VectorDrawable) remplace le logo provisoire ET le titre texte « Miff » (qui aurait doublonné). Il est le titre de l'écran pour les lecteurs d'écran, avec la description « Logo de Miff » / « Miff logo » (clé `home_logo_a11y`, sans « provisoire »). La clé `home_title` est conservée (non utilisée sur Android) pour la parité des clés avec iOS ; à retirer des deux plateformes ensemble. Aucun autre écran n'utilise le logo (pas d'écran d'authentification sur `main` à ce jour).
+- `HomeScreenScrollTest` adapté : il retrouve le logo par sa description au lieu du titre texte.
+
+### Ajouté
+- `app/src/main/play/play-store-icon-512.png` + README : icône 512 x 512 de la fiche Google Play, hors dossier de ressources donc jamais dans l'APK (vérifié sur l'APK release).
+- `LogoColorsTest` : les couleurs des dessins du logo doivent rester celles des tokens du design system.
+
+### Note
+- Pas de splash personnalisé (SplashScreen API non utilisée) : rien à changer. Si un splash est ajouté plus tard, utiliser l'avant-plan de l'icône sur fond `#043CD1`.
+
 ## [0.1.1] - 2026-10-23 : correctifs de la recette INIT-2
 
 ### Corrigé

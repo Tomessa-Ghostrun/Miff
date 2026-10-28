@@ -5,9 +5,11 @@ import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
@@ -52,18 +54,18 @@ class HomeScreenScrollTest {
         scrollable.performScrollToNode(hasText(text(R.string.home_tagline)))
         composeRule.onNodeWithText(text(R.string.home_tagline)).assertIsDisplayed()
 
-        // And back to the top: the title is reachable too.
-        scrollable.performScrollToNode(hasText(text(R.string.home_title)))
-        composeRule.onNodeWithText(text(R.string.home_title)).assertIsDisplayed()
+        // And back to the top: the logo (wordmark "Miff", heading of the screen) is reachable too.
+        scrollable.performScrollToNode(hasContentDescription(text(R.string.home_logo_a11y)))
+        composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertIsDisplayed()
     }
 
-    /** Normal portrait phone: same look as before, title and tagline visible without scrolling. */
+    /** Normal portrait phone: logo and tagline visible without scrolling. */
     @Test
     @Config(qualifiers = "en-w360dp-h800dp-port-xxhdpi")
-    fun normalPortrait_titleAndTaglineVisibleWithoutScrolling() {
+    fun normalPortrait_logoAndTaglineVisibleWithoutScrolling() {
         composeRule.setContent { HomeScreen() }
 
-        composeRule.onNodeWithText(text(R.string.home_title)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.home_tagline)).assertIsDisplayed()
     }
 }

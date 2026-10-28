@@ -10,7 +10,25 @@ Pages web statiques, en français et en anglais, hébergées gratuitement par **
 | Demander la suppression de ton compte | `/fr/supprimer-mon-compte`, `/en/delete-account` | Suppression dans l'app + demande par e-mail. Exigée par Google Play (page web de demande de suppression). |
 | Choisir un nouveau mot de passe | `/reset-password` | Page ouverte par le lien de l'e-mail « Mot de passe oublié ? » (gestionnaire d'action Firebase Authentication). Langue : paramètre `lang` du lien, sinon navigateur, sinon anglais. |
 
-Aucun cookie, aucun traceur, aucun script tiers, aucune police chargée depuis un CDN (polices Baloo Thambi 2 et Hanken Grotesk, licence OFL, reprises de `android/`).
+Aucun cookie, aucun traceur, aucun script tiers, aucune police chargée depuis un CDN (polices Baloo Thambi 2 et Hanken Grotesk, licence OFL, reprises de `android/`). Le logo et les icônes sont ceux du PM (voir « Logo et icônes » ci-dessous).
+
+## Logo et icônes (logo officiel du PM, validé le 2026-10-27)
+
+Le favicon n'est **plus provisoire** : le site utilise le logo officiel de `design/assets/logo/` (PR #20). Le build copie ces fichiers tels quels (un test vérifie qu'ils sont identiques aux originaux) : il n'y a **pas de copie dans `web/src/`**. Pour changer le logo, remplace les fichiers de `design/assets/logo/` ; la liste est `LOGO_FILES` dans `scripts/build-web.mjs`.
+
+| Fichier publié | Source dans `design/assets/logo/` | Rôle |
+|---|---|---|
+| `/favicon.svg` | `web/favicon.svg` | Favicon des navigateurs récents |
+| `/favicon.ico` | `web/favicon-32.png` (emballé en .ico par le build) | Favicon de repli (32 x 32), aussi demandé d'office par certains navigateurs |
+| `/icon-192.png` | `web/icon-192.png` | Icône PNG 192 (liée dans les pages) |
+| `/apple-touch-icon.png` | `web/apple-touch-icon-180.png` | Icône « ajouter à l'écran d'accueil » iOS (180 x 180) |
+| `/icon-512.png`, `/icon-maskable-512.png` | `web/icon-512.png`, `web/icon-maskable-512.png` | Publiées mais **non liées** : prêtes pour un futur manifeste |
+| `/assets/logo/miff-wordmark-color.svg` | `master/miff-wordmark-color.svg` | Mot-symbole « Miff » de l'en-tête de toutes les pages |
+
+- Le mot-symbole est une image (`alt="Miff"`) de 93 x 36 px, dimensions écrites dans le HTML : pas de décalage de mise en page au chargement. Il sert de lien d'accueil dans l'en-tête.
+- **Pas de manifeste web** : la politique de sécurité (`manifest-src 'none'`) le refuse et le site n'est pas une application installable. Les icônes 512 et maskable ne seront utiles que si le PM décide un jour de l'autoriser (changement de `web/firebase.json`, à valider).
+- La politique de sécurité et les en-têtes n'ont **pas changé** : les images restent limitées à `'self'`, aucune ressource externe.
+- Les navigateurs gardent longtemps les favicons en cache : après le déploiement, l'ancien peut rester visible un moment (vider le cache ou recharger en forçant).
 
 ## 1. Prévisualiser en local (sans rien déployer)
 
@@ -52,7 +70,7 @@ Avant / après, pour mémoire :
 node --test "web/tests/*.test.mjs"
 ```
 
-Tests sans dépendance (`node:test`) : pages FR/EN symétriques, liens internes valides, aucune ressource externe, tutoiement, aucune affirmation de relecture juridique, CSP respectée (aucun script ni style en ligne), accessibilité statique et contrastes AA, pas de cookie ni de traceur, éditeur et adresse uniquement via la config, logique de la page de mot de passe (appel REST simulé), garde-fou de déploiement, en-têtes Hosting, serveur de prévisualisation.
+Tests sans dépendance (`node:test`) : pages FR/EN symétriques, liens internes valides, aucune ressource externe, tutoiement, aucune affirmation de relecture juridique, CSP respectée (aucun script ni style en ligne), logo et icônes (présence, dimensions, poids, liens, texte alternatif, fichiers identiques aux originaux, aucune ressource externe), accessibilité statique et contrastes AA, pas de cookie ni de traceur, éditeur et adresse uniquement via la config, logique de la page de mot de passe (appel REST simulé), garde-fou de déploiement, en-têtes Hosting, serveur de prévisualisation.
 
 Le test **« PLACEHOLDERS »** échoue tant qu'un champ `[À COMPLÉTER]` reste dans les pages générées. Pour tolérer cela en prévisualisation locale : PowerShell `$env:MIFF_WEB_PREVIEW="1"` (ou `MIFF_WEB_PREVIEW=1` sous Git Bash) avant la commande. La CI de la PR le tolère aussi tant que les textes sont en cours de finalisation, puis lance le contrôle strict **à titre informatif** (visible dans le résumé du job).
 
@@ -126,5 +144,6 @@ web/firebase.json   Hosting : cleanUrls, en-têtes de sécurité, garde-fou pred
 web/.firebaserc     projet miff-3d283 uniquement
 web/tests/          tests node:test
 web/public/         site généré (ignoré par git : contient la clé web injectée)
+logo et icônes     repris de design/assets/logo/ au build (pas dans web/src)
 scripts/build-web.mjs, preview-web.mjs, web-predeploy-check.mjs
 ```

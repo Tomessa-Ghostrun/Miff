@@ -4,13 +4,14 @@
     French (source language of the product copy) lives in values-fr/strings.xml. Keys are shared with iOS:
     snake_case with a feature prefix; platform-only keys are prefixed android_.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="android_app_name" translatable="false">Miff</string>
 
     <!-- Welcome screen -->
-    <string name="home_title">Miff</string>
     <string name="home_tagline">Know your loved ones are fine, without bothering them.</string>
-    <string name="home_logo_a11y">Miff logo (provisional)</string>
+    <!-- Kept for the iOS/Android key parity (docs/contracts/i18n-keys.md): the Android welcome screen shows the wordmark instead. Remove on both platforms together. -->
+    <string name="home_title" tools:ignore="UnusedResources">Miff</string>
+    <string name="home_logo_a11y">Miff logo</string>
 
     <!-- Diagnostic screen: header and build identity -->
     <string name="diag_title">Internal diagnostic</string>

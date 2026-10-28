@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img">
+  <title>Miff - icone d'application (carre arrondi)</title>
+  <desc>Recreation vectorielle (formes geometrisees) de l'icone fournie par le PM le 2026-10-24.</desc>
+  <rect width="1024" height="1024" rx="219.25" fill="#043CD1"/>
+  <path id="miff-m-i" fill="#FFFFFF" d="M229.53 313.46L402.61 313.46L508.95 641.99L601.78 395.33L679.84 436.84L787.62 397.42L787.62 811.76L665.54 811.76L665.54 472.34L535.36 811.76L458.62 811.76L330.98 449.42L330.98 811.76L229.53 811.76Z"/>
+  <path id="miff-coeur" fill="#D1D828" d="M688.21 232.36C704.11 216.49 727.33 210.44 748.95 216.49C770.58 222.57 787.25 239.84 792.55 261.64C797.89 283.46 791.03 306.46 774.61 321.81L689.66 401.26C686.02 404.65 682.45 404.57 678.97 401.01L597.77 317.75C582.07 301.65 576.29 278.38 582.6 256.8C588.92 235.25 606.36 218.78 628.27 213.73C650.14 208.64 673.06 215.77 688.21 232.36Z"/>
+</svg>
