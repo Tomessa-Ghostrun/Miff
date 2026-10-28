@@ -60,28 +60,29 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.theme.GradientAuthBackground
-import com.tomessa.miff.ui.theme.ShadowSubtle
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
 import com.tomessa.miff.ui.theme.colorActionPrimary
-import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderAction
 import com.tomessa.miff.ui.theme.colorBorderStrong
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextError
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.colorTextPrimary
-import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyRegular
@@ -147,14 +148,11 @@ fun AuthScaffold(
 /** Provisional logo (see README) above the title of the screen; the title is a heading for the screen reader. */
 @Composable
 fun AuthHeader(title: String) {
+    // Official wordmark (design/assets/logo), decorative here: the title right below names the screen.
     Image(
-        painter = painterResource(R.drawable.ic_launcher_foreground),
-        contentDescription = null, // decorative: the title right below names the screen
-        modifier =
-            Modifier
-                .size(Spacing.logoSize / 2)
-                .clip(ShapeMd)
-                .background(colorActionPrimary),
+        painter = painterResource(R.drawable.miff_wordmark_color),
+        contentDescription = null,
+        modifier = Modifier.width(Spacing.logoWidth / 2),
     )
     Spacer(Modifier.size(Spacing.m))
     Text(
@@ -375,10 +373,21 @@ fun LegalLinksRow(modifier: Modifier = Modifier) {
     }
 }
 
+// Google branding guidelines (light theme "Sign in with Google" button): white fill, 1 dp border #747775, text #1F1F1F in
+// Roboto Medium 14 sp, no added shadow, G logo at 18 dp. These are Google brand values, not Miff design tokens.
+private val GoogleButtonBorder = Color(0xFF747775)
+private val GoogleButtonText = Color(0xFF1F1F1F)
+private val GoogleButtonTextStyle =
+    TextStyle(
+        fontFamily = FontFamily.SansSerif, // Roboto on Android
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+    )
+
 /**
- * "Continuer avec Google". The label follows Google's branding wording ("Continue with Google", in the language of the
- * phone) with the multicolour G on a white button. The G drawable must be replaced by the official asset before
- * publication (see ic_google_g.xml).
+ * "Continuer avec Google", following Google's branding wording ("Continue with Google", in the language of the phone).
+ * STILL TO DO before the Play listing: replace ic_google_g.xml by the official asset (see android/README.md).
  */
 @Composable
 fun GoogleButton(
@@ -390,12 +399,11 @@ fun GoogleButton(
         onClick = onClick,
         enabled = enabled,
         shape = ShapeMd,
-        color = colorBgSurface,
-        border = BorderStroke(StrokeHairline, colorBorderStrong),
+        color = Color.White,
+        border = BorderStroke(StrokeHairline, GoogleButtonBorder),
         modifier =
             modifier
                 .fillMaxWidth()
-                .miffShadow(ShadowSubtle, ShapeMd)
                 .heightIn(min = Spacing.minTouchTarget),
     ) {
         Row(
@@ -406,13 +414,13 @@ fun GoogleButton(
             Image(
                 painter = painterResource(R.drawable.ic_google_g),
                 contentDescription = null, // decorative: the label names the button
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(Spacing.s))
             Text(
                 text = stringResource(R.string.auth_google_action),
-                style = textBodyBold16,
-                color = colorTextForm,
+                style = GoogleButtonTextStyle,
+                color = GoogleButtonText,
             )
         }
     }

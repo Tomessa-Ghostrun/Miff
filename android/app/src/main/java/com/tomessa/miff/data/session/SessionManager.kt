@@ -102,6 +102,9 @@ class SessionManager(
     /** True while we end the session ourselves: the "session lost" watcher must not react to our own sign-out. */
     private var ending = false
 
+    /** True from the moment a session is known to exist until it ends: a loss during a transition still counts. */
+    private var sessionActive = false
+
     /** Reads (and forgets) the one-time message for the sign-in screen. */
     fun consumeNotice(): SignedOutNotice? {
         val notice = mutableNotice.value
@@ -112,6 +115,9 @@ class SessionManager(
     fun start() {
         if (started) return
         started = true
+        // Nothing is collected from the very first instant: the manifest says off, and the choice stored on the device
+        // is NOT trusted at a cold start. Collection is only switched on once the account's own choice has been read.
+        privacy.applyAccountConsent(false)
         scope.launch {
             // A purge that failed last time comes BEFORE any other Firestore access.
             cache.purgeIfPending()
@@ -193,6 +199,8 @@ class SessionManager(
     /** Consent panel, "Continuer". Returns false (and does nothing) unless (a) is accepted. */
     fun acceptConsentPanel(consent: ConsentChoice): Boolean {
         if (!consent.termsAccepted) return false
+        // Only from the panel itself: a second call (double tap) must not record twice nor send a second event.
+        if ((mutableState.value as? SessionState.Ready)?.destination != AppDestination.CONSENT_PANEL) return false
         val uid = gateway.currentUid ?: return false
         pending.save(PendingConsent(uid, ConsentVersions.TERMS, consent.analyticsAccepted))
         flags.put(KEY_RETURNING_USER, true)
@@ -213,9 +221,15 @@ class SessionManager(
         val first =
             withContext(NonCancellable) {
                 ending = true
+                cache.markPurgePending()
                 gateway.deleteCurrentAccount()
             }
         var failure = first
+        if (failure == AuthFailure.RECENT_LOGIN_REQUIRED && gateway.signInMethod() != AnalyticsEvent.Method.GOOGLE) {
+            // Only a Google account can be asked to prove itself again here: never leave the person stuck on a dialog
+            // that cannot work. They keep the panel and can accept; the message is the neutral one.
+            failure = AuthFailure.UNKNOWN
+        }
         if (failure == AuthFailure.RECENT_LOGIN_REQUIRED) {
             when (val token = requestGoogleToken()) {
                 is GoogleTokenResult.Token -> {
@@ -257,6 +271,7 @@ class SessionManager(
     suspend fun signOut() {
         withContext(NonCancellable) {
             ending = true
+            cache.markPurgePending()
             mutableState.value = SessionState.Loading
             stopEverything()
             cache.flushPendingWrites()
@@ -276,13 +291,14 @@ class SessionManager(
     private fun isSignedInState(): Boolean =
         when (val current = mutableState.value) {
             SessionState.LookupFailed -> true
-            SessionState.Loading -> false
+            SessionState.Loading -> sessionActive
             is SessionState.Ready -> current.destination.requiresSession()
         }
 
     private suspend fun onSessionLost() {
         withContext(NonCancellable) {
             ending = true
+            cache.markPurgePending()
             mutableState.value = SessionState.Loading
             stopEverything()
             // Signed out already: queued writes would be refused, so no flush.
@@ -308,6 +324,7 @@ class SessionManager(
         notice: SignedOutNotice?,
         markReturning: Boolean,
     ) {
+        sessionActive = false
         gateway.signOut()
         pending.clear()
         privacy.applyAccountConsent(false)
@@ -321,13 +338,20 @@ class SessionManager(
     private suspend fun resolveCurrent() {
         val uid = gateway.currentUid
         if (uid == null) {
+            sessionActive = false
             privacy.applyAccountConsent(false)
             pending.clear()
             mutableState.value = SessionState.Ready(entryDestination())
             return
         }
+        sessionActive = true
+        // Off until the account has been read (also at "Réessayer").
+        privacy.applyAccountConsent(false)
         mutableState.value = SessionState.Loading
-        when (val load = accounts.load(uid)) {
+        val load = accounts.load(uid)
+        // The session may have been lost while we were reading: the loss handler already put the app back to sign-in.
+        if (gateway.currentUid != uid) return
+        when (load) {
             AccountLoad.Unavailable -> mutableState.value = SessionState.LookupFailed
             is AccountLoad.Loaded -> applyAccount(uid, load.snapshot, method = null, signUpGesture = false)
         }
@@ -338,6 +362,7 @@ class SessionManager(
         uid: String,
         consent: ConsentChoice,
     ) {
+        sessionActive = true
         flags.put(KEY_RETURNING_USER, true)
         pending.save(PendingConsent(uid, ConsentVersions.TERMS, consent.analyticsAccepted))
         privacy.applyAccountConsent(consent.analyticsAccepted)
@@ -351,13 +376,16 @@ class SessionManager(
         method: AnalyticsEvent.Method,
         signUpConsent: ConsentChoice?,
     ) {
+        sessionActive = true
         // Nothing is collected until the account's own choice has been read.
         privacy.applyAccountConsent(false)
         if (signUpConsent != null) {
             pending.save(PendingConsent(uid, ConsentVersions.TERMS, signUpConsent.analyticsAccepted))
         }
         mutableState.value = SessionState.Loading
-        when (val load = accounts.load(uid)) {
+        val load = accounts.load(uid)
+        if (gateway.currentUid != uid) return
+        when (load) {
             AccountLoad.Unavailable -> mutableState.value = SessionState.LookupFailed
             is AccountLoad.Loaded -> applyAccount(uid, load.snapshot, method, signUpGesture = signUpConsent != null)
         }

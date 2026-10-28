@@ -20,6 +20,9 @@ interface CachePurger {
      */
     suspend fun purge(): Boolean
 
+    /** Writes the "purge to do" flag at once, at the very start of a sign-out / refusal / session loss. */
+    fun markPurgePending()
+
     suspend fun purgeIfPending()
 }
 
@@ -51,6 +54,10 @@ class FirestoreCachePurger(
         } catch (e: Exception) {
             false
         }
+    }
+
+    override fun markPurgePending() {
+        flags.put(KEY_PURGE_PENDING, true)
     }
 
     override suspend fun purgeIfPending() {

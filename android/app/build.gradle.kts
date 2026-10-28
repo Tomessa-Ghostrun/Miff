@@ -26,6 +26,7 @@ android {
         // Override without editing the code: -Pmiff.legalBaseUrl=... and -Pmiff.supportEmail=...
         val legalBaseUrl = providers.gradleProperty("miff.legalBaseUrl").getOrElse("https://miff-3d283.web.app")
         val supportEmail = providers.gradleProperty("miff.supportEmail").getOrElse("tomessa.mfouka@gmail.com")
+        require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
         buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
     }

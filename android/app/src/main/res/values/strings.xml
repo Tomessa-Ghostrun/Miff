@@ -134,8 +134,8 @@
     <string name="auth_error_email_format">This e-mail address doesn\'t look right.</string>
     <string name="auth_error_password_short">8 characters minimum.</string>
     <string name="auth_error_terms_required">To continue, please accept the Terms of Service and the Privacy Policy.</string>
-    <string name="auth_error_invalid_credentials">This combination does not work. Check your e-mail address and your password, or choose \"Forgot password?\".</string>
-    <string name="auth_error_too_many">A few too many attempts for now. Please wait a few minutes or reset your password.</string>
+    <string name="auth_error_invalid_credentials">This combination does not work. Check your e-mail address and your password.</string>
+    <string name="auth_error_too_many">A few too many attempts for now. Please wait a few minutes before trying again.</string>
     <string name="auth_error_email_in_use">An account already exists with this address. You can sign in.</string>
     <string name="auth_error_other_method">An account already exists with this address, using another way to sign in. Try the other option.</string>
     <string name="auth_error_network">No connection for now. Try again as soon as you have a network.</string>

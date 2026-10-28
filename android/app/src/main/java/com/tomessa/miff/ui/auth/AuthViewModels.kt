@@ -137,22 +137,11 @@ class SignInViewModel(
     val uiState: StateFlow<SignInUiState> = mutableState.asStateFlow()
 
     init {
-        when (session.consumeNotice()) {
-            SignedOutNotice.ACCOUNT_NOT_CREATED -> {
-                mutableState.update { it.copy(showAccountNotCreatedNote = true) }
-            }
-
-            SignedOutNotice.ACCOUNT_UNAVAILABLE -> {
-                mutableState.update {
-                    it.copy(
-                        message = AuthMessage.ACCOUNT_UNAVAILABLE,
-                    )
-                }
-            }
-
-            null -> {
-                Unit
-            }
+        val notice = session.consumeNotice()
+        if (notice == SignedOutNotice.ACCOUNT_NOT_CREATED) {
+            mutableState.update { it.copy(showAccountNotCreatedNote = true) }
+        } else if (notice == SignedOutNotice.ACCOUNT_UNAVAILABLE) {
+            mutableState.update { it.copy(message = AuthMessage.ACCOUNT_UNAVAILABLE) }
         }
     }
 

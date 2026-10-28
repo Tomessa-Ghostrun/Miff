@@ -41,11 +41,15 @@ class LoginThrottle(
 ) {
     private var failures = 0
     private var pausedUntil = 0L
+    private var lastFailureAt = 0L
 
     /** 0 when a new attempt is allowed. */
     fun remainingPauseMillis(): Long = (pausedUntil - nowMillis()).coerceAtLeast(0L)
 
     fun recordWrongCredentials() {
+        // Old failures expire: five wrong answers spread over a day are not "in a row".
+        if (failures > 0 && nowMillis() - lastFailureAt > FAILURE_WINDOW_MILLIS) failures = 0
+        lastFailureAt = nowMillis()
         failures++
         if (failures >= maxFailures) {
             failures = 0
@@ -61,5 +65,6 @@ class LoginThrottle(
     companion object {
         const val DEFAULT_MAX_FAILURES = 5
         const val DEFAULT_PAUSE_MILLIS = 30_000L
+        const val FAILURE_WINDOW_MILLIS = 10 * 60_000L
     }
 }

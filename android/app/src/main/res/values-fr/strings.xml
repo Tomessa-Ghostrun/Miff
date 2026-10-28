@@ -131,8 +131,8 @@
     <string name="auth_error_email_format">Cette adresse e-mail ne semble pas correcte.</string>
     <string name="auth_error_password_short">8 caractères minimum.</string>
     <string name="auth_error_terms_required">Pour continuer, accepte les Conditions de service et la Politique de protection des données.</string>
-    <string name="auth_error_invalid_credentials">Cette combinaison ne fonctionne pas. Vérifie ton adresse e-mail et ton mot de passe, ou choisis « Mot de passe oublié ? ».</string>
-    <string name="auth_error_too_many">Un peu trop d\'essais pour le moment. Patiente quelques minutes ou réinitialise ton mot de passe.</string>
+    <string name="auth_error_invalid_credentials">Cette combinaison ne fonctionne pas. Vérifie ton adresse e-mail et ton mot de passe.</string>
+    <string name="auth_error_too_many">Un peu trop d\'essais pour le moment. Patiente quelques minutes avant de réessayer.</string>
     <string name="auth_error_email_in_use">Un compte existe déjà avec cette adresse. Tu peux te connecter.</string>
     <string name="auth_error_other_method">Un compte existe déjà avec cette adresse, avec un autre mode de connexion. Essaie l\'autre option.</string>
     <string name="auth_error_network">Pas de connexion pour le moment. Réessaie dès que tu as du réseau.</string>

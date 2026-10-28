@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The only permissions of the app: network access. No location, no notification, no storage. -->
+    <!-- The only permissions the app asks for itself: network access. No location, no notification, no storage. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -19,6 +19,18 @@
         tools:node="remove" />
     <uses-permission
         android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE"
+        tools:node="remove" />
+
+    <!--
+        androidx.credentials (Sign in with Google) merges the biometric permissions for passkeys. Miff offers no passkey
+        and no biometric prompt (only the Google account dialog), so they are removed: nothing in the app needs them,
+        and a store reviewer would otherwise ask why a family-reassurance app declares biometrics.
+    -->
+    <uses-permission
+        android:name="android.permission.USE_BIOMETRIC"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.USE_FINGERPRINT"
         tools:node="remove" />
 
     <application

@@ -63,6 +63,16 @@ class AuthFormTest {
     }
 
     @Test
+    fun oldFailuresExpire() {
+        var now = 0L
+        val throttle = LoginThrottle({ now })
+        repeat(4) { throttle.recordWrongCredentials() }
+        now += LoginThrottle.FAILURE_WINDOW_MILLIS + 1
+        throttle.recordWrongCredentials() // the fifth, but a long time after the others
+        assertEquals(0L, throttle.remainingPauseMillis())
+    }
+
+    @Test
     fun aSuccessResetsTheCount() {
         val throttle = LoginThrottle({ 0L })
         repeat(4) { throttle.recordWrongCredentials() }

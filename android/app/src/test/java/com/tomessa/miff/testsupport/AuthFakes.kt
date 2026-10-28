@@ -197,6 +197,10 @@ class FakeCachePurger(
         return true
     }
 
+    override fun markPurgePending() {
+        timeline += "markPending"
+    }
+
     override suspend fun purgeIfPending() {
         purgeIfPendingCalls++
     }
@@ -219,9 +223,13 @@ class SessionHarness(
 
     /** What was collected at the moment the account was read: it must be nothing (criterion X9). */
     var collectionWhenAccountRead: Pair<Boolean, Boolean>? = null
+
+    /** Runs while the account is being read (to simulate something happening during the read). */
+    var duringAccountRead: () -> Unit = {}
     val accounts =
         FakeAccountRepository {
             collectionWhenAccountRead = privacy.analyticsEnabled.value to privacy.crashReportsEnabled.value
+            duringAccountRead()
         }
     var teardownCalls = 0
 

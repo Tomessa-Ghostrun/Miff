@@ -113,6 +113,97 @@ class SessionManagerTest {
             assertEquals(AppDestination.FEED, h.manager.destination())
         }
 
+    // --- Cold start: nothing collected before the account is read (review I1/I2) ---------------------------
+
+    @Test
+    fun coldStartWithASession_cutsAStoredCollection_andStaysOffIfTheReadFails() =
+        run { h ->
+            h.privacy.applyAccountConsent(true) // the choice stored by the previous run
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.result = AccountLoad.Unavailable
+            h.manager.start()
+            assertEquals(SessionState.LookupFailed, h.manager.state.value)
+            assertFalse(h.privacy.analyticsEnabled.value)
+            assertFalse(h.privacy.crashReportsEnabled.value)
+            assertEquals("off while the account was being read", false to false, h.collectionWhenAccountRead)
+        }
+
+    @Test
+    fun coldStartWithASession_switchesOnOnlyAfterASuccessfulRead_andOnlyIfTheAccountSaidYes() =
+        run { h ->
+            h.privacy.applyAccountConsent(true)
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = true)
+            h.manager.start()
+            assertEquals(false to false, h.collectionWhenAccountRead)
+            assertTrue(h.privacy.analyticsEnabled.value)
+
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = false)
+            h.privacy.applyAccountConsent(true)
+            h.manager.retry()
+            assertEquals(false to false, h.collectionWhenAccountRead)
+            assertFalse(h.privacy.analyticsEnabled.value)
+        }
+
+    @Test
+    fun signIn_cutsACollectionLeftOnBeforeTheRead_X9() =
+        run { h ->
+            h.manager.start()
+            h.privacy.applyAccountConsent(true) // left on by something else
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = false)
+            h.manager.signInWithEmail("a@b.fr", "password-1")
+            assertEquals("off at the moment of the read", false to false, h.collectionWhenAccountRead)
+            assertFalse(h.privacy.analyticsEnabled.value)
+            assertTrue(h.sink.events.isEmpty())
+        }
+
+    // --- Session lost during a transition (review I4) --------------------------------------------------------
+
+    @Test
+    fun aSessionLostWhileTheAccountIsBeingRead_isStillCleanedUp() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.duringAccountRead = { h.gateway.setSignedIn(null) }
+            h.manager.start()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            assertEquals("the read result must not bring the app back in", 1, h.cache.purgeCalls)
+            assertEquals(SignedOutNotice.ACCOUNT_UNAVAILABLE, h.manager.consumeNotice())
+        }
+
+    // --- Consent panel details (review I3 and minor) -------------------------------------------------------
+
+    @Test
+    fun panelRefuse_ofAnEmailAccount_neverOpensAGoogleDialog_andKeepsThePanel() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1", AnalyticsEvent.Method.EMAIL)
+            h.accounts.setLoaded(profileExists = false)
+            h.manager.start()
+            h.gateway.deleteResults.addLast(AuthFailure.RECENT_LOGIN_REQUIRED)
+            var googleAsked = false
+
+            val result =
+                h.manager.refuseConsentPanel {
+                    googleAsked = true
+                    GoogleTokenResult.Cancelled
+                }
+
+            assertFalse("a password account cannot be sent to a Google dialog", googleAsked)
+            assertEquals(RefuseResult.Failed(AuthFailure.UNKNOWN), result)
+            assertEquals(AppDestination.CONSENT_PANEL, h.manager.destination())
+        }
+
+    @Test
+    fun panelAccept_twice_recordsOnceAndSendsOneEvent() =
+        run { h ->
+            h.manager.start()
+            h.accounts.setLoaded(profileExists = false)
+            h.manager.signInWithGoogle("token", signUpConsent = null)
+            assertTrue(h.manager.acceptConsentPanel(ConsentChoice(true, true)))
+            assertFalse("second tap", h.manager.acceptConsentPanel(ConsentChoice(true, true)))
+            assertEquals(listOf("sign_up_completed"), h.sink.names)
+        }
+
     @Test
     fun startPurgesAFailedPurgeBeforeAnythingElse() =
         run { h ->
@@ -300,7 +391,7 @@ class SessionManagerTest {
             assertEquals(RefuseResult.Done, result)
             assertEquals(
                 "delete first, then stop listeners, purge, close the session",
-                listOf("delete", "teardown", "purge", "signOut"),
+                listOf("markPending", "delete", "teardown", "purge", "signOut"),
                 h.timeline.entries,
             )
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
@@ -435,7 +526,7 @@ class SessionManagerTest {
 
             h.manager.signOut()
 
-            assertEquals(listOf("teardown", "flush", "purge", "signOut"), h.timeline.entries)
+            assertEquals(listOf("markPending", "teardown", "flush", "purge", "signOut"), h.timeline.entries)
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
             assertNull(h.gateway.currentUid)
             assertFalse(h.privacy.analyticsEnabled.value)
