@@ -31,7 +31,13 @@ Miff is an app to **know your loved ones are okay, without bothering them**.
 
 ## 3. Accepting these terms
 
-By creating an account or using Miff, you accept these terms. If you do not agree, do not use the app. We record the date and version of the terms you accepted.
+At sign-up, you tap the **"Join"** button. Just above it, a sentence tells you: "By clicking Join, you accept our Terms of Use and our Privacy Policy, as well as the sharing of your anonymous usage statistics and crash reports (can be changed at any time in Settings)."
+
+In practice:
+- **There is no checkbox**: your click on "Join" counts as acceptance of these terms and of the Privacy Policy. If you do not agree, do not click and do not use the app.
+- **The same click turns on the sharing of usage statistics and crash reports** (see the Privacy Policy). It is turned on from the start, but **you can turn it off at any time in Settings**, with no consequence for your account or your use of Miff.
+- **Sharing your location is not covered**: it requires a separate agreement, given Miff by Miff (article 6).
+- We record the date and version of the terms you accepted.
 
 You must use Miff having the legal capacity to commit yourself, or with the agreement of your legal representative. Miff does not impose a minimum age and does not verify age. If you are a minor, use the app with your parents' agreement. In France, the law requires a parent's agreement below the age of 15 for certain online services: if you are under 15, ask for their agreement before using Miff. We cannot verify that agreement.
 
@@ -53,7 +59,7 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 
 The core of Miff is sharing your status related to trusted places. Here are our commitments and yours.
 
-- **It is never automatic without your knowledge.** Sharing with a Miff only starts after your explicit consent, given Miff by Miff. Nobody can turn it on for you.
+- **It is never automatic without your knowledge.** Sharing with a Miff only starts after your explicit consent, given Miff by Miff, separate from your click on "Join". Nobody can turn it on for you.
 - **You can stop it at any time**, without justification, in the app settings. Stopping deletes your status and your update photo for that Miff. Your loved ones then simply see "sharing turned off", without any alert message.
 - **Miff does not store your GPS position** or any history of trips: only a status (for example "at Home"), with the time, is shared. Details are in the Privacy Policy.
 - **Reciprocity**: to see other people's status, you must share yours.
