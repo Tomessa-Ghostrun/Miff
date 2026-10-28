@@ -2,6 +2,20 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.2.1] - 2026-10-28 : splash animé (demande du PM après recette sur l'OPPO)
+
+### Ajouté
+- **Écran de lancement animé** : fond bleu uni, logo « M + i » sans cœur, puis le cœur jaune-vert apparaît sur le « i », gonfle comme un ballon (léger élastique), éclate (pop net, 12 petits éclats verts) et l'app s'ouvre en fondu. Environ 2,2 s (2,5 s au plus), une fois par démarrage à froid.
+- **Écran de lancement système** (API Splash Screen d'Android 12+, rétro-portage jusqu'à minSdk 26) : mêmes fond et « M + i » sans cœur, dessiné à la même taille et au même endroit que l'animation, pour un relais sans saut. Dépendance ajoutée : `androidx.core:core-splashscreen` 1.2.0 (AndroidX, gratuite, quelques dizaines de Ko).
+- **« Réduire les animations »** (échelle d'animation à 0) : aucun mouvement, logo complet fixe 0,6 s puis fondu (0,8 s au total).
+- Accessibilité : décoratif, annoncé « Miff » une seule fois ; app masquée du lecteur d'écran et touches absorbées pendant l'animation ; aucun son, aucune vibration, aucun événement d'analyse, aucun clignotement.
+- Tests : machine d'états de l'animation sans interface (`SplashTimelineTest`), détection du réglage (`ReduceMotionTest`), cohérence logo/tokens/thème (`SplashArtworkTest`), enchaînement vers l'app avec et sans mouvement et capture de dix instants (`SplashHostTest`).
+
+### Choix techniques (visibles ou non)
+- Horloge en **temps réel** (pas `Animatable`) : l'échelle d'animation des options développeur ne peut pas rallonger le splash.
+- L'app est composée sous l'animation : la session se résout pendant ce temps, le splash n'attend jamais le réseau. Si le premier écran n'est pas encore prêt à la fin, il affiche son propre chargement (pas de maintien du fond bleu : écart avec le ticket Onboarding §5.1 point 3, voulu pour respecter « jamais plus longtemps que prévu »).
+- Aucun contournement « pour rester gratuit » ; aucune bibliothèque d'animation, aucune ressource externe.
+
 ## [0.2.0] - 2026-10-27 : AUTH-1, inscription et connexion
 
 ### Ajouté

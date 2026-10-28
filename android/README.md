@@ -2,7 +2,7 @@
 
 Application Android native (Kotlin + Jetpack Compose) de Miff. Ce dossier contient le **socle technique** (ticket INIT-2) et l'**inscription / connexion** (ticket AUTH-1) : projet, design system en code, traductions, Firebase, écran de diagnostic interne, écrans d'authentification.
 
-> **Logo et icône OFFICIELS (PM, validés le 2026-10-27).** Source de vérité : `design/assets/logo/` (recréation vectorielle des deux visuels fournis par le PM ; le PM doit encore confirmer ses droits sur le dessin avant publication). Dans l'app : icône adaptative (`mipmap-anydpi-v26/ic_launcher*.xml` : fond `ic_launcher_background` = `#043CD1`, avant-plan `drawable/ic_launcher_foreground.xml`, calque monochrome `ic_launcher_monochrome.xml`) et mot-symbole `drawable/miff_wordmark_color.xml` sur l'écran d'accueil (description accessible "Logo de Miff"). Les couleurs de ces dessins sont des copies des tokens (`colorActionPrimary`, `colorBrandPrimary`, `colorTextOnAction`) : `LogoColorsTest` échoue si elles divergent. L'icône 512 x 512 de la fiche Google Play est dans `app/src/main/play/` (hors ressources : jamais embarquée dans l'APK). Pas d'écran de démarrage personnalisé : Android 12+ affiche l'icône de l'app automatiquement.
+> **Logo et icône OFFICIELS (PM, validés le 2026-10-27).** Source de vérité : `design/assets/logo/` (recréation vectorielle des deux visuels fournis par le PM ; le PM doit encore confirmer ses droits sur le dessin avant publication). Dans l'app : icône adaptative (`mipmap-anydpi-v26/ic_launcher*.xml` : fond `ic_launcher_background` = `#043CD1`, avant-plan `drawable/ic_launcher_foreground.xml`, calque monochrome `ic_launcher_monochrome.xml`) et mot-symbole `drawable/miff_wordmark_color.xml` sur l'écran d'accueil (description accessible "Logo de Miff"). Les couleurs de ces dessins sont des copies des tokens (`colorActionPrimary`, `colorBrandPrimary`, `colorTextOnAction`) : `LogoColorsTest` échoue si elles divergent. L'icône 512 x 512 de la fiche Google Play est dans `app/src/main/play/` (hors ressources : jamais embarquée dans l'APK). Écran de lancement : voir « Écran de lancement animé ».
 
 ## Identité technique
 
@@ -117,6 +117,26 @@ Les écrans d'inscription et de connexion reprennent les maquettes : fond dégra
 
 Le workflow décode le secret dans `~/.android/debug.keystore` du runner (alias `androiddebugkey`, mots de passe de debug standard), sans jamais l'afficher, et le supprime en fin de job. Il compare ensuite la SHA-1 de l'APK à celles de `google-services.json` et échoue si elle n'y est pas. Sans le secret (Dependabot, fork), la clé jetable par défaut reste utilisée. Création du keystore : voir « Signature de l'APK debug de la CI » plus bas. Le workflow échoue aussi, avec un message explicite, si `google-services.json` n'a pas de client OAuth web. Sur le poste, copier le même keystore dans `%USERPROFILE%\.android\debug.keystore` donne la même empreinte.
 
+## Écran de lancement animé (splash)
+
+Demande du PM après sa recette sur l'OPPO : « on voit le logo de l'app sans le cœur vert, le cœur vert apparaît et gonfle comme un ballon de baudruche jusqu'à éclater, puis l'app s'ouvre ». Ordre du démarrage : **écran de lancement système → animation Compose → app** (le carrousel de première ouverture, ticket Onboarding, fera partie de l'app : il n'apparaît qu'après le splash).
+
+| Étape | Ce qui se passe | Où |
+|---|---|---|
+| Écran système (Android 12+ : API Splash Screen ; avant : rétro-portage `androidx.core:core-splashscreen`, minSdk 26 conservé) | Fond bleu `#043CD1` uni et « M + i » blanc **sans cœur** (`drawable/splash_logo_mark.xml`, copie du premier tracé de l'icône officielle, dessiné à 288 dp comme l'icône du splash Android 12) | thème `Theme.Miff.Starting`, `MainActivity.installSplashScreen()` |
+| Animation (≈ 2,2 s au total, 2,5 s au plus) | 0 à 0,25 s : logo seul (relais de l'écran système) ; 0,25 à 0,6 s : le cœur apparaît sur le « i » ; 0,6 à 1,7 s : il gonfle jusqu'à 5 fois sa taille avec un léger élastique ; 1,7 à 2,0 s : pop net (disparition, 12 petits éclats verts qui s'éloignent) ; 2,0 à 2,2 s : fondu vers l'app | `domain/splash/SplashTimeline.kt` (fonction pure du temps, testée), `ui/splash/SplashHost.kt` (dessin) |
+| « Réduire les animations » (`ANIMATOR_DURATION_SCALE` = 0) | Aucun mouvement : logo **complet** fixe 0,6 s puis fondu 0,2 s (0,8 s) | `ui/splash/ReduceMotion.kt` |
+
+Règles tenues :
+- **Une seule fois par démarrage à froid** (pas à la reprise depuis l'arrière-plan). Une rotation pendant l'animation la poursuit au lieu de la relancer.
+- **Ne retarde jamais l'app** : l'app (donc la résolution de session, lancée dans `MiffApplication`) est composée *sous* l'animation dès la deuxième image ; le splash ne dépend ni du réseau ni de la session, et ne dépasse jamais sa durée. Si le premier écran n'est pas prêt à la fin du fondu, c'est son propre état de chargement qui s'affiche (écart assumé avec le ticket §5.1 point 3, qui prévoyait de garder le fond bleu : la consigne du PM prime, « jamais plus longtemps que prévu »).
+- **Temps réel** (horloge d'images), pas `Animatable` : l'échelle d'animation des options développeur ne peut pas rallonger le splash.
+- **Accessibilité** : décoratif, annoncé une seule fois « Miff » (TalkBack) ; l'app dessous est masquée du lecteur d'écran et les touches sont absorbées tant que l'animation dure ; aucun son, aucune vibration, aucun événement d'analyse ; rien ne clignote (le cœur apparaît une fois et disparaît une fois ; couleurs : bleu, blanc, vert de marque, ni éclair blanc ni rouge). Icônes de barres système claires pendant le splash, rétablies ensuite.
+- **Couleurs** : tokens (`colorActionPrimary`, `colorBrandPrimary`, `colorTextOnAction`) ; les deux drawables du logo gardent leurs valeurs hexadécimales, contrôlées par `LogoColorsTest` et `SplashArtworkTest` (le cœur dessiné en Kotlin et le « M + i » sont identiques à l'icône officielle).
+- **Coût** : aucune ressource externe, aucune bibliothèque d'animation ; une seule dépendance AndroidX (`core-splashscreen` 1.2.0, quelques dizaines de Ko).
+- **Limite connue** : sur certaines surcouches constructeur (OPPO/ColorOS), l'écran de lancement système peut s'afficher différemment (icône de l'app au lieu du « M + i »). L'animation Compose reste identique ; à valider par le PM sur l'OPPO. Après une mort du processus par le système, l'app est restaurée sans rejouer le splash.
+- Captures de plusieurs instants (test `SplashHostTest`, fichiers `app/build/splash-frames/`).
+
 ## Confidentialité : Analytics et Crashlytics
 
 - Le manifeste désactive la collecte au démarrage (`firebase_analytics_collection_enabled=false`, `firebase_crashlytics_collection_enabled=false`, identifiant publicitaire désactivé). La clé irréversible `…_collection_deactivated` n'est **pas** utilisée.
@@ -156,7 +176,7 @@ Permissions finales de l'APK release : `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE
 
 ```
 app/src/main      code commun : MiffApplication, AppContainer, MainActivity,
-                  ui/ (theme, components, home, navigation), domain/ (logique pure testée), data/privacy
+                  ui/ (theme, components, home, navigation, splash), domain/ (logique pure testée, dont splash), data/privacy
 app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth en lecture, App Check "debug"
 app/src/release   App Check Play Integrity, aucune destination interne
 app/src/test      tests unitaires JUnit (48 tests ; app/src/testDebug : ViewModel du diagnostic et test de défilement de l'écran d'accueil, via Robolectric)
@@ -233,6 +253,7 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 |---|---|---|
 | Kotlin (stdlib, plugin Compose, plugin sérialisation) | 2.4.21 | Apache 2.0 |
 | AndroidX Core KTX | 1.19.1 | Apache 2.0 |
+| AndroidX Core SplashScreen | 1.2.0 | Apache 2.0 |
 | AndroidX Activity Compose | 1.13.0 | Apache 2.0 |
 | AndroidX Lifecycle (ViewModel Compose, runtime Compose) | 2.11.0 | Apache 2.0 |
 | AndroidX Navigation Compose | 2.10.2 | Apache 2.0 |
