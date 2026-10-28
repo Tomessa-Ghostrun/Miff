@@ -123,6 +123,7 @@ fun WelcomeCarouselScreen(
         ) { page ->
             CarouselIllustration(page)
         }
+        PageDots(current = pagerState.currentPage, animations = animations)
         // Outside the pager: the sentence may grow freely with the system font size.
         Text(
             text = stringResource(captionOf(pagerState.currentPage)),
@@ -131,7 +132,6 @@ fun WelcomeCarouselScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
         )
-        PageDots(current = pagerState.currentPage, animations = animations)
         Spacer(Modifier.height(Spacing.m))
         Text(
             text = stringResource(R.string.onboarding_headline),
