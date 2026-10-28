@@ -194,6 +194,22 @@ jobs:
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
 
+      # The release resource shrinker removed "default_web_client_id" once (it is read by name): without it "Continuer avec
+      # Google" never works in a release build. Same proof for the biometric permissions pulled in by androidx.credentials.
+      - name: Check the release bundle keeps the Google web client id and has no biometric permission
+        if: env.FAKE_FIREBASE_CONFIG != 'true'
+        run: |
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          if ! unzip -p "$bundle" base/resources.pb | grep -a -q 'default_web_client_id'; then
+            echo "::error title=Client web Google supprime::default_web_client_id est absent du bundle release : la connexion Google ne marcherait pas. Verifier android/app/src/main/res/raw/keep.xml."
+            exit 1
+          fi
+          if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -q -E 'USE_BIOMETRIC|USE_FINGERPRINT'; then
+            echo "::error title=Permission biometrique::USE_BIOMETRIC ou USE_FINGERPRINT est revenu dans le manifeste release (voir AndroidManifest.xml et le README, section securite du manifeste)."
+            exit 1
+          fi
+          echo "Bundle release : client web Google present, aucune permission biometrique."
+
       # actions/upload-artifact v7.0.2
       - name: Upload debug APK (short retention)
         if: env.FAKE_FIREBASE_CONFIG != 'true'

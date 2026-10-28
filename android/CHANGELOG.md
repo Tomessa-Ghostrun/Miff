@@ -15,13 +15,22 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - CI : signature de debug stable (secret `DEBUG_KEYSTORE_B64`), contrôle de la SHA-1 de l'APK, échec explicite sans client OAuth web.
 - Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), cases et boutons d'au moins 48 dp, liens légaux focalisables, focus ramené sur la case (a) manquante, contrastes AA (`#D60700` pour les erreurs).
 
+### Corrigé après la revue indépendante
+- **Google en release** : la ressource `default_web_client_id` (lue par son nom) était supprimée par le réducteur de ressources du build release ; `res/raw/keep.xml` la conserve.
+- **Collecte au démarrage** : Analytics et Crashlytics restent coupés tant que `users/{uid}` n'a pas été lu (le choix stocké sur l'appareil n'est plus réappliqué au lancement) ; tests dont un qui tue la suppression de la coupure à la connexion.
+- Panneau de consentement d'un compte **e-mail** : plus de demande de reconnexion Google impossible ; message neutre, la personne peut accepter. Perte de session pendant un chargement : nettoyée aussi. Double appui sur « Continuer » : un seul enregistrement, un seul événement. Drapeau « purge à faire » écrit dès le début de la déconnexion, du refus et de la perte de session. Fenêtre Google limitée à 3 minutes. Les échecs de connexion de plus de 10 minutes sont oubliés.
+- `USE_BIOMETRIC` et `USE_FINGERPRINT` (ajoutées par androidx.credentials) retirées du manifeste ; commentaire et README mis à jour.
+- Bouton Google : règles de marque (Roboto Medium 14 sp, `#1F1F1F`, bordure `#747775`, sans ombre). Le « G » reste un redessin à remplacer avant Google Play.
+- Textes « identifiants incorrects » et « trop d'essais » : plus de renvoi vers un lien « Mot de passe oublié ? » inexistant ; **le texte final avec ce lien reviendra avec AUTH-2**.
+- `LEGAL_BASE_URL` doit commencer par `https://` (le build échoue sinon). `backend/data-model.md` §8 : `sign_up_completed` « après la création du compte » (documentation seulement).
+
 ### Dépendances
 - `androidx.credentials:credentials` et `credentials-play-services-auth` 1.6.0 (Apache 2.0), `googleid` 1.2.1 : nécessaires à la connexion Google (alternative gratuite, maintenue par Google, à l'ancien SDK Google Sign-In). Aucun coût.
 
 ### Choix et limites à connaître
 - Aucun délai propre sur les appels d'authentification : une requête abandonnée par un délai pourrait aboutir plus tard et ouvrir une session que personne ne regarde ; Firebase échoue vite hors connexion. Signal de réexamen : plaintes de chargement sans fin.
 - Le mot de passe est vidé par une rotation de l'écran (seul l'e-mail est conservé), écart assumé avec le cas limite 14 du ticket.
-- Le lien « Mot de passe oublié ? » arrive avec AUTH-2 ; deux messages d'erreur le mentionnent déjà (textes validés du ticket).
+- Le lien « Mot de passe oublié ? » arrive avec AUTH-2, avec le texte final des messages « identifiants incorrects » et « trop d'essais ».
 - Le « G » du bouton Google est un redessin à remplacer par l'asset officiel de Google avant publication.
 - Non vérifié sur téléphone dans ce ticket : voir la description de la PR.
 
