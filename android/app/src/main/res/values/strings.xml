@@ -6,6 +6,8 @@
 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="android_app_name" translatable="false">Miff</string>
+    <!-- Spoken once by the screen reader while the launch animation plays (brand name, not translated). -->
+    <string name="android_splash_a11y" translatable="false">Miff</string>
 
     <!-- Welcome screen -->
     <string name="home_tagline">Know your loved ones are fine, without bothering them.</string>

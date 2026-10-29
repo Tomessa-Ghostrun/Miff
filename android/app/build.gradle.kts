@@ -95,6 +95,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
 
     implementation(libs.androidx.core.ktx)
+    // Splash screen API (Android 12+) with a back-port down to minSdk 26: the system launch screen shows the blue
+    // background and the "M + i" without the heart; the Compose animation takes over from there.
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
