@@ -24,7 +24,9 @@ android {
         // Single place for the public pages of the legal texts (AUTH-W, not deployed yet) and for the provisional
         // contact (ticket decision N2: replace by a dedicated address before the external beta).
         // Override without editing the code: -Pmiff.legalBaseUrl=... and -Pmiff.supportEmail=...
-        val legalBaseUrl = providers.gradleProperty("miff.legalBaseUrl").getOrElse("https://miff-3d283.web.app")
+        // A "/" at the end is removed here too (the app also copes with it, see legalPageUrl).
+        val legalBaseUrl =
+            providers.gradleProperty("miff.legalBaseUrl").getOrElse("https://miff-3d283.web.app").trimEnd('/')
         val supportEmail = providers.gradleProperty("miff.supportEmail").getOrElse("tomessa.mfouka@gmail.com")
         require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")

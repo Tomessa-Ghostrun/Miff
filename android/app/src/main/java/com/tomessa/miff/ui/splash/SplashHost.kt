@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.splash
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +35,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import com.tomessa.miff.R
@@ -42,6 +44,14 @@ import com.tomessa.miff.domain.splash.directionX
 import com.tomessa.miff.domain.splash.directionY
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorBrandPrimary
+
+/**
+ * True while the splash covers the app. The screens composed underneath that handle the system "back" themselves
+ * (the consent panel, where back means REFUSAL) must not react to it then: the person cannot see them. The system
+ * dispatches "back" to the most recently registered handler, and those screens register theirs after the splash, so
+ * they must stand down explicitly instead of relying on the order of registration.
+ */
+val LocalSplashCovering = staticCompositionLocalOf { false }
 
 /**
  * Plays the launch animation ABOVE the app, once per cold start (rotating the phone keeps the timeline going; coming
@@ -68,6 +78,10 @@ fun SplashHost(
     val elapsedMs = rememberSaveable { mutableLongStateOf(0L) }
     var contentMounted by remember { mutableStateOf(false) }
 
+    // The system "back" during the animation does nothing (it must not reach the screen composed underneath, see
+    // [LocalSplashCovering]); it does not leave the app either: the splash lasts 2.2 s at most.
+    BackHandler(enabled = !finished) {}
+
     LaunchedEffect(timeline, finished) {
         // The first frame shows only the blue and the "M + i", exactly like the system launch screen. The app is
         // composed one frame later, so that its (heavier) first composition does not delay the very first frame.
@@ -88,7 +102,9 @@ fun SplashHost(
     Box(modifier = modifier.fillMaxSize()) {
         if (contentMounted || finished) {
             // While the animation covers the app, the screen reader must read only "Miff", not the screen underneath.
-            Box(modifier = if (finished) Modifier else Modifier.clearAndSetSemantics { }) { content() }
+            Box(modifier = if (finished) Modifier else Modifier.clearAndSetSemantics { }) {
+                CompositionLocalProvider(LocalSplashCovering provides !finished) { content() }
+            }
         }
         if (!finished) {
             SplashScreen(timeline = timeline, elapsedMs = { elapsedMs.longValue })

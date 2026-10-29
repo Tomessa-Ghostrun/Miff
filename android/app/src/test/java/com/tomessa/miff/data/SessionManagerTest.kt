@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -199,8 +200,8 @@ class SessionManagerTest {
             h.manager.start()
             h.accounts.setLoaded(profileExists = false)
             h.manager.signInWithGoogle("token", signUpConsent = null)
-            assertTrue(h.manager.acceptConsentPanel(ConsentChoice(true, true)))
-            assertFalse("second tap", h.manager.acceptConsentPanel(ConsentChoice(true, true)))
+            assertTrue(h.manager.acceptConsentPanel(ConsentChoice.IMPLICIT))
+            assertFalse("second tap", h.manager.acceptConsentPanel(ConsentChoice.IMPLICIT))
             assertEquals(listOf("sign_up_completed"), h.sink.names)
         }
 
@@ -222,24 +223,85 @@ class SessionManagerTest {
             assertFalse(h.privacy.crashReportsEnabled.value)
         }
 
+    // --- Review I2: the crash report of the previous run is kept until the account has answered --------------
+
     @Test
-    fun emailSignUp_withBoxBUnticked_collectsNothingAndSendsNothing() =
+    fun coldStartWithAnExistingConsent_keepsTheCrashReport_thenLetsItBeSent() =
         run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = true)
             h.manager.start()
-            val failure = h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice(true, false))
-            assertNull(failure)
-            assertEquals(AppDestination.PROFILE, h.manager.destination())
-            assertFalse(h.privacy.analyticsEnabled.value)
-            assertFalse(h.privacy.crashReportsEnabled.value)
-            assertTrue("no event without (b)", h.sink.events.isEmpty())
-            assertEquals(PendingConsent("uid-1", ConsentVersions.TERMS, false), h.pending.stored)
+            // Paused at the start (nothing deleted), switched on once the account said yes: never "off" in between,
+            // which is what used to erase the report of the previous crash.
+            assertEquals(listOf("pause", "on"), h.crashSwitch.states())
+            assertEquals(listOf("pause", "on"), h.analyticsSwitch.states())
         }
 
     @Test
-    fun emailSignUp_withBoxBTicked_switchesBothOn_thenSendsSignUpCompleted() =
+    fun coldStart_whenTheAccountCannotBeRead_keepsTheCrashReportForLater() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.result = AccountLoad.Unavailable
+            h.manager.start()
+            assertEquals(listOf("pause"), h.crashSwitch.states())
+
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = true)
+            h.manager.retry()
+            assertEquals("still nothing deleted, then switched on", listOf("pause", "on"), h.crashSwitch.states())
+        }
+
+    @Test
+    fun coldStart_whenTheAccountWithdrewItsConsent_deletesTheCrashReport() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = false)
+            h.manager.start()
+            assertEquals(listOf("pause", "off"), h.crashSwitch.states())
+        }
+
+    @Test
+    fun coldStartWithoutASession_deletesTheCrashReport_thereIsNoConsent() =
         run { h ->
             h.manager.start()
-            h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice(true, true))
+            assertEquals(listOf("pause", "off"), h.crashSwitch.states())
+        }
+
+    @Test
+    fun signOut_deletesTheCrashReport() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = true)
+            h.manager.start()
+            h.manager.signOut()
+            assertEquals(listOf("pause", "on", "off"), h.crashSwitch.states())
+        }
+
+    @Test
+    fun refusingThePanel_deletesTheCrashReport() =
+        run { h ->
+            h.manager.start()
+            h.accounts.setLoaded(profileExists = false)
+            h.manager.signInWithGoogle("token", signUpConsent = null)
+            h.manager.refuseConsentPanel { GoogleTokenResult.Unavailable }
+            assertEquals("off", h.crashSwitch.log.last())
+            assertFalse("never switched on", h.crashSwitch.log.contains("on"))
+        }
+
+    @Test
+    fun signIn_pausesWhileTheAccountIsRead_thenSwitchesOn_andNeverDeletesInBetween() =
+        run { h ->
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = true)
+            h.manager.start()
+            h.crashSwitch.log.clear()
+            h.manager.signInWithEmail("a@b.fr", "password-1")
+            assertEquals(listOf("pause", "on"), h.crashSwitch.states())
+        }
+
+    @Test
+    fun emailSignUp_switchesBothOn_thenSendsSignUpCompleted() =
+        run { h ->
+            h.manager.start()
+            h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice.IMPLICIT)
             assertTrue(h.privacy.analyticsEnabled.value)
             assertTrue(h.privacy.crashReportsEnabled.value)
             assertEquals(listOf("sign_up_completed"), h.sink.names)
@@ -257,7 +319,7 @@ class SessionManagerTest {
         run { h ->
             h.manager.start()
             try {
-                h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice(false, true))
+                h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice(termsAccepted = false))
                 fail("must refuse")
             } catch (expected: IllegalArgumentException) {
                 // expected
@@ -270,7 +332,7 @@ class SessionManagerTest {
         run { h ->
             h.gateway.createResult = AuthOutcome.Failure(AuthFailure.EMAIL_ALREADY_IN_USE)
             h.manager.start()
-            val failure = h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice(true, true))
+            val failure = h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice.IMPLICIT)
             assertEquals(AuthFailure.EMAIL_ALREADY_IN_USE, failure)
             assertEquals(AppDestination.SIGN_UP, h.manager.destination())
             assertNull(h.pending.stored)
@@ -347,13 +409,13 @@ class SessionManagerTest {
         }
 
     @Test
-    fun panelAccept_withBoxB_recordsBoth_switchesOn_andSendsSignUpCompleted() =
+    fun panelAccept_recordsBoth_switchesOn_andSendsSignUpCompleted() =
         run { h ->
             h.manager.start()
             h.accounts.setLoaded(profileExists = false)
             h.manager.signInWithGoogle("token", signUpConsent = null)
 
-            assertTrue(h.manager.acceptConsentPanel(ConsentChoice(termsAccepted = true, analyticsAccepted = true)))
+            assertTrue(h.manager.acceptConsentPanel(ConsentChoice.IMPLICIT))
             assertEquals(AppDestination.PROFILE, h.manager.destination())
             assertEquals(PendingConsent("uid-1", ConsentVersions.TERMS, true), h.pending.stored)
             assertTrue(h.privacy.analyticsEnabled.value)
@@ -367,12 +429,12 @@ class SessionManagerTest {
         }
 
     @Test
-    fun panelAccept_withoutBoxA_doesNothing() =
+    fun panelAccept_withoutTheTerms_doesNothing() =
         run { h ->
             h.manager.start()
             h.accounts.setLoaded(profileExists = false)
             h.manager.signInWithGoogle("token", signUpConsent = null)
-            assertFalse(h.manager.acceptConsentPanel(ConsentChoice(termsAccepted = false, analyticsAccepted = true)))
+            assertFalse(h.manager.acceptConsentPanel(ConsentChoice(termsAccepted = false)))
             assertEquals(AppDestination.CONSENT_PANEL, h.manager.destination())
             assertNull(h.pending.stored)
             assertTrue(h.sink.events.isEmpty())
@@ -473,14 +535,14 @@ class SessionManagerTest {
             assertEquals(SignedOutNotice.ACCOUNT_NOT_CREATED, h.manager.consumeNotice())
         }
 
-    // --- Google from the sign-up screen (boxes ticked before the gesture) ---------------------------------
+    // --- Google from the sign-up screen (the tap is the acceptance) ---------------------------------
 
     @Test
-    fun googleFromSignUp_newAccount_recordsTheBoxes_andSendsSignUpOnlyWithBoxB() =
+    fun googleFromSignUp_newAccount_recordsTheAcceptance_andSendsSignUp() =
         run { h ->
             h.manager.start()
             h.accounts.setLoaded(profileExists = false)
-            assertNull(h.manager.signInWithGoogle("token", ConsentChoice(true, true)))
+            assertNull(h.manager.signInWithGoogle("token", ConsentChoice.IMPLICIT))
             assertEquals(AppDestination.PROFILE, h.manager.destination())
             assertEquals("off at the moment of the read", false to false, h.collectionWhenAccountRead)
             assertEquals(PendingConsent("uid-1", ConsentVersions.TERMS, true), h.pending.stored)
@@ -488,25 +550,14 @@ class SessionManagerTest {
         }
 
     @Test
-    fun googleFromSignUp_withoutBoxB_sendsNothing() =
-        run { h ->
-            h.manager.start()
-            h.accounts.setLoaded(profileExists = false)
-            h.manager.signInWithGoogle("token", ConsentChoice(true, false))
-            assertEquals(AppDestination.PROFILE, h.manager.destination())
-            assertTrue(h.sink.events.isEmpty())
-            assertFalse(h.privacy.analyticsEnabled.value)
-        }
-
-    @Test
     fun googleFromSignUp_butTheAccountAlreadyExists_theAccountChoiceRules() =
         run { h ->
             h.manager.start()
             h.accounts.setLoaded(profileExists = true, hasMembership = true, analyticsConsent = false)
-            h.manager.signInWithGoogle("token", ConsentChoice(true, true))
+            h.manager.signInWithGoogle("token", ConsentChoice.IMPLICIT)
             assertEquals(AppDestination.FEED, h.manager.destination())
             assertFalse(
-                "the account said no: the unrelated tick on the sign-up screen does not override it",
+                "the account said no: the tap on the sign-up screen does not override it",
                 h.privacy.analyticsEnabled.value,
             )
             assertTrue(h.sink.events.isEmpty())
@@ -533,6 +584,20 @@ class SessionManagerTest {
             assertFalse(h.privacy.crashReportsEnabled.value)
             assertNull(h.pending.stored)
             assertNull("a voluntary sign-out has no message", h.manager.consumeNotice())
+        }
+
+    @Test
+    fun signOut_forgetsTheAcceptanceRecordedOnThisDevice() =
+        run { h ->
+            h.manager.start()
+            h.accounts.setLoaded(profileExists = false)
+            h.manager.signInWithGoogle("token", signUpConsent = null)
+            assertTrue(h.manager.acceptConsentPanel(ConsentChoice.IMPLICIT))
+            assertNotNull("recorded until the profile exists", h.pending.stored)
+
+            h.manager.signOut()
+
+            assertNull("never applied to the next person", h.pending.stored)
         }
 
     @Test

@@ -68,6 +68,8 @@ class DiagnosticViewModelTest {
 
     private class NoopSwitch : CollectionSwitch {
         override fun setEnabled(enabled: Boolean) = Unit
+
+        override fun pause() = Unit
     }
 
     private class RecordingSink : AnalyticsSink {
