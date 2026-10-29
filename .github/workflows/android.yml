@@ -100,6 +100,36 @@ jobs:
             echo "::error title=Mauvais projet Firebase::Le fichier decode ne correspond pas au projet miff-3d283. Le PM doit le regenerer avec : firebase apps:sdkconfig ANDROID <APP_ID> --project miff-3d283"
             exit 1
           fi
+          # "Continuer avec Google" needs the OAuth WEB client (client_type 3): without it the button cannot work.
+          if ! grep -q '"client_type": *3' app/google-services.json; then
+            rm -f app/google-services.json
+            echo "::error title=Client OAuth web absent::Le google-services.json du secret GOOGLE_SERVICES_JSON_B64 ne contient aucun client OAuth web (client_type 3), necessaire a la connexion Google. Le PM doit activer Google dans Firebase > Authentication, enregistrer la SHA-1 de debug dans Firebase, regenerer le fichier avec : firebase apps:sdkconfig ANDROID <APP_ID> --project miff-3d283, puis recreer le secret."
+            exit 1
+          fi
+
+      # Stable debug signature (ticket AUTH-1): Google sign-in needs a FIXED SHA-1 registered in Firebase. The keystore
+      # comes from a secret, is decoded into the default debug location of this disposable runner (AGP picks it up by
+      # itself, alias androiddebugkey, standard debug passwords), is never printed, and is removed at the end of the job.
+      # A debug key signs test APKs only, never anything that is published.
+      # Without the secret (Dependabot, forks): the default throw-away debug key is kept.
+      - name: Install stable debug keystore (secret, never printed)
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          set +x
+          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
+            echo "DEBUG_KEYSTORE_USED=false" >> "$GITHUB_ENV"
+            echo "::notice title=Signature de debug par defaut::Secret DEBUG_KEYSTORE_B64 absent : l'APK est signe avec une cle jetable (empreinte SHA-1 instable, connexion Google inutilisable avec cet APK)."
+            exit 0
+          fi
+          umask 077
+          mkdir -p "$HOME/.android"
+          if ! printf '%s' "$DEBUG_KEYSTORE_B64" | base64 -d > "$HOME/.android/debug.keystore" 2>/dev/null; then
+            rm -f "$HOME/.android/debug.keystore"
+            echo "::error title=Secret invalide::DEBUG_KEYSTORE_B64 n'est pas du base64 valide. Le PM doit le recreer (voir android/README.md, section signature de debug)."
+            exit 1
+          fi
+          echo "DEBUG_KEYSTORE_USED=true" >> "$GITHUB_ENV"
 
       - name: Format check (Spotless / ktlint)
         run: |
@@ -125,6 +155,24 @@ jobs:
           ./gradlew assembleDebug --console=plain -Pmiff.uploadCrashlyticsMapping=false
           printf '| assembleDebug | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
 
+      # Proof that the APK carries the debug fingerprint registered in Firebase (a SHA-1 is public information).
+      - name: Check the SHA-1 of the debug APK against the Firebase configuration
+        if: env.DEBUG_KEYSTORE_USED == 'true' && env.FAKE_FIREBASE_CONFIG != 'true'
+        run: |
+          set +x
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          apk_sha1=$("$apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | sed -n 's/.*certificate SHA-1 digest: *//p' | head -1 | tr 'A-F' 'a-f')
+          if [ -z "$apk_sha1" ]; then
+            echo "::error title=Signature illisible::Impossible de lire l'empreinte de l'APK de debug."
+            exit 1
+          fi
+          if grep -qi "\"certificate_hash\": *\"$apk_sha1\"" app/google-services.json; then
+            echo "SHA-1 de l'APK de debug ($apk_sha1) : declaree dans la configuration Firebase."
+          else
+            echo "::error title=Empreinte non enregistree::L'APK de debug est signe avec la SHA-1 $apk_sha1, absente de google-services.json. Le PM doit l'ajouter dans Firebase > Parametres du projet > application Android, regenerer le fichier et recreer GOOGLE_SERVICES_JSON_B64."
+            exit 1
+          fi
+
       - name: Build release bundle (unsigned)
         run: |
           start=$(date +%s)
@@ -145,6 +193,22 @@ jobs:
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
+
+      # The release resource shrinker removed "default_web_client_id" once (it is read by name): without it "Continuer avec
+      # Google" never works in a release build. Same proof for the biometric permissions pulled in by androidx.credentials.
+      - name: Check the release bundle keeps the Google web client id and has no biometric permission
+        if: env.FAKE_FIREBASE_CONFIG != 'true'
+        run: |
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          if ! unzip -p "$bundle" base/resources.pb | grep -a -q 'default_web_client_id'; then
+            echo "::error title=Client web Google supprime::default_web_client_id est absent du bundle release : la connexion Google ne marcherait pas. Verifier android/app/src/main/res/raw/keep.xml."
+            exit 1
+          fi
+          if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -q -E 'USE_BIOMETRIC|USE_FINGERPRINT'; then
+            echo "::error title=Permission biometrique::USE_BIOMETRIC ou USE_FINGERPRINT est revenu dans le manifeste release (voir AndroidManifest.xml et le README, section securite du manifeste)."
+            exit 1
+          fi
+          echo "Bundle release : client web Google present, aucune permission biometrique."
 
       # actions/upload-artifact v7.0.2
       - name: Upload debug APK (short retention)
@@ -171,9 +235,11 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Remove Firebase configuration from the runner
+      - name: Remove Firebase configuration and debug keystore from the runner
         if: always()
-        run: rm -f app/google-services.json
+        run: |
+          rm -f app/google-services.json
+          rm -f "$HOME/.android/debug.keystore"
 
       - name: Durée du job
         if: always()

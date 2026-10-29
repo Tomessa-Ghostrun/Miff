@@ -30,7 +30,8 @@ const KEEP_RUNNING = new Set(['ios-testflight.yml']);
 // Seuls ces workflows ont le droit de lire des secrets, et seulement ceux-ci (liste fermée, noms exacts).
 // Tout autre workflow, ou tout autre secret, fait échouer le test : l'ajout d'un secret doit être une décision visible en revue.
 const SECRETS_ALLOWED = {
-  'android.yml': ['GOOGLE_SERVICES_JSON_B64'],
+  // android.yml : la configuration Firebase + le keystore de debug stable (SHA-1 fixe pour la connexion Google).
+  'android.yml': ['DEBUG_KEYSTORE_B64', 'GOOGLE_SERVICES_JSON_B64'],
   // ios.yml : seulement la configuration Firebase (recréée pour la compilation, supprimée en fin de job).
   'ios.yml': ['GOOGLE_SERVICE_INFO_PLIST_B64'],
   // ios-testflight.yml : les 4 secrets de signature + la configuration Firebase (mêmes règles que ios.yml).

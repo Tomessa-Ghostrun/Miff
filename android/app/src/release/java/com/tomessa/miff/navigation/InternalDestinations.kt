@@ -3,11 +3,11 @@ package com.tomessa.miff.navigation
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import com.tomessa.miff.AppContainer
-import com.tomessa.miff.ui.navigation.HomeRoute
+import com.tomessa.miff.ui.navigation.AppRoute
 
-/** Release build: no internal screen. The only destination is the welcome screen. */
+/** Release build: no internal screen. The only destination is the app itself. */
 object InternalDestinations {
-    val startDestination: Any = HomeRoute
+    val startDestination: Any = AppRoute
 
     @Suppress("UNUSED_PARAMETER")
     fun register(

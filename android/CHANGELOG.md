@@ -2,6 +2,48 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.2.0] - 2026-10-27 : AUTH-1, inscription et connexion
+
+### Ajouté
+- Écrans d'**inscription** et de **connexion** : e-mail + mot de passe et « Continuer avec Google » (Credential Manager). Textes `auth_` en français (tutoiement) et anglais, ajoutés aussi au catalogue iOS pour la parité des clés.
+- **Deux cases de consentement** avant tout geste d'inscription : (a) CGU et politique (obligatoire, liens vers les pages web), (b) statistiques et plantages (facultative, décochée). Message bienveillant si (a) manque.
+- **Panneau de consentement** du nouvel utilisateur Google arrivé par la connexion ; refus = suppression du compte tout juste créé, purge du cache, aucun événement, aucun document.
+- **Routage au lancement** selon l'état du compte, session persistante, écran « réessayer » si le compte ne peut pas être lu.
+- **Déconnexion** : arrêt des écoutes, envoi des écritures en attente, purge du cache Firestore (terminate + clearPersistence, drapeau repris au démarrage), arrêt de la collecte. Perte de session détectée : même nettoyage, message calme.
+- **Collecte Analytics / Crashlytics** : coupée tant que `users/{uid}` n'est pas lu, puis selon le choix du compte ; `sign_up_completed` seulement avec (b) ; `sign_in_completed` seulement après lecture d'un consentement accepté.
+- `ProfileDocument` / `UserProfileRepository` : la seule écriture de création de `users/{uid}` (dates serveur, `analyticsConsent` toujours écrit), pour le ticket Onboarding.
+- CI : signature de debug stable (secret `DEBUG_KEYSTORE_B64`), contrôle de la SHA-1 de l'APK, échec explicite sans client OAuth web.
+- Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), cases et boutons d'au moins 48 dp, liens légaux focalisables, focus ramené sur la case (a) manquante, contrastes AA (`#D60700` pour les erreurs).
+
+### Modifié : retours de recette du PM (2026-10-28)
+- **Plus aucune case à cocher** (décision PM, risque légal et stores assumé par lui) : une ligne explicative juste au-dessus du bouton principal, avec liens vers les Conditions d'utilisation et la Politique de confidentialité ; le clic accepte (a) et (b) (`analyticsConsent.enabled = true` à la création du profil). Panneau Google : même ligne, « Continuer » / « Annuler » (refus = suppression du compte, inchangé). Bouton principal « Rejoindre ». Textes `auth_` FR/EN et catalogue iOS mis à jour (clés des cases supprimées).
+- **Carrousel de bienvenue** à la première ouverture seulement (3 slides, points, « Commencer », « J'ai déjà un compte », manuel, sans événement, « Page 1 sur 3 »), illustrations provisoires en Compose sans photo. Préfixe `onboarding_` ajouté au contrat de clés et au script de parité.
+- **Point d'extension du splash** (`StartupSlot`) en tête d'`AppRoot`.
+- Documentation : `docs/tickets/authentification.md` §8 et §17 (Q8 remplacée), `backend/data-model.md` §8 (aucune règle modifiée).
+
+### Modifié : fidélité aux maquettes
+- Écrans d'inscription et de connexion alignés sur les maquettes du PM (en-tête avec flèche et mot-symbole officiel, bouton Google, « Ou : », champs soulignés, bouton principal, lien souligné, œil du mot de passe). Écarts conscients listés dans le README (tutoiement, deux cases avant les boutons, pas d'Apple sur Android, message unique, pas de « Mot de passe oublié ? » avant AUTH-2, règles de marque Google, accessibilité).
+- Libellé du bouton principal en `body/large` (design system). Clé `auth_signin_no_account_action` supprimée (le lien entier est « Pas encore de compte ? »). « Ou : » remplace « ou ».
+
+### Corrigé après la revue indépendante
+- **Google en release** : la ressource `default_web_client_id` (lue par son nom) était supprimée par le réducteur de ressources du build release ; `res/raw/keep.xml` la conserve.
+- **Collecte au démarrage** : Analytics et Crashlytics restent coupés tant que `users/{uid}` n'a pas été lu (le choix stocké sur l'appareil n'est plus réappliqué au lancement) ; tests dont un qui tue la suppression de la coupure à la connexion.
+- Panneau de consentement d'un compte **e-mail** : plus de demande de reconnexion Google impossible ; message neutre, la personne peut accepter. Perte de session pendant un chargement : nettoyée aussi. Double appui sur « Continuer » : un seul enregistrement, un seul événement. Drapeau « purge à faire » écrit dès le début de la déconnexion, du refus et de la perte de session. Fenêtre Google limitée à 3 minutes. Les échecs de connexion de plus de 10 minutes sont oubliés.
+- `USE_BIOMETRIC` et `USE_FINGERPRINT` (ajoutées par androidx.credentials) retirées du manifeste ; commentaire et README mis à jour.
+- Bouton Google : règles de marque (Roboto Medium 14 sp, `#1F1F1F`, bordure `#747775`, sans ombre). Le « G » reste un redessin à remplacer avant Google Play.
+- Textes « identifiants incorrects » et « trop d'essais » : plus de renvoi vers un lien « Mot de passe oublié ? » inexistant ; **le texte final avec ce lien reviendra avec AUTH-2**.
+- `LEGAL_BASE_URL` doit commencer par `https://` (le build échoue sinon). `backend/data-model.md` §8 : `sign_up_completed` « après la création du compte » (documentation seulement).
+
+### Dépendances
+- `androidx.credentials:credentials` et `credentials-play-services-auth` 1.6.0 (Apache 2.0), `googleid` 1.2.1 : nécessaires à la connexion Google (alternative gratuite, maintenue par Google, à l'ancien SDK Google Sign-In). Aucun coût.
+
+### Choix et limites à connaître
+- Aucun délai propre sur les appels d'authentification : une requête abandonnée par un délai pourrait aboutir plus tard et ouvrir une session que personne ne regarde ; Firebase échoue vite hors connexion. Signal de réexamen : plaintes de chargement sans fin.
+- Le mot de passe est vidé par une rotation de l'écran (seul l'e-mail est conservé), écart assumé avec le cas limite 14 du ticket.
+- Le lien « Mot de passe oublié ? » arrive avec AUTH-2, avec le texte final des messages « identifiants incorrects » et « trop d'essais ».
+- Le « G » du bouton Google est un redessin à remplacer par l'asset officiel de Google avant publication.
+- Non vérifié sur téléphone dans ce ticket : voir la description de la PR.
+
 ## [Non publié] : logo et icône officiels
 
 ### Modifié

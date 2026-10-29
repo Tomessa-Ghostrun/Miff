@@ -25,6 +25,7 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | Préfixe | Usage | Présente sur |
 |---|---|---|
 | `auth_` | Inscription, connexion, mot de passe | Android et iOS |
+| `onboarding_` | Carrousel de bienvenue (et, plus tard, les étapes du ticket Onboarding) | Android et iOS |
 | `miff_` | Créer, rejoindre, gérer une Miff, membres, code secret | Android et iOS |
 | `place_` | Lieux de confiance | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |

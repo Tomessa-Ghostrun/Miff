@@ -15,7 +15,7 @@ import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint30
 import com.tomessa.miff.ui.theme.colorTextOnAction
 import com.tomessa.miff.ui.theme.miffShadow
-import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyLarge
 
 /**
  * Primary button of the design system: action/primary background, shadow/default, radius/md,
@@ -47,6 +47,6 @@ fun MiffButton(
                 .then(if (enabled) Modifier.miffShadow(ShadowDefault, ShapeMd) else Modifier)
                 .heightIn(min = Spacing.minTouchTarget),
     ) {
-        Text(text = text, style = textBodyBold16)
+        Text(text = text, style = textBodyLarge)
     }
 }

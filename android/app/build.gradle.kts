@@ -20,6 +20,15 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+
+        // Single place for the public pages of the legal texts (AUTH-W, not deployed yet) and for the provisional
+        // contact (ticket decision N2: replace by a dedicated address before the external beta).
+        // Override without editing the code: -Pmiff.legalBaseUrl=... and -Pmiff.supportEmail=...
+        val legalBaseUrl = providers.gradleProperty("miff.legalBaseUrl").getOrElse("https://miff-3d283.web.app")
+        val supportEmail = providers.gradleProperty("miff.supportEmail").getOrElse("tomessa.mfouka@gmail.com")
+        require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
+        buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
+        buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
     }
 
     buildFeatures {
@@ -95,6 +104,12 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
+
+    // "Continuer avec Google": Credential Manager (Google's recommended replacement of the old Sign-In SDK) and the
+    // Google ID token helper. Needed by ticket AUTH-1; free, maintained by Google/AndroidX.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.googleid)
 
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
