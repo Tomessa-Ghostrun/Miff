@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,7 +15,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,7 +26,10 @@ import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.textBodyBold16
 
 /**
- * Sign-up screen (ticket section 3 A, criteria S1 to S13). Stateless: [state] comes from [SignUpViewModel].
+ * Sign-up screen (mockup "Welcoming screen -7", ticket section 3 A). Stateless: [state] comes from [SignUpViewModel].
+ *
+ * No box to tick: the line right above the main button says that "Rejoindre" (or "Continuer avec Google") accepts the
+ * terms, the privacy policy and the sharing of anonymous statistics (PM decision of 2026-10-28).
  *
  * Only the e-mail survives a rotation (`rememberSaveable`); the password lives in a plain `remember`: it is never
  * saved anywhere, so a rotation empties it (decision of the INIT-2 review, same as the diagnostic screen).
@@ -37,8 +38,6 @@ import com.tomessa.miff.ui.theme.textBodyBold16
 fun SignUpScreen(
     state: SignUpUiState,
     onBack: (() -> Unit)?,
-    onTermsChecked: (Boolean) -> Unit,
-    onAnalyticsChecked: (Boolean) -> Unit,
     onSubmitEmail: (email: String, password: String) -> Unit,
     onGoogle: () -> Unit,
     onGoToSignIn: () -> Unit,
@@ -47,43 +46,12 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var emailTouched by remember { mutableStateOf(false) }
     var passwordTouched by remember { mutableStateOf(false) }
-    val termsFocus = remember { FocusRequester() }
-
-    // At each tap without (a), the focus goes to the box (screen reader and keyboard users land on it).
-    LaunchedEffect(state.termsMissingTick) {
-        if (state.termsMissingTick > 0) termsFocus.requestFocus()
-    }
 
     val showEmailError = (emailTouched || state.showFieldErrors) && emailFieldError(email)
     val showPasswordError =
         (passwordTouched || state.showFieldErrors) && password.isNotEmpty() && !AuthForm.isPasswordLongEnough(password)
 
     AuthScaffold(paneTitle = stringResource(R.string.auth_signup_title), onBack = onBack) {
-        // Both boxes come BEFORE any sign-up button (Google, e-mail), decided by the ticket (Q8): this is the one
-        // difference of order with mockup 04, where the single consent sentence sits under the fields.
-        ConsentCheckbox(
-            checked = state.termsChecked,
-            onCheckedChange = onTermsChecked,
-            text =
-                stringResource(
-                    R.string.auth_consent_terms,
-                    stringResource(R.string.auth_consent_terms_link),
-                    stringResource(R.string.auth_consent_privacy_link),
-                ),
-            errorText = if (state.termsMissing) stringResource(R.string.auth_error_terms_required) else null,
-            focusRequester = termsFocus,
-            enabled = !state.isLoading,
-        )
-        LegalLinksRow()
-        ConsentCheckbox(
-            checked = state.analyticsChecked,
-            onCheckedChange = onAnalyticsChecked,
-            text = stringResource(R.string.auth_consent_analytics),
-            hint = stringResource(R.string.auth_consent_analytics_hint),
-            enabled = !state.isLoading,
-        )
-        Spacer(Modifier.size(Spacing.m))
-
         GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
         OrText()
 
@@ -112,6 +80,9 @@ fun SignUpScreen(
 
         AuthMessageArea(state.message, onGoToSignIn = onGoToSignIn)
 
+        // The explanatory line sits JUST above the main button.
+        ConsentNotice(sentence = R.string.auth_consent_notice)
+        Spacer(Modifier.size(Spacing.m))
         MiffButton(
             text = stringResource(R.string.auth_signup_action),
             onClick = { onSubmitEmail(email, password) },

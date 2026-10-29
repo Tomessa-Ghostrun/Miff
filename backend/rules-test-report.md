@@ -9,6 +9,43 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 - **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **189** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **182 mutations sont détectées, 7 mutants sont documentés comme équivalents** (4 d'avant DUR-3 + 3 de DUR-3, raison écrite dans `tests/tools/mutations.mjs` et `mutations-dur3.mjs`), **0 survivant**. Durée d'une exécution complète : environ 15 minutes en local (non lancée par la CI, pour rester dans les minutes gratuites). Voir la section DUR-3 ci-dessous.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
+## ONB-B (téléphone obligatoire) et MIFF-0 (lot d'entrée avec statut initial)
+
+**Totaux (exécution locale du 2026-10-28)** : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis ; **273 mutations (225 d'avant + 48 d'ONB-B / MIFF-0) : 257 détectées, 16 équivalentes documentées, 0 survivante** (exécution complète du 2026-10-28, puis ré-exécution des 6 mutations touchées ensuite). Nouveaux fichiers : `tests/rules/15-telephone-onb-b.test.js` (18 cas PH1 à PH11, section 14 du plan), `tests/rules/16-lot-entree-miff0.test.js` (9 cas EN1 à EN6, section 15), `tests/tools/mutations-onbb.mjs` (48 mutations) ; 8 mesures de lectures ajoutées à `09-rule-reads.test.js`.
+
+Règles : clé `phone` (E.164) obligatoire et validée sur `users/{uid}` et `members/{uid}`, copie de la fiche égale au profil après le lot (`getAfter`) ; **aucune règle de lecture ni du lot d'entrée n'a été modifiée** (le lot d'entrée fonctionnait déjà).
+
+### Rouge puis vert
+
+Les 25 tests de PH et EN ont d'abord été lancés sur les règles de `main` (fixtures portant déjà `phone`) : **20 rouges, 5 verts** (PH3, PH5, PH10, PH10b, PH10c : non-régression ou lecture, vrais avant comme après). **Honnêteté sur les EN** : sur les anciennes règles ils sont rouges **uniquement parce que la clé `phone` est refusée** (les fixtures la portent), pas parce que le lot d'entrée serait refusé ; la preuve que « le lot d'entrée fonctionnait déjà » est que le diff des règles ne touche ni `sharing`, ni `status`, ni `memberships`, et que les EN passent au vert avec ce seul ajout du téléphone. Sur les nouvelles règles : **25 verts du premier coup**. Aucune règle n'a été modifiée pour faire passer un test.
+
+### Ce que les tests ont trouvé en route (corrigé dans les tests, jamais dans les règles)
+- **Mutation survivante `EN3-statut-ecrit-par-autrui`** : le cas « statut écrit pour un autre membre » visait `frank`, dont la fiche n'existe pas : le refus venait de l'absence de fiche, pas de `isSelf`. Corrigé : la tentative vise le statut de `bob` (qui partage) et vérifie qu'il n'est pas écrasé ; mutation tuée.
+- **Effet de bord sur AB18, AB19, AB21 (AUTH-B)** : la vérification de la copie du téléphone lit le profil (`getAfter`) ; elle exige donc aussi l'existence du profil, et les 4 mutations d'AUTH-B qui retirent `termsAcceptedAfter` ont survécu (profil absent = refusé de toute façon). Cause : AB21 injectait des profils **sans téléphone**, donc refusés pour le téléphone et non pour l'absence de (a). Corrigé : les profils injectés d'AB21 portent un numéro valide, et les mutations `AB18-*`, `AB19-*` sont aussi rattachées à AB21 ; 4 mutations tuées. Le comportement de `termsAcceptedAfter` n'a pas changé.
+- Les cas AB13 et AB17 (AUTH-B) affirmaient le refus de `phone` : adaptés (la clé est autorisée en E.164 ; un numéro national et toute autre clé de contact restent refusés). Rien d'autre n'a été modifié ni affaibli.
+
+### Mutations (48 ajoutées)
+Forme du numéro (10 : sans `+`, zéro initial, trop court, trop long, sans borne, séparateurs, tout caractère, type non texte ; **2 équivalentes** : ancres `^` et `# Rapport des tests des règles Firestore
+
+Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `backend-data` et le PM. Les règles (`firestore.rules`) ne sont **jamais** modifiées pour faire passer un test : chaque échec est d'abord analysé (la règle est-elle fautive, ou le test, ou le plan ?) puis tranché par `backend-data` avec accord du PM.
+
+## État actuel (après DUR-3)
+
+- **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution locale (2026-10-24, règles inchangées depuis DUR-2) : **189 tests de règles dans l'émulateur, 188 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas), plus **48 tests rapides sans émulateur** (`npm run test:unit`, tous réussis). DUR-3 ajoute 20 cas de règles (section 12 du plan, `tests/rules/13-complements-dur3.test.js`), une calibration des limites de lectures de l'émulateur et 20 tests rapides (garde-fou de projet, outil de mutation, dichotomie de la mesure). Historique : 138 tests avant DUR-1, 146 après DUR-1, 169 après DUR-2.
+- Le tableau complet (un identifiant par ligne) est publié dans le résumé du job et dans l'artefact `rules-test-report`.
+- **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **189** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **182 mutations sont détectées, 7 mutants sont documentés comme équivalents** (4 d'avant DUR-3 + 3 de DUR-3, raison écrite dans `tests/tools/mutations.mjs` et `mutations-dur3.mjs`), **0 survivant**. Durée d'une exécution complète : environ 15 minutes en local (non lancée par la CI, pour rester dans les minutes gratuites). Voir la section DUR-3 ci-dessous.
+- Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
+
+ redondantes car `matches()` compare le texte entier), création et mise à jour du profil (9 dont 1 équivalente), création et mise à jour de la fiche (15 dont 2 équivalentes), lecture (6, dont l'appartenance déduite de l'index : un membre retiré dont l'index n'est pas touché continuerait de lire), lot d'entrée (8). Équivalentes (5) : `PH2-regex-sans-ancre-debut`, `PH2-regex-sans-ancre-fin`, `PH2-users-creation-hasAll-seul`, `PH6-members-creation-hasAll-seul` (la présence de la clé est déjà exigée par `hasValidPhone`), `PH8-members-copie-profil-constante` (même refus avec ou sans `get('phone', null)`).
+
+### Lectures de règles
+Voir `data-model.md` §12 : le téléphone n'ajoute **aucune** lecture mesurée ; « Créer et partager » en premium est la marge la plus faible (7 mesurées au plus, **19 appels sur 20 au pire sans cache, marge de 1**, voir data-model.md §12 ; tout appel de règle ajouté à ce lot le fait dépasser 20). Le test `09-rule-reads` échoue si une marge mesurée passe sous 2.
+
+### Limites de ces tests
+- Les mesures de lectures sont celles de l'émulateur (cache, comportement de `getAfter` sur un document écrit dans le même lot non établi : voir DUR-3) ; la colonne « pire cas sans cache » de `data-model.md` §12 est un comptage manuel, non une mesure.
+- `matches()` : le comportement « appariement complet » est constaté dans l'émulateur (mutants sans ancres équivalents), pas lu dans la documentation officielle consultée.
+- Non testé (impossible dans l'émulateur) : le comportement de Firestore en production face aux limites de lectures de règles ; premier essai à faire sur le futur projet de développement.
+
 ## AUTH-B : consentements à l'inscription (a) CGU et (b) statistiques / plantages
 
 **Totaux après fusion avec DUR-3 (exécution locale du 2026-10-24)** : **214 tests de règles, 213 réussis, 0 échoué, 1 ignoré** (A9) ; **48 tests rapides** réussis ; **225 mutations (189 de DUR-3 + 36 d'AUTH-B) : 214 détectées, 11 équivalentes documentées, 0 survivant**. Le fichier de tests d'AUTH-B est `tests/rules/14-consentement-statistiques.test.js` (22 cas AB1 à AB22, section 13 du plan).

@@ -29,6 +29,12 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - CI : signature de debug stable (secret `DEBUG_KEYSTORE_B64`), contrôle de la SHA-1 de l'APK, échec explicite sans client OAuth web.
 - Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), cases et boutons d'au moins 48 dp, liens légaux focalisables, focus ramené sur la case (a) manquante, contrastes AA (`#D60700` pour les erreurs).
 
+### Modifié : retours de recette du PM (2026-10-28)
+- **Plus aucune case à cocher** (décision PM, risque légal et stores assumé par lui) : une ligne explicative juste au-dessus du bouton principal, avec liens vers les Conditions d'utilisation et la Politique de confidentialité ; le clic accepte (a) et (b) (`analyticsConsent.enabled = true` à la création du profil). Panneau Google : même ligne, « Continuer » / « Annuler » (refus = suppression du compte, inchangé). Bouton principal « Rejoindre ». Textes `auth_` FR/EN et catalogue iOS mis à jour (clés des cases supprimées).
+- **Carrousel de bienvenue** à la première ouverture seulement (3 slides, points, « Commencer », « J'ai déjà un compte », manuel, sans événement, « Page 1 sur 3 »), illustrations provisoires en Compose sans photo. Préfixe `onboarding_` ajouté au contrat de clés et au script de parité.
+- **Point d'extension du splash** (`StartupSlot`) en tête d'`AppRoot`.
+- Documentation : `docs/tickets/authentification.md` §8 et §17 (Q8 remplacée), `backend/data-model.md` §8 (aucune règle modifiée).
+
 ### Modifié : fidélité aux maquettes
 - Écrans d'inscription et de connexion alignés sur les maquettes du PM (en-tête avec flèche et mot-symbole officiel, bouton Google, « Ou : », champs soulignés, bouton principal, lien souligné, œil du mot de passe). Écarts conscients listés dans le README (tutoiement, deux cases avant les boutons, pas d'Apple sur Android, message unique, pas de « Mot de passe oublié ? » avant AUTH-2, règles de marque Google, accessibilité).
 - Libellé du bouton principal en `body/large` (design system). Clé `auth_signin_no_account_action` supprimée (le lien entier est « Pas encore de compte ? »). « Ou : » remplace « ou ».

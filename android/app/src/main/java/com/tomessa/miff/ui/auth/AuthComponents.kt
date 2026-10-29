@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -57,16 +58,22 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -316,76 +323,65 @@ fun MessageText(
 }
 
 /**
- * One consent box: the whole row (box + sentence) is one touch target of at least 48 dp, read by the screen reader as
- * "sentence, checkbox, checked / not checked". [errorText] is shown (and announced) under the box.
+ * The explanatory line above the main button (no box to tick): the terms and the privacy policy are links inside the
+ * sentence (underlined, bold, blue). For the screen reader the two links are also offered as actions of the line, so
+ * that they are reachable without having to hit a few words with a finger. [sentence] has two placeholders: the name of
+ * the terms, then the name of the privacy policy.
  */
 @Composable
-fun ConsentCheckbox(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    text: String,
+fun ConsentNotice(
+    @StringRes sentence: Int,
     modifier: Modifier = Modifier,
-    hint: String? = null,
-    errorText: String? = null,
-    focusRequester: FocusRequester? = null,
-    enabled: Boolean = true,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = Spacing.minTouchTarget)
-                    .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                    .toggleable(
-                        value = checked,
-                        enabled = enabled,
-                        role = Role.Checkbox,
-                        onValueChange = onCheckedChange,
-                    ).semantics { if (errorText != null) error(errorText) },
-            verticalAlignment = Alignment.Top,
-        ) {
-            Checkbox(
-                checked = checked,
-                onCheckedChange = null, // handled by the row (single accessibility node)
-                enabled = enabled,
-                colors =
-                    CheckboxDefaults.colors(
-                        checkedColor = colorActionPrimary,
-                        uncheckedColor = if (errorText != null) colorTextError else colorBorderStrong,
-                        checkmarkColor = Color.White,
-                    ),
-            )
-            Column(modifier = Modifier.padding(top = Spacing.s, start = Spacing.xs, end = Spacing.xs)) {
-                Text(text = text, style = textBodyRegular14, color = colorTextPrimary)
-                if (hint != null) {
-                    Text(text = hint, style = textBodyRegular14, color = colorTextDescription)
+    val context = LocalContext.current
+    val termsLabel = stringResource(R.string.auth_consent_terms_link)
+    val privacyLabel = stringResource(R.string.auth_consent_privacy_link)
+    val text = stringResource(sentence, termsLabel, privacyLabel)
+    val openTerms = { LegalLinks.open(context, LegalLinks.termsUrl(context)) }
+    val openPrivacy = { LegalLinks.open(context, LegalLinks.privacyUrl(context)) }
+    val linkStyles =
+        TextLinkStyles(
+            SpanStyle(
+                color = colorActionPrimary,
+                fontWeight = FontWeight.Bold,
+                textDecoration = TextDecoration.Underline,
+            ),
+        )
+    val annotated =
+        buildAnnotatedString {
+            append(text)
+            listOf(termsLabel to openTerms, privacyLabel to openPrivacy).forEach { (label, open) ->
+                val start = text.indexOf(label)
+                if (start >= 0) {
+                    addLink(
+                        LinkAnnotation.Clickable("legal", linkStyles) { open() },
+                        start,
+                        start + label.length,
+                    )
                 }
             }
         }
-        if (errorText != null) {
-            MessageText(text = errorText, isError = true, modifier = Modifier.padding(start = Spacing.xl + Spacing.s))
-        }
-    }
-}
-
-/** The two "read the text" links of the consent (a): separate, focusable, 48 dp high, reachable with TalkBack. */
-@Composable
-@OptIn(ExperimentalLayoutApi::class)
-fun LegalLinksRow(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    FlowRow(
-        modifier = modifier.fillMaxWidth().padding(start = Spacing.xl + Spacing.s),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        TextButton(onClick = { LegalLinks.open(context, LegalLinks.termsUrl(context)) }) {
-            Text(stringResource(R.string.auth_consent_terms_link), style = textBodyBold14, color = colorActionPrimary)
-        }
-        TextButton(onClick = { LegalLinks.open(context, LegalLinks.privacyUrl(context)) }) {
-            Text(stringResource(R.string.auth_consent_privacy_link), style = textBodyBold14, color = colorActionPrimary)
-        }
-    }
+    Text(
+        text = annotated,
+        style = textBodyRegular14,
+        color = colorTextPrimary,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    customActions =
+                        listOf(
+                            CustomAccessibilityAction(termsLabel) {
+                                openTerms()
+                                true
+                            },
+                            CustomAccessibilityAction(privacyLabel) {
+                                openPrivacy()
+                                true
+                            },
+                        )
+                },
+    )
 }
 
 // Google branding guidelines (light theme "Sign in with Google" button): white fill, 1 dp border #747775, text #1F1F1F in
