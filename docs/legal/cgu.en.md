@@ -31,11 +31,12 @@ Miff is an app to **know your loved ones are okay, without bothering them**.
 
 ## 3. Accepting these terms
 
-At sign-up, you tap the **"Join"** button. Just above it, a sentence tells you: "By clicking Join, you accept our Terms of Use and our Privacy Policy, as well as the sharing of your anonymous usage statistics and crash reports (can be changed at any time in Settings)."
+At sign-up, you tap the **"Join"** button (or "Continue with Google"). Just above it, a sentence tells you: "By tapping “Join” or “Continue with Google”, you accept our Terms of Use and our Privacy Policy, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings)."
 
 In practice:
-- **There is no checkbox**: your click on "Join" counts as acceptance of these terms and of the Privacy Policy. If you do not agree, do not click and do not use the app.
-- **The same click turns on the sharing of usage statistics and crash reports** (see the Privacy Policy). It is turned on from the start, but **you can turn it off at any time in Settings**, with no consequence for your account or your use of Miff.
+- **There is no checkbox**: your click on "Join" (or "Continue with Google") counts as acceptance of these terms and of the Privacy Policy. If you do not agree, do not click and do not use the app.
+- **If you sign in with Google from the "Sign in" screen and do not have a Miff account yet**, a screen shows you the same sentence (“By tapping “Continue”, you accept…”) before going any further, with two buttons: "Continue" and "Cancel". If you tap "Cancel" (or the phone's back button), the account that was just created is deleted and nothing is kept.
+- **The same click turns on the sharing of usage statistics and crash reports** (see the Privacy Policy). It is turned on from the start, but **you can turn it off at any time in Settings** (a single choice for statistics and crash reports), with no consequence for your account or your use of Miff.
 - **Sharing your location is not covered**: it requires a separate agreement, given Miff by Miff (article 6).
 - We record the date and version of the terms you accepted.
 

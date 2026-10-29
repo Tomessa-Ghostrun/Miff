@@ -31,11 +31,12 @@ Miff est une app pour **savoir que tes proches vont bien, sans les déranger**.
 
 ## 3. Accepter ces conditions
 
-À l'inscription, tu touches le bouton **« Rejoindre »**. Juste au-dessus, une phrase te dit : « En cliquant sur Rejoindre, tu acceptes nos Conditions d'utilisation et notre Politique de confidentialité, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). »
+À l'inscription, tu touches le bouton **« Rejoindre »** (ou « Continuer avec Google »). Juste au-dessus, une phrase te dit : « En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos Conditions d'utilisation et notre Politique de confidentialité, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). »
 
 Concrètement :
-- **Il n'y a pas de case à cocher** : ton clic sur « Rejoindre » vaut acceptation de ces conditions et de la Politique de confidentialité. Si tu n'es pas d'accord, ne clique pas et n'utilise pas l'app.
-- **Le même clic active le partage de statistiques d'usage et de rapports de plantage** (voir la Politique de confidentialité). C'est activé d'emblée, mais **tu peux le désactiver à tout moment dans les Réglages**, sans conséquence sur ton compte ni sur ton usage de Miff.
+- **Il n'y a pas de case à cocher** : ton clic sur « Rejoindre » (ou « Continuer avec Google ») vaut acceptation de ces conditions et de la Politique de confidentialité. Si tu n'es pas d'accord, ne clique pas et n'utilise pas l'app.
+- **Si tu te connectes avec Google depuis l'écran « Se connecter » et que tu n'as pas encore de compte Miff**, un écran te présente la même phrase (« En cliquant sur « Continuer », tu acceptes… ») avant d'aller plus loin, avec deux boutons : « Continuer » et « Annuler ». Si tu touches « Annuler » (ou le bouton retour du téléphone), le compte tout juste créé est supprimé et rien n'est conservé.
+- **Le même clic active le partage de statistiques d'usage et de rapports de plantage** (voir la Politique de confidentialité). C'est activé d'emblée, mais **tu peux le désactiver à tout moment dans les Réglages** (un seul choix pour les statistiques et les rapports de plantage), sans conséquence sur ton compte ni sur ton usage de Miff.
 - **Le partage de ta localisation n'est pas concerné** : il demande un accord distinct, donné Miff par Miff (article 6).
 - Nous enregistrons la date et la version des conditions que tu as acceptées.
 
