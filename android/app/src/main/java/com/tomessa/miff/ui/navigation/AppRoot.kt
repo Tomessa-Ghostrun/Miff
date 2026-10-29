@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.auth.CredentialManagerGoogleSource
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
@@ -30,6 +31,8 @@ import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelViewModel
 import com.tomessa.miff.ui.auth.NextStepPlaceholderScreen
+import com.tomessa.miff.ui.auth.PasswordResetScreen
+import com.tomessa.miff.ui.auth.PasswordResetViewModel
 import com.tomessa.miff.ui.auth.SessionLoadingScreen
 import com.tomessa.miff.ui.auth.SignInScreen
 import com.tomessa.miff.ui.auth.SignInViewModel
@@ -48,6 +51,12 @@ data object SignInRoute
 
 @Serializable
 data object WelcomeRoute
+
+/** "Mot de passe oublié" (AUTH-2). [email] is the address already typed on the sign-in screen, if any. */
+@Serializable
+data class PasswordResetRoute(
+    val email: String = "",
+)
 
 /**
  * Root of the real app: shows what the SESSION says (ticket section 5): loading, sign-up / sign-in, consent panel, or
@@ -186,6 +195,33 @@ private fun SignedOutHost(
                 onGoToSignUp = {
                     if (!navController.popBackStack<SignUpRoute>(inclusive = false)) navController.navigate(SignUpRoute)
                 },
+                onForgotPassword = { email -> navController.navigate(PasswordResetRoute(email)) },
+            )
+        }
+        composable<PasswordResetRoute> { entry ->
+            val route = entry.toRoute<PasswordResetRoute>()
+            val viewModel: PasswordResetViewModel =
+                viewModel(
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                PasswordResetViewModel(
+                                    gateway = container.passwordResetGateway,
+                                    network = container.networkMonitor,
+                                    cooldown = container.passwordResetCooldown,
+                                )
+                            }
+                        },
+                )
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            PasswordResetScreen(
+                state = uiState,
+                initialEmail = route.email,
+                // System back and the predictive back gesture pop this screen too (NavHost), like the arrow.
+                onBack = { navController.popBackStack() },
+                onEmailChanged = viewModel::onEmailChanged,
+                onSubmit = viewModel::submit,
+                onBackToSignIn = { navController.popBackStack() },
             )
         }
     }

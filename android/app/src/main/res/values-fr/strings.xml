@@ -126,8 +126,9 @@
     <string name="auth_consent_privacy_link">Politique de confidentialité</string>
     <string name="auth_error_email_format">Cette adresse e-mail ne semble pas correcte.</string>
     <string name="auth_error_password_short">8 caractères minimum.</string>
-    <string name="auth_error_invalid_credentials">Cette combinaison ne fonctionne pas. Vérifie ton adresse e-mail et ton mot de passe.</string>
-    <string name="auth_error_too_many">Un peu trop d\'essais pour le moment. Patiente quelques minutes avant de réessayer.</string>
+    <string name="auth_error_invalid_credentials">Cette combinaison ne fonctionne pas. Vérifie ton adresse e-mail et ton mot de passe, ou choisis « Mot de passe oublié ? ».</string>
+    <string name="auth_error_too_many">Un peu trop d\'essais pour le moment. Patiente quelques minutes ou réinitialise ton mot de passe.</string>
+    <string name="auth_error_too_many_requests">Un peu trop de demandes pour le moment. Patiente quelques minutes avant de réessayer.</string>
     <string name="auth_error_email_in_use">Un compte existe déjà avec cette adresse. Tu peux te connecter.</string>
     <string name="auth_error_other_method">Un compte existe déjà avec cette adresse, avec un autre mode de connexion. Essaie l\'autre option.</string>
     <string name="auth_error_network">Pas de connexion pour le moment. Réessaie dès que tu as du réseau.</string>
@@ -141,6 +142,16 @@
     <string name="auth_loading_a11y">Chargement en cours</string>
     <string name="auth_retry_action">Réessayer</string>
     <string name="auth_signout_action">Se déconnecter</string>
+
+    <!-- Mot de passe oublié (AUTH-2) : le nouveau mot de passe se choisit sur la page web ouverte par l'e-mail -->
+    <string name="auth_signin_forgot_password">Mot de passe oublié ?</string>
+    <string name="auth_reset_title">Mot de passe oublié</string>
+    <string name="auth_reset_intro">Indique l\'adresse e-mail de ton compte. Si elle correspond à un compte, tu recevras un lien pour choisir un nouveau mot de passe.</string>
+    <string name="auth_reset_action">Envoyer</string>
+    <string name="auth_reset_resend_action">Renvoyer l\'e-mail</string>
+    <string name="auth_reset_sent">Si un compte existe avec cette adresse, un e-mail vient d\'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu t\'es inscrit avec Apple ou Google, utilise plutôt le bouton correspondant sur l\'écran de connexion.</string>
+    <string name="auth_reset_resend_wait">Tu peux demander un nouvel e-mail dans quelques instants.</string>
+    <string name="auth_reset_back_to_signin">Retour à la connexion</string>
 
     <!-- Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL) et écrans provisoires -->
     <string name="android_legal_terms_path">/fr/cgu</string>

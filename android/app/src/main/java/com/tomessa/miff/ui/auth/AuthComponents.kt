@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -91,6 +93,7 @@ import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
 import com.tomessa.miff.ui.theme.colorActionPrimary
+import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderAction
 import com.tomessa.miff.ui.theme.colorBorderStrong
 import com.tomessa.miff.ui.theme.colorTextDescription
@@ -172,12 +175,15 @@ fun AuthScaffold(
 
 private val AuthHeaderHeight = 56.dp
 
-/** A visible title (the consent panel only: the sign-up and sign-in mockups have none). */
+/** A visible title (the consent panel and "Mot de passe oublié": the sign-up and sign-in mockups have none). */
 @Composable
-fun ScreenTitle(title: String) {
+fun ScreenTitle(
+    title: String,
+    style: TextStyle = textDisplayHeadline,
+) {
     Text(
         text = title,
-        style = textDisplayHeadline,
+        style = style,
         color = colorTextForm,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.l).semantics { heading() },
@@ -189,6 +195,9 @@ fun ScreenTitle(title: String) {
  * mockup and floats up when the field is filled (the screen reader always has the label), the text starts at the left
  * margin of the screen. The error is text under the field, announced by the screen reader, never colour alone.
  * [onBlur] is called when the field loses the focus after having it.
+ *
+ * [outlined] is the boxed style of the "Mot de passe oublié" mockups (-10 and -11): white rounded box with a thin border
+ * (Material outlined field, the label sits on the border when the field is focused or filled). Same behaviour otherwise.
  */
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -203,6 +212,7 @@ fun AuthTextField(
     onImeAction: () -> Unit = {},
     isPassword: Boolean = false,
     newPassword: Boolean = false,
+    outlined: Boolean = false,
     onBlur: () -> Unit = {},
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -219,7 +229,12 @@ fun AuthTextField(
     val keyboardOptions =
         KeyboardOptions(keyboardType = keyboardType, autoCorrectEnabled = false, imeAction = imeAction)
     val keyboardActions =
-        KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }, onGo = { onImeAction() })
+        KeyboardActions(
+            onNext = { onImeAction() },
+            onDone = { onImeAction() },
+            onGo = { onImeAction() },
+            onSend = { onImeAction() },
+        )
     val eyeIcon = if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility
     val colors =
         TextFieldDefaults.colors(
@@ -236,6 +251,24 @@ fun AuthTextField(
             errorIndicatorColor = colorTextError,
             focusedLabelColor = colorActionPrimary,
             unfocusedLabelColor = colorTextDescription, // darker than the mockup grey: AA contrast
+            errorLabelColor = colorTextError,
+        )
+    // Boxed style (mockups -10 and -11): white box, 1 dp border (strong grey, blue when focused, red on error).
+    val outlinedColors =
+        OutlinedTextFieldDefaults.colors(
+            focusedTextColor = colorTextForm,
+            unfocusedTextColor = colorTextForm,
+            errorTextColor = colorTextForm,
+            focusedContainerColor = colorBgSurface,
+            unfocusedContainerColor = colorBgSurface,
+            errorContainerColor = colorBgSurface,
+            cursorColor = colorActionPrimary,
+            errorCursorColor = colorTextError,
+            focusedBorderColor = colorBorderAction,
+            unfocusedBorderColor = colorBorderStrong,
+            errorBorderColor = colorTextError,
+            focusedLabelColor = colorActionPrimary,
+            unfocusedLabelColor = colorTextDescription,
             errorLabelColor = colorTextError,
         )
     Column(modifier = modifier.fillMaxWidth()) {
@@ -264,40 +297,66 @@ fun AuthTextField(
                         }
                     },
             decorationBox = { innerTextField ->
-                TextFieldDefaults.DecorationBox(
-                    value = value,
-                    innerTextField = innerTextField,
-                    enabled = true,
-                    singleLine = true,
-                    visualTransformation = hiddenOrPlain,
-                    interactionSource = interactionSource,
-                    isError = errorText != null,
-                    label = { Text(label, style = textBodyRegular) },
-                    trailingIcon =
-                        if (isPassword && value.isNotEmpty()) {
-                            {
-                                // The "eye" appears with the first character (criterion S4); slashed = visible, tap to hide.
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(
-                                        painter = painterResource(eyeIcon),
-                                        contentDescription =
-                                            stringResource(
-                                                if (passwordVisible) {
-                                                    R.string.auth_password_hide_a11y
-                                                } else {
-                                                    R.string.auth_password_show_a11y
-                                                },
-                                            ),
-                                        tint = colorTextForm,
-                                    )
-                                }
+                val labelContent: @Composable () -> Unit = { Text(label, style = textBodyRegular) }
+                val eye: (@Composable () -> Unit)? =
+                    if (isPassword && value.isNotEmpty()) {
+                        {
+                            // The "eye" appears with the first character (criterion S4); slashed = visible, tap to hide.
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    painter = painterResource(eyeIcon),
+                                    contentDescription =
+                                        stringResource(
+                                            if (passwordVisible) {
+                                                R.string.auth_password_hide_a11y
+                                            } else {
+                                                R.string.auth_password_show_a11y
+                                            },
+                                        ),
+                                    tint = colorTextForm,
+                                )
                             }
-                        } else {
-                            null
+                        }
+                    } else {
+                        null
+                    }
+                if (outlined) {
+                    OutlinedTextFieldDefaults.DecorationBox(
+                        value = value,
+                        innerTextField = innerTextField,
+                        enabled = true,
+                        singleLine = true,
+                        visualTransformation = hiddenOrPlain,
+                        interactionSource = interactionSource,
+                        isError = errorText != null,
+                        label = labelContent,
+                        trailingIcon = eye,
+                        colors = outlinedColors,
+                        container = {
+                            OutlinedTextFieldDefaults.Container(
+                                enabled = true,
+                                isError = errorText != null,
+                                interactionSource = interactionSource,
+                                colors = outlinedColors,
+                                shape = ShapeMd,
+                            )
                         },
-                    colors = colors,
-                    contentPadding = TextFieldDefaults.contentPaddingWithLabel(start = 0.dp, end = 0.dp),
-                )
+                    )
+                } else {
+                    TextFieldDefaults.DecorationBox(
+                        value = value,
+                        innerTextField = innerTextField,
+                        enabled = true,
+                        singleLine = true,
+                        visualTransformation = hiddenOrPlain,
+                        interactionSource = interactionSource,
+                        isError = errorText != null,
+                        label = labelContent,
+                        trailingIcon = eye,
+                        colors = colors,
+                        contentPadding = TextFieldDefaults.contentPaddingWithLabel(start = 0.dp, end = 0.dp),
+                    )
+                }
             },
         )
         if (errorText != null) {
@@ -473,12 +532,38 @@ fun UnderlinedLink(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        TextButton(onClick = onClick) {
+        TextButton(onClick = onClick, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
             Text(
                 text = text,
                 style = textBodyBold16.copy(textDecoration = TextDecoration.Underline),
                 color = colorActionPrimary,
             )
         }
+    }
+}
+
+/**
+ * Small bold link at the start of the line, under a field (mockup -8, "Mot de passe oublié ?"). Underlined like the other
+ * links of these screens (the mockup leaves it bare: colour alone must not be the only sign of a link), 48 dp tall to hit
+ * easily with a finger, and no side padding so that its text lines up with the field above.
+ */
+@Composable
+fun FieldLink(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = PaddingValues(horizontal = 0.dp, vertical = Spacing.s),
+        modifier = modifier.heightIn(min = Spacing.minTouchTarget),
+    ) {
+        Text(
+            text = text,
+            style = textBodyBold14.copy(textDecoration = TextDecoration.Underline),
+            color = colorActionPrimary,
+        )
     }
 }
