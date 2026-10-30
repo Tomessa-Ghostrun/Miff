@@ -42,12 +42,13 @@ data class PendingConsent(
 )
 
 /**
- * The ONE write that creates `users/{uid}` (backend/data-model.md section 8, rules AUTH-B): every key at once, server
- * time for the dates, and `analyticsConsent` ALWAYS written so that the state is explicit. Nothing else is accepted by
- * the rules (no e-mail, no age, no birth date, no phone).
+ * The ONE write that creates `users/{uid}` (backend/data-model.md section 8, rules AUTH-B and ONB-B): every key at once,
+ * server time for the dates, `analyticsConsent` ALWAYS written so that the state is explicit, and the phone number in
+ * E.164 (REQUIRED by the rules since ONB-B: a profile without it is refused). Nothing else is accepted by the rules (no
+ * e-mail, no age, no birth date, no country: the country is deduced from the number's prefix).
  *
- * The profile screens belong to the Onboarding ticket, which calls [UserProfileRepository.create]; the shape of the
- * document lives here, with its tests.
+ * The profile screens (Onboarding ticket, ONB-2) call [UserProfileRepository.create]; the shape of the document lives
+ * here, with its tests.
  */
 object ProfileDocument {
     const val MAX_NAME_LENGTH = 50
@@ -55,14 +56,20 @@ object ProfileDocument {
 
     fun isNameValid(name: String): Boolean = name.trim().length in 1..MAX_NAME_LENGTH
 
+    /** Same shape as the rules: "+" then 7 to 15 digits, the first one not zero (8 to 16 characters in all). */
+    val E164 = Regex("^[+][1-9][0-9]{6,14}$")
+
     fun forCreation(
         firstName: String,
         lastName: String,
         avatarJpeg: ByteArray?,
+        phone: String,
         consent: PendingConsent,
     ): Map<String, Any?> {
         require(isNameValid(firstName) && isNameValid(lastName)) { "name length" }
         require(avatarJpeg == null || avatarJpeg.size <= MAX_AVATAR_BYTES) { "avatar size" }
+        // The value is not repeated in the message: a phone number never goes into a log or a crash report.
+        require(E164.matches(phone)) { "phone is not E.164" }
         val analyticsConsent: Map<String, Any?> =
             if (consent.analyticsAccepted) {
                 mapOf(
@@ -83,6 +90,7 @@ object ProfileDocument {
             mutableMapOf<String, Any?>(
                 "firstName" to firstName.trim(),
                 "lastName" to lastName.trim(),
+                "phone" to phone,
                 "createdAt" to FieldValue.serverTimestamp(),
                 "termsAcceptedAt" to FieldValue.serverTimestamp(),
                 "termsVersion" to consent.termsVersion,

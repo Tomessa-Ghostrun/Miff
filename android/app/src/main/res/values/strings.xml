@@ -161,7 +161,6 @@
     <!-- Android only: paths of the legal pages (the domain comes from BuildConfig.LEGAL_BASE_URL) and provisional screens -->
     <string name="android_legal_terms_path">/en/terms</string>
     <string name="android_legal_privacy_path">/en/privacy</string>
-    <string name="android_next_profile">Next step: your profile (first name, last name, photo). This screen is coming soon.</string>
     <string name="android_next_miff_choice">Next step: create or join a Miff. This screen is coming soon.</string>
     <string name="android_next_feed">You are signed in. The feed of your circle is coming soon.</string>
 
@@ -212,4 +211,45 @@
     <string name="android_onboarding_zone_trust_hint">Safe place for your loved ones</string>
     <string name="android_onboarding_zone_risk">Risk zone</string>
     <string name="android_onboarding_zone_risk_hint">Place to avoid</string>
+    <!-- Profile and phone: the two steps of the profile creation (ONB-2) -->
+    <string name="profile_title">Let your loved ones recognize you</string>
+    <string name="profile_photo_add">Add a photo (optional)</string>
+    <string name="profile_photo_change">Change photo</string>
+    <string name="profile_photo_visibility">Visible to the members of your Miffs</string>
+    <string name="profile_photo_image_a11y">Your profile photo</string>
+    <string name="profile_photo_sheet_title">Profile photo</string>
+    <string name="profile_photo_take">Take a photo</string>
+    <string name="profile_photo_choose">Choose from gallery</string>
+    <string name="profile_photo_remove">Remove photo</string>
+    <string name="profile_photo_unusable">We can\'t use this image. Try another photo.</string>
+    <string name="profile_photo_camera_unavailable">The camera isn\'t available right now. You can choose a photo from your gallery.</string>
+    <string name="profile_crop_title">Frame your photo</string>
+    <string name="profile_crop_hint">Drag the photo to position it, pinch with two fingers to zoom.</string>
+    <string name="profile_crop_area_a11y">Photo cropping area. Use the actions to move the photo.</string>
+    <string name="profile_crop_zoom_a11y">Zoom</string>
+    <string name="profile_crop_move_left">Move photo left</string>
+    <string name="profile_crop_move_right">Move photo right</string>
+    <string name="profile_crop_move_up">Move photo up</string>
+    <string name="profile_crop_move_down">Move photo down</string>
+    <string name="profile_crop_confirm">Use this photo</string>
+    <string name="profile_crop_cancel">Cancel</string>
+    <string name="profile_first_name_label">First name</string>
+    <string name="profile_last_name_label">Last name</string>
+    <string name="profile_name_too_long">50 characters maximum.</string>
+    <string name="profile_name_counter_a11y">%1$d characters out of %2$d</string>
+    <string name="profile_next_a11y">Continue</string>
+    <string name="profile_phone_title">Let your loved ones contact you</string>
+    <string name="profile_phone_country_label">Country</string>
+    <string name="profile_phone_country_field_a11y">Country: %1$s, calling code %2$s. Tap to choose another.</string>
+    <string name="profile_phone_number_label">Phone number</string>
+    <string name="profile_phone_help">Enter your number without the leading zero.</string>
+    <string name="profile_phone_visibility">Only the members of your Miffs will see this number, so they can call or text you. No one else.</string>
+    <string name="profile_phone_invalid">This number doesn\'t look right.</string>
+    <string name="profile_phone_picker_title">Choose your country</string>
+    <string name="profile_phone_picker_search">Search for a country</string>
+    <string name="profile_phone_picker_empty">No country matches.</string>
+    <string name="profile_phone_picker_item_a11y">%1$s, calling code %2$s</string>
+    <string name="profile_save_failed">That didn\'t work this time. Try again in a moment.</string>
+    <string name="profile_phone_invalid_type">This kind of number can\'t be used here. Please enter a mobile or landline number instead.</string>
+    <string name="profile_save_failed_later">It still isn\'t going through. Nothing is lost: you can close the app and try again a little later.</string>
 </resources>

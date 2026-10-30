@@ -46,6 +46,12 @@ interface AuthGateway {
     /** How the current account signs in; null if no one is signed in. */
     fun signInMethod(): AnalyticsEvent.Method?
 
+    /**
+     * The name given by the sign-in provider (Google), if any. It only pre-fills the profile step, where the person can
+     * change it: never stored by itself, never logged. Null for an e-mail account.
+     */
+    fun displayName(): String?
+
     fun signOut()
 }
 
@@ -103,6 +109,8 @@ class FirebaseAuthGateway(
             else -> AnalyticsEvent.Method.EMAIL
         }
     }
+
+    override fun displayName(): String? = auth.currentUser?.displayName
 
     override fun signOut() = auth.signOut()
 

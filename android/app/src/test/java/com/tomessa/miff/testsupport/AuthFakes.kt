@@ -169,6 +169,10 @@ class FakeAuthGateway(
 
     override fun signInMethod() = method
 
+    var displayName: String? = null
+
+    override fun displayName(): String? = displayName
+
     override fun signOut() {
         signOutCalls++
         timeline += "signOut"
@@ -186,8 +190,13 @@ class FakeAccountRepository(
         profileExists: Boolean,
         hasMembership: Boolean = false,
         analyticsConsent: Boolean = false,
+        hasPhone: Boolean = true,
+        hasTermsVersion: Boolean = true,
     ) {
-        result = AccountLoad.Loaded(AccountSnapshot(profileExists, hasMembership, analyticsConsent))
+        result =
+            AccountLoad.Loaded(
+                AccountSnapshot(profileExists, hasMembership, analyticsConsent, hasPhone, hasTermsVersion),
+            )
     }
 
     override suspend fun load(uid: String): AccountLoad {
@@ -225,6 +234,8 @@ class FakeCachePurger(
 /** Everything a SessionManager needs, wired with doubles, and what to look at afterwards. */
 class SessionHarness(
     scope: CoroutineScope,
+    extraTeardown: List<SessionTeardown> = emptyList(),
+    drafts: com.tomessa.miff.data.onboarding.ProfileDraftStore? = null,
 ) {
     val timeline = Timeline()
     val gateway = FakeAuthGateway(timeline)
@@ -264,7 +275,8 @@ class SessionHarness(
                         teardownCalls++
                         timeline += "teardown"
                     },
-                ),
+                ) + extraTeardown,
             scope = scope,
+            drafts = drafts,
         )
 }

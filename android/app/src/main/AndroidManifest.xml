@@ -73,6 +73,21 @@
             android:name="google_analytics_default_allow_ad_personalization_signals"
             android:value="false" />
 
+        <!--
+            Photo taken with the camera application of the system (profile photo, Onboarding ticket 6.3). No CAMERA permission:
+            the system camera writes the picture to ONE file of our private cache, through a content address that only this
+            request can use (not exported). The file is deleted as soon as it has been read. See res/xml/avatar_capture_paths.xml.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.avatarcapture"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/avatar_capture_paths" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

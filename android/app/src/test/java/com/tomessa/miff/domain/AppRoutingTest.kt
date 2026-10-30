@@ -18,7 +18,8 @@ class AppRoutingTest {
         miff: Boolean = false,
         pendingTerms: Boolean = false,
         returning: Boolean = false,
-        account: AccountSnapshot? = AccountSnapshot(profile, miff, false),
+        phone: Boolean = true,
+        account: AccountSnapshot? = AccountSnapshot(profile, miff, false, hasPhone = phone),
     ) = resolveDestination(signedIn, account, pendingTerms, returning)
 
     @Test
@@ -40,6 +41,26 @@ class AppRoutingTest {
 
     @Test
     fun session_profile_noMiff_createOrJoin() = assertEquals(AppDestination.MIFF_CHOICE, route(profile = true))
+
+    @Test
+    fun session_profileWithoutPhone_phoneStepAlone() =
+        assertEquals(AppDestination.PHONE_ONLY, route(profile = true, phone = false))
+
+    @Test
+    fun session_profileWithoutPhone_evenWithAMiff_phoneStepComesFirst() =
+        assertEquals(AppDestination.PHONE_ONLY, route(profile = true, miff = true, phone = false))
+
+    @Test
+    fun session_profileWithPhone_isNotAskedAgain() {
+        assertEquals(AppDestination.MIFF_CHOICE, route(profile = true, phone = true))
+        assertEquals(AppDestination.FEED, route(profile = true, miff = true, phone = true))
+    }
+
+    @Test
+    fun session_noProfile_thePhoneFlagIsIgnored_theProfileStepComesFirst() {
+        assertEquals(AppDestination.PROFILE, route(profile = false, pendingTerms = true, phone = false))
+        assertEquals(AppDestination.CONSENT_PANEL, route(profile = false, phone = false))
+    }
 
     @Test
     fun session_profile_miff_feed() = assertEquals(AppDestination.FEED, route(profile = true, miff = true))

@@ -43,9 +43,13 @@ import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.profile.OnboardingMode
+import com.tomessa.miff.ui.profile.ProfileFlow
+import com.tomessa.miff.ui.profile.ProfileViewModel
 import com.tomessa.miff.ui.startup.StartupSlot
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import java.util.Locale
 
 @Serializable
 data object SignUpRoute
@@ -117,7 +121,40 @@ fun AppRoot(container: AppContainer) {
                     )
                 }
 
-                AppDestination.PROFILE, AppDestination.MIFF_CHOICE, AppDestination.FEED -> {
+                AppDestination.PROFILE, AppDestination.PHONE_ONLY -> {
+                    val mode =
+                        if (current.destination ==
+                            AppDestination.PHONE_ONLY
+                        ) {
+                            OnboardingMode.PHONE_ONLY
+                        } else {
+                            OnboardingMode.FULL
+                        }
+                    // One view model per account, per mode and per session: after a sign-out the next person never meets
+                    // what the previous one typed (it also keeps the crop through a rotation of the phone).
+                    val profileViewModel: ProfileViewModel =
+                        viewModel(
+                            key = "profile-${mode.name}-${session.currentUid}-${session.generation}",
+                            factory =
+                                viewModelFactory {
+                                    initializer {
+                                        ProfileViewModel(
+                                            mode = mode,
+                                            session = session,
+                                            pending = container.pendingConsent,
+                                            drafts = container.profileDrafts,
+                                            profiles = container.userProfiles,
+                                            avatars = container.avatarCodec,
+                                            network = container.networkMonitor,
+                                            deviceRegion = { Locale.getDefault().country.takeIf { it.isNotBlank() } },
+                                        )
+                                    }
+                                },
+                        )
+                    ProfileFlow(profileViewModel)
+                }
+
+                AppDestination.MIFF_CHOICE, AppDestination.FEED -> {
                     NextStepPlaceholderScreen(
                         destination = current.destination,
                         onSignOut = { scope.launch { session.signOut() } },

@@ -5,6 +5,7 @@ import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AuthGateway
 import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.auth.PendingConsentStore
+import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.privacy.BooleanStore
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
@@ -94,6 +95,11 @@ class SessionManager(
     private val cache: CachePurger,
     private val teardown: List<SessionTeardown>,
     private val scope: CoroutineScope,
+    /**
+     * The local draft of the profile steps. Erased whenever it can no longer be of any use: nobody is signed in, or the
+     * profile exists (belt and braces next to the teardown of sign-out and the erasure after the confirmed write).
+     */
+    private val drafts: ProfileDraftStore? = null,
 ) {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
@@ -101,6 +107,23 @@ class SessionManager(
     private val mutableNotice = MutableStateFlow<SignedOutNotice?>(null)
 
     private var started = false
+
+    /**
+     * Goes up at every end of a session (sign-out, refused panel, lost session). A screen that keeps personal data in
+     * memory (the profile steps) keys its view model on it, so a new person never meets what the previous one typed.
+     */
+    var generation: Int = 0
+        private set
+
+    /** What the last read of the account said (null before the first read and after a sign-out). */
+    var accountSnapshot: AccountSnapshot? = null
+        private set
+
+    /** The account that is signed in (null = nobody). Read by the Onboarding steps, which write the profile. */
+    val currentUid: String? get() = gateway.currentUid
+
+    /** Name suggested by the sign-in provider, to pre-fill the profile step. Never stored by the session. */
+    fun suggestedDisplayName(): String? = gateway.displayName()
 
     /** True while we end the session ourselves: the "session lost" watcher must not react to our own sign-out. */
     private var ending = false
@@ -221,6 +244,9 @@ class SessionManager(
      * Google account again; that is the only extra step, and it is cancellable without any message.
      */
     suspend fun refuseConsentPanel(requestGoogleToken: suspend () -> GoogleTokenResult): RefuseResult {
+        // An account that already belongs to a Miff is never deleted by a refusal of the panel (it would orphan the
+        // Miff and the other members' view of it): the person keeps the panel, with the neutral message.
+        if (accountSnapshot?.hasMembership == true) return RefuseResult.Failed(AuthFailure.UNKNOWN)
         val first =
             withContext(NonCancellable) {
                 ending = true
@@ -268,6 +294,42 @@ class SessionManager(
             finishSignedOut(AppDestination.SIGN_IN, SignedOutNotice.ACCOUNT_NOT_CREATED, markReturning = false)
         }
         return RefuseResult.Done
+    }
+
+    /**
+     * The profile (or its phone number) was just WRITTEN AND CONFIRMED by the server: the account is read again and the
+     * app moves on to what the account now needs (create / join a Miff, or the feed if an older account already has one).
+     * If that read fails, the app moves on from what was just written (a new profile has no Miff yet) rather than showing
+     * a "retry" screen right after a success.
+     */
+    suspend fun onProfileSaved(analyticsConsentEnabled: Boolean) {
+        val uid = gateway.currentUid ?: return
+        withContext(NonCancellable) {
+            val load = accounts.load(uid)
+            if (gateway.currentUid != uid) return@withContext
+            val read = (load as? AccountLoad.Loaded)?.snapshot
+            val snapshot =
+                if (read != null && read.profileExists && read.hasPhone) {
+                    read
+                } else {
+                    AccountSnapshot(
+                        profileExists = true,
+                        hasMembership = read?.hasMembership ?: false,
+                        analyticsConsentEnabled = analyticsConsentEnabled,
+                    )
+                }
+            applyAccount(uid, snapshot, method = null, signUpGesture = false)
+        }
+    }
+
+    /**
+     * Does the server already hold a complete profile (with its phone number) for the person signed in? Used after a refused
+     * write, to tell a real refusal from a first try that landed late. One read; false if anything is unclear.
+     */
+    suspend fun profileAlreadySaved(): Boolean {
+        val uid = gateway.currentUid ?: return false
+        val load = accounts.load(uid) as? AccountLoad.Loaded ?: return false
+        return gateway.currentUid == uid && load.snapshot.profileExists && load.snapshot.hasPhone
     }
 
     /** Voluntary sign-out (ticket 7.6): listeners stop, queued writes leave, cache purged, then the sign-out. */
@@ -328,6 +390,8 @@ class SessionManager(
         markReturning: Boolean,
     ) {
         sessionActive = false
+        accountSnapshot = null
+        generation++
         gateway.signOut()
         pending.clear()
         privacy.applyAccountConsent(false)
@@ -343,6 +407,8 @@ class SessionManager(
         if (uid == null) {
             sessionActive = false
             // No session = no consent to send anything: a report left by a crash before the person said yes goes away.
+            accountSnapshot = null
+            drafts?.clear()
             privacy.applyAccountConsent(false)
             pending.clear()
             mutableState.value = SessionState.Ready(entryDestination())
@@ -409,9 +475,11 @@ class SessionManager(
         signUpGesture: Boolean,
     ) {
         val recorded: PendingConsent?
+        accountSnapshot = snapshot
         if (snapshot.profileExists) {
             recorded = null
             pending.clear()
+            drafts?.clear()
             privacy.applyAccountConsent(snapshot.analyticsConsentEnabled)
             if (method != null &&
                 snapshot.analyticsConsentEnabled
