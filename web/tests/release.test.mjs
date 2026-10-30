@@ -40,6 +40,8 @@ test('PLACEHOLDERS - la détection reconnaît les formes attendues et ignore le 
   assert.deepEqual(findPlaceholders('<p>rien à signaler</p>'), []);
 });
 
+// Textes du dépôt sans aucun emplacement (depuis la PR docs/legal-final, les vrais textes n'en contiennent plus ;
+// l'expression remplace d'éventuels emplacements futurs pour que ce test ne dépende pas de leur état).
 function cleanLegalDir() {
   const dir = tempDir('miff-legal-clean-');
   for (const name of LEGAL_SOURCES) {
@@ -49,14 +51,25 @@ function cleanLegalDir() {
   return dir;
 }
 
+// Copie des textes avec UN emplacement volontairement laissé : sert à vérifier que le garde-fou refuse.
+function legalDirWithPlaceholder() {
+  const dir = cleanLegalDir();
+  const file = join(dir, LEGAL_SOURCES[0]);
+  writeFileSync(file, `${read(file)}
+[À COMPLÉTER PAR LE PM : exemple de test]
+`);
+  return dir;
+}
+
 test('GARDE-FOU - refuse un site avec des emplacements restants, sans clé, périmé, en démonstration, en CI ou sur un autre projet', () => {
   const legalDir = cleanLegalDir();
   const ok = buildTemp({ legalDir, env: { MIFF_WEB_API_KEY: FAKE_KEY } });
   assert.equal(ok.info.placeholders, 0);
   assert.deepEqual(checkSite({ publicDir: ok.out, legalDir, env: {} }).errors, [], 'site complet, clé injectée, hors CI : accepté');
 
-  const withPlaceholders = buildTemp({ env: { MIFF_WEB_API_KEY: FAKE_KEY } });
-  const refused = checkSite({ publicDir: withPlaceholders.out, env: {} });
+  const placeholderDir = legalDirWithPlaceholder();
+  const withPlaceholders = buildTemp({ legalDir: placeholderDir, env: { MIFF_WEB_API_KEY: FAKE_KEY } });
+  const refused = checkSite({ publicDir: withPlaceholders.out, legalDir: placeholderDir, env: {} });
   assert.ok(refused.errors.some((e) => /emplacement\(s\) à compléter/.test(e)), 'les emplacements restants bloquent');
   assert.ok(refused.placeholders.length > 0);
 
@@ -67,7 +80,7 @@ test('GARDE-FOU - refuse un site avec des emplacements restants, sans clé, pér
   assert.ok(checkSite({ publicDir: demo.out, legalDir, env: {} }).errors.some((e) => /démonstration/.test(e)));
 
   // site construit avec d'autres textes que ceux du dépôt : périmé
-  assert.ok(checkSite({ publicDir: ok.out, env: {} }).errors.some((e) => /périmé/.test(e)));
+  assert.ok(checkSite({ publicDir: ok.out, legalDir: placeholderDir, env: {} }).errors.some((e) => /périmé/.test(e)));
 
   assert.ok(checkSite({ publicDir: ok.out, legalDir, env: { GITHUB_ACTIONS: 'true' } }).errors.some((e) => /CI/.test(e)));
   assert.ok(checkSite({ publicDir: ok.out, legalDir, env: { CI: 'true' } }).errors.some((e) => /CI/.test(e)));
@@ -77,9 +90,10 @@ test('GARDE-FOU - refuse un site avec des emplacements restants, sans clé, pér
 });
 
 test('GARDE-FOU - aucune variable ne contourne les emplacements restants (plus d\'exception « brouillon »)', () => {
-  const built = buildTemp({ env: { MIFF_WEB_API_KEY: FAKE_KEY } });
+  const legalDir = legalDirWithPlaceholder();
+  const built = buildTemp({ legalDir, env: { MIFF_WEB_API_KEY: FAKE_KEY } });
   for (const env of [{ MIFF_ACCEPT_DRAFT_TEXTS: 'oui-pm-2026-10-24' }, { MIFF_WEB_PREVIEW: '1' }, { FORCE: '1' }]) {
-    assert.ok(checkSite({ publicDir: built.out, env }).errors.some((e) => /emplacement\(s\) à compléter/.test(e)), JSON.stringify(env));
+    assert.ok(checkSite({ publicDir: built.out, legalDir, env }).errors.some((e) => /emplacement\(s\) à compléter/.test(e)), JSON.stringify(env));
   }
   assert.ok(!/MIFF_ACCEPT_DRAFT_TEXTS/.test(read(join(ROOT, 'scripts', 'web-predeploy-check.mjs')).replace(/^\/\/.*$/gm, '')));
 });
