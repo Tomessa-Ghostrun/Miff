@@ -78,7 +78,7 @@ final class LocalizationTests: XCTestCase {
         guard let files = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil) else {
             throw XCTSkip("Sources introuvables (\(sources.path)).")
         }
-        let regex = try NSRegularExpression(pattern: "\"((?:diag|home|auth|place|common)_[a-z0-9_]+)\"")
+        let regex = try NSRegularExpression(pattern: "\"((?:diag|home|auth|place|common|profile|ios)_[a-z0-9_]+)\"")
         var used = Set<String>()
         for case let file as URL in files where file.pathExtension == "swift" {
             let text = try String(contentsOf: file, encoding: .utf8)

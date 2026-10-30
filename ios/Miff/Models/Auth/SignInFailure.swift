@@ -14,15 +14,19 @@ enum SignInFailure: Equatable {
 
 /// Codes d'erreur du SDK Firebase Authentication (domaine « FIRAuthErrorDomain »), valeurs stables de l'API
 /// publique Objective-C. Écrits en clair pour que la logique d'interprétation reste testable sans le SDK.
-private enum AuthErrorNumber {
+enum AuthErrorNumber {
     static let domain = "FIRAuthErrorDomain"
     static let invalidCredential = 17004
     static let userDisabled = 17005
+    static let emailAlreadyInUse = 17007
     static let invalidEmail = 17008
     static let wrongPassword = 17009
     static let tooManyRequests = 17010
     static let userNotFound = 17011
+    static let accountExistsWithDifferentCredential = 17012
+    static let requiresRecentLogin = 17014
     static let networkError = 17020
+    static let credentialAlreadyInUse = 17025
 }
 
 func interpretSignInError(_ error: Error) -> SignInFailure {
@@ -64,6 +68,12 @@ enum CredentialsInput {
 
     /// Volontairement large (Firebase est le vrai validateur) : quelque chose@quelque-chose.tld, sans espace.
     private static let emailShape = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+
+    /// Même contrôle de forme que `check`, utilisable seul (formulaires d'inscription et de connexion).
+    static func looksLikeEmail(_ email: String) -> Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.range(of: emailShape, options: .regularExpression) != nil
+    }
 
     static func check(email: String, password: String) -> CredentialsInputProblem? {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)

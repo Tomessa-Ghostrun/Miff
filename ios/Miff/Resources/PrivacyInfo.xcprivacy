@@ -10,8 +10,14 @@
 	     Position : l'app ne collecte AUCUNE position à ce stade (aucune clé NSLocation*, aucun accès à CoreLocation).
 	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
 
-	     Données collectées, SEULEMENT après un accord explicite de l'utilisateur (interrupteurs Analytics et
-	     Rapports de plantage, éteints par défaut ; jamais liées à l'identité de l'utilisateur) :
+	     Données du COMPTE (AUTH-3, ONB-6), liées à l'identité de la personne, pour le fonctionnement de l'app seulement
+	     (jamais pour de la publicité ni du suivi) : identifiant de compte (UserID), adresse e-mail (e-mail ou Google ou
+	     Apple), prénom et nom, photo de profil facultative, numéro de téléphone. Ils sont créés par la personne
+	     elle-même à l'inscription et dans les étapes du profil ; ils sont lisibles par elle seule et, pour le profil et
+	     le numéro, par les membres de ses Miffs (backend/data-model.md). Le numéro n'est jamais vérifié par SMS.
+
+	     Données d'USAGE, SEULEMENT après le geste « Rejoindre » / « Continuer » (qui vaut accord, décision du PM du
+	     2026-10-28) ou le choix enregistré du compte, retirable dans les Réglages ; jamais liées à l'identité :
 	     - Analytics (FirebaseAnalyticsCore) : interactions avec le produit (événements de la liste blanche),
 	       identifiant d'instance de l'app, données de diagnostic techniques.
 	     - Crashlytics : rapports de plantage et données de diagnostic. -->
@@ -21,6 +27,66 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeProductInteraction</string>

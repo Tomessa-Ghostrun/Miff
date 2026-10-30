@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Premier écran de l'app. Builds Debug et Internal : le diagnostic interne. Build Release : l'écran d'accueil,
-/// sans aucun accès au diagnostic (son code n'est même pas compilé).
+/// Premier écran de l'app. Builds Debug et Internal : le diagnostic interne, d'où un lien ouvre le vrai parcours de l'app
+/// (comme sur Android). Build Release : directement le vrai parcours (inscription, connexion, profil...), sans aucun accès
+/// au diagnostic (son code n'est même pas compilé).
 struct RootView: View {
     let environment: AppEnvironment
 
@@ -9,7 +10,7 @@ struct RootView: View {
         #if DEBUG || INTERNAL
         DiagnosticRootView(environment: environment)
         #else
-        HomeView()
+        AppRootView(environment: environment)
         #endif
     }
 }
