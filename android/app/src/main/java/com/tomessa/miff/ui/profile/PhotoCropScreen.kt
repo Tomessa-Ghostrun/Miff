@@ -109,6 +109,8 @@ fun PhotoCropScreen(
         modifier =
             Modifier
                 .fillMaxSize()
+                // Absorbs the touches: nothing under this screen can be reached (it is also hidden from TalkBack).
+                .pointerInput(Unit) {}
                 .background(GradientAuthBackground)
                 .safeDrawingPadding()
                 .verticalScroll(rememberScrollState())

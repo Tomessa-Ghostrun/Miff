@@ -57,6 +57,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.onboarding.DraftStep
 import com.tomessa.miff.data.profile.AvatarCapture
@@ -381,7 +382,8 @@ fun PhoneStepScreen(
     ProfileScaffold(
         paneTitle = stringResource(R.string.profile_phone_title),
         title = stringResource(R.string.profile_phone_title),
-        onBack = onBack,
+        // No way back while the write is going on: the screen must not change under it.
+        onBack = onBack?.let { back -> { if (!state.isWriting) back() } },
         nextButton = {
             RoundNextButton(
                 enabled = state.canSubmitPhone,
@@ -396,7 +398,12 @@ fun PhoneStepScreen(
             value = state.phoneText,
             onValueChange = onPhoneChanged,
             label = stringResource(R.string.profile_phone_number_label),
-            errorText = if (state.phoneInvalid) stringResource(R.string.profile_phone_invalid) else null,
+            errorText =
+                when {
+                    state.phoneTypeRefused -> stringResource(R.string.profile_phone_invalid_type)
+                    state.phoneInvalid -> stringResource(R.string.profile_phone_invalid)
+                    else -> null
+                },
             placeholder = example,
             prefix = country.dialCode,
             enabled = !state.isWriting,
@@ -425,13 +432,25 @@ fun PhoneStepScreen(
             color = colorTextForm,
         )
         state.message?.let { message ->
-            val text =
-                when (message) {
-                    ProfileMessage.NETWORK -> R.string.auth_error_network
-                    else -> R.string.profile_save_failed
-                }
             Spacer(Modifier.size(Spacing.m))
-            MessageText(text = stringResource(text), isError = true)
+            when (message) {
+                ProfileMessage.ACCOUNT_UNAVAILABLE -> {
+                    MessageText(
+                        text = stringResource(R.string.auth_error_account_unavailable, BuildConfig.SUPPORT_EMAIL),
+                        isError = true,
+                    )
+                }
+
+                else -> {
+                    val text =
+                        when (message) {
+                            ProfileMessage.NETWORK -> R.string.auth_error_network
+                            ProfileMessage.TRY_LATER -> R.string.profile_save_failed_later
+                            else -> R.string.profile_save_failed
+                        }
+                    MessageText(text = stringResource(text), isError = true)
+                }
+            }
         }
     }
 

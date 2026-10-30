@@ -92,5 +92,6 @@ class AppContainer(
             // sign-out stops them (ticket 7.6).
             teardown = listOf(profileDrafts.asTeardown()),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+            drafts = profileDrafts,
         )
 }

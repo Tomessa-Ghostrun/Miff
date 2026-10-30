@@ -15,6 +15,15 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - Accessibilité : titres, champs étiquetés (libellé et champ ne font qu'un pour TalkBack), erreurs en zones live, cibles de 48 dp minimum, police agrandie et droite-à-gauche testés.
 - Tests : validation E.164 (table pays et numéros + exemple de chaque pays de la bibliothèque), noms, géométrie du recadrage, recherche de la taille de l'avatar, codec (métadonnées, 20 000 octets sur 20 images de formes variées, orientation, PNG transparent, fichiers refusés), brouillon, view model (écriture unique et clés, confirmation, hors connexion, compte sans numéro, reprise), session, écrans (Robolectric) et captures.
 
+### Modifié : revue indépendante de la PR (2026-10-30)
+- **Numéros plus stricts que le ticket** : surtaxés, gratuits, coût partagé, pager, messagerie vocale, numéro personnel et UAN refusés (seuls ligne fixe, mobile et VoIP passent), avec un message bienveillant propre ; le PM peut assouplir (`PhoneNumbers.ALLOWED_TYPES`).
+- **Compte antérieur à AUTH-B** : jamais supprimé s'il appartient à une Miff (message neutre) ; sinon prénom, nom et photo lus avant la suppression et pré-remplis. Le refus du panneau de consentement ne supprime plus un compte qui a une Miff.
+- **Recadrage** : le contenu sous l'écran de recadrage est caché au lecteur d'écran et ne reçoit plus les touches. Retour désactivé pendant l'écriture.
+- **Après 3 refus du serveur de suite** : message « Ça ne passe toujours pas… » (tout est gardé). Brouillon aussi effacé au lancement sans compte ou quand le profil existe.
+- Dépôt de la lecture des indicateurs du compte (`hasPhone`, `hasTermsVersion`) dans une fonction pure testée ; accès Firestore de l'Onboarding derrière une interface testée avec un faux (transactions seulement, jamais de `set` simple : test sur le code source).
+- **Limite documentée** : une transaction qui dépasse le délai de 20 s peut aboutir plus tard ; l'app relit alors le compte au refus suivant et continue si le profil est déjà complet.
+- **README réparé** : un remplacement de texte avait dupliqué le début du fichier.
+
 ### Corrigé
 - **I1 de la revue d'AUTH-1** : `ProfileDocument.forCreation` n'écrivait pas `phone` alors que les règles (ONB-B) l'exigent ; il prend maintenant le numéro E.164 (refusé avant toute écriture s'il n'a pas la forme des règles). `ProfileDocumentTest`, qui affirmait le contraire, est corrigé ; README mis à jour.
 

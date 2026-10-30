@@ -2858,6 +2858,23 @@
         }
       }
     },
+    "profile_phone_invalid_type": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This kind of number can't be used here. Please enter a mobile or landline number instead."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce type de numéro ne peut pas être utilisé ici. Saisis plutôt un numéro de mobile ou de ligne fixe."
+          }
+        }
+      }
+    },
     "profile_phone_number_label": {
       "extractionState": "manual",
       "localizations": {
@@ -3160,6 +3177,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ça n'a pas fonctionné cette fois. Réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "profile_save_failed_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It still isn't going through. Nothing is lost: you can close the app and try again a little later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ça ne passe toujours pas. Rien n'est perdu : tu peux fermer l'app et réessayer un peu plus tard."
           }
         }
       }

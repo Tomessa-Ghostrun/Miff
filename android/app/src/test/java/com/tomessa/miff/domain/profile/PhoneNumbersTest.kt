@@ -177,6 +177,83 @@ class PhoneNumbersTest {
         }
     }
 
+    // --- Valid numbers that are not for calling a person (review I2) ---------------------------------------------------------
+
+    private val refusedTypes =
+        listOf(
+            PhoneNumberUtil.PhoneNumberType.PREMIUM_RATE,
+            PhoneNumberUtil.PhoneNumberType.SHARED_COST,
+            PhoneNumberUtil.PhoneNumberType.TOLL_FREE,
+            PhoneNumberUtil.PhoneNumberType.UAN,
+            PhoneNumberUtil.PhoneNumberType.PAGER,
+            PhoneNumberUtil.PhoneNumberType.PERSONAL_NUMBER,
+            PhoneNumberUtil.PhoneNumberType.VOICEMAIL,
+        )
+
+    @Test
+    fun premiumRateAndTollFreeNumbers_areValidForTheLibrary_butRefusedHere() {
+        assertEquals(PhoneResult.UnsupportedType, PhoneNumbers.normalize("US", "800 555 0123"))
+        for (region in listOf("FR", "GB", "DE", "US", "ES", "IT", "BE")) {
+            for (type in listOf(
+                PhoneNumberUtil.PhoneNumberType.PREMIUM_RATE,
+                PhoneNumberUtil.PhoneNumberType.TOLL_FREE,
+            )) {
+                val example = util.getExampleNumberForType(region, type) ?: continue
+                val national = util.format(example, PhoneNumberUtil.PhoneNumberFormat.NATIONAL)
+                assertTrue("$region $type is valid for the library", util.isValidNumber(example))
+                assertEquals(
+                    "$region $type $national",
+                    PhoneResult.UnsupportedType,
+                    PhoneNumbers.normalize(region, national),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun everyKindOfNumberThatIsNotALineToCall_isRefused_inEveryCountry() {
+        var checked = 0
+        for (region in util.supportedRegions) {
+            for (type in refusedTypes) {
+                val example = util.getExampleNumberForType(region, type) ?: continue
+                val e164 = util.format(example, PhoneNumberUtil.PhoneNumberFormat.E164)
+                assertEquals("$region $type", PhoneResult.UnsupportedType, PhoneNumbers.normalize(region, e164))
+                checked++
+            }
+        }
+        assertTrue("only $checked numbers checked", checked > 100)
+    }
+
+    @Test
+    fun theKindsAccepted_areLandlineMobileAndInternetTelephony() {
+        assertEquals(
+            setOf(
+                PhoneNumberUtil.PhoneNumberType.FIXED_LINE,
+                PhoneNumberUtil.PhoneNumberType.MOBILE,
+                PhoneNumberUtil.PhoneNumberType.FIXED_LINE_OR_MOBILE,
+                PhoneNumberUtil.PhoneNumberType.VOIP,
+            ),
+            PhoneNumbers.ALLOWED_TYPES,
+        )
+        for (type in PhoneNumberUtil.PhoneNumberType.entries) {
+            if (type == PhoneNumberUtil.PhoneNumberType.UNKNOWN) continue
+            val expected = type in PhoneNumbers.ALLOWED_TYPES
+            assertEquals(type.toString(), expected, type !in refusedTypes)
+        }
+    }
+
+    @Test
+    fun voipNumbersAreAccepted() {
+        var checked = 0
+        for (region in util.supportedRegions) {
+            val example = util.getExampleNumberForType(region, PhoneNumberUtil.PhoneNumberType.VOIP) ?: continue
+            val e164 = util.format(example, PhoneNumberUtil.PhoneNumberFormat.E164)
+            assertEquals("$region", e164, valid(region, e164))
+            checked++
+        }
+        assertTrue(checked > 0)
+    }
+
     // --- Button, default country, example, "+" number ------------------------------------------------------------------
 
     @Test

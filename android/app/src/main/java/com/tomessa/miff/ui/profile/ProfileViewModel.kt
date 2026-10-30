@@ -43,6 +43,12 @@ enum class ProfileMessage {
     /** The server did not take it (or something unexpected): the fields are kept, retry. */
     SAVE_FAILED,
 
+    /** Several refusals in a row: not a hiccup. Kind advice to come back later; everything typed is kept. */
+    TRY_LATER,
+
+    /** An older account that cannot be completed from here (it belongs to a Miff). Neutral, with the support address. */
+    ACCOUNT_UNAVAILABLE,
+
     /** The chosen file is not an image we can use. */
     PHOTO_UNUSABLE,
 
@@ -79,6 +85,8 @@ data class ProfileUiState(
     val phoneText: String = "",
     /** Shown after a tap on the arrow with a number that does not look right. Cleared at the next change. */
     val phoneInvalid: Boolean = false,
+    /** The number is valid but of a kind that is not accepted (premium rate, toll free...): a more precise sentence. */
+    val phoneTypeRefused: Boolean = false,
     val isWriting: Boolean = false,
     val message: ProfileMessage? = null,
 ) {
@@ -109,6 +117,9 @@ class ProfileViewModel(
     private val worker: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val uid: String? = session.currentUid
+
+    /** Consecutive answers "no" from the server (not counting a missing network); reset by a success. */
+    private var serverRefusals = 0
 
     /** Once the profile is confirmed or the draft erased, nothing is written to the draft any more. */
     private var draftClosed = false
@@ -171,7 +182,9 @@ class ProfileViewModel(
         ) {
             return
         }
-        mutableState.update { it.copy(step = DraftStep.PROFILE, message = null, phoneInvalid = false) }
+        mutableState.update {
+            it.copy(step = DraftStep.PROFILE, message = null, phoneInvalid = false, phoneTypeRefused = false)
+        }
         saveDraft()
     }
 
@@ -248,7 +261,9 @@ class ProfileViewModel(
 
     fun onCountrySelected(region: String) {
         if (!PhoneNumbers.isSupportedRegion(region)) return
-        mutableState.update { it.copy(regionCode = region.uppercase(), phoneInvalid = false, message = null) }
+        mutableState.update {
+            it.copy(regionCode = region.uppercase(), phoneInvalid = false, phoneTypeRefused = false, message = null)
+        }
         saveDraft()
     }
 
@@ -261,6 +276,7 @@ class ProfileViewModel(
                 phoneText = detected?.national ?: text,
                 regionCode = detected?.region ?: it.regionCode,
                 phoneInvalid = false,
+                phoneTypeRefused = false,
                 message = null,
             )
         }
@@ -271,10 +287,12 @@ class ProfileViewModel(
     fun onSubmitPhone() {
         val state = mutableState.value
         if (state.step != DraftStep.PHONE || state.isWriting || !PhoneNumbers.hasDigit(state.phoneText)) return
-        val phone = PhoneNumbers.normalize(state.regionCode, state.phoneText) as? PhoneResult.Valid
+        val checked = PhoneNumbers.normalize(state.regionCode, state.phoneText)
+        val phone = checked as? PhoneResult.Valid
         if (phone == null) {
             // Nothing leaves the phone: a calm message under the field.
-            mutableState.update { it.copy(phoneInvalid = true, message = null) }
+            val typeRefused = checked == PhoneResult.UnsupportedType
+            mutableState.update { it.copy(phoneInvalid = true, phoneTypeRefused = typeRefused, message = null) }
             return
         }
         val me = uid
@@ -283,7 +301,14 @@ class ProfileViewModel(
             mutableState.update { it.copy(message = ProfileMessage.NETWORK) }
             return
         }
-        mutableState.update { it.copy(isWriting = true, message = null, phoneInvalid = false) }
+        mutableState.update {
+            it.copy(
+                isWriting = true,
+                message = null,
+                phoneInvalid = false,
+                phoneTypeRefused = false,
+            )
+        }
         viewModelScope.launch {
             // Whatever happens to the screen, the write is followed to its end: a result nobody reads would leave the
             // draft and the screen out of step with what the server holds.
@@ -331,13 +356,36 @@ class ProfileViewModel(
         me: String,
         phone: String,
     ) {
-        if (session.accountSnapshot?.hasTermsVersion == false) {
-            // The rules refuse any update of a profile without `termsVersion`: it is deleted, and the account goes through
-            // the consent panel and the two steps again. What was typed here is kept in the draft.
+        val snapshot = session.accountSnapshot
+        if (snapshot?.hasTermsVersion == false) {
+            // The rules refuse any update of a profile without `termsVersion`: it has to be deleted and created again,
+            // through the consent panel and the two steps. NEVER for an account that belongs to a Miff (a refusal of the
+            // panel would then delete the whole account and orphan the Miff): neutral message, nothing is touched.
+            if (snapshot.hasMembership) {
+                mutableState.update { it.copy(isWriting = false, message = ProfileMessage.ACCOUNT_UNAVAILABLE) }
+                return
+            }
+            // The names and the photo are read BEFORE the deletion and kept in the draft: nothing to type again.
+            val seed = profiles.read(me)
+            if (seed == null) {
+                mutableState.update { it.copy(isWriting = false, message = ProfileMessage.SAVE_FAILED) }
+                return
+            }
             val deleted = profiles.delete(me)
             if (deleted == ProfileWriteResult.DONE) {
+                val state = mutableState.value
+                drafts.save(
+                    ProfileDraft(
+                        uid = me,
+                        step = DraftStep.PROFILE,
+                        firstName = ProfileForm.limitInput(seed.firstName).text,
+                        lastName = ProfileForm.limitInput(seed.lastName).text,
+                        regionCode = state.regionCode,
+                        phoneText = state.phoneText,
+                        avatar = seed.avatarJpeg,
+                    ),
+                )
                 mutableState.update { it.copy(isWriting = false) }
-                saveDraftAt(DraftStep.PROFILE)
                 session.retry()
             } else {
                 reportFailure(deleted)
@@ -372,7 +420,14 @@ class ProfileViewModel(
     }
 
     private fun reportFailure(result: ProfileWriteResult) {
-        val message = if (result == ProfileWriteResult.OFFLINE) ProfileMessage.NETWORK else ProfileMessage.SAVE_FAILED
+        val message =
+            if (result == ProfileWriteResult.OFFLINE) {
+                ProfileMessage.NETWORK
+            } else {
+                // The server answered "no" (or something unexpected) again and again: not a hiccup any more.
+                serverRefusals++
+                if (serverRefusals >= REFUSALS_BEFORE_ADVICE) ProfileMessage.TRY_LATER else ProfileMessage.SAVE_FAILED
+            }
         mutableState.update { it.copy(isWriting = false, message = message) }
     }
 
@@ -403,6 +458,9 @@ class ProfileViewModel(
     }
 
     companion object {
+        /** After this many refusals in a row, the message advises to come back later instead of "try again". */
+        const val REFUSALS_BEFORE_ADVICE = 3
+
         /** More than a phone number can hold: pasted text is cut here (the number is then simply invalid). */
         const val MAX_PHONE_INPUT = 40
     }

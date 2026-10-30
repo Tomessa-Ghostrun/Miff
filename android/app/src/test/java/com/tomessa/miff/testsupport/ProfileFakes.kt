@@ -1,5 +1,6 @@
 package com.tomessa.miff.testsupport
 
+import com.tomessa.miff.data.auth.ProfileSeed
 import com.tomessa.miff.data.auth.ProfileWriteResult
 import com.tomessa.miff.data.auth.UserProfileRepository
 import com.tomessa.miff.data.onboarding.ProfileDraft
@@ -49,6 +50,12 @@ class FakeUserProfileRepository : UserProfileRepository {
     val phonesAdded = mutableListOf<Pair<String, String>>()
     val deleted = mutableListOf<String>()
 
+    /** What an older profile holds; null = it cannot be read. */
+    var seed: ProfileSeed? = ProfileSeed("Old", "Name", ByteArray(5) { 2 })
+
+    /** Every call, in order ("read", "delete", ...): to prove that the profile is read BEFORE it is deleted. */
+    val calls = mutableListOf<String>()
+
     /** Answers of the next calls, one per call; the last one is repeated. */
     var results = ArrayDeque<ProfileWriteResult>()
     var onWrite: () -> Unit = {}
@@ -68,6 +75,7 @@ class FakeUserProfileRepository : UserProfileRepository {
         phone: String,
         consent: PendingConsent,
     ): ProfileWriteResult {
+        calls += "create"
         created += Created(uid, firstName, lastName, avatarJpeg, phone, consent)
         return next()
     }
@@ -76,13 +84,20 @@ class FakeUserProfileRepository : UserProfileRepository {
         uid: String,
         phone: String,
     ): ProfileWriteResult {
+        calls += "addPhone"
         phonesAdded += uid to phone
         return next()
     }
 
     override suspend fun delete(uid: String): ProfileWriteResult {
+        calls += "delete"
         deleted += uid
         return next()
+    }
+
+    override suspend fun read(uid: String): ProfileSeed? {
+        calls += "read"
+        return seed
     }
 }
 

@@ -1,12 +1,17 @@
 package com.tomessa.miff.data
 
 import com.tomessa.miff.data.auth.AccountLoad
+import com.tomessa.miff.data.onboarding.DraftStep
+import com.tomessa.miff.data.onboarding.ProfileDraft
+import com.tomessa.miff.data.session.RefuseResult
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.session.SessionState
 import com.tomessa.miff.domain.auth.AccountSnapshot
 import com.tomessa.miff.domain.auth.AppDestination
 import com.tomessa.miff.domain.auth.ConsentVersions
+import com.tomessa.miff.domain.auth.GoogleTokenResult
 import com.tomessa.miff.domain.auth.PendingConsent
+import com.tomessa.miff.testsupport.MemoryProfileDraftStore
 import com.tomessa.miff.testsupport.SessionHarness
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -147,6 +152,66 @@ class SessionProfileSavedTest {
         run { h ->
             h.manager.start()
             assertFalse(h.manager.profileAlreadySaved())
+        }
+
+    // --- The draft is erased as soon as it is of no use (review m2) and a Miff is never orphaned (I3) -----------------
+
+    private fun runWithDrafts(block: suspend TestScope.(SessionHarness, MemoryProfileDraftStore) -> Unit) =
+        runTest(UnconfinedTestDispatcher()) {
+            val drafts = MemoryProfileDraftStore()
+            block(SessionHarness(backgroundScope, drafts = drafts), drafts)
+        }
+
+    private fun aDraft() = ProfileDraft("uid-1", DraftStep.PHONE, "Léa", "Martin", "FR", "0612345678", ByteArray(3))
+
+    @Test
+    fun atLaunchWithNobodySignedIn_aLeftOverDraftIsErased() =
+        runWithDrafts { h, drafts ->
+            drafts.save(aDraft())
+            h.manager.start()
+            assertNull(drafts.stored)
+        }
+
+    @Test
+    fun whenTheProfileExists_theDraftIsErased() =
+        runWithDrafts { h, drafts ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasPhone = true)
+            drafts.save(aDraft())
+            h.manager.start()
+            assertNull(drafts.stored)
+        }
+
+    @Test
+    fun whileTheProfileDoesNotExist_theDraftIsKept() =
+        runWithDrafts { h, drafts ->
+            h.gateway.setSignedIn("uid-1")
+            h.pending.save(PendingConsent("uid-1", ConsentVersions.TERMS, analyticsAccepted = true))
+            h.accounts.setLoaded(profileExists = false)
+            drafts.save(aDraft())
+            h.manager.start()
+            assertEquals(AppDestination.PROFILE, h.manager.destination())
+            assertEquals("Léa", drafts.stored!!.firstName)
+        }
+
+    @Test
+    fun theConsentPanelNeverDeletesAnAccountThatBelongsToAMiff() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true, hasPhone = false)
+            h.manager.start()
+            val result = h.manager.refuseConsentPanel { GoogleTokenResult.Cancelled }
+            assertTrue(result is RefuseResult.Failed)
+            assertEquals("the account was not touched", 0, h.gateway.deleteCalls)
+            assertEquals("still signed in", "uid-1", h.gateway.currentUid)
+        }
+
+    @Test
+    fun theConsentPanelStillDeletesAFreshAccountWithoutMiff() =
+        run { h ->
+            h.signedInWithTerms()
+            h.manager.refuseConsentPanel { GoogleTokenResult.Cancelled }
+            assertEquals(1, h.gateway.deleteCalls)
         }
 
     // --- What the screens ask the session ---------------------------------------------------------------------------

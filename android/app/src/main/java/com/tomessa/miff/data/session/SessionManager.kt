@@ -5,6 +5,7 @@ import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AuthGateway
 import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.auth.PendingConsentStore
+import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.privacy.BooleanStore
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
@@ -91,6 +92,11 @@ class SessionManager(
     private val cache: CachePurger,
     private val teardown: List<SessionTeardown>,
     private val scope: CoroutineScope,
+    /**
+     * The local draft of the profile steps. Erased whenever it can no longer be of any use: nobody is signed in, or the
+     * profile exists (belt and braces next to the teardown of sign-out and the erasure after the confirmed write).
+     */
+    private val drafts: ProfileDraftStore? = null,
 ) {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
@@ -235,6 +241,9 @@ class SessionManager(
      * Google account again; that is the only extra step, and it is cancellable without any message.
      */
     suspend fun refuseConsentPanel(requestGoogleToken: suspend () -> GoogleTokenResult): RefuseResult {
+        // An account that already belongs to a Miff is never deleted by a refusal of the panel (it would orphan the
+        // Miff and the other members' view of it): the person keeps the panel, with the neutral message.
+        if (accountSnapshot?.hasMembership == true) return RefuseResult.Failed(AuthFailure.UNKNOWN)
         val first =
             withContext(NonCancellable) {
                 ending = true
@@ -395,6 +404,7 @@ class SessionManager(
         if (uid == null) {
             sessionActive = false
             accountSnapshot = null
+            drafts?.clear()
             privacy.applyAccountConsent(false)
             pending.clear()
             mutableState.value = SessionState.Ready(entryDestination())
@@ -463,6 +473,7 @@ class SessionManager(
         if (snapshot.profileExists) {
             recorded = null
             pending.clear()
+            drafts?.clear()
             privacy.applyAccountConsent(snapshot.analyticsConsentEnabled)
             if (method != null &&
                 snapshot.analyticsConsentEnabled

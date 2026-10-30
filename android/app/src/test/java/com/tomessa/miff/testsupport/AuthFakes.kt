@@ -219,6 +219,7 @@ class FakeCachePurger(
 class SessionHarness(
     scope: CoroutineScope,
     extraTeardown: List<SessionTeardown> = emptyList(),
+    drafts: com.tomessa.miff.data.onboarding.ProfileDraftStore? = null,
 ) {
     val timeline = Timeline()
     val gateway = FakeAuthGateway(timeline)
@@ -260,5 +261,6 @@ class SessionHarness(
                     },
                 ) + extraTeardown,
             scope = scope,
+            drafts = drafts,
         )
 }

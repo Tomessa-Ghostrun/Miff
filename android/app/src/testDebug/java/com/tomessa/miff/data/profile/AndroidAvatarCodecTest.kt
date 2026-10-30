@@ -262,6 +262,19 @@ class AndroidAvatarCodecTest {
     }
 
     @Test
+    fun aFileAddressIsRefused_evenIfARealJpegIsServedThere_M16() {
+        val jpegBytes = jpeg(smooth(400, 300))
+        // The same real picture, served through a content address, IS accepted: the refusal is about the address only.
+        assertNotNull(runBlocking { codec.decode(serve("same-picture", jpegBytes)) })
+        val fileUri = Uri.parse("file:///data/user/0/com.tomessa.miff/files/profile_draft/avatar.jpg")
+        shadowOf(context.contentResolver).registerInputStreamSupplier(fileUri) { ByteArrayInputStream(jpegBytes) }
+        assertNull(runBlocking { codec.decode(fileUri.toString()) })
+        val httpUri = Uri.parse("https://example.com/photo.jpg")
+        shadowOf(context.contentResolver).registerInputStreamSupplier(httpUri) { ByteArrayInputStream(jpegBytes) }
+        assertNull(runBlocking { codec.decode(httpUri.toString()) })
+    }
+
+    @Test
     fun aPhotoOfMoreThan100MillionPixels_isRefusedBeforeBeingDecoded() {
         // A PNG header that announces 20 000 x 10 000 pixels (200 million): only the header is needed to refuse it.
         val ihdr = ByteArrayOutputStream()

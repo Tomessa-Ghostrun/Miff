@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
@@ -31,17 +33,12 @@ data object PhoneStepRoute
 @Composable
 fun ProfileFlow(viewModel: ProfileViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val cropping = state.crop != null
     Box {
-        if (state.mode == OnboardingMode.PHONE_ONLY) {
-            PhoneStepScreen(
-                state = state,
-                onBack = null,
-                onCountrySelected = viewModel::onCountrySelected,
-                onPhoneChanged = viewModel::onPhoneChanged,
-                onSubmit = viewModel::onSubmitPhone,
-            )
-        } else {
-            ProfileSteps(viewModel)
+        // While the crop screen is open it is the ONLY thing that exists for the screen reader: what is behind it is
+        // hidden from the accessibility tree (TalkBack would otherwise reach the fields under the overlay).
+        Box(modifier = if (cropping) Modifier.clearAndSetSemantics {} else Modifier) {
+            ProfileContent(viewModel, state.mode)
         }
         state.crop?.let { crop ->
             PhotoCropScreen(
@@ -55,13 +52,36 @@ fun ProfileFlow(viewModel: ProfileViewModel) {
 }
 
 @Composable
+private fun ProfileContent(
+    viewModel: ProfileViewModel,
+    mode: OnboardingMode,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    Box {
+        if (mode == OnboardingMode.PHONE_ONLY) {
+            PhoneStepScreen(
+                state = state,
+                onBack = null,
+                onCountrySelected = viewModel::onCountrySelected,
+                onPhoneChanged = viewModel::onPhoneChanged,
+                onSubmit = viewModel::onSubmitPhone,
+            )
+        } else {
+            ProfileSteps(viewModel)
+        }
+    }
+}
+
+@Composable
 private fun ProfileSteps(viewModel: ProfileViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     // Where the person was when the app was closed (read once; afterwards the navigation leads).
     val firstStep = remember { state.step }
     val goBack: () -> Unit = {
-        if (!navController.popBackStack()) {
+        // Nothing moves while the write is going on (the view model refuses the step back, the screen must agree).
+        val idle = !viewModel.uiState.value.isWriting
+        if (idle && !navController.popBackStack()) {
             navController.navigate(ProfileStepRoute) { popUpTo<PhoneStepRoute> { inclusive = true } }
         }
     }
@@ -92,7 +112,7 @@ private fun ProfileSteps(viewModel: ProfileViewModel) {
         }
         composable<PhoneStepRoute> {
             // Opened directly (app reopened on this step): there is nothing to pop, "back" goes to the profile step.
-            BackHandler(enabled = navController.previousBackStackEntry == null, onBack = goBack)
+            BackHandler(enabled = navController.previousBackStackEntry == null || state.isWriting, onBack = goBack)
             PhoneStepScreen(
                 state = state,
                 onBack = goBack,

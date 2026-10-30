@@ -40,7 +40,29 @@ data class AccountSnapshot(
      * by an update (the rules read `termsVersion`): it has to be deleted and created again (data-model.md section 2.1).
      */
     val hasTermsVersion: Boolean = true,
-)
+) {
+    companion object {
+        /**
+         * Reads the two presence flags from the RAW values of the profile document (anything the server returned, whatever
+         * its type): a number counts only if it is a string of the E.164 shape of the rules, `termsVersion` only if it is a
+         * non-empty string. Pure, so that the test can cover every case without Firestore. The number itself is not kept.
+         */
+        fun fromProfileFields(
+            profileExists: Boolean,
+            hasMembership: Boolean,
+            analyticsConsentEnabled: Boolean,
+            phone: Any?,
+            termsVersion: Any?,
+        ): AccountSnapshot =
+            AccountSnapshot(
+                profileExists = profileExists,
+                hasMembership = profileExists && hasMembership,
+                analyticsConsentEnabled = profileExists && analyticsConsentEnabled,
+                hasPhone = profileExists && phone is String && ProfileDocument.E164.matches(phone),
+                hasTermsVersion = profileExists && termsVersion is String && termsVersion.isNotEmpty(),
+            )
+    }
+}
 
 /**
  * Pure routing rule. Order of ticket section 5 and Onboarding 6.2:

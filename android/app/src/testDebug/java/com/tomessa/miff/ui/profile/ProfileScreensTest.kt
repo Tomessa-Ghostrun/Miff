@@ -543,6 +543,46 @@ class ProfileScreensTest {
             ).assertExists()
     }
 
+    @Test
+    fun phone_aRefusedKindOfNumber_hasItsOwnKindSentence() {
+        phoneStep(phoneState(phone = "800 555 0123", region = "US").copy(phoneInvalid = true, phoneTypeRefused = true))
+        shoot("phone-type-refused")
+        composeRule.onNodeWithText(text(R.string.profile_phone_invalid_type)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.profile_phone_invalid)).assertCountEquals(0)
+    }
+
+    @Test
+    fun phone_severalRefusals_adviseToComeBackLater() {
+        phoneStep(phoneState(phone = "0612345678", message = ProfileMessage.TRY_LATER))
+        composeRule.onNodeWithText(text(R.string.profile_save_failed_later)).assertExists()
+    }
+
+    @Test
+    fun phone_anOlderAccountThatCannotBeCompleted_getsTheNeutralMessageWithTheSupportAddress() {
+        phoneStep(
+            phoneState(
+                phone = "0612345678",
+                message = ProfileMessage.ACCOUNT_UNAVAILABLE,
+                mode = OnboardingMode.PHONE_ONLY,
+            ),
+            onBack = null,
+        )
+        val shown =
+            context().getString(
+                R.string.auth_error_account_unavailable,
+                com.tomessa.miff.BuildConfig.SUPPORT_EMAIL,
+            )
+        composeRule.onNodeWithText(shown).assertExists()
+    }
+
+    @Test
+    fun phone_whileWriting_theBackArrowDoesNothing_m4() {
+        var back = 0
+        phoneStep(phoneState(phone = "0612345678", writing = true), onBack = { back++ })
+        composeRule.onNodeWithContentDescription(text(R.string.auth_back_a11y)).performClick()
+        assertEquals(0, back)
+    }
+
     // --- Crop ----------------------------------------------------------------------------------------------------------------------------
 
     private fun cropState(zoom: Float = 1f) =

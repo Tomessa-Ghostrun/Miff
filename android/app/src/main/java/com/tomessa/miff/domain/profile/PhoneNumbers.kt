@@ -35,6 +35,12 @@ sealed interface PhoneResult {
     ) : PhoneResult
 
     data object Invalid : PhoneResult
+
+    /**
+     * A valid number of a kind nobody can be called or texted on in the usual way: premium rate, shared cost, toll free,
+     * pager, voicemail... (the "0899" and "0800" of France). Refused on purpose, see [PhoneNumbers.ALLOWED_TYPES].
+     */
+    data object UnsupportedType : PhoneResult
 }
 
 /** A "+..." number typed or pasted: the country it belongs to and the national part to show in the field. */
@@ -61,6 +67,20 @@ object PhoneNumbers {
     private const val SEPARATORS = "-.()/‐‑‒–—"
     private const val LRM = '‎'
     private const val RLM = '‏'
+
+    /**
+     * Kinds of number accepted: landline, mobile (the two are told apart only in some countries) and internet telephony.
+     * Stricter than the ticket (6.4 says "any number of valid form"): a premium-rate or toll-free number would make
+     * every call or message from a member cost money or reach a service, in an app that shows the number to a whole
+     * circle. Review recommendation, kept by default; the PM can relax it by adding a type here.
+     */
+    val ALLOWED_TYPES: Set<PhoneNumberUtil.PhoneNumberType> =
+        setOf(
+            PhoneNumberUtil.PhoneNumberType.FIXED_LINE,
+            PhoneNumberUtil.PhoneNumberType.MOBILE,
+            PhoneNumberUtil.PhoneNumberType.FIXED_LINE_OR_MOBILE,
+            PhoneNumberUtil.PhoneNumberType.VOIP,
+        )
 
     private val util: PhoneNumberUtil by lazy(LazyThreadSafetyMode.PUBLICATION) { PhoneNumberUtil.getInstance() }
 
@@ -122,6 +142,7 @@ object PhoneNumbers {
         val cleaned = clean(input) ?: return PhoneResult.Invalid
         val number = parse(cleaned, if (cleaned.startsWith("+")) null else region) ?: return PhoneResult.Invalid
         if (!util.isValidNumber(number)) return PhoneResult.Invalid
+        if (util.getNumberType(number) !in ALLOWED_TYPES) return PhoneResult.UnsupportedType
         val e164 = util.format(number, PhoneNumberUtil.PhoneNumberFormat.E164)
         // Last guard, the same shape as the Firestore rules: never hand a form the server would refuse.
         if (!ProfileDocument.E164.matches(e164)) return PhoneResult.Invalid

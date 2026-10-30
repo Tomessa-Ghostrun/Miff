@@ -30,35 +30,26 @@ class FirestoreAccountRepository(
                 // The Firestore instance is resolved here, not stored: it is replaced after a cache purge.
                 val users = firestore().collection("users")
                 val profile = users.document(uid).get().await()
-                if (!profile.exists()) {
-                    AccountLoad.Loaded(
-                        AccountSnapshot(
-                            profileExists = false,
-                            hasMembership = false,
-                            analyticsConsentEnabled = false,
-                            hasPhone = false,
-                            hasTermsVersion = false,
-                        ),
-                    )
-                } else {
-                    val memberships =
-                        users
+                val exists = profile.exists()
+                // Memberships are only read once there is a profile: two reads at most (ticket 6.2, RT7).
+                val hasMembership =
+                    exists &&
+                        !users
                             .document(uid)
                             .collection("memberships")
                             .limit(1)
                             .get()
                             .await()
-                    AccountLoad.Loaded(
-                        AccountSnapshot(
-                            profileExists = true,
-                            hasMembership = !memberships.isEmpty,
-                            analyticsConsentEnabled = profile.getBoolean("analyticsConsent.enabled") == true,
-                            // Only the PRESENCE is read: the number itself is not kept in memory here.
-                            hasPhone = profile.getString("phone") != null,
-                            hasTermsVersion = profile.getString("termsVersion") != null,
-                        ),
-                    )
-                }
+                            .isEmpty
+                AccountLoad.Loaded(
+                    AccountSnapshot.fromProfileFields(
+                        profileExists = exists,
+                        hasMembership = hasMembership,
+                        analyticsConsentEnabled = exists && profile.getBoolean("analyticsConsent.enabled") == true,
+                        phone = profile.get("phone"),
+                        termsVersion = profile.get("termsVersion"),
+                    ),
+                )
             }
         } catch (e: TimeoutCancellationException) {
             AccountLoad.Unavailable

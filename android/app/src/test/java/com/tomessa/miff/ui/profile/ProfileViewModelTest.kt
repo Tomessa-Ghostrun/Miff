@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.profile
 
 import com.tomessa.miff.data.auth.AccountLoad
+import com.tomessa.miff.data.auth.ProfileSeed
 import com.tomessa.miff.data.auth.ProfileWriteResult
 import com.tomessa.miff.data.onboarding.DraftStep
 import com.tomessa.miff.data.onboarding.ProfileDraft
@@ -845,6 +846,131 @@ class ProfileViewModelTest {
             assertTrue(repo.deleted.isEmpty())
             assertEquals(ProfileMessage.SAVE_FAILED, vm.uiState.value.message)
             assertEquals(AppDestination.PHONE_ONLY, h.destination())
+        }
+
+    @Test
+    fun theOldProfileIsReadBeforeItIsDeleted_andItsNamesAndPhotoPrefillTheSteps() =
+        runTest(dispatcher) {
+            val h = accountWithoutPhone(hasTermsVersion = false)
+            repo.seed = ProfileSeed("Léa", "Martin", ByteArray(7) { 9 })
+            val vm = h.vm(OnboardingMode.PHONE_ONLY)
+            vm.onPhoneChanged("06 12 34 56 78")
+            h.accounts.setLoaded(profileExists = false)
+            vm.onSubmitPhone()
+            advanceUntilIdle()
+            assertEquals("read first, then delete", listOf("read", "delete"), repo.calls)
+            val draft = drafts.stored!!
+            assertEquals("Léa", draft.firstName)
+            assertEquals("Martin", draft.lastName)
+            assertArrayEquals(ByteArray(7) { 9 }, draft.avatar)
+            // The two steps that follow start pre-filled: nothing to type again.
+            val next = h.vm(OnboardingMode.FULL).uiState.value
+            assertEquals("Léa", next.firstName)
+            assertEquals("Martin", next.lastName)
+            assertNotNull(next.avatar)
+        }
+
+    @Test
+    fun ifTheOldProfileCannotBeRead_nothingIsDeleted() =
+        runTest(dispatcher) {
+            val h = accountWithoutPhone(hasTermsVersion = false)
+            repo.seed = null
+            val vm = h.vm(OnboardingMode.PHONE_ONLY)
+            vm.onPhoneChanged("06 12 34 56 78")
+            vm.onSubmitPhone()
+            advanceUntilIdle()
+            assertTrue(repo.deleted.isEmpty())
+            assertEquals(ProfileMessage.SAVE_FAILED, vm.uiState.value.message)
+            assertEquals(AppDestination.PHONE_ONLY, h.destination())
+        }
+
+    @Test
+    fun anOldProfileThatBelongsToAMiff_isNeverDeleted_neutralMessageInstead() =
+        runTest(dispatcher) {
+            val h = accountWithoutPhone(hasTermsVersion = false, hasMembership = true)
+            val vm = h.vm(OnboardingMode.PHONE_ONLY)
+            vm.onPhoneChanged("06 12 34 56 78")
+            vm.onSubmitPhone()
+            advanceUntilIdle()
+            assertEquals("nothing touched: no read, no delete, no update", emptyList<String>(), repo.calls)
+            assertEquals(ProfileMessage.ACCOUNT_UNAVAILABLE, vm.uiState.value.message)
+            assertFalse(vm.uiState.value.isWriting)
+            assertEquals(AppDestination.PHONE_ONLY, h.destination())
+        }
+
+    // --- Numbers that are valid but not for calling a person (review I2) ------------------------------------------------
+
+    @Test
+    fun aPremiumRateOrTollFreeNumber_isRefusedKindly_andNothingIsWritten() =
+        runTest(dispatcher) {
+            val h = newAccount()
+            val vm = h.vm()
+            vm.fillProfile()
+            vm.onContinueFromProfile()
+            vm.onCountrySelected("US")
+            vm.onPhoneChanged("800 555 0123") // toll free
+            vm.onSubmitPhone()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.phoneInvalid)
+            assertTrue(vm.uiState.value.phoneTypeRefused)
+            assertEquals(0, repo.writes)
+            vm.onPhoneChanged("202 555 0123") // a normal number goes through again
+            assertFalse(vm.uiState.value.phoneTypeRefused)
+            assertFalse(vm.uiState.value.phoneInvalid)
+        }
+
+    @Test
+    fun aMalformedNumber_isNotTheTypeMessage() =
+        runTest(dispatcher) {
+            val h = newAccount()
+            val vm = h.vm()
+            vm.fillProfile()
+            vm.onContinueFromProfile()
+            vm.onPhoneChanged("06 12")
+            vm.onSubmitPhone()
+            assertTrue(vm.uiState.value.phoneInvalid)
+            assertFalse(vm.uiState.value.phoneTypeRefused)
+        }
+
+    // --- Several refusals in a row (review m5) ---------------------------------------------------------------------------------
+
+    @Test
+    fun afterThreeRefusalsInARow_theMessageAdvisesToComeBackLater_andNothingIsLost() =
+        runTest(dispatcher) {
+            val h = newAccount()
+            repo.results = ArrayDeque(listOf(ProfileWriteResult.REFUSED))
+            val vm = h.vm()
+            vm.reachPhoneStep()
+            val messages = mutableListOf<ProfileMessage?>()
+            repeat(3) {
+                vm.onSubmitPhone()
+                advanceUntilIdle()
+                messages += vm.uiState.value.message
+            }
+            assertEquals(
+                listOf(ProfileMessage.SAVE_FAILED, ProfileMessage.SAVE_FAILED, ProfileMessage.TRY_LATER),
+                messages,
+            )
+            assertNotNull("everything typed is kept", drafts.stored)
+            assertEquals(
+                "Léa",
+                vm.uiState.value.firstName
+                    .trim(),
+            )
+        }
+
+    @Test
+    fun aMissingNetwork_doesNotCountAsARefusal() =
+        runTest(dispatcher) {
+            val h = newAccount()
+            repo.results = ArrayDeque(listOf(ProfileWriteResult.OFFLINE))
+            val vm = h.vm()
+            vm.reachPhoneStep()
+            repeat(5) {
+                vm.onSubmitPhone()
+                advanceUntilIdle()
+            }
+            assertEquals(ProfileMessage.NETWORK, vm.uiState.value.message)
         }
 
     // --- One person after another ----------------------------------------------------------------------------------

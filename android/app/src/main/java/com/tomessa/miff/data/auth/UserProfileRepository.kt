@@ -1,5 +1,6 @@
 package com.tomessa.miff.data.auth
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.domain.auth.PendingConsent
@@ -53,10 +54,89 @@ interface UserProfileRepository {
      * and created again with the full set of keys (backend/data-model.md section 2.1).
      */
     suspend fun delete(uid: String): ProfileWriteResult
+
+    /** The names and photo of the profile as it is now, read BEFORE it is deleted; null if it cannot be read. */
+    suspend fun read(uid: String): ProfileSeed?
+}
+
+/** What an older profile holds, kept to pre-fill the steps when it has to be created again (nothing else is kept). */
+class ProfileSeed(
+    val firstName: String,
+    val lastName: String,
+    val avatarJpeg: ByteArray?,
+)
+
+/**
+ * The Firestore operations used by the Onboarding, ALL of them transactions (never a plain `set`, see
+ * [UserProfileRepository]). Behind an interface so that the logic of the repository (checks, time limit, error wording)
+ * is tested with a fake, without Firestore.
+ */
+interface UsersTransactions {
+    suspend fun create(
+        uid: String,
+        data: Map<String, Any?>,
+    )
+
+    suspend fun updatePhone(
+        uid: String,
+        phone: String,
+    )
+
+    suspend fun delete(uid: String)
+
+    /** The fields of the profile (the photo as bytes), or null if there is no profile. */
+    suspend fun read(uid: String): Map<String, Any?>?
+}
+
+class FirestoreUsersTransactions(
+    private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+) : UsersTransactions {
+    // The instance is resolved at each use: it is replaced after a cache purge.
+    private fun ref(uid: String) = firestore().collection("users").document(uid)
+
+    override suspend fun create(
+        uid: String,
+        data: Map<String, Any?>,
+    ) {
+        val ref = ref(uid)
+        firestore()
+            .runTransaction { transaction ->
+                transaction.set(ref, data)
+                Unit
+            }.await()
+    }
+
+    override suspend fun updatePhone(
+        uid: String,
+        phone: String,
+    ) {
+        val ref = ref(uid)
+        firestore()
+            .runTransaction { transaction ->
+                transaction.update(ref, "phone", phone)
+                Unit
+            }.await()
+    }
+
+    override suspend fun delete(uid: String) {
+        val ref = ref(uid)
+        firestore()
+            .runTransaction { transaction ->
+                transaction.delete(ref)
+                Unit
+            }.await()
+    }
+
+    override suspend fun read(uid: String): Map<String, Any?>? {
+        val snapshot = ref(uid).get().await()
+        if (!snapshot.exists()) return null
+        return snapshot.data?.mapValues { (_, value) -> (value as? Blob)?.toBytes() ?: value }
+    }
 }
 
 class FirestoreUserProfileRepository(
-    private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+    private val transactions: UsersTransactions = FirestoreUsersTransactions(),
+    private val timeoutMillis: Long = WRITE_TIMEOUT_MS,
 ) : UserProfileRepository {
     override suspend fun create(
         uid: String,
@@ -68,15 +148,7 @@ class FirestoreUserProfileRepository(
     ): ProfileWriteResult {
         require(consent.uid == uid) { "consent of another account" }
         val data = ProfileDocument.forCreation(firstName, lastName, avatarJpeg, phone, consent)
-        return guarded {
-            val db = firestore()
-            val ref = db.collection("users").document(uid)
-            db
-                .runTransaction { transaction ->
-                    transaction.set(ref, data)
-                    Unit
-                }.await()
-        }
+        return guarded { transactions.create(uid, data) }
     }
 
     override suspend fun addPhone(
@@ -84,31 +156,23 @@ class FirestoreUserProfileRepository(
         phone: String,
     ): ProfileWriteResult {
         require(ProfileDocument.E164.matches(phone)) { "phone is not E.164" }
-        return guarded {
-            val db = firestore()
-            val ref = db.collection("users").document(uid)
-            db
-                .runTransaction { transaction ->
-                    transaction.update(ref, "phone", phone)
-                    Unit
-                }.await()
-        }
+        return guarded { transactions.updatePhone(uid, phone) }
     }
 
-    override suspend fun delete(uid: String): ProfileWriteResult =
-        guarded {
-            val db = firestore()
-            val ref = db.collection("users").document(uid)
-            db
-                .runTransaction { transaction ->
-                    transaction.delete(ref)
-                    Unit
-                }.await()
+    override suspend fun delete(uid: String): ProfileWriteResult = guarded { transactions.delete(uid) }
+
+    override suspend fun read(uid: String): ProfileSeed? =
+        try {
+            withTimeout(timeoutMillis) { transactions.read(uid) }?.let(::seedOf)
+        } catch (e: CancellationException) {
+            if (e is TimeoutCancellationException) null else throw e
+        } catch (e: Exception) {
+            null
         }
 
     private suspend fun guarded(write: suspend () -> Unit): ProfileWriteResult =
         try {
-            withTimeout(WRITE_TIMEOUT_MS) { write() }
+            withTimeout(timeoutMillis) { write() }
             ProfileWriteResult.DONE
         } catch (e: TimeoutCancellationException) {
             ProfileWriteResult.OFFLINE
@@ -118,9 +182,17 @@ class FirestoreUserProfileRepository(
             interpretWriteError(e)
         }
 
-    private companion object {
+    companion object {
         /** Long enough for a slow network, short enough not to leave the person watching a spinner. */
         const val WRITE_TIMEOUT_MS = 20_000L
+
+        /** Names and photo of an existing profile, if they have the shape the rules require; otherwise null. */
+        fun seedOf(fields: Map<String, Any?>): ProfileSeed? {
+            val first = fields["firstName"] as? String ?: return null
+            val last = fields["lastName"] as? String ?: return null
+            val avatar = (fields["avatar"] as? ByteArray)?.takeIf { it.size in 1..ProfileDocument.MAX_AVATAR_BYTES }
+            return ProfileSeed(first, last, avatar)
+        }
     }
 }
 
