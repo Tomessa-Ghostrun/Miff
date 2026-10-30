@@ -114,6 +114,11 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.google.googleid)
 
+    // Onboarding profile step (ONB-2): phone number validation and E.164 formatting (libphonenumber, Apache 2.0, free),
+    // and the orientation of the chosen photo (ExifInterface), which is then re-encoded with NO metadata.
+    implementation(libs.libphonenumber)
+    implementation(libs.androidx.exifinterface)
+
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)

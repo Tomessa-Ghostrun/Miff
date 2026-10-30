@@ -144,3 +144,8 @@ test('checkKeyNames : les préfixes home_ et diag_ sont connus', () => {
   const { errors, warnings } = checkKeyNames(['home_title', 'diag_build_version'], 'Android');
   assert.deepEqual([errors, warnings], [[], []]);
 });
+
+test('checkKeyNames : le préfixe profile_ (étapes de création du profil, ONB-2) est connu', () => {
+  const { errors, warnings } = checkKeyNames(['profile_title', 'profile_phone_visibility'], 'Android');
+  assert.deepEqual([errors, warnings], [[], []]);
+});

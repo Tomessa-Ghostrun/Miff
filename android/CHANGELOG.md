@@ -2,6 +2,42 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.4.0] - 2026-10-30 : ONB-2, profil et téléphone (étapes de création du profil)
+
+### Ajouté
+- **Étape « Profil »** (maquette « Welcoming screen -1 ») : photo facultative, prénom, nom (1 à 50 caractères après suppression des espaces, compteur « 45/50 » près de la limite, « 50 caractères maximum. » au-delà), flèche ronde grisée tant que les deux noms ne sont pas remplis. Aucune flèche retour, aucune déconnexion (décision Q14) : le retour du système met l'app en arrière-plan. Nom et prénom proposés à partir du nom du compte Google (modifiables, jamais de photo importée).
+- **Photo** : sélecteur de photos **du système** (aucune permission), ou appareil photo **du système** (aucune permission `CAMERA` : un seul fichier du cache privé via un `FileProvider` non exporté, supprimé dès qu'il est lu) ; **recadrage carré obligatoire** (glisser, pincer, curseur de zoom, actions « déplacer la photo » pour TalkBack) ; ré-encodage depuis les pixels en JPEG 160 x 160 de **20 000 octets au plus**, **sans aucune métadonnée** (vérifié sur un fichier source contenant une position, une date et un nom d'appareil) ; jamais copiée dans la galerie ; texte « Visible par les membres de tes Miffs ».
+- **Étape « Téléphone »** (maquettes « -2 » et « -6 ») : pays (feuille Material avec recherche, ~240 pays, région de l'appareil par défaut, sinon France), numéro national avec préfixe visuel et exemple du pays, clavier numérique, remplissage automatique autorisé, un numéro « +… » choisit son pays ; validation de forme libphonenumber, **E.164 sans espace** ; aucun SMS, aucune unicité ; message calme « Ce numéro ne semble pas correct. » ; **mention de visibilité** obligatoire sous le champ (décision N1). Flèche et geste « retour » vers le profil (animation de retour prédictif).
+- **Une seule écriture** de `users/{uid}`, à la fin de l'étape téléphone, avec toutes les clés : `firstName`, `lastName`, `phone`, `avatar?`, `createdAt` / `termsAcceptedAt` en heure serveur, `termsVersion`, `analyticsConsent {enabled:true, consentedAt, consentVersion, revokedAt:null}` (consentement réputé donné au clic sur « Rejoindre »). L'écran suivant n'apparaît qu'après la confirmation du serveur ; hors connexion : message neutre, champs conservés.
+- **Brouillon local** (prénom, nom, photo, pays, numéro, étape) : stockage privé, jamais le mot de passe, supprimé après la confirmation du serveur et à toute fin de session ; un brouillon d'un autre compte n'est jamais repris. Fermer l'app en plein onboarding ramène à la bonne étape.
+- **Routage** : profil absent -> panneau de consentement puis profil et téléphone ; profil **sans numéro** (compte antérieur à ONB-B) -> étape téléphone seule (ordre 2b) ; un profil antérieur à AUTH-B (sans `termsVersion`, mise à jour refusée par les règles) est supprimé puis recréé en repassant par le panneau de consentement. Remplace l'écran provisoire du profil.
+- Textes `profile_` FR/EN (tutoiement), ajoutés aussi au catalogue iOS pour la parité des clés ; préfixe `profile_` ajouté au contrat `docs/contracts/i18n-keys.md` et au script de parité.
+- Accessibilité : titres, champs étiquetés (libellé et champ ne font qu'un pour TalkBack), erreurs en zones live, cibles de 48 dp minimum, police agrandie et droite-à-gauche testés.
+- Tests : validation E.164 (table pays et numéros + exemple de chaque pays de la bibliothèque), noms, géométrie du recadrage, recherche de la taille de l'avatar, codec (métadonnées, 20 000 octets sur 20 images de formes variées, orientation, PNG transparent, fichiers refusés), brouillon, view model (écriture unique et clés, confirmation, hors connexion, compte sans numéro, reprise), session, écrans (Robolectric) et captures.
+
+### Modifié : revue indépendante de la PR (2026-10-30)
+- **Numéros plus stricts que le ticket** : surtaxés, gratuits, coût partagé, pager, messagerie vocale, numéro personnel et UAN refusés (seuls ligne fixe, mobile et VoIP passent), avec un message bienveillant propre ; le PM peut assouplir (`PhoneNumbers.ALLOWED_TYPES`).
+- **Compte antérieur à AUTH-B** : jamais supprimé s'il appartient à une Miff (message neutre) ; sinon prénom, nom et photo lus avant la suppression et pré-remplis. Le refus du panneau de consentement ne supprime plus un compte qui a une Miff.
+- **Recadrage** : le contenu sous l'écran de recadrage est caché au lecteur d'écran et ne reçoit plus les touches. Retour désactivé pendant l'écriture.
+- **Après 3 refus du serveur de suite** : message « Ça ne passe toujours pas… » (tout est gardé). Brouillon aussi effacé au lancement sans compte ou quand le profil existe.
+- Dépôt de la lecture des indicateurs du compte (`hasPhone`, `hasTermsVersion`) dans une fonction pure testée ; accès Firestore de l'Onboarding derrière une interface testée avec un faux (transactions seulement, jamais de `set` simple : test sur le code source).
+- **Limite documentée** : une transaction qui dépasse le délai de 20 s peut aboutir plus tard ; l'app relit alors le compte au refus suivant et continue si le profil est déjà complet.
+- **README réparé** : un remplacement de texte avait dupliqué le début du fichier.
+
+### Corrigé
+- **I1 de la revue d'AUTH-1** : `ProfileDocument.forCreation` n'écrivait pas `phone` alors que les règles (ONB-B) l'exigent ; il prend maintenant le numéro E.164 (refusé avant toute écriture s'il n'a pas la forme des règles). `ProfileDocumentTest`, qui affirmait le contraire, est corrigé ; README mis à jour.
+
+### Dépendances
+- `com.googlecode.libphonenumber:libphonenumber` 9.0.42 (Google, Apache 2.0, gratuite, ~360 Ko) : plans de numérotation officiels de tous les pays ; une table maison de longueurs de numéros serait fausse pour certains pays. Signal de remplacement : bibliothèque non maintenue (dernière version Maven Central du 2026-10-23).
+- `androidx.exifinterface:exifinterface` 1.4.2 (AndroidX, Apache 2.0) : lit seulement l'orientation de la photo choisie, avant ré-encodage sans métadonnée.
+- Aucun coût ; aucun SDK d'analyse ; aucune permission ajoutée au manifeste (un `FileProvider` non exporté est déclaré pour l'appareil photo du système).
+
+### Choix et limites à connaître
+- **Transaction Firestore** (et non un `set` simple) pour que « pas de confirmation » signifie « rien d'écrit » : un `set` hors connexion resterait en file d'attente et repartirait seul plus tard.
+- **Règles du téléphone non déployées** : tant qu'elles ne le sont pas sur `miff-3d283`, **toute** création de profil par cette app est refusée par le serveur (message neutre « Ça n'a pas fonctionné cette fois »). À déployer avant la recette (`docs/dev/deploiement-regles.md`, avec l'accord du PM).
+- Compte antérieur à ONB-B qui appartient déjà à des Miffs : seul `users/{uid}` reçoit le numéro ; la copie dans les fiches de membre viendra avec « Réglages > Mes informations » (ONB-3).
+- Libellés des champs au-dessus du cadre (maquettes) et non flottants comme à l'inscription ; liste complète des écarts design / plateforme dans le README (« Profil et téléphone »).
+- Non vérifié sur téléphone dans ce ticket : Photo Picker réel, appareil photo réel, remplissage automatique, retour prédictif, clavier ; voir le parcours de recette de la PR.
 ## [0.3.0] - 2026-10-29 : AUTH-2, mot de passe oublié (v1)
 
 ### Ajouté

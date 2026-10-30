@@ -77,9 +77,9 @@ fun AccountLookupFailedScreen(
 }
 
 /**
- * PROVISIONAL stand-in for the screens of the Onboarding and Feed tickets (profile, create / join a Miff, feed).
- * It only says where the app opened and offers a sign-out so that the routing and the sign-out can be tried on a phone.
- * The sign-out button moves to the Settings ticket; this whole screen disappears with the Onboarding ticket.
+ * PROVISIONAL stand-in for the screens that do not exist yet (create / join a Miff, feed). The profile and phone steps
+ * are real since ONB-2. It only says where the app opened and offers a sign-out so that the routing and the sign-out can
+ * be tried on a phone. The sign-out button moves to the Settings ticket; this whole screen disappears with the Feed ticket.
  */
 @Composable
 fun NextStepPlaceholderScreen(
@@ -88,7 +88,6 @@ fun NextStepPlaceholderScreen(
 ) {
     val text =
         when (destination) {
-            AppDestination.PROFILE -> R.string.android_next_profile
             AppDestination.MIFF_CHOICE -> R.string.android_next_miff_choice
             else -> R.string.android_next_feed
         }

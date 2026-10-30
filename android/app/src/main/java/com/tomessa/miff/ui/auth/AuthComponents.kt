@@ -149,27 +149,33 @@ fun AuthScaffold(
                 .semantics { this.paneTitle = paneTitle }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().heightIn(min = AuthHeaderHeight),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (onBack != null) {
-                IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.auth_back_a11y),
-                        tint = colorTextForm,
-                    )
-                }
-            }
-            Image(
-                painter = painterResource(R.drawable.miff_wordmark_color),
-                contentDescription = stringResource(R.string.home_logo_a11y),
-                modifier = Modifier.width(Spacing.logoWidth / 2).semantics { heading() },
-            )
-        }
+        AuthHeader(onBack)
         Spacer(Modifier.size(Spacing.l))
         content()
+    }
+}
+
+/** Back arrow at the start (when there is a previous screen) and the official wordmark centred (mockups 04 to 11). */
+@Composable
+fun AuthHeader(onBack: (() -> Unit)?) {
+    Box(
+        modifier = Modifier.fillMaxWidth().heightIn(min = AuthHeaderHeight),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (onBack != null) {
+            IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = stringResource(R.string.auth_back_a11y),
+                    tint = colorTextForm,
+                )
+            }
+        }
+        Image(
+            painter = painterResource(R.drawable.miff_wordmark_color),
+            contentDescription = stringResource(R.string.home_logo_a11y),
+            modifier = Modifier.width(Spacing.logoWidth / 2).semantics { heading() },
+        )
     }
 }
 
