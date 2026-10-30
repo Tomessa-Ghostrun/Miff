@@ -45,7 +45,7 @@ Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de to
 ## 4. Ton compte
 
 - Tu peux créer un compte avec une adresse e-mail et un mot de passe, avec Google, ou avec Apple (sur iOS).
-- Donne des informations vraies (prénom, nom) pour que tes proches te reconnaissent. N'utilise pas l'identité d'une autre personne.
+- Donne des informations vraies (prénom, nom, numéro de téléphone) pour que tes proches te reconnaissent et puissent te joindre. N'utilise pas l'identité d'une autre personne.
 - Garde ton mot de passe confidentiel. Tu es responsable de ce qui se passe avec ton compte. Si tu penses qu'il a été utilisé sans ton accord, écris-nous.
 - Un compte est personnel : ne le partage pas.
 
