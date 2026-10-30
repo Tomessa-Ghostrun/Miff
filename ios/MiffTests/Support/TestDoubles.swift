@@ -78,7 +78,7 @@ final class RecordingPrivacy: CollectionConsentApplying {
     }
 }
 
-final class RecordingSink: AnalyticsSink {
+final class EventLogSink: AnalyticsSink {
     private(set) var events: [(name: String, params: [String: Any])] = []
 
     func log(eventName: String, params: [String: Any]) {
@@ -330,7 +330,7 @@ final class SessionHarness {
     let flags = MemoryBooleanStore()
     let pending = MemoryPendingConsentStore()
     let privacy = RecordingPrivacy()
-    let sink = RecordingSink()
+    let sink = EventLogSink()
     let tracker: AnalyticsTracker
     let cache: FakeCachePurger
     let accounts = FakeAccountRepository()
