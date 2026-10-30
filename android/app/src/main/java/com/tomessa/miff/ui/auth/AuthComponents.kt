@@ -94,6 +94,7 @@ import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextError
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.colorTextPrimary
+import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
