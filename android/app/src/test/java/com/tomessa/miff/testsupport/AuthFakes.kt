@@ -173,6 +173,10 @@ class FakeAuthGateway(
 
     override fun displayName(): String? = displayName
 
+    var email: String? = null
+
+    override fun currentEmail(): String? = email
+
     override fun signOut() {
         signOutCalls++
         timeline += "signOut"

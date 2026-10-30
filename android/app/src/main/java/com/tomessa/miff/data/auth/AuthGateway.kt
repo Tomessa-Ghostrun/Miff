@@ -52,6 +52,12 @@ interface AuthGateway {
      */
     fun displayName(): String?
 
+    /**
+     * The e-mail address of the account (an Apple relay address is returned as it is), only to be SHOWN in Settings > Mon
+     * compte. Never stored (not in Firestore, not in an event, not in a log). Null if nobody is signed in.
+     */
+    fun currentEmail(): String?
+
     fun signOut()
 }
 
@@ -111,6 +117,8 @@ class FirebaseAuthGateway(
     }
 
     override fun displayName(): String? = auth.currentUser?.displayName
+
+    override fun currentEmail(): String? = auth.currentUser?.email?.takeIf { it.isNotBlank() }
 
     override fun signOut() = auth.signOut()
 

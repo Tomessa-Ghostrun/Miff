@@ -1,6 +1,6 @@
 # Ticket : Feed, onglet Profil, Réglages complets et Abonnement (challenge des maquettes Figma du 2026-10-30)
 
-**Statut** : brouillon issu de l'étape « challenge » du process par ticket ; **15 questions ouvertes pour le PM (§10)** ; aucun développement lancé ; aucun statut Notion modifié.
+**Statut** : challenge **validé par le PM le 2026-10-30** (« OK pour tout » aux 15 questions de §10 : toutes les recommandations sont des décisions, voir « Décisions du PM (2026-10-30) » en fin de document) ; développement Android d'ONB-3a et ONB-3b lancé ; aucun statut Notion modifié.
 **Rédigé le** : 2026-10-30 (agent `product-specs`).
 **Complète et confronte aux maquettes** : `docs/tickets/onboarding.md` (ONB-3 : barre d'onglets, onglet Profil, Réglages minimaux ; §6.7 à §6.10), `docs/tickets/miff.md` (§7 : constats Feed F1 à F9), `docs/tickets/authentification.md` (§7.6, §7.7, AUTH-2, AUTH-5), `docs/specs/feed-cercle-de-confiance.md`, `docs/specs/update-et-escalade-statut.md`, `docs/specs/paywall-premium.md`, `docs/specs/notifications.md`, `docs/specs/lieux-de-confiance.md`, `docs/specs/profil-et-reglages.md`. **Ne remplace aucun de ces documents** : là où une maquette contredit une décision déjà prise, c'est la décision qui l'emporte tant que le PM ne l'a pas changée (§4B).
 **Maquettes lues (les 26 images)** : `design/exports/feed/` (9), `design/exports/profil/` (2), `design/exports/reglages/` (15), avec leurs README de repérage. Elles sont citées ci-dessous par « feed-0 » (`Welcoming screen.png`), « feed-1 » (`Welcoming screen-1.png`), etc., et « profil-0/1 », « reglages-0 » à « reglages-14 ». J'ai aussi regardé `design/exports/onboarding-original/Paywall.png` (liste des quatre bénéfices Premium).
@@ -482,3 +482,31 @@ Rien de ceci n'est fait par un agent.
 6. Si tu as modifié le ticket Notion « FEED » depuis le 2026-10-24 : me le signaler (je n'ai pas pu le relire).
 
 *Ce document ne modifie ni le code, ni Figma, ni Notion, ni les règles Firestore, ni `backend/data-model.md`. Aucun texte légal n'est rédigé et aucun n'est présenté comme relu par un juriste.*
+
+---
+
+## 13. Décisions du PM (2026-10-30)
+
+Réponse du PM aux 15 questions de §10 : **« OK pour tout »**. Chaque recommandation de l'agent `product-specs` devient donc une **décision**. Rien n'est tranché au-delà de ce qui est écrit en §10 ; là où la recommandation dit « à défaut » ou « [À vérifier] », le point reste à vérifier au moment de l'implémentation.
+
+| # | Sujet | Décision (= recommandation de §10) | Où ça s'applique |
+|---|---|---|---|
+| Q1 | Bouton rond central | « Donner des nouvelles » (mise à jour manuelle) géré par un futur ticket **Update**. Tant qu'il n'existe pas : **masqué** dans les builds pour testeurs externes (la barre passe à deux onglets), **visible mais désactivé** dans les builds internes | ONB-3a |
+| Q2 | Écran d'une Miff, compte gratuit | La **carte de Miff du Profil** ouvre l'écran de la Miff (pas de « Mes Miffs » dans Réglages) ; dans le Feed, avec une seule Miff, le nom est une pastille **non cliquable** ; « Créer une nouvelle Miff » et « + Rejoindre / + Créer » **réservés au Premium** jusqu'au ticket Premium | PRO-1, FEED-1 (pas ONB-3a) |
+| Q3 | Adresses des lieux | Liste = **nom + catégorie** ; l'adresse est sur un **écran de détail** en lecture ; dire clairement, avant d'entrer dans une Miff, que les lieux sont partagés | PRO-1, ticket Lieux, ticket Miff |
+| Q4 | Langues | **Français, English, « Langue du téléphone »**, chaque nom dans sa propre langue ; Android applique le choix **immédiatement** (sans bouton « Enregistrer ») ; iOS ouvre les réglages de l'iPhone | ONB-3a, iOS |
+| Q5 | Mon compte | **E-mail en lecture seule** ; **pas** de formulaire à 3 champs : un bouton « Changer mon mot de passe » qui envoie l'e-mail de réinitialisation (AUTH-2), **masqué** pour les comptes Google et Apple ; « Supprimer mon compte » **seulement quand AUTH-5 est livré** | ONB-3b |
+| Q6 | Notifications | **Ligne masquée** tant que rien n'est envoyé ; l'état de la permission reste dans Confidentialité ; « classiques / intelligentes » à définir par le PM avant le futur ticket Notifications | ONB-3a/3b ; ticket Notifications |
+| Q7 | Abonnement dans Réglages | **Rien d'achetable** avant la validation serveur ; **ABO-1** = ligne « Abonnement » en lecture seule pour un Premium accordé à la main, sans prix ni bouton ; pas d'encart « Débloquez » | ABO-1 (plus tard) |
+| Q8 | Offre et prix | Un seul nom partout ; décider le mode de prélèvement et l'essai de 7 jours avant de créer les produits des stores ; prix **lus depuis les stores**, pourcentage d'économie calculé ou retiré | Ticket Premium |
+| Q9 | Arrêt de l'abonnement | Fin de la **période déjà payée**, avec **préavis**, **choix de la Miff conservée**, « Prévenir mes proches » ; le bouton de l'app renvoie à la gestion d'abonnement **du magasin** | Ticket Premium |
+| Q10 | « Zone à risque » | **Non livrée en v1** ; le type `risk` reste dans le schéma sans interface ; un éventuel `in_risk` s'afficherait en neutre | FEED-2, ticket Lieux |
+| Q11 | Paliers et ton des bandeaux | Trois niveaux de couleur ; règle de la spec (vert avant 2 h, orange de 2 h à 4 h, rouge après 4 h) ; heures absolues ; « Pas de nouvelles de {Prénom} depuis 16 h 02 » + « Envoyer un message » ; une page de bandeau par alerte, seulement s'il y en a plusieurs | FEED-2 |
+| Q12 | Bandeau « rien à signaler » | « Tout va bien » seulement si au moins un statut est connu et tous verts ; « {n} sur {m} ont donné des nouvelles » ; « Pas encore de nouvelles » ; « Tu es seul(e) dans cette Miff pour l'instant » ; « Dernière nouvelle il y a 2 min » ; fin de « Tout le monde est en sécurité » | FEED-1/2 |
+| Q13 | « Localiser » | Remplacé par **« Voir le lieu »** (coordonnées du lieu enregistré, jamais de la personne), absent si aucun lieu connu ; à défaut, retiré en v1 | FEED-2, ticket Lieux |
+| Q14 | Batterie | Gardée, **datée**, masquée si absente ou de plus de 24 h ; **aucune alerte** de batterie faible en v1 ; le texte de consentement d'entrée dans une Miff cite le niveau de batterie (nouvelle `consentVersion`) | FEED-2, ticket Miff |
+| Q15 | Cloche et avatar de l'en-tête du Feed | **Cloche retirée** en v1 ; l'avatar mène à l'onglet Profil (ou est retiré) | FEED-1 ; ONB-3a (Feed provisoire sans cloche) |
+
+**Conséquences pour les deux premières PR Android** : ONB-3a applique Q1, Q4, Q6, Q7, Q15 (et le périmètre de §7) ; ONB-3b applique Q5 et Q6. Les autres décisions guident les tickets FEED, PRO, ABO, Lieux, Miff, Premium et Notifications.
+
+*Le statut des tickets dans Notion n'est pas modifié par ce document ; le PM en garde la main.*

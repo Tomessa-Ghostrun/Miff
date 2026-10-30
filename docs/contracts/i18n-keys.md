@@ -26,7 +26,10 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 |---|---|---|
 | `auth_` | Inscription, connexion, mot de passe | Android et iOS |
 | `onboarding_` | Carrousel de bienvenue (et, plus tard, les autres écrans du ticket Onboarding) | Android et iOS |
-| `profile_` | Étapes de création du profil (photo, prénom, nom, recadrage, pays et numéro de téléphone) et, plus tard, Réglages > Mes informations (ticket Onboarding, ONB-2) | Android et iOS |
+| `profile_` | Étapes de création du profil (photo, prénom, nom, recadrage, pays et numéro de téléphone) ; onglet Profil (`profile_tab_`) ; les champs de Réglages > Mes informations en réutilisent les clés (ticket Onboarding, ONB-2 et ONB-3a) | Android et iOS |
+| `tabbar_` | Barre d'onglets : noms parlés (lecteur d'écran) des trois onglets (ONB-3a) | Android et iOS |
+| `feed_` | Onglet Feed ; pour l'instant l'écran provisoire (ONB-3a), puis le vrai Feed (tickets FEED) | Android et iOS |
+| `settings_` | Réglages : liste, Mes informations, Mon compte, Langue, Confidentialité (ONB-3a, ONB-3b) | Android et iOS |
 | `miff_` | Créer, rejoindre, gérer une Miff, membres, code secret | Android et iOS |
 | `place_` | Lieux de confiance | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |

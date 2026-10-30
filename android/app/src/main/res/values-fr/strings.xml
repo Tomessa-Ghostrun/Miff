@@ -157,7 +157,8 @@
     <string name="android_legal_terms_path">/fr/cgu</string>
     <string name="android_legal_privacy_path">/fr/confidentialite</string>
     <string name="android_next_miff_choice">Prochaine étape : créer ou rejoindre une Miff. Cet écran arrive bientôt.</string>
-    <string name="android_next_feed">Tu es connecté. Le fil de ton cercle arrive bientôt.</string>
+    <!-- Builds de debug seulement (voir NextStepPlaceholderScreen) : jamais affiché dans un build release. -->
+    <string name="android_debug_preview_tabs" tools:ignore="UnusedResources">Aperçu interne : ouvrir les onglets et les Réglages</string>
 
     <!-- Carrousel de bienvenue et consentement implicite (AUTH-1) -->
     <string name="auth_consent_notice">En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
@@ -247,4 +248,43 @@
     <string name="profile_save_failed">Ça n\'a pas fonctionné cette fois. Réessaie dans un instant.</string>
     <string name="profile_phone_invalid_type">Ce type de numéro ne peut pas être utilisé ici. Saisis plutôt un numéro de mobile ou de ligne fixe.</string>
     <string name="profile_save_failed_later">Ça ne passe toujours pas. Rien n\'est perdu : tu peux fermer l\'app et réessayer un peu plus tard.</string>
+
+    <!-- Barre d'onglets, Feed provisoire, onglet Profil, Réglages (ONB-3a) -->
+    <string name="tabbar_feed_a11y">Fil de ta Miff</string>
+    <string name="tabbar_update_a11y">Donner des nouvelles</string>
+    <string name="tabbar_update_soon_a11y">Donner des nouvelles, bientôt disponible</string>
+    <string name="tabbar_profile_a11y">Profil</string>
+    <string name="feed_pane_a11y">Fil de ta Miff</string>
+    <string name="feed_empty_title">Ton fil n\'est pas encore prêt</string>
+    <string name="feed_empty_body">Cet écran est encore en construction. Quand il sera prêt, tu y verras les nouvelles de tes proches. Ta position n\'est pas utilisée pour l\'instant.</string>
+    <string name="profile_tab_pane_a11y">Ton profil</string>
+    <string name="profile_tab_you_label">C\'est toi</string>
+    <string name="profile_tab_open_my_info_a11y">ouvrir Mes informations</string>
+    <string name="profile_tab_settings_a11y">Réglages</string>
+    <string name="profile_tab_unavailable">Nous n\'arrivons pas à afficher ton profil pour le moment. Vérifie ta connexion puis réessaie.</string>
+    <string name="settings_title">Réglages</string>
+    <string name="settings_my_info_title">Mes informations</string>
+    <string name="settings_my_info_subtitle">Modifie ta photo, ton nom et ton numéro</string>
+    <string name="settings_account_title">Mon compte</string>
+    <string name="settings_account_subtitle">Gère ton compte personnel</string>
+    <string name="settings_language_title">Langue</string>
+    <string name="settings_language_subtitle">Change la langue de l\'application</string>
+    <string name="settings_language_system">Langue du téléphone</string>
+    <string name="settings_my_info_phone_label">Téléphone</string>
+    <string name="settings_my_info_save_action">Enregistrer</string>
+    <string name="settings_my_info_saved">C\'est enregistré.</string>
+    <string name="settings_my_info_sync_pending">Tes informations sont enregistrées. Tes proches verront les changements dès que la connexion le permet : appuie de nouveau sur « Enregistrer » dans un instant.</string>
+    <string name="settings_my_info_name_required">Écris au moins un caractère.</string>
+    <string name="settings_my_info_load_failed">Nous n\'arrivons pas à afficher tes informations pour le moment. Vérifie ta connexion puis réessaie.</string>
+    <string name="settings_my_info_photo_edit_a11y">Modifier la photo de profil</string>
+    <string name="settings_my_info_discard_title">Quitter sans enregistrer ?</string>
+    <string name="settings_my_info_discard_body">Les changements que tu as faits ne seront pas gardés.</string>
+    <string name="settings_my_info_discard_confirm">Quitter</string>
+    <string name="settings_my_info_discard_cancel">Rester ici</string>
+    <string name="settings_account_email_label">Adresse e-mail</string>
+    <string name="settings_account_email_a11y">Adresse e-mail : %1$s. Elle ne peut pas être modifiée ici.</string>
+    <string name="settings_account_sign_out_action">Se déconnecter</string>
+    <string name="settings_account_sign_out_title">Te déconnecter ?</string>
+    <string name="settings_account_sign_out_body">Tes proches ne verront plus tes mises à jour tant que tu es déconnecté(e).</string>
+    <string name="settings_account_sign_out_cancel">Annuler</string>
 </resources>

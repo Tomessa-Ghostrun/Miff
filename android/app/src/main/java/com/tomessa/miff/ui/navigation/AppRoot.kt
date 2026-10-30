@@ -26,11 +26,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.data.auth.CredentialManagerGoogleSource
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.data.session.SessionState
 import com.tomessa.miff.domain.auth.AppDestination
 import com.tomessa.miff.domain.auth.shouldShowWelcomeCarousel
+import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelViewModel
@@ -42,6 +44,7 @@ import com.tomessa.miff.ui.auth.SignInScreen
 import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
+import com.tomessa.miff.ui.main.MainShell
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.ProfileFlow
@@ -154,10 +157,23 @@ fun AppRoot(container: AppContainer) {
                     ProfileFlow(profileViewModel)
                 }
 
-                AppDestination.MIFF_CHOICE, AppDestination.FEED -> {
-                    NextStepPlaceholderScreen(
-                        destination = current.destination,
-                        onSignOut = { scope.launch { session.signOut() } },
+                AppDestination.MIFF_CHOICE -> {
+                    // Debug builds only: look at the tabs without a Miff (the code is removed from the release build).
+                    var previewTabs by rememberSaveable { mutableStateOf(false) }
+                    if (BuildConfig.DEBUG && previewTabs) {
+                        MainShell(container = container, tabBar = TabBarConfig.forBuild(isInternalBuild = true))
+                    } else {
+                        NextStepPlaceholderScreen(
+                            onSignOut = { scope.launch { session.signOut() } },
+                            onPreviewTabs = if (BuildConfig.DEBUG) ({ previewTabs = true }) else null,
+                        )
+                    }
+                }
+
+                AppDestination.FEED -> {
+                    MainShell(
+                        container = container,
+                        tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
                     )
                 }
             }

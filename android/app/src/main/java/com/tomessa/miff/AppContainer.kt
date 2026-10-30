@@ -26,7 +26,12 @@ import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.data.privacy.SharedPreferencesBooleanStore
 import com.tomessa.miff.data.profile.AndroidAvatarCodec
 import com.tomessa.miff.data.profile.AvatarCapture
+import com.tomessa.miff.data.profile.CurrentProfile
+import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
+import com.tomessa.miff.data.profile.MyProfileRepository
 import com.tomessa.miff.data.session.SessionManager
+import com.tomessa.miff.data.settings.AndroidLanguageStore
+import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.profile.AvatarCodec
@@ -73,6 +78,16 @@ class AppContainer(
     /** Photo of the profile: Photo Picker / camera of the system, square crop, JPEG without any metadata. */
     val avatarCodec: AvatarCodec = AndroidAvatarCodec(context)
 
+    /** Reading and changing the profile once it exists (Settings > Mes informations). */
+    val myProfiles: MyProfileRepository = FirestoreMyProfileRepository()
+
+    /** The profile of the person signed in, in memory for the session only (Profile tab, Mes informations). */
+    val currentProfile: CurrentProfile =
+        CurrentProfile(repository = myProfiles, currentUid = { authGateway.currentUid })
+
+    /** Language chosen in Settings (French, English, or the phone's), applied at once. */
+    val languageStore: LanguageStore = AndroidLanguageStore(context)
+
     /** Acceptance of the terms kept on the device between the sign-up and the creation of the profile. */
     val pendingConsent: PendingConsentStore = SharedPreferencesPendingConsentStore(context)
 
@@ -100,7 +115,7 @@ class AppContainer(
             // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
             // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
             // sign-out stops them (ticket 7.6).
-            teardown = listOf(profileDrafts.asTeardown()),
+            teardown = listOf(profileDrafts.asTeardown(), currentProfile),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
             drafts = profileDrafts,
         )

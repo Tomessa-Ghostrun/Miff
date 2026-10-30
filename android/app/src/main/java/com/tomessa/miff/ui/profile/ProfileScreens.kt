@@ -307,7 +307,7 @@ private fun PhotoButton(
 /** "Prendre une photo" / "Choisir dans la galerie" / "Supprimer la photo" (not drawn in the mockups: Material bottom sheet). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PhotoSourceSheet(
+internal fun PhotoSourceSheet(
     hasPhoto: Boolean,
     onDismiss: () -> Unit,
     onTakePhoto: () -> Unit,
