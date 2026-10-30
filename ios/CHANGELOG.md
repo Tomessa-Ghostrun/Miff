@@ -2,6 +2,25 @@
 
 ## Non publié
 
+### AUTH-3, AUTH-4, ONB-5, ONB-6 - Parité Android de l'authentification et de l'onboarding
+
+Ajouté :
+- **AUTH-3** : inscription et connexion par e-mail et mot de passe, **Google** (GoogleSignIn-iOS 10.1.0) et **Apple** (natif, nonce SHA-256) ; routage par état du compte (`SessionManager`) ; panneau de consentement pour une personne nouvelle arrivée de l'écran de connexion (le refuser supprime le compte tout juste créé) ; consentement sans case à cocher (le bouton vaut acceptation) ; collecte Analytics et Crashlytics seulement mise en pause au démarrage puis réglée par le choix du compte ; purge du cache Firestore à la fin d'une session ; limite de confort après 5 échecs de connexion.
+- **AUTH-4** : « Mot de passe oublié » (confirmation identique pour toute adresse, pause de 60 s par adresse).
+- **ONB-5** : icône officielle, mot-symbole vectoriel, carrousel de bienvenue (illustrations reconstruites en vectoriel et en vrais textes), écran de lancement système + animation (le cœur gonfle puis éclate, 2,9 s ; version « réduire les animations » 0,8 s).
+- **ONB-6** : étape profil (photo par le sélecteur du système sans permission, recadrage carré, JPEG ré-encodé sans métadonnées, 20 000 octets au plus), étape téléphone (PhoneNumberKit 5.0.13, E.164 obligatoire), brouillon local, écriture unique par transaction.
+- Dépendances : GoogleSignIn-iOS 10.1.0 (Apache-2.0), PhoneNumberKit 5.0.13 (MIT), et leurs dépendances indirectes (voir `README.md`). Entitlement « Se connecter avec Apple ». Phase de compilation qui ajoute le schéma d'URL de Google depuis le fichier de configuration embarqué (jamais dans le dépôt).
+- Textes : catalogue fr + en, parité stricte avec Android (clés `ios_*` propres à iOS), `PrivacyInfo.xcprivacy` complété (données de compte).
+- Tests de la logique (session, routage, formulaires, view models, numéro, photo, chronologie du lancement...) ; checklist de recette `docs/qa/checklists/ios-auth-onboarding-recette-pm.md`.
+
+Changé : `HomeView` utilise le mot-symbole officiel ; le diagnostic ouvre le vrai parcours de l'app ; `PrivacySettings` ne réapplique plus le choix gardé sur l'appareil au démarrage ; l'icône et le logo ne sont plus provisoires (seul le « G » de Google reste un redessin à remplacer avant la fiche de l'App Store). `tools/generate-app-icon.mjs` supprimé.
+
+**Prérequis côté PM pour tester** : capacité « Sign in with Apple » sur l'identifiant `com.tomessa.miff` et fournisseur Apple dans Firebase Authentication ; régénérer `GoogleService-Info.plist` après l'activation de Google et mettre à jour le secret `GOOGLE_SERVICE_INFO_PLIST_B64`.
+
+**Choix économiques** : aucun service payant ajouté ; PhoneNumberKit (local) plutôt qu'un service de vérification (aucun SMS) ; sélecteur de photos du système (aucune permission) ; aucune Cloud Function.
+
+**Non vérifié (seulement possible sur iPhone ou avec des comptes réels)** : rendu et fluidité sur iPhone 11 Pro, fenêtres Google et Apple, signature avec la nouvelle capacité, VoiceOver, iOS 16.
+
 ### INIT-4 - Socle complet (PR #13)
 
 Ajouté :
