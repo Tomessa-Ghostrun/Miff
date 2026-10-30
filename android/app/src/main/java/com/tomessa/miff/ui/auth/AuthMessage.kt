@@ -12,7 +12,12 @@ import com.tomessa.miff.domain.auth.GoogleTokenResult
 enum class AuthMessage {
     /** Wrong e-mail or password, or unknown address: ONE message for both (criteria C4 and C6). */
     INVALID_CREDENTIALS,
+
+    /** E-mail sign-in only: the text points to "Mot de passe oublié ?" (ticket 7.3). */
     TOO_MANY_ATTEMPTS,
+
+    /** Everywhere else (sign-up, Google, reset e-mail): same idea, without advising to reset a password. */
+    TOO_MANY_REQUESTS,
     EMAIL_IN_USE,
     OTHER_METHOD,
     NETWORK,
@@ -31,6 +36,10 @@ fun AuthFailure.toMessage(): AuthMessage =
         AuthFailure.RECENT_LOGIN_REQUIRED -> AuthMessage.UNKNOWN
         AuthFailure.UNKNOWN -> AuthMessage.UNKNOWN
     }
+
+/** For the screens where "reset your password" would make no sense as advice (sign-up, Google, reset e-mail). */
+fun AuthMessage.withoutResetAdvice(): AuthMessage =
+    if (this == AuthMessage.TOO_MANY_ATTEMPTS) AuthMessage.TOO_MANY_REQUESTS else this
 
 /**
  * What to say after the Google dialog. Closing the dialog says NOTHING (criterion S7): null.
@@ -53,6 +62,10 @@ fun AuthMessage.text(): String =
 
         AuthMessage.TOO_MANY_ATTEMPTS -> {
             stringResource(R.string.auth_error_too_many)
+        }
+
+        AuthMessage.TOO_MANY_REQUESTS -> {
+            stringResource(R.string.auth_error_too_many_requests)
         }
 
         AuthMessage.EMAIL_IN_USE -> {

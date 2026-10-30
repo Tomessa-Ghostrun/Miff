@@ -2,7 +2,7 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.3.0] - 2026-10-30 : ONB-2, profil et téléphone (étapes de création du profil)
+## [0.4.0] - 2026-10-30 : ONB-2, profil et téléphone (étapes de création du profil)
 
 ### Ajouté
 - **Étape « Profil »** (maquette « Welcoming screen -1 ») : photo facultative, prénom, nom (1 à 50 caractères après suppression des espaces, compteur « 45/50 » près de la limite, « 50 caractères maximum. » au-delà), flèche ronde grisée tant que les deux noms ne sont pas remplis. Aucune flèche retour, aucune déconnexion (décision Q14) : le retour du système met l'app en arrière-plan. Nom et prénom proposés à partir du nom du compte Google (modifiables, jamais de photo importée).
@@ -38,6 +38,26 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - Compte antérieur à ONB-B qui appartient déjà à des Miffs : seul `users/{uid}` reçoit le numéro ; la copie dans les fiches de membre viendra avec « Réglages > Mes informations » (ONB-3).
 - Libellés des champs au-dessus du cadre (maquettes) et non flottants comme à l'inscription ; liste complète des écarts design / plateforme dans le README (« Profil et téléphone »).
 - Non vérifié sur téléphone dans ce ticket : Photo Picker réel, appareil photo réel, remplissage automatique, retour prédictif, clavier ; voir le parcours de recette de la PR.
+## [0.3.0] - 2026-10-29 : AUTH-2, mot de passe oublié (v1)
+
+### Ajouté
+- Lien **« Mot de passe oublié ? »** sous le champ du mot de passe de la connexion (maquette -8) et écran **« Mot de passe oublié »** (maquette -10) : adresse e-mail (préremplie si elle était déjà saisie), « Envoyer », puis une confirmation sur le même écran. L'e-mail est envoyé par Firebase Authentication (`sendPasswordResetEmail`, dans la langue du téléphone) ; le **nouveau mot de passe se choisit sur la page web d'AUTH-W** (pas d'écran « Nouveau mot de passe » dans l'app en v1, il reste dans AUTH-6).
+- **Même confirmation que l'adresse ait un compte ou non** (aucune énumération) : une adresse inconnue ou un compte désactivé (erreur de Firebase quand sa protection est coupée) est traité comme un envoi réussi, et une réponse acceptée n'est jamais montrée avant 0,8 s.
+- **Pause de renvoi de 60 s** par adresse (le bouton devient « Renvoyer l'e-mail » et se réactive seul), conservée tant que l'app tourne ; confort, pas une protection de sécurité.
+- Format d'adresse vérifié sur le téléphone (« Cette adresse e-mail ne semble pas correcte. »), hors connexion = message neutre sans vider le champ, trop de demandes = message dédié, aucun code technique, aucun événement Analytics.
+- Textes FR (tutoiement) + EN `auth_signin_forgot_password`, `auth_reset_*` et `auth_error_too_many_requests`, ajoutés aussi au catalogue iOS (ajouts seulement, pour la parité des clés).
+- Tests : tri des erreurs de Firebase et pause (`PasswordResetTest`), écran dans le temps virtuel (`PasswordResetViewModelTest` : format, confirmation identique et durée identique pour une adresse connue ou inconnue, pause de 60 s, hors connexion, double appui), écrans et accessibilité (`AuthScreensTest` : lien, champ, confirmation annoncée, 48 dp, très grande police, français).
+
+### Modifié
+- Messages de connexion « identifiants incorrects » et « trop d'essais » : textes finaux du ticket §7.3 qui renvoient à « Mot de passe oublié ? » (FR + EN). **Valeurs du catalogue iOS non modifiées** (consigne : ajouts seulement) : `auth_error_invalid_credentials` et `auth_error_too_many` diffèrent donc entre Android et iOS jusqu'à AUTH-4.
+- Inscription et Google, en cas de « trop de demandes » : variante `auth_error_too_many_requests`, sans conseil de réinitialiser un mot de passe.
+- Champ de saisie : variante encadrée (maquettes -10 et -11), touche d'action « Envoyer » ; lien souligné d'une hauteur de 48 dp au moins (aussi pour « Déjà un compte ? » et « Pas encore de compte ? »).
+
+### À faire par le PM (aucune action dans l'app)
+- Une fois la page web AUTH-W déployée : Firebase > Authentication > Modèles > Réinitialisation du mot de passe > « Personnaliser l'URL d'action » = `https://miff-3d283.web.app/reset-password`, texte du modèle en FR et EN. Tant que ce n'est pas fait, le lien de l'e-mail ouvre la page par défaut de Firebase (voir `android/README.md`).
+
+### Choix économiques
+- Aucun : Firebase Authentication au plan gratuit Spark, aucune dépendance ajoutée, aucun service d'e-mail tiers. Limite connue : le quota quotidien d'e-mails de réinitialisation de Spark n'est **pas lu** (ticket §14) ; signal : un envoi refusé par Firebase (« trop de demandes ») sans raison apparente chez plusieurs personnes le même jour.
 
 ## [0.2.1] - 2026-10-28 : splash animé (demande du PM après recette sur l'OPPO)
 

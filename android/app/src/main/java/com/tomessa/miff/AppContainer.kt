@@ -1,14 +1,17 @@
 package com.tomessa.miff
 
 import android.content.Context
+import android.os.SystemClock
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
 import com.tomessa.miff.data.auth.FirebaseAuthGateway
+import com.tomessa.miff.data.auth.FirebasePasswordResetGateway
 import com.tomessa.miff.data.auth.FirestoreAccountRepository
 import com.tomessa.miff.data.auth.FirestoreCachePurger
 import com.tomessa.miff.data.auth.FirestoreUserProfileRepository
 import com.tomessa.miff.data.auth.NetworkMonitor
+import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
@@ -25,6 +28,7 @@ import com.tomessa.miff.data.profile.AndroidAvatarCodec
 import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
+import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.profile.AvatarCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +57,12 @@ class AppContainer(
     val authGateway: AuthGateway = FirebaseAuthGateway()
 
     val networkMonitor: NetworkMonitor = AndroidNetworkMonitor(context)
+
+    /** "Mot de passe oublié" (AUTH-2): the e-mail is sent by Firebase; the new password is chosen on the web page (AUTH-W). */
+    val passwordResetGateway: PasswordResetGateway = FirebasePasswordResetGateway()
+
+    /** Pause between two sends of the reset e-mail, kept here so that leaving the screen does not give a free resend. */
+    val passwordResetCooldown: ResendCooldown = ResendCooldown(nowMillis = SystemClock::elapsedRealtime)
 
     /** Used by the profile steps of the Onboarding ticket (one confirmed write, see ProfileDocument). */
     val userProfiles: UserProfileRepository = FirestoreUserProfileRepository()
