@@ -1,3 +1,4 @@
+// swiftlint:disable large_tuple -- les aides de test rendent (view model, session, horloge) ensemble
 import XCTest
 @testable import Miff
 
@@ -135,7 +136,8 @@ final class SignInViewModelTests: XCTestCase {
     ) -> (viewModel: SignInViewModel, harness: SessionHarness, time: TestClock) {
         let harness = SessionHarness()
         let time = TestClock()
-        let viewModel = SignInViewModel(session: harness.manager, network: FakeNetwork(online: online), clock: time.clock)
+        let network = FakeNetwork(online: online)
+        let viewModel = SignInViewModel(session: harness.manager, network: network, clock: time.clock)
         return (viewModel, harness, time)
     }
 

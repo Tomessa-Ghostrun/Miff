@@ -98,7 +98,8 @@ struct NewPlaceIllustration: View {
                     style: StrokeStyle(lineWidth: 0.6 * scale)
                 )
                 let dot = Path(
-                    ellipseIn: CGRect(x: center.x - 2.3 * scale, y: center.y - 2.3 * scale, width: 4.6 * scale, height: 4.6 * scale)
+                    ellipseIn: CGRect(
+                        x: center.x - 2.3 * scale, y: center.y - 2.3 * scale, width: 4.6 * scale, height: 4.6 * scale)
                 )
                 context.fill(dot, with: .color(colorActionPrimary.color))
             }

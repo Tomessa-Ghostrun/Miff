@@ -48,7 +48,8 @@ final class OnboardingTextTests: XCTestCase {
     func testTheHeadlineIsOnTwoLinesLikeAndroid() throws {
         let strings = try catalog()
 
-        XCTAssertEqual(text("onboarding_headline", "fr", in: strings), "Savoir qu\u{2019}ils vont bien,\nsans les déranger")
+        let french = "Savoir qu\u{2019}ils vont bien,\nsans les déranger"
+        XCTAssertEqual(text("onboarding_headline", "fr", in: strings), french)
         XCTAssertEqual(text("onboarding_headline", "en", in: strings), "Knowing they are fine,\nwithout bothering them")
     }
 
@@ -63,15 +64,20 @@ final class OnboardingTextTests: XCTestCase {
         let strings = try catalog()
 
         // Sur iOS la ligne de l'inscription cite aussi le bouton Apple, puisqu'il crée un compte comme « Rejoindre ».
-        XCTAssertTrue(try XCTUnwrap(text("ios_auth_consent_notice", "fr", in: strings)).contains("Continuer avec Apple"))
-        XCTAssertTrue(try XCTUnwrap(text("ios_auth_consent_notice", "en", in: strings)).contains("Continue with Apple"))
-        XCTAssertTrue(try XCTUnwrap(text("auth_panel_notice", "fr", in: strings)).contains("« Continuer »"))
+        let notice = try XCTUnwrap(text("ios_auth_consent_notice", "fr", in: strings))
+        let noticeEn = try XCTUnwrap(text("ios_auth_consent_notice", "en", in: strings))
+        let panel = try XCTUnwrap(text("auth_panel_notice", "fr", in: strings))
+        XCTAssertTrue(notice.contains("Continuer avec Apple"))
+        XCTAssertTrue(noticeEn.contains("Continue with Apple"))
+        XCTAssertTrue(panel.contains("« Continuer »"))
     }
 
     func testTheSignInMessagesPointToThePasswordResetLikeAndroid() throws {
         let strings = try catalog()
 
-        XCTAssertTrue(try XCTUnwrap(text("auth_error_invalid_credentials", "fr", in: strings)).contains("Mot de passe oublié ?"))
-        XCTAssertTrue(try XCTUnwrap(text("auth_error_too_many", "fr", in: strings)).contains("réinitialise ton mot de passe"))
+        let invalid = try XCTUnwrap(text("auth_error_invalid_credentials", "fr", in: strings))
+        let tooMany = try XCTUnwrap(text("auth_error_too_many", "fr", in: strings))
+        XCTAssertTrue(invalid.contains("Mot de passe oublié ?"))
+        XCTAssertTrue(tooMany.contains("réinitialise ton mot de passe"))
     }
 }

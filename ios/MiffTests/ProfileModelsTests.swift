@@ -65,7 +65,8 @@ final class ProfileFormTests: XCTestCase {
     }
 
     func testEachPartOfASuggestedNameIsCutToFifty() {
-        let suggested = ProfileForm.splitDisplayName(String(repeating: "a", count: 80) + " " + String(repeating: "b", count: 80))
+        let longName = String(repeating: "a", count: 80) + " " + String(repeating: "b", count: 80)
+        let suggested = ProfileForm.splitDisplayName(longName)
 
         XCTAssertEqual(suggested.first.utf16.count, 50)
         XCTAssertEqual(suggested.last.utf16.count, 50)
@@ -153,7 +154,8 @@ final class ProfileDocumentTests: XCTestCase {
         XCTAssertThrowsError(try ProfileDocument.forCreation(profile(first: " "), consent: consent)) { error in
             XCTAssertEqual(error as? ProfileDocumentError, .invalidName)
         }
-        XCTAssertThrowsError(try ProfileDocument.forCreation(profile(last: String(repeating: "a", count: 51)), consent: consent))
+        let tooLong = profile(last: String(repeating: "a", count: 51))
+        XCTAssertThrowsError(try ProfileDocument.forCreation(tooLong, consent: consent))
         XCTAssertThrowsError(
             try ProfileDocument.forCreation(profile(avatar: Data(count: 20_001)), consent: consent)
         ) { error in
@@ -222,7 +224,8 @@ final class CropMathTests: XCTestCase {
     }
 
     func testAnEmptyPhotoGivesAOnePixelCropInsteadOfACrash() {
-        XCTAssertEqual(CropMath.toCrop(width: 0, height: 0, zoom: 1, center: (0, 0)), SquareCrop(left: 0, top: 0, size: 1))
+        let crop = CropMath.toCrop(width: 0, height: 0, zoom: 1, center: (0, 0))
+        XCTAssertEqual(crop, SquareCrop(left: 0, top: 0, size: 1))
     }
 }
 

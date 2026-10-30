@@ -67,7 +67,8 @@ final class PhoneNumberKitTools: PhoneNumberTools {
 
     func detectInternational(_ input: String) -> DetectedNumber? {
         guard let cleaned = PhoneInput.clean(input), cleaned.hasPrefix("+"),
-              let number = try? Self.utility.parse(cleaned, withRegion: PhoneInput.fallbackRegion, ignoreType: true) else {
+              let number = try? Self.utility.parse(
+                  cleaned, withRegion: PhoneInput.fallbackRegion, ignoreType: true) else {
             return nil
         }
         let region = regionOf(number, fallback: "")

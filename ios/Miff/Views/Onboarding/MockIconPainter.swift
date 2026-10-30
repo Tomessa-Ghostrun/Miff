@@ -100,7 +100,8 @@ enum MockIconPainter {
     private static func drawObject(_ kind: MockIconKind, in context: inout GraphicsContext, grid: Grid, color: Color) {
         switch kind {
         case .battery:
-            let body = CGRect(x: grid.length(2.6), y: grid.length(0.8), width: grid.length(4.8), height: grid.length(8.4))
+            let body = CGRect(
+                x: grid.length(2.6), y: grid.length(0.8), width: grid.length(4.8), height: grid.length(8.4))
             context.fill(Path(roundedRect: body, cornerRadius: grid.length(0.9)), with: .color(color))
             let tip = CGRect(x: grid.length(3.8), y: 0, width: grid.length(2.4), height: grid.length(1.2))
             context.fill(Path(tip), with: .color(color))
@@ -113,7 +114,8 @@ enum MockIconPainter {
             context.fill(path, with: .color(color))
             context.fill(grid.circle(centerX: 5, centerY: 3.8, radius: 1.4), with: .color(colorBgSurface.color))
         case .message:
-            let bubble = CGRect(x: grid.length(0.2), y: grid.length(1.2), width: grid.length(9.6), height: grid.length(6.6))
+            let bubble = CGRect(
+                x: grid.length(0.2), y: grid.length(1.2), width: grid.length(9.6), height: grid.length(6.6))
             context.fill(Path(roundedRect: bubble, cornerRadius: grid.length(2)), with: .color(color))
             context.fill(grid.polygon([(2, 7), (2, 9.4), (4.6, 7)]), with: .color(color))
         default:

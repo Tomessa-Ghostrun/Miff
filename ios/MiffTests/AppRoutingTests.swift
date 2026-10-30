@@ -9,7 +9,8 @@ final class AppRoutingTests: XCTestCase {
         pendingTerms: Bool = false,
         returning: Bool = true
     ) -> AppDestination {
-        resolveDestination(signedIn: signedIn, account: account, hasPendingTerms: pendingTerms, returningUser: returning)
+        resolveDestination(
+            signedIn: signedIn, account: account, hasPendingTerms: pendingTerms, returningUser: returning)
     }
 
     private func account(

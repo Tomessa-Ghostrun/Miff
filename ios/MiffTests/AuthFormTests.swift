@@ -42,7 +42,8 @@ final class AuthFormTests: XCTestCase {
 
     func testInputIsCut() {
         XCTAssertEqual(AuthForm.limitEmailInput(String(repeating: "a", count: 400)).count, AuthForm.maxEmailLength)
-        XCTAssertEqual(AuthForm.limitPasswordInput(String(repeating: "a", count: 5000)).count, AuthForm.maxPasswordLength)
+        let longPassword = String(repeating: "a", count: 5000)
+        XCTAssertEqual(AuthForm.limitPasswordInput(longPassword).count, AuthForm.maxPasswordLength)
     }
 }
 

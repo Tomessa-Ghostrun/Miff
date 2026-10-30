@@ -23,7 +23,8 @@ final class AuthFailureTests: XCTestCase {
 
     func testInvalidCredentialIsNotAWrongPasswordForAGoogleOrAppleToken() {
         XCTAssertEqual(interpretAuthError(authError(AuthErrorNumber.invalidCredential), attempt: .social), .unknown)
-        XCTAssertEqual(interpretAuthError(authError(AuthErrorNumber.invalidCredential), attempt: .signUpEmail), .unknown)
+        let invalid = authError(AuthErrorNumber.invalidCredential)
+        XCTAssertEqual(interpretAuthError(invalid, attempt: .signUpEmail), .unknown)
         XCTAssertEqual(interpretAuthError(authError(AuthErrorNumber.wrongPassword), attempt: .deleteAccount), .unknown)
     }
 
@@ -57,7 +58,8 @@ final class AuthFailureTests: XCTestCase {
 
     func testAnythingElseIsUnknownAndLeaksNothing() {
         XCTAssertEqual(interpretAuthError(authError(99_999), attempt: .signInEmail), .unknown)
-        XCTAssertEqual(interpretAuthError(NSError(domain: "AutreDomaine", code: 17_004), attempt: .signInEmail), .unknown)
+        let foreign = NSError(domain: "AutreDomaine", code: 17_004)
+        XCTAssertEqual(interpretAuthError(foreign, attempt: .signInEmail), .unknown)
     }
 }
 
@@ -101,7 +103,8 @@ final class SocialSignInSupportTests: XCTestCase {
 
         XCTAssertEqual(SocialSignInErrors.googleResult(for: closed), .cancelled)
         XCTAssertEqual(SocialSignInErrors.googleResult(for: other), .failed(.unknown))
-        XCTAssertEqual(SocialSignInErrors.googleResult(for: NSError(domain: NSURLErrorDomain, code: -1009)), .failed(.network))
+        let offline = NSError(domain: NSURLErrorDomain, code: -1009)
+        XCTAssertEqual(SocialSignInErrors.googleResult(for: offline), .failed(.network))
     }
 
     func testClosingTheAppleSheetIsACancellation() {
@@ -136,6 +139,7 @@ final class SocialSignInSupportTests: XCTestCase {
         let credential = SocialCredential.google(idToken: "SECRET-ID", accessToken: "SECRET-ACCESS")
 
         XCTAssertFalse("\(credential)".contains("SECRET"))
-        XCTAssertFalse(String(describing: SocialCredential.apple(idToken: "SECRET", rawNonce: "N", name: nil)).contains("SECRET"))
+        let apple = SocialCredential.apple(idToken: "SECRET", rawNonce: "N", name: nil)
+        XCTAssertFalse(String(describing: apple).contains("SECRET"))
     }
 }

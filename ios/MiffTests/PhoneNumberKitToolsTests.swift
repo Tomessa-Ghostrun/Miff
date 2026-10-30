@@ -14,7 +14,10 @@ final class PhoneNumberKitToolsTests: XCTestCase {
     }
 
     func testAFrenchMobileIsNormalisedToE164WhateverTheFormatting() {
-        for input in ["06 12 34 56 78", "0612345678", "6 12 34 56 78", "06-12-34-56-78", "06.12.34.56.78", "(06) 12 34 56 78"] {
+        let inputs = [
+            "06 12 34 56 78", "0612345678", "6 12 34 56 78", "06-12-34-56-78", "06.12.34.56.78", "(06) 12 34 56 78"
+        ]
+        for input in inputs {
             XCTAssertEqual(e164("FR", input), "+33612345678", input)
         }
     }

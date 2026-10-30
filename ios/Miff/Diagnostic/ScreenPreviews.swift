@@ -85,7 +85,10 @@ struct ScreenPreview: View {
     }
 
     private var resetState: PasswordResetUiState {
-        name == "reset-sent" ? PasswordResetUiState(sent: true, sendCount: 1, resendLocked: true) : PasswordResetUiState()
+        guard name == "reset-sent" else {
+            return PasswordResetUiState()
+        }
+        return PasswordResetUiState(sent: true, sendCount: 1, resendLocked: true)
     }
 
     private var profileState: ProfileUiState {
@@ -137,7 +140,8 @@ struct ScreenPreview: View {
     }
 
     private var sampleAvatar: Data? {
-        UIGraphicsImageRenderer(size: CGSize(width: 160, height: 160)).jpegData(withCompressionQuality: 0.8) { context in
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 160, height: 160))
+        return renderer.jpegData(withCompressionQuality: 0.8) { context in
             UIColor.systemOrange.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 160, height: 160))
         }

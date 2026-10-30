@@ -1,3 +1,4 @@
+// swiftlint:disable file_length type_body_length -- scenarios de test longs par nature, un cas par methode
 import XCTest
 @testable import Miff
 

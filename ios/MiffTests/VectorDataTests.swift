@@ -98,8 +98,10 @@ final class LogoPathsTests: XCTestCase {
     }
 
     func testTheWordmarkIsCompleteAndInsideItsFrame() {
-        assertInside(LogoPaths.wordmarkLetters, width: LogoPaths.wordmarkWidth, height: LogoPaths.wordmarkHeight, name: "lettres")
-        assertInside(LogoPaths.wordmarkHeart, width: LogoPaths.wordmarkWidth, height: LogoPaths.wordmarkHeight, name: "coeur")
+        let width = LogoPaths.wordmarkWidth
+        let height = LogoPaths.wordmarkHeight
+        assertInside(LogoPaths.wordmarkLetters, width: width, height: height, name: "lettres")
+        assertInside(LogoPaths.wordmarkHeart, width: width, height: height, name: "coeur")
         // M, i et deux f : au moins quatre sous-chemins de lettres.
         let starts = LogoPaths.wordmarkLetters.filter { command in
             if case .move = command {

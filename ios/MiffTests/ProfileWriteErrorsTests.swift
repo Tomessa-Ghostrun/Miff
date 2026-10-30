@@ -20,13 +20,15 @@ final class ProfileWriteErrorsTests: XCTestCase {
     }
 
     func testAnythingElseFailsWithoutLeakingTheDocument() {
-        XCTAssertEqual(interpretWriteError(firestoreError(13, message: "firstName Camille phone +33612345678")), .failed)
+        let leaky = firestoreError(13, message: "firstName Camille phone +33612345678")
+        XCTAssertEqual(interpretWriteError(leaky), .failed)
         XCTAssertEqual(interpretWriteError(NSError(domain: "Autre", code: 14)), .failed)
     }
 
     func testAnOlderProfileKeepsOnlyWhatTheRulesAllow() {
         let photo = Data(repeating: 7, count: 1_000)
-        let seed = ProfileSeed.from(fields: ["firstName": "Léa", "lastName": "Martin", "avatar": photo, "phone": "+33600000000"])
+        let fields: [String: Any] = ["firstName": "Léa", "lastName": "Martin", "avatar": photo, "phone": "+33600000000"]
+        let seed = ProfileSeed.from(fields: fields)
 
         XCTAssertEqual(seed, ProfileSeed(firstName: "Léa", lastName: "Martin", avatarJpeg: photo))
     }

@@ -30,7 +30,8 @@ struct SignedOutHost: View {
         self.environment = environment
         self.start = start
         _showCarousel = State(
-            initialValue: shouldShowWelcomeCarousel(start: start, carouselSeen: environment.onboardingFlags.carouselSeen)
+            initialValue: shouldShowWelcomeCarousel(
+                start: start, carouselSeen: environment.onboardingFlags.carouselSeen)
         )
     }
 

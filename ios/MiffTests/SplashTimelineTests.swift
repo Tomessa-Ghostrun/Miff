@@ -27,7 +27,9 @@ final class SplashTimelineTests: XCTestCase {
         // Une pause juste avant l'éclat : le cœur reste à sa plus grande taille.
         XCTAssertTrue((80...250).contains(SplashTimeline.popPauseMs))
         let pauseStart = burstStart - SplashTimeline.popPauseMs
-        let held = stride(from: pauseStart, to: burstStart, by: 10).map { (full.frame(atMs: $0).heartScale * 1_000).rounded() }
+        let held = stride(from: pauseStart, to: burstStart, by: 10).map {
+            (full.frame(atMs: $0).heartScale * 1_000).rounded()
+        }
         XCTAssertEqual(Set(held), [(SplashTimeline.maxScale * 1_000).rounded()])
         // Les morceaux avancent assez lentement pour être suivis.
         XCTAssertLessThan(burstParticles(progress: 0.25)[0].distance, 0.65)

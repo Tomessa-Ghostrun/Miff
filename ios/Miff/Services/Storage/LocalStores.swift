@@ -28,7 +28,8 @@ final class UserDefaultsPendingConsentStore: PendingConsentStore {
               savedUid == uid else {
             return nil
         }
-        return PendingConsent(uid: savedUid, termsVersion: version, analyticsAccepted: defaults.bool(forKey: Key.analytics))
+        let analytics = defaults.bool(forKey: Key.analytics)
+        return PendingConsent(uid: savedUid, termsVersion: version, analyticsAccepted: analytics)
     }
 
     func clear() {
