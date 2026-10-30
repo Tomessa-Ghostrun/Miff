@@ -32,6 +32,8 @@ export const EMAIL_PATTERN = /^[^\s@<>"'()]+@[^\s@<>"'()]+\.[^\s@<>"'()]+$/;
 export const DEFAULT_API_BASE = 'https://identitytoolkit.googleapis.com/v1';
 export const DEMO_API_BASE = '/demo-api';
 export const DEMO_API_KEY = 'demo-key-not-a-real-key';
+export const SITE_URL_PATTERN = /^https:\/\/[a-z0-9.-]+(:\d+)?$/;
+export const OG_IMAGE = { width: 1200, height: 630, type: 'image/png' };
 
 // Emplacements des textes légaux (docs/legal, autre PR) renseignés au build depuis web/site.config.json.
 const LEGAL_CONTACT_PLACEHOLDERS = ['[E-MAIL DE CONTACT À DÉFINIR]', '[CONTACT E-MAIL TO BE DEFINED]', '[ADRESSE DE CONTACT]', '[CONTACT ADDRESS]'];
@@ -45,6 +47,8 @@ export function loadSiteConfig(root = REPO_ROOT) {
   if (typeof name !== 'string' || name.trim() === '') throw new Error('web/site.config.json : publisher.name manquant.');
   if (typeof postalAddress !== 'string' || postalAddress.trim() === '') throw new Error('web/site.config.json : publisher.postalAddress manquant.');
   if (typeof contactEmail !== 'string' || !EMAIL_PATTERN.test(contactEmail)) throw new Error('web/site.config.json : publisher.contactEmail n’a pas la forme d’une adresse e-mail.');
+  const url = config.site?.url;
+  if (typeof url !== 'string' || !SITE_URL_PATTERN.test(url)) throw new Error('web/site.config.json : site.url doit être l’adresse publique du site en https, sans « / » final (ex. https://miff-3d283.web.app).');
   return config;
 }
 
@@ -298,6 +302,25 @@ function assertSafeOut(out, root) {
   return resolved;
 }
 
+/** Remplit un gabarit de page d'accueil : {{t.clé}} (texte de la langue), {{u.id}} (adresse d'une page du registre), {{p.nom}} (extrait). */
+function fillLanding(template, { strings, lang, registry, partials, name }) {
+  const urls = Object.fromEntries(registry.map((page) => [page.id === 'delete-account' ? 'deleteAccount' : page.id, page[lang].url]));
+  const expand = (text) =>
+    text.replace(/\{\{(t|u|p)\.(\w+)\}\}/g,(_m, kind, key) => {
+      if (kind === 't') {
+        if (!(key in strings)) throw new Error(`${name} : texte manquant {{t.${key}}} (${lang})`);
+        return strings[key];
+      }
+      if (kind === 'u') {
+        if (!(key in urls)) throw new Error(`${name} : page inconnue {{u.${key}}}`);
+        return urls[key];
+      }
+      if (!(key in partials)) throw new Error(`${name} : extrait inconnu {{p.${key}}}`);
+      return expand(partials[key]);
+    });
+  return expand(template);
+}
+
 function fill(template, values, name) {
   return template.replace(/\{\{(\w+)\}\}/g, (_m, key) => {
     if (!(key in values)) throw new Error(`${name} : variable de modèle inconnue {{${key}}}`);
@@ -337,6 +360,9 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
   const registry = JSON.parse(readFileSync(join(src, 'pages.json'), 'utf8')).pages;
   const ui = JSON.parse(readFileSync(join(src, 'ui.json'), 'utf8'));
   const layout = readFileSync(join(src, 'layout.html'), 'utf8');
+  const landingStrings = JSON.parse(readFileSync(join(src, 'landing.json'), 'utf8'));
+  const landingTemplate = readFileSync(join(src, 'landing.html'), 'utf8');
+  const landingPartials = { cta: readFileSync(join(src, 'landing-cta.html'), 'utf8') };
 
   // --- Textes légaux : lecture, bandeau, correspondance « fichier .md -> URL » pour les liens internes ---
   const legalByFile = new Map();
@@ -351,7 +377,10 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
   }
 
   // --- Éditeur et contact : UNE seule source, web/site.config.json (valeurs provisoires décidées par le PM) ---
-  const publisher = loadSiteConfig(root).publisher;
+  const siteConfig = loadSiteConfig(root);
+  const publisher = siteConfig.publisher;
+  const siteUrl = siteConfig.site.url;
+  const absolute = (path) => `${siteUrl}${path}`;
   const contactLink = `<a href="mailto:${escapeHtml(publisher.contactEmail)}">${escapeHtml(publisher.contactEmail)}</a>`;
   const applyPublisher = (html) => {
     // Fonctions de remplacement : une valeur contenant « $& » ou « $1 » ne doit jamais être interprétée comme un motif.
@@ -393,6 +422,8 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
         const converted = markdownToHtml(body, { rewriteLink, tableLabel });
         content = converted.html;
         title = converted.title ?? entry.navLabel;
+      } else if (page.kind === 'landing') {
+        content = fillLanding(landingTemplate, { strings: landingStrings[lang], lang, registry, partials: landingPartials, name: `${lang}:${page.id}` });
       } else {
         content = readFileSync(join(src, entry.file), 'utf8');
       }
@@ -405,16 +436,49 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
           return `<li><a href="${p[lang].url}"${current}>${escapeHtml(p[lang].navLabel)}</a></li>`;
         })
         .join('\n');
-      const alternates = [...LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l}" href="${page[l].url}">`), '']
-        .join('\n');
+      // SEO : adresse canonique et variantes de langue en adresses complètes ; x-default = la racine pour l'accueil,
+      // sinon la version anglaise de la page.
+      const xDefault = page.id === 'home' ? '/' : page.en.url;
+      const alternates = [
+        `<link rel="canonical" href="${absolute(entry.url)}">`,
+        ...LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l}" href="${absolute(page[l].url)}">`),
+        `<link rel="alternate" hreflang="x-default" href="${absolute(xDefault)}">`,
+        '',
+      ].join('\n');
       const pageTitle = page.id === 'home' || title.includes('Miff') ? title : `${title} - Miff`;
+      const description = entry.description ?? strings.descriptionHome;
+      const ogImage = absolute(`/assets/og/miff-og-${lang}.png`);
+      const social = [
+        '<meta property="og:site_name" content="Miff">',
+        '<meta property="og:type" content="website">',
+        `<meta property="og:locale" content="${lang === 'fr' ? 'fr_FR' : 'en_US'}">`,
+        `<meta property="og:locale:alternate" content="${other === 'fr' ? 'fr_FR' : 'en_US'}">`,
+        `<meta property="og:title" content="${escapeHtml(pageTitle)}">`,
+        `<meta property="og:description" content="${escapeHtml(description)}">`,
+        `<meta property="og:url" content="${absolute(entry.url)}">`,
+        `<meta property="og:image" content="${ogImage}">`,
+        `<meta property="og:image:type" content="${OG_IMAGE.type}">`,
+        `<meta property="og:image:width" content="${OG_IMAGE.width}">`,
+        `<meta property="og:image:height" content="${OG_IMAGE.height}">`,
+        `<meta property="og:image:alt" content="${escapeHtml(strings.ogImageAlt)}">`,
+        '<meta name="twitter:card" content="summary_large_image">',
+        `<meta name="twitter:title" content="${escapeHtml(pageTitle)}">`,
+        `<meta name="twitter:description" content="${escapeHtml(description)}">`,
+        `<meta name="twitter:image" content="${ogImage}">`,
+        `<meta name="twitter:image:alt" content="${escapeHtml(strings.ogImageAlt)}">`,
+        '',
+      ].join('\n');
+      const extraStyles = (page.styles ?? []).map((href) => `<link rel="stylesheet" href="${href}">\n`).join('');
       const html = fill(
         layout,
         {
           lang,
           title: escapeHtml(pageTitle),
-          description: escapeHtml(entry.description ?? strings.descriptionHome),
+          description: escapeHtml(description),
           alternates,
+          social,
+          extraStyles,
+          bodyClass: page.bodyClass ?? '',
           skip: escapeHtml(strings.skip),
           homeUrl: page.id === 'home' ? entry.url : registry.find((p) => p.id === 'home')[lang].url,
           otherUrl: otherEntry.url,
@@ -435,7 +499,7 @@ export function build({ root = REPO_ROOT, out = join(root, 'web', 'public'), leg
   }
 
   // --- Pages autonomes ---
-  write(outDir, 'index.html', readFileSync(join(src, 'index.html'), 'utf8'));
+  write(outDir, 'index.html', fill(readFileSync(join(src, 'index.html'), 'utf8'), { siteUrl }, 'index'));
   write(outDir, '404.html', readFileSync(join(src, '404.html'), 'utf8'));
   write(
     outDir,
