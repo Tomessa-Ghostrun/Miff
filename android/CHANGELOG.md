@@ -2,6 +2,30 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.0] - 2026-10-30 : ONB-3b, Mon compte (mot de passe) et Confidentialité
+
+Dépend d'ONB-3a (PR « ONB-3a » : barre d'onglets, Profil, Réglages, Mon compte minimal). Ticket `docs/tickets/feed-profil-reglages.md` (§6.6, critères B1 à B7 ; décisions Q5 et Q6 du PM du 2026-10-30).
+
+### Ajouté
+- **Mon compte : « Changer mon mot de passe »** (décision Q5) : un bouton qui envoie l'e-mail de réinitialisation d'AUTH-2 à l'adresse du compte, sans formulaire à trois champs ni ré-authentification ; confirmation unique, « Renvoyer l'e-mail » en pause de 60 s ; **masqué pour un compte Google** (« Connecté avec Google »). « Supprimer mon compte » reste absent (AUTH-5).
+- **Réglages > Confidentialité** : interrupteur unique « Statistiques d'usage et rapports de plantage anonymes » lu et écrit dans `users/{uid}.analyticsConsent` selon les transitions des règles déployées (activer / retirer, trace du consentement conservée, version jamais plus ancienne), en transaction ; **accepter = enregistré d'abord**, **retirer = collecte coupée tout de suite** (rapports non envoyés supprimés) puis enregistré, avec message et « Enregistrer mon choix » si le réseau manque ; localisation et notifications dites honnêtement (rien n'est utilisé ni envoyé pour l'instant) avec « Ouvrir les réglages du téléphone » ; liens « Conditions d'utilisation » et « Politique de confidentialité » (adresses centralisées, vérifiées contre `web/src/pages.json`) ; « Nous contacter » (contact provisoire).
+- Ligne « Confidentialité » dans la liste des Réglages (quatre lignes : Mes informations, Mon compte, Langue, Confidentialité).
+- Textes `settings_account_password_*`, `settings_privacy_*` FR/EN (tutoiement), ajoutés aussi au catalogue iOS (ajouts seulement).
+- Tests : transitions du consentement (toutes les branches), dépôt Firestore (une transaction, erreurs triées, texte plus récent refusé), view model de l'interrupteur (accepter / retirer / réseau / refus / double appui / aucun événement), mot de passe (compte e-mail, compte Google, pause, réseau, quota), écrans Robolectric (structure, 48 dp, grande police, absence de formulaire et de suppression), adresses légales comparées à `web/src/pages.json`.
+
+### Modifié
+- `AuthGateway.accountSignIn()` (mot de passe ou Google) ; `AccountViewModel` reçoit l'envoi de l'e-mail, le réseau et la pause.
+
+### Écarts avec le ticket et les maquettes
+- Les maquettes n'ont **pas** d'écran Confidentialité ni de changement de mot de passe par e-mail : écrans ajoutés d'après le ticket (liberté du CLAUDE.md), liste dans la PR.
+- **Pas de lien « Mentions légales »** : aucune page de ce nom n'existe dans `web/src/pages.json` ; seuls les liens vers les conditions et la politique sont proposés.
+- Les **états réels** de la localisation et des notifications (« toujours », « approximative », « refusée »...) ne sont pas affichés : aucune permission n'est déclarée (aucun usage).
+
+### Choix économiques et limites
+- Aucun service, aucune dépendance, aucune permission ; 0 €. Une lecture et une écriture Firestore par changement de l'interrupteur.
+- **Limite** : un retrait du consentement qui n'a pas pu être enregistré (pas de réseau) puis une fermeture de l'app avant le bouton « Enregistrer mon choix » : le prochain démarrage reprend la collecte d'après le compte. Signal : observé en recette ; piste : mémoriser le retrait en attente sur l'appareil.
+- Aucune règle Firestore modifiée.
+
 ## [0.5.0] - 2026-10-30 : ONB-3a, barre d'onglets, Profil, Réglages (Mes informations, Mon compte, Langue)
 
 Ticket `docs/tickets/feed-profil-reglages.md` (décisions du PM du 2026-10-30 : « OK pour tout » aux 15 questions), maquettes `design/exports/profil/`, `reglages/` et barres d'onglets de `feed/`.

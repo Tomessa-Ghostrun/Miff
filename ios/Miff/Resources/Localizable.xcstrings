@@ -3538,6 +3538,91 @@
         }
       }
     },
+    "settings_account_google": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in with Google"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté avec Google"
+          }
+        }
+      }
+    },
+    "settings_account_password_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change my password"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changer mon mot de passe"
+          }
+        }
+      }
+    },
+    "settings_account_password_help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We'll send you an email with a link to choose a new password."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous t'enverrons un e-mail avec un lien pour choisir un nouveau mot de passe."
+          }
+        }
+      }
+    },
+    "settings_account_password_sending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoi en cours…"
+          }
+        }
+      }
+    },
+    "settings_account_password_sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On its way! An email has just been sent to you. Remember to check your spam folder."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est parti ! Un e-mail vient de t'être envoyé. Pense à regarder dans tes courriers indésirables."
+          }
+        }
+      }
+    },
     "settings_account_sign_out_action": {
       "extractionState": "manual",
       "localizations": {
@@ -3908,6 +3993,261 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mes informations"
+          }
+        }
+      }
+    },
+    "settings_privacy_analytics_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They help us fix the app. They never contain your location. You can change your mind at any time."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ils nous aident à réparer l'app. Ils ne contiennent jamais ta position. Tu peux changer d'avis à tout moment."
+          }
+        }
+      }
+    },
+    "settings_privacy_analytics_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anonymous usage statistics and crash reports"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistiques d'usage et rapports de plantage anonymes"
+          }
+        }
+      }
+    },
+    "settings_privacy_contact": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact us"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous contacter"
+          }
+        }
+      }
+    },
+    "settings_privacy_location_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For now, Miff does not use your phone's location. If that changes, we will explain it clearly before asking you for anything."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour l'instant, Miff n'utilise pas la position de ton téléphone. Si cela change, on te l'expliquera clairement avant de te demander quoi que ce soit."
+          }
+        }
+      }
+    },
+    "settings_privacy_location_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Localisation"
+          }
+        }
+      }
+    },
+    "settings_privacy_notifications_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are coming soon. Nothing is sent for now."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notifications arrivent bientôt. Rien n'est envoyé pour l'instant."
+          }
+        }
+      }
+    },
+    "settings_privacy_notifications_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        }
+      }
+    },
+    "settings_privacy_open_browser_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "open the page in your browser"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ouvrir la page dans ton navigateur"
+          }
+        }
+      }
+    },
+    "settings_privacy_open_mail_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "write an email"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "écrire un e-mail"
+          }
+        }
+      }
+    },
+    "settings_privacy_open_phone_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open phone settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir les réglages du téléphone"
+          }
+        }
+      }
+    },
+    "settings_privacy_retry_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save my choice"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer mon choix"
+          }
+        }
+      }
+    },
+    "settings_privacy_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics, location, notifications and legal texts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistiques, localisation, notifications et textes légaux"
+          }
+        }
+      }
+    },
+    "settings_privacy_texts_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Our texts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nos textes"
+          }
+        }
+      }
+    },
+    "settings_privacy_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confidentialité"
+          }
+        }
+      }
+    },
+    "settings_privacy_withdrawal_not_recorded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It is switched off on this phone. Your choice could not be saved for lack of a connection: tap “Save my choice” as soon as you have a network."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est coupé sur ce téléphone. Ton choix n'a pas pu être enregistré faute de connexion : touche « Enregistrer mon choix » dès que tu as du réseau."
           }
         }
       }
