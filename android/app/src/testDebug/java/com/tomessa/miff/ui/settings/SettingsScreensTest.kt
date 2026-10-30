@@ -332,13 +332,15 @@ class SettingsScreensTest {
 
     @Test
     fun settings_listsMyInformationMyAccountAndLanguage_andNothingElse() {
-        show { SettingsScreen({}, {}, {}, {}) }
+        show { SettingsScreen({}, {}, {}, {}, {}) }
         shoot("settings-list")
         composeRule.onNodeWithText(text(R.string.settings_my_info_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_account_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_language_title)).assertExists()
         // Nothing is sent yet, nothing can be bought yet, nothing can be deleted yet.
-        composeRule.onAllNodesWithText("Notification", substring = true, ignoreCase = true).assertCountEquals(0)
+        // (the Privacy row mentions notifications in its help line: only a ROW of that name must not exist)
+        composeRule.onAllNodesWithText("Notifications").assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_privacy_title)).assertExists()
         composeRule.onAllNodesWithText("Premium", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("trial", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
@@ -349,7 +351,12 @@ class SettingsScreensTest {
     @Test
     fun settings_eachRowIsOneButton_ofAtLeast48dp_andOpensItsScreen() {
         val opened = mutableListOf<String>()
-        show { SettingsScreen({}, { opened += "info" }, { opened += "account" }, { opened += "language" }) }
+        show {
+            SettingsScreen({}, { opened += "info" }, { opened += "account" }, { opened += "language" }, {
+                opened +=
+                    "privacy"
+            })
+        }
         listOf(
             R.string.settings_my_info_title,
             R.string.settings_account_title,
@@ -360,13 +367,14 @@ class SettingsScreensTest {
         composeRule.onNodeWithText(text(R.string.settings_my_info_title)).performClick()
         composeRule.onNodeWithText(text(R.string.settings_account_title)).performClick()
         composeRule.onNodeWithText(text(R.string.settings_language_title)).performClick()
-        assertEquals(listOf("info", "account", "language"), opened)
+        composeRule.onNodeWithText(text(R.string.settings_privacy_title)).performClick()
+        assertEquals(listOf("info", "account", "language", "privacy"), opened)
     }
 
     @Test
     fun settings_theBackArrowWorks_andTheTitleIsTheOnlyHeading() {
         var back = 0
-        show { SettingsScreen({ back++ }, {}, {}, {}) }
+        show { SettingsScreen({ back++ }, {}, {}, {}, {}) }
         composeRule
             .onNodeWithContentDescription(
                 text(R.string.auth_back_a11y),
@@ -414,7 +422,7 @@ class SettingsScreensTest {
     @Test
     fun account_showsTheEmailAsReadOnly_aSecondarySignOut_andNoDeleteLine() {
         show {
-            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {})
+            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {})
         }
         shoot("account")
         composeRule
@@ -442,6 +450,7 @@ class SettingsScreensTest {
             AccountScreen(
                 state = state,
                 onBack = {},
+                onChangePassword = {},
                 onSignOutRequested = {
                     requested++
                     state = state.copy(confirmingSignOut = true)

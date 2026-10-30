@@ -19,9 +19,11 @@ import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
+import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSink
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSwitch
 import com.tomessa.miff.data.privacy.FirebaseCrashlyticsSwitch
+import com.tomessa.miff.data.privacy.FirestoreAnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.data.privacy.SharedPreferencesBooleanStore
 import com.tomessa.miff.data.profile.AndroidAvatarCodec
@@ -52,6 +54,9 @@ class AppContainer(
             analytics = FirebaseAnalyticsSwitch(context),
             crashReports = FirebaseCrashlyticsSwitch(),
         )
+
+    /** Writes the choice "statistics and crash reports" to the account (Settings > Confidentialité). */
+    val analyticsConsents: AnalyticsConsentRepository = FirestoreAnalyticsConsentRepository()
 
     val analyticsTracker: AnalyticsTracker =
         AnalyticsTracker(

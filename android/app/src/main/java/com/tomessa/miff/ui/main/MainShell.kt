@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.main
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -39,6 +40,8 @@ import com.tomessa.miff.ui.settings.LanguageScreen
 import com.tomessa.miff.ui.settings.LanguageViewModel
 import com.tomessa.miff.ui.settings.MyInfoScreen
 import com.tomessa.miff.ui.settings.MyInfoViewModel
+import com.tomessa.miff.ui.settings.PrivacyScreen
+import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -57,6 +60,9 @@ data object AccountRoute
 
 @Serializable
 data object LanguageRoute
+
+@Serializable
+data object PrivacyRoute
 
 /**
  * The app once the onboarding is done (a Miff exists): the three tabs, and, over them, the Settings screens (which hide the
@@ -96,6 +102,7 @@ fun MainShell(
                 onOpenMyInfo = { navController.open(MyInfoRoute) },
                 onOpenAccount = { navController.open(AccountRoute) },
                 onOpenLanguage = { navController.open(LanguageRoute) },
+                onOpenPrivacy = { navController.open(PrivacyRoute) },
             )
         }
         composable<MyInfoRoute> {
@@ -144,7 +151,12 @@ fun MainShell(
                             initializer {
                                 AccountViewModel(
                                     email = container.authGateway.currentEmail(),
+                                    signIn = container.authGateway.accountSignIn(),
                                     signOut = session::signOut,
+                                    passwordReset = container.passwordResetGateway,
+                                    network = container.networkMonitor,
+                                    cooldown = container.passwordResetCooldown,
+                                    nowMillis = SystemClock::elapsedRealtime,
                                 )
                             }
                         },
@@ -153,9 +165,34 @@ fun MainShell(
             AccountScreen(
                 state = state,
                 onBack = { navController.popBackStackIfSafe() },
+                onChangePassword = viewModel::onChangePasswordRequested,
                 onSignOutRequested = viewModel::onSignOutRequested,
                 onSignOutConfirmed = viewModel::onSignOutConfirmed,
                 onSignOutCancelled = viewModel::onSignOutCancelled,
+            )
+        }
+        composable<PrivacyRoute> {
+            val viewModel: PrivacyViewModel =
+                viewModel(
+                    key = "privacy-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                PrivacyViewModel(
+                                    privacy = container.privacySettings,
+                                    consents = container.analyticsConsents,
+                                    session = session,
+                                    network = container.networkMonitor,
+                                )
+                            }
+                        },
+                )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            PrivacyScreen(
+                state = state,
+                onBack = { navController.popBackStackIfSafe() },
+                onAnalyticsToggled = viewModel::onAnalyticsToggled,
+                onRetryWithdrawal = viewModel::onRetryWithdrawal,
             )
         }
         composable<LanguageRoute> {

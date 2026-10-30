@@ -177,6 +177,13 @@ class FakeAuthGateway(
 
     override fun currentEmail(): String? = email
 
+    override fun accountSignIn(): com.tomessa.miff.domain.auth.AccountSignIn =
+        when (method) {
+            AnalyticsEvent.Method.EMAIL -> com.tomessa.miff.domain.auth.AccountSignIn.PASSWORD
+            AnalyticsEvent.Method.GOOGLE -> com.tomessa.miff.domain.auth.AccountSignIn.GOOGLE
+            else -> com.tomessa.miff.domain.auth.AccountSignIn.OTHER
+        }
+
     override fun signOut() {
         signOutCalls++
         timeline += "signOut"
