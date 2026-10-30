@@ -34,7 +34,7 @@ Le français est la version de référence ; l'anglais en est la traduction fid�
 
 ### Date fictive, délais et champs techniques restants
 
-- **Date : "1er janvier 2027" / "January 1, 2027" est une date FICTIVE provisoire** (décision PM du 2026-10-24), écrite dans les en-têtes des quatre textes. **À remplacer par la vraie date de mise en ligne** au moment de la publication.
+- **Date : "30 octobre 2026" / "October 30, 2026"** = date de mise en ligne prévue (remplace la date fictive du 1er janvier 2027, décision PM du 2026-10-30), écrite dans les en-têtes des quatre textes. **À mettre à jour si la mise en ligne a lieu un autre jour.**
 - **Délais de conservation acceptés par le PM (2026-10-24)** : état de l'abonnement supprimé 30 jours après la suppression du compte (aujourd'hui `entitlements` se purge à la main : le PM ou un agent doit le faire dans ce délai) ; e-mails de contact conservés 1 an après le traitement de la demande, puis supprimés.
 - **Décisions produit écrites dans les textes (2026-10-24)** : (1) la suppression du compte d'un créateur supprime les Miffs qu'il a créées ; (2) à la fin d'un abonnement Premium, les Miffs et lieux au-delà des limites gratuites (les derniers ajoutés) sont supprimés. Les apps et le ticket Premium doivent faire exactement cela (risques J19 et J20).
 - **Plus aucun emplacement entre crochets (2026-10-30).** Les 8 emplacements restants (4 par langue) ont été levés (PR `docs/legal-final`), après vérification dans le code (`android/`, `ios/`) et dans la documentation officielle de Google. Le garde-fou de déploiement (`scripts/web-predeploy-check.mjs`) ne remonte plus de crochets ; il refuse encore tant que la clé API web n'est pas fournie (normal).
