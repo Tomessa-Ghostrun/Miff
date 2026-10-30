@@ -145,7 +145,6 @@
     <!-- Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL) et écrans provisoires -->
     <string name="android_legal_terms_path">/fr/cgu</string>
     <string name="android_legal_privacy_path">/fr/confidentialite</string>
-    <string name="android_next_profile">Prochaine étape : ton profil (prénom, nom, photo). Cet écran arrive bientôt.</string>
     <string name="android_next_miff_choice">Prochaine étape : créer ou rejoindre une Miff. Cet écran arrive bientôt.</string>
     <string name="android_next_feed">Tu es connecté. Le fil de ton cercle arrive bientôt.</string>
 
@@ -181,4 +180,43 @@
     <string name="onboarding_sample_when_3">À l\'instant</string>
     <string name="onboarding_sample_name_3">Maman</string>
     <string name="onboarding_sample_place_address_value">12 rue des Lilas, 75000 Paris</string>
+    <!-- Profil et téléphone : les deux étapes de création du profil (ONB-2) -->
+    <string name="profile_title">Permets à tes proches de t\'identifier</string>
+    <string name="profile_photo_add">Ajouter une photo (facultatif)</string>
+    <string name="profile_photo_change">Modifier la photo</string>
+    <string name="profile_photo_visibility">Visible par les membres de tes Miffs</string>
+    <string name="profile_photo_image_a11y">Ta photo de profil</string>
+    <string name="profile_photo_sheet_title">Photo de profil</string>
+    <string name="profile_photo_take">Prendre une photo</string>
+    <string name="profile_photo_choose">Choisir dans la galerie</string>
+    <string name="profile_photo_remove">Supprimer la photo</string>
+    <string name="profile_photo_unusable">Cette image ne peut pas être utilisée. Essaie avec une autre photo.</string>
+    <string name="profile_photo_camera_unavailable">L\'appareil photo n\'est pas disponible pour le moment. Tu peux choisir une photo dans ta galerie.</string>
+    <string name="profile_crop_title">Cadre ta photo</string>
+    <string name="profile_crop_hint">Fais glisser la photo pour la placer, écarte deux doigts pour zoomer.</string>
+    <string name="profile_crop_area_a11y">Zone de recadrage de la photo. Utilise les actions pour déplacer la photo.</string>
+    <string name="profile_crop_zoom_a11y">Zoom</string>
+    <string name="profile_crop_move_left">Déplacer la photo vers la gauche</string>
+    <string name="profile_crop_move_right">Déplacer la photo vers la droite</string>
+    <string name="profile_crop_move_up">Déplacer la photo vers le haut</string>
+    <string name="profile_crop_move_down">Déplacer la photo vers le bas</string>
+    <string name="profile_crop_confirm">Utiliser cette photo</string>
+    <string name="profile_crop_cancel">Annuler</string>
+    <string name="profile_first_name_label">Prénom</string>
+    <string name="profile_last_name_label">Nom</string>
+    <string name="profile_name_too_long">50 caractères maximum.</string>
+    <string name="profile_name_counter_a11y">%1$d caractères sur %2$d</string>
+    <string name="profile_next_a11y">Continuer</string>
+    <string name="profile_phone_title">Permets à tes proches de te contacter</string>
+    <string name="profile_phone_country_label">Pays</string>
+    <string name="profile_phone_country_field_a11y">Pays : %1$s, indicatif %2$s. Appuie pour en choisir un autre.</string>
+    <string name="profile_phone_number_label">Numéro de téléphone</string>
+    <string name="profile_phone_help">Saisis ton numéro sans le premier zéro.</string>
+    <string name="profile_phone_visibility">Seuls les membres de tes Miffs verront ce numéro, pour pouvoir t\'appeler ou t\'écrire. Personne d\'autre.</string>
+    <string name="profile_phone_invalid">Ce numéro ne semble pas correct.</string>
+    <string name="profile_phone_picker_title">Choisis ton pays</string>
+    <string name="profile_phone_picker_search">Rechercher un pays</string>
+    <string name="profile_phone_picker_empty">Aucun pays ne correspond.</string>
+    <string name="profile_phone_picker_item_a11y">%1$s, indicatif %2$s</string>
+    <string name="profile_save_failed">Ça n\'a pas fonctionné cette fois. Réessaie dans un instant.</string>
 </resources>

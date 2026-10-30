@@ -18,6 +18,8 @@ junit = "4.13.2"
 robolectric = "4.17"
 credentials = "1.6.0"
 googleid = "1.2.1"
+libphonenumber = "9.0.42"
+exifinterface = "1.4.2"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -45,6 +47,10 @@ firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 google-googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+# Phone numbers (ONB-2): Google libphonenumber, Apache 2.0, official source of the numbering plans (about 360 KB).
+libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version.ref = "libphonenumber" }
+# Reads the orientation of a photo before it is re-encoded without any metadata (AndroidX, Apache 2.0).
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }

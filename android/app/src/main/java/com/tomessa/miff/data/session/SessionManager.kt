@@ -99,6 +99,23 @@ class SessionManager(
 
     private var started = false
 
+    /**
+     * Goes up at every end of a session (sign-out, refused panel, lost session). A screen that keeps personal data in
+     * memory (the profile steps) keys its view model on it, so a new person never meets what the previous one typed.
+     */
+    var generation: Int = 0
+        private set
+
+    /** What the last read of the account said (null before the first read and after a sign-out). */
+    var accountSnapshot: AccountSnapshot? = null
+        private set
+
+    /** The account that is signed in (null = nobody). Read by the Onboarding steps, which write the profile. */
+    val currentUid: String? get() = gateway.currentUid
+
+    /** Name suggested by the sign-in provider, to pre-fill the profile step. Never stored by the session. */
+    fun suggestedDisplayName(): String? = gateway.displayName()
+
     /** True while we end the session ourselves: the "session lost" watcher must not react to our own sign-out. */
     private var ending = false
 
@@ -267,6 +284,42 @@ class SessionManager(
         return RefuseResult.Done
     }
 
+    /**
+     * The profile (or its phone number) was just WRITTEN AND CONFIRMED by the server: the account is read again and the
+     * app moves on to what the account now needs (create / join a Miff, or the feed if an older account already has one).
+     * If that read fails, the app moves on from what was just written (a new profile has no Miff yet) rather than showing
+     * a "retry" screen right after a success.
+     */
+    suspend fun onProfileSaved(analyticsConsentEnabled: Boolean) {
+        val uid = gateway.currentUid ?: return
+        withContext(NonCancellable) {
+            val load = accounts.load(uid)
+            if (gateway.currentUid != uid) return@withContext
+            val read = (load as? AccountLoad.Loaded)?.snapshot
+            val snapshot =
+                if (read != null && read.profileExists && read.hasPhone) {
+                    read
+                } else {
+                    AccountSnapshot(
+                        profileExists = true,
+                        hasMembership = read?.hasMembership ?: false,
+                        analyticsConsentEnabled = analyticsConsentEnabled,
+                    )
+                }
+            applyAccount(uid, snapshot, method = null, signUpGesture = false)
+        }
+    }
+
+    /**
+     * Does the server already hold a complete profile (with its phone number) for the person signed in? Used after a refused
+     * write, to tell a real refusal from a first try that landed late. One read; false if anything is unclear.
+     */
+    suspend fun profileAlreadySaved(): Boolean {
+        val uid = gateway.currentUid ?: return false
+        val load = accounts.load(uid) as? AccountLoad.Loaded ?: return false
+        return gateway.currentUid == uid && load.snapshot.profileExists && load.snapshot.hasPhone
+    }
+
     /** Voluntary sign-out (ticket 7.6): listeners stop, queued writes leave, cache purged, then the sign-out. */
     suspend fun signOut() {
         withContext(NonCancellable) {
@@ -325,6 +378,8 @@ class SessionManager(
         markReturning: Boolean,
     ) {
         sessionActive = false
+        accountSnapshot = null
+        generation++
         gateway.signOut()
         pending.clear()
         privacy.applyAccountConsent(false)
@@ -339,6 +394,7 @@ class SessionManager(
         val uid = gateway.currentUid
         if (uid == null) {
             sessionActive = false
+            accountSnapshot = null
             privacy.applyAccountConsent(false)
             pending.clear()
             mutableState.value = SessionState.Ready(entryDestination())
@@ -403,6 +459,7 @@ class SessionManager(
         signUpGesture: Boolean,
     ) {
         val recorded: PendingConsent?
+        accountSnapshot = snapshot
         if (snapshot.profileExists) {
             recorded = null
             pending.clear()

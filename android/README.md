@@ -86,7 +86,7 @@ Code : `domain/auth` (règles pures testées), `data/auth` (Firebase Auth, lectu
 
 - **Parcours** : carrousel de bienvenue (première ouverture seulement), puis inscription (e-mail + mot de passe ou Google) et connexion. **Aucune case à cocher** (décision PM du 2026-10-28, risque légal et stores assumé par lui) : une ligne explicative juste au-dessus du bouton « Rejoindre » (liens vers les Conditions d'utilisation et la Politique de confidentialité) dit que le clic accepte les conditions, la politique et le partage de statistiques anonymes (modifiable dans les Réglages). Le clic est l'acceptation de (a) et de (b) : à la création du profil, `analyticsConsent.enabled = true` (`ConsentChoice.IMPLICIT`). Une personne nouvelle qui arrive par « Continuer avec Google » depuis la connexion voit un **panneau** (même ligne, boutons « Continuer » / « Annuler ») ; un refus (bouton, retour système) **supprime le compte tout juste créé**, purge le cache et n'envoie aucun événement.
 - **Routage** (`resolveDestination`) : lu dans l'état du compte, jamais déduit du fait qu'on vient de se connecter : pas de session -> inscription (ou connexion si l'app a déjà servi) ; session sans profil -> panneau si (a) n'est pas enregistrée sur l'appareil, sinon profil ; profil sans Miff -> choix créer/rejoindre ; sinon fil. Les écrans profil, choix de Miff et fil sont **provisoires** (écran d'attente avec un bouton « Se déconnecter », à remplacer par le ticket Onboarding).
-- **Profil** : `ProfileDocument.forCreation` fabrique la **seule écriture** de `users/{uid}` (dates serveur, `analyticsConsent` toujours renseigné) et `UserProfileRepository.create` l'envoie ; l'écran de profil (ticket Onboarding, qui ajoutera aussi le téléphone une fois les règles étendues) les appelle. L'authentification elle-même n'écrit rien dans Firestore.
+- **Profil** : `ProfileDocument.forCreation` fabrique la **seule écriture** de `users/{uid}` avec **toutes** les clés des règles (dont `phone` en E.164, **obligatoire depuis ONB-B** : sans lui le serveur refuse le profil) et `UserProfileRepository.create` l'envoie, depuis les deux étapes de l'Onboarding (voir « Profil et téléphone (ticket ONB-2) »). L'authentification elle-même n'écrit rien dans Firestore.
 - **Consentement et collecte** :$1Au clic sur « Rejoindre » (ou « Continuer »), (b) étant donnée, ils s'allument localement et `sign_up_completed` part après la création du compte (ticket §8, décision PM Q8 ; `backend/data-model.md` §8 a été aligné). `sign_in_completed` ne part qu'après lecture d'un choix « accepté ». Versions des textes : `ConsentVersions` (CGU `0.1`, case (b) `2026-10-v01`).
 - **Déconnexion** (`SessionManager.signOut`) : arrêt des écoutes (`SessionTeardown`, aucune pour l'instant), envoi des écritures en attente (5 s), `terminate()` + `clearPersistence()` avec drapeau « purge à faire » relu au démarrage, puis `signOut()`, collecte coupée, consentement en attente effacé.
 - **Mot de passe** : jamais stocké, jamais dans un état d'écran, jamais journalisé (le test `NoSensitiveLoggingTest` interdit tout journal dans le code de l'app). Seul l'e-mail survit à une rotation (`rememberSaveable`) ; le mot de passe est vidé par une rotation.
@@ -124,6 +124,167 @@ Les écrans d'inscription et de connexion reprennent les maquettes : fond dégra
 ### Signature de debug stable en CI (secret `DEBUG_KEYSTORE_B64`)
 
 Le workflow décode le secret dans `~/.android/debug.keystore` du runner (alias `androiddebugkey`, mots de passe de debug standard), sans jamais l'afficher, et le supprime en fin de job. Il compare ensuite la SHA-1 de l'APK à celles de `google-services.json` et échoue si elle n'y est pas. Sans le secret (Dependabot, fork), la clé jetable par défaut reste utilisée. Création du keystore : voir « Signature de l'APK debug de la CI » plus bas. Le workflow échoue aussi, avec un message explicite, si `google-services.json` n'a pas de client OAuth web. Sur le poste, copier le même keystore dans `%USERPROFILE%\.android\debug.keystore` donne la même empreinte.
+
+## Profil et téléphone (ticket ONB-2)
+
+Étapes de création du profil, après l'inscription ou la connexion Google d'un nouveau compte (ticket `docs/tickets/onboarding.md` §6.2 à §6.4, maquettes « Welcoming screen -1 », « -2 », « -6 »).
+
+- **Deux étapes, une seule écriture.** « Profil » (photo facultative, prénom, nom) puis « Téléphone » (pays + numéro). **Rien n'est écrit à l'étape profil.** À la fin de l'étape téléphone, `users/{uid}` est écrit **en une fois** avec toutes les clés (`firstName`, `lastName`, `phone`, `avatar` si présente, `createdAt` et `termsAcceptedAt` en heure serveur, `termsVersion`, `analyticsConsent {enabled:true, consentedAt, consentVersion, revokedAt:null}` : consentement réputé donné au clic sur « Rejoindre », décision du PM). L'écran suivant n'apparaît qu'après **confirmation du serveur**.
+- **Transaction Firestore plutôt que `set` simple.** Un `set` fait sans réseau reste en file d'attente et repart plus tard tout seul, peut-être après que la personne a modifié sa saisie ou s'est déconnectée. Une transaction n'existe qu'en ligne et ne laisse rien derrière elle en cas d'échec : « pas de confirmation » veut toujours dire « rien d'écrit ». Délai de 20 s, puis message neutre.
+- **Brouillon local** (`data/onboarding/ProfileDraftStore.kt`) : prénom, nom, photo recadrée, pays, numéro tapé et étape atteinte, dans le stockage privé de l'app (aucune sauvegarde cloud : `allowBackup` désactivé et règles d'extraction qui excluent tout). Jamais le mot de passe. Supprimé après la confirmation du serveur et à toute fin de session (déconnexion, refus du panneau, perte de session) ; un brouillon d'un autre compte est effacé et jamais repris. Fermer l'app en plein onboarding ramène à la bonne étape.
+- **Routage** (`AppDestination`) : pas de profil -> panneau de consentement ou **PROFILE** ; profil **sans numéro** -> **PHONE_ONLY** (étape téléphone seule, mise à jour du document) ; sinon choix de Miff ou Feed. Compte antérieur à AUTH-B (profil sans `termsVersion`, mise à jour refusée par les règles) : le profil est **supprimé puis recréé** (panneau de consentement, puis les deux étapes), jamais mis à jour. Cela ne se déclenche que d'après la présence réelle de `termsVersion`, **pas** après un refus (règles non déployées, App Check) : un refus ne supprime jamais rien.
+- **Numéro.** libphonenumber (Google, Apache 2.0, 360 Ko) : pays par défaut = région de l'appareil sinon France ; tous les pays ; zéro initial, espaces, tirets, points, parenthèses tolérés ; un numéro « +… » collé ou saisi par le remplissage automatique choisit son pays ; validité de **forme** selon le plan de numérotation du pays (mobile ou fixe) ; seul le format **E.164** sort (forme exacte des règles : `^[+][1-9][0-9]{6,14}# Miff Android
+
+Application Android native (Kotlin + Jetpack Compose) de Miff. Ce dossier contient le **socle technique** (ticket INIT-2) et l'**inscription / connexion** (ticket AUTH-1) : projet, design system en code, traductions, Firebase, écran de diagnostic interne, écrans d'authentification.
+
+> **Logo et icône OFFICIELS (PM, validés le 2026-10-27).** Source de vérité : `design/assets/logo/` (recréation vectorielle des deux visuels fournis par le PM ; le PM doit encore confirmer ses droits sur le dessin avant publication). Dans l'app : icône adaptative (`mipmap-anydpi-v26/ic_launcher*.xml` : fond `ic_launcher_background` = `#043CD1`, avant-plan `drawable/ic_launcher_foreground.xml`, calque monochrome `ic_launcher_monochrome.xml`) et mot-symbole `drawable/miff_wordmark_color.xml` sur l'écran d'accueil (description accessible "Logo de Miff"). Les couleurs de ces dessins sont des copies des tokens (`colorActionPrimary`, `colorBrandPrimary`, `colorTextOnAction`) : `LogoColorsTest` échoue si elles divergent. L'icône 512 x 512 de la fiche Google Play est dans `app/src/main/play/` (hors ressources : jamais embarquée dans l'APK). Écran de lancement : voir « Écran de lancement animé ».
+
+## Identité technique
+
+| | |
+|---|---|
+| Identifiant d'application | `com.tomessa.miff` (définitif une fois publié) |
+| `minSdk` / `targetSdk` / `compileSdk` | 26 (Android 8.0) / 36 / **37** (voir "Ecarts") |
+| Langage / UI | Kotlin 2.4.21, Jetpack Compose (BOM 2026.09.00), Material 3 |
+| Build | Gradle 9.6.1 (wrapper, somme SHA-256 vérifiée), Android Gradle Plugin 9.4.1, JDK 17 |
+| Firebase | projet `miff-3d283` (BoM 35.1.0) : Firestore, Authentication, App Check, Crashlytics, Analytics |
+| Architecture | MVVM : `ViewModel` + `StateFlow`, Navigation Compose (routes typées), conteneur d'injection manuel (`AppContainer`, pas de Hilt/KSP : build léger sur 8 Go) |
+
+## Démarrer sur un poste Windows
+
+Prérequis : Android Studio installé (il fournit le JDK 17 "JBR" et le SDK). Aucun Gradle global n'est nécessaire : le wrapper (`gradlew`) télécharge la bonne version.
+
+1. **Générer la configuration Firebase** (une seule fois par poste). Le fichier `app/google-services.json` n'est **jamais commité** (il est dans `.gitignore`) :
+
+   ```powershell
+   cd android\app
+   npx firebase-tools apps:sdkconfig ANDROID 1:29899146512:android:307ffd8ea71a4a37659195 --project miff-3d283 > google-services.json
+   ```
+
+   Cette commande lit seulement la configuration. Elle doit toujours porter `--project miff-3d283` (le projet `ghostrun-app` n'est jamais ciblé). Vérifier que le fichier commence par `{` : si le CLI a écrit des lignes de statut dedans, les retirer.
+2. **Indiquer où est le SDK** : Android Studio crée `local.properties` tout seul à l'ouverture du projet. En ligne de commande, créer `android/local.properties` (ignoré par git) avec : `sdk.dir=C\:/Users/<vous>/AppData/Local/Android/Sdk`.
+3. **Construire** (PowerShell, depuis `android/`) :
+
+   ```powershell
+   $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+   .\gradlew assembleDebug
+   ```
+
+   Le premier build télécharge beaucoup de dépendances et le SDK Android 37 (environ 6 minutes sur le poste du projet) ; les suivants prennent 1 à 3 minutes. La mémoire du démon Gradle est limitée à 1,5 Go (`gradle.properties`).
+
+### Commandes utiles
+
+| Objectif | Commande |
+|---|---|
+| APK de test (avec écran de diagnostic) | `.\gradlew assembleDebug` puis `app\build\outputs\apk\debug\app-debug.apk` |
+| Version "release" non signée (sans diagnostic) | `.\gradlew assembleRelease bundleRelease` |
+| Tests unitaires | `.\gradlew testDebugUnitTest` |
+| Android Lint | `.\gradlew lintDebug` |
+| Format (ktlint via Spotless) | `.\gradlew spotlessCheck` (vérifier) / `.\gradlew spotlessApply` (corriger) |
+
+### Installer l'APK de test sur un téléphone (par exemple l'OPPO Find X5 Lite)
+
+1. Copier `app-debug.apk` sur le téléphone (câble USB, ou envoi à soi-même).
+2. L'ouvrir depuis l'application Fichiers. Android demande d'autoriser l'installation depuis cette source : accepter pour cette fois.
+3. Alternative avec câble : activer les options pour les développeurs et le débogage USB, puis `adb install -r app-debug.apk` (ou le bouton "Run" d'Android Studio).
+
+L'APK de test fait environ 20 Mo (non réduit, avec les outils de débogage) ; la version release fait environ 2,7 Mo.
+
+## Variantes de build
+
+| | `debug` | `release` |
+|---|---|---|
+| Ecran affiché au démarrage | **Diagnostic interne** (peut ouvrir l'écran d'accueil) | Ecran d'accueil minimal avec le mot-symbole officiel |
+| Code du diagnostic | présent (`src/debug`) | **absent** (preuve : aucune chaîne `Diagnostic`, `DIAGNOSTICPROBE` ni `DebugAppCheck` dans le dex de l'APK release) |
+| App Check | fournisseur "debug" | Play Integrity (mode non appliqué) |
+| Réduction du code (R8) | non | oui, avec réduction des ressources |
+| Signature | clé de débogage : celle du poste, ou celle du secret `DEBUG_KEYSTORE_B64` en CI (voir « Authentification ») | **non signée** : aucune clé de signature n'existe encore (ne jamais en commiter) |
+| Pseudo-langues `en-XA`, `ar-XB` | oui | non |
+
+## Ecran de diagnostic (debug uniquement)
+
+C'est la preuve que l'app parle au bon projet Firebase, avec des règles qui protègent les données. Il ne fait **aucune écriture**.
+
+1. **Version installée** : version, build, configuration, projet Firebase (doit être `miff-3d283`, sinon avertissement), langue, sens du texte.
+2. **Test 1** : lecture d'une Miff sans être connecté. Résultat attendu : refus = "Règles actives : OK". Si la lecture réussit : avertissement clair (règles ouvertes). Ce test déconnecte d'abord l'éventuelle session.
+3. **Test 2** : saisir e-mail et mot de passe du compte de test (créé à la main dans la console Firebase). L'app se connecte, lit `users/{uid}` et `entitlements/{uid}` ("Pas encore de profil" et "Offre : Classic" sont des résultats normaux), puis se déconnecte. Le mot de passe n'est jamais conservé ni écrit dans le code ; l'e-mail saisi survit à une rotation de l'écran (état sauvegardé de l'app), pas le mot de passe.
+4. **App Check** : indique si un jeton est obtenu (non exigé pour l'instant). En debug, le SDK affiche un jeton de débogage dans Logcat (étiquette `DebugAppCheckProvider`) ; il peut être enregistré dans la console Firebase (App Check > Gérer les jetons de débogage). Ce jeton reste privé : ne jamais le commiter ni le coller dans une conversation.
+5. **Analytics et rapports de plantage** : deux interrupteurs éteints par défaut (remis à zéro à chaque démarrage : la collecte ne suit plus que le choix du compte, voir « Authentification »), un événement de test, un bouton qui tente d'envoyer une position (doit être refusé) et un bouton de plantage de test (actif seulement si les rapports sont activés).
+6. **Galerie de tokens** : couleurs (nom de code et valeur), styles de texte, arrondis, ombres, dégradés, à comparer au Figma.
+7. **Langue** : phrase longue, texte court et pluriel pour voir allongement et droite-à-gauche.
+
+Les messages d'erreur restent neutres ("Pas de connexion pour le moment"), y compris hors-ligne (mode avion).
+
+## Authentification (ticket AUTH-1)
+
+Code : `domain/auth` (règles pures testées), `data/auth` (Firebase Auth, lectures Firestore, purge, Credential Manager), `data/session/SessionManager` (un seul responsable de « qui est connecté et où s'ouvre l'app »), `ui/auth` (écrans et view models), `ui/navigation/AppRoot`.
+
+- **Parcours** : carrousel de bienvenue (première ouverture seulement), puis inscription (e-mail + mot de passe ou Google) et connexion. **Aucune case à cocher** (décision PM du 2026-10-28, risque légal et stores assumé par lui) : une ligne explicative juste au-dessus du bouton « Rejoindre » (liens vers les Conditions d'utilisation et la Politique de confidentialité) dit que le clic accepte les conditions, la politique et le partage de statistiques anonymes (modifiable dans les Réglages). Le clic est l'acceptation de (a) et de (b) : à la création du profil, `analyticsConsent.enabled = true` (`ConsentChoice.IMPLICIT`). Une personne nouvelle qui arrive par « Continuer avec Google » depuis la connexion voit un **panneau** (même ligne, boutons « Continuer » / « Annuler ») ; un refus (bouton, retour système) **supprime le compte tout juste créé**, purge le cache et n'envoie aucun événement.
+- **Routage** (`resolveDestination`) : lu dans l'état du compte, jamais déduit du fait qu'on vient de se connecter : pas de session -> inscription (ou connexion si l'app a déjà servi) ; session sans profil -> panneau si (a) n'est pas enregistrée sur l'appareil, sinon profil ; profil sans Miff -> choix créer/rejoindre ; sinon fil. Les écrans profil, choix de Miff et fil sont **provisoires** (écran d'attente avec un bouton « Se déconnecter », à remplacer par le ticket Onboarding).
+- **Profil** : `ProfileDocument.forCreation` fabrique la **seule écriture** de `users/{uid}` avec **toutes** les clés des règles (dont `phone` en E.164, **obligatoire depuis ONB-B** : sans lui le serveur refuse le profil) et `UserProfileRepository.create` l'envoie, depuis les deux étapes de l'Onboarding (voir « Profil et téléphone (ticket ONB-2) »). L'authentification elle-même n'écrit rien dans Firestore.
+- **Consentement et collecte** :$1Au clic sur « Rejoindre » (ou « Continuer »), (b) étant donnée, ils s'allument localement et `sign_up_completed` part après la création du compte (ticket §8, décision PM Q8 ; `backend/data-model.md` §8 a été aligné). `sign_in_completed` ne part qu'après lecture d'un choix « accepté ». Versions des textes : `ConsentVersions` (CGU `0.1`, case (b) `2026-10-v01`).
+- **Déconnexion** (`SessionManager.signOut`) : arrêt des écoutes (`SessionTeardown`, aucune pour l'instant), envoi des écritures en attente (5 s), `terminate()` + `clearPersistence()` avec drapeau « purge à faire » relu au démarrage, puis `signOut()`, collecte coupée, consentement en attente effacé.
+- **Mot de passe** : jamais stocké, jamais dans un état d'écran, jamais journalisé (le test `NoSensitiveLoggingTest` interdit tout journal dans le code de l'app). Seul l'e-mail survit à une rotation (`rememberSaveable`) ; le mot de passe est vidé par une rotation.
+- **Un seul message à la connexion** pour « adresse inconnue » et « mot de passe faux », avec un délai plancher de 0,8 s sur cette réponse ; après 5 échecs de suite, pause de 30 s côté app (confort, pas une protection : la vraie protection est celle de Firebase et d'App Check).
+- **Liens légaux** : `BuildConfig.LEGAL_BASE_URL` (par défaut `https://miff-3d283.web.app`, pages AUTH-W non déployées pour l'instant) + chemins par langue (`android_legal_*_path`). Modifiable par `-Pmiff.legalBaseUrl=...`. Contact provisoire : `BuildConfig.SUPPORT_EMAIL` (`-Pmiff.supportEmail=...`).
+- **Google** : Credential Manager (« Sign in with Google ») ; il faut un client OAuth **web** dans `google-services.json` (ressource `default_web_client_id`, lue par son nom : `res/raw/keep.xml` la protège du réducteur de ressources du build release, sans quoi le bouton ne marcherait jamais en release) et la SHA-1 de la clé de signature enregistrée dans Firebase. Sans client web, le bouton affiche le message d'erreur neutre. Une fenêtre Google laissée ouverte plus de 3 minutes est refermée sans message.
+- **Un compte par adresse e-mail (décision Q12)** : côté app, une adresse déjà liée à une autre méthode produit un message d'orientation sans code technique (`LINKED_TO_OTHER_METHOD` : « Un compte existe déjà avec cette adresse, avec un autre mode de connexion »), et une adresse déjà utilisée à l'inscription produit « Un compte existe déjà… Tu peux te connecter ». **Reste à tester sur un projet de développement (pas sur la production)** : le réglage de la console « un compte par adresse » ; ce que Firebase fait réellement quand une personne inscrite par e-mail choisit ensuite Google avec la même adresse (fusion automatique ? l'e-mail non vérifié est-il écrasé ?) ; l'analyse de sécurité dédiée demandée par le ticket (R6). Rien n'a été constaté sur un vrai projet dans ce ticket.
+- **Bouton Google** : respecte les règles de marque (fond blanc, bordure `#747775` 1 dp, texte `#1F1F1F` Roboto Medium 14 sp, aucune ombre ajoutée). **À remplacer avant le dépôt sur Google Play** : le « G » (`res/drawable/ic_google_g.xml`) est un redessin, pas le fichier officiel ; à remplacer par l'asset des directives de marque de Google (https://developers.google.com/identity/branding-guidelines), puis revérifier espacement, taille et libellé sur la page de ces directives.
+- **Debug seulement** : l'écran de diagnostic reste le premier écran d'un APK de debug ; le bouton « Ouvrir l'application » mène au vrai parcours.
+
+### Fidélité au design (maquettes du PM, écrans « Welcoming screen -7 » à « -13 »)
+
+Les écrans d'inscription et de connexion reprennent les maquettes : fond dégradé `gradient/auth-background`, flèche retour à gauche et mot-symbole officiel « Miff » centré en haut, bouton Google pleine largeur (arrondi 10), « Ou : » en gras centré, champs à **soulignement** dont le libellé est à la place du texte indicatif, erreurs en rouge sous le champ, bouton principal bleu (grisé à 30 % tant que les champs sont vides, libellé `body/large`), lien gras souligné « Déjà un compte ? » / « Pas encore de compte ? » sous le bouton, œil du mot de passe à droite (barré = visible). Polices Baloo Thambi 2 / Hanken Grotesk, couleurs et arrondis des tokens. Captures de contrôle générées par `AuthScreensTest` dans `app/build/screenshots/` (non commitées).
+
+**Écarts conscients design / implémentation** (décisions du PM, du ticket, de la plateforme ou de l'accessibilité) :
+1. Tutoiement partout (les maquettes vouvoient) ; « Continuer avec Google » (règles de marque) au lieu de « Rejoindre avec Google ».
+2. **Plus de cases de consentement** (décision PM du 2026-10-28) : une ligne explicative juste au-dessus du bouton principal, avec deux liens dans la phrase (aussi proposés comme actions au lecteur d'écran) ; elle cite « Rejoindre » **et** « Continuer avec Google » (les deux créent un compte). Le bouton Google se trouve au-dessus de cette ligne, comme dans la maquette (le PM assume que le clic Google soit lu avant la ligne). Bouton principal « Rejoindre » comme la maquette.
+3. Pas de bouton Apple sur Android (décision Q1).
+4. Message d'erreur **unique** à la connexion, sous les champs, à la place de « Adresse email invalide » / « Mot de passe invalide » (ticket §7.3, décision Q3). Texte d'erreur en `#D60700` (AA) et non `#ea4335`.
+5. Pas de lien « Mot de passe oublié ? » sous le mot de passe : il arrive avec AUTH-2.
+6. Libellés des champs : flottants (ils remontent en petit au-dessus du texte saisi) au lieu de disparaître ; le lecteur d'écran garde ainsi le nom du champ. Couleur du libellé plus foncée que le gris des maquettes (contraste AA).
+7. Bouton Google aux règles de marque de Google (Roboto Medium 14 sp, texte `#1F1F1F`, bordure `#747775`, **sans ombre**) et non en Ubuntu Bold avec l'ombre `shadow/subtle` des maquettes (`design-system.md` : composants officiels des plateformes).
+8. Aucune phrase de titre visible (comme les maquettes) : le nom de l'écran est donné au lecteur d'écran (`paneTitle`). Le panneau de consentement, absent des maquettes, a un titre visible.
+9. Boutons de 48 dp minimum ; ligne explicative en 14 sp (les 11 sp de la maquette sont trop petits).
+10. Le mot de passe est vidé par une rotation de l'écran (déjà noté).
+
+### Carrousel de bienvenue (maquettes « Welcoming screen », « -16 », « -17 »)
+
+`ui/onboarding/WelcomeCarousel.kt` : 3 slides, points, titre à dégradé (« Savoir qu'ils vont bien, sans les déranger »), bouton « Commencer » (-> inscription), lien « J'ai déjà un compte » (décision Q8 du ticket Onboarding, -> connexion). Affiché **à la première ouverture seulement** (aucune session, app jamais utilisée, drapeau local `welcome_carousel_seen` non posé) ; le drapeau (non personnel, jamais envoyé) est posé à « Commencer » ou « J'ai déjà un compte ». Après une déconnexion : connexion directement (décision Q11). La flèche retour de l'inscription ramène au carrousel. Défilement manuel (balayage ou actions du lecteur d'écran), aucun défilement automatique, aucune animation d'entrée ; les points ne s'animent pas si « supprimer les animations » est actif ; « Page 1 sur 3 » est annoncé ; **aucun événement Analytics** (l'écran n'a pas accès au traceur). Le premier écran d'un APK de debug reste le diagnostic.
+
+**Provisoire dans le carrousel** : les trois illustrations sont des dessins simples en Compose (carte de statut, fiche de lieu, trois messages) avec des avatars à initiales ; **aucune photo de personne** (les captures des maquettes sont de basse résolution et contiennent des photos de banque d'images à droits non vérifiés, donc non reprises). Le PM fournira de meilleurs exports. Les légendes des slides 2 et 3 sont des **propositions** reprises du ticket Onboarding (§6.11) et non validées ; le titre à dégradé est celui du PM, identique sur les 3 slides comme la maquette (le ticket recommandait un titre différent par slide : la légende sous l'illustration porte cette différence). Exemples d'illustration traduits (clés `onboarding_sample_*`).
+
+**Point d'extension du splash** : `ui/startup/StartupSlot.kt`, appelé en tout premier par `AppRoot` (avant le carrousel et le routage) ; il se termine tout de suite tant que le splash animé (autre branche) n'existe pas. Ordre à conserver : splash -> (carrousel si première ouverture) -> connexion / routage.
+
+### Signature de debug stable en CI (secret `DEBUG_KEYSTORE_B64`)
+
+Le workflow décode le secret dans `~/.android/debug.keystore` du runner (alias `androiddebugkey`, mots de passe de debug standard), sans jamais l'afficher, et le supprime en fin de job. Il compare ensuite la SHA-1 de l'APK à celles de `google-services.json` et échoue si elle n'y est pas. Sans le secret (Dependabot, fork), la clé jetable par défaut reste utilisée. Création du keystore : voir « Signature de l'APK debug de la CI » plus bas. Le workflow échoue aussi, avec un message explicite, si `google-services.json` n'a pas de client OAuth web. Sur le poste, copier le même keystore dans `%USERPROFILE%\.android\debug.keystore` donne la même empreinte.
+
+). Aucun SMS, aucune unicité. La mention « Seuls les membres de tes Miffs verront ce numéro… » est affichée sous le champ, toujours. Le numéro n'est jamais écrit dans un journal, un événement, un message d'erreur ni un rapport de plantage.
+- **Photo.** Sélecteur de photos **du système** (Photo Picker, **aucune permission**) ou appareil photo **du système** (aucune permission `CAMERA` : la photo est écrite dans **un seul fichier du cache privé**, via un `FileProvider` non exporté, puis supprimée dès qu'elle est lue). Recadrage carré obligatoire (déplacer, pincer, curseur de zoom ; actions « déplacer la photo vers… » pour TalkBack). Ré-encodage **depuis les pixels** : JPEG 160 x 160 (puis 128, 96 si besoin) de **20 000 octets au plus** (limite de `users.avatar` dans `backend/data-model.md` §2.1 ; les 150 Ko concernent les photos d'update, pas l'avatar), **sans aucune métadonnée** (pas de position, de date ni d'appareil : `AndroidAvatarCodecTest` le vérifie sur un fichier source qui contient une position). Rien n'est copié dans la galerie. Fichiers refusés sans plantage : pas une image, plus de 100 millions de pixels, adresse autre que `content://`.
+- **Aucune échappatoire pendant l'onboarding** (décision Q14) : pas de flèche retour sur la première étape, pas de « Se déconnecter » ; le bouton ou le geste « retour » du système met l'app en arrière-plan. Sur l'étape téléphone, la flèche et le geste « retour » reviennent au profil (animation de retour prédictif de la navigation).
+- **Aucun événement d'analyse** n'est émis par ces étapes.
+- **Écrans** : `ui/profile/` (`ProfileScreens.kt`, `CountryPicker.kt`, `PhotoCropScreen.kt`, `ProfileFlow.kt`, `ProfileViewModel.kt`). Captures de contrôle générées par `ProfileScreensTest` dans `app/build/screenshots/` (non commitées).
+- **Limite connue** : pour un compte antérieur à ONB-B qui appartient déjà à des Miffs, seul `users/{uid}` reçoit le numéro ; la copie dans chaque fiche de membre sera ajoutée par « Réglages > Mes informations » (ONB-3, lot unique) avec le nettoyage au lancement. Tant que la fiche n'a pas de numéro, les boutons « Appeler » et « Message » du Feed ne s'affichent pas pour ce membre (ticket, cas limite 29).
+
+### Écarts conscients design / plateforme (ONB-2)
+
+Design commun aux deux plateformes ; adaptations Android (natif d'abord) :
+
+1. **Tutoiement** : « Permets à tes proches de t'identifier » / « … de te contacter » (les maquettes vouvoient). Les titres proposés par le ticket §6.11 (« Pour que tes proches te reconnaissent »...) n'ont **pas** été retenus : la fidélité aux maquettes l'a emporté ; trivial à changer (`profile_title`, `profile_phone_title`).
+2. **Pas de flèche retour sur le profil** (la maquette -1 en montre une) : décision Q14 et Authentification Q11. Le retour du système met l'app en arrière-plan.
+3. **Photo** : la maquette ne montre que le rond avec l'appareil photo. Ajouts : légende « Ajouter une photo (facultatif) » et « Visible par les membres de tes Miffs » (ticket §6.3, PR6), feuille de choix Material « Prendre une photo / Choisir dans la galerie / Supprimer la photo », écran de recadrage (non dessinés).
+4. **Sélecteur de pays** : le champ fermé reprend la maquette (drapeau, « France +33 », triangle) ; la liste des ~240 pays est une **feuille Material avec recherche** (sans accents ni casse), au lieu d'une liste déroulante non dessinée trop longue.
+5. **Numéro** : « +33 » est un préfixe visuel dans le champ, avec un exemple du pays en indice (« 6 12 34 56 78 ») ; clavier **numérique** du téléphone, correction orthographique coupée, remplissage automatique du système autorisé (l'app ne lit jamais le numéro de l'appareil).
+6. **Libellé « Téléphone »** de la maquette -6 remplacé par « Numéro de téléphone » (comme la maquette -2 ; ticket §3.2).
+7. **Erreur de numéro** : « Ce numéro ne semble pas correct. » (texte du ticket) à la place de « Format de numéro de téléphone invalide » ; sous le champ, en `#D60700` (AA), annoncée par le lecteur d'écran ; l'aide « sans le premier zéro » reste dessous, comme la maquette. **Le numéro d'exemple de la maquette -6 (07 83 30 00 44) est en fait un mobile français valide** : l'app l'accepte.
+8. **Mention de visibilité du numéro** (décision N1, obligatoire), absente des maquettes, sous le champ.
+9. **Flèche ronde** : bleue, ou ce même bleu à 30 % tant qu'elle ne peut pas servir (comme le bouton principal) ; elle reste au-dessus du clavier ; pendant l'écriture elle affiche un indicateur annoncé par le lecteur d'écran. 56 dp (cibles de 48 dp minimum).
+10. **Champs** : libellé **au-dessus** du cadre blanc arrondi, comme les maquettes -1, -2, -6 (et **non** flottant comme les champs soulignés d'inscription, qui suivent leurs propres maquettes) ; libellé et champ ne forment **qu'un seul élément** pour TalkBack. Compteur « 45/50 » à partir de 45 caractères ; « 50 caractères maximum. » au-delà.
+11. **Couleurs** : libellés en `text/description` (contraste AA) au lieu du gris des maquettes.
+12. **Noms** : on retire les caractères de contrôle et les caractères invisibles ou qui inversent le sens du texte (un nom est affiché aux autres membres) ; tout alphabet est accepté.
+13. **Nom proposé par Google** : le nom complet de Google est coupé au premier espace (prénom / reste), modifiable ; jamais de photo importée.
+14. Thème clair imposé, droite-à-gauche et police agrandie testés (`ProfileScreensTest`).
 
 ## Écran de lancement animé (splash)
 
@@ -265,6 +426,8 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | AndroidX Activity Compose | 1.13.0 | Apache 2.0 |
 | AndroidX Lifecycle (ViewModel Compose, runtime Compose) | 2.11.0 | Apache 2.0 |
 | AndroidX Navigation Compose | 2.10.2 | Apache 2.0 |
+| libphonenumber (Google) | 9.0.42 | Apache 2.0 |
+| AndroidX ExifInterface | 1.4.2 | Apache 2.0 |
 | Compose UI, Foundation | 1.12.1 | Apache 2.0 |
 | Compose Material 3 | 1.4.0 | Apache 2.0 |
 | kotlinx-serialization-json | 1.12.0 | Apache 2.0 |
