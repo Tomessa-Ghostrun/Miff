@@ -25,8 +25,8 @@ final class DecodedCGImage: DecodedPhoto {
 /// pixels.
 ///
 /// La vie privée est le but de cette classe (risque R6, critère PR4) :
-/// - le JPEG enregistré est écrit par `CGImageDestination` à partir d'une image redessinée : aucun bloc EXIF, donc ni
-///   position, ni date, ni appareil ;
+/// - le JPEG enregistré est écrit par `CGImageDestination` à partir d'une image redessinée : aucune métadonnée de la
+///   photo d'origine n'est reprise, donc ni position, ni date, ni appareil (vérifié par un test) ;
 /// - l'orientation est lue dans la source UNIQUEMENT pour redresser les pixels, puis abandonnée avec tout le reste ;
 /// - rien n'est écrit dans la photothèque ni ailleurs.
 ///

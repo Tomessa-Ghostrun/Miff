@@ -177,9 +177,9 @@ struct NewPlaceIllustration: View {
             if let counterKey {
                 text(
                     counterKey,
-                    x: 138,
+                    x: 133,
                     y: top + 6.3,
-                    style: MockTextStyle(size: 4.6, color: colorTextSecondary.withAlpha(0.6), width: 12)
+                    style: MockTextStyle(size: 4.6, color: colorTextSecondary.withAlpha(0.6), width: 17)
                 )
             }
         }

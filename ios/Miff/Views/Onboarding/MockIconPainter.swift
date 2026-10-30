@@ -119,11 +119,13 @@ enum MockIconPainter {
             context.fill(Path(roundedRect: bubble, cornerRadius: grid.length(2)), with: .color(color))
             context.fill(grid.polygon([(2, 7), (2, 9.4), (4.6, 7)]), with: .color(color))
         default:
-            // Combiné : un arc épais (100 à 205 degrés, dans le sens des aiguilles d'une montre à l'écran).
+            // Combiné : un arc épais (100 à 205 degrés, dans le sens des aiguilles d'une montre à l'écran). Le centre est
+            // placé pour que l'arc reste DANS le carré de l'icône (le dessin d'Android sort de son carré, ce qu'un `Canvas`
+            // SwiftUI couperait).
             var arc = Path()
             arc.addArc(
-                center: grid.point(2, 5.5),
-                radius: grid.length(6.5),
+                center: grid.point(7.5, 3),
+                radius: grid.length(5.5),
                 startAngle: .degrees(100),
                 endAngle: .degrees(205),
                 clockwise: false
