@@ -22,7 +22,7 @@ import com.tomessa.miff.ui.theme.Spacing
  * Sign-in screen (ticket section 3 B, criteria C1 to C9). No consent box here: an existing account has none to give,
  * and a new person arriving through Google gets the consent panel afterwards (ticket 7.8).
  *
- * The "Mot de passe oublié ?" link comes with AUTH-2 (out of this ticket's scope).
+ * "Mot de passe oublié ?" (mockup -8) sits under the password field and opens the reset screen with the address already typed.
  * Only the e-mail survives a rotation; the password is never saved.
  */
 @Composable
@@ -32,6 +32,7 @@ fun SignInScreen(
     onSubmitEmail: (email: String, password: String) -> Unit,
     onGoogle: () -> Unit,
     onGoToSignUp: () -> Unit,
+    onForgotPassword: (email: String) -> Unit,
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -67,7 +68,12 @@ fun SignInScreen(
             onImeAction = { if (AuthForm.hasBothFields(email, password)) onSubmitEmail(email, password) },
             isPassword = true,
         )
-        Spacer(Modifier.size(Spacing.l))
+        FieldLink(
+            text = stringResource(R.string.auth_signin_forgot_password),
+            onClick = { onForgotPassword(AuthForm.normalizeEmail(email)) },
+            enabled = !state.isLoading,
+        )
+        Spacer(Modifier.size(Spacing.m))
 
         // One message, under the fields, for "unknown address" and "wrong password" alike (criteria C4 and C6).
         AuthMessageArea(state.message)

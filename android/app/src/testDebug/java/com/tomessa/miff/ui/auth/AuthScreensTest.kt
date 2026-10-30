@@ -10,6 +10,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -216,6 +218,7 @@ class AuthScreensTest {
                 onSubmitEmail = { _, _ -> },
                 onGoogle = {},
                 onGoToSignUp = {},
+                onForgotPassword = {},
             )
         }
         shoot("signin-error")
@@ -263,6 +266,276 @@ class AuthScreensTest {
             line.startsWith("En cliquant sur « Rejoindre »") &&
                 line.contains("tu acceptes nos Conditions d'utilisation"),
         )
+    }
+
+    // --- Sign-in: "Mot de passe oublié ?" (mockup -8) ---------------------------------------------------------
+
+    private fun signIn(
+        state: SignInUiState = SignInUiState(),
+        onForgotPassword: (String) -> Unit = {},
+    ) = show {
+        SignInScreen(
+            state = state,
+            onBack = {},
+            onSubmitEmail = { _, _ -> },
+            onGoogle = {},
+            onGoToSignUp = {},
+            onForgotPassword = onForgotPassword,
+        )
+    }
+
+    @Test
+    fun signIn_theForgotPasswordLinkSitsUnderThePasswordField_andIsEasyToHit_C7() {
+        signIn()
+        shoot("signin-forgot-link")
+        val link = composeRule.onNodeWithText(text(R.string.auth_signin_forgot_password))
+        link.assertHasClickAction().assertHeightIsAtLeast(48.dp)
+        val password = composeRule.onNodeWithText(text(R.string.auth_password_label)).getUnclippedBoundsInRoot()
+        val button = composeRule.onNodeWithText(text(R.string.auth_signin_action)).getUnclippedBoundsInRoot()
+        val bounds = link.getUnclippedBoundsInRoot()
+        assertTrue("under the password field", bounds.top >= password.bottom - 16.dp)
+        assertTrue("above the main button, as in the mockup", bounds.bottom <= button.top)
+    }
+
+    @Test
+    fun signIn_theForgotPasswordLink_carriesTheAddressAlreadyTyped_withoutItsSpaces() {
+        val received = mutableListOf<String>()
+        signIn(onForgotPassword = { received += it })
+        composeRule.onNodeWithText(text(R.string.auth_email_label)).performTextInput("  toto@gmail.com ")
+        composeRule.onNodeWithText(text(R.string.auth_signin_forgot_password)).performClick()
+        assertEquals(listOf("toto@gmail.com"), received)
+    }
+
+    @Test
+    fun signIn_theLinkWorksEvenWithNothingTyped() {
+        val received = mutableListOf<String>()
+        signIn(onForgotPassword = { received += it })
+        composeRule.onNodeWithText(text(R.string.auth_signin_forgot_password)).performClick()
+        assertEquals(listOf(""), received)
+    }
+
+    @Test
+    fun signIn_errorTexts_sendToTheLink_inEnglish() {
+        assertEquals(
+            "This combination does not work. Check your e-mail address and your password, " +
+                "or choose “Forgot password?”.",
+            text(R.string.auth_error_invalid_credentials),
+        )
+        assertEquals(
+            "A few too many attempts for now. Please wait a few minutes or reset your password.",
+            text(R.string.auth_error_too_many),
+        )
+        assertEquals("Forgot password?", text(R.string.auth_signin_forgot_password))
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
+    fun signIn_errorTexts_sendToTheLink_inFrench_tutoiement() {
+        signIn(state = SignInUiState(message = AuthMessage.INVALID_CREDENTIALS))
+        shoot("signin-forgot-fr")
+        assertEquals(
+            "Cette combinaison ne fonctionne pas. Vérifie ton adresse e-mail et ton mot de passe, " +
+                "ou choisis « Mot de passe oublié ? ».",
+            text(R.string.auth_error_invalid_credentials),
+        )
+        assertEquals(
+            "Un peu trop d'essais pour le moment. Patiente quelques minutes ou réinitialise ton mot de passe.",
+            text(R.string.auth_error_too_many),
+        )
+        composeRule.onNodeWithText("Mot de passe oublié ?").performScrollTo().assertHasClickAction()
+    }
+
+    // --- "Mot de passe oublié" screen (mockup -10) ---------------------------------------------------------------
+
+    private fun reset(
+        state: PasswordResetUiState = PasswordResetUiState(),
+        initialEmail: String = "",
+        onSubmit: (String) -> Unit = {},
+        onBackToSignIn: () -> Unit = {},
+    ) = show {
+        PasswordResetScreen(
+            state = state,
+            initialEmail = initialEmail,
+            onBack = {},
+            onEmailChanged = {},
+            onSubmit = onSubmit,
+            onBackToSignIn = onBackToSignIn,
+        )
+    }
+
+    @Test
+    fun reset_followsTheMockup_titleIntroFieldAndAGreyButton_M1() {
+        reset()
+        shoot("reset-empty")
+        composeRule.onNodeWithText(text(R.string.auth_reset_title)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_reset_intro)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_email_label)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_reset_action)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertExists()
+        composeRule.onNodeWithContentDescription(text(R.string.auth_back_a11y)).assertHasClickAction()
+        // No password, no social button, no box to tick: nothing else than the address.
+        composeRule.onAllNodesWithText(text(R.string.auth_password_label)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.auth_google_action)).assertCountEquals(0)
+        composeRule.onAllNodes(isCheckbox).assertCountEquals(0)
+        // Order of the mockup: title, intro, field, button.
+        val title = composeRule.onNodeWithText(text(R.string.auth_reset_title)).getUnclippedBoundsInRoot()
+        val intro = composeRule.onNodeWithText(text(R.string.auth_reset_intro)).getUnclippedBoundsInRoot()
+        val field = composeRule.onNodeWithText(text(R.string.auth_email_label)).getUnclippedBoundsInRoot()
+        val button = composeRule.onNodeWithText(text(R.string.auth_reset_action)).getUnclippedBoundsInRoot()
+        assertTrue(title.bottom <= intro.top && intro.bottom <= field.top && field.bottom <= button.top)
+    }
+
+    @Test
+    fun reset_theButtonComesAliveWithTheFirstCharacter_andSendsTheAddress_M1() {
+        val sent = mutableListOf<String>()
+        reset(onSubmit = { sent += it })
+        composeRule.onNodeWithText(text(R.string.auth_email_label)).performTextInput("a@b.fr")
+        composeRule.onNodeWithText(text(R.string.auth_reset_action)).assertIsEnabled().performClick()
+        assertEquals(listOf("a@b.fr"), sent)
+    }
+
+    @Test
+    fun reset_aPrefilledAddress_isShown_andTheButtonIsReady() {
+        reset(initialEmail = "toto@gmail.com")
+        composeRule.onNodeWithText("toto@gmail.com").assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_reset_action)).assertIsEnabled()
+    }
+
+    @Test
+    fun reset_aBadAddress_getsTheFormatMessage_inWords_andForTheScreenReader_M1() {
+        reset(state = PasswordResetUiState(showFieldError = true), initialEmail = "not-an-address")
+        shoot("reset-format-error")
+        composeRule.onNodeWithText(text(R.string.auth_error_email_format)).assertExists()
+        val field = composeRule.onNode(hasSetTextAction()).fetchSemanticsNode().config
+        assertEquals(text(R.string.auth_error_email_format), field[SemanticsProperties.Error])
+    }
+
+    @Test
+    fun reset_noFormatMessage_whileTyping_orForAGoodAddress() {
+        reset(state = PasswordResetUiState(showFieldError = true), initialEmail = "a@b.fr")
+        composeRule.onAllNodesWithText(text(R.string.auth_error_email_format)).assertCountEquals(0)
+    }
+
+    @Test
+    fun reset_aFailedResend_showsTheErrorAlone_noConfirmationNextToIt() {
+        // What the view model gives after a resend that failed: sent = false, with the message.
+        reset(state = PasswordResetUiState(sent = false, message = AuthMessage.NETWORK), initialEmail = "a@b.fr")
+        composeRule.onNodeWithText(text(R.string.auth_error_network)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.auth_reset_sent)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.auth_reset_action)).assertIsEnabled()
+    }
+
+    @Test
+    fun reset_noFormatMessage_whileTheAddressIsStillBeingTyped() {
+        reset()
+        composeRule.onNodeWithText(text(R.string.auth_email_label)).performTextInput("not-an")
+        composeRule.onAllNodesWithText(text(R.string.auth_error_email_format)).assertCountEquals(0)
+    }
+
+    @Test
+    fun reset_afterTheSend_oneConfirmation_aPausedButton_andTheWayBack_M2_M5() {
+        var back = 0
+        reset(
+            state = PasswordResetUiState(sent = true, resendLocked = true),
+            initialEmail = "a@b.fr",
+            onBackToSignIn = { back++ },
+        )
+        shoot("reset-sent")
+        composeRule.onNodeWithText(text(R.string.auth_reset_sent)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_reset_resend_wait)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_reset_resend_action)).assertIsNotEnabled()
+        composeRule.onAllNodesWithText(text(R.string.auth_reset_action)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                text(R.string.auth_reset_back_to_signin),
+            ).performScrollTo()
+            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.auth_reset_back_to_signin)).performClick()
+        assertEquals(1, back)
+    }
+
+    @Test
+    fun reset_afterThePause_theButtonIsBack_andTheConfirmationStays() {
+        reset(state = PasswordResetUiState(sent = true, resendLocked = false), initialEmail = "a@b.fr")
+        composeRule.onNodeWithText(text(R.string.auth_reset_sent)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.auth_reset_resend_wait)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.auth_reset_resend_action)).assertIsEnabled()
+    }
+
+    @Test
+    fun reset_theConfirmation_makesNoPromiseThatAnAccountExists_M2() {
+        // The screen is only given "sent": nothing that could depend on the account. And the words themselves are
+        // conditional ("if an account exists").
+        assertTrue(text(R.string.auth_reset_sent).startsWith("If an account exists with this address"))
+        assertTrue(text(R.string.auth_reset_intro).contains("If it matches an account"))
+    }
+
+    @Test
+    fun reset_messagesAreAnnouncedPolitely_andLoadingIsDescribed() {
+        reset(state = PasswordResetUiState(sent = true, message = AuthMessage.NETWORK, isLoading = true))
+        for (id in listOf(R.string.auth_reset_sent, R.string.auth_error_network)) {
+            val config = composeRule.onNodeWithText(text(id)).fetchSemanticsNode().config
+            assertEquals(LiveRegionMode.Polite, config[SemanticsProperties.LiveRegion])
+        }
+        composeRule.onNodeWithContentDescription(text(R.string.auth_loading_a11y)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_reset_resend_action)).assertIsNotEnabled()
+    }
+
+    @Test
+    fun reset_theScreenIsNamedAndTheTitleIsAHeading_forTheScreenReader() {
+        reset()
+        val pane =
+            composeRule
+                .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+                .fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.PaneTitle] }
+        assertTrue("screen named: $pane", pane.contains(text(R.string.auth_reset_title)))
+        val heading = composeRule.onNodeWithText(text(R.string.auth_reset_title)).fetchSemanticsNode().config
+        assertTrue(heading.contains(SemanticsProperties.Heading))
+    }
+
+    @Test
+    fun reset_theFieldDeclaresAnAutofillHint_andIsNotAPasswordField() {
+        reset()
+        val config = composeRule.onNode(hasSetTextAction()).fetchSemanticsNode().config
+        assertTrue("autofill hint declared", config.contains(SemanticsProperties.ContentType))
+        assertTrue("not a password field", !config.contains(SemanticsProperties.Password))
+    }
+
+    @Test
+    fun reset_largestFont_everythingStillReachable() {
+        show {
+            CompositionLocalProvider(LocalDensity provides Density(density = 3f, fontScale = 2f)) {
+                PasswordResetScreen(
+                    state = PasswordResetUiState(sent = true, resendLocked = true),
+                    initialEmail = "a@b.fr",
+                    onBack = {},
+                    onEmailChanged = {},
+                    onSubmit = {},
+                    onBackToSignIn = {},
+                )
+            }
+        }
+        composeRule.onNodeWithText(text(R.string.auth_reset_resend_action)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.auth_reset_back_to_signin)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
+    fun reset_french_showsTheTutoiementTexts() {
+        reset(state = PasswordResetUiState(sent = true, resendLocked = true), initialEmail = "a@b.fr")
+        shoot("reset-fr")
+        composeRule.onNodeWithText("Mot de passe oublié").assertExists()
+        composeRule.onNodeWithText("Renvoyer l'e-mail").assertExists()
+        composeRule.onNodeWithText("Tu peux demander un nouvel e-mail dans quelques instants.").assertExists()
+        assertEquals(
+            "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé. " +
+                "Pense à regarder dans tes courriers indésirables. Si tu t'es inscrit avec Apple ou Google, " +
+                "utilise plutôt le bouton correspondant sur l'écran de connexion.",
+            text(R.string.auth_reset_sent),
+        )
+        assertEquals("Cette adresse e-mail ne semble pas correcte.", text(R.string.auth_error_email_format))
+        assertEquals("Envoyer", text(R.string.auth_reset_action))
     }
 
     // --- Welcome carousel -------------------------------------------------------------------------------------
