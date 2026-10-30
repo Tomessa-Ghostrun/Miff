@@ -106,7 +106,7 @@ Les écrans d'inscription et de connexion reprennent les maquettes : fond dégra
 2. **Plus de cases de consentement** (décision PM du 2026-10-28) : une ligne explicative juste au-dessus du bouton principal, avec deux liens dans la phrase (aussi proposés comme actions au lecteur d'écran) ; elle cite « Rejoindre » **et** « Continuer avec Google » (les deux créent un compte). Le bouton Google se trouve au-dessus de cette ligne, comme dans la maquette (le PM assume que le clic Google soit lu avant la ligne). Bouton principal « Rejoindre » comme la maquette.
 3. Pas de bouton Apple sur Android (décision Q1).
 4. Message d'erreur **unique** à la connexion, sous les champs, à la place de « Adresse email invalide » / « Mot de passe invalide » (ticket §7.3, décision Q3). Texte d'erreur en `#D60700` (AA) et non `#ea4335`.
-5. Pas de lien « Mot de passe oublié ? » sous le mot de passe : il arrive avec AUTH-2.
+5. Le lien « Mot de passe oublié ? » sous le mot de passe est arrivé avec AUTH-2 (voir la section suivante).
 6. Libellés des champs : flottants (ils remontent en petit au-dessus du texte saisi) au lieu de disparaître ; le lecteur d'écran garde ainsi le nom du champ. Couleur du libellé plus foncée que le gris des maquettes (contraste AA).
 7. Bouton Google aux règles de marque de Google (Roboto Medium 14 sp, texte `#1F1F1F`, bordure `#747775`, **sans ombre**) et non en Ubuntu Bold avec l'ombre `shadow/subtle` des maquettes (`design-system.md` : composants officiels des plateformes).
 8. Aucune phrase de titre visible (comme les maquettes) : le nom de l'écran est donné au lecteur d'écran (`paneTitle`). Le panneau de consentement, absent des maquettes, a un titre visible.
@@ -124,6 +124,49 @@ Les écrans d'inscription et de connexion reprennent les maquettes : fond dégra
 ### Signature de debug stable en CI (secret `DEBUG_KEYSTORE_B64`)
 
 Le workflow décode le secret dans `~/.android/debug.keystore` du runner (alias `androiddebugkey`, mots de passe de debug standard), sans jamais l'afficher, et le supprime en fin de job. Il compare ensuite la SHA-1 de l'APK à celles de `google-services.json` et échoue si elle n'y est pas. Sans le secret (Dependabot, fork), la clé jetable par défaut reste utilisée. Création du keystore : voir « Signature de l'APK debug de la CI » plus bas. Le workflow échoue aussi, avec un message explicite, si `google-services.json` n'a pas de client OAuth web. Sur le poste, copier le même keystore dans `%USERPROFILE%\.android\debug.keystore` donne la même empreinte.
+
+## Mot de passe oublié (ticket AUTH-2)
+
+Code : `ui/auth/PasswordResetScreen.kt` et `PasswordResetViewModel.kt`, `domain/auth/PasswordReset.kt` (tri des réponses de Firebase, pause de renvoi, logique pure testée), `data/auth/PasswordResetGateway.kt` (l'appel à Firebase), route `PasswordResetRoute` dans `ui/navigation/AppRoot.kt`. Le lien « Mot de passe oublié ? » est dans `SignInScreen`.
+
+- **Parcours (v1, décision Q4)** : connexion -> lien « Mot de passe oublié ? » (sous le champ du mot de passe, maquette -8) -> écran « Mot de passe oublié » (maquette -10 : adresse e-mail, « Envoyer ») -> confirmation sur le même écran -> l'e-mail de Firebase contient un lien qui ouvre la **page web d'AUTH-W** (`/reset-password`), où l'on choisit le nouveau mot de passe -> retour dans l'app (« Retour à la connexion », ou flèche / geste retour) -> connexion avec le nouveau mot de passe. **Il n'y a pas d'écran « Nouveau mot de passe » dans l'app** (maquette -11) : il reste dans AUTH-6.
+- **Aucune énumération des comptes** (critères M2, C6) : l'écran affiche le **même texte** que l'adresse ait un compte ou non (« Si un compte existe avec cette adresse, un e-mail vient d'être envoyé… » ; même la phrase d'introduction est au conditionnel). Quand la protection contre l'énumération est désactivée côté Firebase, une adresse inconnue renvoie une erreur : `interpretPasswordResetError` la traite comme un succès (de même « compte désactivé »). Une réponse « acceptée » n'est jamais montrée avant 0,8 s (plancher de durée, comme à la connexion) pour que le temps de réponse ne trahisse pas non plus une adresse inconnue. Limite connue : l'envoi réel d'un e-mail peut être plus lent que la réponse « inconnu » ; seul le plancher est garanti.
+- **Format** : vérifié sur le téléphone (`AuthForm.isEmailFormatValid`, espaces retirés), message « Cette adresse e-mail ne semble pas correcte. » (texte du ticket §7.3, et non « Email incorrect » de la maquette) à la sortie du champ ou à l'appui sur « Envoyer », jamais pendant la frappe ; aucune requête pour une adresse mal formée. Si le serveur la juge quand même mal formée : même message.
+- **Pause de renvoi (critère M5)** : après un envoi, le bouton devient « Renvoyer l'e-mail », grisé **60 s**, avec la phrase « Tu peux demander un nouvel e-mail dans quelques instants. ». La pause est **par adresse** (qui corrige une faute de frappe n'attend pas ; la même adresse, quelle que soit la casse, attend) et vit dans `AppContainer` (en mémoire, jamais sur le disque, jamais journalisée) : quitter l'écran et revenir ne donne pas un renvoi gratuit. Horloge monotone (`SystemClock.elapsedRealtime`). **Ce n'est pas une protection de sécurité** (un client modifié la saute) : la protection réelle est le quota de Firebase et App Check. Pas de compte à rebours qui défile : le bouton se réactive tout seul, sans annonces répétées au lecteur d'écran.
+- **Hors connexion et erreurs** : message neutre « Pas de connexion pour le moment… », le champ garde son contenu, aucune requête, aucune pause. Trop de demandes (quota Firebase) : « Un peu trop de demandes pour le moment. Patiente quelques minutes avant de réessayer. » (clé `auth_error_too_many_requests`, sans le conseil « réinitialise ton mot de passe » du texte de connexion, absurde ici). Aucun code technique n'est jamais affiché.
+- **Aucun événement Analytics** : l'écran n'a pas accès au traceur (la liste blanche du contrat n'a d'ailleurs aucun événement de ce genre) ; l'adresse n'est ni journalisée ni conservée (seule la dernière adresse envoyée reste en mémoire vive, pour la pause).
+- **Textes de connexion** : « Cette combinaison ne fonctionne pas… ou choisis « Mot de passe oublié ? » » et « Un peu trop d'essais… ou réinitialise ton mot de passe. » reprennent les textes finaux du ticket §7.3 (FR + EN). Ces deux messages ne servent qu'à la connexion par e-mail ; l'inscription et Google utilisent la variante sans conseil de réinitialisation (`AuthMessage.TOO_MANY_REQUESTS`).
+- **Langue de l'e-mail** : `FirebaseAuth.useAppLanguage()` avant chaque envoi : l'e-mail suit la langue du téléphone et son lien porte `lang=fr` ou `lang=en` (lu par la page web). Pour une autre langue du téléphone, c'est le modèle par défaut de la console.
+
+### À faire par le PM dans la console, une fois la page web AUTH-W déployée (rien n'est dans l'app)
+
+L'app appelle `sendPasswordResetEmail(email)` **sans URL d'action dans le code** (rien n'est inventé) : l'adresse de la page web se règle dans Firebase.
+1. **Firebase (projet `miff-3d283`) > Authentication > Modèles > Réinitialisation du mot de passe > modifier > « Personnaliser l'URL d'action »** : `https://miff-3d283.web.app/reset-password` (valeur de `web/README.md` §6). Compléter aussi l'objet et le texte du modèle en **français et en anglais** (tutoiement, texte du PM) et choisir la langue du modèle.
+2. Les autres actions de console listées dans `web/README.md` §6 (clé web restreinte, domaine autorisé, Hosting) et dans le ticket §13 (protection contre l'énumération des adresses activée, politique de mot de passe).
+3. **Tant que (1) n'est pas fait**, l'envoi fonctionne mais le lien de l'e-mail ouvre la page par défaut de Firebase (sans l'identité de Miff) : suffisant pour essayer, pas pour la bêta.
+
+### Fidélité au design (maquettes -8 et -10) et écarts conscients
+
+Reprend : fond dégradé, flèche retour et mot-symbole centré, titre gras centré, texte d'introduction centré, **champ encadré** blanc aux coins arrondis (arrondi du design system), message d'erreur rouge sous le champ, bouton principal bleu grisé tant que le champ est vide, lien « Mot de passe oublié ? » en petit gras bleu sous le mot de passe.
+
+Écarts **design / ticket** (chacun justifié) :
+1. Tutoiement, et introduction reformulée au conditionnel (maquette : « Merci de renseigner votre adresse email d'inscription afin que nous puissions vous faire parvenir un lien… ») : elle ne promet pas d'e-mail (pas d'énumération). **Texte à valider par le PM.**
+2. « Email incorrect » devient « Cette adresse e-mail ne semble pas correcte. » (ticket §7.3) ; libellé du champ « Adresse e-mail » (clé commune à l'inscription) au lieu de « Email ».
+3. Écran de **confirmation** absent des maquettes : affiché sur le même écran (texte du ticket §7.3, annoncé au lecteur d'écran), sans écran supplémentaire, avec « Retour à la connexion » en lien souligné. Le bouton « Envoyer » devient « Renvoyer l'e-mail ».
+4. **Écran « Nouveau mot de passe » (-11) non réalisé dans l'app** (décision PM : page web AUTH-W en v1).
+5. Lien « Mot de passe oublié ? » **souligné** (la maquette ne le souligne pas, contrairement aux autres liens : la couleur seule ne doit pas faire le lien) et de 48 dp de haut (maquette : environ 12 sp).
+6. Préremplissage de l'adresse déjà saisie à la connexion (ajout : moins de saisie).
+7. Erreurs en `#D60700` (contraste AA, comme AUTH-1) et non le rouge `#ea4335` de la maquette ; introduction en 14 sp (les ~11 sp de la maquette sont trop petits).
+8. Le bouton suit le contenu (comme les écrans d'AUTH-1), il n'est pas collé au bas de l'écran (le clavier et les grandes polices le feraient disparaître).
+9. Étiquette du champ : étiquette Material (dans le cadre, elle remonte sur la bordure à la saisie) au lieu d'un libellé fixe au-dessus du cadre : natif Android, et le lecteur d'écran garde le nom du champ.
+
+Écarts **de plateforme** (natif Android) :
+- Bouton ou geste retour du système (y compris le **geste retour prédictif**, activé dans le manifeste) : même effet que la flèche, retour à la connexion.
+- Clavier d'adresse e-mail, correction automatique coupée, touche d'action « Envoyer » qui envoie (si le champ est valide et la pause terminée) et ferme le clavier ; **saisie automatique** : le champ déclare « adresse e-mail » (le gestionnaire de mots de passe peut la proposer).
+- **TalkBack** : l'écran est nommé et son titre est un titre ; l'erreur du champ est liée au champ (`error`) et annoncée ; la confirmation et les messages sont annoncés poliment ; le chargement est décrit ; flèche, bouton et liens font 48 dp au moins. Polices Hanken Grotesk / Baloo Thambi 2 embarquées, repli sur la police du système pour les écritures qu'elles ne couvrent pas ; taille de police agrandie : l'écran défile, le bouton reste atteignable.
+- Pas d'Apple sur Android : la phrase de confirmation du ticket (« Si tu t'es inscrit avec Apple ou Google, utilise plutôt le bouton correspondant… ») évoque un bouton Apple qui n'existe pas sur Android. Texte du ticket conservé (clé commune) ; **le PM peut choisir une variante Android**.
+
+Captures de contrôle : générées par `AuthScreensTest` dans `app/build/screenshots/` (`reset-*.png`, `signin-forgot-*.png`, non commitées).
 
 ## Écran de lancement animé (splash)
 

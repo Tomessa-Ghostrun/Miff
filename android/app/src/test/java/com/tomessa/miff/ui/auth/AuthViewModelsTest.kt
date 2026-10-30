@@ -140,6 +140,28 @@ class AuthViewModelsTest {
         }
 
     @Test
+    fun signUp_tooManyRequests_isNotAdvisedToResetAPassword() =
+        runTest(dispatcher) {
+            val h = harness()
+            h.gateway.createResult = AuthOutcome.Failure(AuthFailure.TOO_MANY_ATTEMPTS)
+            val vm = SignUpViewModel(h.manager, FakeNetwork())
+            vm.submitEmail("a@b.fr", "password-1")
+            advanceUntilIdle()
+            assertEquals(AuthMessage.TOO_MANY_REQUESTS, vm.uiState.value.message)
+        }
+
+    @Test
+    fun signIn_googleTooManyRequests_isNotAdvisedToResetAPassword() =
+        runTest(dispatcher) {
+            val h = harness()
+            h.gateway.googleResult = AuthOutcome.Failure(AuthFailure.TOO_MANY_ATTEMPTS)
+            val vm = SignInViewModel(h.manager, FakeNetwork(), nowMillis = { currentTime })
+            vm.submitGoogle(FakeGoogle(GoogleTokenResult.Token("t")))
+            advanceUntilIdle()
+            assertEquals(AuthMessage.TOO_MANY_REQUESTS, vm.uiState.value.message)
+        }
+
+    @Test
     fun signUp_offline_saysSo_andSendsNothing_X2() =
         runTest(dispatcher) {
             val h = harness()
