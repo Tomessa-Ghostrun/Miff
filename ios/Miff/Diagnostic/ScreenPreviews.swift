@@ -9,7 +9,9 @@ struct ScreenPreview: View {
     let name: String
     let environment: AppEnvironment
 
-    private let ignoreAction: () -> Void = {}
+    private var ignoreAction: () -> Void {
+        {}
+    }
 
     var body: some View {
         switch name {
