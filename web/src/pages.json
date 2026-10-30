@@ -1,12 +1,14 @@
 {
-  "_comment": "Registre des pages localisées. kind=fragment : contenu dans web/src/<file> encadré par layout.html ; kind=legal : généré depuis docs/legal/<source> par scripts/build-web.mjs. nav=true : lien dans la navigation. Toute page existe en fr ET en en (un test le vérifie).",
+  "_comment": "Registre des pages localisées. kind=landing : page d’accueil générée depuis landing.html + landing.json (textes FR/EN) ; kind=fragment : contenu dans web/src/<file> encadré par layout.html ; kind=legal : généré depuis docs/legal/<source> par scripts/build-web.mjs. nav=true : lien dans la navigation. Toute page existe en fr ET en en (un test le vérifie).",
   "pages": [
     {
       "id": "home",
-      "kind": "fragment",
+      "kind": "landing",
       "nav": true,
-      "fr": { "url": "/fr/", "file": "fr/index.html", "title": "Miff", "navLabel": "Accueil", "description": "Miff : savoir que tes proches vont bien, sans les déranger." },
-      "en": { "url": "/en/", "file": "en/index.html", "title": "Miff", "navLabel": "Home", "description": "Miff: know that your loved ones are okay, without bothering them." }
+      "bodyClass": "page-home",
+      "styles": ["/assets/landing.css"],
+      "fr": { "url": "/fr/", "title": "Miff : savoir que tes proches vont bien, sans les déranger", "navLabel": "Accueil", "description": "Miff prévient ton cercle de confiance quand tu arrives ou pars d’un lieu qui compte, sans message à écrire. Gratuit pour commencer, bientôt sur iPhone et Android." },
+      "en": { "url": "/en/", "title": "Miff: know your loved ones are okay, without bothering them", "navLabel": "Home", "description": "Miff lets your circle of trust know when you arrive at or leave a place that matters, with no message to write. Free to start, coming soon on iPhone and Android." }
     },
     {
       "id": "terms",

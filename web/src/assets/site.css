@@ -133,16 +133,38 @@ a:hover {
   margin: 0;
 }
 
+/* Bouton de langue (FR / EN) : toujours visible, vrai lien vers la page équivalente (lang et hreflang dans le HTML). */
 .lang-switch a {
-  display: inline-block;
-  padding: 0.5rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   min-height: 2.75rem;
-  line-height: 1.75rem;
+  padding: 0.25rem 1rem 0.25rem 0.75rem;
+  border: 2px solid var(--color-action-primary);
+  border-radius: 9999px;
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lang-switch a:hover {
+  background: var(--color-action-primary);
+  color: var(--color-text-on-action);
+}
+
+.lang-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .site-nav {
-  max-width: 48rem;
-  margin: 0.5rem auto 0;
+  flex: 1 0 100%;
+  order: 3;
 }
 
 .site-nav ul {
@@ -332,11 +354,6 @@ button {
 
 .choice-list li {
   margin: 0;
-}
-
-.button-secondary.suggested {
-  background: var(--color-action-primary);
-  color: var(--color-text-on-action);
 }
 
 /* ---- Formulaire de nouveau mot de passe ---- */

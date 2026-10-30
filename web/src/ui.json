@@ -7,7 +7,8 @@
     "publisherLine": "Éditeur : {{PUBLISHER}}, {{ADDRESS}}. Contact : {{CONTACT}}.",
     "fontsNote": "Polices Baloo Thambi 2 et Hanken Grotesk, sous licence SIL Open Font License 1.1 (textes de licence dans /assets/fonts/).",
     "descriptionHome": "Miff : savoir que tes proches vont bien, sans les déranger.",
-    "descriptionNotFound": "Cette page n’existe pas."
+    "descriptionNotFound": "Cette page n’existe pas.",
+    "ogImageAlt": "Miff : savoir que tes proches vont bien, sans les déranger."
   },
   "en": {
     "skip": "Skip to content",
@@ -17,6 +18,7 @@
     "publisherLine": "Publisher: {{PUBLISHER}}, {{ADDRESS}}. Contact: {{CONTACT}}.",
     "fontsNote": "Fonts Baloo Thambi 2 and Hanken Grotesk, licensed under the SIL Open Font License 1.1 (licence texts in /assets/fonts/).",
     "descriptionHome": "Miff: know that your loved ones are okay, without bothering them.",
-    "descriptionNotFound": "This page does not exist."
+    "descriptionNotFound": "This page does not exist.",
+    "ogImageAlt": "Miff: know your loved ones are okay, without bothering them."
   }
 }
