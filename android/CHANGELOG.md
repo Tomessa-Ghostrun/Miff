@@ -2,6 +2,34 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.5.0] - 2026-10-30 : ONB-3a, barre d'onglets, Profil, Réglages (Mes informations, Mon compte, Langue)
+
+Ticket `docs/tickets/feed-profil-reglages.md` (décisions du PM du 2026-10-30 : « OK pour tout » aux 15 questions), maquettes `design/exports/profil/`, `reglages/` et barres d'onglets de `feed/`.
+
+### Ajouté
+- **Barre d'onglets** flottante (Feed, bouton rond central, Profil) visible seulement quand une Miff existe ; noms parlés pour TalkBack, zones de 48 dp, ordre inversé en droite-à-gauche, masquée avec le clavier ouvert. **Bouton central** (décision Q1) : visible mais désactivé dans le build debug, **absent** du build release (deux onglets). Le build debug ajoute sur l'écran « prochaine étape » un bouton d'aperçu interne des onglets (absent du release).
+- **Feed provisoire** honnête : « Ton fil n'est pas encore prêt », sans cloche, sans avatar, sans phrase de sécurité.
+- **Onglet Profil** : photo ou initiales, « Prénom Nom », « C'est toi », engrenage ; toucher la photo ou le nom ouvre Mes informations. Aucune donnée fictive.
+- **Réglages** : Mes informations, Mon compte, Langue.
+- **Mes informations** : photo (sélecteur et appareil photo du système, recadrage, 20 000 octets sans métadonnée), prénom, nom (1 à 50, compteur réel), pays + téléphone (E.164, libphonenumber), mention de visibilité du numéro. Écriture de `users/{uid}` **et** de la copie de chaque Miff en une transaction confirmée (rien en file d'attente hors connexion) ; repli si une Miff n'existe plus ; réparation des copies sans numéro. Confirmation avant d'abandonner des changements.
+- **Langue** : Français, English, « Langue du téléphone », effet immédiat sans bouton (`LocaleManager` sur Android 13+, contexte localisé sur Android 8 à 12), sans AppCompat.
+- **Mon compte (provisoire)** : e-mail en lecture seule, « Se déconnecter » avec confirmation (la déconnexion de l'écran provisoire disparaît). Complété par ONB-3b (changement de mot de passe, Confidentialité).
+- Textes `tabbar_`, `feed_`, `settings_`, `profile_tab_` FR/EN (tutoiement), ajoutés aussi au catalogue iOS (ajouts seulement) pour la parité ; préfixes ajoutés au contrat `docs/contracts/i18n-keys.md` et au script de parité.
+- Tests : modèle de la barre, langues, initiales, dépôt du profil (transaction, repli, plus de 15 Miffs, identifiants non fiables, réseau absent), `CurrentProfile`, view models (Mes informations, onglet Profil, Langue, Compte), écrans Robolectric (structure, absence de Notifications / Premium / suppression, 48 dp, grande police, droite-à-gauche, TalkBack).
+
+### Modifié
+- `data-model.md` : les règles ONB-B (téléphone) sont **déployées** depuis le 2026-10-30 (la mention « non déployées » était périmée).
+- Le champ de saisie commun accepte un rappel « le champ a perdu le focus » (numéro signalé en quittant le champ).
+- Nouveau bouton secondaire `MiffSecondaryButton` ; dégradé `GradientProfileHeader` (approximation de la maquette, hors design system).
+
+### Écarts avec les maquettes (détail dans la PR)
+Tutoiement, « Téléphone » (et non « Nom »), compteurs réels, pas de « 3 caractères minimum », mention N1, « Enregistrer » grisé sans changement, deux langues sans bouton « Enregistrer », pas de « Notifications » ni d'encart Premium ni « Abonnement », e-mail en lecture seule, « Déconnexion » en bouton secondaire, pas de mot de passe à trois champs ni de « Supprimer mon compte », pas de carte de Miff ni de lieux.
+
+### Choix économiques et limites
+- Aucun service, aucune dépendance, aucune permission ajoutée ; coût 0 €. Lectures : une pour le profil (mise en mémoire pour la session), une lecture serveur des appartenances à chaque enregistrement.
+- **Limite** : le « reste à écrire » des copies de Miff (réseau coupé entre deux écritures, ou Premium au-delà de 15 Miffs) n'est pas conservé si l'app est fermée ; signal : des proches qui voient un ancien nom.
+- Aucune règle Firestore modifiée.
+
 ## [0.4.0] - 2026-10-30 : ONB-2, profil et téléphone (étapes de création du profil)
 
 ### Ajouté

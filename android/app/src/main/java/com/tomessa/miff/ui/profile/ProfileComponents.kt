@@ -198,8 +198,11 @@ fun LabeledOutlinedField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     fieldContentType: ContentType? = null,
     enabled: Boolean = true,
+    /** Called when the field loses the focus after having had it (the person has left it). */
+    onBlur: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
+    var hadFocus by remember { mutableStateOf(false) }
     val hasError = errorText != null
     val stroke =
         when {
@@ -225,7 +228,15 @@ fun LabeledOutlinedField(
                     .semantics {
                         if (fieldContentType != null) contentType = fieldContentType
                         if (errorText != null) error(errorText)
-                    }.onFocusChanged { focused = it.isFocused },
+                    }.onFocusChanged {
+                        focused = it.isFocused
+                        if (it.isFocused) {
+                            hadFocus = true
+                        } else if (hadFocus) {
+                            hadFocus = false
+                            onBlur()
+                        }
+                    },
             decorationBox = { innerTextField ->
                 Column {
                     Text(text = label, style = textBodyRegular, color = colorTextDescription)

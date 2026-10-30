@@ -19,7 +19,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
-import com.tomessa.miff.domain.auth.AppDestination
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.Spacing
@@ -77,20 +76,18 @@ fun AccountLookupFailedScreen(
 }
 
 /**
- * PROVISIONAL stand-in for the screens that do not exist yet (create / join a Miff, feed). The profile and phone steps
- * are real since ONB-2. It only says where the app opened and offers a sign-out so that the routing and the sign-out can
- * be tried on a phone. The sign-out button moves to the Settings ticket; this whole screen disappears with the Feed ticket.
+ * PROVISIONAL stand-in for the "create or join a Miff" screens (Miff tickets, not built yet): a person without a Miff never
+ * reaches the tabs (Onboarding ticket 6.7), so this screen is where they stay. It only says where the app opened and offers
+ * a sign-out so that the routing and the sign-out can be tried on a phone; it disappears with the Miff ticket.
+ *
+ * [onPreviewTabs] exists in DEBUG builds only (internal testing): it opens the tabs, the Profile and the Settings without
+ * having to create a Miff by hand in the Firebase console. It is null in the release builds, where the code is removed.
  */
 @Composable
 fun NextStepPlaceholderScreen(
-    destination: AppDestination,
     onSignOut: () -> Unit,
+    onPreviewTabs: (() -> Unit)? = null,
 ) {
-    val text =
-        when (destination) {
-            AppDestination.MIFF_CHOICE -> R.string.android_next_miff_choice
-            else -> R.string.android_next_feed
-        }
     CenteredFrame {
         Text(
             text = stringResource(R.string.home_title),
@@ -100,11 +97,18 @@ fun NextStepPlaceholderScreen(
             modifier = Modifier.semantics { heading() },
         )
         Text(
-            text = stringResource(text),
+            text = stringResource(R.string.android_next_miff_choice),
             style = textBodyRegular,
             color = colorTextDescription,
             textAlign = TextAlign.Center,
         )
+        if (onPreviewTabs != null) {
+            MiffButton(
+                text = stringResource(R.string.android_debug_preview_tabs),
+                onClick = onPreviewTabs,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         MiffButton(
             text = stringResource(R.string.auth_signout_action),
             onClick = onSignOut,
