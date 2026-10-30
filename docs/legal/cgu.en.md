@@ -1,6 +1,6 @@
 # Miff Terms of Use
 
-**Version 0.1 — last updated: January 1, 2027**
+**Version 0.1 — last updated: October 30, 2026**
 
 Welcome to Miff. These terms explain how to use the app, what you can expect from it, and what we expect from you. We tried to write them simply. To learn how your data is processed, also read the [Privacy Policy](politique-confidentialite.en.md).
 
@@ -45,7 +45,7 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 ## 4. Your account
 
 - You can create an account with an e-mail address and a password, with Google, or with Apple (on iOS).
-- Give true information (first name, last name) so your loved ones recognise you. Do not use another person's identity.
+- Give true information (first name, last name, phone number) so your loved ones recognise you and can reach you. Do not use another person's identity.
 - Keep your password confidential. You are responsible for what happens with your account. If you think it was used without your consent, write to us.
 - An account is personal: do not share it.
 
