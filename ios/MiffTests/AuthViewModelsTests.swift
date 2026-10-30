@@ -1,4 +1,5 @@
-// swiftlint:disable large_tuple -- les aides de test rendent (view model, session, horloge) ensemble
+// Les aides de test rendent (view model, session, horloge) ensemble.
+// swiftlint:disable large_tuple
 import XCTest
 @testable import Miff
 
@@ -285,3 +286,4 @@ final class ConsentPanelViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.state.message)
     }
 }
+// swiftlint:enable large_tuple

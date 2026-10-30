@@ -10,7 +10,10 @@ final class ImageAvatarCodecTests: XCTestCase {
 
     /// Un JPEG de démonstration (dégradé et formes) qui PORTE une position GPS, un appareil et une orientation.
     private func sourcePhoto(width: Int = 800, height: Int = 600, orientation: Int = 1) throws -> Data {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
+        // Un pixel par point : sans cela le rendu serait multiplie par l'echelle de l'ecran du simulateur.
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
         let image = renderer.image { context in
             for index in 0..<height {
                 UIColor(hue: CGFloat(index) / CGFloat(height), saturation: 0.8, brightness: 0.9, alpha: 1).setFill()
@@ -50,6 +53,12 @@ final class ImageAvatarCodecTests: XCTestCase {
         return photo
     }
 
+    /// Les metadonnees d'un fichier image, lues par le systeme.
+    private func metadata(of data: Data) throws -> [CFString: Any] {
+        let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
+        return try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+    }
+
     private func contains(_ data: Data, _ text: String) -> Bool {
         data.range(of: Data(text.utf8)) != nil
     }
@@ -70,10 +79,18 @@ final class ImageAvatarCodecTests: XCTestCase {
         let avatar = try XCTUnwrap(encoded)
 
         XCTAssertLessThanOrEqual(avatar.count, AvatarCompression.maxBytes)
-        XCTAssertFalse(contains(avatar, "Exif"))
-        XCTAssertFalse(contains(avatar, "Appareil de test"))
-        XCTAssertFalse(contains(avatar, "Modele secret"))
-        XCTAssertFalse(contains(avatar, "GPS"))
+        XCTAssertFalse(contains(avatar, "Appareil de test"), "marque de l'appareil dans le fichier")
+        XCTAssertFalse(contains(avatar, "Modele secret"), "modele de l'appareil dans le fichier")
+        XCTAssertFalse(contains(avatar, "GPS"), "bloc de position dans le fichier")
+        // Ni position, ni appareil, ni date, relus tels que le systeme les lirait.
+        let properties = try metadata(of: avatar)
+        XCTAssertNil(properties[kCGImagePropertyGPSDictionary], "position")
+        let tiff = properties[kCGImagePropertyTIFFDictionary] as? [CFString: Any]
+        XCTAssertNil(tiff?[kCGImagePropertyTIFFMake], "marque de l'appareil")
+        XCTAssertNil(tiff?[kCGImagePropertyTIFFModel], "modele de l'appareil")
+        XCTAssertNil(tiff?[kCGImagePropertyTIFFDateTime], "date")
+        let exif = properties[kCGImagePropertyExifDictionary] as? [CFString: Any]
+        XCTAssertNil(exif?[kCGImagePropertyExifDateTimeOriginal], "date de prise de vue")
         // C'est bien un JPEG carré de 160 pixels (ou moins si la limite l'a imposé).
         let decoded = try XCTUnwrap(UIImage(data: avatar))
         XCTAssertEqual(Int(decoded.size.width * decoded.scale), Int(decoded.size.height * decoded.scale))

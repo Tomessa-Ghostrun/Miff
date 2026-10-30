@@ -1,4 +1,5 @@
-// swiftlint:disable file_length type_body_length -- scenarios de test longs par nature, un cas par methode
+// Scenarios de test longs par nature (un cas par methode) : les limites de longueur ne s appliquent pas ici.
+// swiftlint:disable file_length type_body_length
 import XCTest
 @testable import Miff
 
@@ -634,3 +635,4 @@ final class SessionManagerTests: XCTestCase {
         XCTAssertEqual(AnalyticsEvent.signInCompleted(method: .apple).name, "sign_in_completed")
     }
 }
+// swiftlint:enable type_body_length
