@@ -3,6 +3,7 @@ package com.tomessa.miff.ui.navigation
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,10 +14,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -195,7 +198,10 @@ private fun SignedOutHost(
                 onGoToSignUp = {
                     if (!navController.popBackStack<SignUpRoute>(inclusive = false)) navController.navigate(SignUpRoute)
                 },
-                onForgotPassword = { email -> navController.navigate(PasswordResetRoute(email)) },
+                onForgotPassword = { email ->
+                    // launchSingleTop: two quick taps open one screen, not two.
+                    navController.navigate(PasswordResetRoute(email)) { launchSingleTop = true }
+                },
             )
         }
         composable<PasswordResetRoute> { entry ->
@@ -209,6 +215,7 @@ private fun SignedOutHost(
                                     gateway = container.passwordResetGateway,
                                     network = container.networkMonitor,
                                     cooldown = container.passwordResetCooldown,
+                                    nowMillis = SystemClock::elapsedRealtime,
                                 )
                             }
                         },
@@ -218,10 +225,10 @@ private fun SignedOutHost(
                 state = uiState,
                 initialEmail = route.email,
                 // System back and the predictive back gesture pop this screen too (NavHost), like the arrow.
-                onBack = { navController.popBackStack() },
+                onBack = { navController.popBackStackIfSafe() },
                 onEmailChanged = viewModel::onEmailChanged,
                 onSubmit = viewModel::submit,
-                onBackToSignIn = { navController.popBackStack() },
+                onBackToSignIn = { navController.popBackStackIfSafe() },
             )
         }
     }
@@ -232,4 +239,14 @@ private fun googleSourceFor(context: Context): GoogleIdTokenSource {
     var current: Context = context
     while (current is ContextWrapper && current !is Activity) current = current.baseContext
     return CredentialManagerGoogleSource(current, CredentialManagerGoogleSource.webClientIdFrom(context))
+}
+
+/**
+ * Pops one screen, but only if there is a screen to go back to AND the current one has finished its transition. Two quick
+ * taps (or a tap and a back gesture) must not pop the sign-in screen as well and leave an empty stack (white screen).
+ */
+internal fun NavController.popBackStackIfSafe(): Boolean {
+    val current = currentBackStackEntry ?: return false
+    if (previousBackStackEntry == null || current.lifecycle.currentState != Lifecycle.State.RESUMED) return false
+    return popBackStack()
 }

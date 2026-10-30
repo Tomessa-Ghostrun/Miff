@@ -249,7 +249,7 @@ class ConsentPanelViewModel(
                     mutableState.update {
                         it.copy(
                             isLoading = false,
-                            message = result.failure.toMessage(),
+                            message = result.failure.toMessage().withoutResetAdvice(),
                         )
                     }
                 }

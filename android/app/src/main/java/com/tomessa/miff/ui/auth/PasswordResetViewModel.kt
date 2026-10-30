@@ -31,6 +31,8 @@ data class PasswordResetUiState(
     val message: AuthMessage? = null,
     /** The confirmation of sending is shown. IDENTICAL whether or not the address has an account (criterion M2). */
     val sent: Boolean = false,
+    /** How many sends were accepted: a new send makes the screen reader say the confirmation again (criterion M2 / a11y). */
+    val sendCount: Int = 0,
     /** The send button is paused (about 60 s after a send to THIS address, criterion M5). */
     val resendLocked: Boolean = false,
 )
@@ -44,7 +46,8 @@ class PasswordResetViewModel(
     private val gateway: PasswordResetGateway,
     private val network: NetworkMonitor,
     private val cooldown: ResendCooldown,
-    private val nowMillis: () -> Long = System::currentTimeMillis,
+    /** Monotonic clock (`SystemClock.elapsedRealtime` in the app), same as the pause of [ResendCooldown]. */
+    private val nowMillis: () -> Long,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(PasswordResetUiState())
     val uiState: StateFlow<PasswordResetUiState> = mutableState.asStateFlow()
@@ -88,7 +91,9 @@ class PasswordResetViewModel(
         }
         if (!network.isOnline()) {
             // Neutral message, the field keeps what was typed (criterion X2).
-            mutableState.update { it.copy(message = AuthMessage.NETWORK) }
+            // A confirmation that no longer holds (this resend did not leave) is taken away.
+            sentTo = null
+            mutableState.update { it.copy(message = AuthMessage.NETWORK, sent = false) }
             return
         }
         mutableState.update { it.copy(isLoading = true, message = null, emailRejected = false) }
@@ -111,6 +116,7 @@ class PasswordResetViewModel(
                             isLoading = false,
                             showFieldError = false,
                             sent = sentTo == typed,
+                            sendCount = it.sendCount + 1,
                             resendLocked = cooldown.remainingMillis(typed) > 0,
                         )
                     }
@@ -118,13 +124,15 @@ class PasswordResetViewModel(
                 }
 
                 PasswordResetOutcome.EmailRejected -> {
-                    mutableState.update { it.copy(isLoading = false, emailRejected = true) }
+                    sentTo = null
+                    mutableState.update { it.copy(isLoading = false, emailRejected = true, sent = false) }
                 }
 
                 is PasswordResetOutcome.Failed -> {
                     // No pause is started: nothing was sent, trying again soon is fine.
                     val message = outcome.failure.toMessage().withoutResetAdvice()
-                    mutableState.update { it.copy(isLoading = false, message = message) }
+                    sentTo = null // the old confirmation must not sit next to an error
+                    mutableState.update { it.copy(isLoading = false, message = message, sent = false) }
                 }
             }
         }

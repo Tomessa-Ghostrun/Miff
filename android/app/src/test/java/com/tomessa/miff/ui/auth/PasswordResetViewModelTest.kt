@@ -167,7 +167,7 @@ class PasswordResetViewModelTest {
             assertTrue(unknown.uiState.value.sent)
             assertTrue(
                 "the fast answer is held back to a floor: $unknownTotal ms",
-                unknownTotal >= PasswordResetViewModel.MIN_ANSWER_MILLIS,
+                unknownTotal >= 800, // hard-coded on purpose: a floor lowered by mistake must fail here
             )
             assertTrue(
                 "and the slow one (a real send) is not held back more: $knownTotal ms",
@@ -334,5 +334,79 @@ class PasswordResetViewModelTest {
             assertEquals(AuthMessage.NETWORK, r.vm.uiState.value.message)
             r.vm.onEmailChanged("a@b.fr2")
             assertNull(r.vm.uiState.value.message)
+        }
+
+    private fun TestScope.pastPause() {
+        advanceTimeBy(ResendCooldown.DEFAULT_DURATION_MILLIS + 1_000)
+        runCurrent()
+    }
+
+    @Test
+    fun aResendThatFails_takesTheOldConfirmationAway_neverBothAtOnce() =
+        runTest(dispatcher) {
+            val r = rig()
+            r.vm.submit("a@b.fr")
+            settle()
+            assertTrue(r.vm.uiState.value.sent)
+            pastPause()
+
+            r.gateway.outcome = PasswordResetOutcome.Failed(AuthFailure.UNKNOWN)
+            r.vm.submit("a@b.fr")
+            settle()
+            assertEquals(AuthMessage.UNKNOWN, r.vm.uiState.value.message)
+            assertFalse("no \"an e-mail has been sent\" next to an error", r.vm.uiState.value.sent)
+        }
+
+    @Test
+    fun aResendOffline_takesTheOldConfirmationAway_too() =
+        runTest(dispatcher) {
+            val r = rig()
+            r.vm.submit("a@b.fr")
+            settle()
+            pastPause()
+
+            r.network.online = false
+            r.vm.submit("a@b.fr")
+            settle()
+            assertEquals(AuthMessage.NETWORK, r.vm.uiState.value.message)
+            assertFalse(r.vm.uiState.value.sent)
+        }
+
+    @Test
+    fun eachAcceptedSend_countsOnce_soTheConfirmationIsAnnouncedAgain() =
+        runTest(dispatcher) {
+            val r = rig()
+            assertEquals(0, r.vm.uiState.value.sendCount)
+            r.vm.submit("a@b.fr")
+            settle()
+            assertEquals(1, r.vm.uiState.value.sendCount)
+            pastPause()
+            r.vm.submit("a@b.fr")
+            settle()
+            assertEquals(2, r.vm.uiState.value.sendCount)
+            assertTrue(r.vm.uiState.value.sent)
+        }
+
+    @Test
+    fun theFloorUsesTheInjectedClock_notTheWallClock() =
+        runTest(dispatcher) {
+            // The view model has no default clock any more: whatever is injected rules the floor.
+            var fake = 0L
+            val gateway = FakeGateway { fake }
+            val vm =
+                PasswordResetViewModel(
+                    gateway,
+                    FakeNetwork(),
+                    ResendCooldown(nowMillis = { fake }),
+                    nowMillis = { fake },
+                )
+            vm.submit("a@b.fr")
+            runCurrent()
+            // The injected clock never moves: the floor delay is never considered elapsed, so it waits the full 800 ms.
+            advanceTimeBy(799)
+            assertFalse(vm.uiState.value.sent)
+            advanceTimeBy(2)
+            runCurrent()
+            assertTrue(vm.uiState.value.sent)
         }
 }

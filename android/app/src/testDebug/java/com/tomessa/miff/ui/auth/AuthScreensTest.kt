@@ -417,6 +417,15 @@ class AuthScreensTest {
     }
 
     @Test
+    fun reset_aFailedResend_showsTheErrorAlone_noConfirmationNextToIt() {
+        // What the view model gives after a resend that failed: sent = false, with the message.
+        reset(state = PasswordResetUiState(sent = false, message = AuthMessage.NETWORK), initialEmail = "a@b.fr")
+        composeRule.onNodeWithText(text(R.string.auth_error_network)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.auth_reset_sent)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.auth_reset_action)).assertIsEnabled()
+    }
+
+    @Test
     fun reset_noFormatMessage_whileTheAddressIsStillBeingTyped() {
         reset()
         composeRule.onNodeWithText(text(R.string.auth_email_label)).performTextInput("not-an")

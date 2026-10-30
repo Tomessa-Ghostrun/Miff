@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -85,11 +86,14 @@ fun PasswordResetScreen(
 
         if (state.sent) {
             // The same words whether or not the address has an account (ticket 7.3): never a hint either way.
-            MessageText(
-                text = stringResource(R.string.auth_reset_sent),
-                isError = false,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            // key: a new send makes a NEW node, so that the screen reader says the (identical) confirmation again.
+            key(state.sendCount) {
+                MessageText(
+                    text = stringResource(R.string.auth_reset_sent),
+                    isError = false,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Spacer(Modifier.size(Spacing.s))
         }
         if (state.resendLocked) {
