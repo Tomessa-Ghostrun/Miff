@@ -1,6 +1,6 @@
 # Miff Terms of Use
 
-**Version 0.1 — last updated: January 1, 2027**
+**Version 0.1 — last updated: October 30, 2026**
 
 Welcome to Miff. These terms explain how to use the app, what you can expect from it, and what we expect from you. We tried to write them simply. To learn how your data is processed, also read the [Privacy Policy](politique-confidentialite.en.md).
 

@@ -1,6 +1,6 @@
 # Politique de confidentialité de Miff
 
-**Version 0.1 — dernière mise à jour : 1er janvier 2027**
+**Version 0.1 — dernière mise à jour : 30 octobre 2026**
 
 Miff est une app pour savoir que tes proches vont bien, sans les déranger. Pour que ça marche, Miff traite quelques données personnelles, dont des informations liées à ta localisation. Cette page t'explique, simplement, ce qui est collecté, pourquoi, qui peut le voir, combien de temps c'est gardé, et comment garder la main.
 

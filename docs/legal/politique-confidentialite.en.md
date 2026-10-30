@@ -1,6 +1,6 @@
 # Miff Privacy Policy
 
-**Version 0.1 — last updated: January 1, 2027**
+**Version 0.1 — last updated: October 30, 2026**
 
 Miff is an app that lets you know your loved ones are okay, without bothering them. To make that work, Miff processes some personal data, including information related to your location. This page explains, simply, what is collected, why, who can see it, how long it is kept, and how you stay in control.
 
