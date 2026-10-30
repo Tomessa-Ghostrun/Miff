@@ -157,7 +157,7 @@
     <!-- Welcome carousel and implicit consent (AUTH-1) -->
     <string name="auth_consent_notice">By tapping “Join” or “Continue with Google”, you accept our %1$s and our %2$s, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings).</string>
     <string name="auth_panel_notice">By tapping “Continue”, you accept our %1$s and our %2$s, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings).</string>
-    <string name="onboarding_headline">Knowing they are fine, without bothering them</string>
+    <string name="onboarding_headline">Knowing they are fine,\nwithout bothering them</string>
     <string name="onboarding_start">Get started</string>
     <string name="onboarding_have_account">I already have an account</string>
     <string name="onboarding_page_a11y">Page %1$d of %2$d</string>
@@ -179,10 +179,10 @@
     <string name="onboarding_sample_place_address">Address</string>
     <string name="onboarding_sample_place_radius">Radius</string>
     <string name="onboarding_sample_msg_1">Thomas arrived safely at school</string>
-    <string name="onboarding_sample_msg_2">Amandine is back home</string>
+    <string name="onboarding_sample_msg_2">Amandine is still not home</string>
     <string name="onboarding_sample_msg_3">Mum just left work</string>
-    <string name="onboarding_sample_when_1">2 min ago</string>
-    <string name="onboarding_sample_when_2">2 h ago</string>
+    <string name="onboarding_sample_when_1">2 min ago.</string>
+    <string name="onboarding_sample_when_2">2 h ago.</string>
     <string name="onboarding_sample_when_3">Just now</string>
     <string name="onboarding_sample_name_3">Mum</string>
     <string name="onboarding_sample_place_address_value">12 Lilac Street, London</string>

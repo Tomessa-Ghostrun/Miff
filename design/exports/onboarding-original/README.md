@@ -11,4 +11,3 @@ Repères identifiés (liste à compléter par le design-system) :
 - -7 : inscription ; -18 : nouvelle Miff ; -19 : amorce de notifications
 - Paywall.png : paywall ; mdi-light_eye.png : icône œil du champ mot de passe
 
-Les droits sur les images du carrousel (photos de personnes) sont à vérifier avant publication : ce sont des photos de banque d'images selon l'analyse du ticket Onboarding.

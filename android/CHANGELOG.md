@@ -11,6 +11,10 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 - `LEGAL_BASE_URL` avec un « / » final (réglage `-Pmiff.legalBaseUrl=...`) ne produit plus de double barre : normalisé au build et à l'ouverture des liens (`legalPageUrl`).
 - Imports inutilisés supprimés (`AuthComponents`, `WelcomeCarousel`, `SplashHost`).
 
+### Corrigé : retours de recette du PM (2026-10-30)
+- **Carrousel de bienvenue fidèle aux maquettes** (`design/exports/onboarding-original/`) : mêmes phrases (titre à dégradé « Savoir qu’ils vont bien, sans les déranger », identique sur les 3 slides ; les légendes inventées sont retirées), mêmes images (slides 1 et 2 : recadrages des maquettes avec leurs vraies photos ; slide 3 : trois cartes refaites en Compose avec les vraies photos de profil recadrées), mêmes formes vert pâle (vecteurs tracés sur les exports), mise en page proportionnelle aux maquettes, points de pagination, bouton « Commencer ». Poids ajouté : environ 70 Ko de PNG. **Limite** : les exports du PM font 320 x 640 px, donc les images des slides 1 et 2 (155 x 290 px) sont un peu floues sur un écran haute définition et leur texte reste en français quelle que soit la langue du téléphone ; le PM fournira de meilleurs exports. Les droits d’image sont réglés par le PM (mention « droits non vérifiés » retirée de la documentation).
+- **Splash : le cœur vert était beaucoup trop gros** (5 fois sa taille). Il apparaît sur le « i » et gonfle maintenant de la taille du logo officiel jusqu’à **120 %** (jamais au-delà de 125 %, élastique léger conservé), puis éclate net avec ses éclats (rayon de départ et portée des éclats réduits en proportion). Durée totale inchangée (2,2 s ; apparition 0,45 s, gonflement 1 s). Test : échelle maximale entre 1,15 et 1,25.
+
 ### Tests ajoutés ou durcis
 - Rapports de plantage conservés au démarrage à froid avec consentement (jusqu'à la réponse du compte) et supprimés au retrait, au refus, à la déconnexion et sans session ; `FirebaseCrashlyticsSwitch` testé avec un faux client.
 - Règle « carrousel seulement à la première ouverture sans session » extraite en fonction pure (`shouldShowWelcomeCarousel`, critère CA5) et testée.
@@ -50,7 +54,7 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 
 ### Modifié : retours de recette du PM (2026-10-28)
 - **Plus aucune case à cocher** (décision PM, risque légal et stores assumé par lui) : une ligne explicative juste au-dessus du bouton principal, avec liens vers les Conditions d'utilisation et la Politique de confidentialité ; le clic accepte (a) et (b) (`analyticsConsent.enabled = true` à la création du profil). Panneau Google : même ligne, « Continuer » / « Annuler » (refus = suppression du compte, inchangé). Bouton principal « Rejoindre ». Textes `auth_` FR/EN et catalogue iOS mis à jour (clés des cases supprimées).
-- **Carrousel de bienvenue** à la première ouverture seulement (3 slides, points, « Commencer », « J'ai déjà un compte », manuel, sans événement, « Page 1 sur 3 »), illustrations provisoires en Compose sans photo. Préfixe `onboarding_` ajouté au contrat de clés et au script de parité.
+- **Carrousel de bienvenue** à la première ouverture seulement (3 slides, points, « Commencer », « J'ai déjà un compte », manuel, sans événement, « Page 1 sur 3 »), illustrations provisoires à l’époque, remplacées par les images des maquettes en 0.2.2. Préfixe `onboarding_` ajouté au contrat de clés et au script de parité.
 - **Point d'extension du splash** (`StartupSlot`) en tête d'`AppRoot`.
 - Documentation : `docs/tickets/authentification.md` §8 et §17 (Q8 remplacée), `backend/data-model.md` §8 (aucune règle modifiée).
 

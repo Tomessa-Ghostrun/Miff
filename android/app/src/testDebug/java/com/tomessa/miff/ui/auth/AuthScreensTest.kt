@@ -322,7 +322,6 @@ class AuthScreensTest {
         carousel()
         shoot("carousel-1")
         composeRule.onNodeWithContentDescription("Page 1 of 3").assertExists()
-        composeRule.onNodeWithText(text(R.string.onboarding_slide1_caption)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.onboarding_slide1_illustration_a11y)).assertExists()
 
         composeRule
@@ -330,7 +329,6 @@ class AuthScreensTest {
             .performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Page 2 of 3").assertExists()
-        composeRule.onNodeWithText(text(R.string.onboarding_slide2_caption)).assertExists()
         shoot("carousel-2")
 
         composeRule

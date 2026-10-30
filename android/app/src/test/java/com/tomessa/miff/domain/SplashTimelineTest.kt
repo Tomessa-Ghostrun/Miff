@@ -63,7 +63,7 @@ class SplashTimelineTest {
 
         // Growing overall (the wobble may dip a little, never back to the start).
         val samples = (inflate until burst step 100).map { full.frameAt(it).heartScale }
-        assertTrue(samples.last() > samples.first() * 3f)
+        assertTrue(samples.last() > samples.first() * 1.1f)
         assertTrue(samples.zipWithNext().all { (a, b) -> b > a * 0.9f })
         // Elastic: the curve is not a straight line.
         val middle = full.frameAt(inflate + SplashTimeline.INFLATE_MS / 2).heartScale
@@ -144,6 +144,20 @@ class SplashTimelineTest {
         assertTrue((0L until reduced.totalMs).all { reduced.frameAt(it).burstProgress == null })
         assertTrue(reduced.isFinished(reduced.totalMs))
         assertEquals(SplashPhase.DONE, reduced.frameAt(reduced.totalMs).phase)
+    }
+
+    /**
+     * PM recette 2026-10-30: the heart was far too big. Scale 1 is the size of the heart on the official logo and icon
+     * (SplashArtworkTest ties the drawn heart to the icon's), and it must swell to "a little bigger": 115 to 125 %.
+     */
+    @Test
+    fun theHeartNeverGetsBiggerThanAboutOneAndAQuarterOfItsSizeOnTheOfficialLogo() {
+        val scales = (0L until full.totalMs).map { full.frameAt(it).heartScale }
+        val max = scales.max()
+        assertTrue("max scale $max must be between 1.15 and 1.25", max in 1.15f..1.25f)
+        val beforePop = full.frameAt(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS + SplashTimeline.INFLATE_MS - 1)
+        assertTrue("it pops at its biggest: ${beforePop.heartScale}", beforePop.heartScale in 1.15f..1.25f)
+        assertTrue(SplashTimeline.MAX_SCALE in 1.15f..1.25f)
     }
 
     @Test

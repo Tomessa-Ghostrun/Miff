@@ -99,8 +99,8 @@ class SplashTimeline(
 
     companion object {
         const val HOLD_MS = 250L
-        const val APPEAR_MS = 350L
-        const val INFLATE_MS = 1100L
+        const val APPEAR_MS = 450L
+        const val INFLATE_MS = 1000L
         const val BURST_MS = 300L
         const val EXIT_MS = 200L
 
@@ -110,8 +110,11 @@ class SplashTimeline(
         /** Upper bound promised to the PM: the animated version never exceeds it. */
         const val MAX_ALLOWED_MS = 2500L
 
-        /** Size reached by the heart just before it pops, relative to its resting size. */
-        const val MAX_SCALE = 5f
+        /**
+         * Size reached by the heart just before it pops, relative to its resting size (1 = the size of the heart on the
+         * official logo and icon): "a little bigger than on the official logo" (PM, recette 2026-10-30), 115 to 125 %.
+         */
+        const val MAX_SCALE = 1.2f
 
         const val PARTICLE_COUNT = 12
     }
@@ -134,7 +137,7 @@ internal fun inflateScale(p: Float): Float {
     val x = p.coerceIn(0f, 1f)
     val growth = 1f + (SplashTimeline.MAX_SCALE - 1f) * x.pow(1.7f)
     val envelope = (0.3f + 0.7f * x) * sin(PI.toFloat() * x).coerceAtLeast(0f).pow(0.5f)
-    val wobble = 1f + 0.05f * envelope * sin(2f * PI.toFloat() * (2.5f * x + 4f * x * x))
+    val wobble = 1f + 0.03f * envelope * sin(2f * PI.toFloat() * (2.5f * x + 4f * x * x))
     return growth * wobble
 }
 
@@ -146,7 +149,8 @@ fun burstParticles(progress: Float): List<BurstParticle> {
     return List(SplashTimeline.PARTICLE_COUNT) { i ->
         val big = i % 2 == 0
         BurstParticle(
-            angleRadians = (2f * PI.toFloat() * i / SplashTimeline.PARTICLE_COUNT) + PI.toFloat() / 12f,
+            // Upper 240 degrees only (from 150 to 390 degrees, y pointing down): nothing flies down over the "M" and the "i".
+            angleRadians = PI.toFloat() * (150f + 240f * (i + 0.5f) / SplashTimeline.PARTICLE_COUNT) / 180f,
             distance = outward * (if (big) 1f else 0.65f),
             size = (1f - 0.8f * p) * (if (big) 1f else 0.6f),
             alpha = alpha,
