@@ -2,6 +2,7 @@ package com.tomessa.miff.data.auth
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -15,6 +16,11 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.GoogleTokenResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Opens the Google account dialog and returns an ID token for Firebase. Bound to a screen (needs an Activity). */
@@ -86,6 +92,12 @@ class CredentialManagerGoogleSource(
 /** Is there a network at all? Used to answer "no connection" at once instead of waiting for a long failure. */
 interface NetworkMonitor {
     fun isOnline(): Boolean
+
+    /**
+     * Emits the current state, then every change (true = a network with Internet is there). Lets a background task wait for the
+     * network to come back instead of asking again and again. The default is a single answer (tests, fakes).
+     */
+    fun onlineChanges(): Flow<Boolean> = flowOf(isOnline())
 }
 
 class AndroidNetworkMonitor(
@@ -98,4 +110,21 @@ class AndroidNetworkMonitor(
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
+
+    override fun onlineChanges(): Flow<Boolean> =
+        callbackFlow {
+            val callback =
+                object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        trySend(true)
+                    }
+
+                    override fun onLost(network: Network) {
+                        trySend(isOnline())
+                    }
+                }
+            trySend(isOnline())
+            manager?.registerDefaultNetworkCallback(callback)
+            awaitClose { manager?.unregisterNetworkCallback(callback) }
+        }.distinctUntilChanged()
 }

@@ -20,12 +20,15 @@ import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
+import com.tomessa.miff.data.privacy.ConsentWithdrawals
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSink
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSwitch
 import com.tomessa.miff.data.privacy.FirebaseCrashlyticsSwitch
 import com.tomessa.miff.data.privacy.FirestoreAnalyticsConsentRepository
+import com.tomessa.miff.data.privacy.PendingWithdrawals
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.data.privacy.SharedPreferencesBooleanStore
+import com.tomessa.miff.data.privacy.SharedPreferencesWithdrawalStorage
 import com.tomessa.miff.data.profile.AndroidAvatarCodec
 import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.data.profile.CurrentProfile
@@ -67,6 +70,22 @@ class AppContainer(
     val authGateway: AuthGateway = FirebaseAuthGateway()
 
     val networkMonitor: NetworkMonitor = AndroidNetworkMonitor(context)
+
+    /**
+     * Withdrawals of the statistics consent not yet recorded in the account (no network at the time): they keep the collection
+     * off at every start and are recorded in the background as soon as the network is back (see [ConsentWithdrawals]).
+     */
+    val pendingWithdrawals: PendingWithdrawals =
+        PendingWithdrawals(SharedPreferencesWithdrawalStorage(context), nowMillis = System::currentTimeMillis)
+
+    val consentWithdrawals: ConsentWithdrawals =
+        ConsentWithdrawals(
+            pending = pendingWithdrawals,
+            consents = analyticsConsents,
+            network = networkMonitor,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
 
     /** "Mot de passe oublié" (AUTH-2): the e-mail is sent by Firebase; the new password is chosen on the web page (AUTH-W). */
     val passwordResetGateway: PasswordResetGateway = FirebasePasswordResetGateway()
@@ -120,8 +139,10 @@ class AppContainer(
             // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
             // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
             // sign-out stops them (ticket 7.6).
-            teardown = listOf(profileDrafts.asTeardown(), currentProfile),
+            teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
             drafts = profileDrafts,
+            withdrawals = pendingWithdrawals,
+            onAccountResolved = consentWithdrawals::resume,
         )
 }

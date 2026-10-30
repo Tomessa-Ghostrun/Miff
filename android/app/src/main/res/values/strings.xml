@@ -306,7 +306,7 @@
     <string name="settings_privacy_subtitle">Statistics, location, notifications and legal texts</string>
     <string name="settings_privacy_analytics_title">Anonymous usage statistics and crash reports</string>
     <string name="settings_privacy_analytics_body">They help us fix the app. They never contain your location. You can change your mind at any time.</string>
-    <string name="settings_privacy_withdrawal_not_recorded">It is switched off on this phone. Your choice could not be saved for lack of a connection: tap “Save my choice” as soon as you have a network.</string>
+    <string name="settings_privacy_withdrawal_not_recorded">It is switched off on this phone, even after a restart. Your choice will be saved as soon as the connection is back; you can also tap “Save my choice”.</string>
     <string name="settings_privacy_retry_action">Save my choice</string>
     <string name="settings_privacy_location_title">Location</string>
     <string name="settings_privacy_location_body">For now, Miff does not use your phone\'s location. If that changes, we will explain it clearly before asking you for anything.</string>

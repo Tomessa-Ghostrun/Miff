@@ -138,7 +138,6 @@ class PrivacyScreensTest {
             PrivacyUiState(
                 analyticsEnabled = false,
                 withdrawalPending = true,
-                message = PrivacyMessage.WITHDRAWAL_NOT_RECORDED,
             ),
             onRetry = { retried++ },
         )

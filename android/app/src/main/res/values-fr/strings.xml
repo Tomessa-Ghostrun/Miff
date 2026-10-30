@@ -298,7 +298,7 @@
     <string name="settings_privacy_subtitle">Statistiques, localisation, notifications et textes légaux</string>
     <string name="settings_privacy_analytics_title">Statistiques d\'usage et rapports de plantage anonymes</string>
     <string name="settings_privacy_analytics_body">Ils nous aident à réparer l\'app. Ils ne contiennent jamais ta position. Tu peux changer d\'avis à tout moment.</string>
-    <string name="settings_privacy_withdrawal_not_recorded">C\'est coupé sur ce téléphone. Ton choix n\'a pas pu être enregistré faute de connexion : touche « Enregistrer mon choix » dès que tu as du réseau.</string>
+    <string name="settings_privacy_withdrawal_not_recorded">C\'est coupé sur ce téléphone, même après un redémarrage. Ton choix sera enregistré dès que la connexion revient ; tu peux aussi toucher « Enregistrer mon choix ».</string>
     <string name="settings_privacy_retry_action">Enregistrer mon choix</string>
     <string name="settings_privacy_location_title">Localisation</string>
     <string name="settings_privacy_location_body">Pour l\'instant, Miff n\'utilise pas la position de ton téléphone. Si cela change, on te l\'expliquera clairement avant de te demander quoi que ce soit.</string>

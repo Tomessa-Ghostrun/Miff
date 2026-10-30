@@ -2,6 +2,24 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
+
+Décision du PM : « Oui pour durcir le consentement » (le risque noté en 0.6.0 est supprimé).
+
+### Ajouté
+- **Retrait en attente mémorisé sur l'appareil** (`PendingWithdrawals`) : « retrait en attente » + heure + clé = empreinte à sens unique de l'identifiant du compte, dans un fichier privé écrit sur le disque avant de rendre la main et exclu des sauvegardes. Aucune donnée personnelle.
+- **La collecte reste coupée au démarrage** tant que le retrait n'est pas confirmé côté serveur pour ce compte (`SessionManager` : le compte qui dit encore « accepté » ne l'emporte plus).
+- **Enregistrement en arrière-plan** (`ConsentWithdrawals`) : attend le retour du réseau (rappel système, sans interrogation répétée), nouvelles tentatives espacées (5 s, 15 s, 1 min, 5 min), transitions des règles déployées respectées. **Pas de boucle** après un refus du serveur (collecte coupée, « Enregistrer mon choix » proposé, un dernier essai au démarrage suivant).
+- Cas gérés : retrait puis ré-acceptation avant enregistrement (verrou commun, marque annulée seulement après la prise en compte de l'acceptation) ; déconnexion ou changement de compte (la marque suit son compte, jamais écrite pour un autre) ; plusieurs comptes sur le même téléphone (20 au plus).
+- `NetworkMonitor.onlineChanges()`.
+- Texte de l'écran Confidentialité mis à jour (FR/EN, catalogue iOS) : « C'est coupé sur ce téléphone, même après un redémarrage. Ton choix sera enregistré dès que la connexion revient… ».
+- Tests : stockage (rien d'identifiable, survit à un redémarrage, limite de 20), démarrage avec marque (collecte coupée, autre compte non touché, aucun événement), enregistreur (réseau de retour, serveur injoignable, refus sans boucle, déconnexion / autre compte, ré-acceptation), view model hors connexion (retrait, enregistrement automatique, bouton, ré-acceptation).
+
+### Limites
+- Une désinstallation efface la marque (sans conséquence : la collecte repart éteinte à la réinstallation, le compte sera relu).
+- Un téléphone qui ne retrouve jamais le réseau garde la collecte coupée mais le compte reste « accepté » côté serveur.
+- Aucune règle Firestore modifiée.
+
 ## [0.6.0] - 2026-10-30 : ONB-3b, Mon compte (mot de passe) et Confidentialité
 
 Dépend d'ONB-3a (PR « ONB-3a » : barre d'onglets, Profil, Réglages, Mon compte minimal). Ticket `docs/tickets/feed-profil-reglages.md` (§6.6, critères B1 à B7 ; décisions Q5 et Q6 du PM du 2026-10-30).
@@ -23,7 +41,7 @@ Dépend d'ONB-3a (PR « ONB-3a » : barre d'onglets, Profil, Réglages, Mon comp
 
 ### Choix économiques et limites
 - Aucun service, aucune dépendance, aucune permission ; 0 €. Une lecture et une écriture Firestore par changement de l'interrupteur.
-- **Limite** : un retrait du consentement qui n'a pas pu être enregistré (pas de réseau) puis une fermeture de l'app avant le bouton « Enregistrer mon choix » : le prochain démarrage reprend la collecte d'après le compte. Signal : observé en recette ; piste : mémoriser le retrait en attente sur l'appareil.
+- ~~Limite : retrait non enregistré puis app fermée~~ : **corrigée en 0.6.1** (retrait mémorisé sur l'appareil).
 - Aucune règle Firestore modifiée.
 
 ## [0.5.0] - 2026-10-30 : ONB-3a, barre d'onglets, Profil, Réglages (Mes informations, Mon compte, Langue)

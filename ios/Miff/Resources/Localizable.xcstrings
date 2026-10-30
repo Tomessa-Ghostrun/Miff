@@ -4241,13 +4241,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "It is switched off on this phone. Your choice could not be saved for lack of a connection: tap “Save my choice” as soon as you have a network."
+            "value": "It is switched off on this phone, even after a restart. Your choice will be saved as soon as the connection is back; you can also tap “Save my choice”."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "C'est coupé sur ce téléphone. Ton choix n'a pas pu être enregistré faute de connexion : touche « Enregistrer mon choix » dès que tu as du réseau."
+            "value": "C'est coupé sur ce téléphone, même après un redémarrage. Ton choix sera enregistré dès que la connexion revient ; tu peux aussi toucher « Enregistrer mon choix »."
           }
         }
       }
