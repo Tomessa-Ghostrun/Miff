@@ -159,7 +159,7 @@ class SplashBackAndTouchTest {
         advance(100)
         assertTrue(splashIsShown())
 
-        // 1.5 s were already played: it ends within its maximum from the START, not 2.5 s after the rotation.
+        // 1.5 s were already played: it ends within its maximum from the START, not 3 s after the rotation.
         advance(SplashTimeline.MAX_ALLOWED_MS - 1500)
         assertFalse(splashIsShown())
     }

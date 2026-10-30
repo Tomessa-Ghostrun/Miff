@@ -41,8 +41,9 @@ data class BurstParticle(
 /**
  * The launch animation as a pure function of elapsed time (milliseconds since the splash was first drawn).
  *
- * Durations (ticket Onboarding section 5.1 and 15 SP1-SP6, PM request): about 2.2 s in total, 2.5 s at the very most;
- * with "reduce animations" 0.8 s and no movement at all. The caller measures REAL time (frame clock), so a slow
+ * Durations (ticket Onboarding section 5.1 and 15 SP1-SP6, PM requests): 2.9 s in total, 3.0 s at the very most (the
+ * PM wanted the swelling and the pop slower, "barely time to understand what happens"); with "reduce animations"
+ * 0.8 s and no movement at all. The caller measures REAL time (frame clock), so a slow
  * device or a "slow animations" developer setting can never stretch the splash past [totalMs].
  *
  * Flash safety (SP4): one single appearance and one single disappearance of the heart, nothing blinks; the colors are
@@ -86,7 +87,9 @@ class SplashTimeline(
             }
 
             t < burstStart -> {
-                val p = (t - inflateStart).toFloat() / INFLATE_MS
+                // The last [POP_PAUSE_MS] of the swelling: the heart holds at its biggest size for an instant, so that the
+                // pop that follows can be read.
+                val p = ((t - inflateStart).toFloat() / (INFLATE_MS - POP_PAUSE_MS)).coerceAtMost(1f)
                 SplashFrame(SplashPhase.INFLATE, inflateScale(p), 1f, null, 1f)
             }
 
@@ -98,17 +101,20 @@ class SplashTimeline(
     }
 
     companion object {
-        const val HOLD_MS = 250L
-        const val APPEAR_MS = 450L
-        const val INFLATE_MS = 1000L
-        const val BURST_MS = 300L
+        const val HOLD_MS = 300L
+        const val APPEAR_MS = 400L
+
+        /** Swelling, including the final [POP_PAUSE_MS] where the heart holds at its biggest size. */
+        const val INFLATE_MS = 1500L
+        const val POP_PAUSE_MS = 120L
+        const val BURST_MS = 500L
         const val EXIT_MS = 200L
 
         /** Reduced version: the full logo stays still this long, then fades. */
         const val STILL_MS = 600L
 
         /** Upper bound promised to the PM: the animated version never exceeds it. */
-        const val MAX_ALLOWED_MS = 2500L
+        const val MAX_ALLOWED_MS = 3000L
 
         /**
          * Size reached by the heart just before it pops, relative to its resting size (1 = the size of the heart on the
@@ -129,13 +135,13 @@ internal fun easeOutBack(p: Float): Float {
 }
 
 /**
- * Balloon being blown up: starts slowly (1 = resting size, p = 0), then swells faster and faster up to
+ * Balloon being blown up: starts slowly (1 = resting size, p = 0), then swells faster and faster (progressive acceleration) up to
  * [SplashTimeline.MAX_SCALE], with a small elastic wobble that grows as the balloon gets tense. The wobble is zero at
  * both ends so the scale is continuous with the appearance before it.
  */
 internal fun inflateScale(p: Float): Float {
     val x = p.coerceIn(0f, 1f)
-    val growth = 1f + (SplashTimeline.MAX_SCALE - 1f) * x.pow(1.7f)
+    val growth = 1f + (SplashTimeline.MAX_SCALE - 1f) * x.pow(2.2f)
     val envelope = (0.3f + 0.7f * x) * sin(PI.toFloat() * x).coerceAtLeast(0f).pow(0.5f)
     val wobble = 1f + 0.03f * envelope * sin(2f * PI.toFloat() * (2.5f * x + 4f * x * x))
     return growth * wobble
@@ -144,7 +150,7 @@ internal fun inflateScale(p: Float): Float {
 /** The pieces thrown by the pop, at [progress] 0 (just popped) to 1 (gone). Same on every launch (no randomness). */
 fun burstParticles(progress: Float): List<BurstParticle> {
     val p = progress.coerceIn(0f, 1f)
-    val outward = 1f - (1f - p).pow(3) // fast at first, then slowing down
+    val outward = 1f - (1f - p).pow(2.2f) // fast at first, then slowing down (slower than before: the pop is read)
     val alpha = (1f - p * p).coerceIn(0f, 1f)
     return List(SplashTimeline.PARTICLE_COUNT) { i ->
         val big = i % 2 == 0

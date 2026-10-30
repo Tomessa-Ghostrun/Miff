@@ -16,12 +16,31 @@ class SplashTimelineTest {
     private val reduced = SplashTimeline(reduceMotion = true)
 
     @Test
-    fun fullAnimationLastsAboutTwoPointTwoSecondsAndNeverMoreThanTheMaximum() {
-        assertEquals(2200L, full.totalMs)
+    fun fullAnimationLastsAboutTwoPointNineSecondsAndNeverMoreThanThree() {
+        assertEquals(2900L, full.totalMs)
+        assertTrue("never more than 3.0 s", full.totalMs <= 3000L)
+        assertEquals(3000L, SplashTimeline.MAX_ALLOWED_MS)
         assertTrue(full.totalMs <= SplashTimeline.MAX_ALLOWED_MS)
         assertFalse(full.isFinished(full.totalMs - 1))
         assertTrue(full.isFinished(full.totalMs))
         assertTrue(full.isFinished(60_000L))
+    }
+
+    /** PM recette: slower swelling and pop ("barely time to understand what happens"), 3 s at the very most. */
+    @Test
+    fun theSwellingAndThePopAreSlow_andThePopIsReadable() {
+        assertTrue(SplashTimeline.INFLATE_MS >= 1400L)
+        assertTrue("the pop lasts at least 0.4 s", SplashTimeline.BURST_MS >= 400L)
+        val burstStart = SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS + SplashTimeline.INFLATE_MS
+        // A pause just before the pop: the heart holds at its biggest size.
+        val pauseStart = burstStart - SplashTimeline.POP_PAUSE_MS
+        assertTrue(SplashTimeline.POP_PAUSE_MS in 80L..250L)
+        val held = (pauseStart until burstStart step 10).map { full.frameAt(it).heartScale }.distinct()
+        assertEquals(listOf(SplashTimeline.MAX_SCALE), held.map { Math.round(it * 1000f) / 1000f }.distinct())
+        // The pieces move slowly enough to be followed: a quarter of the way after a quarter of the pop is not reached too early.
+        assertTrue(burstParticles(0.25f).first().distance < 0.65f)
+        // The pop starts after at least 2 s of animation.
+        assertTrue(burstStart >= 2000L)
     }
 
     @Test

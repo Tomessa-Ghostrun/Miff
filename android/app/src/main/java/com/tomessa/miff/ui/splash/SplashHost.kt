@@ -79,7 +79,7 @@ fun SplashHost(
     var contentMounted by remember { mutableStateOf(false) }
 
     // The system "back" during the animation does nothing (it must not reach the screen composed underneath, see
-    // [LocalSplashCovering]); it does not leave the app either: the splash lasts 2.2 s at most.
+    // [LocalSplashCovering]); it does not leave the app either: the splash lasts 3 s at most.
     BackHandler(enabled = !finished) {}
 
     LaunchedEffect(timeline, finished) {
