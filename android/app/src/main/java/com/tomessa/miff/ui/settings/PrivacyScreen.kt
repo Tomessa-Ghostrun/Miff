@@ -57,6 +57,12 @@ fun PrivacyScreen(
         AnalyticsSwitch(state, onAnalyticsToggled)
         state.message?.let { PrivacyMessageText(it) }
         if (state.withdrawalPending) {
+            // The collection is off and the device remembers the choice: said calmly, as long as the account does not know it.
+            MessageText(
+                text = stringResource(R.string.settings_privacy_withdrawal_not_recorded),
+                isError = false,
+                modifier = Modifier.padding(bottom = Spacing.s),
+            )
             MiffSecondaryButton(
                 text = stringResource(R.string.settings_privacy_retry_action),
                 onClick = onRetryWithdrawal,
@@ -168,10 +174,9 @@ private fun PrivacyMessageText(message: PrivacyMessage) {
                 when (message) {
                     PrivacyMessage.NETWORK -> R.string.auth_error_network
                     PrivacyMessage.SAVE_FAILED -> R.string.profile_save_failed
-                    PrivacyMessage.WITHDRAWAL_NOT_RECORDED -> R.string.settings_privacy_withdrawal_not_recorded
                 },
             ),
-        isError = message != PrivacyMessage.WITHDRAWAL_NOT_RECORDED,
+        isError = true,
         modifier = Modifier.padding(bottom = Spacing.s),
     )
 }

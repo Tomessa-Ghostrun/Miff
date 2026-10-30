@@ -180,7 +180,7 @@ fun MainShell(
                             initializer {
                                 PrivacyViewModel(
                                     privacy = container.privacySettings,
-                                    consents = container.analyticsConsents,
+                                    withdrawals = container.consentWithdrawals,
                                     session = session,
                                     network = container.networkMonitor,
                                 )

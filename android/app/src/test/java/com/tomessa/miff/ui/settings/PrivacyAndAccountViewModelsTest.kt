@@ -5,7 +5,9 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.ProfileWriteResult
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentTransactions
+import com.tomessa.miff.data.privacy.ConsentWithdrawals
 import com.tomessa.miff.data.privacy.FirestoreAnalyticsConsentRepository
+import com.tomessa.miff.data.privacy.PendingWithdrawals
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.domain.auth.AccountSignIn
 import com.tomessa.miff.domain.auth.AuthFailure
@@ -13,7 +15,7 @@ import com.tomessa.miff.domain.auth.PasswordResetOutcome
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.privacy.AnalyticsConsentTransition
 import com.tomessa.miff.testsupport.FakeNetwork
-import com.tomessa.miff.testsupport.MemoryBooleanStore
+import com.tomessa.miff.testsupport.MemoryWithdrawalStorage
 import com.tomessa.miff.testsupport.RecordingSwitch
 import com.tomessa.miff.testsupport.SessionHarness
 import com.tomessa.miff.testsupport.firestoreError
@@ -201,6 +203,8 @@ class PrivacyAndAccountViewModelsTest {
         val crash: RecordingSwitch,
         val consents: FakeConsents,
         val privacy: PrivacySettings,
+        val pending: PendingWithdrawals,
+        val withdrawals: ConsentWithdrawals,
     )
 
     private fun TestScope.privacyEnv(startEnabled: Boolean): PrivacyEnv {
@@ -211,10 +215,29 @@ class PrivacyAndAccountViewModelsTest {
                 it.manager.start()
                 advanceUntilIdle()
             }
-        return PrivacyEnv(harness, harness.analyticsSwitch, harness.crashSwitch, FakeConsents(), harness.privacy)
+        val consents = FakeConsents()
+        val pending = PendingWithdrawals(MemoryWithdrawalStorage()) { 1_000L }
+        val withdrawals =
+            ConsentWithdrawals(
+                pending = pending,
+                consents = consents,
+                network = network,
+                currentUid = { harness.gateway.currentUid },
+                scope = sessionScope,
+                retryDelaysMillis = listOf(1_000L),
+            )
+        return PrivacyEnv(
+            harness,
+            harness.analyticsSwitch,
+            harness.crashSwitch,
+            consents,
+            harness.privacy,
+            pending,
+            withdrawals,
+        )
     }
 
-    private fun PrivacyEnv.vm() = PrivacyViewModel(privacy, consents, harness.manager, network)
+    private fun PrivacyEnv.vm() = PrivacyViewModel(privacy, withdrawals, harness.manager, network)
 
     @Test
     fun theSwitchShowsWhatIsCollected() =
@@ -287,61 +310,120 @@ class PrivacyAndAccountViewModelsTest {
             advanceUntilIdle()
             assertEquals(listOf(false), e.consents.calls)
             assertFalse(vm.uiState.value.withdrawalPending)
+            assertFalse("nothing stays marked once the account knows", e.pending.isPending("uid-1"))
             assertNull(vm.uiState.value.message)
         }
 
     @Test
-    fun withdrawingWithoutNetwork_stillCutsTheCollection_andKeepsAWayToRecordItLater() =
+    fun withdrawingWithoutNetwork_cutsTheCollection_marksTheChoiceOnTheDevice_andShowsIt() =
         runTest(dispatcher) {
             val e = privacyEnv(startEnabled = true)
             val vm = e.vm()
             network.online = false
             vm.onAnalyticsToggled(false)
-            advanceUntilIdle()
+            runCurrent()
             assertFalse("the person asked for nothing to be collected", e.privacy.analyticsEnabled.value)
-            assertTrue(e.consents.calls.isEmpty())
-            val s = vm.uiState.value
-            assertTrue(s.withdrawalPending)
-            assertEquals(PrivacyMessage.WITHDRAWAL_NOT_RECORDED, s.message)
-
-            network.online = true
-            vm.onRetryWithdrawal()
-            advanceUntilIdle()
-            assertEquals(listOf(false), e.consents.calls)
-            assertFalse(vm.uiState.value.withdrawalPending)
-            assertNull(vm.uiState.value.message)
-        }
-
-    @Test
-    fun aWithdrawalTheServerRefused_staysOffOnThePhone_andCanBeRetried() =
-        runTest(dispatcher) {
-            val e = privacyEnv(startEnabled = true)
-            val vm = e.vm()
-            e.consents.results = ArrayDeque(listOf(ProfileWriteResult.FAILED, ProfileWriteResult.DONE))
-            vm.onAnalyticsToggled(false)
-            advanceUntilIdle()
-            assertFalse(e.privacy.analyticsEnabled.value)
+            assertTrue("no doomed request without a network", e.consents.calls.isEmpty())
+            assertTrue("kept on the device, for the next start too", e.pending.isPending("uid-1"))
             assertTrue(vm.uiState.value.withdrawalPending)
-            vm.onRetryWithdrawal()
-            advanceUntilIdle()
-            assertFalse(vm.uiState.value.withdrawalPending)
-            assertEquals(listOf(false, false), e.consents.calls)
         }
 
     @Test
-    fun switchingBackOnAfterAnUnrecordedWithdrawal_needsNoWrite_theAccountStillHoldsTheConsent() =
+    fun theWithdrawalIsRecordedByItselfAsSoonAsTheNetworkIsBack_withoutAnyTap() =
         runTest(dispatcher) {
             val e = privacyEnv(startEnabled = true)
             val vm = e.vm()
             network.online = false
             vm.onAnalyticsToggled(false)
+            runCurrent()
+            assertTrue(vm.uiState.value.withdrawalPending)
+            network.online = true
+            advanceTimeBy(1_100L)
+            runCurrent()
+            assertEquals(listOf(false), e.consents.calls)
+            assertFalse(e.pending.isPending("uid-1"))
+            assertFalse(vm.uiState.value.withdrawalPending)
+            assertFalse("still off", e.privacy.analyticsEnabled.value)
+        }
+
+    @Test
+    fun theButtonTriesRightNow_andSaysNoConnectionIfTheNetworkIsStillMissing() =
+        runTest(dispatcher) {
+            val e = privacyEnv(startEnabled = true)
+            val vm = e.vm()
+            network.online = false
+            vm.onAnalyticsToggled(false)
+            runCurrent()
+            vm.onRetryWithdrawal()
+            runCurrent()
+            assertEquals(PrivacyMessage.NETWORK, vm.uiState.value.message)
+            assertTrue(vm.uiState.value.withdrawalPending)
+            // The network comes back: the background task finishes the job by itself.
+            network.online = true
+            advanceTimeBy(1_100L)
+            runCurrent()
+            assertFalse(e.pending.isPending("uid-1"))
+            assertEquals(listOf(false), e.consents.calls)
+        }
+
+    @Test
+    fun aServerThatSaysNo_stopsTheAutomaticTries_collectionStaysOff_theButtonCanTryAgain() =
+        runTest(dispatcher) {
+            val e = privacyEnv(startEnabled = true)
+            val vm = e.vm()
+            e.consents.results =
+                ArrayDeque(listOf(ProfileWriteResult.OFFLINE, ProfileWriteResult.REFUSED, ProfileWriteResult.DONE))
+            vm.onAnalyticsToggled(false)
+            runCurrent()
+            // First answer OFFLINE: the background task tries again, gets REFUSED and gives up (no loop).
+            advanceTimeBy(600_000L)
+            runCurrent()
+            assertEquals("no loop after a refusal", listOf(false, false), e.consents.calls)
+            assertTrue(e.pending.isPending("uid-1"))
+            assertFalse(e.privacy.analyticsEnabled.value)
+            vm.onRetryWithdrawal()
+            runCurrent()
+            assertEquals(listOf(false, false, false), e.consents.calls)
+            assertFalse(e.pending.isPending("uid-1"))
+        }
+
+    @Test
+    fun acceptingAgainBeforeTheWithdrawalWasRecorded_replacesIt_afterTheServerTookIt() =
+        runTest(dispatcher) {
+            val e = privacyEnv(startEnabled = true)
+            val vm = e.vm()
+            network.online = false
+            vm.onAnalyticsToggled(false)
+            runCurrent()
+            assertTrue(vm.uiState.value.withdrawalPending)
+
             network.online = true
             vm.onAnalyticsToggled(true)
-            advanceUntilIdle()
-            // The write goes through the same path; the transition says "nothing to do" and the collection resumes.
-            assertEquals(listOf(true), e.consents.calls)
+            runCurrent()
+            // The account still holds "accepted": the acceptance is written (nothing changes there) and the mark goes away.
+            // Whatever the order of the two writes, the LAST one is the acceptance, and it is what the account ends with.
+            assertEquals(true, e.consents.calls.last())
+            assertFalse(e.pending.isPending("uid-1"))
             assertTrue(e.privacy.analyticsEnabled.value)
             assertFalse(vm.uiState.value.withdrawalPending)
+            advanceTimeBy(600_000L)
+            runCurrent()
+            assertEquals("nothing is written after the acceptance", true, e.consents.calls.last())
+        }
+
+    @Test
+    fun acceptingAgainWithoutNetworkWhileAWithdrawalWaits_changesNothing() =
+        runTest(dispatcher) {
+            val e = privacyEnv(startEnabled = true)
+            val vm = e.vm()
+            network.online = false
+            vm.onAnalyticsToggled(false)
+            runCurrent()
+            vm.onAnalyticsToggled(true)
+            runCurrent()
+            assertFalse(e.privacy.analyticsEnabled.value)
+            assertTrue(e.pending.isPending("uid-1"))
+            assertEquals(PrivacyMessage.NETWORK, vm.uiState.value.message)
         }
 
     @Test
