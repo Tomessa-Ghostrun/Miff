@@ -2,8 +2,12 @@ package com.tomessa.miff.domain
 
 import com.tomessa.miff.domain.auth.AccountSnapshot
 import com.tomessa.miff.domain.auth.AppDestination
+import com.tomessa.miff.domain.auth.legalPageUrl
 import com.tomessa.miff.domain.auth.resolveDestination
+import com.tomessa.miff.domain.auth.shouldShowWelcomeCarousel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Criteria A5 and X3: the screen comes from the state of the account, in the order of ticket section 5. */
@@ -65,5 +69,45 @@ class AppRoutingTest {
     fun anExistingProfile_neverGoesBackToTheProfileStep_orThePanel() {
         assertEquals(AppDestination.MIFF_CHOICE, route(profile = true, pendingTerms = false))
         assertEquals(AppDestination.MIFF_CHOICE, route(profile = true, pendingTerms = true))
+    }
+
+    // --- Welcome carousel: first opening without a session only (criterion CA5) ---------------------------
+
+    @Test
+    fun carousel_isShownOnTheVeryFirstOpening() {
+        val start = route(signedIn = false, account = null, returning = false)
+        assertTrue(shouldShowWelcomeCarousel(start, carouselSeen = false))
+    }
+
+    @Test
+    fun carousel_isNotShownOnceItWasValidated() {
+        val start = route(signedIn = false, account = null, returning = false)
+        assertFalse(shouldShowWelcomeCarousel(start, carouselSeen = true))
+    }
+
+    @Test
+    fun carousel_isNotShownAfterASignOut_evenIfItWasNeverValidated() {
+        val start = route(signedIn = false, account = null, returning = true)
+        assertEquals(AppDestination.SIGN_IN, start)
+        assertFalse(shouldShowWelcomeCarousel(start, carouselSeen = false))
+    }
+
+    @Test
+    fun carousel_isNeverShownToASignedInPerson() {
+        AppDestination.entries
+            .filter { it != AppDestination.SIGN_UP }
+            .forEach { assertFalse(it.name, shouldShowWelcomeCarousel(it, carouselSeen = false)) }
+        assertFalse(shouldShowWelcomeCarousel(route(), carouselSeen = false))
+    }
+
+    // --- Legal pages ------------------------------------------------------------------------------------------
+
+    @Test
+    fun legalPageUrl_joinsTheBaseAndThePathWithExactlyOneSlash() {
+        val expected = "https://miff-3d283.web.app/fr/cgu"
+        assertEquals(expected, legalPageUrl("https://miff-3d283.web.app", "/fr/cgu"))
+        assertEquals(expected, legalPageUrl("https://miff-3d283.web.app/", "/fr/cgu"))
+        assertEquals(expected, legalPageUrl("https://miff-3d283.web.app//", "fr/cgu"))
+        assertEquals(expected, legalPageUrl("https://miff-3d283.web.app", "fr/cgu"))
     }
 }

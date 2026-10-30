@@ -59,6 +59,33 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 ### Choix économiques
 - Aucun : Firebase Authentication au plan gratuit Spark, aucune dépendance ajoutée, aucun service d'e-mail tiers. Limite connue : le quota quotidien d'e-mails de réinitialisation de Spark n'est **pas lu** (ticket §14) ; signal : un envoi refusé par Firebase (« trop de demandes ») sans raison apparente chez plusieurs personnes le même jour.
 
+## [0.2.2] - 2026-10-29 : correctifs de la 2e revue indépendante (AUTH-1 et splash)
+
+### Corrigé
+- **Les rapports de plantage n'arrivaient jamais** : à chaque démarrage à froid, la coupure de précaution effaçait le rapport du plantage précédent avant que la collecte soit rallumée. Désormais le démarrage met la collecte en **pause** sans rien supprimer (`PrivacySettings.pauseCollection`) ; le rapport part dès que le compte a répondu oui. Les rapports non envoyés ne sont **supprimés** que s'il n'y a pas de consentement : retrait, refus du panneau, déconnexion, ou aucune session au démarrage (un plantage survenu avant que la personne ait dit oui ne doit jamais partir plus tard). Si le compte ne peut pas être lu (hors-ligne), le rapport est gardé pour plus tard.
+- **Retour système pendant le splash** : il ne déclenche plus le « retour = refus » du panneau de consentement composé dessous (le panneau se met en retrait tant que l'animation le couvre ; le retour ne fait rien pendant l’animation et ne quitte pas l'app).
+- Consentement : le chemin « statistiques refusées à l'inscription » n'existe plus (le clic accepte tout, `ConsentChoice` n'a plus que `termsAccepted`) ; commentaires et noms de tests mis à jour (plus de « case (b) »).
+- `LEGAL_BASE_URL` avec un « / » final (réglage `-Pmiff.legalBaseUrl=...`) ne produit plus de double barre : normalisé au build et à l'ouverture des liens (`legalPageUrl`).
+- Imports inutilisés supprimés (`AuthComponents`, `WelcomeCarousel`, `SplashHost`).
+
+### Corrigé : retours de recette du PM (2026-10-30)
+- **Carrousel de bienvenue fidèle aux maquettes** (`design/exports/onboarding-original/`) : mêmes phrases (titre à dégradé « Savoir qu’ils vont bien, sans les déranger », identique sur les 3 slides ; les légendes inventées sont retirées), mêmes images (slides 1 et 2 : recadrages des maquettes avec leurs vraies photos ; slide 3 : trois cartes refaites en Compose avec les vraies photos de profil recadrées), mêmes formes vert pâle (vecteurs tracés sur les exports), mise en page proportionnelle aux maquettes, points de pagination, bouton « Commencer ». Poids ajouté : environ 70 Ko de PNG. **Limite** : les exports du PM font 320 x 640 px, donc les images des slides 1 et 2 (155 x 290 px) sont un peu floues sur un écran haute définition et leur texte reste en français quelle que soit la langue du téléphone ; le PM fournira de meilleurs exports. Les droits d’image sont réglés par le PM (mention « droits non vérifiés » retirée de la documentation).
+- **Splash : le cœur vert était beaucoup trop gros** (5 fois sa taille). Il apparaît sur le « i » et gonfle maintenant de la taille du logo officiel jusqu’à **120 %** (jamais au-delà de 125 %, élastique léger conservé), puis éclate net avec ses éclats (rayon de départ et portée des éclats réduits en proportion). Durée retouchée ensuite (voir la série suivante : 2,9 s). Test : échelle maximale entre 1,15 et 1,25.
+
+### Corrigé : 2e série de retours de recette du PM (2026-10-30)
+- **Splash plus lent** (« à peine le temps de comprendre ce qu’il se passe ») : 0,3 s logo seul, 0,4 s apparition du cœur, 1,5 s de gonflement (courbe plus douce, accélération vers la fin, élastique léger ; le cœur tient 0,12 s à sa taille maximale juste avant l’éclat), 0,5 s d’éclatement (éclats plus lents), 0,2 s de fondu : **2,9 s au total, 3,0 s au plus** (horloge réelle). Le cœur reste à 100-120 % du logo officiel (max ≤ 125 %). Version « animations supprimées » inchangée (0,8 s). Tests : durée ≤ 3,0 s, phases dans l’ordre, éclatement ≥ 0,4 s, pause avant l’éclat ; 12 captures au lieu de 10.
+- **Carrousel : plus aucune image floue.** Les recadrages raster à 155 x 290 px sont abandonnés : les trois illustrations sont **reconstruites en vectoriel et en vrais textes** à partir des maquettes (formes, icônes, ombres, cartes, polices Baloo Thambi 2 / Hanken Grotesk, couleurs des tokens), nettes à toute densité (captures mdpi / xxxhdpi / très grande police). Textes FR/EN (clés `android_onboarding_*`, valeurs des clés partagées alignées sur les maquettes). Seules les photos restent des bitmaps : **photos libres de droits Pexels** validées par le PM (portraits de Thomas, Amandine et « Maman », salon de la slide 1 ; crédits dans `design/exports/onboarding-photos/CREDITS.md`, rien d’affiché dans l’app), JPEG optimisés (environ 220 Ko en tout) avec masque rond vectoriel, remplaçables sans changement de code. Écart connu : le salon n’a pas le décor de branches de la maquette (télévision sur un meuble blanc). Le fond de carte de la slide 2 reste le recadrage de la maquette (un cercle et un point nets sont dessinés par-dessus).
+
+### Tests ajoutés ou durcis
+- Rapports de plantage conservés au démarrage à froid avec consentement (jusqu'à la réponse du compte) et supprimés au retrait, au refus, à la déconnexion et sans session ; `FirebaseCrashlyticsSwitch` testé avec un faux client.
+- Règle « carrousel seulement à la première ouverture sans session » extraite en fonction pure (`shouldShowWelcomeCarousel`, critère CA5) et testée.
+- Splash : touches absorbées, retour système sans effet sur le panneau, non rejoué à la rotation (après la fin, et rotation en cours de route). Panneau : retour = refus (et absorbé pendant le chargement).
+- Liens légaux : cibles en `https`, `/fr/cgu`, `/fr/confidentialite`, `/en/terms`, `/en/privacy`, ouverture dans le navigateur ; `SharedPreferencesPendingConsentStore` filtré par compte et vidé par `clear()` ; consentement en attente effacé à la déconnexion ; plancher de 800 ms de la réponse de connexion testé avec la valeur en dur (le test comparait la constante à elle-même).
+
+### Documentation
+- README : phrase « Consentement et collecte » rétablie ; CHANGELOG 0.2.0 : lignes périmées (cases, « seulement avec (b) ») retirées ; `backend/data-model.md` §8 et `docs/tickets/authentification.md` (§7.8, §8, S11/C8) alignés sur la décision du 2026-10-28 ; textes légaux (`docs/legal`) alignés sur l'app réelle.
+- Rien n'est modifié côté règles Firestore ni iOS ; I1 (`ProfileDocument.forCreation` sans téléphone) est traité par ONB-2.
+
 ## [0.2.1] - 2026-10-28 : splash animé (demande du PM après recette sur l'OPPO)
 
 ### Ajouté
@@ -77,23 +104,23 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 
 ### Ajouté
 - Écrans d'**inscription** et de **connexion** : e-mail + mot de passe et « Continuer avec Google » (Credential Manager). Textes `auth_` en français (tutoiement) et anglais, ajoutés aussi au catalogue iOS pour la parité des clés.
-- **Deux cases de consentement** avant tout geste d'inscription : (a) CGU et politique (obligatoire, liens vers les pages web), (b) statistiques et plantages (facultative, décochée). Message bienveillant si (a) manque.
+- **Consentement par le clic** (aucune case, voir « retours de recette » plus bas) : une ligne au-dessus du bouton principal, avec liens vers les pages web, dit que le clic accepte les conditions, la politique et le partage de statistiques et rapports de plantage anonymes.
 - **Panneau de consentement** du nouvel utilisateur Google arrivé par la connexion ; refus = suppression du compte tout juste créé, purge du cache, aucun événement, aucun document.
 - **Routage au lancement** selon l'état du compte, session persistante, écran « réessayer » si le compte ne peut pas être lu.
 - **Déconnexion** : arrêt des écoutes, envoi des écritures en attente, purge du cache Firestore (terminate + clearPersistence, drapeau repris au démarrage), arrêt de la collecte. Perte de session détectée : même nettoyage, message calme.
-- **Collecte Analytics / Crashlytics** : coupée tant que `users/{uid}` n'est pas lu, puis selon le choix du compte ; `sign_up_completed` seulement avec (b) ; `sign_in_completed` seulement après lecture d'un consentement accepté.
+- **Collecte Analytics / Crashlytics** : coupée tant que `users/{uid}` n'est pas lu, puis selon le choix du compte ; `sign_up_completed` envoyé après la création du compte (le consentement étant donné par le clic) ; `sign_in_completed` seulement après lecture d'un consentement accepté.
 - `ProfileDocument` / `UserProfileRepository` : la seule écriture de création de `users/{uid}` (dates serveur, `analyticsConsent` toujours écrit), pour le ticket Onboarding.
 - CI : signature de debug stable (secret `DEBUG_KEYSTORE_B64`), contrôle de la SHA-1 de l'APK, échec explicite sans client OAuth web.
-- Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), cases et boutons d'au moins 48 dp, liens légaux focalisables, focus ramené sur la case (a) manquante, contrastes AA (`#D60700` pour les erreurs).
+- Accessibilité : titres, champs étiquetés, erreurs annoncées (zones live), boutons d'au moins 48 dp, liens légaux focalisables (aussi proposés comme actions au lecteur d'écran), contrastes AA (`#D60700` pour les erreurs).
 
 ### Modifié : retours de recette du PM (2026-10-28)
 - **Plus aucune case à cocher** (décision PM, risque légal et stores assumé par lui) : une ligne explicative juste au-dessus du bouton principal, avec liens vers les Conditions d'utilisation et la Politique de confidentialité ; le clic accepte (a) et (b) (`analyticsConsent.enabled = true` à la création du profil). Panneau Google : même ligne, « Continuer » / « Annuler » (refus = suppression du compte, inchangé). Bouton principal « Rejoindre ». Textes `auth_` FR/EN et catalogue iOS mis à jour (clés des cases supprimées).
-- **Carrousel de bienvenue** à la première ouverture seulement (3 slides, points, « Commencer », « J'ai déjà un compte », manuel, sans événement, « Page 1 sur 3 »), illustrations provisoires en Compose sans photo. Préfixe `onboarding_` ajouté au contrat de clés et au script de parité.
+- **Carrousel de bienvenue** à la première ouverture seulement (3 slides, points, « Commencer », « J'ai déjà un compte », manuel, sans événement, « Page 1 sur 3 »), illustrations provisoires à l’époque, remplacées par les images des maquettes en 0.2.2. Préfixe `onboarding_` ajouté au contrat de clés et au script de parité.
 - **Point d'extension du splash** (`StartupSlot`) en tête d'`AppRoot`.
 - Documentation : `docs/tickets/authentification.md` §8 et §17 (Q8 remplacée), `backend/data-model.md` §8 (aucune règle modifiée).
 
 ### Modifié : fidélité aux maquettes
-- Écrans d'inscription et de connexion alignés sur les maquettes du PM (en-tête avec flèche et mot-symbole officiel, bouton Google, « Ou : », champs soulignés, bouton principal, lien souligné, œil du mot de passe). Écarts conscients listés dans le README (tutoiement, deux cases avant les boutons, pas d'Apple sur Android, message unique, pas de « Mot de passe oublié ? » avant AUTH-2, règles de marque Google, accessibilité).
+- Écrans d'inscription et de connexion alignés sur les maquettes du PM (en-tête avec flèche et mot-symbole officiel, bouton Google, « Ou : », champs soulignés, bouton principal, lien souligné, œil du mot de passe). Écarts conscients listés dans le README (tutoiement, une ligne de consentement avant le bouton principal, pas d'Apple sur Android, message unique, pas de « Mot de passe oublié ? » avant AUTH-2, règles de marque Google, accessibilité).
 - Libellé du bouton principal en `body/large` (design system). Clé `auth_signin_no_account_action` supprimée (le lien entier est « Pas encore de compte ? »). « Ou : » remplace « ou ».
 
 ### Corrigé après la revue indépendante

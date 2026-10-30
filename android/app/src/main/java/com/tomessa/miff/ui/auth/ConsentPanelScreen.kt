@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.splash.LocalSplashCovering
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.textBodyBold16
@@ -27,8 +28,9 @@ fun ConsentPanelScreen(
     onContinue: () -> Unit,
     onRefuse: () -> Unit,
 ) {
-    // Always consume "back" (even while busy): leaving the app on this panel would skip the refusal.
-    BackHandler { if (!state.isLoading) onRefuse() }
+    // Always consume "back" (even while busy): leaving the app on this panel would skip the refusal. Except while the
+    // launch splash covers the panel: the person cannot see it, so "back" must not refuse for them.
+    BackHandler(enabled = !LocalSplashCovering.current) { if (!state.isLoading) onRefuse() }
 
     AuthScaffold(paneTitle = stringResource(R.string.auth_panel_title), onBack = null) {
         ScreenTitle(title = stringResource(R.string.auth_panel_title))

@@ -30,6 +30,7 @@ import com.tomessa.miff.data.auth.CredentialManagerGoogleSource
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.data.session.SessionState
 import com.tomessa.miff.domain.auth.AppDestination
+import com.tomessa.miff.domain.auth.shouldShowWelcomeCarousel
 import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelViewModel
@@ -176,7 +177,7 @@ private fun SignedOutHost(
     val canGoBack = currentEntry != null && navController.previousBackStackEntry != null
 
     // The carousel only on the very first opening (no session, app never used, carousel never validated).
-    val showCarousel = remember { start == AppDestination.SIGN_UP && !container.onboardingFlags.carouselSeen }
+    val showCarousel = remember { shouldShowWelcomeCarousel(start, container.onboardingFlags.carouselSeen) }
     val startDestination: Any =
         when {
             showCarousel -> WelcomeRoute

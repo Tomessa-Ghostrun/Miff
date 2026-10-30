@@ -88,3 +88,23 @@ fun resolveDestination(
 
 private fun noProfileDestination(hasPendingTerms: Boolean): AppDestination =
     if (hasPendingTerms) AppDestination.PROFILE else AppDestination.CONSENT_PANEL
+
+/**
+ * The welcome carousel is shown on the very first opening only (criterion CA5): the app opens on the sign-up screen
+ * ([start] is [AppDestination.SIGN_UP]: no session, never used before) AND the carousel was never validated. Never with
+ * a session, never after a sign-out ([AppDestination.SIGN_IN]), never again once "Commencer" or "J'ai déjà un compte"
+ * was tapped.
+ */
+fun shouldShowWelcomeCarousel(
+    start: AppDestination,
+    carouselSeen: Boolean,
+): Boolean = start == AppDestination.SIGN_UP && !carouselSeen
+
+/**
+ * Address of a public legal page: the base address (one place, `BuildConfig.LEGAL_BASE_URL`) and the path of the
+ * language. A "/" at the end of the base (or missing at the start of the path) never gives a double or a missing slash.
+ */
+fun legalPageUrl(
+    baseUrl: String,
+    path: String,
+): String = baseUrl.trimEnd('/') + "/" + path.trimStart('/')

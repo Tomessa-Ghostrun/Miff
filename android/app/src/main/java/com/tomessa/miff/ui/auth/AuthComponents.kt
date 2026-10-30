@@ -26,13 +26,10 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,9 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -62,7 +56,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.customActions
@@ -88,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
+import com.tomessa.miff.domain.auth.legalPageUrl
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -109,10 +103,10 @@ import com.tomessa.miff.ui.theme.textDisplayHeadline
 /** Public pages of the legal texts, in the language of the phone. The domain comes from ONE place: BuildConfig. */
 object LegalLinks {
     fun termsUrl(context: Context): String =
-        BuildConfig.LEGAL_BASE_URL + context.getString(R.string.android_legal_terms_path)
+        legalPageUrl(BuildConfig.LEGAL_BASE_URL, context.getString(R.string.android_legal_terms_path))
 
     fun privacyUrl(context: Context): String =
-        BuildConfig.LEGAL_BASE_URL + context.getString(R.string.android_legal_privacy_path)
+        legalPageUrl(BuildConfig.LEGAL_BASE_URL, context.getString(R.string.android_legal_privacy_path))
 
     /** Opens a page in the browser. If nothing can open it, nothing happens (no crash, no technical message). */
     fun open(

@@ -212,7 +212,10 @@ class AuthViewModelsTest {
             val before = currentTime
             vm.submitEmail("a@b.fr", "password-1")
             advanceUntilIdle()
-            assertTrue(currentTime - before >= SignInViewModel.MIN_WRONG_CREDENTIALS_MILLIS)
+            assertTrue(
+                "floor of 800 ms, the same apparent delay whatever the answer (C4)",
+                currentTime - before >= 800L,
+            )
         }
 
     @Test

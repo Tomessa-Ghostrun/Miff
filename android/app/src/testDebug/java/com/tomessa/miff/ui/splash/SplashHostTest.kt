@@ -59,8 +59,8 @@ class SplashHostTest {
         advance(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS + SplashTimeline.INFLATE_MS) // during the burst
         assertTrue("still playing before the end", splashIsShown())
 
-        advance(SplashTimeline.MAX_ALLOWED_MS - 1000) // well beyond the planned 2.2 s, never beyond 2.5 s
-        assertFalse("splash must be gone at 2.5 s", splashIsShown())
+        advance(SplashTimeline.MAX_ALLOWED_MS - 1000) // well beyond the planned 2.9 s, never beyond 3.0 s
+        assertFalse("splash must be gone at 3 s", splashIsShown())
         composeRule.onNodeWithText(appText).assertExists()
     }
 
@@ -90,7 +90,7 @@ class SplashHostTest {
         val dir = File("build/splash-frames").apply { mkdirs() }
         show(reduceMotion = false)
         var last = 0L
-        listOf(0L, 400L, 700L, 1000L, 1300L, 1550L, 1750L, 1850L, 1950L, 2100L).forEach { t ->
+        listOf(0L, 450L, 700L, 1100L, 1500L, 1900L, 2150L, 2250L, 2350L, 2500L, 2700L, 2800L).forEach { t ->
             advance(t - last)
             last = t
             val bitmap = composeRule.onRoot().captureToImage().asAndroidBitmap()
@@ -99,6 +99,6 @@ class SplashHostTest {
                 "splash-%04d.png".format(t),
             ).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
-        assertTrue(dir.listFiles().orEmpty().size >= 10)
+        assertTrue(dir.listFiles().orEmpty().size >= 12)
     }
 }

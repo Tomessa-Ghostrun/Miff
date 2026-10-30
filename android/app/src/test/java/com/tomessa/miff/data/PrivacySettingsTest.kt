@@ -1,54 +1,39 @@
 package com.tomessa.miff.data
 
-import com.tomessa.miff.data.privacy.BooleanStore
-import com.tomessa.miff.data.privacy.CollectionSwitch
+import com.tomessa.miff.data.privacy.CrashReportsClient
+import com.tomessa.miff.data.privacy.FirebaseCrashlyticsSwitch
 import com.tomessa.miff.data.privacy.PrivacySettings
+import com.tomessa.miff.testsupport.MemoryBooleanStore
+import com.tomessa.miff.testsupport.RecordingSwitch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PrivacySettingsTest {
-    private class MemoryStore : BooleanStore {
-        val values = mutableMapOf<String, Boolean>()
+    private class RecordingCrashClient : CrashReportsClient {
+        /** "enabled=true", "enabled=false" and "delete", in order. */
+        val log = mutableListOf<String>()
 
-        override fun get(
-            key: String,
-            default: Boolean,
-        ) = values[key] ?: default
-
-        override fun put(
-            key: String,
-            value: Boolean,
-        ) {
-            values[key] = value
+        override fun setCollectionEnabled(enabled: Boolean) {
+            log += "enabled=$enabled"
         }
-    }
 
-    private class RecordingSwitch : CollectionSwitch {
-        val calls = mutableListOf<Boolean>()
-
-        override fun setEnabled(enabled: Boolean) {
-            calls += enabled
+        override fun deleteUnsentReports() {
+            log += "delete"
         }
     }
 
     @Test
     fun everythingIsOffByDefault() {
-        val analytics = RecordingSwitch()
-        val crash = RecordingSwitch()
-        val settings = PrivacySettings(MemoryStore(), analytics, crash)
+        val settings = PrivacySettings(MemoryBooleanStore(), RecordingSwitch(), RecordingSwitch())
         assertFalse(settings.analyticsEnabled.value)
         assertFalse(settings.crashReportsEnabled.value)
-
-        settings.applyStoredChoices()
-        assertEquals(listOf(false), analytics.calls)
-        assertEquals(listOf(false), crash.calls)
     }
 
     @Test
     fun choicesAreAppliedToTheSdksAndPersisted() {
-        val store = MemoryStore()
+        val store = MemoryBooleanStore()
         val analytics = RecordingSwitch()
         val crash = RecordingSwitch()
         val settings = PrivacySettings(store, analytics, crash)
@@ -60,19 +45,17 @@ class PrivacySettingsTest {
         assertEquals(listOf(true), analytics.calls)
         assertEquals(listOf(true), crash.calls)
 
-        // "Restart": a new instance reads the stored choices and pushes them to the SDKs again.
+        // A new instance (next launch) reads the stored values; they are NOT pushed to the SDKs by themselves: the
+        // session manager decides after having read the account.
         val analyticsAfterRestart = RecordingSwitch()
-        val crashAfterRestart = RecordingSwitch()
-        val restarted = PrivacySettings(store, analyticsAfterRestart, crashAfterRestart)
+        val restarted = PrivacySettings(store, analyticsAfterRestart, RecordingSwitch())
         assertTrue(restarted.analyticsEnabled.value)
-        restarted.applyStoredChoices()
-        assertEquals(listOf(true), analyticsAfterRestart.calls)
-        assertEquals(listOf(true), crashAfterRestart.calls)
+        assertTrue(analyticsAfterRestart.log.isEmpty())
     }
 
     @Test
     fun switchingOffIsAppliedAndPersisted() {
-        val store = MemoryStore()
+        val store = MemoryBooleanStore()
         val analytics = RecordingSwitch()
         val settings = PrivacySettings(store, analytics, RecordingSwitch())
         settings.setAnalyticsEnabled(true)
@@ -84,16 +67,16 @@ class PrivacySettingsTest {
 
     @Test
     fun analyticsAndCrashReportsAreIndependent() {
-        val settings = PrivacySettings(MemoryStore(), RecordingSwitch(), RecordingSwitch())
+        val settings = PrivacySettings(MemoryBooleanStore(), RecordingSwitch(), RecordingSwitch())
         settings.setCrashReportsEnabled(true)
         assertFalse(settings.analyticsEnabled.value)
         assertTrue(settings.crashReportsEnabled.value)
     }
 
-    /** Box (b) is ONE choice for both SDKs; withdrawing it cuts both at once, before anything is written (X20). */
+    /** The consent is ONE choice for both SDKs; withdrawing it cuts both at once, before anything is written (X20). */
     @Test
     fun theAccountChoiceSwitchesBothCollectionsTogether_andWithdrawalCutsBothAtOnce() {
-        val store = MemoryStore()
+        val store = MemoryBooleanStore()
         val analytics = RecordingSwitch()
         val crash = RecordingSwitch()
         val settings = PrivacySettings(store, analytics, crash)
@@ -112,5 +95,43 @@ class PrivacySettingsTest {
         val restarted = PrivacySettings(store, RecordingSwitch(), RecordingSwitch())
         assertFalse(restarted.analyticsEnabled.value)
         assertFalse(restarted.crashReportsEnabled.value)
+    }
+
+    // --- Review I2: the report of the previous crash must survive the cold start ---------------------------
+
+    @Test
+    fun pauseCutsBothCollections_butIsNotAWithdrawal() {
+        val analytics = RecordingSwitch()
+        val crash = RecordingSwitch()
+        val settings = PrivacySettings(MemoryBooleanStore(), analytics, crash)
+        settings.applyAccountConsent(true)
+
+        settings.pauseCollection()
+
+        assertFalse(settings.analyticsEnabled.value)
+        assertFalse(settings.crashReportsEnabled.value)
+        assertEquals(listOf("on", "pause"), analytics.log)
+        assertEquals(listOf("on", "pause"), crash.log)
+    }
+
+    @Test
+    fun crashlytics_pauseKeepsTheUnsentReports() {
+        val client = RecordingCrashClient()
+        FirebaseCrashlyticsSwitch(client).pause()
+        assertEquals(listOf("enabled=false"), client.log)
+    }
+
+    @Test
+    fun crashlytics_noConsentDeletesTheUnsentReports_afterCuttingTheCollection() {
+        val client = RecordingCrashClient()
+        FirebaseCrashlyticsSwitch(client).setEnabled(false)
+        assertEquals(listOf("enabled=false", "delete"), client.log)
+    }
+
+    @Test
+    fun crashlytics_consentTurnsTheCollectionOn_andDeletesNothing() {
+        val client = RecordingCrashClient()
+        FirebaseCrashlyticsSwitch(client).setEnabled(true)
+        assertEquals(listOf("enabled=true"), client.log)
     }
 }

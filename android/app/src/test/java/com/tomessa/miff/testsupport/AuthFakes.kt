@@ -54,10 +54,26 @@ class MemoryPendingConsentStore : PendingConsentStore {
 }
 
 class RecordingSwitch : CollectionSwitch {
+    /** Every [setEnabled] call (`false` = no consent, which deletes the reports not yet sent). */
     val calls = mutableListOf<Boolean>()
+
+    /** Number of [pause] calls (collection off, nothing deleted). */
+    var pauseCalls = 0
+
+    /** All calls in order: "on", "off" (setEnabled) and "pause". */
+    val log = mutableListOf<String>()
+
+    /** [log] without immediate repetitions (the manager may pause twice in a row; what matters is the sequence). */
+    fun states(): List<String> = log.filterIndexed { i, entry -> i == 0 || log[i - 1] != entry }
 
     override fun setEnabled(enabled: Boolean) {
         calls += enabled
+        log += if (enabled) "on" else "off"
+    }
+
+    override fun pause() {
+        pauseCalls++
+        log += "pause"
     }
 }
 

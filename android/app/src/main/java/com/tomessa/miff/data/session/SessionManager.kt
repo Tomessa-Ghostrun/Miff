@@ -74,7 +74,10 @@ fun interface SessionTeardown {
  * Rules kept here, each covered by a unit test:
  * - the destination comes from the state of the ACCOUNT (profile? Miff?), never from "a sign-in just happened";
  * - nothing is collected (Analytics, crash reports) until the account's own choice has been read, or until the person
- *   ticked box (b) on the sign-up screen; the consent panel keeps everything off until (a) is accepted;
+ *   tapped "Rejoindre" / "Continuer" (which accepts the terms AND the statistics, PM decision of 2026-10-28); the
+ *   consent panel keeps everything off until then. While the choice is not known the collection is only PAUSED (the
+ *   crash report of the previous run stays on disk); it is DELETED only when there is no consent: withdrawal, sign-out,
+ *   refusal, or no session at all at a cold start;
  * - the profile is never written here (the Onboarding ticket does it, with [com.tomessa.miff.data.auth.UserProfileRepository]);
  * - ending a session (sign-out, refusal, loss) stops the listeners, purges the Firestore cache, clears the pending
  *   consent and cuts the collections.
@@ -140,7 +143,8 @@ class SessionManager(
         started = true
         // Nothing is collected from the very first instant: the manifest says off, and the choice stored on the device
         // is NOT trusted at a cold start. Collection is only switched on once the account's own choice has been read.
-        privacy.applyAccountConsent(false)
+        // PAUSE, not "no consent": the report of the previous crash must survive until the account has answered.
+        privacy.pauseCollection()
         scope.launch {
             // A purge that failed last time comes BEFORE any other Firestore access.
             cache.purgeIfPending()
@@ -197,8 +201,8 @@ class SessionManager(
         }
 
     /**
-     * Google ID token -> Firebase. [signUpConsent] is the state of the boxes when the gesture comes from the sign-up
-     * screen (null from the sign-in screen: a new person then gets the consent panel).
+     * Google ID token -> Firebase. [signUpConsent] is the acceptance given by the tap when the gesture comes from the
+     * sign-up screen (null from the sign-in screen: a new person then gets the consent panel).
      */
     suspend fun signInWithGoogle(
         idToken: String,
@@ -225,12 +229,11 @@ class SessionManager(
         // Only from the panel itself: a second call (double tap) must not record twice nor send a second event.
         if ((mutableState.value as? SessionState.Ready)?.destination != AppDestination.CONSENT_PANEL) return false
         val uid = gateway.currentUid ?: return false
-        pending.save(PendingConsent(uid, ConsentVersions.TERMS, consent.analyticsAccepted))
+        // "Continuer" accepts the terms AND the statistics (decision of 2026-10-28): both are recorded together.
+        pending.save(PendingConsent(uid, ConsentVersions.TERMS, analyticsAccepted = true))
         flags.put(KEY_RETURNING_USER, true)
-        privacy.applyAccountConsent(consent.analyticsAccepted)
-        if (consent.analyticsAccepted) {
-            tracker.track(AnalyticsEvent.SignUpCompleted(gateway.signInMethod() ?: AnalyticsEvent.Method.EMAIL))
-        }
+        privacy.applyAccountConsent(true)
+        tracker.track(AnalyticsEvent.SignUpCompleted(gateway.signInMethod() ?: AnalyticsEvent.Method.EMAIL))
         mutableState.value = SessionState.Ready(AppDestination.PROFILE)
         return true
     }
@@ -403,6 +406,7 @@ class SessionManager(
         val uid = gateway.currentUid
         if (uid == null) {
             sessionActive = false
+            // No session = no consent to send anything: a report left by a crash before the person said yes goes away.
             accountSnapshot = null
             drafts?.clear()
             privacy.applyAccountConsent(false)
@@ -411,8 +415,8 @@ class SessionManager(
             return
         }
         sessionActive = true
-        // Off until the account has been read (also at "Réessayer").
-        privacy.applyAccountConsent(false)
+        // Off until the account has been read (also at "Réessayer"), but the previous crash report is kept for now.
+        privacy.pauseCollection()
         mutableState.value = SessionState.Loading
         val load = accounts.load(uid)
         // The session may have been lost while we were reading: the loss handler already put the app back to sign-in.
@@ -430,9 +434,10 @@ class SessionManager(
     ) {
         sessionActive = true
         flags.put(KEY_RETURNING_USER, true)
-        pending.save(PendingConsent(uid, ConsentVersions.TERMS, consent.analyticsAccepted))
-        privacy.applyAccountConsent(consent.analyticsAccepted)
-        if (consent.analyticsAccepted) tracker.track(AnalyticsEvent.SignUpCompleted(AnalyticsEvent.Method.EMAIL))
+        // The tap on "Rejoindre" accepted the terms AND the statistics (decision of 2026-10-28).
+        pending.save(PendingConsent(uid, ConsentVersions.TERMS, analyticsAccepted = true))
+        privacy.applyAccountConsent(true)
+        tracker.track(AnalyticsEvent.SignUpCompleted(AnalyticsEvent.Method.EMAIL))
         mutableState.value = SessionState.Ready(AppDestination.PROFILE)
     }
 
@@ -443,10 +448,10 @@ class SessionManager(
         signUpConsent: ConsentChoice?,
     ) {
         sessionActive = true
-        // Nothing is collected until the account's own choice has been read.
-        privacy.applyAccountConsent(false)
+        // Nothing is collected until the account's own choice has been read (paused, nothing deleted yet).
+        privacy.pauseCollection()
         if (signUpConsent != null) {
-            pending.save(PendingConsent(uid, ConsentVersions.TERMS, signUpConsent.analyticsAccepted))
+            pending.save(PendingConsent(uid, ConsentVersions.TERMS, analyticsAccepted = true))
         }
         mutableState.value = SessionState.Loading
         val load = accounts.load(uid)
@@ -460,7 +465,8 @@ class SessionManager(
     /**
      * [method] is set when a sign-in or sign-up gesture just happened (events may be sent), null at a cold start.
      * Existing profile: the ACCOUNT's choice rules (even if the sign-up screen was used); no profile: the choice
-     * recorded on this device (box (b) of the sign-up screen) rules, and only if (a) was recorded.
+     * given by the tap on the sign-up screen and recorded on this device rules, and only if it was recorded for this
+     * account (a person arriving on the consent panel has recorded nothing yet: nothing is collected).
      */
     private fun applyAccount(
         uid: String,

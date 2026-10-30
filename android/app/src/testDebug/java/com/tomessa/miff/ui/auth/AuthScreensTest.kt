@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.auth
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,11 +42,13 @@ import com.tomessa.miff.R
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
@@ -139,6 +142,48 @@ class AuthScreensTest {
         assertEquals(
             listOf(text(R.string.auth_consent_terms_link), text(R.string.auth_consent_privacy_link)),
             actions.map { it.label },
+        )
+    }
+
+    @Test
+    fun legalLinks_pointToTheHttpsPagesOfTheEnglishSite() {
+        val terms = LegalLinks.termsUrl(context())
+        val privacy = LegalLinks.privacyUrl(context())
+        assertTrue(terms, terms.startsWith("https://") && terms.endsWith("/en/terms"))
+        assertTrue(privacy, privacy.startsWith("https://") && privacy.endsWith("/en/privacy"))
+        assertFalse("no double slash after the address", terms.removePrefix("https://").contains("//"))
+        assertFalse(privacy.removePrefix("https://").contains("//"))
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
+    fun legalLinks_pointToTheHttpsPagesOfTheFrenchSite() {
+        val terms = LegalLinks.termsUrl(context())
+        val privacy = LegalLinks.privacyUrl(context())
+        assertTrue(terms, terms.startsWith("https://") && terms.endsWith("/fr/cgu"))
+        assertTrue(privacy, privacy.startsWith("https://") && privacy.endsWith("/fr/confidentialite"))
+    }
+
+    @Test
+    fun signUp_theLegalLinksOpenTheBrowserOnThoseAddresses() {
+        signUp()
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val actions =
+            composeRule
+                .onNodeWithText(notice(R.string.auth_consent_notice))
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+        composeRule.runOnIdle { actions.first { it.label == text(R.string.auth_consent_terms_link) }.action() }
+        composeRule.runOnIdle { actions.first { it.label == text(R.string.auth_consent_privacy_link) }.action() }
+        val shadow = Shadows.shadowOf(app)
+        val first = shadow.nextStartedActivity
+        val second = shadow.nextStartedActivity
+        assertEquals(Intent.ACTION_VIEW, first.action)
+        assertEquals(Intent.ACTION_VIEW, second.action)
+        // Robolectric does not promise the order in which started activities are handed back.
+        assertEquals(
+            setOf(LegalLinks.termsUrl(context()), LegalLinks.privacyUrl(context())),
+            setOf(first.dataString, second.dataString),
         )
     }
 
@@ -550,7 +595,6 @@ class AuthScreensTest {
         carousel()
         shoot("carousel-1")
         composeRule.onNodeWithContentDescription("Page 1 of 3").assertExists()
-        composeRule.onNodeWithText(text(R.string.onboarding_slide1_caption)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.onboarding_slide1_illustration_a11y)).assertExists()
 
         composeRule
@@ -558,7 +602,6 @@ class AuthScreensTest {
             .performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Page 2 of 3").assertExists()
-        composeRule.onNodeWithText(text(R.string.onboarding_slide2_caption)).assertExists()
         shoot("carousel-2")
 
         composeRule

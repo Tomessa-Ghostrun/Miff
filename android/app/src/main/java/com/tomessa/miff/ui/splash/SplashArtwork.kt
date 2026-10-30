@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.splash
 
 import androidx.compose.ui.geometry.Offset
+import com.tomessa.miff.domain.splash.SplashTimeline
 
 /**
  * Geometry of the launch animation, in the 108-unit canvas of the adaptive icon (res/drawable/splash_logo_mark.xml
@@ -30,9 +31,9 @@ internal object SplashArtwork {
     const val HEART_HALF_WIDTH = 8.6f
 
     /** Pieces start on the edge of the burst heart (a bit inside, the heart is not round) and fly this far, in units. */
-    const val PARTICLE_START_RADIUS = HEART_HALF_WIDTH * 5f * 0.85f
-    const val PARTICLE_TRAVEL = 26f
+    val PARTICLE_START_RADIUS = HEART_HALF_WIDTH * SplashTimeline.MAX_SCALE * 0.85f
+    const val PARTICLE_TRAVEL = 17f
 
     /** Radius of a full-size piece, in units. */
-    const val PARTICLE_RADIUS = 2.6f
+    const val PARTICLE_RADIUS = 2.2f
 }
