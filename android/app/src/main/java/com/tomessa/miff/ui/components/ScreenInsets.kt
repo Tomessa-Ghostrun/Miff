@@ -127,13 +127,15 @@ internal fun miffSystemBarsFallbackInUse(): SystemBarsFallback {
 private fun rememberSystemBarsFallback(reportedTop: Int): SystemBarsFallback {
     val view = LocalView.current
     val density = LocalDensity.current
-    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val configuration = LocalConfiguration.current
+    val landscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val reportedNavigationBottom = WindowInsets.navigationBars.getBottom(density)
     val statusBarShown = WindowInsets.areStatusBarsVisible
     val navigationBarShown = WindowInsets.areNavigationBarsVisible
-    // Read at each composition (two cheap calls, no layout needed): a rotation or a resized window changes the configuration,
-    // which recomposes this function, and the keys below then change.
-    val window = SystemBarSizes.windowArea(view)
+    // The window manager calls are NOT free (they can cross to the system process on Android 11 to 13), so the area is
+    // remembered and asked again only when the view or the configuration changes: a rotation or a resized window changes the
+    // configuration, which recomputes the area (and then the keys below change).
+    val window = remember(view, configuration) { SystemBarSizes.windowArea(view) }
     return remember(
         window,
         landscape,

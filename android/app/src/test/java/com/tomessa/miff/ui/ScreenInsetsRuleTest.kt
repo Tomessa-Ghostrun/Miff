@@ -46,6 +46,12 @@ class ScreenInsetsRuleTest {
             Regex("""\b(setOnApplyWindowInsetsListener|OnApplyWindowInsetsListener)\b"""),
             // These components pad themselves with the system bars unless told otherwise (and telling them is forbidden above).
             Regex("""\b($componentsWithDefaultInsets)\s*[({]"""),
+            // Other ways to read or follow the raw insets, or to size something from them.
+            Regex("""\b(getRootWindowInsets|rootWindowInsets)\b"""),
+            Regex("""\bwindowInsets(Top|Bottom)Height\b"""),
+            Regex("""\bwindowInsets(Start|End)Width\b"""),
+            Regex("""\bwaterfallPadding\b"""),
+            Regex("""\bdecorFitsSystemWindows\b"""),
         )
 
     private fun sourceRoots() =
@@ -106,6 +112,15 @@ class ScreenInsetsRuleTest {
                 "CenterAlignedTopAppBar(title = { })",
                 "NavigationBar { }",
                 "Modifier.statusBarsPadding()",
+                "val i = ViewCompat.getRootWindowInsets(view)",
+                "val i = view.rootWindowInsets",
+                "Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))",
+                "Spacer(Modifier.windowInsetsBottomHeight(x))",
+                "Spacer(Modifier.windowInsetsStartWidth(x))",
+                "Spacer(Modifier.windowInsetsEndWidth(x))",
+                "Modifier.waterfallPadding()",
+                "WindowCompat.setDecorFitsSystemWindows(window, false)",
+                "window.decorFitsSystemWindows = false",
             )
         samples.forEach { sample ->
             assertTrue("not detected: $sample", forbidden.any { it.containsMatchIn(sample) })

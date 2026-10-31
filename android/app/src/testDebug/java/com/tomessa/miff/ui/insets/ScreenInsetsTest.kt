@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -107,6 +108,9 @@ class ScreenInsetsTest {
     private var host: View? = null
     private var density: Density = Density(1f)
 
+    /** Simulates a rotation of the phone while the screen is shown (the orientation that the app reads changes). */
+    private val rotated = mutableStateOf(false)
+
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 
     private fun text(id: Int): String = context().getString(id)
@@ -127,7 +131,7 @@ class ScreenInsetsTest {
             // The window itself stays portrait: only the orientation that the app reads is changed (see [feed_inLandscape...]).
             val configuration =
                 Configuration(LocalConfiguration.current).apply {
-                    if (landscape) orientation = Configuration.ORIENTATION_LANDSCAPE
+                    if (landscape || rotated.value) orientation = Configuration.ORIENTATION_LANDSCAPE
                 }
             CompositionLocalProvider(
                 LocalDensity provides Density(base.density, fontScale),
@@ -472,6 +476,32 @@ class ScreenInsetsTest {
         assertTrue(
             "tab bar gap=${barGap()} expected about $base (landscape: the buttons are at the side, never at the bottom)",
             kotlin.math.abs(barGap() - base) <= TOLERANCE,
+        )
+    }
+
+    @Test
+    fun feed_whenThePhoneRotates_theBottomOfTheFallbackFollows() {
+        assumeTrue(SystemBarSizes.hasNavigationButtons())
+        feedWithFallback()
+        val real = SystemBarSizes.navigationBarHeight()
+        val portraitGap = gapWithReported(dpOfPx(real))
+        applyInsets(Phone(statusBar = 40.dp, navigationBottom = 0.dp))
+        assertTrue(
+            "portrait: gap=${barGap()} expected $portraitGap",
+            kotlin.math.abs(barGap() - portraitGap) <= TOLERANCE,
+        )
+        composeRule.runOnUiThread { rotated.value = true }
+        composeRule.waitForIdle()
+        val landscapeGap = portraitGap - real
+        assertTrue(
+            "landscape: gap=${barGap()} expected about $landscapeGap (the bottom of the fallback must go away)",
+            kotlin.math.abs(barGap() - landscapeGap) <= TOLERANCE,
+        )
+        composeRule.runOnUiThread { rotated.value = false }
+        composeRule.waitForIdle()
+        assertTrue(
+            "back to portrait: gap=${barGap()} expected $portraitGap",
+            kotlin.math.abs(barGap() - portraitGap) <= TOLERANCE,
         )
     }
 
