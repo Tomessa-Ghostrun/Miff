@@ -7,10 +7,17 @@ import com.google.firebase.firestore.FirebaseFirestoreException
  * Firestore messages can quote a path or a value (ticket Miff criterion V2).
  */
 enum class MiffFailure {
-    /** The server could not be reached (no network, too slow), or answered "quota" / "App Check": same calm sentence (H4). */
+    /**
+     * The server could not be reached (no network, too slow), or answered "quota exhausted": the same calm sentence, never the
+     * word "quota" (criterion H4).
+     */
     OFFLINE,
 
-    /** The server answered "no" to a write (rules). */
+    /**
+     * The server answered "no" to a write or a read. DECISION (H4): a refusal of App Check cannot be told from a refusal of the
+     * rules (both are PERMISSION_DENIED), so it gets the generic "Ça n'a pas fonctionné. Réessaie dans un instant." and not the
+     * "no connection" sentence, which would be false.
+     */
     REFUSED,
 
     /** The profile is missing (or has no phone number): the person goes back to the profile step, never a "code" message. */
@@ -27,7 +34,7 @@ fun interpretMiffError(error: Throwable): MiffFailure {
         FirebaseFirestoreException.Code.UNAVAILABLE,
         FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
         FirebaseFirestoreException.Code.CANCELLED,
-        // "Quota" is never said to the person: it is the same sentence as "no connection" (criterion H4).
+        // "Quota" is never said to the person: it is the same sentence as "no connection" (criterion H4, see [MiffFailure.OFFLINE]).
         FirebaseFirestoreException.Code.RESOURCE_EXHAUSTED,
         -> MiffFailure.OFFLINE
 

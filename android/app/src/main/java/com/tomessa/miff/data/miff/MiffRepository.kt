@@ -1,5 +1,6 @@
 package com.tomessa.miff.data.miff
 
+import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.LocationAccess
@@ -176,9 +177,6 @@ interface MiffRepository {
         lost: LostMiff,
     ): Boolean
 
-    /** The name and code of a Miff (the "ready" screen reads them again after the creation). Null when not readable. */
-    suspend fun details(miffId: String): com.tomessa.miff.domain.miff.MiffDetails?
-
     fun observe(miffId: String): Flow<MiffObservation>
 }
 
@@ -190,6 +188,8 @@ class FirestoreMiffRepository(
     private val newCode: () -> String = { JoinCode.generate() },
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val timeoutMillis: Long = TIMEOUT_MS,
+    /** Purges the phone cache after a clean-up that nobody is told about (see [cleanUpSilently]). */
+    private val cache: CachePurger? = null,
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -200,7 +200,7 @@ class FirestoreMiffRepository(
                 is StateRead.Failed -> return CreatePreparation.Failed(loaded.failure)
             }
         // A stale index (removed, or Miff deleted) is cleaned BEFORE the write, or the rules would refuse it for nothing.
-        state.lost.forEach { cleanUpLost(uid, it) }
+        cleanUpSilently(uid, state.lost)
         if (!state.premium && state.valid.isNotEmpty()) return CreatePreparation.NeedsPremium
         return CreatePreparation.Ready(premium = state.premium, firstMiff = state.valid.isEmpty())
     }
@@ -294,7 +294,7 @@ class FirestoreMiffRepository(
                 is StateRead.Value -> loaded.state
                 is StateRead.Failed -> return JoinPreparation.Failed(loaded.failure)
             }
-        state.lost.forEach { cleanUpLost(uid, it) }
+        cleanUpSilently(uid, state.lost)
         // Compared on the FIELD miffId of the indexes, never on the id of the document ("free").
         if (state.valid.any { it.miffId == miffId }) return JoinPreparation.AlreadyMember(miffId, miffName)
         if (!state.premium && state.valid.isNotEmpty()) return JoinPreparation.NeedsPremium
@@ -357,7 +357,13 @@ class FirestoreMiffRepository(
         name: String,
     ): MiffWriteResult {
         if (!MiffName.isValid(name) || !JoinCode.isValid(code)) return MiffWriteResult.Failed(MiffFailure.UNKNOWN)
-        return write { store.commit(MiffWrites.rename(miffId, code, name)) }
+        val result = write { store.commit(MiffWrites.rename(miffId, code, name)) }
+        // A lot whose answer was lost is checked on the server before it is shown as a failure.
+        if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
+            val read = (guarded { store.readMiff(miffId, fromServer = true) } as? Guarded.Value)?.value
+            if ((read as? MiffRead.Exists)?.details?.name == MiffName.stored(name)) return MiffWriteResult.Done
+        }
+        return result
     }
 
     override suspend fun setSharing(
@@ -367,15 +373,16 @@ class FirestoreMiffRepository(
     ): MiffWriteResult {
         val writes: List<DocWrite> =
             if (enabled) {
-                MiffWrites.resumeSharing(
-                    miffId,
-                    uid,
-                    location.current(),
-                )
+                MiffWrites.resumeSharing(miffId, uid, location.current())
             } else {
                 MiffWrites.stopSharing(miffId, uid)
             }
-        return write { store.commit(writes) }
+        val result = write { store.commit(writes) }
+        if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
+            val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
+            if (sharing == enabled) return MiffWriteResult.Done
+        }
+        return result
     }
 
     // --- The Miffs of the person, loss of access -------------------------------------------------------------
@@ -406,9 +413,20 @@ class FirestoreMiffRepository(
         return indexOnly == MiffWriteResult.Done
     }
 
-    override suspend fun details(miffId: String) =
-        (guarded { store.readMiff(miffId, fromServer = false) } as? Guarded.Value)
-            ?.let { (it.value as? MiffRead.Exists)?.details }
+    /**
+     * Stale indexes found while creating or joining (the person was removed from a Miff, or it was deleted): cleaned without
+     * a message (the person is busy starting something else), but NEVER leaving that Miff readable offline: the same purge of
+     * the local cache as for a loss of access (data-model.md section 8, "Purge du cache local").
+     */
+    private suspend fun cleanUpSilently(
+        uid: String,
+        lost: List<LostMiff>,
+    ) {
+        if (lost.isEmpty()) return
+        cache?.markPurgePending()
+        lost.forEach { cleanUpLost(uid, it) }
+        cache?.purge()
+    }
 
     override fun observe(miffId: String): Flow<MiffObservation> = observer.observe(miffId)
 
@@ -436,6 +454,9 @@ class FirestoreMiffRepository(
                     if (!withNames) return StateRead.Failed(server.failure)
                     when (val cached = guarded { store.readMemberships(uid, fromServer = false) }) {
                         is Guarded.Value -> {
+                            // An EMPTY cache is not "no Miff": offline on a fresh install nothing is known, so nothing is claimed
+                            // (the Feed would otherwise invite someone who has a Miff to create another).
+                            if (cached.value.isEmpty()) return StateRead.Failed(server.failure)
                             fromCache = true
                             cached.value
                         }

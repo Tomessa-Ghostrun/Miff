@@ -297,6 +297,9 @@
     <string name="common_cancel">Cancel</string>
     <string name="miff_message_offline">No connection right now. Try again once the network is back.</string>
     <string name="miff_message_generic">That didn\'t work. Please try again in a moment.</string>
+    <string name="miff_message_one_miff">For now, this account can be part of one Miff at a time.</string>
+    <string name="miff_message_no_profile">Some details of your profile are still missing. We\'re taking you back to that step to complete them.</string>
+    <string name="miff_consent_places">The trusted places of this Miff are chosen by its creator and visible to all its members.</string>
     <string name="miff_dialog_working_a11y">Working</string>
 
     <!-- Choice: create or join -->
@@ -306,7 +309,7 @@
     <string name="miff_choice_join_title">Join an existing Miff</string>
     <string name="miff_choice_join_body">Did a loved one give you a code? Enter it to join their Miff.</string>
 
-    <!-- Explicit consent before "Create and share" / "Join and share" (version "2026-10-v1", MiffSharingConsent) -->
+    <!-- Explicit consent before "Create and share" / "Join and share" (version "2026-10-v2", MiffSharingConsent) -->
     <string name="miff_consent_create">By creating this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
     <string name="miff_consent_join">By joining this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
     <string name="miff_consent_members_see_title">What the members see of you</string>

@@ -92,10 +92,19 @@ fun MiffScreen(
                 stringResource(
                     if (stopping) R.string.miff_sharing_stop_title else R.string.miff_sharing_resume_title,
                 ),
-            body =
-                stringResource(
-                    if (stopping) R.string.miff_sharing_stop_body else R.string.miff_sharing_resume_body,
-                ),
+            body = if (stopping) stringResource(R.string.miff_sharing_stop_body) else null,
+            content =
+                if (stopping) {
+                    null
+                } else {
+                    {
+                        // The same consent, word for word and with the same version, as at the entry (criterion K6).
+                        SharingConsentCard(
+                            sentence = stringResource(R.string.miff_sharing_resume_body),
+                            systemNote = stringResource(R.string.miff_consent_system_note_create),
+                        )
+                    }
+                },
             confirmLabel =
                 stringResource(
                     if (stopping) R.string.miff_sharing_stop_action else R.string.miff_sharing_resume_action,

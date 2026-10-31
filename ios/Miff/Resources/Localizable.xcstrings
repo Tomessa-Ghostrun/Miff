@@ -2603,6 +2603,23 @@
         }
       }
     },
+    "miff_consent_places": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The trusted places of this Miff are chosen by its creator and visible to all its members."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres."
+          }
+        }
+      }
+    },
     "miff_consent_system_note_create": {
       "extractionState": "manual",
       "localizations": {
@@ -3096,6 +3113,23 @@
         }
       }
     },
+    "miff_message_no_profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some details of your profile are still missing. We're taking you back to that step to complete them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il manque encore des informations sur ton profil. On te ramène à cette étape pour les compléter."
+          }
+        }
+      }
+    },
     "miff_message_offline": {
       "extractionState": "manual",
       "localizations": {
@@ -3109,6 +3143,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas de connexion pour le moment. Réessaie dès que le réseau est revenu."
+          }
+        }
+      }
+    },
+    "miff_message_one_miff": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For now, this account can be part of one Miff at a time."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour l'instant, ce compte peut faire partie d'une seule Miff à la fois."
           }
         }
       }

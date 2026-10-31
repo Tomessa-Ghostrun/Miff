@@ -309,6 +309,7 @@ class MiffScreensTest {
         composeRule.onNodeWithText(text(R.string.miff_consent_join)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_consent_system_note_join)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_consent_members_see_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent_places)).assertIsDisplayed()
         val consent = composeRule.onNodeWithText(text(R.string.miff_consent_join)).getUnclippedBoundsInRoot()
         val button = composeRule.onNodeWithText(text(R.string.miff_join_action)).getUnclippedBoundsInRoot()
         assertTrue(consent.bottom <= button.top)
@@ -448,6 +449,10 @@ class MiffScreensTest {
         shoot("miff-m2-resume-dialog")
         composeRule.onNodeWithText(text(R.string.miff_sharing_resume_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_sharing_resume_body)).assertIsDisplayed()
+        // The same consent card as at the entry: what the members see, the places sentence, the note about the phone permission.
+        composeRule.onNodeWithText(text(R.string.miff_consent_members_see_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent_places)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent_system_note_create)).assertIsDisplayed()
     }
 
     // --- L. Access lost -------------------------------------------------------------------------------------------

@@ -6,11 +6,13 @@ import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.testsupport.CODE
+import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
 import com.tomessa.miff.testsupport.FakeMiffObserver
 import com.tomessa.miff.testsupport.FakeMiffStore
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.OTHER_MIFF_ID
+import com.tomessa.miff.testsupport.Timeline
 import com.tomessa.miff.testsupport.firestoreError
 import com.tomessa.miff.testsupport.miffDetails
 import kotlinx.coroutines.test.runTest
@@ -29,6 +31,8 @@ class MiffRepositoryTest {
     private val location = FakeLocationProbe()
     private var drawn = ArrayDeque<String>()
     private var now = 1_000_000L
+    private val timeline = Timeline()
+    private val cache = FakeCachePurger(timeline)
 
     private fun repo() =
         FirestoreMiffRepository(
@@ -39,6 +43,7 @@ class MiffRepositoryTest {
             newCode = { drawn.removeFirstOrNull() ?: CODE },
             nowMillis = { now },
             timeoutMillis = 1_000,
+            cache = cache,
         )
 
     private fun joinable() {
@@ -422,6 +427,53 @@ class MiffRepositoryTest {
             assertTrue(repo().cleanUpLost(uid, lost))
             assertEquals(1, store.commitsAsLots.single().size)
         }
+
+    @Test
+    fun aStaleIndexCleanedWhileCreatingOrJoining_neverLeavesThatMiffReadableOffline() =
+        runTest {
+            joinable()
+            store.memberships = listOf(MembershipRef("free", OTHER_MIFF_ID))
+            repo().prepareJoin(uid, CODE)
+            assertEquals("markPending", timeline.entries.first())
+            assertEquals("the cache of the phone is purged after the silent clean-up", 1, cache.purgeCalls)
+            // Nothing to clean: no purge (a purge ends the listeners of the person for nothing).
+            timeline.entries.clear()
+            val before = cache.purgeCalls
+            store.memberships = emptyList()
+            repo().prepareCreate(uid)
+            assertEquals(before, cache.purgeCalls)
+        }
+
+    @Test
+    fun offlineWithAnEmptyCache_isNotNoMiff_itIsUnknown() =
+        runTest {
+            store.membershipsFailure = firestoreError(Code.UNAVAILABLE)
+            store.memberships = emptyList()
+            // A realistic fresh install: the server cannot be reached, the cache answers an empty list.
+            assertEquals(MyMiffsLoad.Unavailable, repo().myMiffs(uid))
+        }
+
+    @Test
+    fun rename_aLotWhoseAnswerWasLost_isCheckedOnTheServer_beforeItIsCalledAFailure() =
+        runTest {
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.DEADLINE_EXCEEDED)))
+            store.miffs[MIFF_ID] = miffDetails(name = "Nouveau nom")
+            assertEquals(MiffWriteResult.Done, repo().rename(MIFF_ID, CODE, "Nouveau nom"))
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.DEADLINE_EXCEEDED)))
+            store.miffs[MIFF_ID] = miffDetails(name = "Ancien nom")
+            assertEquals(MiffWriteResult.Failed(MiffFailure.OFFLINE), repo().rename(MIFF_ID, CODE, "Nouveau nom"))
+        }
+
+    @Test
+    fun setSharing_aLotWhoseAnswerWasLost_isCheckedOnTheServer() =
+        runTest {
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.DEADLINE_EXCEEDED)))
+            store.sharing = false
+            assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = false))
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.DEADLINE_EXCEEDED)))
+            store.sharing = true
+            assertEquals(MiffWriteResult.Failed(MiffFailure.OFFLINE), repo().setSharing(MIFF_ID, uid, enabled = false))
+        }
 }
 
 /** A store that forwards to [FakeMiffStore] so that one call can be replaced. */
@@ -443,6 +495,11 @@ open class MiffStoreByDelegation(
     override suspend fun readEntitlement(uid: String) = inner.readEntitlement(uid)
 
     override suspend fun serverReachable(uid: String) = inner.serverReachable(uid)
+
+    override suspend fun readSharing(
+        miffId: String,
+        uid: String,
+    ) = inner.readSharing(miffId, uid)
 
     override suspend fun commitWithProfile(
         uid: String,

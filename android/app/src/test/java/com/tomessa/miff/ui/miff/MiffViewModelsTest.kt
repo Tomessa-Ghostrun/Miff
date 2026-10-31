@@ -20,8 +20,12 @@ import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.RecordingSink
 import com.tomessa.miff.testsupport.miffDetails
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -48,6 +52,8 @@ class MiffViewModelsTest {
     private val entered = mutableListOf<AnalyticsEvent.OnboardingVia>()
     private var directoryChanges = 0
     private var now = 0L
+    private var profileMissing = 0
+    private val observing = CoroutineScope(dispatcher + SupervisorJob())
 
     @Before
     fun setUp() {
@@ -56,6 +62,7 @@ class MiffViewModelsTest {
 
     @After
     fun tearDown() {
+        observing.cancel()
         Dispatchers.resetMain()
     }
 
@@ -67,6 +74,7 @@ class MiffViewModelsTest {
             tracker = tracker,
             onEntered = { entered += it },
             onDirectoryChanged = { directoryChanges++ },
+            onProfileMissing = { profileMissing++ },
         )
 
     private fun join() =
@@ -77,6 +85,7 @@ class MiffViewModelsTest {
             tracker = tracker,
             onEntered = { entered += it },
             onDirectoryChanged = { directoryChanges++ },
+            onProfileMissing = { profileMissing++ },
             limiter = JoinAttemptLimiter(nowMillis = { now }),
         )
 
@@ -184,14 +193,14 @@ class MiffViewModelsTest {
         }
 
     @Test
-    fun create_needingPremium_saysNothingAboutPremium_justTheGenericSentence() =
+    fun create_needingPremium_saysNothingAboutPremium_justTheHonestOneMiffSentence() =
         runTest(dispatcher) {
             repo.createPreparation = CreatePreparation.NeedsPremium
             val vm = create()
             vm.onNameChanged("Chez nous")
             vm.onSubmit()
             advanceUntilIdle()
-            assertEquals(ActionMessage.GENERIC, vm.uiState.value.message)
+            assertEquals(ActionMessage.ONE_MIFF, vm.uiState.value.message)
             assertFalse("create" in repo.calls)
         }
 
@@ -373,14 +382,18 @@ class MiffViewModelsTest {
     private fun screen(
         uid: String = "uid-owner",
         lost: MutableList<String> = mutableListOf(),
+        confirmLoss: Boolean = true,
     ) = MiffScreenViewModel(
         miffId = MIFF_ID,
         repository = repo,
         network = network,
         currentUid = { uid },
-        onAccessLost = { id, _ -> lost += id },
+        onAccessLost = { id, _ ->
+            lost += id
+            confirmLoss
+        },
         onNameChanged = { directoryChanges++ },
-    )
+    ).also { vm -> observing.launch { vm.observe() } }
 
     @Test
     fun screen_theCreatorCanRename_aMemberCannot() =
@@ -585,5 +598,90 @@ class MiffViewModelsTest {
             network.online = true
             advanceUntilIdle()
             assertFalse(vm.uiState.value.offline)
+        }
+
+    @Test
+    fun screen_aRefusalTheServerDoesNotConfirm_isNotARemoval_noMessage_andRetryWorks() =
+        runTest(dispatcher) {
+            val lost = mutableListOf<String>()
+            val vm = screen(lost = lost, confirmLoss = false)
+            advanceUntilIdle()
+            val flow = repo.observer.flowOf(MIFF_ID)
+            flow.emit(data())
+            advanceUntilIdle()
+            flow.emit(MiffObservation.AccessLost)
+            advanceUntilIdle()
+            assertEquals("the directory was asked, and said no", listOf(MIFF_ID), lost)
+            assertEquals(MiffScreenStatus.UNAVAILABLE, vm.uiState.value.status)
+            assertEquals("nothing of the Miff is shown while in doubt", "", vm.uiState.value.joinCode)
+            vm.retry()
+            assertEquals(MiffScreenStatus.LOADING, vm.uiState.value.status)
+            advanceUntilIdle()
+            flow.emit(data())
+            advanceUntilIdle()
+            assertEquals(MiffScreenStatus.READY, vm.uiState.value.status)
+        }
+
+    @Test
+    fun screen_stopsListening_whenTheScreenIsNotOnView() =
+        runTest(dispatcher) {
+            val vm = screen()
+            advanceUntilIdle()
+            assertTrue(
+                "listening",
+                repo.observer
+                    .flowOf(MIFF_ID)
+                    .subscriptionCount.value > 0,
+            )
+            observing.coroutineContext[kotlinx.coroutines.Job]!!.children.forEach { it.cancel() }
+            advanceUntilIdle()
+            assertEquals(
+                "no listener left (the lifecycle cancels observe())",
+                0,
+                repo.observer
+                    .flowOf(MIFF_ID)
+                    .subscriptionCount.value,
+            )
+            assertEquals(MiffScreenStatus.LOADING, vm.uiState.value.status)
+        }
+
+    @Test
+    fun create_withoutAProfile_saysItHonestly_andAsksTheRoutingAgain() =
+        runTest(dispatcher) {
+            repo.createResult = CreateResult.Failed(MiffFailure.NO_PROFILE)
+            val vm = create()
+            vm.onNameChanged("Chez nous")
+            vm.onSubmit()
+            advanceUntilIdle()
+            assertEquals(ActionMessage.NO_PROFILE, vm.uiState.value.message)
+            assertEquals(1, profileMissing)
+        }
+
+    @Test
+    fun join_aFreeAccountWithAMiff_isToldHonestly_andItDoesNotCountAsAWrongCode() =
+        runTest(dispatcher) {
+            repo.joinPreparation = JoinPreparation.NeedsPremium
+            val vm = join()
+            repeat(6) {
+                vm.onCodeChanged(CODE)
+                vm.onContinue()
+                advanceUntilIdle()
+            }
+            assertEquals(JoinProblem.ONE_MIFF, vm.uiState.value.problem)
+            assertEquals(6, repo.calls.count { it == "prepareJoin" })
+        }
+
+    @Test
+    fun join_confirmWithoutAProfile_saysItHonestly_andAsksTheRoutingAgain() =
+        runTest(dispatcher) {
+            val vm = join()
+            vm.onCodeChanged(CODE)
+            vm.onContinue()
+            advanceUntilIdle()
+            repo.joinResult = JoinResult.Failed(MiffFailure.NO_PROFILE)
+            vm.onConfirm()
+            advanceUntilIdle()
+            assertEquals(ActionMessage.NO_PROFILE, vm.uiState.value.confirmMessage)
+            assertEquals(1, profileMissing)
         }
 }

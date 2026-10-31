@@ -218,6 +218,11 @@ fun SharingConsentCard(
             style = textBodyRegular14,
             color = colorTextPrimary,
         )
+        Text(
+            text = stringResource(R.string.miff_consent_places),
+            style = textBodyRegular14,
+            color = colorTextPrimary,
+        )
         Text(text = systemNote, style = textBodyCaption, color = colorTextDescription)
     }
 }
@@ -305,6 +310,7 @@ fun NameField(
     }
 }
 
+/** The counter "34 / 40" appears from this length (design fiche `miff-creation.md`). */
 private const val COUNTER_FROM = 30
 
 @Composable
@@ -430,6 +436,7 @@ private fun JoinCodeStep(
             JoinProblem.PAUSED -> MiffNotice(stringResource(R.string.miff_join_paused))
             JoinProblem.OFFLINE -> MiffNotice(actionMessageText(ActionMessage.OFFLINE))
             JoinProblem.GENERIC -> MiffNotice(actionMessageText(ActionMessage.GENERIC))
+            JoinProblem.ONE_MIFF -> MiffNotice(actionMessageText(ActionMessage.ONE_MIFF))
             else -> Unit
         }
         state.alreadyMember?.let { member ->

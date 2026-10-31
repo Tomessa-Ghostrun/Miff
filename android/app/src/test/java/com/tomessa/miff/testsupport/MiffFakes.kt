@@ -84,6 +84,16 @@ class FakeMiffStore : MiffStore {
         return entitlement
     }
 
+    var sharing: Boolean? = null
+
+    override suspend fun readSharing(
+        miffId: String,
+        uid: String,
+    ): Boolean? {
+        calls += "sharing"
+        return sharing
+    }
+
     override suspend fun serverReachable(uid: String): Boolean {
         calls += "reachable"
         return reachable
@@ -240,8 +250,6 @@ class FakeMiffRepository : MiffRepository {
         cleaned += lost
         return true
     }
-
-    override suspend fun details(miffId: String): MiffDetails? = null
 
     override fun observe(miffId: String): Flow<MiffObservation> = observer.observe(miffId)
 }

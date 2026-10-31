@@ -11,10 +11,11 @@ import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSharingConsent
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -127,61 +128,74 @@ class MiffScreenViewModel(
     private val repository: MiffRepository,
     private val network: NetworkMonitor,
     private val currentUid: () -> String?,
-    /** The directory cleans up and shows the single message (it also keeps the Feed and the Profile in line). */
-    private val onAccessLost: suspend (miffId: String, name: String?) -> Unit,
+    /**
+     * The directory checks with the server, and only if the loss is confirmed cleans up and queues the single message. True =
+     * confirmed. False = the server did not say so (or could not be reached): this is NOT a removal, the screen offers
+     * "Réessayer" and nobody is told anything.
+     */
+    private val onAccessLost: suspend (miffId: String, name: String?) -> Boolean,
     private val onNameChanged: suspend () -> Unit,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(MiffScreenState(miffId = miffId, myUid = currentUid().orEmpty()))
     val uiState: StateFlow<MiffScreenState> = mutableState.asStateFlow()
 
-    private var observing: Job? = null
     private var lostReported = false
 
-    init {
-        start()
-        viewModelScope.launch {
-            network.onlineChanges().collect { online -> mutableState.update { it.copy(offline = !online) } }
+    /** Goes up at "Réessayer": the listeners are attached again. */
+    private val restarts = MutableStateFlow(0)
+
+    /**
+     * Reads the Miff live until the caller stops (the screen calls it from `repeatOnLifecycle(STARTED)`: the three Firestore
+     * listeners and the network watch are cancelled when the screen goes to the background, and attached again when it
+     * comes back; nothing keeps listening to a Miff nobody is looking at).
+     */
+    suspend fun observe() {
+        coroutineScope {
+            launch { network.onlineChanges().collect { online -> mutableState.update { it.copy(offline = !online) } } }
+            restarts.collectLatest {
+                repository.observe(miffId).collect { observation -> handle(observation) }
+            }
+        }
+    }
+
+    private suspend fun handle(observation: MiffObservation) {
+        when (observation) {
+            MiffObservation.Loading -> {
+                Unit
+            }
+
+            is MiffObservation.Data -> {
+                lostReported = false
+                apply(observation)
+            }
+
+            MiffObservation.AccessLost -> {
+                if (lostReported) return
+                lostReported = true
+                val name = mutableState.value.name.takeIf { it.isNotEmpty() }
+                // Nothing of the Miff stays on the screen while the server is asked (criterion D7).
+                mutableState.value = MiffScreenState(status = MiffScreenStatus.ACCESS_LOST, miffId = miffId)
+                if (!onAccessLost(miffId, name)) {
+                    // Not confirmed by the server: a doubt is not a removal. "Réessayer", no message (ticket 5.7, D3).
+                    lostReported = false
+                    mutableState.value = MiffScreenState(status = MiffScreenStatus.UNAVAILABLE, miffId = miffId)
+                }
+            }
+
+            MiffObservation.Failed -> {
+                if (mutableState.value.status != MiffScreenStatus.READY) {
+                    mutableState.update { it.copy(status = MiffScreenStatus.UNAVAILABLE) }
+                }
+            }
         }
     }
 
     /** "Réessayer" after a reading that failed. */
     fun retry() {
-        if (mutableState.value.status == MiffScreenStatus.UNAVAILABLE) start()
-    }
-
-    private fun start() {
-        observing?.cancel()
+        if (mutableState.value.status != MiffScreenStatus.UNAVAILABLE) return
+        lostReported = false
         mutableState.update { it.copy(status = MiffScreenStatus.LOADING) }
-        observing =
-            viewModelScope.launch {
-                repository.observe(miffId).collect { observation ->
-                    when (observation) {
-                        MiffObservation.Loading -> {
-                            Unit
-                        }
-
-                        is MiffObservation.Data -> {
-                            apply(observation)
-                        }
-
-                        MiffObservation.AccessLost -> {
-                            val name = mutableState.value.name.takeIf { it.isNotEmpty() }
-                            // Nothing of the Miff stays on the screen (criterion D7).
-                            mutableState.value = MiffScreenState(status = MiffScreenStatus.ACCESS_LOST, miffId = miffId)
-                            if (!lostReported) {
-                                lostReported = true
-                                onAccessLost(miffId, name)
-                            }
-                        }
-
-                        MiffObservation.Failed -> {
-                            if (mutableState.value.status != MiffScreenStatus.READY) {
-                                mutableState.update { it.copy(status = MiffScreenStatus.UNAVAILABLE) }
-                            }
-                        }
-                    }
-                }
-            }
+        restarts.update { it + 1 }
     }
 
     private fun apply(observation: MiffObservation.Data) {

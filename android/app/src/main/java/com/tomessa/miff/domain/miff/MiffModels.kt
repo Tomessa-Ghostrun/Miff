@@ -82,11 +82,12 @@ sealed interface MiffObservation {
 /** Version of the text shown before "Rejoindre et partager" / "Créer et partager" / "Reprendre le partage" (rules: 1 to 20 chars). */
 object MiffSharingConsent {
     /**
-     * Shared constant with iOS: change it together with the text of `miff_consent_*` (criterion K8). The PM's sentence plus the
-     * short list of what the members see (first name, last name, photo, phone number), the reminder about the phone's own
-     * permission. A new wording = a new version.
+     * Shared constant with iOS: change it together with the text of `miff_consent_*` (criterion K8). Version "2026-10-v2": the
+     * PM's sentence, the short list of what the members see (first name, last name, photo, phone number), the sentence about
+     * the places (chosen by the creator, visible to every member), and the reminder about the phone's own permission. A new
+     * wording = a new version. ("2026-10-v1" was the same text without the sentence about the places.)
      */
-    const val VERSION = "2026-10-v1"
+    const val VERSION = "2026-10-v2"
 
     /** Maximum number of members, creator included (decision QM5): a soft ceiling, shown by the app only. */
     const val SOFT_MEMBER_LIMIT = 15

@@ -48,7 +48,7 @@
 - [ ] Champ « Code de la Miff » : tapez des minuscules et des espaces (« xtzr sp36 7988 ») : tout passe en majuscules, groupé par 4. **Continuer** est grisé tant qu'il n'y a pas 12 caractères. Tapez un « 0 » (zéro) ou un « O » : le message **« Ce code ne ressemble pas à un code Miff… »** apparaît tout de suite (aucune vérification réseau).
 - [ ] **Coller** : copiez d'abord le code de A (message reçu en Partie A), touchez **Coller** : le code apparaît. **Le téléphone ne lit jamais le presse-papiers tout seul.**
 - [ ] Un **faux code** valide en forme (par exemple « AAAAAAAAAAAA ») : **« On ne trouve pas de Miff avec ce code. Vérifie-le auprès de la personne qui te l'a donné. »** Après **5 faux codes de suite** : « On fait une petite pause d'une minute avant de réessayer. » et le bouton est grisé ; il se réactive tout seul au bout d'une minute.
-- [ ] Le **bon code** : l'écran **« Rejoindre la Miff « Test Miff A2 » ? »** : le texte « En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. », « Ce que les membres voient de toi » (prénom, nom, photo, **numéro de téléphone**), le rappel que le téléphone demandera la position **séparément** et que vous pouvez la refuser, puis **Rejoindre et partager** et **Annuler**. **Tout est visible sans défiler.**
+- [ ] Le **bon code** : l'écran **« Rejoindre la Miff « Test Miff A2 » ? »** : le texte « En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff. », « Ce que les membres voient de toi » (prénom, nom, photo, **numéro de téléphone**), la phrase « Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres. », le rappel que le téléphone demandera la position **séparément** et que vous pouvez la refuser, puis **Rejoindre et partager** et **Annuler**. **Tout est visible sans défiler.**
 - [ ] **Annuler** : retour à la saisie du code, rien n'a été écrit (A ne voit personne de plus). Recommencez, puis **Rejoindre et partager** (un seul appui) : vous arrivez dans le Feed avec la pastille « Test Miff A2 ». **Le téléphone ne demande pas la position** (c'est le ticket Localisation).
 - [ ] Profil de B > carte de la Miff > écran de la Miff : **pas de champ pour changer le nom**, le code est visible et partageable, la liste montre A (**Créateur**) et B (**Toi**), « Partager mon statut » est actif.
 - [ ] (Facultatif, compte Premium accordé à la main seulement) depuis le sélecteur du Feed, `+ Rejoindre une Miff` avec le code d'une Miff dont vous faites déjà partie : « Tu fais déjà partie de la Miff … » avec « Ouvrir la Miff ». Avec des comptes gratuits ce cas n'est pas atteignable (l'écran de choix n'est proposé qu'à qui n'a pas de Miff) ; il est couvert par des tests automatiques.
@@ -63,7 +63,7 @@
 
 - [ ] Sur B, touchez la ligne **Partager mon statut** : une question **« Arrêter de partager ton statut avec cette Miff ? »** (texte calme, bouton « Arrêter le partage », **Annuler**). **Annuler** : rien ne change.
 - [ ] Recommencez, confirmez : l'interrupteur passe à « arrêté » et la description devient « Ton statut n'est plus partagé avec cette Miff. ». B **reste dans la Miff**.
-- [ ] Touchez à nouveau : **« Reprendre le partage ? »** avec le texte « Tu partages à nouveau ton statut avec les membres de cette Miff ; tu peux arrêter à tout moment. ». Confirmez : le partage est repris.
+- [ ] Touchez à nouveau : **« Reprendre le partage ? »** avec le texte « Tu partages à nouveau ton statut avec les membres de cette Miff ; tu peux arrêter à tout moment. ». **Le même cadre qu'à l'entrée** apparaît (ce que les membres voient de toi, les lieux choisis par le créateur, la permission du téléphone). Confirmez : le partage est repris.
 - [ ] En mode avion, la ligne est grisée.
 - [ ] Refus de la permission de localisation : **rien à faire**, l'app ne la demande pas encore ; la Miff s'est créée / rejointe sans elle (critère K4).
 
@@ -75,11 +75,13 @@
 - [ ] Chez B, **un seul message** apparaît : **« Tu n'as plus accès à la Miff « … » — Ta position n'est plus partagée avec ce cercle. »** avec **Compris**. Aucun écran technique, aucune liste de membres qui reste. Après « Compris » : le Feed **« Pas encore de Miff »** avec **Créer une Miff** / **Rejoindre une Miff**.
 - [ ] Relancez l'app sur B : le message ne revient pas en boucle. B peut maintenant créer ou rejoindre une autre Miff (son ancien emplacement a été libéré).
 - [ ] Variante (Miff supprimée) : même message mot pour mot, sans dire pourquoi.
+- [ ] **Doute ≠ retrait** : sur un appareil qui a une Miff ouverte à l'écran, coupez le réseau puis rouvrez l'écran de la Miff : aucun message « plus accès », au pire un écran « On n'arrive pas à afficher cette Miff… » avec « Réessayer » (qui fonctionne au retour du réseau).
 - [ ] **Mode avion ≠ accès perdu** : coupez le réseau sur un appareil qui a une Miff, relancez l'app : la Miff reste, aucun message « plus accès ».
 
 ## Partie H — Lecture à voix haute et confort (3 min)
 
 - [ ] Relisez chaque texte à voix haute : est-ce que vous le diriez à un proche inquiet ? Notez tout mot qui sonne froid, accusateur ou alarmiste.
+- [ ] Mettez l'app en arrière-plan puis revenez sur l'écran de la Miff : tout se remet à jour tout seul.
 - [ ] Agrandissez la taille de texte du téléphone (Réglages > Affichage > Taille de la police, au maximum) : sur « Rejoindre la Miff… ? » le texte de partage et les boutons restent lisibles, sans chevauchement.
 - [ ] TalkBack (facultatif) : le code est lu **groupe par groupe, lettre par lettre**, et le texte de partage est lu **avant** le bouton.
 

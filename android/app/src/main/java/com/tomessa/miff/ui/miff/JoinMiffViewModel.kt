@@ -10,6 +10,7 @@ import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.miff.JoinCode
+import com.tomessa.miff.domain.miff.MiffFailure
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,9 @@ enum class JoinProblem {
 
     OFFLINE,
     GENERIC,
+
+    /** A free account that already has a Miff ("une seule Miff à la fois"): the Premium ticket decides what is offered. */
+    ONE_MIFF,
 }
 
 class AlreadyMember(
@@ -107,6 +111,7 @@ class JoinMiffViewModel(
     private val onEntered: (AnalyticsEvent.OnboardingVia) -> Unit,
     private val onDirectoryChanged: suspend () -> Unit,
     private val limiter: JoinAttemptLimiter,
+    private val onProfileMissing: () -> Unit,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(JoinUiState())
     val uiState: StateFlow<JoinUiState> = mutableState.asStateFlow()
@@ -181,7 +186,7 @@ class JoinMiffViewModel(
 
                 // Not a mistake of the person: it does not count as a failed try.
                 JoinPreparation.NeedsPremium -> {
-                    mutableState.update { it.copy(checking = false, problem = JoinProblem.GENERIC) }
+                    mutableState.update { it.copy(checking = false, problem = JoinProblem.ONE_MIFF) }
                 }
 
                 is JoinPreparation.Failed -> {
@@ -229,11 +234,12 @@ class JoinMiffViewModel(
                 }
 
                 JoinResult.NeedsPremium -> {
-                    mutableState.update { it.copy(joining = false, confirmMessage = ActionMessage.GENERIC) }
+                    mutableState.update { it.copy(joining = false, confirmMessage = ActionMessage.ONE_MIFF) }
                 }
 
                 is JoinResult.Failed -> {
                     mutableState.update { it.copy(joining = false, confirmMessage = messageFor(result.failure)) }
+                    if (result.failure == MiffFailure.NO_PROFILE) onProfileMissing()
                 }
             }
         }

@@ -12,6 +12,7 @@ import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.auth.legalPageUrl
 import com.tomessa.miff.domain.miff.JoinCode
+import com.tomessa.miff.domain.miff.MiffName
 
 /*
  * SECURITY, for this file: the code is a secret that the person chooses to hand over. It goes only into the share sheet of the
@@ -27,7 +28,8 @@ object MiffSharing {
         context: Context,
         miffName: String,
         code: String,
-    ): String = context.getString(R.string.miff_share_message, miffName, JoinCode.grouped(code), downloadUrl())
+    ): String =
+        context.getString(R.string.miff_share_message, MiffName.clean(miffName), JoinCode.grouped(code), downloadUrl())
 
     /** Opens the share sheet. If nothing can share, nothing happens (no crash, no technical message). */
     fun share(

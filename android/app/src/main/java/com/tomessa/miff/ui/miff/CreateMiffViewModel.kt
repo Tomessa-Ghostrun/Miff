@@ -21,17 +21,30 @@ import kotlinx.coroutines.launch
  * only, never in a log, an analytics event (the events carry `is_first_miff` and nothing else) or a crash report.
  */
 
-/** The two calm sentences an action can end with (never "quota", never a code, never a technical word). */
+/** The calm sentences an action can end with (never "quota", never a code, never a technical word). */
 enum class ActionMessage {
     /** "Pas de connexion pour le moment. Réessaie dès que le réseau est revenu." */
     OFFLINE,
 
     /** "Ça n'a pas fonctionné. Réessaie dans un instant." */
     GENERIC,
+
+    /**
+     * "Pour l'instant, ce compte peut faire partie d'une seule Miff à la fois." A free account that already has a Miff: the
+     * Premium ticket decides what is offered, this only says honestly what is.
+     */
+    ONE_MIFF,
+
+    /** The profile (or its phone number) is missing: the person goes back to the profile step. */
+    NO_PROFILE,
 }
 
 internal fun messageFor(failure: MiffFailure): ActionMessage =
-    if (failure == MiffFailure.OFFLINE) ActionMessage.OFFLINE else ActionMessage.GENERIC
+    when (failure) {
+        MiffFailure.OFFLINE -> ActionMessage.OFFLINE
+        MiffFailure.NO_PROFILE -> ActionMessage.NO_PROFILE
+        else -> ActionMessage.GENERIC
+    }
 
 enum class CreateStep { NAME, READY }
 
@@ -81,6 +94,8 @@ class CreateMiffViewModel(
     private val onEntered: (AnalyticsEvent.OnboardingVia) -> Unit,
     /** The Feed and the Profile learn about the new Miff. */
     private val onDirectoryChanged: suspend () -> Unit,
+    /** The profile is missing: the routing is asked again and sends the person back to the profile step. */
+    private val onProfileMissing: () -> Unit,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(CreateUiState())
     val uiState: StateFlow<CreateUiState> = mutableState.asStateFlow()
@@ -129,11 +144,12 @@ class CreateMiffViewModel(
 
                 // Nothing is said about the Premium offer here: that is the Premium ticket's to decide.
                 CreateResult.NeedsPremium -> {
-                    mutableState.update { it.copy(saving = false, message = ActionMessage.GENERIC) }
+                    mutableState.update { it.copy(saving = false, message = ActionMessage.ONE_MIFF) }
                 }
 
                 is CreateResult.Failed -> {
                     mutableState.update { it.copy(saving = false, message = messageFor(result.failure)) }
+                    if (result.failure == MiffFailure.NO_PROFILE) onProfileMissing()
                 }
             }
         }

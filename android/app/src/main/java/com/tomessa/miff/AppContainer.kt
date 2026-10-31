@@ -48,6 +48,7 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
+import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -143,6 +144,7 @@ class AppContainer(
             store = FirestoreMiffStore(),
             observer = FirestoreMiffObserver(),
             location = AndroidLocationAccessProbe(context),
+            cache = cachePurger,
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -152,6 +154,12 @@ class AppContainer(
                     .id
             },
         )
+
+    /**
+     * The pause after 5 wrong codes lives as long as the process, not as long as the screen: leaving and coming back does not
+     * give a free new series. An aid of the interface, not a protection (ticket Miff 5.3).
+     */
+    val joinLimiter: JoinAttemptLimiter = JoinAttemptLimiter(nowMillis = SystemClock::elapsedRealtime)
 
     /** The Miffs of the person signed in, in memory for the session (Feed, Profile tab); also deals with a loss of access. */
     val miffDirectory: MiffDirectory =

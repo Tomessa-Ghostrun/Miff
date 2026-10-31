@@ -135,7 +135,7 @@ class MiffDirectoryTest {
             repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "Chez nous")))
             directory.refresh()
             repo.myMiffsResult = loaded(lost = listOf(lost()))
-            directory.onAccessLost(MIFF_ID, "Chez nous")
+            assertTrue(directory.onAccessLost(MIFF_ID, "Chez nous"))
             assertEquals(
                 "Chez nous",
                 directory.notice.value
@@ -169,5 +169,42 @@ class MiffDirectoryTest {
             uid = null
             directory().refresh()
             assertFalse("myMiffs" in repo.calls)
+        }
+
+    @Test
+    fun aRefusalHeardByTheScreen_whileTheServerCannotBeReached_givesZeroMessage_andCleansNothing() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = MyMiffsLoad.Unavailable
+            assertFalse(directory.onAccessLost(MIFF_ID, "Chez nous"))
+            assertTrue("nobody is told they were removed on a doubt", directory.notice.value.isEmpty())
+            assertTrue(repo.cleaned.isEmpty())
+            assertEquals(0, cache.purgeCalls)
+        }
+
+    @Test
+    fun aRefusalHeardByTheScreen_thatTheServerDoesNotConfirm_givesZeroMessage() =
+        runTest {
+            val directory = directory()
+            // The server says the Miff is there and fine: the listener was wrong (or the answer too early).
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "Chez nous")))
+            assertFalse(directory.onAccessLost(MIFF_ID, "Chez nous"))
+            assertTrue(directory.notice.value.isEmpty())
+            assertTrue(repo.cleaned.isEmpty())
+            assertEquals("Chez nous", (directory.state.value as DirectoryState.Ready).active?.name)
+        }
+
+    @Test
+    fun aConfirmedLoss_isAnnouncedOnlyAfterTheServerAnswered() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(lost = listOf(lost()))
+            assertTrue(directory.onAccessLost(MIFF_ID, null))
+            assertEquals(
+                "Chez nous",
+                directory.notice.value
+                    .single()
+                    .name,
+            )
         }
 }

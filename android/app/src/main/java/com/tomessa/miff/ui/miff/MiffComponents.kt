@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,8 +50,6 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tomessa.miff.R
@@ -59,6 +59,7 @@ import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.profile.Initials
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.profile.ProfileAvatar
+import com.tomessa.miff.ui.theme.CodeLetterSpacing
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -75,6 +76,7 @@ import com.tomessa.miff.ui.theme.colorBorderDefault
 import com.tomessa.miff.ui.theme.colorBorderStrong
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextError
+import com.tomessa.miff.ui.theme.colorTextErrorDisabled
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.colorTextOnAction
 import com.tomessa.miff.ui.theme.colorTextPrimary
@@ -94,12 +96,6 @@ import com.tomessa.miff.ui.theme.textTitleBold24
  * dialog, role pill, row with a switch, section header, notice). Built from the tokens of ui/theme; no colour, size or font of
  * their own, except the few sizes named below, taken from the fiches design/screens/miff-*.md.
  */
-
-private val SectionIconBox = 33.dp
-private val SectionIconSize = 20.dp
-private val PillHeight = 20.dp
-private val MemberAvatar = 46.dp
-private val CodeLetterSpacing = 2.sp
 
 /** The header of the screens of the flow: the back arrow at the start, the title in the middle (mockups, "Nouvelle Miff"). */
 @Composable
@@ -152,14 +148,14 @@ fun MiffSectionHeader(
         verticalAlignment = Alignment.Top,
     ) {
         Box(
-            modifier = Modifier.size(SectionIconBox).clip(ShapeMd).background(colorActionPrimaryTint20),
+            modifier = Modifier.size(Spacing.sectionIconBox).clip(ShapeMd).background(colorActionPrimaryTint20),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
                 tint = colorActionPrimary,
-                modifier = Modifier.size(SectionIconSize),
+                modifier = Modifier.size(Spacing.sectionIcon),
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -202,12 +198,11 @@ fun MiffNotice(
 @Composable
 fun actionMessageText(message: ActionMessage): String =
     stringResource(
-        if (message ==
-            ActionMessage.OFFLINE
-        ) {
-            R.string.miff_message_offline
-        } else {
-            R.string.miff_message_generic
+        when (message) {
+            ActionMessage.OFFLINE -> R.string.miff_message_offline
+            ActionMessage.GENERIC -> R.string.miff_message_generic
+            ActionMessage.ONE_MIFF -> R.string.miff_message_one_miff
+            ActionMessage.NO_PROFILE -> R.string.miff_message_no_profile
         },
     )
 
@@ -405,7 +400,7 @@ fun MiffRolePill(
         color = if (isOwner) colorActionPrimary else colorTextPrimary,
         modifier =
             modifier
-                .heightIn(min = PillHeight)
+                .heightIn(min = Spacing.pillHeight)
                 .clip(ShapeFull)
                 .background(if (isOwner) colorActionPrimaryTint10 else colorBorderDefault)
                 .padding(horizontal = Spacing.s, vertical = Spacing.xs / 2),
@@ -437,7 +432,7 @@ fun MiffMemberRow(
         ProfileAvatar(
             jpeg = member.avatarJpeg,
             initials = Initials.of(member.firstName, member.lastName),
-            size = MemberAvatar,
+            size = Spacing.memberAvatar,
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(text = member.displayName, style = textDisplayLabel, color = colorTextPrimary)
@@ -518,7 +513,7 @@ enum class DialogTone { DEFAULT, SENSITIVE }
 @Composable
 fun MiffConfirmDialog(
     title: String,
-    body: String,
+    body: String?,
     confirmLabel: String,
     cancelLabel: String,
     onConfirm: () -> Unit,
@@ -527,6 +522,8 @@ fun MiffConfirmDialog(
     tone: DialogTone = DialogTone.DEFAULT,
     busy: Boolean = false,
     message: ActionMessage? = null,
+    /** Something to show under the sentence (the consent card of "Reprendre le partage"). */
+    content: (@Composable () -> Unit)? = null,
 ) {
     Dialog(
         onDismissRequest = { if (!busy) onCancel() },
@@ -541,6 +538,7 @@ fun MiffConfirmDialog(
                     .clip(ShapeMd)
                     .background(colorBgSurface)
                     .border(StrokeAccent, colorBorderAction, ShapeMd)
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -552,7 +550,10 @@ fun MiffConfirmDialog(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { heading() },
             )
-            Text(text = body, style = textBodyRegular, color = colorTextDescription, textAlign = TextAlign.Center)
+            if (body != null) {
+                Text(text = body, style = textBodyRegular, color = colorTextDescription, textAlign = TextAlign.Center)
+            }
+            content?.invoke()
             if (message != null) MiffNotice(text = actionMessageText(message))
             if (tone == DialogTone.DEFAULT) {
                 MiffButton(
@@ -571,7 +572,7 @@ fun MiffConfirmDialog(
                         androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                             containerColor = colorBgSurface,
                             contentColor = colorTextError,
-                            disabledContentColor = colorTextError.copy(alpha = DISABLED_ALPHA),
+                            disabledContentColor = colorTextErrorDisabled,
                         ),
                     modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget),
                 ) {
@@ -599,5 +600,3 @@ fun MiffConfirmDialog(
         }
     }
 }
-
-private const val DISABLED_ALPHA = 0.5f

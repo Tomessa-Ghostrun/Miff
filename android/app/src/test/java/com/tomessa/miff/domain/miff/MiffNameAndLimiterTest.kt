@@ -94,4 +94,31 @@ class MiffNameAndLimiterTest {
         limiter.recordFailure()
         assertFalse(limiter.isPaused())
     }
+
+    @Test
+    fun name_isCutBetweenWholeCharacters_aLetterIsNeverSeparatedFromItsAccent() {
+        val accented = "e" + 0x0301.toChar() // "é" written as a letter and a combining accent: 2 units, 1 character
+        val typed = "a".repeat(39) + accented
+        val limited = MiffName.limit(typed)
+        assertEquals("the whole accented letter does not fit: it is left out, not cut", "a".repeat(39), limited.text)
+        assertTrue(limited.limitReached)
+        // It fits when there is room for the whole character.
+        assertEquals("a".repeat(38) + accented, MiffName.limit("a".repeat(38) + accented).text)
+    }
+
+    @Test
+    fun name_removesBidirectionalControlsAndInvisibleCharacters_butKeepsTheJoinersOfEmojiSequences() {
+        val rtlOverride = 0x202E.toChar()
+        val isolate = 0x2067.toChar()
+        val zeroWidthSpace = 0x200B.toChar()
+        val joiner = 0x200D.toChar()
+        assertEquals("Famille", MiffName.limit("Fam${rtlOverride}ille$isolate$zeroWidthSpace").text)
+        assertEquals("ab", MiffName.clean("a" + 0xFEFF.toChar() + 0x2060.toChar() + 0x00AD.toChar() + "b"))
+        assertEquals("a${joiner}b", MiffName.clean("a${joiner}b"))
+        assertEquals(
+            "a name that hides its end cannot be stored",
+            "Chez nous",
+            MiffName.stored("Chez nous$rtlOverride"),
+        )
+    }
 }

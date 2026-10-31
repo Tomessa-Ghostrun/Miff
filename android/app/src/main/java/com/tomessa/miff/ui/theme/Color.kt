@@ -50,3 +50,6 @@ val colorBorderDefault = Color(0xFFEFEFEF)
 val colorBorderStrong = colorTextPrimary.copy(alpha = 0.50f)
 val colorBorderSubtle = colorTextPrimary.copy(alpha = 0.30f)
 val colorBorderAction = colorActionPrimary
+
+/** "text/error" at half strength: the label of a disabled red-outlined button. */
+val colorTextErrorDisabled = colorTextError.copy(alpha = 0.5f)

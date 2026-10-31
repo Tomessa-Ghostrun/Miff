@@ -29,6 +29,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.navigation.MainTab
@@ -108,8 +109,12 @@ private fun LostAccessOverlay(
             miffName = notice.name,
             onAcknowledge = {
                 container.miffDirectory.dismissNotice()
-                val onMiffScreen = navController.currentDestination?.hasRoute<MiffRoute>() == true
-                if (onMiffScreen) navController.popBackStackIfSafe()
+                // Only the screen of THAT Miff is left: another Miff open behind (Premium) stays where it is.
+                val entry = navController.currentBackStackEntry
+                val onThatMiff =
+                    entry?.destination?.hasRoute<MiffRoute>() == true &&
+                        entry.toRoute<MiffRoute>().miffId == notice.miffId
+                if (onThatMiff) navController.popBackStackIfSafe()
             },
         )
     }

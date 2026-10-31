@@ -289,6 +289,9 @@
     <string name="common_cancel">Annuler</string>
     <string name="miff_message_offline">Pas de connexion pour le moment. Réessaie dès que le réseau est revenu.</string>
     <string name="miff_message_generic">Ça n\'a pas fonctionné. Réessaie dans un instant.</string>
+    <string name="miff_message_one_miff">Pour l\'instant, ce compte peut faire partie d\'une seule Miff à la fois.</string>
+    <string name="miff_message_no_profile">Il manque encore des informations sur ton profil. On te ramène à cette étape pour les compléter.</string>
+    <string name="miff_consent_places">Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres.</string>
     <string name="miff_dialog_working_a11y">En cours</string>
 
     <!-- Choix : créer ou rejoindre -->
@@ -298,7 +301,7 @@
     <string name="miff_choice_join_title">Rejoindre une Miff existante</string>
     <string name="miff_choice_join_body">Un proche t\'a donné un code ? Saisis-le pour entrer dans sa Miff.</string>
 
-    <!-- Consentement explicite avant « Créer et partager » / « Rejoindre et partager » (version « 2026-10-v1 », MiffSharingConsent) -->
+    <!-- Consentement explicite avant « Créer et partager » / « Rejoindre et partager » (version « 2026-10-v2 », MiffSharingConsent) -->
     <string name="miff_consent_create">En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
     <string name="miff_consent_join">En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
     <string name="miff_consent_members_see_title">Ce que les membres voient de toi</string>

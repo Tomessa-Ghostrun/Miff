@@ -8,6 +8,7 @@ import com.google.firebase.firestore.Source
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffDetails
+import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.miff.ProfileCopy
 import com.tomessa.miff.domain.miff.WriteKind
 import kotlinx.coroutines.tasks.await
@@ -60,6 +61,12 @@ interface MiffStore {
     ): MiffRead
 
     suspend fun readEntitlement(uid: String): EntitlementRead?
+
+    /** Whether MY card says I share, read from the SERVER (to check a lot whose answer was lost); null if there is no card. */
+    suspend fun readSharing(
+        miffId: String,
+        uid: String,
+    ): Boolean?
 
     /** A read that only the person can do and that always works when the server is reachable and App Check is fine. */
     suspend fun serverReachable(uid: String): Boolean
@@ -115,6 +122,21 @@ class FirestoreMiffStore(
                 .get(source(fromServer))
                 .await()
         return detailsOf(snapshot)?.let { MiffRead.Exists(it) } ?: MiffRead.Missing
+    }
+
+    override suspend fun readSharing(
+        miffId: String,
+        uid: String,
+    ): Boolean? {
+        val snapshot =
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("members")
+                .document(uid)
+                .get(Source.SERVER)
+                .await()
+        return if (snapshot.exists()) snapshot.getBoolean("sharing.enabled") else null
     }
 
     override suspend fun readEntitlement(uid: String): EntitlementRead? {
@@ -185,7 +207,7 @@ class FirestoreMiffStore(
         /** The Miff of a snapshot, if it exists and has the shape the rules require; null otherwise. */
         fun detailsOf(snapshot: DocumentSnapshot): MiffDetails? {
             if (!snapshot.exists()) return null
-            val name = snapshot.getString("name") ?: return null
+            val name = MiffName.clean(snapshot.getString("name") ?: return null)
             val code = snapshot.getString("joinCode") ?: return null
             val owner = snapshot.getString("ownerUid") ?: return null
             return MiffDetails(snapshot.id, name, code, owner)

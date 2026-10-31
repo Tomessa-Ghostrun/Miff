@@ -1,11 +1,13 @@
 package com.tomessa.miff.ui.miff
 
-import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -16,7 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
-import com.tomessa.miff.domain.miff.JoinAttemptLimiter
+import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -64,6 +66,7 @@ fun NavGraphBuilder.miffEntryRoutes(
                                 currentUid = { session.currentUid },
                                 tracker = container.analyticsTracker,
                                 onEntered = session::onMiffEntered,
+                                onProfileMissing = session::retry,
                                 onDirectoryChanged = container.miffDirectory::refresh,
                             )
                         }
@@ -79,6 +82,7 @@ fun NavGraphBuilder.miffEntryRoutes(
         )
     }
     composable<JoinMiffRoute> {
+        val scope = rememberCoroutineScope()
         val viewModel: JoinMiffViewModel =
             viewModel(
                 factory =
@@ -90,8 +94,9 @@ fun NavGraphBuilder.miffEntryRoutes(
                                 currentUid = { session.currentUid },
                                 tracker = container.analyticsTracker,
                                 onEntered = session::onMiffEntered,
+                                onProfileMissing = session::retry,
                                 onDirectoryChanged = container.miffDirectory::refresh,
-                                limiter = JoinAttemptLimiter(nowMillis = SystemClock::elapsedRealtime),
+                                limiter = container.joinLimiter,
                             )
                         }
                     },
@@ -108,7 +113,12 @@ fun NavGraphBuilder.miffEntryRoutes(
             onContinue = viewModel::onContinue,
             onConfirm = viewModel::onConfirm,
             onCancelConfirm = viewModel::onCancelConfirm,
-            onOpenMiff = onOpenExisting,
+            onOpenMiff = { miffId ->
+                // "Ouvrir la Miff": the person is in that Miff, so the account has one (the end of the onboarding is counted).
+                session.onMiffEntered(AnalyticsEvent.OnboardingVia.JOINED)
+                scope.launch { container.miffDirectory.refresh() }
+                onOpenExisting(miffId)
+            },
         )
     }
 }
@@ -168,6 +178,7 @@ fun NavGraphBuilder.miffScreenRoute(
                     },
             )
         val state by viewModel.uiState.collectAsStateWithLifecycle()
+// The three Firestore listeners only run while the screen is on view (cancelled in the background, attached again on return).        val lifecycleOwner = LocalLifecycleOwner.current        LaunchedEffect(viewModel) {            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }        }
         MiffScreen(
             state = state,
             onBack = { navController.popBackStackIfSafe() },

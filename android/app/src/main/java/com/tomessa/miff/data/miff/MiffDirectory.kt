@@ -122,26 +122,31 @@ class MiffDirectory(
         }
     }
 
-    /** The Miff screen saw the access go (listener refused, Miff deleted) while it was open. */
+    /**
+     * The Miff screen saw its listener refused (or the Miff vanish). The message is given ONLY once the server itself says the
+     * access is gone (the same check as at the opening of the Feed): a refusal heard while the server cannot be reached, or
+     * that the server does not confirm, is not a removal and nobody is told so. Returns true when the loss is confirmed (the
+     * clean-up is done and the single message is queued), false otherwise (the screen offers "Réessayer").
+     */
     suspend fun onAccessLost(
         miffId: String,
         name: String?,
-    ) {
+    ): Boolean =
         mutex.withLock {
-            val uid = currentUid() ?: return
+            val uid = currentUid() ?: return@withLock false
             val startedIn = epoch
-            val key = (mutableState.value as? DirectoryState.Ready)?.miffs?.firstOrNull { it.id == miffId }
-            announce(LostNotice(miffId, name ?: key?.name))
+            val known = (mutableState.value as? DirectoryState.Ready)?.miffs?.firstOrNull { it.id == miffId }?.name
             // The index key is read again from the server: it is "free" or the id of the Miff.
             val load = repository.myMiffs(uid)
-            if (epoch != startedIn || currentUid() != uid) return
-            if (load is MyMiffsLoad.Loaded) {
-                val lost = load.lost.filter { it.ref.miffId == miffId }
-                publish(load.miffs, load.premium, load.fromCache)
-                if (lost.isNotEmpty()) cleanUpAndPurge(uid, startedIn, lost)
-            }
+            if (epoch != startedIn || currentUid() != uid) return@withLock false
+            if (load !is MyMiffsLoad.Loaded) return@withLock false
+            val lost = load.lost.filter { it.ref.miffId == miffId }
+            publish(load.miffs, load.premium, load.fromCache)
+            if (lost.isEmpty()) return@withLock false
+            announce(LostNotice(miffId, name ?: lost.first().name ?: known))
+            cleanUpAndPurge(uid, startedIn, lost)
+            true
         }
-    }
 
     fun dismissNotice() {
         mutableNotices.value = mutableNotices.value.drop(1)
