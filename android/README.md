@@ -245,6 +245,36 @@ Ce que la personne voit une fois l'onboarding terminé et qu'une Miff existe (de
 - **Aucune donnée personnelle dans les journaux, événements d'analyse ni rapports de plantage** : le code n'écrit aucun journal (`NoSensitiveLoggingTest`) ; `MyProfile.toString()` ne montre rien ; aucun événement n'est émis par ces écrans.
 - **Écarts conscients design / plateforme (ONB-3a)** : voir la description de la PR (tableau) ; les principaux : tutoiement, libellé « Téléphone », compteurs réels, aucun « 3 caractères minimum », mention de visibilité du numéro, « Enregistrer » grisé sans changement, deux langues, pas de « Notifications » ni d'encart Premium, « Déconnexion » en bouton secondaire, pas de carte de Miff ni de lieux, confirmation de déconnexion et d'abandon ajoutées (non dessinées).
 
+## Zones sûres : barre d'état, barre de navigation, encoche, clavier (règle pour tout écran)
+
+L'app dessine « bord à bord » (`enableEdgeToEdge` dans `MainActivity`, et Android 15 l'impose de toute façon : `targetSdk` 36). Sans précaution, un écran se dessine donc SOUS l'heure, la batterie, les touches ou la barre de gestes, et l'encoche.
+
+**Règle : tout écran, barre ou feuille prend ses marges système dans `ui/components/ScreenInsets.kt`, et nulle part ailleurs.**
+
+| Je construis... | J'utilise |
+|---|---|
+| un écran entier | `MiffScreen(Modifier.background(...)) { ... }` (ou `Modifier.miffScreenInsets()` sur la racine d'un écran existant) |
+| une barre du haut qui dessine sous la barre d'état (Réglages) | `Modifier.miffTopInsets()` sur la barre, puis `Modifier.miffBottomInsets()` sur le corps |
+| le contenu d'un onglet | `Modifier.miffTopInsets()` sur sa racine (la barre d'onglets gère le bas) |
+| le contenu d'une feuille (`ModalBottomSheet`) | `Modifier.miffBottomInsets()` |
+| une barre du bas | `Modifier.miffBottomInsets()` |
+| un élément à pousser seulement vers le bas | `miffTopInset()` (hauteur) |
+
+- Le fond (couleur, dégradé) se met AVANT le modificateur : il continue ainsi sous les barres système, sans que le contenu y passe.
+- Ces modificateurs **consomment** ce qu'ils appliquent : les imbriquer ne double jamais une marge.
+- **Interdits ailleurs que dans ce fichier** (`ScreenInsetsRuleTest` échoue sinon) : `safeDrawingPadding`, `statusBarsPadding`, `navigationBarsPadding`, `imePadding`, `windowInsetsPadding`, `WindowInsets.*`, `consumeWindowInsets`, `contentWindowInsets`. Pas de `Scaffold` sans y réfléchir : son `contentWindowInsets` par défaut remplit le haut, et un `consumeWindowInsets(padding)` ensuite « mangeait » la barre d'état avant que les onglets s'en servent.
+- Exception voulue : l'écran de lancement animé (`ui/splash`) est plein écran et ne prend rien d'ici ; il passe seulement les icônes de la barre d'état en clair le temps de l'animation.
+- Fenêtres de dialogue (`AlertDialog`) : Android les place lui-même hors des barres, rien à faire.
+- Clavier : `AndroidManifest.xml` déclare `windowSoftInputMode="adjustResize"` (Android 8 à 10 : sans cela le clavier n'est pas transmis à Compose). Les écrans à formulaire défilent ; la barre d'onglets se cache quand le clavier est ouvert.
+- Icônes de la barre d'état : `MainActivity` demande des icônes sombres (app claire seulement), thème `windowLightStatusBar=true` pour les premières images.
+
+- **Repli si le téléphone ne rapporte rien (ajouté après la recette du 31/10/2026, l'OPPO ayant gardé le défaut)** : `miffSafeInsets()` prend les marges rapportées par le système ; si le haut vaut 0 alors que la fenêtre commence tout en haut de l'écran et que la barre d'état n'est pas déclarée masquée, il utilise la hauteur que le système déclare pour sa barre (`status_bar_height`) ; idem en bas, uniquement en navigation à 3 ou 2 boutons (`navigation_bar_height`, portrait). Une valeur réelle du système n'est jamais remplacée. Actif seulement dans `MainActivity` (`ProvideSystemBarsFallback`) : les tests voient exactement les marges qu'ils envoient.
+- **Diagnostic (APK debug seulement)** : l'écran de diagnostic, ouvert au lancement de l'APK debug, commence par la carte « Marges système (insets) : à photographier » (valeurs brutes de Compose et du système, densité, version d'Android, mode de navigation, repli appliqué, marqueur `insets-r2`). Fichier `src/debug/.../InsetsDiagnostic.kt`, seul autre fichier autorisé à lire les marges brutes.
+
+**Cause du défaut vu à la recette (31/10/2026)** : `MainTabs` utilisait un `Scaffold` (rempli par défaut avec la hauteur de la barre d'état) puis `consumeWindowInsets(padding)` : le haut était déclaré « déjà géré » alors que personne n'y avait appliqué de marge, et le `statusBarsPadding()` du Feed et du Profil recevait 0. Les autres écrans appliquaient déjà leurs marges ; ils passent maintenant eux aussi par le fichier commun.
+
+**Tests** : `ScreenInsetsTest` (Robolectric, `src/testDebug/.../ui/insets`) envoie à chaque écran de vraies marges système (barre d'état 48 dp, barre de navigation 48 dp, encoche, clavier) et échoue si un texte, une icône ou un bouton passe sous la barre d'état, l'encoche ou la barre latérale, ou si la barre d'onglets passe sous la barre de navigation ; il a été vérifié qu'il échoue avec l'ancien `MainTabs`. `ScreenInsetsRuleTest` (JVM) interdit les fonctions brutes. Un nouvel écran doit être ajouté à `ScreenInsetsTest`. Recette PM : `docs/qa/checklists/insets-android-recette-pm.md`.
+
 ## Écran de lancement animé (splash)
 
 Demande du PM après sa recette sur l'OPPO : « on voit le logo de l'app sans le cœur vert, le cœur vert apparaît et gonfle comme un ballon de baudruche jusqu'à éclater, puis l'app s'ouvre ». Ordre du démarrage : **écran de lancement système → animation Compose → app** (le carrousel de première ouverture, ticket Onboarding, fera partie de l'app : il n'apparaît qu'après le splash).
@@ -304,7 +334,7 @@ Permissions finales de l'APK release : `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE
 
 ```
 app/src/main      code commun : MiffApplication, AppContainer, MainActivity,
-                  ui/ (theme, components, home, navigation, main = barre d'onglets, feed, profile, settings, splash), domain/ (logique pure testée),
+                  ui/ (theme, components (dont ScreenInsets.kt : zones sûres), home, navigation, main = barre d'onglets, feed, profile, settings, splash), domain/ (logique pure testée),
                   data/ (privacy, auth, profile, settings)
 app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth en lecture, App Check "debug"
 app/src/release   App Check Play Integrity, aucune destination interne

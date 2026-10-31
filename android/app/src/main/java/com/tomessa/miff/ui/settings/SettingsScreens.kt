@@ -8,17 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -44,6 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.settings.AppLanguage
+import com.tomessa.miff.ui.components.miffBottomInsets
+import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -85,7 +81,7 @@ fun SettingsScaffold(
                     .fillMaxWidth()
                     .miffShadow(ShadowDefault, RectangleShape)
                     .background(colorBgSurface)
-                    .statusBarsPadding()
+                    .miffTopInsets()
                     .heightIn(min = TopBarHeight),
             contentAlignment = Alignment.Center,
         ) {
@@ -115,7 +111,7 @@ fun SettingsScaffold(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(HorizontalAndBottom))
+                    .miffBottomInsets()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.l, vertical = Spacing.m),
             content = content,
@@ -124,8 +120,6 @@ fun SettingsScaffold(
 }
 
 private val TopBarHeight = 56.dp
-
-private val HorizontalAndBottom = WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
 
 /** One line of the Settings list: a pale blue tile with the icon, the title and its one-line help, and the chevron. */
 @Composable

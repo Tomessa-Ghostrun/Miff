@@ -17,6 +17,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.tomessa.miff.data.settings.AndroidLanguageStore
+import com.tomessa.miff.ui.components.ProvideSystemBarsFallback
 import com.tomessa.miff.ui.navigation.MiffNavHost
 import com.tomessa.miff.ui.splash.ReduceMotion
 import com.tomessa.miff.ui.splash.SplashHost
@@ -46,9 +47,11 @@ class MainActivity : ComponentActivity() {
         recreateWhenLanguageChanges(container)
         setContent {
             MiffTheme {
-                SplashHost(reduceMotion = reduceMotion) {
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        MiffNavHost(container = container)
+                ProvideSystemBarsFallback {
+                    SplashHost(reduceMotion = reduceMotion) {
+                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                            MiffNavHost(container = container)
+                        }
                     }
                 }
             }
