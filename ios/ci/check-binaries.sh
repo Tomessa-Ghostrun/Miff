@@ -101,11 +101,25 @@ gsi="${app}/GoogleService-Info.plist"
 if [ -f "$gsi" ]; then
   analytics_flag="$(plutil -extract IS_ANALYTICS_ENABLED raw -o - "$gsi" 2> /dev/null || echo absent)"
   report "GoogleService-Info.plist embarqué (CI) : IS_ANALYTICS_ENABLED = ${analytics_flag} ; la collecte reste éteinte par les clés de l'Info.plist ci-dessus"
+  # Connexion Google : le schéma d'URL de retour (REVERSED_CLIENT_ID) n'est jamais dans le dépôt ; la phase de compilation
+  # « Google - schéma d'URL de retour » l'ajoute à l'Info.plist depuis ce fichier. La valeur n'est pas affichée.
+  reversed="$(plutil -extract REVERSED_CLIENT_ID raw -o - "$gsi" 2> /dev/null || echo absent)"
+  if [ "$reversed" = "absent" ]; then
+    report "AVERTISSEMENT : le fichier de configuration n'a pas de REVERSED_CLIENT_ID : la connexion Google ne pourra pas démarrer (configuration factice, ou fichier généré avant l'activation de Google dans Firebase Authentication : le PM doit le régénérer puis mettre à jour le secret GOOGLE_SERVICE_INFO_PLIST_B64)"
+    echo "::warning::GoogleService-Info.plist sans REVERSED_CLIENT_ID : connexion Google impossible tant que le fichier n'est pas régénéré."
+  else
+    scheme="$(plutil -extract CFBundleURLTypes.0.CFBundleURLSchemes.0 raw -o - "$plist" 2> /dev/null || echo absent)"
+    if [ "$scheme" = "$reversed" ]; then
+      report "Info.plist : schéma d'URL de retour de Google ajouté depuis le fichier de configuration (OK)"
+    else
+      fail "Le schéma d'URL de retour de Google n'a pas été ajouté à l'Info.plist (phase « Google - schéma d'URL de retour »)."
+    fi
+  fi
 fi
 
 # --- Polices et manifeste de confidentialité embarqués ---
 for file in BalooThambi2-Variable.ttf HankenGrotesk-Regular.ttf HankenGrotesk-Bold.ttf HankenGrotesk-Italic.ttf \
-  PrivacyInfo.xcprivacy; do
+  PrivacyInfo.xcprivacy Assets.car; do
   if [ -f "${app}/${file}" ]; then
     report "${file} : présent (OK)"
   else

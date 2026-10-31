@@ -8,6 +8,8 @@ import UIKit
 struct DiagnosticView: View {
     @ObservedObject var viewModel: DiagnosticViewModel
     @ObservedObject var privacy: PrivacySettings
+    /// Pour ouvrir le vrai parcours de l'app (inscription, connexion, profil...) depuis le diagnostic.
+    let environment: AppEnvironment
 
     // L'e-mail saisi reste à l'écran ; le mot de passe est vidé dès l'appui sur le bouton.
     @State private var email = ""
@@ -51,8 +53,11 @@ struct DiagnosticView: View {
                 .foregroundColor(colorTextPrimary.color)
                 .accessibilityAddTraits(.isHeader)
             DiagLine("diag_subtitle", .description)
+            #if DEBUG
+            // Debug seulement : en Internal le vrai parcours est la racine de l'app (le diagnostic est une feuille par-dessus).
             NavigationLink {
-                HomeView()
+                AppRootView(environment: environment)
+                    .toolbar(.hidden, for: .navigationBar)
             } label: {
                 Text("diag_open_home")
                     .miffTextStyle(textBodyBold14)
@@ -60,6 +65,7 @@ struct DiagnosticView: View {
                     .multilineTextAlignment(.leading)
                     .frame(minHeight: Spacing.minTouchTarget, alignment: .leading)
             }
+            #endif
         }
     }
 

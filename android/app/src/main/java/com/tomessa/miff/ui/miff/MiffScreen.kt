@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorTextDescription
@@ -52,7 +52,7 @@ fun MiffScreen(
             Modifier
                 .fillMaxSize()
                 .background(colorBgCanvas)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .semantics { paneTitle = title }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),

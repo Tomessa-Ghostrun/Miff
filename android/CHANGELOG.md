@@ -22,6 +22,12 @@ Ticket `docs/tickets/miff.md` (§13, écrans A à G, L et M ; décisions du PM `
 - `AppRoot` : `MIFF_CHOICE` ouvre le vrai écran (l'écran provisoire de l'Auth et ses deux textes `android_*` sont supprimés). `FeedPlaceholderScreen` devient `FeedScreen`.
 - `AppContainer` : un seul `CachePurger` partagé ; `miffDirectory` ajouté à la liste d'arrêt de la session.
 
+### Fusion de main (zones sûres #46, démarrage à froid #49) et migration des écrans de MIFF-1
+- **Zones sûres.** Tous les écrans ajoutés par MIFF-1 passent par `ui/components/ScreenInsets.kt` : `MiffFrame` (Créer, Rejoindre, Ta Miff est prête, choix), l'écran de la Miff, le message d'accès perdu : `miffScreenInsets()` à la place de `safeDrawingPadding()` ; le Feed (qui remplace `FeedPlaceholderScreen`) : `miffTopInsets()` à la place de `statusBarsPadding()`. Plus aucune marge système brute dans le code (la règle `ScreenInsetsRuleTest` passe). Clavier : le contenu défile au-dessus du clavier sur le nom de la Miff, le code et le nom à l'écran de la Miff. Dialogues et menu du sélecteur : fenêtres du système, rien à faire.
+- **Tests** (`ScreenInsetsTest`) : 22 nouveaux cas pour MIFF-1 (Feed avec une Miff, sans Miff, illisible ; carte de Miff du Profil ; choix ; Créer (nom, prête) ; Rejoindre (code, confirmation) ; écran de la Miff (créateur, membre, chargement) ; accès perdu ; paysage avec encoche ; très grande police ; clavier ouvert). Les appels à `MainTabs` suivent ses nouveaux paramètres.
+- **Démarrage à froid.** `cachePurger`, `miffRepository`, `joinLimiter` et `miffDirectory` deviennent paresseux (`lazy`) dans `AppContainer` ; `MiffDirectory` rejoint la liste d'arrêt de la session. Aucun accès Firestore de MIFF-1 avant `MiffApplication.startSession` (vérifié : la construction n'ouvre pas Firestore, tout passe par des fonctions appelées à la première requête, depuis des écrans affichés après le routage).
+- **Catalogue iOS** (`Localizable.xcstrings`) : fusion des clés de l'authentification iOS (main) et des clés `miff_*` / `feed_*` / `profile_tab_*` ajoutées ici pour la parité ; aucune clé en conflit, parité Android / iOS vérifiée (349 clés communes).
+
 ### Corrigé après la revue indépendante de la PR #45
 - **I1** : « Tu n'as plus accès » n'est annoncé qu'après confirmation par le serveur, aussi quand c'est l'écran de la Miff qui entend le refus ; sans confirmation, rien n'est annoncé ni nettoyé et l'écran propose « Réessayer » (test : écouteur refusé + serveur injoignable = zéro message).
 - **I2** : « Reprendre le partage » affiche le même cadre de consentement (même texte, même version) que l'entrée.
@@ -38,6 +44,62 @@ Titre de l'écran = nom de la Miff ; un seul bouton de validation (coche retiré
 - **Limite connue** : sans permission de localisation demandée par l'app (ticket Localisation), `locationAccess` est écrit `unknown` ; il passera à `denied` / `foreground` / `background` avec ce ticket.
 - **Limite connue** : le lien du message de partage est la racine du site public ; une page d'atterrissage dédiée (QM14) viendra avec le site.
 - Signal de bascule : voir `backend/data-model.md` §12 (ratio lectures par utilisateur actif).
+
+## [0.6.4] - 2026-10-31 : démarrage à froid, le « M » ne doit plus rester seul longtemps
+
+Retour du PM après recette sur l'OPPO Find X5 Lite (APK debug de la CI) : le « M » seul reste près de 4 s avant le cœur ; pas sur iOS. Diagnostic complet et chronologie : `README.md`, « Démarrage à froid ».
+
+### Cause trouvée (lecture du code ; non mesurée sur appareil)
+Tout ce qui précède la première image de l'animation allonge le « M seul » : `Application.onCreate` construisait tout le conteneur, initialisait Firebase Auth et lançait la lecture de session (client Firestore compris) sur le thread principal ; puis la première composition de l'app (en debug : l'écran de diagnostic entier, galerie de tokens comprise) gelait l'écran **avant** que l'horloge de l'animation démarre.
+
+### Modifié
+- **`AppContainer` entièrement paresseux** (`lazy`) : le créer ne construit plus rien. `MiffApplication` construit le reste **sur un fil d'arrière-plan** (`warmUp`), après l'installation d'App Check.
+- **Session démarrée après la première image** de l'animation (`MiffApplication.startSession`, appelée par `SplashHost.onFirstFrame`) ; la lecture Firestore du compte tourne hors du thread principal (`FirestoreAccountRepository`, `Dispatchers.IO`). Routage, règle « collecte en pause jusqu'à la lecture de `users/{uid}` » et purge du cache avant tout accès Firestore : **inchangés**. App Check reste installé en premier dans `Application.onCreate`, la pause de la collecte aussi (synchrone).
+- **Le nettoyage des photos de la caméra** (fichiers) sort du constructeur : fil d'arrière-plan, après la première image.
+- **L'app est composée sous l'animation quand le cœur est apparu** (0,5 s) et non plus à la 2e image : son gel tombe pendant le début du gonflement (cœur presque immobile) ; temps réel conservé, jamais plus de 3,0 s.
+- **Le « M + i » est dessiné comme un tracé** (même contour que l'écran système, contrôlé par `SplashArtworkTest`) ; les tracés sont préparés hors du thread principal.
+- **Premier beat de l'animation 300 → 100 ms** (`HOLD_MS`) : l'écran système a déjà montré le « M » ; durée totale **2,7 s** (2,9 s avant), toujours ≤ 3,0 s. Une constante à remettre à 300 si le PM préfère l'ancien rythme.
+- **Écran de diagnostic (debug)** : seul l'en-tête est composé sous l'animation, le reste après son départ.
+
+### Ajouté
+- **Mesure du démarrage** (`startup/StartupTrace`, `domain/startup/StartupReport`) : sections de trace système `Miff.*` (`android.os.Trace`) ; encart « Mesure du démarrage » (debug et `releaseLike` seulement, retiré du release par R8 et contrôlé par la CI) avec départ → première image, départ → cœur visible, durée dans `Application.onCreate`, plus long arrêt de l'animation. Aucun journal (l'app ne journalise pas), aucune donnée personnelle.
+- **Build `releaseLike`** (code release, R8, non « debuggable », signé avec la clé de debug) et son artefact CI `miff-releaselike-apk` (3 jours) pour comparer debug et release sur l'OPPO. Jamais publié ; aucune nouvelle clé, aucun secret ajouté (la CI utilise le keystore de debug déjà décodé depuis `DEBUG_KEYSTORE_B64`).
+- **Baseline Profile** écrit à la main (`src/main/baseline-prof.txt`) + `androidx.profileinstaller` 1.4.1 (Apache 2.0, gratuit). Limite : sans appareil il liste des paquets et non les méthodes réellement appelées ; un profil enregistré (Macrobenchmark) viendra plus tard ; aucun effet en debug.
+- Tests : `StartupReportTest`, `StartupTraceAndContainerTest` (le conteneur ne construit rien sans Firebase), `SplashHostTest` (l'app attend le cœur, composée tout de suite en « réduire les animations », première image), `SplashTimelineTest` (premier beat, moment de composition, 3,0 s).
+
+### Choix « économiques »
+- Aucun coût : bibliothèque AndroidX gratuite, build supplémentaire en CI (quelques minutes de calcul sur le quota gratuit de GitHub Actions ; signal de bascule : si la CI dépasse le quota gratuit, retirer `assembleReleaseLike` de la CI et le lancer à la demande).
+
+### Rejeté
+- **Icône animée (AnimatedVectorDrawable) de l'écran système** : raccord sans saut impossible à garantir sans appareil (durées inconnues de l'écran système, ColorOS, risque d'une double apparition du cœur contre la règle photosensible). Détails dans le README.
+
+### Limites
+- Aucune durée n'a pu être mesurée sur appareil : les gains sont attendus, pas chiffrés. À chronométrer par le PM (checklist dans la PR).
+- `FirebaseInitProvider` et les initialiseurs `androidx.startup` s'exécutent encore avant `Application.onCreate`.
+
+## [0.6.3] - 2026-10-31 : zones sûres, repli et diagnostic (la recette sur l'OPPO a montré le même défaut avec la PR #46)
+
+Retour du PM : « j'ai toujours le même problème avec les marges » (logo du Feed à y≈45 px, sous l'heure). La cause du 0.6.2 (Scaffold + consumeWindowInsets) était réelle mais **pas suffisante** sur ce téléphone, et la cause exacte sur l'OPPO n'est **pas établie** (non reproduite : tests Robolectric API 35 et émulateur Android 14 corrects).
+
+### Ajouté
+- **Repli** dans `ScreenInsets.kt` (`miffSafeInsets`, `SystemBarsFallback`) : si le système rapporte 0 en haut (ou en bas avec boutons) alors que la barre existe, la hauteur déclarée par le système est utilisée ; jamais à la place d'une vraie valeur. Branché dans `MainActivity` seulement. Tests : `feed_whenThePhoneReportsNoStatusBarAtAll...` et `feed_whenThePhoneReportsARealValue...`.
+- **Carte de diagnostic des marges** (debug seulement, première carte de l'écran de diagnostic) pour lire ce que l'OPPO rapporte vraiment.
+- `adjustResize` conservé (ne peut pas être la cause : le défaut existait avant).
+
+## [0.6.2] - 2026-10-31 : zones sûres (barre d'état, barre de navigation, encoche, clavier)
+
+Retour du PM après sa recette sur l'OPPO Find X5 Lite : « tout est systématiquement trop haut » ; le logo « Miff » du Feed était dessiné par-dessus l'heure et les icônes.
+
+### Corrigé
+- **Cause** : `MainTabs` (Feed et Profil) utilisait un `Scaffold` puis `consumeWindowInsets(padding)` : la barre d'état était déclarée « déjà gérée » sans qu'aucune marge ne soit appliquée, donc le `statusBarsPadding()` des onglets recevait 0. Le `Scaffold` est retiré (colonne simple : contenu de l'onglet + barre d'onglets).
+- **Un seul endroit pour les marges système** : `ui/components/ScreenInsets.kt` (`MiffScreen`, `miffScreenInsets`, `miffTopInsets`, `miffBottomInsets`, `miffTopInset`, `miffKeyboardVisible`). Tous les écrans existants (inscription, connexion, mot de passe oublié, panneau de consentement, accueil, profil, téléphone, recadrage, carrousel, onglets Feed et Profil, barre d'onglets, Réglages et ses 4 sous-écrans, diagnostic, feuilles Photo et Pays) l'utilisent ; plus aucun appel brut à `safeDrawingPadding`/`statusBarsPadding`/`navigationBarsPadding` ailleurs (`ScreenInsetsRuleTest`).
+- Réglages : la barre du haut respecte aussi l'encoche sur les côtés en paysage ; barre d'onglets : respecte la barre de navigation latérale (3 boutons en paysage) et l'encoche ; feuille des pays : le champ de recherche reste visible au-dessus du clavier.
+- `windowSoftInputMode="adjustResize"` sur `MainActivity` : le clavier est transmis à Compose sur Android 8 à 10 (sans cela l'écran pouvait « glisser » vers le haut, sous la barre d'état).
+
+### Ajouté
+- `ScreenInsetsTest` (22 tests Robolectric : insets réels simulés) et `ScreenInsetsRuleTest` ; checklist de recette `docs/qa/checklists/insets-android-recette-pm.md`.
+- Vérifié : `targetSdk` 36 (edge-to-edge imposé sur Android 15, déjà le comportement de l'app depuis le début, donc aucun changement visible), icônes de la barre d'état sombres sur fond clair (`enableEdgeToEdge` + thème), splash volontairement plein écran. Aucun choix économique, aucune dépendance ajoutée.
+
 ## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
 
 Décision du PM : « Oui pour durcir le consentement » (le risque noté en 0.6.0 est supprimé).

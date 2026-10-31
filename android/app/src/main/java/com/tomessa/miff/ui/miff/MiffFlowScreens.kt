@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -46,6 +45,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -86,7 +86,7 @@ fun MiffFrame(
             modifier
                 .fillMaxSize()
                 .background(background)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .semantics { if (title != null) paneTitle = title }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
@@ -116,7 +116,7 @@ fun MiffChoiceScreen(
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .semantics { paneTitle = pane }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
@@ -541,7 +541,7 @@ fun AccessLostScreen(
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .semantics {
                     paneTitle = title

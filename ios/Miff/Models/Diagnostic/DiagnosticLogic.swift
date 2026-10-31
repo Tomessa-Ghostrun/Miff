@@ -22,14 +22,6 @@ enum RulesProbeOutcome: Equatable {
     case inconclusive
 }
 
-/// Codes d'erreur de Firestore (domaine « FIRFirestoreErrorDomain »), identiques aux codes gRPC.
-private enum FirestoreErrorNumber {
-    static let domain = "FIRFirestoreErrorDomain"
-    static let deadlineExceeded = 4
-    static let permissionDenied = 7
-    static let unavailable = 14
-}
-
 /// Erreur levée quand une opération réseau dépasse le délai que nous lui accordons.
 struct OperationTimeoutError: Error, Equatable {}
 

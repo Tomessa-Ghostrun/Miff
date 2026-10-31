@@ -2,14 +2,9 @@ package com.tomessa.miff.ui.main
 
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -18,7 +13,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -34,6 +28,8 @@ import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.ui.components.miffBottomInsets
+import com.tomessa.miff.ui.components.miffKeyboardVisible
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.miff.AccessLostScreen
@@ -290,8 +286,12 @@ private fun NavController.open(route: Any) = navigate(route) { launchSingleTop =
  * The tabs and their bar. The tab in use is kept through a rotation; leaving a tab keeps its own state (scroll position, and
  * everything it remembers) for when the person comes back; tapping the tab already in use brings it back to the top. The bar
  * disappears while the keyboard is open.
+ *
+ * Safe areas (see ui/components/ScreenInsets.kt): the BAR keeps itself above the navigation bar (3 buttons or gestures); each
+ * TAB keeps itself below the status bar with miffTopInsets() on its own root, so that it can draw its background (the gradient
+ * of the Profile) under the status bar. This function must not consume insets it does not pad: it did once (Scaffold +
+ * consumeWindowInsets), the status bar was "consumed" before the tabs could use it, and the Feed logo was drawn over the clock.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainTabs(
     tabBar: TabBarConfig,
@@ -309,25 +309,10 @@ fun MainTabs(
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
     val holder = rememberSaveableStateHolder()
-    val keyboardOpen = WindowInsets.isImeVisible
-    Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (!keyboardOpen) {
-                MainTabBar(
-                    config = tabBar,
-                    selected = selected,
-                    onSelect = { tab ->
-                        if (tab == selected) scrollToTop++ else selected = tab
-                    },
-                    modifier = Modifier.navigationBarsPadding(),
-                )
-            }
-        },
-    ) { padding ->
-        // The tab content draws under the status bar itself (gradient of the Profile); only the bar's space is reserved.
+    val keyboardOpen = miffKeyboardVisible()
+    Column(modifier = Modifier.fillMaxSize()) {
         holder.SaveableStateProvider(selected) {
-            Box(Modifier.padding(bottom = padding.calculateBottomPadding()).consumeWindowInsets(padding)) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (selected) {
                     MainTab.FEED -> {
                         FeedScreen(
@@ -356,6 +341,16 @@ fun MainTabs(
                     MainTab.UPDATE -> {}
                 }
             }
+        }
+        if (!keyboardOpen) {
+            MainTabBar(
+                config = tabBar,
+                selected = selected,
+                onSelect = { tab ->
+                    if (tab == selected) scrollToTop++ else selected = tab
+                },
+                modifier = Modifier.miffBottomInsets(),
+            )
         }
     }
 }

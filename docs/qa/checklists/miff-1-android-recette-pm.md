@@ -1,7 +1,7 @@
 # Recette Android de MIFF-1 (créer, rejoindre, écran de la Miff, partage du statut, accès perdu) — parcours pour le PM
 
 **Pour qui** : vous, sur votre OPPO Find X5 Lite (Android 13). Aucune connaissance technique requise, sauf l'étape D (une manipulation dans la console Firebase, décrite pas à pas).
-**Durée** : environ 40 minutes.
+**Durée** : environ 50 minutes.
 **Ce que vous testez** : l'écran « Choisis comment tu veux commencer », la création d'une Miff, le code et son partage, l'entrée avec un code, l'écran de la Miff, « Partager mon statut » (arrêter / reprendre), le message quand on n'a plus accès à une Miff, le comportement sans réseau.
 **Ce qui n'est PAS encore là (c'est voulu, ne le comptez pas comme un défaut)** : retirer un proche, quitter une Miff, supprimer une Miff, créer un nouveau code, « Prévenir mes proches » (ticket MIFF-2) ; le vrai Feed avec les statuts des proches ; la demande de permission de localisation (ticket Localisation) ; l'offre Premium pour une deuxième Miff.
 **Rappel** : les maquettes ont des écarts voulus (liste dans la description de la PR).
@@ -84,6 +84,24 @@
 - [ ] Mettez l'app en arrière-plan puis revenez sur l'écran de la Miff : tout se remet à jour tout seul.
 - [ ] Agrandissez la taille de texte du téléphone (Réglages > Affichage > Taille de la police, au maximum) : sur « Rejoindre la Miff… ? » le texte de partage et les boutons restent lisibles, sans chevauchement.
 - [ ] TalkBack (facultatif) : le code est lu **groupe par groupe, lettre par lettre**, et le texte de partage est lu **avant** le bouton.
+
+## Partie I — Marges et clavier sur les nouveaux écrans (8 min)
+
+Cette version reprend la règle des **zones sûres** (voir `insets-android-recette-pm.md`) : rien ne doit passer sous l'heure et les icônes du haut, ni sous les touches ou la barre de gestes du bas. À regarder sur **chaque écran de cette recette**, en navigation par **3 boutons** puis par **gestes** si possible :
+
+- [ ] **Choisis comment tu veux commencer** : le logo « Miff » est sous l'heure, « Se déconnecter » reste visible au-dessus des touches.
+- [ ] **Nouvelle Miff** : flèche retour et titre sous l'heure. Touchez le champ **Nom** : le clavier s'ouvre, le champ reste visible, on peut faire défiler jusqu'au bouton **Créer et partager** qui s'arrête **au-dessus** du clavier.
+- [ ] **Ta Miff « … » est prête** : le logo est sous l'heure, **Continuer** est au-dessus des touches (faire défiler si besoin).
+- [ ] **Rejoindre une Miff** : touchez le champ **Code de la Miff** : le champ et le bouton **Continuer** restent atteignables au-dessus du clavier ; rien ne remonte sous l'heure.
+- [ ] **Rejoindre la Miff « … » ?** (confirmation) : tout le texte et les deux boutons sont visibles et au-dessus des touches.
+- [ ] **Feed** (avec une Miff, puis sans Miff) : le logo est sous l'heure ; la barre d'onglets est au-dessus des touches. Ouvrez le sélecteur de Miff (compte Premium seulement) : le menu s'ouvre entièrement à l'écran.
+- [ ] **Profil > carte de la Miff** : la carte est entièrement visible au-dessus de la barre d'onglets.
+- [ ] **Écran de la Miff** : flèche retour et titre sous l'heure. (Créateur) touchez le champ **Nom** : il reste visible au-dessus du clavier. Faites défiler jusqu'à **Lieux de confiance** : le dernier texte s'arrête au-dessus des touches.
+- [ ] **Fenêtres de confirmation** (arrêter / reprendre le partage) et **message « Tu n'as plus accès… »** : centrés, rien de coupé en haut ni en bas.
+- [ ] **Paysage** (rotation automatique active) : sur « Nouvelle Miff » et sur l'écran de la Miff, rien sous l'encoche ni sous les touches qui passent sur le côté ; on peut défiler jusqu'en bas.
+- [ ] **Grande police** (taille de police au maximum) : « Nouvelle Miff », « Rejoindre une Miff » et l'écran de la Miff défilent, rien n'est coupé, tous les boutons restent atteignables.
+
+Si un écran est faux : capture d'écran, numéro de la ligne, mode (3 boutons ou gestes), orientation.
 
 ## À me renvoyer
 

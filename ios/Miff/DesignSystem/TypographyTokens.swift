@@ -37,6 +37,20 @@ enum MiffFontFace: String, CaseIterable {
     }
 }
 
+extension MiffFontFace {
+    /// Baloo Thambi 2 en gras (graisse 700 de la police variable), pour les titres des illustrations du carrousel (comme
+    /// sur Android). Si le système ne sait pas appliquer la variation, la police normale est rendue : jamais d'échec.
+    static func balooBoldFont(size: CGFloat) -> Font {
+        let base = MiffFontFace.baloo.uiFont(size: size)
+        // 0x77676874 est l'étiquette « wght » (graisse) des polices variables.
+        let weightAxis = 0x7767_6874
+        let descriptor = base.fontDescriptor.addingAttributes([
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [weightAxis: 700]
+        ])
+        return Font(UIFont(descriptor: descriptor, size: size) as CTFont)
+    }
+}
+
 struct TextStyleToken {
     let name: String
     let face: MiffFontFace
