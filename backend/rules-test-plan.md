@@ -346,3 +346,15 @@ Un lot atomique contient : **adhésion** `members/{moi}` (partage **activé** : 
 | EN6 | Après le lot : le nouveau membre lit les statuts, les autres lisent le sien, `carol` (partage désactivé) toujours pas ; un créateur est lu par le membre qui le suit | OK / KO comme indiqué |
 
 Lectures de règles de ces lots : voir `rules-test-report.md` (section ONB-B / MIFF-0) et `data-model.md` §12.
+
+## 16. MIFF-1 : longueur du nom d'une Miff (ticket `docs/tickets/miff.md`, §5.2, décision QM6)
+
+Constat à établir avant le développement Android : comment les règles comptent la longueur d'un nom (`isStr(d.name, 1, 40)`) avec des emojis et des lettres accentuées. **Aucune règle n'est modifiée** : ces cas documentent un comportement existant dont le client dépend (il limite à 40 unités UTF-16, `String.length` en Kotlin).
+
+| # | Cas | Attendu |
+|---|---|---|
+| ND1 | `eve` crée une Miff dont le nom a 41, puis 40 caractères ASCII | KO, puis OK |
+| ND1b | Le créateur renomme (Miff + nom du code, un lot) : 41, puis 40 caractères | KO, puis OK |
+| ND2 | Nom de 20 emojis (40 unités UTF-16, 20 code points, 80 octets UTF-8) | OK |
+| ND2b | Nom de 40 lettres « é » (40 unités, 80 octets UTF-8) : les règles comptent des caractères, pas des octets | OK |
+| ND3 | Mesure d'information : 30 emojis (30 code points, 60 unités UTF-16) | **Refusé** constaté : les règles comptent des unités UTF-16 (le cas n'échoue jamais, il imprime le constat) |

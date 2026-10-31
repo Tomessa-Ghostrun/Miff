@@ -331,6 +331,28 @@ class SessionManager(
     }
 
     /**
+     * A Miff was just created or joined and the server CONFIRMED it (Miff ticket). The account now counts as having a Miff.
+     * The end of the onboarding is only counted (`onboarding_completed`, once, if the consent allows) when the person was on
+     * the "create or join" step; the app does NOT move on here (the "Ta Miff est prête" screen still has to be seen): see
+     * [continueAfterMiff].
+     */
+    fun onMiffEntered(via: AnalyticsEvent.OnboardingVia) {
+        accountSnapshot = accountSnapshot?.copy(hasMembership = true)
+        if (currentDestination() == AppDestination.MIFF_CHOICE) tracker.track(AnalyticsEvent.OnboardingCompleted(via))
+    }
+
+    /** From the "create or join" step to the feed (no effect anywhere else). */
+    fun continueAfterMiff() {
+        if (currentDestination() ==
+            AppDestination.MIFF_CHOICE
+        ) {
+            mutableState.value = SessionState.Ready(AppDestination.FEED)
+        }
+    }
+
+    private fun currentDestination(): AppDestination? = (mutableState.value as? SessionState.Ready)?.destination
+
+    /**
      * Does the server already hold a complete profile (with its phone number) for the person signed in? Used after a refused
      * write, to tell a real refusal from a first try that landed late. One read; false if anything is unclear.
      */
