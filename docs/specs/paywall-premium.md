@@ -34,3 +34,10 @@ Nom de l'offre : **Miff+**.
 - **Abonnement mensuel sans engagement** : 6,99 €/mois.
 
 Restent à cadrer avant la création des produits dans les stores : ce qui se passe après la première année (reconduction au même tarif ?), l'essai de 7 jours sur l'offre mensuelle aussi ou seulement sur l'annuelle, le retrait du « Économisez 30 % » en dur dans la maquette (le calcul réel est 28,6 %), l'obtention des prix depuis les stores (jamais en dur dans l'app) et les textes légaux d'abonnement (reconduction tacite, rétractation, médiateur de la consommation déjà prévu). Aucun achat n'est branché tant que la validation serveur n'existe pas (Premium accordé à la main, voir `docs/tickets/initialisation-technique.md`).
+
+### Précisions du PM (2026-10-31, même jour)
+
+- **Après la première année** : l'abonnement annuel est **reconduit au même tarif** (4,99 €/mois, 59,88 € par an).
+- **Essai gratuit de 7 jours** : **uniquement pour l'offre annuelle**, pas pour le mensuel.
+- **« Économisez 30 % »** : **conservé** dans la maquette. Le calcul réel est 28,6 % (6,99 € contre 4,99 €) : écart **assumé par le PM** (risque : mention publicitaire inexacte, y compris dans les fiches des stores). À reprendre si un store ou une autorité le demande.
+- Restent à cadrer : l'obtention des prix depuis les stores (jamais en dur dans l'app) et les textes légaux d'abonnement (reconduction tacite, rétractation, médiateur de la consommation déjà prévu).
