@@ -173,6 +173,14 @@ jobs:
             exit 1
           fi
 
+      # "releaseLike" = the release build (R8, not debuggable, no diagnostic screen) signed with the DEBUG key, to compare the launch
+      # time with the debug APK on a phone. Test build only: never published, short retention.
+      - name: Build releaseLike APK (release code, signed with the debug key)
+        run: |
+          start=$(date +%s)
+          ./gradlew assembleReleaseLike --console=plain -Pmiff.uploadCrashlyticsMapping=false
+          printf '| assembleReleaseLike | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
+
       - name: Build release bundle (unsigned)
         run: |
           start=$(date +%s)
@@ -193,6 +201,19 @@ jobs:
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
+          # The launch-duration readout is for the debug and releaseLike builds only: the real release must not contain it.
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q 'STARTUPMETRICSOVERLAY'; then
+            echo "::error title=Mesure du demarrage dans le release::Le bundle release contient l'affichage de mesure du demarrage (STARTUPMETRICSOVERLAY) : il doit rester reserve aux builds debug et releaseLike."
+            exit 1
+          fi
+          # releaseLike is built from the release sources: same proof for its APK.
+          like=app/build/outputs/apk/releaseLike/app-releaseLike.apk
+          test -f "$like" || { echo "::error::APK releaseLike introuvable : $like"; exit 1; }
+          if unzip -p "$like" 'classes*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck'; then
+            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic ou le fournisseur App Check de debug."
+            exit 1
+          fi
+          echo "APK releaseLike : aucune trace du diagnostic ni du fournisseur App Check de debug."
 
       # The release resource shrinker removed "default_web_client_id" once (it is read by name): without it "Continuer avec
       # Google" never works in a release build. Same proof for the biometric permissions pulled in by androidx.credentials.
@@ -217,6 +238,15 @@ jobs:
         with:
           name: miff-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Upload releaseLike APK (short retention)
+        if: env.FAKE_FIREBASE_CONFIG != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: miff-releaselike-apk
+          path: android/app/build/outputs/apk/releaseLike/app-releaseLike.apk
           retention-days: 3
           if-no-files-found: error
 

@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,6 +18,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.tomessa.miff.data.settings.AndroidLanguageStore
+import com.tomessa.miff.domain.startup.StartupMark
+import com.tomessa.miff.startup.StartupMetricsOverlay
+import com.tomessa.miff.startup.StartupTrace
 import com.tomessa.miff.ui.components.ProvideSystemBarsFallback
 import com.tomessa.miff.ui.navigation.MiffNavHost
 import com.tomessa.miff.ui.splash.ReduceMotion
@@ -31,6 +35,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        StartupTrace.onActivityCreate(recreation = savedInstanceState != null)
         // System launch screen (blue, "M + i" without the heart), then the animation of ui/splash takes over.
         // Nothing is held back: the system screen goes away as soon as the first frame is drawn. Removing it at once
         // (no system exit animation) keeps the hand-over to the Compose animation free of any visible jump.
@@ -48,14 +53,24 @@ class MainActivity : ComponentActivity() {
         setContent {
             MiffTheme {
                 ProvideSystemBarsFallback {
-                    SplashHost(reduceMotion = reduceMotion) {
-                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                            MiffNavHost(container = container)
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        SplashHost(
+                            reduceMotion = reduceMotion,
+                            // The session is read once the first image of the animation is on screen, not before: reading it
+                            // first would keep the system launch screen up for longer (the routing itself is unchanged).
+                            onFirstFrame = { (application as MiffApplication).startSession() },
+                        ) {
+                            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                                MiffNavHost(container = container)
+                            }
                         }
+                        // Internal builds only (debug, releaseLike): durations of the launch, for the PM. Absent from release.
+                        if (BuildConfig.STARTUP_METRICS) StartupMetricsOverlay()
                     }
                 }
             }
         }
+        StartupTrace.mark(StartupMark.ACTIVITY_CONTENT_SET)
     }
 
     /**
