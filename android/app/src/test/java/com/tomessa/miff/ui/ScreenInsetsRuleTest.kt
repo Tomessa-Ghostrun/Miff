@@ -12,7 +12,8 @@ import java.io.File
  * If this test fails: use MiffScreen / miffScreenInsets / miffTopInsets / miffBottomInsets instead (see android/README.md).
  */
 class ScreenInsetsRuleTest {
-    private val central = "ScreenInsets.kt"
+    // The debug diagnostic card shows the raw values of the phone: the only other file allowed to read them (debug build only).
+    private val central = setOf("ScreenInsets.kt", "InsetsDiagnostic.kt")
 
     private val forbidden =
         listOf(
@@ -44,7 +45,7 @@ class ScreenInsetsRuleTest {
         assertTrue("source folders not found from ${File(".").absolutePath}", roots.isNotEmpty())
         val offenders = mutableListOf<String>()
         roots.forEach { root ->
-            root.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name != central }.forEach { file ->
+            root.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in central }.forEach { file ->
                 file.readLines().forEachIndexed { index, line ->
                     if (isCode(line) &&
                         forbidden.any { it.containsMatchIn(line) }
@@ -63,7 +64,7 @@ class ScreenInsetsRuleTest {
 
     @Test
     fun theCommonFileExists() {
-        assertTrue(sourceRoots().any { root -> root.walkTopDown().any { it.name == central } })
+        assertTrue(sourceRoots().any { root -> root.walkTopDown().any { it.name == "ScreenInsets.kt" } })
     }
 
     @Test

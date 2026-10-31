@@ -2,6 +2,15 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.3] - 2026-10-31 : zones sûres, repli et diagnostic (la recette sur l'OPPO a montré le même défaut avec la PR #46)
+
+Retour du PM : « j'ai toujours le même problème avec les marges » (logo du Feed à y≈45 px, sous l'heure). La cause du 0.6.2 (Scaffold + consumeWindowInsets) était réelle mais **pas suffisante** sur ce téléphone, et la cause exacte sur l'OPPO n'est **pas établie** (non reproduite : tests Robolectric API 35 et émulateur Android 14 corrects).
+
+### Ajouté
+- **Repli** dans `ScreenInsets.kt` (`miffSafeInsets`, `SystemBarsFallback`) : si le système rapporte 0 en haut (ou en bas avec boutons) alors que la barre existe, la hauteur déclarée par le système est utilisée ; jamais à la place d'une vraie valeur. Branché dans `MainActivity` seulement. Tests : `feed_whenThePhoneReportsNoStatusBarAtAll...` et `feed_whenThePhoneReportsARealValue...`.
+- **Carte de diagnostic des marges** (debug seulement, première carte de l'écran de diagnostic) pour lire ce que l'OPPO rapporte vraiment.
+- `adjustResize` conservé (ne peut pas être la cause : le défaut existait avant).
+
 ## [0.6.2] - 2026-10-31 : zones sûres (barre d'état, barre de navigation, encoche, clavier)
 
 Retour du PM après sa recette sur l'OPPO Find X5 Lite : « tout est systématiquement trop haut » ; le logo « Miff » du Feed était dessiné par-dessus l'heure et les icônes.

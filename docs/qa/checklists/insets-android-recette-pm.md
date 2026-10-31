@@ -7,6 +7,11 @@
 Faites le parcours **deux fois** : (A) navigation par **3 boutons**, (B) navigation par **gestes**
 (Réglages > Paramètres supplémentaires > Bouton de navigation, ou Réglages > Système > Navigation système selon la version).
 
+## Étape 0 : photographier le diagnostic des marges (2 minutes, à faire en premier)
+
+L'APK **debug** s'ouvre sur l'écran « Internal diagnostic » : sa **première carte**, « Marges système (insets) : à photographier », liste ce que le téléphone rapporte (hauteur de la barre d'état, de la barre de navigation, encoche, densité, version d'Android, mode de navigation). Faites **2 ou 3 captures** en faisant défiler la carte (Marche + Volume bas), une en navigation **3 boutons** et une en **gestes** si possible, et envoyez-les. Vérifiez que la ligne du haut indique « insets-r2 » : sinon l'ancienne version est encore installée (désinstallez-la puis réinstallez).
+Pour ouvrir l'application depuis cet écran : bouton « Open the app ».
+
 ## Pour chaque écran
 
 Le critère est toujours le même, 3 points : **haut** (rien sous l'heure/la batterie), **bas** (rien sous les touches ou la barre de gestes), **icônes de la barre d'état lisibles** (sombres sur fond clair, claires sur l'écran bleu de lancement).

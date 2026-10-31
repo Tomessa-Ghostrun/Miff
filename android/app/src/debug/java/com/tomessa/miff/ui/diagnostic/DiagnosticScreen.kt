@@ -111,6 +111,8 @@ fun DiagnosticScreen(
             Text(stringResource(R.string.diag_open_home), style = textBodyBold14, color = colorActionPrimary)
         }
 
+        InsetsDiagnosticCard()
+
         BuildIdentityCard(projectId = state.firebaseProjectId)
 
         SectionCard(stringResource(R.string.diag_test1_title)) {

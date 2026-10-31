@@ -47,6 +47,8 @@ import com.tomessa.miff.ui.auth.SignInUiState
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpUiState
 import com.tomessa.miff.ui.components.MiffScreen
+import com.tomessa.miff.ui.components.ProvideSystemBarsFallback
+import com.tomessa.miff.ui.components.SystemBarSizes
 import com.tomessa.miff.ui.home.HomeScreen
 import com.tomessa.miff.ui.main.MainTabs
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
@@ -68,6 +70,7 @@ import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyUiState
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.theme.MiffTheme
+import com.tomessa.miff.ui.theme.Spacing
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -102,6 +105,7 @@ class ScreenInsetsTest {
 
     private fun show(
         fontScale: Float = 1f,
+        systemBarsFallback: Boolean = false,
         content: @Composable () -> Unit,
     ) {
         composeRule.setContent {
@@ -112,7 +116,11 @@ class ScreenInsetsTest {
                 density = base
             }
             CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
-                MiffTheme { Box(Modifier.fillMaxSize()) { content() } }
+                MiffTheme {
+                    ProvideSystemBarsFallback(
+                        systemBarsFallback,
+                    ) { Box(Modifier.fillMaxSize()) { content() } }
+                }
             }
         }
     }
@@ -319,6 +327,44 @@ class ScreenInsetsTest {
         composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_feed_a11y)).assertCountEquals(0)
         applyInsets(phone)
         composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_feed_a11y)).assertCountEquals(1)
+    }
+
+    // --- A phone that reports NOTHING for the status bar (the OPPO of the recipe of 2026-10-31) ---------------------------------
+
+    private fun feedWithFallback() {
+        show(systemBarsFallback = true) {
+            MainTabs(
+                tabBar = TabBarConfig.forBuild(isInternalBuild = true),
+                profileState = ProfileTabUiState(ProfileTabStatus.LOADING, null),
+                onOpenMyInfo = {},
+                onOpenSettings = {},
+                onRetryProfile = {},
+            )
+        }
+    }
+
+    private fun logoTop(): Float =
+        composeRule
+            .onNodeWithContentDescription(text(R.string.home_logo_a11y))
+            .fetchSemanticsNode()
+            .boundsInRoot.top
+
+    @Test
+    fun feed_whenThePhoneReportsNoStatusBarAtAll_theRealHeightOfTheBarIsUsed() {
+        feedWithFallback()
+        applyInsets(Phone(statusBar = 0.dp, navigationBottom = 0.dp))
+        val bar = SystemBarSizes.statusBarHeight(landscape = false)
+        assertTrue("the framework declares a status bar height", bar > 0)
+        assertTrue("logo top=${logoTop()} must be below the real status bar ($bar px)", logoTop() >= bar - TOLERANCE)
+    }
+
+    @Test
+    fun feed_whenThePhoneReportsARealValue_thatValueIsKept_noExtraMargin() {
+        feedWithFallback()
+        val reported = Phone(statusBar = 40.dp, navigationBottom = 0.dp)
+        applyInsets(reported)
+        val expected = px(reported.statusBar) + px(Spacing.m)
+        assertTrue("logo top=${logoTop()} expected about $expected", kotlin.math.abs(logoTop() - expected) <= TOLERANCE)
     }
 
     // --- One test per screen: a phone with a status bar and a navigation bar is simulated -------------------------------------
