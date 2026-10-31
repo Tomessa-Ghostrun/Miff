@@ -76,7 +76,6 @@ import com.tomessa.miff.ui.theme.colorBorderDefault
 import com.tomessa.miff.ui.theme.colorBorderStrong
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextError
-import com.tomessa.miff.ui.theme.colorTextErrorDisabled
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.colorTextOnAction
 import com.tomessa.miff.ui.theme.colorTextPrimary
@@ -572,7 +571,7 @@ fun MiffConfirmDialog(
                         androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                             containerColor = colorBgSurface,
                             contentColor = colorTextError,
-                            disabledContentColor = colorTextErrorDisabled,
+                            disabledContentColor = colorTextError.copy(alpha = DISABLED_ALPHA),
                         ),
                     modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget),
                 ) {
@@ -600,3 +599,6 @@ fun MiffConfirmDialog(
         }
     }
 }
+
+/** Opacity of the label of a disabled button (same value as the tab bar and the design fiches). */
+private const val DISABLED_ALPHA = 0.5f
