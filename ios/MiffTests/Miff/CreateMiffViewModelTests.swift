@@ -38,7 +38,7 @@ final class CreateMiffViewModelTests: MiffFlowTestCase {
 
         viewModel.onSubmit()
         XCTAssertTrue(viewModel.state.saving, "le bouton est verrouillé tout de suite")
-        await waitUntil { viewModel.state.step == .ready }
+        await waitUntil { viewModel.state.step == .ready && self.recorder.directoryChanges == 1 }
 
         XCTAssertEqual(stepWhenWriting, .name, "toujours à l'étape du nom tant que le serveur n'a pas répondu")
         XCTAssertEqual(viewModel.state.created?.joinCode, testCode)
@@ -51,6 +51,31 @@ final class CreateMiffViewModelTests: MiffFlowTestCase {
         let values = sink.events.first?.params.values.compactMap { $0 as? String } ?? []
         XCTAssertFalse(values.contains(testCode))
         XCTAssertFalse(values.contains("Chez nous"))
+    }
+
+    func testTheCodeIsShownAtOnceWithoutWaitingForTheDirectoryToRefresh() async {
+        let gate = TestGate()
+        directoryGate = gate
+        addTeardownBlock {
+            gate.open()
+        }
+        let viewModel = create()
+        viewModel.onNameChanged("Chez nous")
+
+        viewModel.onSubmit()
+        await waitUntil { viewModel.state.step == .ready }
+
+        // Le lot est accepté : la personne voit son code, alors que le rafraîchissement de l'annuaire n'a pas fini.
+        XCTAssertEqual(viewModel.state.step, .ready)
+        XCTAssertEqual(viewModel.state.created?.joinCode, testCode)
+        XCTAssertFalse(viewModel.state.saving)
+        await waitUntil { gate.arrivals == 1 }
+        XCTAssertEqual(gate.arrivals, 1, "le rafraîchissement est bien lancé")
+        XCTAssertEqual(recorder.directoryChanges, 0, "mais il n'a pas fini")
+
+        gate.open()
+        await waitUntil { self.recorder.directoryChanges == 1 }
+        XCTAssertEqual(recorder.directoryChanges, 1, "il va quand même jusqu'au bout")
     }
 
     func testADoubleTapMakesOneMiff() async {

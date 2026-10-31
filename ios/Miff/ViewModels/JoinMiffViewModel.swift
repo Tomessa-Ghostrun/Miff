@@ -192,12 +192,17 @@ final class JoinMiffViewModel: ObservableObject {
         if case .joined(let miffId, let firstMiff) = result {
             context.tracker.track(.miffJoined(isFirstMiff: firstMiff))
             context.onEntered(.joined)
-            await context.onDirectoryChanged()
             ready = nil
             var done = state
             done.joining = false
             done.joinedMiffId = miffId
             state = done
+            // Le lot est accepté : l'écran se referme tout de suite ; l'annuaire se rafraîchit ensuite en tâche de fond
+            // (même schéma que « Créer » : aucune attente sur un écran verrouillé).
+            let refresh = context.onDirectoryChanged
+            Task {
+                await refresh()
+            }
             return
         }
         var next = state

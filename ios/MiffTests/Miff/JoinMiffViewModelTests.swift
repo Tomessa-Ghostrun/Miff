@@ -71,7 +71,7 @@ final class JoinMiffViewModelTests: MiffFlowTestCase {
 
         viewModel.onConfirm()
         viewModel.onConfirm()
-        await waitUntil { viewModel.state.joinedMiffId != nil }
+        await waitUntil { viewModel.state.joinedMiffId != nil && self.recorder.directoryChanges == 1 }
 
         XCTAssertEqual(repo.calls.filter { $0 == "join" }.count, 1)
         XCTAssertEqual(viewModel.state.joinedMiffId, testMiffId)
@@ -79,6 +79,31 @@ final class JoinMiffViewModelTests: MiffFlowTestCase {
         XCTAssertEqual(sink.names, ["miff_joined"])
         XCTAssertEqual(recorder.directoryChanges, 1)
         XCTAssertFalse(viewModel.state.joining)
+    }
+
+    func testTheScreenClosesAtOnceWithoutWaitingForTheDirectoryToRefresh() async {
+        let gate = TestGate()
+        directoryGate = gate
+        addTeardownBlock {
+            gate.open()
+        }
+        let viewModel = join()
+        viewModel.onCodeChanged(testCode)
+        viewModel.onContinue()
+        await waitUntil { viewModel.state.step == .confirm }
+
+        viewModel.onConfirm()
+        await waitUntil { viewModel.state.joinedMiffId != nil }
+
+        XCTAssertEqual(viewModel.state.joinedMiffId, testMiffId)
+        XCTAssertFalse(viewModel.state.joining)
+        await waitUntil { gate.arrivals == 1 }
+        XCTAssertEqual(gate.arrivals, 1, "le rafraîchissement est bien lancé")
+        XCTAssertEqual(recorder.directoryChanges, 0, "mais il n'a pas fini")
+
+        gate.open()
+        await waitUntil { self.recorder.directoryChanges == 1 }
+        XCTAssertEqual(recorder.directoryChanges, 1, "il va quand même jusqu'au bout")
     }
 
     func testWrongRenewedOrDeletedCodeShowTheSameMessage() async {

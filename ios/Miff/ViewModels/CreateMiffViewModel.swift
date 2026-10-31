@@ -105,12 +105,18 @@ final class CreateMiffViewModel: ObservableObject {
         case .created(let creation):
             context.tracker.track(.miffCreated(isFirstMiff: creation.firstMiff))
             context.onEntered(.created)
-            await context.onDirectoryChanged()
+            // Le lot est accepté : la personne voit son code TOUT DE SUITE. L'annuaire se rafraîchit ensuite en tâche de fond
+            // (il garde ses propres garde-fous : verrou, fin de session) ; sur un réseau instable il pouvait faire attendre
+            // longtemps sur un écran verrouillé, au risque qu'on quitte l'app sans avoir vu le code.
             var next = state
             next.step = .ready
             next.saving = false
             next.created = creation
             state = next
+            let refresh = context.onDirectoryChanged
+            Task {
+                await refresh()
+            }
         case .needsPremium:
             // Rien n'est dit de l'offre Premium ici : c'est au ticket Premium de le décider.
             state.saving = false
