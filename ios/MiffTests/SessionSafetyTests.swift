@@ -60,7 +60,7 @@ final class SessionSafetyTests: XCTestCase {
     func testNoSignInStartsWhileAnOldSessionCannotBeClosed() async {
         let harness = SessionHarness()
         harness.gateway.setSignedIn("uid-old")
-        harness.gateway.signOutFailures = 5
+        harness.gateway.signOutFailures = 100
 
         let email = await harness.manager.signInWithEmail(email: "a@b.fr", password: "motdepasse")
         let created = await harness.manager.createAccountWithEmail(
