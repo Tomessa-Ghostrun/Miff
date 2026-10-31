@@ -158,12 +158,9 @@
     <string name="auth_reset_resend_wait">You can ask for a new e-mail in a few moments.</string>
     <string name="auth_reset_back_to_signin">Back to sign in</string>
 
-    <!-- Android only: paths of the legal pages (the domain comes from BuildConfig.LEGAL_BASE_URL) and provisional screens -->
+    <!-- Android only: paths of the legal pages (the domain comes from BuildConfig.LEGAL_BASE_URL) -->
     <string name="android_legal_terms_path">/en/terms</string>
     <string name="android_legal_privacy_path">/en/privacy</string>
-    <string name="android_next_miff_choice">Next step: create or join a Miff. This screen is coming soon.</string>
-    <!-- Debug builds only (see NextStepPlaceholderScreen): never shown in a release build. -->
-    <string name="android_debug_preview_tabs" tools:ignore="UnusedResources">Internal preview: open the tabs and the Settings</string>
 
     <!-- Welcome carousel and implicit consent (AUTH-1) -->
     <string name="auth_consent_notice">By tapping “Join” or “Continue with Google”, you accept our %1$s and our %2$s, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings).</string>
@@ -296,6 +293,121 @@
     <string name="settings_account_sign_out_body">Your loved ones won\'t see your updates while you\'re signed out.</string>
     <string name="settings_account_sign_out_cancel">Cancel</string>
 
+    <!-- Miff: create, join, Miff screen, status sharing, lost access (ticket MIFF-1). Friendly, calm tone. -->
+    <string name="common_cancel">Cancel</string>
+    <string name="miff_message_offline">No connection right now. Try again once the network is back.</string>
+    <string name="miff_message_generic">That didn\'t work. Please try again in a moment.</string>
+    <string name="miff_message_one_miff">For now, this account can be part of one Miff at a time.</string>
+    <string name="miff_message_no_profile">Some details of your profile are still missing. We\'re taking you back to that step to complete them.</string>
+    <string name="miff_consent_places">The trusted places of this Miff are chosen by its creator and visible to all its members.</string>
+    <string name="miff_dialog_working_a11y">Working</string>
+
+    <!-- Choice: create or join -->
+    <string name="miff_choice_title">Choose how you want to start</string>
+    <string name="miff_choice_create_title">Create a new Miff</string>
+    <string name="miff_choice_create_body">You can then invite your loved ones to join you.</string>
+    <string name="miff_choice_join_title">Join an existing Miff</string>
+    <string name="miff_choice_join_body">Did a loved one give you a code? Enter it to join their Miff.</string>
+
+    <!-- Explicit consent before "Create and share" / "Join and share" (version "2026-10-v2", MiffSharingConsent) -->
+    <string name="miff_consent_create">By creating this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
+    <string name="miff_consent_join">By joining this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
+    <string name="miff_consent_members_see_title">What the members see of you</string>
+    <string name="miff_consent_members_see_body">Your first name, last name, photo and phone number.</string>
+    <string name="miff_consent_system_note_create">Your phone will ask separately for access to your location. You can say no.</string>
+    <string name="miff_consent_system_note_join">Your phone will ask separately for access to your location. You can say no and still join.</string>
+
+    <!-- Create -->
+    <string name="miff_create_title">New Miff</string>
+    <string name="miff_create_action">Create and share</string>
+    <string name="miff_create_saving">Creating your Miff…</string>
+    <string name="miff_name_label">Name</string>
+    <string name="miff_name_placeholder">The Moudugenou family</string>
+    <string name="miff_name_help">Pick a name so you can find this Miff easily. People who receive your code will see this name.</string>
+    <string name="miff_name_limit">40 character limit reached.</string>
+    <string name="miff_name_counter">%1$d / %2$d</string>
+    <string name="miff_ready_title">Your Miff “%1$s” is ready</string>
+    <string name="miff_ready_body">Share this code with your loved ones so they can join.</string>
+    <string name="miff_ready_hint">You\'ll find this code in your Miff, from the Profile tab.</string>
+    <string name="miff_ready_continue_action">Continue</string>
+    <string name="miff_share_code_action">Share the code</string>
+    <string name="miff_copy_code_action">Copy</string>
+    <string name="miff_code_copied">Code copied</string>
+    <string name="miff_code_a11y">Miff code: %1$s</string>
+    <string name="miff_share_chooser_title">Share the code</string>
+    <string name="miff_share_message">Join my Miff “%1$s” on Miff. Here is the code to enter: %2$s\n\nTo download the app: %3$s</string>
+
+    <!-- Join -->
+    <string name="miff_join_title">Join a Miff</string>
+    <string name="miff_join_help">Enter the code your loved one gave you.</string>
+    <string name="miff_join_code_label">Miff code</string>
+    <string name="miff_join_code_hint">XXXX XXXX XXXX</string>
+    <string name="miff_join_paste_action">Paste</string>
+    <string name="miff_join_continue_action">Continue</string>
+    <string name="miff_join_checking">Checking…</string>
+    <string name="miff_join_not_found">We can\'t find a Miff with this code. Check it with the person who gave it to you.</string>
+    <string name="miff_join_foreign">This doesn\'t look like a Miff code. Check the letters and numbers.</string>
+    <string name="miff_join_paused">Let\'s take a one-minute break before trying again.</string>
+    <string name="miff_join_already_member">You\'re already part of the Miff “%1$s”.</string>
+    <string name="miff_join_open_action">Open Miff</string>
+    <string name="miff_join_confirm_title">Join the Miff “%1$s”?</string>
+    <string name="miff_join_action">Join and share</string>
+    <string name="miff_join_joining">Adding you to the Miff…</string>
+
+    <!-- Miff screen -->
+    <string name="miff_screen_title_loading">Your Miff</string>
+    <string name="miff_section_name_title">Name</string>
+    <string name="miff_name_save_action">Save</string>
+    <string name="miff_name_saving">Saving…</string>
+    <string name="miff_name_saved">Name saved.</string>
+    <string name="miff_section_code_title">Add loved ones</string>
+    <string name="miff_section_code_description">Share this code with your loved ones so they can join this Miff.</string>
+    <string name="miff_full_notice">This Miff is nicely full!</string>
+    <string name="miff_section_members_title">Loved ones in this Miff</string>
+    <string name="miff_section_members_description">Here are the loved ones who are currently in this Miff.</string>
+    <string name="miff_members_alone">No other loved one in this Miff yet.</string>
+    <string name="miff_role_owner">Owner</string>
+    <string name="miff_role_you">You</string>
+    <string name="miff_section_places_title">Trusted places</string>
+    <string name="miff_section_places_description">Here are the places linked to this Miff.</string>
+    <string name="miff_places_empty">No place for this Miff yet.</string>
+    <string name="miff_offline_notice">No connection right now. You can read this Miff, but not change it.</string>
+    <string name="miff_unavailable">We can\'t show this Miff right now. Please try again in a moment.</string>
+
+    <!-- Share my status (stop / resume at any time) -->
+    <string name="miff_sharing_title">Share my status</string>
+    <string name="miff_sharing_on_description">Your loved ones can see your status.</string>
+    <string name="miff_sharing_off_description">Your status is no longer shared with this Miff.</string>
+    <string name="miff_sharing_state_on">On</string>
+    <string name="miff_sharing_state_off">Off</string>
+    <string name="miff_sharing_stop_title">Stop sharing your status with this Miff?</string>
+    <string name="miff_sharing_stop_body">Your status and update photo will be deleted for this circle. You can resume whenever you like.</string>
+    <string name="miff_sharing_stop_action">Stop sharing</string>
+    <string name="miff_sharing_resume_title">Resume sharing?</string>
+    <string name="miff_sharing_resume_body">You share your status with the members of this Miff again; you can stop at any time.</string>
+    <string name="miff_sharing_resume_action">Resume sharing</string>
+
+    <!-- Lost access (one message, the same for a removal and for a deleted Miff) -->
+    <string name="miff_lost_title">You no longer have access to the Miff “%1$s”</string>
+    <string name="miff_lost_title_unknown">You no longer have access to one of your Miffs</string>
+    <string name="miff_lost_body">Your location is no longer shared with this circle.</string>
+    <string name="miff_lost_ok_action">Got it</string>
+
+    <!-- Feed (provisional): Miff pastille, state without a Miff -->
+    <string name="feed_selector_none">No Miff yet</string>
+    <string name="feed_selector_a11y">Miff shown: %1$s. Tap to switch Miff or add one.</string>
+    <string name="feed_selector_join">+ Join a Miff</string>
+    <string name="feed_selector_create">+ Create a Miff</string>
+    <string name="feed_nomiff_body">Create your Miff or join a loved one\'s to get started.</string>
+    <string name="feed_create_action">Create a Miff</string>
+    <string name="feed_join_action">Join a Miff</string>
+    <string name="feed_offline_note">No connection right now. What you see may not be up to date.</string>
+    <string name="feed_unavailable">We can\'t read your Miffs right now. Please try again in a moment.</string>
+
+    <!-- Profile tab: Miff cards -->
+    <string name="profile_tab_miffs_title">My Miffs</string>
+    <string name="profile_tab_miff_hint">Loved ones, code and sharing</string>
+    <string name="profile_tab_miff_open_a11y">Open the Miff %1$s</string>
     <!-- Settings: My account (password) and Privacy (ONB-3b) -->
     <string name="settings_account_password_help">We\'ll send you an email with a link to choose a new password.</string>
     <string name="settings_account_password_action">Change my password</string>
@@ -317,4 +429,42 @@
     <string name="settings_privacy_contact">Contact us</string>
     <string name="settings_privacy_open_browser_a11y">open the page in your browser</string>
     <string name="settings_privacy_open_mail_a11y">write an email</string>
+    <!-- Miff: remove a loved one, leave, delete the Miff, renew the code (ticket MIFF-2). Friendly, calm tone. -->
+    <string name="miff_member_menu_a11y">Actions for %1$s</string>
+    <string name="miff_member_remove_action">Remove from Miff</string>
+    <string name="miff_remove_title">Remove %1$s from the Miff?</string>
+    <string name="miff_remove_body">%1$s will no longer have access to this circle. A new code will be created: the old one will stop working.</string>
+    <string name="miff_remove_action">Remove</string>
+    <string name="miff_remove_done_title">%1$s is no longer part of the Miff</string>
+    <string name="miff_remove_done_body">Here is the new code, to share with whoever you like.</string>
+    <string name="miff_remove_done_close">Done</string>
+    <string name="miff_renew_link">Create a new code</string>
+    <string name="miff_renew_title">Create a new code?</string>
+    <string name="miff_renew_body">The old one will stop working. Current members stay in the Miff.</string>
+    <string name="miff_renew_action">Create a new code</string>
+    <string name="miff_renew_done">New code created.</string>
+    <string name="miff_renew_invite">A loved one has left the Miff. Would you like to create a new code? It\'s optional.</string>
+    <string name="miff_renew_invite_later">Later</string>
+    <string name="miff_leave_hint">You can leave this Miff at any time. Your location will no longer be shared with this circle.</string>
+    <string name="miff_leave_link">Leave the Miff</string>
+    <string name="miff_leave_title">Leave the Miff “%1$s”?</string>
+    <string name="miff_leave_body">Your location will no longer be shared with this circle. You can come back if someone gives you the code again.</string>
+    <string name="miff_leave_action">Leave the Miff</string>
+    <string name="miff_owner_foot">You created this Miff: if you want to close it, you can delete it. The other loved ones will then no longer have access to it.</string>
+    <string name="miff_delete_link">Delete the Miff</string>
+    <string name="miff_delete_title">Delete the Miff “%1$s”?</string>
+    <string name="miff_delete_body_alone">The places will be deleted. This can\'t be undone.</string>
+    <string name="miff_delete_action">Delete the Miff</string>
+    <string name="miff_delete_notify_action">Let my loved ones know</string>
+    <string name="miff_delete_notify_hint">Prepares a message that you send yourself: nobody is told automatically.</string>
+    <string name="miff_delete_notice_message">I\'m closing our Miff “%1$s” in Miff: it will no longer be accessible.</string>
+    <string name="miff_delete_progress">Finishing the deletion…</string>
+    <string name="miff_delete_paused">No connection right now. We\'ll carry on as soon as the network is back.</string>
+    <string name="miff_delete_done">The Miff has been deleted.</string>
+    <string name="miff_delete_close">Close</string>
+    <string name="miff_delete_resume">Picking up the deletion of your Miff again…</string>
+    <plurals name="miff_delete_body_others">
+        <item quantity="one">The other loved one will lose access and the places will be deleted. This can\'t be undone.</item>
+        <item quantity="other">The %1$d other loved ones will lose access and the places will be deleted. This can\'t be undone.</item>
+    </plurals>
 </resources>
