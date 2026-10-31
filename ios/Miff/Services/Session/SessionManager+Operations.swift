@@ -26,6 +26,9 @@ extension SessionManager {
     /// nil = connecté (l'état avance tout seul) ; sinon pourquoi ça n'a pas fonctionné.
     func signInWithEmail(email: String, password: String) async -> AuthFailure? {
         await cache.purgeIfPending()
+        guard clearLeftoverSession() else {
+            return .unknown
+        }
         switch await gateway.signInWithEmail(email: email, password: password) {
         case .failure(let failure):
             return failure
@@ -41,6 +44,9 @@ extension SessionManager {
             return .unknown
         }
         await cache.purgeIfPending()
+        guard clearLeftoverSession() else {
+            return .unknown
+        }
         switch await gateway.createAccountWithEmail(email: email, password: password) {
         case .failure(let failure):
             return failure
@@ -57,6 +63,9 @@ extension SessionManager {
             return .unknown
         }
         await cache.purgeIfPending()
+        guard clearLeftoverSession() else {
+            return .unknown
+        }
         switch await gateway.signIn(with: credential) {
         case .failure(let failure):
             return failure
@@ -187,6 +196,15 @@ extension SessionManager {
     }
 
     // MARK: - Intérieur
+
+    /// Aucune connexion ne démarre tant qu'une ancienne session est ouverte : un compte ne doit jamais se mélanger à un
+    /// autre. Une déconnexion qui avait échoué est retentée ici ; faux si la session reste ouverte.
+    private func clearLeftoverSession() -> Bool {
+        for _ in 0..<2 where gateway.currentUid != nil {
+            gateway.signOut()
+        }
+        return gateway.currentUid == nil
+    }
 
     /// Démarrage à froid et « Réessayer » : la même règle, quoi qu'il soit arrivé avant.
     func resolveCurrent() async {

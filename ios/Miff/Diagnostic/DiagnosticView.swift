@@ -53,6 +53,8 @@ struct DiagnosticView: View {
                 .foregroundColor(colorTextPrimary.color)
                 .accessibilityAddTraits(.isHeader)
             DiagLine("diag_subtitle", .description)
+            #if DEBUG
+            // Debug seulement : en Internal le vrai parcours est la racine de l'app (le diagnostic est une feuille par-dessus).
             NavigationLink {
                 AppRootView(environment: environment)
                     .toolbar(.hidden, for: .navigationBar)
@@ -63,6 +65,7 @@ struct DiagnosticView: View {
                     .multilineTextAlignment(.leading)
                     .frame(minHeight: Spacing.minTouchTarget, alignment: .leading)
             }
+            #endif
         }
     }
 

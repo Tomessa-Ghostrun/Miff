@@ -36,7 +36,8 @@ packages:
     url: https://github.com/google/GoogleSignIn-iOS
     exactVersion: 10.1.0
   # Numeros de telephone (MIT) : port Swift des donnees de libphonenumber, la meme bibliotheque qu'Android (metadonnees
-  # 9.0.42). Le depot marmelroy/PhoneNumberKit est archive depuis la 4.3.0 : on utilise le nouveau depot officiel.
+  # 9.0.42). Le depot historique marmelroy/PhoneNumberKit n est pas archive mais n a plus de version depuis la 4.3.0 (mai 2026) :
+  # les versions 5.x sont publiees par l organisation PhoneNumberKit.
   PhoneNumberKit:
     url: https://github.com/PhoneNumberKit/PhoneNumberKit
     exactVersion: 5.0.13

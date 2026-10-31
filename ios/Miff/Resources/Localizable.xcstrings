@@ -2252,13 +2252,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings)."
+            "value": "By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@)."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
+            "value": "En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
+          }
+        }
+      }
+    },
+    "ios_auth_panel_notice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By tapping “Continue”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En cliquant sur « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
           }
         }
       }
@@ -2582,6 +2599,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lieu sûr pour vos proches"
+          }
+        }
+      }
+    },
+    "ios_phone_keyboard_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }

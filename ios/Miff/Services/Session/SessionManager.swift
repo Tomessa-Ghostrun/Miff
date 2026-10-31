@@ -67,6 +67,8 @@ struct SessionDependencies {
 @MainActor
 final class SessionManager {
     static let keyReturningUser = "returning_user"
+    /// Posé au tout premier lancement d'une INSTALLATION (les réglages de l'app disparaissent avec elle, pas le Trousseau).
+    static let keyInstallMarker = "install_marker_v1"
 
     let gateway: AuthGateway
     let accounts: AccountRepository
@@ -155,6 +157,15 @@ final class SessionManager {
         privacy.pauseCollection()
         // Une purge qui avait échoué la dernière fois passe AVANT tout autre accès à Firestore.
         await cache.purgeIfPending()
+        // Sur iOS la session Firebase est gardée dans le Trousseau, qui SURVIT à la désinstallation : une app réinstallée
+        // s'ouvrirait connectée, sans carrousel ni consentement vu sur cette installation. Au premier lancement d'une
+        // installation, une session trouvée est donc fermée avant tout routage (la personne se reconnecte).
+        if !flags.value(forKey: Self.keyInstallMarker, default: false) {
+            flags.set(true, forKey: Self.keyInstallMarker)
+            if gateway.currentUid != nil {
+                await signOut()
+            }
+        }
         watcher = Task { [weak self] in
             await self?.watchSessionLoss()
         }
@@ -224,6 +235,11 @@ final class SessionManager {
         accountSnapshot = nil
         generation += 1
         gateway.signOut()
+        if gateway.currentUid != nil {
+            // La déconnexion n'a pas abouti (Trousseau illisible) : une seconde tentative, puis les écrans de connexion
+            // refusent de continuer tant qu'une session reste ouverte (voir `clearLeftoverSession`).
+            gateway.signOut()
+        }
         pending.clear()
         privacy.applyAccountConsent(false)
         if markReturning {

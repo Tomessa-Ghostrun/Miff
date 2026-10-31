@@ -101,7 +101,7 @@ struct ConsentPanelContent: View {
         AuthScaffold(paneTitle: "auth_panel_title", onBack: nil) {
             ScreenTitle(key: "auth_panel_title")
             AuthMessageArea(message: state.message)
-            ConsentNotice(sentenceKey: "auth_panel_notice")
+            ConsentNotice(sentenceKey: "ios_auth_panel_notice")
             Spacer().frame(height: Spacing.md)
             Button("auth_panel_continue", action: onContinue)
                 .buttonStyle(.miffPrimaryFullWidth)

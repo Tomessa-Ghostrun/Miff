@@ -11,7 +11,10 @@ import GoogleSignIn
 final class FirebaseAuthGateway: AuthGateway {
     /// Nom donné par Apple à la première connexion (une seule fois) : gardé en mémoire SEULEMENT, pour pré-remplir
     /// l'étape profil. Jamais écrit sur le disque, jamais journalisé.
-    private var appleName: PersonNameParts?
+    private var appleName = AppleNameMemory()
+    /// Code d'autorisation d'Apple (voir `SocialCredential`) : gardé en mémoire pour la révocation future, jamais écrit
+    /// sur le disque ni journalisé ; oublié à la déconnexion.
+    private var appleAuthorizationCode: String?
 
     var currentUid: String? {
         guard FirebaseBootstrap.isConfigured else {
@@ -57,8 +60,9 @@ final class FirebaseAuthGateway: AuthGateway {
     }
 
     func signIn(with credential: SocialCredential) async -> AuthOutcome {
-        if case .apple(_, _, let name) = credential {
-            appleName = name
+        if case .apple(_, _, let name, let code) = credential {
+            appleName.record(name)
+            appleAuthorizationCode = code ?? appleAuthorizationCode
         }
         let firebaseCredential = firebaseCredential(for: credential)
         return await run(.social) {
@@ -112,18 +116,28 @@ final class FirebaseAuthGateway: AuthGateway {
         if let name = Auth.auth().currentUser?.displayName, !name.isEmpty {
             return name
         }
-        let parts = [appleName?.givenName, appleName?.familyName].compactMap { $0 }
+        let parts = [appleName.name?.givenName, appleName.name?.familyName].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
     func signOut() {
-        appleName = nil
+        appleName.forget()
+        appleAuthorizationCode = nil
         // Le SDK Google garde aussi sa propre session : sans ceci, le choix du compte Google ne serait plus proposé.
         GIDSignIn.sharedInstance.signOut()
         guard FirebaseBootstrap.isConfigured else {
             return
         }
-        try? Auth.auth().signOut()
+        // Un échec (Trousseau momentanément illisible) est retenté une fois ; s'il persiste, la session reste ouverte et
+        // `SessionManager` le constate (`currentUid`) au lieu de croire la déconnexion faite.
+        for _ in 0..<2 {
+            do {
+                try Auth.auth().signOut()
+                return
+            } catch {
+                continue
+            }
+        }
     }
 
     // Aucun délai de notre part exprès : une requête abandonnée par un délai peut encore aboutir plus tard et ouvrir une
@@ -145,7 +159,7 @@ final class FirebaseAuthGateway: AuthGateway {
         switch credential {
         case .google(let idToken, let accessToken):
             return GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
-        case .apple(let idToken, let rawNonce, let name):
+        case .apple(let idToken, let rawNonce, let name, _):
             var components = PersonNameComponents()
             components.givenName = name?.givenName
             components.familyName = name?.familyName

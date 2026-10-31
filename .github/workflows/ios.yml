@@ -243,6 +243,9 @@ jobs:
             fi
           done
 
+      - name: Test du script du schéma d'URL de Google (configurations factices)
+        run: bash ci/timed.sh "Script du schéma d'URL Google (test)" bash ci/test-google-url-scheme.sh || echo "SCRIPT_TEST_FAILED=true" >> "$GITHUB_ENV"
+
       - name: Choisir un simulateur iPhone
         run: |
           set -euo pipefail
@@ -379,6 +382,7 @@ jobs:
         run: |
           fail=0
           if [ "${LINT_FAILED:-}" = "true" ]; then echo "::error::SwiftLint a signalé des violations (voir l'étape SwiftLint)."; fail=1; fi
+          if [ "${SCRIPT_TEST_FAILED:-}" = "true" ]; then echo "::error::Le test du script du schéma d'URL de Google a échoué."; fail=1; fi
           if [ "${TESTS_FAILED:-}" = "true" ]; then echo "::error::Des tests XCTest ont échoué (voir l'étape Tests XCTest)."; fail=1; fi
           if [ "${BINARY_CHECK_FAILED:-}" = "true" ]; then echo "::error::Un contrôle du binaire a échoué (voir les étapes de contrôle)."; fail=1; fi
           if [ "${RELEASE_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Release a échoué."; fail=1; fi

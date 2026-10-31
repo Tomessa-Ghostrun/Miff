@@ -27,6 +27,20 @@ enum SocialSignInErrors {
     }
 }
 
+/// Le nom donné par Apple UNE SEULE FOIS (à la première connexion). Une connexion suivante n'en porte plus : le nom déjà
+/// reçu est conservé (en mémoire seulement) jusqu'à la fin de la session, et jamais écrasé par une absence de nom.
+struct AppleNameMemory {
+    private(set) var name: PersonNameParts?
+
+    mutating func record(_ newName: PersonNameParts?) {
+        name = newName ?? name
+    }
+
+    mutating func forget() {
+        name = nil
+    }
+}
+
 /// Jeton à usage unique de « Continuer avec Apple » (protection contre le rejeu) : une chaîne aléatoire de 32 caractères
 /// dont seule l'empreinte SHA-256 est donnée à Apple, la chaîne elle-même allant à Firebase. 64 caractères possibles
 /// exactement : un octet modulo 64 ne favorise aucun caractère.

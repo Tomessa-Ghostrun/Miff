@@ -148,6 +148,18 @@
 				<string>CA92.1</string>
 			</array>
 		</dict>
+		<!-- Horloge du système : `ProcessInfo.systemUptime` (`Models/Support/AppClock.swift`) mesure des durées dans l'app
+		     (plancher de durée des réponses, pauses, animation de lancement), jamais pour identifier l'appareil.
+		     Raison 35F9.1 : mesurer le temps écoulé entre deux événements de l'app. Le test PrivacyManifestApiTests
+		     compare ce manifeste aux API réellement utilisées par le code. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

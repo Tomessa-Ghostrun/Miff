@@ -123,6 +123,8 @@ final class FakeAuthGateway: AuthGateway {
     var deleteResults: [AuthFailure?] = []
     var reauthResult: AuthFailure?
     var name: String?
+    /// Nombre de déconnexions qui échouent encore (la session reste ouverte), pour tester la reprise.
+    var signOutFailures = 0
     private(set) var signInCalls = 0
     private(set) var createCalls = 0
     private(set) var socialCalls = 0
@@ -203,6 +205,10 @@ final class FakeAuthGateway: AuthGateway {
     func signOut() {
         signOutCalls += 1
         timeline.add("signOut")
+        if signOutFailures > 0 {
+            signOutFailures -= 1
+            return
+        }
         uid = nil
         continuation?.yield(nil)
     }
@@ -340,7 +346,8 @@ final class SessionHarness {
     /// Ce qui était collecté au moment où le compte a été lu : ce doit être rien (critère X9).
     private(set) var collectionWhenAccountRead: Bool?
 
-    init(teardown: [SessionTeardown] = []) {
+    /// `freshInstall` vrai : la première ouverture d'une installation (aucun repère d'installation sur l'appareil).
+    init(teardown: [SessionTeardown] = [], freshInstall: Bool = false) {
         let timeline = self.timeline
         let gateway = FakeAuthGateway(timeline: timeline)
         let privacy = self.privacy
@@ -362,6 +369,9 @@ final class SessionHarness {
         )
         accounts.onLoad = { [weak self] in
             self?.collectionWhenAccountRead = privacy.analyticsEnabled
+        }
+        if !freshInstall {
+            flags.set(true, forKey: SessionManager.keyInstallMarker)
         }
     }
 

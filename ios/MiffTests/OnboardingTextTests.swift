@@ -66,10 +66,23 @@ final class OnboardingTextTests: XCTestCase {
         // Sur iOS la ligne de l'inscription cite aussi le bouton Apple, puisqu'il crée un compte comme « Rejoindre ».
         let notice = try XCTUnwrap(text("ios_auth_consent_notice", "fr", in: strings))
         let noticeEn = try XCTUnwrap(text("ios_auth_consent_notice", "en", in: strings))
-        let panel = try XCTUnwrap(text("auth_panel_notice", "fr", in: strings))
+        let panel = try XCTUnwrap(text("ios_auth_panel_notice", "fr", in: strings))
         XCTAssertTrue(notice.contains("Continuer avec Apple"))
         XCTAssertTrue(noticeEn.contains("Continue with Apple"))
         XCTAssertTrue(panel.contains("« Continuer »"))
+    }
+
+    func testTheConsentLinesDoNotPromiseASettingsScreenIosDoesNotHaveYet() throws {
+        let strings = try catalog()
+
+        // Pas d'écran Réglages sur iOS pour l'instant : le retrait du consentement passe par l'adresse de contact.
+        for key in ["ios_auth_consent_notice", "ios_auth_panel_notice"] {
+            for language in ["fr", "en"] {
+                let value = try XCTUnwrap(text(key, language, in: strings), key)
+                XCTAssertFalse(value.contains("Réglages") || value.contains("Settings"), "\(key) (\(language))")
+                XCTAssertTrue(value.contains("%3$@"), "\(key) (\(language)) : l'adresse de contact manque")
+            }
+        }
     }
 
     func testTheSignInMessagesPointToThePasswordResetLikeAndroid() throws {

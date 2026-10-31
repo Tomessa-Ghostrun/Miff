@@ -79,7 +79,9 @@ struct PersonNameParts: Equatable {
 /// Contient des jetons : jamais journalisé, jamais stocké, jamais affiché (la description est volontairement vide).
 enum SocialCredential: Equatable {
     case google(idToken: String, accessToken: String)
-    case apple(idToken: String, rawNonce: String, name: PersonNameParts?)
+    /// `authorizationCode` : code à usage unique donné par Apple en plus du jeton. Gardé seulement en mémoire, pour la
+    /// révocation du jeton Apple à la suppression d'un compte (AUTH-5, à venir) ; jamais stocké ni journalisé.
+    case apple(idToken: String, rawNonce: String, name: PersonNameParts?, authorizationCode: String? = nil)
 }
 
 extension SocialCredential: CustomStringConvertible {

@@ -119,7 +119,8 @@ final class AppleAuthorizationRunner: NSObject, ASAuthorizationControllerDelegat
         if let fullName = apple.fullName, fullName.givenName != nil || fullName.familyName != nil {
             name = PersonNameParts(givenName: fullName.givenName, familyName: fullName.familyName)
         }
-        finish(.credential(.apple(idToken: idToken, rawNonce: rawNonce, name: name)))
+        let code = apple.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+        finish(.credential(.apple(idToken: idToken, rawNonce: rawNonce, name: name, authorizationCode: code)))
     }
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {

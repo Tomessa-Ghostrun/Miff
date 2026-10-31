@@ -61,6 +61,18 @@ struct PhoneStepContent: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             messageView
         }
+        // Le pavé numérique n'a pas de touche de validation : une barre « OK » au-dessus du clavier valide la saisie.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("ios_phone_keyboard_done") {
+                    focus = nil
+                    submit()
+                }
+            }
+        }
+        // Pendant l'écriture, le balayage depuis le bord ne ramène pas à l'étape profil.
+        .background(SwipeBackLock(isLocked: state.isWriting))
         .task(id: state.regionCode) {
             let region = state.regionCode
             let phoneTools = tools

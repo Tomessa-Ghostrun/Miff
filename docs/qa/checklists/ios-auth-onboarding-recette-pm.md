@@ -16,6 +16,7 @@
 2. **Firebase** (projet **Miff**, `miff-3d283`, pas Ghostrun) > Authentication > Méthodes de connexion : activer **Apple** (et vérifier que **Google** et **E-mail/mot de passe** le sont).
 3. **Fichier de configuration** : après avoir activé Google, le fichier `GoogleService-Info.plist` doit être **régénéré** (il doit contenir `CLIENT_ID` et `REVERSED_CLIENT_ID`) puis le secret GitHub `GOOGLE_SERVICE_INFO_PLIST_B64` mis à jour (commande dans `ios/README.md`). Claude peut le faire avec vous ; sinon le bouton Google répondra par un message d'erreur neutre.
 4. **Lancer la version de test** : GitHub > Actions > **ios-testflight** > Run workflow > branche `ios/auth-onboarding` (ou `main` après fusion) > mode **signed** (le mode `unsigned` n'a jamais été vérifié) > Run. Puis, dans TestFlight sur l'iPhone, installer le nouveau build (mode d'emploi : `docs/dev/ios-spike.md`).
+5. **Ce build s'ouvre directement sur le vrai parcours** (animation de lancement, puis carrousel), comme le fera l'app publique. L'écran technique « Diagnostic interne » reste disponible : **appui long d'environ 2 secondes tout en haut à gauche de l'écran** (sur l'heure de la barre d'état) ; il s'ouvre dans une feuille qu'on ferme en la faisant glisser vers le bas. Ce n'est utile que pour les tests techniques, pas pour cette recette.
 
 ## Parcours
 
@@ -31,7 +32,7 @@
 - [ ] Fermer complètement l'app et la rouvrir : le carrousel **n'apparaît plus**.
 
 ### 3. Inscription par e-mail (AUTH-3)
-- [ ] Deux boutons (Apple noir, Google blanc), « Ou : », puis e-mail et mot de passe. **Aucune case à cocher** ; au-dessus de **Rejoindre**, une ligne dit qu'en touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google » on accepte les conditions, la politique et le partage de statistiques anonymes. Les liens « Conditions d'utilisation » et « Politique de confidentialité » s'ouvrent (les pages web d'AUTH-W ne sont pas forcément déployées : une page introuvable n'est pas un défaut de l'app).
+- [ ] Deux boutons (Apple noir, Google blanc), « Ou : », puis e-mail et mot de passe. **Aucune case à cocher** ; au-dessus de **Rejoindre**, une ligne dit qu'en touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google » on accepte les conditions, la politique et le partage de statistiques anonymes. La ligne précise aussi que le partage de statistiques **se retire à tout moment en écrivant à l'adresse de contact** (iOS n'a pas encore d'écran Réglages : voir l'écart n° 10 de `ios/README.md`) ; elle ne promet donc **pas** « modifiable dans les Réglages ». Les liens « Conditions d'utilisation » et « Politique de confidentialité » s'ouvrent (les pages web d'AUTH-W ne sont pas forcément déployées : une page introuvable n'est pas un défaut de l'app).
 - [ ] Mot de passe de moins de 8 caractères : message calme sous le champ. Adresse mal formée : message calme.
 - [ ] Œil du mot de passe : affiche et masque. Le trousseau iCloud propose un mot de passe fort.
 - [ ] Inscription avec une adresse de test et un mot de passe de 8 caractères ou plus : l'écran suivant est **l'étape profil**.
@@ -42,6 +43,8 @@
 - [ ] Saisir plus de 50 caractères dans un nom : « 50 caractères maximum. » et un compteur en approchant de la limite.
 - [ ] Photo : touche le disque > le sélecteur de photos d'iOS s'ouvre (**aucune demande d'autorisation**) > choisir une photo > écran de recadrage (glisser, pincer ou curseur) > « Utiliser cette photo ». Elle apparaît dans le disque ; la toucher propose « Choisir une autre photo » / « Supprimer la photo ».
 - [ ] Flèche ronde > étape téléphone : pays présélectionné (France), préfixe « +33 », exemple de numéro, aide « sans le premier zéro », mention de qui voit le numéro.
+- [ ] Le pavé numérique a une barre **OK** au-dessus du clavier : elle valide la saisie (comme la flèche ronde).
+- [ ] Pendant l'enregistrement du profil (la flèche tourne), le balayage depuis le bord gauche ne ramène **pas** à l'étape profil. (Difficile à provoquer : l'écriture est rapide ; en mode avion elle échoue tout de suite.)
 - [ ] Numéro invalide (par exemple `12 34`) : message calme. Numéro d'un service surtaxé (`08 99 12 34 56`) : message plus précis. Numéro valide (un faux numéro à vous) : la flèche enregistre, puis l'écran provisoire apparaît.
 - [ ] Coller un numéro « +32 470 12 34 56 » : le pays passe à la Belgique.
 - [ ] La flèche de retour de l'étape téléphone (et le geste de balayage depuis le bord gauche) ramène à l'étape profil **sans rien perdre**.
@@ -66,12 +69,13 @@
 
 ## Réinstallation (à connaître)
 
-Si vous désinstallez puis réinstallez l'app, iOS peut garder la session de connexion (Trousseau) : l'app peut s'ouvrir déjà connectée alors que le carrousel est revenu à zéro. Ce n'est pas un défaut (voir `ios/README.md`, écart n° 7).
+Si vous désinstallez puis réinstallez l'app, iOS garde la session de connexion dans le Trousseau. Pour éviter qu'une app réinstallée s'ouvre connectée sans carrousel ni consentement vus, **au premier lancement d'une installation l'app ferme cette session** : après une réinstallation vous arrivez sur l'écran de **connexion** (et devez vous reconnecter). Ce n'est pas un défaut (voir `ios/README.md`, écart n° 7). À vérifier : se connecter, supprimer l'app, la réinstaller depuis TestFlight, l'ouvrir : écran de connexion.
 
 ## Non vérifié (pas un défaut, un trou de couverture)
 
 | Sujet | Pourquoi | Comment le couvrir |
 |---|---|---|
+| Retrait du consentement aux statistiques dans l'app | Pas d'écran Réglages sur iOS : retrait par e-mail à l'adresse de contact (écart n° 10) | Ticket iOS Réglages |
 | Rendu réel sur l'iPhone 11 Pro (ombres, polices, animation du lancement à 60 images/s) | Aucun Mac, seule la CI sur simulateur | Ce parcours |
 | Signature, entitlements Apple et App Attest | `ios-testflight` jamais exécuté avant ce lot | Étape « Avant de commencer » n° 4 |
 | Google, Apple (feuilles système) | Comptes réels et configuration Firebase | Parcours, étape 6 |
