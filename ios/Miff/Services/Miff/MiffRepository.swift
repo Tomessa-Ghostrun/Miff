@@ -6,7 +6,8 @@ import Foundation
 
 /// Tout ce que les tickets Miff font avec Firestore, tel que les écrans en ont besoin (ticket Miff §5.4, §5.7, §5.13) :
 /// l'ordre des vérifications pour entrer, les lots, le nettoyage après une perte d'accès, la vue en direct d'une Miff.
-/// La logique est du Swift pur : Firestore est derrière `MiffStore`, remplaçable par un double dans les tests.
+/// La logique est du Swift pur : Firestore est derrière `MiffStore`, remplaçable par un double dans les tests. La lecture de
+/// ce que la personne tient est dans `MiffStateReader`.
 final class FirestoreMiffRepository: MiffRepository {
     static let maxCodeDraws = 3
     static let freeKey = "free"
@@ -17,6 +18,7 @@ final class FirestoreMiffRepository: MiffRepository {
     /// Vide le cache du téléphone après un nettoyage dont personne n'est averti (voir `cleanUpSilently`).
     private let cache: CachePurger?
     private let rules: MiffRepositoryRules
+    private let reader: MiffStateReader
 
     init(
         store: MiffStore,
@@ -30,13 +32,14 @@ final class FirestoreMiffRepository: MiffRepository {
         self.location = location
         self.cache = cache
         self.rules = rules
+        reader = MiffStateReader(store: store, rules: rules)
     }
 
     // MARK: - Créer
 
     func prepareCreate(uid: String) async -> CreatePreparation {
         let state: HeldState
-        switch await readState(uid: uid, allowCache: false) {
+        switch await reader.read(uid: uid, allowCache: false) {
         case .value(let loaded):
             state = loaded
         case .failed(let failure):
@@ -82,7 +85,7 @@ final class FirestoreMiffRepository: MiffRepository {
             return .created(creation)
         case .failed(let failure):
             // Un lot parti dont la réponse s'est perdue ne s'affiche pas comme un échec (un appui = une Miff, critère H3).
-            if failure.mayHaveLanded, await landed(miffId) {
+            if failure.mayHaveLanded, await reader.landed(miffId) {
                 return .created(creation)
             }
             return .failed(failure)
@@ -139,7 +142,7 @@ final class FirestoreMiffRepository: MiffRepository {
         }
         // Étape 4 : un index obsolète est nettoyé avant toute écriture. Étape 5 : déjà dans cette Miff ?
         let state: HeldState
-        switch await readState(uid: uid, allowCache: false) {
+        switch await reader.read(uid: uid, allowCache: false) {
         case .value(let loaded):
             state = loaded
         case .failed(let failure):
@@ -198,7 +201,7 @@ final class FirestoreMiffRepository: MiffRepository {
         case .done:
             return joined
         case .failed(let failure):
-            if failure.mayHaveLanded, await landed(preparation.miffId) {
+            if failure.mayHaveLanded, await reader.landed(preparation.miffId) {
                 return joined
             }
             // Les règles ont dit « non » : le code a été renouvelé, ou la Miff supprimée, depuis qu'il a été lu. Même message.
@@ -255,7 +258,7 @@ final class FirestoreMiffRepository: MiffRepository {
     // MARK: - Les Miffs de la personne, perte d'accès
 
     func myMiffs(uid: String) async -> MyMiffsLoad {
-        switch await readState(uid: uid, allowCache: true) {
+        switch await reader.read(uid: uid, allowCache: true) {
         case .failed:
             return .unavailable
         case .value(let state):
@@ -305,147 +308,6 @@ final class FirestoreMiffRepository: MiffRepository {
 
     private func membershipKey(premium: Bool, miffId: String) -> String {
         premium ? miffId : Self.freeKey
-    }
-
-    /// Une Miff que la personne tient, d'après le serveur.
-    private struct HeldState {
-        let valid: [MembershipRef]
-        let summaries: [MiffSummary]
-        let lost: [LostMiff]
-        let premium: Bool
-        let fromCache: Bool
-    }
-
-    private enum StateRead {
-        case value(HeldState)
-        case failed(MiffFailure)
-    }
-
-    private enum RefsRead {
-        case refs([MembershipRef], fromCache: Bool)
-        case failed(MiffFailure)
-    }
-
-    private enum Classification {
-        case valid(name: String?)
-        case lost(name: String?)
-        case failed(MiffFailure)
-    }
-
-    /// Ce que la personne tient, vérifié auprès du serveur : chaque index est lu, puis la Miff qu'il désigne. Une Miff que le
-    /// serveur dit « absente » ou refuse est PERDUE, mais seulement quand le serveur est par ailleurs joignable (un refus
-    /// d'App Check refuserait tout, et personne n'apprend qu'on l'a retiré à cause de cela).
-    private func readState(uid: String, allowCache: Bool) async -> StateRead {
-        let premium = await isPremium(uid: uid)
-        let refs: [MembershipRef]
-        let fromCache: Bool
-        switch await readRefs(uid: uid, allowCache: allowCache) {
-        case .failed(let failure):
-            return .failed(failure)
-        case .refs(let found, let cached):
-            refs = found
-            fromCache = cached
-        }
-        var valid: [MembershipRef] = []
-        var summaries: [MiffSummary] = []
-        var lost: [LostMiff] = []
-        for ref in refs {
-            switch await classify(ref, uid: uid, fromCache: fromCache) {
-            case .valid(let name):
-                valid.append(ref)
-                if let name {
-                    summaries.append(MiffSummary(id: ref.miffId, name: name))
-                }
-            case .lost(let name):
-                lost.append(LostMiff(ref: ref, name: name))
-            case .failed(let failure):
-                return .failed(failure)
-            }
-        }
-        let held = HeldState(valid: valid, summaries: summaries, lost: lost, premium: premium, fromCache: fromCache)
-        return .value(held)
-    }
-
-    private func readRefs(uid: String, allowCache: Bool) async -> RefsRead {
-        let store = self.store
-        let server = await guarded { try await store.readMemberships(uid: uid, fromServer: true) }
-        switch server {
-        case .value(let refs):
-            return .refs(refs, fromCache: false)
-        case .failed(let failure, _):
-            // Hors ligne : le cache peut dire quoi montrer, mais rien n'est créé, rejoint ni nettoyé à partir de lui.
-            guard allowCache else {
-                return .failed(failure)
-            }
-            let cached = await guarded { try await store.readMemberships(uid: uid, fromServer: false) }
-            guard case .value(let refs) = cached, !refs.isEmpty else {
-                // Un cache VIDE n'est pas « aucune Miff » : hors ligne sur une installation neuve, on ne sait rien, donc
-                // rien n'est affirmé (l'accueil inviterait sinon à en créer une une personne qui en a déjà une).
-                return .failed(failure)
-            }
-            return .refs(refs, fromCache: true)
-        }
-    }
-
-    private func classify(_ ref: MembershipRef, uid: String, fromCache: Bool) async -> Classification {
-        let store = self.store
-        let read = await guarded { try await store.readMiff(miffId: ref.miffId, fromServer: !fromCache) }
-        switch read {
-        case .value(.exists(let details)):
-            return .valid(name: details.name)
-        case .value(.missing):
-            let name = await cachedName(ref.miffId)
-            return .lost(name: name)
-        case .failed(let failure, let lostAccess):
-            if lostAccess, !fromCache, await serverReachable(uid) {
-                let name = await cachedName(ref.miffId)
-                return .lost(name: name)
-            }
-            if failure == .offline || lostAccess {
-                // Aucune conclusion : elle reste, sans nom tant que le serveur n'a pas répondu (jamais « retiré » sur un doute).
-                return .valid(name: nil)
-            }
-            return .failed(failure)
-        }
-    }
-
-    private func cachedName(_ miffId: String) async -> String? {
-        let store = self.store
-        let read = await guarded { try await store.readMiff(miffId: miffId, fromServer: false) }
-        if case .value(.exists(let details)) = read {
-            return details.name
-        }
-        return nil
-    }
-
-    private func serverReachable(_ uid: String) async -> Bool {
-        let store = self.store
-        let read = await guarded { await store.serverReachable(uid: uid) }
-        if case .value(let reachable) = read {
-            return reachable
-        }
-        return false
-    }
-
-    /// Premium = un abonnement actif qui n'a pas expiré (les règles décident pour de vrai : ceci choisit seulement la clé).
-    private func isPremium(uid: String) async -> Bool {
-        let store = self.store
-        let read = await guarded { try await store.readEntitlement(uid: uid) }
-        guard case .value(let maybeEntitlement) = read,
-              let entitlement = maybeEntitlement,
-              let expires = entitlement.expiresAtMillis else {
-            return false
-        }
-        return entitlement.active && expires > rules.epochMillis()
-    }
-
-    private func landed(_ miffId: String) async -> Bool {
-        let store = self.store
-        let read = await guarded { try await store.readMiff(miffId: miffId, fromServer: true) }
-        if case .value(.exists) = read {
-            return true
-        }
-        return false
     }
 
     private func write(_ action: @escaping () async throws -> Void) async -> MiffWriteResult {

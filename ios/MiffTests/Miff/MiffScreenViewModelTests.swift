@@ -1,76 +1,10 @@
-// Scénarios de test longs par nature (un cas par méthode) : les limites de longueur ne s'appliquent pas ici.
-// swiftlint:disable file_length type_body_length
 import XCTest
 @testable import Miff
 
-/// Ce que l'écran d'une Miff a demandé à l'annuaire.
-final class ScreenRecorder {
-    var lost: [String] = []
-    var nameChanges = 0
-}
-
-/// L'écran d'une Miff (ticket Miff, critères F, G, K, H, D) : le créateur et le membre, « Partager mon statut », la perte
-/// d'accès qui n'est jamais une erreur réseau. Aucun Firestore : un dépôt double qui pilote l'écoute.
+/// L'écran d'une Miff, côté lecture (ticket Miff, critères F, G, H, D) : le créateur et le membre, le nom, le code en direct,
+/// la perte d'accès qui n'est jamais une erreur réseau. Aucun Firestore : un dépôt double qui pilote l'écoute.
 @MainActor
-final class MiffScreenViewModelTests: XCTestCase {
-    private let repo = FakeMiffRepository()
-    private let network = FakeNetwork()
-    private let recorder = ScreenRecorder()
-    private var observing: [Task<Void, Never>] = []
-
-    private func screen(uid: String = "uid-owner", confirmLoss: Bool = true) -> MiffScreenViewModel {
-        let log = recorder
-        let dependencies = MiffScreenDependencies(
-            repository: repo,
-            network: network,
-            currentUid: { uid },
-            onAccessLost: { miffId, _ in
-                log.lost.append(miffId)
-                return confirmLoss
-            },
-            onNameChanged: { log.nameChanges += 1 }
-        )
-        let viewModel = MiffScreenViewModel(miffId: testMiffId, dependencies: dependencies)
-        let listening = Task {
-            await viewModel.observe()
-        }
-        observing.append(listening)
-        // L'écoute s'arrête avec le test.
-        addTeardownBlock {
-            listening.cancel()
-        }
-        return viewModel
-    }
-
-    private func data(
-        owner: String = "uid-owner",
-        members: [MiffMember]? = nil,
-        code: String = testCode
-    ) -> MiffObservation {
-        let people = members ?? [testMember("uid-owner", role: .owner), testMember("uid-2")]
-        return .data(
-            MiffSnapshot(
-                miff: testMiffDetails(code: code, owner: owner),
-                members: people,
-                places: [MiffPlace(id: "p1", name: "Maison")],
-                fromCache: false
-            )
-        )
-    }
-
-    private func waitUntil(_ condition: () -> Bool) async {
-        for _ in 0..<300 where !condition() {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-    }
-
-    private func readyScreen(uid: String = "uid-owner", members: [MiffMember]? = nil) async -> MiffScreenViewModel {
-        let viewModel = screen(uid: uid)
-        repo.observer.emit(data(members: members))
-        await waitUntil { viewModel.state.status == .ready }
-        return viewModel
-    }
-
+final class MiffScreenViewModelTests: MiffScreenTestCase {
     func testTheCreatorCanRenameAMemberCannot() async {
         let owner = await readyScreen(uid: "uid-owner")
         let member = await readyScreen(uid: "uid-2")
@@ -200,83 +134,6 @@ final class MiffScreenViewModelTests: XCTestCase {
         XCTAssertEqual(gate.arrivals, 2)
     }
 
-    func testStopSharingAsksFirstThenWritesOnceAndTheSwitchOnlyMovesWithTheServer() async {
-        let viewModel = await readyScreen()
-        XCTAssertEqual(viewModel.state.sharing, true)
-
-        viewModel.onSharingRequested()
-        XCTAssertEqual(viewModel.state.sharingDialog, .stop)
-        XCTAssertTrue(repo.sharingChanges.isEmpty, "poser la question n'écrit rien")
-        viewModel.onSharingDialogDismissed()
-        XCTAssertNil(viewModel.state.sharingDialog)
-        XCTAssertTrue(repo.sharingChanges.isEmpty)
-        viewModel.onSharingRequested()
-        viewModel.onSharingConfirmed()
-        viewModel.onSharingConfirmed()
-        await waitUntil { !viewModel.state.sharingBusy && viewModel.state.sharingDialog == nil }
-
-        XCTAssertEqual(repo.sharingChanges, [false])
-        // L'état montré est celui de la fiche, apporté par l'écoute en direct (pas deviné par l'app).
-        XCTAssertEqual(viewModel.state.sharing, true)
-        repo.observer.emit(data(members: [testMember("uid-owner", role: .owner, sharing: false)]))
-        await waitUntil { viewModel.state.sharing == false }
-        XCTAssertEqual(viewModel.state.sharing, false)
-    }
-
-    func testResumeSharingUsesTheSameQuestionAndWritesTheResume() async {
-        let viewModel = await readyScreen(members: [testMember("uid-owner", role: .owner, sharing: false)])
-
-        viewModel.onSharingRequested()
-        XCTAssertEqual(viewModel.state.sharingDialog, .resume)
-        viewModel.onSharingConfirmed()
-        await waitUntil { !viewModel.state.sharingBusy && viewModel.state.sharingDialog == nil }
-
-        XCTAssertEqual(repo.sharingChanges, [true])
-    }
-
-    func testSharingOfflineIsRefusedCalmlyNothingIsQueued() async {
-        let viewModel = await readyScreen()
-        viewModel.onSharingRequested()
-        network.online = false
-
-        viewModel.onSharingConfirmed()
-
-        XCTAssertEqual(viewModel.state.message, .offline)
-        XCTAssertTrue(repo.sharingChanges.isEmpty)
-    }
-
-    func testSharingFailureKeepsTheDialogWithACalmMessage() async {
-        repo.sharingResult = .failed(.unknown)
-        let viewModel = await readyScreen()
-        viewModel.onSharingRequested()
-
-        viewModel.onSharingConfirmed()
-        await waitUntil { !viewModel.state.sharingBusy }
-
-        XCTAssertEqual(viewModel.state.message, .generic)
-        XCTAssertEqual(viewModel.state.sharingDialog, .stop)
-        XCTAssertFalse(viewModel.state.sharingBusy)
-    }
-
-    func testOfflineGreysTheButtonsThatWriteButKeepsReading() async {
-        let viewModel = await readyScreen()
-
-        network.online = false
-        await waitUntil { viewModel.state.offline }
-
-        // La lecture continue depuis le cache ; ce qui écrit est grisé (critères G8 et H5).
-        XCTAssertTrue(viewModel.state.offline)
-        XCTAssertEqual(viewModel.state.members.count, 2)
-        XCTAssertFalse(viewModel.state.canWrite)
-        viewModel.onNameInputChanged("Nouveau nom")
-        XCTAssertFalse(viewModel.state.canSaveName)
-        viewModel.onSharingRequested()
-        XCTAssertNil(viewModel.state.sharingDialog, "aucune question n'est posée quand l'action est impossible")
-        network.online = true
-        await waitUntil { !viewModel.state.offline }
-        XCTAssertFalse(viewModel.state.offline)
-    }
-
     func testARefusalTheServerDoesNotConfirmIsNotARemovalNoMessageAndRetryWorks() async {
         let viewModel = screen(confirmLoss: false)
         repo.observer.emit(data())
@@ -303,7 +160,7 @@ final class MiffScreenViewModelTests: XCTestCase {
         for task in observing {
             task.cancel()
         }
-        await waitUntil { repo.observer.subscriptions == 0 }
+        await waitUntil { self.repo.observer.subscriptions == 0 }
 
         XCTAssertEqual(repo.observer.subscriptions, 0, "aucune écoute ne reste (l'annulation arrête observe())")
         XCTAssertEqual(viewModel.state.status, .ready)
