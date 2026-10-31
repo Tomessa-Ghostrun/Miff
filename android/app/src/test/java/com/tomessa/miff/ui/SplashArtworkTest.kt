@@ -33,6 +33,8 @@ class SplashArtworkTest {
         val mark = pathsOf("splash_logo_mark")
         assertEquals(2, official.size)
         assertEquals(listOf(official.first()), mark)
+        // The animation draws the very same outline as a path (no drawable resource to parse at the start).
+        assertEquals(official.first().second, SplashArtwork.MARK_PATH)
         assertEquals(hex(colorTextOnAction.toArgb()), mark.single().first)
     }
 

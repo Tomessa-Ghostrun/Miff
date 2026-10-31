@@ -1,0 +1,50 @@
+# Baseline Profile of Miff, written by hand (no device was available: see android/README.md, "Démarrage").
+#
+# What it does: AGP compiles this file into the APK/AAB (assets/dexopt/baseline.prof). When the app is installed, the system
+# pre-compiles the listed code instead of interpreting it at the first launch, which shortens the very first start (Application,
+# first composition, first draw of the launch animation). AndroidX libraries (Compose, Activity, Lifecycle, Navigation, Core)
+# ship their own profiles, which AGP merges: this file only lists OUR classes that run between the creation of the process and
+# the first screens.
+#
+# Flags: H = hot (used often), S = used at startup, P = used after startup. Wildcards: ** crosses packages, * stays in one.
+# Names are the ORIGINAL ones: with R8 the build rewrites them to the obfuscated names itself.
+#
+# LIMIT: a hand-written profile lists packages, not the exact methods a real launch calls, so it is less precise than a profile
+# recorded with a Macrobenchmark on a device (that needs a device or an emulator and is a follow-up, see the PR). It is
+# harmless if a rule matches nothing. The effect only exists in a RELEASE-type build installed through the store or with
+# profile installation (the debug APK is not optimised at all, with or without profile).
+
+# --- Process start: Application, Activity, container, measure -----------------------------------------------------------
+HSPLcom/tomessa/miff/*;->**(**)**
+Lcom/tomessa/miff/*;
+HSPLcom/tomessa/miff/startup/**;->**(**)**
+HSPLcom/tomessa/miff/data/AppCheckInstaller;->**(**)**
+HSPLcom/tomessa/miff/domain/startup/**;->**(**)**
+
+# --- Launch animation (first image, heart) ------------------------------------------------------------------------------
+HSPLcom/tomessa/miff/ui/splash/**;->**(**)**
+HSPLcom/tomessa/miff/domain/splash/**;->**(**)**
+HSPLcom/tomessa/miff/ui/startup/**;->**(**)**
+HSPLcom/tomessa/miff/ui/theme/**;->**(**)**
+Lcom/tomessa/miff/ui/splash/**;
+Lcom/tomessa/miff/domain/splash/**;
+Lcom/tomessa/miff/ui/theme/**;
+
+# --- Session and what the container builds at the start --------------------------------------------------------------------
+HSPLcom/tomessa/miff/data/session/**;->**(**)**
+HSPLcom/tomessa/miff/data/privacy/**;->**(**)**
+HSPLcom/tomessa/miff/data/auth/**;->**(**)**
+HSPLcom/tomessa/miff/data/settings/**;->**(**)**
+HSPLcom/tomessa/miff/data/onboarding/**;->**(**)**
+HSPLcom/tomessa/miff/domain/auth/**;->**(**)**
+HSPLcom/tomessa/miff/domain/analytics/**;->**(**)**
+
+# --- First screens composed under the animation --------------------------------------------------------------------------
+HSPLcom/tomessa/miff/ui/navigation/**;->**(**)**
+HSPLcom/tomessa/miff/navigation/**;->**(**)**
+HSPLcom/tomessa/miff/ui/onboarding/**;->**(**)**
+HSPLcom/tomessa/miff/ui/auth/**;->**(**)**
+HSPLcom/tomessa/miff/ui/components/**;->**(**)**
+HPLcom/tomessa/miff/ui/main/**;->**(**)**
+HPLcom/tomessa/miff/ui/feed/**;->**(**)**
+HPLcom/tomessa/miff/ui/home/**;->**(**)**

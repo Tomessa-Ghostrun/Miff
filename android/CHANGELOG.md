@@ -2,6 +2,38 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.2] - 2026-10-31 : démarrage à froid, le « M » ne doit plus rester seul longtemps
+
+Retour du PM après recette sur l'OPPO Find X5 Lite (APK debug de la CI) : le « M » seul reste près de 4 s avant le cœur ; pas sur iOS. Diagnostic complet et chronologie : `README.md`, « Démarrage à froid ».
+
+### Cause trouvée (lecture du code ; non mesurée sur appareil)
+Tout ce qui précède la première image de l'animation allonge le « M seul » : `Application.onCreate` construisait tout le conteneur, initialisait Firebase Auth et lançait la lecture de session (client Firestore compris) sur le thread principal ; puis la première composition de l'app (en debug : l'écran de diagnostic entier, galerie de tokens comprise) gelait l'écran **avant** que l'horloge de l'animation démarre.
+
+### Modifié
+- **`AppContainer` entièrement paresseux** (`lazy`) : le créer ne construit plus rien. `MiffApplication` construit le reste **sur un fil d'arrière-plan** (`warmUp`), après l'installation d'App Check.
+- **Session démarrée après la première image** de l'animation (`MiffApplication.startSession`, appelée par `SplashHost.onFirstFrame`) ; la lecture Firestore du compte tourne hors du thread principal (`FirestoreAccountRepository`, `Dispatchers.IO`). Routage, règle « collecte en pause jusqu'à la lecture de `users/{uid}` » et purge du cache avant tout accès Firestore : **inchangés**. App Check reste installé en premier dans `Application.onCreate`, la pause de la collecte aussi (synchrone).
+- **Le nettoyage des photos de la caméra** (fichiers) sort du constructeur : fil d'arrière-plan, après la première image.
+- **L'app est composée sous l'animation quand le cœur est apparu** (0,5 s) et non plus à la 2e image : son gel tombe pendant le début du gonflement (cœur presque immobile) ; temps réel conservé, jamais plus de 3,0 s.
+- **Le « M + i » est dessiné comme un tracé** (même contour que l'écran système, contrôlé par `SplashArtworkTest`) ; les tracés sont préparés hors du thread principal.
+- **Premier beat de l'animation 300 → 100 ms** (`HOLD_MS`) : l'écran système a déjà montré le « M » ; durée totale **2,7 s** (2,9 s avant), toujours ≤ 3,0 s. Une constante à remettre à 300 si le PM préfère l'ancien rythme.
+- **Écran de diagnostic (debug)** : seul l'en-tête est composé sous l'animation, le reste après son départ.
+
+### Ajouté
+- **Mesure du démarrage** (`startup/StartupTrace`, `domain/startup/StartupReport`) : sections de trace système `Miff.*` (`android.os.Trace`) ; encart « Mesure du démarrage » (debug et `releaseLike` seulement, retiré du release par R8 et contrôlé par la CI) avec départ → première image, départ → cœur visible, durée dans `Application.onCreate`, plus long arrêt de l'animation. Aucun journal (l'app ne journalise pas), aucune donnée personnelle.
+- **Build `releaseLike`** (code release, R8, non « debuggable », signé avec la clé de debug) et son artefact CI `miff-releaselike-apk` (3 jours) pour comparer debug et release sur l'OPPO. Jamais publié ; aucune nouvelle clé, aucun secret ajouté (la CI utilise le keystore de debug déjà décodé depuis `DEBUG_KEYSTORE_B64`).
+- **Baseline Profile** écrit à la main (`src/main/baseline-prof.txt`) + `androidx.profileinstaller` 1.4.1 (Apache 2.0, gratuit). Limite : sans appareil il liste des paquets et non les méthodes réellement appelées ; un profil enregistré (Macrobenchmark) viendra plus tard ; aucun effet en debug.
+- Tests : `StartupReportTest`, `StartupTraceAndContainerTest` (le conteneur ne construit rien sans Firebase), `SplashHostTest` (l'app attend le cœur, composée tout de suite en « réduire les animations », première image), `SplashTimelineTest` (premier beat, moment de composition, 3,0 s).
+
+### Choix « économiques »
+- Aucun coût : bibliothèque AndroidX gratuite, build supplémentaire en CI (quelques minutes de calcul sur le quota gratuit de GitHub Actions ; signal de bascule : si la CI dépasse le quota gratuit, retirer `assembleReleaseLike` de la CI et le lancer à la demande).
+
+### Rejeté
+- **Icône animée (AnimatedVectorDrawable) de l'écran système** : raccord sans saut impossible à garantir sans appareil (durées inconnues de l'écran système, ColorOS, risque d'une double apparition du cœur contre la règle photosensible). Détails dans le README.
+
+### Limites
+- Aucune durée n'a pu être mesurée sur appareil : les gains sont attendus, pas chiffrés. À chronométrer par le PM (checklist dans la PR).
+- `FirebaseInitProvider` et les initialiseurs `androidx.startup` s'exécutent encore avant `Application.onCreate`.
+
 ## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
 
 Décision du PM : « Oui pour durcir le consentement » (le risque noté en 0.6.0 est supprimé).
