@@ -1,8 +1,8 @@
 # Recette Android de MIFF-2 (retirer, quitter, supprimer, renouveler le code, « Prévenir mes proches ») — parcours pour le PM
 
 **Pour qui** : vous, sur votre OPPO Find X5 Lite (Android 13), **avec un second compte de test** (un second téléphone Android, ou le même téléphone après déconnexion / reconnexion, ou un émulateur : voir « Matériel » ci-dessous).
-**Durée** : environ 35 minutes.
-**Prérequis** : la recette de MIFF-1 est faite (vous savez créer une Miff, rejoindre avec un code, ouvrir l'écran de la Miff depuis l'onglet Profil). Cette PR repose sur MIFF-1 (PR #45) : ne la testez qu'avec une version qui contient les deux.
+**Durée** : environ 40 minutes.
+**Prérequis** : la recette de MIFF-1 est faite (vous savez créer une Miff, rejoindre avec un code, ouvrir l'écran de la Miff depuis l'onglet Profil). MIFF-1 (PR #45) est fusionnée dans `main` et cette PR en a été mise à jour : la version à tester contient les deux, ainsi que les zones sûres (PR #46) et le démarrage à froid (PR #49).
 **Matériel** : le **temps réel entre deux personnes** (le second compte voit le message « Tu n'as plus accès… » sans rien faire) se voit mieux avec **deux appareils**. Avec un seul appareil, tout le reste se teste en changeant de compte (Réglages > Mon compte > Se déconnecter), et le message du compte retiré apparaît à sa prochaine ouverture de l'app.
 **Rappel de sécurité** : mots de passe de test et codes de Miff se tapent **uniquement sur le téléphone**, jamais dans une conversation ni dans une capture partagée.
 
@@ -58,7 +58,8 @@ Remettez B dans la Miff (nouveau code de A).
 - [ ] Refaites, **Quitter la Miff** : chargement, puis B revient à l'accueil (« Pas encore de Miff »). **Aucun** message « Tu n'as plus accès… » pour B (c'est son choix).
 - [ ] B peut tout de suite **créer ou rejoindre** une autre Miff (son emplacement gratuit est libéré).
 - [ ] Avec **A** (son écran de la Miff ouvert, ou rouvert) : B n'est plus dans la liste, et A voit une invitation discrète : « **Un proche a quitté la Miff. Tu veux créer un nouveau code ? C'est facultatif.** » avec « Créer un nouveau code » et « **Plus tard** ». Touchez « Plus tard » : l'invitation disparaît et **ne revient pas** à chaque ouverture.
-- [ ] Le code de la Miff **n'a pas changé** tout seul (c'est à A de décider).
+- [ ] Le code de la Miff **n'a pas changé** tout seul (c'est à A de décider). C'est la décision du PM du 2026-10-31 : **une sortie volontaire ne renouvelle pas le code** ; seul le retrait d'un proche par le créateur le renouvelle. Vérifiez que **A** voit toujours **le même code** qu'avant le départ de B, et que B, avec ce même code, peut **rejoindre à nouveau** la Miff.
+- [ ] **Texte du départ volontaire** : relisez la question de B (« Ta position ne sera plus partagée avec ce cercle. Tu pourras revenir si on te redonne le code. »), la phrase en pied d'écran (« Tu peux quitter cette Miff à tout moment… ») et l'invitation de A. **Aucun** ne dit que le code sera changé quand quelqu'un part (ni « le code sera changé », ni « un nouveau code sera créé » dans le parcours « Quitter »). Notez si « si on te redonne le code » vous paraît juste, alors que l'ancien code marche encore tant que A ne l'a pas renouvelé.
 - [ ] **Mode avion** sur B, « Quitter » : message calme ; après retour du réseau, B est **toujours** dans la Miff.
 
 ## Partie F — Supprimer la Miff (8 min)
@@ -93,6 +94,19 @@ Remettez B dans la Miff. (Idéal : un troisième compte C aussi, pour voir « pl
 - [ ] Passez l'app en **English** (Réglages > Langue) et relisez les mêmes messages.
 - [ ] Taille de texte du téléphone au **maximum** (Réglages Android > Affichage) : les questions restent lisibles, les boutons ne se chevauchent pas.
 - [ ] (Si vous utilisez TalkBack) le « ⋯ » est annoncé « Actions pour *{prénom}* » ; dans les questions, vous entendez le titre, puis **Annuler**, puis l'action.
+
+## Partie J — Marges et zones sûres des écrans de MIFF-2 (4 min)
+
+Même contrôle que celui de la PR #46, sur ce que MIFF-2 ajoute (sur votre OPPO, avec la navigation à 3 boutons **et** avec les gestes si vous pouvez les essayer).
+
+- [ ] **Écran de la Miff, créateur** : le titre et la flèche retour sont **sous** l'heure et les icônes du haut (rien n'est dessiné dessous) ; en faisant défiler jusqu'en bas, le lien « Supprimer la Miff » s'arrête **au-dessus** de la barre de navigation (boutons ou ligne de gestes), sans être coupé ni caché.
+- [ ] **Écran de la Miff, membre** : même contrôle pour le lien « Quitter la Miff » en bas.
+- [ ] **Invitation à renouveler le code** (après un départ, voir la partie E) : l'encadré et ses deux boutons ne touchent ni le haut ni les bords de l'écran.
+- [ ] **Les questions** (renouveler, retirer, quitter, supprimer, « Terminer » après un retrait, « On finalise la suppression… ») sont des fenêtres centrées, **entièrement visibles** : rien sous l'heure ni sous la barre de navigation ; les boutons « Annuler » et l'action restent atteignables.
+- [ ] **Menu « ⋯ »** : le petit menu s'ouvre à côté de la ligne et reste entièrement à l'écran, y compris pour la dernière ligne de la liste.
+- [ ] **Paysage** : tournez le téléphone sur l'écran de la Miff (créateur) : rien n'est coupé à gauche ni à droite (encoche, barre de navigation), le défilement permet d'atteindre tout en bas ; une question ouverte reste lisible.
+- [ ] **Texte au maximum** (Réglages Android > Affichage) : les questions défilent si elles sont trop hautes, sans bouton coupé.
+- [ ] **Clavier** : sur l'écran de la Miff (créateur), touchez le champ du nom : le clavier s'ouvre, le champ et « Enregistrer » restent visibles au-dessus (en défilant si besoin).
 
 ## À me remonter
 

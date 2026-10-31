@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.profile.PhoneCountry
 import com.tomessa.miff.domain.profile.PhoneNumbers
+import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
@@ -134,7 +134,7 @@ fun CountryPickerSheet(
     val shown = remember(countries, query) { countries.filter { PhoneNumbers.matchesSearch(it, query) } }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = colorBgSurface) {
         Column(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = Spacing.l),
+            modifier = Modifier.miffBottomInsets().padding(horizontal = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Text(

@@ -50,6 +50,26 @@ class MiffNameAndLimiterTest {
     }
 
     @Test
+    fun serverName_isCleanedOfBidirectionalAndInvisibleCharacters() {
+        assertEquals("Chez nous", MiffName.fromServer("\u202EChez\u200B nous\u2066\u0000 "))
+        assertEquals("Chez nous", MiffName.fromServer("  Chez nous  "))
+    }
+
+    @Test
+    fun serverName_withNothingVisibleLeft_isMissing() {
+        assertEquals(null, MiffName.fromServer("\u202E\u200B\uFEFF \u2066"))
+        assertEquals(null, MiffName.fromServer(""))
+    }
+
+    @Test
+    fun serverPlace_isCleaned_andDroppedWhenNothingVisibleIsLeft() {
+        val place = MiffPlace.fromServer("p1", "\u202EMaison\u200B")
+        assertEquals("Maison", place?.name)
+        assertEquals("p1", place?.id)
+        assertEquals(null, MiffPlace.fromServer("p2", "\u200B\u202E "))
+    }
+
+    @Test
     fun limiter_pausesAfterFiveFailures_forOneMinute() {
         var now = 0L
         val limiter = JoinAttemptLimiter(nowMillis = { now })

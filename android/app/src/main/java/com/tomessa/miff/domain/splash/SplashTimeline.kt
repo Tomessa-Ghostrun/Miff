@@ -41,7 +41,8 @@ data class BurstParticle(
 /**
  * The launch animation as a pure function of elapsed time (milliseconds since the splash was first drawn).
  *
- * Durations (ticket Onboarding section 5.1 and 15 SP1-SP6, PM requests): 2.9 s in total, 3.0 s at the very most (the
+ * Durations (ticket Onboarding section 5.1 and 15 SP1-SP6, PM requests): 2.7 s in total (2.9 s before the PM recette of
+ * 2026-10-31 shortened the first beat), 3.0 s at the very most (the
  * PM wanted the swelling and the pop slower, "barely time to understand what happens"); with "reduce animations"
  * 0.8 s and no movement at all. The caller measures REAL time (frame clock), so a slow
  * device or a "slow animations" developer setting can never stretch the splash past [totalMs].
@@ -58,6 +59,17 @@ class SplashTimeline(
     val totalMs: Long = exitStartMs + EXIT_MS
 
     fun isFinished(elapsedMs: Long): Boolean = elapsedMs >= totalMs
+
+    /**
+     * From when the app may be composed UNDER the animation. Its first composition is heavy and freezes the screen for a
+     * moment: it must not happen before the heart is there (PM recette 2026-10-31: the "M" alone stayed for seconds because
+     * the app was composed first). Full version: once the heart has appeared, at the start of the swelling, where the heart
+     * is nearly still, so that a stall costs nothing visible. "Reduce animations": nothing moves, so at once.
+     * Always well before the exit ([totalMs] minus [EXIT_MS]), so the first screen is ready when the animation fades.
+     */
+    val contentMountMs: Long = if (reduceMotion) 0L else HOLD_MS + APPEAR_MS
+
+    fun shouldMountContent(elapsedMs: Long): Boolean = elapsedMs >= contentMountMs
 
     fun frameAt(elapsedMs: Long): SplashFrame {
         val t = elapsedMs.coerceAtLeast(0L)
@@ -101,7 +113,12 @@ class SplashTimeline(
     }
 
     companion object {
-        const val HOLD_MS = 300L
+        /**
+         * "M + i" alone, after the first image. The system launch screen has ALREADY shown the same picture for the whole
+         * start of the process, so this beat is short (PM recette 2026-10-31: "I see the M for a long time without the heart";
+         * it was 300 ms). Total: 2.7 s, 3.0 s at the very most.
+         */
+        const val HOLD_MS = 100L
         const val APPEAR_MS = 400L
 
         /** Swelling, including the final [POP_PAUSE_MS] where the heart holds at its biggest size. */

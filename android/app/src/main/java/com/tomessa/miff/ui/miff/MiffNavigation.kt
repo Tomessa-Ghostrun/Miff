@@ -179,33 +179,45 @@ fun NavGraphBuilder.miffScreenRoute(
                         }
                     },
             )
-        val state by viewModel.uiState.collectAsStateWithLifecycle()
-        // The three Firestore listeners only run while the screen is on view (cancelled in the background, attached again on return).
-        val lifecycleOwner = LocalLifecycleOwner.current
-        LaunchedEffect(viewModel) {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }
-        }
-        // The person left this Miff and the server confirmed: the screen of a Miff that is no longer theirs closes by itself.
-        LaunchedEffect(state.departed) {
-            if (state.departed) navController.popBackStackIfSafe()
-        }
-        MiffScreen(
-            state = state,
-            onBack = { navController.popBackStackIfSafe() },
-            onRetry = viewModel::retry,
-            onNameChanged = viewModel::onNameInputChanged,
-            onSaveName = viewModel::onSaveName,
-            onSharingRequested = viewModel::onSharingRequested,
-            onSharingConfirmed = viewModel::onSharingConfirmed,
-            onSharingDismissed = viewModel::onSharingDialogDismissed,
-            onRemoveRequested = viewModel::onRemoveRequested,
-            onRenewRequested = viewModel::onRenewRequested,
-            onLeaveRequested = viewModel::onLeaveRequested,
-            onDeleteRequested = viewModel::onDeleteRequested,
-            onActionConfirmed = viewModel::onActionConfirmed,
-            onActionDismissed = viewModel::onActionDismissed,
-            onInviteLater = viewModel::onInviteLater,
-            onDeletionRetry = viewModel::onDeletionRetry,
-        )
+        MiffScreenHost(viewModel = viewModel, onBack = { navController.popBackStackIfSafe() })
     }
+}
+
+/**
+ * The screen of a Miff wired to its view model: it READS the Miff while it is on view. The three Firestore listeners and the
+ * network watch run inside `repeatOnLifecycle(STARTED)` (cancelled in the background, attached again on return). Without this
+ * effect the screen would never read anything (an empty, frozen list): `MiffScreenHostTest` fails in that case.
+ */
+@Composable
+fun MiffScreenHost(
+    viewModel: MiffScreenViewModel,
+    onBack: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }
+    }
+    // The person left this Miff and the server confirmed: the screen of a Miff that is no longer theirs closes by itself.
+    LaunchedEffect(state.departed) {
+        if (state.departed) onBack()
+    }
+    MiffScreen(
+        state = state,
+        onBack = onBack,
+        onRetry = viewModel::retry,
+        onNameChanged = viewModel::onNameInputChanged,
+        onSaveName = viewModel::onSaveName,
+        onSharingRequested = viewModel::onSharingRequested,
+        onSharingConfirmed = viewModel::onSharingConfirmed,
+        onSharingDismissed = viewModel::onSharingDialogDismissed,
+        onRemoveRequested = viewModel::onRemoveRequested,
+        onRenewRequested = viewModel::onRenewRequested,
+        onLeaveRequested = viewModel::onLeaveRequested,
+        onDeleteRequested = viewModel::onDeleteRequested,
+        onActionConfirmed = viewModel::onActionConfirmed,
+        onActionDismissed = viewModel::onActionDismissed,
+        onInviteLater = viewModel::onInviteLater,
+        onDeletionRetry = viewModel::onDeletionRetry,
+    )
 }

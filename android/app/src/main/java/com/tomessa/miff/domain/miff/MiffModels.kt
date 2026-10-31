@@ -28,6 +28,9 @@ class MiffMember(
 ) {
     val displayName: String get() = "$firstName $lastName".trim()
 
+    /** How the creator's questions name this person ("Retirer {prénom}..."): the first name, or the last name if the first has nothing visible. */
+    val callName: String get() = firstName.ifEmpty { lastName }
+
     override fun toString(): String = "MiffMember(redacted)"
 }
 
@@ -37,6 +40,14 @@ class MiffPlace(
     val name: String,
 ) {
     override fun toString(): String = "MiffPlace(redacted)"
+
+    companion object {
+        /** A place as the server describes it: the name is cleaned ([MiffName.fromServer]); a place with no visible name is dropped. */
+        fun fromServer(
+            id: String,
+            rawName: String,
+        ): MiffPlace? = MiffName.fromServer(rawName)?.let { MiffPlace(id, it) }
+    }
 }
 
 /** One document of `users/{uid}/memberships`: [key] is the id of the document, [miffId] the field that says which Miff. */

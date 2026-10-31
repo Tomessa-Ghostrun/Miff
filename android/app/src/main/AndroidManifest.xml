@@ -88,9 +88,15 @@
                 android:resource="@xml/avatar_capture_paths" />
         </provider>
 
+        <!--
+            adjustResize: on Android 8 to 10 the height of the keyboard only reaches Compose (ui/components/ScreenInsets.kt) with
+            this mode; without it the system may "pan" the whole screen instead and push its top under the status bar.
+            From Android 11 the app receives the keyboard height whatever the mode.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Miff.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

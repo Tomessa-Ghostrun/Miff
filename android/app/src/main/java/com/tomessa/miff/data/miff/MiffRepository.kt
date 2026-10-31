@@ -323,7 +323,9 @@ class FirestoreMiffRepository(
                 is Guarded.Failed -> return JoinPreparation.Failed(read.failure)
             }
         val miffId = (found?.get("miffId") as? String)?.takeIf(FirestoreMiffStore::isMiffId)
-        val miffName = found?.get("miffName") as? String
+        // The name was written by the holder of the code, before the reader consented to anything: cleaned like any name read
+        // from the server, and a name with nothing visible left is answered like an unknown code.
+        val miffName = (found?.get("miffName") as? String)?.let(MiffName::fromServer)
         if (found == null || miffId == null || miffName == null) return JoinPreparation.NotFound
         // Step 4: a stale index is cleaned before anything is written. Step 5: already in this Miff?
         val state =
@@ -415,7 +417,12 @@ class FirestoreMiffRepository(
                 MiffWrites.stopSharing(miffId, uid)
             }
         val result = write { store.commit(writes) }
-        if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
+        // A refusal can also mean "already in the state asked for": the dialog asks for the opposite of what the card said when it
+        // was opened, and the card may have changed since (another phone), in which case the rules refuse a no-op write
+        // (false -> false, true -> true). The server's card is read, and the wanted state counts as a success.
+        if (result is MiffWriteResult.Failed &&
+            (result.failure.mayHaveLanded() || result.failure == MiffFailure.REFUSED)
+        ) {
             val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
             if (sharing == enabled) return MiffWriteResult.Done
         }

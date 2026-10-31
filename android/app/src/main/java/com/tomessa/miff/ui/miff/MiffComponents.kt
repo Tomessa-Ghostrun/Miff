@@ -484,7 +484,7 @@ private fun MemberMenu(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_more_vert),
-                contentDescription = stringResource(R.string.miff_member_menu_a11y, member.firstName),
+                contentDescription = stringResource(R.string.miff_member_menu_a11y, member.callName),
                 tint = if (enabled) colorTextPrimary else colorTextDescription,
             )
         }

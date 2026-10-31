@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -64,6 +63,7 @@ import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.domain.profile.PhoneNumbers
 import com.tomessa.miff.domain.profile.ProfileForm
 import com.tomessa.miff.ui.auth.MessageText
+import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgSurface
@@ -320,7 +320,7 @@ internal fun PhotoSourceSheet(
         containerColor = colorBgSurface,
     ) {
         Column(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = Spacing.l, vertical = Spacing.s),
+            modifier = Modifier.miffBottomInsets().padding(horizontal = Spacing.l, vertical = Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             Text(

@@ -272,7 +272,8 @@ class FirestoreMiffStore(
         /** The Miff of a snapshot, if it exists and has the shape the rules require; null otherwise. */
         fun detailsOf(snapshot: DocumentSnapshot): MiffDetails? {
             if (!snapshot.exists()) return null
-            val name = MiffName.clean(snapshot.getString("name") ?: return null)
+            // Cleaned and trimmed ([MiffName.fromServer]); a name with nothing visible left stays "" (the screen shows its loading title).
+            val name = MiffName.fromServer(snapshot.getString("name") ?: return null).orEmpty()
             val code = snapshot.getString("joinCode") ?: return null
             val owner = snapshot.getString("ownerUid") ?: return null
             return MiffDetails(snapshot.id, name, code, owner)

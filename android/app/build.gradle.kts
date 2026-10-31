@@ -31,6 +31,8 @@ android {
         require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
         buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
+        // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
+        buildConfigField("boolean", "STARTUP_METRICS", "false")
     }
 
     buildFeatures {
@@ -46,6 +48,7 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("boolean", "STARTUP_METRICS", "true")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }
@@ -62,11 +65,37 @@ android {
                     providers.gradleProperty("miff.uploadCrashlyticsMapping").map { it == "true" }.getOrElse(false)
             }
         }
+        // "releaseLike": the RELEASE build (same code, same R8 minification, not debuggable, same release sources: no diagnostic
+        // screen, Play Integrity App Check) but signed with the DEBUG key, so that the PM can install it on a phone and compare
+        // the launch time with the debug APK. It is a test build: never published, never uploaded anywhere. The debug key is
+        // the standard AGP one (on CI, the stable keystore read from a secret by the workflow; nothing secret is in the repository).
+        // It adds the launch-duration readout (STARTUP_METRICS), which the real release does not contain.
+        create("releaseLike") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "STARTUP_METRICS", "true")
+            (this as ExtensionAware).extensions.configure<CrashlyticsExtension>("firebaseCrashlytics") {
+                mappingFileUploadEnabled = false
+            }
+        }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    // releaseLike is a release build: it uses the release sources (no diagnostic screen, Play Integrity App Check), not a copy.
+    sourceSets {
+        getByName("releaseLike") {
+            java.directories.add("src/release/java")
+            kotlin.directories.add("src/release/java")
+        }
     }
 
     lint {
@@ -87,8 +116,10 @@ android {
 // Release keeps only the supported languages from libraries (smaller APK; any other device language falls back to
 // English). Debug keeps everything so that the en-XA / ar-XB pseudo-locales work.
 androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
-        variant.androidResources.localeFilters.addAll("en", "fr")
+    for (buildType in listOf("release", "releaseLike")) {
+        onVariants(selector().withBuildType(buildType)) { variant ->
+            variant.androidResources.localeFilters.addAll("en", "fr")
+        }
     }
 }
 
@@ -101,6 +132,10 @@ dependencies {
     // background and the "M + i" without the heart; the Compose animation takes over from there.
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)
+    // Baseline Profile (app/src/main/baseline-prof.txt): lets the system pre-compile the start-up path of the app at install time.
+    // Official AndroidX library, Apache 2.0, free, a few KB; it only installs the profile shipped in the APK. Already pulled in
+    // by Compose, declared here so that the version is ours and visible.
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
@@ -127,6 +162,7 @@ dependencies {
     implementation(libs.firebase.analytics)
     // App Check: Play Integrity in release, debug provider in debug (never shipped in release).
     releaseImplementation(libs.firebase.appcheck.playintegrity)
+    add("releaseLikeImplementation", libs.firebase.appcheck.playintegrity)
     debugImplementation(libs.firebase.appcheck.debug)
 
     debugImplementation(libs.androidx.compose.ui.tooling)

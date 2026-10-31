@@ -14,6 +14,10 @@ struct FirebaseAnalyticsSwitch: CollectionSwitch {
         }
         Analytics.setAnalyticsCollectionEnabled(enabled)
     }
+
+    func pause() {
+        setEnabled(false)
+    }
 }
 
 struct FirebaseCrashlyticsSwitch: CollectionSwitch {
@@ -27,6 +31,14 @@ struct FirebaseCrashlyticsSwitch: CollectionSwitch {
         if !enabled {
             crashlytics.deleteUnsentReports()
         }
+    }
+
+    /// Collecte coupée, mais le rapport du plantage précédent reste sur le disque jusqu'à la réponse du compte.
+    func pause() {
+        guard FirebaseBootstrap.isConfigured else {
+            return
+        }
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(false)
     }
 }
 

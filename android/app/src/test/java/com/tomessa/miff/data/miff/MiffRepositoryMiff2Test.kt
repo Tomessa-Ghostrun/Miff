@@ -146,6 +146,18 @@ class MiffRepositoryMiff2Test {
         }
 
     @Test
+    fun leave_neverRenewsTheCode_decisionOfThePm_2026_10_31() =
+        runTest {
+            // A voluntary departure touches the person's own documents only: neither the Miff (its code), nor any code document.
+            store.miffs[MIFF_ID] = miffDetails(owner = "someone-else")
+            store.memberships = listOf(MembershipRef("free", MIFF_ID))
+            assertEquals(MiffWriteResult.Done, repo().leave(uid, MIFF_ID))
+            val paths = store.commitsAsLots.flatten().map { it.path }
+            assertTrue(paths.none { it == "miffs/$MIFF_ID" || it.startsWith("joinCodes") })
+            assertTrue(paths.all { it.contains("/$uid") })
+        }
+
+    @Test
     fun leave_withAPremiumIndexKeyedByTheMiffId_deletesThatOne() =
         runTest {
             store.memberships = listOf(MembershipRef(MIFF_ID, MIFF_ID), MembershipRef("free", "ZyXwVuTsRqPoNmLkJiHg"))

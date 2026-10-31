@@ -4,7 +4,16 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 
 ## [0.8.0] - 2026-10-31 : MIFF-2, retirer un proche, quitter, supprimer la Miff, renouveler le code, « Prévenir mes proches »
 
-Ticket `docs/tickets/miff.md` (§13 MIFF-2 : écrans H, I, J, K ; critères N, R, Q, S, D), décisions du PM `miff-questions-pm.md` (QM1, QM8, QM9) et du 2026-10-31 (vignette des applications récentes), fiches `design/screens/miff-dialogues.md` et `miff-ecran-miff.md`, maquettes `design/exports/miff/` (-1 : corbeilles rouges, -3 : dialogue de suppression). **Dépend de MIFF-1 (PR #45)** : cette branche part de `android/miff-1`.
+Ticket `docs/tickets/miff.md` (§13 MIFF-2 : écrans H, I, J, K ; critères N, R, Q, S, D), décisions du PM `miff-questions-pm.md` (QM1, QM8, QM9) et du 2026-10-31 (vignette des applications récentes), fiches `design/screens/miff-dialogues.md` et `miff-ecran-miff.md`, maquettes `design/exports/miff/` (-1 : corbeilles rouges, -3 : dialogue de suppression). **Mise à jour du 2026-10-31** : MIFF-1 (PR #45, avec ses corrections de revue), les zones sûres (#46), le démarrage à froid (#49) et le suivi des revues (#50) sont fusionnés dans `main`, et la branche les a reçus (`git merge origin/main`, la PR cible `main`).
+
+### Décision du PM du 2026-10-31 : le départ volontaire ne renouvelle pas le code
+**Une sortie volontaire d'une Miff ne renouvelle PAS le code ; seul le retrait d'un membre par le créateur le renouvelle.** C'est déjà le comportement des règles déployées (un membre simple ne peut pas écrire la Miff) et du lot « Quitter » (4 suppressions, aucune écriture sur la Miff ni son code) : rien ne change dans le code ; un test (`MiffRepositoryMiff2Test`) le garantit. Tous les textes affichés ont été relus : aucun ne promet qu'un départ change le code (la question « Quitter » dit « Tu pourras revenir si on te redonne le code » ; l'invitation faite au créateur reste facultative). Consigné dans `docs/tickets/miff.md` §15 (QM16), `miff-questions-pm.md` et `backend/data-model.md`.
+
+### Mis en conformité avec `main` à cette occasion
+- **Marges communes** : l'écran de la Miff (avec ses nouveautés : menus « ⋯ », invitation, liens du pied d'écran) prend ses marges dans `ui/components/ScreenInsets.kt` (`miffScreenInsets()`) ; les questions et la fenêtre de progression sont des fenêtres du système (`MiffConfirmDialog`, `MiffProgressDialog`), placées hors des barres par Android, comme celles de MIFF-1. Aucune marge brute : `ScreenInsetsRuleTest` passe. Nouveaux cas dans `ScreenInsetsTest` (créateur avec invitation, paysage avec encoche, membre à la plus grande police, dernier lien atteignable au-dessus du clavier, pour le créateur et pour le membre).
+- **Noms reçus du serveur** : les prénoms et noms des proches (ligne, menu « ⋯ », « Retirer {prénom} », « {prénom} ne fait plus partie… ») et le nom de la Miff (« Quitter la Miff « X » ? », « Supprimer la Miff « X » ? », message « Prévenir mes proches ») passent par `MiffName.fromServer` (caractères de contrôle et invisibles retirés, espaces retirés). Un prénom sans aucun caractère visible est remplacé, dans les questions, par le nom de famille (`MiffMember.callName`) ; il n'est jamais écarté de la liste (le créateur doit pouvoir le retirer).
+- **Démarrage à froid** : `miffStore` et `miffDeletions` sont créés à la première utilisation (`by lazy`) ; la reprise d'une suppression est lancée par `MainShell`, affiché seulement une fois la session résolue (donc après la purge d'une déconnexion ratée) : aucun accès à Firestore avant `MiffApplication.startSession`.
+- **Écran de la Miff** : `MiffScreenHost` (MIFF-1) reçoit les actions de MIFF-2 et ferme l'écran quand la personne a quitté la Miff. Les corrections de revue de MIFF-1 (page blanche après annulation, « déjà dans l'état voulu » traité comme un succès) sont conservées.
 
 ### Ajouté
 - **Retirer un proche** (créateur) : menu « ⋯ » sur la ligne des autres proches (jamais sur la sienne, jamais pour un membre), question nominative, **un seul lot de 6 écritures qui renouvelle toujours le code** (fiche, statut, photo de la personne ; Miff, nouveau code, ancien code supprimé), puis « {Prénom} ne fait plus partie de la Miff » avec **le nouveau code** et « Partager le code ». Une cible déjà partie est acceptée (le code est renouvelé quand même). Les composants sans interface (`MiffRepository.removeMember`, `MiffDeletion`) sont prêts pour AUTH-5 et le ticket Premium.
@@ -17,10 +26,10 @@ Ticket `docs/tickets/miff.md` (§13 MIFF-2 : écrans H, I, J, K ; critères N, R
 
 ### Modifié
 - `MiffRepository` : `renewCode`, `removeMember`, `leave` ; `MiffStore` : `readMemberIds`, `readPlaceIds`, `commitWithMiff` (transaction qui lit la Miff et l'existence de son code) ; `MiffWrites.leave` accepte un index introuvable. `MiffConfirmDialog` : bouton secondaire, ordre de lecture (question, « Annuler », action), variante informative. `MiffMemberRow` : menu. `MiffDirectory.expectDeparture`. `AppContainer` : `miffDeletions`, `onMiffLeft`.
-- **Corrigé au passage** : dans `MiffNavigation.kt` (MIFF-1), la ligne qui attache les écouteurs au cycle de vie était **entièrement en commentaire** (commentaire et code sur la même ligne) : l'écran de la Miff ne lisait donc jamais rien. Remise sur plusieurs lignes ; le même correctif est à reporter sur `android/miff-1`.
+- (Le défaut de MIFF-1 corrigé ici à l'origine, une ligne d'attache au cycle de vie entièrement en commentaire, est réglé dans `main` par `MiffScreenHost` et son test.)
 
 ### Écarts avec les maquettes et les fiches (liste justifiée dans la PR)
-Corbeille rouge remplacée par « ⋯ » (§3.3 du ticket) ; dialogue de suppression : tutoiement, « Cette action est définitive » au lieu de « de manière irrévocable », bouton « Supprimer la Miff » blanc à contour rouge (pas de fond rouge, fiche `Tone=Sensitive`), « Annuler » en lien, phrase ajoutée sous « Prévenir mes proches » (le libellé validé par le PM pourrait faire croire à une notification automatique : risque R6) ; « Nouveau code créé » est une ligne qui s'annonce au lecteur d'écran, pas un toast (fiche K2) ; progression et fin de suppression en dialogue sur l'écran de la Miff, et en **message système court** quand l'écran est quitté (la fiche prévoit une `Notice Info` : un bandeau global attendrait la fusion des marges de la barre d'état, `android/fix-insets`) ; textes de pied pour le membre (§G de la fiche) et pour le créateur (QM1) ; les libellés « Terminer », « Fermer », « Plus tard » sont ceux de la fiche (à confirmer par le PM).
+Corbeille rouge remplacée par « ⋯ » (§3.3 du ticket) ; dialogue de suppression : tutoiement, « Cette action est définitive » au lieu de « de manière irrévocable », bouton « Supprimer la Miff » blanc à contour rouge (pas de fond rouge, fiche `Tone=Sensitive`), « Annuler » en lien, phrase ajoutée sous « Prévenir mes proches » (le libellé validé par le PM pourrait faire croire à une notification automatique : risque R6) ; « Nouveau code créé » est une ligne qui s'annonce au lecteur d'écran, pas un toast (fiche K2) ; progression et fin de suppression en dialogue sur l'écran de la Miff, et en **message système court** quand l'écran est quitté (la fiche prévoit une `Notice Info` : un bandeau global est gardé pour plus tard, le message système n'ayant aucune marge à gérer) ; textes de pied pour le membre (§G de la fiche) et pour le créateur (QM1) ; les libellés « Terminer », « Fermer », « Plus tard » sont ceux de la fiche (à confirmer par le PM).
 
 ### Choix économiques et limites
 - Aucun service, aucune dépendance, aucune permission ajoutée ; 0 €. **Aucune règle modifiée** (`backend/firestore.rules` identique à `main`).
@@ -51,9 +60,22 @@ Ticket `docs/tickets/miff.md` (§13, écrans A à G, L et M ; décisions du PM `
 - `AppRoot` : `MIFF_CHOICE` ouvre le vrai écran (l'écran provisoire de l'Auth et ses deux textes `android_*` sont supprimés). `FeedPlaceholderScreen` devient `FeedScreen`.
 - `AppContainer` : un seul `CachePurger` partagé ; `miffDirectory` ajouté à la liste d'arrêt de la session.
 
+### Fusion de main (zones sûres #46, démarrage à froid #49) et migration des écrans de MIFF-1
+- **Zones sûres.** Tous les écrans ajoutés par MIFF-1 passent par `ui/components/ScreenInsets.kt` : `MiffFrame` (Créer, Rejoindre, Ta Miff est prête, choix), l'écran de la Miff, le message d'accès perdu : `miffScreenInsets()` à la place de `safeDrawingPadding()` ; le Feed (qui remplace `FeedPlaceholderScreen`) : `miffTopInsets()` à la place de `statusBarsPadding()`. Plus aucune marge système brute dans le code (la règle `ScreenInsetsRuleTest` passe). Clavier : le contenu défile au-dessus du clavier sur le nom de la Miff, le code et le nom à l'écran de la Miff. Dialogues et menu du sélecteur : fenêtres du système, rien à faire.
+- **Tests** (`ScreenInsetsTest`) : 22 nouveaux cas pour MIFF-1 (Feed avec une Miff, sans Miff, illisible ; carte de Miff du Profil ; choix ; Créer (nom, prête) ; Rejoindre (code, confirmation) ; écran de la Miff (créateur, membre, chargement) ; accès perdu ; paysage avec encoche ; très grande police ; clavier ouvert). Les appels à `MainTabs` suivent ses nouveaux paramètres.
+- **Démarrage à froid.** `cachePurger`, `miffRepository`, `joinLimiter` et `miffDirectory` deviennent paresseux (`lazy`) dans `AppContainer` ; `MiffDirectory` rejoint la liste d'arrêt de la session. Aucun accès Firestore de MIFF-1 avant `MiffApplication.startSession` (vérifié : la construction n'ouvre pas Firestore, tout passe par des fonctions appelées à la première requête, depuis des écrans affichés après le routage).
+- **Catalogue iOS** (`Localizable.xcstrings`) : fusion des clés de l'authentification iOS (main) et des clés `miff_*` / `feed_*` / `profile_tab_*` ajoutées ici pour la parité ; aucune clé en conflit, parité Android / iOS vérifiée (349 clés communes).
+
+### Corrigé après les revues sécurité et code (PR #45, second passage)
+- **Nom de la Miff lu dans le code (M1 sécurité)** : `joinCodes.miffName` est écrit par le détenteur du code avant tout consentement du lecteur ; il passe maintenant par `MiffName.fromServer` (caractères de contrôle, bidirectionnels et invisibles retirés, espaces des bords retirés) avant d'être affiché (« Rejoindre la Miff « X » ? », « Tu fais déjà partie de la Miff X »). S'il ne reste rien de visible, la réponse est celle d'un code inconnu. Le commentaire de `MiffName` ne prétendait plus à tort que tous les noms du serveur étaient nettoyés.
+- **Noms de lieux (L5)** : même nettoyage (`MiffPlace.fromServer`) ; un lieu sans nom visible n'est pas affiché.
+- **Commentaire (L3)** : « Reprendre le partage » montre le même cadre et la même version de consentement qu'à l'entrée, avec sa propre phrase d'ouverture (textes inchangés).
+- **Page blanche (CR-M1)** : si l'écran de la Miff passe en arrière-plan ou pivote pendant la vérification d'un accès perdu, l'état est remis à « chargement » et l'accès perdu est entendu de nouveau au retour (avant : état muet, sans message ni « Réessayer »). Test d'annulation en pleine vérification.
+- **Partage déjà dans l'état voulu (CR-M3)** : si les règles refusent l'écriture (état déjà atteint depuis un autre appareil), la fiche du serveur est relue et l'état voulu compte comme un succès. Tests.
+
 ### Corrigé après la revue indépendante de la PR #45
 - **I1** : « Tu n'as plus accès » n'est annoncé qu'après confirmation par le serveur, aussi quand c'est l'écran de la Miff qui entend le refus ; sans confirmation, rien n'est annoncé ni nettoyé et l'écran propose « Réessayer » (test : écouteur refusé + serveur injoignable = zéro message).
-- **I2** : « Reprendre le partage » affiche le même cadre de consentement (même texte, même version) que l'entrée.
+- **I2** : « Reprendre le partage » affiche le même cadre de consentement (même version de consentement ; seule la phrase d'ouverture diffère) que l'entrée.
 - **I3** : le cadre de consentement dit que les lieux de confiance sont choisis par le créateur et visibles de tous les membres ; `MiffSharingConsent.VERSION` passe à `2026-10-v2` (documenté dans `backend/data-model.md` §4 et le README). Phrase par défaut, le PM peut encore l'ajuster (alors `v3`).
 - **M1** limiteur d'essais porté par `AppContainer` (durée du processus). **M2** nettoyage silencieux d'un index obsolète : même purge du cache que pour un accès perdu. **M3** nom : coupe entre deux caractères entiers (`BreakIterator`), caractères de contrôle et bidirectionnels retirés à la saisie, à la lecture et dans le message de partage. **M4** écoute en direct sous `repeatOnLifecycle`. **M5** textes honnêtes pour « une seule Miff à la fois » et « profil manquant » (retour à l'étape profil). **M6** hors connexion avec un cache vide : « on ne sait pas » et non « pas de Miff ». **M7** décision H4 documentée (quota = « pas de connexion » ; refus App Check indistinguable d'un refus des règles = phrase générique). **M8** « Compris » ne ferme que l'écran de la Miff perdue ; « Ouvrir la Miff » compte la fin de l'onboarding ; lot à réponse perdue vérifié aussi pour renommer et arrêter / reprendre le partage. **M9** constantes de taille et d'opacité remplacées par des jetons (`Spacing`, `Type`, `Color`), `details()` supprimé, tests ajoutés (assemblage des écouteurs, message de partage, copie « sensible »).
 
@@ -67,6 +89,85 @@ Titre de l'écran = nom de la Miff ; un seul bouton de validation (coche retiré
 - **Limite connue** : sans permission de localisation demandée par l'app (ticket Localisation), `locationAccess` est écrit `unknown` ; il passera à `denied` / `foreground` / `background` avec ce ticket.
 - **Limite connue** : le lien du message de partage est la racine du site public ; une page d'atterrissage dédiée (QM14) viendra avec le site.
 - Signal de bascule : voir `backend/data-model.md` §12 (ratio lectures par utilisateur actif).
+- **Limite connue (M2)** : le délai de 20 s d'une écriture (`write { ... }`) arrête l'attente de l'app, pas la transaction Firestore : une écriture dont la réponse tarde peut aboutir après le message d'échec. L'app le vérifie par une lecture serveur avant de parler d'échec (créer, rejoindre, renommer, partager) ; le cas résiduel est une transaction qui aboutit après cette vérification.
+- **Limite connue (M4)** : tout refus des règles lors de « Rejoindre » affiche « On ne trouve pas de Miff avec ce code » : voulu pour un code renouvelé, mais cela couvre aussi un emplacement gratuit pris entre-temps, des conditions d'utilisation absentes ou un refus d'App Check ; le message peut égarer et le limiteur d'essais ne compte pas ces cas. Non modifié dans cette PR.
+- **Limite connue (M5)** : un refus d'App Check et un refus des règles sont tous deux `PERMISSION_DENIED` et reçoivent la même phrase générique (écart H4, documenté dans le README).
+- **Limite connue (F1)** : si la lecture de l'abonnement échoue (réseau instable), `premium()` renvoie « non premium » : un compte Miff+ peut alors se voir répondre « une seule Miff à la fois » à tort. À rendre explicite (échec) plutôt que « non premium » ; non corrigé dans cette PR.
+
+## [0.6.5] - 2026-10-31 : suivi des revues (marges et démarrage), sans nouvelle fonctionnalité
+
+Remarques non bloquantes des revues indépendantes des PR #46 (zones sûres) et #49 (démarrage à froid). Aucun changement visible attendu sur un téléphone qui fonctionne.
+
+### Corrigé
+- **Bas du repli des marges (`ScreenInsets.kt`)** : il lisait la hauteur et la position de la vue dans un résultat mémorisé ; à la première composition la vue n'est pas encore mesurée (hauteur 0), donc le bas restait figé à 0 sur un téléphone qui rapporte 0 pour la barre à 3 boutons. La position de la fenêtre et de l'écran vient maintenant du gestionnaire de fenêtres (connue avant toute mise en page), mémorisée et redemandée seulement quand la vue ou la configuration (rotation, redimensionnement) change, car cet appel n’est pas gratuit ; la visibilité des barres est lue comme un état Compose, donc le repli se recalcule quand elle change. Inchangé : une valeur réellement rapportée n'est jamais remplacée (maximum côté par côté), pas de double marge. Le haut utilise la même position de fenêtre (même défaut possible).
+- **`MiffApplication.warmUp`** attrape `Throwable` (et non seulement `Exception`) : une erreur (`LinkageError`, mémoire) dans ce fil d'arrière-plan facultatif ne fait plus tomber l'app au lancement ; le fil principal construit ce qui manque. Aucun journal, aucune donnée personnelle.
+
+### Ajouté
+- Tests du bas du repli (`ScreenInsetsTest`) : 3 boutons rapportés à 0 (le bas de l'app reste au-dessus de la vraie barre), valeur rapportée conservée (plus petite et plus grande que la barre déclarée), barre de navigation masquée, paysage (inactif), tout premier affichage (test qui échoue avec l'ancienne lecture de la vue : vérifié), et règles pures (fenêtre qui n'atteint pas le bas ou le haut, mode gestes, fenêtre inconnue).
+- `ScreenInsetsRuleTest` : exemptions **par chemin** (`ScreenInsets.kt`, `InsetsDiagnostic.kt`) et non par nom de fichier ; interdit en plus le paramètre `windowInsets =`, `WindowInsetsCompat`, `setOnApplyWindowInsetsListener` et `Scaffold` / `TopAppBar` (et variantes) / `BottomAppBar` / `NavigationBar` / `NavigationRail` (marges par défaut) : aucun faux positif sur le code actuel (test de motifs inclus). Limite : lecture du texte ligne par ligne, un alias d'import n'est pas vu.
+- Commentaires : le repli est **inerte sous Android 10 et moins** ; `config_navBarInteractionMode` est une ressource privée (absente : bas du repli désactivé, côté sûr) ; `STARTUPMETRICSOVERLAY` ne doit pas être renommé (la CI le cherche dans le dex release) ; `MainTabs` devra gérer le clavier si un onglet reçoit un champ de saisie.
+
+### Documenté
+- `README.md` : l'APK `releaseLike` ne pourra plus joindre Firebase une fois l'application d'App Check activée (Play Integrity ne valide pas hors Google Play) ; il faudra alors un jeton de débogage App Check.
+
+### Choix « économiques »
+- Aucun : pas de nouvelle dépendance ni de service.
+
+## [0.6.4] - 2026-10-31 : démarrage à froid, le « M » ne doit plus rester seul longtemps
+
+Retour du PM après recette sur l'OPPO Find X5 Lite (APK debug de la CI) : le « M » seul reste près de 4 s avant le cœur ; pas sur iOS. Diagnostic complet et chronologie : `README.md`, « Démarrage à froid ».
+
+### Cause trouvée (lecture du code ; non mesurée sur appareil)
+Tout ce qui précède la première image de l'animation allonge le « M seul » : `Application.onCreate` construisait tout le conteneur, initialisait Firebase Auth et lançait la lecture de session (client Firestore compris) sur le thread principal ; puis la première composition de l'app (en debug : l'écran de diagnostic entier, galerie de tokens comprise) gelait l'écran **avant** que l'horloge de l'animation démarre.
+
+### Modifié
+- **`AppContainer` entièrement paresseux** (`lazy`) : le créer ne construit plus rien. `MiffApplication` construit le reste **sur un fil d'arrière-plan** (`warmUp`), après l'installation d'App Check.
+- **Session démarrée après la première image** de l'animation (`MiffApplication.startSession`, appelée par `SplashHost.onFirstFrame`) ; la lecture Firestore du compte tourne hors du thread principal (`FirestoreAccountRepository`, `Dispatchers.IO`). Routage, règle « collecte en pause jusqu'à la lecture de `users/{uid}` » et purge du cache avant tout accès Firestore : **inchangés**. App Check reste installé en premier dans `Application.onCreate`, la pause de la collecte aussi (synchrone).
+- **Le nettoyage des photos de la caméra** (fichiers) sort du constructeur : fil d'arrière-plan, après la première image.
+- **L'app est composée sous l'animation quand le cœur est apparu** (0,5 s) et non plus à la 2e image : son gel tombe pendant le début du gonflement (cœur presque immobile) ; temps réel conservé, jamais plus de 3,0 s.
+- **Le « M + i » est dessiné comme un tracé** (même contour que l'écran système, contrôlé par `SplashArtworkTest`) ; les tracés sont préparés hors du thread principal.
+- **Premier beat de l'animation 300 → 100 ms** (`HOLD_MS`) : l'écran système a déjà montré le « M » ; durée totale **2,7 s** (2,9 s avant), toujours ≤ 3,0 s. Une constante à remettre à 300 si le PM préfère l'ancien rythme.
+- **Écran de diagnostic (debug)** : seul l'en-tête est composé sous l'animation, le reste après son départ.
+
+### Ajouté
+- **Mesure du démarrage** (`startup/StartupTrace`, `domain/startup/StartupReport`) : sections de trace système `Miff.*` (`android.os.Trace`) ; encart « Mesure du démarrage » (debug et `releaseLike` seulement, retiré du release par R8 et contrôlé par la CI) avec départ → première image, départ → cœur visible, durée dans `Application.onCreate`, plus long arrêt de l'animation. Aucun journal (l'app ne journalise pas), aucune donnée personnelle.
+- **Build `releaseLike`** (code release, R8, non « debuggable », signé avec la clé de debug) et son artefact CI `miff-releaselike-apk` (3 jours) pour comparer debug et release sur l'OPPO. Jamais publié ; aucune nouvelle clé, aucun secret ajouté (la CI utilise le keystore de debug déjà décodé depuis `DEBUG_KEYSTORE_B64`).
+- **Baseline Profile** écrit à la main (`src/main/baseline-prof.txt`) + `androidx.profileinstaller` 1.4.1 (Apache 2.0, gratuit). Limite : sans appareil il liste des paquets et non les méthodes réellement appelées ; un profil enregistré (Macrobenchmark) viendra plus tard ; aucun effet en debug.
+- Tests : `StartupReportTest`, `StartupTraceAndContainerTest` (le conteneur ne construit rien sans Firebase), `SplashHostTest` (l'app attend le cœur, composée tout de suite en « réduire les animations », première image), `SplashTimelineTest` (premier beat, moment de composition, 3,0 s).
+
+### Choix « économiques »
+- Aucun coût : bibliothèque AndroidX gratuite, build supplémentaire en CI (quelques minutes de calcul sur le quota gratuit de GitHub Actions ; signal de bascule : si la CI dépasse le quota gratuit, retirer `assembleReleaseLike` de la CI et le lancer à la demande).
+
+### Rejeté
+- **Icône animée (AnimatedVectorDrawable) de l'écran système** : raccord sans saut impossible à garantir sans appareil (durées inconnues de l'écran système, ColorOS, risque d'une double apparition du cœur contre la règle photosensible). Détails dans le README.
+
+### Limites
+- Aucune durée n'a pu être mesurée sur appareil : les gains sont attendus, pas chiffrés. À chronométrer par le PM (checklist dans la PR).
+- `FirebaseInitProvider` et les initialiseurs `androidx.startup` s'exécutent encore avant `Application.onCreate`.
+
+## [0.6.3] - 2026-10-31 : zones sûres, repli et diagnostic (la recette sur l'OPPO a montré le même défaut avec la PR #46)
+
+Retour du PM : « j'ai toujours le même problème avec les marges » (logo du Feed à y≈45 px, sous l'heure). La cause du 0.6.2 (Scaffold + consumeWindowInsets) était réelle mais **pas suffisante** sur ce téléphone, et la cause exacte sur l'OPPO n'est **pas établie** (non reproduite : tests Robolectric API 35 et émulateur Android 14 corrects).
+
+### Ajouté
+- **Repli** dans `ScreenInsets.kt` (`miffSafeInsets`, `SystemBarsFallback`) : si le système rapporte 0 en haut (ou en bas avec boutons) alors que la barre existe, la hauteur déclarée par le système est utilisée ; jamais à la place d'une vraie valeur. Branché dans `MainActivity` seulement. Tests : `feed_whenThePhoneReportsNoStatusBarAtAll...` et `feed_whenThePhoneReportsARealValue...`.
+- **Carte de diagnostic des marges** (debug seulement, première carte de l'écran de diagnostic) pour lire ce que l'OPPO rapporte vraiment.
+- `adjustResize` conservé (ne peut pas être la cause : le défaut existait avant).
+
+## [0.6.2] - 2026-10-31 : zones sûres (barre d'état, barre de navigation, encoche, clavier)
+
+Retour du PM après sa recette sur l'OPPO Find X5 Lite : « tout est systématiquement trop haut » ; le logo « Miff » du Feed était dessiné par-dessus l'heure et les icônes.
+
+### Corrigé
+- **Cause** : `MainTabs` (Feed et Profil) utilisait un `Scaffold` puis `consumeWindowInsets(padding)` : la barre d'état était déclarée « déjà gérée » sans qu'aucune marge ne soit appliquée, donc le `statusBarsPadding()` des onglets recevait 0. Le `Scaffold` est retiré (colonne simple : contenu de l'onglet + barre d'onglets).
+- **Un seul endroit pour les marges système** : `ui/components/ScreenInsets.kt` (`MiffScreen`, `miffScreenInsets`, `miffTopInsets`, `miffBottomInsets`, `miffTopInset`, `miffKeyboardVisible`). Tous les écrans existants (inscription, connexion, mot de passe oublié, panneau de consentement, accueil, profil, téléphone, recadrage, carrousel, onglets Feed et Profil, barre d'onglets, Réglages et ses 4 sous-écrans, diagnostic, feuilles Photo et Pays) l'utilisent ; plus aucun appel brut à `safeDrawingPadding`/`statusBarsPadding`/`navigationBarsPadding` ailleurs (`ScreenInsetsRuleTest`).
+- Réglages : la barre du haut respecte aussi l'encoche sur les côtés en paysage ; barre d'onglets : respecte la barre de navigation latérale (3 boutons en paysage) et l'encoche ; feuille des pays : le champ de recherche reste visible au-dessus du clavier.
+- `windowSoftInputMode="adjustResize"` sur `MainActivity` : le clavier est transmis à Compose sur Android 8 à 10 (sans cela l'écran pouvait « glisser » vers le haut, sous la barre d'état).
+
+### Ajouté
+- `ScreenInsetsTest` (22 tests Robolectric : insets réels simulés) et `ScreenInsetsRuleTest` ; checklist de recette `docs/qa/checklists/insets-android-recette-pm.md`.
+- Vérifié : `targetSdk` 36 (edge-to-edge imposé sur Android 15, déjà le comportement de l'app depuis le début, donc aucun changement visible), icônes de la barre d'état sombres sur fond clair (`enableEdgeToEdge` + thème), splash volontairement plein écran. Aucun choix économique, aucune dépendance ajoutée.
+
 ## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
 
 Décision du PM : « Oui pour durcir le consentement » (le risque noté en 0.6.0 est supprimé).

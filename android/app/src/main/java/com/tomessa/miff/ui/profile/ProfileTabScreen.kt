@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +37,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
+import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.theme.GradientProfileHeader
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -82,7 +82,7 @@ fun ProfileTabScreen(
             Modifier
                 .fillMaxSize()
                 .background(GradientProfileHeader)
-                .statusBarsPadding()
+                .miffTopInsets()
                 .verticalScroll(scroll)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },

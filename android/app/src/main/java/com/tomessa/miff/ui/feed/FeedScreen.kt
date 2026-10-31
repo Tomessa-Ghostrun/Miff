@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +43,7 @@ import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
+import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.miff.MiffLoading
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -88,7 +88,7 @@ fun FeedScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .miffTopInsets()
                 .verticalScroll(scroll)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },

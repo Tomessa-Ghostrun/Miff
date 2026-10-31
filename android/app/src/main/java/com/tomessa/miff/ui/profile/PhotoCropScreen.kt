@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -53,6 +52,7 @@ import com.tomessa.miff.data.profile.BitmapPhoto
 import com.tomessa.miff.domain.profile.CropMath
 import com.tomessa.miff.ui.auth.LoadingIndicator
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -112,7 +112,7 @@ fun PhotoCropScreen(
                 // Absorbs the touches: nothing under this screen can be reached (it is also hidden from TalkBack).
                 .pointerInput(Unit) {}
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .semantics { paneTitle = title }
                 .padding(horizontal = Spacing.l, vertical = Spacing.m),

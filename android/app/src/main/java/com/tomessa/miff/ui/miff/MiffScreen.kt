@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +29,7 @@ import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorTextDescription
@@ -72,7 +72,7 @@ fun MiffScreen(
             Modifier
                 .fillMaxSize()
                 .background(colorBgCanvas)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .semantics { paneTitle = title }
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
@@ -128,7 +128,8 @@ fun MiffScreen(
                     null
                 } else {
                     {
-                        // The same consent, word for word and with the same version, as at the entry (criterion K6).
+                        // The same consent card and the same consent version as at the entry (criterion K6); only the opening sentence differs
+                        // (miff_sharing_resume_body, "Tu partages à nouveau…", instead of miff_consent_create).
                         SharingConsentCard(
                             sentence = stringResource(R.string.miff_sharing_resume_body),
                             systemNote = stringResource(R.string.miff_consent_system_note_create),

@@ -473,6 +473,8 @@ Le PM a répondu aux 15 questions du challenge le 2026-10-24 (détail dans `miff
 - **Extension de QM2 à la création : OUI.** « Créer et partager », même texte explicite avant l'action, **un seul lot atomique** (profil exigé + Miff + code + fiche de membre + consentement de partage + `status/{moi}` initial).
 - **« 15 membres maximum » : créateur compris.**
 - **Visibilité du téléphone : proposition A** : le numéro est visible des membres des Miffs de l'utilisateur, et d'eux seuls (voir §4 #19, §7 F2). La question « visibilité du numéro » du ticket Feed est résolue ; restent à définir la mise en œuvre (champ, règles) et le texte de consentement.
+
+**Décision du PM (2026-10-31) — départ volontaire et code (QM16)** : **une sortie volontaire d'une Miff ne renouvelle PAS le code** ; **seul le retrait d'un membre par le créateur le renouvelle** (automatiquement, dans le même lot, imposé par les règles). C'est déjà le comportement des règles déployées (un membre simple ne peut pas écrire la Miff) : aucune règle ni aucun lot ne change. Conséquences : (a) aucun texte affiché dans le parcours « Quitter » ne promet un changement de code (« Quitter, confirmation » §5.10 : « Tu pourras revenir si on te redonne le code » ne dit rien de tel) ; (b) la personne qui est partie de son plein gré **peut revenir avec le même code** tant que le créateur ne l'a pas renouvelé ; (c) le créateur garde l'invitation discrète et facultative « Un proche a quitté la Miff. Tu veux créer un nouveau code ? » (décision du 2026-10-22, une fois par départ) ; (d) iOS (MIFF-4) applique la même règle.
 ---
 
 ## 16. Critères d'acceptation

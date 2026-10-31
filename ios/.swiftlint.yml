@@ -21,6 +21,11 @@ identifier_name:
   min_length: 2
   excluded:
     - id
+    # Coordonnees et dimensions des illustrations (x, y, w, h), lisibles ainsi.
+    - x
+    - y
+    - w
+    - h
 
 type_name:
   max_length: 50

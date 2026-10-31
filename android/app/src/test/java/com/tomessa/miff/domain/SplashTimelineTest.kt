@@ -16,8 +16,8 @@ class SplashTimelineTest {
     private val reduced = SplashTimeline(reduceMotion = true)
 
     @Test
-    fun fullAnimationLastsAboutTwoPointNineSecondsAndNeverMoreThanThree() {
-        assertEquals(2900L, full.totalMs)
+    fun fullAnimationLastsAboutTwoPointSevenSecondsAndNeverMoreThanThree() {
+        assertEquals(2700L, full.totalMs)
         assertTrue("never more than 3.0 s", full.totalMs <= 3000L)
         assertEquals(3000L, SplashTimeline.MAX_ALLOWED_MS)
         assertTrue(full.totalMs <= SplashTimeline.MAX_ALLOWED_MS)
@@ -177,6 +177,51 @@ class SplashTimelineTest {
         val beforePop = full.frameAt(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS + SplashTimeline.INFLATE_MS - 1)
         assertTrue("it pops at its biggest: ${beforePop.heartScale}", beforePop.heartScale in 1.15f..1.25f)
         assertTrue(SplashTimeline.MAX_SCALE in 1.15f..1.25f)
+    }
+
+    /**
+     * PM recette 2026-10-31: "I see the M for a long time without the heart". The system launch screen already shows the M for
+     * the whole start of the process: the beat of the animation itself stays short, and the heart is there within 0.2 s of the
+     * first image.
+     */
+    @Test
+    fun theHeartShowsUpAlmostRightAfterTheFirstImage() {
+        assertTrue("first beat <= 150 ms", SplashTimeline.HOLD_MS <= 150L)
+        val firstWithHeart = (0L until full.totalMs).first { full.frameAt(it).heartAlpha > 0f }
+        assertTrue(
+            "the heart starts to show right after the first beat",
+            firstWithHeart in SplashTimeline.HOLD_MS..(SplashTimeline.HOLD_MS + 20L),
+        )
+        assertTrue("fully opaque within 0.25 s of the first image", full.frameAt(250L).heartAlpha == 1f)
+    }
+
+    /**
+     * The app is composed under the animation (a heavy, freezing step) only once the heart has appeared, and long enough before
+     * the exit that the first screen is ready when the animation fades. Reduced motion: nothing moves, so at once.
+     */
+    @Test
+    fun theAppIsComposedUnderTheAnimationOnlyOnceTheHeartHasAppeared() {
+        assertEquals(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS, full.contentMountMs)
+        assertFalse(full.shouldMountContent(0L))
+        assertFalse(full.shouldMountContent(full.contentMountMs - 1))
+        assertTrue(full.shouldMountContent(full.contentMountMs))
+        // At that moment the heart is fully there and still nearly at its resting size: a stall costs nothing visible.
+        val atMount = full.frameAt(full.contentMountMs)
+        assertEquals(1f, atMount.heartAlpha, 0f)
+        assertEquals(1f, atMount.heartScale, 0.01f)
+        // A freeze of 0.5 s right then still leaves the heart small, and the app is ready long before the exit.
+        assertTrue(full.frameAt(full.contentMountMs + 500L).heartScale < 1.06f)
+        assertTrue(full.contentMountMs + 1000L < full.totalMs - SplashTimeline.EXIT_MS)
+        assertEquals(0L, reduced.contentMountMs)
+        assertTrue(reduced.shouldMountContent(0L))
+    }
+
+    /** Real time, whatever happens: a stall never adds seconds, it only eats animation (the caller reads the real clock). */
+    @Test
+    fun noMatterHowLateTheClockIsRead_theSplashIsOverAtTheTotalAndNeverLater() {
+        assertTrue(full.isFinished(full.totalMs))
+        assertTrue(full.isFinished(full.totalMs + 5_000L))
+        assertTrue(full.totalMs <= SplashTimeline.MAX_ALLOWED_MS)
     }
 
     @Test

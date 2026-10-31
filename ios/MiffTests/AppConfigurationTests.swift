@@ -103,9 +103,23 @@ final class AppConfigurationTests: XCTestCase {
         let types = collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }
         XCTAssertFalse(types.isEmpty)
         XCTAssertTrue(types.allSatisfy { !$0.contains("Location") }, "\(types)")
-        // Rien n'est lié à l'identité de l'utilisateur ni utilisé pour du suivi.
-        XCTAssertTrue(collected.allSatisfy { $0["NSPrivacyCollectedDataTypeLinked"] as? Bool == false })
+        // Rien n'est utilisé pour du suivi.
         XCTAssertTrue(collected.allSatisfy { $0["NSPrivacyCollectedDataTypeTracking"] as? Bool == false })
+        // Les données de COMPTE (inscription et profil) sont liées à l'identité, pour le fonctionnement de l'app seulement ;
+        // les données d'USAGE (Analytics, rapports de plantage) ne le sont jamais.
+        let accountTypes = [
+            "UserID", "EmailAddress", "Name", "PhotosorVideos", "PhoneNumber"
+        ].map { "NSPrivacyCollectedDataType\($0)" }
+        for entry in collected {
+            let type = entry["NSPrivacyCollectedDataType"] as? String ?? ""
+            let linked = entry["NSPrivacyCollectedDataTypeLinked"] as? Bool
+            XCTAssertEqual(linked, accountTypes.contains(type), "\(type) : liaison à l'identité inattendue")
+            if accountTypes.contains(type) {
+                let purposes = entry["NSPrivacyCollectedDataTypePurposes"] as? [String]
+                XCTAssertEqual(purposes, ["NSPrivacyCollectedDataTypePurposeAppFunctionality"], type)
+            }
+        }
+        XCTAssertTrue(Set(accountTypes).isSubset(of: Set(types)), "données de compte manquantes : \(types)")
     }
 
     // MARK: - Langues
