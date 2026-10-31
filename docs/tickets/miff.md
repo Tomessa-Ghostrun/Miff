@@ -530,7 +530,7 @@ Découpage : **C** création, **J** rejoindre, **K** partage du statut, **G** é
 ### Renouveler le code
 - [ ] **N1** « Renouveler le code » demande une confirmation puis écrit un lot de 3 écritures ; l'ancien code ne fonctionne plus (un second compte tente l'ancien : message unique), le nouveau fonctionne.
 - [ ] **N2** Les membres actuels restent dans la Miff et voient le nouveau code en direct.
-- [ ] **N3** Après un départ volontaire constaté par l'app du créateur, une **invitation unique** discrète s'affiche (« Plus tard » la ferme sans la répéter) ; aucune invitation pour des départs antérieurs à l'installation locale ni pour un retrait que le créateur vient de faire.
+- [ ] **N3** Après un départ volontaire constaté par l'app du créateur, une **invitation unique** discrète s'affiche (« Plus tard » la ferme sans la répéter) ; l'invitation n'apparaît que si le créateur a l'écran de la Miff sous les yeux au moment du départ (Android : non conservée) ; aucune invitation pour des départs antérieurs à l'installation locale ni pour un retrait que le créateur vient de faire.
 
 ### Retirer
 - [ ] **R1** Le menu « ⋯ » d'un proche propose « Retirer de la Miff » ; une confirmation nominative, au ton non accusateur, précède toute action.
