@@ -49,11 +49,10 @@ jobs:
   build-and-test:
     name: Build et tests (simulateur, sans signature)
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
-    # Mesure : 6 a 8 min en tout avec le cache des paquets ; sans cache (premiere execution apres un changement de
-    # dependances : GoogleSignIn, PhoneNumberKit) la resolution et la compilation prennent environ 10 min de plus, d'ou
-    # 25 min (15 min coupait le job en pleine compilation Release). Reste borne pour ne pas laisser un job bloque
-    # consommer le quota.
-    timeout-minutes: 25
+    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) sur les runners du depot prive ; le
+    # 2026-10-30, depuis le passage du depot en public, les memes etapes ont depasse 15 min a deux reprises
+    # (runners macOS plus lents ou files d'attente). 30 min laisse de la marge ; les minutes sont gratuites en public.
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash

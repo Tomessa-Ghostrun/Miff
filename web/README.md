@@ -4,7 +4,7 @@ Pages web statiques, en français et en anglais, hébergées gratuitement par **
 
 | Page | Adresse (FR / EN) | Pourquoi |
 |---|---|---|
-| Accueil | `/` (choix de langue), `/fr/`, `/en/` | Présentation sobre. La langue du navigateur est seulement *suggérée* : jamais de redirection forcée. |
+| Accueil | `/` (choix de langue), `/fr/`, `/en/` | Page de présentation marketing (voir « Page d'accueil marketing » ci-dessous). `/` redirige vers `/fr/` si le navigateur est en français, sinon vers `/en/` ; jamais ailleurs. |
 | Conditions d'utilisation | `/fr/cgu`, `/en/terms` | Générées au build depuis `docs/legal/cgu.*.md`. |
 | Politique de confidentialité | `/fr/confidentialite`, `/en/privacy` | Générées au build depuis `docs/legal/politique-confidentialite.*.md`. Exigée par Apple et Google. |
 | Demander la suppression de ton compte | `/fr/supprimer-mon-compte`, `/en/delete-account` | Suppression dans l'app + demande par e-mail. Exigée par Google Play (page web de demande de suppression). |
@@ -30,6 +30,47 @@ Le favicon n'est **plus provisoire** : le site utilise le logo officiel de `desi
 - La politique de sécurité et les en-têtes n'ont **pas changé** : les images restent limitées à `'self'`, aucune ressource externe.
 - Les navigateurs gardent longtemps les favicons en cache : après le déploiement, l'ancien peut rester visible un moment (vider le cache ou recharger en forçant).
 
+## Page d'accueil marketing (`/fr/`, `/en/`) et choix de langue (`/`)
+
+L'accueil est une vraie page de présentation, mobile d'abord, qui donne envie de télécharger Miff **sans rien annoncer qui n'existe pas encore**. Elle est générée au build depuis un **seul gabarit** (`web/src/landing.html` + l'extrait `landing-cta.html`) et un **seul fichier de textes** (`web/src/landing.json`, clés `fr` et `en`) : les deux langues ont donc forcément la même structure, et un test vérifie que les clés sont identiques et toutes utilisées. Les adresses internes viennent du registre (`{{u.privacy}}`), l'e-mail de `web/site.config.json` (`{{CONTACT_EMAIL}}`).
+
+### Structure de la page (même ordre en FR et en EN)
+
+| Ancre | Contenu |
+|---|---|
+| (héros) | Pastille « Bientôt sur iPhone et Android », titre « Savoir que tes proches vont bien, sans les déranger. », texte d'accroche, boutons « Bientôt… » + lien « Être prévenu(e) du lancement », trois points (gratuit pour commencer, aucune publicité, tu choisis ce que tu partages), maquette de téléphone (écran « Ma Miff ») avec deux petites notifications |
+| `#how` | Comment ça marche, 3 étapes : rejoindre/créer une Miff avec un code secret, choisir les lieux de confiance, tes proches savent que tu vas bien (chaque étape a un mini-écran) |
+| `#benefits` | Rassurer sans surveiller : aucune conversation imposée, tu choisis ce que tu partages, un statut simple et pas ton trajet, un coup d'œil et c'est rassurant |
+| `#trust` | Confiance et vie privée (section bleue) : accord d'abord, tu gardes la main, seulement ton cercle, pas d'historique de trajets, pas de publicité ni de revente ; encadré « Qui voit quoi ? » ; phrase sur l'autorisation de localisation en arrière-plan ; lien vers la politique de confidentialité |
+| `#use-cases` | Famille, amis, couple (pas seulement parents/enfants) |
+| `#pricing` | Freemium en une phrase honnête : 1 lieu de confiance et 1 Miff gratuits, Premium pour plus. **Aucun prix, aucune offre, aucun essai** : « Les détails de Premium ne sont pas encore définis. » |
+| `#faq` | 6 questions (`<details>`, sans JavaScript) : suivi en direct, obligation de partager, téléphone éteint, service d'urgence, prix, date de disponibilité |
+| `#download` | Appel à l'action répété (mêmes boutons que le héros) |
+| (fin) | Mention discrète « Miff n'est pas un service d'urgence » (112) et crédits des photos |
+
+### Ce qu'il faut remplacer à la publication des applications
+
+- **Boutons « Bientôt sur l'App Store » / « Bientôt sur Google Play »** : ce sont des `<button disabled>` neutres (texte, pas de logo). Ils **n'utilisent PAS les badges officiels** d'Apple et de Google, dont l'usage est encadré par la charte graphique de chaque magasin. À la publication : remplacer `web/src/landing-cta.html` (un seul extrait, repris deux fois dans la page) par les badges officiels téléchargés sur les sites d'Apple et de Google, avec les vrais liens ; mettre à jour la pastille « Bientôt sur iPhone et Android » (`heroEyebrow`), « Miff n'est pas encore disponible » (`finalText`), la question 6 de la FAQ et les clés `store*` de `landing.json` ; **adapter le test** « aucune promesse interdite » de `web/tests/landing.test.mjs` (il interdit aujourd'hui tout lien vers un magasin et tout bouton actif).
+- **Lien « Être prévenu(e) du lancement »** : simple `mailto:` vers l'adresse de `web/site.config.json`, **aucun formulaire, aucune collecte** sur le site. Sa phrase promet que l'adresse ne sert qu'à prévenir de la sortie (décision de contenu à confirmer par le PM) ; à retirer au lancement.
+
+### Détection de la langue (racine `/` uniquement)
+
+- `/assets/lang-redirect.js` (script externe : la politique de sécurité interdit les scripts en ligne) lit `navigator.languages` et choisit **la première langue prise en charge** de la liste : `fr` -> `/fr/`, `en` -> `/en/`, rien de reconnu -> `/en/`. Exemples : `fr-FR, en-US` -> français ; `en-US, fr` -> anglais ; `de, fr-CH` -> français ; `de` -> anglais. La recherche (`?...`) et l'ancre (`#...`) sont conservées ; `location.replace` évite que le bouton « retour » ne ramène à la racine.
+- **Aucun cookie, aucun stockage, aucun traceur** : la décision est recalculée à chaque visite de la racine. Pour la même raison, la redirection ne s'applique **que** sur `/` : le script n'est chargé par aucune autre page (un test le vérifie). Ouvrir `/fr/` ou `/en/` directement, ou utiliser le bouton de langue, **ne redirige jamais**.
+- **Sans JavaScript**, la racine reste utile : titre et texte en anglais, boutons « Continue in English » et « Lire en français » (`lang`, `hreflang`), `<noscript>` explicatif.
+- **Bouton de langue** de l'en-tête (pastille avec globe, « English » / « Français ») : un vrai lien vers la **page équivalente** (`/fr/cgu` -> `/en/terms`, etc.), avec `lang` et `hreflang`, visible sur mobile comme sur ordinateur.
+- **SEO** : sur chaque page, `canonical`, `hreflang` `fr` et `en`, et `x-default` (la racine pour l'accueil, la version anglaise pour les autres pages), tous en **adresses complètes** construites avec `site.url` de `web/site.config.json` (`https://miff-3d283.web.app` ; à changer si le domaine change). Métadonnées **Open Graph et Twitter** (`summary_large_image`) avec une image de partage 1200 x 630 par langue.
+
+### Images, polices, performances
+
+- Tout est local (zéro ressource externe : la CSP du site le refuse de toute façon). Images de la page : `web/src/assets/img/` (3 portraits WebP de 128 px, 1 miniature de salon WebP de 520 px, 3 SVG légers de fond, de carte et de coche), ensemble d’environ 30 Ko. `width` et `height` partout, `alt=""` pour le décoratif, `loading="lazy"` hors du héros ; l'illustration du héros est décrite une seule fois (`role="img"` + `aria-label`).
+- **Origine et licences des photos** : les portraits et le salon viennent du carrousel de bienvenue (`design/exports/onboarding-photos/`, licence **Pexels**, usage commercial libre, crédit non obligatoire ; auteurs dans `CREDITS.md`). Par courtoisie, la page les crédite (Nino Sanger, Talal Hakim, Christina Morillo, Lisa Anna, via Pexels) et précise que ce sont des **modèles, pas des utilisateurs de Miff** (la licence interdit de suggérer un parrainage). Elles sont présentées comme des exemples d'écran, jamais comme des témoignages.
+- Les « maquettes de téléphone » et les mini-écrans sont du **HTML et du CSS** reproduisant l'écran « Ma Miff » (maquette `design/exports/feed/`), l'écran « Rejoindre une Miff » et l'écran « Nouveau lieu » du carrousel. Un seul écart volontaire avec l'app : le bandeau dit « Tout le monde va bien » au lieu de « Tout le monde est en sécurité » (l'accueil ne doit promettre aucune sécurité).
+- `landing.css` (environ 18 Ko, 6 Ko compressés avec site.css) n'est chargé que sur `/`, `/fr/` et `/en/`. Une très légère flottaison des deux notifications du héros n'existe que si le visiteur n'a pas demandé moins d'animations (`prefers-reduced-motion`).
+- **Regénérer les images** (rarement utile) : `node web/tools/make-landing-images.mjs` (Chrome ou Edge installé ; `web/tools/chrome-cdp.mjs` pilote le navigateur sans dépendance ; l'image de partage est rendue depuis `web/tools/og-image.html` avec le logo officiel). Ces outils ne sont ni publiés ni lancés par le build ou la CI ; les fichiers générés sont versionnés.
+- Captures locales : `node scripts/preview-web.mjs`, puis un navigateur (le dossier `.preview/` est ignoré par git).
+- **Limites connues** : (1) le poids de la page est dominé par les deux polices TTF complètes (0,44 Mo, cachées un an) reprises d’`android/` ; piste si le score mobile doit monter : les convertir en WOFF2 et les réduire aux caractères latins (outil à ajouter, non fait ici) ; (2) aucun test automatique dans un vrai navigateur dans la CI (les captures et la redirection ont été vérifiées à la main avec Chrome piloté par `web/tools/chrome-cdp.mjs`) ; (3) l’audit Lighthouse n’a pas pu être lancé dans cet environnement.
+
 ## 1. Prévisualiser en local (sans rien déployer)
 
 Depuis la racine du dépôt :
@@ -39,6 +80,8 @@ node scripts/preview-web.mjs
 ```
 
 Puis ouvre `http://127.0.0.1:5000/`. La commande affiche aussi les adresses de la page « nouveau mot de passe » avec des **codes de démonstration** (lien valable, lien expiré, lien déjà utilisé, mot de passe refusé, panne…). `Ctrl+C` pour arrêter. Elle n'écoute que sur ton ordinateur, ne contacte pas Firebase, et applique les **mêmes en-têtes de sécurité que Firebase Hosting** (si la politique de sécurité bloque quelque chose, tu le vois ici avant tout déploiement).
+
+Sans clé d'API web, la commande construit en mode démonstration (clé fictive) : rien à configurer pour regarder la page d'accueil.
 
 Un site construit pour la prévisualisation est marqué « démonstration » : le garde-fou de déploiement le refuse.
 
@@ -70,7 +113,7 @@ Avant / après, pour mémoire :
 node --test "web/tests/*.test.mjs"
 ```
 
-Tests sans dépendance (`node:test`) : pages FR/EN symétriques, liens internes valides, aucune ressource externe, tutoiement, aucune affirmation de relecture juridique, CSP respectée (aucun script ni style en ligne), logo et icônes (présence, dimensions, poids, liens, texte alternatif, fichiers identiques aux originaux, aucune ressource externe), accessibilité statique et contrastes AA, pas de cookie ni de traceur, éditeur et adresse uniquement via la config, logique de la page de mot de passe (appel REST simulé), garde-fou de déploiement, en-têtes Hosting, serveur de prévisualisation.
+Tests sans dépendance (`node:test`) : `web/tests/landing.test.mjs` (accueil : parité des textes FR/EN, sections, promesses interdites comme prix, « 100 % sécurisé », faux avis ou badges officiels, mailto, hreflang/canonical/Open Graph, images et poids, mouvement réduit, comportement du script de langue sur de nombreuses combinaisons de `navigator.languages`) ; pages FR/EN symétriques, liens internes valides, aucune ressource externe, tutoiement, aucune affirmation de relecture juridique, CSP respectée (aucun script ni style en ligne), logo et icônes (présence, dimensions, poids, liens, texte alternatif, fichiers identiques aux originaux, aucune ressource externe), accessibilité statique et contrastes AA, pas de cookie ni de traceur, éditeur et adresse uniquement via la config, logique de la page de mot de passe (appel REST simulé), garde-fou de déploiement, en-têtes Hosting, serveur de prévisualisation.
 
 Le test **« PLACEHOLDERS »** échoue tant qu'un champ `[À COMPLÉTER]` reste dans les pages générées. Pour tolérer cela en prévisualisation locale : PowerShell `$env:MIFF_WEB_PREVIEW="1"` (ou `MIFF_WEB_PREVIEW=1` sous Git Bash) avant la commande. La CI de la PR le tolère aussi tant que les textes sont en cours de finalisation, puis lance le contrôle strict **à titre informatif** (visible dans le résumé du job).
 
@@ -132,13 +175,15 @@ La restriction de clé « par site » repose sur l'en-tête `Referer` envoyé à
 
 ## 8. Coût et surveillance
 
-0 € : Firebase Hosting sur Spark (quotas gratuits d'espace et de transfert, valeurs à revérifier sur la page de tarifs au moment du déploiement). Le site pèse environ 0,6 Mo (dont 0,45 Mo de polices, mises en cache un an). Signal d'alerte : transfert quotidien proche de la limite gratuite (console Hosting > Utilisation) ; réponse possible : réduire les polices (sous-ensembles) avant toute option payante.
+0 € : Firebase Hosting sur Spark (quotas gratuits d'espace et de transfert, valeurs à revérifier sur la page de tarifs au moment du déploiement). Le site pèse environ 1,1 Mo (dont 0,45 Mo de polices, mises en cache un an, et 0,27 Mo d'images de partage, que seuls les réseaux sociaux téléchargent). Signal d'alerte : transfert quotidien proche de la limite gratuite (console Hosting > Utilisation) ; réponse possible : réduire les polices (sous-ensembles) avant toute option payante.
 
 ## 9. Organisation des fichiers
 
 ```
 web/src/            pages et ressources écrites à la main (layout.html, pages.json = registre FR/EN, ui.json = textes d'interface)
-web/src/assets/     site.css, scripts de la page de mot de passe (reset-*.js) et du choix de langue
+web/src/landing.html, landing-cta.html, landing.json   gabarit et textes (FR/EN) de la page d'accueil
+web/src/assets/     site.css, landing.css, img/ (WebP, SVG), og/ (images de partage), lang-redirect.js (racine seulement), scripts de la page de mot de passe (reset-*.js)
+web/tools/          outils de développement non publiés (images de la page d'accueil, pilotage du navigateur pour les captures)
 web/site.config.json   éditeur, adresse postale, e-mail de contact (source unique)
 web/firebase.json   Hosting : cleanUrls, en-têtes de sécurité, garde-fou predeploy
 web/.firebaserc     projet miff-3d283 uniquement

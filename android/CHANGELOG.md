@@ -2,6 +2,76 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
+
+Décision du PM : « Oui pour durcir le consentement » (le risque noté en 0.6.0 est supprimé).
+
+### Ajouté
+- **Retrait en attente mémorisé sur l'appareil** (`PendingWithdrawals`) : « retrait en attente » + heure + clé = empreinte à sens unique de l'identifiant du compte, dans un fichier privé écrit sur le disque avant de rendre la main et exclu des sauvegardes. Aucune donnée personnelle.
+- **La collecte reste coupée au démarrage** tant que le retrait n'est pas confirmé côté serveur pour ce compte (`SessionManager` : le compte qui dit encore « accepté » ne l'emporte plus).
+- **Enregistrement en arrière-plan** (`ConsentWithdrawals`) : attend le retour du réseau (rappel système, sans interrogation répétée), nouvelles tentatives espacées (5 s, 15 s, 1 min, 5 min), transitions des règles déployées respectées. **Pas de boucle** après un refus du serveur (collecte coupée, « Enregistrer mon choix » proposé, un dernier essai au démarrage suivant).
+- Cas gérés : retrait puis ré-acceptation avant enregistrement (verrou commun, marque annulée seulement après la prise en compte de l'acceptation) ; déconnexion ou changement de compte (la marque suit son compte, jamais écrite pour un autre) ; plusieurs comptes sur le même téléphone (20 au plus).
+- `NetworkMonitor.onlineChanges()`.
+- Texte de l'écran Confidentialité mis à jour (FR/EN, catalogue iOS) : « C'est coupé sur ce téléphone, même après un redémarrage. Ton choix sera enregistré dès que la connexion revient… ».
+- Tests : stockage (rien d'identifiable, survit à un redémarrage, limite de 20), démarrage avec marque (collecte coupée, autre compte non touché, aucun événement), enregistreur (réseau de retour, serveur injoignable, refus sans boucle, déconnexion / autre compte, ré-acceptation), view model hors connexion (retrait, enregistrement automatique, bouton, ré-acceptation).
+
+### Limites
+- Une désinstallation efface la marque (sans conséquence : la collecte repart éteinte à la réinstallation, le compte sera relu).
+- Un téléphone qui ne retrouve jamais le réseau garde la collecte coupée mais le compte reste « accepté » côté serveur.
+- Aucune règle Firestore modifiée.
+
+## [0.6.0] - 2026-10-30 : ONB-3b, Mon compte (mot de passe) et Confidentialité
+
+Dépend d'ONB-3a (PR « ONB-3a » : barre d'onglets, Profil, Réglages, Mon compte minimal). Ticket `docs/tickets/feed-profil-reglages.md` (§6.6, critères B1 à B7 ; décisions Q5 et Q6 du PM du 2026-10-30).
+
+### Ajouté
+- **Mon compte : « Changer mon mot de passe »** (décision Q5) : un bouton qui envoie l'e-mail de réinitialisation d'AUTH-2 à l'adresse du compte, sans formulaire à trois champs ni ré-authentification ; confirmation unique, « Renvoyer l'e-mail » en pause de 60 s ; **masqué pour un compte Google** (« Connecté avec Google »). « Supprimer mon compte » reste absent (AUTH-5).
+- **Réglages > Confidentialité** : interrupteur unique « Statistiques d'usage et rapports de plantage anonymes » lu et écrit dans `users/{uid}.analyticsConsent` selon les transitions des règles déployées (activer / retirer, trace du consentement conservée, version jamais plus ancienne), en transaction ; **accepter = enregistré d'abord**, **retirer = collecte coupée tout de suite** (rapports non envoyés supprimés) puis enregistré, avec message et « Enregistrer mon choix » si le réseau manque ; localisation et notifications dites honnêtement (rien n'est utilisé ni envoyé pour l'instant) avec « Ouvrir les réglages du téléphone » ; liens « Conditions d'utilisation » et « Politique de confidentialité » (adresses centralisées, vérifiées contre `web/src/pages.json`) ; « Nous contacter » (contact provisoire).
+- Ligne « Confidentialité » dans la liste des Réglages (quatre lignes : Mes informations, Mon compte, Langue, Confidentialité).
+- Textes `settings_account_password_*`, `settings_privacy_*` FR/EN (tutoiement), ajoutés aussi au catalogue iOS (ajouts seulement).
+- Tests : transitions du consentement (toutes les branches), dépôt Firestore (une transaction, erreurs triées, texte plus récent refusé), view model de l'interrupteur (accepter / retirer / réseau / refus / double appui / aucun événement), mot de passe (compte e-mail, compte Google, pause, réseau, quota), écrans Robolectric (structure, 48 dp, grande police, absence de formulaire et de suppression), adresses légales comparées à `web/src/pages.json`.
+
+### Modifié
+- `AuthGateway.accountSignIn()` (mot de passe ou Google) ; `AccountViewModel` reçoit l'envoi de l'e-mail, le réseau et la pause.
+
+### Écarts avec le ticket et les maquettes
+- Les maquettes n'ont **pas** d'écran Confidentialité ni de changement de mot de passe par e-mail : écrans ajoutés d'après le ticket (liberté du CLAUDE.md), liste dans la PR.
+- **Pas de lien « Mentions légales »** : aucune page de ce nom n'existe dans `web/src/pages.json` ; seuls les liens vers les conditions et la politique sont proposés.
+- Les **états réels** de la localisation et des notifications (« toujours », « approximative », « refusée »...) ne sont pas affichés : aucune permission n'est déclarée (aucun usage).
+
+### Choix économiques et limites
+- Aucun service, aucune dépendance, aucune permission ; 0 €. Une lecture et une écriture Firestore par changement de l'interrupteur.
+- ~~Limite : retrait non enregistré puis app fermée~~ : **corrigée en 0.6.1** (retrait mémorisé sur l'appareil).
+- Aucune règle Firestore modifiée.
+
+## [0.5.0] - 2026-10-30 : ONB-3a, barre d'onglets, Profil, Réglages (Mes informations, Mon compte, Langue)
+
+Ticket `docs/tickets/feed-profil-reglages.md` (décisions du PM du 2026-10-30 : « OK pour tout » aux 15 questions), maquettes `design/exports/profil/`, `reglages/` et barres d'onglets de `feed/`.
+
+### Ajouté
+- **Barre d'onglets** flottante (Feed, bouton rond central, Profil) visible seulement quand une Miff existe ; noms parlés pour TalkBack, zones de 48 dp, ordre inversé en droite-à-gauche, masquée avec le clavier ouvert. **Bouton central** (décision Q1) : visible mais désactivé dans le build debug, **absent** du build release (deux onglets). Le build debug ajoute sur l'écran « prochaine étape » un bouton d'aperçu interne des onglets (absent du release).
+- **Feed provisoire** honnête : « Ton fil n'est pas encore prêt », sans cloche, sans avatar, sans phrase de sécurité.
+- **Onglet Profil** : photo ou initiales, « Prénom Nom », « C'est toi », engrenage ; toucher la photo ou le nom ouvre Mes informations. Aucune donnée fictive.
+- **Réglages** : Mes informations, Mon compte, Langue.
+- **Mes informations** : photo (sélecteur et appareil photo du système, recadrage, 20 000 octets sans métadonnée), prénom, nom (1 à 50, compteur réel), pays + téléphone (E.164, libphonenumber), mention de visibilité du numéro. Écriture de `users/{uid}` **et** de la copie de chaque Miff en une transaction confirmée (rien en file d'attente hors connexion) ; repli si une Miff n'existe plus ; réparation des copies sans numéro. Confirmation avant d'abandonner des changements.
+- **Langue** : Français, English, « Langue du téléphone », effet immédiat sans bouton (`LocaleManager` sur Android 13+, contexte localisé sur Android 8 à 12), sans AppCompat.
+- **Mon compte (provisoire)** : e-mail en lecture seule, « Se déconnecter » avec confirmation (la déconnexion de l'écran provisoire disparaît). Complété par ONB-3b (changement de mot de passe, Confidentialité).
+- Textes `tabbar_`, `feed_`, `settings_`, `profile_tab_` FR/EN (tutoiement), ajoutés aussi au catalogue iOS (ajouts seulement) pour la parité ; préfixes ajoutés au contrat `docs/contracts/i18n-keys.md` et au script de parité.
+- Tests : modèle de la barre, langues, initiales, dépôt du profil (transaction, repli, plus de 15 Miffs, identifiants non fiables, réseau absent), `CurrentProfile`, view models (Mes informations, onglet Profil, Langue, Compte), écrans Robolectric (structure, absence de Notifications / Premium / suppression, 48 dp, grande police, droite-à-gauche, TalkBack).
+
+### Modifié
+- `data-model.md` : les règles ONB-B (téléphone) sont **déployées** depuis le 2026-10-30 (la mention « non déployées » était périmée).
+- Le champ de saisie commun accepte un rappel « le champ a perdu le focus » (numéro signalé en quittant le champ).
+- Nouveau bouton secondaire `MiffSecondaryButton` ; dégradé `GradientProfileHeader` (approximation de la maquette, hors design system).
+
+### Écarts avec les maquettes (détail dans la PR)
+Tutoiement, « Téléphone » (et non « Nom »), compteurs réels, pas de « 3 caractères minimum », mention N1, « Enregistrer » grisé sans changement, deux langues sans bouton « Enregistrer », pas de « Notifications » ni d'encart Premium ni « Abonnement », e-mail en lecture seule, « Déconnexion » en bouton secondaire, pas de mot de passe à trois champs ni de « Supprimer mon compte », pas de carte de Miff ni de lieux.
+
+### Choix économiques et limites
+- Aucun service, aucune dépendance, aucune permission ajoutée ; coût 0 €. Lectures : une pour le profil (mise en mémoire pour la session), une lecture serveur des appartenances à chaque enregistrement.
+- **Limite** : le « reste à écrire » des copies de Miff (réseau coupé entre deux écritures, ou Premium au-delà de 15 Miffs) n'est pas conservé si l'app est fermée ; signal : des proches qui voient un ancien nom.
+- Aucune règle Firestore modifiée.
+
 ## [0.4.0] - 2026-10-30 : ONB-2, profil et téléphone (étapes de création du profil)
 
 ### Ajouté

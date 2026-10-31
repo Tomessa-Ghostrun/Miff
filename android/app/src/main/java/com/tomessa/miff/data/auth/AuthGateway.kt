@@ -4,6 +4,7 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
+import com.tomessa.miff.domain.auth.AccountSignIn
 import com.tomessa.miff.domain.auth.AuthAttempt
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.AuthOutcome
@@ -51,6 +52,15 @@ interface AuthGateway {
      * change it: never stored by itself, never logged. Null for an e-mail account.
      */
     fun displayName(): String?
+
+    /**
+     * The e-mail address of the account (an Apple relay address is returned as it is), only to be SHOWN in Settings > Mon
+     * compte. Never stored (not in Firestore, not in an event, not in a log). Null if nobody is signed in.
+     */
+    fun currentEmail(): String?
+
+    /** Does this account have a password in Miff (e-mail), or does it sign in with Google? Decides the "Mon compte" screen. */
+    fun accountSignIn(): AccountSignIn
 
     fun signOut()
 }
@@ -111,6 +121,15 @@ class FirebaseAuthGateway(
     }
 
     override fun displayName(): String? = auth.currentUser?.displayName
+
+    override fun currentEmail(): String? = auth.currentUser?.email?.takeIf { it.isNotBlank() }
+
+    override fun accountSignIn(): AccountSignIn =
+        when (signInMethod()) {
+            AnalyticsEvent.Method.EMAIL -> AccountSignIn.PASSWORD
+            AnalyticsEvent.Method.GOOGLE -> AccountSignIn.GOOGLE
+            else -> AccountSignIn.OTHER
+        }
 
     override fun signOut() = auth.signOut()
 

@@ -162,7 +162,8 @@
     <string name="android_legal_terms_path">/en/terms</string>
     <string name="android_legal_privacy_path">/en/privacy</string>
     <string name="android_next_miff_choice">Next step: create or join a Miff. This screen is coming soon.</string>
-    <string name="android_next_feed">You are signed in. The feed of your circle is coming soon.</string>
+    <!-- Debug builds only (see NextStepPlaceholderScreen): never shown in a release build. -->
+    <string name="android_debug_preview_tabs" tools:ignore="UnusedResources">Internal preview: open the tabs and the Settings</string>
 
     <!-- Welcome carousel and implicit consent (AUTH-1) -->
     <string name="auth_consent_notice">By tapping “Join” or “Continue with Google”, you accept our %1$s and our %2$s, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings).</string>
@@ -252,4 +253,68 @@
     <string name="profile_save_failed">That didn\'t work this time. Try again in a moment.</string>
     <string name="profile_phone_invalid_type">This kind of number can\'t be used here. Please enter a mobile or landline number instead.</string>
     <string name="profile_save_failed_later">It still isn\'t going through. Nothing is lost: you can close the app and try again a little later.</string>
+
+    <!-- Tab bar, provisional Feed, Profile tab, Settings (ONB-3a) -->
+    <string name="tabbar_feed_a11y">Your Miff feed</string>
+    <string name="tabbar_update_a11y">Share an update</string>
+    <string name="tabbar_update_soon_a11y">Share an update, coming soon</string>
+    <string name="tabbar_profile_a11y">Profile</string>
+    <string name="feed_pane_a11y">Your Miff feed</string>
+    <string name="feed_empty_title">Your feed isn\'t ready yet</string>
+    <string name="feed_empty_body">This screen is still being built. Once it is ready, you\'ll see news from your loved ones here. Your location is not used for now.</string>
+    <string name="profile_tab_pane_a11y">Your profile</string>
+    <string name="profile_tab_you_label">That\'s you</string>
+    <string name="profile_tab_open_my_info_a11y">open My information</string>
+    <string name="profile_tab_settings_a11y">Settings</string>
+    <string name="profile_tab_unavailable">We can\'t show your profile right now. Check your connection and try again.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_my_info_title">My information</string>
+    <string name="settings_my_info_subtitle">Change your photo, name and phone number</string>
+    <string name="settings_account_title">My account</string>
+    <string name="settings_account_subtitle">Manage your personal account</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_subtitle">Change the language of the app</string>
+    <!-- Each language is written in its own language, so that it can be found whatever language the app is in. -->
+    <string name="settings_language_french" translatable="false">Français</string>
+    <string name="settings_language_english" translatable="false">English</string>
+    <string name="settings_language_system">Phone language</string>
+    <string name="settings_my_info_phone_label">Phone</string>
+    <string name="settings_my_info_save_action">Save</string>
+    <string name="settings_my_info_saved">Saved.</string>
+    <string name="settings_my_info_sync_pending">Your information is saved. Your loved ones will see the changes as soon as the connection allows: tap “Save” again in a moment.</string>
+    <string name="settings_my_info_name_required">Please write at least one character.</string>
+    <string name="settings_my_info_load_failed">We can\'t show your information right now. Check your connection and try again.</string>
+    <string name="settings_my_info_photo_edit_a11y">Change profile photo</string>
+    <string name="settings_my_info_discard_title">Leave without saving?</string>
+    <string name="settings_my_info_discard_body">The changes you made won\'t be kept.</string>
+    <string name="settings_my_info_discard_confirm">Leave</string>
+    <string name="settings_my_info_discard_cancel">Stay here</string>
+    <string name="settings_account_email_label">Email address</string>
+    <string name="settings_account_email_a11y">Email address: %1$s. It can\'t be changed here.</string>
+    <string name="settings_account_sign_out_action">Sign out</string>
+    <string name="settings_account_sign_out_title">Sign out?</string>
+    <string name="settings_account_sign_out_body">Your loved ones won\'t see your updates while you\'re signed out.</string>
+    <string name="settings_account_sign_out_cancel">Cancel</string>
+
+    <!-- Settings: My account (password) and Privacy (ONB-3b) -->
+    <string name="settings_account_password_help">We\'ll send you an email with a link to choose a new password.</string>
+    <string name="settings_account_password_action">Change my password</string>
+    <string name="settings_account_password_sending">Sending…</string>
+    <string name="settings_account_password_sent">On its way! An email has just been sent to you. Remember to check your spam folder.</string>
+    <string name="settings_account_google">Signed in with Google</string>
+    <string name="settings_privacy_title">Privacy</string>
+    <string name="settings_privacy_subtitle">Statistics, location, notifications and legal texts</string>
+    <string name="settings_privacy_analytics_title">Anonymous usage statistics and crash reports</string>
+    <string name="settings_privacy_analytics_body">They help us fix the app. They never contain your location. You can change your mind at any time.</string>
+    <string name="settings_privacy_withdrawal_not_recorded">It is switched off on this phone, even after a restart. Your choice will be saved as soon as the connection is back; you can also tap “Save my choice”.</string>
+    <string name="settings_privacy_retry_action">Save my choice</string>
+    <string name="settings_privacy_location_title">Location</string>
+    <string name="settings_privacy_location_body">For now, Miff does not use your phone\'s location. If that changes, we will explain it clearly before asking you for anything.</string>
+    <string name="settings_privacy_notifications_title">Notifications</string>
+    <string name="settings_privacy_notifications_body">Notifications are coming soon. Nothing is sent for now.</string>
+    <string name="settings_privacy_open_phone_settings">Open phone settings</string>
+    <string name="settings_privacy_texts_title">Our texts</string>
+    <string name="settings_privacy_contact">Contact us</string>
+    <string name="settings_privacy_open_browser_a11y">open the page in your browser</string>
+    <string name="settings_privacy_open_mail_a11y">write an email</string>
 </resources>

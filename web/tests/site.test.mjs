@@ -6,6 +6,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { FAKE_CONTACT, FAKE_KEY, ROOT, WEB, buildTemp, decode, htmlPages, ids, read, rel, tags, tempDir, urlToCandidates, visibleText, walk } from './helpers.mjs';
 
+const SITE_URL = JSON.parse(read(join(WEB, 'site.config.json'))).site.url;
 const registry = JSON.parse(read(join(WEB, 'src', 'pages.json'))).pages;
 const ui = JSON.parse(read(join(WEB, 'src', 'ui.json')));
 const site = buildTemp();
@@ -61,8 +62,9 @@ test('PAGES - la page de langue renvoie vers son équivalent et déclare hreflan
     for (const [lang, other] of [['fr', 'en'], ['en', 'fr']]) {
       const html = byName[urlToCandidates(page[lang].url).find((c) => byName[c])].html;
       assert.match(html, new RegExp(`<html lang="${lang}">`));
-      assert.ok(html.includes(`<a href="${page[other].url}" hreflang="${other}" lang="${other}">`), `${page.id}/${lang} : lien vers la langue ${other} manquant`);
-      assert.ok(html.includes(`<link rel="alternate" hreflang="${other}" href="${page[other].url}">`));
+      assert.ok(html.includes(`<a href="${page[other].url}" hreflang="${other}" lang="${other}"><svg class="lang-icon"`), `${page.id}/${lang} : lien vers la langue ${other} manquant`);
+      assert.ok(html.includes(`<link rel="alternate" hreflang="${other}" href="${SITE_URL}${page[other].url}">`), `${page.id}/${lang} : hreflang ${other} (adresse complète) manquant`);
+      assert.ok(html.includes(`<link rel="canonical" href="${SITE_URL}${page[lang].url}">`), `${page.id}/${lang} : adresse canonique manquante`);
     }
   }
 });
@@ -108,7 +110,10 @@ test('RESSOURCES - aucune ressource externe : pas de script, style, police, imag
   const external = /^(https?:)?\/\//i;
   for (const { name, html } of pages) {
     for (const [tag, attr] of [['link', 'href'], ['script', 'src'], ['img', 'src'], ['source', 'src'], ['iframe', 'src'], ['form', 'action'], ['object', 'data'], ['embed', 'src']]) {
-      for (const t of tags(html, tag)) assert.ok(!external.test(t.attrs[attr] ?? ''), `${name} : ressource externe <${tag} ${attr}="${t.attrs[attr]}">`);
+      for (const t of tags(html, tag)) {
+        if (tag === 'link' && /^(canonical|alternate)$/.test(t.attrs.rel ?? '')) continue; // adresses de référence pour les moteurs de recherche : rien n'est chargé
+        assert.ok(!external.test(t.attrs[attr] ?? ''), `${name} : ressource externe <${tag} ${attr}="${t.attrs[attr]}">`);
+      }
     }
     assert.equal(tags(html, 'base').length, 0, `${name} : <base> interdit`);
     for (const t of tags(html, 'a')) {
@@ -150,7 +155,7 @@ test('MENTIONS - aucune page n\'affirme qu\'un juriste a relu les textes (décis
   ];
   const texts = [...pages.map((p) => [p.name, visibleText(p.html)]), ...['reset-strings.js'].map((f) => [f, read(join(WEB, 'src', 'assets', f))])];
   for (const [name, text] of texts) for (const claim of claims) assert.ok(!claim.test(text), `${name} : affirmation de relecture juridique (${claim})`);
-  for (const file of ['fr/index.html', 'en/index.html', 'fr/supprimer-mon-compte.html', 'en/delete-account.html', 'ui.json']) {
+  for (const file of ['landing.json', 'fr/supprimer-mon-compte.html', 'en/delete-account.html', 'ui.json']) {
     for (const claim of claims) assert.ok(!claim.test(read(join(WEB, 'src', file))), `${file} : affirmation de relecture juridique`);
   }
 });
@@ -200,7 +205,8 @@ test('TUTOIEMENT - aucune chaîne d\'interface française ne vouvoie (pages, int
   }
   for (const [key, value] of Object.entries(ui.fr)) assert.ok(!vous.test(value), `ui.json fr.${key} : vouvoiement`);
   for (const page of registry) for (const field of ['title', 'navLabel', 'description']) assert.ok(!vous.test(page.fr[field] ?? ''), `pages.json ${page.id} : vouvoiement`);
-  for (const file of ['fr/index.html', 'fr/supprimer-mon-compte.html']) assert.ok(!vous.test(visibleText(read(join(WEB, 'src', file)))), `${file} : vouvoiement`);
+  for (const file of ['fr/supprimer-mon-compte.html']) assert.ok(!vous.test(visibleText(read(join(WEB, 'src', file)))), `${file} : vouvoiement`);
+  for (const [key, value] of Object.entries(JSON.parse(read(join(WEB, 'src', 'landing.json'))).fr)) assert.ok(!vous.test(value), `landing.json fr.${key} : vouvoiement`);
 });
 
 test('CSP - aucun script ni style en ligne, aucun gestionnaire d\'événement, aucune URL javascript:', () => {
@@ -304,6 +310,8 @@ test('CONTRASTES - paires texte/fond du design system au moins AA (4,5:1 texte, 
     ['color-text-on-action', 'color-action-primary'],
     ['color-text-form', 'color-action-primary-disabled'],
     ['color-text-form', 'color-warning-tint'],
+    ['color-brand-primary', 'color-action-primary'], // cœurs et coches jaune-vert sur la section bleue de la page d'accueil
+    ['color-text-form', 'color-brand-primary'], // coche foncée sur pastille jaune-vert
   ];
   for (const [fg, bg] of textPairs) {
     const ratio = contrast(token(fg), token(bg));
@@ -327,7 +335,7 @@ test('ADRESSE - l\'e-mail et l\'adresse de l\'éditeur n\'apparaissent que via w
     join(ROOT, 'scripts', 'preview-web.mjs'),
     join(ROOT, 'scripts', 'web-predeploy-check.mjs'),
     join(ROOT, '.github', 'workflows', 'web.yml'),
-  ].filter((f) => existsSync(f) && !/\.(ttf)$/.test(f));
+  ].filter((f) => existsSync(f) && !/\.(ttf|png|webp)$/.test(f));
   assert.ok(scanned.length > 15);
   for (const file of scanned) {
     const text = read(file);
@@ -347,7 +355,7 @@ test('ADRESSE - l\'e-mail et l\'adresse de l\'éditeur n\'apparaissent que via w
   cpSync(join(ROOT, 'design', 'assets', 'logo'), join(copyRoot, 'design', 'assets', 'logo'), { recursive: true });
   mkdirSync(join(copyRoot, 'scripts'));
   cpSync(join(ROOT, 'scripts', 'build-web.mjs'), join(copyRoot, 'scripts', 'build-web.mjs'));
-  const other = { publisher: { name: 'Test Éditeur', postalAddress: '1 rue de l’Exemple, 00000 Ville', contactEmail: FAKE_CONTACT } };
+  const other = { publisher: { name: 'Test Éditeur', postalAddress: '1 rue de l’Exemple, 00000 Ville', contactEmail: FAKE_CONTACT }, site: { url: SITE_URL } };
   writeFileSync(join(copyRoot, 'web', 'site.config.json'), JSON.stringify(other));
   const changed = buildTemp({ root: copyRoot });
   // Pages pilotées par la config (pied de page, suppression de compte). Les textes légaux de docs/legal peuvent, eux,

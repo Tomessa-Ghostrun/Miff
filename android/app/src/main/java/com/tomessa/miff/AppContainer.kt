@@ -19,14 +19,24 @@ import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
+import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
+import com.tomessa.miff.data.privacy.ConsentWithdrawals
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSink
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSwitch
 import com.tomessa.miff.data.privacy.FirebaseCrashlyticsSwitch
+import com.tomessa.miff.data.privacy.FirestoreAnalyticsConsentRepository
+import com.tomessa.miff.data.privacy.PendingWithdrawals
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.data.privacy.SharedPreferencesBooleanStore
+import com.tomessa.miff.data.privacy.SharedPreferencesWithdrawalStorage
 import com.tomessa.miff.data.profile.AndroidAvatarCodec
 import com.tomessa.miff.data.profile.AvatarCapture
+import com.tomessa.miff.data.profile.CurrentProfile
+import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
+import com.tomessa.miff.data.profile.MyProfileRepository
 import com.tomessa.miff.data.session.SessionManager
+import com.tomessa.miff.data.settings.AndroidLanguageStore
+import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.profile.AvatarCodec
@@ -48,6 +58,9 @@ class AppContainer(
             crashReports = FirebaseCrashlyticsSwitch(),
         )
 
+    /** Writes the choice "statistics and crash reports" to the account (Settings > Confidentialité). */
+    val analyticsConsents: AnalyticsConsentRepository = FirestoreAnalyticsConsentRepository()
+
     val analyticsTracker: AnalyticsTracker =
         AnalyticsTracker(
             sink = FirebaseAnalyticsSink(context),
@@ -57,6 +70,22 @@ class AppContainer(
     val authGateway: AuthGateway = FirebaseAuthGateway()
 
     val networkMonitor: NetworkMonitor = AndroidNetworkMonitor(context)
+
+    /**
+     * Withdrawals of the statistics consent not yet recorded in the account (no network at the time): they keep the collection
+     * off at every start and are recorded in the background as soon as the network is back (see [ConsentWithdrawals]).
+     */
+    val pendingWithdrawals: PendingWithdrawals =
+        PendingWithdrawals(SharedPreferencesWithdrawalStorage(context), nowMillis = System::currentTimeMillis)
+
+    val consentWithdrawals: ConsentWithdrawals =
+        ConsentWithdrawals(
+            pending = pendingWithdrawals,
+            consents = analyticsConsents,
+            network = networkMonitor,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
 
     /** "Mot de passe oublié" (AUTH-2): the e-mail is sent by Firebase; the new password is chosen on the web page (AUTH-W). */
     val passwordResetGateway: PasswordResetGateway = FirebasePasswordResetGateway()
@@ -72,6 +101,16 @@ class AppContainer(
 
     /** Photo of the profile: Photo Picker / camera of the system, square crop, JPEG without any metadata. */
     val avatarCodec: AvatarCodec = AndroidAvatarCodec(context)
+
+    /** Reading and changing the profile once it exists (Settings > Mes informations). */
+    val myProfiles: MyProfileRepository = FirestoreMyProfileRepository()
+
+    /** The profile of the person signed in, in memory for the session only (Profile tab, Mes informations). */
+    val currentProfile: CurrentProfile =
+        CurrentProfile(repository = myProfiles, currentUid = { authGateway.currentUid })
+
+    /** Language chosen in Settings (French, English, or the phone's), applied at once. */
+    val languageStore: LanguageStore = AndroidLanguageStore(context)
 
     /** Acceptance of the terms kept on the device between the sign-up and the creation of the profile. */
     val pendingConsent: PendingConsentStore = SharedPreferencesPendingConsentStore(context)
@@ -100,8 +139,10 @@ class AppContainer(
             // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
             // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
             // sign-out stops them (ticket 7.6).
-            teardown = listOf(profileDrafts.asTeardown()),
+            teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
             drafts = profileDrafts,
+            withdrawals = pendingWithdrawals,
+            onAccountResolved = consentWithdrawals::resume,
         )
 }

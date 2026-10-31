@@ -7,6 +7,7 @@ import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.privacy.BooleanStore
+import com.tomessa.miff.data.privacy.PendingWithdrawals
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
@@ -100,6 +101,13 @@ class SessionManager(
      * profile exists (belt and braces next to the teardown of sign-out and the erasure after the confirmed write).
      */
     private val drafts: ProfileDraftStore? = null,
+    /**
+     * Withdrawals of the statistics consent that the account does not know about yet (no network when the person switched it
+     * off). While one waits for THIS account, the collection stays off at every start, whatever the account says.
+     */
+    private val withdrawals: PendingWithdrawals? = null,
+    /** Called with the id of the account once it has been read (the pending withdrawal, if any, is then recorded). */
+    private val onAccountResolved: (String) -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
@@ -480,9 +488,11 @@ class SessionManager(
             recorded = null
             pending.clear()
             drafts?.clear()
-            privacy.applyAccountConsent(snapshot.analyticsConsentEnabled)
+            // A withdrawal made without network and not yet recorded wins over what the account still says.
+            val collect = snapshot.analyticsConsentEnabled && withdrawals?.isPending(uid) != true
+            privacy.applyAccountConsent(collect)
             if (method != null &&
-                snapshot.analyticsConsentEnabled
+                collect
             ) {
                 tracker.track(AnalyticsEvent.SignInCompleted(method))
             }
@@ -503,6 +513,7 @@ class SessionManager(
         // The app counts as "used" once a usable account exists; a refused consent panel leaves no trace.
         if (method != null && destination != AppDestination.CONSENT_PANEL) flags.put(KEY_RETURNING_USER, true)
         mutableState.value = SessionState.Ready(destination)
+        if (snapshot.profileExists) onAccountResolved(uid)
     }
 
     private fun entryDestination(): AppDestination =

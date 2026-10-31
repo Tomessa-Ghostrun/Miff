@@ -91,9 +91,20 @@ class RecordingSink : AnalyticsSink {
 }
 
 class FakeNetwork(
-    var online: Boolean = true,
+    online: Boolean = true,
 ) : NetworkMonitor {
-    override fun isOnline() = online
+    private val state = kotlinx.coroutines.flow.MutableStateFlow(online)
+
+    /** Changing it also tells the ones who wait for the network to come back. */
+    var online: Boolean
+        get() = state.value
+        set(value) {
+            state.value = value
+        }
+
+    override fun isOnline() = state.value
+
+    override fun onlineChanges(): kotlinx.coroutines.flow.Flow<Boolean> = state
 }
 
 /** Shared timeline of the calls that matter for ordering (flush, purge, sign-out...). */
@@ -173,6 +184,17 @@ class FakeAuthGateway(
 
     override fun displayName(): String? = displayName
 
+    var email: String? = null
+
+    override fun currentEmail(): String? = email
+
+    override fun accountSignIn(): com.tomessa.miff.domain.auth.AccountSignIn =
+        when (method) {
+            AnalyticsEvent.Method.EMAIL -> com.tomessa.miff.domain.auth.AccountSignIn.PASSWORD
+            AnalyticsEvent.Method.GOOGLE -> com.tomessa.miff.domain.auth.AccountSignIn.GOOGLE
+            else -> com.tomessa.miff.domain.auth.AccountSignIn.OTHER
+        }
+
     override fun signOut() {
         signOutCalls++
         timeline += "signOut"
@@ -236,6 +258,8 @@ class SessionHarness(
     scope: CoroutineScope,
     extraTeardown: List<SessionTeardown> = emptyList(),
     drafts: com.tomessa.miff.data.onboarding.ProfileDraftStore? = null,
+    withdrawals: com.tomessa.miff.data.privacy.PendingWithdrawals? = null,
+    onAccountResolved: (String) -> Unit = {},
 ) {
     val timeline = Timeline()
     val gateway = FakeAuthGateway(timeline)
@@ -278,5 +302,7 @@ class SessionHarness(
                 ) + extraTeardown,
             scope = scope,
             drafts = drafts,
+            withdrawals = withdrawals,
+            onAccountResolved = onAccountResolved,
         )
 }
