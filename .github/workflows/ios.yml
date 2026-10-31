@@ -49,9 +49,10 @@ jobs:
   build-and-test:
     name: Build et tests (simulateur, sans signature)
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
-    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) ; 15 min laisse de la marge sans
-    # laisser un job bloque consommer le quota.
-    timeout-minutes: 15
+    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) sur les runners du depot prive ; le
+    # 2026-10-30, depuis le passage du depot en public, les memes etapes ont depasse 15 min a deux reprises
+    # (runners macOS plus lents ou files d'attente). 30 min laisse de la marge ; les minutes sont gratuites en public.
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
