@@ -1,25 +1,29 @@
 import SwiftUI
 
-/// Bouton primaire du design system : fond action/primary, ombre shadow/default, arrondi radius/md,
-/// etat desactive = fond a 30 %. Le texte peut passer a la ligne (grande taille de texte, traductions longues).
+/// Bouton primaire du design system : fond action/primary, ombre shadow/default, arrondi radius/md, texte body/large
+/// (comme Android), état désactivé = fond à 30 %. Le texte peut passer à la ligne (grande taille de texte, traductions
+/// longues). `fillsWidth` étire le bouton sur toute la largeur (écrans d'authentification et d'onboarding).
 struct MiffPrimaryButtonStyle: ButtonStyle {
+    var fillsWidth = false
+
     func makeBody(configuration: ButtonStyleConfiguration) -> some View {
-        MiffPrimaryButtonBody(configuration: configuration)
+        MiffPrimaryButtonBody(configuration: configuration, fillsWidth: fillsWidth)
     }
 }
 
 private struct MiffPrimaryButtonBody: View {
     @Environment(\.isEnabled) private var isEnabled
     let configuration: ButtonStyleConfiguration
+    let fillsWidth: Bool
 
     var body: some View {
         configuration.label
-            .miffTextStyle(textBodyBold16)
+            .miffTextStyle(textBodyLarge)
             .foregroundColor(colorTextOnAction.color)
             .multilineTextAlignment(.center)
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.sm)
-            .frame(minHeight: Spacing.minTouchTarget)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: Spacing.minTouchTarget)
             .background(background)
             .opacity(configuration.isPressed ? 0.85 : 1)
             .padding(.vertical, Spacing.xs)
@@ -41,5 +45,10 @@ private struct MiffPrimaryButtonBody: View {
 extension ButtonStyle where Self == MiffPrimaryButtonStyle {
     static var miffPrimary: MiffPrimaryButtonStyle {
         MiffPrimaryButtonStyle()
+    }
+
+    /// Le bouton primaire sur toute la largeur.
+    static var miffPrimaryFullWidth: MiffPrimaryButtonStyle {
+        MiffPrimaryButtonStyle(fillsWidth: true)
     }
 }

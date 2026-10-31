@@ -2,6 +2,34 @@
 
 ## Non publié
 
+### AUTH-3, AUTH-4, ONB-5, ONB-6 - Parité Android de l'authentification et de l'onboarding
+
+Ajouté :
+- **AUTH-3** : inscription et connexion par e-mail et mot de passe, **Google** (GoogleSignIn-iOS 10.1.0) et **Apple** (natif, nonce SHA-256) ; routage par état du compte (`SessionManager`) ; panneau de consentement pour une personne nouvelle arrivée de l'écran de connexion (le refuser supprime le compte tout juste créé) ; consentement sans case à cocher (le bouton vaut acceptation) ; collecte Analytics et Crashlytics seulement mise en pause au démarrage puis réglée par le choix du compte ; purge du cache Firestore à la fin d'une session ; limite de confort après 5 échecs de connexion.
+- **AUTH-4** : « Mot de passe oublié » (confirmation identique pour toute adresse, pause de 60 s par adresse).
+- **ONB-5** : icône officielle, mot-symbole vectoriel, carrousel de bienvenue (illustrations reconstruites en vectoriel et en vrais textes), écran de lancement système + animation (le cœur gonfle puis éclate, 2,9 s ; version « réduire les animations » 0,8 s).
+- **ONB-6** : étape profil (photo par le sélecteur du système sans permission, recadrage carré, JPEG ré-encodé sans métadonnées, 20 000 octets au plus), étape téléphone (PhoneNumberKit 5.0.13, E.164 obligatoire), brouillon local, écriture unique par transaction.
+- Dépendances : GoogleSignIn-iOS 10.1.0 (Apache-2.0), PhoneNumberKit 5.0.13 (MIT), et leurs dépendances indirectes (voir `README.md`). Entitlement « Se connecter avec Apple ». Phase de compilation qui ajoute le schéma d'URL de Google depuis le fichier de configuration embarqué (jamais dans le dépôt).
+- Textes : catalogue fr + en, parité stricte avec Android (clés `ios_*` propres à iOS), `PrivacyInfo.xcprivacy` complété (données de compte).
+- Tests de la logique (session, routage, formulaires, view models, numéro, photo, chronologie du lancement...) ; checklist de recette `docs/qa/checklists/ios-auth-onboarding-recette-pm.md`.
+
+Changé : `HomeView` utilise le mot-symbole officiel ; le diagnostic ouvre le vrai parcours de l'app ; `PrivacySettings` ne réapplique plus le choix gardé sur l'appareil au démarrage ; l'icône et le logo ne sont plus provisoires (seul le « G » de Google reste un redessin à remplacer avant la fiche de l'App Store). `tools/generate-app-icon.mjs` supprimé.
+
+**CI** : 357 tests, 0 échec, SwiftLint strict vert, Release et Internal compilées, 34 captures relues (run 41115100528, commit c69c8b9). Le job du simulateur a duré 21 à 25 minutes sur les machines actuelles (le temps est surtout passé AVANT le démarrage des tests, 6 à 14 minutes, et non dans les tests eux-mêmes : 14 secondes) ; la limite du job (relevée à 30 minutes sur `main` par la PR #44) était donc trop juste à 15 minutes ; une exécution a été coupée à 25 minutes pendant les captures (relancée une fois, verte). À surveiller : si cela se reproduit, séparer les captures dans un second job. Package.resolved régénéré (17 paquets) ; les versions des dépendances déjà présentes sont inchangées.
+
+**Corrections de revue (2026-10-31)** :
+- I1 : `PrivacyInfo.xcprivacy` déclare `SystemBootTime` (raison 35F9.1, `ProcessInfo.systemUptime` dans `AppClock`) ; le test `PrivacyManifestApiTests` compare le manifeste aux appels de chaque catégorie à raison obligatoire (horloge, UserDefaults, horodatages de fichiers, espace disque, claviers actifs) réellement présents dans le code.
+- I2 : le build **Internal** (TestFlight) s'ouvre sur le vrai parcours ; le diagnostic reste derrière un appui long de 1,5 s en haut à gauche, dans une feuille (pas de navigation imbriquée : le balayage depuis le bord ne peut pas y ramener). Le lien « vrai parcours » du diagnostic n'existe plus qu'en Debug.
+- I3 : pas d'écran Réglages sur iOS : le texte de consentement iOS (`ios_auth_consent_notice`, `ios_auth_panel_notice`) ne promet plus « modifiable dans les Réglages » mais « à retirer à tout moment en écrivant à » l'adresse de contact ; limite et suite documentées (README, écart n° 10).
+- M1 le nom donné une seule fois par Apple n'est plus écrasé par une connexion sans nom (`AppleNameMemory`) ; M2 une déconnexion qui échoue est retentée et aucune connexion ne démarre tant qu'une ancienne session reste ouverte ; M3 le code d'autorisation d'Apple est capturé (mémoire seulement, jamais journalisé) pour la révocation future (AUTH-5) ; M4 le balayage de retour est coupé pendant l'écriture du profil (`SwipeBackLock`) ; M5 barre « OK » au-dessus du pavé numérique ; M6 phrase sur PhoneNumberKit corrigée (dépôt historique non archivé, plus de version depuis la 4.3.0) ; M7 tests ajoutés (manifeste, nom Apple, session après réinstallation, déconnexion qui échoue, script du schéma d'URL Google avec des fichiers factices : `ci/test-google-url-scheme.sh`, étape de la CI macOS).
+- Q1 : au **premier lancement d'une installation**, une session trouvée (Trousseau conservé après désinstallation) est fermée avant tout routage : après une réinstallation il faut se reconnecter (recommandation de la revue, appliquée sauf veto du PM). Q3 : textes « Zone à risque / Lieu à éviter » du carrousel inchangés (décision du PM en attente).
+
+**Prérequis côté PM pour tester** : capacité « Sign in with Apple » sur l'identifiant `com.tomessa.miff` et fournisseur Apple dans Firebase Authentication ; régénérer `GoogleService-Info.plist` après l'activation de Google et mettre à jour le secret `GOOGLE_SERVICE_INFO_PLIST_B64`.
+
+**Choix économiques** : aucun service payant ajouté ; PhoneNumberKit (local) plutôt qu'un service de vérification (aucun SMS) ; sélecteur de photos du système (aucune permission) ; aucune Cloud Function.
+
+**Non vérifié (seulement possible sur iPhone ou avec des comptes réels)** : rendu et fluidité sur iPhone 11 Pro, fenêtres Google et Apple, signature avec la nouvelle capacité, VoiceOver, iOS 16.
+
 ### INIT-4 - Socle complet (PR #13)
 
 Ajouté :

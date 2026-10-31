@@ -69,7 +69,8 @@ enum Spacing {
     static let md: CGFloat = 16
     static let lg: CGFloat = 24
     static let xl: CGFloat = 32
-    static let logoSize: CGFloat = 120
+    /// Largeur du mot-symbole sur l'ecran d'accueil ; la hauteur suit le rapport 981 : 380 du logo.
+    static let logoWidth: CGFloat = 200
     /// Cible tactile minimale : 44 pt (recommandation d'Apple, a la place des 48 dp d'Android).
     static let minTouchTarget: CGFloat = 44
 }

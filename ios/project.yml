@@ -2,6 +2,8 @@
 # Le fichier Miff.xcodeproj n'est PAS versionne : il est genere par la CI
 # (et par `xcodegen generate` sur un Mac) a partir de ce fichier.
 # INIT-4 : socle complet (Firebase, design system, traductions, ecran de diagnostic).
+# AUTH-3, AUTH-4, ONB-5, ONB-6 : inscription et connexion (e-mail, Google, Apple), mot de passe oublie, carrousel de
+# bienvenue, ecran de lancement anime, profil et telephone.
 name: Miff
 
 options:
@@ -28,6 +30,17 @@ packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
     exactVersion: 13.1.1
+  # Connexion Google (Apache-2.0, Google). 10.1.0 = premiere version compatible avec Firebase 13 par SwiftPM (elle accepte
+  # AppCheckCore 12, que Firebase 13.1.1 impose). iOS 15 minimum : compatible avec notre cible iOS 16.
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    exactVersion: 10.1.0
+  # Numeros de telephone (MIT) : port Swift des donnees de libphonenumber, la meme bibliotheque qu'Android (metadonnees
+  # 9.0.42). Le depot historique marmelroy/PhoneNumberKit n est pas archive mais n a plus de version depuis la 4.3.0 (mai 2026) :
+  # les versions 5.x sont publiees par l organisation PhoneNumberKit.
+  PhoneNumberKit:
+    url: https://github.com/PhoneNumberKit/PhoneNumberKit
+    exactVersion: 5.0.13
 
 settings:
   base:
@@ -72,11 +85,20 @@ targets:
         product: FirebaseCrashlytics
       - package: Firebase
         product: FirebaseAnalyticsCore
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: PhoneNumberKit
+        product: PhoneNumberKit
     # Envoi des symboles de plantage a Crashlytics (Internal et Release seulement ; le script ne fait
     # rien en Debug et ne fait jamais echouer la compilation).
     postBuildScripts:
       - name: Crashlytics - envoi des symboles
         path: ci/crashlytics-upload-symbols.sh
+        basedOnDependencyAnalysis: false
+      # Connexion Google : le schema d'URL de retour (REVERSED_CLIENT_ID) vient du fichier de configuration Firebase, qui n'est
+      # JAMAIS dans le depot. Ce script l'ajoute a l'Info.plist du build a partir du fichier embarque (voir le script).
+      - name: Google - schema d'URL de retour
+        path: ci/inject-google-url-scheme.sh
         basedOnDependencyAnalysis: false
     # Info.plist genere par XcodeGen (fichier non versionne, voir ios/.gitignore).
     # Volontairement ABSENTS : toute cle NSLocation* et NSAppTransportSecurity (ATS).
@@ -95,7 +117,11 @@ targets:
         # Nom de la configuration Xcode (Debug, Internal, Release), affiche par le diagnostic.
         MiffBuildConfiguration: "$(CONFIGURATION)"
         LSRequiresIPhoneOS: true
-        UILaunchScreen: {}
+        # Ecran de lancement systeme : fond bleu de la marque et « M + i » blanc SANS le coeur (le coeur est celui de
+        # l'animation de lancement, Views/Splash). Image et couleur : Assets.xcassets (LaunchMark, LaunchBackground).
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchMark
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:

@@ -19,6 +19,21 @@ enum DiagnosticLaunchOptions {
         UserDefaults.standard.bool(forKey: "MiffShowHome")
     }
 
+    /// Ouvre directement le VRAI parcours de l'app (carrousel, inscription...) au lieu du diagnostic.
+    static var showApp: Bool {
+        UserDefaults.standard.bool(forKey: "MiffShowApp")
+    }
+
+    /// Saute l'animation de lancement (captures de la CI : elle durerait plus longtemps que l'attente avant la capture).
+    static var skipSplash: Bool {
+        UserDefaults.standard.bool(forKey: "MiffSkipSplash")
+    }
+
+    /// Montre un seul écran avec un état fixe (voir `ScreenPreview`), pour les captures de la CI.
+    static var preview: String? {
+        UserDefaults.standard.string(forKey: "MiffPreview")
+    }
+
     /// Lance le test 1 au démarrage (capture « Règles actives : OK »).
     static var autoRunTest1: Bool {
         UserDefaults.standard.bool(forKey: "MiffAutoTest1")
@@ -31,6 +46,9 @@ enum DiagnosticLaunchOptions {
     #else
     static let forceRightToLeft = false
     static let showHome = false
+    static let showApp = false
+    static let skipSplash = false
+    static let preview: String? = nil
     static let autoRunTest1 = false
     static let scrollTarget: DiagnosticSection? = nil
     #endif

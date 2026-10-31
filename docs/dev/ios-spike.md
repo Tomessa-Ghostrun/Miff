@@ -268,6 +268,6 @@ Autres limites connues du spike : aucun test sur iOS 16 réel (les simulateurs d
 - `ios/project.yml` : description du projet (configurations `Debug`, `Internal`, `Release`).
 - `ios/Miff/` : code (`MiffApp`, `Views/HelloView`, `Models/BuildInfo`) et ressources (icône, manifeste de confidentialité).
 - `ios/MiffTests/` : tests XCTest.
-- `ios/tools/generate-app-icon.mjs` : génère l'icône provisoire (`node ios/tools/generate-app-icon.mjs`).
+- `ios/tools/` : générateurs de données vectorielles et de l'image de l'écran de lancement (l'icône est désormais l'icône officielle de `design/assets/logo/ios`, l'ancien générateur d'icône provisoire a été retiré).
 - `ios/ci/` : `timed.sh` (durées dans le résumé) et `ExportOptions.plist.template`.
 - `.github/workflows/ios.yml`, `.github/workflows/ios-testflight.yml`.

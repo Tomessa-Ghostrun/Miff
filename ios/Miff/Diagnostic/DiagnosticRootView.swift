@@ -1,13 +1,15 @@
 #if DEBUG || INTERNAL
 import SwiftUI
 
-/// Racine des builds Debug et Internal : le diagnostic, avec un lien vers l'écran d'accueil.
+/// Racine des builds Debug et Internal : le diagnostic, avec un lien qui ouvre le vrai parcours de l'app.
 @MainActor
 struct DiagnosticRootView: View {
     @StateObject private var viewModel: DiagnosticViewModel
     @ObservedObject private var privacy: PrivacySettings
+    private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
+        self.environment = environment
         _viewModel = StateObject(
             wrappedValue: DiagnosticViewModel(
                 repository: FirebaseDiagnosticRepository(),
@@ -19,13 +21,26 @@ struct DiagnosticRootView: View {
 
     var body: some View {
         NavigationStack {
-            if DiagnosticLaunchOptions.showHome {
-                HomeView()
-            } else {
-                DiagnosticView(viewModel: viewModel, privacy: privacy)
-            }
+            root
         }
         .modifier(ForcedLayoutDirection(rightToLeft: DiagnosticLaunchOptions.forceRightToLeft))
+    }
+
+    @ViewBuilder
+    private var root: some View {
+        #if DEBUG
+        if let preview = DiagnosticLaunchOptions.preview {
+            ScreenPreview(name: preview, environment: environment)
+        } else if DiagnosticLaunchOptions.showApp {
+            AppRootView(environment: environment)
+        } else if DiagnosticLaunchOptions.showHome {
+            HomeView()
+        } else {
+            DiagnosticView(viewModel: viewModel, privacy: privacy, environment: environment)
+        }
+        #else
+        DiagnosticView(viewModel: viewModel, privacy: privacy, environment: environment)
+        #endif
     }
 }
 
