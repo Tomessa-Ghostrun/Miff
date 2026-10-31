@@ -18,15 +18,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
-import com.tomessa.miff.ui.feed.FeedPlaceholderScreen
+import com.tomessa.miff.ui.feed.FeedScreen
+import com.tomessa.miff.ui.feed.FeedViewModel
+import com.tomessa.miff.ui.miff.AccessLostScreen
+import com.tomessa.miff.ui.miff.CreateMiffRoute
+import com.tomessa.miff.ui.miff.JoinMiffRoute
+import com.tomessa.miff.ui.miff.MiffRoute
+import com.tomessa.miff.ui.miff.miffEntryRoutes
+import com.tomessa.miff.ui.miff.miffScreenRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
@@ -72,8 +83,46 @@ fun MainShell(
     container: AppContainer,
     tabBar: TabBarConfig,
 ) {
-    val session = container.sessionManager
     val navController = rememberNavController()
+    Box(Modifier.fillMaxSize()) {
+        MainNavigation(container, tabBar, navController)
+        LostAccessOverlay(container, navController)
+    }
+}
+
+/**
+ * The single message of a lost access (decision QM8), over everything: nothing of that Miff stays visible behind it. "Compris"
+ * closes it, and leaves the screen of that Miff if it was open.
+ */
+@Composable
+private fun LostAccessOverlay(
+    container: AppContainer,
+    navController: NavController,
+) {
+    val notices by container.miffDirectory.notice.collectAsStateWithLifecycle()
+    notices.firstOrNull()?.let { notice ->
+        AccessLostScreen(
+            miffName = notice.name,
+            onAcknowledge = {
+                container.miffDirectory.dismissNotice()
+                // Only the screen of THAT Miff is left: another Miff open behind (Premium) stays where it is.
+                val entry = navController.currentBackStackEntry
+                val onThatMiff =
+                    entry?.destination?.hasRoute<MiffRoute>() == true &&
+                        entry.toRoute<MiffRoute>().miffId == notice.miffId
+                if (onThatMiff) navController.popBackStackIfSafe()
+            },
+        )
+    }
+}
+
+@Composable
+private fun MainNavigation(
+    container: AppContainer,
+    tabBar: TabBarConfig,
+    navController: NavHostController,
+) {
+    val session = container.sessionManager
     // One view model per account and per session: the next person never meets what the previous one saw.
     val scopeKey = "${session.currentUid}-${session.generation}"
 
@@ -85,12 +134,24 @@ fun MainShell(
                     factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
                 )
             val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+            val feedViewModel: FeedViewModel =
+                viewModel(
+                    key = "feed-$scopeKey",
+                    factory = viewModelFactory { initializer { FeedViewModel(container.miffDirectory) } },
+                )
+            val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
                 profileState = profileState,
                 onOpenMyInfo = { navController.open(MyInfoRoute) },
                 onOpenSettings = { navController.open(SettingsRoute) },
                 onRetryProfile = profileViewModel::retry,
+                miffs = directoryState,
+                onRetryMiffs = feedViewModel::refresh,
+                onSelectMiff = feedViewModel::onSelect,
+                onCreateMiff = { navController.open(CreateMiffRoute) },
+                onJoinMiff = { navController.open(JoinMiffRoute) },
+                onOpenMiff = { navController.open(MiffRoute(it)) },
             )
         }
         composable<SettingsRoute> {
@@ -202,6 +263,19 @@ fun MainShell(
                 onSelect = viewModel::onSelect,
             )
         }
+        miffEntryRoutes(
+            container = container,
+            navController = navController,
+            onCreated = { navController.popBackStackIfSafe() },
+            onJoined = { navController.popBackStackIfSafe() },
+            onOpenExisting = { miffId ->
+                navController.navigate(MiffRoute(miffId)) {
+                    popUpTo<JoinMiffRoute> { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+        miffScreenRoute(container, navController)
     }
 }
 
@@ -230,6 +304,12 @@ fun MainTabs(
     onOpenMyInfo: () -> Unit,
     onOpenSettings: () -> Unit,
     onRetryProfile: () -> Unit,
+    miffs: DirectoryState,
+    onRetryMiffs: () -> Unit,
+    onSelectMiff: (String) -> Unit,
+    onCreateMiff: () -> Unit,
+    onJoinMiff: () -> Unit,
+    onOpenMiff: (String) -> Unit,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
@@ -240,7 +320,14 @@ fun MainTabs(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (selected) {
                     MainTab.FEED -> {
-                        FeedPlaceholderScreen(scrollToTopSignal = scrollToTop)
+                        FeedScreen(
+                            state = miffs,
+                            scrollToTopSignal = scrollToTop,
+                            onRetry = onRetryMiffs,
+                            onSelect = onSelectMiff,
+                            onCreate = onCreateMiff,
+                            onJoin = onJoinMiff,
+                        )
                     }
 
                     MainTab.PROFILE -> {
@@ -250,6 +337,8 @@ fun MainTabs(
                             onOpenMyInfo = onOpenMyInfo,
                             onOpenSettings = onOpenSettings,
                             onRetry = onRetryProfile,
+                            miffs = miffs,
+                            onOpenMiff = onOpenMiff,
                         )
                     }
 

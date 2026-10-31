@@ -163,6 +163,7 @@ Pas de `list`. `get` exige de connaître le code entier. Ne contient ni le créa
 | `createdAt` | timestamp | |
 
 Lisible par les membres uniquement (`get` ; pas de `list`). Modifiable par le créateur : `name`, `joinCode` (régénération).
+**Longueur du nom (MIFF-1, constaté à l'émulateur le 2026-10-31, tests ND1 à ND3)** : `name` et `miffName` sont comptés en **unités UTF-16** (un emoji compte pour 2 ; 30 emojis = 60 unités sont refusés ; 40 lettres accentuées sont acceptées : on compte des caractères, pas des octets). Les clients limitent donc à 40 unités UTF-16 (`String.length` en Kotlin, `utf16.count` en Swift), sans couper un emoji en deux.
 
 **Création** : refusée si `miffsDeleted/{miffId}` existe (un identifiant supprimé ne sert plus jamais). **Suppression** (créateur) : refusée si, dans le même lot, la pierre tombale `miffsDeleted/{miffId}` n'est pas créée **ou** si `joinCodes/{joinCode}` existe encore après le lot.
 
@@ -299,6 +300,7 @@ Si un lieu de confiance et une zone à risque se chevauchent, la zone à risque 
 - "Voir ce que je partage" : l'écran Réglages affiche, pour chaque Miff, la liste des membres (`members`) et l'interrupteur de partage. Le contenu partagé = le document `status/{uid}` (à afficher tel quel à l'utilisateur).
 - Le consentement ne peut pas être donné "par défaut" : à la création/jonction, le document membre peut naître avec `enabled=false` (sans consentement) ou `true` (avec l'écran de consentement). Aucun autre chemin.
 - **Lot d'entrée (MIFF-0, décision QM2 du PM et son extension à la création)** : « Rejoindre et partager » et « Créer et partager » sont le **consentement explicite** de cette Miff. Le client écrit, en **un seul lot atomique** : la fiche de membre avec `sharing = {enabled:true, consentedAt:<heure serveur>, consentVersion:<version du texte affiché avant le bouton>, revokedAt:null}`, l'index `memberships` et le statut initial `status/{moi}` (`presence = "unknown"`, §8). Les règles n'ont **pas besoin de changer** pour cela (la fiche peut naître avec `enabled = true` ; le statut exige le partage actif **après** le lot) : testé (EN1 à EN6), y compris le cas où une écriture est refusée (rien n'est écrit) et mesuré (§12). Les règles **n'imposent pas** que le premier statut soit `unknown` (convention du client, test EN5) ni que la version du texte soit la version courante (seulement 1 à 20 caractères).
+  **Versions du texte de consentement (Android, MIFF-1)** : `2026-10-v1` = la phrase du PM + « Ce que les membres voient de toi » (prénom, nom, photo, numéro de téléphone) + le rappel sur la permission du téléphone ; **`2026-10-v2`** (en vigueur) ajoute la phrase « Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres » (l'entrant consent avant de voir les lieux, R1 du ticket Miff). La même version est écrite à la création, à l'entrée et à la reprise du partage ; iOS (MIFF-3) reprend la même constante et les mêmes mots. Le format n'est pas imposé par les règles (1 à 20 caractères).
 
 ---
 
