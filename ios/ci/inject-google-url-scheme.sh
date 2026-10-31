@@ -26,7 +26,7 @@ fi
 
 reversed="$("$plistbuddy" -c "Print :REVERSED_CLIENT_ID" "$config" 2> /dev/null || true)"
 if [ -z "$reversed" ]; then
-  echo "warning: GoogleService-Info.plist sans REVERSED_CLIENT_ID : la connexion Google ne pourra pas démarrer. Régénérer le fichier (firebase apps:sdkconfig IOS <APP_ID> --project miff-3d283) APRÈS avoir activé Google dans Firebase Authentication, puis mettre à jour le secret GOOGLE_SERVICE_INFO_PLIST_B64."
+  echo "warning: GoogleService-Info.plist sans REVERSED_CLIENT_ID : la connexion Google ne pourra pas démarrer. Régénérer le fichier de configuration (voir ios/README.md, section Connexion Google) APRÈS avoir activé Google dans Firebase Authentication, puis mettre à jour le secret GOOGLE_SERVICE_INFO_PLIST_B64."
   exit 0
 fi
 # Valeur attendue : com.googleusercontent.apps.<identifiant> (lettres, chiffres, point, tiret, tiret bas seulement).
