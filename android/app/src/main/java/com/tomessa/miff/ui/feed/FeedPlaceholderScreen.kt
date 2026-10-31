@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +22,7 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
+import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextForm
@@ -46,7 +46,7 @@ fun FeedPlaceholderScreen(scrollToTopSignal: Int) {
         modifier =
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .miffTopInsets()
                 .verticalScroll(scroll)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },

@@ -2,6 +2,20 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.2] - 2026-10-31 : zones sûres (barre d'état, barre de navigation, encoche, clavier)
+
+Retour du PM après sa recette sur l'OPPO Find X5 Lite : « tout est systématiquement trop haut » ; le logo « Miff » du Feed était dessiné par-dessus l'heure et les icônes.
+
+### Corrigé
+- **Cause** : `MainTabs` (Feed et Profil) utilisait un `Scaffold` puis `consumeWindowInsets(padding)` : la barre d'état était déclarée « déjà gérée » sans qu'aucune marge ne soit appliquée, donc le `statusBarsPadding()` des onglets recevait 0. Le `Scaffold` est retiré (colonne simple : contenu de l'onglet + barre d'onglets).
+- **Un seul endroit pour les marges système** : `ui/components/ScreenInsets.kt` (`MiffScreen`, `miffScreenInsets`, `miffTopInsets`, `miffBottomInsets`, `miffTopInset`, `miffKeyboardVisible`). Tous les écrans existants (inscription, connexion, mot de passe oublié, panneau de consentement, accueil, profil, téléphone, recadrage, carrousel, onglets Feed et Profil, barre d'onglets, Réglages et ses 4 sous-écrans, diagnostic, feuilles Photo et Pays) l'utilisent ; plus aucun appel brut à `safeDrawingPadding`/`statusBarsPadding`/`navigationBarsPadding` ailleurs (`ScreenInsetsRuleTest`).
+- Réglages : la barre du haut respecte aussi l'encoche sur les côtés en paysage ; barre d'onglets : respecte la barre de navigation latérale (3 boutons en paysage) et l'encoche ; feuille des pays : le champ de recherche reste visible au-dessus du clavier.
+- `windowSoftInputMode="adjustResize"` sur `MainActivity` : le clavier est transmis à Compose sur Android 8 à 10 (sans cela l'écran pouvait « glisser » vers le haut, sous la barre d'état).
+
+### Ajouté
+- `ScreenInsetsTest` (22 tests Robolectric : insets réels simulés) et `ScreenInsetsRuleTest` ; checklist de recette `docs/qa/checklists/insets-android-recette-pm.md`.
+- Vérifié : `targetSdk` 36 (edge-to-edge imposé sur Android 15, déjà le comportement de l'app depuis le début, donc aucun changement visible), icônes de la barre d'état sombres sur fond clair (`enableEdgeToEdge` + thème), splash volontairement plein écran. Aucun choix économique, aucune dépendance ajoutée.
+
 ## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
 
 Décision du PM : « Oui pour durcir le consentement » (le risque noté en 0.6.0 est supprimé).
