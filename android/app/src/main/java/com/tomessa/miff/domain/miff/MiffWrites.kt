@@ -191,7 +191,10 @@ object MiffWrites {
             DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
         )
 
-    /** Resume sharing (ticket K6): a new consent (date and version) and the first status again. */
+    /**
+     * Resume sharing (ticket K6): a new consent (date and the same [MiffSharingConsent.VERSION] as at the entry; the screen shows
+     * the same card, with its own opening sentence) and the first status again.
+     */
     fun resumeSharing(
         miffId: String,
         uid: String,

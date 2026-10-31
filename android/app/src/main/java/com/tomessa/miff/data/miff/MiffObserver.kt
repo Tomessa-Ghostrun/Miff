@@ -191,7 +191,7 @@ class FirestoreMiffObserver(
 
     private fun placesOf(snapshot: QuerySnapshot): List<MiffPlace> =
         snapshot.documents
-            .mapNotNull { doc -> doc.getString("name")?.let { MiffPlace(doc.id, it) } }
+            .mapNotNull { doc -> doc.getString("name")?.let { MiffPlace.fromServer(doc.id, it) } }
             .sortedBy { it.name.lowercase() }
 }
 

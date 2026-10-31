@@ -98,7 +98,8 @@ fun MiffScreen(
                     null
                 } else {
                     {
-                        // The same consent, word for word and with the same version, as at the entry (criterion K6).
+                        // The same consent card and the same consent version as at the entry (criterion K6); only the opening sentence differs
+                        // (miff_sharing_resume_body, "Tu partages à nouveau…", instead of miff_consent_create).
                         SharingConsentCard(
                             sentence = stringResource(R.string.miff_sharing_resume_body),
                             systemNote = stringResource(R.string.miff_consent_system_note_create),

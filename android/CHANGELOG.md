@@ -28,9 +28,16 @@ Ticket `docs/tickets/miff.md` (§13, écrans A à G, L et M ; décisions du PM `
 - **Démarrage à froid.** `cachePurger`, `miffRepository`, `joinLimiter` et `miffDirectory` deviennent paresseux (`lazy`) dans `AppContainer` ; `MiffDirectory` rejoint la liste d'arrêt de la session. Aucun accès Firestore de MIFF-1 avant `MiffApplication.startSession` (vérifié : la construction n'ouvre pas Firestore, tout passe par des fonctions appelées à la première requête, depuis des écrans affichés après le routage).
 - **Catalogue iOS** (`Localizable.xcstrings`) : fusion des clés de l'authentification iOS (main) et des clés `miff_*` / `feed_*` / `profile_tab_*` ajoutées ici pour la parité ; aucune clé en conflit, parité Android / iOS vérifiée (349 clés communes).
 
+### Corrigé après les revues sécurité et code (PR #45, second passage)
+- **Nom de la Miff lu dans le code (M1 sécurité)** : `joinCodes.miffName` est écrit par le détenteur du code avant tout consentement du lecteur ; il passe maintenant par `MiffName.fromServer` (caractères de contrôle, bidirectionnels et invisibles retirés, espaces des bords retirés) avant d'être affiché (« Rejoindre la Miff « X » ? », « Tu fais déjà partie de la Miff X »). S'il ne reste rien de visible, la réponse est celle d'un code inconnu. Le commentaire de `MiffName` ne prétendait plus à tort que tous les noms du serveur étaient nettoyés.
+- **Noms de lieux (L5)** : même nettoyage (`MiffPlace.fromServer`) ; un lieu sans nom visible n'est pas affiché.
+- **Commentaire (L3)** : « Reprendre le partage » montre le même cadre et la même version de consentement qu'à l'entrée, avec sa propre phrase d'ouverture (textes inchangés).
+- **Page blanche (CR-M1)** : si l'écran de la Miff passe en arrière-plan ou pivote pendant la vérification d'un accès perdu, l'état est remis à « chargement » et l'accès perdu est entendu de nouveau au retour (avant : état muet, sans message ni « Réessayer »). Test d'annulation en pleine vérification.
+- **Partage déjà dans l'état voulu (CR-M3)** : si les règles refusent l'écriture (état déjà atteint depuis un autre appareil), la fiche du serveur est relue et l'état voulu compte comme un succès. Tests.
+
 ### Corrigé après la revue indépendante de la PR #45
 - **I1** : « Tu n'as plus accès » n'est annoncé qu'après confirmation par le serveur, aussi quand c'est l'écran de la Miff qui entend le refus ; sans confirmation, rien n'est annoncé ni nettoyé et l'écran propose « Réessayer » (test : écouteur refusé + serveur injoignable = zéro message).
-- **I2** : « Reprendre le partage » affiche le même cadre de consentement (même texte, même version) que l'entrée.
+- **I2** : « Reprendre le partage » affiche le même cadre de consentement (même version de consentement ; seule la phrase d'ouverture diffère) que l'entrée.
 - **I3** : le cadre de consentement dit que les lieux de confiance sont choisis par le créateur et visibles de tous les membres ; `MiffSharingConsent.VERSION` passe à `2026-10-v2` (documenté dans `backend/data-model.md` §4 et le README). Phrase par défaut, le PM peut encore l'ajuster (alors `v3`).
 - **M1** limiteur d'essais porté par `AppContainer` (durée du processus). **M2** nettoyage silencieux d'un index obsolète : même purge du cache que pour un accès perdu. **M3** nom : coupe entre deux caractères entiers (`BreakIterator`), caractères de contrôle et bidirectionnels retirés à la saisie, à la lecture et dans le message de partage. **M4** écoute en direct sous `repeatOnLifecycle`. **M5** textes honnêtes pour « une seule Miff à la fois » et « profil manquant » (retour à l'étape profil). **M6** hors connexion avec un cache vide : « on ne sait pas » et non « pas de Miff ». **M7** décision H4 documentée (quota = « pas de connexion » ; refus App Check indistinguable d'un refus des règles = phrase générique). **M8** « Compris » ne ferme que l'écran de la Miff perdue ; « Ouvrir la Miff » compte la fin de l'onboarding ; lot à réponse perdue vérifié aussi pour renommer et arrêter / reprendre le partage. **M9** constantes de taille et d'opacité remplacées par des jetons (`Spacing`, `Type`, `Color`), `details()` supprimé, tests ajoutés (assemblage des écouteurs, message de partage, copie « sensible »).
 
@@ -44,6 +51,10 @@ Titre de l'écran = nom de la Miff ; un seul bouton de validation (coche retiré
 - **Limite connue** : sans permission de localisation demandée par l'app (ticket Localisation), `locationAccess` est écrit `unknown` ; il passera à `denied` / `foreground` / `background` avec ce ticket.
 - **Limite connue** : le lien du message de partage est la racine du site public ; une page d'atterrissage dédiée (QM14) viendra avec le site.
 - Signal de bascule : voir `backend/data-model.md` §12 (ratio lectures par utilisateur actif).
+- **Limite connue (M2)** : le délai de 20 s d'une écriture (`write { ... }`) arrête l'attente de l'app, pas la transaction Firestore : une écriture dont la réponse tarde peut aboutir après le message d'échec. L'app le vérifie par une lecture serveur avant de parler d'échec (créer, rejoindre, renommer, partager) ; le cas résiduel est une transaction qui aboutit après cette vérification.
+- **Limite connue (M4)** : le message affiché quand l'entrée dans une Miff échoue à la confirmation reste le message générique ; non modifié dans cette PR (retenu par la revue de code indépendante).
+- **Limite connue (M5)** : un refus d'App Check et un refus des règles sont tous deux `PERMISSION_DENIED` et reçoivent la même phrase générique (écart H4, documenté dans le README).
+- **Limite connue (F1)** : remarque de forme de la revue de code indépendante de la PR #45, non corrigée dans cette PR.
 
 ## [0.6.5] - 2026-10-31 : suivi des revues (marges et démarrage), sans nouvelle fonctionnalité
 

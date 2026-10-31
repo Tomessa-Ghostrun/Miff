@@ -11,6 +11,7 @@ import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSharingConsent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -175,7 +176,18 @@ class MiffScreenViewModel(
                 val name = mutableState.value.name.takeIf { it.isNotEmpty() }
                 // Nothing of the Miff stays on the screen while the server is asked (criterion D7).
                 mutableState.value = MiffScreenState(status = MiffScreenStatus.ACCESS_LOST, miffId = miffId)
-                if (!onAccessLost(miffId, name)) {
+                val confirmed =
+                    try {
+                        onAccessLost(miffId, name)
+                    } catch (e: CancellationException) {
+                        // The screen left the foreground (or rotated) while the server was being asked: nothing was decided.
+                        // Without this, "lost" would stay reported on a blank page and the next AccessLost would be ignored;
+                        // the listeners are attached again when the screen comes back, and say it again.
+                        lostReported = false
+                        mutableState.value = MiffScreenState(status = MiffScreenStatus.LOADING, miffId = miffId)
+                        throw e
+                    }
+                if (!confirmed) {
                     // Not confirmed by the server: a doubt is not a removal. "Réessayer", no message (ticket 5.7, D3).
                     lostReported = false
                     mutableState.value = MiffScreenState(status = MiffScreenStatus.UNAVAILABLE, miffId = miffId)

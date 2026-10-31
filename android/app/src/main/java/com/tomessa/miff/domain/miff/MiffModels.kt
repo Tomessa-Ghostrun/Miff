@@ -37,6 +37,14 @@ class MiffPlace(
     val name: String,
 ) {
     override fun toString(): String = "MiffPlace(redacted)"
+
+    companion object {
+        /** A place as the server describes it: the name is cleaned ([MiffName.fromServer]); a place with no visible name is dropped. */
+        fun fromServer(
+            id: String,
+            rawName: String,
+        ): MiffPlace? = MiffName.fromServer(rawName)?.let { MiffPlace(id, it) }
+    }
 }
 
 /** One document of `users/{uid}/memberships`: [key] is the id of the document, [miffId] the field that says which Miff. */

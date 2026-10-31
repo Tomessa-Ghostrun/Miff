@@ -20,11 +20,13 @@ import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.RecordingSink
 import com.tomessa.miff.testsupport.miffDetails
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -499,6 +501,49 @@ class MiffViewModelsTest {
             flow.emit(MiffObservation.AccessLost)
             advanceUntilIdle()
             assertEquals("the directory is told once: no loop", listOf(MIFF_ID), lost)
+        }
+
+    @Test
+    fun screen_leavingTheScreenWhileTheLossIsChecked_doesNotLeaveABlankPage_andTheLossIsHeardAgain() =
+        runTest(dispatcher) {
+            val gate = CompletableDeferred<Boolean>()
+            var asked = 0
+            val vm =
+                MiffScreenViewModel(
+                    miffId = MIFF_ID,
+                    repository = repo,
+                    network = network,
+                    currentUid = { "uid-owner" },
+                    onAccessLost = { _, _ ->
+                        asked++
+                        gate.await()
+                    },
+                    onNameChanged = {},
+                )
+            val flow = repo.observer.flowOf(MIFF_ID)
+            val first = observing.launch { vm.observe() }
+            advanceUntilIdle()
+            flow.emit(data())
+            advanceUntilIdle()
+            flow.emit(MiffObservation.AccessLost)
+            advanceUntilIdle()
+            assertEquals(1, asked)
+            assertEquals(MiffScreenStatus.ACCESS_LOST, vm.uiState.value.status)
+            // The screen goes to the background (or rotates) in the middle of the check: observe() is cancelled.
+            first.cancelAndJoin()
+            assertEquals(
+                "nothing was decided: a screen that reads again, not a blank page",
+                MiffScreenStatus.LOADING,
+                vm.uiState.value.status,
+            )
+            // Back on screen: the listeners are attached again and the loss is heard again (it was not swallowed).
+            gate.complete(true)
+            val second = observing.launch { vm.observe() }
+            advanceUntilIdle()
+            flow.emit(MiffObservation.AccessLost)
+            advanceUntilIdle()
+            assertEquals(2, asked)
+            second.cancelAndJoin()
         }
 
     @Test

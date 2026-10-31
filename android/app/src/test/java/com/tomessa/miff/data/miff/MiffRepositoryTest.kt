@@ -88,6 +88,22 @@ class MiffRepositoryTest {
         }
 
     @Test
+    fun prepareJoin_theNameOfTheCode_isCleanedBeforeItIsShown() =
+        runTest {
+            store.codes[CODE] = mapOf("miffId" to MIFF_ID, "miffName" to "\u202EChez\u200B nous\u2067")
+            store.miffs[MIFF_ID] = miffDetails()
+            assertEquals("Chez nous", ready(repo().prepareJoin(uid, CODE)).miffName)
+        }
+
+    @Test
+    fun prepareJoin_aNameWithNothingVisibleLeft_isTheSameAnswerAsAnUnknownCode() =
+        runTest {
+            store.codes[CODE] = mapOf("miffId" to MIFF_ID, "miffName" to "\u202E\u200B \uFEFF")
+            store.miffs[MIFF_ID] = miffDetails()
+            assertEquals(JoinPreparation.NotFound, repo().prepareJoin(uid, CODE))
+        }
+
+    @Test
     fun prepareJoin_theRead_ofTheCodeFailingOffline_isANetworkProblem_notANotFound() =
         runTest {
             val offline =
@@ -462,6 +478,30 @@ class MiffRepositoryTest {
             store.commitFailures = ArrayDeque(listOf(firestoreError(Code.DEADLINE_EXCEEDED)))
             store.miffs[MIFF_ID] = miffDetails(name = "Ancien nom")
             assertEquals(MiffWriteResult.Failed(MiffFailure.OFFLINE), repo().rename(MIFF_ID, CODE, "Nouveau nom"))
+        }
+
+    @Test
+    fun setSharing_aRefusalBecauseTheCardAlreadyHasTheWantedState_isASuccess() =
+        runTest {
+            // Stop asked, but another phone already stopped: the rules refuse false -> false.
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED)))
+            store.sharing = false
+            assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = false))
+            // Resume asked, but another phone already resumed.
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED)))
+            store.sharing = true
+            assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = true))
+        }
+
+    @Test
+    fun setSharing_aRefusalWhileTheCardIsNotInTheWantedState_staysAFailure() =
+        runTest {
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED)))
+            store.sharing = true
+            assertEquals(MiffWriteResult.Failed(MiffFailure.REFUSED), repo().setSharing(MIFF_ID, uid, enabled = false))
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED)))
+            store.sharing = null
+            assertEquals(MiffWriteResult.Failed(MiffFailure.REFUSED), repo().setSharing(MIFF_ID, uid, enabled = false))
         }
 
     @Test

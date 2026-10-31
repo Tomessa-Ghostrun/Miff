@@ -10,11 +10,12 @@ import java.text.BreakIterator
  * `17-nom-miff-longueur.test.js`: an emoji takes 2 units). The text is cut on a boundary between two whole characters as the
  * reader sees them (a letter with its accent, an emoji with its modifiers), never in the middle of one.
  *
- * Invisible characters that change how text is drawn or read are removed, in what is typed AND in what comes from the
- * server (a name is shown to people who only hold the code, so another phone may have written anything): control
- * characters, the bidirectional controls (they can make a name read backwards or hide the end of a sentence), zero-width
- * spaces, the word joiner, the byte order mark and the soft hyphen. The two joiners U+200C and U+200D stay: emoji sequences
- * and several scripts need them.
+ * Invisible characters that change how text is drawn or read are removed from what is typed ([limit], [stored]) and from the
+ * names that come from the server and are shown before any consent or to other people ([fromServer]: the name in a join
+ * code, which the holder of the code wrote; the names of places; the names of members are cleaned where they are read):
+ * control characters, the bidirectional controls (they can make a name read backwards or hide the end of a sentence),
+ * zero-width spaces, the word joiner, the byte order mark and the soft hyphen. The two joiners U+200C and U+200D stay: emoji
+ * sequences and several scripts need them. A server name is NOT cut to 40 units (only the rules of Firestore bound it).
  */
 object MiffName {
     const val MIN_LENGTH = 2
@@ -36,6 +37,12 @@ object MiffName {
 
     /** [text] without control characters and invisible format characters. Used on what is typed and on what is read. */
     fun clean(text: String): String = text.filter { !it.isISOControl() && it !in INVISIBLE }
+
+    /**
+     * A name read from the server, ready to be shown: cleaned and without the spaces at both ends, or null when nothing
+     * visible is left (the caller then treats the name as missing). Never show a server name without going through here.
+     */
+    fun fromServer(text: String): String? = clean(text).trim().takeIf { it.isNotEmpty() }
 
     /**
      * What the field keeps of [typed]: cleaned, at most [MAX_LENGTH] units, cut between two whole characters.
