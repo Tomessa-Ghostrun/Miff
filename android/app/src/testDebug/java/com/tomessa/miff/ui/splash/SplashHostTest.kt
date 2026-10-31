@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -35,10 +36,17 @@ class SplashHostTest {
 
     private val appText = "first screen of the app"
 
+    private var firstFrames = 0
+
     private fun show(reduceMotion: Boolean) {
         composeRule.mainClock.autoAdvance = false
-        composeRule.setContent { SplashHost(reduceMotion = reduceMotion) { Text(appText) } }
+        composeRule.setContent {
+            SplashHost(reduceMotion = reduceMotion, onFirstFrame = { firstFrames++ }) { Text(appText) }
+        }
     }
+
+    private fun appIsComposed(): Boolean =
+        composeRule.onAllNodesWithText(appText, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
 
     private fun advance(ms: Long) {
         composeRule.mainClock.advanceTimeBy(ms)
@@ -59,7 +67,7 @@ class SplashHostTest {
         advance(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS + SplashTimeline.INFLATE_MS) // during the burst
         assertTrue("still playing before the end", splashIsShown())
 
-        advance(SplashTimeline.MAX_ALLOWED_MS - 1000) // well beyond the planned 2.9 s, never beyond 3.0 s
+        advance(SplashTimeline.MAX_ALLOWED_MS - 1000) // well beyond the planned 2.7 s, never beyond 3.0 s
         assertFalse("splash must be gone at 3 s", splashIsShown())
         composeRule.onNodeWithText(appText).assertExists()
     }
@@ -79,9 +87,43 @@ class SplashHostTest {
     @Test
     fun appIsComposedUnderTheSplash_soTheSessionAndFirstScreenAreReadyWhenItFadesOut() {
         show(reduceMotion = false)
-        advance(100)
+        advance(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS + 100)
         // Not in the screen reader's tree (hidden on purpose), but composed: found in the unmerged tree.
         composeRule.onNodeWithText(appText, useUnmergedTree = true).assertExists()
+    }
+
+    /**
+     * PM recette 2026-10-31 ("the M stays alone for seconds"): the heavy first composition of the app must not happen before
+     * the heart has appeared. It is composed once the heart is there, and in time for the end of the animation.
+     */
+    @Test
+    fun theAppIsNotComposedBeforeTheHeartHasAppeared_thenItIsComposedUnderTheAnimation() {
+        show(reduceMotion = false)
+        advance(60)
+        assertFalse("not at the first image", appIsComposed())
+        advance(SplashTimeline.HOLD_MS + SplashTimeline.APPEAR_MS - 60 - 40)
+        assertFalse("not while the heart appears", appIsComposed())
+        advance(200)
+        assertTrue("composed once the heart is there", appIsComposed())
+        assertTrue("and the animation is still playing", splashIsShown())
+    }
+
+    @Test
+    fun withReducedMotionTheAppIsComposedAtOnce() {
+        show(reduceMotion = true)
+        advance(60)
+        assertTrue(appIsComposed())
+    }
+
+    /** What can wait for the first image (reading the session) is started by it. */
+    @Test
+    fun theFirstImageStartsWhatCanWait() {
+        show(reduceMotion = false)
+        advance(60)
+        // Drawing happens when the picture is asked for (nothing is on screen in this test otherwise).
+        composeRule.onRoot().captureToImage()
+        composeRule.waitForIdle()
+        assertTrue("started after the first image", firstFrames >= 1)
     }
 
     /** Writes several instants of the animation as PNG files (build/splash-frames) to look at them. */

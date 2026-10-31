@@ -9,6 +9,22 @@
     <!-- Spoken once by the screen reader while the launch animation plays (brand name, not translated). -->
     <string name="android_splash_a11y" translatable="false">Miff</string>
 
+    <!--
+        Readout of the launch durations (internal builds only: debug and releaseLike, see StartupMetricsOverlay). Not
+        translated on purpose: an internal tool for the PM, in French, absent from the release build.
+    -->
+    <string name="android_startup_metrics_title" translatable="false">Mesure du démarrage (build interne)</string>
+    <string name="android_startup_metrics_cold" translatable="false">Démarrage à froid (mesure depuis la création du processus)</string>
+    <string name="android_startup_metrics_warm" translatable="false">Application déjà en mémoire (mesure depuis la création de l\'écran)</string>
+    <string name="android_startup_metrics_to_heart" translatable="false">Départ → cœur visible : %1$s ms</string>
+    <string name="android_startup_metrics_to_first_frame" translatable="false">Départ → première image (le M seul) : %1$s ms</string>
+    <string name="android_startup_metrics_hold" translatable="false">Première image → cœur : %1$s ms</string>
+    <string name="android_startup_metrics_application" translatable="false">Avant l\'application : %1$s ms, puis son démarrage : %2$s ms</string>
+    <string name="android_startup_metrics_app_to_frame" translatable="false">Fin du démarrage de l\'application → première image : %1$s ms</string>
+    <string name="android_startup_metrics_mounted" translatable="false">Départ → contenu de l\'app posé sous l\'animation : %1$s ms</string>
+    <string name="android_startup_metrics_freeze" translatable="false">Plus long arrêt de l\'animation : %1$d ms (%2$d images)</string>
+    <string name="android_startup_metrics_close" translatable="false">Touchez pour fermer</string>
+
     <!-- Welcome screen -->
     <string name="home_tagline">Know your loved ones are fine, without bothering them.</string>
     <!-- Kept for the iOS/Android key parity (docs/contracts/i18n-keys.md): the Android welcome screen shows the wordmark instead. Remove on both platforms together. -->
