@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.auth.AuthHeader
 import com.tomessa.miff.ui.auth.MessageText
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -97,7 +97,7 @@ fun ProfileScaffold(
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .semantics { this.paneTitle = paneTitle },
     ) {
         Column(

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +19,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorTextDescription
@@ -40,7 +40,7 @@ fun HomeScreen() {
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,

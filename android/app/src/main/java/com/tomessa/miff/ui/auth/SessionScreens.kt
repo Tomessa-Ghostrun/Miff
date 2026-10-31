@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -20,6 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -36,7 +36,7 @@ private fun CenteredFrame(content: @Composable () -> Unit) {
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,

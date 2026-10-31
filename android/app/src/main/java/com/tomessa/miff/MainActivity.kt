@@ -21,6 +21,7 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.domain.startup.StartupMark
 import com.tomessa.miff.startup.StartupMetricsOverlay
 import com.tomessa.miff.startup.StartupTrace
+import com.tomessa.miff.ui.components.ProvideSystemBarsFallback
 import com.tomessa.miff.ui.navigation.MiffNavHost
 import com.tomessa.miff.ui.splash.ReduceMotion
 import com.tomessa.miff.ui.splash.SplashHost
@@ -51,19 +52,21 @@ class MainActivity : ComponentActivity() {
         recreateWhenLanguageChanges(container)
         setContent {
             MiffTheme {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    SplashHost(
-                        reduceMotion = reduceMotion,
-                        // The session is read once the first image of the animation is on screen, not before: reading it
-                        // first would keep the system launch screen up for longer (the routing itself is unchanged).
-                        onFirstFrame = { (application as MiffApplication).startSession() },
-                    ) {
-                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                            MiffNavHost(container = container)
+                ProvideSystemBarsFallback {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        SplashHost(
+                            reduceMotion = reduceMotion,
+                            // The session is read once the first image of the animation is on screen, not before: reading it
+                            // first would keep the system launch screen up for longer (the routing itself is unchanged).
+                            onFirstFrame = { (application as MiffApplication).startSession() },
+                        ) {
+                            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                                MiffNavHost(container = container)
+                            }
                         }
+                        // Internal builds only (debug, releaseLike): durations of the launch, for the PM. Absent from release.
+                        if (BuildConfig.STARTUP_METRICS) StartupMetricsOverlay()
                     }
-                    // Internal builds only (debug, releaseLike): durations of the launch, for the PM. Absent from release.
-                    if (BuildConfig.STARTUP_METRICS) StartupMetricsOverlay()
                 }
             }
         }

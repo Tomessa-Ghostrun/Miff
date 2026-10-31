@@ -2,7 +2,7 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.6.2] - 2026-10-31 : démarrage à froid, le « M » ne doit plus rester seul longtemps
+## [0.6.4] - 2026-10-31 : démarrage à froid, le « M » ne doit plus rester seul longtemps
 
 Retour du PM après recette sur l'OPPO Find X5 Lite (APK debug de la CI) : le « M » seul reste près de 4 s avant le cœur ; pas sur iOS. Diagnostic complet et chronologie : `README.md`, « Démarrage à froid ».
 
@@ -33,6 +33,29 @@ Tout ce qui précède la première image de l'animation allonge le « M seul » 
 ### Limites
 - Aucune durée n'a pu être mesurée sur appareil : les gains sont attendus, pas chiffrés. À chronométrer par le PM (checklist dans la PR).
 - `FirebaseInitProvider` et les initialiseurs `androidx.startup` s'exécutent encore avant `Application.onCreate`.
+
+## [0.6.3] - 2026-10-31 : zones sûres, repli et diagnostic (la recette sur l'OPPO a montré le même défaut avec la PR #46)
+
+Retour du PM : « j'ai toujours le même problème avec les marges » (logo du Feed à y≈45 px, sous l'heure). La cause du 0.6.2 (Scaffold + consumeWindowInsets) était réelle mais **pas suffisante** sur ce téléphone, et la cause exacte sur l'OPPO n'est **pas établie** (non reproduite : tests Robolectric API 35 et émulateur Android 14 corrects).
+
+### Ajouté
+- **Repli** dans `ScreenInsets.kt` (`miffSafeInsets`, `SystemBarsFallback`) : si le système rapporte 0 en haut (ou en bas avec boutons) alors que la barre existe, la hauteur déclarée par le système est utilisée ; jamais à la place d'une vraie valeur. Branché dans `MainActivity` seulement. Tests : `feed_whenThePhoneReportsNoStatusBarAtAll...` et `feed_whenThePhoneReportsARealValue...`.
+- **Carte de diagnostic des marges** (debug seulement, première carte de l'écran de diagnostic) pour lire ce que l'OPPO rapporte vraiment.
+- `adjustResize` conservé (ne peut pas être la cause : le défaut existait avant).
+
+## [0.6.2] - 2026-10-31 : zones sûres (barre d'état, barre de navigation, encoche, clavier)
+
+Retour du PM après sa recette sur l'OPPO Find X5 Lite : « tout est systématiquement trop haut » ; le logo « Miff » du Feed était dessiné par-dessus l'heure et les icônes.
+
+### Corrigé
+- **Cause** : `MainTabs` (Feed et Profil) utilisait un `Scaffold` puis `consumeWindowInsets(padding)` : la barre d'état était déclarée « déjà gérée » sans qu'aucune marge ne soit appliquée, donc le `statusBarsPadding()` des onglets recevait 0. Le `Scaffold` est retiré (colonne simple : contenu de l'onglet + barre d'onglets).
+- **Un seul endroit pour les marges système** : `ui/components/ScreenInsets.kt` (`MiffScreen`, `miffScreenInsets`, `miffTopInsets`, `miffBottomInsets`, `miffTopInset`, `miffKeyboardVisible`). Tous les écrans existants (inscription, connexion, mot de passe oublié, panneau de consentement, accueil, profil, téléphone, recadrage, carrousel, onglets Feed et Profil, barre d'onglets, Réglages et ses 4 sous-écrans, diagnostic, feuilles Photo et Pays) l'utilisent ; plus aucun appel brut à `safeDrawingPadding`/`statusBarsPadding`/`navigationBarsPadding` ailleurs (`ScreenInsetsRuleTest`).
+- Réglages : la barre du haut respecte aussi l'encoche sur les côtés en paysage ; barre d'onglets : respecte la barre de navigation latérale (3 boutons en paysage) et l'encoche ; feuille des pays : le champ de recherche reste visible au-dessus du clavier.
+- `windowSoftInputMode="adjustResize"` sur `MainActivity` : le clavier est transmis à Compose sur Android 8 à 10 (sans cela l'écran pouvait « glisser » vers le haut, sous la barre d'état).
+
+### Ajouté
+- `ScreenInsetsTest` (22 tests Robolectric : insets réels simulés) et `ScreenInsetsRuleTest` ; checklist de recette `docs/qa/checklists/insets-android-recette-pm.md`.
+- Vérifié : `targetSdk` 36 (edge-to-edge imposé sur Android 15, déjà le comportement de l'app depuis le début, donc aucun changement visible), icônes de la barre d'état sombres sur fond clair (`enableEdgeToEdge` + thème), splash volontairement plein écran. Aucun choix économique, aucune dépendance ajoutée.
 
 ## [0.6.1] - 2026-10-30 : ONB-3b, durcissement du retrait de consentement hors connexion
 
