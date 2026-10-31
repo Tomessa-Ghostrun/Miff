@@ -168,7 +168,7 @@ private fun SettingsRow(
 private val RowMinHeight = Spacing.minTouchTarget + Spacing.l
 
 /**
- * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language. Nothing else: no
+ * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language, Privacy (ONB-3b). Nothing else: no
  * Notifications line (nothing is sent yet), no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
  * compte" (it arrives with the account deletion ticket).
  */
@@ -178,6 +178,7 @@ fun SettingsScreen(
     onOpenMyInfo: () -> Unit,
     onOpenAccount: () -> Unit,
     onOpenLanguage: () -> Unit,
+    onOpenPrivacy: () -> Unit,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_title), onBack = onBack) {
         SettingsRow(
@@ -197,6 +198,12 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_language_title),
             subtitle = stringResource(R.string.settings_language_subtitle),
             onClick = onOpenLanguage,
+        )
+        SettingsRow(
+            icon = R.drawable.ic_lock,
+            title = stringResource(R.string.settings_privacy_title),
+            subtitle = stringResource(R.string.settings_privacy_subtitle),
+            onClick = onOpenPrivacy,
         )
     }
 }

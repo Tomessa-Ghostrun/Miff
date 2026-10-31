@@ -176,7 +176,7 @@ class SettingsViewModelsTest {
     fun signingOutAsksFirst_andCancellingChangesNothing() =
         runTest(dispatcher) {
             var signedOut = 0
-            val vm = AccountViewModel(email = "lea@example.org") { signedOut++ }
+            val vm = AccountViewModel(email = "lea@example.org", signOut = { signedOut++ })
             assertEquals("lea@example.org", vm.uiState.value.email)
             vm.onSignOutRequested()
             assertTrue(vm.uiState.value.confirmingSignOut)
@@ -190,7 +190,7 @@ class SettingsViewModelsTest {
     fun confirmingSignsOutOnce_evenOnADoubleTap() =
         runTest(dispatcher) {
             var signedOut = 0
-            val vm = AccountViewModel(email = null) { signedOut++ }
+            val vm = AccountViewModel(email = null, signOut = { signedOut++ })
             vm.onSignOutRequested()
             vm.onSignOutConfirmed()
             vm.onSignOutConfirmed()

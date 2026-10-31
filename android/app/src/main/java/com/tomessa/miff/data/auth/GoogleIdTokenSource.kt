@@ -93,8 +93,11 @@ class CredentialManagerGoogleSource(
 interface NetworkMonitor {
     fun isOnline(): Boolean
 
-    /** The state now, then at each change (the Miff screen shows its calm "offline" mention from it). */
-    fun observeOnline(): Flow<Boolean> = flowOf(isOnline())
+    /**
+     * Emits the current state, then every change (true = a network with Internet is there). Lets a background task wait for the
+     * network to come back instead of asking again and again. The default is a single answer (tests, fakes).
+     */
+    fun onlineChanges(): Flow<Boolean> = flowOf(isOnline())
 }
 
 class AndroidNetworkMonitor(
@@ -108,26 +111,19 @@ class AndroidNetworkMonitor(
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    override fun observeOnline(): Flow<Boolean> =
+    override fun onlineChanges(): Flow<Boolean> =
         callbackFlow {
-            trySend(isOnline())
             val callback =
                 object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: Network) {
-                        trySend(isOnline())
+                        trySend(true)
                     }
 
                     override fun onLost(network: Network) {
                         trySend(isOnline())
                     }
-
-                    override fun onCapabilitiesChanged(
-                        network: Network,
-                        networkCapabilities: NetworkCapabilities,
-                    ) {
-                        trySend(isOnline())
-                    }
                 }
+            trySend(isOnline())
             manager?.registerDefaultNetworkCallback(callback)
             awaitClose { manager?.unregisterNetworkCallback(callback) }
         }.distinctUntilChanged()

@@ -103,3 +103,17 @@ class FakeLanguageStore(
         refreshes++
     }
 }
+
+/** The pending withdrawals as the disk would keep them: what is written is what the next start reads. */
+class MemoryWithdrawalStorage(
+    var stored: Map<String, Long> = emptyMap(),
+) : com.tomessa.miff.data.privacy.WithdrawalStorage {
+    var writes = 0
+
+    override fun read(): Map<String, Long> = stored
+
+    override fun write(entries: Map<String, Long>) {
+        writes++
+        stored = entries
+    }
+}

@@ -405,4 +405,25 @@
     <string name="profile_tab_miffs_title">My Miffs</string>
     <string name="profile_tab_miff_hint">Loved ones, code and sharing</string>
     <string name="profile_tab_miff_open_a11y">Open the Miff %1$s</string>
+    <!-- Settings: My account (password) and Privacy (ONB-3b) -->
+    <string name="settings_account_password_help">We\'ll send you an email with a link to choose a new password.</string>
+    <string name="settings_account_password_action">Change my password</string>
+    <string name="settings_account_password_sending">Sending…</string>
+    <string name="settings_account_password_sent">On its way! An email has just been sent to you. Remember to check your spam folder.</string>
+    <string name="settings_account_google">Signed in with Google</string>
+    <string name="settings_privacy_title">Privacy</string>
+    <string name="settings_privacy_subtitle">Statistics, location, notifications and legal texts</string>
+    <string name="settings_privacy_analytics_title">Anonymous usage statistics and crash reports</string>
+    <string name="settings_privacy_analytics_body">They help us fix the app. They never contain your location. You can change your mind at any time.</string>
+    <string name="settings_privacy_withdrawal_not_recorded">It is switched off on this phone, even after a restart. Your choice will be saved as soon as the connection is back; you can also tap “Save my choice”.</string>
+    <string name="settings_privacy_retry_action">Save my choice</string>
+    <string name="settings_privacy_location_title">Location</string>
+    <string name="settings_privacy_location_body">For now, Miff does not use your phone\'s location. If that changes, we will explain it clearly before asking you for anything.</string>
+    <string name="settings_privacy_notifications_title">Notifications</string>
+    <string name="settings_privacy_notifications_body">Notifications are coming soon. Nothing is sent for now.</string>
+    <string name="settings_privacy_open_phone_settings">Open phone settings</string>
+    <string name="settings_privacy_texts_title">Our texts</string>
+    <string name="settings_privacy_contact">Contact us</string>
+    <string name="settings_privacy_open_browser_a11y">open the page in your browser</string>
+    <string name="settings_privacy_open_mail_a11y">write an email</string>
 </resources>

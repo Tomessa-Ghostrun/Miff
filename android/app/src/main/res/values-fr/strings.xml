@@ -397,4 +397,25 @@
     <string name="profile_tab_miffs_title">Mes Miffs</string>
     <string name="profile_tab_miff_hint">Proches, code et partage</string>
     <string name="profile_tab_miff_open_a11y">Ouvrir la Miff %1$s</string>
+    <!-- Réglages : Mon compte (mot de passe) et Confidentialité (ONB-3b) -->
+    <string name="settings_account_password_help">Nous t\'enverrons un e-mail avec un lien pour choisir un nouveau mot de passe.</string>
+    <string name="settings_account_password_action">Changer mon mot de passe</string>
+    <string name="settings_account_password_sending">Envoi en cours…</string>
+    <string name="settings_account_password_sent">C\'est parti ! Un e-mail vient de t\'être envoyé. Pense à regarder dans tes courriers indésirables.</string>
+    <string name="settings_account_google">Connecté avec Google</string>
+    <string name="settings_privacy_title">Confidentialité</string>
+    <string name="settings_privacy_subtitle">Statistiques, localisation, notifications et textes légaux</string>
+    <string name="settings_privacy_analytics_title">Statistiques d\'usage et rapports de plantage anonymes</string>
+    <string name="settings_privacy_analytics_body">Ils nous aident à réparer l\'app. Ils ne contiennent jamais ta position. Tu peux changer d\'avis à tout moment.</string>
+    <string name="settings_privacy_withdrawal_not_recorded">C\'est coupé sur ce téléphone, même après un redémarrage. Ton choix sera enregistré dès que la connexion revient ; tu peux aussi toucher « Enregistrer mon choix ».</string>
+    <string name="settings_privacy_retry_action">Enregistrer mon choix</string>
+    <string name="settings_privacy_location_title">Localisation</string>
+    <string name="settings_privacy_location_body">Pour l\'instant, Miff n\'utilise pas la position de ton téléphone. Si cela change, on te l\'expliquera clairement avant de te demander quoi que ce soit.</string>
+    <string name="settings_privacy_notifications_title">Notifications</string>
+    <string name="settings_privacy_notifications_body">Les notifications arrivent bientôt. Rien n\'est envoyé pour l\'instant.</string>
+    <string name="settings_privacy_open_phone_settings">Ouvrir les réglages du téléphone</string>
+    <string name="settings_privacy_texts_title">Nos textes</string>
+    <string name="settings_privacy_contact">Nous contacter</string>
+    <string name="settings_privacy_open_browser_a11y">ouvrir la page dans ton navigateur</string>
+    <string name="settings_privacy_open_mail_a11y">écrire un e-mail</string>
 </resources>

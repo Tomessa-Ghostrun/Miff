@@ -140,7 +140,7 @@ class MiffScreenViewModel(
     init {
         start()
         viewModelScope.launch {
-            network.observeOnline().collect { online -> mutableState.update { it.copy(offline = !online) } }
+            network.onlineChanges().collect { online -> mutableState.update { it.copy(offline = !online) } }
         }
     }
 

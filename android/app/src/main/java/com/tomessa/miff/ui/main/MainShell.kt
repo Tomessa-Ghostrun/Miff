@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.main
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -24,6 +25,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -49,6 +51,8 @@ import com.tomessa.miff.ui.settings.LanguageScreen
 import com.tomessa.miff.ui.settings.LanguageViewModel
 import com.tomessa.miff.ui.settings.MyInfoScreen
 import com.tomessa.miff.ui.settings.MyInfoViewModel
+import com.tomessa.miff.ui.settings.PrivacyScreen
+import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -68,6 +72,9 @@ data object AccountRoute
 @Serializable
 data object LanguageRoute
 
+@Serializable
+data object PrivacyRoute
+
 /**
  * The app once the onboarding is done (a Miff exists): the three tabs, and, over them, the Settings screens (which hide the
  * tab bar, like the mockups). Reached from [com.tomessa.miff.ui.navigation.AppRoot] only for the destination FEED: a person
@@ -79,144 +86,195 @@ fun MainShell(
     container: AppContainer,
     tabBar: TabBarConfig,
 ) {
-    val session = container.sessionManager
     val navController = rememberNavController()
+    Box(Modifier.fillMaxSize()) {
+        MainNavigation(container, tabBar, navController)
+        LostAccessOverlay(container, navController)
+    }
+}
+
+/**
+ * The single message of a lost access (decision QM8), over everything: nothing of that Miff stays visible behind it. "Compris"
+ * closes it, and leaves the screen of that Miff if it was open.
+ */
+@Composable
+private fun LostAccessOverlay(
+    container: AppContainer,
+    navController: NavController,
+) {
+    val notices by container.miffDirectory.notice.collectAsStateWithLifecycle()
+    notices.firstOrNull()?.let { notice ->
+        AccessLostScreen(
+            miffName = notice.name,
+            onAcknowledge = {
+                container.miffDirectory.dismissNotice()
+                val onMiffScreen = navController.currentDestination?.hasRoute<MiffRoute>() == true
+                if (onMiffScreen) navController.popBackStackIfSafe()
+            },
+        )
+    }
+}
+
+@Composable
+private fun MainNavigation(
+    container: AppContainer,
+    tabBar: TabBarConfig,
+    navController: NavHostController,
+) {
+    val session = container.sessionManager
     // One view model per account and per session: the next person never meets what the previous one saw.
     val scopeKey = "${session.currentUid}-${session.generation}"
 
-    Box(Modifier.fillMaxSize()) {
-        NavHost(navController = navController, startDestination = TabsRoute) {
-            composable<TabsRoute> {
-                val profileViewModel: ProfileTabViewModel =
-                    viewModel(
-                        key = "profile-tab-$scopeKey",
-                        factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
-                    )
-                val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
-                val feedViewModel: FeedViewModel =
-                    viewModel(
-                        key = "feed-$scopeKey",
-                        factory = viewModelFactory { initializer { FeedViewModel(container.miffDirectory) } },
-                    )
-                val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
-                MainTabs(
-                    tabBar = tabBar,
-                    profileState = profileState,
-                    onOpenMyInfo = { navController.open(MyInfoRoute) },
-                    onOpenSettings = { navController.open(SettingsRoute) },
-                    onRetryProfile = profileViewModel::retry,
-                    miffs = directoryState,
-                    onRetryMiffs = feedViewModel::refresh,
-                    onSelectMiff = feedViewModel::onSelect,
-                    onCreateMiff = { navController.open(CreateMiffRoute) },
-                    onJoinMiff = { navController.open(JoinMiffRoute) },
-                    onOpenMiff = { navController.open(MiffRoute(it)) },
+    NavHost(navController = navController, startDestination = TabsRoute) {
+        composable<TabsRoute> {
+            val profileViewModel: ProfileTabViewModel =
+                viewModel(
+                    key = "profile-tab-$scopeKey",
+                    factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
                 )
-            }
-            composable<SettingsRoute> {
-                SettingsScreen(
-                    onBack = { navController.popBackStackIfSafe() },
-                    onOpenMyInfo = { navController.open(MyInfoRoute) },
-                    onOpenAccount = { navController.open(AccountRoute) },
-                    onOpenLanguage = { navController.open(LanguageRoute) },
+            val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+            val feedViewModel: FeedViewModel =
+                viewModel(
+                    key = "feed-$scopeKey",
+                    factory = viewModelFactory { initializer { FeedViewModel(container.miffDirectory) } },
                 )
-            }
-            composable<MyInfoRoute> {
-                val viewModel: MyInfoViewModel =
-                    viewModel(
-                        key = "my-info-$scopeKey",
-                        factory =
-                            viewModelFactory {
-                                initializer {
-                                    MyInfoViewModel(
-                                        session = session,
-                                        repository = container.myProfiles,
-                                        current = container.currentProfile,
-                                        avatars = container.avatarCodec,
-                                        network = container.networkMonitor,
-                                        deviceRegion = { Locale.getDefault().country.takeIf { it.isNotBlank() } },
-                                    )
-                                }
-                            },
-                    )
-                val state by viewModel.uiState.collectAsStateWithLifecycle()
-                MyInfoScreen(
-                    state = state,
-                    onBack = { navController.popBackStackIfSafe() },
-                    onRetry = viewModel::retry,
-                    onFirstNameChanged = viewModel::onFirstNameChanged,
-                    onLastNameChanged = viewModel::onLastNameChanged,
-                    onCountrySelected = viewModel::onCountrySelected,
-                    onPhoneChanged = viewModel::onPhoneChanged,
-                    onPhoneFocusLost = viewModel::onPhoneFocusLost,
-                    onPhotoChosen = viewModel::onPhotoChosen,
-                    onRemovePhoto = viewModel::onRemovePhoto,
-                    onCameraUnavailable = viewModel::onCameraUnavailable,
-                    onCropChanged = viewModel::onCropChanged,
-                    onCropConfirm = viewModel::onCropConfirmed,
-                    onCropCancel = viewModel::onCropCancelled,
-                    onSave = viewModel::onSave,
-                )
-            }
-            composable<AccountRoute> {
-                val viewModel: AccountViewModel =
-                    viewModel(
-                        key = "account-$scopeKey",
-                        factory =
-                            viewModelFactory {
-                                initializer {
-                                    AccountViewModel(
-                                        email = container.authGateway.currentEmail(),
-                                        signOut = session::signOut,
-                                    )
-                                }
-                            },
-                    )
-                val state by viewModel.uiState.collectAsStateWithLifecycle()
-                AccountScreen(
-                    state = state,
-                    onBack = { navController.popBackStackIfSafe() },
-                    onSignOutRequested = viewModel::onSignOutRequested,
-                    onSignOutConfirmed = viewModel::onSignOutConfirmed,
-                    onSignOutCancelled = viewModel::onSignOutCancelled,
-                )
-            }
-            composable<LanguageRoute> {
-                val viewModel: LanguageViewModel =
-                    viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
-                val selected by viewModel.selected.collectAsStateWithLifecycle()
-                LanguageScreen(
-                    selected = selected,
-                    onBack = { navController.popBackStackIfSafe() },
-                    onSelect = viewModel::onSelect,
-                )
-            }
-            miffEntryRoutes(
-                container = container,
-                navController = navController,
-                onCreated = { navController.popBackStackIfSafe() },
-                onJoined = { navController.popBackStackIfSafe() },
-                onOpenExisting = { miffId ->
-                    navController.navigate(MiffRoute(miffId)) {
-                        popUpTo<JoinMiffRoute> { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-            )
-            miffScreenRoute(container, navController)
-        }
-        // The single message of a lost access (decision QM8), over everything: nothing of that Miff stays visible.
-        val notices by container.miffDirectory.notice.collectAsStateWithLifecycle()
-        notices.firstOrNull()?.let { notice ->
-            AccessLostScreen(
-                miffName = notice.name,
-                onAcknowledge = {
-                    container.miffDirectory.dismissNotice()
-                    val onMiffScreen = navController.currentDestination?.hasRoute<MiffRoute>() == true
-                    if (onMiffScreen) navController.popBackStackIfSafe()
-                },
+            val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
+            MainTabs(
+                tabBar = tabBar,
+                profileState = profileState,
+                onOpenMyInfo = { navController.open(MyInfoRoute) },
+                onOpenSettings = { navController.open(SettingsRoute) },
+                onRetryProfile = profileViewModel::retry,
+                miffs = directoryState,
+                onRetryMiffs = feedViewModel::refresh,
+                onSelectMiff = feedViewModel::onSelect,
+                onCreateMiff = { navController.open(CreateMiffRoute) },
+                onJoinMiff = { navController.open(JoinMiffRoute) },
+                onOpenMiff = { navController.open(MiffRoute(it)) },
             )
         }
+        composable<SettingsRoute> {
+            SettingsScreen(
+                onBack = { navController.popBackStackIfSafe() },
+                onOpenMyInfo = { navController.open(MyInfoRoute) },
+                onOpenAccount = { navController.open(AccountRoute) },
+                onOpenLanguage = { navController.open(LanguageRoute) },
+                onOpenPrivacy = { navController.open(PrivacyRoute) },
+            )
+        }
+        composable<MyInfoRoute> {
+            val viewModel: MyInfoViewModel =
+                viewModel(
+                    key = "my-info-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                MyInfoViewModel(
+                                    session = session,
+                                    repository = container.myProfiles,
+                                    current = container.currentProfile,
+                                    avatars = container.avatarCodec,
+                                    network = container.networkMonitor,
+                                    deviceRegion = { Locale.getDefault().country.takeIf { it.isNotBlank() } },
+                                )
+                            }
+                        },
+                )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            MyInfoScreen(
+                state = state,
+                onBack = { navController.popBackStackIfSafe() },
+                onRetry = viewModel::retry,
+                onFirstNameChanged = viewModel::onFirstNameChanged,
+                onLastNameChanged = viewModel::onLastNameChanged,
+                onCountrySelected = viewModel::onCountrySelected,
+                onPhoneChanged = viewModel::onPhoneChanged,
+                onPhoneFocusLost = viewModel::onPhoneFocusLost,
+                onPhotoChosen = viewModel::onPhotoChosen,
+                onRemovePhoto = viewModel::onRemovePhoto,
+                onCameraUnavailable = viewModel::onCameraUnavailable,
+                onCropChanged = viewModel::onCropChanged,
+                onCropConfirm = viewModel::onCropConfirmed,
+                onCropCancel = viewModel::onCropCancelled,
+                onSave = viewModel::onSave,
+            )
+        }
+        composable<AccountRoute> {
+            val viewModel: AccountViewModel =
+                viewModel(
+                    key = "account-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                AccountViewModel(
+                                    email = container.authGateway.currentEmail(),
+                                    signIn = container.authGateway.accountSignIn(),
+                                    signOut = session::signOut,
+                                    passwordReset = container.passwordResetGateway,
+                                    network = container.networkMonitor,
+                                    cooldown = container.passwordResetCooldown,
+                                    nowMillis = SystemClock::elapsedRealtime,
+                                )
+                            }
+                        },
+                )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            AccountScreen(
+                state = state,
+                onBack = { navController.popBackStackIfSafe() },
+                onChangePassword = viewModel::onChangePasswordRequested,
+                onSignOutRequested = viewModel::onSignOutRequested,
+                onSignOutConfirmed = viewModel::onSignOutConfirmed,
+                onSignOutCancelled = viewModel::onSignOutCancelled,
+            )
+        }
+        composable<PrivacyRoute> {
+            val viewModel: PrivacyViewModel =
+                viewModel(
+                    key = "privacy-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                PrivacyViewModel(
+                                    privacy = container.privacySettings,
+                                    withdrawals = container.consentWithdrawals,
+                                    session = session,
+                                    network = container.networkMonitor,
+                                )
+                            }
+                        },
+                )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            PrivacyScreen(
+                state = state,
+                onBack = { navController.popBackStackIfSafe() },
+                onAnalyticsToggled = viewModel::onAnalyticsToggled,
+                onRetryWithdrawal = viewModel::onRetryWithdrawal,
+            )
+        }
+        composable<LanguageRoute> {
+            val viewModel: LanguageViewModel =
+                viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
+            val selected by viewModel.selected.collectAsStateWithLifecycle()
+            LanguageScreen(
+                selected = selected,
+                onBack = { navController.popBackStackIfSafe() },
+                onSelect = viewModel::onSelect,
+            )
+        }
+        miffEntryRoutes(
+            container = container,
+            navController = navController,
+            onCreated = { navController.popBackStackIfSafe() },
+            onJoined = { navController.popBackStackIfSafe() },
+            onOpenExisting = { miffId ->
+                navController.navigate(MiffRoute(miffId)) {
+                    popUpTo<JoinMiffRoute> { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+        miffScreenRoute(container, navController)
     }
 }
 
