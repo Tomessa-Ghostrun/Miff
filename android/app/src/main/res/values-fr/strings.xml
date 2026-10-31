@@ -153,12 +153,9 @@
     <string name="auth_reset_resend_wait">Tu peux demander un nouvel e-mail dans quelques instants.</string>
     <string name="auth_reset_back_to_signin">Retour à la connexion</string>
 
-    <!-- Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL) et écrans provisoires -->
+    <!-- Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL) -->
     <string name="android_legal_terms_path">/fr/cgu</string>
     <string name="android_legal_privacy_path">/fr/confidentialite</string>
-    <string name="android_next_miff_choice">Prochaine étape : créer ou rejoindre une Miff. Cet écran arrive bientôt.</string>
-    <!-- Builds de debug seulement (voir NextStepPlaceholderScreen) : jamais affiché dans un build release. -->
-    <string name="android_debug_preview_tabs" tools:ignore="UnusedResources">Aperçu interne : ouvrir les onglets et les Réglages</string>
 
     <!-- Carrousel de bienvenue et consentement implicite (AUTH-1) -->
     <string name="auth_consent_notice">En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
@@ -287,4 +284,117 @@
     <string name="settings_account_sign_out_title">Te déconnecter ?</string>
     <string name="settings_account_sign_out_body">Tes proches ne verront plus tes mises à jour tant que tu es déconnecté(e).</string>
     <string name="settings_account_sign_out_cancel">Annuler</string>
+
+    <!-- Miff : créer, rejoindre, écran de la Miff, partage du statut, accès perdu (ticket MIFF-1). Tutoiement, ton calme. -->
+    <string name="common_cancel">Annuler</string>
+    <string name="miff_message_offline">Pas de connexion pour le moment. Réessaie dès que le réseau est revenu.</string>
+    <string name="miff_message_generic">Ça n\'a pas fonctionné. Réessaie dans un instant.</string>
+    <string name="miff_dialog_working_a11y">En cours</string>
+
+    <!-- Choix : créer ou rejoindre -->
+    <string name="miff_choice_title">Choisis comment tu veux commencer</string>
+    <string name="miff_choice_create_title">Créer une nouvelle Miff</string>
+    <string name="miff_choice_create_body">Tu pourras ensuite inviter tes proches à te rejoindre.</string>
+    <string name="miff_choice_join_title">Rejoindre une Miff existante</string>
+    <string name="miff_choice_join_body">Un proche t\'a donné un code ? Saisis-le pour entrer dans sa Miff.</string>
+
+    <!-- Consentement explicite avant « Créer et partager » / « Rejoindre et partager » (version « 2026-10-v1 », MiffSharingConsent) -->
+    <string name="miff_consent_create">En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
+    <string name="miff_consent_join">En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
+    <string name="miff_consent_members_see_title">Ce que les membres voient de toi</string>
+    <string name="miff_consent_members_see_body">Ton prénom, ton nom, ta photo et ton numéro de téléphone.</string>
+    <string name="miff_consent_system_note_create">Ton téléphone te demandera séparément l\'accès à ta position. Tu peux le refuser.</string>
+    <string name="miff_consent_system_note_join">Ton téléphone te demandera séparément l\'accès à ta position. Tu peux le refuser : tu rejoins la Miff quand même.</string>
+
+    <!-- Créer -->
+    <string name="miff_create_title">Nouvelle Miff</string>
+    <string name="miff_create_action">Créer et partager</string>
+    <string name="miff_create_saving">On crée ta Miff…</string>
+    <string name="miff_name_label">Nom</string>
+    <string name="miff_name_placeholder">Famille Moudugenou</string>
+    <string name="miff_name_help">Choisis un nom pour retrouver cette Miff facilement. Les personnes qui reçoivent ton code verront ce nom.</string>
+    <string name="miff_name_limit">Limite de 40 caractères atteinte.</string>
+    <string name="miff_name_counter">%1$d / %2$d</string>
+    <string name="miff_ready_title">Ta Miff « %1$s » est prête</string>
+    <string name="miff_ready_body">Partage ce code avec tes proches pour qu\'ils puissent la rejoindre.</string>
+    <string name="miff_ready_hint">Tu retrouveras ce code dans ta Miff, depuis l\'onglet Profil.</string>
+    <string name="miff_ready_continue_action">Continuer</string>
+    <string name="miff_share_code_action">Partager le code</string>
+    <string name="miff_copy_code_action">Copier</string>
+    <string name="miff_code_copied">Code copié</string>
+    <string name="miff_code_a11y">Code de la Miff : %1$s</string>
+    <string name="miff_share_chooser_title">Partager le code</string>
+    <string name="miff_share_message">Rejoins ma Miff « %1$s » sur Miff. Voici le code à saisir : %2$s\n\nPour télécharger l\'application : %3$s</string>
+
+    <!-- Rejoindre -->
+    <string name="miff_join_title">Rejoindre une Miff</string>
+    <string name="miff_join_help">Saisis le code que ton proche t\'a donné.</string>
+    <string name="miff_join_code_label">Code de la Miff</string>
+    <string name="miff_join_code_hint">XXXX XXXX XXXX</string>
+    <string name="miff_join_paste_action">Coller</string>
+    <string name="miff_join_continue_action">Continuer</string>
+    <string name="miff_join_checking">Vérification…</string>
+    <string name="miff_join_not_found">On ne trouve pas de Miff avec ce code. Vérifie-le auprès de la personne qui te l\'a donné.</string>
+    <string name="miff_join_foreign">Ce code ne ressemble pas à un code Miff. Vérifie les lettres et les chiffres.</string>
+    <string name="miff_join_paused">On fait une petite pause d\'une minute avant de réessayer.</string>
+    <string name="miff_join_already_member">Tu fais déjà partie de la Miff « %1$s ».</string>
+    <string name="miff_join_open_action">Ouvrir la Miff</string>
+    <string name="miff_join_confirm_title">Rejoindre la Miff « %1$s » ?</string>
+    <string name="miff_join_action">Rejoindre et partager</string>
+    <string name="miff_join_joining">On t\'ajoute à la Miff…</string>
+
+    <!-- Écran de la Miff -->
+    <string name="miff_screen_title_loading">Ta Miff</string>
+    <string name="miff_section_name_title">Nom</string>
+    <string name="miff_name_save_action">Enregistrer</string>
+    <string name="miff_name_saving">On enregistre…</string>
+    <string name="miff_name_saved">Nom enregistré.</string>
+    <string name="miff_section_code_title">Ajouter des proches</string>
+    <string name="miff_section_code_description">Partage ce code avec tes proches pour qu\'ils puissent rejoindre cette Miff.</string>
+    <string name="miff_full_notice">Cette Miff est bien remplie !</string>
+    <string name="miff_section_members_title">Proches dans cette Miff</string>
+    <string name="miff_section_members_description">Voici les proches qui sont actuellement dans cette Miff.</string>
+    <string name="miff_members_alone">Pas encore d\'autre proche dans cette Miff.</string>
+    <string name="miff_role_owner">Créateur</string>
+    <string name="miff_role_you">Toi</string>
+    <string name="miff_section_places_title">Lieux de confiance</string>
+    <string name="miff_section_places_description">Voici les lieux liés à cette Miff.</string>
+    <string name="miff_places_empty">Pas encore de lieu pour cette Miff.</string>
+    <string name="miff_offline_notice">Pas de connexion pour le moment. Tu peux consulter la Miff, mais pas la modifier.</string>
+    <string name="miff_unavailable">On n\'arrive pas à afficher cette Miff pour le moment. Réessaie dans un instant.</string>
+
+    <!-- Partager mon statut (arrêter / reprendre à tout moment) -->
+    <string name="miff_sharing_title">Partager mon statut</string>
+    <string name="miff_sharing_on_description">Tes proches voient ton statut.</string>
+    <string name="miff_sharing_off_description">Ton statut n\'est plus partagé avec cette Miff.</string>
+    <string name="miff_sharing_state_on">Activé</string>
+    <string name="miff_sharing_state_off">Désactivé</string>
+    <string name="miff_sharing_stop_title">Arrêter de partager ton statut avec cette Miff ?</string>
+    <string name="miff_sharing_stop_body">Ton statut et ta photo d\'update seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
+    <string name="miff_sharing_stop_action">Arrêter le partage</string>
+    <string name="miff_sharing_resume_title">Reprendre le partage ?</string>
+    <string name="miff_sharing_resume_body">Tu partages à nouveau ton statut avec les membres de cette Miff ; tu peux arrêter à tout moment.</string>
+    <string name="miff_sharing_resume_action">Reprendre le partage</string>
+
+    <!-- Accès perdu (message unique, le même pour un retrait et pour une Miff supprimée) -->
+    <string name="miff_lost_title">Tu n\'as plus accès à la Miff « %1$s »</string>
+    <string name="miff_lost_title_unknown">Tu n\'as plus accès à l\'une de tes Miffs</string>
+    <string name="miff_lost_body">Ta position n\'est plus partagée avec ce cercle.</string>
+    <string name="miff_lost_ok_action">Compris</string>
+
+    <!-- Feed (provisoire) : pastille de la Miff, état sans Miff -->
+    <string name="feed_selector_none">Pas encore de Miff</string>
+    <string name="feed_selector_a11y">Miff affichée : %1$s. Appuie pour changer de Miff ou en ajouter une.</string>
+    <string name="feed_selector_join">+ Rejoindre une Miff</string>
+    <string name="feed_selector_create">+ Créer une Miff</string>
+    <string name="feed_nomiff_body">Crée ta Miff ou rejoins celle d\'un proche pour commencer.</string>
+    <string name="feed_create_action">Créer une Miff</string>
+    <string name="feed_join_action">Rejoindre une Miff</string>
+    <string name="feed_offline_note">Pas de connexion pour le moment. Ce que tu vois peut ne pas être à jour.</string>
+    <string name="feed_unavailable">On n\'arrive pas à lire tes Miffs pour le moment. Réessaie dans un instant.</string>
+
+    <!-- Onglet Profil : cartes de Miff -->
+    <string name="profile_tab_miffs_title">Mes Miffs</string>
+    <string name="profile_tab_miff_hint">Proches, code et partage</string>
+    <string name="profile_tab_miff_open_a11y">Ouvrir la Miff %1$s</string>
 </resources>

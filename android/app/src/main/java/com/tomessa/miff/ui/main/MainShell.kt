@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -22,13 +23,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
-import com.tomessa.miff.ui.feed.FeedPlaceholderScreen
+import com.tomessa.miff.ui.feed.FeedScreen
+import com.tomessa.miff.ui.feed.FeedViewModel
+import com.tomessa.miff.ui.miff.AccessLostScreen
+import com.tomessa.miff.ui.miff.CreateMiffRoute
+import com.tomessa.miff.ui.miff.JoinMiffRoute
+import com.tomessa.miff.ui.miff.MiffRoute
+import com.tomessa.miff.ui.miff.miffEntryRoutes
+import com.tomessa.miff.ui.miff.miffScreenRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
@@ -74,98 +84,137 @@ fun MainShell(
     // One view model per account and per session: the next person never meets what the previous one saw.
     val scopeKey = "${session.currentUid}-${session.generation}"
 
-    NavHost(navController = navController, startDestination = TabsRoute) {
-        composable<TabsRoute> {
-            val profileViewModel: ProfileTabViewModel =
-                viewModel(
-                    key = "profile-tab-$scopeKey",
-                    factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
+    Box(Modifier.fillMaxSize()) {
+        NavHost(navController = navController, startDestination = TabsRoute) {
+            composable<TabsRoute> {
+                val profileViewModel: ProfileTabViewModel =
+                    viewModel(
+                        key = "profile-tab-$scopeKey",
+                        factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
+                    )
+                val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+                val feedViewModel: FeedViewModel =
+                    viewModel(
+                        key = "feed-$scopeKey",
+                        factory = viewModelFactory { initializer { FeedViewModel(container.miffDirectory) } },
+                    )
+                val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
+                MainTabs(
+                    tabBar = tabBar,
+                    profileState = profileState,
+                    onOpenMyInfo = { navController.open(MyInfoRoute) },
+                    onOpenSettings = { navController.open(SettingsRoute) },
+                    onRetryProfile = profileViewModel::retry,
+                    miffs = directoryState,
+                    onRetryMiffs = feedViewModel::refresh,
+                    onSelectMiff = feedViewModel::onSelect,
+                    onCreateMiff = { navController.open(CreateMiffRoute) },
+                    onJoinMiff = { navController.open(JoinMiffRoute) },
+                    onOpenMiff = { navController.open(MiffRoute(it)) },
                 )
-            val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
-            MainTabs(
-                tabBar = tabBar,
-                profileState = profileState,
-                onOpenMyInfo = { navController.open(MyInfoRoute) },
-                onOpenSettings = { navController.open(SettingsRoute) },
-                onRetryProfile = profileViewModel::retry,
-            )
-        }
-        composable<SettingsRoute> {
-            SettingsScreen(
-                onBack = { navController.popBackStackIfSafe() },
-                onOpenMyInfo = { navController.open(MyInfoRoute) },
-                onOpenAccount = { navController.open(AccountRoute) },
-                onOpenLanguage = { navController.open(LanguageRoute) },
-            )
-        }
-        composable<MyInfoRoute> {
-            val viewModel: MyInfoViewModel =
-                viewModel(
-                    key = "my-info-$scopeKey",
-                    factory =
-                        viewModelFactory {
-                            initializer {
-                                MyInfoViewModel(
-                                    session = session,
-                                    repository = container.myProfiles,
-                                    current = container.currentProfile,
-                                    avatars = container.avatarCodec,
-                                    network = container.networkMonitor,
-                                    deviceRegion = { Locale.getDefault().country.takeIf { it.isNotBlank() } },
-                                )
-                            }
-                        },
+            }
+            composable<SettingsRoute> {
+                SettingsScreen(
+                    onBack = { navController.popBackStackIfSafe() },
+                    onOpenMyInfo = { navController.open(MyInfoRoute) },
+                    onOpenAccount = { navController.open(AccountRoute) },
+                    onOpenLanguage = { navController.open(LanguageRoute) },
                 )
-            val state by viewModel.uiState.collectAsStateWithLifecycle()
-            MyInfoScreen(
-                state = state,
-                onBack = { navController.popBackStackIfSafe() },
-                onRetry = viewModel::retry,
-                onFirstNameChanged = viewModel::onFirstNameChanged,
-                onLastNameChanged = viewModel::onLastNameChanged,
-                onCountrySelected = viewModel::onCountrySelected,
-                onPhoneChanged = viewModel::onPhoneChanged,
-                onPhoneFocusLost = viewModel::onPhoneFocusLost,
-                onPhotoChosen = viewModel::onPhotoChosen,
-                onRemovePhoto = viewModel::onRemovePhoto,
-                onCameraUnavailable = viewModel::onCameraUnavailable,
-                onCropChanged = viewModel::onCropChanged,
-                onCropConfirm = viewModel::onCropConfirmed,
-                onCropCancel = viewModel::onCropCancelled,
-                onSave = viewModel::onSave,
-            )
-        }
-        composable<AccountRoute> {
-            val viewModel: AccountViewModel =
-                viewModel(
-                    key = "account-$scopeKey",
-                    factory =
-                        viewModelFactory {
-                            initializer {
-                                AccountViewModel(
-                                    email = container.authGateway.currentEmail(),
-                                    signOut = session::signOut,
-                                )
-                            }
-                        },
+            }
+            composable<MyInfoRoute> {
+                val viewModel: MyInfoViewModel =
+                    viewModel(
+                        key = "my-info-$scopeKey",
+                        factory =
+                            viewModelFactory {
+                                initializer {
+                                    MyInfoViewModel(
+                                        session = session,
+                                        repository = container.myProfiles,
+                                        current = container.currentProfile,
+                                        avatars = container.avatarCodec,
+                                        network = container.networkMonitor,
+                                        deviceRegion = { Locale.getDefault().country.takeIf { it.isNotBlank() } },
+                                    )
+                                }
+                            },
+                    )
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
+                MyInfoScreen(
+                    state = state,
+                    onBack = { navController.popBackStackIfSafe() },
+                    onRetry = viewModel::retry,
+                    onFirstNameChanged = viewModel::onFirstNameChanged,
+                    onLastNameChanged = viewModel::onLastNameChanged,
+                    onCountrySelected = viewModel::onCountrySelected,
+                    onPhoneChanged = viewModel::onPhoneChanged,
+                    onPhoneFocusLost = viewModel::onPhoneFocusLost,
+                    onPhotoChosen = viewModel::onPhotoChosen,
+                    onRemovePhoto = viewModel::onRemovePhoto,
+                    onCameraUnavailable = viewModel::onCameraUnavailable,
+                    onCropChanged = viewModel::onCropChanged,
+                    onCropConfirm = viewModel::onCropConfirmed,
+                    onCropCancel = viewModel::onCropCancelled,
+                    onSave = viewModel::onSave,
                 )
-            val state by viewModel.uiState.collectAsStateWithLifecycle()
-            AccountScreen(
-                state = state,
-                onBack = { navController.popBackStackIfSafe() },
-                onSignOutRequested = viewModel::onSignOutRequested,
-                onSignOutConfirmed = viewModel::onSignOutConfirmed,
-                onSignOutCancelled = viewModel::onSignOutCancelled,
+            }
+            composable<AccountRoute> {
+                val viewModel: AccountViewModel =
+                    viewModel(
+                        key = "account-$scopeKey",
+                        factory =
+                            viewModelFactory {
+                                initializer {
+                                    AccountViewModel(
+                                        email = container.authGateway.currentEmail(),
+                                        signOut = session::signOut,
+                                    )
+                                }
+                            },
+                    )
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
+                AccountScreen(
+                    state = state,
+                    onBack = { navController.popBackStackIfSafe() },
+                    onSignOutRequested = viewModel::onSignOutRequested,
+                    onSignOutConfirmed = viewModel::onSignOutConfirmed,
+                    onSignOutCancelled = viewModel::onSignOutCancelled,
+                )
+            }
+            composable<LanguageRoute> {
+                val viewModel: LanguageViewModel =
+                    viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
+                val selected by viewModel.selected.collectAsStateWithLifecycle()
+                LanguageScreen(
+                    selected = selected,
+                    onBack = { navController.popBackStackIfSafe() },
+                    onSelect = viewModel::onSelect,
+                )
+            }
+            miffEntryRoutes(
+                container = container,
+                navController = navController,
+                onCreated = { navController.popBackStackIfSafe() },
+                onJoined = { navController.popBackStackIfSafe() },
+                onOpenExisting = { miffId ->
+                    navController.navigate(MiffRoute(miffId)) {
+                        popUpTo<JoinMiffRoute> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
+            miffScreenRoute(container, navController)
         }
-        composable<LanguageRoute> {
-            val viewModel: LanguageViewModel =
-                viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
-            val selected by viewModel.selected.collectAsStateWithLifecycle()
-            LanguageScreen(
-                selected = selected,
-                onBack = { navController.popBackStackIfSafe() },
-                onSelect = viewModel::onSelect,
+        // The single message of a lost access (decision QM8), over everything: nothing of that Miff stays visible.
+        val notices by container.miffDirectory.notice.collectAsStateWithLifecycle()
+        notices.firstOrNull()?.let { notice ->
+            AccessLostScreen(
+                miffName = notice.name,
+                onAcknowledge = {
+                    container.miffDirectory.dismissNotice()
+                    val onMiffScreen = navController.currentDestination?.hasRoute<MiffRoute>() == true
+                    if (onMiffScreen) navController.popBackStackIfSafe()
+                },
             )
         }
     }
@@ -187,6 +236,12 @@ fun MainTabs(
     onOpenMyInfo: () -> Unit,
     onOpenSettings: () -> Unit,
     onRetryProfile: () -> Unit,
+    miffs: DirectoryState,
+    onRetryMiffs: () -> Unit,
+    onSelectMiff: (String) -> Unit,
+    onCreateMiff: () -> Unit,
+    onJoinMiff: () -> Unit,
+    onOpenMiff: (String) -> Unit,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
@@ -212,7 +267,14 @@ fun MainTabs(
             Box(Modifier.padding(bottom = padding.calculateBottomPadding()).consumeWindowInsets(padding)) {
                 when (selected) {
                     MainTab.FEED -> {
-                        FeedPlaceholderScreen(scrollToTopSignal = scrollToTop)
+                        FeedScreen(
+                            state = miffs,
+                            scrollToTopSignal = scrollToTop,
+                            onRetry = onRetryMiffs,
+                            onSelect = onSelectMiff,
+                            onCreate = onCreateMiff,
+                            onJoin = onJoinMiff,
+                        )
                     }
 
                     MainTab.PROFILE -> {
@@ -222,6 +284,8 @@ fun MainTabs(
                             onOpenMyInfo = onOpenMyInfo,
                             onOpenSettings = onOpenSettings,
                             onRetry = onRetryProfile,
+                            miffs = miffs,
+                            onOpenMiff = onOpenMiff,
                         )
                     }
 

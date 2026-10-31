@@ -17,4 +17,7 @@ object Spacing {
     /** Wordmark width on the welcome screen; height follows the 981:380 ratio of the drawable. */
     val logoWidth = 200.dp
     val minTouchTarget = 48.dp
+
+    /** Width of the confirmation dialog (design fiche `miff-dialogues.md`: 280). */
+    val dialogWidth = 280.dp
 }

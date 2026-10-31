@@ -2,6 +2,37 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.0] - 2026-10-31 : MIFF-1, créer, rejoindre, écran de la Miff, partage du statut, accès perdu
+
+Ticket `docs/tickets/miff.md` (§13, écrans A à G, L et M ; décisions du PM `miff-questions-pm.md` QM1 à QM15 et `feed-profil-reglages.md` §13, dont Q2), maquettes `design/exports/miff/`, `onboarding-original/` (-3 à -6, -18) et `feed/` (-2, -3). Retirer, quitter, supprimer, renouveler le code et « Prévenir mes proches » sont **MIFF-2** : aucun bouton n'est dessiné pour eux.
+
+### Ajouté
+- **Écran de choix** « Choisis comment tu veux commencer » (onboarding) : créer ou rejoindre ; l'onboarding n'est complet qu'avec une Miff. Le bouton de debug « Aperçu interne » est **retiré** (l'écran de choix permet de créer une vraie Miff) ; une déconnexion discrète reste sur cet écran.
+- **Créer** en deux temps : « Nouvelle Miff » (nom 2 à 40 caractères, texte de partage au-dessus de « Créer et partager »), puis « Ta Miff « X » est prête » (code par groupes de 4, Partager, Copier). **Un seul lot atomique** de 5 écritures (Miff, code, fiche du créateur avec consentement daté et versionné, index, statut initial), code tiré à ce moment par `SecureRandom` (rejet des octets biaisés).
+- **Rejoindre** : saisie du code (majuscules, ASCII, sans correction, espaces et tirets normalisés, « Coller » sur appui seulement, message local pour un caractère hors alphabet, pause d'une minute après 5 échecs), vérifications dans l'ordre du ticket §5.4 (format, lecture du code, nettoyage d'un index obsolète, déjà membre par le champ `miffId`), écran de confirmation avec le texte de partage **avant** « Rejoindre et partager », **un seul lot atomique** de 3 écritures (fiche avec partage activé, index, statut initial `unknown`). Rien n'est écrit avant l'appui.
+- **Écran de la Miff** (créateur et membre) : nom (modifiable par le créateur, lot Miff + nom du code), code et partage (feuille système ; copie marquée « sensible » sur Android 13+), proches en direct (photo ou initiales, « Créateur », « Toi »), ligne **« Partager mon statut »** (arrêter / reprendre à tout moment, avec confirmation ; arrêt = fiche + suppression du statut et de la photo dans le même lot ; reprise = nouveau consentement + statut initial), lieux en liste, texte « Cette Miff est bien remplie ! » à 15 membres (plafond doux, non imposé par le serveur), lecture seule hors connexion.
+- **Accès perdu** : détecté en direct (écouteur refusé ou Miff inexistante) et à l'ouverture (contrôle auprès du serveur) ; **une erreur réseau n'en est jamais une** (et un refus n'est retenu que si le serveur répond par ailleurs). Un seul message (« Tu n'as plus accès à la Miff « X » »), nettoyage (lot « Quitter », sinon l'index seul), purge du cache local, bascule vers l'état sans Miff.
+- **Feed** : pastille avec le nom de la Miff (non cliquable avec un compte gratuit, sélecteur avec « + Rejoindre / + Créer une Miff » pour un Premium), état « Pas encore de Miff » avec « Créer une Miff » / « Rejoindre une Miff ». **Profil** : carte « Mes Miffs » qui ouvre l'écran de la Miff.
+- **Modèle unique de dialogue de confirmation** (`MiffConfirmDialog`, ton calme, « Annuler » toujours disponible), réutilisable par MIFF-2 ; composants : champ de nom, champ de code, ligne de proche, pastille de rôle, ligne à interrupteur, en-tête de section, notice.
+- `SessionManager.onMiffEntered` / `continueAfterMiff` ; `NetworkMonitor.observeOnline()` ; `MiffDirectory` (Miffs en mémoire pour la session, vidé à la déconnexion) ; `MiffRepository` (toute la logique Firestore, derrière `MiffStore`).
+- Textes `miff_*`, `feed_*`, `profile_tab_*`, `common_cancel` FR/EN (tutoiement), **aussi ajoutés au catalogue iOS** pour la parité (code iOS : MIFF-3).
+- Tests : code (alphabet, 1 000 tirages, biais, normalisation), nom (emojis non coupés), pause des essais, contenu exact des lots (clés des règles, dates serveur, aucune coordonnée), interprétation des erreurs (réseau ≠ accès perdu), dépôt (ordre des vérifications, nettoyage avant écriture, atomicité, hors connexion sans file d'attente, collision de code, clé de l'index gratuit / Premium), annuaire (message unique, purge, pas de boucle), view models, session (fin d'onboarding), écrans Robolectric (consentement avant le bouton, grande police, absence des actions MIFF-2, aucun statut sur l'écran de la Miff). Backend : `17-nom-miff-longueur.test.js` (voir ci-dessous).
+
+### Modifié
+- `AppRoot` : `MIFF_CHOICE` ouvre le vrai écran (l'écran provisoire de l'Auth et ses deux textes `android_*` sont supprimés). `FeedPlaceholderScreen` devient `FeedScreen`.
+- `AppContainer` : un seul `CachePurger` partagé ; `miffDirectory` ajouté à la liste d'arrêt de la session.
+
+### Écarts avec les maquettes (liste justifiée dans la PR)
+Titre de l'écran = nom de la Miff ; un seul bouton de validation (coche retirée) ; pas de corbeille rouge ni de « Supprimer cette Miff » (MIFF-2) ; code absent de « Nouvelle Miff » (QM15) ; section « Lieux » de la création retirée ; champ de code sorti de la carte de choix vers une page dédiée ; vouvoiement remplacé par le tutoiement ; faute « saisit » supprimée ; code par groupes de 4 ; texte de partage ajouté ; « Rejoindre » devient « Continuer » puis « Rejoindre et partager » ; bandeau vert « Tout le monde est en sécurité » non dessiné quand il n'y a pas de Miff (décision Q12).
+
+### Choix économiques et limites
+- Aucun service, aucune dépendance, aucune permission ajoutée ; 0 €. Aucune règle modifiée.
+- Lectures : ouverture du Feed = 1 lecture des appartenances + 1 lecture de la Miff par appartenance + 1 de l'abonnement ; écran de la Miff = 3 écouteurs (Miff, membres, lieux) soit 1 + N + nombre de lieux lectures à l'ouverture (le ticket borne à N + 4). Création : 1 lecture de vérification du code tiré + le lot. Entrée : lecture du code + appartenances + lot.
+- **Limite connue** : le lot d'entrée « Créer et partager » d'un compte **Premium** qui garde un ancien emplacement gratuit est à **19 appels de règles sur 20** au pire sans cache (marge de 1) : aucun contrôle ne doit y être ajouté (voir `backend/data-model.md` §12). Le lot gratuit : 14 sur 20.
+- **Limite connue** : sans permission de localisation demandée par l'app (ticket Localisation), `locationAccess` est écrit `unknown` ; il passera à `denied` / `foreground` / `background` avec ce ticket.
+- **Limite connue** : le lien du message de partage est la racine du site public ; une page d'atterrissage dédiée (QM14) viendra avec le site.
+- Signal de bascule : voir `backend/data-model.md` §12 (ratio lectures par utilisateur actif).
+
 ## [0.5.0] - 2026-10-30 : ONB-3a, barre d'onglets, Profil, Réglages (Mes informations, Mon compte, Langue)
 
 Ticket `docs/tickets/feed-profil-reglages.md` (décisions du PM du 2026-10-30 : « OK pour tout » aux 15 questions), maquettes `design/exports/profil/`, `reglages/` et barres d'onglets de `feed/`.

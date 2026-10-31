@@ -163,6 +163,7 @@ Pas de `list`. `get` exige de connaître le code entier. Ne contient ni le créa
 | `createdAt` | timestamp | |
 
 Lisible par les membres uniquement (`get` ; pas de `list`). Modifiable par le créateur : `name`, `joinCode` (régénération).
+**Longueur du nom (MIFF-1, constaté à l'émulateur le 2026-10-31, tests ND1 à ND3)** : `name` et `miffName` sont comptés en **unités UTF-16** (un emoji compte pour 2 ; 30 emojis = 60 unités sont refusés ; 40 lettres accentuées sont acceptées : on compte des caractères, pas des octets). Les clients limitent donc à 40 unités UTF-16 (`String.length` en Kotlin, `utf16.count` en Swift), sans couper un emoji en deux.
 
 **Création** : refusée si `miffsDeleted/{miffId}` existe (un identifiant supprimé ne sert plus jamais). **Suppression** (créateur) : refusée si, dans le même lot, la pierre tombale `miffsDeleted/{miffId}` n'est pas créée **ou** si `joinCodes/{joinCode}` existe encore après le lot.
 

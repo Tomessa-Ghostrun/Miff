@@ -91,9 +91,19 @@ class RecordingSink : AnalyticsSink {
 }
 
 class FakeNetwork(
-    var online: Boolean = true,
+    online: Boolean = true,
 ) : NetworkMonitor {
+    private val state = MutableStateFlow(online)
+
+    var online: Boolean
+        get() = state.value
+        set(value) {
+            state.value = value
+        }
+
     override fun isOnline() = online
+
+    override fun observeOnline(): Flow<Boolean> = state
 }
 
 /** Shared timeline of the calls that matter for ordering (flush, purge, sign-out...). */

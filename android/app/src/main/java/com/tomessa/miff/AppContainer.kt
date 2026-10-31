@@ -2,9 +2,11 @@ package com.tomessa.miff
 
 import android.content.Context
 import android.os.SystemClock
+import com.google.firebase.firestore.FirebaseFirestore
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
+import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.auth.FirebaseAuthGateway
 import com.tomessa.miff.data.auth.FirebasePasswordResetGateway
 import com.tomessa.miff.data.auth.FirestoreAccountRepository
@@ -15,6 +17,13 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
+import com.tomessa.miff.data.miff.FirestoreMiffObserver
+import com.tomessa.miff.data.miff.FirestoreMiffRepository
+import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.MiffDirectory
+import com.tomessa.miff.data.miff.MiffRepository
+import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -101,6 +110,33 @@ class AppContainer(
 
     val onboardingFlags: OnboardingFlags = OnboardingFlags(sessionFlags)
 
+    /** Local Firestore cache purge (sign-out, refusal of the panel, and loss of access to a Miff). One instance for all. */
+    val cachePurger: CachePurger = FirestoreCachePurger(flags = sessionFlags)
+
+    /** Create, join, rename, stop / resume sharing, clean-up after a loss of access, live view of a Miff (Miff ticket). */
+    val miffRepository: MiffRepository =
+        FirestoreMiffRepository(
+            store = FirestoreMiffStore(),
+            observer = FirestoreMiffObserver(),
+            location = AndroidLocationAccessProbe(context),
+            // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
+            newMiffId = {
+                FirebaseFirestore
+                    .getInstance()
+                    .collection("miffs")
+                    .document()
+                    .id
+            },
+        )
+
+    /** The Miffs of the person signed in, in memory for the session (Feed, Profile tab); also deals with a loss of access. */
+    val miffDirectory: MiffDirectory =
+        MiffDirectory(
+            repository = miffRepository,
+            currentUid = { authGateway.currentUid },
+            activeStore = SharedPreferencesActiveMiffStore(context),
+            cache = cachePurger,
+        )
     val accountRepository: AccountRepository = FirestoreAccountRepository()
 
     val sessionManager: SessionManager =
@@ -111,11 +147,11 @@ class AppContainer(
             flags = sessionFlags,
             privacy = privacySettings,
             tracker = analyticsTracker,
-            cache = FirestoreCachePurger(flags = sessionFlags),
+            cache = cachePurger,
             // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
             // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
             // sign-out stops them (ticket 7.6).
-            teardown = listOf(profileDrafts.asTeardown(), currentProfile),
+            teardown = listOf(profileDrafts.asTeardown(), currentProfile, miffDirectory),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
             drafts = profileDrafts,
         )
