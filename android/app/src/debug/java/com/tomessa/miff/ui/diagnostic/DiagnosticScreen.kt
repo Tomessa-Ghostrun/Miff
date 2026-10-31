@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,6 +56,7 @@ import com.tomessa.miff.domain.diagnostic.OfferState
 import com.tomessa.miff.domain.diagnostic.RulesProbeOutcome
 import com.tomessa.miff.domain.diagnostic.isExpectedProject
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -95,7 +95,7 @@ fun DiagnosticScreen(
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -110,6 +110,8 @@ fun DiagnosticScreen(
         TextButton(onClick = onOpenHome) {
             Text(stringResource(R.string.diag_open_home), style = textBodyBold14, color = colorActionPrimary)
         }
+
+        InsetsDiagnosticCard()
 
         BuildIdentityCard(projectId = state.firebaseProjectId)
 
