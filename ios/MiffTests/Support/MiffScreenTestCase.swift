@@ -56,12 +56,6 @@ class MiffScreenTestCase: XCTestCase {
         )
     }
 
-    func waitUntil(_ condition: () -> Bool) async {
-        for _ in 0..<300 where !condition() {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-    }
-
     func readyScreen(uid: String = "uid-owner", members: [MiffMember]? = nil) async -> MiffScreenViewModel {
         let viewModel = screen(uid: uid)
         repo.observer.emit(data(members: members))

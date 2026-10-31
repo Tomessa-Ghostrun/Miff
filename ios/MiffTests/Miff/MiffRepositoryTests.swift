@@ -597,3 +597,4 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(notLanded, .failed(.offline))
     }
 }
+// swiftlint:enable type_body_length

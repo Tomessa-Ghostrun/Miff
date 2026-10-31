@@ -30,10 +30,4 @@ class MiffFlowTestCase: XCTestCase {
             onProfileMissing: { log.profileMissing += 1 }
         )
     }
-
-    func waitUntil(_ condition: () -> Bool) async {
-        for _ in 0..<300 where !condition() {
-            try? await Task.sleep(nanoseconds: 10_000_000)
-        }
-    }
 }
