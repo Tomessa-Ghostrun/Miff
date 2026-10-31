@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.startup.StartupReport
+import com.tomessa.miff.ui.components.miffTopInsets
 import kotlinx.coroutines.delay
 
 /**
@@ -49,7 +49,7 @@ fun StartupMetricsOverlay(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .testTag("STARTUPMETRICSOVERLAY")
-                .statusBarsPadding()
+                .miffTopInsets()
                 .padding(8.dp)
                 .fillMaxWidth()
                 .background(Color(0xCC000000), RoundedCornerShape(8.dp))
