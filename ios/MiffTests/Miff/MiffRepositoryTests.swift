@@ -234,10 +234,12 @@ final class MiffRepositoryTests: XCTestCase {
 
     func testAnExpiredEntitlementIsNotPremium() async {
         store.entitlement = EntitlementRead(active: true, expiresAtMillis: now.value - 1)
-        XCTAssertEqual(loaded(await repo().myMiffs(uid: uid))?.premium, false)
+        let expired = loaded(await repo().myMiffs(uid: uid))
+        XCTAssertEqual(expired?.premium, false)
 
         store.entitlement = EntitlementRead(active: false, expiresAtMillis: now.value + 1_000)
-        XCTAssertEqual(loaded(await repo().myMiffs(uid: uid))?.premium, false)
+        let inactive = loaded(await repo().myMiffs(uid: uid))
+        XCTAssertEqual(inactive?.premium, false)
     }
 
     // MARK: - Rejoindre : le lot (ticket §5.4, étape 7)
