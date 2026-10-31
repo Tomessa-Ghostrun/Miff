@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.insets
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.view.View
 import androidx.compose.foundation.layout.Box
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsActions
@@ -54,9 +57,13 @@ import com.tomessa.miff.ui.auth.SignInScreen
 import com.tomessa.miff.ui.auth.SignInUiState
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpUiState
+import com.tomessa.miff.ui.components.BarSizeSource
 import com.tomessa.miff.ui.components.MiffScreen
 import com.tomessa.miff.ui.components.ProvideSystemBarsFallback
 import com.tomessa.miff.ui.components.SystemBarSizes
+import com.tomessa.miff.ui.components.SystemBarsFallback
+import com.tomessa.miff.ui.components.WindowArea
+import com.tomessa.miff.ui.components.miffSystemBarsFallbackInUse
 import com.tomessa.miff.ui.home.HomeScreen
 import com.tomessa.miff.ui.main.MainTabs
 import com.tomessa.miff.ui.miff.AccessLostScreen
@@ -90,7 +97,9 @@ import com.tomessa.miff.ui.settings.PrivacyUiState
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.theme.MiffTheme
 import com.tomessa.miff.ui.theme.Spacing
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -119,6 +128,9 @@ class ScreenInsetsTest {
     private var host: View? = null
     private var density: Density = Density(1f)
 
+    /** Simulates a rotation of the phone while the screen is shown (the orientation that the app reads changes). */
+    private val rotated = mutableStateOf(false)
+
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 
     private fun text(id: Int): String = context().getString(id)
@@ -126,6 +138,7 @@ class ScreenInsetsTest {
     private fun show(
         fontScale: Float = 1f,
         systemBarsFallback: Boolean = false,
+        landscape: Boolean = false,
         content: @Composable () -> Unit,
     ) {
         composeRule.setContent {
@@ -135,7 +148,15 @@ class ScreenInsetsTest {
                 host = view
                 density = base
             }
-            CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
+            // The window itself stays portrait: only the orientation that the app reads is changed (see [feed_inLandscape...]).
+            val configuration =
+                Configuration(LocalConfiguration.current).apply {
+                    if (landscape || rotated.value) orientation = Configuration.ORIENTATION_LANDSCAPE
+                }
+            CompositionLocalProvider(
+                LocalDensity provides Density(base.density, fontScale),
+                LocalConfiguration provides configuration,
+            ) {
                 MiffTheme {
                     ProvideSystemBarsFallback(
                         systemBarsFallback,
@@ -152,6 +173,8 @@ class ScreenInsetsTest {
         val navigationEnd: Dp = 0.dp,
         val cutoutStart: Dp = 0.dp,
         val keyboard: Dp = 0.dp,
+        val statusBarVisible: Boolean = true,
+        val navigationVisible: Boolean = true,
     )
 
     private fun px(value: Dp): Float = value.value * density.density
@@ -171,8 +194,8 @@ class ScreenInsetsTest {
                     WindowInsetsCompat.Type.navigationBars(),
                     inset(0.dp, 0.dp, phone.navigationEnd, phone.navigationBottom),
                 ).setInsets(WindowInsetsCompat.Type.displayCutout(), inset(phone.cutoutStart, 0.dp, 0.dp, 0.dp))
-                .setVisible(WindowInsetsCompat.Type.statusBars(), true)
-                .setVisible(WindowInsetsCompat.Type.navigationBars(), true)
+                .setVisible(WindowInsetsCompat.Type.statusBars(), phone.statusBarVisible)
+                .setVisible(WindowInsetsCompat.Type.navigationBars(), phone.navigationVisible)
         if (phone.keyboard > 0.dp) {
             builder
                 .setInsets(WindowInsetsCompat.Type.ime(), inset(0.dp, 0.dp, 0.dp, phone.keyboard))
@@ -401,6 +424,208 @@ class ScreenInsetsTest {
         applyInsets(reported)
         val expected = px(reported.statusBar) + px(Spacing.m)
         assertTrue("logo top=${logoTop()} expected about $expected", kotlin.math.abs(logoTop() - expected) <= TOLERANCE)
+    }
+
+    // --- The BOTTOM of the fallback (3 buttons reported as 0) ----------------------------------------------------------------------
+
+    /** Distance between the bottom of the Feed tab button and the bottom of the window (what the navigation bar takes + the bar's own padding). */
+    private fun barGap(): Float {
+        val rootBottom =
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.bottom
+        val bottom =
+            composeRule
+                .onNodeWithContentDescription(text(R.string.tabbar_feed_a11y))
+                .fetchSemanticsNode()
+                .boundsInRoot.bottom
+        return rootBottom - bottom
+    }
+
+    private fun dpOfPx(px: Int): Dp = (px / density.density).dp
+
+    /** The gap the tab bar has when the navigation bar of [navigationBottom] is REPORTED and visible (no fallback involved). */
+    private fun gapWithReported(navigationBottom: Dp): Float {
+        applyInsets(Phone(statusBar = 40.dp, navigationBottom = navigationBottom))
+        return barGap()
+    }
+
+    @Test
+    fun feed_with3ButtonsReportedAsZero_theTabBarStaysAboveTheRealNavigationBar() {
+        assumeTrue(
+            "this test needs the framework of the test environment to declare 3-button navigation",
+            SystemBarSizes.hasNavigationButtons(),
+        )
+        feedWithFallback()
+        val real = SystemBarSizes.navigationBarHeight()
+        assertTrue("the framework declares a navigation bar height", real > 0)
+        val expected = gapWithReported(dpOfPx(real))
+        applyInsets(Phone(statusBar = 40.dp, navigationBottom = 0.dp))
+        assertTrue(
+            "tab bar gap=${barGap()} expected about $expected (the real navigation bar of $real px is not kept out of)",
+            kotlin.math.abs(barGap() - expected) <= TOLERANCE,
+        )
+    }
+
+    @Test
+    fun feed_whenTheNavigationBarIsReportedAndSmallerThanTheRealOne_theReportedValueIsKept() {
+        feedWithFallback()
+        val real = SystemBarSizes.navigationBarHeight()
+        val small = dpOfPx(real / 2)
+        val bigger = dpOfPx(real + real / 2)
+        // The gap follows the REPORTED value exactly, below and above the size declared by the framework: never replaced by it
+        // (a "maximum" with the declared size would flatten the first one), never added to it (a double margin).
+        val gapSmall = gapWithReported(small)
+        val gapBigger = gapWithReported(bigger)
+        val difference = px(bigger) - px(small)
+        assertTrue(
+            "gap small=$gapSmall bigger=$gapBigger: expected a difference of $difference",
+            kotlin.math.abs((gapBigger - gapSmall) - difference) <= TOLERANCE,
+        )
+    }
+
+    @Test
+    fun feed_whenTheNavigationBarIsReportedHidden_noMarginIsAdded() {
+        feedWithFallback()
+        val base = gapWithReported(20.dp) - px(20.dp)
+        applyInsets(Phone(statusBar = 40.dp, navigationBottom = 0.dp, navigationVisible = false))
+        assertTrue(
+            "tab bar gap=${barGap()} expected about $base (bar hidden: nothing to keep out of)",
+            kotlin.math.abs(barGap() - base) <= TOLERANCE,
+        )
+    }
+
+    @Test
+    fun feed_inLandscape_theBottomOfTheFallbackIsOff() {
+        show(systemBarsFallback = true, landscape = true) {
+            TabsUnderTest(profile = ProfileTabUiState(ProfileTabStatus.LOADING, null), miffs = DirectoryState.Loading)
+        }
+        val base = gapWithReported(20.dp) - px(20.dp)
+        applyInsets(Phone(statusBar = 40.dp, navigationBottom = 0.dp))
+        assertTrue(
+            "tab bar gap=${barGap()} expected about $base (landscape: the buttons are at the side, never at the bottom)",
+            kotlin.math.abs(barGap() - base) <= TOLERANCE,
+        )
+    }
+
+    @Test
+    fun feed_whenThePhoneRotates_theBottomOfTheFallbackFollows() {
+        assumeTrue(SystemBarSizes.hasNavigationButtons())
+        feedWithFallback()
+        val real = SystemBarSizes.navigationBarHeight()
+        val portraitGap = gapWithReported(dpOfPx(real))
+        applyInsets(Phone(statusBar = 40.dp, navigationBottom = 0.dp))
+        assertTrue(
+            "portrait: gap=${barGap()} expected $portraitGap",
+            kotlin.math.abs(barGap() - portraitGap) <= TOLERANCE,
+        )
+        composeRule.runOnUiThread { rotated.value = true }
+        composeRule.waitForIdle()
+        val landscapeGap = portraitGap - real
+        assertTrue(
+            "landscape: gap=${barGap()} expected about $landscapeGap (the bottom of the fallback must go away)",
+            kotlin.math.abs(barGap() - landscapeGap) <= TOLERANCE,
+        )
+        composeRule.runOnUiThread { rotated.value = false }
+        composeRule.waitForIdle()
+        assertTrue(
+            "back to portrait: gap=${barGap()} expected $portraitGap",
+            kotlin.math.abs(barGap() - portraitGap) <= TOLERANCE,
+        )
+    }
+
+    @Test
+    fun fallback_atTheVeryFirstComposition_alreadyKnowsTheWindow() {
+        // Regression: the first version read the height of the view at the first composition (not measured yet: 0) and kept
+        // that answer for good, so the bottom stayed at 0. The window position now comes from the window manager: the very
+        // first composition, before any inset or layout, already gives the right answer.
+        assumeTrue(SystemBarSizes.hasNavigationButtons())
+        val seen = mutableListOf<SystemBarsFallback>()
+        show(systemBarsFallback = true) {
+            val fallback = miffSystemBarsFallbackInUse()
+            SideEffect { seen += fallback }
+        }
+        assertTrue("composed at least once", seen.isNotEmpty())
+        assertEquals(SystemBarSizes.navigationBarHeight(), seen.first().bottom)
+    }
+
+    // The same rules, without a phone: the sizes and the position of the window are given. -------------------------------------------
+
+    private class FakeSizes(
+        private val buttons: Boolean = true,
+    ) : BarSizeSource {
+        override fun statusBarHeight(landscape: Boolean) = if (landscape) 60 else 80
+
+        override fun navigationBarHeight() = 144
+
+        override fun hasNavigationButtons() = buttons
+    }
+
+    private val fullScreen = WindowArea(top = 0, bottom = 2400, screenBottom = 2400)
+
+    private fun compute(
+        window: WindowArea? = fullScreen,
+        landscape: Boolean = false,
+        reportedTop: Int = 0,
+        reportedNavigationBottom: Int = 0,
+        statusBarShown: Boolean = true,
+        navigationBarShown: Boolean = true,
+        buttons: Boolean = true,
+    ) = SystemBarsFallback.compute(
+        window,
+        landscape,
+        reportedTop,
+        reportedNavigationBottom,
+        statusBarShown,
+        navigationBarShown,
+        FakeSizes(buttons),
+    )
+
+    @Test
+    fun fallback_3ButtonsReportedAsZero_addsTheDeclaredNavigationBar() {
+        assertEquals(SystemBarsFallback(top = 80, bottom = 144), compute())
+    }
+
+    @Test
+    fun fallback_aRealValueIsNeverReplacedNorAddedTo() {
+        assertEquals(SystemBarsFallback(top = 0, bottom = 0), compute(reportedTop = 10, reportedNavigationBottom = 10))
+        // Smaller than the declared size: still kept (only the missing side is ever completed).
+        assertEquals(SystemBarsFallback(top = 80, bottom = 0), compute(reportedNavigationBottom = 10))
+        assertEquals(SystemBarsFallback(top = 0, bottom = 144), compute(reportedTop = 10))
+    }
+
+    @Test
+    fun fallback_gestureNavigationOrUnknownMode_hasNoBottom() {
+        assertEquals(SystemBarsFallback(top = 80, bottom = 0), compute(buttons = false))
+    }
+
+    @Test
+    fun fallback_barsReportedHidden_addNothingOnTheirSide() {
+        assertEquals(SystemBarsFallback(top = 80, bottom = 0), compute(navigationBarShown = false))
+        assertEquals(SystemBarsFallback(top = 0, bottom = 144), compute(statusBarShown = false))
+    }
+
+    @Test
+    fun fallback_inLandscape_hasNoBottomAndTheLandscapeStatusBar() {
+        assertEquals(SystemBarsFallback(top = 60, bottom = 0), compute(landscape = true))
+    }
+
+    @Test
+    fun fallback_windowThatDoesNotReachTheBottomOrTheTop_getsNothingOnThatSide() {
+        assertEquals(
+            SystemBarsFallback(top = 80, bottom = 0),
+            compute(window = WindowArea(top = 0, bottom = 1200, screenBottom = 2400)),
+        )
+        assertEquals(
+            SystemBarsFallback(top = 0, bottom = 144),
+            compute(window = WindowArea(top = 1200, bottom = 2400, screenBottom = 2400)),
+        )
+    }
+
+    @Test
+    fun fallback_withoutKnowingTheWindow_isOff() {
+        assertEquals(SystemBarsFallback.None, compute(window = null))
     }
 
     // --- One test per screen: a phone with a status bar and a navigation bar is simulated -------------------------------------

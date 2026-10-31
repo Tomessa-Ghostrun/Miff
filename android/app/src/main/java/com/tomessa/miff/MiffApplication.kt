@@ -54,8 +54,11 @@ class MiffApplication : Application() {
                 try {
                     SplashArtwork.prepare()
                     container.warmUp()
-                } catch (e: Exception) {
-                    // The main thread will build what is missing, and report a real problem itself.
+                } catch (e: Throwable) {
+                    // Throwable on purpose, not only Exception: an Error escaping a background thread would take the whole
+                    // process down at launch (e.g. a LinkageError or an OutOfMemoryError while building an object), for an
+                    // optimisation. The main thread builds what is missing and reports a real problem itself, where it is
+                    // handled as before. Nothing is logged (the app never logs) and nothing is kept: no personal data here.
                 }
             },
             "miff-warmup",

@@ -291,6 +291,11 @@ private fun NavController.open(route: Any) = navigate(route) { launchSingleTop =
  * TAB keeps itself below the status bar with miffTopInsets() on its own root, so that it can draw its background (the gradient
  * of the Profile) under the status bar. This function must not consume insets it does not pad: it did once (Scaffold +
  * consumeWindowInsets), the status bar was "consumed" before the tabs could use it, and the Feed logo was drawn over the clock.
+ *
+ * KEYBOARD, if a text field is added to a tab one day: the tab content has NO bottom margin (the bar owns it), and while the
+ * keyboard is open the bar is removed, so nothing would keep the field above the keyboard. The tab will then have to handle
+ * the keyboard itself (through ScreenInsets.kt, e.g. a new modifier there that covers the ime), with a test in
+ * ScreenInsetsTest that sends a keyboard to that tab. No tab has a text field today.
  */
 @Composable
 fun MainTabs(
