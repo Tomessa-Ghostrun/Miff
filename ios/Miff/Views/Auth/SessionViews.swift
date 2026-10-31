@@ -60,34 +60,6 @@ struct AccountLookupFailedView: View {
     }
 }
 
-/// Écran PROVISOIRE à la place de ceux qui n'existent pas encore (créer / rejoindre une Miff, fil). Il dit seulement où
-/// l'app s'est ouverte et propose une déconnexion pour qu'on puisse essayer le routage et la déconnexion sur un iPhone. Le
-/// bouton de déconnexion ira dans le ticket Réglages ; cet écran disparaît avec le ticket du Fil.
-struct NextStepPlaceholderView: View {
-    let destination: AppDestination
-    let onSignOut: () -> Void
-
-    private var textKey: LocalizedStringKey {
-        destination == .miffChoice ? "ios_next_miff_choice" : "ios_next_feed"
-    }
-
-    var body: some View {
-        CenteredFrame {
-            Text("home_title")
-                .miffTextStyle(textDisplayHeadline)
-                .foregroundColor(colorTextForm.color)
-                .multilineTextAlignment(.center)
-                .accessibilityAddTraits(.isHeader)
-            Text(textKey)
-                .miffTextStyle(textBodyRegular)
-                .foregroundColor(colorTextDescription.color)
-                .multilineTextAlignment(.center)
-            Button("auth_signout_action", action: onSignOut)
-                .buttonStyle(.miffPrimaryFullWidth)
-        }
-    }
-}
-
 /// Panneau de consentement d'une personne nouvelle arrivée par Google ou Apple depuis l'écran de connexion (ticket §7.8).
 /// Rien d'autre n'est accessible tant qu'il est ouvert. Pas de case (décision du 2026-10-28) : la ligne au-dessus des
 /// boutons dit que « Continuer » accepte les conditions, la politique et les statistiques. « Annuler » est le refus : le

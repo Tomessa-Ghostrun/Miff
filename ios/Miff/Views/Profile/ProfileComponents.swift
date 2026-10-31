@@ -25,6 +25,8 @@ struct LabeledFieldOptions {
     var keyboard: UIKeyboardType = .default
     var contentType: UITextContentType?
     var capitalization: TextInputAutocapitalization = .never
+    /// Le style du texte saisi (le code d'une Miff est en gras dans les maquettes).
+    var textStyle: TextStyleToken = textBodyRegular
 }
 
 /// Champ des maquettes « Welcoming screen -1, -2, -6 » : le libellé est AU-DESSUS d'une boîte blanche à bord fin arrondi
@@ -94,7 +96,7 @@ struct LabeledTextField<Field: Hashable>: View {
                     .accessibilityHidden(true)
             }
             TextField(label, text: text, prompt: Text(verbatim: options.placeholder ?? ""))
-                .miffTextStyle(textBodyRegular)
+                .miffTextStyle(options.textStyle)
                 .foregroundColor(colorTextForm.color)
                 .tint(hasError ? colorTextError.color : colorActionPrimary.color)
                 .keyboardType(options.keyboard)
