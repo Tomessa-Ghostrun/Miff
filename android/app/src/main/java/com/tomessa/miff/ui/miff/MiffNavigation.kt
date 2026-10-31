@@ -177,17 +177,33 @@ fun NavGraphBuilder.miffScreenRoute(
                         }
                     },
             )
-        val state by viewModel.uiState.collectAsStateWithLifecycle()
-// The three Firestore listeners only run while the screen is on view (cancelled in the background, attached again on return).        val lifecycleOwner = LocalLifecycleOwner.current        LaunchedEffect(viewModel) {            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }        }
-        MiffScreen(
-            state = state,
-            onBack = { navController.popBackStackIfSafe() },
-            onRetry = viewModel::retry,
-            onNameChanged = viewModel::onNameInputChanged,
-            onSaveName = viewModel::onSaveName,
-            onSharingRequested = viewModel::onSharingRequested,
-            onSharingConfirmed = viewModel::onSharingConfirmed,
-            onSharingDismissed = viewModel::onSharingDialogDismissed,
-        )
+        MiffScreenHost(viewModel = viewModel, onBack = { navController.popBackStackIfSafe() })
     }
+}
+
+/**
+ * The screen of a Miff wired to its view model: it READS the Miff while it is on view. The three Firestore listeners and the
+ * network watch run inside `repeatOnLifecycle(STARTED)` (cancelled in the background, attached again on return). Without this
+ * effect the screen would never read anything (an empty, frozen list): `MiffScreenHostTest` fails in that case.
+ */
+@Composable
+fun MiffScreenHost(
+    viewModel: MiffScreenViewModel,
+    onBack: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }
+    }
+    MiffScreen(
+        state = state,
+        onBack = onBack,
+        onRetry = viewModel::retry,
+        onNameChanged = viewModel::onNameInputChanged,
+        onSaveName = viewModel::onSaveName,
+        onSharingRequested = viewModel::onSharingRequested,
+        onSharingConfirmed = viewModel::onSharingConfirmed,
+        onSharingDismissed = viewModel::onSharingDialogDismissed,
+    )
 }
