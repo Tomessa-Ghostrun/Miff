@@ -291,8 +291,13 @@ class UserProfileRepositoryTest {
     @Test
     fun theContainerRegistersTheDraftAsATeardown_andGivesItToTheSession_M26() {
         val source = File("src/main/java/com/tomessa/miff/AppContainer.kt").readText()
-        // The profile kept in memory (ONB-3a) goes with the session too, next to the draft.
-        assertTrue(source.contains("teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals)"))
+        // The profile kept in memory (ONB-3a), the withdrawals of consent (ONB-3b) and the Miffs kept in memory (MIFF-1) go with
+        // the session too, next to the draft.
+        assertTrue(
+            source.contains(
+                "teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory)",
+            ),
+        )
         assertTrue(source.contains("drafts = profileDrafts"))
     }
 }

@@ -36,7 +36,6 @@ import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelViewModel
-import com.tomessa.miff.ui.auth.NextStepPlaceholderScreen
 import com.tomessa.miff.ui.auth.PasswordResetScreen
 import com.tomessa.miff.ui.auth.PasswordResetViewModel
 import com.tomessa.miff.ui.auth.SessionLoadingScreen
@@ -45,6 +44,7 @@ import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
 import com.tomessa.miff.ui.main.MainShell
+import com.tomessa.miff.ui.miff.MiffOnboardingHost
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.ProfileFlow
@@ -158,16 +158,9 @@ fun AppRoot(container: AppContainer) {
                 }
 
                 AppDestination.MIFF_CHOICE -> {
-                    // Debug builds only: look at the tabs without a Miff (the code is removed from the release build).
-                    var previewTabs by rememberSaveable { mutableStateOf(false) }
-                    if (BuildConfig.DEBUG && previewTabs) {
-                        MainShell(container = container, tabBar = TabBarConfig.forBuild(isInternalBuild = true))
-                    } else {
-                        NextStepPlaceholderScreen(
-                            onSignOut = { scope.launch { session.signOut() } },
-                            onPreviewTabs = if (BuildConfig.DEBUG) ({ previewTabs = true }) else null,
-                        )
-                    }
+                    // Create or join a Miff (Miff ticket). The onboarding is complete only with a Miff: this host is left
+                    // when the session moves on to the Feed.
+                    MiffOnboardingHost(container)
                 }
 
                 AppDestination.FEED -> {

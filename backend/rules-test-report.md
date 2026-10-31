@@ -248,3 +248,8 @@ Format à utiliser pour chaque échec :
 ## Mesure des lectures de règles (historique, critère T5)
 
 La méthode (lectures factices `!exists()` ajoutées en mémoire devant la condition d'une règle, recherche du plus grand nombre accepté) est inchangée ; sa version corrigée, les causes des anciennes mesures non concluantes et le tableau à jour sont dans la section **DUR-3 : Mesure des lectures de règles (R15)** ci-dessus. Les chiffres de DUR-1 et DUR-2 qui figuraient ici (« 10 à 12 », « 11 », « non concluante », 3 pour rejoindre, 10 pour activer le partage) étaient des plafonds de l'outil et non des totaux.
+
+## MIFF-1 (Android) : longueur du nom d'une Miff et mesure du lot d'entrée (2026-10-31)
+
+- **Aucune règle modifiée.** Suite complète relancée sur `main` (31e4361) avant le développement : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** ; 49 tests rapides. Mesures de lectures de règles confirmées : « Rejoindre et partager » <= 3 sur 20, « Créer et partager » gratuit <= 3, **premium <= 7** (19 appels au pire sans cache, marge de 1, voir `data-model.md` §12), arrêt du partage <= 0, reprise du partage <= 0. Le client Android n'ajoute **aucun** appel de règle à ces lots (le contenu des lots est testé clé par clé contre les règles côté client : `MiffWritesTest`).
+- **Nouveau fichier** `tests/rules/17-nom-miff-longueur.test.js` (section 16 du plan : ND1, ND1b, ND2, ND2b, ND3) : les règles comptent la longueur d'un nom en **unités UTF-16**. ND3 est une mesure d'information (elle ne peut pas échouer) : 30 emojis (60 unités) sont refusés.
