@@ -604,3 +604,13 @@ L'écran d'information affiche le contact provisoire (**Tomessa MFOUKA, `tomessa
 ---
 
 *Ce ticket ne modifie ni Figma, ni Notion, ni les règles Firestore, ni le code, ni les tests. Aucune commande Firebase n'a été exécutée. Aucun texte juridique n'est rédigé ici et aucun n'est présenté comme relu par un juriste.*
+
+---
+
+## Décisions du PM (2026-10-31, premières réponses)
+
+- **Écran après la suppression (§16, question 1)** : la personne voit **le carrousel de bienvenue** (et non l'écran d'inscription directement, contrairement à la recommandation du challenge). À appliquer au routage de lancement : compte supprimé, puis carrousel, puis inscription/connexion.
+- **Rappel d'abonnement (question 3 du challenge)** : **pas de rappel pour l'instant.** Le bloc « Ton abonnement n'est pas résilié » et le lien « Gérer mon abonnement » ne sont pas construits dans cette première version ; à reprendre avec le ticket Premium (l'abonnement du magasin ne se résilie pas à la suppression du compte : risque noté).
+- **Demandes par e-mail ou page web (question 5)** : **accepté tel que recommandé** : demande reçue depuis l'adresse du compte (question de contrôle pour une adresse relais Apple), délai d'un mois en visant moins d'une semaine, traitement par le PM avec un runbook ; dans l'app, la suppression du compte est **bloquée tant qu'une Miff créée subsiste** (la personne doit d'abord supprimer ses Miffs ou en transférer la propriété si cela existe un jour).
+- **Sortie volontaire d'une Miff (question 9)** : confirmé : une sortie volontaire, y compris par suppression de compte d'un simple membre, **ne renouvelle pas le code** ; seul le retrait d'un membre par le créateur le renouvelle.
+- **Toujours ouvertes** : les autres questions du §16 (ordre de la procédure, ré-authentification, Apple, comptes jetables, contact provisoire, découpage en deux étapes, textes et maquettes).
