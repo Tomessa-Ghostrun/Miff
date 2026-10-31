@@ -812,3 +812,14 @@ Aucun moyen de paiement n'est requis par les choix proposés. Contact et éditeu
 | **Actions du PM** | §18 |
 
 *Ce document ne modifie ni le code, ni Notion, ni Figma, ni les règles Firestore, ni `backend/data-model.md`, ni les textes légaux. Aucun texte légal ou de store n'est présenté comme relu par un juriste. Aucune commande Firebase n'a été exécutée.*
+
+---
+
+## Décisions du PM (2026-10-31, premières réponses)
+
+Réponses du PM aux points saillants du challenge (les autres questions QL1 à QL20 restent ouvertes) :
+
+- **Lieu ajouté après le consentement (point saillant 2, QL4)** : « non, pas besoin d'évolution sur ce point ». Aucun avis discret ni mécanisme supplémentaire n'est ajouté : un lieu ajouté est armé chez les membres sans autre étape. **Risque assumé par le PM** (règles des stores contre les applications de surveillance : un consentement qui ne mentionne pas que des lieux peuvent être ajoutés après coup est un motif de rejet possible ; le texte de consentement v2 reste à valider, voir point 1 ci-dessous).
+- **Adresse (point saillant 3, QL6)** : « l'adresse doit rester obligatoire ». Le champ Adresse est obligatoire à la création et à la modification d'un lieu ; l'atténuation « adresse facultative » est écartée. **Risque assumé par le PM** : un code de Miff qui fuite expose l'adresse du lieu ; à documenter dans le texte de consentement.
+- **Maquettes** : le formulaire « Nouveau lieu » (création, modification, suppression avec confirmation) est reçu : `design/exports/lieux/` (voir son README pour les points à lever, dont les catégories maintenant dessinées et l'incohérence sur « Travail »).
+- **Toujours ouvertes** : point 1 (consentement v2 : texte, re-consentement des membres déjà entrés) et point 4 (évolutions de règles R-LIEU-1 et R-LIEU-3) ; QL1 à QL3, QL5, QL7 à QL20.
