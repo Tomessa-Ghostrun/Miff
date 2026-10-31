@@ -48,6 +48,9 @@ fun StartupMetricsOverlay(modifier: Modifier = Modifier) {
     Column(
         modifier =
             modifier
+                // DO NOT RENAME this tag: the CI (.github/workflows/android.yml) searches the release bundle's dex for this exact
+                // string to prove that the launch-duration readout was removed from the real release. A renamed tag would make
+                // that check pass for the wrong reason.
                 .testTag("STARTUPMETRICSOVERLAY")
                 .miffTopInsets()
                 .padding(8.dp)

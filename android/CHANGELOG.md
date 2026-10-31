@@ -2,6 +2,25 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.6.5] - 2026-10-31 : suivi des revues (marges et démarrage), sans nouvelle fonctionnalité
+
+Remarques non bloquantes des revues indépendantes des PR #46 (zones sûres) et #49 (démarrage à froid). Aucun changement visible attendu sur un téléphone qui fonctionne.
+
+### Corrigé
+- **Bas du repli des marges (`ScreenInsets.kt`)** : il lisait la hauteur et la position de la vue dans un résultat mémorisé ; à la première composition la vue n'est pas encore mesurée (hauteur 0), donc le bas restait figé à 0 sur un téléphone qui rapporte 0 pour la barre à 3 boutons. La position de la fenêtre et de l'écran vient maintenant du gestionnaire de fenêtres (connue avant toute mise en page), mémorisée et redemandée seulement quand la vue ou la configuration (rotation, redimensionnement) change, car cet appel n’est pas gratuit ; la visibilité des barres est lue comme un état Compose, donc le repli se recalcule quand elle change. Inchangé : une valeur réellement rapportée n'est jamais remplacée (maximum côté par côté), pas de double marge. Le haut utilise la même position de fenêtre (même défaut possible).
+- **`MiffApplication.warmUp`** attrape `Throwable` (et non seulement `Exception`) : une erreur (`LinkageError`, mémoire) dans ce fil d'arrière-plan facultatif ne fait plus tomber l'app au lancement ; le fil principal construit ce qui manque. Aucun journal, aucune donnée personnelle.
+
+### Ajouté
+- Tests du bas du repli (`ScreenInsetsTest`) : 3 boutons rapportés à 0 (le bas de l'app reste au-dessus de la vraie barre), valeur rapportée conservée (plus petite et plus grande que la barre déclarée), barre de navigation masquée, paysage (inactif), tout premier affichage (test qui échoue avec l'ancienne lecture de la vue : vérifié), et règles pures (fenêtre qui n'atteint pas le bas ou le haut, mode gestes, fenêtre inconnue).
+- `ScreenInsetsRuleTest` : exemptions **par chemin** (`ScreenInsets.kt`, `InsetsDiagnostic.kt`) et non par nom de fichier ; interdit en plus le paramètre `windowInsets =`, `WindowInsetsCompat`, `setOnApplyWindowInsetsListener` et `Scaffold` / `TopAppBar` (et variantes) / `BottomAppBar` / `NavigationBar` / `NavigationRail` (marges par défaut) : aucun faux positif sur le code actuel (test de motifs inclus). Limite : lecture du texte ligne par ligne, un alias d'import n'est pas vu.
+- Commentaires : le repli est **inerte sous Android 10 et moins** ; `config_navBarInteractionMode` est une ressource privée (absente : bas du repli désactivé, côté sûr) ; `STARTUPMETRICSOVERLAY` ne doit pas être renommé (la CI le cherche dans le dex release) ; `MainTabs` devra gérer le clavier si un onglet reçoit un champ de saisie.
+
+### Documenté
+- `README.md` : l'APK `releaseLike` ne pourra plus joindre Firebase une fois l'application d'App Check activée (Play Integrity ne valide pas hors Google Play) ; il faudra alors un jeton de débogage App Check.
+
+### Choix « économiques »
+- Aucun : pas de nouvelle dépendance ni de service.
+
 ## [0.6.4] - 2026-10-31 : démarrage à froid, le « M » ne doit plus rester seul longtemps
 
 Retour du PM après recette sur l'OPPO Find X5 Lite (APK debug de la CI) : le « M » seul reste près de 4 s avant le cœur ; pas sur iOS. Diagnostic complet et chronologie : `README.md`, « Démarrage à froid ».
