@@ -52,9 +52,9 @@ Titre de l'écran = nom de la Miff ; un seul bouton de validation (coche retiré
 - **Limite connue** : le lien du message de partage est la racine du site public ; une page d'atterrissage dédiée (QM14) viendra avec le site.
 - Signal de bascule : voir `backend/data-model.md` §12 (ratio lectures par utilisateur actif).
 - **Limite connue (M2)** : le délai de 20 s d'une écriture (`write { ... }`) arrête l'attente de l'app, pas la transaction Firestore : une écriture dont la réponse tarde peut aboutir après le message d'échec. L'app le vérifie par une lecture serveur avant de parler d'échec (créer, rejoindre, renommer, partager) ; le cas résiduel est une transaction qui aboutit après cette vérification.
-- **Limite connue (M4)** : le message affiché quand l'entrée dans une Miff échoue à la confirmation reste le message générique ; non modifié dans cette PR (retenu par la revue de code indépendante).
+- **Limite connue (M4)** : tout refus des règles lors de « Rejoindre » affiche « On ne trouve pas de Miff avec ce code » : voulu pour un code renouvelé, mais cela couvre aussi un emplacement gratuit pris entre-temps, des conditions d'utilisation absentes ou un refus d'App Check ; le message peut égarer et le limiteur d'essais ne compte pas ces cas. Non modifié dans cette PR.
 - **Limite connue (M5)** : un refus d'App Check et un refus des règles sont tous deux `PERMISSION_DENIED` et reçoivent la même phrase générique (écart H4, documenté dans le README).
-- **Limite connue (F1)** : remarque de forme de la revue de code indépendante de la PR #45, non corrigée dans cette PR.
+- **Limite connue (F1)** : si la lecture de l'abonnement échoue (réseau instable), `premium()` renvoie « non premium » : un compte Miff+ peut alors se voir répondre « une seule Miff à la fois » à tort. À rendre explicite (échec) plutôt que « non premium » ; non corrigé dans cette PR.
 
 ## [0.6.5] - 2026-10-31 : suivi des revues (marges et démarrage), sans nouvelle fonctionnalité
 
