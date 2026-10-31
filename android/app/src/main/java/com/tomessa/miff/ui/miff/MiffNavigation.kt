@@ -173,12 +173,22 @@ fun NavGraphBuilder.miffScreenRoute(
                                 currentUid = { session.currentUid },
                                 onAccessLost = container.miffDirectory::onAccessLost,
                                 onNameChanged = container.miffDirectory::refresh,
+                                deletions = container.miffDeletions,
+                                onLeft = { id -> container.onMiffLeft(id) },
                             )
                         }
                     },
             )
         val state by viewModel.uiState.collectAsStateWithLifecycle()
-// The three Firestore listeners only run while the screen is on view (cancelled in the background, attached again on return).        val lifecycleOwner = LocalLifecycleOwner.current        LaunchedEffect(viewModel) {            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }        }
+        // The three Firestore listeners only run while the screen is on view (cancelled in the background, attached again on return).
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(viewModel) {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }
+        }
+        // The person left this Miff and the server confirmed: the screen of a Miff that is no longer theirs closes by itself.
+        LaunchedEffect(state.departed) {
+            if (state.departed) navController.popBackStackIfSafe()
+        }
         MiffScreen(
             state = state,
             onBack = { navController.popBackStackIfSafe() },
@@ -188,6 +198,14 @@ fun NavGraphBuilder.miffScreenRoute(
             onSharingRequested = viewModel::onSharingRequested,
             onSharingConfirmed = viewModel::onSharingConfirmed,
             onSharingDismissed = viewModel::onSharingDialogDismissed,
+            onRemoveRequested = viewModel::onRemoveRequested,
+            onRenewRequested = viewModel::onRenewRequested,
+            onLeaveRequested = viewModel::onLeaveRequested,
+            onDeleteRequested = viewModel::onDeleteRequested,
+            onActionConfirmed = viewModel::onActionConfirmed,
+            onActionDismissed = viewModel::onActionDismissed,
+            onInviteLater = viewModel::onInviteLater,
+            onDeletionRetry = viewModel::onDeletionRetry,
         )
     }
 }

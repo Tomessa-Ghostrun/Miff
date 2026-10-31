@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.main
 
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +21,8 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -31,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
@@ -91,6 +96,38 @@ fun MainShell(
     Box(Modifier.fillMaxSize()) {
         MainNavigation(container, tabBar, navController)
         LostAccessOverlay(container, navController)
+        DeletionNotices(container, navController)
+    }
+}
+
+/**
+ * The deletion of a Miff goes on in the app, whether its screen is open or not. This picks it up again at launch (ticket S4) and
+ * says so calmly with a short system message; and tells, the same way, when a deletion ends while the person is elsewhere. While the
+ * screen of that Miff is open it says it itself (dialog), so nothing is said twice.
+ */
+@Composable
+private fun DeletionNotices(
+    container: AppContainer,
+    navController: NavController,
+) {
+    val context = LocalContext.current
+    val resumedText = stringResource(R.string.miff_delete_resume)
+    val doneText = stringResource(R.string.miff_delete_done)
+    LaunchedEffect(container) {
+        val resumed = container.miffDeletions.resumePending()
+        if (resumed.isNotEmpty()) {
+            Toast.makeText(context, resumedText, Toast.LENGTH_LONG).show()
+        }
+    }
+    LaunchedEffect(container) {
+        container.miffDeletions.completed.collect { miffId ->
+            val entry = navController.currentBackStackEntry
+            val onThatMiff =
+                entry?.destination?.hasRoute<MiffRoute>() == true && entry.toRoute<MiffRoute>().miffId == miffId
+            if (!onThatMiff) {
+                Toast.makeText(context, doneText, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }
 

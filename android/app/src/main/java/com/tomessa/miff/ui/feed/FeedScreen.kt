@@ -43,6 +43,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.miff.MiffLoading
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -77,6 +78,7 @@ fun FeedScreen(
     onCreate: () -> Unit,
     onJoin: () -> Unit,
 ) {
+    RecentsPrivacy()
     val scroll = rememberScrollState()
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) scroll.animateScrollTo(0)

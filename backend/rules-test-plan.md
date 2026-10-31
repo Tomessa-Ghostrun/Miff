@@ -358,3 +358,33 @@ Constat à établir avant le développement Android : comment les règles compte
 | ND2 | Nom de 20 emojis (40 unités UTF-16, 20 code points, 80 octets UTF-8) | OK |
 | ND2b | Nom de 40 lettres « é » (40 unités, 80 octets UTF-8) : les règles comptent des caractères, pas des octets | OK |
 | ND3 | Mesure d'information : 30 emojis (30 code points, 60 unités UTF-16) | **Refusé** constaté : les règles comptent des unités UTF-16 (le cas n'échoue jamais, il imprime le constat) |
+
+## 17. MIFF-2 : renouveler le code, retirer, quitter, supprimer la Miff (ticket `docs/tickets/miff.md`, §5.3, §5.6, critères N, R, Q, S)
+
+Les lots sont ceux que le client Android écrit (`MiffWrites.kt`) : mêmes chemins, mêmes clés, même ordre. **Aucune règle n'est modifiée** : ces cas figent le contrat dont le client dépend (dont deux refus qui expliquent des choix du client : supprimer un document **absent** d'un code ou d'un index est refusé, donc le client lit leur existence avant). Tests dans `tests/rules/18-miff2-retirer-quitter-supprimer.test.js` ; mesures de lectures dans `09-rule-reads.test.js` (`READS-delete-miff-final`, `READS-delete-places`, `READS-remove-member-gone`).
+
+| # | Cas | Attendu |
+|---|---|---|
+| MN1 | `alice` renouvelle le code (lot de 3 : Miff, nouveau code, suppression de l'ancien) ; `bob` reste membre et lit le nouveau code ; `eve` essaie l'ancien code puis le nouveau | OK ; ancien code KO pour `eve`, nouveau OK |
+| MN2 | Un membre simple ; lot sans nouveau code ; lot sans suppression de l'ancien ; nouveau code vers une autre Miff ; nom différent ; code mal formé ; créatrice d'une autre Miff | KO, **rien n'est écrit** ; le lot correct : OK |
+| MN3 | Deux renouvellements de suite ; lot calculé sur un code périmé | OK ; KO pour le lot périmé |
+| MR1 | `alice` retire `bob` (statut et photo présents) : lot de 6 | OK ; fiche, statut, photo supprimés, code renouvelé ; `bob` ne lit plus et ne revient pas avec l'ancien code |
+| MR2 | Retrait d'une cible déjà partie (documents absents) | OK, le code est renouvelé quand même |
+| MR3 | Retrait d'un membre sans statut ni photo, puis du dernier proche | OK ; la créatrice reste seule |
+| MR4 | Lot sans changement de code ; ancien code conservé ; nouveau code absent ou vers une autre Miff ; statut oublié ; photo oubliée alors qu'elle existe | KO, `bob` toujours là, code inchangé ; le lot correct : OK |
+| MR5 | `bob` ou `zoe` retire `carol` ; `alice` se retire elle-même avec code renouvelé | KO |
+| MR6 | Après le retrait, l'index de `bob` reste : la créatrice ne peut pas le supprimer, `bob` ne peut pas rejoindre une autre Miff avant, puis le peut après avoir libéré son index | KO / KO / OK / OK |
+| MR7 | Code courant absent (incohérence) : lot avec suppression de l'ancien code, puis sans | KO, puis OK |
+| MQ1 | `bob` quitte (statut et photo présents) : lot de 4 ; le code n'est pas renouvelé ; il rejoint ensuite une autre Miff | OK |
+| MQ2 | `carol` quitte avec partage arrêté (ni statut ni photo) | OK |
+| MQ3 | Supprimer un index absent ; lot de 4 avec index absent ; lot de 3 sans index | KO ; KO ; OK |
+| MQ4 | `alice` (créatrice) quitte sans supprimer la Miff ; lot sans statut | KO, rien n'est écrit |
+| MS1 | Suppression complète : retrait de `bob`, retrait de `carol`, lieux, lot final de 7 (Miff, pierre tombale, code courant, statut, photo, fiche, index) ; relecture, recréation avec le même identifiant, création d'une autre Miff | OK ; Miff illisible ; recréation KO (pierre tombale) ; autre Miff OK (index libéré) |
+| MS2 | Reprise après chaque étape : lieu déjà supprimé, membre déjà parti, relancés | OK |
+| MS2b | Lot final sans index (non trouvé) : Miff illisible ensuite, l'index se supprime seul | OK |
+| MS3 | Lot final sans pierre tombale, sans suppression du code, avec un retrait de membre dedans, par un membre simple, avec un autre code | KO, rien n'est supprimé |
+| MS3b | **Limite constatée** : lot final accepté malgré des fiches restantes ; le survivant lit « Miff inexistante » (document absent, pas une erreur) et ne lit ni membres ni statuts | OK / lecture vide / KO |
+| MS4 | Lot final sans statut ni photo de la créatrice (partage arrêté) | OK |
+| MS5 | Cinq lieux supprimés dans un lot par la créatrice ; par un membre ; lieu absent | OK ; KO ; OK |
+| MS6 | Code courant absent : lot final avec sa suppression, puis sans | KO, puis OK |
+| MS7 | Après la suppression : arrivée avec le dernier code connu ou un ancien code | KO |

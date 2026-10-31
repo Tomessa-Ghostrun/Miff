@@ -2722,6 +2722,257 @@
         }
       }
     },
+    "miff_delete_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer la Miff"
+          }
+        }
+      }
+    },
+    "miff_delete_body_alone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The places will be deleted. This can't be undone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lieux seront effacés. Cette action est définitive."
+          }
+        }
+      }
+    },
+    "miff_delete_body_others": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The other loved one will lose access and the places will be deleted. This can't be undone."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The %lld other loved ones will lose access and the places will be deleted. This can't be undone."
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld autre proche n'y aura plus accès et les lieux seront effacés. Cette action est définitive."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Les %lld autres proches n'y auront plus accès et les lieux seront effacés. Cette action est définitive."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Les %lld autres proches n'y auront plus accès et les lieux seront effacés. Cette action est définitive."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "miff_delete_close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
+      }
+    },
+    "miff_delete_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Miff has been deleted."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La Miff a été supprimée."
+          }
+        }
+      }
+    },
+    "miff_delete_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer la Miff"
+          }
+        }
+      }
+    },
+    "miff_delete_notice_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I'm closing our Miff “%1$@” in Miff: it will no longer be accessible."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je ferme notre Miff « %1$@ » dans Miff : elle ne sera plus accessible."
+          }
+        }
+      }
+    },
+    "miff_delete_notify_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let my loved ones know"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévenir mes proches"
+          }
+        }
+      }
+    },
+    "miff_delete_notify_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepares a message that you send yourself: nobody is told automatically."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prépare un message que tu envoies toi-même : personne n'est prévenu automatiquement."
+          }
+        }
+      }
+    },
+    "miff_delete_paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection right now. We'll carry on as soon as the network is back."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. On continue dès que le réseau est revenu."
+          }
+        }
+      }
+    },
+    "miff_delete_progress": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finishing the deletion…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On finalise la suppression…"
+          }
+        }
+      }
+    },
+    "miff_delete_resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picking up the deletion of your Miff again…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On reprend la suppression de ta Miff…"
+          }
+        }
+      }
+    },
+    "miff_delete_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the Miff “%1$@”?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer la Miff « %1$@ » ?"
+          }
+        }
+      }
+    },
     "miff_dialog_working_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -3011,6 +3262,91 @@
         }
       }
     },
+    "miff_leave_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave the Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter la Miff"
+          }
+        }
+      }
+    },
+    "miff_leave_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your location will no longer be shared with this circle. You can come back if someone gives you the code again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta position ne sera plus partagée avec ce cercle. Tu pourras revenir si on te redonne le code."
+          }
+        }
+      }
+    },
+    "miff_leave_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can leave this Miff at any time. Your location will no longer be shared with this circle."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu peux quitter cette Miff à tout moment. Ta position ne sera plus partagée avec ce cercle."
+          }
+        }
+      }
+    },
+    "miff_leave_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave the Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter la Miff"
+          }
+        }
+      }
+    },
+    "miff_leave_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave the Miff “%1$@”?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter la Miff « %1$@ » ?"
+          }
+        }
+      }
+    },
     "miff_lost_body": {
       "extractionState": "manual",
       "localizations": {
@@ -3075,6 +3411,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tu n'as plus accès à l'une de tes Miffs"
+          }
+        }
+      }
+    },
+    "miff_member_menu_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions for %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions pour %1$@"
+          }
+        }
+      }
+    },
+    "miff_member_remove_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer de la Miff"
           }
         }
       }
@@ -3317,6 +3687,23 @@
         }
       }
     },
+    "miff_owner_foot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You created this Miff: if you want to close it, you can delete it. The other loved ones will then no longer have access to it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as créé cette Miff : si tu veux la fermer, tu peux la supprimer. Les autres proches n'y auront alors plus accès."
+          }
+        }
+      }
+    },
     "miff_places_empty": {
       "extractionState": "manual",
       "localizations": {
@@ -3398,6 +3785,227 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta Miff « %1$@ » est prête"
+          }
+        }
+      }
+    },
+    "miff_remove_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer"
+          }
+        }
+      }
+    },
+    "miff_remove_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ will no longer have access to this circle. A new code will be created: the old one will stop working."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ n'aura plus accès à ce cercle. Un nouveau code sera créé : l'ancien ne fonctionnera plus."
+          }
+        }
+      }
+    },
+    "miff_remove_done_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Here is the new code, to share with whoever you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voici le nouveau code, à partager avec qui tu veux."
+          }
+        }
+      }
+    },
+    "miff_remove_done_close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminer"
+          }
+        }
+      }
+    },
+    "miff_remove_done_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is no longer part of the Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ne fait plus partie de la Miff"
+          }
+        }
+      }
+    },
+    "miff_remove_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %1$@ from the Miff?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer %1$@ de la Miff ?"
+          }
+        }
+      }
+    },
+    "miff_renew_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new code"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un nouveau code"
+          }
+        }
+      }
+    },
+    "miff_renew_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The old one will stop working. Current members stay in the Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'ancien ne fonctionnera plus. Les membres actuels restent dans la Miff."
+          }
+        }
+      }
+    },
+    "miff_renew_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New code created."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau code créé."
+          }
+        }
+      }
+    },
+    "miff_renew_invite": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A loved one has left the Miff. Would you like to create a new code? It's optional."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a quitté la Miff. Tu veux créer un nouveau code ? C'est facultatif."
+          }
+        }
+      }
+    },
+    "miff_renew_invite_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        }
+      }
+    },
+    "miff_renew_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new code"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un nouveau code"
+          }
+        }
+      }
+    },
+    "miff_renew_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a new code?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer un nouveau code ?"
           }
         }
       }

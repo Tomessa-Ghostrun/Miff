@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.theme.GradientProfileHeader
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -70,6 +71,7 @@ fun ProfileTabScreen(
     miffs: DirectoryState = DirectoryState.Loading,
     onOpenMiff: (String) -> Unit = {},
 ) {
+    RecentsPrivacy()
     val scroll = rememberScrollState()
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) scroll.animateScrollTo(0)

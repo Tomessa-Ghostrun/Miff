@@ -429,4 +429,42 @@
     <string name="settings_privacy_contact">Contact us</string>
     <string name="settings_privacy_open_browser_a11y">open the page in your browser</string>
     <string name="settings_privacy_open_mail_a11y">write an email</string>
+    <!-- Miff: remove a loved one, leave, delete the Miff, renew the code (ticket MIFF-2). Friendly, calm tone. -->
+    <string name="miff_member_menu_a11y">Actions for %1$s</string>
+    <string name="miff_member_remove_action">Remove from Miff</string>
+    <string name="miff_remove_title">Remove %1$s from the Miff?</string>
+    <string name="miff_remove_body">%1$s will no longer have access to this circle. A new code will be created: the old one will stop working.</string>
+    <string name="miff_remove_action">Remove</string>
+    <string name="miff_remove_done_title">%1$s is no longer part of the Miff</string>
+    <string name="miff_remove_done_body">Here is the new code, to share with whoever you like.</string>
+    <string name="miff_remove_done_close">Done</string>
+    <string name="miff_renew_link">Create a new code</string>
+    <string name="miff_renew_title">Create a new code?</string>
+    <string name="miff_renew_body">The old one will stop working. Current members stay in the Miff.</string>
+    <string name="miff_renew_action">Create a new code</string>
+    <string name="miff_renew_done">New code created.</string>
+    <string name="miff_renew_invite">A loved one has left the Miff. Would you like to create a new code? It\'s optional.</string>
+    <string name="miff_renew_invite_later">Later</string>
+    <string name="miff_leave_hint">You can leave this Miff at any time. Your location will no longer be shared with this circle.</string>
+    <string name="miff_leave_link">Leave the Miff</string>
+    <string name="miff_leave_title">Leave the Miff “%1$s”?</string>
+    <string name="miff_leave_body">Your location will no longer be shared with this circle. You can come back if someone gives you the code again.</string>
+    <string name="miff_leave_action">Leave the Miff</string>
+    <string name="miff_owner_foot">You created this Miff: if you want to close it, you can delete it. The other loved ones will then no longer have access to it.</string>
+    <string name="miff_delete_link">Delete the Miff</string>
+    <string name="miff_delete_title">Delete the Miff “%1$s”?</string>
+    <string name="miff_delete_body_alone">The places will be deleted. This can\'t be undone.</string>
+    <string name="miff_delete_action">Delete the Miff</string>
+    <string name="miff_delete_notify_action">Let my loved ones know</string>
+    <string name="miff_delete_notify_hint">Prepares a message that you send yourself: nobody is told automatically.</string>
+    <string name="miff_delete_notice_message">I\'m closing our Miff “%1$s” in Miff: it will no longer be accessible.</string>
+    <string name="miff_delete_progress">Finishing the deletion…</string>
+    <string name="miff_delete_paused">No connection right now. We\'ll carry on as soon as the network is back.</string>
+    <string name="miff_delete_done">The Miff has been deleted.</string>
+    <string name="miff_delete_close">Close</string>
+    <string name="miff_delete_resume">Picking up the deletion of your Miff again…</string>
+    <plurals name="miff_delete_body_others">
+        <item quantity="one">The other loved one will lose access and the places will be deleted. This can\'t be undone.</item>
+        <item quantity="other">The %1$d other loved ones will lose access and the places will be deleted. This can\'t be undone.</item>
+    </plurals>
 </resources>
