@@ -12,8 +12,20 @@ import java.io.File
  * If this test fails: use MiffScreen / miffScreenInsets / miffTopInsets / miffBottomInsets instead (see android/README.md).
  */
 class ScreenInsetsRuleTest {
-    // The debug diagnostic card shows the raw values of the phone: the only other file allowed to read them (debug build only).
-    private val central = setOf("ScreenInsets.kt", "InsetsDiagnostic.kt")
+    // Exempt files, by PATH (relative to the module, with "/"), not by file name: a file of the same name elsewhere is not
+    // exempt. The debug diagnostic card shows the raw values of the phone: the only other file allowed to read them (debug only).
+    private val commonFile = "src/main/java/com/tomessa/miff/ui/components/ScreenInsets.kt"
+    private val diagnosticFile = "src/debug/java/com/tomessa/miff/ui/diagnostic/InsetsDiagnostic.kt"
+    private val central = setOf(commonFile, diagnosticFile)
+
+    private fun relativePath(file: File): String = file.invariantSeparatorsPath.removePrefix("./")
+
+    // Material3 components that pad themselves with the system bars by default (their `windowInsets` / `contentWindowInsets`
+    // parameter defaults). Not allowed as is; if one is ever needed, add a wrapper in ScreenInsets.kt that gives it explicit
+    // insets, and use that. ModalBottomSheet and AlertDialog are not in this list: they are allowed, but only with the safe
+    // areas of the common file for their content (and a `windowInsets =` parameter is forbidden everywhere else, see below).
+    private val componentsWithDefaultInsets =
+        "Scaffold|TopAppBar|CenterAlignedTopAppBar|MediumTopAppBar|LargeTopAppBar|BottomAppBar|NavigationBar|NavigationRail"
 
     private val forbidden =
         listOf(
@@ -27,6 +39,13 @@ class ScreenInsetsRuleTest {
             Regex("""\bsetDecorFitsSystemWindows\b"""),
             Regex("""\bfitsSystemWindows\b"""),
             Regex("""\bisImeVisible\b"""),
+            // Material3 parameter (ModalBottomSheet, Scaffold, bars...): giving it a value is a private deal with the insets.
+            Regex("""\bwindowInsets\s*="""),
+            // Reading or intercepting the raw insets from the view system.
+            Regex("""\bWindowInsetsCompat\b"""),
+            Regex("""\b(setOnApplyWindowInsetsListener|OnApplyWindowInsetsListener)\b"""),
+            // These components pad themselves with the system bars unless told otherwise (and telling them is forbidden above).
+            Regex("""\b($componentsWithDefaultInsets)\s*[({]"""),
         )
 
     private fun sourceRoots() =
@@ -45,15 +64,18 @@ class ScreenInsetsRuleTest {
         assertTrue("source folders not found from ${File(".").absolutePath}", roots.isNotEmpty())
         val offenders = mutableListOf<String>()
         roots.forEach { root ->
-            root.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in central }.forEach { file ->
-                file.readLines().forEachIndexed { index, line ->
-                    if (isCode(line) &&
-                        forbidden.any { it.containsMatchIn(line) }
-                    ) {
-                        offenders += "${file.name}:${index + 1}"
+            root
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "kt" && relativePath(it) !in central }
+                .forEach { file ->
+                    file.readLines().forEachIndexed { index, line ->
+                        if (isCode(line) &&
+                            forbidden.any { it.containsMatchIn(line) }
+                        ) {
+                            offenders += "${relativePath(file)}:${index + 1}"
+                        }
                     }
                 }
-            }
         }
         assertTrue(
             "safe areas must come from ui/components/ScreenInsets.kt (MiffScreen, miffScreenInsets, miffTopInsets, " +
@@ -63,8 +85,38 @@ class ScreenInsetsRuleTest {
     }
 
     @Test
-    fun theCommonFileExists() {
-        assertTrue(sourceRoots().any { root -> root.walkTopDown().any { it.name == "ScreenInsets.kt" } })
+    fun theExemptFilesExistAtTheirPath() {
+        // If one of them moves, the exemption above must move with it (otherwise the moved file would fail the rule, or worse,
+        // a new file could take its place unnoticed).
+        assertTrue("missing: $commonFile", File(commonFile).isFile)
+        assertTrue("missing: $diagnosticFile", File(diagnosticFile).isFile)
+    }
+
+    @Test
+    fun theRuleSeesWhatItShould() {
+        // The patterns themselves, so that a typo in one of them cannot silently let a violation through.
+        val samples =
+            listOf(
+                "ModalBottomSheet(onDismissRequest = f, windowInsets = WindowInsets(0))",
+                "    windowInsets = BottomSheetDefaults.windowInsets,",
+                "val c = WindowInsetsCompat.Builder()",
+                "ViewCompat.setOnApplyWindowInsetsListener(view) { _, i -> i }",
+                "Scaffold(topBar = { }) { padding -> }",
+                "TopAppBar(title = { })",
+                "CenterAlignedTopAppBar(title = { })",
+                "NavigationBar { }",
+                "Modifier.statusBarsPadding()",
+            )
+        samples.forEach { sample ->
+            assertTrue("not detected: $sample", forbidden.any { it.containsMatchIn(sample) })
+        }
+        listOf(
+            "ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {",
+            "MainTabBar(config = tabBar)",
+            "Modifier.miffBottomInsets()",
+        ).forEach { sample ->
+            assertTrue("false positive: $sample", forbidden.none { it.containsMatchIn(sample) })
+        }
     }
 
     @Test

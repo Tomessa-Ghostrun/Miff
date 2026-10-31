@@ -2,13 +2,16 @@ package com.tomessa.miff.ui.components
 
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.util.DisplayMetrics
+import android.os.Build
 import android.view.View
+import android.view.WindowManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.areNavigationBarsVisible
+import androidx.compose.foundation.layout.areStatusBarsVisible
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
@@ -27,8 +30,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 /*
  * THE ONLY PLACE where the app deals with the "safe areas" of the phone: status bar (clock, battery), navigation bar (3 buttons
@@ -98,15 +99,7 @@ fun miffKeyboardVisible(): Boolean = WindowInsets.isImeVisible
 internal fun miffSafeInsets(): WindowInsets {
     val reported = WindowInsets.safeDrawing
     if (!LocalSystemBarsFallback.current) return reported
-    val view = LocalView.current
-    val density = LocalDensity.current
-    val orientation = LocalConfiguration.current.orientation
-    val reportedTop = reported.getTop(density)
-    val reportedNavigationBottom = WindowInsets.navigationBars.getBottom(density)
-    val fallback =
-        remember(view, orientation, reportedTop, reportedNavigationBottom) {
-            SystemBarsFallback.compute(view, orientation, reportedTop, reportedNavigationBottom)
-        }
+    val fallback = rememberSystemBarsFallback(reportedTop = reported.getTop(LocalDensity.current))
     return if (fallback == SystemBarsFallback.None) {
         reported
     } else {
@@ -118,15 +111,47 @@ internal fun miffSafeInsets(): WindowInsets {
 @Composable
 internal fun miffSystemBarsFallbackInUse(): SystemBarsFallback {
     if (!LocalSystemBarsFallback.current) return SystemBarsFallback.None
+    return rememberSystemBarsFallback(reportedTop = WindowInsets.safeDrawing.getTop(LocalDensity.current))
+}
+
+/**
+ * The fallback of the current window, recomputed whenever one of its ingredients changes. Every ingredient is read from
+ * Compose state (reported insets and visibility of the bars: reading them recomposes when the system sends new ones) or from
+ * the configuration (rotation, window resize, display size, which recompose too). Nothing is read from the [View] itself
+ * (height, position): on the first composition the view is not measured yet, so such a value would be 0 and, being part of a
+ * remembered result, would stay wrong. The position of the window comes from the window manager instead (see
+ * [SystemBarSizes.windowArea]), which knows it before any layout.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun rememberSystemBarsFallback(reportedTop: Int): SystemBarsFallback {
     val view = LocalView.current
     val density = LocalDensity.current
-    val orientation = LocalConfiguration.current.orientation
-    return SystemBarsFallback.compute(
-        view,
-        orientation,
-        WindowInsets.safeDrawing.getTop(density),
-        WindowInsets.navigationBars.getBottom(density),
-    )
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val reportedNavigationBottom = WindowInsets.navigationBars.getBottom(density)
+    val statusBarShown = WindowInsets.areStatusBarsVisible
+    val navigationBarShown = WindowInsets.areNavigationBarsVisible
+    // Read at each composition (two cheap calls, no layout needed): a rotation or a resized window changes the configuration,
+    // which recomposes this function, and the keys below then change.
+    val window = SystemBarSizes.windowArea(view)
+    return remember(
+        window,
+        landscape,
+        density.density,
+        reportedTop,
+        reportedNavigationBottom,
+        statusBarShown,
+        navigationBarShown,
+    ) {
+        SystemBarsFallback.compute(
+            window = window,
+            landscape = landscape,
+            reportedTop = reportedTop,
+            reportedNavigationBottom = reportedNavigationBottom,
+            statusBarShown = statusBarShown,
+            navigationBarShown = navigationBarShown,
+        )
+    }
 }
 
 /** Switches the fallback of [miffSafeInsets] on for everything inside [content] (one place: MainActivity). */
@@ -145,9 +170,20 @@ private val LocalSystemBarsFallback = compositionLocalOf { false }
  *
  * Top: the status bar height of the system resources, only when the reported top inset is 0, the window starts at the very top
  * of the screen and the status bar is not reported hidden. Bottom: the navigation bar height, only with the 3-button (or
- * 2-button) navigation, only when the reported bar inset is 0 and the window reaches the bottom of the screen: with gestures
- * there is no bar to keep out of, only a thin line. Never used when the system gives a real value, so a phone that works keeps
- * its exact insets (cut-out included).
+ * 2-button) navigation, only when the reported bar inset is 0, the bar is not reported hidden, in portrait, and the window
+ * reaches the bottom of the screen: with gestures there is no bar to keep out of, only a thin line.
+ *
+ * A real value is never replaced: [miffSafeInsets] makes a UNION (the maximum, side by side) of what is reported and of what is
+ * added here, and nothing is added at all for a side where the system reports something. So a phone that works keeps its
+ * exact insets (cut-out included), and a margin cannot be doubled.
+ *
+ * Limits, on purpose:
+ * - INERT under Android 10 and below (API 29 and less): there, "is this bar visible" is deduced from its inset (a reported 0
+ *   reads as "hidden", so the condition "reported 0 but visible" is never true) and the window manager does not give the area
+ *   of the window ([SystemBarSizes.windowArea] answers null). The phone of the recipe (OPPO, Android 13) is not concerned.
+ * - The bottom needs `config_navBarInteractionMode`, a PRIVATE framework resource: when a phone does not have it,
+ *   [SystemBarSizes.navigationMode] answers null and the bottom of the fallback is simply off. That is the safe side: the
+ *   screen then behaves exactly as without the fallback (nothing added, nothing doubled).
  */
 internal data class SystemBarsFallback(
     val top: Int,
@@ -157,28 +193,23 @@ internal data class SystemBarsFallback(
         val None = SystemBarsFallback(0, 0)
 
         fun compute(
-            view: View,
-            orientation: Int,
+            window: WindowArea?,
+            landscape: Boolean,
             reportedTop: Int,
             reportedNavigationBottom: Int,
+            statusBarShown: Boolean,
+            navigationBarShown: Boolean,
+            sizes: BarSizeSource = SystemBarSizes,
         ): SystemBarsFallback {
-            val onScreen = IntArray(2).also { view.getLocationOnScreen(it) }
-            val rootInsets = ViewCompat.getRootWindowInsets(view)
-            val landscape = orientation == Configuration.ORIENTATION_LANDSCAPE
-            val statusBarShown = rootInsets?.isVisible(WindowInsetsCompat.Type.statusBars()) ?: true
+            if (window == null) return None
             val top =
-                if (reportedTop == 0 && onScreen[1] <= 0 && statusBarShown) {
-                    SystemBarSizes.statusBarHeight(landscape)
-                } else {
-                    0
-                }
-            val navigationBarShown = rootInsets?.isVisible(WindowInsetsCompat.Type.navigationBars()) ?: true
-            val reachesBottom = onScreen[1] + view.height >= SystemBarSizes.realScreenHeight(view) - 1
+                if (reportedTop == 0 && window.top <= 0 && statusBarShown) sizes.statusBarHeight(landscape) else 0
+            val reachesBottom = window.bottom >= window.screenBottom - 1
             val bottom =
                 if (reportedNavigationBottom == 0 && navigationBarShown && reachesBottom && !landscape &&
-                    SystemBarSizes.hasNavigationButtons()
+                    sizes.hasNavigationButtons()
                 ) {
-                    SystemBarSizes.navigationBarHeight()
+                    sizes.navigationBarHeight()
                 } else {
                     0
                 }
@@ -187,35 +218,60 @@ internal data class SystemBarsFallback(
     }
 }
 
+/** Where the window is on the screen, in pixels (screen coordinates): its top, its bottom, and the bottom of the screen. */
+internal data class WindowArea(
+    val top: Int,
+    val bottom: Int,
+    val screenBottom: Int,
+)
+
+/** What the fallback needs to know about the bars (the real one reads the framework resources; the tests give their own). */
+internal interface BarSizeSource {
+    fun statusBarHeight(landscape: Boolean): Int
+
+    fun navigationBarHeight(): Int
+
+    fun hasNavigationButtons(): Boolean
+}
+
 /** The sizes the system itself declares for its bars (framework resources); the debug diagnostic displays them too. */
-internal object SystemBarSizes {
+internal object SystemBarSizes : BarSizeSource {
     private fun dimen(name: String): Int {
         val resources = Resources.getSystem()
         val id = resources.getIdentifier(name, "dimen", "android")
         return if (id > 0) resources.getDimensionPixelSize(id) else 0
     }
 
-    fun statusBarHeight(landscape: Boolean): Int =
+    override fun statusBarHeight(landscape: Boolean): Int =
         listOf(if (landscape) "status_bar_height_landscape" else "status_bar_height_portrait", "status_bar_height")
             .firstNotNullOfOrNull { dimen(it).takeIf { size -> size > 0 } } ?: 0
 
-    fun navigationBarHeight(): Int = dimen("navigation_bar_height")
+    override fun navigationBarHeight(): Int = dimen("navigation_bar_height")
 
-    /** 0 = 3 buttons, 1 = 2 buttons, 2 = gestures (config_navBarInteractionMode); null when the phone does not say. */
+    /**
+     * 0 = 3 buttons, 1 = 2 buttons, 2 = gestures (config_navBarInteractionMode); null when the phone does not say.
+     * That resource is PRIVATE to the framework (not part of the public API): it may be missing on some phones or versions,
+     * and then the bottom of the fallback is off (see [SystemBarsFallback]).
+     */
     fun navigationMode(): Int? {
         val resources = Resources.getSystem()
         val id = resources.getIdentifier("config_navBarInteractionMode", "integer", "android")
         return if (id > 0) resources.getInteger(id) else null
     }
 
-    fun hasNavigationButtons(): Boolean = navigationMode()?.let { it != NAVIGATION_GESTURES } ?: false
+    override fun hasNavigationButtons(): Boolean = navigationMode()?.let { it != NAVIGATION_GESTURES } ?: false
 
-    @Suppress("DEPRECATION")
-    fun realScreenHeight(view: View): Int {
-        val display = view.display ?: return Int.MAX_VALUE
-        val metrics = DisplayMetrics()
-        display.getRealMetrics(metrics)
-        return metrics.heightPixels
+    /**
+     * Position of the window on the screen, from the window manager: known before the first layout, unlike the height and the
+     * position of a [View] at the first composition. Null before Android 11 (API 30), where it is not available: the fallback
+     * is off there.
+     */
+    fun windowArea(view: View): WindowArea? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        val windowManager = view.context.getSystemService(WindowManager::class.java) ?: return null
+        val current = windowManager.currentWindowMetrics.bounds
+        val screen = windowManager.maximumWindowMetrics.bounds
+        return WindowArea(top = current.top, bottom = current.bottom, screenBottom = screen.bottom)
     }
 
     private const val NAVIGATION_GESTURES = 2
