@@ -1,4 +1,4 @@
-// Plan de test, section 6 : lieux et limites freemium (P1 à P13, puis P14 à P23 : 2 lieux gratuits, catégorie, type modifiable,
+// Plan de test, section 6 : lieux et limites freemium (P1 à P13, puis P14 à P28 : 2 lieux gratuits, catégorie, type modifiable,
 // lieu dans plusieurs Miffs ; décisions du PM du 2026-11-01)
 import assert from 'node:assert/strict';
 import {
@@ -292,3 +292,61 @@ s.tc('P23', 'createdBy et createdAt restent immuables même avec type et catégo
   await assertFails(ref.update({ type: 'trusted', createdBy: 'bob', updatedAt: serverTs() }));
   await assertFails(ref.update({ category: 'work', createdAt: Timestamp.now(), updatedAt: serverTs() }));
 });
+
+// --- Revue de sécurité des PR #54/#55 (sondes X5, X8, X9, Y2, Y3) : limites connues figées -------------------------------------------
+s.tc('P24', 'ancien premium créateur de 2 Miffs : p1 et p2 dans CHACUNE (4 lieux gratuits), pas d\'identifiant libre ni de risk (limite connue M5, ticket Premium)', async ({ db, seedMiff }) => {
+  const M5 = 'M5'.padEnd(20, 'x');
+  await seedMiff({ miffId: ID.M4, name: 'Expire 1', code: CODE.M4, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true, key: ID.M4 }] });
+  await seedMiff({ miffId: M5, name: 'Expire 2', code: CODE.NEW2, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true, key: M5 }] });
+  const frank = db('frank'); // abonnement expiré (jeu de données)
+  for (const miffId of [ID.M4, M5]) {
+    for (const placeId of ['p1', 'p2']) await assertSucceeds(frank.doc(lieuDans(miffId, placeId)).set(placeInput('frank')));
+    await assertFails(frank.doc(lieuDans(miffId, 'zzz')).set(placeInput('frank')));
+    await assertFails(frank.doc(lieuDans(miffId, 'p1')).update({ type: 'risk', updatedAt: serverTs() }));
+  }
+});
+
+s.tc('P25', 'échange de Miffs d\'un lieu : 3 suppressions + 3 créations en UN lot (15 appels) acceptées ; ni retrait ni ajout hors de ses Miffs', async ({ db, seedMiff }) => {
+  await seedDaveMiffs(seedMiff);
+  const dave = db('dave');
+  const [a, b, c, d, e] = DAVE_MIFFS.map((m) => m.id);
+  const seeded = dave.batch();
+  for (const id of [a, b, c]) seeded.set(dave.doc(lieuDans(id, 'lieuEchange1')), placeInput('dave'));
+  await assertSucceeds(seeded.commit());
+  const lot = dave.batch();
+  for (const id of [a, b]) lot.delete(dave.doc(lieuDans(id, 'lieuEchange1')));
+  for (const id of [d, e]) lot.set(dave.doc(lieuDans(id, 'lieuEchange1')), placeInput('dave'));
+  await assertSucceeds(lot.commit());
+  for (const id of [d, e]) await assertSucceeds(dave.doc(lieuDans(id, 'lieuEchange1')).get());
+  // Une Miff d'alice dans le lot : tout est refusé.
+  await assertFails(commitOps(dave, [{ del: lieuDans(c, 'lieuEchange1') }, { set: lieuDans(ID.M1, 'lieuEchange1') }]));
+  await assertSucceeds(dave.doc(lieuDans(c, 'lieuEchange1')).get());
+});
+
+s.tc('P26', 'abonnement mal typé (date en texte, actif en texte) : traité comme absent', async ({ db, admin, seedMiff }) => {
+  await seedDave(seedMiff);
+  const place = (n) => db('dave').doc(lieuDans(ID.M3, n));
+  await admin((f) => f.doc('entitlements/dave').update({ expiresAt: '2099-01-01' }));
+  await assertFails(place('zz1').set(placeInput('dave')));
+  await admin((f) => f.doc('entitlements/dave').update({ expiresAt: inMs(DAY), active: 'true' }));
+  await assertFails(place('zz2').set(placeInput('dave')));
+});
+
+s.tc('P27', 'gratuite : un « set » complet sur p1 existant avec type risk (déguisé en recréation) est refusé', async ({ db }) => {
+  await assertFails(db('alice').doc(P1).set({ ...placeSeed(), type: 'risk', updatedAt: serverTs() }));
+});
+
+// Contrats du client, NON imposés par les règles (documentés, data-model.md §2.9) : l'adresse peut être nulle et le rayon monter à 2000 m.
+s.tc('P28', 'contrats du client (non imposés par les règles) : adresse nulle et rayon de 2000 m acceptés', async ({ db, admin }) => {
+  await removePlace(admin);
+  await assertSucceeds(db('alice').doc(P1).set(placeInput('alice', { address: null, radiusM: 2000 })));
+});
+
+function commitOps(dave, ops) {
+  const batch = dave.batch();
+  for (const op of ops) {
+    if (op.del) batch.delete(dave.doc(op.del));
+    else batch.set(dave.doc(op.set), placeInput('dave'));
+  }
+  return batch.commit();
+}

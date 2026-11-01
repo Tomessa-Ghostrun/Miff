@@ -157,6 +157,11 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | P21 | `dave` modifie (`type="risk"`, catégorie) puis supprime ce lieu dans 5 Miffs, un lot chacune | OK ; OK |
 | P22 | `bob` (membre) crée `p2`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×4 |
 | P23 | `alice` modifie `createdBy` ou `createdAt` en même temps que le type ou la catégorie | KO ×2 |
+| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1` et `p2` dans CHACUNE ; un identifiant libre ou le passage à `risk` | OK ×4 (4 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO |
+| P25 | Échange de Miffs d'un lieu : 2 suppressions + 2 créations en UN lot ; même lot avec une Miff d'un autre créateur | OK ; KO, rien n'est écrit (au-delà de 4 + 4 le changement se fait en deux lots NON atomiques : budget figé dans `tests/unit/budgets.test.js`) |
+| P26 | Abonnement dont `expiresAt` ou `active` n'a pas le bon type | KO (traité comme absent) |
+| P27 | `alice` (gratuite) fait un `set` complet de `p1` existant avec `type="risk"` | KO |
+| P28 | Contrats du client NON imposés par les règles : adresse nulle, rayon de 2000 m | OK (comportement figé) |
 
 ## 7. Premium et attaques de privilèges
 
