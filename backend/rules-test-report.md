@@ -9,6 +9,16 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 - **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **189** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **182 mutations sont détectées, 7 mutants sont documentés comme équivalents** (4 d'avant DUR-3 + 3 de DUR-3, raison écrite dans `tests/tools/mutations.mjs` et `mutations-dur3.mjs`), **0 survivant**. Durée d'une exécution complète : environ 15 minutes en local (non lancée par la CI, pour rester dans les minutes gratuites). Voir la section DUR-3 ci-dessous.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
+## Lieux de confiance : 2 lieux gratuits, catégorie, type modifiable, lieu dans plusieurs Miffs (PR `backend/regles-lieux`, 2026-11-01)
+
+**Totaux (exécution locale du 2026-11-01, Java 21)** : **271 tests de règles dans l'émulateur, 270 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis ; **283 mutations, 267 détectées, 16 équivalentes documentées, 0 survivante**.
+
+- Règles : `p1`/`p2` gratuits (R-LIEU-5), `category` obligatoire en liste fermée (R-LIEU-2), `type` et `category` modifiables, passage à `risk` réservé au premium (R-LIEU-6), nouvelle fonction `isPremiumOneRead` (1 lecture au lieu de 3) pour tenir le budget des lots multi-Miffs (data-model.md §12).
+- Tests : P2, P3 et P8 adaptés ; **P14 à P23 ajoutés** (dont lots réels de 5 Miffs : P20, P20b, P20c, P21) ; mesures `READS-place-create-free`, `READS-place-update-risk`, `READS-place-delete` (≤ 2, ≤ 3, ≤ 2 sur 10).
+- Mutations : P8-type-modifiable redéfinie (passage à `risk` sans premium), ajoutées P17-type-non-modifiable, P16-categorie-non-modifiable, P15-categorie-facultative, P15-categorie-libre, P15-categorie-controle-retire, P14-troisieme-emplacement-gratuit, P14-un-seul-emplacement-gratuit, P19-creation-sans-premium, P19-premium-expiration, P19-premium-actif ; P2, P4 et les deux mutations de `updatedAt` mises à jour.
+- Constat en route : retirer seulement `'category'` de la liste des clés exigées est une mutation **équivalente** (`isPlaceCategory(d.category)` échoue déjà sur une clé absente et le refuse) ; la mutation retire donc les deux garde-fous ensemble et est détectée par P15.
+- Les fixtures `placeSeed` / `placeInput` portent maintenant `category` (sinon tous les tests de lieux auraient échoué pour une autre raison que celle testée).
+
 ## ONB-B (téléphone obligatoire) et MIFF-0 (lot d'entrée avec statut initial)
 
 **Totaux (exécution locale du 2026-10-28)** : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis ; **273 mutations (225 d'avant + 48 d'ONB-B / MIFF-0) : 257 détectées, 16 équivalentes documentées, 0 survivante** (exécution complète du 2026-10-28, puis ré-exécution des 6 mutations touchées ensuite). Nouveaux fichiers : `tests/rules/15-telephone-onb-b.test.js` (18 cas PH1 à PH11, section 14 du plan), `tests/rules/16-lot-entree-miff0.test.js` (9 cas EN1 à EN6, section 15), `tests/tools/mutations-onbb.mjs` (48 mutations) ; 8 mesures de lectures ajoutées à `09-rule-reads.test.js`.

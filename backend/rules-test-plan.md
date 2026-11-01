@@ -131,18 +131,32 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | # | Cas | Attendu |
 |---|---|---|
 | P1 | `alice` (gratuite) crée `places/p1` type `trusted` dans une Miff sans lieu | OK |
-| P2 | `alice` (gratuite) crée un 2e lieu (ID auto) | KO |
-| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
+| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1` et `p2`) | KO |
+| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type` vers `risk`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
 | P4 | `alice` (gratuite) crée un lieu `type="risk"` (ID `p1`) | KO |
 | P5 | `dave` (premium) crée 3 lieux (ID auto) dont 1 `risk` | OK |
 | P6 | `frank` (premium expiré) crée un 2e lieu | KO |
 | P7 | `bob` (membre) crée / modifie / supprime un lieu | KO |
-| P8 | `alice` change le `type` d'un lieu existant | KO |
+| P8 | `alice` (gratuite) passe le `type` d'un lieu existant à `risk` ; puis, sur un lieu `risk` hérité, repasse à `trusted` (R-LIEU-6) | KO ; OK |
 | P9 | `alice` : `radiusM=10` ou `5000`, `lat=95`, `lng=200`, nom vide | KO |
 | P10 | `alice` supprime puis recrée `p1` | OK |
 | P11 | `alice` modifie `createdBy` d'un lieu | KO |
 | P12 | Lieu avec `createdAt` client | KO |
 | P13 | `eve` lit `places` de M1 | KO |
+| P14 | `alice` (gratuite, `p1` existe) crée `p2` `trusted` ; puis `p3`, un ID auto, `P2` | OK ; KO ×3 (R-LIEU-5 : 2 lieux gratuits) |
+| P14b | `alice` (gratuite) crée `p2` en `risk` ; crée `p2` en `trusted` ; supprime `p1` puis le recrée | KO ; OK ; OK ; OK |
+| P15 | Création sans `category`, ou avec `""`, `maison`, `Home`, `HOME`, ` home`, `home `, `danger`, `null`, `3`, liste, objet ; puis avec `home` (R-LIEU-2) | KO ×11 + sans clé ; OK |
+| P15b | `dave` (premium) crée un lieu pour chacune des 7 catégories (`home`, `work`, `school`, `sport`, `relative`, `leisure`, `other`) | OK ×7 |
+| P16 | `alice` change la `category` (valide), puis invalide (`maison`, `""`, `null`, `7`) ; un lieu sans `category` (hérité) : nom seul, puis nom + catégorie | OK ; KO ×4 ; KO ; OK |
+| P17 | `dave` (premium) : `trusted` vers `risk` (+ catégorie), `risk` vers `trusted`, `type="banane"` (R-LIEU-6) | OK ; OK ; KO |
+| P18 | `alice` (gratuite) : `trusted` vers `risk` (seul, ou avec catégorie et nom) ; nom + rayon + catégorie | KO ×2 ; OK |
+| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`, `p2` en `trusted` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; KO ; OK ; KO |
+| P20 | `dave` (premium, 5 Miffs) crée en UN lot 5 lieux de même identifiant, un par Miff | OK |
+| P20b | Même lot dont une Miff est celle d'`alice` | KO, rien n'est écrit dans les 4 autres |
+| P20c | Même lot avec une catégorie invalide dans une seule copie ; avec un identifiant invalide dans une seule copie | KO ; KO |
+| P21 | `dave` modifie (`type="risk"`, catégorie) puis supprime ce lieu dans 5 Miffs, un lot chacune | OK ; OK |
+| P22 | `bob` (membre) crée `p2`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×4 |
+| P23 | `alice` modifie `createdBy` ou `createdAt` en même temps que le type ou la catégorie | KO ×2 |
 
 ## 7. Premium et attaques de privilèges
 

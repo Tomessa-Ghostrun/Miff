@@ -7,7 +7,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
-  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
+  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
   serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
@@ -164,6 +164,38 @@ const scenarios = [
     hosts: [H.placesCreate],
     prepare: seedDaveMiff,
     run: (env) => db(env, 'dave').collection(`miffs/${ID.M3}/places`).doc().set(placeInput('dave')),
+  },
+  {
+    // Lieux, évolutions du 2026-11-01 (R-LIEU-5, -6) : coût PAR DOCUMENT ; un lot de N Miffs coûte au plus N fois le coût sans cache
+    // (comptage manuel dans data-model.md §12 : création premium 3, gratuite p1/p2 2, passage à risk 3, suppression 2 -> 5 Miffs = 15, 10, 15, 10 sur 20).
+    // Les lectures factices (zz_pad) ont des chemins fixes que l'émulateur met en cache d'une écriture à l'autre du lot : un lot de N
+    // écritures identiques ne se mesure donc pas par injection ; on mesure une écriture et on multiplie par le pire cas manuel.
+    id: 'READS-place-create-free',
+    title: "création d'un lieu gratuit sous p2 (écriture simple)",
+    name: "Création d'un lieu gratuit p2 (écriture simple)",
+    limit: 10,
+    hosts: [H.placesCreate],
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p2`).set(placeInput('alice')),
+  },
+  {
+    id: 'READS-place-update-risk',
+    title: "passage d'un lieu à la zone de danger, premium (écriture simple)",
+    name: "Lieu : passage à risk, premium (écriture simple)",
+    limit: 10,
+    hosts: [H.placesUpdate],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`miffs/${ID.M3}/places/abc`).set(placeSeed({ createdBy: 'dave' })));
+    },
+    run: (env) => db(env, 'dave').doc(`miffs/${ID.M3}/places/abc`).update({ type: 'risk', updatedAt: serverTs() }),
+  },
+  {
+    id: 'READS-place-delete',
+    title: "suppression d'un lieu (écriture simple)",
+    name: "Suppression d'un lieu (écriture simple)",
+    limit: 10,
+    hosts: [H.placesDelete],
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p1`).delete(),
   },
   {
     // Cause de la mesure « non concluante » du premier jet (R15) : l'émulateur accepte 20 lectures de règles pour une LISTE
