@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Icônes des catégories</title>
+<style>
+/* Maquettes « Lieux de confiance » — tokens de design/design-system.md (valeurs en pt/px, non mises à l'échelle).
+   Source unique : ce fichier est inclus tel quel dans chaque HTML par build.mjs (les HTML sont autonomes). */
+@font-face{font-family:"Hanken Grotesk";font-weight:400;font-style:normal;src:url("../../../../ios/Miff/Resources/Fonts/HankenGrotesk-Regular.ttf")}
+@font-face{font-family:"Hanken Grotesk";font-weight:700;font-style:normal;src:url("../../../../ios/Miff/Resources/Fonts/HankenGrotesk-Bold.ttf")}
+@font-face{font-family:"Hanken Grotesk";font-weight:400;font-style:italic;src:url("../../../../ios/Miff/Resources/Fonts/HankenGrotesk-Italic.ttf")}
+@font-face{font-family:"Baloo Thambi 2";font-weight:400 800;src:url("../../../../ios/Miff/Resources/Fonts/BalooThambi2-Variable.ttf")}
+
+:root{
+  --brand-primary:#d1d828;
+  --action:#043cd1; --action-t5:rgba(4,60,209,.05); --action-t10:rgba(4,60,209,.10); --action-t20:rgba(4,60,209,.20); --action-t30:rgba(4,60,209,.30);
+  --on-action:#fff;
+  --safe:#d1d828; --safe-tint:rgba(209,216,40,.30);
+  --warning:#ffb650; --warning-tint:rgba(255,182,80,.30);
+  --danger:#ff5650; --danger-tint:rgba(255,86,80,.30);
+  --text-error:#d60700;
+  --canvas:#f9f9f7; --surface:#fff; --placeholder:#d9d9d9; --overlay-header:rgba(249,249,247,.6); --gradient-end:#edefb9;
+  --text:#000; --text-form:#222; --text-placeholder:rgba(34,34,34,.5); --text-desc:rgba(0,0,0,.7); --text-muted:rgba(0,0,0,.5); --text-secondary:#7d7c7c;
+  --border-default:#efefef; --border-strong:rgba(0,0,0,.5); --border-subtle:rgba(0,0,0,.3);
+  --r-md:10px; --r-sm:5px; --r-full:9999px;
+  --shadow:0 4px 4px rgba(0,0,0,.25);
+  --shadow-subtle:0 0 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#e9e9e6}
+body{font-family:"Hanken Grotesk",system-ui,sans-serif;font-size:16px;line-height:22px;color:var(--text);-webkit-font-smoothing:antialiased}
+svg{display:block}
+.ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- cadre d'écran 390 x 844 ---------- */
+.frame{position:relative;width:390px;height:844px;overflow:hidden;background:var(--canvas);isolation:isolate}
+.frame.tall{height:auto;min-height:844px;overflow:visible}
+.frame.grad{background:linear-gradient(180deg,var(--canvas) 17%,var(--gradient-end) 100%)}
+.frame.fragment{height:auto;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.fold{position:absolute;left:0;right:0;top:844px;border-top:1px dashed rgba(0,0,0,.28);z-index:50;pointer-events:none}
+.fold span{position:absolute;right:6px;top:2px;font-size:10px;line-height:12px;color:rgba(0,0,0,.4);background:rgba(249,249,247,.85);padding:0 3px}
+
+.status{height:47px;padding:14px 26px 0 30px;display:flex;justify-content:space-between;align-items:flex-start;font-weight:700;font-size:15px;color:#000}
+.status .r{display:flex;gap:6px;align-items:center}
+.status svg{width:18px;height:12px;fill:#000}
+
+/* ---------- en-tête ---------- */
+.header{position:sticky;top:0;z-index:10;background:var(--overlay-header);backdrop-filter:blur(10px);box-shadow:0 2px 4px rgba(0,0,0,.12)}
+.header .bar{height:56px;display:flex;align-items:center;justify-content:center;position:relative}
+.header .back{position:absolute;left:12px;top:6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--action)}
+.header .right{position:absolute;right:16px;top:6px;height:44px;display:flex;align-items:center;font-weight:700;color:var(--action)}
+.header h1{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+
+.content{padding:20px 16px 24px}
+.section{margin-bottom:24px;position:relative}
+.sec-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.pill{width:33px;height:33px;border-radius:var(--r-md);background:var(--action-t20);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.pill .ico{width:20px;height:20px}
+.sec-head h2{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+.sec-head p{font-size:12px;line-height:16px;color:var(--text-desc);margin-top:0}
+.sec-body{padding-left:0}
+
+/* ---------- champs ---------- */
+.field{position:relative;min-height:46px;border:1px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:10px;font-size:16px;line-height:22px;color:var(--text-form)}
+.field .ph{color:var(--text-placeholder)}
+.field .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field.focus{border:2px solid var(--action);padding:0 13px}
+.field.error{border:2px solid var(--text-error);padding:0 13px}
+.field.disabled{opacity:.5}
+.field .tail{color:var(--text-secondary);display:flex;align-items:center}
+.field .caret{display:inline-block;width:2px;height:20px;background:var(--action);margin-left:1px;vertical-align:-4px}
+.under{display:flex;justify-content:space-between;gap:12px;margin-top:4px;font-size:12px;line-height:16px;color:var(--text-desc);min-height:16px}
+.under .cnt{margin-left:auto;color:var(--text-secondary);white-space:nowrap}
+.err{color:var(--text-error)}
+.hint{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:16px;color:var(--text-desc);margin-top:6px}
+.hint .ico{width:14px;height:14px;margin-top:1px;color:var(--text-secondary)}
+
+/* Miffs : chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;padding:6px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 6px 0 12px;border-radius:var(--r-full);background:var(--action-t10);color:var(--action);font-size:14px;font-weight:700;line-height:20px;border:1px solid var(--action-t30)}
+.chip .x{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.chip .x .ico{width:12px;height:12px;stroke-width:2.4}
+.chip.ro{padding:0 12px}
+.field.multi{padding:2px 10px 2px 8px}
+
+/* suggestions */
+.sugg{margin-top:6px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border-default);box-shadow:var(--shadow);overflow:hidden}
+.sugg .row{display:flex;gap:12px;align-items:center;min-height:56px;padding:8px 14px;border-bottom:1px solid var(--border-default)}
+.sugg .row:last-of-type{border-bottom:0}
+.sugg .row.press{background:var(--action-t5)}
+.sugg .t{font-size:14px;line-height:20px;color:var(--text)}
+.sugg .t b{font-weight:700}
+.sugg .s{font-size:12px;line-height:16px;color:var(--text-desc)}
+.sugg .src{padding:6px 14px;font-size:10px;line-height:14px;color:var(--text-secondary);background:var(--canvas);border-top:1px solid var(--border-default)}
+.mini-pin{width:32px;height:32px;border-radius:50%;background:var(--action-t10);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none}
+.mini-pin .ico{width:16px;height:16px}
+.skel{height:12px;border-radius:6px;background:rgba(217,217,217,.6)}
+.msg-row{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;font-size:14px;line-height:20px;color:var(--text-form)}
+.msg-row .ico{width:20px;height:20px;color:var(--text-secondary);margin-top:0}
+.link{color:var(--action);font-weight:700}
+
+/* carte */
+.map{position:relative;height:176px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border-default);background:#f1f0e8}
+.map svg.m{width:100%;height:100%}
+.map .attr{position:absolute;right:0;bottom:0;font-size:9px;line-height:12px;color:#555;background:rgba(255,255,255,.8);padding:0 4px}
+.map.big{height:210px}
+.map.empty{background:var(--placeholder);background:repeating-linear-gradient(135deg,#ececea 0 10px,#f3f3f1 10px 20px);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 40px;color:var(--text-desc);font-size:14px;line-height:20px;flex-direction:column;gap:8px}
+.map.empty .ico{width:28px;height:28px;color:var(--text-secondary)}
+
+/* curseur */
+.slider{display:flex;align-items:center;gap:14px;margin-top:14px}
+.track{position:relative;flex:1;height:4px;border-radius:2px;background:var(--border-subtle)}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--action)}
+.track .thumb{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#fff;border:2px solid var(--action);box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.slider.off .fill{background:var(--border-subtle)}
+.slider.off .thumb{border-color:var(--border-subtle);box-shadow:none}
+.val{min-width:64px;height:30px;padding:0 10px;border-radius:var(--r-sm);background:#ededeb;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.val.off{color:var(--text-muted)}
+.scale{display:flex;justify-content:space-between;font-size:10px;line-height:14px;color:var(--text-secondary);margin:4px 78px 0 0}
+
+/* type */
+.types{display:flex;gap:10px}
+.type{flex:1;position:relative;border-radius:var(--r-md);padding:10px 10px 10px 10px;display:flex;gap:8px;align-items:flex-start;background:var(--surface);min-height:62px;border:1px solid}
+.type .ico{width:22px;height:22px;margin-top:1px}
+.type b{display:block;font-size:14px;line-height:18px}
+.type span{display:block;font-size:12px;line-height:15px;color:var(--text-desc)}
+.type.trust{border-color:rgba(168,174,10,.7)}
+.type.trust .ico{color:#9a9f08}
+.type.trust.sel{background:var(--safe-tint);border:2px solid var(--brand-primary);padding:9px}
+.type.risk{border-color:rgba(255,86,80,.6)}
+.type.risk .ico{color:var(--text-error)}
+.type.risk.sel{background:var(--danger-tint);border:2px solid var(--danger);padding:9px}
+.type .tick{position:absolute;right:6px;top:6px;width:18px;height:18px;border-radius:50%;background:var(--action);color:#fff;display:flex;align-items:center;justify-content:center}
+.type .tick .ico{width:11px;height:11px;stroke-width:3;margin:0}
+.type .plus{position:absolute;right:6px;top:6px;height:18px;padding:0 7px;border-radius:var(--r-full);background:var(--action-t10);color:var(--action);font-size:11px;line-height:18px;font-weight:700;display:flex;align-items:center;gap:3px}
+.type .plus .ico{width:10px;height:10px;margin:0;color:var(--action);stroke-width:2.6}
+.type-help{margin-top:8px;font-size:12px;line-height:16px;color:var(--text-desc)}
+
+/* catégories (liste à choix unique) */
+.cats{display:flex;flex-direction:column}
+.cat{display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--border-strong);flex:none;display:flex;align-items:center;justify-content:center}
+.radio.on{border-color:var(--action)}
+.radio.on::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--action)}
+.cic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--action-t10);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none}
+.cic .ico{width:18px;height:18px}
+.cic.lg{width:44px;height:44px;border-radius:var(--r-md);background:var(--action-t20)}
+.cic.lg .ico{width:26px;height:26px}
+.cic.xl{width:72px;height:72px;border-radius:14px;background:var(--action-t20)}
+.cic.xl .ico{width:42px;height:42px;stroke-width:1.6}
+
+/* boutons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:46px;border-radius:var(--r-md);font-size:16px;line-height:22px;font-weight:400;border:1px solid transparent;text-align:center}
+.btn.primary{background:var(--action);color:var(--on-action);box-shadow:var(--shadow)}
+.btn.primary.disabled{background:var(--action-t30);box-shadow:none}
+.btn.secondary{background:var(--surface);color:var(--action);border-color:var(--action);box-shadow:var(--shadow-subtle)}
+.btn.sensitive{background:var(--surface);color:var(--text-error);border-color:var(--text-error)}
+.btn.tall2{height:auto;min-height:46px;padding:8px 14px}
+.btn.link{border:0;background:none;color:var(--action);font-weight:700;height:44px;width:auto;padding:0 12px}
+.btn .spin{width:20px;height:20px;border-radius:50%;border:3px solid rgba(255,255,255,.4);border-top-color:#fff}
+.btn-stack{display:flex;flex-direction:column;gap:12px}
+.footer{padding:12px 16px 28px;background:linear-gradient(180deg,rgba(249,249,247,0),var(--canvas) 22%)}
+
+/* notice / toast */
+.notice{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border-subtle);font-size:14px;line-height:20px;color:var(--text-form)}
+.notice .ico{width:20px;height:20px;margin-top:0}
+.notice.info{border-color:var(--action);background:var(--action-t5)}
+.notice.info .ico{color:var(--action)}
+.notice.offline .ico{color:var(--text-secondary)}
+.notice.error{border:1.5px solid var(--text-error)}
+.notice.error .ico{color:var(--text-error)}
+.toast{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:var(--r-md);background:rgba(34,34,34,.92);color:#fff;font-size:14px;line-height:20px}
+
+/* ---------- dialogue et pop-in ---------- */
+.veil{position:absolute;inset:0;background:rgba(0,0,0,.28);z-index:20}
+.dialog{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);z-index:30;background:var(--surface);border:2px solid var(--action);border-radius:var(--r-md);box-shadow:var(--shadow);padding:24px 20px 12px;display:flex;flex-direction:column;gap:16px}
+.dialog h3{font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+.dialog p{color:var(--text-desc)}
+.dialog .btn{height:44px}
+.dialog .cancel{height:44px;display:flex;align-items:center;justify-content:center;color:var(--action);font-weight:700}
+.dlist{background:var(--canvas);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;line-height:20px;color:var(--text-form)}
+.dlist div{display:flex;gap:8px;align-items:center;min-height:28px}
+.dlist .ico{width:16px;height:16px;color:var(--action)}
+
+.backdrop{position:absolute;inset:0;z-index:0;background:var(--canvas)}
+.backdrop .inner{position:absolute;inset:0;filter:blur(5px)}
+.backdrop::after{content:"";position:absolute;inset:0;background:rgba(249,249,247,.55)}
+.popin{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);z-index:30;background:var(--surface);border:1.5px solid var(--action);border-radius:var(--r-md);box-shadow:var(--shadow);padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.popin h3{font-weight:700;font-size:20px;line-height:26px;color:var(--action)}
+.popin p.body{font-size:14px;line-height:20px;color:var(--text)}
+.popin .btn{height:46px}
+.popin .errmsg{font-size:13px;line-height:18px;color:#ea4335;font-size:13px}
+.popin .errmsg.ds{color:var(--text-error)}
+.popin .calm{font-size:12px;line-height:16px;color:var(--text-desc)}
+.popin .later{height:40px;display:flex;align-items:center;color:var(--action);font-weight:700;font-size:14px}
+.facts{align-self:stretch;display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--canvas);border-radius:var(--r-md);padding:12px}
+.fact{display:flex;gap:10px;align-items:flex-start}
+.fact .ico{width:20px;height:20px;color:var(--action);margin-top:1px}
+.fact b{display:block;font-size:13px;line-height:17px}
+.fact span{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
+.steps{align-self:stretch;display:flex;flex-direction:column;gap:10px;text-align:left}
+.step{display:flex;gap:12px;align-items:center;font-size:14px;line-height:20px}
+.step i{width:26px;height:26px;border-radius:50%;background:var(--action-t20);color:var(--action);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:13px;flex:none}
+.step b{font-weight:700}
+
+/* backdrop Feed (flou) */
+.fb-head{display:flex;justify-content:space-between;align-items:center;padding:6px 18px}
+.fb-av{width:46px;height:46px;border-radius:50%;border:3px solid var(--safe);background:#c9c4bd}
+.fb-logo{font-family:"Baloo Thambi 2";font-weight:800;font-size:48px;line-height:48px;color:var(--action)}
+.fb-bell{width:30px;height:30px;color:var(--action)}
+.fb-bell .ico{width:30px;height:30px}
+.fb-sel{margin:14px auto 0;width:180px;height:38px;border-radius:var(--r-md);background:#eee;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-style:italic}
+.fb-blob{margin:26px 16px 0;height:190px;border-radius:50% 46% 52% 48%/60% 55% 45% 40%;background:var(--safe-tint);padding:50px 28px;font-family:"Baloo Thambi 2";font-weight:700;font-size:24px;line-height:36px}
+.fb-card{margin:20px 16px 0;height:150px;background:#fff;border-radius:var(--r-sm);box-shadow:var(--shadow-subtle)}
+.fb-tab{position:absolute;left:24px;right:24px;bottom:22px;height:56px;border-radius:var(--r-md);background:#fff;box-shadow:var(--shadow)}
+
+/* pop-in : pictogramme de localisation */
+.locart{width:92px;height:92px}
+
+/* paywall */
+.pw-close{position:absolute;left:16px;top:56px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.15);color:#fff;display:flex;align-items:center;justify-content:center;z-index:5}
+.pw-close .ico{width:16px;height:16px;stroke-width:2.6}
+.pw-logo{width:112px;margin:56px auto 0}
+.pw-logo svg{width:100%;height:auto}
+.pw-title{text-align:center;font-weight:700;font-size:24px;line-height:30px;margin:20px 20px 0;background:linear-gradient(90deg,#043cd1,#d1d52c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pw-ctx{margin:16px 16px 0;padding:14px;border-radius:var(--r-md);background:var(--surface);border:2px solid var(--action);box-shadow:var(--shadow);display:flex;gap:12px;align-items:center}
+.pw-ctx b{display:block;font-size:16px;line-height:22px}
+.pw-ctx span{display:block;font-size:14px;line-height:20px;color:var(--text-desc)}
+.dots{display:flex;gap:6px;margin-top:6px}
+.dots i{width:22px;height:22px;border-radius:50%;background:var(--action);display:flex;align-items:center;justify-content:center;color:#fff}
+.dots i .ico{width:12px;height:12px;stroke-width:2.4}
+.dots i.empty{background:none;border:2px dashed var(--border-subtle);color:var(--text-muted)}
+.pw-list{margin:14px 16px 0;display:flex;flex-direction:column;gap:10px}
+.pw-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:var(--r-md);background:var(--surface);box-shadow:var(--shadow-subtle);border:1px solid var(--border-default)}
+.pw-item.hl{border:2px solid var(--action);padding:11px}
+.pw-item b{display:block;font-size:14px;line-height:20px}
+.pw-item span{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
+.pw-cta{position:absolute;left:16px;right:16px;bottom:34px}
+.pw-cta .tag{position:absolute;right:10px;top:-11px;height:16px;padding:0 8px;border-radius:var(--r-sm);background:var(--brand-primary);border:1px solid #000;font-size:8px;line-height:14px;color:#000;z-index:2}
+.pw-cta small{display:block;text-align:center;margin-top:10px;font-size:14px;line-height:20px;color:var(--action)}
+
+/* détail / liste */
+.card{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-sm);box-shadow:var(--shadow-subtle)}
+.kv{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-default);min-height:52px}
+.kv:last-child{border-bottom:0}
+.kv .k{font-size:12px;line-height:16px;color:var(--text-secondary)}
+.kv .v{font-size:16px;line-height:22px;color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-sm);font-size:14px;line-height:20px}
+.badge .ico{width:14px;height:14px}
+.badge.trust{background:var(--safe-tint)}
+.badge.risk{background:var(--danger-tint)}
+.explain{display:flex;gap:10px;padding:12px 14px;border-radius:var(--r-md);background:var(--action-t5);border:1px solid var(--action-t20);font-size:14px;line-height:20px;color:var(--text-form)}
+.explain .ico{width:20px;height:20px;color:var(--action);margin-top:0}
+.sect-title{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px}
+.place-row{display:flex;gap:12px;align-items:center;padding:10px 12px;min-height:60px}
+.place-row .n{font-size:16px;line-height:22px}
+.place-row .a{font-size:12px;line-height:16px;color:var(--text-secondary)}
+.place-row .chev{margin-left:auto;color:var(--text-secondary)}
+.add-dashed{margin:8px 12px 12px;border:1px dashed var(--action);border-radius:var(--r-md);min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--action);font-size:16px}
+.plus-tag{height:18px;padding:0 7px;border-radius:var(--r-full);background:var(--action-t10);color:var(--action);font-size:11px;line-height:18px;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+.plus-tag .ico{width:10px;height:10px;stroke-width:2.6}
+.sm{font-size:12px;line-height:16px;color:var(--text-desc)}
+.miff-card{margin:0 16px;padding:14px;display:flex;gap:12px;align-items:center}
+.avs{display:flex}
+.avs i{width:28px;height:28px;border-radius:50%;border:2px solid var(--action);margin-left:-6px;background:#cfc7bd}
+.avs i:first-child{margin-left:0}
+.prof-top{background:linear-gradient(180deg,#d9de3d,#e8eb9a 60%,rgba(249,249,247,0));padding:0 16px 24px}
+
+/* planche d'états (hors maquette) */
+.board{display:flex;flex-wrap:wrap;gap:36px;padding:28px;align-items:flex-start;background:#e9e9e6}
+.slot{display:flex;flex-direction:column;gap:8px}
+.cap{font-size:13px;line-height:18px;font-weight:700;color:#333;max-width:390px}
+.cap span{display:block;font-weight:400;color:#555}
+.pad{padding:16px}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:300px;background:#d3d6dc;z-index:15;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.dev{background:#fff;border:1px dashed #999;border-radius:6px;padding:10px 12px;font-size:12px;line-height:16px;color:#444}
+.type .tx{padding-right:16px}
+.fold span{left:50%;right:auto;transform:translateX(-50%);white-space:nowrap}
+.type .tx{padding-right:0}
+.type .tick{top:auto;bottom:6px}
+.type .plus{top:auto;bottom:6px}
+.kbd{height:260px}
+
+
+</style></head>
+<body>
+<div class="board" style="width:1304px"><div class="slot"><div class="cap">A. Les 7 icônes<span>Trait 1,8, fond d'icône `action/primary-tint-20`, même famille que les pastilles de section. Dessins provisoires de maquette.</span></div><div class="frame fragment"><div class="content" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px 8px;justify-items:center;text-align:center;padding-bottom:20px"><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">Maison</div><div class="sm">Home</div></div><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M3 13h18"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">Travail</div><div class="sm">Work</div></div><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v6"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">École</div><div class="sm">School</div></div><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4z"/><path d="M12 8V3M15.5 10.5l5-1.5M14.2 14.5l3 4M9.8 14.5l-3 4M8.5 10.5l-5-1.5"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">Sport</div><div class="sm">Sport</div></div><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M2.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M17 20.5s-4-2.8-4-5.6a2.2 2.2 0 0 1 4-1.3 2.2 2.2 0 0 1 4 1.3c0 2.8-4 5.6-4 5.6z"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">Chez un proche</div><div class="sm">At a relative's</div></div><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11.2" r=".9" fill="currentColor" stroke="none"/><circle cx="18.2" cy="13" r=".9" fill="currentColor" stroke="none"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">Loisir</div><div class="sm">Leisure</div></div><div><div class="cic xl" style="margin:0 auto"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg></div><div style="font-weight:700;font-size:14px;line-height:20px;margin-top:6px">Autre</div><div class="sm">Other</div></div></div></div></div><div class="slot"><div class="cap">B. Utilisations<span>Formulaire (28 pt), liste (44 pt), étiquette du Feed (14 pt).</span></div><div class="frame fragment"><div class="content" style="padding-bottom:12px">
+      <div class="sect-title" style="margin-bottom:6px">Dans le formulaire</div><div class="cats"><div class="cat"><div class="radio on"></div><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></div><span>Maison</span></div><div class="cat"><div class="radio "></div><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M3 13h18"/></svg></div><span>Travail</span></div><div class="cat"><div class="radio "></div><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v6"/></svg></div><span>École</span></div></div>
+      <div class="sect-title" style="margin:16px 0 6px">Dans la liste des lieux</div><div class="card"><div class="place-row"><div class="cic lg"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4z"/><path d="M12 8V3M15.5 10.5l5-1.5M14.2 14.5l3 4M9.8 14.5l-3 4M8.5 10.5l-5-1.5"/></svg></div><div><div class="n">Sport</div><div class="a">Exemple d'adresse</div></div></div><div class="place-row"><div class="cic lg"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M2.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M17 20.5s-4-2.8-4-5.6a2.2 2.2 0 0 1 4-1.3 2.2 2.2 0 0 1 4 1.3c0 2.8-4 5.6-4 5.6z"/></svg></div><div><div class="n">Chez un proche</div><div class="a">Exemple d'adresse</div></div></div><div class="place-row"><div class="cic lg"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11.2" r=".9" fill="currentColor" stroke="none"/><circle cx="18.2" cy="13" r=".9" fill="currentColor" stroke="none"/></svg></div><div><div class="n">Loisir</div><div class="a">Exemple d'adresse</div></div></div></div>
+      <div class="sect-title" style="margin:16px 0 6px">Dans une étiquette du Feed</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge trust" style="height:26px"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>À la maison</span><span class="badge trust" style="height:26px"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v6"/></svg>À l'école</span><span class="badge" style="height:26px;background:var(--warning-tint)"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M3 13h18"/></svg>A quitté le travail</span></div>
+      <div class="sm" style="margin-top:8px">Libellés du Feed d'après le ticket Notion (catégorie ou nom du lieu) ; ici seulement pour montrer l'icône.</div></div></div></div><div class="slot"><div class="cap">C. Équivalence avec les emojis actuels<span>Choix à faire par le PM : garder les emojis ou adopter les icônes.</span></div><div class="frame fragment"><div class="content" style="padding-bottom:12px"><div class="sect-title" style="margin-bottom:8px">Emojis de la maquette du PM</div><div class="card"><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">🏠</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></div><span>Maison</span></div><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">💻</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M3 13h18"/></svg></div><span>Travail</span></div><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">📖</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v6"/></svg></div><span>École</span></div><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">⚽</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4z"/><path d="M12 8V3M15.5 10.5l5-1.5M14.2 14.5l3 4M9.8 14.5l-3 4M8.5 10.5l-5-1.5"/></svg></div><span>Sport</span></div><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">👨‍👩‍👧</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M2.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M17 20.5s-4-2.8-4-5.6a2.2 2.2 0 0 1 4-1.3 2.2 2.2 0 0 1 4 1.3c0 2.8-4 5.6-4 5.6z"/></svg></div><span>Chez un proche</span></div><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">🎮</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11.2" r=".9" fill="currentColor" stroke="none"/><circle cx="18.2" cy="13" r=".9" fill="currentColor" stroke="none"/></svg></div><span>Loisir</span></div><div class="kv" style="min-height:44px;padding:6px 14px"><span style="font-size:22px;width:30px">⭕</span><span style="color:var(--text-secondary)">→</span><div class="cic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg></div><span>Autre</span></div></div><div class="sm" style="margin-top:8px">Les emojis dépendent de la police de chaque téléphone (rendu différent, ou carré vide sur certains Android). Les icônes ci-contre sont des dessins de maquette à faire valider et exporter proprement par le PM.</div></div></div></div></div>
+</body></html>
