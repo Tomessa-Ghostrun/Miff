@@ -67,6 +67,17 @@ export const PHONE = '+33612345678';
 export const PHONE_B = '+242061234567';
 export const profile = (first) => ({ firstName: first, lastName: 'Test', phone: PHONE });
 
+// R-LIEU-POS (dernière position connue) : le texte de consentement qui couvre la position est la version 3 ou plus. Les fixtures du
+// partage de base portent 'v1' (comptes sans position) ; sharingOnSeedV3 / sharingOnNowV3 portent une version qui autorise la position.
+export const CONSENT_POSITION = '2026-11-v3';
+export const sharingOnSeedV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: T0, consentVersion: version, revokedAt: null });
+export const sharingOnNowV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: serverTs(), consentVersion: version, revokedAt: null });
+
+/** Dernière position telle qu'un client l'envoie : latitude, longitude, heure de la mesure (rien d'autre). */
+export const positionDoc = (over = {}) => ({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-5 * 60_000), ...over });
+/** Position déjà enregistrée (état injecté avec les règles désactivées). */
+export const positionSeed = (over = {}) => positionDoc({ measuredAt: T0, ...over });
+
 export const statusDoc = (over = {}) => ({
   presence: 'in_trusted',
   placeId: 'p1',
@@ -234,12 +245,13 @@ export function createShareOps({ uid, miffId = ID.NEW, code = CODE.NEW, name = '
   };
 }
 
-/** Quitter une Miff (batch de 4 suppressions). */
+/** Quitter une Miff (batch de 5 suppressions : fiche, statut, photo, dernière position, index). */
 export function leaveOps(uid, miffId = ID.M1, key = 'free') {
   return {
     member: del(`miffs/${miffId}/members/${uid}`),
     status: del(`miffs/${miffId}/status/${uid}`),
     photo: del(`miffs/${miffId}/photos/${uid}`),
+    position: del(`miffs/${miffId}/positions/${uid}`),
     index: del(`users/${uid}/memberships/${key}`),
   };
 }
@@ -367,7 +379,7 @@ export function suite({ extraProfiles = true } = {}) {
 export { seedBase };
 
 /**
- * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 6 écritures dans UN lot,
+ * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 7 écritures dans UN lot (dont la suppression de la dernière position),
  * dont le renouvellement du code secret (nouveau code créé, ancien supprimé).
  */
 export function removeMemberOps({
@@ -381,6 +393,7 @@ export function removeMemberOps({
     member: del(`miffs/${miffId}/members/${target}`),
     status: del(`miffs/${miffId}/status/${target}`),
     photo: del(`miffs/${miffId}/photos/${target}`),
+    position: del(`miffs/${miffId}/positions/${target}`),
     miff: update(`miffs/${miffId}`, { joinCode: newCode }),
     newCode: set(`joinCodes/${newCode}`, { miffId, miffName: name, createdAt: serverTs() }),
     oldCode: del(`joinCodes/${oldCode}`),
