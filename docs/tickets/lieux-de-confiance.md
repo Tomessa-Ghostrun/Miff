@@ -756,3 +756,8 @@ Aucun moyen de paiement n'est requis. Contact et éditeur provisoires inchangés
 | Sous-ticket session | `docs/tickets/session-appareil-unique.md` |
 
 *Ce document ne modifie ni le code, ni Notion, ni Figma, ni les règles Firestore, ni `backend/data-model.md`, ni les textes légaux. Aucun texte légal ou de store n'est présenté comme relu par un juriste.*
+
+## Décisions complémentaires du PM (2026-11-01, après les maquettes)
+- **Tutoiement partout**, y compris dans les pop-ins de notifications, de localisation et d'avis (les maquettes du PM, au vouvoiement, sont à réécrire au tutoiement à l'implémentation).
+- **Recommandations de design validées** (`design/screens/lieux/README.md`) : encart de 3 lignes dans la pop-in de localisation (« même quand l'app est fermée », visibilité de la dernière position pour les membres de la Miff, possibilité d'arrêter), paywall affichant « 59,88 € par an (soit 4,99 €/mois) » et « voir quand tes proches s'y trouvent », bouton de suppression en contour rouge, pastille « Miff+ » sur la zone de danger pour un compte gratuit, icônes SVG des catégories (export Figma du PM à fournir pour remplacer les approximations).
+- **Position côté serveur** : recommandations L1 à L5 validées (dernière position seule avec heure de mesure, lecture par les membres de la même Miff avec consentement actif, effacement avec le statut, masquage après 24 h, nouveau consentement avant toute écriture) ; wording « zone de danger » conservé.
