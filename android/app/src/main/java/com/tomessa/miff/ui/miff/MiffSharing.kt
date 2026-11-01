@@ -55,6 +55,33 @@ object MiffSharing {
     }
 
     /**
+     * "Prévenir mes proches" (decision QM9): opens the share sheet with a short message that the creator sends THEMSELVES, to whom
+     * they choose. The app sends nothing and cannot know who received it. The message holds the name of the Miff and nothing else:
+     * never the code, never an identifier.
+     */
+    fun shareClosingNotice(
+        context: Context,
+        miffName: String,
+    ) {
+        val send =
+            Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(
+                    Intent.EXTRA_TEXT,
+                    context.getString(R.string.miff_delete_notice_message, MiffName.clean(miffName)),
+                )
+        try {
+            context.startActivity(
+                Intent
+                    .createChooser(send, context.getString(R.string.miff_delete_notify_action))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        } catch (e: ActivityNotFoundException) {
+            // No app can take the text: nothing happens, and nothing is lost (the deletion does not depend on this).
+        }
+    }
+
+    /**
      * Copies the code alone. From Android 13 the system shows its own confirmation and hides the content (marked sensitive):
      * returns true when the app has to confirm itself ("Code copié", older versions).
      */

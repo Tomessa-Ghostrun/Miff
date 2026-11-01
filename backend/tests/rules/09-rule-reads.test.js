@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
-  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B,
+  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, placeSeed,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -110,6 +110,55 @@ const scenarios = [
         del(`${M1}/status/alice`),
         del('users/alice/memberships/free'),
       ]),
+  },
+  {
+    // MIFF-2 : le lot final de la suppression, tel que le client l'écrit (avec la photo de la créatrice : 7 écritures).
+    id: 'READS-delete-miff-final',
+    title: 'suppression de la Miff, lot final du client (batch de 7 : Miff, pierre tombale, code, statut, photo, fiche, index, MIFF-2)',
+    name: 'Supprimer la Miff, lot final (batch de 7, MIFF-2)',
+    lot: true,
+    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.statusDelete, H.photosDelete, H.membersDelete, H.membershipsDelete],
+    prepare: seedAlicePhoto,
+    run: (env) =>
+      commit(db(env, 'alice'), [
+        del(M1),
+        set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() }),
+        del(`joinCodes/${CODE.M1}`),
+        del(`${M1}/status/alice`),
+        del(`${M1}/photos/alice`),
+        del(`${M1}/members/alice`),
+        del('users/alice/memberships/free'),
+      ]),
+  },
+  {
+    // MIFF-2 : cinq lieux supprimés dans un même lot (étape 2 de la suppression). Une seule règle hôte : les cinq écritures évaluent
+    // la même règle sur les mêmes documents (comptés une fois avec le cache de l'émulateur ; au pire 5 fois sans cache).
+    id: 'READS-delete-places',
+    title: 'suppression de 5 lieux dans un lot (MIFF-2)',
+    name: 'Supprimer 5 lieux (batch de 5, MIFF-2)',
+    limit: 20,
+    hosts: [H.placesDelete],
+    prepare: (env) =>
+      env.withSecurityRulesDisabled(async (ctx) => {
+        const f = ctx.firestore();
+        for (const id of ['p2', 'p3', 'p4', 'p5']) await f.doc(`${M1}/places/${id}`).set(placeSeed({ createdBy: 'alice' }));
+      }),
+    run: (env) => commit(db(env, 'alice'), ['p1', 'p2', 'p3', 'p4', 'p5'].map((id) => del(`${M1}/places/${id}`))),
+  },
+  {
+    // MIFF-2 : retrait d'une cible déjà partie (fiche et statut absents) : même lot de 6, avec des suppressions de documents absents.
+    id: 'READS-remove-member-gone',
+    title: 'retirer un membre déjà parti avec renouvellement du code (batch de 6, MIFF-2)',
+    name: 'Retirer un membre déjà parti + nouveau code (batch de 6, MIFF-2)',
+    lot: true,
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
+    prepare: (env) =>
+      env.withSecurityRulesDisabled(async (ctx) => {
+        const f = ctx.firestore();
+        await f.doc(`${M1}/members/bob`).delete();
+        await f.doc(`${M1}/status/bob`).delete();
+      }),
+    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
   },
   {
     id: 'READS-regen-code',

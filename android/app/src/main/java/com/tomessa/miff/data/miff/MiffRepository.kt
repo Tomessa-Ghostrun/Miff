@@ -110,6 +110,20 @@ sealed interface JoinResult {
     ) : JoinResult
 }
 
+/** How a change of the code of a Miff ended (renewal, or removal of a member which renews it). */
+sealed interface CodeChangeResult {
+    /** The server accepted the lot. [newCode] is the code now in force: shown to the creator, never logged. */
+    class Changed(
+        val newCode: String,
+    ) : CodeChangeResult {
+        override fun toString(): String = "Changed(redacted)"
+    }
+
+    data class Failed(
+        val failure: MiffFailure,
+    ) : CodeChangeResult
+}
+
 /** The Miffs of the person, as the Feed and the Profile show them. */
 sealed interface MyMiffsLoad {
     class Loaded(
@@ -170,6 +184,29 @@ interface MiffRepository {
     ): MiffWriteResult
 
     suspend fun myMiffs(uid: String): MyMiffsLoad
+
+    /**
+     * "Créer un nouveau code" (ticket N1): the creator only. ONE lot of 3 writes; the new code is drawn on the phone (same generator
+     * as the first), checked free, and only shown once the server said yes.
+     */
+    suspend fun renewCode(miffId: String): CodeChangeResult
+
+    /**
+     * Removes one member (ticket R1 to R7): the creator only. ONE lot of 6 writes that ALWAYS renews the code (the rules refuse a
+     * removal that does not), even if the person had already left. Headless on purpose: the Premium ticket (end of a subscription)
+     * and the deletion of an account (AUTH-5) call it with no screen. Never queued offline: no answer from the server = nothing
+     * written (the lot is a transaction).
+     */
+    suspend fun removeMember(
+        miffId: String,
+        targetUid: String,
+    ): CodeChangeResult
+
+    /** "Quitter la Miff" (ticket Q1): a member only (the creator can only delete the Miff). ONE lot of 4 deletions. */
+    suspend fun leave(
+        uid: String,
+        miffId: String,
+    ): MiffWriteResult
 
     /** The "Quitter" lot, else the index alone (ticket 5.7). True when the index is gone. */
     suspend fun cleanUpLost(
@@ -392,6 +429,86 @@ class FirestoreMiffRepository(
         return result
     }
 
+    // --- MIFF-2: renew the code, remove a member, leave ------------------------------------------------------------
+
+    override suspend fun renewCode(miffId: String): CodeChangeResult =
+        changeCode(miffId) { view, newCode ->
+            MiffWrites.renewCode(miffId, view.details.name, view.details.joinCode, newCode, view.codeDocumentExists)
+        }
+
+    override suspend fun removeMember(
+        miffId: String,
+        targetUid: String,
+    ): CodeChangeResult =
+        changeCode(miffId) { view, newCode ->
+            MiffWrites.removeMember(
+                miffId = miffId,
+                targetUid = targetUid,
+                name = view.details.name,
+                oldCode = view.details.joinCode,
+                newCode = newCode,
+                oldCodeExists = view.codeDocumentExists,
+            )
+        }
+
+    /**
+     * One lot that changes the code. The Miff is read INSIDE the transaction (the code and name to replace are the ones of that
+     * very moment; if another phone renews at the same time, Firestore runs the lot again on the fresh copy). A lot whose answer was
+     * lost is checked on the server before it is shown as a failure.
+     */
+    private suspend fun changeCode(
+        miffId: String,
+        writes: (MiffTxView, String) -> List<DocWrite>,
+    ): CodeChangeResult {
+        val newCode =
+            when (val free = freeCode()) {
+                is CodeDraw.Free -> free.code
+                is CodeDraw.Failed -> return CodeChangeResult.Failed(free.failure)
+            }
+        val result = write { store.commitWithMiff(miffId) { view -> writes(view, newCode) } }
+        return when (result) {
+            MiffWriteResult.Done -> {
+                CodeChangeResult.Changed(newCode)
+            }
+
+            is MiffWriteResult.Failed -> {
+                val landed =
+                    result.failure.mayHaveLanded() &&
+                        (
+                            (
+                                guarded {
+                                    store.readMiff(
+                                        miffId,
+                                        fromServer = true,
+                                    )
+                                } as? Guarded.Value
+                            )?.value as? MiffRead.Exists
+                        )?.details
+                            ?.joinCode == newCode
+                if (landed) CodeChangeResult.Changed(newCode) else CodeChangeResult.Failed(result.failure)
+            }
+        }
+    }
+
+    override suspend fun leave(
+        uid: String,
+        miffId: String,
+    ): MiffWriteResult {
+        // The key of the index is read from the server (it is "free", or the id of the Miff): it is found by its FIELD miffId.
+        val key =
+            when (val read = guarded { store.readMemberships(uid, fromServer = true) }) {
+                is Guarded.Value -> read.value.firstOrNull { it.miffId == miffId }?.key
+                is Guarded.Failed -> return MiffWriteResult.Failed(read.failure)
+            }
+        val result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
+            // The answer was lost: if the server now refuses the Miff to this person, the lot did leave.
+            val check = guarded { store.readMiff(miffId, fromServer = true) }
+            if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) return MiffWriteResult.Done
+        }
+        return result
+    }
+
     // --- The Miffs of the person, loss of access -------------------------------------------------------------
 
     override suspend fun myMiffs(uid: String): MyMiffsLoad {
@@ -558,30 +675,7 @@ class FirestoreMiffRepository(
             is Guarded.Failed -> MiffWriteResult.Failed(outcome.failure)
         }
 
-    private sealed interface Guarded<out T> {
-        class Value<T>(
-            val value: T,
-        ) : Guarded<T>
-
-        class Failed(
-            val failure: MiffFailure,
-            /** The server refused the access (rules): the only answer that can mean "removed". */
-            val lostAccess: Boolean,
-        ) : Guarded<Nothing>
-    }
-
-    private suspend fun <T> guarded(call: suspend () -> T): Guarded<T> =
-        try {
-            Guarded.Value(withTimeout(timeoutMillis) { call() })
-        } catch (e: TimeoutCancellationException) {
-            Guarded.Failed(MiffFailure.OFFLINE, lostAccess = false)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: MissingProfileException) {
-            Guarded.Failed(MiffFailure.NO_PROFILE, lostAccess = false)
-        } catch (e: Exception) {
-            Guarded.Failed(interpretMiffError(e), lostAccess = isAccessLostError(e))
-        }
+    private suspend fun <T> guarded(call: suspend () -> T): Guarded<T> = guardedCall(timeoutMillis, call)
 
     companion object {
         const val TIMEOUT_MS = 20_000L

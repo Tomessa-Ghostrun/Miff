@@ -21,9 +21,13 @@ import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
 import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.MiffDeletion
+import com.tomessa.miff.data.miff.MiffDeletionCoordinator
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
+import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
+import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -161,9 +165,11 @@ class AppContainer(
      * only called when a request is made), and every request comes from a screen shown after [MiffApplication.startSession]
      * has resolved the session, hence after the cache purge of a failed sign-out.
      */
+    private val miffStore: MiffStore by lazy { FirestoreMiffStore() }
+
     val miffRepository: MiffRepository by lazy {
         FirestoreMiffRepository(
-            store = FirestoreMiffStore(),
+            store = miffStore,
             observer = FirestoreMiffObserver(),
             location = AndroidLocationAccessProbe(context),
             cache = cachePurger,
@@ -191,6 +197,32 @@ class AppContainer(
             currentUid = { authGateway.currentUid },
             activeStore = SharedPreferencesActiveMiffStore(context),
             cache = cachePurger,
+        )
+    }
+
+    /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
+    suspend fun onMiffLeft(miffId: String) {
+        miffDirectory.expectDeparture(miffId)
+        cachePurger.markPurgePending()
+        cachePurger.purge()
+        miffDirectory.refresh()
+    }
+
+    /**
+     * Deletion of a Miff, with no screen: used by the Miff screen now, and later by the deletion of an account (AUTH-5) and by the
+     * end of a subscription (Premium ticket). Runs as long as the app lives and resumes at launch from a local marker. Built on
+     * first use: the main shell (shown only once the session is resolved) is the first to use it, so nothing here reaches Firestore
+     * before [MiffApplication.startSession].
+     */
+    val miffDeletions: MiffDeletionCoordinator by lazy {
+        MiffDeletionCoordinator(
+            deletion = MiffDeletion(store = miffStore, repository = miffRepository),
+            pending = SharedPreferencesPendingDeletionStore(context),
+            network = networkMonitor,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            onStarted = miffDirectory::expectDeparture,
+            onDeleted = { miffId -> onMiffLeft(miffId) },
         )
     }
 

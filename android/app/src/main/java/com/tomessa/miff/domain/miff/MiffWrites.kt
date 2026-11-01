@@ -216,23 +216,126 @@ object MiffWrites {
 
     /**
      * "Quitter" lot (4 deletions): the card, the status, the photo and the index. Used to clean up after a loss of access
-     * (ticket 5.7); the "Quitter" button of MIFF-2 uses the same lot.
+     * (ticket 5.7) and by the "Quitter la Miff" button of a member (ticket Q1, MIFF-2). The index is left out only when it was not
+     * found ([membershipKey] null): the rules refuse the deletion of an index that does not exist.
      */
     fun leave(
         miffId: String,
         uid: String,
-        membershipKey: String,
-    ): List<DocWrite> =
-        listOf(
-            DocWrite("miffs/$miffId/members/$uid", WriteKind.DELETE),
-            DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE),
-            DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
-            DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE),
-        )
+        membershipKey: String?,
+    ): List<DocWrite> {
+        val writes =
+            mutableListOf(
+                DocWrite("miffs/$miffId/members/$uid", WriteKind.DELETE),
+                DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE),
+                DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
+            )
+        if (membershipKey != null) writes += DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE)
+        return writes
+    }
 
     /** Fallback of the clean-up: the card is already gone (removed), only the index is left; the rules allow deleting it then. */
     fun dropIndex(
         uid: String,
         membershipKey: String,
     ): List<DocWrite> = listOf(DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE))
+
+    // --- MIFF-2: renew the code, remove a member, delete the Miff ----------------------------------------------------------
+
+    /**
+     * The three writes that change the code of a Miff (ticket N1, data-model.md section 8): the Miff points to [newCode], the new
+     * code document exists, the old one is gone. The rules refuse the lot unless all three are there (an old code that still
+     * works would let a removed person come back). [name] is the name the Miff has NOW (the code document must carry the same).
+     */
+    private fun codeChange(
+        miffId: String,
+        name: String,
+        oldCode: String,
+        newCode: String,
+        oldCodeExists: Boolean,
+    ): List<DocWrite> {
+        require(JoinCode.isValid(oldCode) && JoinCode.isValid(newCode)) { "join code shape" }
+        require(oldCode != newCode) { "the code must change" }
+        val writes =
+            mutableListOf(
+                DocWrite("miffs/$miffId", WriteKind.UPDATE, mapOf("joinCode" to newCode)),
+                DocWrite(
+                    "joinCodes/$newCode",
+                    WriteKind.SET,
+                    mapOf("miffId" to miffId, "miffName" to name, "createdAt" to FieldValue.serverTimestamp()),
+                ),
+            )
+        // The rules need the old code gone after the lot; a code document that is already missing cannot be deleted again
+        // (its deletion is refused), and it is gone anyway.
+        if (oldCodeExists) writes += DocWrite("joinCodes/$oldCode", WriteKind.DELETE)
+        return writes
+    }
+
+    /** "Créer un nouveau code" (ticket N1): 3 writes in ONE lot. */
+    fun renewCode(
+        miffId: String,
+        name: String,
+        oldCode: String,
+        newCode: String,
+        oldCodeExists: Boolean = true,
+    ): List<DocWrite> = codeChange(miffId, name, oldCode, newCode, oldCodeExists)
+
+    /**
+     * Removing a member (ticket R2): 6 writes in ONE lot, in this order: the card, the status and the photo of the person, then
+     * the three writes of the new code. NOTHING else goes in this lot: with these six writes the rules read up to 18 documents
+     * out of the 20 Firestore allows (backend/rules-test-report.md, MIFF-2), and a seventh write could cross the line. The index
+     * of the person is not touched (the creator cannot delete it; the person cleans it at their next start).
+     */
+    fun removeMember(
+        miffId: String,
+        targetUid: String,
+        name: String,
+        oldCode: String,
+        newCode: String,
+        oldCodeExists: Boolean = true,
+    ): List<DocWrite> =
+        listOf(
+            DocWrite("miffs/$miffId/members/$targetUid", WriteKind.DELETE),
+            DocWrite("miffs/$miffId/status/$targetUid", WriteKind.DELETE),
+            DocWrite("miffs/$miffId/photos/$targetUid", WriteKind.DELETE),
+        ) + codeChange(miffId, name, oldCode, newCode, oldCodeExists)
+
+    /** Places per lot when a Miff is deleted: each deletion costs the rules 2 reads of its own, so 5 stay far from the 20. */
+    const val PLACES_PER_LOT = 5
+
+    /** Deleting places (step 2 of the deletion of a Miff): from 1 to [PLACES_PER_LOT] per lot. */
+    fun deletePlaces(
+        miffId: String,
+        placeIds: List<String>,
+    ): List<DocWrite> {
+        require(placeIds.size in 1..PLACES_PER_LOT) { "places per lot" }
+        return placeIds.map { DocWrite("miffs/$miffId/places/$it", WriteKind.DELETE) }
+    }
+
+    /**
+     * The last lot of the deletion of a Miff (ticket S2), up to 7 writes in ONE lot: the Miff, its tombstone `miffsDeleted/{id}`
+     * (the id can never be reused), the CURRENT code, and the creator's own status, photo, card and index. The rules refuse it
+     * without the tombstone or without deleting the code. [membershipKey] is null when the index was not found; [codeExists] is
+     * false when the code document is already gone (it is then left out: the rules refuse the deletion of a missing code).
+     */
+    fun finalDelete(
+        miffId: String,
+        uid: String,
+        code: String,
+        codeExists: Boolean,
+        membershipKey: String?,
+    ): List<DocWrite> {
+        require(JoinCode.isValid(code)) { "join code shape" }
+        val writes =
+            mutableListOf(
+                DocWrite("miffs/$miffId", WriteKind.DELETE),
+                DocWrite("miffsDeleted/$miffId", WriteKind.SET, mapOf("deletedAt" to FieldValue.serverTimestamp())),
+            )
+        if (codeExists) writes += DocWrite("joinCodes/$code", WriteKind.DELETE)
+        writes += DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE)
+        writes += DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE)
+        writes += DocWrite("miffs/$miffId/members/$uid", WriteKind.DELETE)
+        if (membershipKey != null) writes += DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE)
+        return writes
+    }
 }

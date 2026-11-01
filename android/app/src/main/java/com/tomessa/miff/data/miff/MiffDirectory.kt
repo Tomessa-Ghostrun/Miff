@@ -148,6 +148,14 @@ class MiffDirectory(
             true
         }
 
+    /**
+     * The person is leaving this Miff, or deleting it, on purpose: the single message "Tu n'as plus accès…" is never shown for it
+     * (ticket MIFF-2: nobody is told they lost what they just gave up). Forgotten at the end of the session.
+     */
+    fun expectDeparture(miffId: String) {
+        announced.add(miffId)
+    }
+
     fun dismissNotice() {
         mutableNotices.value = mutableNotices.value.drop(1)
     }

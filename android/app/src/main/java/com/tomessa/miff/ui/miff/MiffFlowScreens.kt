@@ -45,6 +45,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -236,6 +237,7 @@ fun CreateMiffScreen(
     onSubmit: () -> Unit,
     onContinue: () -> Unit,
 ) {
+    RecentsPrivacy()
     when (state.step) {
         CreateStep.NAME -> CreateNameStep(state, onBack, onNameChanged, onSubmit)
         CreateStep.READY -> CreateReadyStep(state, onContinue)
@@ -388,6 +390,7 @@ fun JoinMiffScreen(
     onCancelConfirm: () -> Unit,
     onOpenMiff: (String) -> Unit,
 ) {
+    RecentsPrivacy()
     when (state.step) {
         JoinStep.CODE -> JoinCodeStep(state, onBack, onCodeChanged, onContinue, onOpenMiff)
         JoinStep.CONFIRM -> JoinConfirmStep(state, onConfirm, onCancelConfirm)
@@ -529,6 +532,7 @@ fun AccessLostScreen(
     miffName: String?,
     onAcknowledge: () -> Unit,
 ) {
+    RecentsPrivacy()
     val title =
         if (miffName != null) {
             stringResource(R.string.miff_lost_title, miffName)

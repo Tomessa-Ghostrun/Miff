@@ -1,28 +1,38 @@
 package com.tomessa.miff.testsupport
 
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.miff.ActiveMiffStore
+import com.tomessa.miff.data.miff.CodeChangeResult
 import com.tomessa.miff.data.miff.CreatePreparation
 import com.tomessa.miff.data.miff.CreateResult
+import com.tomessa.miff.data.miff.DeletionController
+import com.tomessa.miff.data.miff.DeletionState
 import com.tomessa.miff.data.miff.EntitlementRead
 import com.tomessa.miff.data.miff.JoinPreparation
 import com.tomessa.miff.data.miff.JoinResult
 import com.tomessa.miff.data.miff.LocationAccessProbe
 import com.tomessa.miff.data.miff.LostMiff
+import com.tomessa.miff.data.miff.MiffGoneException
 import com.tomessa.miff.data.miff.MiffObserver
 import com.tomessa.miff.data.miff.MiffRead
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.miff.MiffStore
+import com.tomessa.miff.data.miff.MiffTxView
 import com.tomessa.miff.data.miff.MiffWriteResult
 import com.tomessa.miff.data.miff.MissingProfileException
 import com.tomessa.miff.data.miff.MyMiffsLoad
+import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffDetails
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.ProfileCopy
+import com.tomessa.miff.domain.miff.WriteKind
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 const val MIFF_ID = "AbCdEfGhIjKlMnOpQrSt"
 const val OTHER_MIFF_ID = "ZyXwVuTsRqPoNmLkJiHg"
@@ -99,6 +109,82 @@ class FakeMiffStore : MiffStore {
         return reachable
     }
 
+    // --- MIFF-2 -------------------------------------------------------------------------------------------------------
+
+    /** The ids of the cards of the Miff, as the SERVER lists them; a failure to throw instead. */
+    var memberIds: MutableList<String> = mutableListOf()
+    var membersFailure: Exception? = null
+    var placeIds: MutableList<String> = mutableListOf()
+    var placesFailure: Exception? = null
+
+    /** Does the document of the CURRENT code exist (what the transaction of a lot reads)? */
+    var codeDocumentExists = true
+
+    /**
+     * When true a lot that goes through also changes what the fake answers (a removed member disappears from the list, a renewed
+     * code replaces the old one, a deleted Miff is refused to its former members), so that a whole procedure can be followed.
+     */
+    var simulate = false
+
+    override suspend fun readMemberIds(miffId: String): List<String> {
+        calls += "memberIds"
+        membersFailure?.let { throw it }
+        return memberIds.toList()
+    }
+
+    override suspend fun readPlaceIds(miffId: String): List<String> {
+        calls += "placeIds"
+        placesFailure?.let { throw it }
+        return placeIds.toList()
+    }
+
+    override suspend fun commitWithMiff(
+        miffId: String,
+        build: (MiffTxView) -> List<DocWrite>,
+    ) {
+        calls += "commitWithMiff"
+        val details =
+            when (val answer = miffs[miffId]) {
+                is MiffDetails -> answer
+                is Exception -> throw answer
+                else -> throw MiffGoneException()
+            }
+        record(build(MiffTxView(details, codeDocumentExists)))
+    }
+
+    private fun applyEffects(writes: List<DocWrite>) {
+        for (write in writes) {
+            val parts = write.path.split("/")
+            val delete = write.kind == WriteKind.DELETE
+            val inMiff = parts.size == 4 && parts[0] == "miffs"
+            val theMiff = parts.size == 2 && parts[0] == "miffs"
+            when {
+                inMiff && parts[2] == "members" && delete -> {
+                    memberIds.remove(parts[3])
+                }
+
+                inMiff && parts[2] == "places" && delete -> {
+                    placeIds.remove(parts[3])
+                }
+
+                theMiff && write.kind == WriteKind.UPDATE && write.data.containsKey("joinCode") -> {
+                    val old = miffs[parts[1]] as? MiffDetails
+                    val code = write.data["joinCode"] as String
+                    if (old != null) miffs[parts[1]] = MiffDetails(old.id, old.name, code, old.ownerUid)
+                }
+
+                theMiff && delete -> {
+                    // A deleted Miff is refused to everyone who is not a member any more: what the server answers.
+                    miffs[parts[1]] = firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED)
+                }
+
+                parts.size == 4 && parts[0] == "users" && parts[2] == "memberships" && delete -> {
+                    memberships = memberships.filter { it.key != parts[3] }
+                }
+            }
+        }
+    }
+
     override suspend fun commitWithProfile(
         uid: String,
         build: (ProfileCopy) -> List<DocWrite>,
@@ -114,12 +200,23 @@ class FakeMiffStore : MiffStore {
         record(writes)
     }
 
+    /** The number (from 0) of the lot whose ANSWER is lost: it goes through, then the call fails as if the network had cut. */
+    var loseAnswerAt: Int = -1
+    private var commitCount = 0
+
     private fun record(writes: List<DocWrite>) {
+        val number = commitCount++
         val failure = if (commitFailures.isEmpty()) null else commitFailures.removeFirst()
         onCommit()
+        if (number == loseAnswerAt) {
+            commitsAsLots += listOf(writes)
+            if (simulate) applyEffects(writes)
+            throw firestoreError(FirebaseFirestoreException.Code.UNAVAILABLE)
+        }
         // A failed lot writes NOTHING: it is not recorded as done (atomicity).
         if (failure != null) throw failure
         commitsAsLots += listOf(writes)
+        if (simulate) applyEffects(writes)
     }
 
     /** One entry per lot that went through. */
@@ -242,6 +339,37 @@ class FakeMiffRepository : MiffRepository {
         return myMiffsResult
     }
 
+    // --- MIFF-2 -------------------------------------------------------------------------------------------------------
+
+    var renewResult: CodeChangeResult = CodeChangeResult.Changed("NEWCODE23456")
+    var removeResult: CodeChangeResult = CodeChangeResult.Changed("NEWCODE23456")
+    var leaveResult: MiffWriteResult = MiffWriteResult.Done
+    val removed = mutableListOf<String>()
+    var onRemove: (String) -> Unit = {}
+
+    override suspend fun renewCode(miffId: String): CodeChangeResult {
+        calls += "renewCode"
+        return renewResult
+    }
+
+    override suspend fun removeMember(
+        miffId: String,
+        targetUid: String,
+    ): CodeChangeResult {
+        calls += "removeMember"
+        removed += targetUid
+        onRemove(targetUid)
+        return removeResult
+    }
+
+    override suspend fun leave(
+        uid: String,
+        miffId: String,
+    ): MiffWriteResult {
+        calls += "leave"
+        return leaveResult
+    }
+
     override suspend fun cleanUpLost(
         uid: String,
         lost: LostMiff,
@@ -252,4 +380,58 @@ class FakeMiffRepository : MiffRepository {
     }
 
     override fun observe(miffId: String): Flow<MiffObservation> = observer.observe(miffId)
+}
+
+/** The deletion as the Miff screen sees it: what was asked, and the state it is told about. */
+class FakeDeletionController : DeletionController {
+    private val mutable = MutableStateFlow<Map<String, DeletionState>>(emptyMap())
+    override val states: StateFlow<Map<String, DeletionState>> = mutable
+    val started = mutableListOf<String>()
+    val retried = mutableListOf<String>()
+
+    override fun start(miffId: String) {
+        started += miffId
+        mutable.value = mutable.value + (
+            miffId to
+                com.tomessa.miff.data.miff.DeletionState
+                    .Running(resumed = false)
+        )
+    }
+
+    override fun retry(miffId: String) {
+        retried += miffId
+    }
+
+    fun set(
+        miffId: String,
+        state: DeletionState,
+    ) {
+        mutable.value = mutable.value + (miffId to state)
+    }
+}
+
+/** What the marker "a deletion is under way" holds, in memory. */
+class MemoryPendingDeletions(
+    initial: Set<Pair<String, String>> = emptySet(),
+) : PendingDeletionStore {
+    private val entries = initial.toMutableSet()
+
+    override fun ids(uid: String): Set<String> = entries.filter { it.first == uid }.map { it.second }.toSet()
+
+    override fun add(
+        uid: String,
+        miffId: String,
+    ) {
+        entries += uid to miffId
+    }
+
+    override fun remove(
+        uid: String,
+        miffId: String,
+    ) {
+        entries -= uid to miffId
+    }
+
+    /** Everything held, whoever it belongs to. */
+    fun all(): Set<Pair<String, String>> = entries.toSet()
 }

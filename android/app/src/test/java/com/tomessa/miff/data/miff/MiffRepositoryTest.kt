@@ -547,4 +547,13 @@ open class MiffStoreByDelegation(
     ) = inner.commitWithProfile(uid, build)
 
     override suspend fun commit(writes: List<com.tomessa.miff.domain.miff.DocWrite>) = inner.commit(writes)
+
+    override suspend fun readMemberIds(miffId: String) = inner.readMemberIds(miffId)
+
+    override suspend fun readPlaceIds(miffId: String) = inner.readPlaceIds(miffId)
+
+    override suspend fun commitWithMiff(
+        miffId: String,
+        build: (MiffTxView) -> List<com.tomessa.miff.domain.miff.DocWrite>,
+    ) = inner.commitWithMiff(miffId, build)
 }

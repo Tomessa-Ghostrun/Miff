@@ -9,6 +9,30 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 - **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **189** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **182 mutations sont détectées, 7 mutants sont documentés comme équivalents** (4 d'avant DUR-3 + 3 de DUR-3, raison écrite dans `tests/tools/mutations.mjs` et `mutations-dur3.mjs`), **0 survivant**. Durée d'une exécution complète : environ 15 minutes en local (non lancée par la CI, pour rester dans les minutes gratuites). Voir la section DUR-3 ci-dessous.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
+## MIFF-2 (renouveler le code, retirer, quitter, supprimer la Miff)
+
+**Totaux (exécution locale du 2026-10-31, `npm test`)** : **280 tests de règles dans l'émulateur, 279 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis. Ajouts : `tests/rules/18-miff2-retirer-quitter-supprimer.test.js` (23 cas MN1 à MS7, section 17 du plan) et 3 mesures de lectures dans `09-rule-reads.test.js`. **Aucune règle n'est modifiée** (`firestore.rules` identique à `main`) ; les mutations existantes n'ont donc pas à être rejouées.
+
+Les lots testés sont ceux que le client Android écrit (`MiffWrites.kt` : mêmes chemins, mêmes clés, même ordre).
+
+### Ce que les tests ont établi (et dont le client dépend)
+- **Supprimer un document absent n'est pas toujours possible** : la suppression d'une **fiche, d'un statut, d'une photo ou d'un lieu absent** est acceptée (retrait d'une cible déjà partie, reprise d'une suppression : MR2, MS2, MS5), mais celle d'un **code** (`joinCodes/{code}` absent) et celle d'un **index** (`memberships/{clé}` absent) est **refusée** (la règle lit `resource.data`, qui n'existe pas : MR7, MQ3, MS6). Le client lit donc, **dans la même transaction**, l'existence du code courant (et retrouve l'index par son champ `miffId`) et **omet** ces deux suppressions quand le document manque : le lot passe alors à 5 ou 6 écritures au lieu de 6 ou 7.
+- **Un survivant lit « la Miff n'existe pas »** (MS3b) : après la suppression, `get miffs/{id}` d'un ancien membre dont la fiche existe encore **n'est pas une erreur** (document absent, lecture permise car `isMember` est vrai) ; les listes de membres et de statuts, elles, sont refusées. Le client traite les deux cas (refus ou document absent) comme un accès perdu.
+- **Limite constatée, déjà assumée (R17)** : le lot final de suppression est accepté même s'il reste des fiches de membres. Garde-fou côté client : la procédure retire d'abord tous les autres membres, relit la liste du serveur après chaque passe, et s'arrête (reprise possible) si elle ne se vide pas.
+- Un retrait dans le lot qui supprime la Miff est refusé (MS3), comme le dit le ticket de durcissement.
+
+### Lectures de règles des nouveaux lots
+| Lot (client Android) | Mesuré dans l'émulateur (avec son cache) | Comptage manuel du pire cas, sans cache | Marge |
+|---|---|---|---|
+| Retrait d'un membre, 6 écritures (cible présente) | <= 1 sur 20 | **18 sur 20** (inchangé, `data-model.md` §12) | 2 au pire cas |
+| Retrait d'une cible déjà partie, 6 écritures | <= 1 sur 20 | 18 sur 20 (mêmes règles évaluées) | 2 |
+| Renouvellement du code, 3 écritures | <= 1 sur 20 | 8 sur 20 | 12 |
+| Quitter, 4 suppressions | 0 sur 20 | 3 sur 20 | 17 |
+| **Suppression, lot final, 7 écritures** (nouveau) | <= 1 sur 20 | **12 sur 20** (Miff 4, pierre tombale 3, code 1, fiche 3, index 1) | 8 |
+| **Cinq lieux supprimés dans un lot** (nouveau) | <= 12 sur 20 (plafonné par la limite de 10 appels par écriture de l'outil de mesure) | 10 sur 20 (2 par lieu) | 10 |
+
+Le test échoue si une marge mesurée passe sous 2. **Aucun appel de règle n'a été ajouté** : les lots de retrait et de renouvellement du client sont identiques à ceux du plan (`removeMemberOps`, 18 sur 20 au pire cas).
+
 ## ONB-B (téléphone obligatoire) et MIFF-0 (lot d'entrée avec statut initial)
 
 **Totaux (exécution locale du 2026-10-28)** : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** (A9) ; **49 tests rapides** réussis ; **273 mutations (225 d'avant + 48 d'ONB-B / MIFF-0) : 257 détectées, 16 équivalentes documentées, 0 survivante** (exécution complète du 2026-10-28, puis ré-exécution des 6 mutations touchées ensuite). Nouveaux fichiers : `tests/rules/15-telephone-onb-b.test.js` (18 cas PH1 à PH11, section 14 du plan), `tests/rules/16-lot-entree-miff0.test.js` (9 cas EN1 à EN6, section 15), `tests/tools/mutations-onbb.mjs` (48 mutations) ; 8 mesures de lectures ajoutées à `09-rule-reads.test.js`.

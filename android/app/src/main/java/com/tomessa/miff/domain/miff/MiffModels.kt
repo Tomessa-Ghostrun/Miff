@@ -28,6 +28,9 @@ class MiffMember(
 ) {
     val displayName: String get() = "$firstName $lastName".trim()
 
+    /** How the creator's questions name this person ("Retirer {prénom}..."): the first name, or the last name if the first has nothing visible. */
+    val callName: String get() = firstName.ifEmpty { lastName }
+
     override fun toString(): String = "MiffMember(redacted)"
 }
 
