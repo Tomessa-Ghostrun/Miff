@@ -2484,36 +2484,19 @@
         }
       }
     },
-    "ios_next_feed": {
+    "ios_miff_ready_hint": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You are signed in. The feed of your circle is coming soon."
+            "value": "You'll find this code in your Miff, from the home screen."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es connecté. Le fil de ton cercle arrive bientôt."
-          }
-        }
-      }
-    },
-    "ios_next_miff_choice": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Next step: create or join a Miff. This screen is coming soon."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prochaine étape : créer ou rejoindre une Miff. Cet écran arrive bientôt."
+            "value": "Tu retrouveras ce code dans ta Miff, depuis l'écran d'accueil."
           }
         }
       }

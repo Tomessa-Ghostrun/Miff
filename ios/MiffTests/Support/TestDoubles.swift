@@ -91,7 +91,16 @@ final class EventLogSink: AnalyticsSink {
 }
 
 final class FakeNetwork: NetworkMonitor {
-    var online: Bool
+    /// Chaque changement est annoncé aux flux ouverts par `onlineChanges()`.
+    var online: Bool {
+        didSet {
+            for continuation in continuations {
+                continuation.yield(online)
+            }
+        }
+    }
+
+    private var continuations: [AsyncStream<Bool>.Continuation] = []
 
     init(online: Bool = true) {
         self.online = online
@@ -99,6 +108,13 @@ final class FakeNetwork: NetworkMonitor {
 
     func isOnline() -> Bool {
         online
+    }
+
+    func onlineChanges() -> AsyncStream<Bool> {
+        AsyncStream { continuation in
+            self.continuations.append(continuation)
+            continuation.yield(self.online)
+        }
     }
 }
 

@@ -2,6 +2,28 @@
 
 ## Non publié
 
+### MIFF-3 - Créer, rejoindre, écran de la Miff, partage du statut, accès perdu (miroir d'Android MIFF-1)
+
+Tickets `docs/tickets/miff.md` (§8, §16), décisions du PM `miff-questions-pm.md` (QM1 à QM15) et `feed-profil-reglages.md` §13 ; maquettes `design/exports/miff/`. Retirer, quitter, supprimer, renouveler le code et « Prévenir mes proches » sont **MIFF-4** : aucun bouton n'est dessiné pour eux. Détail de l'architecture, de la sécurité, des écarts avec les maquettes et des limites : `README.md`, section « Miffs ».
+
+Ajouté :
+- **Écran de choix** « Choisis comment tu veux commencer » (créer / rejoindre ; l'onboarding n'est complet qu'avec une Miff) à la place de l'écran provisoire ; un lien discret « Se déconnecter ».
+- **Créer** en deux temps (nom 2 à 40 caractères avec texte de partage, puis « Ta Miff « X » est prête » : code par groupes de 4, Partager, Copier). **UN lot de 5 écritures** dans UNE transaction, code tiré à l'enregistrement par `SecRandomCopyBytes` (échantillonnage par rejet, jusqu'à 3 tirages).
+- **Rejoindre** : saisie du code (majuscules, clavier ASCII, `PasteButton` système, message local pour un caractère hors alphabet, pause d'une minute après 5 échecs), vérifications dans l'ordre du ticket §5.4, écran de confirmation avec le texte de partage avant « Rejoindre et partager », **UN lot de 3 écritures**.
+- **Écran de la Miff** (créateur et membre) : nom modifiable (créateur), code et partage (`ShareLink`), proches en direct (trois écoutes mises en une image), « Partager mon statut » (arrêter 3 écritures / reprendre 2, en feuille avec le même cadre de consentement), lieux, plafond doux de 15, lecture seule hors connexion (`NetworkMonitor.onlineChanges()` ajouté).
+- **Accès perdu** : détecté en direct et à l'ouverture, **jamais sur une erreur réseau**, un seul message, nettoyage (lot « Quitter », sinon l'index seul), purge du cache.
+- **Accueil provisoire** (`MiffHomeHost`) : pastille de la Miff (sélecteur Premium), carte « Mes Miffs », « Pas encore de Miff », déconnexion. `SessionManager.onMiffEntered` / `continueAfterMiff` (fin d'onboarding comptée une fois, `miff_created` / `miff_joined` avec `is_first_miff`).
+- **Sécurité** : code via `SecRandomCopyBytes` ; aucun journal ; aucun état de restauration du code ; presse-papiers « local seulement » avec expiration à 2 minutes ; vignette du sélecteur d'applications masquée sur les écrans qui montrent le code ; `MiffName.clean` sur TOUT nom reçu du serveur (noms de Miff de `joinCodes` et de `miffs`, noms des membres, noms de lieux) ; identifiants lus sur le réseau vérifiés avant de devenir un chemin ; démarrage à froid : aucun accès Firestore avant la session ; annuaire vidé à la déconnexion.
+- **Reprise du second passage des revues d'Android** (PR #45) : `MiffName.fromServer` pour le nom d'un code et les noms de lieux (un nom sans rien de visible = code inconnu, lieu non montré) ; « Arrêter / Reprendre le partage » refusé parce que la fiche est déjà dans l'état voulu (autre téléphone) = succès ; un écran de la Miff qui passe en arrière-plan pendant la vérification d'un accès perdu redevient « chargement » et entend la perte de nouveau au retour (pas de page blanche).
+- **Textes** : clés `miff_*`, `feed_*`, `profile_tab_*` du catalogue (reprises d'Android) ; ajout de `ios_miff_ready_hint` ; retrait de `ios_next_miff_choice` et `ios_next_feed` (écran provisoire supprimé). `LocalizationTests` contrôle aussi les clés `miff_` et `feed_` du code.
+- **Tests** : code (alphabet, 1 000 tirages, biais, normalisation), nom (émojis et accents non coupés, contrôles bidirectionnels), pause des essais, contenu exact des lots (clés des règles, dates serveur, aucune coordonnée), interprétation des erreurs (réseau ≠ accès perdu), dépôt (ordre des vérifications, nettoyage avant écriture, atomicité, hors connexion sans file d'attente, collision de code, clé de l'index gratuit / Premium, lot dont la réponse s'est perdue), annuaire (message unique, purge, pas de boucle, fin de session), view models (créer, rejoindre, écran de la Miff, hors connexion, double appui), session (fin d'onboarding). Captures CI des nouveaux écrans (`-MiffPreview miff-*`, 16 + 2 avec la plus grande taille de texte). Checklist de recette `docs/qa/checklists/miff-3-ios-recette-pm.md`.
+
+Changé : `NetworkMonitor` (nouvelle méthode `onlineChanges()`), `LabeledFieldOptions` (style du texte saisi), `FirestoreErrorNumber` (code « quota épuisé »), `Spacing` (tailles du flux Miff), bouton secondaire.
+
+**Choix économiques** : aucun service, aucune dépendance, aucune permission ajoutée ; 0 €. Aucune règle Firestore modifiée. Lectures : ouverture de l'accueil = 1 lecture des appartenances + 1 par appartenance + 1 de l'abonnement ; écran de la Miff = 3 écoutes (Miff, membres, lieux), arrêtées en arrière-plan ; une seule lecture de l'accueil par session (pas une à chaque retour sur l'écran).
+
+**Limites connues** : `locationAccess` toujours `unknown` (l'app ne demande pas encore la localisation) ; lien de partage = racine du site public ; curseur qui saute en modifiant le milieu du code ; rendu, vignette du sélecteur d'applications, `PasteButton`, `ShareLink`, VoiceOver et zones sûres **à vérifier sur l'iPhone** (rien n'est compilé en local).
+
 ### AUTH-3, AUTH-4, ONB-5, ONB-6 - Parité Android de l'authentification et de l'onboarding
 
 Ajouté :

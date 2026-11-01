@@ -55,9 +55,20 @@ struct AppRootView: View {
         case .phoneOnly:
             ProfileFlowView(environment: environment, mode: .phoneOnly)
                 .id(profileKey(for: .phoneOnly))
-        case .miffChoice, .feed:
-            NextStepPlaceholderView(destination: destination, onSignOut: signOut)
+        case .miffChoice:
+            // L'onboarding n'est complet qu'une fois une Miff créée ou rejointe (CLAUDE.md).
+            MiffOnboardingHost(environment: environment)
+                .id(sessionKey(for: "choice"))
+        case .feed:
+            MiffHomeHost(environment: environment)
+                .id(sessionKey(for: "feed"))
         }
+    }
+
+    /// Un hôte neuf par compte et par session : la personne suivante ne retrouve jamais une navigation ni un écran de la
+    /// précédente.
+    private func sessionKey(for name: String) -> String {
+        "miff-\(name)-\(environment.session.currentUid ?? "")-\(environment.session.generation)"
     }
 
     /// Un view model par compte, par mode et par session : après une déconnexion la personne suivante ne retrouve jamais ce

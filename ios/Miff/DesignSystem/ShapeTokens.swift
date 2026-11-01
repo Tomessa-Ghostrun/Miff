@@ -73,4 +73,10 @@ enum Spacing {
     static let logoWidth: CGFloat = 200
     /// Cible tactile minimale : 44 pt (recommandation d'Apple, a la place des 48 dp d'Android).
     static let minTouchTarget: CGFloat = 44
+    /// Flux Miff (fiches design/screens/miff-*.md) : pastille d'une icone de section (33 x 33), l'icone dedans, la hauteur d'une
+    /// etiquette (« Createur », « Toi »), la photo d'un proche (46).
+    static let sectionIconBox: CGFloat = 33
+    static let sectionIcon: CGFloat = 20
+    static let pillHeight: CGFloat = 20
+    static let memberAvatar: CGFloat = 46
 }
