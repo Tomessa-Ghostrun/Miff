@@ -44,6 +44,11 @@ import com.tomessa.miff.ui.miff.MiffRoute
 import com.tomessa.miff.ui.miff.miffEntryRoutes
 import com.tomessa.miff.ui.miff.miffScreenRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.place.PlaceDetailRoute
+import com.tomessa.miff.ui.place.PlaceFormRoute
+import com.tomessa.miff.ui.place.PlacePaywallRoute
+import com.tomessa.miff.ui.place.ProfilePlacesSection
+import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
@@ -189,6 +194,18 @@ private fun MainNavigation(
                 onCreateMiff = { navController.open(CreateMiffRoute) },
                 onJoinMiff = { navController.open(JoinMiffRoute) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
+                placesContent = {
+                    (directoryState as? DirectoryState.Ready)?.let { ready ->
+                        ProfilePlacesSection(
+                            container = container,
+                            directory = ready,
+                            scopeKey = scopeKey,
+                            onOpenPlace = { miffId, placeId -> navController.open(PlaceDetailRoute(miffId, placeId)) },
+                            onAddPlace = { navController.open(PlaceFormRoute()) },
+                            onOpenOffer = { reason -> navController.open(PlacePaywallRoute.of(reason)) },
+                        )
+                    }
+                },
             )
         }
         composable<SettingsRoute> {
@@ -313,6 +330,7 @@ private fun MainNavigation(
             },
         )
         miffScreenRoute(container, navController)
+        placeRoutes(container, navController)
     }
 }
 
@@ -347,6 +365,7 @@ fun MainTabs(
     onCreateMiff: () -> Unit,
     onJoinMiff: () -> Unit,
     onOpenMiff: (String) -> Unit,
+    placesContent: @Composable () -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
@@ -376,6 +395,7 @@ fun MainTabs(
                             onRetry = onRetryProfile,
                             miffs = miffs,
                             onOpenMiff = onOpenMiff,
+                            placesContent = placesContent,
                         )
                     }
 

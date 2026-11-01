@@ -21,6 +21,7 @@ googleid = "1.2.1"
 libphonenumber = "9.0.42"
 exifinterface = "1.4.2"
 profileinstaller = "1.4.1"
+maplibre = "13.7.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -54,6 +55,10 @@ libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", vers
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 # Installs the Baseline Profile of the APK (AndroidX, Apache 2.0).
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
+# Map of the place form and detail (LOC-1): MapLibre Native (BSD-2-Clause, free, no key, no telemetry). Tiles: OpenFreeMap (no key).
+# The OpenGL ES flavour on purpose: the default "android-sdk" artifact draws with Vulkan and CRASHES the app on a phone without a
+# Vulkan GPU (seen on an emulator, 2026-11-01: "No Vulkan compatible GPU found"). OpenGL ES runs everywhere from minSdk 26.
+maplibre-android = { module = "org.maplibre.gl:android-sdk-opengl", version.ref = "maplibre" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
