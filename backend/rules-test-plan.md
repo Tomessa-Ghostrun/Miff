@@ -372,3 +372,39 @@ Constat à établir avant le développement Android : comment les règles compte
 | ND2 | Nom de 20 emojis (40 unités UTF-16, 20 code points, 80 octets UTF-8) | OK |
 | ND2b | Nom de 40 lettres « é » (40 unités, 80 octets UTF-8) : les règles comptent des caractères, pas des octets | OK |
 | ND3 | Mesure d'information : 30 emojis (30 code points, 60 unités UTF-16) | **Refusé** constaté : les règles comptent des unités UTF-16 (le cas n'échoue jamais, il imprime le constat) |
+
+## 17. R-LIEU-POS : dernière position connue (ticket `docs/tickets/lieux-de-confiance.md` v3 §6.9, §7, risques R16 à R18 ; décisions du PM du 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ
+
+Un document `miffs/{id}/positions/{uid}` = `{ lat, lng, measuredAt }` par membre et par Miff, **séparé du statut** (le statut garde un schéma fermé sans coordonnées : S11, S19). Écrit par son auteur seul, avec partage actif **et** texte de consentement de version 3 ou plus (lu par `getAfter` sur la fiche : 1 lecture de règles). Lu (`get` uniquement, jamais de liste) par soi-même, ou par un autre membre qui remplit les conditions des statuts (Miff existante, partage actif, statut publié) **plus** sa propre position publiée (réciprocité réelle). Le créateur n'a aucun droit de plus. Supprimé **dans le même lot** que le statut et la photo (arrêt du partage, départ, retrait). Tests dans `tests/rules/18-derniere-position.test.js` ; mutations dans `tests/tools/mutations-position.mjs` ; mesures de lectures dans `tests/rules/09-rule-reads.test.js` (`READS-position-*`). Fixtures : `bothPublished` = alice et bob ont le texte v3 et une position (leur statut existe déjà dans le jeu de départ).
+
+| # | Cas | Attendu |
+|---|---|---|
+| DP1 | `bob` (partage actif, texte v3) écrit, remplace puis modifie sa position | OK ; un seul document dans `positions` (aucun historique) |
+| DP2 | Version du consentement : `v1`, `2026-10-v1`, `2026-10-v2`, `2026-10-v02`, `2026-11-v0`, `2026-09-v1` ; formats invalides (`v3`, `3`, `2026-13-v3`, `2026-11-V3`...) ; puis `2026-11-v3`, `2026-10-v3`, `2026-10-v03`, `2027-01-v4`, `2026-12-v10`, `2027-02-v100` | KO pour les deux premiers groupes ; OK pour le dernier (le numéro doit valoir 3 ou plus, quel que soit le mois) |
+| DP2b | Version du consentement de la fiche `null` ou numérique | KO |
+| DP3 | Partage jamais activé (`carol`) ou arrêté (`bob`, `revokedAt` renseigné), même avec le texte v3 | KO |
+| DP4 | `bob` écrit `positions/alice` ; `alice` (créatrice) crée ou modifie `positions/bob` ; `eve`, visiteur, membre d'une autre Miff (`zoe`) | KO partout |
+| DP5 | Clé en trop (`accuracyM`, `speed`, `altitude`, `updatedAt`, `history`, `address`, `placeId`), clé manquante (chacune des trois), `lat` > 90 ou < -90, `lng` > 180 ou < -180, NaN, infini, texte, `null`, booléen | KO ; bornes incluses (90, -90, 180, -180, 0) : OK |
+| DP5b | `measuredAt` à -25 h, -3 jours, +10 min, +1 jour ; `null`, texte, nombre, booléen, 1970 | KO ; -23 h, +4 min, heure serveur : OK |
+| DP6 | `bob` et `alice` (texte v3, position publiée, statut publié) lisent la position l'un de l'autre | OK ; la valeur lue est celle enregistrée |
+| DP6b | `bob` sans sa propre position publiée ; sans son statut publié ; partage arrêté (état injecté) ; fiche retirée | KO pour chacun ; OK dès que la condition est rétablie |
+| DP6c | `carol` (partage désactivé), `eve`, `zoe` (autre Miff), visiteur ; Miff supprimée (survivant) | KO partout |
+| DP6d | Lecteur au consentement antérieur (texte sans position), statut publié, sans position : il ne lit rien ; il ne peut pas écrire sa position ; avec le texte v3 et sa position, il lit | KO, KO, puis OK |
+| DP7 | La créatrice lit celle d'un membre dans les mêmes conditions ; sans sa propre position, ou partage arrêté, ou dans une autre Miff : aucune exception | OK dans les conditions communes ; KO sinon |
+| DP8 | `list` de `positions` (membre qui partage, créatrice, requête filtrée, groupe de collections `positions`, étranger, visiteur) | KO partout |
+| DP9 | On relit toujours sa propre position, même partage arrêté ; pas celle des autres dans ce cas | OK / KO |
+| DP10 | Une position mesurée il y a plusieurs mois reste lisible : les règles n'appliquent pas de durée (le masquage après 24 h est un affichage du client, date toujours affichée) | OK (comportement figé, voir `data-model.md` §2.12) |
+| DP11 | `bob` arrête son partage : lot sans la suppression de la position ; lot avec la position seule ; lot complet (fiche + statut + photo + position) | KO, KO, OK ; la position a disparu et un autre membre ne la lit plus |
+| DP11b | Arrêt du partage sans aucune position enregistrée, lot de 3 comme avant | OK (rien à supprimer) |
+| DP12 | `bob` quitte la Miff : lot sans la position ; lot complet de 5 | KO ; OK |
+| DP12b | `alice` retire `bob` : lot sans la position ; lot de 7 (position comprise, nouveau code) | KO ; OK |
+| DP12c | `alice` supprime la Miff : lot final sans sa position ; avec | KO ; OK |
+| DP13 | Suppression d'une position par un autre membre, un étranger, un membre d'une autre Miff, un visiteur ; par la créatrice (retrait) ; par soi ; par un ex-membre dont la fiche a disparu | KO pour les quatre premiers ; OK pour les trois derniers |
+| DP13b | Le droit de suppression de la créatrice ne lui donne ni l'écriture de la position d'un membre ni sa lecture sans les conditions communes | KO |
+| DP14 | Après un arrêt, réactivation avec l'ancien texte : la présence repart, la position reste refusée ; arrêt puis réactivation avec le texte v3 : position acceptée | KO, puis OK |
+| DP14b | `carol` active le partage (texte v3) et écrit statut + position en UN lot ; même lot avec l'ancien texte (rien d'écrit) ; `bob` révoque et écrit sa position dans le même lot | OK ; KO ; KO |
+| DP15 | Aucune coordonnée ailleurs : statut (`lat`, `lng`, `measuredAt`), fiche de membre, profil, `positions/bob` hors d'une Miff, `users/bob/positions/x`, `places`, `photos`, chemin `position` | KO partout |
+| DP16 | Un compte premium écrit sa position pour 15 Miffs dans UN lot | OK (15 lectures de règles sur 20) |
+| DP16b | Le même pour 21 Miffs | KO en bloc, rien d'écrit (limite de 20) : le client écrit 15 Miffs au plus par lot |
+
+Cas touchés dans les sections précédentes : `leaveOps` (quitter) passe à 5 écritures et `removeMemberOps` (retrait) à 7 (la suppression de la position y est ajoutée : S4, M-retrait, H5 et les autres cas qui les réutilisent restent valables, la position n'existant pas dans le jeu de départ) ; les mesures `READS-leave`, `READS-remove-member`, `READS-delete-miff` et `READS-consent-off` incluent la suppression de la position. Les cas S11 et S19 (statut sans coordonnées) restent inchangés.

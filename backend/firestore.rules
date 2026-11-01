@@ -10,6 +10,8 @@ rules_version = '2';
 // (PR « ONB-B / MIFF-0 ») est donc PLUS STRICT que ce qui tourne en production, et les apps qui écrivent un profil ou
 // une fiche sans `phone` y seraient refusées. Tout déploiement suit la procédure du ticket
 // docs/tickets/durcissement-regles-firestore.md (§8.2) et l'accord explicite du PM.
+// Les évolutions « lieux » (R-LIEU-5, -2, -6) et « dernière position connue » (R-LIEU-POS, principe 9) sont PRÉPARÉES et NON
+// déployées : aucun déploiement sans le « oui » explicite du PM (docs/dev/deploiement-regles.md).
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -31,6 +33,14 @@ rules_version = '2';
 //  8. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
 //     des codes et les abus de volume sont atténués par App Check (à activer
 //     dans la console) + entropie du code (12 caractères, ~59 bits).
+//  9. Dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ : un document
+//     miffs/{id}/positions/{uid} par membre et par Miff (lat, lng, measuredAt, rien d'autre, aucun historique), SÉPARÉ du
+//     statut (le statut ne contient toujours aucune coordonnée). Écriture : par l'intéressé seul, partage actif ET texte de
+//     consentement de version 3 ou plus (jamais de position sans ce nouveau consentement). Lecture d'un autre membre : mêmes
+//     conditions que les statuts (Miff existante, partage actif, statut publié) PLUS avoir publié sa propre position
+//     (réciprocité réelle, comme ATK3) ; get seulement, jamais de liste. Le créateur n'a AUCUN droit de lecture de plus. Effacée
+//     dans le MÊME lot que le statut et la photo (arrêt du partage, départ, retrait) : les règles le EXIGENT.
+//     L'écriture de position lit UN document (getAfter de la fiche du membre) et ne doit jamais partager un lot avec des lieux.
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -99,6 +109,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/miffs/$(miffId)).data.ownerUid == request.auth.uid;
     }
 
+    // Créateur de la Miff en UNE seule lecture de règles (isOwner en coûte 2 : exists + get). Même résultat quand la Miff
+    // n'existe pas : get() échoue et la requête est refusée. À n'utiliser que dans une conjonction ou une disjonction
+    // POSITIVE, jamais derrière « ! ». Sert aux purges du créateur (statut, photo, position) pour que le lot de retrait d'un
+    // membre reste à 18 lectures de règles sur 20 une fois la position ajoutée (data-model.md §12).
+    function isOwnerOneRead(miffId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/miffs/$(miffId)).data.ownerUid == request.auth.uid;
+    }
+
     // Membre qui a lui-même activé le partage de position dans cette Miff.
     // (get() échoue si non-membre => refus.) Sert à la réciprocité.
     function mySharingOn(miffId) {
@@ -118,6 +137,15 @@ service cloud.firestore {
     function statusPublished(miffId) {
       return isSignedIn()
         && exists(/databases/$(database)/documents/miffs/$(miffId)/status/$(request.auth.uid));
+    }
+
+    // Réciprocité réelle de la position (R-LIEU-POS, même logique que ATK3) : avoir PUBLIÉ sa propre dernière position dans
+    // cette Miff (le document positions/{moi} existe). Un membre qui n'en partage aucune ne lit pas celle des autres. Comme
+    // ce document ne peut exister qu'avec un partage actif et le consentement de version 3 ou plus (validPosition), et
+    // disparaît à l'arrêt du partage, cette condition prouve aussi que le lecteur a accepté le même texte.
+    function positionPublished(miffId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/miffs/$(miffId)/positions/$(request.auth.uid));
     }
 
     // Retrait d'un membre (ATK4) : le code secret de la Miff CHANGE dans le même lot (l'ancien code
@@ -224,6 +252,15 @@ service cloud.firestore {
         );
     }
 
+    // Texte de consentement qui couvre la DERNIÈRE POSITION CONNUE (R-LIEU-POS, décision du PM du 2026-11-01 : nouveau
+    // consentement avant toute écriture de position). Les versions du partage s'écrivent AAAA-MM-vN (2026-10-v1, 2026-10-v2
+    // pour les textes sans position) ; le texte « position » est la version 3 : le NUMÉRO N doit valoir 3 ou plus (zéros de tête
+    // tolérés), quel que soit le mois. Hypothèse à confirmer avec les clients (le numéro 3 et le format viennent de la
+    // demande du PM, pas d'un texte déjà publié) : changer ce numéro est une ligne, un test et une mutation.
+    function isPositionConsentVersion(v) {
+      return v is string && v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v0*([3-9]|[1-9][0-9]+)$');
+    }
+
     // Consentement à la création du document membre.
     // Les 4 clés sont TOUJOURS présentes (null si non applicable).
     function validSharingCreate(s) {
@@ -239,7 +276,7 @@ service cloud.firestore {
 
     // Changement de consentement (o = ancien, n = nouveau).
     //  - activer   : consentedAt = maintenant, version du texte acceptée, revokedAt vidé
-    //  - révoquer  : revokedAt = maintenant ET statut + photo supprimés dans le même batch
+    //  - révoquer  : revokedAt = maintenant ET statut + photo + dernière position supprimés dans le même batch
     function validSharingChange(miffId, uid, o, n) {
       return n is map
         && n.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
@@ -255,7 +292,8 @@ service cloud.firestore {
             && n.consentedAt == o.consentedAt
             && n.consentVersion == o.consentVersion
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
-            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid)))
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid)))
         );
     }
 
@@ -331,12 +369,13 @@ service cloud.firestore {
         );
     }
 
-    // Quitter / être retiré : le statut et la photo doivent disparaître dans le
+    // Quitter / être retiré : le statut, la photo et la dernière position doivent disparaître dans le
     // même batch (sinon une trace de position resterait visible d'un ex-membre).
     function memberDeleteOk(miffId, uid) {
       return isSignedIn()
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
+        && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid))
         && (
           (isSelf(uid) && resource.data.role == 'member')
           // Le créateur ne peut partir qu'en supprimant la Miff dans le même batch.
@@ -488,6 +527,34 @@ service cloud.firestore {
         // Consentement actif APRÈS le batch (le membre peut activer le partage
         // et créer son statut dans le même batch).
         && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+    }
+
+    // Coordonnée valide : un nombre dans [-max, max] (NaN et l'infini échouent aux comparaisons).
+    function isCoordinate(v, max) {
+      return v is number && v >= -max && v <= max;
+    }
+
+    // Dernière position connue du membre dans UNE Miff (R-LIEU-POS). SEULEMENT latitude, longitude et heure de la mesure
+    // (aucune précision, aucune vitesse, aucune altitude, aucun historique : le document est écrasé). Données sensibles.
+    //  - lat / lng : nombres dans les plages valides (NaN et l'infini sont refusés par les comparaisons) ;
+    //  - measuredAt : heure de la mesure fournie par l'appareil, bornée comme les horodatages du statut (pas plus de 24 h dans
+    //    le passé, pas plus de 5 min dans le futur) ;
+    //  - consentement : partage actif ET texte de version 3 ou plus APRÈS le lot (getAfter : on peut activer le partage et
+    //    écrire la position dans le même lot, mais pas révoquer et écrire). UNE seule lecture de règles, aucune autre.
+    // La précision des coordonnées (5 décimales, ~1 m) est un contrat du client : une règle ne peut pas la contrôler
+    // proprement sur des nombres à virgule flottante.
+    function validPosition(miffId, uid) {
+      let d = request.resource.data;
+      let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
+      return d.keys().hasOnly(['lat', 'lng', 'measuredAt'])
+        && d.keys().hasAll(['lat', 'lng', 'measuredAt'])
+        && isCoordinate(d.lat, 90)
+        && isCoordinate(d.lng, 180)
+        && d.measuredAt is timestamp
+        && d.measuredAt >= request.time - duration.value(1, 'd')
+        && d.measuredAt <= request.time + duration.value(5, 'm')
+        && s.enabled == true
+        && isPositionConsentVersion(s.consentVersion);
     }
 
     // Photo de la dernière update (au plus une par membre et par Miff).
@@ -669,7 +736,21 @@ service cloud.firestore {
         allow get, list: if miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId);
         allow create, update: if isSelf(uid) && validStatus(miffId, uid);
         // Le propriétaire de la Miff peut purger (retrait d'un membre).
-        allow delete: if isSelf(uid) || isOwner(miffId);
+        allow delete: if isSelf(uid) || isOwnerOneRead(miffId);
+      }
+
+      // ---- Dernière position connue (très sensible, R-LIEU-POS) --------------
+      // Lecture : get seulement (un membre à la fois, bouton « Localiser » ; jamais de liste). Soi-même : toujours (transparence,
+      // « voir ce que je partage »). Un autre membre : Miff existante, partage actif, statut publié (comme les statuts) ET sa
+      // propre position publiée (réciprocité réelle). Le créateur n'a aucun droit de lecture de plus. L'affichage masqué après
+      // 24 h est une décision d'AFFICHAGE du client (la date reste affichée) : les règles ne l'appliquent pas, voir data-model.md.
+      // Écriture : par soi seul (validPosition). Suppression : soi, ou le créateur dans le lot de retrait d'un membre.
+      match /positions/{uid} {
+        allow get: if isSelf(uid)
+          || (miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId) && positionPublished(miffId));
+        allow list: if false;
+        allow create, update: if isSelf(uid) && validPosition(miffId, uid);
+        allow delete: if isSelf(uid) || isOwnerOneRead(miffId);
       }
 
       // ---- Photo de la dernière update (sensible) ---------------------------
@@ -682,7 +763,7 @@ service cloud.firestore {
           && (resource == null || resource.data.expiresAt > request.time);
         allow list: if false;
         allow create, update: if isSelf(uid) && validPhoto(miffId, uid);
-        allow delete: if isSelf(uid) || isOwner(miffId)
+        allow delete: if isSelf(uid) || isOwnerOneRead(miffId)
           || (isMember(miffId) && resource.data.expiresAt <= request.time);
       }
 
