@@ -408,3 +408,20 @@ Un document `miffs/{id}/positions/{uid}` = `{ lat, lng, measuredAt }` par membre
 | DP16b | Le même pour 21 Miffs | KO en bloc, rien d'écrit (limite de 20) : le client écrit 15 Miffs au plus par lot |
 
 Cas touchés dans les sections précédentes : `leaveOps` (quitter) passe à 5 écritures et `removeMemberOps` (retrait) à 7 (la suppression de la position y est ajoutée : S4, M-retrait, H5 et les autres cas qui les réutilisent restent valables, la position n'existant pas dans le jeu de départ) ; les mesures `READS-leave`, `READS-remove-member`, `READS-delete-miff` et `READS-consent-off` incluent la suppression de la position. Les cas S11 et S19 (statut sans coordonnées) restent inchangés.
+
+## 18. R-LIEU-3 : renouvellement d'un consentement de partage actif (acceptée par le PM, confirmée le 2026-11-01 « avant le Tracking ») — PRÉPARÉ, NON DÉPLOYÉ
+
+Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un texte plus récent, **sans arrêter le partage** (donc sans perdre statut, photo ni position, et sans rien exiger dans le lot). Conditions : `consentedAt` = heure serveur, `consentVersion` de 1 à 20 caractères et **strictement supérieure** à l'ancienne (comparaison alphabétique, comme `analyticsConsent`), `revokedAt` nul, les quatre clés exactes. **0 lecture de règles.** Tests dans `tests/rules/19-renouvellement-consentement.test.js` ; mutations dans `tests/tools/mutations-position.mjs` (RC-*) ; mesure `READS-consent-renew`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| RC1 | `bob` (partage actif, texte v1) renouvelle avec `2026-11-v3`, avec photo et position déjà enregistrées | OK ; version et date mises à jour, `enabled` vrai, `revokedAt` nul ; statut, photo et position conservés |
+| RC1b | Régression : `2026-10-v1` -> `2026-10-v2` -> `2026-11-v3` -> `2026-12-v4` ; position refusée en v2, permise dès la v3, conservée au renouvellement suivant | OK ; KO puis OK |
+| RC1c | Renouvellement et écriture de la position dans le même lot | OK |
+| RC2 | Même version, version plus ancienne, texte vide, `null`, nombre, 21 caractères | KO ; 20 caractères : OK |
+| RC2b | `consentedAt` du client, conservé ou nul ; `revokedAt` renseigné ; clé en trop, clé manquante, bloc nul | KO partout |
+| RC3 | `enabled=false` avec une version supérieure, sans purge (seul, avec statut et photo supprimés, ou avec la position supprimée mais déguisé en renouvellement) | KO : le renouvellement ne contourne pas l'arrêt du partage |
+| RC4 | Renouvellement par la créatrice, un autre membre, un étranger, un visiteur ; partage arrêté (désactivé -> désactivé) ; l'activation d'un partage arrêté reste celle d'avant | KO ; OK pour l'activation |
+| RC5 | Régression sur `2026-10-v2` : arrêt sans purge KO, arrêt avec purge OK, réactivation OK | KO ; OK ; OK |
+| RC6 | Limite documentée : `v9` -> `v10` (même mois) refusé ; mois suivant ou zéro de tête (`v09` -> `v10`) accepté | KO ; OK ; OK |
+| RC7 | Renouvellement dans deux Miffs en un lot | OK |

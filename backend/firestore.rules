@@ -10,8 +10,8 @@ rules_version = '2';
 // (PR « ONB-B / MIFF-0 ») est donc PLUS STRICT que ce qui tourne en production, et les apps qui écrivent un profil ou
 // une fiche sans `phone` y seraient refusées. Tout déploiement suit la procédure du ticket
 // docs/tickets/durcissement-regles-firestore.md (§8.2) et l'accord explicite du PM.
-// Les évolutions « lieux » (R-LIEU-5, -2, -6) et « dernière position connue » (R-LIEU-POS, principe 9) sont PRÉPARÉES et NON
-// déployées : aucun déploiement sans le « oui » explicite du PM (docs/dev/deploiement-regles.md).
+// Les évolutions « lieux » (R-LIEU-5, -2, -6) et « dernière position connue » (R-LIEU-POS, principe 9) et le renouvellement d'un consentement actif (R-LIEU-3) sont PRÉPARÉS et NON
+// déployés : aucun déploiement sans le « oui » explicite du PM (docs/dev/deploiement-regles.md).
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -277,6 +277,7 @@ service cloud.firestore {
     // Changement de consentement (o = ancien, n = nouveau).
     //  - activer   : consentedAt = maintenant, version du texte acceptée, revokedAt vidé
     //  - révoquer  : revokedAt = maintenant ET statut + photo + dernière position supprimés dans le même batch
+    //  - renouveler (partage actif -> actif) : nouveau texte, version strictement supérieure, rien à supprimer (R-LIEU-3)
     function validSharingChange(miffId, uid, o, n) {
       return n is map
         && n.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
@@ -294,6 +295,17 @@ service cloud.firestore {
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid)))
+          ||
+          // Renouveler un consentement ACTIF (R-LIEU-3, accepté puis confirmé par le PM le 2026-11-01) : le partage reste actif,
+          // un nouveau texte est accepté. Heure serveur, version du texte, revokedAt vide, version STRICTEMENT supérieure
+          // (comparaison de textes, comme analyticsConsent : jamais de rétrogradation ni de réécriture à l'identique). Aucune
+          // suppression de statut, de photo ni de position, et AUCUNE lecture de règles. Limite : l'ordre est alphabétique, donc
+          // v9 -> v10 serait refusé (échec fermé) tant que les numéros ne sont pas écrits avec un zéro de tête (v09 -> v10).
+          (o.enabled == true && n.enabled == true
+            && n.consentedAt == request.time
+            && isStr(n.consentVersion, 1, 20)
+            && n.consentVersion > o.consentVersion
+            && n.revokedAt == null)
         );
     }
 

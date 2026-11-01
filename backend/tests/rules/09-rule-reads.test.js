@@ -398,6 +398,17 @@ const scenarios = [
       ]),
   },
   {
+    // R-LIEU-3 : renouveler un consentement actif = une écriture de fiche, aucune lecture de règles.
+    id: 'READS-consent-renew',
+    title: 'renouveler un consentement de partage actif (écriture simple, R-LIEU-3)',
+    name: 'Renouvellement du consentement de partage (écriture simple)',
+    limit: 10,
+    hosts: [H.membersUpdate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': '2026-10-v2' })),
+    run: (env) =>
+      db(env, 'bob').doc(`${M1}/members/bob`).update({ sharing: { enabled: true, consentedAt: serverTs(), consentVersion: CONSENT_POSITION, revokedAt: null } }),
+  },
+  {
     id: 'READS-code-lookup',
     title: 'recherche d\'un code secret (get joinCodes)',
     name: 'Recherche d\'un code secret',
