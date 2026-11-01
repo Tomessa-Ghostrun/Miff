@@ -32,8 +32,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DeletionState
 import com.tomessa.miff.domain.miff.MiffMember
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
+import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -102,7 +102,7 @@ class MiffScreensMiff2Test {
         joinCode = code,
         isOwner = owner,
         members = members,
-        places = listOf(MiffPlace("p1", "Maison")),
+        places = listOf(testPlace("p1", "Maison")),
         myUid = if (owner) "me" else "u2",
         sharing = true,
         nameInput = "Famille Martin",

@@ -11,7 +11,6 @@ import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.testsupport.CODE
@@ -21,6 +20,7 @@ import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.RecordingSink
 import com.tomessa.miff.testsupport.miffDetails
+import com.tomessa.miff.testsupport.testPlace
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -381,7 +381,7 @@ class MiffViewModelsTest {
         members: List<MiffMember> = listOf(member("uid-owner", MiffRole.OWNER), member("uid-2")),
     ) = MiffObservation
         .Data(
-            MiffSnapshot(miffDetails(owner = owner), members, listOf(MiffPlace("p1", "Maison")), fromCache = false),
+            MiffSnapshot(miffDetails(owner = owner), members, listOf(testPlace("p1", "Maison")), fromCache = false),
         ).also { check(me.isNotEmpty()) }
 
     private fun screen(

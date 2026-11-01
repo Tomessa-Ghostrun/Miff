@@ -32,6 +32,15 @@ import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
+import com.tomessa.miff.data.place.CachedAddressSearch
+import com.tomessa.miff.data.place.FallbackAddressSearch
+import com.tomessa.miff.data.place.FirestorePlaceRepository
+import com.tomessa.miff.data.place.FirestorePlaceStore
+import com.tomessa.miff.data.place.GeoapifyAddressSearch
+import com.tomessa.miff.data.place.PhotonAddressSearch
+import com.tomessa.miff.data.place.PlaceNotices
+import com.tomessa.miff.data.place.PlaceRepository
+import com.tomessa.miff.data.place.UrlConnectionFetcher
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSink
@@ -226,6 +235,49 @@ class AppContainer(
         )
     }
 
+    /**
+     * The places (ticket LOC-1): create, edit, delete, in the Miffs the person created. Reads that decide a limit come from the
+     * server; every write is a transaction (nothing is queued offline). Built on first use, like the rest of the Miff data.
+     */
+    val placeRepository: PlaceRepository by lazy {
+        FirestorePlaceRepository(
+            store = FirestorePlaceStore(miffStore),
+            // An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place.
+            newId = {
+                FirebaseFirestore
+                    .getInstance()
+                    .collection("miffs")
+                    .document()
+                    .collection("places")
+                    .document()
+                    .id
+            },
+        )
+    }
+
+    /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */
+    val placeNotices: PlaceNotices by lazy { PlaceNotices() }
+
+    /**
+     * The suggestions of address of the form: Photon (free, no key) with the session cache; the Geoapify fallback exists only when a
+     * key was given at build time (never committed, see app/build.gradle.kts and docs/dev/lieux-fournisseurs-gratuits.md).
+     */
+    val addressSearch: CachedAddressSearch by lazy {
+        val fetcher = UrlConnectionFetcher(userAgent = "Miff-Android/${BuildConfig.VERSION_NAME}")
+        CachedAddressSearch(
+            FallbackAddressSearch(
+                primary = PhotonAddressSearch(BuildConfig.PHOTON_URL, fetcher),
+                fallback =
+                    BuildConfig.GEOAPIFY_KEY.takeIf { it.isNotEmpty() }?.let {
+                        GeoapifyAddressSearch(
+                            it,
+                            fetcher,
+                        )
+                    },
+            ),
+        )
+    }
+
     val sessionManager: SessionManager by lazy {
         StartupTrace.section("Miff.container.sessionManager") {
             SessionManager(
@@ -239,7 +291,15 @@ class AppContainer(
                 // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
                 // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
                 // sign-out stops them (ticket 7.6).
-                teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory),
+                teardown =
+                    listOf(
+                        profileDrafts.asTeardown(),
+                        currentProfile,
+                        consentWithdrawals,
+                        miffDirectory,
+                        placeNotices,
+                        addressSearch,
+                    ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
                 drafts = profileDrafts,
                 withdrawals = pendingWithdrawals,

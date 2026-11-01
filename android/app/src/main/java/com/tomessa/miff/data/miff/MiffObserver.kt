@@ -13,10 +13,10 @@ import com.tomessa.miff.domain.miff.MiffDetails
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.domain.miff.isAccessLostError
+import com.tomessa.miff.domain.place.Place
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -78,7 +78,7 @@ class FirestoreMiffObserver(
             val lock = Any()
             var miff: ObservedPiece<MiffDetails>? = null
             var members: ObservedPiece<List<MiffMember>>? = null
-            var places: ObservedPiece<List<MiffPlace>>? = null
+            var places: ObservedPiece<List<Place>>? = null
 
             fun publish() {
                 val current = synchronized(lock) { assembleObservation(miff, members, places) }
@@ -141,7 +141,7 @@ class FirestoreMiffObserver(
                                 ) {
                                     ObservedPiece(emptyList())
                                 } else {
-                                    ObservedPiece(placesOf(snapshot))
+                                    ObservedPiece(placesOf(miffId, snapshot))
                                 }
                         }
                         publish()
@@ -189,9 +189,13 @@ class FirestoreMiffObserver(
         val joinedAt: Long,
     )
 
-    private fun placesOf(snapshot: QuerySnapshot): List<MiffPlace> =
+    private fun placesOf(
+        miffId: String,
+        snapshot: QuerySnapshot,
+    ): List<Place> =
         snapshot.documents
-            .mapNotNull { doc -> doc.getString("name")?.let { MiffPlace.fromServer(doc.id, it) } }
+            // Cleaned like every text read from the server; a document that cannot be a place of this app is simply not shown.
+            .mapNotNull { doc -> Place.fromServer(doc.id, miffId, doc.data) }
             .sortedBy { it.name.lowercase() }
 }
 
@@ -211,7 +215,7 @@ internal class ObservedPiece<T>(
 internal fun assembleObservation(
     miff: ObservedPiece<MiffDetails>?,
     members: ObservedPiece<List<MiffMember>>?,
-    places: ObservedPiece<List<MiffPlace>>?,
+    places: ObservedPiece<List<Place>>?,
 ): MiffObservation =
     when {
         miff?.lost == true || members?.lost == true -> {

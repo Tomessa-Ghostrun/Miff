@@ -70,6 +70,8 @@ fun ProfileTabScreen(
     onRetry: () -> Unit,
     miffs: DirectoryState = DirectoryState.Loading,
     onOpenMiff: (String) -> Unit = {},
+    /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
+    placesContent: @Composable () -> Unit = {},
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -106,6 +108,7 @@ fun ProfileTabScreen(
             Unavailable(onRetry)
         }
         MiffCards(miffs, onOpenMiff)
+        placesContent()
     }
 }
 

@@ -1,5 +1,7 @@
 package com.tomessa.miff.domain.miff
 
+import com.tomessa.miff.domain.place.Place
+
 /*
  * SECURITY, for this file: names, code, photos and phone numbers are personal data or secrets. Every class that carries one
  * has a toString() that shows nothing, so that a log line or a crash report can never leak it.
@@ -34,22 +36,6 @@ class MiffMember(
     override fun toString(): String = "MiffMember(redacted)"
 }
 
-/** A place of the Miff, by its name only (creation and editing belong to the Places ticket). */
-class MiffPlace(
-    val id: String,
-    val name: String,
-) {
-    override fun toString(): String = "MiffPlace(redacted)"
-
-    companion object {
-        /** A place as the server describes it: the name is cleaned ([MiffName.fromServer]); a place with no visible name is dropped. */
-        fun fromServer(
-            id: String,
-            rawName: String,
-        ): MiffPlace? = MiffName.fromServer(rawName)?.let { MiffPlace(id, it) }
-    }
-}
-
 /** One document of `users/{uid}/memberships`: [key] is the id of the document, [miffId] the field that says which Miff. */
 data class MembershipRef(
     val key: String,
@@ -68,7 +54,7 @@ class MiffSummary(
 class MiffSnapshot(
     val miff: MiffDetails,
     val members: List<MiffMember>,
-    val places: List<MiffPlace>,
+    val places: List<Place>,
     /** True while what is shown comes from the phone's cache only (no answer of the server yet, or offline). */
     val fromCache: Boolean,
 ) {
