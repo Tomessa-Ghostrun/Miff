@@ -1,7 +1,7 @@
 # Sous-ticket — Un compte, un seul appareil (SESS)
 
-**Statut** : brouillon issu du challenge « Lieux de confiance et Tracking » (`docs/tickets/lieux-de-confiance.md`), **nouvelle exigence du PM du 2026-11-01 (QL17)** : quand on se connecte sur un appareil, les autres appareils connectés avec le même compte doivent être déconnectés. À valider par le PM avant tout développement.
-**Rédigé le** : 2026-11-01 (agent `product-specs`). Contraintes : plan Spark, **aucune Cloud Function**, sécurité non négociable, gratuit.
+**Statut** : **mécanisme validé par le PM le 2026-11-01** (réponse « OK » à S1, S2, S3 : document de session côté client + règles ; un appareil hors ligne n'est déconnecté qu'à son retour en ligne ; les règles refusent ses écritures entre-temps ; message de déconnexion proposé au §2.2). Issu du challenge « Lieux de confiance et Tracking » (`docs/tickets/lieux-de-confiance.md`), **exigence du PM (QL17)** : quand on se connecte sur un appareil, les autres appareils connectés avec le même compte doivent être déconnectés. **Reste avant développement** : la conception exacte des règles par `backend-data` (voie 1 ou 2, §3) et la mesure de lectures ; aucun déploiement sans « oui » explicite du PM.
+**Rédigé le** : 2026-11-01 (agent `product-specs`), mis à jour le 2026-11-01 après les réponses du PM. Contraintes : plan Spark, **aucune Cloud Function**, sécurité non négociable, gratuit.
 **Convention** : [Proposé] = ma proposition ; [À vérifier] = non confirmé ; aucune règle n'est modifiée ici.
 
 ---
@@ -72,10 +72,12 @@ Dépend de AUTH-1 / AUTH-3 ; à livrer **avant** la détection (LOC-2 / LOC-4) p
 - [ ] **SES7** Mesure des lectures : lancement ≤ 1 lecture de plus ; écriture de statut : marge ≥ 2 sur 10 (règles mesurées).
 - [ ] **SES8** Textes FR et EN identiques sur les deux plateformes, ton calme.
 
-## 8. Questions pour le PM
+## 8. Décisions du PM (2026-11-01) et questions restantes
 
-| # | Question | Reco |
+| # | Question | Décision du PM |
 |---|---|---|
-| **S1** | Valides-tu le principe « session = un document, la dernière connexion gagne », avec la limite de l'ancien appareil hors ligne ? | Oui |
-| **S2** | Veux-tu que les **règles refusent** les écritures d'un appareil remplacé (mesure de cohérence, +1 lecture de règles par statut) ? | Oui |
-| **S3** | Quel message affiché à l'appareil déconnecté (§2.2) ? | Texte proposé |
+| **S1** | Principe « session = un document, la dernière connexion gagne », avec la limite de l'ancien appareil hors ligne | **Validé** |
+| **S2** | Les **règles refusent** les écritures d'un appareil remplacé (mesure de cohérence, +1 lecture de règles par statut) | **Validé** |
+| **S3** | Message affiché à l'appareil déconnecté (§2.2) | **Texte proposé validé** |
+
+**Questions restantes pour le PM : aucune.** Points techniques pour `backend-data` (non décisionnels pour le PM) : voie 1 ou 2 du §3 (`auth_time` à vérifier ou `deviceId` dans le statut) et mesure de lectures. **Note nouvelle (2026-11-01)** : si la dernière position connue est stockée côté serveur (`lieux-de-confiance.md` §7), l'écriture de position doit aussi être refusée pour un appareil remplacé (même contrôle que le statut) : à intégrer à la conception de R-LIEU-POS.
