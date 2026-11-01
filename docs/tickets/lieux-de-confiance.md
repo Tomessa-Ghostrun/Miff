@@ -706,6 +706,8 @@ Codes : **PL** lieu, **LIM** limites, **MIF** multi-Miffs, **ADR** adresse et ca
 `design/exports/lieux/` (7 images) : formulaire complet, modification, confirmation de suppression, aperçu de carte. `design/exports/onboarding-original/` : **écran 19** (autorisation des notifications), **écrans 20, 21, 22** (autorisation de la localisation : « Toujours autoriser », « Autoriser la localisation en arrière plan », état d'erreur rouge). **Ces quatre écrans correspondent au ticket Tracking** (Android) et deviennent la référence, au tutoiement. `design/exports/profil/` : liste « Lieux de la Miff » (nom, adresse, « Ajouter »).
 
 ### 18.2 Manquantes (à dessiner par `design-system`, puis à exporter par le PM)
+
+> **Mise à jour du 2026-11-01** : les points 1 à 9, 11, 12 et la correction du point 8 ont été dessinés dans le dépôt (fiches `design/screens/lieux/`, maquettes HTML et PNG `design/exports/lieux/claude/`), **sans Figma** (le PM le juge inutile). Restent non dessinés : 10 (écran de diagnostic interne) et 13 (cartes du Feed). Décisions de design à valider : `design/screens/lieux/README.md`.
 1. **Suggestions d'adresse** sous le champ (liste, chargement, aucune, indisponible) ; saisie de l'adresse choisie.
 2. **Sélection de plusieurs Miffs** (la maquette montre une liste déroulante à valeur unique) ; état « une seule Miff créée ».
 3. **Écrans iOS d'autorisation** (« Toujours » obligatoire, évolution depuis « Lorsque l'app est active ») et état « autorisation retirée / réaffichage ».
