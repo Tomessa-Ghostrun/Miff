@@ -45,6 +45,12 @@ sealed interface MiffRead {
     data object Missing : MiffRead
 }
 
+/** What MY card says about the consent: whether I share, and the version of the text I accepted (null if the card has none). */
+data class SharingConsentRead(
+    val enabled: Boolean,
+    val version: String?,
+)
+
 /** `entitlements/{uid}`: only what the client needs to choose the key of the index. */
 data class EntitlementRead(
     val active: Boolean,
@@ -79,6 +85,15 @@ interface MiffStore {
         miffId: String,
         uid: String,
     ): Boolean?
+
+    /**
+     * My consent as my card says it (LOC-2a: is the version of the text I accepted an old one?), read from the SERVER; null if there is
+     * no card. One read of rules (`isMember`, `miffAlive`) and one document.
+     */
+    suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ): SharingConsentRead?
 
     /** A read that only the person can do and that always works when the server is reachable and App Check is fine. */
     suspend fun serverReachable(uid: String): Boolean
@@ -165,6 +180,25 @@ class FirestoreMiffStore(
                 .get(Source.SERVER)
                 .await()
         return if (snapshot.exists()) snapshot.getBoolean("sharing.enabled") else null
+    }
+
+    override suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ): SharingConsentRead? {
+        val snapshot =
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("members")
+                .document(uid)
+                .get(Source.SERVER)
+                .await()
+        if (!snapshot.exists()) return null
+        return SharingConsentRead(
+            enabled = snapshot.getBoolean("sharing.enabled") == true,
+            version = snapshot.getString("sharing.consentVersion"),
+        )
     }
 
     override suspend fun readEntitlement(uid: String): EntitlementRead? {

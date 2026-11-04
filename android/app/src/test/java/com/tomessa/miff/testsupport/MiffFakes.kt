@@ -104,6 +104,22 @@ class FakeMiffStore : MiffStore {
         return sharing
     }
 
+    /** The consent of my card by Miff id (LOC-2a), or an exception to throw (offline, refused). Missing = no card. */
+    val consents = mutableMapOf<String, Any>()
+
+    override suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ): com.tomessa.miff.data.miff.SharingConsentRead? {
+        calls += "consent:$miffId"
+        return when (val answer = consents[miffId]) {
+            null -> null
+            is Exception -> throw answer
+            is com.tomessa.miff.data.miff.SharingConsentRead -> answer
+            else -> error("unexpected")
+        }
+    }
+
     override suspend fun serverReachable(uid: String): Boolean {
         calls += "reachable"
         return reachable

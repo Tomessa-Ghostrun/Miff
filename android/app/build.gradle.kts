@@ -46,6 +46,14 @@ android {
         buildConfigField("String", "PLACE_MAP_STYLE_URL", "\"$mapStyleUrl\"")
         buildConfigField("String", "PHOTON_URL", "\"$photonUrl\"")
         buildConfigField("String", "GEOAPIFY_KEY", "\"$geoapifyKey\"")
+        // LOC-2a. Compile-time switch (AUT6, decision (e) of the PM): the location screen "Toujours autoriser" is BLOCKING by default, because
+        // Miff only works with the precise location all the time. -Pmiff.locationBlocking=false relaxes it (a "Plus tard" link appears) in
+        // case a store refuses the blocking (Apple 5.1.2(i) is the known risk, assumed by the PM). Only "true" or "false" are accepted.
+        val locationBlocking = providers.gradleProperty("miff.locationBlocking").getOrElse("true")
+        require(
+            locationBlocking == "true" || locationBlocking == "false",
+        ) { "miff.locationBlocking must be true or false" }
+        buildConfigField("boolean", "LOCATION_BLOCKING", locationBlocking)
         // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
         buildConfigField("boolean", "STARTUP_METRICS", "false")
     }

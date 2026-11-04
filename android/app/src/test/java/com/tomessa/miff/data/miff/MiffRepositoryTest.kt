@@ -142,7 +142,10 @@ class MiffRepositoryTest {
             val result = repo().prepareJoin(uid, CODE)
             assertTrue(result is JoinPreparation.Ready)
             assertEquals("only the lot that went through is recorded", 1, store.commitsAsLots.size)
-            assertEquals(listOf("users/$uid/memberships/free"), store.commitsAsLots.single().map { it.path })
+            assertEquals(
+                listOf("miffs/$OTHER_MIFF_ID/positions/$uid", "users/$uid/memberships/free"),
+                store.commitsAsLots.single().map { it.path },
+            )
             assertEquals(2, store.calls.count { it == "commit" })
         }
 
@@ -416,10 +419,10 @@ class MiffRepositoryTest {
         }
 
     @Test
-    fun setSharing_stop_isTheLotOfThree_resume_theLotOfTwo() =
+    fun setSharing_stop_isTheLotOfFour_resume_theLotOfTwo() =
         runTest {
             assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = false))
-            assertEquals(3, store.commitsAsLots.last().size)
+            assertEquals(4, store.commitsAsLots.last().size)
             assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = true))
             assertEquals(2, store.commitsAsLots.last().size)
         }
@@ -437,11 +440,11 @@ class MiffRepositoryTest {
         runTest {
             val lost = LostMiff(MembershipRef("free", MIFF_ID), "Chez nous")
             assertTrue(repo().cleanUpLost(uid, lost))
-            assertEquals(4, store.commitsAsLots.single().size)
+            assertEquals(5, store.commitsAsLots.single().size)
             store.commitsAsLots.clear()
             store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED), null))
             assertTrue(repo().cleanUpLost(uid, lost))
-            assertEquals(1, store.commitsAsLots.single().size)
+            assertEquals(2, store.commitsAsLots.single().size)
         }
 
     @Test
@@ -540,6 +543,11 @@ open class MiffStoreByDelegation(
         miffId: String,
         uid: String,
     ) = inner.readSharing(miffId, uid)
+
+    override suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ) = inner.readSharingConsent(miffId, uid)
 
     override suspend fun commitWithProfile(
         uid: String,

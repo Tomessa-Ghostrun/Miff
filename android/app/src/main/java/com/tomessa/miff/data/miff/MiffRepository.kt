@@ -192,7 +192,7 @@ interface MiffRepository {
     suspend fun renewCode(miffId: String): CodeChangeResult
 
     /**
-     * Removes one member (ticket R1 to R7): the creator only. ONE lot of 6 writes that ALWAYS renews the code (the rules refuse a
+     * Removes one member (ticket R1 to R7): the creator only. ONE lot of 7 writes that ALWAYS renews the code (the rules refuse a
      * removal that does not), even if the person had already left. Headless on purpose: the Premium ticket (end of a subscription)
      * and the deletion of an account (AUTH-5) call it with no screen. Never queued offline: no answer from the server = nothing
      * written (the lot is a transaction).
@@ -202,7 +202,7 @@ interface MiffRepository {
         targetUid: String,
     ): CodeChangeResult
 
-    /** "Quitter la Miff" (ticket Q1): a member only (the creator can only delete the Miff). ONE lot of 4 deletions. */
+    /** "Quitter la Miff" (ticket Q1): a member only (the creator deletes the Miff instead). ONE lot of 5 deletions. */
     suspend fun leave(
         uid: String,
         miffId: String,
@@ -533,7 +533,7 @@ class FirestoreMiffRepository(
         val leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
         if (leave == MiffWriteResult.Done) return true
         // Removed: the card is already gone, the lot is refused. Only the index is left, and the rules allow deleting it now.
-        val indexOnly = write { store.commit(MiffWrites.dropIndex(uid, lost.ref.key)) }
+        val indexOnly = write { store.commit(MiffWrites.dropIndex(lost.ref.miffId, uid, lost.ref.key)) }
         return indexOnly == MiffWriteResult.Done
     }
 

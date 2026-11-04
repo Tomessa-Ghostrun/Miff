@@ -142,7 +142,7 @@ class MiffDeletion(
                 is Guarded.Failed -> return MiffDeletionResult.Paused(read.failure)
             }
         refs.filter { it.miffId == miffId }.forEach { ref ->
-            val dropped = guardedCall(timeoutMillis) { store.commit(MiffWrites.dropIndex(uid, ref.key)) }
+            val dropped = guardedCall(timeoutMillis) { store.commit(MiffWrites.dropIndex(miffId, uid, ref.key)) }
             if (dropped is Guarded.Failed) return MiffDeletionResult.Paused(dropped.failure)
         }
         return MiffDeletionResult.Deleted

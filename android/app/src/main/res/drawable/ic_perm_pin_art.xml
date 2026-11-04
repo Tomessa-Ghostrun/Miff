@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pin of the permission pop-ins (design/exports/pop-ins). PROVISIONAL drawing: the PM exports the real one from Figma. Brand colour. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp"
+    android:height="72dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D1D828"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M36,52C36,52 19,36 19,25a17,17 0 0,1 34,0C53,36 36,52 36,52z M36,19.5a5.5,5.5 0 1,0 0.01,0z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D1D828"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M24,50C14,52 10,56 10,60c0,6 12.5,10 26,10s26,-4 26,-10c0,-4 -4,-8 -14,-10" />
+</vector>
