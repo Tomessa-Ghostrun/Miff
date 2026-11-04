@@ -560,6 +560,20 @@ final class SessionManagerTests: XCTestCase {
         XCTAssertEqual(harness.cache.purgeCalls, 0)
     }
 
+    func testAStaleSignedOutAnnouncementNeverEndsASessionThatIsOpen() async {
+        let harness = SessionHarness()
+        await openPanel(harness)
+
+        // L'annonce « personne n'est connecté » (celle de l'ouverture du flux) n'est lue qu'une fois la connexion faite.
+        await harness.manager.handleUidChange(nil)
+
+        XCTAssertEqual(harness.manager.state, ready(.consentPanel))
+        XCTAssertEqual(harness.gateway.currentUid, "uid-1")
+        XCTAssertEqual(harness.gateway.signOutCalls, 0)
+        XCTAssertEqual(harness.cache.purgeCalls, 0)
+        XCTAssertNil(harness.manager.consumeNotice())
+    }
+
     func testASessionLostWhileTheAccountIsBeingReadIsStillCleanedUp() async {
         let harness = SessionHarness()
         harness.gateway.setSignedIn("uid-1")

@@ -2,6 +2,12 @@
 
 ## Non publié
 
+### Correctif - tests instables du gestionnaire de session (course réelle sur la « session perdue »)
+
+Trois tests échouaient au hasard en CI (`SessionManagerTests.testPanelRefuseWhenTheDeletionFailsStaysOnThePanel`, `SessionManagerTests.testPanelRefuseDeletesTheAccountKeepsNothingSendsNothingAndComesBackToSignIn`, `SignUpViewModelTests.testAppleFromSignUpIsAnImplicitAcceptanceToo`). Cause : un défaut du code, pas des tests. Le guetteur de « session perdue » ouvrait son écoute au premier tour d'une tâche, et lisait l'annonce « personne n'est connecté » de l'ouverture du flux APRÈS la connexion, avec l'état de l'écran de ce moment-là : il déconnectait alors, à tort, un compte tout juste connecté (et pouvait lancer une seconde fin de session en parallèle d'un refus).
+
+Changé : l'écoute est ouverte tout de suite dans `startAndResolve` ; une annonce « déconnecté » ne termine une session (`SessionManager.handleUidChange`) que si plus personne n'est vraiment connecté au moment où elle est lue. Ajouté : un test déterministe de cette règle. Aucun service, dépendance ni coût ajoutés.
+
 ### MIFF-3 - Créer, rejoindre, écran de la Miff, partage du statut, accès perdu (miroir d'Android MIFF-1)
 
 Tickets `docs/tickets/miff.md` (§8, §16), décisions du PM `miff-questions-pm.md` (QM1 à QM15) et `feed-profil-reglages.md` §13 ; maquettes `design/exports/miff/`. Retirer, quitter, supprimer, renouveler le code et « Prévenir mes proches » sont **MIFF-4** : aucun bouton n'est dessiné pour eux. Détail de l'architecture, de la sécurité, des écarts avec les maquettes et des limites : `README.md`, section « Miffs ».
