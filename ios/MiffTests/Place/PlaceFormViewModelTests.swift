@@ -350,7 +350,9 @@ final class PlaceFormViewModelTests: XCTestCase {
     // MARK: - Les Miffs (MIF1)
 
     private func fiveAndOne() async -> PlaceFormViewModel {
-        let owned = (1...6).map { OwnedMiff(id: String(format: "MIFFID%014ld", $0), name: "Miff \($0)", joinedAtMillis: $0) }
+        let owned = (1...6).map { index in
+            OwnedMiff(id: String(format: "MIFFID%014ld", index), name: "Miff \(index)", joinedAtMillis: index)
+        }
         return await viewModel(context: context(premium: true, owned: owned))
     }
 
