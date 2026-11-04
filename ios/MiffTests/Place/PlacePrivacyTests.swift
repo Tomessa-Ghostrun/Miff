@@ -76,7 +76,9 @@ final class PlacePrivacyTests: XCTestCase {
     }
 
     func testTheSourcesAreFound() throws {
-        XCTAssertGreaterThanOrEqual(try placeSources().count, 25)
+        let sources = try placeSources()
+
+        XCTAssertGreaterThanOrEqual(sources.count, 25)
     }
 
     func testNothingIsLoggedNoErrorIsReportedNoEventOrClipboardCarriesAPlace() throws {
