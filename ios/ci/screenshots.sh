@@ -97,6 +97,18 @@ shot 62-fr-miff-accueil 2 "${fr_args[@]}" -MiffPreview miff-home
 shot 63-fr-miff-accueil-sans-miff 2 "${fr_args[@]}" -MiffPreview miff-home-empty
 shot 64-en-miff-rejoindre-confirmation 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-join-confirm
 shot 65-en-miff-ecran-createur 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-screen-owner
+# MIFF-4 : retirer, renouveler le code, quitter, supprimer. Les questions sont des feuilles : attente de 3 s (animation).
+shot 68-fr-miff-retirer 3 "${fr_args[@]}" -MiffPreview miff-screen-remove
+shot 69-fr-miff-retire-nouveau-code 3 "${fr_args[@]}" -MiffPreview miff-screen-removed
+shot 70-fr-miff-renouveler 3 "${fr_args[@]}" -MiffPreview miff-screen-renew
+shot 71-fr-miff-invitation-depart 2 "${fr_args[@]}" -MiffPreview miff-screen-invite
+shot 72-fr-miff-quitter 3 "${fr_args[@]}" -MiffPreview miff-screen-leave
+shot 73-fr-miff-supprimer 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 74-fr-miff-supprimer-seul 3 "${fr_args[@]}" -MiffPreview miff-screen-delete-alone
+shot 75-fr-miff-suppression-en-cours 3 "${fr_args[@]}" -MiffPreview miff-screen-deleting
+shot 76-fr-miff-suppression-pause 3 "${fr_args[@]}" -MiffPreview miff-screen-deleting-paused
+shot 77-fr-miff-supprimee 3 "${fr_args[@]}" -MiffPreview miff-screen-deleted
+shot 78-en-miff-supprimer 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-screen-delete
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
@@ -119,6 +131,8 @@ shot 41-fr-telephone-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_F
 shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview carousel1
 shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
 shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
+shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 80-fr-miff-nouveau-code-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-removed
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

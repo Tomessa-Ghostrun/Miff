@@ -34,6 +34,13 @@ struct MiffMember: Equatable, CustomStringConvertible {
         "\(firstName) \(lastName)".trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Comment les questions du créateur nomment cette personne (« Retirer {prénom} de la Miff ? ») : le prénom, ou le nom de
+    /// famille quand le prénom n'a rien de visible. Jamais écartée de la liste pour autant : le créateur doit pouvoir la retirer.
+    var callName: String {
+        let first = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return first.isEmpty ? lastName.trimmingCharacters(in: .whitespacesAndNewlines) : first
+    }
+
     var description: String {
         "MiffMember(redacted)"
     }

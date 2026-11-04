@@ -5,7 +5,8 @@ import Combine
 
 // SÉCURITÉ, pour ce fichier : le nom, le code, les noms et les photos des membres sont des données personnelles / un secret.
 // Ils vivent en mémoire dans cet état seulement : jamais dans un journal, un événement Analytics (aucun n'est envoyé depuis
-// cet écran) ni un rapport de plantage.
+// cet écran) ni un rapport de plantage. Le NOUVEAU code rendu par un retrait ou un renouvellement est gardé ici pour la
+// fenêtre qui le montre, et nulle part ailleurs.
 
 enum MiffScreenStatus: Equatable {
     case loading
@@ -53,10 +54,28 @@ struct MiffScreenState: CustomStringConvertible {
     var nameSaved = false
     /// Monte à « Réessayer » : l'écran relance l'écoute.
     var restart = 0
+    /// La fenêtre de MIFF-4 qui est ouverte, s'il y en a une.
+    var action: MiffAction?
+    /// Le lot de cette fenêtre est en route vers le serveur : rien d'autre ne peut être touché (un appui = une opération).
+    var actionBusy = false
+    /// Où en est la suppression de CETTE Miff (nil = aucune en cours).
+    var deletion: DeletionState?
+    /// « Un proche a quitté la Miff. Tu veux créer un nouveau code ? » (le créateur, une fois par départ).
+    var inviteToRenew = false
+    /// « Nouveau code créé. » jusqu'à ce que la personne fasse autre chose.
+    var codeRenewed = false
+    /// La personne a quitté cette Miff : l'écran se ferme (la Miff n'est plus à elle).
+    var departed = false
+
+    /// La suppression est en cours (ou finie) : plus rien d'autre n'est écrit sur cette Miff.
+    var deletionActive: Bool {
+        deletion != nil
+    }
 
     /// « Enregistrer » n'est actif que si le nom a changé ET est valide (critère G3).
     var canSaveName: Bool {
-        isOwner && !saving && !offline && MiffName.isValid(nameInput) && MiffName.stored(nameInput) != name
+        isOwner && !saving && !offline && !deletionActive && MiffName.isValid(nameInput)
+            && MiffName.stored(nameInput) != name
     }
 
     /// À 15 membres ou plus, « Partager le code » est remplacé par une phrase calme (décision QM5, un plafond doux).
@@ -65,7 +84,12 @@ struct MiffScreenState: CustomStringConvertible {
     }
 
     var canWrite: Bool {
-        !offline && !saving && !sharingBusy
+        !offline && !saving && !sharingBusy && !actionBusy && !deletionActive
+    }
+
+    /// Les autres membres, dans l'ordre de la liste (la ligne du créateur n'en fait jamais partie).
+    var others: [MiffMember] {
+        members.filter { $0.uid != myUid }
     }
 
     var description: String {
@@ -83,23 +107,40 @@ struct MiffScreenDependencies {
     /// « Réessayer » et personne n'est informé de rien.
     let onAccessLost: (String, String?) async -> Bool
     let onNameChanged: () async -> Void
+    /// La suppression d'une Miff, qui continue même si l'écran est quitté (critère S3).
+    let deletions: DeletionController
+    /// Après un « Quitter » confirmé par le serveur : aucun message d'accès perdu pour un départ voulu, purge du cache, liste
+    /// des Miffs relue.
+    let onLeft: (String) async -> Void
 }
 
 /// L'écran d'une Miff, pour son créateur (F) et pour un membre (G) : le nom (le créateur peut le changer), le code à
 /// partager, les proches, « Partager mon statut » (arrêter / reprendre à tout moment, critères K5 et K6), les lieux. Aucun
-/// statut, aucune batterie, aucune position, aucune photo d'update n'apparaît ici (critère G7). Retirer, quitter, supprimer
-/// et renouveler appartiennent à MIFF-4.
+/// statut, aucune batterie, aucune position, aucune photo d'update n'apparaît ici (critère G7).
+///
+/// MIFF-4 ajoute ce qui change qui est dans la Miff (voir `MiffScreenViewModel+Actions.swift`) : le créateur retire un proche
+/// (le code est renouvelé par le même lot), renouvelle le code, ou supprime la Miff ; un membre la quitte. Chacun est d'abord
+/// une question, puis UN lot confirmé par le serveur : sans réseau le bouton est gris et rien n'est mis en attente.
 ///
 /// La lecture est en direct (trois écoutes, voir `FirestoreMiffObserver`). Écrire exige le serveur : sans réseau, les boutons
 /// sont gris et rien n'est mis en attente (critère H5). Une perte d'accès est confiée à `onAccessLost` ; une coupure réseau
-/// n'en est pas une (critère D3).
+/// n'en est pas une (critère D3). Un départ que la personne a choisi (quitter, supprimer) ne lui est jamais annoncé comme une
+/// perte.
 @MainActor
 final class MiffScreenViewModel: ObservableObject {
     @Published private(set) var state: MiffScreenState
 
-    private let miffId: String
-    private let dependencies: MiffScreenDependencies
+    // Visibles de `MiffScreenViewModel+Actions.swift` (même module) : c'est le seul autre fichier qui s'en sert.
+    let miffId: String
+    let dependencies: MiffScreenDependencies
     private var lostReported = false
+    /// Vrai du premier appui sur « Quitter » jusqu'à la réponse : un refus entendu entre-temps est le départ lui-même.
+    var leaving = false
+    /// Les personnes que ce créateur a retirées depuis cet écran : leur disparition n'est pas un « départ » qui mérite une
+    /// invitation.
+    var removedByMe = Set<String>()
+    /// La dernière liste de membres vue, pour trouver qui est parti (nil tant qu'aucune image n'existe).
+    var previousMembers: [MiffMember]?
 
     init(miffId: String, dependencies: MiffScreenDependencies) {
         self.miffId = miffId
@@ -110,9 +151,16 @@ final class MiffScreenViewModel: ObservableObject {
         state = first
     }
 
+    /// Change l'état depuis `MiffScreenViewModel+Actions.swift` (le setter de `state` reste privé à ce fichier).
+    func update(_ change: (inout MiffScreenState) -> Void) {
+        var next = state
+        change(&next)
+        state = next
+    }
+
     /// Lit la Miff en direct jusqu'à ce que l'appelant arrête (l'écran l'appelle dans une tâche annulée quand l'app passe en
-    /// arrière-plan ou que l'écran disparaît : les trois écoutes Firestore et la veille du réseau s'arrêtent, rien n'écoute
-    /// une Miff que personne ne regarde).
+    /// arrière-plan ou que l'écran disparaît : les trois écoutes Firestore, la veille du réseau et celle de la suppression
+    /// s'arrêtent, rien n'écoute une Miff que personne ne regarde).
     func observe() async {
         let network = dependencies.network
         let watcher = Task { [weak self] in
@@ -120,8 +168,17 @@ final class MiffScreenViewModel: ObservableObject {
                 self?.state.offline = !online
             }
         }
+        let deletionWatcher = Task { [weak self] in
+            guard let self else {
+                return
+            }
+            for await states in self.dependencies.deletions.stateStream() {
+                self.state.deletion = states[self.miffId]
+            }
+        }
         defer {
             watcher.cancel()
+            deletionWatcher.cancel()
         }
         for await observation in dependencies.repository.observe(miffId: miffId) {
             await handle(observation)
@@ -145,7 +202,8 @@ final class MiffScreenViewModel: ObservableObject {
     }
 
     private func handleLoss() async {
-        if lostReported {
+        // Une Miff que la personne quitte ou supprime disparaît de son propre fait : ce n'est pas une perte (rien n'est annoncé).
+        if lostReported || leaving || state.departed || state.deletionActive {
             return
         }
         lostReported = true
@@ -189,6 +247,16 @@ final class MiffScreenViewModel: ObservableObject {
 
     private func apply(_ snapshot: MiffSnapshot) {
         let uid = dependencies.currentUid() ?? ""
+        let owner = snapshot.miff.ownerUid == uid
+        // Qui est parti depuis la dernière image : une invitation à renouveler le code, pour le créateur seulement, et jamais
+        // pendant la suppression (les membres disparaissent alors un à un, par le fait du créateur lui-même).
+        let departures = MemberDepartures.between(
+            previous: previousMembers,
+            current: snapshot.members,
+            myUid: uid,
+            removedByMe: removedByMe
+        )
+        previousMembers = snapshot.members
         var next = state
         // Ce que la personne est en train de taper n'est jamais écrasé par un changement qui arrive pendant qu'elle tape.
         let untouched = next.status != .ready || next.nameInput == next.name
@@ -196,7 +264,7 @@ final class MiffScreenViewModel: ObservableObject {
         next.status = .ready
         next.name = saved
         next.joinCode = snapshot.miff.joinCode
-        next.isOwner = snapshot.miff.ownerUid == uid
+        next.isOwner = owner
         next.members = snapshot.members
         next.places = snapshot.places
         next.myUid = uid
@@ -205,6 +273,7 @@ final class MiffScreenViewModel: ObservableObject {
             next.nameInput = saved
         }
         next.fromCache = snapshot.fromCache
+        next.inviteToRenew = next.inviteToRenew || (owner && !departures.isEmpty && !next.deletionActive)
         state = next
     }
 

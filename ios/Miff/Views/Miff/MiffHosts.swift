@@ -98,6 +98,8 @@ struct MiffHomeHost: View {
     private let environment: AppEnvironment
     @ObservedObject private var directory: MiffDirectory
     @State private var path: [MiffRoute] = []
+    /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
+    @State private var banner: DeletionBanner?
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -115,6 +117,9 @@ struct MiffHomeHost: View {
                     }
             }
             .accessibilityHidden(directory.notices.first != nil)
+            if let banner {
+                DeletionBannerView(banner: banner)
+            }
             if let notice = directory.notices.first {
                 AccessLostView(miffName: notice.name, onAcknowledge: { acknowledge(notice) })
             }
@@ -123,6 +128,36 @@ struct MiffHomeHost: View {
         // serveur que l'accès à chaque Miff existe encore, avant d'en montrer quoi que ce soit (ticket §5.7, critère D2).
         .task {
             await directory.refreshIfNeeded()
+        }
+        // Une suppression non terminée est reprise au lancement (critère S4), et une suppression qui se termine pendant que la
+        // personne est ailleurs que sur l'écran de cette Miff est dite avec calme.
+        .task {
+            await watchDeletions()
+        }
+        .task(id: banner) {
+            guard banner != nil else {
+                return
+            }
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            banner = nil
+        }
+    }
+
+    /// Le flux d'annonces est ouvert AVANT la reprise : rien de ce qu'elle annonce n'est perdu.
+    private func watchDeletions() async {
+        let deletions = environment.miffDeletions
+        let notices = deletions.notices()
+        deletions.resumePending()
+        for await notice in notices {
+            switch notice {
+            case .resumed:
+                banner = .resumed
+            case .completed(let miffId):
+                // Sur l'écran de cette Miff, c'est l'écran lui-même qui le dit : rien n'est dit deux fois.
+                if path.last != .miff(miffId) {
+                    banner = .done
+                }
+            }
         }
     }
 

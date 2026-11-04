@@ -12,10 +12,14 @@ struct MiffServices {
     /// Le limiteur d'essais du code (aide de l'interface, critère J5) : gardé pour la durée du processus, pour que quitter
     /// l'écran puis y revenir ne remette pas le compte à zéro.
     let limiter: JoinAttemptLimiter
+    /// La suppression d'une Miff, sans écran (MIFF-4) : utilisée par l'écran de la Miff, reprise au lancement, et plus tard par
+    /// AUTH-5 (suppression d'un compte) et le ticket Premium (fin d'un abonnement).
+    let deletions: MiffDeletionCoordinator
 
-    static func make(gateway: AuthGateway, cache: CachePurger) -> MiffServices {
+    static func make(gateway: AuthGateway, cache: CachePurger, network: NetworkMonitor) -> MiffServices {
+        let store = FirestoreMiffStore()
         let repository = FirestoreMiffRepository(
-            store: FirestoreMiffStore(),
+            store: store,
             observer: FirestoreMiffObserver(),
             location: SystemLocationAccessProbe(),
             cache: cache,
@@ -27,10 +31,25 @@ struct MiffServices {
             activeStore: UserDefaultsActiveMiffStore(),
             cache: cache
         )
+        // Avant la première écriture, la suppression prévient l'annuaire (jamais de « tu n'as plus accès » pour la Miff qu'on
+        // supprime) ; une fois la Miff disparue, purge du cache et liste relue.
+        let hooks = DeletionHooks(
+            onStarted: { miffId in directory.expectDeparture(miffId: miffId) },
+            onDeleted: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
+        )
+        let deletions = MiffDeletionCoordinator(
+            deletion: MiffDeletion(store: store, repository: repository),
+            pending: PendingDeletionFileStore(),
+            network: network,
+            currentUid: { gateway.currentUid },
+            hooks: hooks
+        )
+        deletions.background = UIKitBackgroundExecution()
         return MiffServices(
             repository: repository,
             directory: directory,
-            limiter: JoinAttemptLimiter(nowMillis: AppClock.live.nowMillis)
+            limiter: JoinAttemptLimiter(nowMillis: AppClock.live.nowMillis),
+            deletions: deletions
         )
     }
 }
@@ -56,6 +75,8 @@ final class AppEnvironment {
     let onboardingFlags: OnboardingFlags
     let miffRepository: MiffRepository
     let miffDirectory: MiffDirectory
+    /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
+    let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
 
     private let userProfiles: UserProfileRepository
@@ -84,8 +105,10 @@ final class AppEnvironment {
         let gateway = FirebaseAuthGateway()
         // Un seul purgeur de cache pour toute l'app : la session, l'annuaire des Miffs et le dépôt purgent le MÊME cache.
         let cache = FirestoreCachePurger(flags: flagStore)
-        let miff = MiffServices.make(gateway: gateway, cache: cache)
+        let networkMonitor = NWNetworkMonitor()
+        let miff = MiffServices.make(gateway: gateway, cache: cache, network: networkMonitor)
         let directory = miff.directory
+        let deletions = miff.deletions
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -97,7 +120,7 @@ final class AppEnvironment {
                 cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: [{ drafts.clear() }, { await directory.stop() }],
+                teardown: [{ drafts.clear() }, { await directory.stop() }, { await deletions.stop() }],
                 drafts: drafts
             )
         )
@@ -105,7 +128,7 @@ final class AppEnvironment {
         analyticsTracker = tracker
         session = manager
         sessionState = SessionObservable(manager: manager)
-        network = NWNetworkMonitor()
+        network = networkMonitor
         passwordResetGateway = FirebasePasswordResetGateway()
         passwordResetCooldown = ResendCooldown(nowMillis: AppClock.live.nowMillis)
         phoneTools = PhoneNumberKitTools()
@@ -113,6 +136,7 @@ final class AppEnvironment {
         onboardingFlags = OnboardingFlags(store: flagStore)
         miffRepository = miff.repository
         miffDirectory = directory
+        miffDeletions = deletions
         joinLimiter = miff.limiter
         userProfiles = FirestoreUserProfileRepository()
         profileDrafts = drafts
@@ -149,7 +173,7 @@ final class AppEnvironment {
         )
     }
 
-    /// Les dépendances de l'écran d'une Miff (MIFF-3).
+    /// Les dépendances de l'écran d'une Miff (MIFF-3 et MIFF-4).
     func miffScreenDependencies() -> MiffScreenDependencies {
         let session = self.session
         let directory = miffDirectory
@@ -158,7 +182,9 @@ final class AppEnvironment {
             network: network,
             currentUid: { session.currentUid },
             onAccessLost: { miffId, name in await directory.onAccessLost(miffId: miffId, name: name) },
-            onNameChanged: { await directory.refresh() }
+            onNameChanged: { await directory.refresh() },
+            deletions: miffDeletions,
+            onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
         )
     }
 }
