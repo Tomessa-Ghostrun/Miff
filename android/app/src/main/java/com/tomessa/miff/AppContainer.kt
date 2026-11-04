@@ -66,14 +66,25 @@ import com.tomessa.miff.data.profile.MyProfileRepository
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
+import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
+import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
+import com.tomessa.miff.data.tracking.DetectionJournals
+import com.tomessa.miff.data.tracking.FirestoreTrackingStore
+import com.tomessa.miff.data.tracking.FusedMovementUpdates
+import com.tomessa.miff.data.tracking.FusedPositionSource
+import com.tomessa.miff.data.tracking.PlayGeofenceArming
+import com.tomessa.miff.data.tracking.SharedPreferencesTrackingLocalStore
+import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
+import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.startup.StartupTrace
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Hand-written dependency container (no Hilt/KSP: keeps the build light on an 8 GB workstation).
@@ -189,6 +200,7 @@ class AppContainer(
             observer = FirestoreMiffObserver(),
             location = AndroidLocationAccessProbe(context),
             cache = cachePurger,
+            onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -208,7 +220,45 @@ class AppContainer(
 
     val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
 
-    val consentRenewals: ConsentRenewals by lazy { FirestoreConsentRenewals(miffStore) }
+    val consentRenewals: ConsentRenewals by lazy {
+        FirestoreConsentRenewals(miffStore, onRenewed = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) })
+    }
+
+    /**
+     * LOC-2b, the detection of the arrivals and departures. The journal exists in the debug build only (the release one does nothing).
+     * Built on first use; the system never starts it by itself: the screens, the receiver and [MiffApplication] ask it to look again.
+     */
+    val detectionJournal: DetectionJournal by lazy { DetectionJournals.create(context) }
+
+    val trackingEngine: TrackingEngine by lazy {
+        TrackingEngine(
+            env =
+                AndroidTrackingEnvironment(
+                    context = context,
+                    permissions = devicePermissions,
+                    currentUid = { authGateway.currentUid },
+                    online = { networkMonitor.isOnline() },
+                ),
+            store = FirestoreTrackingStore(miffStore),
+            local = SharedPreferencesTrackingLocalStore(context),
+            position = FusedPositionSource(context),
+            geofences = PlayGeofenceArming(context),
+            movement = FusedMovementUpdates(context),
+            networkWake = ConnectivityNetworkWake(context),
+            journal = detectionJournal,
+        )
+    }
+
+    private val trackingScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
+    /** Asks the detection to look again (the app opened, went to the background, the sharing changed...). Never blocks the caller. */
+    fun trackingLooksAgain(reason: TrackingEngine.Reason) {
+        trackingScope.launch {
+            // A purge of the cache left by a failed sign-out comes before any other access to Firestore.
+            cachePurger.purgeIfPending()
+            trackingEngine.refresh(reason)
+        }
+    }
 
     /**
      * The pause after 5 wrong codes lives as long as the process, not as long as the screen: leaving and coming back does not
@@ -232,6 +282,8 @@ class AppContainer(
         cachePurger.markPurgePending()
         cachePurger.purge()
         miffDirectory.refresh()
+        // The zones and the position of the Miff just left are no longer watched or kept (criterion DET4).
+        trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED)
     }
 
     /**
@@ -317,6 +369,8 @@ class AppContainer(
                         currentProfile,
                         consentWithdrawals,
                         miffDirectory,
+                        // Sign-out, deletion of the account, session lost: no more zones, no more position, the local copy and the journal erased (VIE2, VIE3).
+                        trackingEngine,
                         placeNotices,
                         addressSearch,
                         mapTileCache,

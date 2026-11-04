@@ -10,9 +10,9 @@
         LOCATION (ticket LOC-2a, decision of the PM: the precise location ALL THE TIME is required, Miff does not work without). These three and
         POST_NOTIFICATIONS are the ONLY sensitive permissions the app declares; nothing else (no foreground service, no media location,
         no Wi-Fi state). They are only ASKED from the screens of ui/permission, after the person tapped a button that says why, with the
-        disclosure that Google Play requires on the screen itself (docs/release/google-play-localisation-arriere-plan.md). No position is
-        read by this version (LOC-2b detects the arrivals and departures). The merged manifest is checked in CI (android.yml) and by
-        PermissionPrivacyTest.
+        disclosure that Google Play requires on the screen itself (docs/release/google-play-localisation-arriere-plan.md). Since LOC-2b the app
+        reads the position (and watches the zones of the geofencing) ONLY once the person agreed (consent of version 3) AND granted these
+        permissions. The merged manifest is checked in CI (android.yml) and by PermissionPrivacyTest.
         - ACCESS_FINE_LOCATION: the precise position, needed by the geofencing of the places.
         - ACCESS_COARSE_LOCATION: Android 12+ requires it to be declared (and asked) together with the precise one.
         - ACCESS_BACKGROUND_LOCATION: "all the time", so that arrivals and departures are noticed while the app is closed.
@@ -22,6 +22,13 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        LOC-2b. The zones of the geofencing are erased by Android when the phone restarts: this normal permission (no window, nothing asked of the
+        person) lets Miff arm them again at the restart, without opening the app (criterion AND2). No foreground service, no notification of its own:
+        the geofencing and the reports of a move of more than 250 m are delivered by the system to the receiver below.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- The Analytics SDK merges advertising-ID, ad-attribution and install-referrer permissions: Miff uses none of them. -->
     <uses-permission
@@ -119,6 +126,19 @@
             this mode; without it the system may "pan" the whole screen instead and push its top under the status bar.
             From Android 11 the app receives the keyboard height whatever the mode.
         -->
+        <!--
+            LOC-2b: the ONE receiver of the detection. Not exported: only the system (restart of the phone, update of the app) and the PendingIntents
+            of the app itself (geofencing, move of more than 250 m, network back) reach it. It never reads the location that comes with a geofence event.
+        -->
+        <receiver
+            android:name=".data.tracking.TrackingReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

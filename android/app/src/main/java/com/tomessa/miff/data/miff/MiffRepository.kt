@@ -227,6 +227,11 @@ class FirestoreMiffRepository(
     private val timeoutMillis: Long = TIMEOUT_MS,
     /** Purges the phone cache after a clean-up that nobody is told about (see [cleanUpSilently]). */
     private val cache: CachePurger? = null,
+    /**
+     * Called after a write that changes WHO the person shares with (a Miff created, joined, left, cleaned up; sharing stopped or resumed): the
+     * detection (LOC-2b) looks at its Miffs again. Nothing about the Miff is passed (no name, no identifier).
+     */
+    private val onSharingChanged: () -> Unit = {},
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -271,12 +276,14 @@ class FirestoreMiffRepository(
             }
         return when (result) {
             MiffWriteResult.Done -> {
+                onSharingChanged()
                 CreateResult.Created(miffId, code, MiffName.stored(name), preparation.firstMiff)
             }
 
             is MiffWriteResult.Failed -> {
                 // A lot that left but whose answer was lost must not be shown as a failure (ticket H3, one tap = one Miff).
                 if (result.failure.mayHaveLanded() && landed(miffId)) {
+                    onSharingChanged()
                     CreateResult.Created(miffId, code, MiffName.stored(name), preparation.firstMiff)
                 } else {
                     CreateResult.Failed(result.failure)
@@ -366,12 +373,14 @@ class FirestoreMiffRepository(
             }
         return when (result) {
             MiffWriteResult.Done -> {
+                onSharingChanged()
                 JoinResult.Joined(preparation.miffId, preparation.firstMiff)
             }
 
             is MiffWriteResult.Failed -> {
                 when {
                     result.failure.mayHaveLanded() && landed(preparation.miffId) -> {
+                        onSharingChanged()
                         JoinResult.Joined(preparation.miffId, preparation.firstMiff)
                     }
 
@@ -417,6 +426,7 @@ class FirestoreMiffRepository(
                 MiffWrites.stopSharing(miffId, uid)
             }
         val result = write { store.commit(writes) }
+        if (result == MiffWriteResult.Done) onSharingChanged()
         // A refusal can also mean "already in the state asked for": the dialog asks for the opposite of what the card said when it
         // was opened, and the card may have changed since (another phone), in which case the rules refuse a no-op write
         // (false -> false, true -> true). The server's card is read, and the wanted state counts as a success.
@@ -424,7 +434,10 @@ class FirestoreMiffRepository(
             (result.failure.mayHaveLanded() || result.failure == MiffFailure.REFUSED)
         ) {
             val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
-            if (sharing == enabled) return MiffWriteResult.Done
+            if (sharing == enabled) {
+                onSharingChanged()
+                return MiffWriteResult.Done
+            }
         }
         return result
     }
@@ -501,10 +514,14 @@ class FirestoreMiffRepository(
                 is Guarded.Failed -> return MiffWriteResult.Failed(read.failure)
             }
         val result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        if (result == MiffWriteResult.Done) onSharingChanged()
         if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
             // The answer was lost: if the server now refuses the Miff to this person, the lot did leave.
             val check = guarded { store.readMiff(miffId, fromServer = true) }
-            if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) return MiffWriteResult.Done
+            if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) {
+                onSharingChanged()
+                return MiffWriteResult.Done
+            }
         }
         return result
     }
@@ -531,9 +548,13 @@ class FirestoreMiffRepository(
     ): Boolean {
         // Clean-up needs the server: without it nothing is touched (the next start will do it).
         val leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
-        if (leave == MiffWriteResult.Done) return true
+        if (leave == MiffWriteResult.Done) {
+            onSharingChanged()
+            return true
+        }
         // Removed: the card is already gone, the lot is refused. Only the index is left, and the rules allow deleting it now.
         val indexOnly = write { store.commit(MiffWrites.dropIndex(lost.ref.miffId, uid, lost.ref.key)) }
+        if (indexOnly == MiffWriteResult.Done) onSharingChanged()
         return indexOnly == MiffWriteResult.Done
     }
 

@@ -55,6 +55,8 @@ interface ConsentRenewals {
 class FirestoreConsentRenewals(
     private val store: MiffStore,
     private val timeoutMillis: Long = FirestoreMiffRepository.TIMEOUT_MS,
+    /** Called once the agreement is recorded: the detection (LOC-2b) looks at its Miffs again (they now carry the consent of version 3). */
+    private val onRenewed: () -> Unit = {},
 ) : ConsentRenewals {
     override suspend fun check(uid: String): ConsentRenewalCheck {
         val refs =
@@ -111,11 +113,13 @@ class FirestoreConsentRenewals(
                 is Guarded.Value -> MiffWriteResult.Done
                 is Guarded.Failed -> MiffWriteResult.Failed(outcome.failure)
             }
+        if (result == MiffWriteResult.Done) onRenewed()
         // A lot whose answer was lost may have left, and a refusal can mean "already renewed" (another phone did it: the rules want a
         // strictly newer version): the server is asked before the person is told it failed.
         if (result is MiffWriteResult.Failed &&
             check(uid) == ConsentRenewalCheck.NothingToRenew
         ) {
+            onRenewed()
             return MiffWriteResult.Done
         }
         return result

@@ -187,6 +187,10 @@ dependencies {
     // Map with the perimeter of a place (LOC-1): MapLibre Native, BSD-2-Clause, free. See docs/dev/lieux-fournisseurs-gratuits.md.
     implementation(libs.maplibre.android)
 
+    // Geofencing and the fused provider of positions (LOC-2b): Google Play services, free, no key. Justification (PR): the geofencing
+    // that keeps working with the app closed and the battery-friendly reports of a move are only offered by this library.
+    implementation(libs.play.services.location)
+
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)
