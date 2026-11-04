@@ -98,7 +98,7 @@ final class PlaceWritesTests: XCTestCase {
         }
         XCTAssertEqual(write("m2")?.kind, .update)
         XCTAssertEqual(write("m3")?.kind, .set)
-        XCTAssertEqual(Set(write("m3")?.data.keys ?? []), shapeKeys)
+        XCTAssertEqual(Set((write("m3")?.data ?? [:]).keys), shapeKeys)
         XCTAssertEqual(write("m1")?.kind, .delete)
         XCTAssertEqual(lot.count, 3)
     }
