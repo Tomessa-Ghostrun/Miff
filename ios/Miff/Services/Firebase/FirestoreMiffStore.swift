@@ -44,7 +44,7 @@ extension MiffRepositoryRules {
 /// confirmation » veut toujours dire « rien d'écrit ». L'instance Firestore est résolue à CHAQUE usage, jamais gardée : elle
 /// est remplacée après une purge du cache. Rien ici n'ouvre Firestore avant qu'un écran ne le demande.
 final class FirestoreMiffStore: MiffStore {
-    private func firestore() throws -> Firestore {
+    func firestore() throws -> Firestore {
         guard FirebaseBootstrap.isConfigured else {
             // Sans configuration Firebase (poste sans fichier de configuration), rien n'est joignable.
             throw NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)
@@ -95,8 +95,9 @@ final class FirestoreMiffStore: MiffStore {
     }
 
     /// La Miff d'un document, s'il existe et a la forme qu'exigent les règles ; nil sinon. Le nom vient du réseau : il est
-    /// nettoyé comme tout nom reçu d'un autre téléphone.
-    static func details(of snapshot: DocumentSnapshot) -> MiffDetails? {
+    /// nettoyé comme tout nom reçu d'un autre téléphone, SAUF quand le nom n'est pas montré mais recopié dans un lot
+    /// (`cleaningName` faux : le document du code doit porter exactement le nom de la Miff).
+    static func details(of snapshot: DocumentSnapshot, cleaningName: Bool = true) -> MiffDetails? {
         guard snapshot.exists,
               let data = snapshot.data(),
               let name = data["name"] as? String,
@@ -105,7 +106,8 @@ final class FirestoreMiffStore: MiffStore {
               let owner = data["ownerUid"] as? String else {
             return nil
         }
-        return MiffDetails(id: snapshot.documentID, name: MiffName.clean(name), joinCode: code, ownerUid: owner)
+        let kept = cleaningName ? MiffName.clean(name) : name
+        return MiffDetails(id: snapshot.documentID, name: kept, joinCode: code, ownerUid: owner)
     }
 
     func readEntitlement(uid: String) async throws -> EntitlementRead? {
@@ -181,7 +183,7 @@ final class FirestoreMiffStore: MiffStore {
         }
     }
 
-    private static func apply(_ writes: [DocWrite], to transaction: Transaction, in database: Firestore) {
+    static func apply(_ writes: [DocWrite], to transaction: Transaction, in database: Firestore) {
         for write in writes {
             let reference = database.document(write.path)
             switch write.kind {

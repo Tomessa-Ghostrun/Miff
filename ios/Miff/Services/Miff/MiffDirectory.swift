@@ -187,6 +187,22 @@ final class MiffDirectory: ObservableObject {
         return true
     }
 
+    /// La personne quitte cette Miff, ou la supprime, exprès : le message unique « Tu n'as plus accès… » n'est jamais montré
+    /// pour elle (MIFF-4 : personne n'apprend qu'il a perdu ce qu'il vient de laisser). Oublié à la fin de la session.
+    func expectDeparture(miffId: String) {
+        announced.insert(miffId)
+    }
+
+    /// La personne vient de quitter cette Miff, ou de la supprimer, et le serveur l'a confirmé : aucun message « tu n'as plus
+    /// accès » pour elle, purge du cache du téléphone (rien de cette Miff ne doit rester lisible hors ligne), liste des Miffs
+    /// relue.
+    func afterOwnDeparture(miffId: String) async {
+        expectDeparture(miffId: miffId)
+        cache.markPurgePending()
+        _ = await cache.purge()
+        await refresh()
+    }
+
     func dismissNotice() {
         notices = Array(notices.dropFirst())
     }

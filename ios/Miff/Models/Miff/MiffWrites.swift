@@ -224,14 +224,20 @@ enum MiffWrites {
     }
 
     /// Lot « Quitter » (4 suppressions) : la fiche, le statut, la photo et l'index. Sert au nettoyage après une perte d'accès
-    /// (ticket §5.7) ; le bouton « Quitter » de MIFF-4 utilisera le même lot.
-    static func leave(miffId: String, uid: String, membershipKey: String) -> [DocWrite] {
-        [
+    /// (ticket §5.7) et au bouton « Quitter la Miff » d'un membre (critère Q1, MIFF-4). L'index n'est laissé de côté que
+    /// s'il n'a pas été trouvé (`membershipKey` nil) : les règles refusent la suppression d'un index qui n'existe pas.
+    /// AUCUNE écriture sur la Miff ni sur son code : une sortie volontaire ne renouvelle pas le code (décision du PM du
+    /// 2026-10-31).
+    static func leave(miffId: String, uid: String, membershipKey: String?) -> [DocWrite] {
+        var writes = [
             DocWrite(path: "miffs/\(miffId)/members/\(uid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .delete),
-            DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .delete),
-            DocWrite(path: "users/\(uid)/memberships/\(membershipKey)", kind: .delete)
+            DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .delete)
         ]
+        if let membershipKey {
+            writes.append(DocWrite(path: "users/\(uid)/memberships/\(membershipKey)", kind: .delete))
+        }
+        return writes
     }
 
     /// Repli du nettoyage : la fiche a déjà disparu (retrait), il ne reste que l'index, que les règles laissent supprimer.
