@@ -29,7 +29,7 @@ Seuls des gestes déjà prévus par les specs (`docs/specs/`). Rien n'est ajout�
 | `analytics_diagnostic_test` | Bouton de test de l'écran de diagnostic (builds debug / TestFlight uniquement) | aucun |
 
 Notes :
-- `extra_trusted_place` nomme la limite gratuite atteinte (un seul lieu), pas un lieu : aucun nom, type ni emplacement n'est transmis.
+- `extra_trusted_place` nomme la limite gratuite atteinte (2 lieux de confiance gratuits depuis le 2026-11-01), pas un lieu : aucun nom, type ni emplacement n'est transmis.
 - Aucun événement d'achat n'est défini ici : le paiement n'existe pas encore (voir ticket, décisions du PM). Ils s'ajouteront avec le ticket Paywall.
 - Aucun événement sur les lieux de confiance, le feed, les mises à jour de statut, les notifications ou les réglages : non spécifiés ici, et ils frôlent la localisation. À proposer plus tard, un par un, avec avis du PM.
 

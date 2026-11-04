@@ -54,10 +54,10 @@ Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de to
 ## 5. Les Miffs et les codes secrets
 
 - Une Miff se rejoint avec un **code secret**. Toute personne qui connaît le code peut la rejoindre. **Ne partage ce code qu'avec des personnes de confiance.**
-- Le créateur d'une Miff gère les lieux : **lui seul les crée, les modifie et les supprime**, y compris les zones à risque (réservées à Miff+). Un même lieu peut être associé à plusieurs Miffs qu'il a créées ; le supprimer le supprime dans toutes ces Miffs. Il peut aussi renouveler le code ou retirer un membre. Quand un membre est retiré, le code est renouvelé : l'ancien code ne fonctionne plus.
+- Le créateur d'une Miff gère les lieux : **lui seul les crée, les modifie et les supprime**, y compris les zones de danger (réservées à Miff+). Un même lieu peut être associé à plusieurs Miffs qu'il a créées ; le supprimer le supprime dans toutes ces Miffs. Il peut aussi renouveler le code ou retirer un membre. Quand un membre est retiré, le code est renouvelé : l'ancien code ne fonctionne plus.
 - **Les lieux d'une Miff sont visibles de tous ses membres, adresse comprise.** N'enregistre que des adresses que tu as le droit d'enregistrer : l'adresse d'une autre personne (son domicile, par exemple) ne s'enregistre pas sans son accord.
 - Tu peux quitter une Miff quand tu veux.
-- Avec la version gratuite, tu peux être dans **une seule Miff à la fois** et utiliser **2 lieux de confiance**. Le Premium lève ces limites (voir article 9).
+- Avec la version gratuite, tu peux être dans **une seule Miff à la fois** et utiliser **2 lieux de confiance**. Miff+ lève ces limites (voir article 9).
 
 ## 6. Le partage de ta localisation : ton choix
 
@@ -70,8 +70,8 @@ Le cœur de Miff est le partage de ton statut lié aux lieux de confiance. Voici
 - **Effacement** : ta position est effacée quand tu arrêtes de partager, quittes la Miff, es retiré(e) de la Miff, ou quand la Miff ou ton compte est supprimé. Au bout de 24 heures, elle n'est plus affichée que masquée, avec sa date (elle reste stockée jusqu'à son remplacement ou son effacement). Les détails sont dans la Politique de confidentialité.
 - **Réciprocité** : pour voir le statut et la position des autres, tu dois partager les tiens.
 - **Miff a besoin de la localisation « Toujours »** (en arrière-plan, même quand l'app est fermée, avec la position précise) pour fonctionner. Sans elle, l'app te la redemande et ne peut pas être utilisée normalement. Tu peux la retirer à tout moment dans les réglages de ton téléphone : cela n'a pas d'effet sur ton compte, mais Miff ne fonctionne plus tant qu'elle n'est pas rétablie. Les notifications, elles, sont facultatives.
-- **Zones à risque (Miff+)** : le créateur d'une Miff peut définir une « zone à risque ». Si tu entres dans une zone à risque, ton statut s'affiche en rouge pour les membres de ta Miff. C'est une information liée à un lieu que le créateur a choisi, pas un jugement sur toi. Aujourd'hui, Miff n'envoie pas de notification à ce sujet.
-- **N'utilise Miff que dans le respect des personnes.** Miff est fait pour des personnes qui savent qu'elles partagent leur statut et leur position, et qui sont d'accord. **Il est interdit d'utiliser Miff pour suivre, surveiller ou contrôler quelqu'un à son insu ou contre sa volonté** (y compris en se servant des lieux ou des zones à risque d'une Miff pour contrôler quelqu'un), ni pour faire pression sur quelqu'un pour qu'il partage. Si une personne ne veut pas partager, c'est son droit.
+- **Zones de danger (Miff+)** : le créateur d'une Miff peut définir une « zone de danger ». Si tu entres dans une zone de danger, ton statut s'affiche en rouge pour les membres de ta Miff. C'est une information liée à un lieu que le créateur a choisi, pas un jugement sur toi. Aujourd'hui, Miff n'envoie pas de notification à ce sujet.
+- **N'utilise Miff que dans le respect des personnes.** Miff est fait pour des personnes qui savent qu'elles partagent leur statut et leur position, et qui sont d'accord. **Il est interdit d'utiliser Miff pour suivre, surveiller ou contrôler quelqu'un à son insu ou contre sa volonté** (y compris en se servant des lieux ou des zones de danger d'une Miff pour contrôler quelqu'un), ni pour faire pression sur quelqu'un pour qu'il partage. Si une personne ne veut pas partager, c'est son droit.
 
 ## 7. Règles d'usage
 
@@ -92,15 +92,15 @@ Tu t'engages à ne pas :
 - Un membre d'une Miff peut enregistrer ce qu'il voit (capture d'écran, par exemple). Nous ne pouvons pas l'empêcher : n'envoie que ce que tu acceptes de montrer à ton cercle.
 - Tu peux nous signaler un contenu ou un comportement problématique à **tomessa.mfouka@gmail.com**. Nous pouvons supprimer un contenu qui ne respecte pas ces conditions.
 
-## 9. Miff gratuit et Miff Premium
+## 9. Miff gratuit et Miff+
 
 - **Gratuit** : une Miff à la fois et **2 lieux de confiance**.
-- **Premium (« Miff+ », abonnement payant)** : plusieurs Miffs, des lieux de confiance en nombre illimité et les zones à risque, ainsi que les autres options présentées dans l'app au moment de l'achat (par exemple des notifications intelligentes, selon leur disponibilité). Le contenu exact, le prix, la durée et l'éventuelle période d'essai sont **affichés dans l'app et sur le store avant que tu t'abonnes**.
+- **Miff+ (abonnement payant)** : plusieurs Miffs, des lieux de confiance en nombre illimité et les zones de danger, ainsi que les autres options présentées dans l'app au moment de l'achat (par exemple des notifications intelligentes, selon leur disponibilité). Le contenu exact, le prix, la durée et l'éventuelle période d'essai sont **affichés dans l'app et sur le store avant que tu t'abonnes**.
 - **L'achat se fait via l'App Store (Apple) ou Google Play**, pas directement chez nous. Le paiement, la facturation, le renouvellement automatique, la résiliation et les remboursements sont gérés par Apple ou Google, selon leurs conditions.
 - **Résilier** : dans les réglages de ton compte Apple (iPhone) ou dans Google Play (Android), avant la fin de la période en cours, pour éviter le prochain renouvellement. Supprimer l'app ou ton compte Miff **ne résilie pas** automatiquement l'abonnement : il faut le résilier auprès du store.
 - **Remboursement** : demande-le à Apple ou à Google, selon leurs règles. Si tu es consommateur, les droits que la loi te donne (par exemple le droit de rétractation, dans les conditions prévues par la loi et par les conditions du store) restent applicables.
-- **Fin de l'abonnement** : tu repasses à la version gratuite. Les éléments qui dépassent les limites de la formule gratuite (une Miff, 2 lieux de confiance et aucune zone à risque) sont alors supprimés, avec les données qui leur sont liées : ce sont les derniers ajoutés qui sont supprimés, tes premiers éléments restent. Si tu as plusieurs Miffs ou plusieurs lieux, pense à regarder ce que tu veux garder avant la fin de ton abonnement.
-- **Pendant la phase de test (bêta)**, l'équipe Miff peut accorder gratuitement l'accès Premium à certains testeurs. Cet accès peut être retiré à la fin de la bêta.
+- **Fin de l'abonnement** : tu repasses à la version gratuite. Les éléments qui dépassent les limites de la formule gratuite (une Miff, 2 lieux de confiance et aucune zone de danger) sont alors supprimés, avec les données qui leur sont liées : ce sont les derniers ajoutés qui sont supprimés, tes premiers éléments restent. Si tu as plusieurs Miffs ou plusieurs lieux, pense à regarder ce que tu veux garder avant la fin de ton abonnement.
+- **Pendant la phase de test (bêta)**, l'équipe Miff peut accorder gratuitement l'accès Miff+ à certains testeurs. Cet accès peut être retiré à la fin de la bêta.
 - Nous pouvons faire évoluer les offres et les prix pour l'avenir. Un changement de prix n'affecte pas ta période déjà payée et est annoncé dans le respect des règles du store.
 
 ## 10. Disponibilité du service
@@ -115,7 +115,7 @@ Nous faisons de notre mieux pour que Miff fonctionne bien, mais nous ne garantis
 
 ## 12. Suspension et suppression de compte
 
-- **Tu peux supprimer ton compte à tout moment dans l'app.** Cela supprime ton compte et les données associées (voir la Politique de confidentialité). Pense à résilier ton abonnement Premium auprès du store. Si tu es le **créateur** d'une Miff, la suppression de ton compte supprime aussi cette Miff, avec ses lieux, ses statuts, les dernières positions connues et ses photos. Les autres membres n'y ont alors plus accès : l'app leur indique simplement, sans alarme, que la Miff n'existe plus, et les données qui les concernent dans cette Miff, devenues illisibles, sont effacées à la prochaine ouverture de leur app. Leur propre compte n'est pas touché et ils peuvent créer ou rejoindre une autre Miff. Si tu le souhaites, préviens tes proches avant de supprimer ton compte.
+- **Tu peux supprimer ton compte à tout moment dans l'app.** Cela supprime ton compte et les données associées (voir la Politique de confidentialité). Pense à résilier ton abonnement Miff+ auprès du store. Si tu es le **créateur** d'une Miff, la suppression de ton compte supprime aussi cette Miff, avec ses lieux, ses statuts, les dernières positions connues et ses photos. Les autres membres n'y ont alors plus accès : l'app leur indique simplement, sans alarme, que la Miff n'existe plus, et les données qui les concernent dans cette Miff, devenues illisibles, sont effacées à la prochaine ouverture de leur app. Leur propre compte n'est pas touché et ils peuvent créer ou rejoindre une autre Miff. Si tu le souhaites, préviens tes proches avant de supprimer ton compte.
 - **Nous pouvons suspendre ou supprimer un compte** qui ne respecte pas ces conditions (en particulier les articles 6 et 7), ou en cas d'abus, de risque pour la sécurité d'autres personnes, ou de demande d'une autorité. Sauf urgence ou obligation légale, nous t'expliquons pourquoi et tu peux répondre à **tomessa.mfouka@gmail.com**.
 
 ## 13. Données personnelles
@@ -134,7 +134,7 @@ Nous pouvons modifier ces conditions, par exemple si l'app évolue ou si la loi 
 
 - Ces conditions sont régies par le **droit français**. Si tu es consommateur, tu bénéficies aussi des règles impératives de protection du pays où tu vis.
 - **Écris-nous d'abord** à **tomessa.mfouka@gmail.com** : nous cherchons toujours une solution amiable.
-- Si tu souscris un abonnement Premium, tu peux recourir gratuitement à un médiateur de la consommation.
+- Si tu souscris un abonnement Miff+, tu peux recourir gratuitement à un médiateur de la consommation.
 - À défaut d'accord, les tribunaux compétents sont ceux prévus par la loi.
 
 ## 17. Divers
