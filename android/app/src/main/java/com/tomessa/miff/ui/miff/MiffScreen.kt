@@ -30,6 +30,9 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.place.PlaceListUi
+import com.tomessa.miff.ui.place.PlaceRows
+import com.tomessa.miff.ui.place.PlacesExtras
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorTextDescription
@@ -63,6 +66,8 @@ fun MiffScreen(
     onActionDismissed: () -> Unit = {},
     onInviteLater: () -> Unit = {},
     onDeletionRetry: () -> Unit = {},
+    /** LOC-1: Miff+ or not (null while unknown), the name of the place just saved, and the two ways into the places. */
+    placesExtras: PlacesExtras = PlacesExtras(),
 ) {
     RecentsPrivacy()
     val context = LocalContext.current
@@ -111,6 +116,7 @@ fun MiffScreen(
                     onLeaveRequested = onLeaveRequested,
                     onDeleteRequested = onDeleteRequested,
                     onInviteLater = onInviteLater,
+                    placesExtras = placesExtras,
                 )
             }
         }
@@ -173,6 +179,7 @@ private fun MiffContent(
     onLeaveRequested: () -> Unit,
     onDeleteRequested: () -> Unit,
     onInviteLater: () -> Unit,
+    placesExtras: PlacesExtras,
 ) {
     val context = LocalContext.current
     val copiedText = stringResource(R.string.miff_code_copied)
@@ -315,24 +322,15 @@ private fun MiffContent(
             stringResource(R.string.miff_section_places_title),
             stringResource(R.string.miff_section_places_description),
         )
-        if (state.places.isEmpty()) {
-            Text(
-                text = stringResource(R.string.miff_places_empty),
-                style = textBodyRegular14,
-                color = colorTextDescription,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.s),
-            )
-        } else {
-            state.places.forEach { place ->
-                Text(
-                    text = place.name,
-                    style = textBodyRegular14,
-                    color = colorTextDescription,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.s, vertical = Spacing.xs),
+        PlaceRows(
+            ui = PlaceListUi(state.places, state.isOwner, placesExtras.premium, placesExtras.savedName),
+            onOpen = placesExtras.onOpenPlace,
+            onAdd = {
+                placesExtras.onAddPlace(
+                    PlaceListUi(state.places, state.isOwner, placesExtras.premium).atFreeLimit,
                 )
-            }
-        }
+            },
+        )
     }
     MiffFoot(state = state, onLeaveRequested = onLeaveRequested, onDeleteRequested = onDeleteRequested)
     Spacer(Modifier.size(Spacing.l))

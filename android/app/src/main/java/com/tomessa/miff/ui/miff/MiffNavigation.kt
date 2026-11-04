@@ -18,8 +18,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.place.ConsumeNoticeOnLeave
+import com.tomessa.miff.ui.place.PlaceDetailRoute
+import com.tomessa.miff.ui.place.PlaceFormRoute
+import com.tomessa.miff.ui.place.PlacePaywallRoute
+import com.tomessa.miff.ui.place.PlacesExtras
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -179,7 +186,26 @@ fun NavGraphBuilder.miffScreenRoute(
                         }
                     },
             )
-        MiffScreenHost(viewModel = viewModel, onBack = { navController.popBackStackIfSafe() })
+        // LOC-1: the places of this Miff. Miff+ comes from the Miffs of the person (read once for the Feed), the confirmation of a save
+        // from the notices (in memory, gone when the screen is left).
+        val directory by container.miffDirectory.state.collectAsStateWithLifecycle()
+        val notice by container.placeNotices.notice.collectAsStateWithLifecycle()
+        ConsumeNoticeOnLeave(container.placeNotices::consume)
+        MiffScreenHost(
+            viewModel = viewModel,
+            onBack = { navController.popBackStackIfSafe() },
+            placesExtras =
+                PlacesExtras(
+                    premium = (directory as? DirectoryState.Ready)?.premium,
+                    savedName = notice?.name,
+                    onOpenPlace = { place -> navController.openMiffRoute(PlaceDetailRoute(route.miffId, place.id)) },
+                    onAddPlace = { atLimit ->
+                        navController.openMiffRoute(
+                            if (atLimit) PlacePaywallRoute.of(PaywallReason.LIMIT) else PlaceFormRoute(),
+                        )
+                    },
+                ),
+        )
     }
 }
 
@@ -192,6 +218,7 @@ fun NavGraphBuilder.miffScreenRoute(
 fun MiffScreenHost(
     viewModel: MiffScreenViewModel,
     onBack: () -> Unit,
+    placesExtras: PlacesExtras = PlacesExtras(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -219,5 +246,6 @@ fun MiffScreenHost(
         onActionDismissed = viewModel::onActionDismissed,
         onInviteLater = viewModel::onInviteLater,
         onDeletionRetry = viewModel::onDeletionRetry,
+        placesExtras = placesExtras,
     )
 }

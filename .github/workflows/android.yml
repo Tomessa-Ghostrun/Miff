@@ -231,6 +231,28 @@ jobs:
           fi
           echo "Bundle release : client web Google present, aucune permission biometrique."
 
+      # LOC-1: the map library (MapLibre) merges location and Wi-Fi permissions into the manifest; Miff removes them
+      # (tools:node="remove" in AndroidManifest.xml) because no feature uses a position yet (location arrives with LOC-2, which
+      # removes those lines and this check at the same time). The check reads the MERGED manifests (what the phone really gets),
+      # not the source one: a library update that merges a new permission is caught here. Never skipped (also for Dependabot).
+      - name: Check that no merged manifest declares a location permission
+        run: |
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          test -f "$bundle" || { echo "::error::Bundle release introuvable : $bundle"; exit 1; }
+          if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -q -E 'ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION|ACCESS_WIFI_STATE'; then
+            echo "::error title=Permission de localisation::Le manifeste fusionne du bundle release declare une permission de localisation ou ACCESS_WIFI_STATE (ajoutee par une bibliotheque ?). Les retirer avec tools:node=\"remove\" dans AndroidManifest.xml (voir le commentaire MapLibre) : aucune fonction ne les utilise avant LOC-2."
+            exit 1
+          fi
+          manifests=$(find app/build/intermediates/merged_manifests -name AndroidManifest.xml)
+          test -n "$manifests" || { echo "::error::Aucun manifeste fusionne trouve."; exit 1; }
+          for m in $manifests; do
+            if grep -q -E 'ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION|ACCESS_WIFI_STATE' "$m"; then
+              echo "::error title=Permission de localisation::$m declare une permission de localisation ou ACCESS_WIFI_STATE."
+              exit 1
+            fi
+          done
+          echo "Manifestes fusionnes (bundle release et variantes) : aucune permission de localisation."
+
       # actions/upload-artifact v7.0.2
       - name: Upload debug APK (short retention)
         if: env.FAKE_FIREBASE_CONFIG != 'true'

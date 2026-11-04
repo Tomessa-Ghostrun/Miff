@@ -48,20 +48,29 @@ object MiffName {
      * What the field keeps of [typed]: cleaned, at most [MAX_LENGTH] units, cut between two whole characters.
      * [limitReached] is true when something was cut or the field is full, to show "Limite de 40 caractères atteinte."
      */
-    fun limit(typed: String): NameInput {
+    fun limit(typed: String): NameInput = limit(typed, MAX_LENGTH)
+
+    /** Same as [limit] for another maximum (the name of a place: 50, see `PlaceName`). */
+    fun limit(
+        typed: String,
+        max: Int,
+    ): NameInput {
         val clean = clean(typed)
-        if (clean.length <= MAX_LENGTH) return NameInput(clean, limitReached = clean.length == MAX_LENGTH)
-        return NameInput(clean.substring(0, cutPoint(clean)), limitReached = true)
+        if (clean.length <= max) return NameInput(clean, limitReached = clean.length == max)
+        return NameInput(clean.substring(0, cutPoint(clean, max)), limitReached = true)
     }
 
-    /** The last boundary between two whole characters at or before [MAX_LENGTH] units. */
-    private fun cutPoint(text: String): Int {
+    /** The last boundary between two whole characters at or before [max] units. */
+    private fun cutPoint(
+        text: String,
+        max: Int,
+    ): Int {
         val boundaries = BreakIterator.getCharacterInstance()
         boundaries.setText(text)
-        val end = boundaries.preceding(MAX_LENGTH + 1)
+        val end = boundaries.preceding(max + 1)
         if (end > 0) return end
         // A single "character" longer than the limit: fall back on the last whole code point.
-        var fallback = MAX_LENGTH
+        var fallback = max
         if (Character.isHighSurrogate(text[fallback - 1]) && Character.isLowSurrogate(text[fallback])) fallback--
         return fallback
     }

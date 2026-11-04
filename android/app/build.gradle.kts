@@ -31,6 +31,21 @@ android {
         require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
         buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
+        // LOC-1 (places). Providers of the map and of the address suggestions: all free, none needs a key (decision of the ticket,
+        // section 12). Override without editing the code: -Pmiff.mapStyleUrl=..., -Pmiff.photonUrl=... (https only).
+        // The optional fallback of the suggestions (Geoapify, free plan) is OFF unless a key is given at build time with
+        // -Pmiff.geoapifyKey=... (in your own ~/.gradle/gradle.properties): NO key is ever committed. A key inside an app can be
+        // extracted: turning the fallback on in a published build is a decision of the PM (see docs/dev/lieux-fournisseurs-gratuits.md).
+        val mapStyleUrl =
+            providers.gradleProperty("miff.mapStyleUrl").getOrElse("https://tiles.openfreemap.org/styles/positron")
+        val photonUrl = providers.gradleProperty("miff.photonUrl").getOrElse("https://photon.komoot.io/api/")
+        val geoapifyKey = providers.gradleProperty("miff.geoapifyKey").getOrElse("")
+        require(mapStyleUrl.startsWith("https://")) { "miff.mapStyleUrl must be an https:// address (no clear text)" }
+        require(photonUrl.startsWith("https://")) { "miff.photonUrl must be an https:// address (no clear text)" }
+        require(Regex("[A-Za-z0-9]*").matches(geoapifyKey)) { "miff.geoapifyKey must only hold letters and digits" }
+        buildConfigField("String", "PLACE_MAP_STYLE_URL", "\"$mapStyleUrl\"")
+        buildConfigField("String", "PHOTON_URL", "\"$photonUrl\"")
+        buildConfigField("String", "GEOAPIFY_KEY", "\"$geoapifyKey\"")
         // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
         buildConfigField("boolean", "STARTUP_METRICS", "false")
     }
@@ -155,6 +170,9 @@ dependencies {
     // and the orientation of the chosen photo (ExifInterface), which is then re-encoded with NO metadata.
     implementation(libs.libphonenumber)
     implementation(libs.androidx.exifinterface)
+
+    // Map with the perimeter of a place (LOC-1): MapLibre Native, BSD-2-Clause, free. See docs/dev/lieux-fournisseurs-gratuits.md.
+    implementation(libs.maplibre.android)
 
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)

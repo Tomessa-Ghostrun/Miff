@@ -33,6 +33,23 @@
         android:name="android.permission.USE_FINGERPRINT"
         tools:node="remove" />
 
+    <!--
+        MapLibre (map of the places, ticket LOC-1) merges the location permissions, Wi-Fi state and others for its optional "my position"
+        layer. Miff draws a still map and never asks for a position in this ticket, so they are removed: a store reviewer must not
+        find a location permission in an app that does not use it yet, and the person must not see one asked. WAKE_LOCK stays: it
+        comes from the Analytics library, not from the map. TICKET LOC-2 (geofencing) REMOVES these three "remove" lines and declares
+        the permissions it really needs. The merged manifest is checked in CI (android.yml) and by PlacePrivacyTest.
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE"
+        tools:node="remove" />
+
     <application
         android:name=".MiffApplication"
         android:allowBackup="false"
