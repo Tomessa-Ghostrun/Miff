@@ -63,6 +63,14 @@ enum PlaceMapLayout {
     }
 }
 
+/// Interrupteurs de fonctionnalité des lieux.
+enum PlaceFeatures {
+    /// L'encart « ce que ça change pour toi » du détail (« ...ta Miff voit ton statut... même quand l'app est fermée », « ...ton
+    /// statut en rouge... ») décrit la DÉTECTION, qui n'existe pas encore (LOC-2 et LOC-4) : il reste caché pour ne rien promettre
+    /// d'inexistant (même décision qu'Android, validée par le PM le 2026-11-04). Les textes sont gardés dans le catalogue.
+    static let explainsWhatItChanges = false
+}
+
 /// L'adresse d'un lieu sur deux lignes, comme la maquette 16 : la rue et son numéro, puis le code postal, la ville et le pays.
 /// L'adresse est enregistrée entière (« 26 rue du Volnay, 21000 Dijon, France ») : la première virgule sépare les deux lignes.
 enum PlaceAddressLines {

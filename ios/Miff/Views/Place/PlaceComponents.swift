@@ -5,29 +5,6 @@ import SwiftUI
 // du PM les remplacera : fiche `icones-categories.md`).
 
 extension PlaceCategory {
-    var labelKey: String {
-        switch self {
-        case .home:
-            return "place_category_home"
-        case .work:
-            return "place_category_work"
-        case .school:
-            return "place_category_school"
-        case .sport:
-            return "place_category_sport"
-        case .relative:
-            return "place_category_relative"
-        case .leisure:
-            return "place_category_leisure"
-        case .other:
-            return "place_category_other"
-        }
-    }
-
-    var label: String {
-        L10n.string(labelKey)
-    }
-
     var symbol: String {
         switch self {
         case .home:
@@ -49,14 +26,6 @@ extension PlaceCategory {
 }
 
 extension PlaceType {
-    var label: String {
-        L10n.string(self == .trusted ? "place_type_trusted" : "place_type_danger")
-    }
-
-    var detail: String {
-        L10n.string(self == .trusted ? "place_type_trusted_desc" : "place_type_danger_desc")
-    }
-
     var symbol: String {
         self == .trusted ? "checkmark.shield" : "exclamationmark.triangle"
     }

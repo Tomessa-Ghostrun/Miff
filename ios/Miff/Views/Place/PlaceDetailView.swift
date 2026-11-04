@@ -186,6 +186,10 @@ struct PlaceDetailBody: View {
             MiffNotice(text: L10n.string("place_detail_no_map_app"))
         }
         facts
+        if PlaceFeatures.explainsWhatItChanges {
+            let key = place.type == .trusted ? "place_detail_info_trusted" : "place_detail_info_danger"
+            PlaceInfoLine(text: L10n.string(key))
+        }
     }
 
     private var addressRow: some View {
