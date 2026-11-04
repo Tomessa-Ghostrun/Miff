@@ -149,10 +149,12 @@ final class FakeAddressSearch: AddressSearch {
 
     func search(query: String) async -> AddressSearchResult {
         queries.append(query)
+        // La réponse est celle du moment de la demande : une réponse tardive à une frappe périmée garde sa valeur d'origine.
+        let current = answer
         if delayNanos > 0 {
             try? await Task.sleep(nanoseconds: delayNanos)
         }
-        return answer
+        return current
     }
 
     func resolve(_ suggestion: AddressSuggestion) async -> ResolvedAddress? {
