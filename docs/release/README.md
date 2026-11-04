@@ -75,3 +75,8 @@ Ces règles changent : `release-manager` les relit **avant chaque soumission**.
 - Apple, détails de confidentialité de l'app (Precise Location = latitude/longitude à 3 décimales ou plus) : https://developer.apple.com/app-store/app-privacy-details/
 - Firebase, déclarations Apple et Google (sans tableau complet pour Analytics, à compléter au moment du remplissage) : https://firebase.google.com/docs/ios/app-store-data-collection et https://firebase.google.com/docs/android/play-data-disclosure
 - OpenFreeMap, politique de confidentialité : https://openfreemap.org/privacy/ ; Photon : https://photon.komoot.io (aucune politique de confidentialité lisible sur la page)
+
+## Décisions du PM (2026-11-04)
+- **Risque Google « stalkerware » assumé** par le PM (politique lue le 2026-11-04 : le suivi d'autres personnes n'est admis que pour les apps « exclusivement pour les parents » et ne peut pas servir à suivre « un conjoint », même avec son accord ; Miff vise aussi amis et couples). Le partage reste réciproque, consenti et visible ; aucune notification persistante n'est prévue. Risque de refus ou de retrait de l'app assumé, écrit comme tel, jamais « à valider » ; aucun texte ne prétend à une relecture juridique.
+- **Consentement v3 : option A** (phrase honnête, sans « Tu peux le refuser »).
+- **Refus du re-consentement v3** : rien n'est écrit tant que le nouveau consentement n'est pas accepté ; l'utilisateur peut quitter la Miff ou supprimer son compte.
