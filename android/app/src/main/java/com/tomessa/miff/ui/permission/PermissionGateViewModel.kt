@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /*
  * SECURITY / PRIVACY, for this file: nothing here reads a position (AUT7) or writes anything but the renewal of the consent, and that only
@@ -35,7 +36,12 @@ class RenewalUiState(
     /** Writing: the button says so and nothing else can be tapped (one tap = one operation). */
     val busy: Boolean = false,
     val message: ActionMessage? = null,
+    /** The question "Quitter la Miff « X » ?" is open (members with one Miff only: the creator cannot leave, he deletes). */
+    val leaveAsked: Boolean = false,
 ) {
+    /** The way out of the screen of design 21B: a member whose only Miff is waiting for the agreement can leave it. */
+    val leavable: RenewalMiff? get() = miffs.singleOrNull()?.takeIf { !it.isOwner && it.name.isNotEmpty() }
+
     override fun toString(): String = "RenewalUiState(redacted)"
 }
 
@@ -58,16 +64,23 @@ class PermissionGateViewModel(
     private val renewals: ConsentRenewals,
     private val currentUid: () -> String?,
     private val locationBlocking: Boolean,
+    /** "Quitter la Miff" of the existing flow (uid, Miff id): the same lot as the button of the Miff screen. */
+    private val leaver: suspend (String, String) -> MiffWriteResult,
+    /** What the app does once a Miff was left (purge of the cache, fresh list of Miffs). */
+    private val onLeft: suspend (String) -> Unit,
     private val consentBeforeLocation: Boolean = com.tomessa.miff.domain.permission.GatePolicy.CONSENT_BEFORE_LOCATION,
 ) : ViewModel() {
     private var snapshot: PermissionSnapshot = permissions.snapshot()
     private var attempt = LocationAttempt()
     private var locationDeferred = false
     private var renewalDeferred = false
-    private var renewalState = RenewalState.UNKNOWN
+
+    // Checking from the start when there is a session: the "Toujours" screen waits for the end of the check (bounded by [CHECK_TIMEOUT_MS]).
+    private var renewalState = if (currentUid() != null) RenewalState.CHECKING else RenewalState.UNKNOWN
     private var due: List<RenewalMiff> = emptyList()
     private var renewalBusy = false
     private var renewalMessage: ActionMessage? = null
+    private var leaveAsked = false
     private var notificationsHandled = currentUid()?.let(asked::wasShown) ?: true
 
     private val mutableState = MutableStateFlow(build())
@@ -77,7 +90,9 @@ class PermissionGateViewModel(
         val uid = currentUid()
         if (uid != null) {
             viewModelScope.launch {
-                when (val check = renewals.check(uid)) {
+                // A check that is too slow ends as "unknown": the screen never waits for ever (no network, a slow server).
+                val check = withTimeoutOrNull(CHECK_TIMEOUT_MS) { renewals.check(uid) } ?: ConsentRenewalCheck.Unknown
+                when (check) {
                     is ConsentRenewalCheck.Due -> {
                         due = check.miffs
                         renewalState = RenewalState.DUE
@@ -87,9 +102,9 @@ class PermissionGateViewModel(
                         renewalState = RenewalState.NOTHING_DUE
                     }
 
-                    // Not known: nothing is claimed and nothing is blocked; the next launch asks again.
+                    // Not known: nothing is claimed and nothing is blocked any more; the next launch asks again.
                     ConsentRenewalCheck.Unknown -> {
-                        Unit
+                        renewalState = RenewalState.UNKNOWN
                     }
                 }
                 publish()
@@ -161,6 +176,45 @@ class PermissionGateViewModel(
         }
     }
 
+    fun onLeaveRequested() {
+        if (renewalBusy || renewalState != RenewalState.DUE || RenewalUiState(due).leavable == null) return
+        leaveAsked = true
+        renewalMessage = null
+        publish()
+    }
+
+    fun onLeaveCancelled() {
+        if (renewalBusy) return
+        leaveAsked = false
+        publish()
+    }
+
+    /** "Quitter la Miff" confirmed: the existing lot (nothing written before this tap); once left, nothing is left to agree to. */
+    fun onLeaveConfirmed() {
+        val uid = currentUid() ?: return
+        val miff = RenewalUiState(due).leavable ?: return
+        if (renewalBusy || !leaveAsked) return
+        renewalBusy = true
+        renewalMessage = null
+        publish()
+        viewModelScope.launch {
+            when (val result = leaver(uid, miff.miffId)) {
+                MiffWriteResult.Done -> {
+                    onLeft(miff.miffId)
+                    due = emptyList()
+                    renewalState = RenewalState.NOTHING_DUE
+                    leaveAsked = false
+                }
+
+                is MiffWriteResult.Failed -> {
+                    renewalMessage = messageFor(result.failure)
+                }
+            }
+            renewalBusy = false
+            publish()
+        }
+    }
+
     private fun publish() {
         mutableState.update { build() }
     }
@@ -181,11 +235,23 @@ class PermissionGateViewModel(
         return GateUiState(
             screen = screen,
             location = LocationFlow.model(snapshot, attempt),
-            renewal = if (renewalState == RenewalState.DUE) RenewalUiState(due, renewalBusy, renewalMessage) else null,
+            renewal =
+                if (renewalState ==
+                    RenewalState.DUE
+                ) {
+                    RenewalUiState(due, renewalBusy, renewalMessage, leaveAsked)
+                } else {
+                    null
+                },
             canPutOffLocation = !locationBlocking,
         )
     }
 
     /** The state of the permissions as the view model last read it (for the screen: which window to open). */
     val currentSnapshot: PermissionSnapshot get() = snapshot
+
+    companion object {
+        /** The longest the "Toujours" screen waits for the look at the consents (2 reads of the server at most for a free account). */
+        const val CHECK_TIMEOUT_MS = 8_000L
+    }
 }

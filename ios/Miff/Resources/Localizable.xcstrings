@@ -4906,7 +4906,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Amandine n’est toujours pas rentré à la maison"
+            "value": "Amandine n’est toujours pas rentrée à la maison"
           }
         }
       }
@@ -9714,6 +9714,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ton accord n'est pas enregistré : rien n'est partagé pour l'instant."
+          }
+        }
+      }
+    },
+    "miff_renewal_exit_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is recorded until you agree. You can also leave this Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'est enregistré tant que tu n'as pas accepté. Tu peux aussi quitter cette Miff."
           }
         }
       }

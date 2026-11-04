@@ -12,19 +12,22 @@ object GatePolicy {
      */
     const val CONSENT_BEFORE_LOCATION = true
 
-    /**
-     * Frequency of the renewal screen (recommendation: at every launch of the app). True: "Pas maintenant" is kept in memory only, so the
-     * screen comes back at the next launch. The other option of the design (once a day) is NOT built: it needs a stored date.
-     */
-    const val RENEWAL_EVERY_LAUNCH = true
-
     /** A discreet "Se déconnecter" link on the blocking screens of the permissions (recommendation: yes). "Supprimer mon compte" cannot exist yet (AUTH-5). */
     const val EXIT_LINKS_ON_BLOCKING_SCREENS = true
 }
 
-/** What the renewal of the consent looks like for the gate. */
+/**
+ * What the renewal of the consent looks like for the gate. "Pas maintenant" is kept in memory only, so a renewal that is due comes back at
+ * every launch of the app (recommendation of the design; the "once a day" option is not built: it needs a stored date).
+ */
 enum class RenewalState {
-    /** Not looked at yet (or the server could not be asked): nothing is claimed, nothing is blocked. */
+    /**
+     * The check is under way (it starts with the screen and is bounded in time). The "Toujours" screen waits for its end: a member who
+     * shares under an older text must not be able to give the background location BEFORE the agreement (review of the PR).
+     */
+    CHECKING,
+
+    /** The check ended without an answer (no network, too slow, refused): nothing is claimed and nothing more is waited for. */
     UNKNOWN,
 
     NOTHING_DUE,
@@ -34,7 +37,7 @@ enum class RenewalState {
 }
 
 /** The screen the gate puts in front of the Feed (NONE: the Feed itself). */
-enum class GateScreen { NONE, NOTIFICATIONS, LOCATION, RENEWAL }
+enum class GateScreen { NONE, NOTIFICATIONS, CHECKING, LOCATION, RENEWAL }
 
 data class GateInput(
     val snapshot: PermissionSnapshot,
@@ -65,7 +68,10 @@ fun resolveGate(input: GateInput): GateScreen {
 
         renewalAsked && input.consentBeforeLocation -> GateScreen.RENEWAL
 
-        // Agreement first: while it is pending (and put off), no permission is asked: nothing would use it yet.
+        // Agreement first: the "Toujours" screen is not shown while the check runs, nor while the agreement is due (put off or not):
+        // no permission is asked while nothing would use it, and none before the agreement.
+        locationAsked && input.consentBeforeLocation && input.renewal == RenewalState.CHECKING -> GateScreen.CHECKING
+
         locationAsked && !(input.consentBeforeLocation && renewalPending) -> GateScreen.LOCATION
 
         renewalAsked -> GateScreen.RENEWAL

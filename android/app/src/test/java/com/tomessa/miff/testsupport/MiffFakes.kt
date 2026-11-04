@@ -120,6 +120,21 @@ class FakeMiffStore : MiffStore {
         }
     }
 
+    /** What the transaction of a renewal does: the card is read in it, the lot is made for the Miffs where the person still shares. */
+    override suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<DocWrite>,
+    ): List<String> {
+        calls += "commitWhereSharing"
+        val active =
+            miffIds.filter {
+                (consents[it] as? com.tomessa.miff.data.miff.SharingConsentRead)?.enabled == true
+            }
+        if (active.isNotEmpty()) record(build(active))
+        return active
+    }
+
     override suspend fun serverReachable(uid: String): Boolean {
         calls += "reachable"
         return reachable

@@ -646,6 +646,7 @@
     <string name="miff_renewal_intro_one">For \"%1$s\", Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement.</string>
     <string name="miff_renewal_intro_unnamed">For this Miff, Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement.</string>
     <string name="miff_renewal_intro_many">For your Miffs, Miff can now keep your last known location, with the time it was measured. The members of each Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with these Miffs, we need your agreement.</string>
+    <string name="miff_renewal_exit_note">Nothing is recorded until you agree. You can also leave this Miff.</string>
     <string name="miff_renewal_accept">I agree</string>
     <string name="miff_renewal_later">Not now</string>
     <string name="miff_renewal_saving">Saving your agreement…</string>

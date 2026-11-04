@@ -37,6 +37,8 @@ import com.tomessa.miff.domain.permission.LocationScreenModel
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.miff.ConsentLine
+import com.tomessa.miff.ui.miff.DialogTone
+import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.miff.RenewalDetailsCard
 import com.tomessa.miff.ui.miff.actionMessageText
@@ -314,57 +316,55 @@ fun LocationPopIn(
             contentDescription = null,
             modifier = Modifier.size(72.dp),
         )
+        Text(
+            text =
+                stringResource(
+                    if (model.steps) R.string.permission_location_steps_body else R.string.permission_location_body,
+                ),
+            style = textBodyRegular14,
+            color = colorTextPrimary,
+            textAlign = TextAlign.Center,
+        )
+        // The disclosure that Google Play requires (location, background, app closed, the features concerned) and the three lines: on BOTH
+        // variants, visible BEFORE the button. On the settings variant (screen 13) it is repeated on purpose: when the precise location was
+        // already granted, that is the first screen the person sees (review of the PR).
+        Text(
+            text = stringResource(R.string.permission_location_disclosure),
+            style = textBodyRegular14,
+            color = colorTextPrimary,
+            textAlign = TextAlign.Center,
+        )
         if (model.steps) {
-            Text(
-                text = stringResource(R.string.permission_location_steps_body),
-                style = textBodyRegular14,
-                color = colorTextPrimary,
-                textAlign = TextAlign.Center,
-            )
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 Step(1, stringResource(R.string.permission_location_step_1))
                 Step(2, stringResource(R.string.permission_location_step_2))
                 Step(3, stringResource(R.string.permission_location_step_3))
             }
-        } else {
-            Text(
-                text = stringResource(R.string.permission_location_body),
-                style = textBodyRegular14,
-                color = colorTextPrimary,
-                textAlign = TextAlign.Center,
+        }
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(ShapeMd)
+                    .background(colorBgCanvas)
+                    .padding(Spacing.s + Spacing.xs),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            ConsentLine(
+                R.drawable.ic_perm_phone,
+                R.string.permission_location_closed_title,
+                R.string.permission_location_closed_body,
             )
-            // The disclosure that Google Play requires (location, background, app closed, the features concerned): visible BEFORE the button.
-            Text(
-                text = stringResource(R.string.permission_location_disclosure),
-                style = textBodyRegular14,
-                color = colorTextPrimary,
-                textAlign = TextAlign.Center,
+            ConsentLine(
+                R.drawable.ic_visibility,
+                R.string.permission_location_seen_title,
+                R.string.permission_location_seen_body,
             )
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(ShapeMd)
-                        .background(colorBgCanvas)
-                        .padding(Spacing.s + Spacing.xs),
-                verticalArrangement = Arrangement.spacedBy(Spacing.s),
-            ) {
-                ConsentLine(
-                    R.drawable.ic_perm_phone,
-                    R.string.permission_location_closed_title,
-                    R.string.permission_location_closed_body,
-                )
-                ConsentLine(
-                    R.drawable.ic_visibility,
-                    R.string.permission_location_seen_title,
-                    R.string.permission_location_seen_body,
-                )
-                ConsentLine(
-                    R.drawable.ic_perm_swap,
-                    R.string.permission_location_control_title,
-                    R.string.permission_location_control_body,
-                )
-            }
+            ConsentLine(
+                R.drawable.ic_perm_swap,
+                R.string.permission_location_control_title,
+                R.string.permission_location_control_body,
+            )
         }
     }
 }
@@ -401,6 +401,9 @@ fun RenewalScreen(
     state: RenewalUiState,
     onAccept: () -> Unit,
     onLater: () -> Unit,
+    onLeave: () -> Unit = {},
+    onLeaveConfirmed: () -> Unit = {},
+    onLeaveCancelled: () -> Unit = {},
 ) {
     val title = stringResource(R.string.miff_renewal_title)
     Column(
@@ -455,6 +458,36 @@ fun RenewalScreen(
             }
             Text(text = introText(state), style = textBodyRegular14, color = colorTextPrimary)
             RenewalDetailsCard()
+            // The way out of design screen 21B, at the END of the text (not pinned: two more choices all the time would weigh on the screen).
+            // Only for a member whose single Miff waits for the agreement; the creator deletes his Miff elsewhere, and "Supprimer mon
+            // compte" does not exist yet (AUTH-5), so the sentence does not promise it.
+            state.leavable?.let {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(ShapeMd)
+                            .background(colorBgSurface.copy(alpha = 0.7f))
+                            .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                ) {
+                    Text(
+                        text = stringResource(R.string.miff_renewal_exit_note),
+                        style = textBodyRegular14,
+                        color = colorTextDescription,
+                    )
+                    TextButton(
+                        onClick = onLeave,
+                        enabled = !state.busy,
+                        modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
+                    ) {
+                        Text(
+                            stringResource(R.string.miff_leave_link),
+                            style = textBodyBold16,
+                            color = colorActionPrimary,
+                        )
+                    }
+                }
+            }
         }
         Column(
             modifier =
@@ -464,7 +497,7 @@ fun RenewalScreen(
                     .padding(horizontal = Spacing.l, vertical = Spacing.s),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            state.message?.let {
+            state.message?.takeIf { !state.leaveAsked }?.let {
                 MiffNotice(text = actionMessageText(it), isError = true)
                 Text(
                     text = stringResource(R.string.miff_renewal_error_extra),
@@ -486,6 +519,21 @@ fun RenewalScreen(
             ) {
                 Text(stringResource(R.string.miff_renewal_later), style = textBodyBold16, color = colorActionPrimary)
             }
+        }
+    }
+    if (state.leaveAsked) {
+        state.leavable?.let { miff ->
+            MiffConfirmDialog(
+                title = stringResource(R.string.miff_leave_title, miff.name),
+                body = stringResource(R.string.miff_leave_body),
+                confirmLabel = stringResource(R.string.miff_leave_action),
+                cancelLabel = stringResource(R.string.common_cancel),
+                tone = DialogTone.SENSITIVE,
+                busy = state.busy,
+                message = state.message,
+                onConfirm = onLeaveConfirmed,
+                onCancel = onLeaveCancelled,
+            )
         }
     }
 }

@@ -240,7 +240,7 @@ jobs:
           allowed='android.permission.ACCESS_FINE_LOCATION android.permission.ACCESS_COARSE_LOCATION android.permission.ACCESS_BACKGROUND_LOCATION android.permission.POST_NOTIFICATIONS'
           check_manifest() {
             # xargs puts the sorted names on one line (no newline character to escape in this file).
-            found=$(grep -a -o -E 'android[.]permission[.](ACCESS_[A-Z_]*LOCATION|FOREGROUND_SERVICE[A-Z_]*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|RECEIVE_BOOT_COMPLETED)' | sort -u | xargs)
+            found=$(grep -a -o -E 'android[.]permission[.](ACCESS_[A-Z_]*LOCATION[A-Z_]*|FOREGROUND_SERVICE[A-Z_]*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_[A-Z_]+|ACTIVITY_RECOGNITION|RECEIVE_BOOT_COMPLETED)' | sort -u | xargs)
             expected=$(printf '%s ' $allowed | xargs -n1 | sort -u | xargs)
             if [ "$found" != "$expected" ]; then
               echo "::error title=Permissions sensibles::$1 declare : [$found] au lieu de : [$expected]. Une bibliotheque a ajoute une permission (la retirer avec tools:node=\"remove\" dans AndroidManifest.xml), ou une permission du ticket LOC-2a manque."

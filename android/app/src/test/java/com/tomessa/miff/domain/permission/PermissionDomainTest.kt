@@ -95,8 +95,27 @@ class PermissionDomainTest {
         // With the location complete the renewal still comes.
         assertEquals(GateScreen.RENEWAL, gate(full, renewal = RenewalState.DUE))
         assertEquals(GateScreen.NONE, gate(full, renewal = RenewalState.DUE, renewalDeferred = true))
-        // Not looked at yet: nothing is claimed.
+        // The check ended without an answer: nothing is claimed, the "Toujours" screen is shown (after the end of the check only).
         assertEquals(GateScreen.LOCATION, gate(missing, renewal = RenewalState.UNKNOWN))
+    }
+
+    @Test
+    fun whileTheCheckRuns_neitherTheLocationScreenNorTheFeedWhenTheLocationIsMissing() {
+        val missing = snap(notifications = true)
+        // A member who shares under an older text must not be able to give the background location BEFORE the agreement (review of the PR).
+        assertEquals(GateScreen.CHECKING, gate(missing, renewal = RenewalState.CHECKING))
+        assertEquals(GateScreen.CHECKING, gate(missing, blocking = false, renewal = RenewalState.CHECKING))
+        // The notifications never wait for the check; with the location complete there is nothing to wait for (the Feed, then the renewal).
+        assertEquals(GateScreen.NOTIFICATIONS, gate(snap(), renewal = RenewalState.CHECKING))
+        assertEquals(GateScreen.NONE, gate(full, renewal = RenewalState.CHECKING))
+        // Relaxed build and "Plus tard" already said: nothing to wait for either.
+        assertEquals(GateScreen.NONE, gate(missing, blocking = false, deferred = true, renewal = RenewalState.CHECKING))
+        // The other order (location first, decision pending): the check does not delay the location screen.
+        assertEquals(GateScreen.LOCATION, gate(missing, renewal = RenewalState.CHECKING, consentFirst = false))
+        // The end of the check, whatever it answers, lets the right screen through.
+        assertEquals(GateScreen.LOCATION, gate(missing, renewal = RenewalState.NOTHING_DUE))
+        assertEquals(GateScreen.LOCATION, gate(missing, renewal = RenewalState.UNKNOWN))
+        assertEquals(GateScreen.RENEWAL, gate(missing, renewal = RenewalState.DUE))
     }
 
     @Test

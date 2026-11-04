@@ -82,6 +82,8 @@ class ConsentRenewalsTest {
     @Test
     fun renew_isOneLot_ofOneUpdatePerMiff_toTheCurrentVersion() =
         runTest {
+            member(MIFF_ID)
+            member(OTHER_MIFF_ID)
             val result = renewals.renew(uid, listOf(MIFF_ID, OTHER_MIFF_ID, MIFF_ID))
             assertEquals(MiffWriteResult.Done, result)
             val lot = store.commitsAsLots.single()
@@ -93,6 +95,33 @@ class ConsentRenewalsTest {
             @Suppress("UNCHECKED_CAST")
             val sharing = lot.first().data["sharing"] as Map<String, Any?>
             assertEquals("2026-11-v03", sharing["consentVersion"])
+        }
+
+    @Test
+    fun renew_readsTheCardInTheTransaction_andNeverTurnsAStoppedSharingBackOn() =
+        runTest {
+            member(MIFF_ID)
+            // Stopped meanwhile (another phone): nothing is written for it, the other Miff is still renewed.
+            member(OTHER_MIFF_ID, enabled = false)
+            assertEquals(MiffWriteResult.Done, renewals.renew(uid, listOf(MIFF_ID, OTHER_MIFF_ID)))
+            assertEquals(listOf("miffs/$MIFF_ID/members/$uid"), store.commitsAsLots.single().map { it.path })
+            assertTrue("commitWhereSharing" in store.calls)
+            // Nobody shares any more: nothing is written at all.
+            store.commitsAsLots.clear()
+            member(MIFF_ID, enabled = false)
+            assertEquals(MiffWriteResult.Done, renewals.renew(uid, listOf(MIFF_ID)))
+            assertTrue(store.commitsAsLots.isEmpty())
+        }
+
+    @Test
+    fun theCreatorIsToldApart_fromAMember() =
+        runTest {
+            store.memberships = listOf(MembershipRef("free", MIFF_ID))
+            store.miffs[MIFF_ID] = miffDetails(name = "Chez nous", owner = uid)
+            member(MIFF_ID)
+            assertTrue((renewals.check(uid) as ConsentRenewalCheck.Due).miffs.single().isOwner)
+            store.miffs[MIFF_ID] = miffDetails(name = "Chez nous", owner = "someone-else")
+            assertFalse((renewals.check(uid) as ConsentRenewalCheck.Due).miffs.single().isOwner)
         }
 
     @Test

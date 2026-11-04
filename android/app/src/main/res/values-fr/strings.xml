@@ -182,7 +182,7 @@
     <string name="onboarding_sample_place_address">Adresse</string>
     <string name="onboarding_sample_place_radius">Périmètre</string>
     <string name="onboarding_sample_msg_1">Thomas est bien arrivé à l’école</string>
-    <string name="onboarding_sample_msg_2">Amandine n’est toujours pas rentré à la maison</string>
+    <string name="onboarding_sample_msg_2">Amandine n’est toujours pas rentrée à la maison</string>
     <string name="onboarding_sample_msg_3">Maman vient de quitter le travail</string>
     <string name="onboarding_sample_when_1">Il y a 2 min.</string>
     <string name="onboarding_sample_when_2">Il y a 2 h.</string>
@@ -624,6 +624,7 @@
     <string name="miff_renewal_intro_one">Pour « %1$s », Miff peut maintenant garder ta dernière position connue, avec l\'heure de la mesure. Les membres de cette Miff qui partagent aussi la leur peuvent la voir. Pas d\'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord.</string>
     <string name="miff_renewal_intro_unnamed">Pour cette Miff, Miff peut maintenant garder ta dernière position connue, avec l\'heure de la mesure. Les membres de cette Miff qui partagent aussi la leur peuvent la voir. Pas d\'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord.</string>
     <string name="miff_renewal_intro_many">Pour tes Miffs, Miff peut maintenant garder ta dernière position connue, avec l\'heure de la mesure. Les membres de chaque Miff qui partagent aussi la leur peuvent la voir. Pas d\'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec ces Miffs, nous avons besoin de ton accord.</string>
+    <string name="miff_renewal_exit_note">Rien n\'est enregistré tant que tu n\'as pas accepté. Tu peux aussi quitter cette Miff.</string>
     <string name="miff_renewal_accept">J\'accepte</string>
     <string name="miff_renewal_later">Pas maintenant</string>
     <string name="miff_renewal_saving">On enregistre ton accord…</string>

@@ -95,6 +95,17 @@ interface MiffStore {
         uid: String,
     ): SharingConsentRead?
 
+    /**
+     * ONE transaction (LOC-2a, renewal of the consent): my card is READ in each of [miffIds] inside the transaction, and [build] makes the lot
+     * for the ones where I STILL share (`sharing.enabled` is true) only; nothing is written for the others (a sharing stopped meanwhile, on
+     * another phone, is never turned back on by a renewal). Returns the ids that were written (empty: nothing was written).
+     */
+    suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<DocWrite>,
+    ): List<String>
+
     /** A read that only the person can do and that always works when the server is reachable and App Check is fine. */
     suspend fun serverReachable(uid: String): Boolean
 
@@ -199,6 +210,31 @@ class FirestoreMiffStore(
             enabled = snapshot.getBoolean("sharing.enabled") == true,
             version = snapshot.getString("sharing.consentVersion"),
         )
+    }
+
+    override suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<DocWrite>,
+    ): List<String> {
+        val db = firestore()
+        return db
+            .runTransaction { transaction ->
+                val active =
+                    miffIds.filter { miffId ->
+                        val card =
+                            transaction.get(
+                                db
+                                    .collection("miffs")
+                                    .document(miffId)
+                                    .collection("members")
+                                    .document(uid),
+                            )
+                        card.exists() && card.getBoolean("sharing.enabled") == true
+                    }
+                if (active.isNotEmpty()) applyWrites(db, transaction, build(active))
+                active
+            }.await()
     }
 
     override suspend fun readEntitlement(uid: String): EntitlementRead? {

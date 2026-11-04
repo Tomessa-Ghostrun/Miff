@@ -16,6 +16,8 @@ class RenewalMiff(
     val miffId: String,
     /** The name as the phone knows it; "" when it could not be read (the screen then says it without the name). */
     val name: String,
+    /** The creator cannot leave a Miff (only delete it): the "Quitter la Miff" link of the renewal screen is for members. */
+    val isOwner: Boolean = false,
 ) {
     override fun toString(): String = "RenewalMiff(redacted)"
 }
@@ -67,7 +69,7 @@ class FirestoreConsentRenewals(
                 is Guarded.Value -> {
                     val consent = read.value
                     if (consent != null && consent.enabled && MiffSharingConsent.isRenewalDue(consent.version)) {
-                        due += RenewalMiff(ref.miffId, nameOf(ref.miffId))
+                        due += describe(ref.miffId, uid)
                     }
                 }
 
@@ -98,9 +100,13 @@ class FirestoreConsentRenewals(
         val result =
             when (
                 val outcome =
-                    guardedCall(
-                        timeoutMillis,
-                    ) { store.commit(ids.flatMap { MiffWrites.renewConsent(it, uid) }) }
+                    guardedCall(timeoutMillis) {
+                        // The card is read INSIDE the transaction: only the Miffs where the person still shares are renewed.
+                        store.commitWhereSharing(
+                            uid,
+                            ids,
+                        ) { active -> active.flatMap { MiffWrites.renewConsent(it, uid) } }
+                    }
             ) {
                 is Guarded.Value -> MiffWriteResult.Done
                 is Guarded.Failed -> MiffWriteResult.Failed(outcome.failure)
@@ -115,13 +121,12 @@ class FirestoreConsentRenewals(
         return result
     }
 
-    private suspend fun nameOf(miffId: String): String {
+    private suspend fun describe(
+        miffId: String,
+        uid: String,
+    ): RenewalMiff {
         val read = guardedCall(timeoutMillis) { store.readMiff(miffId, fromServer = false) }
-        val exists = (read as? Guarded.Value)?.value as? MiffRead.Exists
-        return exists
-            ?.details
-            ?.name
-            ?.let(MiffName::clean)
-            .orEmpty()
+        val details = ((read as? Guarded.Value)?.value as? MiffRead.Exists)?.details
+        return RenewalMiff(miffId, details?.name?.let(MiffName::clean).orEmpty(), isOwner = details?.ownerUid == uid)
     }
 }

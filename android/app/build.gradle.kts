@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
 }
 
+// LOC-2a. -Pmiff.locationBlocking=false relaxes the blocking of the location screen (see defaultConfig). That is a TEST option: a RELEASE
+// build (release, releaseLike) refuses it unless -Pmiff.allowRelaxedLocationInRelease=true is ALSO given, on purpose (a decision of the PM, for
+// instance if a store refuses the blocking). The default is "true" everywhere. Checked by PermissionPrivacyTest.
+val locationBlockingProperty: String = providers.gradleProperty("miff.locationBlocking").getOrElse("true")
+
 android {
     namespace = "com.tomessa.miff"
     // compileSdk 37 (not 36): the current AndroidX releases (Compose 1.12, Navigation 2.10, Core 1.19) require it.
@@ -49,7 +54,7 @@ android {
         // LOC-2a. Compile-time switch (AUT6, decision (e) of the PM): the location screen "Toujours autoriser" is BLOCKING by default, because
         // Miff only works with the precise location all the time. -Pmiff.locationBlocking=false relaxes it (a "Plus tard" link appears) in
         // case a store refuses the blocking (Apple 5.1.2(i) is the known risk, assumed by the PM). Only "true" or "false" are accepted.
-        val locationBlocking = providers.gradleProperty("miff.locationBlocking").getOrElse("true")
+        val locationBlocking = locationBlockingProperty
         require(
             locationBlocking == "true" || locationBlocking == "false",
         ) { "miff.locationBlocking must be true or false" }
@@ -201,4 +206,19 @@ dependencies {
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+run {
+    val relaxed = locationBlockingProperty == "false"
+    val allowedInRelease = providers.gradleProperty("miff.allowRelaxedLocationInRelease").orNull == "true"
+    if (relaxed && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.locationBlocking=false is not allowed in a release build (the location screen must block). " +
+                        "Add -Pmiff.allowRelaxedLocationInRelease=true only if the PM decided to relax it.",
+                )
+            }
+        }
+    }
 }

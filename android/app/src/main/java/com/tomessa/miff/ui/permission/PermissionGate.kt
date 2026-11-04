@@ -29,6 +29,7 @@ import com.tomessa.miff.domain.permission.GateScreen
 import com.tomessa.miff.domain.permission.LocationButton
 import com.tomessa.miff.domain.permission.LocationFlow
 import com.tomessa.miff.domain.permission.PermissionNames
+import com.tomessa.miff.ui.auth.SessionLoadingScreen
 import kotlinx.coroutines.launch
 
 /*
@@ -61,6 +62,8 @@ fun PermissionGate(
                             renewals = container.consentRenewals,
                             currentUid = { session.currentUid },
                             locationBlocking = BuildConfig.LOCATION_BLOCKING,
+                            leaver = { uid, miffId -> container.miffRepository.leave(uid, miffId) },
+                            onLeft = { miffId -> container.onMiffLeft(miffId) },
                         )
                     }
                 },
@@ -95,6 +98,11 @@ fun PermissionGate(
     when (state.screen) {
         GateScreen.NONE -> {
             content()
+        }
+
+        GateScreen.CHECKING -> {
+            // The look at the consents is under way (a few seconds at most): neither the Feed nor the "Toujours" screen yet.
+            SessionLoadingScreen()
         }
 
         GateScreen.NOTIFICATIONS -> {
@@ -146,6 +154,9 @@ fun PermissionGate(
                     state = renewal,
                     onAccept = viewModel::onRenewalAccepted,
                     onLater = viewModel::onRenewalPutOff,
+                    onLeave = viewModel::onLeaveRequested,
+                    onLeaveConfirmed = viewModel::onLeaveConfirmed,
+                    onLeaveCancelled = viewModel::onLeaveCancelled,
                 )
             }
         }

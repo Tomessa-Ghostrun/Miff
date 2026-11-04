@@ -549,6 +549,12 @@ open class MiffStoreByDelegation(
         uid: String,
     ) = inner.readSharingConsent(miffId, uid)
 
+    override suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<com.tomessa.miff.domain.miff.DocWrite>,
+    ) = inner.commitWhereSharing(uid, miffIds, build)
+
     override suspend fun commitWithProfile(
         uid: String,
         build: (com.tomessa.miff.domain.miff.ProfileCopy) -> List<com.tomessa.miff.domain.miff.DocWrite>,

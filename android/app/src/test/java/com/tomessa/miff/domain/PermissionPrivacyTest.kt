@@ -25,7 +25,9 @@ class PermissionPrivacyTest {
 
     private val declared = Regex("""<uses-permission\s+android:name="([^"]+)"\s*/>""")
     private val sensitive =
-        Regex("""permission\.(ACCESS_\w*LOCATION|FOREGROUND_SERVICE\w*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE)""")
+        Regex(
+            """permission\.(ACCESS_\w*LOCATION\w*|FOREGROUND_SERVICE\w*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_\w+|ACTIVITY_RECOGNITION)""",
+        )
 
     @Test
     fun theSourceManifest_declaresExactlyTheLocationAndNotificationPermissionsOfTheTicket() {
@@ -71,6 +73,17 @@ class PermissionPrivacyTest {
     }
 
     @Test
+    fun aReleaseBuildRefusesTheRelaxedLocationBlocking_unlessAskedOnPurpose() {
+        val gradle = File("build.gradle.kts").readText()
+        // The default is "blocking" ...
+        assertTrue(gradle.contains("""providers.gradleProperty("miff.locationBlocking").getOrElse("true")"""))
+        // ... and a release build (release, releaseLike) fails with the relaxed value unless the second property is given too.
+        assertTrue(gradle.contains("miff.allowRelaxedLocationInRelease"))
+        assertTrue(gradle.contains("preReleaseBuild") && gradle.contains("preReleaseLikeBuild"))
+        assertTrue(gradle.contains("GradleException"))
+    }
+
+    @Test
     fun noPositionIsReadAnywhereInThisVersion_noLocationLibrary() {
         val forbidden =
             listOf(
@@ -79,7 +92,8 @@ class PermissionPrivacyTest {
                 Regex("""\bFusedLocationProviderClient\b|\bLocationServices\b|play\.services\.location"""),
                 Regex("""\bGeofencingClient\b|\bGeofencingRequest\b"""),
                 Regex("""getLastKnownLocation|requestLocationUpdates|getCurrentLocation|\.lastLocation\b"""),
-                Regex("""\bLocationCallback\b|\bLocationRequest\b"""),
+                Regex("""\bLocationCallback\b|\bLocationRequest\b|\bLocationListener\b"""),
+                Regex("""LocationManagerCompat|LOCATION_SERVICE|ActivityRecognition"""),
             )
         val offenders =
             sources("com").flatMap { file ->

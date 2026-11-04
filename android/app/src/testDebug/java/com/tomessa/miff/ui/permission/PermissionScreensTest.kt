@@ -15,6 +15,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -164,6 +165,48 @@ class PermissionScreensTest {
         assertEquals(0, accepted)
         composeRule.onNodeWithText(text(R.string.miff_renewal_accept)).performClick()
         assertEquals(1, accepted)
+    }
+
+    @Test
+    fun renewal_aMemberWithOneMiff_hasTheNoteAndTheLeaveLink_askingFirst() {
+        var asked = 0
+        var confirmed = 0
+        show {
+            RenewalScreen(
+                RenewalUiState(listOf(RenewalMiff("AbCdEfGhIjKlMnOpQrSt", "Famille Mfouka")), leaveAsked = true),
+                onAccept = {},
+                onLater = {},
+                onLeave = { asked++ },
+                onLeaveConfirmed = { confirmed++ },
+            )
+        }
+        composeRule.onNodeWithText(text(R.string.miff_renewal_exit_note)).performScrollTo().assertIsDisplayed()
+        // The link and the confirm button of the question carry the same words: the link is in the screen, the button in the open question.
+        composeRule.onAllNodesWithText(text(R.string.miff_leave_link)).assertCountEquals(2)
+        composeRule.onAllNodesWithText(text(R.string.miff_leave_action)).onLast().performClick()
+        assertEquals(1, confirmed)
+        assertEquals(0, asked)
+    }
+
+    @Test
+    fun renewal_theCreator_hasNoLeaveLink() {
+        show {
+            RenewalScreen(
+                RenewalUiState(listOf(RenewalMiff("AbCdEfGhIjKlMnOpQrSt", "Famille Mfouka", isOwner = true))),
+                onAccept = {},
+                onLater = {},
+            )
+        }
+        composeRule.onAllNodesWithText(text(R.string.miff_leave_link)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.miff_renewal_exit_note)).assertCountEquals(0)
+    }
+
+    @Test
+    fun location_settingsStep_repeatsTheFullDisclosure_forAPersonWhoseFirstScreenItIs() {
+        show { LocationPopIn(settings, onAction = {}, onPutOff = null, onSignOut = null) }
+        composeRule.onNodeWithText(text(R.string.permission_location_disclosure)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.permission_location_seen_body)).performScrollTo().assertExists()
+        composeRule.onNodeWithText(text(R.string.permission_location_control_body)).performScrollTo().assertExists()
     }
 
     @Test
