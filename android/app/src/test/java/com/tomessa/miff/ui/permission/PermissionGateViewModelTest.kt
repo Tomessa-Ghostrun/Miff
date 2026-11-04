@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.permission
 
+import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewalCheck
 import com.tomessa.miff.data.miff.ConsentRenewals
 import com.tomessa.miff.data.miff.MiffWriteResult
@@ -99,6 +100,7 @@ class PermissionGateViewModelTest {
         phone: Phone,
         blocking: Boolean = true,
         uid: String? = "uid-1",
+        awaiting: AwaitingAgreement = AwaitingAgreement(),
     ) = PermissionGateViewModel(
         phone,
         asks,
@@ -110,6 +112,7 @@ class PermissionGateViewModelTest {
             leaveResult
         },
         onLeft = { left += it },
+        awaiting = awaiting,
     )
 
     @Test
@@ -403,6 +406,76 @@ class PermissionGateViewModelTest {
                 several.uiState.value.renewal!!
                     .leavable,
             )
+        }
+
+    // --- LOC-2b, design 23: the Miffs that wait for the agreement -----------------------------------------------------------
+
+    @Test
+    fun theMiffsThatWait_areTold_whileNotNowIsChosen_andForgottenOnceTheAgreementIsGiven() =
+        runTest {
+            renewals.check = due
+            val awaiting = AwaitingAgreement()
+            val model = vm(Phone(snap(true, true, true, true)), awaiting = awaiting)
+            advanceUntilIdle()
+            assertEquals(setOf(MIFF_ID), awaiting.waiting.value)
+            model.onRenewalPutOff()
+            // The Feed is shown, and the Miff is still said to wait: nothing was written.
+            assertEquals(GateScreen.NONE, model.uiState.value.screen)
+            assertEquals(setOf(MIFF_ID), awaiting.waiting.value)
+            assertTrue(renewals.renewed.isEmpty())
+        }
+
+    @Test
+    fun reviewAndAgree_bringsTheRenewalScreenBack_afterNotNow() =
+        runTest {
+            renewals.check = due
+            val awaiting = AwaitingAgreement()
+            val model = vm(Phone(snap(true, true, true, true)), awaiting = awaiting)
+            advanceUntilIdle()
+            model.onRenewalPutOff()
+            assertEquals(GateScreen.NONE, model.uiState.value.screen)
+            awaiting.requestReview()
+            advanceUntilIdle()
+            assertEquals(GateScreen.RENEWAL, model.uiState.value.screen)
+            model.onRenewalAccepted()
+            advanceUntilIdle()
+            assertEquals(GateScreen.NONE, model.uiState.value.screen)
+            assertEquals(emptySet<String>(), awaiting.waiting.value)
+            assertEquals(listOf(listOf(MIFF_ID)), renewals.renewed)
+        }
+
+    @Test
+    fun nothingToRenew_nobodyWaits() =
+        runTest {
+            val awaiting = AwaitingAgreement()
+            awaiting.replace(setOf("stale"))
+            vm(Phone(snap(true, true, true, true)), awaiting = awaiting)
+            advanceUntilIdle()
+            assertEquals(emptySet<String>(), awaiting.waiting.value)
+        }
+
+    @Test
+    fun aMiffLeftFromTheRenewalScreen_doesNotWaitAnyMore() =
+        runTest {
+            renewals.check = due
+            val awaiting = AwaitingAgreement()
+            val model = vm(Phone(snap(true, true, true, true)), awaiting = awaiting)
+            advanceUntilIdle()
+            model.onLeaveRequested()
+            model.onLeaveConfirmed()
+            advanceUntilIdle()
+            assertEquals(emptySet<String>(), awaiting.waiting.value)
+        }
+
+    @Test
+    fun aReviewRequestedWithNothingDue_changesNothing() =
+        runTest {
+            val awaiting = AwaitingAgreement()
+            val model = vm(Phone(snap(true, true, true, true)), awaiting = awaiting)
+            advanceUntilIdle()
+            awaiting.requestReview()
+            advanceUntilIdle()
+            assertEquals(GateScreen.NONE, model.uiState.value.screen)
         }
 
     @Test

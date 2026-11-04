@@ -18,6 +18,7 @@ import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
+import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewals
 import com.tomessa.miff.data.miff.FirestoreConsentRenewals
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
@@ -220,6 +221,9 @@ class AppContainer(
 
     val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
 
+    /** LOC-2b (design 23): the Miffs that wait for the agreement of the person, in memory for the session. */
+    val awaitingAgreement: AwaitingAgreement by lazy { AwaitingAgreement() }
+
     val consentRenewals: ConsentRenewals by lazy {
         FirestoreConsentRenewals(miffStore, onRenewed = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) })
     }
@@ -363,14 +367,16 @@ class AppContainer(
                 // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
                 // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
                 // sign-out stops them (ticket 7.6).
+                // LOC-2b: trackingEngine = sign-out, deletion of the account, session lost: no more zones, no more position, the local copy and
+                // the journal erased (VIE2, VIE3); awaitingAgreement = nobody waits for anything any more.
                 teardown =
                     listOf(
                         profileDrafts.asTeardown(),
                         currentProfile,
                         consentWithdrawals,
                         miffDirectory,
-                        // Sign-out, deletion of the account, session lost: no more zones, no more position, the local copy and the journal erased (VIE2, VIE3).
                         trackingEngine,
+                        awaitingAgreement,
                         placeNotices,
                         addressSearch,
                         mapTileCache,

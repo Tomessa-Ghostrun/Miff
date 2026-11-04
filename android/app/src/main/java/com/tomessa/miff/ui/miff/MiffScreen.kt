@@ -68,6 +68,9 @@ fun MiffScreen(
     onDeletionRetry: () -> Unit = {},
     /** LOC-1: Miff+ or not (null while unknown), the name of the place just saved, and the two ways into the places. */
     placesExtras: PlacesExtras = PlacesExtras(),
+    /** LOC-2b, design 23B: this Miff waits for the agreement of the person ("Pas maintenant"), and the way back to the renewal screen. */
+    agreementWaiting: Boolean = false,
+    onReviewAgreement: () -> Unit = {},
 ) {
     RecentsPrivacy()
     val context = LocalContext.current
@@ -117,6 +120,8 @@ fun MiffScreen(
                     onDeleteRequested = onDeleteRequested,
                     onInviteLater = onInviteLater,
                     placesExtras = placesExtras,
+                    agreementWaiting = agreementWaiting,
+                    onReviewAgreement = onReviewAgreement,
                 )
             }
         }
@@ -177,6 +182,8 @@ private fun MiffContent(
     onDeleteRequested: () -> Unit,
     onInviteLater: () -> Unit,
     placesExtras: PlacesExtras,
+    agreementWaiting: Boolean,
+    onReviewAgreement: () -> Unit,
 ) {
     val context = LocalContext.current
     val copiedText = stringResource(R.string.miff_code_copied)
@@ -296,21 +303,40 @@ private fun MiffContent(
         }
     }
 
-    state.sharing?.let { sharing ->
+    if (agreementWaiting) {
+        // Design 23B: the card is the ONE way back to the agreement; the switch tells the truth (nothing is shared) and cannot be used.
+        AwaitingAgreementCard(
+            body =
+                stringResource(
+                    if (state.isOwner) R.string.miff_waiting_miff_body_owner else R.string.miff_waiting_miff_body,
+                ),
+            onReview = onReviewAgreement,
+        )
         MiffSwitchRow(
             title = stringResource(R.string.miff_sharing_title),
-            description =
-                stringResource(
-                    if (sharing) R.string.miff_sharing_on_description else R.string.miff_sharing_off_description,
-                ),
-            checked = sharing,
-            enabled = state.canWrite,
-            stateText =
-                stringResource(
-                    if (sharing) R.string.miff_sharing_state_on else R.string.miff_sharing_state_off,
-                ),
-            onClick = onSharingRequested,
+            description = stringResource(R.string.miff_sharing_waiting_description),
+            checked = false,
+            enabled = false,
+            stateText = stringResource(R.string.miff_sharing_waiting_state),
+            onClick = {},
         )
+    } else {
+        state.sharing?.let { sharing ->
+            MiffSwitchRow(
+                title = stringResource(R.string.miff_sharing_title),
+                description =
+                    stringResource(
+                        if (sharing) R.string.miff_sharing_on_description else R.string.miff_sharing_off_description,
+                    ),
+                checked = sharing,
+                enabled = state.canWrite,
+                stateText =
+                    stringResource(
+                        if (sharing) R.string.miff_sharing_state_on else R.string.miff_sharing_state_off,
+                    ),
+                onClick = onSharingRequested,
+            )
+        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {

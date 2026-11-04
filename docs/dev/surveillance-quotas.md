@@ -78,6 +78,7 @@ Le plan gratuit risque de ne plus suffire, ou quelqu'un abuse. Dans cet ordre (d
 | Quota (Spark) | Seuil d'alerte conseillé | Où |
 |---|---|---|
 | Écritures Firestore : 20 000 par jour | 12 000 par jour | Firestore > Utilisation |
+| **Écritures de la détection (LOC-2b)** : statuts et dernières positions, par téléphone et par jour | normal : 6 à 10 statuts + 20 à 60 positions par Miff ; **borné** à 60 statuts + 150 positions par téléphone (disjoncteurs de l'app) ; relever **à part** la part des écritures de `positions` à la recette | Firestore > Utilisation, puis le journal de la recette (`docs/qa/checklists/loc-2b-android-recette-pm.md`, partie C) |
 | Suppressions Firestore : 20 000 par jour | rarement en jeu | Firestore > Utilisation |
 | Transfert sortant : 10 GiB par mois | 6 GiB par mois | Firestore > Utilisation |
 | Stockage : 1 GiB | rarement en jeu avant des milliers d'utilisateurs | Firestore > Utilisation |

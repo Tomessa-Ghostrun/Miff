@@ -92,17 +92,24 @@ class PrivacyScreensTest {
     }
 
     @Test
-    fun privacy_theLocationIsSaidHonestly_notAsASettingThatDoesNotExist() {
+    fun privacy_theLocationIsSaidHonestly_theDetectionUsesIt_andNoStateIsInvented() {
         privacy(PrivacyUiState())
-        // Nothing uses the location yet: no "always" / "approximate" state is invented.
-        composeRule.onAllNodesWithText("always", substring = true, ignoreCase = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("approximate", substring = true, ignoreCase = true).assertCountEquals(0)
+        // LOC-2b: the location IS used (once the person agreed and gave "Always"): the sentence says what it is used for, who sees it, and that it is erased.
         composeRule
             .onNodeWithText(
-                "For now, Miff does not use your phone's location.",
+                "Miff uses your phone's location, even when the app is closed",
                 substring = true,
             ).performScrollTo()
             .assertExists()
+        composeRule.onNodeWithText("No history of trips is kept.", substring = true).performScrollTo().assertExists()
+        // The permission is not complete in this state: the state says so, it never says "Always allowed".
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_location_status_ok)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                text(R.string.settings_privacy_location_status_todo),
+            ).performScrollTo()
+            .assertExists()
+        composeRule.onAllNodesWithText("approximate", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 
     @Test
