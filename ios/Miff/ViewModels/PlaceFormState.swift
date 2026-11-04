@@ -23,6 +23,8 @@ enum PlaceMessage: Equatable {
     case offline
     case generic
     case miffGone
+    /// Un lieu a changé depuis l'ouverture du formulaire (identifiant déjà pris).
+    case idTaken
 
     init(failure: MiffFailure) {
         self = failure == .offline ? .offline : .generic

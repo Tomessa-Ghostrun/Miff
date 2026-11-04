@@ -59,7 +59,7 @@ struct PlaceRows: View {
         if !ui.isCreator {
             return L10n.string("place_list_member_hint")
         }
-        if ui.premium == false {
+        if ui.showsFreeCounter {
             return L10n.plural("place_list_counter_free", count: ui.distinctCount)
         }
         return nil

@@ -84,6 +84,11 @@ extension PlaceFormViewModel {
                 $0.saving = false
                 $0.end = .placeGone
             }
+        case .idTaken:
+            update {
+                $0.saving = false
+                $0.message = .idTaken
+            }
         case .failed(let failure):
             update {
                 $0.saving = false
@@ -148,7 +153,7 @@ extension PlaceFormViewModel {
                 $0.deleting = false
                 $0.deleteMessage = ActionMessage(failure: failure)
             }
-        case .needsPremium, .miffUnavailable, .placeGone:
+        case .needsPremium, .miffUnavailable, .placeGone, .idTaken:
             update {
                 $0.deleting = false
                 $0.deleteMessage = .generic

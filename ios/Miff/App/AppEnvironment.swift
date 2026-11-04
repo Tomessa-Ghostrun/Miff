@@ -54,7 +54,7 @@ struct MiffServices {
     }
 }
 
-/// Les services des lieux de confiance (LOC-3), construits d'un seul tenant. Rien ici n'ouvre Firestore ni MapKit : tout passe par
+/// Les services des lieux de confiance (LOC-3), construits d'un seul tenant. Rien ici n'ouvre Firestore ni MapKit (MapKit n'est créé qu'au premier usage d'un champ d'adresse) : tout passe par
 /// des fonctions appelées par les écrans des lieux, affichés APRÈS le routage de la session. AUCUNE permission de localisation :
 /// la recherche d'adresse et la carte de MapKit n'en ont pas besoin.
 @MainActor

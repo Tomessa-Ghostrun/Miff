@@ -169,7 +169,9 @@ final class PlaceFormViewModel: ObservableObject {
         filled.selectedMiffIds = loaded.ownedMiffs.map { $0.id }.filter { group.miffIds.contains($0) }
         filled.addressText = address
         filled.chosen = chosen
-        filled.radiusM = place.radiusM
+        // Un rayon hérité (les règles acceptent 50 à 2 000 m, l'écran 50 à 800 par pas de 50) est ramené au pas permis le plus proche :
+        // le curseur et la valeur écrite restent d'accord. Le bouton reste grisé tant que rien d'autre n'a changé.
+        filled.radiusM = PlaceRadius.snap(Double(place.radiusM))
         filled.type = place.type
         // Un lieu écrit avant que les catégories existent n'en a pas : la personne doit en choisir une pour enregistrer.
         filled.category = place.category

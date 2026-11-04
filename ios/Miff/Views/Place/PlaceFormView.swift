@@ -123,6 +123,8 @@ struct PlaceFormContent: View {
     let state: PlaceFormState
     let actions: PlaceFormActions
 
+    @Environment(.dynamicTypeSize) private var dynamicTypeSize
+
     private var title: String {
         L10n.string(state.mode == .create ? "place_form_title_new" : "place_form_title_edit")
     }
@@ -148,8 +150,13 @@ struct PlaceFormContent: View {
         } else if let failure = state.loadFailed {
             loadFailure(failure)
         } else {
-            PlaceFormBody(state: state, actions: actions)
-            PlaceFormFoot(state: state, actions: actions)
+            // Aux tailles de texte d'accessibilité le pied (message, « Enregistrer », « Supprimer ») prendrait la moitié de l'écran,
+            // surtout clavier ouvert : il défile alors avec le formulaire au lieu d'être fixé en bas.
+            let inline = dynamicTypeSize.isAccessibilitySize
+            PlaceFormBody(state: state, actions: actions, includesFoot: inline)
+            if !inline {
+                PlaceFormFoot(state: state, actions: actions)
+            }
         }
     }
 
@@ -172,6 +179,7 @@ struct PlaceFormContent: View {
 struct PlaceFormBody: View {
     let state: PlaceFormState
     let actions: PlaceFormActions
+    var includesFoot = false
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -184,6 +192,9 @@ struct PlaceFormBody: View {
                     PlaceRadiusSection(state: state, actions: actions)
                     PlaceTypeSection(state: state, actions: actions)
                     PlaceCategorySection(state: state, actions: actions)
+                    if includesFoot {
+                        PlaceFormFoot(state: state, actions: actions, isInline: true)
+                    }
                     Spacer().frame(height: Spacing.sm)
                 }
                 .padding(.horizontal, Spacing.lg)
@@ -209,6 +220,8 @@ struct PlaceFormBody: View {
 struct PlaceFormFoot: View {
     let state: PlaceFormState
     let actions: PlaceFormActions
+    /// Dans le défilement du formulaire (texte très grand) : pas de marges ni de fond propres.
+    var isInline = false
 
     private var saveKey: LocalizedStringKey {
         state.saving ? "place_saving" : "place_save_action"
@@ -225,6 +238,8 @@ struct PlaceFormFoot: View {
             return L10n.string("miff_message_generic")
         case .miffGone:
             return L10n.string("place_message_miff_gone")
+        case .idTaken:
+            return L10n.string("ios_place_message_id_taken")
         }
     }
 
@@ -250,7 +265,7 @@ struct PlaceFormFoot: View {
                 .disabled(state.busy)
             }
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, isInline ? 0 : Spacing.lg)
         .padding(.vertical, Spacing.sm)
         .background(colorBgCanvas.color)
         .sheet(isPresented: deleteBinding) {

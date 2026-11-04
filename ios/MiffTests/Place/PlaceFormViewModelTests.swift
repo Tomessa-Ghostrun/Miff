@@ -557,6 +557,31 @@ final class PlaceFormViewModelTests: XCTestCase {
         XCTAssertTrue(repo.created.isEmpty)
     }
 
+    func testEditALegacyRadiusIsBroughtBackToTheNearestAllowedStep() async {
+        let legacy = testPlace(id: "p1", name: "Ancien", radiusM: 120)
+        let wide = testPlace(id: "p1", name: "Ancien", radiusM: 2_000)
+
+        let model = await editing(places: [legacy])
+        let other = await editing(places: [wide])
+
+        XCTAssertEqual(model.state.radiusM, 100)
+        XCTAssertFalse(model.state.canSave, "rien n'a changé pour la personne : le bouton dort")
+        XCTAssertEqual(other.state.radiusM, 800)
+    }
+
+    func testSaveASlotTakenMeanwhileSaysThePlaceChangedAndTheButtonStaysUsable() async {
+        let model = await viewModel()
+        await fill(model)
+        repo.createResult = .idTaken
+
+        model.onSave()
+        await waitUntil { model.state.message != nil }
+
+        XCTAssertEqual(model.state.message, .idTaken)
+        XCTAssertTrue(model.state.canSave)
+        XCTAssertNil(model.state.end)
+    }
+
     func testEditAPlaceWithoutCategoryMustGetOneBeforeSaving() async {
         let model = await editing(places: [testPlace(id: "p1", name: "Vieille", category: nil)])
 

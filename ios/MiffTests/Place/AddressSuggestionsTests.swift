@@ -117,6 +117,20 @@ final class AddressSuggestionsTests: XCTestCase {
         XCTAssertEqual(inner.resets, 1)
     }
 
+    func testAnAnswerWhoseSuggestionTheServiceForgotIsEvictedSoRetryAsksAgain() async {
+        let inner = FakeAddressSearch()
+        let cached = CachedAddressSearch(inner)
+        _ = await cached.search(query: "17 avenue")
+        inner.resolved = nil
+
+        let resolved = await cached.resolve(testSuggestion())
+        inner.resolved = testResolved
+        _ = await cached.search(query: "17 avenue")
+
+        XCTAssertNil(resolved)
+        XCTAssertEqual(inner.queries.count, 2, "la réponse périmée n'est pas resservie : une vraie recherche repart")
+    }
+
     func testResolveIsAlwaysAskedOfTheService() async {
         let inner = FakeAddressSearch()
         let cached = CachedAddressSearch(inner)

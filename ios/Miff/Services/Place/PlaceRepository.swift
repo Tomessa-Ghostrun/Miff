@@ -123,9 +123,16 @@ final class FirestorePlaceRepository: PlaceRepository {
             return .done(placeId: placeId)
         }
         let done = PlaceWriteResult.done(placeId: placeId)
-        return await afterFailedWrite(uid: uid, failure: failure, miffIds: draft.miffIds, done: done) { places in
+        let verdict = await afterFailedWrite(uid: uid, failure: failure, miffIds: draft.miffIds, done: done) { places in
             self.matchesEverywhere(places, placeId: placeId, draft: draft)
         }
+        // Refusé alors que les Miffs existent toujours : l'identifiant choisi (emplacement gratuit, ou tout autre) a pu être pris
+        // depuis l'ouverture du formulaire par un autre téléphone. Une phrase précise, plutôt que « Ça n'a pas fonctionné ».
+        if case .failed(let reason) = verdict, reason == .refused || reason == .unknown,
+           let places = await placesOf(draft.miffIds), places.contains(where: { $0.id == placeId }) {
+            return .idTaken
+        }
+        return verdict
     }
 
     // MARK: - Modifier

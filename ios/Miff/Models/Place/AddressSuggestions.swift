@@ -147,7 +147,26 @@ final class CachedAddressSearch: AddressSearch {
     }
 
     func resolve(_ suggestion: AddressSuggestion) async -> ResolvedAddress? {
-        await inner.resolve(suggestion)
+        let resolved = await inner.resolve(suggestion)
+        if resolved == nil {
+            // Le service a oublié cette suggestion (sa mémoire est bornée) : toute réponse gardée qui la contient est périmée, sinon
+            // « Réessayer » reprendrait la même réponse périmée sans fin.
+            forget(containing: suggestion.id)
+        }
+        return resolved
+    }
+
+    private func forget(containing identifier: String) {
+        let stale = answers.filter { _, answer in
+            if case .found(let suggestions) = answer {
+                return suggestions.contains { $0.id == identifier }
+            }
+            return false
+        }.map { $0.key }
+        for key in stale {
+            answers[key] = nil
+            order.removeAll { $0 == key }
+        }
     }
 
     func reset() {

@@ -334,6 +334,19 @@ final class PlaceRepositoryTests: XCTestCase {
         XCTAssertEqual(result, .failed(.refused))
     }
 
+    func testCreateRefusedBecauseTheSlotWasTakenMeanwhileSaysThePlaceChanged() async {
+        setUpMiffs()
+        let loaded = await context()
+        // Un autre téléphone a écrit « p1 » dans la Miff depuis l'ouverture du formulaire.
+        store.places[testMiffId] = [testPlace(id: "p1", name: "Écrit ailleurs", miffId: testMiffId)]
+        store.commitFailures = [refused()]
+
+        let result = await repository().create(uid: uid, draft: draft(), context: loaded)
+
+        XCTAssertEqual(result, .idTaken)
+        XCTAssertTrue(store.commits.isEmpty)
+    }
+
     // MARK: - Modifier (PL7, MIF2, LIM3)
 
     private func group(_ id: String, _ miffs: [String], type: PlaceType = .trusted) -> PlaceGroup {

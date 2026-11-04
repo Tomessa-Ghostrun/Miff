@@ -7,21 +7,23 @@ struct PlacePaywallView: View {
     let tracker: AnalyticsTracker
     let onClose: () -> Void
 
+    @State private var tracking: PlacePaywallTracking?
+
     var body: some View {
-        PlacePaywallContent(
-            reason: reason,
-            onClose: {
-                if let event = PlacePaywall.dismissed(for: reason) {
+        PlacePaywallContent(reason: reason, onClose: onClose)
+            .onAppear {
+                let current = tracking ?? PlacePaywallTracking(reason: reason)
+                tracking = current
+                if let event = current.appeared() {
                     tracker.track(event)
                 }
-                onClose()
             }
-        )
-        .onAppear {
-            if let event = PlacePaywall.shown(for: reason) {
-                tracker.track(event)
+            // Croix, « Plus tard » et geste retour : tous finissent par la disparition de l'écran.
+            .onDisappear {
+                if let event = tracking?.disappeared() {
+                    tracker.track(event)
+                }
             }
-        }
     }
 }
 

@@ -32,7 +32,9 @@ struct PlaceMapBlock: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: height)
+        // La carte a une hauteur fixe ; ce qui la remplace (texte, « Réessayer ») peut grandir avec la taille du texte.
+        .frame(height: chosen != nil && !failed ? height : nil)
+        .frame(minHeight: height)
         .clipShape(RoundedRectangle(cornerRadius: radiusMd, style: .continuous))
         .onChange(of: chosen) { _ in
             // Une autre adresse : on réessaie la carte.

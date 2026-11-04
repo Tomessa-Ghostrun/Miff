@@ -87,6 +87,9 @@ enum PlaceWriteResult: Equatable {
     case miffUnavailable
     /// Le lieu a été supprimé depuis un autre téléphone pendant qu'il était ouvert.
     case placeGone
+    /// L'emplacement choisi pour ce lieu est déjà pris dans une des Miffs (un autre téléphone l'a écrit depuis l'ouverture du
+    /// formulaire) : rien n'a été écrit, la personne rouvre le formulaire.
+    case idTaken
     case failed(MiffFailure)
 }
 

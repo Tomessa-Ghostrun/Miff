@@ -266,7 +266,8 @@ final class FirestoreMiffRepository: MiffRepository {
                 miffs: state.summaries,
                 lost: state.lost,
                 premium: state.premium,
-                fromCache: state.fromCache
+                fromCache: state.fromCache,
+                premiumKnown: state.premiumKnown
             )
             return .loaded(miffs)
         }

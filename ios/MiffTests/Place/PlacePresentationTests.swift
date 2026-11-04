@@ -27,6 +27,13 @@ final class PlacePresentationTests: XCTestCase {
         XCTAssertFalse(list(["p1"], isCreator: true, premium: false).atFreeLimit)
     }
 
+    func testTheFreeCounterIsOnlyForACreatorWhoseFreePlanIsKnown() {
+        XCTAssertTrue(list(["p1"], isCreator: true, premium: false).showsFreeCounter)
+        XCTAssertFalse(list(["p1"], isCreator: true, premium: nil).showsFreeCounter, "formule inconnue")
+        XCTAssertFalse(list(["p1"], isCreator: true, premium: true).showsFreeCounter)
+        XCTAssertFalse(list(["p1"], isCreator: false, premium: false).showsFreeCounter)
+    }
+
     func testTheCounterCountsPlacesNotDocuments() {
         let ui = PlaceListUi(places: places(["p1", "p1", "p2"]), isCreator: true, premium: false, notice: nil)
 
@@ -55,6 +62,25 @@ final class PlacePresentationTests: XCTestCase {
         XCTAssertEqual(event.name, "paywall_shown")
         XCTAssertEqual(event.params.keys.sorted(), ["trigger"])
         XCTAssertEqual(AnalyticsContract.validate(event.name, params: event.params), .allowed)
+    }
+
+    // MARK: - Les événements de l'offre, une fois par apparition
+
+    func testThePaywallIsCountedOncePerAppearanceAndNeverClosedWithoutBeingOpened() {
+        let tracking = PlacePaywallTracking(reason: .limit)
+
+        XCTAssertNil(tracking.disappeared(), "jamais « fermée » sans avoir été « ouverte »")
+        XCTAssertEqual(tracking.appeared(), .paywallShown(trigger: .extraTrustedPlace))
+        XCTAssertNil(tracking.appeared(), "une seule ouverture")
+        XCTAssertEqual(tracking.disappeared(), .paywallDismissed(trigger: .extraTrustedPlace))
+        XCTAssertNil(tracking.disappeared(), "une seule fermeture (croix, « Plus tard » ou geste retour)")
+    }
+
+    func testTheDangerZonePaywallSendsNothing() {
+        let tracking = PlacePaywallTracking(reason: .danger)
+
+        XCTAssertNil(tracking.appeared())
+        XCTAssertNil(tracking.disappeared())
     }
 
     // MARK: - « Voir sur la carte »

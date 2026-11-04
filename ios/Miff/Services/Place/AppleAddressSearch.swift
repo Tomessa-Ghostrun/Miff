@@ -15,18 +15,25 @@ import MapKit
 /// précédente annulée, cache de session (`CachedAddressSearch`).
 @MainActor
 final class AppleAddressSearch: AddressSearch {
-    private let core = AppleSearchCore()
+    /// Créé au PREMIER usage : ouvrir l'app ou un autre écran ne touche pas à MapKit.
+    private lazy var core = AppleSearchCore()
+    private var started = false
 
     func search(query: String) async -> AddressSearchResult {
-        await core.search(query: query)
+        started = true
+        return await core.search(query: query)
     }
 
     func resolve(_ suggestion: AddressSuggestion) async -> ResolvedAddress? {
-        await core.resolve(suggestion)
+        started = true
+        return await core.resolve(suggestion)
     }
 
     func reset() {
-        core.reset()
+        // Rien n'a été demandé à MapKit : rien à vider (et on ne le crée pas pour ça).
+        if started {
+            core.reset()
+        }
     }
 }
 
@@ -36,18 +43,17 @@ final class AppleAddressSearch: AddressSearch {
 private final class AppleSearchCore: NSObject, MKLocalSearchCompleterDelegate {
     private static let memoryLimit = 400
 
-    private let completer = MKLocalSearchCompleter()
+    private lazy var completer: MKLocalSearchCompleter = {
+        let created = MKLocalSearchCompleter()
+        created.delegate = self
+        // Des adresses et des lieux nommés (un stade, une école) ; pas de « requêtes » du genre « restaurants à proximité ».
+        created.resultTypes = [.address, .pointOfInterest]
+        return created
+    }()
     private var pending: CheckedContinuation<AddressSearchResult, Never>?
     private var currentQuery = ""
     private var completions: [String: MKLocalSearchCompletion] = [:]
     private var counter = 0
-
-    override init() {
-        super.init()
-        completer.delegate = self
-        // Des adresses et des lieux nommés (un stade, une école) ; pas de « requêtes » du genre « restaurants à proximité ».
-        completer.resultTypes = [.address, .pointOfInterest]
-    }
 
     func search(query: String) async -> AddressSearchResult {
         finishPending(with: .unavailable)

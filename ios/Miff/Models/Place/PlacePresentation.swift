@@ -18,6 +18,12 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
         Set(places.map { $0.id }).count
     }
 
+    /// « 2 lieux sur 2 avec la formule gratuite » : seulement pour un créateur dont la formule gratuite est CONNUE (`premium` faux
+    /// ET connu : jamais d'après une lecture échouée ou un cache, voir `DirectoryReady.premiumKnown`).
+    var showsFreeCounter: Bool {
+        isCreator && premium == false
+    }
+
     /// Un créateur en formule gratuite qui a déjà 2 lieux : « Ajouter un lieu » ouvre l'écran de la limite plutôt que le
     /// formulaire (critère LIM1).
     var atFreeLimit: Bool {
@@ -39,6 +45,34 @@ enum PlacePaywall {
 
     static func dismissed(for reason: PaywallReason) -> AnalyticsEvent? {
         reason == .limit ? .paywallDismissed(trigger: .extraTrustedPlace) : nil
+    }
+}
+
+/// Compte l'offre une fois par apparition : « ouverte » à la première apparition, « fermée » quand l'écran disparaît (croix, « Plus
+/// tard » ou geste retour), jamais deux fois, et jamais « fermée » sans avoir été « ouverte ».
+final class PlacePaywallTracking {
+    private let reason: PaywallReason
+    private var opened = false
+    private var closed = false
+
+    init(reason: PaywallReason) {
+        self.reason = reason
+    }
+
+    func appeared() -> AnalyticsEvent? {
+        guard !opened else {
+            return nil
+        }
+        opened = true
+        return PlacePaywall.shown(for: reason)
+    }
+
+    func disappeared() -> AnalyticsEvent? {
+        guard opened, !closed else {
+            return nil
+        }
+        closed = true
+        return PlacePaywall.dismissed(for: reason)
     }
 }
 

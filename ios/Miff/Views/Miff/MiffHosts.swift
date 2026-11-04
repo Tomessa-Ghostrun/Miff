@@ -258,11 +258,13 @@ struct MiffHomeHost: View {
         }
     }
 
-    /// Ce que la liste des lieux d'une Miff reçoit : Miff+ ou non (nil tant que ce n'est pas lu), le message d'un enregistrement,
-    /// les gestes. « Ajouter un lieu » à la limite de la formule gratuite ouvre l'offre, jamais le formulaire.
+    /// Ce que la liste des lieux d'une Miff reçoit : Miff+ ou non (nil tant que ce n'est pas lu auprès du serveur), le message d'un
+    /// enregistrement, les gestes.
     private func placeContext(for miffId: String) -> PlaceListContext {
+        // Miff+ n'est affirmé (ou nié) que s'il a été LU auprès du serveur : sinon nil, et la liste n'affirme rien de la formule
+        // gratuite (ni compteur, ni pastille).
         var premium: Bool?
-        if case .ready(let ready) = directory.state {
+        if case .ready(let ready) = directory.state, ready.premiumKnown {
             premium = ready.premium
         }
         let notices = placeNotices
@@ -271,9 +273,9 @@ struct MiffHomeHost: View {
             notice: notices.notice,
             actions: PlaceListActions(
                 onOpen: { place in open(.placeDetail(miffId: miffId, placeId: place.id)) },
-                onAdd: { atFreeLimit in
-                    open(atFreeLimit ? .placePaywall(.limit) : .placeForm(placeId: nil, miffId: nil))
-                }
+                // Toujours le formulaire : il relit l'abonnement et les lieux auprès du SERVEUR et ne propose l'offre que si la limite
+                // est vraiment atteinte (jamais une décision prise sur l'annuaire, qui peut ignorer un Miff+).
+                onAdd: { _ in open(.placeForm(placeId: nil, miffId: nil)) }
             ),
             onLeave: { notices.consume() }
         )
