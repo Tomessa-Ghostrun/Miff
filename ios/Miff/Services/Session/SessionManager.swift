@@ -166,8 +166,8 @@ final class SessionManager {
                 await signOut()
             }
         }
-        // L'écoute est OUVERTE ici, tout de suite, et non au premier tour de la tâche ci-dessous : sinon l'instant où elle
-        // commence dépend de l'ordonnancement des tâches.
+        // Le flux est ouvert ici, tout de suite (instant d'ouverture déterministe, inoffensif et utile). Ce qui évite la fausse
+        // perte de session est la relecture de `gateway.currentUid` dans `handleUidChange`.
         let changes = gateway.uidChanges()
         watcher = Task { [weak self] in
             await self?.watchSessionLoss(changes)
