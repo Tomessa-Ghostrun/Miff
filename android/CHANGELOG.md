@@ -7,7 +7,8 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 Retour de recette : « la connexion Google a échoué plusieurs fois de suite avant de marcher, et l'app n'a pas informé ». Avant : tous les échecs de la fenêtre Google donnaient le même message générique, affiché en bas du formulaire, loin du bouton Google (facile à ne pas voir), et ceux qu'Android signale comme une annulation restaient muets. Ticket `docs/tickets/authentification.md` (§7.3, §11 cas 3 et 4), `CLAUDE.md` (ton bienveillant, non anxiogène).
 
 ### Causes distinguées (types d'exception de `androidx.credentials`, jamais leur message)
-- **Aucun message** : la personne ferme la fenêtre Google (`GetCredentialCancellationException`), ou la fenêtre reste ouverte plus de 3 minutes (retour à l'état stable).
+- **Aucun message** : la personne ferme la fenêtre Google (`GetCredentialCancellationException` revenue **au bout de 1,5 s ou plus**), ou la fenêtre reste ouverte plus de 3 minutes (retour à l'état stable).
+- **Annulation quasi instantanée** (`GetCredentialCancellationException` revenue en **moins de 1,5 s**) : traitée comme un échec temporaire, avec le message « La connexion avec Google n'a pas abouti. Réessaie dans un instant. » (voir « Heuristique » plus bas).
 - **Aucun compte Google utilisable** (`NoCredentialException`) : « Aucun compte Google n'est disponible sur ce téléphone pour le moment. Tu peux en ajouter un dans les réglages du téléphone, ou continuer avec ton adresse e-mail. »
 - **Services Google absents, trop anciens ou qui ne gèrent pas la demande** (`GetCredentialProviderConfigurationException`, `GetCredentialUnsupportedException`) : « Les services Google ne répondent pas sur ce téléphone pour le moment. Vérifie qu'ils sont à jour, ou continue avec ton adresse e-mail. »
 - **Google n'a pas répondu cette fois** (`GetCredentialInterruptedException` : c'est ainsi que les services Google signalent leurs erreurs réseau et internes) : « La connexion avec Google n'a pas abouti. Réessaie dans un instant. »
@@ -25,10 +26,11 @@ Retour de recette : « la connexion Google a échoué plusieurs fois de suite av
 - Textes `auth_error_google_no_account`, `auth_error_google_services`, `auth_error_google_interrupted` FR/EN et catalogue iOS (parité des clés vérifiée ; le code iOS n'est pas touché).
 
 ### Tests
-- `GoogleIdTokenSourceTest` (12) : chaque type d'exception, annulation, délai de 3 minutes, annulation de la coroutine propagée, aucun message du système dans le résultat. `GoogleErrorViewModelsTest` (20) : chaque cause sur l'inscription et la connexion, silence à la fermeture, message conservé puis effacé à la tentative suivante, hors connexion, jeton refusé. `GoogleErrorScreensTest` (12, Robolectric, vrais view models) : message sous le bouton, annonce TalkBack, fermeture silencieuse, relance par le bouton, textes FR/EN calmes et au tutoiement.
+- `GoogleIdTokenSourceTest` (15) : chaque type d'exception, annulation, délai de 3 minutes, annulation de la coroutine propagée, aucun message du système dans le résultat. `GoogleErrorViewModelsTest` (20) : chaque cause sur l'inscription et la connexion, silence à la fermeture, message conservé puis effacé à la tentative suivante, hors connexion, jeton refusé. `GoogleErrorScreensTest` (12, Robolectric, vrais view models) : message sous le bouton, annonce TalkBack, fermeture silencieuse, relance par le bouton, textes FR/EN calmes et au tutoiement.
 
-### Limite connue
-- Android remonte certains échecs Google (code 16, par exemple « Account reauth failed ») comme une **annulation** : ils restent silencieux, car rien ne permet de les distinguer d'une fermeture volontaire sans lire un message interne de Google (fragile, interdit ici). Si la recette montre encore des échecs muets, c'est la piste à examiner.
+### Heuristique : annulation trop rapide (à confirmer sur l'OPPO)
+- Android remonte certains échecs Google (code 16, par exemple « Account reauth failed ») comme une **annulation**, ce qui expliquait probablement les échecs muets de la recette. Sans lire aucun message interne de Google, une annulation qui revient en **moins de 1,5 s** après l'ouverture de la fenêtre (constante `CredentialManagerGoogleSource.FAST_CANCELLATION_MS`, strictement inférieur) est traitée comme un échec temporaire ; plus lente, c'est une vraie fermeture et elle reste silencieuse. Horloge injectée dans les tests (juste avant : 1 499 ms, valeur du seuil : 1 500 ms).
+- **Limite** : seuil par défaut du produit, **à confirmer par le PM sur l'OPPO Find X5 Lite**. Trop haut, une fermeture très rapide de la fenêtre afficherait un message à tort ; trop bas, des échecs muets pourraient subsister. Un échec lent classé comme annulation resterait silencieux.
 
 ## [0.9.0] - 2026-11-01 : LOC-1, lieux de confiance (formulaire, adresses, carte, liste, détail, modification, suppression)
 

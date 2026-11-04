@@ -44,11 +44,21 @@ class GoogleIdTokenSourceTest {
 
     private fun failingWith(error: Throwable) = FakeClient { throw error }
 
+    /** The clock of the source: tests move it by hand to say how long the dialog was open. */
+    private var now = 10_000L
+
     private fun sourceOf(
         client: GoogleCredentialClient,
         webClientId: String? = "web-client-id",
         timeoutMs: Long = 180_000L,
-    ) = CredentialManagerGoogleSource(client, webClientId, timeoutMs)
+    ) = CredentialManagerGoogleSource(client, webClientId, timeoutMs, nowMillis = { now })
+
+    /** A client that answers with a cancellation after the dialog was "open" for [openMs] milliseconds. */
+    private fun cancelledAfter(openMs: Long) =
+        FakeClient {
+            now += openMs
+            throw GetCredentialCancellationException("closed")
+        }
 
     private fun failed(failure: AuthFailure) = GoogleTokenResult.Failed(failure)
 
@@ -73,8 +83,39 @@ class GoogleIdTokenSourceTest {
     @Test
     fun thePersonClosesTheDialog_isACancellation_notAnError() =
         runTest {
-            val result = sourceOf(failingWith(GetCredentialCancellationException("closed"))).requestIdToken()
-            assertEquals(GoogleTokenResult.Cancelled, result)
+            for (openMs in listOf(1_500L, 1_501L, 5_000L, 60_000L)) {
+                val result = sourceOf(cancelledAfter(openMs)).requestIdToken()
+                assertEquals("open for $openMs ms", GoogleTokenResult.Cancelled, result)
+            }
+        }
+
+    @Test
+    fun aCancellationTooQuickToBeAHumanGesture_isATemporaryFailure() =
+        runTest {
+            assertEquals(1_500L, CredentialManagerGoogleSource.FAST_CANCELLATION_MS)
+            for (openMs in listOf(0L, 200L, 1_000L, 1_499L)) {
+                val result = sourceOf(cancelledAfter(openMs)).requestIdToken()
+                assertEquals("open for $openMs ms", failed(AuthFailure.GOOGLE_INTERRUPTED), result)
+            }
+        }
+
+    @Test
+    fun theThreshold_isExactly1500ms_justBeforeIsAFailure_theValueItselfIsAClosing() =
+        runTest {
+            assertEquals(failed(AuthFailure.GOOGLE_INTERRUPTED), sourceOf(cancelledAfter(1_499L)).requestIdToken())
+            assertEquals(GoogleTokenResult.Cancelled, sourceOf(cancelledAfter(1_500L)).requestIdToken())
+        }
+
+    @Test
+    fun theSpeedOnlyMattersForCancellations_otherFailuresKeepTheirOwnCause() =
+        runTest {
+            val quickNoAccount =
+                FakeClient {
+                    now += 10L
+                    throw NoCredentialException("none")
+                }
+            assertEquals(failed(AuthFailure.GOOGLE_NO_ACCOUNT), sourceOf(quickNoAccount).requestIdToken())
+            assertEquals(GoogleTokenResult.Token("t"), sourceOf(FakeClient { "t" }).requestIdToken())
         }
 
     @Test
