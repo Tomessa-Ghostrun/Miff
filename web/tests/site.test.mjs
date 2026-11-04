@@ -413,8 +413,8 @@ test('BUILD - refuse d\'écrire hors de web/ ou du dossier temporaire', () => {
 });
 
 test('SUPPRESSION - la page dit explicitement que supprimer un compte de créateur supprime aussi ses Miffs', () => {
-  assert.match(visibleText(byName['fr/supprimer-mon-compte.html'].html), /supprimer ton compte supprime aussi les Miffs que tu as créées, avec leurs lieux, statuts et photos/);
-  assert.match(visibleText(byName['en/delete-account.html'].html), /deleting your account also deletes the Miffs you created, with their places, statuses and photos/);
+  assert.match(visibleText(byName['fr/supprimer-mon-compte.html'].html), /supprimer ton compte supprime aussi les Miffs que tu as créées, avec leurs lieux, statuts, dernières positions connues et photos/);
+  assert.match(visibleText(byName['en/delete-account.html'].html), /deleting your account also deletes the Miffs you created, with their places, statuses, last known locations and photos/);
 });
 
 test('CONFIDENTIALITE - la politique décrit le site web lui-même (journaux d\'hébergement, mot de passe transmis à Google, aucun cookie), en FR et en EN', () => {
