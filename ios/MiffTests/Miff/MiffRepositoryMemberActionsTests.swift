@@ -7,14 +7,14 @@ import XCTest
 final class MiffRepositoryMemberActionsTests: XCTestCase {
     private let uid = "uid-owner"
     private let newCode = "BCDFGHK23456"
-    private let store = FakeMiffStore()
+    /// La Miff existe, et la personne en est le créateur.
+    private let store: FakeMiffStore = {
+        let made = FakeMiffStore()
+        made.miffs[testMiffId] = testMiffDetails(owner: "uid-owner")
+        return made
+    }()
     private let drawn = TestBox<[String]>([])
     private lazy var timeline = Timeline()
-
-    override func setUp() {
-        super.setUp()
-        store.miffs[testMiffId] = testMiffDetails(owner: uid)
-    }
 
     private func repo() -> FirestoreMiffRepository {
         let draws = drawn

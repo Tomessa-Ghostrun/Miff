@@ -4,20 +4,18 @@ import XCTest
 /// Le marqueur « une suppression est en cours » (critère S4, IOS3) : sur le disque, par compte, qui ne contient que des
 /// identifiants opaques, et que le prochain lancement relit.
 final class PendingDeletionFileStoreTests: XCTestCase {
-    private var directory = URL(fileURLWithPath: NSTemporaryDirectory())
-
-    override func setUp() {
-        super.setUp()
-        directory = URL(fileURLWithPath: NSTemporaryDirectory())
+    /// Un dossier neuf pour le test, effacé à la fin.
+    private func makeDirectory() -> URL {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("pending-deletions-\(UUID().uuidString)", isDirectory: true)
-    }
-
-    override func tearDown() {
-        try? FileManager.default.removeItem(at: directory)
-        super.tearDown()
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: url)
+        }
+        return url
     }
 
     func testAMarkerIsStillThereForANewStoreOnTheSameFolderLikeAfterTheAppWasKilled() {
+        let directory = makeDirectory()
         PendingDeletionFileStore(directory: directory).add(uid: "uid-1", miffId: testMiffId)
 
         let afterRestart = PendingDeletionFileStore(directory: directory)
@@ -26,7 +24,7 @@ final class PendingDeletionFileStoreTests: XCTestCase {
     }
 
     func testAnotherAccountNeverSeesTheMarkerOfSomeoneElse() {
-        let store = PendingDeletionFileStore(directory: directory)
+        let store = PendingDeletionFileStore(directory: makeDirectory())
         store.add(uid: "uid-1", miffId: testMiffId)
         store.add(uid: "uid-2", miffId: testOtherMiffId)
 
@@ -36,6 +34,7 @@ final class PendingDeletionFileStoreTests: XCTestCase {
     }
 
     func testRemovingOneMarkerKeepsTheOthersAndTheLastRemovalDeletesTheFile() {
+        let directory = makeDirectory()
         let store = PendingDeletionFileStore(directory: directory)
         store.add(uid: "uid-1", miffId: testMiffId)
         store.add(uid: "uid-1", miffId: testOtherMiffId)
@@ -50,7 +49,7 @@ final class PendingDeletionFileStoreTests: XCTestCase {
     }
 
     func testAddingTheSameMarkerTwiceKeepsOne() {
-        let store = PendingDeletionFileStore(directory: directory)
+        let store = PendingDeletionFileStore(directory: makeDirectory())
 
         store.add(uid: "uid-1", miffId: testMiffId)
         store.add(uid: "uid-1", miffId: testMiffId)
@@ -59,8 +58,8 @@ final class PendingDeletionFileStoreTests: XCTestCase {
     }
 
     func testTheFileHoldsOnlyOpaqueIdentifiersNeverANameOrACode() throws {
-        let store = PendingDeletionFileStore(directory: directory)
-        store.add(uid: "uid-1", miffId: testMiffId)
+        let directory = makeDirectory()
+        PendingDeletionFileStore(directory: directory).add(uid: "uid-1", miffId: testMiffId)
 
         let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
         let file = try XCTUnwrap(files.first)
@@ -72,6 +71,7 @@ final class PendingDeletionFileStoreTests: XCTestCase {
     }
 
     func testTheFolderIsExcludedFromBackups() throws {
+        let directory = makeDirectory()
         PendingDeletionFileStore(directory: directory).add(uid: "uid-1", miffId: testMiffId)
 
         let values = try directory.resourceValues(forKeys: [.isExcludedFromBackupKey])
@@ -80,6 +80,7 @@ final class PendingDeletionFileStoreTests: XCTestCase {
     }
 
     func testAnUnreadableFileIsTreatedAsNoMarker() throws {
+        let directory = makeDirectory()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try Data("pas du JSON".utf8).write(to: directory.appendingPathComponent("pending-deletions.json"))
 
