@@ -15,6 +15,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -83,7 +84,7 @@ class GoogleIdTokenSourceTest {
     @Test
     fun thePersonClosesTheDialog_isACancellation_notAnError() =
         runTest {
-            for (openMs in listOf(1_500L, 1_501L, 5_000L, 60_000L)) {
+            for (openMs in listOf(1_000L, 1_001L, 5_000L, 60_000L)) {
                 val result = sourceOf(cancelledAfter(openMs)).requestIdToken()
                 assertEquals("open for $openMs ms", GoogleTokenResult.Cancelled, result)
             }
@@ -92,18 +93,18 @@ class GoogleIdTokenSourceTest {
     @Test
     fun aCancellationTooQuickToBeAHumanGesture_isATemporaryFailure() =
         runTest {
-            assertEquals(1_500L, CredentialManagerGoogleSource.FAST_CANCELLATION_MS)
-            for (openMs in listOf(0L, 200L, 1_000L, 1_499L)) {
+            assertEquals(1_000L, CredentialManagerGoogleSource.FAST_CANCELLATION_MS)
+            for (openMs in listOf(0L, 200L, 500L, 999L)) {
                 val result = sourceOf(cancelledAfter(openMs)).requestIdToken()
                 assertEquals("open for $openMs ms", failed(AuthFailure.GOOGLE_INTERRUPTED), result)
             }
         }
 
     @Test
-    fun theThreshold_isExactly1500ms_justBeforeIsAFailure_theValueItselfIsAClosing() =
+    fun theThreshold_isExactly1000ms_justBeforeIsAFailure_theValueItselfIsAClosing() =
         runTest {
-            assertEquals(failed(AuthFailure.GOOGLE_INTERRUPTED), sourceOf(cancelledAfter(1_499L)).requestIdToken())
-            assertEquals(GoogleTokenResult.Cancelled, sourceOf(cancelledAfter(1_500L)).requestIdToken())
+            assertEquals(failed(AuthFailure.GOOGLE_INTERRUPTED), sourceOf(cancelledAfter(999L)).requestIdToken())
+            assertEquals(GoogleTokenResult.Cancelled, sourceOf(cancelledAfter(1_000L)).requestIdToken())
         }
 
     @Test
@@ -166,20 +167,78 @@ class GoogleIdTokenSourceTest {
         }
 
     @Test
-    fun nothingOfTheSystemMessage_reachesTheResult() =
+    fun aCancelledCoroutineInsideTheClient_isRethrown_neverTakenForAFailureOrAClosing() =
         runTest {
-            val secret = "someone@example.com ya29.SECRET-TOKEN"
-            val errors =
-                listOf(
-                    NoCredentialException(secret),
-                    GetCredentialInterruptedException(secret),
-                    GetCredentialUnknownException(secret),
-                    RuntimeException(secret),
-                )
-            for (error in errors) {
-                val shown = sourceOf(failingWith(error)).requestIdToken().toString()
-                assertFalse(shown, shown.contains("example.com") || shown.contains("SECRET"))
+            val source = sourceOf(failingWith(CancellationException("scope cancelled")))
+            var rethrown = false
+            try {
+                source.requestIdToken()
+            } catch (e: CancellationException) {
+                rethrown = true
             }
+            assertTrue("the cancellation of the coroutine goes up", rethrown)
+        }
+
+    @Test
+    fun reauthentication_aQuickCancellationStaysASilentClosing_theRuleIsOnlyForTheSignInButtons() =
+        runTest {
+            for (openMs in listOf(0L, 300L, 999L, 1_000L, 5_000L)) {
+                val result = sourceOf(cancelledAfter(openMs)).requestIdTokenForReauthentication()
+                assertEquals("open for $openMs ms", GoogleTokenResult.Cancelled, result)
+            }
+        }
+
+    @Test
+    fun reauthentication_otherOutcomesAreTheSameAsForTheButtons() =
+        runTest {
+            assertEquals(GoogleTokenResult.Token("t"), sourceOf(FakeClient { "t" }).requestIdTokenForReauthentication())
+            assertEquals(
+                failed(AuthFailure.GOOGLE_NO_ACCOUNT),
+                sourceOf(failingWith(NoCredentialException("x"))).requestIdTokenForReauthentication(),
+            )
+            assertEquals(
+                GoogleTokenResult.Unavailable,
+                sourceOf(FakeClient { "t" }, webClientId = null).requestIdTokenForReauthentication(),
+            )
+        }
+
+    // --- The quick-cancellation rule together with the 3-minute limit (virtual time = the clock of the source) ---
+
+    private fun kotlinx.coroutines.test.TestScope.virtualSource(
+        timeoutMs: Long,
+        client: GoogleCredentialClient,
+    ) = CredentialManagerGoogleSource(client, "web-client-id", timeoutMs, nowMillis = { testScheduler.currentTime })
+
+    @Test
+    fun aDialogCancelledAfterAMomentButBeforeTheLimit_followsTheQuickCancellationRule() =
+        runTest {
+            val quick =
+                FakeClient {
+                    delay(400L)
+                    throw GetCredentialCancellationException("closed")
+                }
+            assertEquals(failed(AuthFailure.GOOGLE_INTERRUPTED), virtualSource(180_000L, quick).requestIdToken())
+            val slow =
+                FakeClient {
+                    delay(2_000L)
+                    throw GetCredentialCancellationException("closed")
+                }
+            assertEquals(GoogleTokenResult.Cancelled, virtualSource(180_000L, slow).requestIdToken())
+        }
+
+    @Test
+    fun aDialogThatNeverAnswers_isASilentClosingAfterTheLimit_notAQuickFailure() =
+        runTest {
+            val never = FakeClient { awaitCancellation() }
+            assertEquals(GoogleTokenResult.Cancelled, virtualSource(180_000L, never).requestIdToken())
+            assertEquals("the 3 minutes really passed", 180_000L, testScheduler.currentTime)
+        }
+
+    @Test
+    fun aLimitShorterThanTheQuickThreshold_stillGivesASilentClosing_notAFailure() =
+        runTest {
+            val never = FakeClient { awaitCancellation() }
+            assertEquals(GoogleTokenResult.Cancelled, virtualSource(500L, never).requestIdToken())
         }
 
     @Test

@@ -155,7 +155,7 @@
     <string name="auth_error_network">No connection for now. Try again as soon as you have a network.</string>
     <string name="auth_error_unknown">Something did not work. Please try again in a moment.</string>
     <string name="auth_error_google_interrupted">Signing in with Google did not go through. Please try again in a moment.</string>
-    <string name="auth_error_google_no_account">No Google account is available on this phone right now. You can add one in the phone settings, or continue with your e-mail address.</string>
+    <string name="auth_error_google_no_account">Google could not offer an account on this phone for now. You can add one in the phone settings, or continue with your e-mail address.</string>
     <string name="auth_error_google_services">Google services are not responding on this phone for now. Check that they are up to date, or continue with your e-mail address.</string>
     <string name="auth_error_account_unavailable">This account is not available for now. If you need help, write to us at %1$s.</string>
     <string name="auth_lookup_failed">We can\'t open your account right now. Please try again in a moment.</string>

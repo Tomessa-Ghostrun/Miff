@@ -337,6 +337,69 @@ class GoogleErrorViewModelsTest {
             assertNull(vm.uiState.value.googleMessage)
         }
 
+    // --- Consent panel: the Google dialog only re-checks who the person is -------------------------------------
+
+    /** Asks for the recent sign-in: the plain request fails like a sign-in button would, the re-check does what is scripted. */
+    private class ReauthGoogle(
+        private val reauth: GoogleTokenResult,
+    ) : GoogleIdTokenSource {
+        var plainCalls = 0
+        var reauthCalls = 0
+
+        override suspend fun requestIdToken(): GoogleTokenResult {
+            plainCalls++
+            return GoogleTokenResult.Failed(AuthFailure.GOOGLE_INTERRUPTED)
+        }
+
+        override suspend fun requestIdTokenForReauthentication(): GoogleTokenResult {
+            reauthCalls++
+            return reauth
+        }
+    }
+
+    private fun TestScope.panelNeedingARecentSignIn(): Pair<SessionHarness, ConsentPanelViewModel> {
+        val h = harness()
+        h.accounts.setLoaded(profileExists = false)
+        h.gateway.googleResult = AuthOutcome.Success("uid-1", isNewUser = true)
+        h.gateway.deleteResults.addLast(AuthFailure.RECENT_LOGIN_REQUIRED)
+        return h to ConsentPanelViewModel(h.manager)
+    }
+
+    @Test
+    fun panel_closingTheRecheckDialog_staysSilent_evenWhenItIsQuick() =
+        runTest(dispatcher) {
+            val (h, vm) = panelNeedingARecentSignIn()
+            h.manager.signInWithGoogle("t", signUpConsent = null)
+            val source = ReauthGoogle(GoogleTokenResult.Cancelled)
+            vm.refuse(source)
+            advanceUntilIdle()
+            assertEquals("the re-check variant is the one used", 1, source.reauthCalls)
+            assertEquals(0, source.plainCalls)
+            assertNull(vm.uiState.value.message)
+            assertFalse(vm.uiState.value.isLoading)
+            assertEquals(AppDestination.CONSENT_PANEL, (h.manager.state.value as SessionState.Ready).destination)
+        }
+
+    @Test
+    fun panel_aFailureOfTheRecheckDialog_showsThePlainNeutralMessage_notTheSignInOnes() =
+        runTest(dispatcher) {
+            val causes =
+                listOf(
+                    AuthFailure.GOOGLE_NO_ACCOUNT,
+                    AuthFailure.GOOGLE_SERVICES_UNAVAILABLE,
+                    AuthFailure.GOOGLE_INTERRUPTED,
+                    AuthFailure.UNKNOWN,
+                )
+            for (cause in causes) {
+                val (h, vm) = panelNeedingARecentSignIn()
+                h.manager.signInWithGoogle("t", signUpConsent = null)
+                vm.refuse(ReauthGoogle(GoogleTokenResult.Failed(cause)))
+                advanceUntilIdle()
+                assertEquals("$cause", AuthMessage.UNKNOWN, vm.uiState.value.message)
+                assertFalse(vm.uiState.value.isLoading)
+            }
+        }
+
     // --- Mapping of the results to messages -------------------------------------------------------------------
 
     @Test

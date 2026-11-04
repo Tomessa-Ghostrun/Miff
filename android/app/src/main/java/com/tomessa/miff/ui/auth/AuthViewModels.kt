@@ -106,9 +106,14 @@ class SignUpViewModel(
         mutableState.update { it.copy(isLoading = true, message = null, googleMessage = null) }
         viewModelScope.launch {
             // Closing the dialog gives no message at all (null): the screen goes back to what it was.
-            val message =
-                googleAttempt(source, network) { token -> session.signInWithGoogle(token, ConsentChoice.IMPLICIT) }
-            mutableState.update { it.copy(isLoading = false, googleMessage = message) }
+            var message: AuthMessage? = null
+            try {
+                message =
+                    googleAttempt(source, network) { token -> session.signInWithGoogle(token, ConsentChoice.IMPLICIT) }
+            } finally {
+                // Whatever happens, the screen is never left blocked on its busy state.
+                mutableState.update { it.copy(isLoading = false, googleMessage = message) }
+            }
         }
     }
 }
@@ -209,9 +214,13 @@ class SignInViewModel(
         }
         viewModelScope.launch {
             // Closing the dialog gives no message at all (null).
-            val message =
-                googleAttempt(source, network) { token -> session.signInWithGoogle(token, signUpConsent = null) }
-            mutableState.update { it.copy(isLoading = false, googleMessage = message) }
+            var message: AuthMessage? = null
+            try {
+                message =
+                    googleAttempt(source, network) { token -> session.signInWithGoogle(token, signUpConsent = null) }
+            } finally {
+                mutableState.update { it.copy(isLoading = false, googleMessage = message) }
+            }
         }
     }
 
@@ -256,7 +265,7 @@ class ConsentPanelViewModel(
         if (mutableState.value.isLoading) return
         mutableState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
-            when (val result = session.refuseConsentPanel { source.requestIdToken() }) {
+            when (val result = session.refuseConsentPanel { source.requestIdTokenForReauthentication() }) {
                 RefuseResult.Done -> {
                     mutableState.update { it.copy(isLoading = false) }
                 }

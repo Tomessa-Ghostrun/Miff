@@ -286,7 +286,7 @@ class GoogleErrorScreensTest {
             text(R.string.auth_error_google_interrupted),
         )
         assertEquals(
-            "Aucun compte Google n'est disponible sur ce téléphone pour le moment. " +
+            "Google n'a pas pu proposer de compte sur ce téléphone pour le moment. " +
                 "Tu peux en ajouter un dans les réglages du téléphone, ou continuer avec ton adresse e-mail.",
             text(R.string.auth_error_google_no_account),
         )
