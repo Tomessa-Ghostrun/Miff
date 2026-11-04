@@ -609,3 +609,4 @@ final class PlaceRepositoryTests: XCTestCase {
         XCTAssertTrue(store.commits.isEmpty)
     }
 }
+// swiftlint:enable type_body_length

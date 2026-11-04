@@ -55,6 +55,10 @@ private final class AppleSearchCore: NSObject, MKLocalSearchCompleterDelegate {
         return await withCheckedContinuation { continuation in
             pending = continuation
             currentQuery = query
+            if completer.queryFragment == query {
+                // Le même texte redemandé (« Réessayer ») ne relancerait rien : on repart d'un champ vide.
+                completer.queryFragment = ""
+            }
             completer.queryFragment = query
         }
     }

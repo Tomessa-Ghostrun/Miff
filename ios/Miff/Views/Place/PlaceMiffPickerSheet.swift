@@ -6,7 +6,7 @@ struct PlaceMiffPickerSheet: View {
     let state: PlaceFormState
     let actions: PlaceFormActions
 
-    private var count: Int {
+    private var selectedCount: Int {
         state.selectedMiffIds.count
     }
 
@@ -26,7 +26,7 @@ struct PlaceMiffPickerSheet: View {
                             miff: miff,
                             isChecked: state.selectedMiffIds.contains(miff.id),
                             isLastJoined: miff.id == state.lastJoinedId,
-                            isLocked: count >= PlaceLimits.maxMiffs && !state.selectedMiffIds.contains(miff.id)
+                            isLocked: selectedCount >= PlaceLimits.maxMiffs && !state.selectedMiffIds.contains(miff.id)
                         ) {
                             actions.onMiffToggled(miff.id)
                         }
@@ -37,7 +37,7 @@ struct PlaceMiffPickerSheet: View {
                     Text("place_miffs_sheet_done")
                 }
                 .buttonStyle(.miffPrimaryFullWidth)
-                .disabled(count == 0)
+                .disabled(state.selectedMiffIds.isEmpty)
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.vertical, Spacing.lg)
@@ -50,12 +50,12 @@ struct PlaceMiffPickerSheet: View {
     /// « 3 Miffs sur 5 au maximum », « Choisis au moins une Miff. », « Un lieu peut être attaché à 5 Miffs au maximum. ».
     @ViewBuilder
     private var footer: some View {
-        if count == 0 {
+        if state.selectedMiffIds.isEmpty {
             PlaceInfoLine(text: L10n.string("place_miffs_none_selected"))
-        } else if count >= PlaceLimits.maxMiffs {
+        } else if selectedCount >= PlaceLimits.maxMiffs {
             PlaceInfoLine(text: L10n.string("place_miffs_max_reached"))
         } else {
-            Text(verbatim: L10n.format("place_miffs_count", count, PlaceLimits.maxMiffs))
+            Text(verbatim: L10n.format("place_miffs_count", selectedCount, PlaceLimits.maxMiffs))
                 .miffTextStyle(textBodyCaption)
                 .foregroundColor(colorTextDescription.color)
         }

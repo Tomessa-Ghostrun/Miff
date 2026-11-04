@@ -737,3 +737,4 @@ final class PlaceFormViewModelTests: XCTestCase {
         XCTAssertFalse("\(model.state.snapshot)".contains("Nathan"))
     }
 }
+// swiftlint:enable type_body_length

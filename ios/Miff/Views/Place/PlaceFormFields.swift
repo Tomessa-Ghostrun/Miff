@@ -72,7 +72,7 @@ struct PlaceMiffsSection: View {
     private func field(single: Bool) -> some View {
         HStack(alignment: .center, spacing: Spacing.sm) {
             LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 120), spacing: Spacing.sm)],
+                columns: [GridItem(.adaptive(minimum: 150), spacing: Spacing.sm)],
                 alignment: .leading,
                 spacing: Spacing.sm
             ) {

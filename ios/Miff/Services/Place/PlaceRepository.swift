@@ -187,8 +187,7 @@ final class FirestorePlaceRepository: PlaceRepository {
             failure: failure,
             original: original,
             draft: draft,
-            current: current,
-            everywhere: everywhere
+            current: current
         )
     }
 
@@ -230,9 +229,9 @@ final class FirestorePlaceRepository: PlaceRepository {
         failure: MiffFailure,
         original: PlaceGroup,
         draft: PlaceDraft,
-        current: [String],
-        everywhere: [String]
+        current: [String]
     ) async -> PlaceWriteResult {
+        let everywhere = unique(original.miffIds + draft.miffIds)
         let removed = current.filter { !draft.miffIds.contains($0) }
         let verdict = await afterFailedWrite(
             uid: uid,
@@ -272,9 +271,11 @@ final class FirestorePlaceRepository: PlaceRepository {
         }
         return .failed(failure)
     }
+}
 
-    // MARK: - Intérieur
+// MARK: - Intérieur
 
+extension FirestorePlaceRepository {
     private func isOwned(_ miffIds: [String], by context: PlaceContext) -> Bool {
         let owned = Set(context.ownedMiffs.map { $0.id })
         return miffIds.allSatisfy { owned.contains($0) }
@@ -312,7 +313,8 @@ final class FirestorePlaceRepository: PlaceRepository {
         }
         if failure == .refused || failure == .unknown {
             for miffId in miffIds {
-                if await isGone(miffId, for: uid) {
+                let gone = await isGone(miffId, for: uid)
+                if gone {
                     return .miffUnavailable
                 }
             }

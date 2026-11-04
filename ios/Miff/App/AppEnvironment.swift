@@ -79,7 +79,7 @@ struct PlaceServices {
     }
 
     /// Fin de session : le message, ce qui a été tapé dans la recherche d'adresse et ce qu'elle a reçu ne sont pas gardés.
-    func stop() {
+    func stop() async {
         notices.stop()
         search.reset()
     }
