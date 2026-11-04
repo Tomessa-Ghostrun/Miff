@@ -5,7 +5,7 @@ Projet piloté par un Product Manager (5 ans d'expérience produit, non-dévelop
 
 ## Concept produit
 Miff est une app de réassurance pour son cercle de confiance : *savoir que ses proches vont bien, sans les déranger*. On rejoint ou crée une "Miff" (groupe) via un code secret, on définit des "lieux de confiance" (geofencing iOS region monitoring / Android geofencing), et l'app signale automatiquement à son cercle qu'on va bien à l'entrée/sortie de ces lieux — sans action manuelle, sans conversation imposée.
-- Modèle freemium : gratuit = 1 lieu de confiance, 1 seule Miff à la fois ; premium = lieux et Miffs illimités.
+- Modèle freemium : gratuit = 2 lieux de confiance (décision PM du 2026-11-01, avant : 1), 1 seule Miff à la fois ; premium = lieux et Miffs illimités.
 - 1 Miff = 1 code secret pour la rejoindre. L'onboarding n'est complet qu'une fois qu'on a créé ou rejoint une Miff.
 - Le cercle de confiance peut être familial, amical, romantique — pas limité à une relation parent-enfant, même si c'est un cas d'usage probable.
 
