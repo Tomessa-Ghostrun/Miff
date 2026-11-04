@@ -4,14 +4,10 @@ rules_version = '2';
 // Miff — règles de sécurité Firestore (projet miff-3d283, europe-west9)
 //
 // STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
-// `npm test` dans backend/). Les règles de `main` au 2026-10-23 (commit 1017391) ont été
-// déployées sur miff-3d283 depuis le poste du PM ; celles d'AUTH-B (consentements, profil exigé) et
-// d'ONB-B (téléphone obligatoire, copie identique dans la fiche de membre) ne sont PAS déployées : ce fichier
-// (PR « ONB-B / MIFF-0 ») est donc PLUS STRICT que ce qui tourne en production, et les apps qui écrivent un profil ou
-// une fiche sans `phone` y seraient refusées. Tout déploiement suit la procédure du ticket
-// docs/tickets/durcissement-regles-firestore.md (§8.2) et l'accord explicite du PM.
-// Les évolutions « lieux » (R-LIEU-5, -2, -6) et « dernière position connue » (R-LIEU-POS, principe 9) et le renouvellement d'un consentement actif (R-LIEU-3) sont PRÉPARÉS et NON
-// déployés : aucun déploiement sans le « oui » explicite du PM (docs/dev/deploiement-regles.md).
+// `npm test` dans backend/). Déployées sur miff-3d283 depuis le poste du PM : le 2026-10-30 (règles de `main` du
+// 2026-10-27, AUTH-B et ONB-B comprises), puis le 2026-11-04 (commit 42031c0 : lieux R-LIEU-5, -2, -6 ; dernière position
+// connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3). Tout déploiement suit la procédure
+// docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -33,7 +29,7 @@ rules_version = '2';
 //  8. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
 //     des codes et les abus de volume sont atténués par App Check (à activer
 //     dans la console) + entropie du code (12 caractères, ~59 bits).
-//  9. Dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ : un document
+//  9. Dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01) — DÉPLOYÉ le 2026-11-04 : un document
 //     miffs/{id}/positions/{uid} par membre et par Miff (lat, lng, measuredAt, rien d'autre, aucun historique), SÉPARÉ du
 //     statut (le statut ne contient toujours aucune coordonnée). Écriture : par l'intéressé seul, Miff existante, partage actif ET
 //     texte de consentement de version 3 ou plus (jamais de position sans ce nouveau consentement). Lecture d'un autre membre :
