@@ -16,29 +16,30 @@ class MiffWritesMiff2Test {
     private val newCode = "BCDFGHK23456"
 
     @Test
-    fun removeMember_isExactlySixWrites_theThreeOfThePersonThenTheThreeOfTheNewCode_andNothingElse() {
+    fun removeMember_isExactlySevenWrites_theFourOfThePersonThenTheThreeOfTheNewCode_andNothingElse() {
         val lot = MiffWrites.removeMember(miffId, "uid-2", "Chez nous", oldCode, newCode)
         assertEquals(
             listOf(
                 "miffs/$miffId/members/uid-2" to WriteKind.DELETE,
                 "miffs/$miffId/status/uid-2" to WriteKind.DELETE,
                 "miffs/$miffId/photos/uid-2" to WriteKind.DELETE,
+                "miffs/$miffId/positions/uid-2" to WriteKind.DELETE,
                 "miffs/$miffId" to WriteKind.UPDATE,
                 "joinCodes/$newCode" to WriteKind.SET,
                 "joinCodes/$oldCode" to WriteKind.DELETE,
             ),
             lot.map { it.path to it.kind },
         )
-        // Nothing is added to this lot: with six writes the rules read up to 18 of the 20 documents allowed (criterion R2).
-        assertEquals(6, lot.size)
+        // Nothing is added to this lot: the rules read up to 18 of the 20 documents allowed (criterion R2); deleting the position costs no read.
+        assertEquals(7, lot.size)
         assertFalse("the index of the person is never touched by the creator", lot.any { it.path.startsWith("users/") })
     }
 
     @Test
     fun removeMember_alwaysChangesTheCode_andTheNewCodeDocumentCarriesTheCurrentName() {
         val lot = MiffWrites.removeMember(miffId, "uid-2", "Chez nous", oldCode, newCode)
-        assertEquals(mapOf<String, Any?>("joinCode" to newCode), lot[3].data)
-        val doc = lot[4].data
+        assertEquals(mapOf<String, Any?>("joinCode" to newCode), lot[4].data)
+        val doc = lot[5].data
         assertEquals(miffId, doc["miffId"])
         assertEquals("Chez nous", doc["miffName"])
         assertEquals(setOf("miffId", "miffName", "createdAt"), doc.keys)
@@ -52,7 +53,7 @@ class MiffWritesMiff2Test {
     @Test
     fun removeMember_whenTheOldCodeDocumentIsAlreadyGone_leavesItsDeletionOut() {
         val lot = MiffWrites.removeMember(miffId, "uid-2", "Chez nous", oldCode, newCode, oldCodeExists = false)
-        assertEquals(5, lot.size)
+        assertEquals(6, lot.size)
         assertFalse(lot.any { it.path == "joinCodes/$oldCode" })
     }
 
@@ -70,19 +71,20 @@ class MiffWritesMiff2Test {
     }
 
     @Test
-    fun leave_isFourDeletions_andTheIndexIsLeftOutOnlyWhenItWasNotFound() {
+    fun leave_isFiveDeletions_andTheIndexIsLeftOutOnlyWhenItWasNotFound() {
         val lot = MiffWrites.leave(miffId, "uid-2", "free")
         assertEquals(
             listOf(
                 "miffs/$miffId/members/uid-2",
                 "miffs/$miffId/status/uid-2",
                 "miffs/$miffId/photos/uid-2",
+                "miffs/$miffId/positions/uid-2",
                 "users/uid-2/memberships/free",
             ),
             lot.map { it.path },
         )
         assertTrue(lot.all { it.kind == WriteKind.DELETE })
-        assertEquals(3, MiffWrites.leave(miffId, "uid-2", null).size)
+        assertEquals(4, MiffWrites.leave(miffId, "uid-2", null).size)
         // A premium account keys its index by the id of the Miff.
         assertEquals("users/uid-2/memberships/$miffId", MiffWrites.leave(miffId, "uid-2", miffId).last().path)
     }
@@ -111,6 +113,7 @@ class MiffWritesMiff2Test {
                 "joinCodes/$oldCode" to WriteKind.DELETE,
                 "miffs/$miffId/status/uid-1" to WriteKind.DELETE,
                 "miffs/$miffId/photos/uid-1" to WriteKind.DELETE,
+                "miffs/$miffId/positions/uid-1" to WriteKind.DELETE,
                 "miffs/$miffId/members/uid-1" to WriteKind.DELETE,
                 "users/uid-1/memberships/free" to WriteKind.DELETE,
             ),
@@ -132,7 +135,7 @@ class MiffWritesMiff2Test {
         assertFalse(noCode.any { it.path.startsWith("joinCodes/") })
         val noIndex = MiffWrites.finalDelete(miffId, "uid-1", oldCode, codeExists = true, membershipKey = null)
         assertFalse(noIndex.any { it.path.startsWith("users/") })
-        assertEquals(5, MiffWrites.finalDelete(miffId, "uid-1", oldCode, codeExists = false, membershipKey = null).size)
+        assertEquals(6, MiffWrites.finalDelete(miffId, "uid-1", oldCode, codeExists = false, membershipKey = null).size)
     }
 
     @Test

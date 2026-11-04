@@ -965,8 +965,17 @@ class ScreenInsetsTest {
     @Test
     fun createMiff_withTheKeyboardOpen_theButtonCanBeReachedAboveIt() {
         show { CreateMiffScreen(CreateUiState(name = "Famille"), {}, {}, {}, {}) }
-        applyInsets(phone)
-        assertLastItemAboveKeyboard(text(R.string.miff_create_action))
+        // LOC-2a: the button is PINNED under the scrolling text (no scrolling needed): it must sit above the keyboard as it is.
+        val keyboardPhone = phone.copy(keyboard = 300.dp)
+        applyInsets(keyboardPhone)
+        composeRule.waitForIdle()
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val bottom =
+            composeRule
+                .onNodeWithText(text(R.string.miff_create_action))
+                .fetchSemanticsNode()
+                .boundsInRoot.bottom
+        assertTrue("the pinned button is under the keyboard", bottom <= root.bottom - px(keyboardPhone.keyboard) + 1f)
     }
 
     @Test

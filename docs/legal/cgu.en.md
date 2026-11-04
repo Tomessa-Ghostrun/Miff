@@ -54,10 +54,10 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 ## 5. Miffs and secret codes
 
 - A Miff is joined with a **secret code**. Anyone who knows the code can join it. **Only share this code with people you trust.**
-- The creator of a Miff manages the places: **only they create, edit and delete them**, risk zones included (reserved for Miff+). The same place can be linked to several Miffs they created; deleting it deletes it in all those Miffs. They can also renew the code or remove a member. When a member is removed, the code is renewed: the old code no longer works.
+- The creator of a Miff manages the places: **only they create, edit and delete them**, danger zones included (reserved for Miff+). The same place can be linked to several Miffs they created; deleting it deletes it in all those Miffs. They can also renew the code or remove a member. When a member is removed, the code is renewed: the old code no longer works.
 - **A Miff's places are visible to all its members, address included.** Only save addresses you have the right to save: another person's address (their home, for example) must not be saved without their agreement.
 - You can leave a Miff whenever you want.
-- With the free version, you can be in **one Miff at a time** and use **2 trusted places**. Premium removes these limits (see article 9).
+- With the free version, you can be in **one Miff at a time** and use **2 trusted places**. Miff+ removes these limits (see article 9).
 
 ## 6. Sharing your location: your choice
 
@@ -70,8 +70,8 @@ The core of Miff is sharing your status related to trusted places. Here are our 
 - **Erasure**: your location is erased when you stop sharing, leave the Miff, are removed from the Miff, or when the Miff or your account is deleted. After 24 hours, it is only shown hidden, with its date (it stays stored until it is replaced or erased). Details are in the Privacy Policy.
 - **Reciprocity**: to see other people's status and location, you must share yours.
 - **Miff needs "Always" location** (in the background, even when the app is closed, with precise location) to work. Without it, the app asks for it again and cannot be used normally. You can withdraw it at any time in your phone settings: this has no effect on your account, but Miff stops working until it is restored. Notifications, on the other hand, are optional.
-- **Risk zones (Miff+)**: the creator of a Miff can set up a "risk zone". If you enter a risk zone, your status is shown in red to the members of your Miff. This is information tied to a place the creator chose, not a judgement about you. Today, Miff sends no notification about it.
-- **Only use Miff with respect for people.** Miff is made for people who know they are sharing their status and location, and who agree to it. **It is forbidden to use Miff to follow, monitor or control someone without their knowledge or against their will** (including by using a Miff's places or risk zones to control someone), or to pressure someone into sharing. If a person does not want to share, that is their right.
+- **Danger zones (Miff+)**: the creator of a Miff can set up a "danger zone". If you enter a danger zone, your status is shown in red to the members of your Miff. This is information tied to a place the creator chose, not a judgement about you. Today, Miff sends no notification about it.
+- **Only use Miff with respect for people.** Miff is made for people who know they are sharing their status and location, and who agree to it. **It is forbidden to use Miff to follow, monitor or control someone without their knowledge or against their will** (including by using a Miff's places or danger zones to control someone), or to pressure someone into sharing. If a person does not want to share, that is their right.
 
 ## 7. Rules of use
 
@@ -92,15 +92,15 @@ You agree not to:
 - A member of a Miff can record what they see (a screenshot, for example). We cannot prevent it: only send what you are comfortable showing your circle.
 - You can report problematic content or behaviour to **tomessa.mfouka@gmail.com**. We may remove content that does not comply with these terms.
 
-## 9. Free Miff and Miff Premium
+## 9. Free Miff and Miff+
 
 - **Free**: one Miff at a time and **2 trusted places**.
-- **Premium ("Miff+", paid subscription)**: several Miffs, an unlimited number of trusted places and risk zones, plus the other options presented in the app at the time of purchase (for example smart notifications, depending on availability). The exact content, price, duration and any trial period are **shown in the app and on the store before you subscribe**.
+- **Miff+ (paid subscription)**: several Miffs, an unlimited number of trusted places and danger zones, plus the other options presented in the app at the time of purchase (for example smart notifications, depending on availability). The exact content, price, duration and any trial period are **shown in the app and on the store before you subscribe**.
 - **Purchase is made through the App Store (Apple) or Google Play**, not directly with us. Payment, billing, automatic renewal, cancellation and refunds are handled by Apple or Google, under their terms.
 - **Cancelling**: in your Apple account settings (iPhone) or in Google Play (Android), before the end of the current period, to avoid the next renewal. Deleting the app or your Miff account **does not** automatically cancel the subscription: it must be cancelled with the store.
 - **Refunds**: ask Apple or Google, under their rules. If you are a consumer, the rights the law gives you (for example the right of withdrawal, under the conditions set by law and by the store's terms) still apply.
-- **End of subscription**: you go back to the free version. Items that go beyond the limits of the free plan (one Miff, 2 trusted places and no risk zone) are then deleted, along with the data linked to them: the most recently added ones are deleted, your first items remain. If you have several Miffs or several places, remember to check what you want to keep before your subscription ends.
-- **During the test phase (beta)**, the Miff team may grant Premium access free of charge to some testers. This access may be withdrawn at the end of the beta.
+- **End of subscription**: you go back to the free version. Items that go beyond the limits of the free plan (one Miff, 2 trusted places and no danger zone) are then deleted, along with the data linked to them: the most recently added ones are deleted, your first items remain. If you have several Miffs or several places, remember to check what you want to keep before your subscription ends.
+- **During the test phase (beta)**, the Miff team may grant Miff+ access free of charge to some testers. This access may be withdrawn at the end of the beta.
 - We may change offers and prices for the future. A price change does not affect a period you have already paid and is announced in line with the store's rules.
 
 ## 10. Availability of the service
@@ -115,7 +115,7 @@ We do our best to make Miff work well, but we do not guarantee an uninterrupted 
 
 ## 12. Suspension and deletion of an account
 
-- **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Premium subscription with the store. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses, last known locations and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account.
+- **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Miff+ subscription with the store. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses, last known locations and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account.
 - **We may suspend or delete an account** that does not comply with these terms (in particular articles 6 and 7), or in case of abuse, risk to other people's safety, or a request from an authority. Except in an emergency or where the law requires otherwise, we explain why and you can reply at **tomessa.mfouka@gmail.com**.
 
 ## 13. Personal data
@@ -134,7 +134,7 @@ We may change these terms, for example if the app evolves or the law changes. Fo
 
 - These terms are governed by **French law**. If you are a consumer, you also benefit from the mandatory protection rules of the country where you live.
 - **Write to us first** at **tomessa.mfouka@gmail.com**: we always look for an amicable solution.
-- If you subscribe to Premium, you can use a consumer mediator free of charge.
+- If you subscribe to Miff+, you can use a consumer mediator free of charge.
 - Failing agreement, the competent courts are those provided by law.
 
 ## 17. Miscellaneous

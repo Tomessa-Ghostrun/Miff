@@ -205,9 +205,10 @@ class MiffWritesTest {
     }
 
     @Test
-    fun stopSharing_marksTheCard_andDeletesTheStatusAndThePhoto_inTheSameLot() {
+    fun stopSharing_marksTheCard_andDeletesTheStatusThePhotoAndTheLocation_inTheSameLot() {
         val writes = MiffWrites.stopSharing(miffId, uid)
-        assertEquals(3, writes.size)
+        // LOC-2a: 4 writes (the contract of the rules); the rules refuse the stop while a position survives.
+        assertEquals(4, writes.size)
         val card = writes.at("miffs/$miffId/members/$uid")
         assertEquals(WriteKind.UPDATE, card.kind)
         // Only two sub-fields change: the date and version of the first consent are kept as they were.
@@ -216,6 +217,7 @@ class MiffWritesTest {
         assertEquals(serverTime, card.data["sharing.revokedAt"])
         assertEquals(WriteKind.DELETE, writes.at("miffs/$miffId/status/$uid").kind)
         assertEquals(WriteKind.DELETE, writes.at("miffs/$miffId/photos/$uid").kind)
+        assertEquals(WriteKind.DELETE, writes.at("miffs/$miffId/positions/$uid").kind)
     }
 
     @Test
@@ -235,25 +237,64 @@ class MiffWritesTest {
         assertEquals("background", status.data["locationAccess"])
     }
 
+    @Test
+    fun renewConsent_isOneUpdateOfTheCard_withTheFourKeysOfSharingExactly_andNothingElse() {
+        val writes = MiffWrites.renewConsent(miffId, uid)
+        assertEquals(1, writes.size)
+        val card = writes.single()
+        assertEquals("miffs/$miffId/members/$uid", card.path)
+        assertEquals(WriteKind.UPDATE, card.kind)
+        // Only the field "sharing" is touched (names, photo, phone, role stay), as a whole map of exactly the four keys of the rules.
+        assertEquals(setOf("sharing"), card.data.keys)
+        @Suppress("UNCHECKED_CAST")
+        val sharing = card.data["sharing"] as Map<String, Any?>
+        assertEquals(setOf("enabled", "consentedAt", "consentVersion", "revokedAt"), sharing.keys)
+        assertEquals(true, sharing["enabled"])
+        assertEquals(serverTime, sharing["consentedAt"])
+        assertEquals("2026-11-v03", sharing["consentVersion"])
+        assertNull(sharing["revokedAt"])
+    }
+
+    @Test
+    fun everyLotThatEndsAMembership_deletesTheLastKnownLocationToo() {
+        val lots =
+            listOf(
+                MiffWrites.stopSharing(miffId, uid),
+                MiffWrites.leave(miffId, uid, "free"),
+                MiffWrites.leave(miffId, uid, null),
+                MiffWrites.removeMember(miffId, uid, "Chez nous", code, "BCDFGHK23456"),
+                MiffWrites.finalDelete(miffId, uid, code, codeExists = true, membershipKey = "free"),
+                MiffWrites.finalDelete(miffId, uid, code, codeExists = false, membershipKey = null),
+                MiffWrites.dropIndex(miffId, uid, "free"),
+            )
+        lots.forEach { lot ->
+            val position = lot.filter { it.path == "miffs/$miffId/positions/$uid" }
+            assertEquals("one deletion of the position per lot: $lot", 1, position.size)
+            assertEquals(WriteKind.DELETE, position.single().kind)
+        }
+    }
+
     // --- Clean-up -------------------------------------------------------------------------------------------------
 
     @Test
-    fun leave_isFourDeletions_andDropIndexIsOne() {
+    fun leave_isFiveDeletions_andDropIndexIsTwo() {
         val leave = MiffWrites.leave(miffId, uid, "free")
-        assertEquals(4, leave.size)
+        assertEquals(5, leave.size)
         assertTrue(leave.all { it.kind == WriteKind.DELETE })
         assertEquals(
             setOf(
                 "miffs/$miffId/members/$uid",
                 "miffs/$miffId/status/$uid",
                 "miffs/$miffId/photos/$uid",
+                "miffs/$miffId/positions/$uid",
                 "users/$uid/memberships/free",
             ),
             leave.map { it.path }.toSet(),
         )
-        val drop = MiffWrites.dropIndex(uid, "free")
-        assertEquals(listOf("users/$uid/memberships/free"), drop.map { it.path })
-        assertEquals(WriteKind.DELETE, drop.single().kind)
+        // A last known location left behind by an older build goes with the index (its author may always delete it).
+        val drop = MiffWrites.dropIndex(miffId, uid, "free")
+        assertEquals(listOf("miffs/$miffId/positions/$uid", "users/$uid/memberships/free"), drop.map { it.path })
+        assertTrue(drop.all { it.kind == WriteKind.DELETE })
     }
 
     // --- Profile copy and failures --------------------------------------------------------------------------------

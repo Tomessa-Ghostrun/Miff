@@ -9,7 +9,7 @@ import java.io.File
 /**
  * What the places must never do (ticket LOC-1, criteria ADR3, ADR4, VIE1 for the part that is the app's own, QA3), checked on the SOURCE so that
  * a later change cannot break it unnoticed: no address, name or coordinate in a log, an event or a crash report; no key committed;
- * nothing but HTTPS; no permission added.
+ * nothing but HTTPS; no Wi-Fi permission (the location ones are LOC-2a: see PermissionPrivacyTest).
  */
 class PlacePrivacyTest {
     private val roots =
@@ -102,39 +102,31 @@ class PlacePrivacyTest {
         assertEquals(emptyList<String>(), offenders)
     }
 
-    private val locationPermission = Regex("""ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION|ACCESS_WIFI_STATE""")
+    private val wifiPermission = Regex("""ACCESS_WIFI_STATE""")
 
     @Test
-    fun theSourceManifest_onlyMentionsLocationToRemoveIt_noNotificationPermission() {
+    fun theSourceManifest_removesTheWifiStateOfTheMapLibrary() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
-        // Every mention sits in an element that removes it (the map library merges these permissions; LOC-2 will declare its own).
         val elements =
             Regex("""<uses-permission[^>]*?/>""", RegexOption.DOT_MATCHES_ALL)
                 .findAll(manifest)
-                .map {
-                    it.value
-                }.toList()
-        val mentions = elements.filter { locationPermission.containsMatchIn(it) }
-        assertTrue("the three removals are missing", mentions.size >= 3)
+                .map { it.value }
+                .toList()
+        val mentions = elements.filter { wifiPermission.containsMatchIn(it) }
+        assertEquals("the removal of ACCESS_WIFI_STATE is missing", 1, mentions.size)
         mentions.forEach { assertTrue("not a removal: $it", it.contains("""tools:node="remove"""")) }
-        assertFalse(manifest.contains("POST_NOTIFICATIONS"))
+        // LOC-2a: the location permissions are now DECLARED, on purpose: PermissionPrivacyTest checks the exact list.
     }
 
     @Test
-    fun theMergedManifests_declareNoLocationPermission_whenTheyAreThere() {
-        // What the phone really gets (CI also checks the release bundle: android.yml). Present once Gradle has merged a variant.
+    fun theMergedManifests_doNotDeclareTheWifiState_whenTheyAreThere() {
         val merged =
             File("build/intermediates/merged_manifests")
                 .walkTopDown()
-                .filter {
-                    it.name ==
-                        "AndroidManifest.xml"
-                }.toList()
+                .filter { it.name == "AndroidManifest.xml" }
+                .toList()
         merged.forEach { file ->
-            assertFalse(
-                "${file.path} declares a location permission",
-                locationPermission.containsMatchIn(file.readText()),
-            )
+            assertFalse("${file.path} declares ACCESS_WIFI_STATE", wifiPermission.containsMatchIn(file.readText()))
         }
     }
 

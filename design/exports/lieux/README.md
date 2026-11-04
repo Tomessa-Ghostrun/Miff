@@ -18,5 +18,5 @@ Export Figma du PM (`Miff - App (2).zip`, noms d'origine « Welcoming screen… 
 - **Nom** : compteur « 12/50 » ; le schéma de données actuel et les règles bornent les noms de lieu autrement : à vérifier avant le développement.
 - **Sélecteur de Miff** : n'apparaît que sur la création (`02`), limité aux Miffs créées par la personne ; absent de `03`.
 - **Suppression** : le texte annonce une suppression « pour vous et l'ensemble des membres » ; à confirmer avec les règles Firestore (seul le créateur supprime).
-- **Type « Zone à risque / Lieu à éviter »** : libellés conservés pour l'instant (décision PM antérieure, à revoir avant les stores : ton non anxiogène).
+- **Type « Zone à risque / Lieu à éviter »** (libellés de la maquette) : le PM a retenu « **zone de danger** » pour les textes affichés (2026-11-01) ; le sous-titre « Lieu à éviter » est conservé pour l'instant, à revoir avant les stores (ton non anxiogène).
 - Les maquettes n'ont pas de barre de zone sûre ni de variante sombre : adaptation native à l'implémentation.
