@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.BuildConfig
+import com.tomessa.miff.data.auth.CredentialManagerClient
 import com.tomessa.miff.data.auth.CredentialManagerGoogleSource
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.data.session.SessionState
@@ -285,7 +286,10 @@ private fun SignedOutHost(
 private fun googleSourceFor(context: Context): GoogleIdTokenSource {
     var current: Context = context
     while (current is ContextWrapper && current !is Activity) current = current.baseContext
-    return CredentialManagerGoogleSource(current, CredentialManagerGoogleSource.webClientIdFrom(context))
+    return CredentialManagerGoogleSource(
+        CredentialManagerClient(current),
+        CredentialManagerGoogleSource.webClientIdFrom(context),
+    )
 }
 
 /**

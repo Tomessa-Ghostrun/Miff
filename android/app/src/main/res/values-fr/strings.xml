@@ -133,6 +133,9 @@
     <string name="auth_error_other_method">Un compte existe déjà avec cette adresse, avec un autre mode de connexion. Essaie l\'autre option.</string>
     <string name="auth_error_network">Pas de connexion pour le moment. Réessaie dès que tu as du réseau.</string>
     <string name="auth_error_unknown">Quelque chose n\'a pas fonctionné. Réessaie dans un instant.</string>
+    <string name="auth_error_google_interrupted">La connexion avec Google n\'a pas abouti. Réessaie dans un instant.</string>
+    <string name="auth_error_google_no_account">Aucun compte Google n\'est disponible sur ce téléphone pour le moment. Tu peux en ajouter un dans les réglages du téléphone, ou continuer avec ton adresse e-mail.</string>
+    <string name="auth_error_google_services">Les services Google ne répondent pas sur ce téléphone pour le moment. Vérifie qu\'ils sont à jour, ou continue avec ton adresse e-mail.</string>
     <string name="auth_error_account_unavailable">Ce compte n\'est pas disponible pour le moment. Si tu as besoin d\'aide, écris-nous à %1$s.</string>
     <string name="auth_lookup_failed">Nous n\'arrivons pas à ouvrir ton compte pour le moment. Réessaie dans un instant.</string>
     <string name="auth_panel_title">Bienvenue ! Une dernière chose avant de continuer.</string>

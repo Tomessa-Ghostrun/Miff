@@ -2,6 +2,34 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.9.1] - 2026-11-04 : message clair quand la connexion Google échoue (retour de recette du PM)
+
+Retour de recette : « la connexion Google a échoué plusieurs fois de suite avant de marcher, et l'app n'a pas informé ». Avant : tous les échecs de la fenêtre Google donnaient le même message générique, affiché en bas du formulaire, loin du bouton Google (facile à ne pas voir), et ceux qu'Android signale comme une annulation restaient muets. Ticket `docs/tickets/authentification.md` (§7.3, §11 cas 3 et 4), `CLAUDE.md` (ton bienveillant, non anxiogène).
+
+### Causes distinguées (types d'exception de `androidx.credentials`, jamais leur message)
+- **Aucun message** : la personne ferme la fenêtre Google (`GetCredentialCancellationException`), ou la fenêtre reste ouverte plus de 3 minutes (retour à l'état stable).
+- **Aucun compte Google utilisable** (`NoCredentialException`) : « Aucun compte Google n'est disponible sur ce téléphone pour le moment. Tu peux en ajouter un dans les réglages du téléphone, ou continuer avec ton adresse e-mail. »
+- **Services Google absents, trop anciens ou qui ne gèrent pas la demande** (`GetCredentialProviderConfigurationException`, `GetCredentialUnsupportedException`) : « Les services Google ne répondent pas sur ce téléphone pour le moment. Vérifie qu'ils sont à jour, ou continue avec ton adresse e-mail. »
+- **Google n'a pas répondu cette fois** (`GetCredentialInterruptedException` : c'est ainsi que les services Google signalent leurs erreurs réseau et internes) : « La connexion avec Google n'a pas abouti. Réessaie dans un instant. »
+- **Pas de réseau** : vérifié avant d'ouvrir la fenêtre (comme avant), et aussi **après** un échec peu clair (inconnu ou « n'a pas abouti ») si le téléphone est hors connexion à ce moment : « Pas de connexion pour le moment. Réessaie dès que tu as du réseau. »
+- **Compte refusé par Firebase** (compte désactivé) : « Ce compte n'est pas disponible pour le moment… » avec l'adresse d'assistance ; **trop d'essais**, **adresse déjà liée à une autre méthode** : les messages existants.
+- **Tout le reste** (erreur inconnue du système, jeton illisible, autre type d'identifiant, jeton refusé sans raison claire, configuration sans client OAuth web) : message générique honnête « Quelque chose n'a pas fonctionné. Réessaie dans un instant. »
+
+### Comportement
+- Le message s'affiche **juste sous le bouton « Continuer avec Google »** (inscription ET connexion), annoncé par TalkBack (zone « polie »), en couleur d'erreur ET en mots. Il reste jusqu'à la tentative suivante (Google ou e-mail) ; le bouton Google n'est jamais bloqué après un échec et sert de « Réessayer » (pas de bouton supplémentaire : parcours court).
+- Aucun code technique, aucun reproche. Rien n'est journalisé : ni compte, ni adresse, ni jeton, ni message du système (une erreur est réduite à sa nature avant d'arriver à l'écran).
+
+### Modifié
+- `CredentialManagerGoogleSource` prend maintenant un `GoogleCredentialClient` (la partie qui parle au système, `CredentialManagerClient`) : chaque issue est jouable en test. Toute exception autre que l'annulation de la coroutine devient un échec (avant, une exception inattendue pouvait faire planter l'app).
+- `AuthFailure` : `GOOGLE_NO_ACCOUNT`, `GOOGLE_SERVICES_UNAVAILABLE`, `GOOGLE_INTERRUPTED`. `AuthMessage` : les mêmes trois. États d'écran : `googleMessage` (séparé du `message` du formulaire e-mail).
+- Textes `auth_error_google_no_account`, `auth_error_google_services`, `auth_error_google_interrupted` FR/EN et catalogue iOS (parité des clés vérifiée ; le code iOS n'est pas touché).
+
+### Tests
+- `GoogleIdTokenSourceTest` (12) : chaque type d'exception, annulation, délai de 3 minutes, annulation de la coroutine propagée, aucun message du système dans le résultat. `GoogleErrorViewModelsTest` (20) : chaque cause sur l'inscription et la connexion, silence à la fermeture, message conservé puis effacé à la tentative suivante, hors connexion, jeton refusé. `GoogleErrorScreensTest` (12, Robolectric, vrais view models) : message sous le bouton, annonce TalkBack, fermeture silencieuse, relance par le bouton, textes FR/EN calmes et au tutoiement.
+
+### Limite connue
+- Android remonte certains échecs Google (code 16, par exemple « Account reauth failed ») comme une **annulation** : ils restent silencieux, car rien ne permet de les distinguer d'une fermeture volontaire sans lire un message interne de Google (fragile, interdit ici). Si la recette montre encore des échecs muets, c'est la piste à examiner.
+
 ## [0.9.0] - 2026-11-01 : LOC-1, lieux de confiance (formulaire, adresses, carte, liste, détail, modification, suppression)
 
 Ticket `docs/tickets/lieux-de-confiance.md` v3 (§6.1 à §6.4, §10, §11, §12, §17 : Formulaire, Limites, Plusieurs Miffs, Adresse et carte, Android ; §18), décisions du PM du 2026-11-01 (en tête et en fin du ticket), fiches `design/screens/lieux/` et maquettes `design/exports/lieux/` (7 du PM + 20 complémentaires). **Hors périmètre** : détection des arrivées et départs, permissions de localisation et de notifications, écriture du statut ou de la position (LOC-2), appareil unique, iOS. **Les règles Firestore qu'il suppose (PR #54 : 2 lieux gratuits `p1` / `p2`, catégorie obligatoire, type modifiable, zone de danger réservée à Miff+, lot de 5 Miffs) ne sont PAS déployées** : le code leur est conforme et testé contre leur contrat ; avant leur déploiement, **« Enregistrer » est refusé par le serveur** et l'app répond « Ça n'a pas fonctionné. Réessaie dans un instant. » (recette en deux temps : `docs/qa/checklists/loc-1-android-recette-pm.md`).
