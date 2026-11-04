@@ -78,14 +78,22 @@ final class LocalizationTests: XCTestCase {
         guard let files = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil) else {
             throw XCTSkip("Sources introuvables (\(sources.path)).")
         }
-        let regex = try NSRegularExpression(pattern: "\"((?:diag|home|auth|place|common|profile|ios)_[a-z0-9_]+)\"")
+        let regex = try NSRegularExpression(
+            pattern: "\"((?:diag|home|auth|place|common|profile|feed|miff|ios)_[a-z0-9_]+)\""
+        )
+        // Les noms d'événements Analytics (`miff_created`, `miff_joined`) ont la même forme qu'une clé de texte `miff_` : ce ne
+        // sont pas des clés.
+        let analyticsNames: Set<String> = ["miff_created", "miff_joined"]
         var used = Set<String>()
         for case let file as URL in files where file.pathExtension == "swift" {
             let text = try String(contentsOf: file, encoding: .utf8)
             let range = NSRange(text.startIndex..., in: text)
             for match in regex.matches(in: text, range: range) {
                 if let keyRange = Range(match.range(at: 1), in: text) {
-                    used.insert(String(text[keyRange]))
+                    let key = String(text[keyRange])
+                    if !analyticsNames.contains(key) {
+                        used.insert(key)
+                    }
                 }
             }
         }

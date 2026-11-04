@@ -9,6 +9,7 @@ final class NWNetworkMonitor: NetworkMonitor {
     private let queue = DispatchQueue(label: "com.tomessa.miff.network")
     private let lock = NSLock()
     private var online = true
+    private var listeners: [UUID: AsyncStream<Bool>.Continuation] = [:]
 
     init() {
         monitor.pathUpdateHandler = { [weak self] path in
@@ -27,9 +28,33 @@ final class NWNetworkMonitor: NetworkMonitor {
         return online
     }
 
+    func onlineChanges() -> AsyncStream<Bool> {
+        AsyncStream { continuation in
+            let identifier = UUID()
+            self.lock.lock()
+            self.listeners[identifier] = continuation
+            let current = self.online
+            self.lock.unlock()
+            continuation.yield(current)
+            continuation.onTermination = { [weak self] _ in
+                self?.removeListener(identifier)
+            }
+        }
+    }
+
+    private func removeListener(_ identifier: UUID) {
+        lock.lock()
+        listeners[identifier] = nil
+        lock.unlock()
+    }
+
     private func update(_ value: Bool) {
         lock.lock()
         online = value
+        let current = Array(listeners.values)
         lock.unlock()
+        for continuation in current {
+            continuation.yield(value)
+        }
     }
 }

@@ -48,6 +48,10 @@ protocol SocialCredentialSource {
 /// Y a-t-il un réseau ? Sert à répondre « pas de connexion » tout de suite au lieu d'attendre un long échec.
 protocol NetworkMonitor {
     func isOnline() -> Bool
+
+    /// L'état du réseau, dit tout de suite puis à chaque changement (vrai = en ligne) : l'écran d'une Miff grise ce qui écrit
+    /// quand le réseau part, et le rend quand il revient. Le flux s'arrête quand on l'abandonne.
+    func onlineChanges() -> AsyncStream<Bool>
 }
 
 enum AccountLoad: Equatable {

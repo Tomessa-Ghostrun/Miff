@@ -77,6 +77,27 @@ shot 33-fr-splash-eclat 2 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview
 shot 34-en-carrousel-1 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview carousel1
 shot 35-en-inscription 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview signup
 shot 36-fr-inscription-droite-a-gauche 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffForceRTL YES -MiffPreview signup
+# Le flux Miff (MIFF-3) : créer, rejoindre, écran d'une Miff, accueil, perte d'accès. Les VRAIS écrans, nourris par des états
+# fixes (Diagnostic/MiffScreenPreviews.swift, option -MiffPreview miff-*, build Debug seulement) : aucun réseau, aucune session,
+# noms et code de démonstration. Ils servent à relire les marges, les textes et l'ordre des blocs sans iPhone.
+fr_args=(-AppleLanguages "(fr)" -AppleLocale fr_FR)
+shot 50-fr-miff-choix 2 "${fr_args[@]}" -MiffPreview miff-choice
+shot 51-fr-miff-nouvelle 2 "${fr_args[@]}" -MiffPreview miff-create
+shot 52-fr-miff-nouvelle-limite 2 "${fr_args[@]}" -MiffPreview miff-create-limit
+shot 53-fr-miff-prete 2 "${fr_args[@]}" -MiffPreview miff-ready
+shot 54-fr-miff-rejoindre 2 "${fr_args[@]}" -MiffPreview miff-join
+shot 55-fr-miff-rejoindre-introuvable 2 "${fr_args[@]}" -MiffPreview miff-join-error
+shot 56-fr-miff-rejoindre-confirmation 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
+shot 57-fr-miff-ecran-createur 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
+shot 58-fr-miff-ecran-membre 2 "${fr_args[@]}" -MiffPreview miff-screen-member
+shot 59-fr-miff-ecran-reprendre 3 "${fr_args[@]}" -MiffPreview miff-screen-resume
+shot 60-fr-miff-ecran-hors-ligne 2 "${fr_args[@]}" -MiffPreview miff-screen-offline
+shot 61-fr-miff-perdue 2 "${fr_args[@]}" -MiffPreview miff-lost
+shot 62-fr-miff-accueil 2 "${fr_args[@]}" -MiffPreview miff-home
+shot 63-fr-miff-accueil-sans-miff 2 "${fr_args[@]}" -MiffPreview miff-home-empty
+shot 64-en-miff-rejoindre-confirmation 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-join-confirm
+shot 65-en-miff-ecran-createur 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-screen-owner
+
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
 # L'animation de lancement réelle, jouée au-dessus du vrai parcours (aux instants 1 s et 2,2 s environ).
@@ -96,6 +117,8 @@ shot 13-fr-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR
 shot 40-fr-inscription-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview signup
 shot 41-fr-telephone-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview phone
 shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview carousel1
+shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
+shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

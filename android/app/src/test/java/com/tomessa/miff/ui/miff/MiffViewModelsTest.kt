@@ -15,6 +15,7 @@ import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.testsupport.CODE
+import com.tomessa.miff.testsupport.FakeDeletionController
 import com.tomessa.miff.testsupport.FakeMiffRepository
 import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
@@ -56,6 +57,8 @@ class MiffViewModelsTest {
     private var now = 0L
     private var profileMissing = 0
     private val observing = CoroutineScope(dispatcher + SupervisorJob())
+    private val deletions = FakeDeletionController()
+    private val left = mutableListOf<String>()
 
     @Before
     fun setUp() {
@@ -395,6 +398,8 @@ class MiffViewModelsTest {
             confirmLoss
         },
         onNameChanged = { directoryChanges++ },
+        deletions = deletions,
+        onLeft = { left += it },
     ).also { vm -> observing.launch { vm.observe() } }
 
     @Test
@@ -519,6 +524,8 @@ class MiffViewModelsTest {
                         gate.await()
                     },
                     onNameChanged = {},
+                    deletions = FakeDeletionController(),
+                    onLeft = {},
                 )
             val flow = repo.observer.flowOf(MIFF_ID)
             val first = observing.launch { vm.observe() }
