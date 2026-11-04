@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -611,6 +612,86 @@ fun MiffConfirmDialog(
     /** False for a dialog that only informs ("Terminer" after a removal): then there is no "Annuler". */
     showCancel: Boolean = true,
 ) {
+    // With something under the sentence (the consent card of "Reprendre le partage", LOC-2a) the text scrolls and the
+    // buttons stay PINNED under it, always visible (same rule as screen 24); otherwise the whole dialog scrolls, as before.
+    val pinned = content != null
+    val tail: @Composable ColumnScope.() -> Unit = {
+        if (message != null) MiffNotice(text = actionMessageText(message))
+        if (extraLabel != null && onExtra != null) {
+            Column(
+                modifier = Modifier.semantics { traversalIndex = ACTION_ORDER - 1f },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                MiffSecondaryButton(
+                    text = extraLabel,
+                    onClick = onExtra,
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (extraHint != null) {
+                    Text(
+                        text = extraHint,
+                        style = textBodyCaption,
+                        color = colorTextDescription,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+        if (tone == DialogTone.DEFAULT) {
+            MiffButton(
+                text = confirmLabel,
+                onClick = onConfirm,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().semantics { traversalIndex = ACTION_ORDER },
+            )
+        } else {
+            OutlinedButton(
+                onClick = onConfirm,
+                enabled = !busy,
+                shape = ShapeMd,
+                border = BorderStroke(StrokeAccent, colorTextError),
+                colors =
+                    androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = colorBgSurface,
+                        contentColor = colorTextError,
+                        disabledContentColor = colorTextError.copy(alpha = DISABLED_ALPHA),
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = Spacing.minTouchTarget)
+                        .semantics { traversalIndex = ACTION_ORDER },
+            ) {
+                Text(confirmLabel, style = textBodyBold16)
+            }
+        }
+        if (busy) {
+            val working = stringResource(R.string.miff_dialog_working_a11y)
+            CircularProgressIndicator(
+                color = colorActionPrimary,
+                modifier =
+                    Modifier.size(Spacing.l).semantics {
+                        contentDescription = working
+                        liveRegion = LiveRegionMode.Polite
+                    },
+            )
+        }
+        if (showCancel) {
+            TextButton(
+                onClick = onCancel,
+                enabled = !busy,
+                modifier =
+                    Modifier
+                        .heightIn(
+                            min = Spacing.minTouchTarget,
+                        ).semantics { traversalIndex = CANCEL_ORDER },
+            ) {
+                Text(cancelLabel, style = textBodyBold16, color = colorActionPrimary)
+            }
+        }
+    }
     Dialog(
         onDismissRequest = { if (!busy) onCancel() },
         properties = DialogProperties(dismissOnBackPress = !busy, dismissOnClickOutside = false),
@@ -624,97 +705,52 @@ fun MiffConfirmDialog(
                     .clip(ShapeMd)
                     .background(colorBgSurface)
                     .border(StrokeAccent, colorBorderAction, ShapeMd)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l)
                     // Reading order for the screen reader: the question, then "Annuler" (the safe way out), then the action.
                     .semantics { isTraversalGroup = true },
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = title,
-                style = textTitleBold20,
-                color = colorTextPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() },
-            )
-            if (body != null) {
-                Text(text = body, style = textBodyRegular, color = colorTextDescription, textAlign = TextAlign.Center)
-            }
-            content?.invoke()
-            if (message != null) MiffNotice(text = actionMessageText(message))
-            if (extraLabel != null && onExtra != null) {
-                Column(
-                    modifier = Modifier.semantics { traversalIndex = ACTION_ORDER - 1f },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-                ) {
-                    MiffSecondaryButton(
-                        text = extraLabel,
-                        onClick = onExtra,
-                        enabled = !busy,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    if (extraHint != null) {
-                        Text(
-                            text = extraHint,
-                            style = textBodyCaption,
-                            color = colorTextDescription,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-            if (tone == DialogTone.DEFAULT) {
-                MiffButton(
-                    text = confirmLabel,
-                    onClick = onConfirm,
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth().semantics { traversalIndex = ACTION_ORDER },
-                )
-            } else {
-                OutlinedButton(
-                    onClick = onConfirm,
-                    enabled = !busy,
-                    shape = ShapeMd,
-                    border = BorderStroke(StrokeAccent, colorTextError),
-                    colors =
-                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                            containerColor = colorBgSurface,
-                            contentColor = colorTextError,
-                            disabledContentColor = colorTextError.copy(alpha = DISABLED_ALPHA),
+            Column(
+                modifier =
+                    Modifier
+                        .then(if (pinned) Modifier.weight(1f, fill = false) else Modifier)
+                        .verticalScroll(rememberScrollState())
+                        .padding(
+                            start = Spacing.m + Spacing.xs,
+                            end = Spacing.m + Spacing.xs,
+                            top = Spacing.l,
+                            bottom = if (pinned) Spacing.s else Spacing.l,
                         ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = title,
+                    style = textTitleBold20,
+                    color = colorTextPrimary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (body != null) {
+                    Text(
+                        text = body,
+                        style = textBodyRegular,
+                        color = colorTextDescription,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                content?.invoke()
+                if (!pinned) tail()
+            }
+            if (pinned) {
+                Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .heightIn(min = Spacing.minTouchTarget)
-                            .semantics { traversalIndex = ACTION_ORDER },
+                            .padding(horizontal = Spacing.m + Spacing.xs)
+                            .padding(bottom = Spacing.l),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(confirmLabel, style = textBodyBold16)
-                }
-            }
-            if (busy) {
-                val working = stringResource(R.string.miff_dialog_working_a11y)
-                CircularProgressIndicator(
-                    color = colorActionPrimary,
-                    modifier =
-                        Modifier.size(Spacing.l).semantics {
-                            contentDescription = working
-                            liveRegion = LiveRegionMode.Polite
-                        },
-                )
-            }
-            if (showCancel) {
-                TextButton(
-                    onClick = onCancel,
-                    enabled = !busy,
-                    modifier =
-                        Modifier
-                            .heightIn(
-                                min = Spacing.minTouchTarget,
-                            ).semantics { traversalIndex = CANCEL_ORDER },
-                ) {
-                    Text(cancelLabel, style = textBodyBold16, color = colorActionPrimary)
+                    tail()
                 }
             }
         }

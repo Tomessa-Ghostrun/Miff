@@ -32,6 +32,7 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | `settings_` | Réglages : liste, Mes informations, Mon compte, Langue, Confidentialité (ONB-3a, ONB-3b) | Android et iOS |
 | `miff_` | Créer, rejoindre, gérer une Miff, membres, code secret | Android et iOS |
 | `place_` | Lieux de confiance | Android et iOS |
+| `permission_` | Écrans d'autorisation du système (notifications, localisation « Toujours ») et leur divulgation (LOC-2a) | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |
 | `home_` | Écran d'accueil | Android et iOS |
 | `diag_` | Écran de diagnostic interne (builds debug / TestFlight, jamais en release) | Android et iOS |

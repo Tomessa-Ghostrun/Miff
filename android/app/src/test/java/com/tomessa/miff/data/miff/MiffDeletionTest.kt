@@ -69,7 +69,7 @@ class MiffDeletionTest {
             world()
             assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
             // two removals of 6, places 5 + 2, then the last lot of 7
-            assertEquals(listOf(6, 6, 5, 2, 7), lotSizes)
+            assertEquals(listOf(7, 7, 5, 2, 8), lotSizes)
             val removed = store.commitsAsLots.take(2).map { it.first().path }
             assertEquals(listOf("miffs/$MIFF_ID/members/uid-a", "miffs/$MIFF_ID/members/uid-b"), removed)
             val last = store.commitsAsLots.last()
@@ -84,7 +84,7 @@ class MiffDeletionTest {
         runTest {
             world()
             deletion().run(uid, MIFF_ID)
-            val renewed = store.commitsAsLots.take(2).map { lot -> lot[3].data["joinCode"] as String }
+            val renewed = store.commitsAsLots.take(2).map { lot -> lot[4].data["joinCode"] as String }
             assertEquals(2, renewed.toSet().size)
             val last = store.commitsAsLots.last()
             assertEquals("joinCodes/${renewed.last()}", last.first { it.path.startsWith("joinCodes/") }.path)
@@ -95,7 +95,7 @@ class MiffDeletionTest {
         runTest {
             world(others = emptyList(), places = emptyList())
             assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
-            assertEquals(listOf(7), lotSizes)
+            assertEquals(listOf(8), lotSizes)
         }
 
     @Test
@@ -168,12 +168,10 @@ class MiffDeletionTest {
             world()
             store.miffs[MIFF_ID] = firestoreError(Code.PERMISSION_DENIED)
             assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            // The index goes with the last known location, if an older build left one (it may always be deleted by its author).
             assertEquals(
-                "users/$uid/memberships/free",
-                store.commitsAsLots
-                    .single()
-                    .single()
-                    .path,
+                listOf("miffs/$MIFF_ID/positions/$uid", "users/$uid/memberships/free"),
+                store.commitsAsLots.single().map { it.path },
             )
         }
 
@@ -257,7 +255,7 @@ class MiffDeletionTest {
             store.memberships = emptyList()
             assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
             val last = store.commitsAsLots.single()
-            assertEquals(5, last.size)
+            assertEquals(6, last.size)
             assertFalse(last.any { it.path.startsWith("joinCodes/") || it.path.startsWith("users/") })
         }
 
@@ -282,7 +280,7 @@ class MiffDeletionTest {
         runTest {
             world()
             deletion().run(uid, MIFF_ID)
-            val used = store.commitsAsLots.take(2).map { it[3].data["joinCode"] as String }
+            val used = store.commitsAsLots.take(2).map { it[4].data["joinCode"] as String }
             assertNotEquals(used[0], used[1])
             assertTrue(used.all { it.length == 12 })
         }

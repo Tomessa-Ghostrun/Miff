@@ -18,6 +18,8 @@ import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
+import com.tomessa.miff.data.miff.ConsentRenewals
+import com.tomessa.miff.data.miff.FirestoreConsentRenewals
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
 import com.tomessa.miff.data.miff.FirestoreMiffStore
@@ -32,6 +34,10 @@ import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
+import com.tomessa.miff.data.permission.AndroidDevicePermissions
+import com.tomessa.miff.data.permission.DevicePermissions
+import com.tomessa.miff.data.permission.NotificationAskStore
+import com.tomessa.miff.data.permission.SharedPreferencesNotificationAskStore
 import com.tomessa.miff.data.place.CachedAddressSearch
 import com.tomessa.miff.data.place.FallbackAddressSearch
 import com.tomessa.miff.data.place.FirestorePlaceRepository
@@ -193,6 +199,16 @@ class AppContainer(
             },
         )
     }
+
+    /**
+     * LOC-2a: what the phone says about the permissions of Miff (state only, never a position), the flag "notification screen already shown",
+     * and the renewal of the consent of the members who share under an older text.
+     */
+    val devicePermissions: DevicePermissions by lazy { AndroidDevicePermissions(context) }
+
+    val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
+
+    val consentRenewals: ConsentRenewals by lazy { FirestoreConsentRenewals(miffStore) }
 
     /**
      * The pause after 5 wrong codes lives as long as the process, not as long as the screen: leaving and coming back does not
