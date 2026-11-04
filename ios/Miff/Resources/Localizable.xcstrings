@@ -9734,6 +9734,346 @@
           }
         }
       }
+    },
+    "miff_waiting_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for your agreement"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente de ton accord"
+          }
+        }
+      }
+    },
+    "miff_waiting_feed_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is shared with \"%1$@\" until you agree."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'est partagé avec « %1$@ » tant que tu n'as pas donné ton accord."
+          }
+        }
+      }
+    },
+    "miff_waiting_feed_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll see your loved ones' statuses here again once you've agreed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu verras de nouveau les statuts de tes proches ici dès que tu auras donné ton accord."
+          }
+        }
+      }
+    },
+    "miff_waiting_miff_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is shared with this Miff until you agree. You can also leave it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'est partagé avec cette Miff tant que tu n'as pas donné ton accord. Tu peux aussi la quitter."
+          }
+        }
+      }
+    },
+    "miff_waiting_miff_body_owner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is shared with this Miff until you agree."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'est partagé avec cette Miff tant que tu n'as pas donné ton accord."
+          }
+        }
+      }
+    },
+    "miff_waiting_review": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review and agree"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoir et accepter"
+          }
+        }
+      }
+    },
+    "miff_sharing_waiting_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for your agreement: nothing is shared for now."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente de ton accord : rien n'est partagé pour l'instant."
+          }
+        }
+      }
+    },
+    "miff_sharing_waiting_state": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "waiting for your agreement"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en attente de ton accord"
+          }
+        }
+      }
+    },
+    "settings_privacy_location_status_ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always allowed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toujours autorisée"
+          }
+        }
+      }
+    },
+    "settings_privacy_location_status_todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To complete in the phone settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À compléter dans les réglages du téléphone"
+          }
+        }
+      }
+    },
+    "settings_privacy_miff_waiting_pill": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente"
+          }
+        }
+      }
+    },
+    "settings_privacy_miff_waiting_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your agreement is waiting: nothing is shared with this Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton accord est en attente : rien n'est partagé avec cette Miff."
+          }
+        }
+      }
+    },
+    "settings_privacy_detection_help_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If detections are slow"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si les détections tardent"
+          }
+        }
+      }
+    },
+    "settings_detection_help_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If arrivals and departures are slow"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si les arrivées et départs tardent"
+          }
+        }
+      }
+    },
+    "settings_detection_help_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certains téléphones (Oppo, Xiaomi, Samsung, Huawei...) arrêtent les applications en arrière-plan pour économiser la batterie. Miff peut alors repérer une arrivée ou un départ avec du retard. Ces réglages sont facultatifs : ils peuvent aider, et Miff fonctionne sans."
+          }
+        }
+      }
+    },
+    "settings_detection_help_step_battery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. In the Miff settings, open \"Battery\" (or \"Power consumption\") and choose \"No restrictions\" (or \"Don't optimize\")."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Dans les réglages de Miff, ouvre « Batterie » (ou « Consommation d'énergie ») et choisis « Aucune restriction » (ou « Ne pas optimiser »)."
+          }
+        }
+      }
+    },
+    "settings_detection_help_step_background": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Allow background activity for Miff if the phone offers it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Autorise l'activité en arrière-plan de Miff si le téléphone le propose."
+          }
+        }
+      }
+    },
+    "settings_detection_help_step_autostart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. On Oppo, OnePlus or Realme (ColorOS): also allow Miff to \"auto-start\", and do not close it by swiping it away in the list of recent apps."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Sur Oppo, OnePlus ou Realme (ColorOS) : autorise aussi le « démarrage automatique » de Miff, et ne la ferme pas en la balayant dans la liste des applications récentes."
+          }
+        }
+      }
+    },
+    "settings_detection_help_step_saver": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. If you can, avoid keeping battery saver on all the time, especially while you are on the move."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. Si possible, évite l'économiseur de batterie en continu, surtout pendant tes déplacements."
+          }
+        }
+      }
+    },
+    "settings_detection_help_outro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The exact names of the settings change with the phone and the Android version."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les noms exacts des réglages changent selon le téléphone et la version d'Android."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
