@@ -21,7 +21,7 @@ rules_version = '2';
 //     partagent eux-mêmes ET ont publié leur propre statut (réciprocité), tant que
 //     la Miff existe. Révoquer = supprimer ces données.
 //  5. Limites freemium appliquées par des "slots" à identifiant fixe (voir
-//     data-model.md §6) : 1 Miff et 1 lieu en gratuit, sans Cloud Function.
+//     data-model.md §6) : 1 Miff et 2 lieux (p1, p2) en gratuit, sans Cloud Function.
 //  6. Téléphone (ONB-B) : donnée de contact obligatoire, sans vérification ni unicité. Il n'est visible de quelqu'un d'autre
 //     que par la copie dans la fiche de membre (lisible des seuls membres de la Miff, sans condition de partage : décision
 //     N1 du PM) ; la copie est contrainte à être celle du profil users/{uid} après le lot. Une fuite du code d'une Miff est
@@ -402,11 +402,19 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/miffs/$(d.miffId)).data.name == d.miffName;
     }
 
+    // Catégorie du lieu (R-LIEU-2, décision du PM du 2026-11-01) : OBLIGATOIRE, liste fermée. Valeurs techniques (anglais,
+    // stables) ; les libellés FR/EN sont côté client : home = Maison, work = Travail, school = École, sport = Sport,
+    // relative = Chez un proche, leisure = Loisir, other = Autre.
+    function isPlaceCategory(v) {
+      return v in ['home', 'work', 'school', 'sport', 'relative', 'leisure', 'other'];
+    }
+
     function validPlaceShape(d) {
-      return d.keys().hasOnly(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
-        && d.keys().hasAll(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
         && isStr(d.name, 1, 60)
         && d.type in ['trusted', 'risk']
+        && isPlaceCategory(d.category)
         && isNullOrStr(d.address, 200)
         && d.lat is number && d.lat >= -90 && d.lat <= 90
         && d.lng is number && d.lng >= -180 && d.lng <= 180
@@ -414,9 +422,18 @@ service cloud.firestore {
         && (d.priority == null || (d.priority is int && d.priority >= 0 && d.priority <= 999));
     }
 
-    // Limite freemium "1 lieu" : en gratuit, SEUL l'identifiant 'p1' et le type
-    // 'trusted' sont acceptés (un second create sur 'p1' est un update => refusé
-    // pour les champs verrouillés). Premium : identifiants libres + zones à risque.
+    // Premium en UNE seule lecture de règles (budget des lots multi-Miffs : data-model.md §12), contre 3 appels pour
+    // isPremium. Différence : sans document entitlements/{uid}, get() échoue et la requête est refusée, ce qui est bien le
+    // résultat voulu (pas de premium). À n'utiliser que dans une conjonction ou une disjonction POSITIVE, jamais derrière « ! ».
+    function isPremiumOneRead(uid) {
+      let e = get(/databases/$(database)/documents/entitlements/$(uid)).data;
+      return e.active == true && e.expiresAt > request.time;
+    }
+
+    // Limite freemium "2 lieux" (R-LIEU-5, décision du PM du 2026-11-01) : en gratuit, SEULS les identifiants 'p1' et 'p2' et
+    // le type 'trusted' sont acceptés (recréer un identifiant existant est une mise à jour, soumise à validPlaceUpdate).
+    // Premium : identifiants libres et zones à risque. Un lieu rattaché à plusieurs Miffs = UN document par Miff avec le MÊME
+    // identifiant (généré une fois par le client) : chaque document est évalué séparément, aucune règle ne compare les copies.
     function validPlaceCreate(placeId) {
       let d = request.resource.data;
       return placeId.matches('^[A-Za-z0-9]{1,20}$')
@@ -425,18 +442,21 @@ service cloud.firestore {
         && d.createdAt == request.time
         && d.updatedAt == request.time
         && (
-          (placeId == 'p1' && d.type == 'trusted')
-          || isPremium(request.auth.uid)
+          (placeId in ['p1', 'p2'] && d.type == 'trusted')
+          || isPremiumOneRead(request.auth.uid)
         );
     }
 
-    // type, createdBy, createdAt immuables (une zone de confiance ne devient pas
-    // une zone à risque, et inversement, sans repasser par la création).
+    // Modifiables : nom, type (R-LIEU-6), catégorie, adresse, coordonnées, rayon, priorité. createdBy et createdAt restent
+    // immuables. Le type change dans les deux sens, mais passer à 'risk' (zone de danger) exige le premium, comme à la
+    // création : sinon un compte gratuit contournerait la réserve premium en créant « confiance » puis en modifiant.
+    // Repasser à 'trusted' est toujours permis. Un lieu ne change jamais de Miff (le chemin du document est son identité).
     function validPlaceUpdate() {
       let d = request.resource.data;
-      return affected().hasOnly(['name', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])
+      return affected().hasOnly(['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])
         && validPlaceShape(d)
-        && d.updatedAt == request.time;
+        && d.updatedAt == request.time
+        && (!affected().hasAny(['type']) || d.type == 'trusted' || isPremiumOneRead(request.auth.uid));
     }
 
     // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :

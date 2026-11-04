@@ -84,6 +84,7 @@ export const statusDoc = (over = {}) => ({
 export const placeSeed = (over = {}) => ({
   name: 'Maison',
   type: 'trusted',
+  category: 'home',
   address: null,
   lat: 48.8566,
   lng: 2.3522,
@@ -99,6 +100,7 @@ export const placeSeed = (over = {}) => ({
 export const placeInput = (uid, over = {}) => ({
   name: 'Ecole',
   type: 'trusted',
+  category: 'school',
   address: null,
   lat: 48.85,
   lng: 2.35,
