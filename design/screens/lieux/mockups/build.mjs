@@ -13,7 +13,8 @@ const outPng = resolve(here, "../../../exports/lieux/claude");
 const { screens: form } = await import("./screens-form.mjs");
 const { screens: perm } = await import("./screens-perm.mjs");
 const { screens: misc } = await import("./screens-misc.mjs");
-const all = [...form, ...perm, ...misc];
+const { screens: consent } = await import("./screens-consent.mjs");
+const all = [...form, ...perm, ...misc, ...consent];
 
 for (const s of all) writeFileSync(join(here, s.file + ".html"), s.html(), "utf8");
 console.log(`${all.length} HTML écrits dans ${here}`);
