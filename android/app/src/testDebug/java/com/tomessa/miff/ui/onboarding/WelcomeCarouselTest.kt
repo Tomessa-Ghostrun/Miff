@@ -134,7 +134,7 @@ class WelcomeCarouselTest {
         assertTexts(
             "Thomas est bien arrivé à l’école",
             "Il y a 2 min.",
-            "Amandine n’est toujours pas rentré à la maison",
+            "Amandine n’est toujours pas rentrée à la maison",
             "Il y a 2 h.",
             "Maman vient de quitter le travail",
             "À l’instant",

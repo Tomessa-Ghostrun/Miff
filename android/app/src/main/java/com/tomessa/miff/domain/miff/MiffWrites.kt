@@ -8,6 +8,12 @@ import com.tomessa.miff.domain.auth.ProfileDocument
  * SECURITY, for this file: the writes below are the contract with backend/firestore.rules. Every key of a document is always
  * written (the rules refuse a missing key and an unknown one); the dates are the server's (the rules refuse a date of the
  * phone); no coordinate, no address, no place name is ever written by a Miff screen (ticket Miff criterion V1).
+ *
+ * LOC-2a, the contract of the rules for the LAST KNOWN LOCATION (backend/firestore.rules, `positions/{uid}`; data-model.md section 8):
+ * as soon as a position exists, the rules REFUSE the stop of sharing, the departure, the removal and the final deletion unless the same
+ * lot deletes `miffs/{id}/positions/{uid}` too. This build writes no position (that is LOC-2b), but every one of these lots already carries
+ * the deletion (it is accepted when there is nothing to delete), so that a person is never locked in by this build once LOC-2b writes a
+ * position ("avant ou avec" the first build that writes one).
  */
 
 enum class WriteKind { SET, UPDATE, DELETE }
@@ -173,9 +179,10 @@ object MiffWrites {
     }
 
     /**
-     * Stop sharing (ticket K5): the card says "no" with the date, and the status and the photo are deleted in the same lot (the
-     * rules refuse the stop otherwise: no trace of a position survives a withdrawn consent). Only two sub-fields change, so
-     * the date and the version of the first consent stay as they were.
+     * Stop sharing (ticket K5): the card says "no" with the date, and the status, the photo and the last known location are deleted in
+     * the same lot (4 writes; the rules refuse the stop otherwise: no trace of a position survives a withdrawn consent). The rules read
+     * 3 documents for it, so 6 Miffs at most would fit in one lot (18 of the 20 allowed): the app writes one lot per Miff. Only two
+     * sub-fields change, so the date and the version of the consent stay as they were.
      */
     fun stopSharing(
         miffId: String,
@@ -189,11 +196,12 @@ object MiffWrites {
             ),
             DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
+            DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE),
         )
 
     /**
-     * Resume sharing (ticket K6): a new consent (date and the same [MiffSharingConsent.VERSION] as at the entry; the screen shows
-     * the same card, with its own opening sentence) and the first status again.
+     * Resume sharing (ticket K6): a new consent (date and the same [MiffSharingConsent.VERSION] as at the entry, so version 3 from
+     * LOC-2a on; the screen shows the same card, with its own opening sentence) and the first status again.
      */
     fun resumeSharing(
         miffId: String,
@@ -215,7 +223,26 @@ object MiffWrites {
         )
 
     /**
-     * "Quitter" lot (4 deletions): the card, the status, the photo and the index. Used to clean up after a loss of access
+     * Renewal of an ACTIVE consent under a newer text (rule R-LIEU-3, LOC-2a): the person already shares, nothing stops, nothing is
+     * deleted and no status is rewritten. ONE write per Miff, with the four keys of `sharing` exactly (the rules refuse a missing or an
+     * unknown key): enabled stays true, the date is the server's, the version is the new one (strictly greater than the old one, fixed
+     * width), revokedAt stays empty. The rules read no document for it (0 reads of rules), so one lot can hold every Miff of the person.
+     * The other fields of the card (names, photo, phone number, role) are not touched.
+     */
+    fun renewConsent(
+        miffId: String,
+        uid: String,
+    ): List<DocWrite> =
+        listOf(
+            DocWrite(
+                "miffs/$miffId/members/$uid",
+                WriteKind.UPDATE,
+                mapOf("sharing" to sharingOn()),
+            ),
+        )
+
+    /**
+     * "Quitter" lot (5 deletions): the card, the status, the photo, the last known location and the index. Used to clean up after a loss of access
      * (ticket 5.7) and by the "Quitter la Miff" button of a member (ticket Q1, MIFF-2). The index is left out only when it was not
      * found ([membershipKey] null): the rules refuse the deletion of an index that does not exist.
      */
@@ -229,16 +256,26 @@ object MiffWrites {
                 DocWrite("miffs/$miffId/members/$uid", WriteKind.DELETE),
                 DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE),
                 DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
+                DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE),
             )
         if (membershipKey != null) writes += DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE)
         return writes
     }
 
-    /** Fallback of the clean-up: the card is already gone (removed), only the index is left; the rules allow deleting it then. */
+    /**
+     * Fallback of the clean-up: the card is already gone (removed), only the index is left; the rules allow deleting it then. A last
+     * known location left behind (a removal by an older build) goes with it: its author may always delete it (data-model.md, order of
+     * delivery, point 4), and nobody else can once the person is no longer a member.
+     */
     fun dropIndex(
+        miffId: String,
         uid: String,
         membershipKey: String,
-    ): List<DocWrite> = listOf(DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE))
+    ): List<DocWrite> =
+        listOf(
+            DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE),
+            DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE),
+        )
 
     // --- MIFF-2: renew the code, remove a member, delete the Miff ----------------------------------------------------------
 
@@ -281,9 +318,10 @@ object MiffWrites {
     ): List<DocWrite> = codeChange(miffId, name, oldCode, newCode, oldCodeExists)
 
     /**
-     * Removing a member (ticket R2): 6 writes in ONE lot, in this order: the card, the status and the photo of the person, then
-     * the three writes of the new code. NOTHING else goes in this lot: with these six writes the rules read up to 18 documents
-     * out of the 20 Firestore allows (backend/rules-test-report.md, MIFF-2), and a seventh write could cross the line. The index
+     * Removing a member (ticket R2): 7 writes in ONE lot, in this order: the card, the status, the photo and the last known location of
+     * the person, then the three writes of the new code. NOTHING else goes in this lot: the rules read up to 18 documents out of the 20
+     * Firestore allows (backend/rules-test-report.md, MIFF-2; deleting a position costs no read of its own), and one more document
+     * to check could cross the line. The index
      * of the person is not touched (the creator cannot delete it; the person cleans it at their next start).
      */
     fun removeMember(
@@ -298,6 +336,7 @@ object MiffWrites {
             DocWrite("miffs/$miffId/members/$targetUid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/status/$targetUid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/photos/$targetUid", WriteKind.DELETE),
+            DocWrite("miffs/$miffId/positions/$targetUid", WriteKind.DELETE),
         ) + codeChange(miffId, name, oldCode, newCode, oldCodeExists)
 
     /** Places per lot when a Miff is deleted: each deletion costs the rules 2 reads of its own, so 5 stay far from the 20. */
@@ -313,8 +352,9 @@ object MiffWrites {
     }
 
     /**
-     * The last lot of the deletion of a Miff (ticket S2), up to 7 writes in ONE lot: the Miff, its tombstone `miffsDeleted/{id}`
-     * (the id can never be reused), the CURRENT code, and the creator's own status, photo, card and index. The rules refuse it
+     * The last lot of the deletion of a Miff (ticket S2), up to 8 writes in ONE lot (the contract of the rules counts 7: it leaves the photo
+     * out, which this app deletes too; neither costs a read of rules): the Miff, its tombstone `miffsDeleted/{id}` (the id can never be
+     * reused), the CURRENT code, and the creator's own status, photo, last known location, card and index. The rules refuse it
      * without the tombstone or without deleting the code. [membershipKey] is null when the index was not found; [codeExists] is
      * false when the code document is already gone (it is then left out: the rules refuse the deletion of a missing code).
      */
@@ -334,6 +374,7 @@ object MiffWrites {
         if (codeExists) writes += DocWrite("joinCodes/$code", WriteKind.DELETE)
         writes += DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE)
         writes += DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE)
+        writes += DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE)
         writes += DocWrite("miffs/$miffId/members/$uid", WriteKind.DELETE)
         if (membershipKey != null) writes += DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE)
         return writes

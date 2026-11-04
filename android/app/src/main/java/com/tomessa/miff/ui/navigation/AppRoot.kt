@@ -47,6 +47,7 @@ import com.tomessa.miff.ui.auth.SignUpViewModel
 import com.tomessa.miff.ui.main.MainShell
 import com.tomessa.miff.ui.miff.MiffOnboardingHost
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.permission.PermissionGate
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.ProfileFlow
 import com.tomessa.miff.ui.profile.ProfileViewModel
@@ -165,10 +166,13 @@ fun AppRoot(container: AppContainer) {
                 }
 
                 AppDestination.FEED -> {
-                    MainShell(
-                        container = container,
-                        tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
-                    )
+                    // LOC-2a: the notification screen, the renewal of the consent and the blocking location screen come BEFORE the Feed.
+                    PermissionGate(container) {
+                        MainShell(
+                            container = container,
+                            tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
+                        )
+                    }
                 }
             }
         }

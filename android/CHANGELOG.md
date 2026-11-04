@@ -2,7 +2,7 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.9.1] - 2026-11-04 : message clair quand la connexion Google échoue (retour de recette du PM)
+## [0.10.1] - 2026-11-04 : message clair quand la connexion Google échoue (retour de recette du PM)
 
 Retour de recette : « la connexion Google a échoué plusieurs fois de suite avant de marcher, et l'app n'a pas informé ». Avant : tous les échecs de la fenêtre Google donnaient le même message générique, affiché en bas du formulaire, loin du bouton Google (facile à ne pas voir), et ceux qu'Android signale comme une annulation restaient muets. Ticket `docs/tickets/authentification.md` (§7.3, §11 cas 3 et 4), `CLAUDE.md` (ton bienveillant, non anxiogène).
 
@@ -31,6 +31,41 @@ Retour de recette : « la connexion Google a échoué plusieurs fois de suite av
 ### Heuristique : annulation trop rapide (à confirmer sur l'OPPO)
 - Android remonte certains échecs Google (code 16, par exemple « Account reauth failed ») comme une **annulation**, ce qui expliquait probablement les échecs muets de la recette. Sans lire aucun message interne de Google, une annulation qui revient en **moins de 1,5 s** après l'ouverture de la fenêtre (constante `CredentialManagerGoogleSource.FAST_CANCELLATION_MS`, strictement inférieur) est traitée comme un échec temporaire ; plus lente, c'est une vraie fermeture et elle reste silencieuse. Horloge injectée dans les tests (juste avant : 1 499 ms, valeur du seuil : 1 500 ms).
 - **Limite** : seuil par défaut du produit, **à confirmer par le PM sur l'OPPO Find X5 Lite**. Trop haut, une fermeture très rapide de la fenêtre afficherait un message à tort ; trop bas, des échecs muets pourraient subsister. Un échec lent classé comme annulation resterait silencieux.
+## [0.10.0] - 2026-11-04 : LOC-2a, autorisations de localisation et de notifications, consentement version 3
+
+Première moitié de LOC-2 (ticket `docs/tickets/lieux-de-confiance.md` §6.5, §6.7, §7, §10, §11, §17 : AUT1 à AUT7, VIE1 à VIE4, POS5 à POS7 ; décisions du PM du 2026-11-01 et du 2026-11-04 ; texte `docs/legal/consentement-localisation-v3.md` et `docs/release/google-play-localisation-arriere-plan.md` de la PR #61 ; maquettes `design/exports/pop-ins/` et `design/exports/lieux/claude/` 11 à 13, 21, 22, 24). **Aucune position n'est lue ni écrite** (LOC-2b). Empilée sur la PR #56 (LOC-1). Recette : `docs/qa/checklists/loc-2a-android-recette-pm.md`.
+
+### Ajouté
+- **Écran des notifications** (pop-in du PM, tutoiement) : jamais bloquant, sauté si accordées, si Android < 13 ou déjà montré à ce compte ; ligne honnête sous les exemples (aucune notification n'est envoyée aujourd'hui, plan Spark).
+- **Écran « Toujours autoriser » BLOQUANT** (écrans 11, 12, 13) : divulgation exigée par Google Play sur l'écran avant le bouton, fenêtre du système, message rouge du ticket sous le bouton, Android 11+ : réglages de l'app puis relecture de l'état au retour ; ne se ferme que lorsque la localisation **précise et « tout le temps »** sont données (la position approximative seule ne suffit pas) ; réapparaît à chaque retour au premier plan si une autorisation a été retirée (AUT5).
+- **Interrupteur de compilation** `BuildConfig.LOCATION_BLOCKING` (`-Pmiff.locationBlocking=false` ; défaut : bloquant), testé dans les deux positions.
+- **Consentement version 3 `2026-11-v03`** (option A) : carte unique pour « Créer et partager », « Rejoindre et partager » et « Reprendre le partage » ; boutons épinglés sous le texte qui défile (écran 24).
+- **Re-consentement** (écrans 21, 22) pour les membres qui partagent avec un texte plus ancien : « J'accepte » = un seul lot (`members/{moi}.sharing`, règle R-LIEU-3, aucune lecture de règles) ; « Pas maintenant » n'écrit rien ; hors connexion et erreur calmes.
+- **Lots de suppression** : `positions/{uid}` supprimée dans l'arrêt du partage (4 écritures), « Quitter » (5), le retrait d'un membre (7), la suppression finale de la Miff (8 avec la photo) et le repli du nettoyage ; le suppression-de-Miff (`MiffDeletion`) purge donc les positions.
+- **Manifeste** : `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `POST_NOTIFICATIONS` ; les retraits `tools:node="remove"` de la localisation (LOC-1) sont supprimés, `ACCESS_WIFI_STATE` reste retirée. **CI** : l'étape de contrôle compare les permissions sensibles des manifestes fusionnés à cette liste exacte.
+- Code : `domain/permission/` (`PermissionGate`, `LocationFlow`, `PermissionModels`), `data/permission/`, `data/miff/ConsentRenewals.kt`, `ui/permission/`, `ui/miff/ConsentCards.kt`. Textes : clés `permission_*`, `miff_consent3_*`, `miff_renewal_*` (FR, EN, et catalogue iOS pour la parité ; préfixe `permission` ajouté au contrat de clés).
+- Tests : machine de la localisation, passerelle (ordre, interrupteur dans les deux positions), version de consentement, lots d'écriture contre le contrat des règles, renouvellement, view model de la passerelle, écrans (captures dans `build/screenshots/loc2a-*.png`), `PermissionPrivacyTest` (liste exacte des permissions, aucune lecture de position, aucun journal ni événement, divulgation, tutoiement).
+
+### Corrigé après la revue indépendante de la PR #64
+- **I1** : tant que le contrôle du re-consentement n'a pas répondu, l'écran « Toujours autoriser » n'est plus actif : état `CHECKING` (attente neutre, bornée à 8 s) distinct de `UNKNOWN` (contrôle terminé sans réponse) ; l'écran n'apparaît qu'à la fin du contrôle, y compris sur échec.
+- **I2 (décision du PM en attente, rien changé dans `GatePolicy`)** : « Pas maintenant » ouvre le **Feed sans autorisation de localisation** (avec `CONSENT_BEFORE_LOCATION = true`). LOC-2b en hérite : aucune détection ni écriture de position tant que le consentement v3 n'est pas accepté **et** que la localisation « Toujours » n'est pas accordée ; la décision à prendre avec le texte v3 (O1) est de savoir si l'app doit rester utilisable ainsi.
+- **3** : écran de re-consentement : note « Rien n'est enregistré tant que tu n'as pas accepté. Tu peux aussi quitter cette Miff. » et lien « Quitter la Miff » pour un membre dont l'unique Miff attend l'accord. **Écart** avec la maquette 21B : pas de « ou supprimer ton compte » (AUTH-5 n'existe pas), et le créateur n'a ni la note ni le lien (il supprime sa Miff depuis son écran).
+- **4** : le lot de renouvellement relit `sharing.enabled` **dans la transaction** (`MiffStore.commitWhereSharing`) et n'écrit rien pour une Miff où le partage a été arrêté entre-temps.
+- **5** : constante morte `GatePolicy.RENEWAL_EVERY_LAUNCH` retirée (le comportement « à chaque lancement » est la conséquence de « Pas maintenant » gardé en mémoire seulement).
+- **6** : un build de release refuse `-Pmiff.locationBlocking=false` sauf `-Pmiff.allowRelaxedLocationInRelease=true` en plus (garde Gradle sur `preReleaseBuild` et `preReleaseLikeBuild`, testée dans `PermissionPrivacyTest`).
+- **7** : le contrôle CI et `PermissionPrivacyTest` couvrent aussi `ACCESS_LOCATION_EXTRA_COMMANDS` (toute `ACCESS_*LOCATION*`), `NEARBY_*`, `ACTIVITY_RECOGNITION`, `LocationManagerCompat`, `LOCATION_SERVICE`, `LocationListener`.
+- **9** : l'écran des trois étapes (13) répète la divulgation complète et les trois lignes (c'est le premier écran vu quand la précise est déjà accordée).
+- **10** : « Amandine n'est toujours pas rentrée à la maison » (accord corrigé, Android et catalogue iOS) ; le bouton du dialogue « Reprendre le partage » est **épinglé** sous le texte qui défile.
+- **11 (prérequis inter-plateformes)** : iOS n'a **pas encore** la suppression de `positions/{uid}` dans ses lots (data-model, « ordre de livraison », I1) ; tant que iOS/LOC-2b ne l'embarquent pas, un créateur iOS ne pourrait plus retirer un membre Android ni supprimer sa Miff dès que ce membre a une position.
+
+### Modifié
+- `MiffSharingConsent.VERSION` : `2026-10-v2` devient `2026-11-v03` (largeur fixe). Les clés `miff_consent_*` et `miff_sharing_resume_body` ne sont plus utilisées par Android (conservées dans les catalogues tant qu'iOS n'a pas adopté la v3).
+- `MiffFrame` : paramètre `footer` (bouton épinglé). `MiffWrites.dropIndex` prend la Miff. `PlacePrivacyTest` ne contrôle plus que `ACCESS_WIFI_STATE`.
+- Réglages > Confidentialité : le texte de la localisation ne dit plus « on te demandera avant » (une autorisation est maintenant demandée) mais reste vrai (rien n'est lu ni enregistré) ; le bloc complet de la maquette 23 n'est **pas** construit.
+
+### Choix économiques et limites
+- **0 €** : aucun service ni bibliothèque de plus (aucune bibliothèque de localisation : elle viendra avec LOC-2b). Le re-consentement coûte une lecture de l'index et une lecture de fiche par Miff et par lancement (une Miff en gratuit) ; la mise à jour est un seul lot. Signal de bascule : aucun à ce volume.
+- **Limite connue** : la version du consentement est **déclarée par l'app** ; aucune règle ne prouve quel texte a été affiché (la protection est la constante partagée, la revue et la QA).
 
 ## [0.9.0] - 2026-11-01 : LOC-1, lieux de confiance (formulaire, adresses, carte, liste, détail, modification, suppression)
 
