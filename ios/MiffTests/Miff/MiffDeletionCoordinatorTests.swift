@@ -14,7 +14,7 @@ final class MiffDeletionCoordinatorTests: XCTestCase {
     private let started = TestBox<[String]>([])
     private let deleted = TestBox<[String]>([])
 
-    private func coordinator() -> MiffDeletionCoordinator {
+    private func coordinator(using custom: MiffDeleter? = nil) -> MiffDeletionCoordinator {
         let account = uid
         let startedLog = started
         let deletedLog = deleted
@@ -23,7 +23,7 @@ final class MiffDeletionCoordinatorTests: XCTestCase {
             onDeleted: { deletedLog.value.append($0) }
         )
         let made = MiffDeletionCoordinator(
-            deletion: deleter,
+            deletion: custom ?? deleter,
             pending: pending,
             network: network,
             currentUid: { account.value },
@@ -235,5 +235,50 @@ final class MiffDeletionCoordinatorTests: XCTestCase {
         XCTAssertTrue(states.value.isEmpty)
         XCTAssertEqual(deleter.runs.count, 1, "rien ne reprend pour la personne qui est partie")
         XCTAssertEqual(pending.ids(uid: "uid-owner"), [testMiffId], "la suppression reprendra avec ce compte")
+    }
+
+    func testTheEndOfASessionWaitsForTheStepInFlightAndNothingIsSaidAfterIt() async {
+        let gated = GatedDeleter()
+        let coordinator = coordinator(using: gated)
+        _ = coordinator.start(miffId: testMiffId)
+        await waitUntil { gated.gate.arrivals == 1 }
+
+        let stopping = Task {
+            await coordinator.stop()
+        }
+        try? await Task.sleep(nanoseconds: 30_000_000)
+        XCTAssertEqual(gated.finished, 0, "stop() attend la fin de l'étape en cours avant de rendre la main")
+        gated.gate.open()
+        await stopping.value
+
+        XCTAssertEqual(gated.finished, 1)
+        XCTAssertTrue(deleted.value.isEmpty, "une suppression annulée n'annonce rien à la session suivante")
+        XCTAssertEqual(pending.ids(uid: "uid-owner"), [testMiffId], "le marqueur reste pour le même compte")
+    }
+
+    func testTheSameAccountCanStartAgainAfterAStopWithoutADoubleRun() async {
+        deleter.append(.paused(.offline))
+        deleter.append(.paused(.offline))
+        network.online = false
+        let coordinator = coordinator()
+        _ = coordinator.start(miffId: testMiffId)
+        await waitUntil { self.deleter.runs.count == 1 }
+        await coordinator.stop()
+
+        _ = coordinator.start(miffId: testMiffId)
+        await waitUntil { self.deleter.runs.count == 2 }
+        _ = coordinator.start(miffId: testMiffId)
+        try? await Task.sleep(nanoseconds: 30_000_000)
+
+        XCTAssertEqual(deleter.runs.count, 2, "le lancement annulé n'a pas effacé l'entrée du nouveau")
+    }
+
+    func testAnIdentifierThatIsNotAMiffIdentifierIsNeverWrittenToTheDisk() {
+        let coordinator = coordinator()
+
+        XCTAssertNil(coordinator.start(miffId: "../x"))
+
+        XCTAssertTrue(pending.all().isEmpty)
+        XCTAssertTrue(started.value.isEmpty)
     }
 }

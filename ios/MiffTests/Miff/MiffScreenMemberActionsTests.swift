@@ -34,6 +34,18 @@ final class MiffScreenMemberActionsTests: MiffScreenTestCase {
         XCTAssertTrue(repo.removed.isEmpty)
     }
 
+    func testRemoveForAPersonWithNoVisibleNameUsesANeutralPhrase() async {
+        let blank = MiffMember(
+            uid: "uid-2", firstName: " ", lastName: " ", avatarJpeg: nil, role: .member, sharingEnabled: true
+        )
+        let viewModel = await readyScreen(members: [testMember("uid-owner", role: .owner), blank])
+
+        viewModel.onRemoveRequested(uid: "uid-2")
+
+        XCTAssertEqual(viewModel.state.action, .remove(uid: "uid-2", firstName: L10n.string("ios_member_unnamed")))
+        XCTAssertFalse(L10n.string("ios_member_unnamed").isEmpty)
+    }
+
     func testRemoveConfirmWritesOnceAndShowsTheNewCodeOnlyAfterTheServer() async {
         let viewModel = await readyWithThree()
         viewModel.onRemoveRequested(uid: "uid-2")

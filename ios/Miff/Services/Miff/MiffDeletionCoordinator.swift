@@ -32,7 +32,9 @@ final class MiffDeletionCoordinator: DeletionController {
     private let hooks: DeletionHooks
 
     private var states: [String: DeletionState] = [:]
-    private var running = Set<String>()
+    /// Les suppressions en cours, chacune avec le jeton de SON lancement : un lancement annulé ne retire jamais l'entrée d'un
+    /// relancement du même compte.
+    private var running: [String: UUID] = [:]
     private var jobs: [Task<Void, Never>] = []
     private let stateBroadcast = Broadcaster<[String: DeletionState]>(replay: true, initial: [:])
     private let noticeBroadcast = Broadcaster<DeletionNotice>(replay: false)
@@ -64,7 +66,8 @@ final class MiffDeletionCoordinator: DeletionController {
     }
 
     func start(miffId: String) -> DeletionState? {
-        guard let uid = currentUid() else {
+        // Un identifiant qui n'a pas la forme d'un identifiant de Miff n'est jamais écrit sur le disque.
+        guard MiffId.isValid(miffId), let uid = currentUid() else {
             return nil
         }
         // Le marqueur est sur le disque AVANT la première écriture (une app tuée aussitôt reprend quand même).
@@ -87,7 +90,8 @@ final class MiffDeletionCoordinator: DeletionController {
         guard let uid = currentUid() else {
             return []
         }
-        let launched = pending.ids(uid: uid).sorted().filter { launch(uid: uid, miffId: $0, resumed: true) }
+        let ids = pending.ids(uid: uid).sorted().filter { MiffId.isValid($0) }
+        let launched = ids.filter { launch(uid: uid, miffId: $0, resumed: true) }
         if !launched.isEmpty {
             noticeBroadcast.send(.resumed)
         }
@@ -96,12 +100,19 @@ final class MiffDeletionCoordinator: DeletionController {
 
     /// Fin de session : plus rien ne tourne pour la personne qui s'en va, et la suivante ne retrouve pas ses états. Le marqueur
     /// reste : la suppression reprendra quand le même compte reviendra.
+    ///
+    /// On ATTEND la fin de chaque suppression annulée (l'appel du serveur en cours se termine en 20 s au plus) avant de rendre la
+    /// main : la déconnexion purge ensuite le cache, et plus rien ne doit le repeupler après cela.
     func stop() async {
-        for job in jobs {
-            job.cancel()
-        }
+        let stopping = jobs
         jobs.removeAll()
         running.removeAll()
+        for job in stopping {
+            job.cancel()
+        }
+        for job in stopping {
+            await job.value
+        }
         states.removeAll()
         stateBroadcast.send(states)
     }
@@ -109,30 +120,37 @@ final class MiffDeletionCoordinator: DeletionController {
     // MARK: - La suppression
 
     private func launch(uid: String, miffId: String, resumed: Bool) -> Bool {
-        guard !running.contains(miffId) else {
+        guard running[miffId] == nil else {
             return false
         }
-        running.insert(miffId)
+        let token = UUID()
+        running[miffId] = token
         hooks.onStarted(miffId)
         set(miffId, .running(resumed: resumed))
         let job = Task {
-            await self.drive(uid: uid, miffId: miffId, resumed: resumed)
+            await self.drive(uid: uid, miffId: miffId, resumed: resumed, token: token)
         }
         jobs.append(job)
         return true
     }
 
-    private func drive(uid: String, miffId: String, resumed: Bool) async {
+    private func drive(uid: String, miffId: String, resumed: Bool, token: UUID) async {
         defer {
-            running.remove(miffId)
+            if running[miffId] == token {
+                running[miffId] = nil
+            }
         }
         var otherFailures = 0
         var pause = retryPauseNanos
         while !Task.isCancelled, currentUid() == uid {
             set(miffId, .running(resumed: resumed))
-            let token = background.begin()
+            let backgroundToken = background.begin()
             let result = await deletion.run(uid: uid, miffId: miffId)
-            background.end(token)
+            background.end(backgroundToken)
+            // Annulée (fin de session) : ni état, ni annonce, ni purge pour une session qui n'existe plus.
+            if Task.isCancelled {
+                return
+            }
             switch result {
             case .deleted:
                 await finish(uid: uid, miffId: miffId)

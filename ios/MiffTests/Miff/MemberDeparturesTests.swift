@@ -60,5 +60,9 @@ final class MemberDeparturesTests: XCTestCase {
 
         XCTAssertEqual(normal.callName, "Camille")
         XCTAssertEqual(noFirstName.callName, "Durand")
+        let blank = MiffMember(
+            uid: "c", firstName: " ", lastName: "  ", avatarJpeg: nil, role: .member, sharingEnabled: true
+        )
+        XCTAssertEqual(blank.callName, "", "la question utilise alors une formule neutre")
     }
 }

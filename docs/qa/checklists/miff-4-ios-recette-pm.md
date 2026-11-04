@@ -84,6 +84,7 @@ Remettez B dans la Miff. (Idéal : un troisième compte C aussi, pour voir « pl
 - [ ] **Quitter l'écran pendant la suppression** : refaites avec une nouvelle Miff, et touchez **Fermer** (ou glissez la feuille vers le bas) pendant « On finalise la suppression… » : vous quittez l'écran **sans arrêter** la suppression ; une banderole « La Miff a été supprimée. » apparaît en haut de l'accueil à la fin, puis s'efface.
 - [ ] **Coupure du réseau pendant la suppression** (une Miff avec 2 proches, mode avion juste après avoir touché « Supprimer la Miff ») : la feuille dit « Pas de connexion pour le moment. On continue dès que le réseau est revenu. » **Désactivez le mode avion** : la suppression **reprend toute seule** et se termine.
 - [ ] **App tuée pendant la suppression** (le plus important) : refaites avec une Miff de 2 proches, et **fermez l'app** (remontez le doigt depuis le bas, puis balayez la vignette de l'app) dès que « On finalise la suppression… » apparaît. **Rouvrez l'app** : une banderole « On reprend la suppression de ta Miff… » apparaît en haut de l'accueil et la Miff **finit par disparaître** (B et C reçoivent le message d'accès perdu). Notez si la suppression a avancé pendant les quelques secondes où l'app était en arrière-plan (comportement d'iOS, pas un défaut).
+- [ ] **Suppression durablement « arrêtée »** (voulu, à connaître) : si une suppression reste bloquée (la feuille propose « Réessayer »), elle est relancée à **chaque lancement** de l'app, avec la banderole « On reprend la suppression de ta Miff… », jusqu'à ce qu'elle aboutisse. Pas un défaut.
 - [ ] **Mode avion avant de toucher « Supprimer la Miff »** : message calme, rien n'est lancé ; au retour du réseau, **rien ne se supprime tout seul**.
 
 ## Partie G — Cas à deux téléphones (facultatif, 5 min, si vous avez deux appareils)
@@ -96,6 +97,7 @@ Remettez B dans la Miff. (Idéal : un troisième compte C aussi, pour voir « pl
 
 - [ ] Ouvrez l'écran d'une Miff (code et noms visibles), puis remontez le doigt depuis le bas pour voir le sélecteur d'applications : la vignette de Miff est **recouverte** (fond de l'app et mot « Miff »), sans code ni noms. Revenez dans l'app : tout est de nouveau visible.
 - [ ] Même contrôle avec **la feuille « *{Prénom}* ne fait plus partie de la Miff »** ouverte (elle montre le **nouveau code**) : la vignette ne montre pas le code.
+- [ ] **Feuille de partage du système ouverte depuis le nouveau code** (touchez « Partager le code » dans cette feuille, sans choisir de destinataire), puis remontez le doigt depuis le bas : la vignette du sélecteur d'applications **ne montre pas le code** (ni dans la feuille de partage, ni derrière). Même contrôle avec la feuille de partage de « Prévenir mes proches » (le message n'a pas de code).
 
 ## Partie I — Ton et lecture à voix haute (4 min)
 

@@ -98,3 +98,17 @@ final class CountingBackground: BackgroundExecution {
         ended += 1
     }
 }
+
+/// Une procédure de suppression qui reste suspendue devant une porte que le test ouvre (une étape « en vol »), et rend
+/// « supprimée » même quand on l'a annulée : le coordinateur ne doit alors rien en faire.
+@MainActor
+final class GatedDeleter: MiffDeleter {
+    let gate = TestGate()
+    private(set) var finished = 0
+
+    func run(uid: String, miffId: String) async -> MiffDeletionResult {
+        await gate.wait()
+        finished += 1
+        return .deleted
+    }
+}

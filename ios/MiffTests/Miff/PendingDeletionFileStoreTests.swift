@@ -86,4 +86,20 @@ final class PendingDeletionFileStoreTests: XCTestCase {
 
         XCTAssertTrue(PendingDeletionFileStore(directory: directory).ids(uid: "uid-1").isEmpty)
     }
+
+    func testAFolderThatCannotBeWrittenLeavesNoMarkerAndNeverCrashes() throws {
+        // Le dossier voulu est « sous » un fichier ordinaire : il ne peut pas être créé. Comportement documenté : le marqueur
+        // est un filet, la suppression tourne quand même, sans reprise automatique au prochain lancement.
+        let name = "not-a-folder-\(UUID().uuidString)"
+        let file = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(name)
+        try Data("x".utf8).write(to: file)
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: file)
+        }
+        let store = PendingDeletionFileStore(directory: file.appendingPathComponent("sub", isDirectory: true))
+
+        store.add(uid: "uid-1", miffId: testMiffId)
+
+        XCTAssertTrue(store.ids(uid: "uid-1").isEmpty)
+    }
 }

@@ -2484,6 +2484,23 @@
         }
       }
     },
+    "ios_member_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this loved one"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ce proche"
+          }
+        }
+      }
+    },
     "ios_miff_ready_hint": {
       "extractionState": "manual",
       "localizations": {

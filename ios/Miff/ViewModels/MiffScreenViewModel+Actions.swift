@@ -17,8 +17,10 @@ extension MiffScreenViewModel {
               member.uid != current.myUid, member.role != .owner else {
             return
         }
+        // Prénom et nom sans rien de visible : jamais « Retirer  de la Miff ? », une formule neutre à la place.
+        let name = member.callName.isEmpty ? L10n.string("ios_member_unnamed") : member.callName
         update {
-            $0.action = .remove(uid: member.uid, firstName: member.callName)
+            $0.action = .remove(uid: member.uid, firstName: name)
             $0.message = nil
         }
     }

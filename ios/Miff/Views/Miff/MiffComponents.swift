@@ -144,8 +144,22 @@ struct MiffNotice: View {
                     .stroke((isError ? colorTextError : colorBorderStrong).color, lineWidth: strokeHairline)
             )
             .onAppear {
-                Announcer.announce(text)
+                MiffNoticeAnnouncements.announceOnce(text)
             }
+    }
+}
+
+/// Une même phrase calme n'est pas ré-annoncée par VoiceOver chaque fois que le bandeau réapparaît (défilement, retour à
+/// l'écran) : seulement si elle est nouvelle, ou si la dernière annonce date de plus de 10 secondes.
+enum MiffNoticeAnnouncements {
+    private static var last: (text: String, date: Date)?
+
+    static func announceOnce(_ text: String, now: Date = Date()) {
+        if let last, last.text == text, now.timeIntervalSince(last.date) < 10 {
+            return
+        }
+        last = (text, now)
+        Announcer.announce(text)
     }
 }
 

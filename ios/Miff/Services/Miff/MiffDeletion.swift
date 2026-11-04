@@ -29,7 +29,7 @@ final class MiffDeletion: MiffDeleter {
     }
 
     func run(uid: String, miffId: String) async -> MiffDeletionResult {
-        guard MiffId.isValid(miffId) else {
+        guard MiffId.isValid(miffId), !Task.isCancelled else {
             return .paused(.unknown)
         }
         // La Miff, auprès du SERVEUR. Refusée ou absente (et le serveur joignable) = elle a déjà disparu.
@@ -45,11 +45,19 @@ final class MiffDeletion: MiffDeleter {
         if details.ownerUid != uid {
             return .notOwner
         }
+        // Une session qui se termine annule la tâche : plus aucune étape ne part (une lecture auprès du serveur après la purge
+        // du cache le repeuplerait de numéros de téléphone). Chaque étape et chaque tour de boucle le vérifient.
         if let stopped = await removeOtherMembers(uid: uid, miffId: miffId) {
             return stopped
         }
+        guard !Task.isCancelled else {
+            return .paused(.unknown)
+        }
         if let stopped = await deletePlaces(miffId: miffId) {
             return stopped
+        }
+        guard !Task.isCancelled else {
+            return .paused(.unknown)
         }
         return await deleteMiff(uid: uid, miffId: miffId)
     }
@@ -79,6 +87,9 @@ final class MiffDeletion: MiffDeleter {
     /// reste personne.
     private func removeOtherMembers(uid: String, miffId: String) async -> MiffDeletionResult? {
         for _ in 0..<Self.maxMemberPasses {
+            guard !Task.isCancelled else {
+                return .paused(.unknown)
+            }
             switch await readOthers(uid: uid, miffId: miffId) {
             case .nobody:
                 return nil
@@ -86,6 +97,9 @@ final class MiffDeletion: MiffDeleter {
                 return .paused(failure)
             case .people(let others):
                 for target in others {
+                    guard !Task.isCancelled else {
+                        return .paused(.unknown)
+                    }
                     if case .failed(let failure) = await repository.removeMember(miffId: miffId, targetUid: target) {
                         return .paused(failure)
                     }
@@ -117,6 +131,9 @@ final class MiffDeletion: MiffDeleter {
         }
         var start = 0
         while start < places.count {
+            guard !Task.isCancelled else {
+                return .paused(.unknown)
+            }
             let chunk = Array(places[start..<min(start + MiffWrites.placesPerLot, places.count)])
             let writes = MiffWrites.deletePlaces(miffId: miffId, placeIds: chunk)
             let deleted = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(writes) }
