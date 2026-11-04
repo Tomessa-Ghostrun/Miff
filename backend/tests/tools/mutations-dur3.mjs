@@ -9,8 +9,8 @@ const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
 const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...(equivalent ? { equivalent } : {}) });
 
-const PLACE_KEYS = "['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt']";
-const PLACE_UPDATE_KEYS = "['name', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt']";
+const PLACE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt']";
+const PLACE_UPDATE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt']";
 const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt']";
 const SHARING_KEYS = "['enabled', 'consentedAt', 'consentVersion', 'revokedAt']";
 const MEMBERS_UID_DELETE = `!existsAfter(${DB}/miffs/$(resource.data.miffId)/members/$(uid))`;
@@ -129,13 +129,13 @@ export const DUR3_MUTATIONS = [
     [edit('&& d.expiresAt > request.time\n        // 24 h', '&& true\n        // 24 h')],
     ['S16b']),
   mut('S18-purge-statut-par-membre', "n'importe quel membre peut purger le statut d'un autre (pas seulement le créateur)",
-    [edit('allow delete: if isSelf(uid) || isOwner(miffId);', 'allow delete: if isSelf(uid) || isMember(miffId);')],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSelf(uid) || isMember(miffId);', 1, 2)],
     ['S18']),
   mut('S18-purge-statut-par-tout-connecte', "n'importe quel utilisateur connecté peut purger un statut",
-    [edit('allow delete: if isSelf(uid) || isOwner(miffId);', 'allow delete: if isSignedIn();')],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSignedIn();', 1, 2)],
     ['S18']),
   mut('S18-purge-photo-par-membre', "n'importe quel membre peut purger la photo d'un autre (pas seulement le créateur)",
-    [edit('allow delete: if isSelf(uid) || isOwner(miffId)\n          ||', 'allow delete: if isSelf(uid) || isMember(miffId)\n          ||')],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId)\n          ||', 'allow delete: if isSelf(uid) || isMember(miffId)\n          ||')],
     ['S18', 'H5c', 'X6']),
 
   // --- Lieux ---------------------------------------------------------------------------------------
@@ -152,9 +152,26 @@ export const DUR3_MUTATIONS = [
     [edit('&& (d.priority == null || (d.priority is int && d.priority >= 0 && d.priority <= 999))', '&& true')], ['P9b']),
   mut('P9-type-valeur', 'le type de lieu accepte toute valeur', [edit("&& d.type in ['trusted', 'risk']", '&& true')], ['P9b']),
   mut('P9-cles', 'un lieu accepte des clés inconnues', [edit(`return d.keys().hasOnly(${PLACE_KEYS})`, 'return true')], ['P9b']),
-  mut('P8-type-modifiable', "le type d'un lieu existant peut changer",
+  // R-LIEU-6 (2026-11-01) : le type devient modifiable ; l'ancienne mutation « type modifiable » est remplacée par celle-ci :
+  // passer à 'risk' sans premium. Les deux suivantes vérifient que le type et la catégorie restent bien MODIFIABLES.
+  mut('P8-type-modifiable', "un compte gratuit peut passer un lieu existant à 'risk' (zone de danger sans premium)",
+    [edit("d.type == 'trusted' || isPremiumOneRead(request.auth.uid));", "d.type == 'trusted' || true);")],
+    ['P8', 'P18', 'P19']),
+  mut('P17-type-non-modifiable', "le type d'un lieu existant n'est plus modifiable (retour à l'ancienne règle)",
+    [edit(`affected().hasOnly(${PLACE_UPDATE_KEYS})`, "affected().hasOnly(['name', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])")],
+    ['P8', 'P17']),
+  mut('P16-categorie-non-modifiable', "la catégorie d'un lieu existant n'est plus modifiable",
     [edit(`affected().hasOnly(${PLACE_UPDATE_KEYS})`, "affected().hasOnly(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])")],
-    ['P8']),
+    ['P16', 'P18']),
+  mut('P15-categorie-facultative', 'la catégorie n\'est plus obligatoire (clé non exigée)',
+    [edit("&& d.keys().hasAll(['name', 'type', 'category', 'address'", "&& d.keys().hasAll(['name', 'type', 'address'"),
+      // Retirer seulement la clé exigée serait une mutation équivalente : isPlaceCategory(d.category) échoue déjà (erreur
+      // d'évaluation = refus) quand la clé est absente. Les deux garde-fous sont donc retirés ensemble.
+      edit('&& isPlaceCategory(d.category)', '&& true')], ['P15']),
+  mut('P15-categorie-libre', 'la catégorie accepte toute valeur textuelle (liste fermée retirée)',
+    [edit("return v in ['home', 'work', 'school', 'sport', 'relative', 'leisure', 'other'];", 'return v is string;')], ['P15']),
+  mut('P15-categorie-controle-retire', 'la catégorie n\'est plus vérifiée du tout',
+    [edit('&& isPlaceCategory(d.category)', '&& true')], ['P15', 'P15b', 'P16']),
   mut('P11-createdBy-modifiable', "createdBy d'un lieu existant peut changer",
     [edit(`affected().hasOnly(${PLACE_UPDATE_KEYS})`, "affected().hasOnly(['name', 'createdBy', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])")],
     ['P11']),
@@ -164,15 +181,25 @@ export const DUR3_MUTATIONS = [
   mut('P12-createdAt-client', 'createdAt du lieu peut être une date client',
     [edit('&& d.createdAt == request.time', '&& true', 3, 4)], ['P12b']),
   mut('P12-updatedAt-creation-client', "updatedAt d'un lieu créé peut être une date client",
-    [edit("&& d.updatedAt == request.time\n        && (\n          (placeId == 'p1'", "&& true\n        && (\n          (placeId == 'p1'")], ['P12b']),
+    [edit("&& d.updatedAt == request.time\n        && (\n          (placeId in ['p1', 'p2']", "&& true\n        && (\n          (placeId in ['p1', 'p2']")], ['P12b']),
   mut('P12-updatedAt-maj-client', "updatedAt d'un lieu modifié peut être une date client",
-    [edit('&& d.updatedAt == request.time;\n    }\n\n    // État courant', '&& true;\n    }\n\n    // État courant')], ['P12b']),
+    [edit("&& d.updatedAt == request.time\n        && (!affected().hasAny(['type'])", "&& true\n        && (!affected().hasAny(['type'])")], ['P12b']),
   mut('P11-createdBy-creation-autre', "createdBy d'un lieu créé peut désigner un autre utilisateur",
     [edit('&& d.createdBy == request.auth.uid', '&& true')], ['P11b']),
-  mut('P2-lieu-libre-gratuit', "un compte gratuit peut créer des lieux 'trusted' sous un identifiant libre (plus d'un lieu)",
-    [edit("(placeId == 'p1' && d.type == 'trusted')", "(d.type == 'trusted')")], ['P2']),
-  mut('P4-lieu-risque-gratuit', "un compte gratuit peut créer un lieu 'risk' sous l'identifiant p1",
-    [edit("(placeId == 'p1' && d.type == 'trusted')", "(placeId == 'p1')")], ['P4']),
+  mut('P2-lieu-libre-gratuit', "un compte gratuit peut créer des lieux 'trusted' sous un identifiant libre (plus de 2 lieux)",
+    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(d.type == 'trusted')")], ['P2', 'P14']),
+  mut('P4-lieu-risque-gratuit', "un compte gratuit peut créer un lieu 'risk' sous l'identifiant p1 ou p2",
+    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(placeId in ['p1', 'p2'])")], ['P4', 'P14b']),
+  mut('P14-troisieme-emplacement-gratuit', 'un compte gratuit dispose d\'un troisième emplacement (p3)',
+    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')")], ['P14']),
+  mut('P14-un-seul-emplacement-gratuit', "retour à l'ancienne limite : p2 n'est plus accepté en gratuit",
+    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(placeId == 'p1' && d.type == 'trusted')")], ['P14', 'P14b']),
+  mut('P19-creation-sans-premium', "la création hors emplacements gratuits n'exige plus le premium",
+    [edit('|| isPremiumOneRead(request.auth.uid)\n        );', '|| true\n        );')], ['P2', 'P14', 'P19']),
+  mut('P19-premium-expiration', "l'expiration de l'abonnement n'est plus vérifiée pour les lieux",
+    [edit('return e.active == true && e.expiresAt > request.time;', 'return e.active == true;')], ['P19']),
+  mut('P19-premium-actif', "le drapeau actif de l'abonnement n'est plus vérifié pour les lieux",
+    [edit('return e.active == true && e.expiresAt > request.time;', 'return e.expiresAt > request.time;')], ['P19']),
   mut('P5-identifiant-lieu', "l'identifiant d'un lieu n'est plus contrôlé (format libre)",
     [edit("return placeId.matches('^[A-Za-z0-9]{1,20}$')", 'return true')], ['P2b']),
 
@@ -225,11 +252,11 @@ export const DUR3_MUTATIONS = [
     "défense en profondeur : miffName doit être égal au nom de la Miff après le lot (getAfter), et ce nom est borné à 1..40 caractères par validMiffUpdate (testé : M6b) ou inchangé ; une valeur hors bornes est donc refusée avant ce contrôle"),
 
   // --- Lectures ------------------------------------------------------------------------------------
-  mut('R4-liste-users', 'la liste des profils est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 1, 5)], ['R4']),
-  mut('R4-liste-entitlements', 'la liste des entitlements est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 2, 5)], ['R4', 'R10']),
-  mut('R4-liste-codes', 'la liste des codes secrets est autorisée (énumération)', [edit('allow list: if false;', 'allow list: if isSignedIn();', 3, 5)], ['R4', 'J17']),
-  mut('R4-liste-miffs', 'la liste des Miffs est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 4, 5)], ['R4']),
-  mut('R12-liste-photos', 'la liste des photos est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 5, 5)], ['R12']),
+  mut('R4-liste-users', 'la liste des profils est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 1, 6)], ['R4']),
+  mut('R4-liste-entitlements', 'la liste des entitlements est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 2, 6)], ['R4', 'R10']),
+  mut('R4-liste-codes', 'la liste des codes secrets est autorisée (énumération)', [edit('allow list: if false;', 'allow list: if isSignedIn();', 3, 6)], ['R4', 'J17']),
+  mut('R4-liste-miffs', 'la liste des Miffs est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 4, 6)], ['R4']),
+  mut('R12-liste-photos', 'la liste des photos est autorisée', [edit('allow list: if false;', 'allow list: if isSignedIn();', 6, 6)], ['R12']),
   mut('J3-code-mauvais-format', "la lecture d'un code n'exige plus le bon format", [edit('allow get: if isSignedIn() && isJoinCode(code);', 'allow get: if isSignedIn();')], ['J3']),
   mut('R1-code-sans-connexion', "la lecture d'un code est possible sans être connecté", [edit('allow get: if isSignedIn() && isJoinCode(code);', 'allow get: if isJoinCode(code);')], ['R1']),
   mut('R11-refus-par-defaut', 'le refus par défaut est remplacé par une autorisation aux utilisateurs connectés',

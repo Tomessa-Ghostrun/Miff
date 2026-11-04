@@ -16,6 +16,7 @@ export const H = {
   statusDelete: { match: 'match /status/{uid} {', method: 'delete' },
   photosDelete: { match: 'match /photos/{uid} {', method: 'delete' },
   placesCreate: { match: 'match /places/{placeId} {', method: 'create' },
+  placesUpdate: { match: 'match /places/{placeId} {', method: 'update' },
   placesDelete: { match: 'match /places/{placeId} {', method: 'delete' },
   usersCreate: { match: 'match /users/{uid} {', method: 'create' },
   usersUpdate: { match: 'match /users/{uid} {', method: 'update' },
@@ -25,5 +26,10 @@ export const H = {
   miffsUpdate: { match: 'match /miffs/{miffId} {', method: 'update' },
   miffsDelete: { match: 'match /miffs/{miffId} {', method: 'delete' },
   miffsDeletedCreate: { match: 'match /miffsDeleted/{miffId} {', method: 'create' },
+  // R-LIEU-POS : dernière position connue.
+  positionsGet: { match: 'match /positions/{uid} {', method: 'get' },
+  positionsCreate: { match: 'match /positions/{uid} {', method: 'create' },
+  positionsUpdate: { match: 'match /positions/{uid} {', method: 'update' },
+  positionsDelete: { match: 'match /positions/{uid} {', method: 'delete' },
   membersUpdate: { match: 'match /members/{uid} {', method: 'update' },
 };

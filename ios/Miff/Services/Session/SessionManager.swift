@@ -166,8 +166,11 @@ final class SessionManager {
                 await signOut()
             }
         }
+        // Le flux est ouvert ici, tout de suite (instant d'ouverture déterministe, inoffensif et utile). Ce qui évite la fausse
+        // perte de session est la relecture de `gateway.currentUid` dans `handleUidChange`.
+        let changes = gateway.uidChanges()
         watcher = Task { [weak self] in
-            await self?.watchSessionLoss()
+            await self?.watchSessionLoss(changes)
         }
         await resolveCurrent()
     }
@@ -197,10 +200,22 @@ final class SessionManager {
         state = newState
     }
 
-    private func watchSessionLoss() async {
-        for await uid in gateway.uidChanges() where uid == nil && !ending && isSignedInState() {
-            await onSessionLost()
+    private func watchSessionLoss(_ changes: AsyncStream<String?>) async {
+        for await uid in changes {
+            await handleUidChange(uid)
         }
+    }
+
+    /// Réaction à une annonce « le compte connecté a changé ». Les annonces passent par un flux : elles sont lues un peu
+    /// APRÈS l'événement, et la première (l'état au moment où l'écoute s'ouvre, souvent « personne n'est connecté ») peut
+    /// n'être lue qu'au milieu d'une connexion. Une session n'est donc déclarée perdue que si, au moment où l'annonce est
+    /// lue, plus personne n'est vraiment connecté : une annonce périmée ne doit jamais déconnecter quelqu'un, ni lancer une
+    /// seconde fin de session en parallèle d'une autre (course réelle relevée en CI sur le panneau de consentement).
+    func handleUidChange(_ uid: String?) async {
+        guard uid == nil, !ending, isSignedInState(), gateway.currentUid == nil else {
+            return
+        }
+        await onSessionLost()
     }
 
     private func isSignedInState() -> Bool {
