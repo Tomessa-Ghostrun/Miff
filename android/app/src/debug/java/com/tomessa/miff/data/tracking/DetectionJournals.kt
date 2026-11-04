@@ -36,7 +36,7 @@ class FileDetectionJournal(
         synchronized(lock) {
             try {
                 val lines = (read() + format(clock(), kind, placeId, batteryPct)).takeLast(maxLines)
-                file.writeText(lines.joinToString("\n", postfix = "\n"))
+                file.writeText("# ${DetectionJournals.MARKER}\n" + lines.joinToString("\n", postfix = "\n"))
             } catch (e: Exception) {
                 // The journal is a convenience: it never breaks the detection.
             }
@@ -52,7 +52,17 @@ class FileDetectionJournal(
         synchronized(lock) { file.delete() }
     }
 
-    private fun read(): List<String> = if (file.exists()) file.readLines().filter { it.isNotBlank() } else emptyList()
+    // The first line of the file carries the marker (and is not a line of the journal): the marker is USED by the writer, so that the optimizer of the
+    // release build cannot drop it from a release that would, by mistake, contain this writer (the CI looks for it).
+    private fun read(): List<String> =
+        if (file.exists()) {
+            file.readLines().filter {
+                it.isNotBlank() &&
+                    !it.startsWith("#")
+            }
+        } else {
+            emptyList()
+        }
 
     private fun format(
         at: Long,

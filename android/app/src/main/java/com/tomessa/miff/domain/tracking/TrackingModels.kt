@@ -7,6 +7,27 @@ import com.tomessa.miff.domain.place.PlaceType
  * toString() that shows nothing, so that a log line, an analytics parameter or a crash report can never leak it (criterion VIE1).
  */
 
+/**
+ * The identity of a ZONE on the ground (review B1): the identifier of the place AND its geometry and type. A free account can only use the fixed
+ * identifiers p1 and p2 (the rules), so two creators' different places can both be "p1": the identifier alone must never name a zone. The same place
+ * attached to several Miffs (same identifier, same geometry) has the same key: one zone. The key holds coordinates: it never leaves the phone
+ * (local copy, system geofencing) and is NEVER written to a log or a journal; [placeId] is what is shown or written.
+ */
+object ZoneKey {
+    fun of(fact: PlaceFact): String = "${fact.id}|${fact.lat}|${fact.lng}|${fact.radiusM}|${fact.type.value}"
+
+    /** The place identifier of a key (the part that is safe to write in a status or a journal). */
+    fun placeId(key: String): String = key.substringBefore('|')
+
+    private val SHAPE =
+        Regex(
+            "^[A-Za-z0-9]{1,20}\\|-?[0-9]+(\\.[0-9]+)?(E-?[0-9]+)?\\|-?[0-9]+(\\.[0-9]+)?(E-?[0-9]+)?\\|[0-9]{1,4}\\|(trusted|risk)$",
+        )
+
+    /** Is this string the shape of a key we made (the receiver ignores any other identifier coming back from the system)? */
+    fun isValid(value: String): Boolean = value.length <= 100 && SHAPE.matches(value)
+}
+
 /** What the local list of places keeps of one place of one Miff: what is needed to watch it, and nothing else (no name, no address). */
 class PlaceFact(
     val id: String,
@@ -16,6 +37,8 @@ class PlaceFact(
     val type: PlaceType,
 ) {
     /** Same zone on the ground (a place changed by its creator is another zone: the presence cannot be confirmed any more). */
+    val key: String get() = ZoneKey.of(this)
+
     fun sameGeometry(other: PlaceFact): Boolean =
         lat == other.lat && lng == other.lng && radiusM == other.radiusM && type == other.type
 
@@ -27,6 +50,8 @@ class PlaceFact(
  * MIF3): one zone, one status per Miff. [miffIds] are the Miffs it belongs to (never empty).
  */
 class TrackedZone(
+    /** [ZoneKey]: the identity of the zone (identifier + geometry + type). */
+    val key: String,
     val placeId: String,
     val lat: Double,
     val lng: Double,

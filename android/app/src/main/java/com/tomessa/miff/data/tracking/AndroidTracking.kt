@@ -127,8 +127,12 @@ class FusedPositionSource(
                     .setMaxUpdateAgeMillis(MAX_AGE_MILLIS)
                     .setDurationMillis(WAIT_MILLIS)
                     .build()
+            // The last location the phone has is only a fallback, and only when it is recent (review I2): an old one would be a position the person left.
             val location = client.getCurrentLocation(request, token.token).await() ?: client.lastLocation.await()
-            location?.let { Fix(it.latitude, it.longitude, it.time) }
+            location
+                ?.takeIf {
+                    System.currentTimeMillis() - it.time <= MAX_AGE_MILLIS
+                }?.let { Fix(it.latitude, it.longitude, it.time) }
         } catch (e: CancellationException) {
             token.cancel()
             throw e
@@ -141,7 +145,7 @@ class FusedPositionSource(
 
     private companion object {
         const val MAX_AGE_MILLIS = 2L * 60L * 1000L
-        const val WAIT_MILLIS = 8_000L
+        const val WAIT_MILLIS = TrackingLimits.POSITION_WAIT_MILLIS
     }
 }
 
@@ -189,7 +193,8 @@ class PlayGeofenceArming(
     private fun toGeofence(zone: TrackedZone): Geofence =
         Geofence
             .Builder()
-            .setRequestId(zone.placeId)
+            // The name of the zone for the system is its KEY (identifier + geometry + type): two places with the same identifier are two zones (review B1).
+            .setRequestId(zone.key)
             .setCircularRegion(zone.lat, zone.lng, zone.radiusM.toFloat())
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)

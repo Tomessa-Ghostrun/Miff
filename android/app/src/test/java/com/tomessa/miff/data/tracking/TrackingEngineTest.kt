@@ -56,6 +56,7 @@ class TrackingEngineTest {
     private val lng = 2.3522
     private val home = PlaceFact("home", lat, lng, 100, PlaceType.TRUSTED)
     private val danger = PlaceFact("danger", lat + 0.01, lng, 100, PlaceType.RISK)
+    private val onlyB = PlaceFact("onlyB", lat + 0.02, lng, 100, PlaceType.TRUSTED)
 
     private fun v3() = SharingConsentRead(enabled = true, version = "2026-11-v03")
 
@@ -157,7 +158,7 @@ class TrackingEngineTest {
             assertTrue(statusWrites().isEmpty())
             // The nearest were chosen: the farthest two (by the edge) are left out.
             val farthest =
-                (store.places[miffA].orEmpty() + store.places[miffB].orEmpty()).map { it.id }.toSet() - geofences.armed
+                (store.places[miffA].orEmpty() + store.places[miffB].orEmpty()).map { it.key }.toSet() - geofences.armed
             assertEquals(2, farthest.size)
         }
 
@@ -280,7 +281,7 @@ class TrackingEngineTest {
             store.commits.clear()
             env.now += 10 * minute
             val eventAt = env.now - 2 * minute
-            engine.onTransition(TransitionKind.ENTER, "home", eventAt)
+            engine.onTransition(TransitionKind.ENTER, home.key, eventAt)
             val statuses = statusWrites()
             assertEquals(setOf("miffs/miffA/status/uid1", "miffs/miffB/status/uid1"), statuses.map { it.path }.toSet())
             statuses.forEach {
@@ -302,11 +303,11 @@ class TrackingEngineTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
             env.now += 5 * minute
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             env.now += 3 * hour
             val left = env.now - minute
-            engine.onTransition(TransitionKind.EXIT, "home", left)
+            engine.onTransition(TransitionKind.EXIT, home.key, left)
             val write = statusWrites().single()
             assertEquals("out", write.data["presence"])
             assertEquals("home", write.data["placeId"])
@@ -321,7 +322,7 @@ class TrackingEngineTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
             store.commits.clear()
-            engine.onTransition(TransitionKind.ENTER, "home", env.now + 3 * hour)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now + 3 * hour)
             assertEquals(Timestamp(Date(env.now)), statusWrites().single().data["presenceAt"])
         }
 
@@ -331,7 +332,7 @@ class TrackingEngineTest {
             share(miffA) { listOf(home, danger) }
             engine.refresh(TrackingEngine.Reason.OPENED)
             store.commits.clear()
-            engine.onTransition(TransitionKind.ENTER, "danger", env.now)
+            engine.onTransition(TransitionKind.ENTER, danger.key, env.now)
             val write = statusWrites().single()
             assertEquals("in_risk", write.data["presence"])
             assertEquals("danger", write.data["placeId"])
@@ -343,9 +344,9 @@ class TrackingEngineTest {
         runTest {
             share(miffA) { listOf(home, danger) }
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
-            engine.onTransition(TransitionKind.ENTER, "danger", env.now + 1000)
+            engine.onTransition(TransitionKind.ENTER, danger.key, env.now + 1000)
             assertTrue(statusWrites().isEmpty())
         }
 
@@ -359,7 +360,7 @@ class TrackingEngineTest {
             store.places[miffB] = listOf(PlaceFact("other", lat + 0.05, lng, 100, PlaceType.TRUSTED))
             engine.refresh(TrackingEngine.Reason.OPENED)
             store.commits.clear()
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             assertEquals(listOf("miffs/miffA/status/uid1"), statusWrites().map { it.path })
         }
 
@@ -371,16 +372,19 @@ class TrackingEngineTest {
             store.commits.clear()
             store.alwaysFailing["miffs/miffA/status/uid1"] = refused()
             val readsBefore = store.readCalls
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             assertEquals(listOf("miffs/miffB/status/uid1"), statusWrites().map { it.path })
             assertTrue(JournalKind.STATUS_REFUSED in journal.kinds)
-            // The refused one is not kept waiting (no loop), and the Miff is looked at again (the consent is read from the server again).
+            // The refused one is not kept waiting (no loop), and the Miff is looked at again SOON (not at every wake-up: a clock that is ahead would loop).
             assertNull(
                 local.state!!
                     .miffs
                     .getValue(miffA)
                     .pending,
             )
+            assertEquals(readsBefore, store.readCalls)
+            env.now += 6 * minute
+            engine.refresh(TrackingEngine.Reason.OPENED)
             assertTrue(store.readCalls > readsBefore)
         }
 
@@ -389,12 +393,12 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             // The status says "last update 30 hours ago": the rules refuse it; the second try moves it to the time of the departure.
             store.failuresByPath["miffs/miffA/status/uid1"] = ArrayDeque(listOf(refused()))
             env.now += 30 * hour
-            engine.onTransition(TransitionKind.EXIT, "home", env.now - minute)
+            engine.onTransition(TransitionKind.EXIT, home.key, env.now - minute)
             val write = statusWrites().single()
             assertEquals(Timestamp(Date(env.now - minute)), write.data["lastUpdateAt"])
         }
@@ -406,12 +410,12 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             env.online = false
             env.now += 2 * hour
             val left = env.now
-            engine.onTransition(TransitionKind.EXIT, "home", left)
+            engine.onTransition(TransitionKind.EXIT, home.key, left)
             assertTrue(statusWrites().isEmpty())
             assertTrue(wake.watching)
             assertNotNull(
@@ -441,14 +445,14 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             env.online = false
             env.now += hour
-            engine.onTransition(TransitionKind.EXIT, "home", env.now)
+            engine.onTransition(TransitionKind.EXIT, home.key, env.now)
             env.now += 10 * minute
             val back = env.now
-            engine.onTransition(TransitionKind.ENTER, "home", back)
+            engine.onTransition(TransitionKind.ENTER, home.key, back)
             env.online = true
             engine.onNetworkBack()
             val write = statusWrites().single()
@@ -461,10 +465,10 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             env.online = false
-            engine.onTransition(TransitionKind.EXIT, "home", env.now)
+            engine.onTransition(TransitionKind.EXIT, home.key, env.now)
             env.online = true
             env.now += 25 * hour
             engine.onNetworkBack()
@@ -484,13 +488,13 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             local.state =
                 local.state!!.copyWith(
                     breaker = BreakerState(WriteBreaker.dayKey(env.now), TrackingLimits.MAX_STATUS_WRITES_PER_DAY, 0),
                 )
-            engine.onTransition(TransitionKind.EXIT, "home", env.now)
+            engine.onTransition(TransitionKind.EXIT, home.key, env.now)
             assertTrue(statusWrites().isEmpty())
             assertTrue(JournalKind.BREAKER_STATUS in journal.kinds)
             assertNotNull(
@@ -516,7 +520,7 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             store.places[miffA] = emptyList()
             env.now += 2 * hour
@@ -532,15 +536,18 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             val updatesBefore = geofences.updates
-            store.places[miffA] = listOf(PlaceFact("home", lat + 0.0001, lng, 150, PlaceType.TRUSTED))
+            val movedHome = PlaceFact("home", lat + 0.0001, lng, 150, PlaceType.TRUSTED)
+            store.places[miffA] = listOf(movedHome)
             env.now += 2 * hour
             engine.refresh(TrackingEngine.Reason.OPENED)
             assertEquals("unknown", statusWrites().single().data["presence"])
             assertTrue(geofences.updates > updatesBefore)
-            assertTrue("home" in geofences.armed)
+            // The old zone is gone, the new one (another key: its geometry) is armed.
+            assertFalse(home.key in geofences.armed)
+            assertTrue(movedHome.key in geofences.armed)
         }
 
     @Test
@@ -548,12 +555,12 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             geofences.armed.clear()
             env.now += hour
             engine.refresh(TrackingEngine.Reason.REARM)
-            assertTrue("home" in geofences.armed)
+            assertTrue(home.key in geofences.armed)
             assertTrue(statusWrites().isEmpty())
         }
 
@@ -562,7 +569,7 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
             geofences.armed.clear()
             env.now += hour
@@ -618,15 +625,15 @@ class TrackingEngineTest {
             store.consents[miffA] = v3()
             store.consents[miffB] = v3()
             store.places[miffA] = listOf(home)
-            store.places[miffB] = listOf(home, PlaceFact("onlyB", lat + 0.02, lng, 100, PlaceType.TRUSTED))
+            store.places[miffB] = listOf(home, onlyB)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            assertEquals(setOf("home", "onlyB"), geofences.armed)
+            assertEquals(setOf(home.key, onlyB.key), geofences.armed)
             store.consents[miffB] = SharingConsentRead(enabled = false, version = "2026-11-v03")
             store.commits.clear()
             engine.refresh(TrackingEngine.Reason.SHARING_CHANGED)
-            assertEquals(setOf("home"), geofences.armed)
+            assertEquals(setOf(home.key), geofences.armed)
             assertEquals(setOf(miffA), local.state!!.miffs.keys)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             assertEquals(listOf("miffs/miffA/status/uid1"), statusWrites().map { it.path })
         }
 
@@ -672,7 +679,7 @@ class TrackingEngineTest {
             engine.refresh(TrackingEngine.Reason.OPENED)
             store.commits.clear()
             env.snapshot = whileInUseOnly()
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             assertTrue(statusWrites().isEmpty())
             assertTrue(geofences.armed.isEmpty())
         }
@@ -684,9 +691,9 @@ class TrackingEngineTest {
         runTest {
             share(miffA, miffB)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             env.now += 2 * hour
-            engine.onTransition(TransitionKind.EXIT, "home", env.now)
+            engine.onTransition(TransitionKind.EXIT, home.key, env.now)
             env.now += 20 * minute
             engine.refresh(TrackingEngine.Reason.BACKGROUNDED)
             assertTrue(store.commits.isNotEmpty())
@@ -715,7 +722,7 @@ class TrackingEngineTest {
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
-            engine.onTransition(TransitionKind.ENTER, "home", env.now)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             val text = journal.lines().joinToString { "${it.kind} ${it.placeId} ${it.batteryPct}" }
             assertFalse(Regex("""\d+\.\d{3,}""").containsMatchIn(text))
             assertTrue(journal.lines().isNotEmpty())

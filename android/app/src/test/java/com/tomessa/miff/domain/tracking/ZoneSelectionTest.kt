@@ -61,13 +61,34 @@ class ZoneSelectionTest {
     }
 
     @Test
-    fun twoStaleCopiesOfOnePlace_theSmallestMiffIdWins_deterministically() {
+    fun twoDifferentPlacesWithTheSameIdentifier_areTwoZones_neverMerged_reviewB1() {
+        // The fixed identifier p1 of two free creators: two different places, two Miffs.
+        val atA = place("p1", 100.0, radius = 100)
+        val atB = place("p1", 5_000.0, radius = 100)
+        val zones = ZoneSelection.merge(listOf(miffPlace("miffA", atA), miffPlace("miffB", atB)))
+        assertEquals(2, zones.size)
+        assertEquals(2, zones.map { it.key }.toSet().size)
+        assertEquals(setOf(setOf("miffA"), setOf("miffB")), zones.map { it.miffIds }.toSet())
+        assertEquals(setOf("p1"), zones.map { it.placeId }.toSet())
+    }
+
+    @Test
+    fun twoStaleCopiesOfOnePlace_thatDisagree_areTwoZones_untilTheServerIsReadAgain() {
         val a = place("p", 100.0, radius = 100)
-        val b = place("p", 5_000.0, radius = 300)
-        val one = ZoneSelection.merge(listOf(miffPlace("miffB", b), miffPlace("miffA", a))).single()
-        val other = ZoneSelection.merge(listOf(miffPlace("miffA", a), miffPlace("miffB", b))).single()
-        assertEquals(100, one.radiusM)
-        assertEquals(100, other.radiusM)
+        val b = place("p", 100.0, radius = 300)
+        assertEquals(2, ZoneSelection.merge(listOf(miffPlace("miffB", b), miffPlace("miffA", a))).size)
+    }
+
+    @Test
+    fun theKeyIsTheShapeTheReceiverAccepts_andOnlyThat() {
+        val key = place("p1", 100.0).key
+        assertTrue(ZoneKey.isValid(key))
+        assertEquals("p1", ZoneKey.placeId(key))
+        assertFalse(ZoneKey.isValid("p1"))
+        assertFalse(ZoneKey.isValid("home"))
+        assertFalse(ZoneKey.isValid(key + "|x"))
+        assertFalse(ZoneKey.isValid("../../etc|1|2|3|trusted"))
+        assertTrue(key.length <= 100)
     }
 
     @Test
@@ -97,7 +118,7 @@ class ZoneSelectionTest {
         val edge = place("edge", 700.0, radius = 100)
         val others = (1..25).map { miffPlace("m", place("o$it", it * 20.0 + 50.0, radius = 50)) }
         val zones = ZoneSelection.merge(listOf(miffPlace("m", edge)) + others)
-        val withState = ZoneSelection.select(lat, lng, zones, insideIds = setOf("edge"))
+        val withState = ZoneSelection.select(lat, lng, zones, insideIds = setOf(edge.key))
         assertTrue("edge" in withState.map { it.placeId })
         val without = ZoneSelection.select(lat, lng, zones, insideIds = emptySet())
         assertFalse("edge" in without.map { it.placeId })

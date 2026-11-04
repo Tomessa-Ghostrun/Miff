@@ -9758,13 +9758,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nothing is shared with \"%1$@\" until you agree."
+            "value": "Miff no longer updates your status with \"%1$@\" until you agree."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien n'est partagé avec « %1$@ » tant que tu n'as pas donné ton accord."
+            "value": "Miff ne met plus à jour ton statut avec « %1$@ » tant que tu n'as pas donné ton accord."
           }
         }
       }
@@ -9792,13 +9792,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nothing is shared with this Miff until you agree. You can also leave it."
+            "value": "Miff no longer updates your status with this Miff until you agree. Your last status stays visible to its members until you stop sharing. You can also leave it."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien n'est partagé avec cette Miff tant que tu n'as pas donné ton accord. Tu peux aussi la quitter."
+            "value": "Miff ne met plus à jour ton statut avec cette Miff tant que tu n'as pas donné ton accord. Ton dernier statut reste visible de ses membres jusqu'à ce que tu arrêtes de partager. Tu peux aussi la quitter."
           }
         }
       }
@@ -9809,13 +9809,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nothing is shared with this Miff until you agree."
+            "value": "Miff no longer updates your status with this Miff until you agree. Your last status stays visible to its members until you stop sharing."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rien n'est partagé avec cette Miff tant que tu n'as pas donné ton accord."
+            "value": "Miff ne met plus à jour ton statut avec cette Miff tant que tu n'as pas donné ton accord. Ton dernier statut reste visible de ses membres jusqu'à ce que tu arrêtes de partager."
           }
         }
       }
@@ -9843,30 +9843,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Waiting for your agreement: nothing is shared for now."
+            "value": "Waiting for your agreement: your status is no longer updated. You can stop sharing."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En attente de ton accord : rien n'est partagé pour l'instant."
-          }
-        }
-      }
-    },
-    "miff_sharing_waiting_state": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "waiting for your agreement"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "en attente de ton accord"
+            "value": "En attente de ton accord : ton statut n'est plus mis à jour. Tu peux arrêter de partager."
           }
         }
       }
@@ -9928,13 +9911,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your agreement is waiting: nothing is shared with this Miff."
+            "value": "Your agreement is waiting: Miff no longer updates your status with this Miff. You can stop sharing from the Miff screen."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton accord est en attente : rien n'est partagé avec cette Miff."
+            "value": "Ton accord est en attente : Miff ne met plus à jour ton statut avec cette Miff. Tu peux arrêter de partager depuis l'écran de la Miff."
           }
         }
       }

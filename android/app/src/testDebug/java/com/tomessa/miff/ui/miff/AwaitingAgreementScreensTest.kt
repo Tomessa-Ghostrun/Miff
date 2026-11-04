@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -85,7 +84,7 @@ class AwaitingAgreementScreensTest {
         composeRule.onNodeWithText(text(R.string.miff_waiting_title)).assertIsDisplayed()
         composeRule
             .onNodeWithText(
-                "Rien n'est partagé avec « Famille Mfouka » tant que tu n'as pas donné ton accord.",
+                "Miff ne met plus à jour ton statut avec « Famille Mfouka » tant que tu n'as pas donné ton accord.",
             ).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_waiting_feed_note)).assertIsDisplayed()
         // The provisional text of the Feed gives way to the one that tells the truth.
@@ -175,21 +174,30 @@ class AwaitingAgreementScreensTest {
     }
 
     @Test
-    fun theSwitchOfTheMiff_inThatState_isOff_andCannotBeUsed() {
+    fun theSwitchOfTheMiff_inThatState_staysUsable_theLineSaysWhatIsTrue_reviewI6() {
         var clicks = 0
         show {
             MiffSwitchRow(
                 title = text(R.string.miff_sharing_title),
                 description = text(R.string.miff_sharing_waiting_description),
-                checked = false,
-                enabled = false,
-                stateText = text(R.string.miff_sharing_waiting_state),
+                checked = true,
+                enabled = true,
+                stateText = text(R.string.miff_sharing_state_on),
                 onClick = { clicks++ },
             )
         }
         composeRule.onNodeWithText(text(R.string.miff_sharing_waiting_description)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_sharing_title)).assertIsNotEnabled()
         composeRule.onNodeWithText(text(R.string.miff_sharing_title)).performClick()
-        assertEquals(0, clicks)
+        assertEquals(1, clicks)
+        // The texts never say that "nothing is shared": the last status stays visible until sharing is stopped.
+        val all =
+            listOf(
+                R.string.miff_waiting_feed_body,
+                R.string.miff_waiting_miff_body,
+                R.string.miff_waiting_miff_body_owner,
+                R.string.miff_sharing_waiting_description,
+                R.string.settings_privacy_miff_waiting_body,
+            ).joinToString(" ") { text(it) }
+        assert("Rien n'est partagé" !in all) { "the texts of the waiting state must not claim that nothing is shared" }
     }
 }

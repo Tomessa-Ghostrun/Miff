@@ -304,7 +304,8 @@ private fun MiffContent(
     }
 
     if (agreementWaiting) {
-        // Design 23B: the card is the ONE way back to the agreement; the switch tells the truth (nothing is shared) and cannot be used.
+        // Design 23B: the card is the way back to the agreement. The switch stays USABLE (review I6): the person can always stop sharing, and what
+        // Miff says is exact: it no longer updates the status, but the last one is still visible to the members until sharing is stopped.
         AwaitingAgreementCard(
             body =
                 stringResource(
@@ -312,31 +313,26 @@ private fun MiffContent(
                 ),
             onReview = onReviewAgreement,
         )
+    }
+    state.sharing?.let { sharing ->
         MiffSwitchRow(
             title = stringResource(R.string.miff_sharing_title),
-            description = stringResource(R.string.miff_sharing_waiting_description),
-            checked = false,
-            enabled = false,
-            stateText = stringResource(R.string.miff_sharing_waiting_state),
-            onClick = {},
+            description =
+                stringResource(
+                    when {
+                        sharing && agreementWaiting -> R.string.miff_sharing_waiting_description
+                        sharing -> R.string.miff_sharing_on_description
+                        else -> R.string.miff_sharing_off_description
+                    },
+                ),
+            checked = sharing,
+            enabled = state.canWrite,
+            stateText =
+                stringResource(
+                    if (sharing) R.string.miff_sharing_state_on else R.string.miff_sharing_state_off,
+                ),
+            onClick = onSharingRequested,
         )
-    } else {
-        state.sharing?.let { sharing ->
-            MiffSwitchRow(
-                title = stringResource(R.string.miff_sharing_title),
-                description =
-                    stringResource(
-                        if (sharing) R.string.miff_sharing_on_description else R.string.miff_sharing_off_description,
-                    ),
-                checked = sharing,
-                enabled = state.canWrite,
-                stateText =
-                    stringResource(
-                        if (sharing) R.string.miff_sharing_state_on else R.string.miff_sharing_state_off,
-                    ),
-                onClick = onSharingRequested,
-            )
-        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {

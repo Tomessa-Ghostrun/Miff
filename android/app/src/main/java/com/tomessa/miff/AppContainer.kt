@@ -82,6 +82,7 @@ import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.startup.StartupTrace
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -250,10 +251,15 @@ class AppContainer(
             movement = FusedMovementUpdates(context),
             networkWake = ConnectivityNetworkWake(context),
             journal = detectionJournal,
+            // What the end of a session stopped stays stopped until the session changes (a lambda: the session manager lists this engine in its teardown).
+            generation = { sessionManager.generation },
         )
     }
 
-    private val trackingScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    // A failure of the detection never takes the app down (nothing is logged: it could hold a place).
+    private val trackingScope by lazy {
+        CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
+    }
 
     /** Asks the detection to look again (the app opened, went to the background, the sharing changed...). Never blocks the caller. */
     fun trackingLooksAgain(reason: TrackingEngine.Reason) {

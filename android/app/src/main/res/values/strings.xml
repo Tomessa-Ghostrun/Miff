@@ -654,17 +654,16 @@
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">Waiting for your agreement</string>
-    <string name="miff_waiting_feed_body">Nothing is shared with \"%1$s\" until you agree.</string>
+    <string name="miff_waiting_feed_body">Miff no longer updates your status with \"%1$s\" until you agree.</string>
     <string name="miff_waiting_feed_note">You\'ll see your loved ones\' statuses here again once you\'ve agreed.</string>
-    <string name="miff_waiting_miff_body">Nothing is shared with this Miff until you agree. You can also leave it.</string>
-    <string name="miff_waiting_miff_body_owner">Nothing is shared with this Miff until you agree.</string>
+    <string name="miff_waiting_miff_body">Miff no longer updates your status with this Miff until you agree. Your last status stays visible to its members until you stop sharing. You can also leave it.</string>
+    <string name="miff_waiting_miff_body_owner">Miff no longer updates your status with this Miff until you agree. Your last status stays visible to its members until you stop sharing.</string>
     <string name="miff_waiting_review">Review and agree</string>
-    <string name="miff_sharing_waiting_description">Waiting for your agreement: nothing is shared for now.</string>
-    <string name="miff_sharing_waiting_state">waiting for your agreement</string>
+    <string name="miff_sharing_waiting_description">Waiting for your agreement: your status is no longer updated. You can stop sharing.</string>
     <string name="settings_privacy_location_status_ok">Always allowed</string>
     <string name="settings_privacy_location_status_todo">To complete in the phone settings</string>
     <string name="settings_privacy_miff_waiting_pill">Waiting</string>
-    <string name="settings_privacy_miff_waiting_body">Your agreement is waiting: nothing is shared with this Miff.</string>
+    <string name="settings_privacy_miff_waiting_body">Your agreement is waiting: Miff no longer updates your status with this Miff. You can stop sharing from the Miff screen.</string>
     <string name="settings_privacy_detection_help_link">If detections are slow</string>
     <string name="settings_detection_help_title">If arrivals and departures are slow</string>
     <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them.</string>

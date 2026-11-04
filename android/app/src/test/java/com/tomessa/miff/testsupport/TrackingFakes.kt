@@ -68,11 +68,18 @@ class FakePosition(
     var lat = 48.8566
     var lng = 2.3522
     var available = true
+
+    /** The position never comes back (a slow start of the provider): the engine must not wait for ever. */
+    var hangs = false
+
+    /** How old the position is when it comes back (a fallback on an old last location). */
+    var ageMillis = 0L
     var reads = 0
 
     override suspend fun current(): Fix? {
         reads++
-        return if (available) Fix(lat, lng, env.now) else null
+        if (hangs) kotlinx.coroutines.awaitCancellation()
+        return if (available) Fix(lat, lng, env.now - ageMillis) else null
     }
 }
 
@@ -89,7 +96,7 @@ class FakeGeofences : GeofenceArming {
         updates++
         if (!accept) return false
         armed.removeAll(removeIds.toSet())
-        armed.addAll(add.map { it.placeId })
+        armed.addAll(add.map { it.key })
         return true
     }
 
@@ -176,8 +183,12 @@ class FakeTrackingStore : TrackingStore {
     val alwaysFailing = mutableMapOf<String, Exception>()
     var readCalls = 0
 
+    /** When set, the reads of the server fail with it (no network, a refusal). */
+    var readFailure: Exception? = null
+
     override suspend fun memberships(uid: String): List<MembershipRef> {
         readCalls++
+        readFailure?.let { throw it }
         return memberships
     }
 

@@ -30,10 +30,11 @@
 ## Partie A — Rien avant l'accord (5 min)
 
 - [ ] Avec un compte dont l'accord date de l'**ancien** texte (voir la recette LOC-2a, partie E) ou un compte neuf **avant** « J'accepte » : dans la console, **aucun** document `positions/…` n'apparaît pour lui et son statut ne change pas.
-- [ ] Touchez « **Pas maintenant** » au re-consentement : vous arrivez sur le Feed. **Un encart « En attente de ton accord »** est affiché sous le nom de la Miff (« Rien n'est partagé avec « … » tant que tu n'as pas donné ton accord. »), avec le bouton **« Revoir et accepter »** et la phrase « Tu verras de nouveau les statuts de tes proches ici dès que tu auras donné ton accord. ». Aucun mot « refusé » ou « désactivé ».
-- [ ] Ouvrez l'écran de la **Miff** : le même encart, et l'interrupteur « Partager mon statut » est **coupé et grisé** (« En attente de ton accord : rien n'est partagé pour l'instant. »). Créateur : pas de « Tu peux aussi la quitter ».
+- [ ] Touchez « **Pas maintenant** » au re-consentement : vous arrivez sur le Feed. **Un encart « En attente de ton accord »** est affiché sous le nom de la Miff (« Miff ne met plus à jour ton statut avec « … » tant que tu n'as pas donné ton accord. »), avec le bouton **« Revoir et accepter »** et la phrase « Tu verras de nouveau les statuts de tes proches ici dès que tu auras donné ton accord. ». Aucun mot « refusé » ou « désactivé ».
+- [ ] Ouvrez l'écran de la **Miff** : le même encart, et l'interrupteur « Partager mon statut » reste **utilisable** (« En attente de ton accord : ton statut n'est plus mis à jour. Tu peux arrêter de partager. ») : le texte dit que le dernier statut reste visible des membres tant que vous n'avez pas arrêté de partager. Créateur : pas de « Tu peux aussi la quitter ».
 - [ ] Réglages > Confidentialité > Localisation : l'état de l'autorisation (« Toujours autorisée » ou « À compléter… »), la phrase qui dit à quoi sert la localisation, et **une ligne « En attente » par Miff** avec « Revoir et accepter ».
 - [ ] Marchez dehors 10 minutes dans cet état (ou laissez le téléphone) : **aucune** icône de localisation en barre d'état venant de Miff, aucune écriture dans la console.
+- [ ] Dans cet état, **arrêtez de partager** avec l'interrupteur : le statut disparaît de la console (le dialogue habituel).
 - [ ] Touchez « **Revoir et accepter** » puis « J'accepte » : l'encart disparaît ; la console montre `consentVersion` = `2026-11-v03`.
 
 ## Partie B — Arrivée et départ, app fermée, à pied (20 min)

@@ -41,15 +41,31 @@ object TrackingLimits {
     /** The places and the consent of a Miff are read again from the server when the local copy is older than this (ticket 6.4 (3)). */
     const val PLACES_REREAD_MILLIS = 60L * 60L * 1000L
 
-    /** A fix older than this is not used to choose the zones (the person has moved since): another one is asked for. */
+    /**
+     * A position older than this is never used, for any occasion (review I2): the person has moved since, and an old one would write a false arrival or
+     * a false position. Another one is asked for, or nothing is done.
+     */
     const val FIX_MAX_AGE_MILLIS = 10L * 60L * 1000L
+
+    /** How long the engine waits for a fresh position (a receiver has about ten seconds in all: the zones are armed BEFORE this wait, review I1). */
+    const val POSITION_WAIT_MILLIS = 3_000L
+
+    /** The rules accept a time up to 5 minutes ahead of the server's: the same margin is used for a position that looks to be in the future. */
+    const val CLOCK_SKEW_MILLIS = 5L * 60L * 1000L
+
+    /**
+     * After a refusal of the server the Miff is looked at again in this time, not at every wake-up (a phone whose clock is more than 5 minutes ahead is
+     * refused every time and would read the server at each wake-up).
+     */
+    const val RECHECK_AFTER_REFUSAL_MILLIS = 5L * 60L * 1000L
 }
 
 /** The time of an event as it is written (criterion STA3). */
 object EventTime {
     /**
-     * The real time of the event, never later than now (a clock that is ahead must not make the rules refuse it: they accept 5 minutes at most),
-     * or null when it is more than about 24 h old: the rules would refuse it, so it is given up (no loop).
+     * The real time of the event, never later than the clock of the phone, or null when it is more than about 24 h old: the rules would refuse it, so
+     * it is given up (no loop). LIMIT: the rules compare with the clock of the SERVER (24 h back, 5 minutes ahead). A phone whose clock is more than
+     * 5 minutes ahead is refused even with a time capped at its own now; such a refusal is not retried at every wake-up (see RECHECK_AFTER_REFUSAL_MILLIS).
      */
     fun forWrite(
         eventMillis: Long,

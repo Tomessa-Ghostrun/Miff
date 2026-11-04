@@ -6,7 +6,7 @@ package com.tomessa.miff.domain.tracking
 
 /** Which zones of the Miffs where the person shares are watched, and which ones are left out (ticket 6.5, criteria POS2, POS3, POS4). */
 object ZoneSelection {
-    /** The geofencing of Android would take 100; the PM decided 20, like iOS (decision Q9). */
+    /** Android allows 100 geofences per app; the PM decided 20, like iOS (decision Q9). */
     const val MAX_WATCHED = 20
 
     /** One place of one Miff, before the copies are put together. */
@@ -18,23 +18,25 @@ object ZoneSelection {
     }
 
     /**
-     * The copies of a place (same identifier) in several Miffs are ONE zone (criterion MIF3). Should two copies disagree (one is stale),
-     * the copy of the Miff with the smallest identifier wins: deterministic, and the next reading of the server makes them agree.
+     * The copies of a place in several Miffs are ONE zone (criterion MIF3) ONLY when they are the same zone on the ground: same identifier, same
+     * position, radius and type ([ZoneKey]). Two different places that happen to have the same identifier (the fixed p1 / p2 of two free creators, review B1)
+     * are two zones, and so are two stale copies that disagree: the next reading of the server makes the stale one go away.
      */
     fun merge(places: List<MiffPlace>): List<TrackedZone> =
         places
-            .groupBy { it.place.id }
-            .map { (id, copies) ->
-                val first = copies.minBy { it.miffId }.place
+            .groupBy { it.place.key }
+            .map { (key, copies) ->
+                val first = copies.first().place
                 TrackedZone(
-                    placeId = id,
+                    key = key,
+                    placeId = first.id,
                     lat = first.lat,
                     lng = first.lng,
                     radiusM = first.radiusM,
                     type = first.type,
                     miffIds = copies.map { it.miffId }.toSet(),
                 )
-            }.sortedBy { it.placeId }
+            }.sortedBy { it.key }
 
     /**
      * The zones to watch: the ones where the person IS now (by the position, or by the local state of the presence) always come first, so
@@ -59,14 +61,14 @@ object ZoneSelection {
             zones.map {
                 val centre = Geo.distanceMeters(lat, lng, it.lat, it.lng)
                 val edge = Geo.edgeDistanceMeters(centre, it.radiusM)
-                Scored(it, edge, centre, here = edge == 0.0 || it.placeId in insideIds)
+                Scored(it, edge, centre, here = edge == 0.0 || it.key in insideIds)
             }
         return scored
             .sortedWith(
                 compareByDescending<Scored> { it.here }
                     .thenBy { if (it.here) 0.0 else it.edge }
                     .thenBy { it.centre }
-                    .thenBy { it.zone.placeId },
+                    .thenBy { it.zone.key },
             ).take(max)
             .map { it.zone }
     }

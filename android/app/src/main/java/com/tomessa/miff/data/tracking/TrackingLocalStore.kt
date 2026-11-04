@@ -136,6 +136,9 @@ class LocalState(
     val updatesArmed: Boolean = false,
     /** When the list of Miffs where the person shares (with the consent of version 3) was last read from the server (0 = never). */
     val checkedAtMillis: Long = 0L,
+    /** The last Miff served by a pass of statuses / of positions: the next pass starts AFTER it, so that a breaker never spares the same Miffs for good. */
+    val statusCursor: String? = null,
+    val positionCursor: String? = null,
 ) {
     fun fix(): Fix? =
         if (fixLat != null && fixLng != null &&
@@ -154,6 +157,8 @@ class LocalState(
         breaker: BreakerState? = this.breaker?.toState(),
         updatesArmed: Boolean = this.updatesArmed,
         checkedAtMillis: Long = this.checkedAtMillis,
+        statusCursor: String? = this.statusCursor,
+        positionCursor: String? = this.positionCursor,
     ) = LocalState(
         uid = uid,
         miffs = miffs,
@@ -165,6 +170,8 @@ class LocalState(
         breaker = breaker?.let(LocalBreaker::of),
         updatesArmed = updatesArmed,
         checkedAtMillis = checkedAtMillis,
+        statusCursor = statusCursor,
+        positionCursor = positionCursor,
     )
 
     override fun toString(): String = "LocalState(redacted)"

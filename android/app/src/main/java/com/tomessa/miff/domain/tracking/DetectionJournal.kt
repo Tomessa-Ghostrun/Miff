@@ -26,8 +26,7 @@ enum class JournalKind {
     PRESENCE_UNKNOWN,
     NOT_ELIGIBLE,
     WAKE_NETWORK,
-    WAKE_BOOT,
-    WAKE_UPDATE,
+    WAKE_REARM,
 }
 
 /** A line of the journal as it is kept and shown. */

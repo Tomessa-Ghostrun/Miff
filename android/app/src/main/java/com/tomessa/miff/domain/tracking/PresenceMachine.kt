@@ -6,8 +6,9 @@ import com.tomessa.miff.domain.place.PlaceType
  * PRIVACY, for this file: only identifiers of places and times; no coordinate, no name, no address. Pure: nothing is read from the phone.
  */
 
-/** A zone of ONE Miff, as far as the presence is concerned. */
+/** A zone of ONE Miff, as far as the presence is concerned: its [key] names the zone on the ground, its [placeId] is the identifier of the place in that Miff. */
 class ZoneRef(
+    val key: String,
     val placeId: String,
     val type: PlaceType,
 ) {
@@ -21,9 +22,9 @@ class ZoneRef(
  */
 object PresenceMachine {
     /**
-     * The presence of a Miff given the zones the person is in (6.6): a trusted zone wins over a danger zone ("la zone de confiance l'emporte",
-     * decision of the PM, ticket Statut); among several zones of the same type the last entered is named (leaving A while staying in B is
-     * `in_trusted` on B); no zone of the Miff = out. The [placeId] of an `out` is filled by the caller (the zone just left).
+     * The presence of a Miff given the zones the person is in, a map zone KEY -> time of the entry (6.6): a trusted zone wins over a danger zone ("la zone de confiance
+     * l'emporte", decision of the PM, ticket Statut); among several zones of the same type the last entered is named (leaving A while staying in B is
+     * `in_trusted` on B); no zone of the Miff = out. The placeId is the one of the Miff; that of an `out` is filled by the caller (the zone just left).
      */
     fun derive(
         zones: List<ZoneRef>,
@@ -31,8 +32,8 @@ object PresenceMachine {
     ): DerivedPresence {
         fun latest(type: PlaceType): String? =
             zones
-                .filter { it.type == type && it.placeId in inside }
-                .sortedWith(compareByDescending<ZoneRef> { inside.getValue(it.placeId) }.thenBy { it.placeId })
+                .filter { it.type == type && it.key in inside }
+                .sortedWith(compareByDescending<ZoneRef> { inside.getValue(it.key) }.thenBy { it.placeId })
                 .firstOrNull()
                 ?.placeId
         latest(PlaceType.TRUSTED)?.let { return DerivedPresence(PresenceValue.IN_TRUSTED, it) }
@@ -47,17 +48,23 @@ object PresenceMachine {
      */
     fun onTransition(
         kind: TransitionKind,
-        placeId: String,
+        zoneKey: String,
         atMillis: Long,
         zones: List<ZoneRef>,
         insideAfter: Map<String, Long>,
         last: DerivedPresence?,
     ): Pair<DerivedPresence, StatusFact>? {
-        if (zones.none { it.placeId == placeId }) return null
+        val zone = zones.firstOrNull { it.key == zoneKey } ?: return null
         val raw = derive(zones, insideAfter)
         // A departure that leaves no zone says WHICH zone was left (the label "A quitté {lieu}" of the Feed).
         val derived =
-            if (raw.presence == PresenceValue.OUT && kind == TransitionKind.EXIT) raw.copy(placeId = placeId) else raw
+            if (raw.presence == PresenceValue.OUT &&
+                kind == TransitionKind.EXIT
+            ) {
+                raw.copy(placeId = zone.placeId)
+            } else {
+                raw
+            }
         if (derived == last) return null
         return derived to
             StatusFact(

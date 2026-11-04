@@ -9,6 +9,8 @@ import com.google.android.gms.location.LocationResult
 import com.tomessa.miff.MiffApplication
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.TransitionKind
+import com.tomessa.miff.domain.tracking.ZoneKey
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,22 +37,7 @@ class TrackingReceiver : BroadcastReceiver() {
         val work: suspend () -> Unit =
             when (intent.action) {
                 TrackingIntents.ACTION_GEOFENCE -> {
-                    val event = GeofencingEvent.fromIntent(intent) ?: return
-                    if (event.hasError()) return
-                    val kind =
-                        when (event.geofenceTransition) {
-                            Geofence.GEOFENCE_TRANSITION_ENTER -> TransitionKind.ENTER
-                            Geofence.GEOFENCE_TRANSITION_EXIT -> TransitionKind.EXIT
-                            else -> return
-                        }
-                    val ids =
-                        event.triggeringGeofences
-                            .orEmpty()
-                            .map { it.requestId }
-                            .filter(::isPlaceId)
-                    // The time of the event is the time it reaches the app (the system gives no other, short of reading the location, which is not done).
-                    val at = System.currentTimeMillis()
-                    ({ ids.forEach { engine.onTransition(kind, it, at) } })
+                    geofenceWork(intent, engine) ?: return
                 }
 
                 TrackingIntents.ACTION_MOVED -> {
@@ -87,14 +74,37 @@ class TrackingReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun isPlaceId(value: String): Boolean = PLACE_ID.matches(value)
+    /**
+     * What to do for a message of the geofencing, or null to ignore it. An error (GEOFENCE_NOT_AVAILABLE and the like) means the system lost or cannot
+     * keep the zones: they are all armed again, as after a restart (review B2). Otherwise only the kind of transition and the zone keys are taken.
+     */
+    private fun geofenceWork(
+        intent: Intent,
+        engine: TrackingEngine,
+    ): (suspend () -> Unit)? {
+        val event = GeofencingEvent.fromIntent(intent) ?: return null
+        if (event.hasError()) return { engine.refresh(TrackingEngine.Reason.REARM) }
+        val kind =
+            when (event.geofenceTransition) {
+                Geofence.GEOFENCE_TRANSITION_ENTER -> TransitionKind.ENTER
+                Geofence.GEOFENCE_TRANSITION_EXIT -> TransitionKind.EXIT
+                else -> return null
+            }
+        val keys =
+            event.triggeringGeofences
+                .orEmpty()
+                .map { it.requestId }
+                .filter(ZoneKey::isValid)
+        // The time of the event is the time it reaches the app (the system gives no other, short of reading the location, which is not done).
+        val at = System.currentTimeMillis()
+        return { keys.forEach { engine.onTransition(kind, it, at) } }
+    }
 
     private companion object {
-        val PLACE_ID = Regex("^[A-Za-z0-9]{1,20}$")
-
         /** A receiver has about ten seconds: stopping a little before, what is not finished waits for the next wake-up. */
         const val BUDGET_MILLIS = 8_500L
 
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        // A failure of the detection must never take the app down from a receiver: swallowed here (nothing is logged: it could hold a place).
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
     }
 }

@@ -9,9 +9,9 @@ import org.junit.Test
 
 /** From the events of the zones to the status of ONE Miff (ticket 6.6, criteria DET2, DET3, STA1). Pure. */
 class PresenceMachineTest {
-    private val home = ZoneRef("home", PlaceType.TRUSTED)
-    private val work = ZoneRef("work", PlaceType.TRUSTED)
-    private val danger = ZoneRef("danger", PlaceType.RISK)
+    private val home = ZoneRef("home", "home", PlaceType.TRUSTED)
+    private val work = ZoneRef("work", "work", PlaceType.TRUSTED)
+    private val danger = ZoneRef("danger", "danger", PlaceType.RISK)
     private val zones = listOf(home, work, danger)
 
     private fun enter(
