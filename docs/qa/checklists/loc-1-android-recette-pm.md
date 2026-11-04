@@ -37,7 +37,7 @@ Accès : Profil > « Lieux de la Miff » > **Ajouter un lieu** (ou la carte de l
 - [ ] **Mode avion**, tapez une adresse : « La recherche d'adresse n'est pas disponible pour le moment. Réessaie dans un instant. » avec **Réessayer** ; réactivez le réseau, touchez Réessayer : les suggestions arrivent.
 - [ ] Curseur du périmètre : de **50 à 800 m, par pas de 50**, 100 m au départ. Le cercle de la carte suit le curseur et la carte s'éloigne seule quand le rayon grandit. **Sous 100 m**, une note discrète « En dessous de 100 m, la détection peut manquer un passage. » (pas en rouge) ; elle disparaît à 100 m.
 - [ ] Sous la carte, **« OpenFreeMap © OpenMapTiles Data from OpenStreetMap »** est toujours lu.
-- [ ] Type : « Zone de confiance » est choisie (avec une coche). **« Zone de danger » porte une pastille « Miff+ » avec un cadenas** ; la toucher ouvre l'écran « Les zones de danger font partie de Miff+ » (provisoire : « Miff+ arrive bientôt », pas de prix, pas de bouton d'essai) ; en le fermant, vous revenez au formulaire, **le type est resté « Zone de confiance »**.
+- [ ] Type : « Zone de confiance » est choisie (avec une coche). **« Zone de danger » porte une pastille « Miff+ » avec un cadenas** ; la toucher ouvre l'écran « Les zones de danger font partie de Miff+ » (provisoire : « Avec Miff+, tu peux définir des zones de danger autour des lieux à éviter. », « Miff+ arrive bientôt », pas de prix, pas de bouton d'essai) ; en le fermant, vous revenez au formulaire, **le type est resté « Zone de confiance »**.
 - [ ] Remplissez nom + adresse choisie et touchez **Enregistrer** : « On enregistre ton lieu… » puis (Temps 1) « Ça n'a pas fonctionné. Réessaie dans un instant. » et le formulaire reste rempli ; (Temps 2) retour à la liste avec la confirmation (partie C).
 
 ## Partie B — Accessibilité et confort (Temps 1, 8 min)
@@ -56,7 +56,7 @@ Accès : Profil > « Lieux de la Miff » > **Ajouter un lieu** (ou la carte de l
 
 ## Partie D — Détail, modification, suppression (Temps 2, 10 min)
 
-- [ ] Détail d'un lieu (A) : carte avec cercle, adresse, **« Voir sur la carte »** (ouvre l'application de cartes sur le lieu), Rayon, Type (étiquette + icône), Catégorie, « Visible par les membres de… », « Créé par… (toi) », et la phrase sur ce que ça change pour vous. **« Modifier »** en haut à droite (absent chez B).
+- [ ] Détail d'un lieu (A) : carte avec cercle, adresse, **« Voir sur la carte »** (ouvre l'application de cartes sur le lieu), Rayon, Type (étiquette + icône), Catégorie, « Visible par les membres de… », « Créé par… (toi) ». **Pas** de phrase sur « ce que ça change pour toi » : elle est masquée jusqu'à LOC-2 (la détection n'existe pas encore). **« Modifier »** en haut à droite (absent chez B).
 - [ ] **Modifier** : tout est pré-rempli ; « Enregistrer » est grisé tant que rien n'a changé. Changez le nom, le rayon, la catégorie, **le type** (vers « Zone de danger » : refusé pour un compte sans Miff+, avec l'écran « Miff+ arrive bientôt »), l'adresse : après enregistrement, le détail montre les nouvelles valeurs.
 - [ ] **Supprimer ce lieu** (bouton blanc au contour rouge, pas de rouge plein) : la question « Supprimer ce lieu ? Ce lieu sera définitivement supprimé pour toi et pour tous les membres des Miffs associées. » avec **Annuler** ; Annuler ne supprime rien. Confirmez : retour à la liste, le lieu a disparu (chez B aussi, en direct si son écran est ouvert).
 - [ ] **Mode avion** + Supprimer + confirmer : « Pas de connexion pour le moment… », rien n'est supprimé, rien n'attend dans une file.
@@ -64,7 +64,8 @@ Accès : Profil > « Lieux de la Miff » > **Ajouter un lieu** (ou la carte de l
 
 ## Partie E — Vie privée (Temps 1, 3 min)
 
-- [ ] L'app ne demande **aucune permission** (ni localisation, ni notifications) dans tout ce parcours.
+- [ ] L'app ne demande **aucune permission** (ni localisation, ni notifications) dans tout ce parcours, et **Réglages Android > Applications > Miff > Autorisations** n'en liste aucune de localisation.
+- [ ] Après une **déconnexion**, la carte d'un lieu d'un autre compte ne s'affiche pas « déjà chargée » : les tuiles sont effacées avec la session.
 - [ ] Liste des applications récentes (Android 13) : l'aperçu de l'app est masqué sur les écrans des lieux.
 - [ ] Aucune adresse, aucun nom de lieu dans les événements Analytics (console, DebugView) : seuls `paywall_shown` / `paywall_dismissed` (avec `extra_trusted_place`) existent, au 3e lieu seulement.
 

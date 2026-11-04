@@ -86,7 +86,8 @@ fun CategoryIcon(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource((category ?: PlaceCategory.OTHER).iconRes),
+            // A place written before the categories existed has none: a plain pin, never "Autre" by default.
+            painter = painterResource(category?.iconRes ?: R.drawable.ic_loc_pin),
             contentDescription = null,
             tint = colorActionPrimary,
             modifier = Modifier.size(size * ICON_RATIO),

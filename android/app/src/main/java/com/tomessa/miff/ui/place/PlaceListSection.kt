@@ -134,12 +134,24 @@ private fun PlaceRow(
     onClick: () -> Unit,
 ) {
     val category = place.category
-    val categoryName = stringResource((category ?: com.tomessa.miff.domain.place.PlaceCategory.OTHER).labelRes)
+    val address = place.address
     val spoken =
-        if (place.address.isNullOrEmpty()) {
-            stringResource(R.string.place_list_row_noaddress_a11y, place.name, categoryName)
-        } else {
-            stringResource(R.string.place_list_row_a11y, place.name, categoryName, place.address)
+        when {
+            category != null && !address.isNullOrEmpty() -> {
+                stringResource(R.string.place_list_row_a11y, place.name, stringResource(category.labelRes), address)
+            }
+
+            category != null -> {
+                stringResource(R.string.place_list_row_noaddress_a11y, place.name, stringResource(category.labelRes))
+            }
+
+            !address.isNullOrEmpty() -> {
+                stringResource(R.string.place_list_row_nocategory_a11y, place.name, address)
+            }
+
+            else -> {
+                stringResource(R.string.place_list_row_nocategory_noaddress_a11y, place.name)
+            }
         }
     Row(
         modifier =

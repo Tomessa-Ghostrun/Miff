@@ -5302,6 +5302,23 @@
         }
       }
     },
+    "place_address_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Address of the place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse du lieu"
+          }
+        }
+      }
+    },
     "place_address_clear_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -5349,6 +5366,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Entre l'adresse exacte de ce lieu, puis choisis-la dans la liste."
+          }
+        }
+      }
+    },
+    "place_address_legacy_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This place doesn't have an address yet: search for it and pick it from the list to be able to save it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce lieu n'a pas encore d'adresse : cherche-la et choisis-la dans la liste pour pouvoir l'enregistrer."
           }
         }
       }
@@ -6114,6 +6148,40 @@
         }
       }
     },
+    "place_list_row_nocategory_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "place_list_row_nocategory_noaddress_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        }
+      }
+    },
     "place_list_title": {
       "extractionState": "manual",
       "localizations": {
@@ -6178,6 +6246,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
+          }
+        }
+      }
+    },
+    "place_map_retry_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
           }
         }
       }
@@ -6471,6 +6556,23 @@
         }
       }
     },
+    "place_name_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name of the place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nom du lieu"
+          }
+        }
+      }
+    },
     "place_name_counter": {
       "extractionState": "manual",
       "localizations": {
@@ -6596,13 +6698,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When a loved one enters a danger zone, their status turns red in your Miff's Feed."
+            "value": "With Miff+, you can set danger zones around places to avoid."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quand un proche entre dans une zone de danger, son statut passe au rouge dans le Feed de ta Miff."
+            "value": "Avec Miff+, tu peux définir des zones de danger autour des lieux à éviter."
           }
         }
       }
@@ -6647,13 +6749,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Set danger zones to see when your loved ones are there"
+            "value": "Set danger zones around places to avoid"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Déclare des zones de danger pour voir quand tes proches s'y trouvent"
+            "value": "Définis des zones de danger autour des lieux à éviter"
           }
         }
       }
@@ -6977,6 +7079,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enregistrer"
+          }
+        }
+      }
+    },
+    "place_save_hint_category": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a category to save this place."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis une catégorie pour enregistrer ce lieu."
           }
         }
       }

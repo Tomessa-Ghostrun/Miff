@@ -33,7 +33,8 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 
 - Le **texte tapé** dans le champ d'adresse part vers **Photon** (komoot, Allemagne), avec l'adresse IP. C'est une adresse que la personne tape pour **créer un lieu**, souvent un domicile. Le fournisseur ne reçoit ni le nom du lieu, ni l'identité, ni la position.
 - La **zone de la carte affichée** est connue d'**OpenFreeMap** (tuiles demandées) avec l'adresse IP.
-- Ni l'un ni l'autre ne reçoit de position GPS : **l'app ne demande aucune permission de localisation dans ce ticket** (LOC-2).
+- Ni l'un ni l'autre ne reçoit de position GPS : **l'app ne demande aucune permission de localisation dans ce ticket** (LOC-2). **Attention** : MapLibre ajoute lui-même à son manifeste les permissions de localisation et `ACCESS_WIFI_STATE` (pour une couche « ma position » que Miff n'utilise pas) ; elles sont **retirées** par `tools:node="remove"` dans `AndroidManifest.xml` et la CI vérifie le **manifeste fusionné** à chaque PR. LOC-2 retirera ces lignes.
+- Les **tuiles mémorisées** par la carte (fichier `mbgl-offline.db` des fichiers privés de l'app, hors sauvegarde) sont effacées à la fin de la session (déconnexion, suppression de compte).
 - Dans l'app : ce texte n'est **jamais journalisé**, jamais dans un événement Analytics, jamais dans un rapport de plantage, jamais dans une route de navigation (`PlacePrivacyTest` le vérifie sur le code source).
 - Tout passe en **HTTPS**, sans repli en clair, sans suivre de redirection.
 
@@ -46,3 +47,14 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 | Enregistrer, modifier, supprimer | écritures seulement (5 Miffs au plus par lot ; **20 lectures de règles** par lot au plus, vérifié par `PlaceWritesTest` : 5 Miffs en Miff+ = 15) |
 
 **Limite connue** : l'ouverture du formulaire relit tout depuis le serveur (pour décider des limites sur des données fraîches). Pour un compte Miff+ avec beaucoup de Miffs, c'est une dizaine de lectures par ouverture : sans effet à l'échelle de la bêta. **Signal** : voir `surveillance-quotas.md` (ratio de lectures par utilisateur actif).
+
+## Licences et attributions (à reprendre dans l'écran « licences » quand il existera)
+
+| Élément | Licence | À afficher |
+|---|---|---|
+| MapLibre Native (`android-sdk-opengl`) | BSD-2-Clause | Texte de la licence et mention de copyright de MapLibre |
+| Données OpenStreetMap (cartes, adresses) | ODbL | « © contributeurs OpenStreetMap » (sous la liste d'adresses) |
+| Tuiles OpenFreeMap | Conditions d'OpenFreeMap (lues le 2026-11-01) | « OpenFreeMap © OpenMapTiles Data from OpenStreetMap » (sous chaque carte) |
+| Photon (service public de komoot) | Apache 2.0 (logiciel) ; données OSM (ODbL) | Pas d'attribution propre exigée dans les pages lues ; celle d'OSM suffit |
+
+Il n'y a **pas d'écran « licences » dans l'app** aujourd'hui : l'inventaire des dépendances est dans `android/README.md`.

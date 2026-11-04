@@ -52,7 +52,12 @@ class FakePlaceStore : com.tomessa.miff.data.place.PlaceStore {
     var onCommit: (List<com.tomessa.miff.domain.miff.DocWrite>) -> Unit = {}
     val commits = mutableListOf<List<com.tomessa.miff.domain.miff.DocWrite>>()
 
-    override suspend fun readEntitlement(uid: String) = entitlement
+    var entitlementFailure: Exception? = null
+
+    override suspend fun readEntitlement(uid: String): com.tomessa.miff.data.miff.EntitlementRead? {
+        entitlementFailure?.let { throw it }
+        return entitlement
+    }
 
     override suspend fun readMemberships(uid: String): List<com.tomessa.miff.data.place.PlaceMembership> {
         membershipsFailure?.let { throw it }

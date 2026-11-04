@@ -512,7 +512,8 @@ class PlaceScreensTest {
         composeRule.onNodeWithText("150 m").assertIsDisplayed()
         composeRule.onNodeWithText("Famille Martin").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Emmanuelle Martin").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.place_detail_info_trusted)).performScrollTo().assertIsDisplayed()
+        // The sentence about what arrival and departure do is hidden until LOC-2 (nothing detects a position yet).
+        composeRule.onAllNodesWithText(text(R.string.place_detail_info_trusted)).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.place_detail_edit)).assertCountEquals(0)
     }
 
@@ -531,7 +532,7 @@ class PlaceScreensTest {
         composeRule.onNodeWithText(text(R.string.place_detail_edit)).performClick()
         assertEquals(1, edited)
         composeRule.onNodeWithText("Emmanuelle Martin (toi)").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.place_detail_info_danger)).performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.place_detail_info_danger)).assertCountEquals(0)
         composeRule.onAllNodesWithText("risque", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 
@@ -600,5 +601,61 @@ class PlaceScreensTest {
         composeRule.onNodeWithText(text(R.string.place_type_danger)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_category_other)).performScrollTo().assertIsDisplayed()
         assertTrue(true)
+    }
+    // --- Review of PR #56 ------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun detail_aPlaceWithoutCategory_showsNoCategory_neverAutreByDefault() {
+        detail(readyState.copy(place = testPlace("p1", "Vieille maison", category = null)))
+        composeRule.onAllNodesWithText(text(R.string.place_detail_category)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.place_category_other)).assertCountEquals(0)
+    }
+
+    @Test
+    fun list_aPlaceWithoutCategory_isReadWithoutOne() {
+        rows(PlaceListUi(listOf(testPlace("p1", "Vieille maison", category = null)), isCreator = false, premium = null))
+        composeRule
+            .onNodeWithContentDescription("Vieille maison, 17 Avenue d'Italie, 75013 Paris, France")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun form_editAPlaceWithoutCategory_saysWhySaveIsGrey_andNothingIsPreselected() {
+        form(filled().copy(mode = PlaceFormMode.EDIT, category = null, initial = filled().snapshot))
+        composeRule.onNodeWithText(text(R.string.place_save_hint_category)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.place_save_action)).assertIsNotEnabled()
+    }
+
+    @Test
+    fun form_editAPlaceWithoutAddress_saysWhatToDo() {
+        val base = filled().copy(mode = PlaceFormMode.EDIT, chosen = null, addressText = "")
+        form(base.copy(initial = base.snapshot))
+        composeRule.onNodeWithText(text(R.string.place_address_legacy_hint)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun deleteDialog_listsTheMiffsThePlaceIsInNow_evenIfOneWasUntickedInTheForm() {
+        val base = filled(owned = listOf(famille, tuches), selected = listOf(MIFF_ID, OTHER_MIFF_ID))
+        val untickedOne =
+            base.copy(
+                mode = PlaceFormMode.EDIT,
+                initial = base.snapshot,
+                selectedMiffIds = listOf(MIFF_ID),
+            )
+        form(untickedOne.copy(deleteDialogOpen = true))
+        composeRule.onNodeWithText(text(R.string.place_delete_body_several)).assertIsDisplayed()
+        composeRule.onAllNodesWithText("Les tuches").assertCountEquals(1)
+    }
+
+    @Test
+    fun offer_promisesNothingThatDoesNotExistYet() {
+        show { PlacePaywallScreen(PaywallReason.DANGER, onClose = {}) }
+        composeRule.onAllNodesWithText("statut passe au rouge", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("pour voir quand", substring = true).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                text(R.string.place_paywall_feature_danger_desc),
+            ).performScrollTo()
+            .assertIsDisplayed()
     }
 }

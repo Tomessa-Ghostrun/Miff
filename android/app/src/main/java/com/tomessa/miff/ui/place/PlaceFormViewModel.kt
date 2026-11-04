@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /*
  * SECURITY, for this file: the name, the address (typed and chosen), the coordinates and the Miffs of a place live in memory in
@@ -135,6 +136,16 @@ data class PlaceFormState(
             !loading && loadFailed == null && !busy && PlaceName.hasSomething(name) && chosen != null &&
                 selectedMiffIds.isNotEmpty() && category != null && changed
 
+    /** The Miffs the place is attached to NOW (what a deletion removes it from), in the order of the list, whatever is ticked. */
+    val attachedMiffs: List<OwnedMiff>
+        get() = owned.filter { it.id in initial?.miffIds.orEmpty() }
+
+    /** Edit mode, place written before the addresses were compulsory: it has none, and one must be chosen to save. */
+    val addressMissing: Boolean get() = mode == PlaceFormMode.EDIT && initial != null && initial.label.isEmpty()
+
+    /** Edit mode, place written before the categories existed: one must be chosen to save (nothing is chosen for the person). */
+    val categoryMissing: Boolean get() = mode == PlaceFormMode.EDIT && category == null
+
     /** One Miff only: no picker, the Miff is shown (design 05E). */
     val singleMiff: Boolean get() = owned.size <= 1
 
@@ -152,6 +163,8 @@ data class PlaceFormState(
 class PlaceFormViewModel(
     /** Null: a new place. Else the identifier of the place to edit. */
     private val placeId: String?,
+    /** The Miff the place was opened from (two different places can share an identifier in two Miffs: this one says which). */
+    private val miffId: String?,
     private val repository: PlaceRepository,
     private val search: AddressSearch,
     private val network: NetworkMonitor,
@@ -160,6 +173,8 @@ class PlaceFormViewModel(
     /** "fr" or "en": the language of the labels asked of the search service. */
     private val language: () -> String,
     private val debounceMillis: Long = PlaceLimits.SUGGESTION_DEBOUNCE_MS,
+    /** The whole search, fallback included: no screen waits for ever for a service. */
+    private val searchTimeoutMillis: Long = SEARCH_TIMEOUT_MS,
 ) : ViewModel() {
     private val mutableState =
         MutableStateFlow(PlaceFormState(mode = if (placeId == null) PlaceFormMode.CREATE else PlaceFormMode.EDIT))
@@ -235,7 +250,7 @@ class PlaceFormViewModel(
             }
             return
         }
-        val group = loaded.groups.firstOrNull { it.id == placeId }
+        val group = loaded.groups.firstOrNull { it.id == placeId && (miffId == null || miffId in it.miffIds) }
         if (group == null) {
             mutableState.update { it.copy(loading = false, end = PlaceFormEnd.PLACE_GONE) }
             return
@@ -243,8 +258,13 @@ class PlaceFormViewModel(
         original = group
         val place = group.main
         val address = place.address.orEmpty()
+        // A place written before the addresses were compulsory has none: nothing is chosen, and the form says what to do.
         val chosen =
-            AddressSuggestion(title = address, subtitle = "", label = address, lat = place.lat, lng = place.lng)
+            if (address.isEmpty()) {
+                null
+            } else {
+                AddressSuggestion(title = address, subtitle = "", label = address, lat = place.lat, lng = place.lng)
+            }
         val miffs = loaded.ownedMiffs.map { it.id }.filter { it in group.miffIds }
         val filled =
             PlaceFormState(
@@ -362,7 +382,12 @@ class PlaceFormViewModel(
             viewModelScope.launch {
                 delay(debounceMillis)
                 val answer =
-                    if (network.isOnline()) search.search(query, language()) else AddressSearchResult.Unavailable
+                    if (network.isOnline()) {
+                        withTimeoutOrNull(searchTimeoutMillis) { search.search(query, language()) }
+                            ?: AddressSearchResult.Unavailable
+                    } else {
+                        AddressSearchResult.Unavailable
+                    }
                 val next =
                     when (answer) {
                         is AddressSearchResult.Found -> SuggestionsState.Found(answer.suggestions)
@@ -533,5 +558,6 @@ class PlaceFormViewModel(
     private companion object {
         /** What can be typed in the address field: the longest address the rules accept. */
         const val ADDRESS_INPUT_MAX = PlaceLimits.ADDRESS_MAX
+        const val SEARCH_TIMEOUT_MS = 8_000L
     }
 }

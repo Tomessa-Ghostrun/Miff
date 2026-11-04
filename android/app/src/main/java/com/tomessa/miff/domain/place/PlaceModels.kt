@@ -121,11 +121,16 @@ class PlaceGroup(
     override fun toString(): String = "PlaceGroup(redacted)"
 
     companion object {
-        /** The places of several Miffs grouped by identifier; a group keeps the order in which its identifier first appears. */
+        /**
+         * The places of several Miffs put together: copies of ONE place have the same identifier AND the same name and position
+         * (they are written together). Two different places that happen to share an identifier stay two places (a free account
+         * created before the rule "a slot is free in every Miff" could have made them). A group keeps the order in which it first appears.
+         */
         fun groupById(places: List<Place>): List<PlaceGroup> =
             places
-                .groupBy { it.id }
-                .map { (id, copies) -> PlaceGroup(id, copies) }
+                .groupBy { "${it.id}|${it.name}|${it.lat}|${it.lng}" }
+                .values
+                .map { copies -> PlaceGroup(copies.first().id, copies) }
     }
 }
 

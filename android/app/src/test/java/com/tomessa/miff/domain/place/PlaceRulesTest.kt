@@ -126,9 +126,13 @@ class PlaceRulesTest {
     private fun slot(
         premium: Boolean = false,
         type: PlaceType = PlaceType.TRUSTED,
-        targets: List<String> = listOf("m1"),
         existing: Map<String, Set<String>> = mapOf("m1" to emptySet()),
-    ) = PlaceQuota.forCreate(premium, type, targets, existing) { "NEWID123456789012345" }
+        distinct: Int =
+            existing.values
+                .flatten()
+                .toSet()
+                .size,
+    ) = PlaceQuota.forCreate(premium, type, existing, distinct) { "NEWID123456789012345" }
 
     @Test
     fun free_takesTheFirstFreeFixedSlot() {
@@ -150,19 +154,28 @@ class PlaceRulesTest {
     }
 
     @Test
-    fun free_theLimitCountsThePlacesOfThePersonInAllTheirMiffs() {
-        // A place attached to two Miffs counts once; two different places in two Miffs are the two of the plan.
-        val same = slot(targets = listOf("m1"), existing = mapOf("m1" to setOf("p1"), "m2" to setOf("p1")))
-        assertEquals("p2", (same as PlaceSlot.Use).placeId)
-        val two = slot(targets = listOf("m2"), existing = mapOf("m1" to setOf("p1"), "m2" to setOf("p2")))
+    fun free_aSlotTakenInAnotherOfMyMiffs_isNeverReused_forAnotherPlace() {
+        // The review scenario: I have "p1" in Miff A; I create a NEW place in Miff B only. B has no "p1", but taking it would make two
+        // different places share an identifier (read as ONE place in two Miffs: the count of the limit would be wrong).
+        val decision = slot(existing = mapOf("a" to setOf("p1"), "b" to emptySet()))
+        assertEquals("p2", (decision as PlaceSlot.Use).placeId)
+    }
+
+    @Test
+    fun free_onePlaceInTwoMiffs_countsOnce_andTwoDifferentPlacesCountTwice() {
+        // p1 in A and B = ONE place (distinct = 1): the 2nd place takes p2.
+        val one = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p1")), distinct = 1)
+        assertEquals("p2", (one as PlaceSlot.Use).placeId)
+        // p1 in A and p2 in B = TWO places: the limit.
+        val two = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p2")), distinct = 2)
         assertEquals(PaywallReason.LIMIT, (two as PlaceSlot.NeedsPremium).reason)
     }
 
     @Test
-    fun free_theSlotMustBeFreeInEveryChosenMiff() {
-        // p1 is free in m1 but taken in m2 (another place): p2 is the only slot free in both... and is taken nowhere.
-        val decision = slot(targets = listOf("m1", "m2"), existing = mapOf("m1" to emptySet(), "m2" to setOf("p1")))
-        assertEquals("p2", (decision as PlaceSlot.Use).placeId)
+    fun free_twoDifferentPlacesThatShareAnIdentifier_stillCountTwo() {
+        // Written by an older version: p1 in A and p1 in B are two places (the model groups them apart): the limit.
+        val decision = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p1")), distinct = 2)
+        assertEquals(PaywallReason.LIMIT, (decision as PlaceSlot.NeedsPremium).reason)
     }
 
     @Test

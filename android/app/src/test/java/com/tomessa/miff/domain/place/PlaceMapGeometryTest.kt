@@ -61,6 +61,19 @@ class PlaceMapGeometryTest {
     }
 
     @Test
+    fun geoUri_hasADotAndFiveDecimals_whateverTheLanguage() {
+        val before = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.FRANCE)
+            assertEquals("geo:48.82927,2.35679?q=48.82927,2.35679", PlaceMapGeometry.geoUri(48.82927, 2.35679))
+            assertEquals("geo:48.00000,2.10000?q=48.00000,2.10000", PlaceMapGeometry.geoUri(48.0, 2.1))
+            assertEquals("geo:-33.86880,151.20930?q=-33.86880,151.20930", PlaceMapGeometry.geoUri(-33.8688, 151.2093))
+        } finally {
+            Locale.setDefault(before)
+        }
+    }
+
+    @Test
     fun ring_neverGoesOutOfTheLongitudeRange() {
         PlaceMapGeometry.ring(0.0, 179.9995, 800).forEach { assertTrue(it.lng in -180.0..180.0) }
     }

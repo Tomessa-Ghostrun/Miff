@@ -303,7 +303,7 @@ class UserProfileRepositoryTest {
         assertTrue(
             flat.contains(
                 "teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory, " +
-                    "placeNotices, addressSearch)",
+                    "placeNotices, addressSearch, mapTileCache)",
             ),
         )
         assertTrue(source.contains("drafts = profileDrafts"))

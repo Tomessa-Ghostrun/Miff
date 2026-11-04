@@ -50,7 +50,21 @@ class FirestorePlaceStore(
     private val base: MiffStore,
     private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
 ) : PlaceStore {
-    override suspend fun readEntitlement(uid: String): EntitlementRead? = base.readEntitlement(uid)
+    // From the SERVER, never from the cache: a stale "free" would open the offer to a Miff+ account, a stale "Miff+" would let a
+    // limit through to the rules. A failure to read is an exception (the repository says "try again"), never "not Miff+".
+    override suspend fun readEntitlement(uid: String): EntitlementRead? {
+        val snapshot =
+            firestore()
+                .collection("entitlements")
+                .document(uid)
+                .get(Source.SERVER)
+                .await()
+        if (!snapshot.exists()) return null
+        return EntitlementRead(
+            active = snapshot.getBoolean("active") == true,
+            expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
+        )
+    }
 
     override suspend fun readMemberships(uid: String): List<PlaceMembership> =
         firestore()

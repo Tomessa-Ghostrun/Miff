@@ -461,4 +461,101 @@ class PlaceRepositoryTest {
             assertTrue(repository.delete("p1", (1..6).map { "m$it" }) is PlaceWriteResult.Failed)
             assertTrue(store.commits.isEmpty())
         }
+    // --- Review of PR #56 ----------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun prepare_theSubscriptionIsUnknown_whenItCannotBeRead_neverFree() =
+        runTest {
+            setUpMiffs()
+            store.entitlementFailure = offline()
+            val result = repository.prepare(uid)
+            // A failed read is "try again", never "free": the offer must not open because the network is down.
+            assertEquals(MiffFailure.OFFLINE, (result as PlaceContextLoad.Failed).failure)
+            store.entitlementFailure = FirebaseFirestoreException("x", Code.PERMISSION_DENIED)
+            assertEquals(MiffFailure.REFUSED, (repository.prepare(uid) as PlaceContextLoad.Failed).failure)
+        }
+
+    @Test
+    fun prepare_noEntitlementDocument_isFree_notUnknown() =
+        runTest {
+            setUpMiffs()
+            store.entitlement = null
+            assertEquals(false, context().premium)
+        }
+
+    @Test
+    fun scenario_aHasP1InMiffA_creatingInMiffB_takesP2_andTheNextOneIsTheLimit() =
+        runTest {
+            // The review scenario (I4): two Miffs created by a free account whose Miff+ ended.
+            setUpMiffs()
+            seed("p1", MIFF_ID)
+            val first = repository.create(uid, draft(miffIds = listOf(OTHER_MIFF_ID), name = "Chez Papa"), context())
+            // p1 is free in Miff B but is used in Miff A by ANOTHER place: it is not reused.
+            assertEquals("p2", (first as PlaceWriteResult.Done).placeId)
+            store.places.getOrPut(OTHER_MIFF_ID) { mutableListOf() }.add(testPlace("p2", "Chez Papa", OTHER_MIFF_ID))
+            val loaded = context()
+            assertEquals(2, loaded.distinctPlaces)
+            val third = repository.create(uid, draft(miffIds = listOf(MIFF_ID), name = "Troisième"), loaded)
+            assertEquals(PaywallReason.LIMIT, (third as PlaceWriteResult.NeedsPremium).reason)
+        }
+
+    @Test
+    fun scenario_twoDifferentPlacesSharingAnIdentifier_areTwoPlacesForTheLimit() =
+        runTest {
+            setUpMiffs()
+            seed("p1", MIFF_ID)
+            store.places.getOrPut(OTHER_MIFF_ID) { mutableListOf() }.add(testPlace("p1", "Le stade", OTHER_MIFF_ID))
+            val loaded = context()
+            assertEquals(2, loaded.groups.size)
+            assertEquals(2, loaded.distinctPlaces)
+            val result = repository.create(uid, draft(), loaded)
+            assertEquals(PaywallReason.LIMIT, (result as PlaceWriteResult.NeedsPremium).reason)
+            assertTrue(store.commits.isEmpty())
+        }
+
+    @Test
+    fun update_secondAttempt_readsTheCopiesAgain_andUpdatesTheMiffAlreadyAdded_neverCreatesItTwice() =
+        runTest {
+            setUpMiffs()
+            premium()
+            seed("PLACEID0000000000001", MIFF_ID)
+            val staleForm = group("PLACEID0000000000001", MIFF_ID) // what the form was opened with: ONE Miff
+            val wanted = draft(miffIds = listOf(MIFF_ID, OTHER_MIFF_ID), name = "Chez Papa")
+            val loaded = context()
+            // A first attempt (answer lost) already wrote the copy of the Miff added, with the wanted fields.
+            store.places[OTHER_MIFF_ID] =
+                mutableListOf(
+                    Place(
+                        "PLACEID0000000000001",
+                        OTHER_MIFF_ID,
+                        "Chez Papa",
+                        PlaceType.TRUSTED,
+                        PlaceCategory.HOME,
+                        "17 Avenue d'Italie, 75013 Paris",
+                        48.82927,
+                        2.35679,
+                        100,
+                        uid,
+                    ),
+                )
+            val result = repository.update(uid, staleForm, wanted, loaded)
+            assertTrue(result is PlaceWriteResult.Done)
+            val writes = store.commits.single()
+            // Both copies are UPDATED: writing the Miff added again as a creation would be refused by the rules (createdAt changes).
+            assertEquals(listOf(WriteKind.UPDATE, WriteKind.UPDATE), writes.map { it.kind })
+            assertTrue(writes.none { it.kind == WriteKind.SET || it.kind == WriteKind.DELETE })
+        }
+
+    @Test
+    fun update_aPlaceThatIsGoneOnTheServer_isNoticed_beforeAnythingIsWritten() =
+        runTest {
+            setUpMiffs()
+            premium()
+            seed("PLACEID0000000000001", MIFF_ID)
+            val loaded = context()
+            store.places[MIFF_ID] = mutableListOf()
+            val result = repository.update(uid, group("PLACEID0000000000001", MIFF_ID), draft(), loaded)
+            assertEquals(PlaceWriteResult.PlaceGone, result)
+            assertTrue(store.commits.isEmpty())
+        }
 }

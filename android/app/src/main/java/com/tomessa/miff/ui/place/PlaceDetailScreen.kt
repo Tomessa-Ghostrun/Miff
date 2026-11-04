@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.place.Place
+import com.tomessa.miff.domain.place.PlaceMapGeometry
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
@@ -214,7 +215,7 @@ private fun Content(
         OutlinedButton(
             onClick = {
                 // The map app opens on the PLACE (its coordinates), never on the position of a person.
-                val uri = Uri.parse("geo:${place.lat},${place.lng}?q=${place.lat},${place.lng}")
+                val uri = Uri.parse(PlaceMapGeometry.geoUri(place.lat, place.lng))
                 try {
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 } catch (e: ActivityNotFoundException) {
@@ -242,9 +243,19 @@ private fun Content(
             )
         }
         Facts(state, place)
-        InfoCard(stringResource(if (danger) R.string.place_detail_info_danger else R.string.place_detail_info_trusted))
+        // HIDDEN until LOC-2 (review of PR #56): these two sentences describe what the phone does on arrival and departure, which
+        // does not exist yet (nothing detects a position). The texts stay in the catalogs (place_detail_info_trusted and
+        // place_detail_info_danger, FR/EN, Android and iOS); LOC-2 switches this on with the detection itself.
+        if (EXPLAIN_WHAT_IT_CHANGES) {
+            InfoCard(
+                stringResource(if (danger) R.string.place_detail_info_danger else R.string.place_detail_info_trusted),
+            )
+        }
     }
 }
+
+/** "Ce que ça change pour toi": ON in LOC-2, when the phone really detects arrivals and departures. */
+private const val EXPLAIN_WHAT_IT_CHANGES = false
 
 private val MAP_HEIGHT = 210.dp
 
@@ -275,8 +286,11 @@ private fun Facts(
         Divider()
         FactWith(R.drawable.ic_visibility, stringResource(R.string.place_detail_type)) { PlaceTypeTag(place.type) }
         Divider()
-        FactWithCategory(place)
-        Divider()
+        // A place written before the categories existed has none: nothing is shown (never "Autre" by default).
+        if (place.category != null) {
+            FactWithCategory(place.category)
+            Divider()
+        }
         Fact(R.drawable.ic_group, stringResource(R.string.place_detail_visible_by), state.miffName)
         if (state.creatorName.isNotEmpty()) {
             Divider()
@@ -345,8 +359,7 @@ private fun FactWith(
 }
 
 @Composable
-private fun FactWithCategory(place: Place) {
-    val category = place.category
+private fun FactWithCategory(category: com.tomessa.miff.domain.place.PlaceCategory) {
     Row(
         modifier =
             Modifier
@@ -365,7 +378,7 @@ private fun FactWithCategory(place: Place) {
                 color = colorTextDescription,
             )
             Text(
-                text = stringResource((category ?: com.tomessa.miff.domain.place.PlaceCategory.OTHER).labelRes),
+                text = stringResource(category.labelRes),
                 style = textBodyRegular,
                 color = colorTextPrimary,
             )

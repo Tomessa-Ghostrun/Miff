@@ -1,5 +1,6 @@
 package com.tomessa.miff.data.place
 
+import com.tomessa.miff.data.miff.EntitlementRead
 import com.tomessa.miff.data.miff.Guarded
 import com.tomessa.miff.data.miff.MiffRead
 import com.tomessa.miff.data.miff.guardedCall
@@ -41,7 +42,7 @@ class PlaceContext(
         get() = ownedMiffs.associate { miff -> miff.id to places.filter { it.miffId == miff.id }.map { it.id }.toSet() }
 
     /** How many different places the person has (a place in 3 Miffs counts once): what the free plan limits. */
-    val distinctPlaces: Int get() = places.map { it.id }.toSet().size
+    val distinctPlaces: Int get() = groups.size
 
     override fun toString(): String = "PlaceContext(redacted)"
 }
@@ -120,7 +121,12 @@ class FirestorePlaceRepository(
     // --- Reading ------------------------------------------------------------------------------------------------
 
     override suspend fun prepare(uid: String): PlaceContextLoad {
-        val premium = isPremium(uid)
+        // An unknown plan is NOT "free": a failed read never opens the offer (the person is told to try again).
+        val premium =
+            when (val read = guarded { store.readEntitlement(uid) }) {
+                is Guarded.Value -> isActive(read.value)
+                is Guarded.Failed -> return PlaceContextLoad.Failed(read.failure)
+            }
         val memberships =
             when (val read = guarded { store.readMemberships(uid) }) {
                 is Guarded.Value -> read.value
@@ -153,10 +159,9 @@ class FirestorePlaceRepository(
         return PlaceContextLoad.Loaded(PlaceContext(premium, owned.sortedBy { it.joinedAtMillis }, lastJoined, places))
     }
 
-    /** Miff+ = an active entitlement that has not expired (the rules decide for real). A read that fails counts as "not Miff+". */
-    private suspend fun isPremium(uid: String): Boolean {
-        val read = (guarded { store.readEntitlement(uid) } as? Guarded.Value)?.value ?: return false
-        val expires = read.expiresAtMillis ?: return false
+    /** Miff+ = an active entitlement that has not expired (the rules decide for real). No document at all = not Miff+. */
+    private fun isActive(read: EntitlementRead?): Boolean {
+        val expires = read?.expiresAtMillis ?: return false
         return read.active && expires > nowMillis()
     }
 
@@ -173,7 +178,7 @@ class FirestorePlaceRepository(
             return PlaceWriteResult.Failed(MiffFailure.UNKNOWN)
         }
         val slot =
-            PlaceQuota.forCreate(context.premium, draft.type, draft.miffIds, context.idsByMiff, newId)
+            PlaceQuota.forCreate(context.premium, draft.type, context.idsByMiff, context.distinctPlaces, newId)
         val placeId =
             when (slot) {
                 is PlaceSlot.NeedsPremium -> return PlaceWriteResult.NeedsPremium(slot.reason)
@@ -197,7 +202,19 @@ class FirestorePlaceRepository(
         ) {
             return PlaceWriteResult.Failed(MiffFailure.UNKNOWN)
         }
-        val from = original.main
+        // The copies are READ AGAIN before writing: a second attempt after a failed first one (or a change made on another phone)
+        // must start from what the server holds now, not from what the form was opened with. Copies of this place: the ones of
+        // its own Miffs, and the ones a previous attempt may already have written in a Miff added since.
+        val everywhere = (original.miffIds + draft.miffIds).distinct()
+        val fresh =
+            when (val read = placesRead(everywhere)) {
+                is Guarded.Value -> read.value
+                is Guarded.Failed -> return PlaceWriteResult.Failed(read.failure)
+            }
+        val copies = fresh.filter { it.id == original.id && (it.miffId in original.miffIds || it.isCopyOf(draft)) }
+        if (copies.isEmpty()) return PlaceWriteResult.PlaceGone
+        val currentMiffIds = copies.map { it.miffId }
+        val from = copies.first()
         // Making a place a danger zone is Miff+ only (R-LIEU-6); going back to "trusted" is always allowed.
         PlaceQuota
             .forTypeChange(
@@ -206,32 +223,26 @@ class FirestorePlaceRepository(
                 draft.type,
             )?.let { return PlaceWriteResult.NeedsPremium(it) }
         val toRisk = draft.type == PlaceType.RISK && from.type != PlaceType.RISK
-        val added = draft.miffIds.filter { it !in original.miffIds }
+        val added = draft.miffIds.filter { it !in currentMiffIds }
         // A Miff added gets a NEW document: free only in the fixed slots, and only as a place of trust (rules R-LIEU-5, R-LIEU-6).
         val addedNeedPremium = !(original.id in PlaceLimits.FREE_IDS && draft.type == PlaceType.TRUSTED)
-        if (!context.premium && added.isNotEmpty() &&
-            (addedNeedPremium || added.any { original.id in context.idsByMiff[it].orEmpty() })
-        ) {
+        val slotTakenByAnotherPlace = added.any { miffId -> fresh.any { it.miffId == miffId && it.id == original.id } }
+        if (!context.premium && added.isNotEmpty() && (addedNeedPremium || slotTakenByAnotherPlace)) {
             return PlaceWriteResult.NeedsPremium(PaywallReason.LIMIT)
         }
         val lots =
             PlaceWrites.change(
                 uid = uid,
                 placeId = original.id,
-                currentMiffIds = original.miffIds,
+                currentMiffIds = currentMiffIds,
                 draft = draft,
                 typeChangedToRisk = toRisk,
                 addedNeedPremium = addedNeedPremium,
             )
         val failure = commitAll(lots) ?: return PlaceWriteResult.Done(original.id)
-        val removed = original.miffIds.filter { it !in draft.miffIds }
+        val removed = currentMiffIds.filter { it !in draft.miffIds }
         val verdict =
-            afterFailedWrite(
-                uid,
-                failure,
-                (draft.miffIds + original.miffIds).distinct(),
-                PlaceWriteResult.Done(original.id),
-            ) { places ->
+            afterFailedWrite(uid, failure, everywhere, PlaceWriteResult.Done(original.id)) { places ->
                 // The change went through when every wanted Miff holds the new fields and no removed Miff holds a copy any more.
                 places.matchesEverywhere(original.id, draft) &&
                     removed.none { miffId -> places.any { it.miffId == miffId && it.id == original.id } }
@@ -312,28 +323,32 @@ class FirestorePlaceRepository(
         return PlaceWriteResult.Failed(failure)
     }
 
-    /** The places of these Miffs as the server has them, or null when they cannot be read. A Miff that cannot be read counts as empty. */
-    private suspend fun placesOf(miffIds: List<String>): List<Place>? {
+    /** The places of these Miffs as the server has them. A Miff that cannot be read (access lost) counts as empty. */
+    private suspend fun placesRead(miffIds: List<String>): Guarded<List<Place>> {
         val all = mutableListOf<Place>()
         for (miffId in miffIds) {
             when (val read = guarded { store.readPlaces(miffId) }) {
                 is Guarded.Value -> all += read.value
-                is Guarded.Failed -> if (!read.lostAccess) return null
+                is Guarded.Failed -> if (!read.lostAccess) return read
             }
         }
-        return all
+        return Guarded.Value(all)
     }
+
+    /** Same, or null when they cannot be read. */
+    private suspend fun placesOf(miffIds: List<String>): List<Place>? = (placesRead(miffIds) as? Guarded.Value)?.value
+
+    /** This copy holds what the draft says (name, position, radius, type, category): a previous attempt wrote it. */
+    private fun Place.isCopyOf(draft: PlaceDraft): Boolean =
+        name == PlaceName.stored(draft.name) && type == draft.type && category == draft.category &&
+            radiusM == draft.radiusM && lat == PlaceCoordinates.round5(draft.lat) &&
+            lng == PlaceCoordinates.round5(draft.lng)
 
     private fun List<Place>.matchesEverywhere(
         placeId: String,
         draft: PlaceDraft,
     ): Boolean =
-        draft.miffIds.all { miffId ->
-            val copy = firstOrNull { it.miffId == miffId && it.id == placeId } ?: return@all false
-            copy.name == PlaceName.stored(draft.name) && copy.type == draft.type && copy.category == draft.category &&
-                copy.radiusM == draft.radiusM && copy.lat == PlaceCoordinates.round5(draft.lat) &&
-                copy.lng == PlaceCoordinates.round5(draft.lng)
-        }
+        draft.miffIds.all { miffId -> firstOrNull { it.miffId == miffId && it.id == placeId }?.isCopyOf(draft) == true }
 
     private suspend fun <T> guarded(call: suspend () -> T): Guarded<T> = guardedCall(timeoutMillis, call)
 

@@ -37,6 +37,8 @@ import java.util.Locale
 @Serializable
 data class PlaceFormRoute(
     val placeId: String? = null,
+    /** The Miff the place is opened from: two different places can share an identifier in two Miffs. */
+    val miffId: String? = null,
 )
 
 @Serializable
@@ -66,16 +68,19 @@ fun NavGraphBuilder.placeRoutes(
     val session = container.sessionManager
     composable<PlaceFormRoute> { entry ->
         val route = entry.toRoute<PlaceFormRoute>()
+        // One view model per account and per session (the next person never meets what the previous one typed).
+        val scopeKey = "${session.currentUid}-${session.generation}"
         val context = LocalContext.current
         val goneText = stringResource(R.string.place_gone)
         val viewModel: PlaceFormViewModel =
             viewModel(
-                key = "place-form-${route.placeId.orEmpty()}-${session.currentUid}-${session.generation}",
+                key = "place-form-${route.placeId.orEmpty()}-${route.miffId.orEmpty()}-$scopeKey",
                 factory =
                     viewModelFactory {
                         initializer {
                             PlaceFormViewModel(
                                 placeId = route.placeId,
+                                miffId = route.miffId,
                                 repository = container.placeRepository,
                                 search = container.addressSearch,
                                 network = container.networkMonitor,
@@ -188,7 +193,7 @@ fun NavGraphBuilder.placeRoutes(
         PlaceDetailScreen(
             state = state,
             onBack = { navController.popBackStackIfSafe() },
-            onEdit = { navController.openPlaceRoute(PlaceFormRoute(route.placeId)) },
+            onEdit = { navController.openPlaceRoute(PlaceFormRoute(route.placeId, route.miffId)) },
             onRetry = { attempt++ },
         )
     }

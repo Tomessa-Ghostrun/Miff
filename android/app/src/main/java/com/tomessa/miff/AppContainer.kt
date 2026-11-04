@@ -37,6 +37,7 @@ import com.tomessa.miff.data.place.FallbackAddressSearch
 import com.tomessa.miff.data.place.FirestorePlaceRepository
 import com.tomessa.miff.data.place.FirestorePlaceStore
 import com.tomessa.miff.data.place.GeoapifyAddressSearch
+import com.tomessa.miff.data.place.MapTileCachePurger
 import com.tomessa.miff.data.place.PhotonAddressSearch
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.data.place.PlaceRepository
@@ -278,6 +279,9 @@ class AppContainer(
         )
     }
 
+    /** The tiles of the map are the picture of where the person goes: erased with the session (sign-out, account deletion). */
+    val mapTileCache: MapTileCachePurger by lazy { MapTileCachePurger.forContext(context) }
+
     val sessionManager: SessionManager by lazy {
         StartupTrace.section("Miff.container.sessionManager") {
             SessionManager(
@@ -299,6 +303,7 @@ class AppContainer(
                         miffDirectory,
                         placeNotices,
                         addressSearch,
+                        mapTileCache,
                     ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
                 drafts = profileDrafts,

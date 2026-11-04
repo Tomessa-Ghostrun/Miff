@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PlatformImeOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -270,6 +271,7 @@ private fun NameSection(
             value = state.name,
             onValueChange = actions.onNameChanged,
             placeholder = stringResource(R.string.place_name_placeholder),
+            label = stringResource(R.string.place_name_a11y),
             enabled = !state.busy,
             isError = state.nameTooShort,
             capitalization = KeyboardCapitalization.Sentences,
@@ -392,7 +394,7 @@ private fun MiffChip(
             Box(
                 modifier =
                     Modifier
-                        .size(Spacing.minTouchTarget - Spacing.s)
+                        .size(Spacing.minTouchTarget)
                         .clickable(onClickLabel = removeLabel, role = Role.Button, onClick = onRemove),
                 contentAlignment = Alignment.Center,
             ) {
@@ -562,19 +564,22 @@ private fun AddressSection(
         value = state.addressText,
         onValueChange = actions.onAddressChanged,
         placeholder = stringResource(R.string.place_address_placeholder),
+        label = stringResource(R.string.place_address_a11y),
         enabled = state.canEditAddress,
         leadingIcon = if (chosen) R.drawable.ic_loc_pin else R.drawable.ic_loc_search,
         leadingTint = if (chosen) colorActionPrimary else colorTextDescription,
         onClear = if (state.addressText.isNotEmpty()) actions.onAddressCleared else null,
         capitalization = KeyboardCapitalization.Words,
         keyboardType = KeyboardType.Text,
-        // The service of suggestions must see no more than what is needed: no learning keyboard (see PlaceTextField).
         imeAction = ImeAction.Done,
     )
     when (val suggestions = state.suggestions) {
         SuggestionsState.Idle -> {
             val typed = state.addressText.trim().length >= PlaceLimits.SUGGESTION_MIN_CHARS
-            if (!chosen && typed) {
+            if (!chosen && !typed && state.addressMissing) {
+                // A place written before the addresses were compulsory: say what to do, precisely (nothing is invented for it).
+                InfoLine(stringResource(R.string.place_address_legacy_hint))
+            } else if (!chosen && typed) {
                 // Typed in full but not picked: the button stays asleep and a quiet line says why (design 04F).
                 InfoLine(stringResource(R.string.place_address_pick_hint))
             }
@@ -582,7 +587,7 @@ private fun AddressSection(
 
         SuggestionsState.Loading -> {
             SuggestionsPanel {
-                repeat(SKELETON_ROWS) { SkeletonRow() }
+                repeat(SKELETON_ROWS) { index -> SkeletonRow(announce = index == 0) }
             }
         }
 
@@ -645,8 +650,7 @@ private fun SuggestionsPanel(content: @Composable () -> Unit) {
                 .miffShadow(ShadowDefault, ShapeMd)
                 .clip(ShapeMd)
                 .background(colorBgSurface)
-                .border(StrokeHairline, colorBorderDefault, ShapeMd)
-                .semantics { liveRegion = LiveRegionMode.Polite },
+                .border(StrokeHairline, colorBorderDefault, ShapeMd),
     ) {
         content()
     }
@@ -703,14 +707,21 @@ private fun boldPrefix(
 }
 
 @Composable
-private fun SkeletonRow() {
+private fun SkeletonRow(announce: Boolean) {
+    // The three lines are one "looking for the address": said once, politely, not three times.
     val loading = stringResource(R.string.place_address_loading_a11y)
     Row(
         modifier =
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).semantics {
-                contentDescription =
-                    loading
-            },
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s).then(
+                if (announce) {
+                    Modifier.semantics {
+                        contentDescription = loading
+                        liveRegion = LiveRegionMode.Polite
+                    }
+                } else {
+                    Modifier.clearAndSetSemantics {}
+                },
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
@@ -747,7 +758,12 @@ private fun MessageRow(
         modifier = Modifier.fillMaxWidth().padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.Top) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            verticalAlignment = Alignment.Top,
+            // A short sentence ("on ne trouve pas cette adresse"): announced once, politely.
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        ) {
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
@@ -1062,6 +1078,10 @@ private fun Foot(
                 ).padding(horizontal = Spacing.l, vertical = Spacing.s),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
+        if (state.categoryMissing && state.category == null && !state.busy) {
+            // "Enregistrer" is grey and the person must know why (a place written before the categories existed).
+            InfoLine(stringResource(R.string.place_save_hint_category))
+        }
         state.message?.let { message ->
             MiffNotice(
                 text =
@@ -1107,7 +1127,8 @@ private fun DeleteDialog(
     state: PlaceFormState,
     actions: PlaceFormActions,
 ) {
-    val severalMiffs = state.selectedMiffIds.size > 1
+    // What is deleted is the place in the Miffs it is attached to NOW, not what is ticked in the form.
+    val severalMiffs = state.attachedMiffs.size > 1
     MiffConfirmDialog(
         title = stringResource(R.string.place_delete_title),
         body =
@@ -1132,7 +1153,7 @@ private fun DeleteDialog(
                                 .padding(Spacing.s),
                         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                     ) {
-                        state.owned.filter { it.id in state.initial?.miffIds.orEmpty() }.forEach { miff ->
+                        state.attachedMiffs.forEach { miff ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
@@ -1162,6 +1183,7 @@ private fun PlaceTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
+    label: String,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
@@ -1222,14 +1244,20 @@ private fun PlaceTextField(
                 unfocusedPlaceholderColor = colorTextDescription,
             ),
         textStyle = textBodyRegular,
-        // A name and an address are private: no learning keyboard, no correction, no suggestion built from them.
+        // A name and an address are private: no automatic correction, and the keyboard is ASKED not to learn from what is typed
+        // (private IME option of Gboard, ${NO_LEARNING}; other keyboards may ignore it: it is a request, not a guarantee).
         keyboardOptions =
             KeyboardOptions(
                 capitalization = capitalization,
                 autoCorrectEnabled = false,
                 keyboardType = keyboardType,
                 imeAction = imeAction,
+                platformImeOptions = PlatformImeOptions(privateImeOptions = NO_LEARNING),
             ),
-        modifier = modifier.fillMaxWidth(),
+        // The section title above says what the field is, but a screen reader reads a field with its own name.
+        modifier = modifier.fillMaxWidth().semantics { contentDescription = label },
     )
 }
+
+/** Gboard's private option "no personalized learning" (honoured by Gboard; harmless for the other keyboards). */
+private const val NO_LEARNING = "com.google.android.inputmethod.latin.noPersonalizedLearning"

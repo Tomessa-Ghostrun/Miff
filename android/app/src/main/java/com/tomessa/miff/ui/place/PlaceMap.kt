@@ -7,13 +7,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,6 +51,7 @@ import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderDefault
 import com.tomessa.miff.ui.theme.colorStatusDanger
 import com.tomessa.miff.ui.theme.colorTextDescription
+import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import org.maplibre.android.MapLibre
@@ -102,6 +107,8 @@ fun PlaceMapBox(
     enabled: Boolean = true,
 ) {
     var failed by remember(spec?.lat, spec?.lng) { mutableStateOf(false) }
+    // "Réessayer": the map is built again from scratch (a new view, a new request of the style).
+    var attempt by remember { mutableIntStateOf(0) }
     Box(
         modifier =
             modifier
@@ -141,6 +148,19 @@ fun PlaceMapBox(
                         color = colorTextDescription,
                         textAlign = TextAlign.Center,
                     )
+                    TextButton(
+                        onClick = {
+                            attempt++
+                            failed = false
+                        },
+                        modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
+                    ) {
+                        Text(
+                            stringResource(R.string.place_map_retry_action),
+                            style = textBodyBold16,
+                            color = colorActionPrimary,
+                        )
+                    }
                 }
             }
 
@@ -151,7 +171,7 @@ fun PlaceMapBox(
                             .fillMaxSize()
                             .clearAndSetSemantics { contentDescription = spec.description },
                 ) {
-                    LocalPlaceMapRenderer.current(spec, { failed = true }, Modifier.fillMaxSize())
+                    key(attempt) { LocalPlaceMapRenderer.current(spec, { failed = true }, Modifier.fillMaxSize()) }
                 }
                 Text(
                     text = stringResource(R.string.place_map_attribution),

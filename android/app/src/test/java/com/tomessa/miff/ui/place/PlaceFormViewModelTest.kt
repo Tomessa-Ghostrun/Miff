@@ -21,6 +21,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
@@ -66,17 +67,21 @@ class PlaceFormViewModelTest {
         placeId: String? = null,
         context: PlaceContext = context(),
         uid: String? = "uid-1",
+        fromMiff: String? = null,
+        searchTimeoutMillis: Long = 8_000L,
     ): PlaceFormViewModel {
         repo.context = context
         val viewModel =
             PlaceFormViewModel(
                 placeId = placeId,
+                miffId = fromMiff,
                 repository = repo,
                 search = search,
                 network = network,
                 currentUid = { uid },
                 notices = notices,
                 language = { "fr" },
+                searchTimeoutMillis = searchTimeoutMillis,
             )
         dispatcher.scheduler.runCurrent()
         return viewModel
@@ -596,5 +601,84 @@ class PlaceFormViewModelTest {
         vm.fill("Chez Nathan")
         assertFalse(vm.state().toString().contains("Nathan"))
         assertFalse(vm.state().toString().contains("Italie"))
+    }
+    // --- Review of PR #56 ------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun delete_theDialogAndTheDeletionFollowTheMiffsThePlaceIsInNow_notWhatIsTickedInTheForm() {
+        val vm =
+            viewModel(
+                placeId = "p1",
+                context =
+                    context(
+                        owned = listOf(famille, tuches),
+                        places = listOf(existing, testPlace("p1", "Maison de Papa", OTHER_MIFF_ID)),
+                    ),
+                fromMiff = MIFF_ID,
+            )
+        assertEquals(listOf(MIFF_ID, OTHER_MIFF_ID), vm.state().attachedMiffs.map { it.id })
+        // The person unticks one Miff in the form, then asks to delete: the place is still in BOTH Miffs.
+        vm.onMiffToggled(OTHER_MIFF_ID)
+        assertEquals(listOf(MIFF_ID), vm.state().selectedMiffIds)
+        assertEquals(listOf(MIFF_ID, OTHER_MIFF_ID), vm.state().attachedMiffs.map { it.id })
+        vm.onDeleteRequested()
+        vm.onDeleteConfirmed()
+        dispatcher.scheduler.runCurrent()
+        assertEquals(listOf("p1" to listOf(MIFF_ID, OTHER_MIFF_ID)), repo.deleted)
+    }
+
+    @Test
+    fun edit_twoDifferentPlacesSharingAnIdentifier_theOneOpenedIsTheOneEdited() {
+        val first = testPlace("p1", "Maison de Papa", MIFF_ID)
+        val stadium =
+            com.tomessa.miff.domain.place.Place(
+                "p1",
+                OTHER_MIFF_ID,
+                "Le stade",
+                PlaceType.TRUSTED,
+                PlaceCategory.SPORT,
+                "Stade",
+                10.0,
+                20.0,
+                150,
+                "u1",
+            )
+        val ctx = context(owned = listOf(famille, tuches), places = listOf(first, stadium))
+        val fromTuches = viewModel(placeId = "p1", context = ctx, fromMiff = OTHER_MIFF_ID)
+        assertEquals("Le stade", fromTuches.state().name)
+        assertEquals(listOf(OTHER_MIFF_ID), fromTuches.state().selectedMiffIds)
+        val fromFamille = viewModel(placeId = "p1", context = ctx, fromMiff = MIFF_ID)
+        assertEquals("Maison de Papa", fromFamille.state().name)
+        assertEquals(listOf(MIFF_ID), fromFamille.state().selectedMiffIds)
+    }
+
+    @Test
+    fun edit_aPlaceWithoutAddress_asksForOne_andTheButtonWaitsForIt() {
+        val vm = editing(places = listOf(testPlace("p1", "Vieille maison", MIFF_ID, address = null)))
+        assertTrue(vm.state().addressMissing)
+        assertNull(vm.state().chosen)
+        vm.onNameChanged("Vieille maison de Papa")
+        assertFalse(vm.state().canSave)
+        vm.onSuggestionChosen(testSuggestion())
+        assertTrue(vm.state().canSave)
+    }
+
+    @Test
+    fun edit_aPlaceWithoutCategory_saysSo_andShowsNoCategoryByDefault() {
+        val vm = editing(places = listOf(testPlace("p1", "Vieille", MIFF_ID, category = null)))
+        assertTrue(vm.state().categoryMissing)
+        assertNull(vm.state().category)
+        vm.onCategorySelected(PlaceCategory.LEISURE)
+        assertFalse(vm.state().categoryMissing)
+    }
+
+    @Test
+    fun address_aSearchThatNeverAnswers_endsAsUnavailable_afterTheLimitOfTime() {
+        val vm = viewModel(searchTimeoutMillis = 2_000L)
+        search.delayMillis = 60_000
+        vm.onAddressChanged("17 avenue")
+        dispatcher.scheduler.advanceTimeBy(300 + 2_001)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(SuggestionsState.Unavailable, vm.state().suggestions)
     }
 }

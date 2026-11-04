@@ -142,22 +142,22 @@ sealed interface PlaceSlot {
  */
 object PlaceQuota {
     /**
-     * @param existingIdsByMiff the identifiers already used in each Miff the person created (every Miff, not only the chosen ones:
-     *   the limit counts the places of the person)
+     * @param existingIdsByMiff the identifiers already used in each Miff the person created (EVERY Miff, not only the chosen ones)
+     * @param distinctPlaces how many different places the person has (a place in 3 Miffs counts once): what the free plan limits
      */
     fun forCreate(
         premium: Boolean,
         type: PlaceType,
-        targetMiffIds: List<String>,
         existingIdsByMiff: Map<String, Set<String>>,
+        distinctPlaces: Int,
         newId: () -> String,
     ): PlaceSlot {
         if (premium) return PlaceSlot.Use(newId())
         if (type == PlaceType.RISK) return PlaceSlot.NeedsPremium(PaywallReason.DANGER)
-        val all = existingIdsByMiff.values.flatten().toSet()
-        if (all.size >= PlaceLimits.FREE_PLACES) return PlaceSlot.NeedsPremium(PaywallReason.LIMIT)
-        // The slot must be free in EVERY chosen Miff: writing an existing document would be an update, which the rules refuse.
-        val taken = targetMiffIds.flatMap { existingIdsByMiff[it].orEmpty() }.toSet()
+        if (distinctPlaces >= PlaceLimits.FREE_PLACES) return PlaceSlot.NeedsPremium(PaywallReason.LIMIT)
+        // The slot must be unused in EVERY Miff the person created, not only in the chosen ones: two different places that
+        // shared an identifier would be read as ONE place in two Miffs (the count of the limit and the edit would be wrong).
+        val taken = existingIdsByMiff.values.flatten().toSet()
         val free =
             PlaceLimits.FREE_IDS.firstOrNull { it !in taken } ?: return PlaceSlot.NeedsPremium(PaywallReason.LIMIT)
         return PlaceSlot.Use(free)

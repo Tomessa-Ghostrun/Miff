@@ -102,13 +102,40 @@ class PlacePrivacyTest {
         assertEquals(emptyList<String>(), offenders)
     }
 
+    private val locationPermission = Regex("""ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION|ACCESS_WIFI_STATE""")
+
     @Test
-    fun theManifestAsksForNothingNew_noLocationInThisTicket() {
+    fun theSourceManifest_onlyMentionsLocationToRemoveIt_noNotificationPermission() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
-        assertFalse(manifest.contains("ACCESS_FINE_LOCATION"))
-        assertFalse(manifest.contains("ACCESS_COARSE_LOCATION"))
-        assertFalse(manifest.contains("ACCESS_BACKGROUND_LOCATION"))
+        // Every mention sits in an element that removes it (the map library merges these permissions; LOC-2 will declare its own).
+        val elements =
+            Regex("""<uses-permission[^>]*?/>""", RegexOption.DOT_MATCHES_ALL)
+                .findAll(manifest)
+                .map {
+                    it.value
+                }.toList()
+        val mentions = elements.filter { locationPermission.containsMatchIn(it) }
+        assertTrue("the three removals are missing", mentions.size >= 3)
+        mentions.forEach { assertTrue("not a removal: $it", it.contains("""tools:node="remove"""")) }
         assertFalse(manifest.contains("POST_NOTIFICATIONS"))
+    }
+
+    @Test
+    fun theMergedManifests_declareNoLocationPermission_whenTheyAreThere() {
+        // What the phone really gets (CI also checks the release bundle: android.yml). Present once Gradle has merged a variant.
+        val merged =
+            File("build/intermediates/merged_manifests")
+                .walkTopDown()
+                .filter {
+                    it.name ==
+                        "AndroidManifest.xml"
+                }.toList()
+        merged.forEach { file ->
+            assertFalse(
+                "${file.path} declares a location permission",
+                locationPermission.containsMatchIn(file.readText()),
+            )
+        }
     }
 
     @Test

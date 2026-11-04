@@ -66,8 +66,10 @@ object PlaceWrites {
      *
      * The rules read documents for every write (backend/data-model.md section 12: 2 for the owner check, +1 when Miff+ is
      * checked): if the lot would go over [PlaceLimits.RULE_READ_BUDGET] it is cut in two, the additions and changes first, the
-     * removals after. Each lot is atomic; between the two, the place simply sits in both the old and the new Miffs (valid), and a
-     * second attempt finishes the job (every write is idempotent).
+     * removals after. Each lot is atomic; between the two, the place simply sits in both the old and the new Miffs (valid).
+     * A second attempt is NOT a replay of the same writes (a Miff added by the first lot already holds its document: writing it
+     * again as a creation would be refused): [currentMiffIds] must be what the server holds NOW. The repository reads the copies
+     * again before every attempt ([com.tomessa.miff.data.place.FirestorePlaceRepository.update]) and gives them here.
      */
     fun change(
         uid: String,

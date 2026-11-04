@@ -95,6 +95,16 @@ class PlaceModelsTest {
     }
 
     @Test
+    fun twoDifferentPlacesThatShareAnIdentifier_areNotMergedIntoOne() {
+        val a = Place.fromServer("p1", "m1", full)!!
+        val other = Place.fromServer("p1", "m2", full + ("name" to "Le stade") + ("lat" to 10.0))!!
+        val groups = PlaceGroup.groupById(listOf(a, other))
+        assertEquals(2, groups.size)
+        assertEquals(listOf("m1"), groups[0].miffIds)
+        assertEquals(listOf("m2"), groups[1].miffIds)
+    }
+
+    @Test
     fun noToStringShowsAnything() {
         val place = Place.fromServer("p1", "m1", full)!!
         assertEquals("Place(redacted)", place.toString())

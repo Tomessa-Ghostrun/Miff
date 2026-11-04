@@ -72,4 +72,16 @@ object PlaceMapGeometry {
         )},${number(lat)}]}}"""
 
     private fun number(value: Double): String = String.format(Locale.ROOT, "%.6f", value)
+
+    /**
+     * The address "geo:" that opens the map application of the phone on the PLACE (never on a person): 5 decimals and a dot whatever
+     * the language of the phone (a comma would make an invalid address in French).
+     */
+    fun geoUri(
+        lat: Double,
+        lng: Double,
+    ): String {
+        val point = String.format(Locale.ROOT, "%.5f,%.5f", lat, lng)
+        return "geo:$point?q=$point"
+    }
 }
