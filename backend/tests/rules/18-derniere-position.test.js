@@ -62,21 +62,23 @@ s.tc('DP1', 'écrire puis mettre à jour sa dernière position (partage actif, c
   if ((await countDocs(h, `${M1}/positions`)) !== 1) throw new Error('un seul document de position attendu');
 });
 
-s.tc('DP2', 'pas de position sans le nouveau consentement : versions 1 et 2 refusées, versions 3 et plus acceptées', async (h) => {
+s.tc('DP2', 'pas de position sans le nouveau consentement : versions 1 et 2 et formats libres refusés, AAAA-MM-vNN avec NN de 03 à 99 accepté', async (h) => {
   const ref = h.db('bob').doc(`${M1}/positions/bob`);
   const tryVersion = async (version) => {
     await h.admin((f) => f.doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': version }));
     return ref.set(positionDoc());
   };
   // Le consentement actuel des comptes existants (texte sans position) est refusé.
-  for (const v of ['v1', '2026-10-v1', '2026-10-v2', '2026-10-v02', '2026-11-v0', '2026-11-v00', '2026-09-v1']) {
+  for (const v of ['v1', '2026-10-v1', '2026-10-v2', '2026-10-v02', '2026-11-v0', '2026-11-v00', '2026-11-v01', '2026-09-v1']) {
     await assertFails(tryVersion(v));
   }
   // Format invalide : jamais accepté, même si le numéro paraît grand.
-  for (const v of ['v3', '3', '2026-11-3', '2026-13-v3', '2026-00-v3', '2026-11-v3x', 'x2026-11-v3', '2026-11-V3', '26-11-v3', '2026-11-v-3', 'version 3']) {
+  // Contrat de nommage : largeur fixe. Sans zéro de tête (2026-11-v3), à trois chiffres, avec espace, retour à la ligne ou NUL : refusé (sonde Y1).
+  for (const v of ['v3', '3', '2026-11-3', '2026-11-v3', '2026-12-v9', '2026-13-v03', '2026-00-v03', '2026-11-v03x', 'x2026-11-v03', '2026-11-V03', '26-11-v03', '2026-11-v-3', 'version 3', '2026-11-v003', '2026-11-v100',
+    '2026-11-v03\n', '2026-11-v03 ', ' 2026-11-v03', '2026-11-v03\u0000', '2026-11-v\u0663\u0663', '2026-11-v٠٣']) {
     await assertFails(tryVersion(v));
   }
-  for (const v of ['2026-11-v3', '2026-10-v3', '2026-10-v03', '2027-01-v4', '2026-12-v9', '2026-12-v10', '2027-02-v100']) {
+  for (const v of ['2026-11-v03', '2026-10-v03', '2027-01-v04', '2026-12-v09', '2026-12-v10', '2027-02-v99']) {
     await assertSucceeds(tryVersion(v));
   }
 });
@@ -260,9 +262,8 @@ s.tc('DP11', 'arrêt du partage : refusé tant que la position n\'est pas suppri
   await assertSucceeds(commit(h.db('bob'), [revoke(), del(`${M1}/status/bob`), del(`${M1}/photos/bob`), del(`${M1}/positions/bob`)]));
   const left = await docExists(h, `${M1}/positions/bob`);
   if (left) throw new Error('la position devrait avoir disparu');
-  // Plus aucune lecture possible pour les autres (document introuvable, pas une erreur ni une ancienne position).
-  const gone = await h.db('alice').doc(`${M1}/positions/bob`).get();
-  if (gone.exists) throw new Error('un autre membre lit encore la position après l\'arrêt du partage');
+  // Plus aucune lecture possible pour les autres : refus (la cible ne partage plus), jamais une ancienne position.
+  await readKo(h, 'alice', 'bob');
 });
 
 s.tc('DP11b', 'arrêt du partage sans aucune position enregistrée : accepté comme avant (rien à supprimer)', async (h) => {
@@ -436,14 +437,114 @@ const seedManyMiffs = async (h, count) => {
   return miffIds;
 };
 
-s.tc('DP16', 'une position écrite pour 15 Miffs d\'un compte premium dans UN lot : acceptée (1 lecture de règles par Miff)', async (h) => {
-  const miffIds = await seedManyMiffs(h, 15);
+s.tc('DP16', 'une position écrite pour 8 Miffs d\'un compte premium dans UN lot : acceptée (2 lectures de règles par Miff : Miff existante + fiche)', async (h) => {
+  const miffIds = await seedManyMiffs(h, 8);
   await assertSucceeds(commit(h.db('dave'), miffIds.map((id) => set(`miffs/${id}/positions/dave`, positionDoc()))));
 });
 
-s.tc('DP16b', 'au-delà de la limite de 20 lectures de règles par lot (21 Miffs) : refusé en bloc (le client écrit 15 Miffs au plus par lot)', async (h) => {
-  const miffIds = await seedManyMiffs(h, 21);
+s.tc('DP16b', 'au-delà de la limite de 20 lectures de règles par lot (11 Miffs = 22) : refusé en bloc (le client écrit 8 Miffs au plus par lot)', async (h) => {
+  const miffIds = await seedManyMiffs(h, 11);
   await assertFails(commit(h.db('dave'), miffIds.map((id) => set(`miffs/${id}/positions/dave`, positionDoc()))));
   const written = await docExists(h, `miffs/${miffIds[0]}/positions/dave`);
   if (written) throw new Error('un lot refusé ne doit rien écrire');
+});
+
+// --- Revue de sécurité des PR #54/#55 -----------------------------------------------------------------------------------------------
+s.tc('DP6e', 'sonde Y4 : la position d\'un non-membre ou d\'un membre dont le partage est arrêté (reliquat) n\'est pas lisible', async (h) => {
+  await bothPublished(h);
+  // Reliquat : position d'un compte qui n'est pas membre de M1 (zoe), ou d'un membre dont le partage est arrêté (carol).
+  await h.admin(async (f) => {
+    await f.doc(`${M1}/positions/zoe`).set(positionSeed());
+    await f.doc(`${M1}/positions/carol`).set(positionSeed());
+  });
+  await readKo(h, 'bob', 'zoe');
+  await readKo(h, 'bob', 'carol');
+  await readOk(h, 'bob', 'alice'); // contrôle : un membre qui partage reste lisible
+});
+
+s.tc('DP17', 'sonde X4 / Y5 (assumé) : le créateur peut SUPPRIMER la position de n\'importe quel membre à tout moment, hors lot de retrait ; il ne gagne ni lecture ni écriture', async (h) => {
+  await bothPublished(h);
+  await assertSucceeds(h.db('alice').doc(`${M1}/positions/bob`).delete());
+  if (await docExists(h, `${M1}/positions/bob`)) throw new Error('la position de bob devrait avoir été supprimée');
+  // Pas de droit d'écriture sur celle d'un autre, ni de lecture sans les conditions communes (déjà DP4, DP7, DP13b).
+  await assertFails(h.db('alice').doc(`${M1}/positions/bob`).set(positionDoc()));
+  await h.admin((f) => f.doc(`${M1}/positions/alice`).delete());
+  await readKo(h, 'alice', 'bob');
+});
+
+s.tc('DP18', 'sonde X2 : aucune position sous une Miff supprimée (membre survivant)', async (h) => {
+  await consentV3(h, 'bob');
+  await assertSucceeds(h.db('bob').doc(`${M1}/positions/bob`).set(positionDoc())); // contrôle : Miff vivante
+  await h.admin((f) => f.doc(M1).delete());
+  await assertFails(h.db('bob').doc(`${M1}/positions/bob`).set(positionDoc()));
+  await assertFails(h.db('bob').doc(`${M1}/positions/bob`).update({ lat: 1 }));
+  // Il peut en revanche effacer la sienne (nettoyage au lancement).
+  await assertSucceeds(h.db('bob').doc(`${M1}/positions/bob`).delete());
+});
+
+s.tc('DP19', 'M4 : aucun chemin de suppression de fiche membre ni d\'arrêt du partage ne laisse une position en base', async (h) => {
+  await bothPublished(h);
+  const bob = h.db('bob');
+  const alice = h.db('alice');
+  // Suppression de la fiche seule (soi-même, créatrice qui retire, créatrice qui part) : refusée tant que la position existe.
+  await assertFails(bob.doc(`${M1}/members/bob`).delete());
+  await assertFails(commit(bob, [del(`${M1}/members/bob`), del(`${M1}/status/bob`), del(`${M1}/photos/bob`)]));
+  const { position: _bobPosition, ...removeWithoutPosition } = removeMemberOps({ target: 'bob' });
+  await assertFails(commit(alice, Object.values(removeWithoutPosition)));
+  await assertFails(commit(alice, [del(`${M1}/members/alice`), del(`${M1}/status/alice`), del(`${M1}/photos/alice`)]));
+  // Arrêt du partage sous toutes ses formes sans la suppression de la position : refusé.
+  const stop = { sharing: bobRevoke() };
+  await assertFails(bob.doc(`${M1}/members/bob`).update(stop));
+  await assertFails(commit(bob, [update(`${M1}/members/bob`, stop)]));
+  await assertFails(commit(bob, [update(`${M1}/members/bob`, stop), del(`${M1}/status/bob`)]));
+  await assertFails(commit(bob, [update(`${M1}/members/bob`, stop), del(`${M1}/status/bob`), del(`${M1}/photos/bob`), set(`${M1}/positions/bob`, positionDoc())]));
+  // Supprimer la position de la mauvaise personne ne suffit pas.
+  await assertFails(commit(bob, [update(`${M1}/members/bob`, stop), del(`${M1}/status/bob`), del(`${M1}/photos/bob`), del(`${M1}/positions/alice`)]));
+  // Les deux positions sont toujours là.
+  if (!(await docExists(h, `${M1}/positions/bob`)) || !(await docExists(h, `${M1}/positions/alice`))) throw new Error('aucune position ne devait être supprimée');
+  // Contrôle : le lot complet passe.
+  await assertSucceeds(commit(bob, [update(`${M1}/members/bob`, stop), del(`${M1}/status/bob`), del(`${M1}/photos/bob`), del(`${M1}/positions/bob`)]));
+});
+
+// Budgets d'arrêt du partage et de départ dans plusieurs Miffs (contrat client, data-model.md §8). L'émulateur accepte des lots plus
+// gros que Firestore (cache, sonde X6 : 10 Miffs passent) : les budgets sont figés par tests/unit/budgets.test.js ; ici, le lot
+// recommandé fonctionne réellement.
+const manyMemberships = async (h, count, uid = 'dave') => {
+  const ids = [];
+  await h.admin(async (f) => {
+    for (let i = 0; i < count; i += 1) {
+      const id = `Z${String(i).padStart(2, '0')}`.padEnd(20, 'y');
+      ids.push(id);
+      const b = f.batch();
+      b.set(f.doc(`miffs/${id}`), { ownerUid: 'zzowner', name: `M${i}`, joinCode: 'K7M2QX9PDW4H', createdAt: T0 });
+      b.set(f.doc(`miffs/${id}/members/${uid}`), {
+        role: 'member', firstName: uid, lastName: 'T', phone: '+33612345678', joinedAt: T0, joinCode: 'K7M2QX9PDW4H',
+        sharing: { enabled: true, consentedAt: T0, consentVersion: V3, revokedAt: null },
+      });
+      b.set(f.doc(`miffs/${id}/status/${uid}`), statusDoc({ updatedAt: T0 }));
+      b.set(f.doc(`miffs/${id}/positions/${uid}`), positionSeed());
+      b.set(f.doc(`users/${uid}/memberships/${id}`), { miffId: id, joinedAt: T0 });
+      await b.commit();
+    }
+  });
+  return ids;
+};
+
+s.tc('DP20', 'arrêt du partage dans 6 Miffs en UN lot (3 lectures par Miff = 18, marge 2) et départ de 4 Miffs en un lot (4 par Miff = 16, marge 4) : acceptés', async (h) => {
+  const ids = await manyMemberships(h, 6);
+  const stop = (id) => [
+    update(`miffs/${id}/members/dave`, { sharing: { enabled: false, consentedAt: T0, consentVersion: V3, revokedAt: serverTs() } }),
+    del(`miffs/${id}/status/dave`),
+    del(`miffs/${id}/positions/dave`),
+  ];
+  await assertSucceeds(commit(h.db('dave'), ids.slice(0, 6).flatMap(stop)));
+  const left = await manyMemberships(h, 4, 'dave');
+  const leave = (id) => [
+    del(`miffs/${id}/members/dave`),
+    del(`miffs/${id}/status/dave`),
+    del(`miffs/${id}/photos/dave`),
+    del(`miffs/${id}/positions/dave`),
+    del(`users/dave/memberships/${id}`),
+  ];
+  await assertSucceeds(commit(h.db('dave'), left.flatMap(leave)));
 });

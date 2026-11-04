@@ -69,7 +69,7 @@ export const profile = (first) => ({ firstName: first, lastName: 'Test', phone: 
 
 // R-LIEU-POS (dernière position connue) : le texte de consentement qui couvre la position est la version 3 ou plus. Les fixtures du
 // partage de base portent 'v1' (comptes sans position) ; sharingOnSeedV3 / sharingOnNowV3 portent une version qui autorise la position.
-export const CONSENT_POSITION = '2026-11-v3';
+export const CONSENT_POSITION = '2026-11-v03'; // AAAA-MM-vNN, largeur fixe (contrat de nommage)
 export const sharingOnSeedV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: T0, consentVersion: version, revokedAt: null });
 export const sharingOnNowV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: serverTs(), consentVersion: version, revokedAt: null });
 

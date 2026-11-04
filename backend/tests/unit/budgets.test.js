@@ -25,20 +25,23 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
   assert.deepEqual(actual, {
     isMember: [1, 1],
     isOwner: [2, 2],
+    isOwnerOneRead: [1, 1],
     mySharingOn: [1, 1],
     miffAlive: [1, 1],
     statusPublished: [1, 1],
+    positionPublished: [1, 1],
+    targetSharingOn: [1, 1],
     codeRenewed: [2, 2],
     isPremium: [3, 3],
     phoneMatchesProfile: [1, 1],
-    validSharingChange: [2, 2],
+    validSharingChange: [3, 3],
     indexAfterOk: [4, 4],
     ownerCreateOk: [2, 6],
     memberJoinOk: [2, 6],
     termsAcceptedAfter: [1, 1],
     validMemberCreate: [0, 14],
-    validMemberUpdate: [0, 3],
-    memberDeleteOk: [3, 7],
+    validMemberUpdate: [0, 4],
+    memberDeleteOk: [4, 8],
     validMiffCreate: [3, 3],
     validMiffUpdate: [2, 2],
     validJoinCodeCreate: [3, 3],
@@ -46,6 +49,7 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     validPlaceCreate: [0, 1],
     validPlaceUpdate: [0, 1],
     validStatus: [1, 1],
+    validPosition: [1, 1],
     validPhoto: [1, 1],
   });
 });
@@ -53,9 +57,11 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
 test('BUDGET - coût figé de chaque règle « allow » (borne haute sans court-circuit)', () => {
   const cost = (header, methods) => Object.fromEntries(methods.map((m) => [m, allow(header, m)]));
   assert.deepEqual(cost('match /places/{placeId} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 3, update: 3, delete: 2 });
-  assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 1, update: 1, delete: 2 });
-  assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 3, delete: 7 });
-  assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 2, create: 1, delete: 3 });
+  assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 1, update: 1, delete: 1 });
+  assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 4, delete: 8 });
+  assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 2, create: 1, delete: 2 });
+  // Dernière position (R-LIEU-POS) : écriture = Miff existante + fiche du membre ; lecture = Miff, mon partage, mon statut, ma position, partage de la cible.
+  assert.deepEqual(cost('match /positions/{uid} {', ['get', 'create', 'update', 'delete']), { get: 5, create: 2, update: 2, delete: 1 });
   assert.deepEqual(cost('match /memberships/{key} {', ['create', 'delete']), { create: 4, delete: 1 });
   assert.deepEqual(cost('match /miffs/{miffId} {', ['get', 'create', 'update', 'delete']), { get: 1, create: 3, update: 4, delete: 4 });
   assert.deepEqual(cost('match /joinCodes/{code} {', ['create', 'update', 'delete']), { create: 3, update: 2, delete: 1 });
@@ -94,23 +100,69 @@ test('BUDGET - changer les Miffs d\'un lieu rattaché à 5 Miffs (retirer de 5 e
 });
 
 // --- Lots documentés (comptage manuel avec court-circuit, data-model.md §12) -------------------------------------------------------
-const writes = (...parts) => parts.reduce((n, p) => n + p, 0);
+const sum = (...parts) => parts.reduce((n, p) => n + p, 0);
+const A = (header, method) => allow(header, method);
 const upper = {
-  retrait: writes(allow('match /members/{uid} {', 'delete'), allow('match /status/{uid} {', 'delete'), allow('match /photos/{uid} {', 'delete'),
-    allow('match /miffs/{miffId} {', 'update'), allow('match /joinCodes/{code} {', 'create'), allow('match /joinCodes/{code} {', 'delete')),
-  creerPremium: writes(allow('match /miffs/{miffId} {', 'create'), allow('match /joinCodes/{code} {', 'create'), allow('match /members/{uid} {', 'create'),
-    allow('match /memberships/{key} {', 'create'), allow('match /status/{uid} {', 'create')),
+  retrait: sum(A('match /members/{uid} {', 'delete'), A('match /status/{uid} {', 'delete'), A('match /photos/{uid} {', 'delete'),
+    A('match /positions/{uid} {', 'delete'), A('match /miffs/{miffId} {', 'update'), A('match /joinCodes/{code} {', 'create'),
+    A('match /joinCodes/{code} {', 'delete')),
+  creerPremium: sum(A('match /miffs/{miffId} {', 'create'), A('match /joinCodes/{code} {', 'create'), A('match /members/{uid} {', 'create'),
+    A('match /memberships/{key} {', 'create'), A('match /status/{uid} {', 'create')),
+  arretUneMiff: A('match /members/{uid} {', 'update'),
+  quitterUneMiff: sum(A('match /members/{uid} {', 'delete'), A('match /memberships/{key} {', 'delete')),
+  activer: sum(A('match /members/{uid} {', 'update'), A('match /status/{uid} {', 'create'), A('match /positions/{uid} {', 'create')),
+  supprimerMiff: sum(A('match /miffs/{miffId} {', 'delete'), A('match /members/{uid} {', 'delete'), A('match /memberships/{key} {', 'delete')),
 };
 const DOCUMENTED = {
-  // [lectures documentées, lot concerné]
-  retraitUnMembre: 18, // fiche 6 + statut 2 + photo 2 + Miff 4 + code créé 3 + code supprimé 1
-  creerEtPartagerPremium: 19, // marge de 1 : AUCUN appel de plus dans ce lot (data-model.md §12)
+  retraitUnMembre: 18, // fiche 7 (3 existsAfter + propriétaire 2 + code renouvelé 2) + statut 1 + photo 1 + position 1 + Miff 4 + code créé 3 + code supprimé 1
+  creerEtPartagerPremium: 19, // marge de 1 : AUCUN appel de plus dans ce lot (la position n'y entre jamais)
+  arretDuPartageUneMiff: 3, // 3 existsAfter (statut, photo, position)
+  quitterUneMiff: 4, // fiche 3 existsAfter + index 1
+  activerPartageStatutPosition: 3, // getAfter du statut 1 + Miff 1 + getAfter de la fiche 1
+  supprimerLaMiff: 13, // Miff 4 + pierre tombale 3 + code 1 + fiche 4 + index 1
 };
 
 test('BUDGET - lots documentés : sous la limite de 20 et sous la borne haute calculée sur le texte des règles', () => {
   for (const [name, value] of Object.entries(DOCUMENTED)) assert.ok(value <= LIMIT, name);
   assert.ok(DOCUMENTED.retraitUnMembre <= upper.retrait, `retrait : ${DOCUMENTED.retraitUnMembre} > ${upper.retrait}`);
-  assert.ok(DOCUMENTED.creerEtPartagerPremium <= upper.creerPremium, `création : ${DOCUMENTED.creerEtPartagerPremium} > ${upper.creerPremium}`);
+  assert.ok(DOCUMENTED.creerEtPartagerPremium <= upper.creerPremium, 'création premium');
+  assert.ok(DOCUMENTED.arretDuPartageUneMiff <= upper.arretUneMiff, 'arrêt du partage');
+  assert.ok(DOCUMENTED.quitterUneMiff <= upper.quitterUneMiff, 'quitter');
+  assert.ok(DOCUMENTED.activerPartageStatutPosition <= upper.activer, 'activation');
+  assert.ok(DOCUMENTED.supprimerLaMiff <= upper.supprimerMiff + A('match /miffsDeleted/{miffId} {', 'create'), 'suppression de la Miff');
   assert.equal(LIMIT - DOCUMENTED.creerEtPartagerPremium, 1, 'marge de 1 documentée : tout ajout de lecture à ce lot le fait dépasser 20');
-  assert.equal(LIMIT - DOCUMENTED.retraitUnMembre, 2);
+  assert.equal(LIMIT - DOCUMENTED.retraitUnMembre, 2, 'retrait : marge de 2, inchangée par la position (isOwnerOneRead)');
+});
+
+// --- Dernière position (R-LIEU-POS) et contrat client des lots multi-Miffs (revue de sécurité, I2 / M1) -----------------------------
+test('BUDGET - position : écriture isolée = 2 (Miff + fiche) ; au plus 8 Miffs par lot (16 sur 20, marge 4) ; 11 = 22 dépasse', () => {
+  const write = A('match /positions/{uid} {', 'create');
+  assert.equal(write, 2);
+  assert.equal(8 * write, 16);
+  assert.ok(LIMIT - 8 * write >= 2);
+  assert.equal(10 * write, 20); // limite atteinte, aucune marge : le client ne dépasse pas 8
+  assert.ok(11 * write > LIMIT);
+  assert.equal(A('match /positions/{uid} {', 'get'), 5); // 5 sur 10 : marge 5
+});
+
+test('BUDGET - contrat client : arrêt du partage 6 Miffs au plus par lot (3 × 6 = 18), départ 4 au plus (4 × 4 = 16 ; 5 = 20 sans marge)', () => {
+  assert.equal(DOCUMENTED.arretDuPartageUneMiff * 6, 18);
+  assert.ok(LIMIT - DOCUMENTED.arretDuPartageUneMiff * 6 >= 2);
+  assert.ok(DOCUMENTED.arretDuPartageUneMiff * 7 > LIMIT);
+  assert.equal(DOCUMENTED.quitterUneMiff * 4, 16);
+  assert.ok(LIMIT - DOCUMENTED.quitterUneMiff * 4 >= 2);
+  assert.equal(DOCUMENTED.quitterUneMiff * 5, 20);
+  // Avant la position (PR #55) : arrêt 2 par Miff (10 Miffs), départ 3 par Miff (6 Miffs) : le contrat recule.
+});
+
+test('BUDGET - la position n\'entre dans aucun lot de lieux ni dans la création de Miff : budgets de ces lots inchangés par la position', () => {
+  assert.equal(5 * PLACE.createPremium, 15);
+  assert.equal(DOCUMENTED.creerEtPartagerPremium, 19);
+  // Aucune règle de lieu ni de création n'appelle de fonction de position.
+  const positionFns = ['validPosition', 'positionPublished', 'targetSharingOn', 'isPositionConsentVersion'];
+  for (const header of ['match /places/{placeId} {', 'match /miffs/{miffId} {', 'match /joinCodes/{code} {', 'match /memberships/{key} {']) {
+    for (const [method, expr] of Object.entries(model.allowRules(header))) {
+      for (const fn of positionFns) assert.ok(!expr.includes(fn), `${header} ${method} appelle ${fn}`);
+    }
+  }
 });

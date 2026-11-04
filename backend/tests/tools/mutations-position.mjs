@@ -7,18 +7,20 @@ const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
 const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...(equivalent ? { equivalent } : {}) });
 
-const READ_CONDITION = 'miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId) && positionPublished(miffId)';
-const CONSENT_REGEX = "v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v0*([3-9]|[1-9][0-9]+)$')";
+const TARGET = ' && targetSharingOn(miffId, uid)';
+const READ_CONDITION = `miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId) && positionPublished(miffId)${TARGET}`;
+const CONSENT_REGEX = "v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v(0[3-9]|[1-9][0-9])$')";
+const withNN = (nn) => `v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v${nn}$')`;
 const POSITION_KEYS = "['lat', 'lng', 'measuredAt']";
 const EXISTS_AFTER_POSITION = `&& !existsAfter(${DB}/miffs/$(miffId)/positions/$(uid))`; // 8 espaces d'indentation dans memberDeleteOk
 
 export const POSITION_MUTATIONS = [
   // --- Écriture : qui, forme ---------------------------------------------------------------------------
   mut('DP4-ecriture-par-autrui', "n'importe quel utilisateur connecté écrit la position d'un autre",
-    [edit('allow create, update: if isSelf(uid) && validPosition(miffId, uid);', 'allow create, update: if isSignedIn() && validPosition(miffId, uid);')],
+    [edit('allow create, update: if isSelf(uid) && miffAlive(miffId) && validPosition(miffId, uid);', 'allow create, update: if isSignedIn() && miffAlive(miffId) && validPosition(miffId, uid);')],
     ['DP4']),
   mut('DP4-ecriture-sans-controle', "la validation de la position est retirée (seul l'auteur est contrôlé)",
-    [edit('allow create, update: if isSelf(uid) && validPosition(miffId, uid);', 'allow create, update: if isSelf(uid);')],
+    [edit('allow create, update: if isSelf(uid) && miffAlive(miffId) && validPosition(miffId, uid);', 'allow create, update: if isSelf(uid) && miffAlive(miffId);')],
     ['DP2', 'DP3', 'DP5', 'DP5b']),
   mut('DP5-cles-inconnues', 'une position accepte des clés en plus (précision, vitesse, historique...)',
     [edit(`return d.keys().hasOnly(${POSITION_KEYS})`, 'return true')],
@@ -49,26 +51,26 @@ export const POSITION_MUTATIONS = [
   mut('DP3-partage-actif', 'une position est acceptée même si le partage est arrêté', [edit('&& s.enabled == true\n        && isPositionConsentVersion', '&& isPositionConsentVersion')], ['DP3']),
   mut('DP2-consentement-v3', 'une position est acceptée sans le texte de version 3', [edit('&& isPositionConsentVersion(s.consentVersion);', '&& true;')], ['DP2', 'DP2b', 'DP6d', 'DP14']),
   mut('DP2-version-2', 'la version 2 (sans position) est acceptée',
-    [edit(CONSENT_REGEX, "v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v0*([2-9]|[1-9][0-9]+)$')")],
+    [edit(CONSENT_REGEX, withNN('(0[2-9]|[1-9][0-9])'))],
     ['DP2']),
   mut('DP2-version-4', 'la version 3 est refusée (seule la version 4 ou plus passe)',
-    [edit(CONSENT_REGEX, "v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v0*([4-9]|[1-9][0-9]+)$')")],
+    [edit(CONSENT_REGEX, withNN('(0[4-9]|[1-9][0-9])'))],
     ['DP2']),
   mut('DP2-version-dizaines', 'les versions à deux chiffres (10 et plus) sont refusées',
-    [edit(CONSENT_REGEX, "v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v0*([3-9])$')")],
+    [edit(CONSENT_REGEX, withNN('(0[3-9])'))],
     ['DP2']),
-  mut('DP2-version-zero-0', 'la version 0 est acceptée', [edit(CONSENT_REGEX, "v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v0*([0-9]|[1-9][0-9]+)$')")], ['DP2']),
+  mut('DP2-version-zero-0', 'la version 0 est acceptée', [edit(CONSENT_REGEX, withNN('(0[0-9]|[1-9][0-9])'))], ['DP2']),
   mut('DP2-version-format-libre', 'n\'importe quel texte se terminant par un numéro ≥ 3 est accepté',
-    [edit(CONSENT_REGEX, "v.matches('.*v0*([3-9]|[1-9][0-9]+)$')")],
+    [edit(CONSENT_REGEX, "v.matches('.*v(0[3-9]|[1-9][0-9])$')")],
     ['DP2']),
   mut('DP2-version-mois', 'le mois n\'est plus contrôlé (13 accepté)',
-    [edit(CONSENT_REGEX, "v.matches('^20[0-9]{2}-[0-9]{2}-v0*([3-9]|[1-9][0-9]+)$')")],
+    [edit(CONSENT_REGEX, "v.matches('^20[0-9]{2}-[0-9]{2}-v(0[3-9]|[1-9][0-9])$')")],
     ['DP2']),
   mut('DP2-version-type', 'une valeur non textuelle est acceptée par le contrôle de version',
     [edit(`return v is string && ${CONSENT_REGEX};`, `return !(v is string) || ${CONSENT_REGEX};`)],
     ['DP2b']),
   mut('DP2-version-sans-ancre-debut', 'regex sans ancre de début (équivalent : matches() compare le texte entier)',
-    [edit(CONSENT_REGEX, "v.matches('20[0-9]{2}-(0[1-9]|1[0-2])-v0*([3-9]|[1-9][0-9]+)$')")],
+    [edit(CONSENT_REGEX, "v.matches('20[0-9]{2}-(0[1-9]|1[0-2])-v(0[3-9]|[1-9][0-9])$')")],
     ['DP2'],
     'matches() exige que le texte ENTIER corresponde : les ancres ^ et $ sont redondantes'),
   mut('DP14b-consentement-avant-lot', "le consentement est lu avant le lot (get au lieu de getAfter) : activer le partage et écrire la position en un lot est refusé",
@@ -77,16 +79,16 @@ export const POSITION_MUTATIONS = [
 
   // --- Lecture : réciprocité, aucun droit de plus ---------------------------------------------------------
   mut('DP6-lecture-miff-supprimee', 'une position reste lisible après la suppression de la Miff',
-    [edit(`|| (${READ_CONDITION})`, '|| (mySharingOn(miffId) && statusPublished(miffId) && positionPublished(miffId))')],
+    [edit(`|| (${READ_CONDITION})`, `|| (mySharingOn(miffId) && statusPublished(miffId) && positionPublished(miffId)${TARGET})`)],
     ['DP6c']),
   mut('DP6-lecture-sans-partage', 'une position est lisible par un lecteur dont le partage est arrêté',
-    [edit(`|| (${READ_CONDITION})`, '|| (miffAlive(miffId) && statusPublished(miffId) && positionPublished(miffId))')],
+    [edit(`|| (${READ_CONDITION})`, `|| (miffAlive(miffId) && statusPublished(miffId) && positionPublished(miffId)${TARGET})`)],
     ['DP6b', 'DP6c']),
   mut('DP6-lecture-sans-statut', 'une position est lisible par un lecteur sans statut publié',
-    [edit(`|| (${READ_CONDITION})`, '|| (miffAlive(miffId) && mySharingOn(miffId) && positionPublished(miffId))')],
+    [edit(`|| (${READ_CONDITION})`, `|| (miffAlive(miffId) && mySharingOn(miffId) && positionPublished(miffId)${TARGET})`)],
     ['DP6b']),
   mut('DP6-lecture-sans-position-publiee', "une position est lisible par un lecteur qui n'a pas publié la sienne (suivi à sens unique)",
-    [edit(`|| (${READ_CONDITION})`, '|| (miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId))')],
+    [edit(`|| (${READ_CONDITION})`, `|| (miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId)${TARGET})`)],
     ['DP6b', 'DP6d', 'DP7']),
   mut('DP6-lecture-membre-seul', 'tout membre lit les positions (aucune réciprocité)',
     [edit(`|| (${READ_CONDITION})`, '|| (isMember(miffId) && miffAlive(miffId))')],
@@ -104,7 +106,7 @@ export const POSITION_MUTATIONS = [
     [edit('allow list: if false;', 'allow list: if isSignedIn();', 5, 6)],
     ['DP8']),
   mut('DP8-liste-membre', 'la liste des positions est autorisée aux membres qui partagent',
-    [edit('allow list: if false;', `allow list: if ${READ_CONDITION};`, 5, 6)],
+    [edit('allow list: if false;', `allow list: if ${READ_CONDITION.replace(TARGET, '')};`, 5, 6)],
     ['DP8']),
 
   // --- Effacement dans le même lot -------------------------------------------------------------------------
@@ -150,11 +152,8 @@ export const POSITION_MUTATIONS = [
   mut('RC2-renouvellement-version-egale', 'le renouvellement accepte la même version (>= au lieu de >)',
     [edit('&& n.consentVersion > o.consentVersion', '&& n.consentVersion >= o.consentVersion')],
     ['RC2']),
-  mut('RC2-renouvellement-version-longueur', 'la version du renouvellement n\'est plus bornée à 20 caractères',
-    [edit('&& isStr(n.consentVersion, 1, 20)\n            && n.consentVersion > o.consentVersion', '&& n.consentVersion > o.consentVersion')],
-    ['RC2']),
   mut('RC2-renouvellement-revoque', 'le renouvellement accepte un revokedAt renseigné',
-    [edit('&& n.consentVersion > o.consentVersion\n            && n.revokedAt == null)', '&& n.consentVersion > o.consentVersion)')],
+    [edit('&& (!isPositionConsentVersion(o.consentVersion) || isPositionConsentVersion(n.consentVersion))\n            && n.revokedAt == null)', '&& (!isPositionConsentVersion(o.consentVersion) || isPositionConsentVersion(n.consentVersion)))')],
     ['RC2b']),
   mut('RC3-renouvellement-arret-deguise', 'un « renouvellement » peut mettre enabled à false : arrêt du partage sans purge',
     [edit('(o.enabled == true && n.enabled == true\n            && n.consentedAt == request.time', '(o.enabled == true\n            && n.consentedAt == request.time')],
@@ -163,4 +162,24 @@ export const POSITION_MUTATIONS = [
     [edit('(o.enabled == true && n.enabled == true\n            && n.consentedAt == request.time', '(n.enabled == true\n            && n.consentedAt == request.time')],
     ['RC4'],
     "un partage arrêté (o.enabled = false) est déjà activable par la première branche avec les mêmes conditions de date ; seule la comparaison de version est ajoutée, donc la mutation ne change rien d'observable pour enabled=true"),
+
+  // --- Revue de sécurité des PR #54/#55 --------------------------------------------------------------------------
+  mut('RC6-renouvellement-largeur-fixe', 'le renouvellement n\'impose plus la largeur fixe (v10 -> v2, texte libre acceptés)',
+    [edit('&& isConsentVersion(n.consentVersion)\n            && n.consentVersion > o.consentVersion', '&& isStr(n.consentVersion, 1, 20)\n            && n.consentVersion > o.consentVersion')],
+    ['RC6', 'RC8']),
+  mut('RC8-renouvellement-couverture', 'on peut sortir de la couverture « position » en renouvelant (position publiée sous un texte qui ne la couvre plus)',
+    [edit('\n            && (!isPositionConsentVersion(o.consentVersion) || isPositionConsentVersion(n.consentVersion))', '')],
+    ['RC8', 'RC9']),
+  mut('RC8-renouvellement-couverture-inversee', 'la clause de couverture est inversée (seul un texte qui ne couvre pas la position est accepté depuis un texte qui la couvre)',
+    [edit('(!isPositionConsentVersion(o.consentVersion) || isPositionConsentVersion(n.consentVersion))', '(!isPositionConsentVersion(o.consentVersion) || !isPositionConsentVersion(n.consentVersion))')],
+    ['RC1', 'RC8']),
+  mut('DP18-position-sous-miff-supprimee', 'une position peut être écrite sous une Miff supprimée (membre survivant)',
+    [edit('allow create, update: if isSelf(uid) && miffAlive(miffId) && validPosition(miffId, uid);', 'allow create, update: if isSelf(uid) && validPosition(miffId, uid);')],
+    ['DP18']),
+  mut('DP6e-lecture-cible-sans-controle', 'la position d\'un non-membre ou d\'un membre dont le partage est arrêté (reliquat) est lisible',
+    [edit(' && positionPublished(miffId) && targetSharingOn(miffId, uid));', ' && positionPublished(miffId));')],
+    ['DP6e']),
+  mut('DP6e-cible-partage-non-actif', 'la cible doit seulement avoir une fiche (partage non contrôlé)',
+    [edit(`get(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;\n    }\n\n    // Retrait d'un membre`, `get(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing != null;\n    }\n\n    // Retrait d'un membre`)],
+    ['DP6e']),
 ];
