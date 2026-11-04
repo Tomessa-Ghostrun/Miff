@@ -237,12 +237,15 @@ struct PlaceSuggestionsPanel<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
+        .background(
+            RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
+                .fill(colorBgSurface.color)
+                .miffShadow(shadowDefault)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
                 .stroke(colorBorderDefault.color, lineWidth: strokeHairline)
         )
-        .miffShadow(shadowDefault)
     }
 }
 
