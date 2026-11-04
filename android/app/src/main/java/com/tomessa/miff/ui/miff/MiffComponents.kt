@@ -17,7 +17,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -28,9 +31,14 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -38,10 +46,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -58,6 +68,7 @@ import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.profile.Initials
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.profile.ProfileAvatar
 import com.tomessa.miff.ui.theme.CodeLetterSpacing
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -415,6 +426,9 @@ fun MiffMemberRow(
     member: MiffMember,
     isMe: Boolean,
     modifier: Modifier = Modifier,
+    /** "Retirer de la Miff": given for the creator, on the lines of the OTHER members only (never on the creator's own line). */
+    onRemove: (() -> Unit)? = null,
+    menuEnabled: Boolean = true,
 ) {
     Row(
         modifier =
@@ -423,29 +437,96 @@ fun MiffMemberRow(
                 .clip(ShapeMd)
                 .background(colorBgSurface)
                 .border(StrokeHairline, colorBorderDefault, ShapeMd)
-                .padding(Spacing.s + Spacing.xs)
-                .semantics(mergeDescendants = true) {},
+                .padding(Spacing.s + Spacing.xs),
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ProfileAvatar(
-            jpeg = member.avatarJpeg,
-            initials = Initials.of(member.firstName, member.lastName),
-            size = Spacing.memberAvatar,
-        )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            Text(text = member.displayName, style = textDisplayLabel, color = colorTextPrimary)
-            if (member.role == MiffRole.OWNER || isMe) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    if (member.role ==
-                        MiffRole.OWNER
-                    ) {
-                        MiffRolePill(stringResource(R.string.miff_role_owner), isOwner = true)
+        // The person (photo, name, pills) is ONE thing for the screen reader; the menu next to it stays a button of its own.
+        Row(
+            modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {},
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ProfileAvatar(
+                jpeg = member.avatarJpeg,
+                initials = Initials.of(member.firstName, member.lastName),
+                size = Spacing.memberAvatar,
+            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(text = member.displayName, style = textDisplayLabel, color = colorTextPrimary)
+                if (member.role == MiffRole.OWNER || isMe) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                        if (member.role == MiffRole.OWNER) {
+                            MiffRolePill(stringResource(R.string.miff_role_owner), isOwner = true)
+                        }
+                        if (isMe) MiffRolePill(stringResource(R.string.miff_role_you), isOwner = false)
                     }
-                    if (isMe) MiffRolePill(stringResource(R.string.miff_role_you), isOwner = false)
                 }
             }
         }
+        if (onRemove != null) MemberMenu(member = member, enabled = menuEnabled, onRemove = onRemove)
+    }
+}
+
+/** The "⋯" of a line: a 48 dp button that opens a small menu with the one choice of this version, "Retirer de la Miff". */
+@Composable
+private fun MemberMenu(
+    member: MiffMember,
+    enabled: Boolean,
+    onRemove: () -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(
+            onClick = { open = true },
+            enabled = enabled,
+            modifier = Modifier.size(Spacing.minTouchTarget),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_vert),
+                contentDescription = stringResource(R.string.miff_member_menu_a11y, member.callName),
+                tint = if (enabled) colorTextPrimary else colorTextDescription,
+            )
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(R.string.miff_member_remove_action),
+                        style = textBodyRegular,
+                        color = colorTextPrimary,
+                    )
+                },
+                onClick = {
+                    open = false
+                    onRemove()
+                },
+                modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
+            )
+        }
+    }
+}
+
+/** A line of text that acts like a link, 48 dp tall: "Créer un nouveau code", "Quitter la Miff", "Supprimer la Miff". */
+@Composable
+fun MiffLinkButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    color: Color = colorActionPrimary,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.heightIn(min = Spacing.minTouchTarget),
+        colors =
+            ButtonDefaults.textButtonColors(
+                contentColor = color,
+                disabledContentColor = color.copy(alpha = DISABLED_ALPHA),
+            ),
+    ) {
+        Text(text, style = textBodyBold16, textAlign = TextAlign.Center)
     }
 }
 
@@ -523,6 +604,12 @@ fun MiffConfirmDialog(
     message: ActionMessage? = null,
     /** Something to show under the sentence (the consent card of "Reprendre le partage"). */
     content: (@Composable () -> Unit)? = null,
+    /** A second, quieter action above the main one ("Prévenir mes proches"), with a short line that says what it really does. */
+    extraLabel: String? = null,
+    extraHint: String? = null,
+    onExtra: (() -> Unit)? = null,
+    /** False for a dialog that only informs ("Terminer" after a removal): then there is no "Annuler". */
+    showCancel: Boolean = true,
 ) {
     Dialog(
         onDismissRequest = { if (!busy) onCancel() },
@@ -538,7 +625,9 @@ fun MiffConfirmDialog(
                     .background(colorBgSurface)
                     .border(StrokeAccent, colorBorderAction, ShapeMd)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l),
+                    .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l)
+                    // Reading order for the screen reader: the question, then "Annuler" (the safe way out), then the action.
+                    .semantics { isTraversalGroup = true },
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -554,12 +643,34 @@ fun MiffConfirmDialog(
             }
             content?.invoke()
             if (message != null) MiffNotice(text = actionMessageText(message))
+            if (extraLabel != null && onExtra != null) {
+                Column(
+                    modifier = Modifier.semantics { traversalIndex = ACTION_ORDER - 1f },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                ) {
+                    MiffSecondaryButton(
+                        text = extraLabel,
+                        onClick = onExtra,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (extraHint != null) {
+                        Text(
+                            text = extraHint,
+                            style = textBodyCaption,
+                            color = colorTextDescription,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
             if (tone == DialogTone.DEFAULT) {
                 MiffButton(
                     text = confirmLabel,
                     onClick = onConfirm,
                     enabled = !busy,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().semantics { traversalIndex = ACTION_ORDER },
                 )
             } else {
                 OutlinedButton(
@@ -573,7 +684,11 @@ fun MiffConfirmDialog(
                             contentColor = colorTextError,
                             disabledContentColor = colorTextError.copy(alpha = DISABLED_ALPHA),
                         ),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = Spacing.minTouchTarget)
+                            .semantics { traversalIndex = ACTION_ORDER },
                 ) {
                     Text(confirmLabel, style = textBodyBold16)
                 }
@@ -589,16 +704,75 @@ fun MiffConfirmDialog(
                         },
                 )
             }
-            TextButton(
-                onClick = onCancel,
-                enabled = !busy,
-                modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
-            ) {
-                Text(cancelLabel, style = textBodyBold16, color = colorActionPrimary)
+            if (showCancel) {
+                TextButton(
+                    onClick = onCancel,
+                    enabled = !busy,
+                    modifier =
+                        Modifier
+                            .heightIn(
+                                min = Spacing.minTouchTarget,
+                            ).semantics { traversalIndex = CANCEL_ORDER },
+                ) {
+                    Text(cancelLabel, style = textBodyBold16, color = colorActionPrimary)
+                }
             }
         }
     }
 }
 
+/** Reading order inside a dialog (see [MiffConfirmDialog]): the sentences keep 0, "Annuler" comes before the action. */
+private const val CANCEL_ORDER = 1f
+private const val ACTION_ORDER = 3f
+
 /** Opacity of the label of a disabled button (same value as the tab bar and the design fiches). */
 private const val DISABLED_ALPHA = 0.5f
+
+/**
+ * A dialog that only tells where things stand (the deletion of a Miff under way): a sentence, a progress circle and nothing to press.
+ * "Retour" calls [onDismiss] (the screen closes, the work goes on elsewhere); a tap outside does nothing.
+ */
+@Composable
+fun MiffProgressDialog(
+    title: String,
+    body: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val working = stringResource(R.string.miff_dialog_working_a11y)
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false),
+    ) {
+        Column(
+            modifier =
+                modifier
+                    .widthIn(max = Spacing.dialogWidth)
+                    .fillMaxWidth()
+                    .miffShadow(ShadowDefault, ShapeMd)
+                    .clip(ShapeMd)
+                    .background(colorBgSurface)
+                    .border(StrokeAccent, colorBorderAction, ShapeMd)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = title,
+                style = textTitleBold20,
+                color = colorTextPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (body != null) {
+                Text(text = body, style = textBodyRegular, color = colorTextDescription, textAlign = TextAlign.Center)
+            }
+            CircularProgressIndicator(
+                color = colorActionPrimary,
+                modifier = Modifier.size(Spacing.l).semantics { contentDescription = working },
+            )
+        }
+    }
+}

@@ -245,15 +245,23 @@ export function createShareOps({ uid, miffId = ID.NEW, code = CODE.NEW, name = '
   };
 }
 
-/** Quitter une Miff (batch de 5 suppressions : fiche, statut, photo, dernière position, index). */
+/**
+ * Quitter une Miff : variante EXACTE des applications actuelles (MIFF-1/2 Android, MIFF-3 iOS), 4 suppressions SANS la dernière position.
+ * Elle doit continuer à passer tant qu'aucune position n'existe (tests de main qui rejouent les lots du client).
+ */
 export function leaveOps(uid, miffId = ID.M1, key = 'free') {
   return {
     member: del(`miffs/${miffId}/members/${uid}`),
     status: del(`miffs/${miffId}/status/${uid}`),
     photo: del(`miffs/${miffId}/photos/${uid}`),
-    position: del(`miffs/${miffId}/positions/${uid}`),
     index: del(`users/${uid}/memberships/${key}`),
   };
+}
+
+/** Quitter une Miff, variante des builds qui écrivent une position (R-LIEU-POS) : 5 suppressions, la position comprise. */
+export function leaveWithPositionOps(uid, miffId = ID.M1, key = 'free') {
+  const { member, status, photo, index } = leaveOps(uid, miffId, key);
+  return { member, status, photo, position: del(`miffs/${miffId}/positions/${uid}`), index };
 }
 
 // ---------------------------------------------------------------------------
@@ -379,8 +387,9 @@ export function suite({ extraProfiles = true } = {}) {
 export { seedBase };
 
 /**
- * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 7 écritures dans UN lot (dont la suppression de la dernière position),
- * dont le renouvellement du code secret (nouveau code créé, ancien supprimé).
+ * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : variante EXACTE des applications actuelles, 6 écritures dans UN lot
+ * SANS la dernière position, dont le renouvellement du code secret (nouveau code créé, ancien supprimé). Doit continuer à passer tant
+ * qu'aucune position n'existe.
  */
 export function removeMemberOps({
   target,
@@ -393,9 +402,19 @@ export function removeMemberOps({
     member: del(`miffs/${miffId}/members/${target}`),
     status: del(`miffs/${miffId}/status/${target}`),
     photo: del(`miffs/${miffId}/photos/${target}`),
-    position: del(`miffs/${miffId}/positions/${target}`),
     miff: update(`miffs/${miffId}`, { joinCode: newCode }),
     newCode: set(`joinCodes/${newCode}`, { miffId, miffName: name, createdAt: serverTs() }),
     oldCode: del(`joinCodes/${oldCode}`),
+  };
+}
+
+/** Retrait d'un membre, variante des builds qui écrivent une position (R-LIEU-POS) : 7 écritures, la position de la cible comprise. */
+export function removeMemberWithPositionOps(args = {}) {
+  const ops = removeMemberOps(args);
+  const { target, miffId = ID.M1 } = args;
+  return {
+    member: ops.member, status: ops.status, photo: ops.photo,
+    position: del(`miffs/${miffId}/positions/${target}`),
+    miff: ops.miff, newCode: ops.newCode, oldCode: ops.oldCode,
   };
 }

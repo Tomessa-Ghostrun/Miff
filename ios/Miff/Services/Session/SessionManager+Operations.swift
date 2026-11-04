@@ -195,6 +195,43 @@ extension SessionManager {
         finishSignedOut(destination: .signIn, notice: nil, markReturning: true)
     }
 
+    // MARK: - Miff (MIFF-3)
+
+    /// Une Miff vient d'être créée ou rejointe ET le serveur l'a CONFIRMÉ (ticket Miff). Le compte compte désormais comme
+    /// ayant une Miff. La fin de l'onboarding n'est comptée (`onboarding_completed`, si le consentement le permet) que quand
+    /// la personne était à l'étape « créer ou rejoindre » ; l'app NE change PAS d'écran ici (l'écran « Ta Miff est prête »
+    /// doit encore être vu) : voir `continueAfterMiff`.
+    func onMiffEntered(via: AnalyticsEvent.OnboardingVia) {
+        if let known = accountSnapshot {
+            setSnapshot(
+                AccountSnapshot(
+                    profileExists: known.profileExists,
+                    hasMembership: true,
+                    analyticsConsentEnabled: known.analyticsConsentEnabled,
+                    hasPhone: known.hasPhone,
+                    hasTermsVersion: known.hasTermsVersion
+                )
+            )
+        }
+        if currentDestination() == .miffChoice {
+            tracker.track(.onboardingCompleted(via: via))
+        }
+    }
+
+    /// De l'étape « créer ou rejoindre » au fil (sans effet ailleurs).
+    func continueAfterMiff() {
+        if currentDestination() == .miffChoice {
+            setState(.ready(.feed))
+        }
+    }
+
+    private func currentDestination() -> AppDestination? {
+        if case .ready(let destination) = state {
+            return destination
+        }
+        return nil
+    }
+
     // MARK: - Intérieur
 
     /// Aucune connexion ne démarre tant qu'une ancienne session est ouverte : un compte ne doit jamais se mélanger à un

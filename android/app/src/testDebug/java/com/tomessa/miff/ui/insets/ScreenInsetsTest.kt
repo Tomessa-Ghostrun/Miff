@@ -851,6 +851,40 @@ class ScreenInsetsTest {
     fun miffScreen_asMember_isInsideTheSafeArea() =
         assertScreenIsSafe("miff-screen-member", withBackArrow = true) { MiffDetail(miffScreenState(owner = false)) }
 
+    // MIFF-2: the creator's screen with the invitation to renew the code ("⋯" menus, "Créer un nouveau code", "Supprimer la Miff")
+    // and the member's screen with "Quitter la Miff" at the bottom. The questions themselves are system windows
+    // (MiffConfirmDialog), placed by Android outside the bars, like the dialogs of MIFF-1.
+    @Test
+    fun miffScreen_asOwnerWithTheRenewInvitation_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-screen-owner-invite", withBackArrow = true) {
+            MiffDetail(miffScreenState().copy(inviteToRenew = true, codeRenewed = true))
+        }
+
+    @Test
+    fun miffScreen_asOwnerWithTheRenewInvitation_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { MiffDetail(miffScreenState().copy(inviteToRenew = true)) }
+
+    @Test
+    fun miffScreen_asMember_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { MiffDetail(miffScreenState(owner = false)) }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun miffScreen_withTheKeyboardOpen_theLastLinkOfTheOwnerCanBeReachedAboveIt() {
+        show { MiffDetail() }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.miff_delete_link))
+    }
+
+    @Test
+    fun miffScreen_withTheKeyboardOpen_theLastLinkOfAMemberCanBeReachedAboveIt() {
+        show { MiffDetail(miffScreenState(owner = false)) }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.miff_leave_link))
+    }
+
     @Test
     fun miffScreen_whileLoading_isInsideTheSafeArea() =
         assertScreenIsSafe("miff-screen-loading", withBackArrow = true) { MiffDetail(MiffScreenState()) }

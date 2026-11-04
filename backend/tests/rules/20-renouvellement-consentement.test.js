@@ -1,4 +1,4 @@
-// Plan de test, section 18 : renouvellement d'un consentement de partage ACTIF (R-LIEU-3, accepté par le PM, confirmé le
+// Plan de test, section 19 : renouvellement d'un consentement de partage ACTIF (R-LIEU-3, accepté par le PM, confirmé le
 // 2026-11-01 « avant le Tracking »), cas RC1 à RC9. Règles PRÉPARÉES et NON déployées.
 // Un membre dont le partage est actif accepte un nouveau texte (version strictement supérieure) sans arrêter son partage :
 // statut, photo et dernière position ne sont ni supprimés ni exigés dans le lot.

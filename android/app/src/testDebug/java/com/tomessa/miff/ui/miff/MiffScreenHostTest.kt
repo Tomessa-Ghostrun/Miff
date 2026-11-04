@@ -9,6 +9,7 @@ import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSnapshot
+import com.tomessa.miff.testsupport.FakeDeletionController
 import com.tomessa.miff.testsupport.FakeMiffRepository
 import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
@@ -44,6 +45,8 @@ class MiffScreenHostTest {
             currentUid = { "me" },
             onAccessLost = { _, _ -> true },
             onNameChanged = {},
+            deletions = FakeDeletionController(),
+            onLeft = {},
         )
 
     private fun members(vararg others: String) =

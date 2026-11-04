@@ -49,8 +49,9 @@ struct ScreenPreview: View {
                     actions: cropActions
                 )
             }
-        case "next":
-            NextStepPlaceholderView(destination: .feed, onSignOut: ignoreAction)
+        case _ where name.hasPrefix("miff-"):
+            // Le flux Miff (créer, rejoindre, écran d'une Miff, accueil, perte d'accès) : voir `MiffScreenPreview`.
+            MiffScreenPreview(name: name)
         case "lookup-failed":
             AccountLookupFailedView(onRetry: ignoreAction, onSignOut: ignoreAction)
         default:

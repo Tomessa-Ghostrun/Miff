@@ -161,8 +161,8 @@ class FirestoreMiffObserver(
     private fun membersOf(snapshot: QuerySnapshot): List<MiffMember> =
         snapshot.documents
             .mapNotNull { doc ->
-                val first = MiffName.clean(doc.getString("firstName") ?: return@mapNotNull null)
-                val last = MiffName.clean(doc.getString("lastName") ?: return@mapNotNull null)
+                val first = MiffName.fromServer(doc.getString("firstName") ?: return@mapNotNull null).orEmpty()
+                val last = MiffName.fromServer(doc.getString("lastName") ?: return@mapNotNull null).orEmpty()
                 val role = if (doc.getString("role") == "owner") MiffRole.OWNER else MiffRole.MEMBER
                 val joinedAt = doc.getTimestamp("joinedAt")?.toDate()?.time ?: Long.MAX_VALUE
                 OrderedMember(

@@ -173,6 +173,8 @@ fun NavGraphBuilder.miffScreenRoute(
                                 currentUid = { session.currentUid },
                                 onAccessLost = container.miffDirectory::onAccessLost,
                                 onNameChanged = container.miffDirectory::refresh,
+                                deletions = container.miffDeletions,
+                                onLeft = { id -> container.onMiffLeft(id) },
                             )
                         }
                     },
@@ -196,6 +198,10 @@ fun MiffScreenHost(
     LaunchedEffect(viewModel) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }
     }
+    // The person left this Miff and the server confirmed: the screen of a Miff that is no longer theirs closes by itself.
+    LaunchedEffect(state.departed) {
+        if (state.departed) onBack()
+    }
     MiffScreen(
         state = state,
         onBack = onBack,
@@ -205,5 +211,13 @@ fun MiffScreenHost(
         onSharingRequested = viewModel::onSharingRequested,
         onSharingConfirmed = viewModel::onSharingConfirmed,
         onSharingDismissed = viewModel::onSharingDialogDismissed,
+        onRemoveRequested = viewModel::onRemoveRequested,
+        onRenewRequested = viewModel::onRenewRequested,
+        onLeaveRequested = viewModel::onLeaveRequested,
+        onDeleteRequested = viewModel::onDeleteRequested,
+        onActionConfirmed = viewModel::onActionConfirmed,
+        onActionDismissed = viewModel::onActionDismissed,
+        onInviteLater = viewModel::onInviteLater,
+        onDeletionRetry = viewModel::onDeletionRetry,
     )
 }

@@ -1,10 +1,10 @@
-// Plan de test, section 17 : dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01), cas DP1 à DP15.
+// Plan de test, section 18 : dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01), cas DP1 à DP15.
 // Règles PRÉPARÉES et NON déployées. La position est un document SÉPARÉ du statut : miffs/{id}/positions/{uid}
 // = { lat, lng, measuredAt }, rien d'autre, aucun historique.
 import {
   ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp, inMs,
   statusDoc, photoDoc, positionDoc, positionSeed, sharingOnNow, sharingOnNowV3, sharingOnSeedV3, CONSENT_POSITION,
-  leaveOps, removeMemberOps, adminSeedMiff,
+  leaveWithPositionOps, removeMemberWithPositionOps, adminSeedMiff,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -278,7 +278,7 @@ s.tc('DP11b', 'arrêt du partage sans aucune position enregistrée : accepté co
 
 s.tc('DP12', 'quitter la Miff : fiche, statut, photo ET position supprimés dans le même lot', async (h) => {
   await bothPublished(h);
-  const { position, ...withoutPosition } = leaveOps('bob');
+  const { position, ...withoutPosition } = leaveWithPositionOps('bob');
   await assertFails(commit(h.db('bob'), Object.values(withoutPosition)));
   await assertSucceeds(commit(h.db('bob'), [position, ...Object.values(withoutPosition)]));
   const left = await docExists(h, `${M1}/positions/bob`);
@@ -287,7 +287,7 @@ s.tc('DP12', 'quitter la Miff : fiche, statut, photo ET position supprimés dans
 
 s.tc('DP12b', 'retrait d\'un membre par la créatrice : la position part dans le même lot (7 écritures, nouveau code)', async (h) => {
   await bothPublished(h);
-  const { position, ...withoutPosition } = removeMemberOps({ target: 'bob' });
+  const { position, ...withoutPosition } = removeMemberWithPositionOps({ target: 'bob' });
   await assertFails(commit(h.db('alice'), Object.values(withoutPosition)));
   await assertSucceeds(commit(h.db('alice'), [position, ...Object.values(withoutPosition)]));
   const left = await docExists(h, `${M1}/positions/bob`);
@@ -489,7 +489,7 @@ s.tc('DP19', 'M4 : aucun chemin de suppression de fiche membre ni d\'arrêt du p
   // Suppression de la fiche seule (soi-même, créatrice qui retire, créatrice qui part) : refusée tant que la position existe.
   await assertFails(bob.doc(`${M1}/members/bob`).delete());
   await assertFails(commit(bob, [del(`${M1}/members/bob`), del(`${M1}/status/bob`), del(`${M1}/photos/bob`)]));
-  const { position: _bobPosition, ...removeWithoutPosition } = removeMemberOps({ target: 'bob' });
+  const { position: _bobPosition, ...removeWithoutPosition } = removeMemberWithPositionOps({ target: 'bob' });
   await assertFails(commit(alice, Object.values(removeWithoutPosition)));
   await assertFails(commit(alice, [del(`${M1}/members/alice`), del(`${M1}/status/alice`), del(`${M1}/photos/alice`)]));
   // Arrêt du partage sous toutes ses formes sans la suppression de la position : refusé.

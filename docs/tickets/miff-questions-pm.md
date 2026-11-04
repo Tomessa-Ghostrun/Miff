@@ -32,3 +32,9 @@ Les deux décisions qui **diffèrent de la recommandation** sont QM2 et QM11 ; e
 
 - **Ticket Premium** : doit définir le comportement visible d'un compte gratuit qui tente une deuxième Miff (aucun comportement n'est inventé dans ce ticket).
 - **Ticket Feed** : doit définir ce que fait « Localiser » sans coordonnées stockées et le libellé exact de la bulle.
+
+## Décision du PM (2026-10-31) — départ volontaire et code
+
+| QM | Question | Décision du PM | Répercussion |
+|---|---|---|---|
+| QM16 | Quand quelqu'un quitte la Miff de son plein gré, le code est-il renouvelé ? | **Non.** Une sortie volontaire ne renouvelle **pas** le code ; **seul le retrait d'un membre par le créateur le renouvelle** (déjà le comportement des règles : un membre simple ne peut pas écrire la Miff). Le créateur garde l'invitation discrète et facultative à le renouveler après un départ. | `miff.md` §15 et §5.10 (aucun texte ne promet un changement de code au départ) ; `backend/data-model.md` (DUR-2 et ligne « Code qui fuite » de la table des risques) ; critères Q et N ; Android MIFF-2 ; iOS MIFF-4. |

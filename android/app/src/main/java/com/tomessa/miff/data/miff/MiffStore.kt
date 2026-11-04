@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.domain.miff.DocWrite
+import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffDetails
 import com.tomessa.miff.domain.miff.MiffName
@@ -20,6 +21,17 @@ import kotlinx.coroutines.tasks.await
 
 /** `users/{uid}` is missing, or has no valid phone number: the card of a member cannot be written. */
 class MissingProfileException : Exception("profile")
+
+/** The Miff does not exist (or can no longer be read): a lot that needed to read it cannot be built. */
+class MiffGoneException : Exception("miff gone")
+
+/** What a transaction read of a Miff: the Miff itself and whether the document of its CURRENT code is there. */
+class MiffTxView(
+    val details: MiffDetails,
+    val codeDocumentExists: Boolean,
+) {
+    override fun toString(): String = "MiffTxView(redacted)"
+}
 
 /** What `get miffs/{id}` said. A refusal of the rules is an exception (PERMISSION_DENIED), not a value. */
 sealed interface MiffRead {
@@ -70,6 +82,22 @@ interface MiffStore {
 
     /** A read that only the person can do and that always works when the server is reachable and App Check is fine. */
     suspend fun serverReachable(uid: String): Boolean
+
+    /** The ids of the cards of `miffs/{id}/members`, read from the SERVER (the deletion of a Miff must not rely on a cache). */
+    suspend fun readMemberIds(miffId: String): List<String>
+
+    /** The ids of `miffs/{id}/places`, read from the SERVER. */
+    suspend fun readPlaceIds(miffId: String): List<String>
+
+    /**
+     * ONE transaction: the Miff (and whether its code document exists) is read first, [build] makes the lot from what was read
+     * (it may be called again if Firestore retries because the Miff changed in the meantime: a code renewed by another phone is
+     * never replaced from a stale copy). A Miff that does not exist throws [MiffGoneException].
+     */
+    suspend fun commitWithMiff(
+        miffId: String,
+        build: (MiffTxView) -> List<DocWrite>,
+    )
 
     /** ONE transaction: the profile is read first, [build] makes the lot from it (it may be called again if Firestore retries). */
     suspend fun commitWithProfile(
@@ -165,6 +193,43 @@ class FirestoreMiffStore(
             false
         }
 
+    override suspend fun readMemberIds(miffId: String): List<String> =
+        firestore()
+            .collection("miffs")
+            .document(miffId)
+            .collection("members")
+            .get(Source.SERVER)
+            .await()
+            .documents
+            .map { it.id }
+
+    override suspend fun readPlaceIds(miffId: String): List<String> =
+        firestore()
+            .collection("miffs")
+            .document(miffId)
+            .collection("places")
+            .get(Source.SERVER)
+            .await()
+            .documents
+            .map { it.id }
+
+    override suspend fun commitWithMiff(
+        miffId: String,
+        build: (MiffTxView) -> List<DocWrite>,
+    ) {
+        val db = firestore()
+        val miffRef = db.collection("miffs").document(miffId)
+        db
+            .runTransaction { transaction ->
+                val details = detailsOf(transaction.get(miffRef)) ?: throw MiffGoneException()
+                // Only a well-formed code is turned into a path (it is a document id read from the server).
+                val codeExists =
+                    JoinCode.isValid(details.joinCode) &&
+                        transaction.get(db.collection("joinCodes").document(details.joinCode)).exists()
+                applyWrites(db, transaction, build(MiffTxView(details, codeExists)))
+            }.await()
+    }
+
     override suspend fun commitWithProfile(
         uid: String,
         build: (ProfileCopy) -> List<DocWrite>,
@@ -207,7 +272,8 @@ class FirestoreMiffStore(
         /** The Miff of a snapshot, if it exists and has the shape the rules require; null otherwise. */
         fun detailsOf(snapshot: DocumentSnapshot): MiffDetails? {
             if (!snapshot.exists()) return null
-            val name = MiffName.clean(snapshot.getString("name") ?: return null)
+            // Cleaned and trimmed ([MiffName.fromServer]); a name with nothing visible left stays "" (the screen shows its loading title).
+            val name = MiffName.fromServer(snapshot.getString("name") ?: return null).orEmpty()
             val code = snapshot.getString("joinCode") ?: return null
             val owner = snapshot.getString("ownerUid") ?: return null
             return MiffDetails(snapshot.id, name, code, owner)

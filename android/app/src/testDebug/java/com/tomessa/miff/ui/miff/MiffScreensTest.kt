@@ -357,10 +357,8 @@ class MiffScreensTest {
         composeRule.onNodeWithText(text(R.string.miff_role_you)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_sharing_title)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Maison").performScrollTo().assertIsDisplayed()
-        // The actions of MIFF-2 are not drawn: a button that does nothing never reaches a tester.
-        composeRule.onAllNodesWithText("Supprimer", substring = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Quitter", substring = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Retirer", substring = true).assertCountEquals(0)
+        // The creator has no "Quitter" (decision QM1); the actions of MIFF-2 are checked in MiffScreensMiff2Test.
+        composeRule.onAllNodesWithText(text(R.string.miff_leave_link)).assertCountEquals(0)
     }
 
     @Test
