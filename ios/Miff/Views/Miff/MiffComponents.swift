@@ -151,6 +151,7 @@ struct MiffNotice: View {
 
 /// Une même phrase calme n'est pas ré-annoncée par VoiceOver chaque fois que le bandeau réapparaît (défilement, retour à
 /// l'écran) : seulement si elle est nouvelle, ou si la dernière annonce date de plus de 10 secondes.
+@MainActor
 enum MiffNoticeAnnouncements {
     private static var last: (text: String, date: Date)?
 
