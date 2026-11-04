@@ -46,22 +46,6 @@ struct MiffMember: Equatable, CustomStringConvertible {
     }
 }
 
-/// Un lieu de la Miff, par son nom seulement (création et modification : ticket Lieux).
-struct MiffPlace: Equatable, CustomStringConvertible {
-    let id: String
-    let name: String
-
-    var description: String {
-        "MiffPlace(redacted)"
-    }
-
-    /// Un lieu tel que le serveur le décrit : le nom est nettoyé (`MiffName.fromServer`) ; un lieu sans nom visible n'est pas
-    /// montré (nil).
-    static func fromServer(id: String, rawName: String) -> MiffPlace? {
-        MiffName.fromServer(rawName).map { MiffPlace(id: id, name: $0) }
-    }
-}
-
 /// Un document de `users/{uid}/memberships` : `key` est l'identifiant du document, `miffId` le CHAMP qui dit quelle Miff.
 struct MembershipRef: Equatable {
     let key: String
@@ -82,7 +66,7 @@ struct MiffSummary: Equatable, CustomStringConvertible {
 struct MiffSnapshot: Equatable, CustomStringConvertible {
     let miff: MiffDetails
     let members: [MiffMember]
-    let places: [MiffPlace]
+    let places: [Place]
     /// Vrai tant que ce qui est montré vient seulement du cache du téléphone (pas encore de réponse du serveur, ou hors ligne).
     let fromCache: Bool
 
