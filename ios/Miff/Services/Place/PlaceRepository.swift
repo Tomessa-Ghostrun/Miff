@@ -150,9 +150,7 @@ final class FirestorePlaceRepository: PlaceRepository {
         case .failed(let failure, _):
             return .failed(failure)
         }
-        let copies = fresh.filter {
-            $0.id == original.id && (original.miffIds.contains($0.miffId) || isCopy($0, of: draft))
-        }
+        let copies = currentCopies(of: original, wanted: draft, among: fresh)
         guard let from = copies.first else {
             return .placeGone
         }
@@ -171,17 +169,15 @@ final class FirestorePlaceRepository: PlaceRepository {
         if limitHit {
             return .needsPremium(.limit)
         }
-        let checks = (
-            typeChangedToRisk: draft.type == .risk && from.type != .risk,
-            // Une Miff ajoutée reçoit un document NEUF : gratuit seulement dans les emplacements fixes, et comme lieu de confiance.
-            addedNeedPremium: !(PlaceLimits.freeIds.contains(original.id) && draft.type == .trusted)
-        )
         let lots = PlaceWrites.change(
             uid: uid,
             placeId: original.id,
             currentMiffIds: current,
             draft: draft,
-            premiumChecks: checks
+            premiumChecks: (
+                typeChangedToRisk: draft.type == .risk && from.type != .risk,
+                addedNeedPremium: addedMiffsNeedPremium(original: original, draft: draft)
+            )
         )
         guard let failure = await commitAll(lots) else {
             return .done(placeId: original.id)
@@ -196,6 +192,22 @@ final class FirestorePlaceRepository: PlaceRepository {
         )
     }
 
+    /// Les copies de ce lieu que le serveur détient MAINTENANT : celles de ses propres Miffs, et celles qu'un essai précédent a pu
+    /// écrire dans une Miff ajoutée depuis (mêmes champs que le brouillon).
+    private func currentCopies(of original: PlaceGroup, wanted draft: PlaceDraft, among fresh: [Place]) -> [Place] {
+        fresh.filter { place in
+            guard place.id == original.id else {
+                return false
+            }
+            return original.miffIds.contains(place.miffId) || isCopy(place, of: draft)
+        }
+    }
+
+    /// Une Miff ajoutée reçoit un document NEUF : gratuit seulement dans les emplacements fixes, et comme lieu de confiance.
+    private func addedMiffsNeedPremium(original: PlaceGroup, draft: PlaceDraft) -> Bool {
+        !(PlaceLimits.freeIds.contains(original.id) && draft.type == .trusted)
+    }
+
     /// Ajouter une Miff à un lieu qui n'a pas d'emplacement fixe (ou dont l'emplacement est pris par un autre lieu) demande Miff+.
     private func needsPremiumForAddedMiffs(
         original: PlaceGroup,
@@ -208,7 +220,7 @@ final class FirestorePlaceRepository: PlaceRepository {
         if premium || added.isEmpty {
             return false
         }
-        let needsPremium = !(PlaceLimits.freeIds.contains(original.id) && draft.type == .trusted)
+        let needsPremium = addedMiffsNeedPremium(original: original, draft: draft)
         let slotTaken = added.contains { miffId in fresh.contains { $0.miffId == miffId && $0.id == original.id } }
         return needsPremium || slotTaken
     }
