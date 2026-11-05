@@ -1,9 +1,12 @@
 package com.tomessa.miff.ui.miff
 
 import android.app.Application
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffObservation
@@ -14,7 +17,10 @@ import com.tomessa.miff.testsupport.FakeMiffRepository
 import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.miffDetails
+import com.tomessa.miff.testsupport.testPlace
+import com.tomessa.miff.ui.place.PlacesExtras
 import com.tomessa.miff.ui.theme.MiffTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -71,4 +77,39 @@ class MiffScreenHostTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Ryadh Pluchard").performScrollTo().assertIsDisplayed()
     }
+
+    /** "Ajouter un lieu" calls the way in to the FORM whatever the plan the list knows (free, Miff+, unknown): LOC-1 fix. */
+    private fun addPlaceOpensTheForm(premium: Boolean?) {
+        var added = 0
+        val viewModel = viewModel()
+        composeRule.setContent {
+            MiffTheme {
+                MiffScreenHost(
+                    viewModel = viewModel,
+                    onBack = {},
+                    placesExtras = PlacesExtras(premium = premium, onAddPlace = { added++ }),
+                )
+            }
+        }
+        val places = listOf(testPlace("p1", "Maison", MIFF_ID), testPlace("p2", "Foot", MIFF_ID))
+        val snapshot =
+            MiffSnapshot(miffDetails(owner = "me", name = "Famille Martin"), members(), places, fromCache = false)
+        assertTrue(repo.observer.flowOf(MIFF_ID).tryEmit(MiffObservation.Data(snapshot)))
+        composeRule.waitForIdle()
+        if (premium == null) {
+            composeRule.onAllNodesWithText("formule gratuite", substring = true).assertCountEquals(0)
+        }
+        composeRule.onNodeWithText("Ajouter un lieu").performScrollTo().performClick()
+        assertEquals("the form is opened, never the offer", 1, added)
+    }
+
+    @Test
+    fun addPlace_onAFreePlanAtTwoPlaces_stillOpensTheForm() = addPlaceOpensTheForm(premium = false)
+
+    @Test
+    fun addPlace_onMiffPlus_opensTheForm() = addPlaceOpensTheForm(premium = true)
+
+    @Test
+    fun addPlace_whenThePlanIsUnknown_opensTheForm_andSaysNothingAboutTheFreePlan() =
+        addPlaceOpensTheForm(premium = null)
 }

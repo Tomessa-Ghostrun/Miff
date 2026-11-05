@@ -3,7 +3,7 @@
 // ce fichier prouve que le deuxième déploiement ne demande aucune autre modification, ce qu'il refuse (les applications qui n'écrivent
 // pas encore la session) et ce qu'il continue d'accepter (tout ce qui n'est ni un statut ni une position).
 import {
-  ID, CODE, suite, assertFails, assertSucceeds, commit, update, set, serverTs,
+  ID, CODE, T0, Timestamp, DAY, suite, assertFails, assertSucceeds, commit, update, set, serverTs,
   statusDoc, statusInitial, photoDoc, positionDoc, sharingOnNow, CONSENT_POSITION,
   joinShareOps, createShareOps, createMiffOps, joinOps, leaveOps, leaveWithPositionOps, removeMemberOps, placeInput,
   DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH, temps2, readRules, sharingOff,
@@ -113,4 +113,15 @@ s.tc('SF8', "temps 2 : la session elle-même s'écrit comme au temps 1 (avant to
   await assertSucceeds(h.db('bob').doc(SESSION_PATH('bob')).set(sessionDoc(DEVICE_B)));
   await assertFails(status(h, 'bob', { deviceId: DEVICE_A }));
   await assertSucceeds(status(h, 'bob', { deviceId: DEVICE_B }));
+});
+
+s.tc('SF10', "temps 2 + R-LIEU-1 : un statut ancien sans deviceId en base est refusé même avec les heures conservées ; avec le bon deviceId, accepté", async (h) => {
+  const old = Timestamp.fromMillis(Date.now() - 3 * DAY);
+  await h.admin((f) => f.doc(`${M1}/status/bob`).set(statusDoc({ presenceAt: old, lastUpdateAt: old, updatedAt: T0 })));
+  await seedSession(h, 'bob', DEVICE_A);
+  const ref = h.db('bob').doc(`${M1}/status/bob`);
+  const depart = (over = {}) => ref.update({ presence: 'out', presenceAt: Timestamp.fromMillis(Date.now() - 60_000), updatedAt: serverTs(), ...over });
+  await assertFails(depart());
+  await assertFails(depart({ deviceId: DEVICE_B }));
+  await assertSucceeds(depart({ deviceId: DEVICE_A }));
 });

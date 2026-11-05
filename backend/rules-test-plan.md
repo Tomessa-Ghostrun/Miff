@@ -491,6 +491,7 @@ Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (prop
 | SE15 | **Limite connue** : un appareil remplacé écrit un lieu, le supprime, met à jour sa fiche, écrit une photo seule, renouvelle son consentement | OK partout (actions manuelles, budget des lots de lieux préservé) |
 | SE16 | **Limite connue** : un membre autorisé lit le statut de `bob` avec son `deviceId` ; un étranger ne lit rien | OK ; KO |
 | SE17 | Régression : les écritures SANS `deviceId` d'avant (rejoindre, créer, statut invalide, batterie 101, clé en plus avec ou sans `deviceId`) | comme avant : OK / KO selon le cas |
+| SE18 | R-LIEU-1 + SESS-1 ensemble : statut de plus de 24 h, départ en mise à jour partielle avec `lastUpdateAt` ancien conservé : mauvais `deviceId`, `deviceId` nul, nouvelle valeur ancienne avec le bon `deviceId`, bon `deviceId` ; puis un autre appareil prend la place | KO ; KO ; KO ; OK (heure conservée) ; ancien appareil KO, nouveau OK |
 | SF1 | Garde-fou : la bascule du temps 2 change exactement UNE ligne de `firestore.rules` | OK |
 | SF2 | Temps 2 : statut sans `deviceId` (avec ou sans session), avec un faux, avec `null` ; avec le bon ; mise à jour avec le bon | KO ; KO ; KO ; OK ; OK |
 | SF3 | Temps 2 : position sans `deviceId`, avec un faux (appareil remplacé), avec le bon | KO ; KO ; OK |
@@ -500,6 +501,28 @@ Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (prop
 | SF7 | Temps 2 : activer le partage (fiche + statut + position) sans `deviceId` sur le statut, sans sur la position, avec les deux | KO ; KO ; OK |
 | SF8 | Temps 2 : la session s'écrit avant tout statut, un nouvel appareil prend la place | OK ; l'ancien refusé ; le nouveau OK |
 | SF9 | **Limite connue** : mise à jour PARTIELLE sans `deviceId`, jugée sur le document résultant | OK si la valeur en base est celle de la session ; KO si elle est périmée ; OK de nouveau quand l'appareil actif a écrit |
+| SF10 | Temps 2 + R-LIEU-1 : statut ancien sans `deviceId` en base, départ partiel sans clé, avec un faux, avec le bon | KO ; KO ; OK |
 | SV1 | Sonde (voie 1, écartée) : `request.auth.token.auth_time` est un entier utilisable dans une règle (l'écriture n'accepte que l'`auth_time` du jeton) | OK |
 | SV2 | Sonde : deux jetons de `auth_time` différents ; seul celui de la session passe | OK / KO |
 | SV3 | Sonde, limite : deux connexions de même `auth_time` (même seconde) ne sont pas distinguées | OK pour les deux |
+
+## 20. R-LIEU-1 : statut dont les horodatages ont plus de 24 h (acceptée par le PM le 2026-11-01 ; demandée par le client Android LOC-2b) — PRÉPARÉ, NON DÉPLOYÉ
+
+`presenceAt` et `lastUpdateAt` restent bornés (pas plus de 24 h dans le passé, pas plus de 5 min dans le futur) **sauf si la valeur envoyée est identique, à la microseconde (précision de stockage de Firestore), à celle déjà enregistrée dans le même statut** : elle peut alors être conservée quel que soit son âge. Chaque champ n'est comparé qu'à lui-même ; le statut doit déjà exister ; tout le reste de la validation (clés, valeurs, heure serveur, consentement actif) est inchangé. `escalationDueAt` n'est PAS concerné (limite connue). **0 lecture de règles de plus** (`resource` ne coûte rien). Tests dans `tests/rules/21-statut-ancien.test.js` ; mutations `R-LIEU-1-*` dans `tests/tools/mutations-statut.mjs`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| RL1 | Cas Android LOC-2b : statut en base vieux de plus de 24 h ; `bob` écrit un départ (`out`) avec `presenceAt` récent et `lastUpdateAt` **conservé** | OK ; `lastUpdateAt` inchangé en base |
+| RL1b | Mise à jour manuelle après un long séjour (`lastUpdateAt` = maintenant, `presenceAt` conservé) ; rafraîchissement de `locationAccess` avec les deux horodatages conservés | OK ; OK |
+| RL1c | Régression : deux horodatages récents (statut récent, puis statut ancien), jusqu'à +4 min 55 s dans le futur | OK partout |
+| RL2 | Nouvelle valeur ancienne : à ±1 ms de celle de la base, avancée de 1 h mais encore ancienne, il y a 3 jours, 1970, ±1 microseconde ; pour `lastUpdateAt` puis pour `presenceAt` | KO partout |
+| RL2b | La valeur de `lastUpdateAt` mise dans `presenceAt` et inversement ; puis chacune à sa place | KO ; KO ; OK |
+| RL3 | Conservation sans statut en base : création d'un statut (activation du partage, valeurs anciennes) ; recréation après suppression dans une écriture SÉPARÉE avec les anciennes valeurs | KO ; KO ; (valeurs récentes : OK) |
+| RL3b | `resource` vaut l'état d'AVANT le lot : un lot `[supprimer son statut, le recréer avec les anciennes valeurs]` est accepté (équivaut à une mise à jour, inoffensif : aucune valeur nouvelle) ; le même lot avec une nouvelle ancienne valeur est refusé | OK ; KO |
+| RL6b | Base injectée (règles désactivées) SANS `lastUpdateAt` (puis sans `presenceAt`) : une ancienne valeur n'est pas acceptée (une clé absente en base ne vaut jamais « conservée ») | KO ; KO |
+| RL4 | `bob` écrit le statut d'`alice` avec les valeurs d'`alice` conservées, ou avec les siennes ; `bob` recopie dans son statut la valeur ancienne d'`alice` ; visiteur ; membre d'une autre Miff (`zoe`) | KO partout |
+| RL5 | L'avenir reste borné : +10 min (conservé ou non), +1 jour ; une valeur de +4 min écrite puis conservée | KO ; KO ; KO ; OK |
+| RL6 | Type : `null`, texte, nombre, booléen, objet à la place d'un horodatage (les deux champs) ; base contenant `null` et `null` renvoyé | KO partout |
+| RL7 | Le reste ne bouge pas : `escalationDueAt` ancien conservé (limite connue) ; `updatedAt` client ; clé en trop (`lat`) ; `presence`, `locationAccess`, `batteryPct`, `updateText` invalides ; clé manquante | KO partout ; `escalationDueAt` nul : OK |
+| RL8 | Consentement exigé : partage arrêté, puis fiche retirée, avec les valeurs conservées | KO ; KO |
+| RL9 | Lecture inchangée : un statut ancien reste lisible par `alice` (membre qui partage), pas par un étranger ni un visiteur | OK ; KO ; KO |

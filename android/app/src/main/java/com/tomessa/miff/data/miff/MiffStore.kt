@@ -55,6 +55,11 @@ data class SharingConsentRead(
 data class EntitlementRead(
     val active: Boolean,
     val expiresAtMillis: Long?,
+    /**
+     * True when the answer comes from the phone's cache (no answer of the server): a copy that may be old, and a missing document
+     * in the cache proves nothing. The plan is then UNKNOWN, still usable as the key of the index offline (limit F1).
+     */
+    val fromCache: Boolean = false,
 )
 
 /**
@@ -244,10 +249,23 @@ class FirestoreMiffStore(
                 .document(uid)
                 .get()
                 .await()
-        if (!snapshot.exists()) return null
+        val fromCache = snapshot.metadata.isFromCache
+        // A missing document is "free" ONLY when the server said so; from the cache it is reported as an unknown plan.
+        if (!snapshot.exists()) {
+            return if (fromCache) {
+                EntitlementRead(
+                    active = false,
+                    expiresAtMillis = null,
+                    fromCache = true,
+                )
+            } else {
+                null
+            }
+        }
         return EntitlementRead(
             active = snapshot.getBoolean("active") == true,
             expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
+            fromCache = fromCache,
         )
     }
 

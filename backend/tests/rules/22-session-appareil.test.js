@@ -8,7 +8,7 @@
 //     seule, renouvellement du consentement.
 import {
   ID, CODE, T0, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs,
-  FieldPath, statusDoc, statusInitial, photoDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
+  FieldPath, Timestamp, DAY, statusDoc, statusInitial, photoDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
   joinShareOps, createShareOps, leaveOps, removeMemberOps, placeInput,
   DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH,
 } from '../helpers/fixtures.js';
@@ -245,4 +245,21 @@ s.tc('SE17', "régression : les écritures SANS deviceId d'avant (statut initial
   await assertFails(status(h, 'bob', { batteryPct: 101 }));
   await assertFails(h.db('bob').doc(`${M1}/status/bob`).set({ ...statusDoc(), extra: 1 }));
   await assertFails(h.db('bob').doc(`${M1}/status/bob`).set({ ...statusDoc(), deviceId: DEVICE_A, extra: 1 }));
+});
+
+s.tc('SE18', "R-LIEU-1 et SESS-1 ensemble : un statut ANCIEN (plus de 24 h) mis à jour partiellement passe avec le bon deviceId, est refusé avec un mauvais, et une nouvelle heure ancienne reste refusée", async (h) => {
+  const old = Timestamp.fromMillis(Date.now() - 3 * DAY);
+  await h.admin((f) => f.doc(`${M1}/status/bob`).set(statusDoc({ presenceAt: old, lastUpdateAt: old, updatedAt: T0, deviceId: DEVICE_A })));
+  await seedSession(h, 'bob', DEVICE_A);
+  const ref = h.db('bob').doc(`${M1}/status/bob`);
+  const depart = (deviceId, over = {}) => ref.update({ presence: 'out', presenceAt: Timestamp.fromMillis(Date.now() - 60_000), deviceId, updatedAt: serverTs(), ...over });
+  await assertFails(depart(DEVICE_B)); // appareil remplacé : refusé même si l'heure conservée est valide
+  await assertFails(depart(null));
+  await assertFails(depart(DEVICE_A, { lastUpdateAt: Timestamp.fromMillis(old.toMillis() + 1000) })); // nouvelle valeur ancienne : refusée (R-LIEU-1)
+  await assertSucceeds(depart(DEVICE_A)); // lastUpdateAt ancien conservé à l'identique + bon deviceId
+  const after = await read(h, `${M1}/status/bob`);
+  if (after.lastUpdateAt.toMillis() !== old.toMillis() || after.presence !== 'out') throw new Error("le statut conservé devait garder lastUpdateAt et prendre le départ");
+  await writeSession(h, 'bob', DEVICE_B); // un autre appareil prend la place
+  await assertFails(depart(DEVICE_A));
+  await assertSucceeds(depart(DEVICE_B, { presenceAt: Timestamp.fromMillis(Date.now() - 30_000) }));
 });
