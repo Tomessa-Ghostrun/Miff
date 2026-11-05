@@ -14,11 +14,18 @@ final class FakeDeviceSessionRemote: DeviceSessionRemote {
     var reachable = true
     /// Les prochaines écritures qui échouent (réponse perdue), pour prouver le second essai.
     var writesToFail = 0
+    /// Une écriture dure ce temps (nanosecondes) : pour que deux `begin` se chevauchent s'ils n'étaient pas sérialisés.
+    var writeDelayNanos: UInt64 = 0
+    /// Appelé quand une écriture arrive au serveur, avant qu'elle soit appliquée (pour observer l'état local à cet instant).
+    var onWrite: () -> Void = {}
     private(set) var writeAttempts = 0
+    private(set) var maxConcurrentWrites = 0
+    private var activeWrites = 0
     private(set) var writtenIds: [String] = []
     private(set) var readCalls = 0
     private(set) var deleteCalls = 0
     private(set) var deletedCount = 0
+    private(set) var changesCalls = 0
     private var continuation: AsyncStream<RemoteSession>.Continuation?
 
     init(timeline: Timeline = Timeline()) {
@@ -36,6 +43,13 @@ final class FakeDeviceSessionRemote: DeviceSessionRemote {
 
     func write(uid: String, deviceId: String) async -> Bool {
         writeAttempts += 1
+        onWrite()
+        activeWrites += 1
+        maxConcurrentWrites = max(maxConcurrentWrites, activeWrites)
+        if writeDelayNanos > 0 {
+            try? await Task.sleep(nanoseconds: writeDelayNanos)
+        }
+        activeWrites -= 1
         guard reachable else {
             return false
         }
@@ -70,7 +84,8 @@ final class FakeDeviceSessionRemote: DeviceSessionRemote {
     }
 
     func changes(uid: String) -> AsyncStream<RemoteSession> {
-        AsyncStream { continuation in
+        changesCalls += 1
+        return AsyncStream { continuation in
             self.continuation = continuation
         }
     }
@@ -86,25 +101,70 @@ final class FakeDeviceSessionRemote: DeviceSessionRemote {
         serverId = nil
         continuation?.yield(.absent)
     }
+
+    /// L'écoute se termine toute seule (erreur du serveur), sans que le client l'ait abandonnée.
+    func endListening() {
+        continuation?.finish()
+        continuation = nil
+    }
 }
 
+/// Le stockage local de la session, en mémoire : `stored` est l'identifiant, `isCandidate` dit s'il attend la confirmation du
+/// serveur. Chaque panne du disque se simule par un drapeau.
 final class MemoryDeviceIdStore: DeviceIdStore {
     var stored: String?
+    var isCandidate = false
+    var revoked = false
+    /// Disque plein : l'identifiant ne peut pas être gardé.
     var saveFails = false
+    /// Le candidat ne peut pas être confirmé.
+    var confirmFails = false
+    /// Erreur de lecture (autre chose que « fichier absent »).
+    var unreadable = false
+    /// Le marqueur « révoqué » ne peut pas être retiré.
+    var revokedClearFails = false
 
-    func read() -> String? {
-        stored
+    func read() -> StoredDevice {
+        if unreadable {
+            return .unreadable
+        }
+        guard let stored else {
+            return .absent
+        }
+        return isCandidate ? .candidate(stored) : .confirmed(stored)
     }
 
-    func save(_ deviceId: String) -> Bool {
+    func saveCandidate(_ deviceId: String) -> Bool {
         guard !saveFails, DeviceId.isValid(deviceId) else {
             return false
         }
         stored = deviceId
+        isCandidate = true
+        return true
+    }
+
+    func confirm() -> Bool {
+        guard stored != nil, !confirmFails else {
+            return false
+        }
+        isCandidate = false
         return true
     }
 
     func clear() {
         stored = nil
+        isCandidate = false
+    }
+
+    func isRevoked() -> Bool {
+        revoked
+    }
+
+    func setRevoked(_ value: Bool) -> Bool {
+        if !value && revokedClearFails {
+            return false
+        }
+        revoked = value
+        return true
     }
 }

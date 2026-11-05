@@ -97,7 +97,7 @@ final class SessionDeviceFlowTests: XCTestCase {
         XCTAssertNil(failure, "la connexion elle-même a réussi")
         XCTAssertEqual(harness.manager.state, .lookupFailed)
         XCTAssertNil(harness.device.currentDeviceId, "aucune écriture de statut ne peut partir")
-        XCTAssertNil(harness.deviceStore.stored)
+        XCTAssertTrue(harness.deviceStore.isCandidate, "connexion non confirmée : un candidat")
         XCTAssertEqual(harness.accounts.loadCalls, 0, "le compte n'est pas lu tant que la session n'est pas ouverte")
 
         harness.remote.reachable = true
@@ -105,8 +105,9 @@ final class SessionDeviceFlowTests: XCTestCase {
         await harness.waitUntil { harness.manager.state == .ready(.feed) }
 
         XCTAssertEqual(harness.manager.state, ready(.feed))
-        XCTAssertEqual(harness.remote.writtenIds.count, 1)
+        XCTAssertEqual(harness.remote.writtenIds, ["test-device-id-0001"], "candidat réutilisé")
         XCTAssertNotNil(harness.device.currentDeviceId)
+        XCTAssertFalse(harness.deviceStore.isCandidate)
     }
 
     func testTryAgainAfterAMissingAcknowledgementNeverSignsOutTheNewcomerAsReplaced() async {

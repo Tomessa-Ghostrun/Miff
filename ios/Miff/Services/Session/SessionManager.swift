@@ -128,6 +128,9 @@ final class SessionManager {
     var deviceWatchers: [Task<Void, Never>] = []
     var deviceReviewBusy = false
     var deviceReviewDirty = false
+    /// Quand l'écoute du document se termine sans qu'on l'ait demandé (erreur du serveur), elle est relancée après ces pauses, en
+    /// nanosecondes, UNE fois par pause (bornée : au-delà, seul le retour du réseau vérifie encore la session). Réglable par les tests.
+    var deviceWatchRestartPauses: [UInt64] = [15_000_000_000, 30_000_000_000, 60_000_000_000]
 
     private var started = false
     private var notice: SignedOutNotice?
@@ -291,11 +294,15 @@ final class SessionManager {
 
     /// Un autre appareil a pris la place de celui-ci (SESS-3). Une seule fin de session à la fois : sans effet si une autre est déjà
     /// en cours (déconnexion volontaire, session perdue) ou si personne n'est connecté.
+    ///
+    /// La fin de session tourne dans sa propre tâche : `stopDeviceWatch` annule les tâches de surveillance (dont celle qui appelle),
+    /// et l'arrêt de tout (suivi des lieux, LOC-4b) ne doit jamais être coupé net par cette annulation. L'appelant attend la fin.
     func endBecauseReplaced() async {
         guard !ending, sessionActive else {
             return
         }
-        await endLocally(notice: .sessionReplaced)
+        ending = true
+        await Task { await self.endLocally(notice: .sessionReplaced) }.value
     }
 
     func stopEverything() async {

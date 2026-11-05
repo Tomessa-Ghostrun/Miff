@@ -50,4 +50,11 @@ enum SessionWriteGuard {
     static func isCompliant(_ writes: [DocWrite]) -> Bool {
         violations(in: writes).isEmpty
     }
+
+    /// LA validation d'un lot avant son envoi, partagée par TOUS les sites d'écriture réels (`FirestoreMiffStore` : `commit`,
+    /// `commitWithProfile`, `commitWithMiff`) et par le double des tests : un lot vide, ou un statut / une position sans identifiant de
+    /// session valide, n'est jamais envoyé. Un test vérifie que chaque site d'écriture réel l'appelle.
+    static func isSendable(_ writes: [DocWrite]) -> Bool {
+        !writes.isEmpty && isCompliant(writes)
+    }
 }

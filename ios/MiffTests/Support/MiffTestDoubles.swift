@@ -169,7 +169,7 @@ final class FakeMiffStore: MiffStore {
 
     private func record(_ writes: [DocWrite]) throws {
         // Comme le vrai magasin : un lot vide, ou un statut / une position sans l'identifiant de session (SESS-3), n'est jamais envoyé.
-        guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes) else {
+        guard SessionWriteGuard.isSendable(writes) else {
             throw InvalidWriteError()
         }
         let number = commitCount

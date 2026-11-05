@@ -53,7 +53,10 @@ final class DeviceSessionTests: XCTestCase {
         let done = await session.begin(uid: uid)
 
         XCTAssertFalse(done)
-        XCTAssertNil(store.stored, "un identifiant local qui n'est celui d'aucune session ne doit pas rester")
+        // L'ancien identifiant confirmé est remplacé par un CANDIDAT non confirmé, qui n'est jamais jugé comme une session active.
+        XCTAssertEqual(store.stored, "test-device-id-0001")
+        XCTAssertTrue(store.isCandidate)
+        XCTAssertTrue(session.hasPendingBegin)
         XCTAssertNil(session.currentDeviceId)
         XCTAssertNil(remote.serverId)
     }
@@ -66,6 +69,8 @@ final class DeviceSessionTests: XCTestCase {
 
         XCTAssertFalse(done)
         XCTAssertNil(session.currentDeviceId)
+        XCTAssertTrue(remote.writtenIds.isEmpty, "disque plein : rien n'est écrit sur le serveur")
+        XCTAssertEqual(remote.writeAttempts, 0)
     }
 
     func testNoIdentifierMeansNoSessionAndNothingIsSent() async {

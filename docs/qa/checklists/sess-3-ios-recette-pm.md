@@ -59,6 +59,9 @@ Dans la suite : **T** = un compte de test qui a déjà un profil (par exemple le
 5. **Variante : se déconnecter à la main hors ligne** (2 min) : **iPhone** : connectez-vous avec **T** (l'OPPO est déconnecté), mode avion sur l'iPhone, **OPPO** : connectez-vous avec **T**, puis **iPhone** (toujours en mode avion) : **Se déconnecter** à la main, puis désactivez le mode avion.
    - [ ] L'**OPPO reste connecté** : se déconnecter à la main ne chasse jamais le téléphone qui a pris la place.
 
+6. **Coupure courte** : **iPhone** connecté avec **T**, personne d'autre n'est connecté. Activez le mode avion 10 secondes puis désactivez-le.
+   - [ ] **Rien ne se passe** : pas de déconnexion, pas de message, l'accueil reste affiché (la session est relue en silence au retour du réseau).
+
 ## Partie E — Se déconnecter à la main et réinstaller (3 min)
 
 1. **iPhone** connecté avec **T**, accueil ouvert : **Se déconnecter**.
@@ -74,6 +77,12 @@ C'est le cas d'une personne qui avait l'app **avant** cette fonction : connecté
 
 - [ ] Avec l'ancien build de l'iPhone encore installé et **T connecté**, installez le build SESS-3 **par-dessus** (TestFlight > Mettre à jour) et ouvrez l'app : vous restez **connecté**, sans message ni écran de plus (la session est écrite en silence). Puis refaites la partie B.2 : l'iPhone est bien déconnecté quand l'OPPO se connecte.
   *(Si l'iPhone a déjà été mis à jour pour la partie A, cette étape n'est plus faisable : passez-la.)*
+
+## Partie F2 — Compte tout juste créé puis panneau refusé, sans réseau (2 min, facultatif)
+
+Avec un **nouveau** compte Google ou Apple (écran de connexion, « Continuer avec Google »), sur le panneau de consentement :
+
+- [ ] **Mode avion** activé, touchez **Annuler** : un message calme explique que ça n'a pas fonctionné ; **le compte n'est pas supprimé** (vous restez sur le panneau). Désactivez le mode avion, touchez de nouveau **Annuler** : « Pas de souci, ton compte n'a pas été créé… » sur l'écran de connexion.
 
 ## Partie G — Ton, langue, lecture (2 min)
 

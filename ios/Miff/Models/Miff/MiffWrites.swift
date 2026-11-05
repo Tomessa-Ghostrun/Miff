@@ -64,7 +64,7 @@ struct ProfileCopy: Equatable, CustomStringConvertible {
 
 /// Qui entre dans quelle Miff, sous quelle clé d'index, avec quelle permission : ce que partagent les lots de création et
 /// d'entrée.
-struct MiffEntry {
+struct MiffEntry: CustomStringConvertible {
     let uid: String
     let miffId: String
     /// « free », ou l'identifiant de la Miff pour un compte Premium.
@@ -74,6 +74,11 @@ struct MiffEntry {
     /// L'identifiant de la session de cet appareil, CONFIRMÉ par le serveur (`DeviceSession.currentDeviceId`) : il part dans le
     /// premier statut du lot (SESS-3). Un identifiant mal formé fait refuser le lot avant envoi.
     let deviceId: String
+
+    /// Ni l'identifiant de session, ni le profil, ni les identifiants de compte ne doivent apparaître dans un dump.
+    var description: String {
+        "MiffEntry(redacted)"
+    }
 }
 
 /// Les lots du ticket Miff §5.4, §5.7 et §5.13, en données : testés sans Firestore, appliqués chacun par UNE transaction. Un

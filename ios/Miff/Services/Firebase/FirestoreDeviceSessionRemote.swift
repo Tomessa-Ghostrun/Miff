@@ -10,6 +10,8 @@ import Foundation
 final class FirestoreDeviceSessionRemote: DeviceSessionRemote {
     /// Comme Android : 8 secondes. Un serveur qui ne répond pas est « non confirmé », jamais « remplacé ».
     private static let timeoutSeconds: TimeInterval = 8
+    /// La suppression à la déconnexion est plus courte : la latence d'une déconnexion est bornée (vidage 5 s + suppression 5 s).
+    private static let deleteTimeoutSeconds: TimeInterval = 5
 
     func write(uid: String, deviceId: String) async -> Bool {
         guard FirebaseBootstrap.isConfigured, Self.isValidUid(uid), DeviceId.isValid(deviceId) else {
@@ -43,7 +45,7 @@ final class FirestoreDeviceSessionRemote: DeviceSessionRemote {
             return false
         }
         do {
-            try await timedOperation(seconds: Self.timeoutSeconds) {
+            try await timedOperation(seconds: Self.deleteTimeoutSeconds) {
                 try await Self.commitDeleteIfMine(uid: uid, deviceId: deviceId)
             }
             return true

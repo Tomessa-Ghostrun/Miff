@@ -30,7 +30,7 @@ final class SessionDeviceLaunchTests: XCTestCase {
         await harness.manager.startAndResolve()
 
         XCTAssertEqual(harness.manager.state, ready(.feed))
-        XCTAssertEqual(harness.remote.readCalls, 1, "au plus une lecture de plus au lancement (SES7)")
+        XCTAssertEqual(harness.remote.readCalls, 1, "1 lecture explicite (+1 instantané : SES7 = 2)")
         XCTAssertTrue(harness.remote.writtenIds.isEmpty)
         XCTAssertEqual(harness.device.currentDeviceId, "test-device-id-0001")
     }

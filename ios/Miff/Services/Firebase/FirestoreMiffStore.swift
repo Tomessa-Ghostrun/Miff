@@ -167,7 +167,7 @@ final class FirestoreMiffStore: MiffStore {
                 }
                 let writes = build(profile)
                 // Un lot vide, ou un statut / une position sans l'identifiant de session (SESS-3), n'est jamais envoyé.
-                guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes) else {
+                guard SessionWriteGuard.isSendable(writes) else {
                     errorPointer?.pointee = NSError(domain: InvalidWriteError.domain, code: 1)
                     return nil
                 }
@@ -181,7 +181,7 @@ final class FirestoreMiffStore: MiffStore {
 
     func commit(_ writes: [DocWrite]) async throws {
         // Un statut ou une position sans l'identifiant de la session (SESS-3) n'est jamais envoyé : contrat I-1 de SESS-1.
-        guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes) else {
+        guard SessionWriteGuard.isSendable(writes) else {
             throw InvalidWriteError()
         }
         let database = try firestore()

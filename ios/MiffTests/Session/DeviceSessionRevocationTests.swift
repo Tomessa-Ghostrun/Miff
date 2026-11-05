@@ -42,7 +42,8 @@ final class DeviceSessionRevocationTests: XCTestCase {
         XCTAssertFalse(done)
         XCTAssertEqual(remote.writeAttempts, 2)
         XCTAssertNil(session.currentDeviceId)
-        XCTAssertNil(store.stored)
+        XCTAssertEqual(store.stored, "test-device-id-0001", "le candidat reste, réutilisé par l'essai suivant")
+        XCTAssertTrue(store.isCandidate)
     }
 
     func testAReplacedPhoneStaysRevokedAndNeverWritesANewSessionUntilTheNextSignIn() async {

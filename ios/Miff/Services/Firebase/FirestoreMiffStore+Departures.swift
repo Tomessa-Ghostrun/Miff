@@ -62,7 +62,7 @@ extension FirestoreMiffStore {
                 }
                 let view = MiffTxView(details: details, codeDocumentExists: codeSnapshot.exists)
                 let writes = build(view)
-                guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes) else {
+                guard SessionWriteGuard.isSendable(writes) else {
                     errorPointer?.pointee = NSError(domain: InvalidWriteError.domain, code: 1)
                     return nil
                 }

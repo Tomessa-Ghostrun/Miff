@@ -105,10 +105,15 @@ extension SessionManager {
             return .failed(.unknown)
         }
         ending = true
-        cache.markPurgePending()
         // SESS-3 : la session d'appareil du compte qui va disparaître est supprimée tant que nous sommes connectés (après, plus
-        // personne ne pourrait la supprimer). Si le compte est gardé finalement (voir plus bas), elle est réécrite.
-        await releaseDeviceSession(uid: gateway.currentUid)
+        // personne ne pourrait la supprimer). SANS accusé de suppression, le compte n'est PAS supprimé (la personne garde le
+        // panneau et peut réessayer). Si le compte est gardé finalement (voir plus bas), la session est réécrite.
+        guard await deleteDeviceSessionBeforeAccountRemoval(uid: gateway.currentUid) else {
+            ending = false
+            resumeDeviceWatch()
+            return .failed(.network)
+        }
+        cache.markPurgePending()
         var failure = await gateway.deleteCurrentAccount()
         if failure == .recentLoginRequired {
             switch await requestFreshCredential(source: source) {
