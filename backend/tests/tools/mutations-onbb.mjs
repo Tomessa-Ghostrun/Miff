@@ -153,7 +153,7 @@ export const ONBB_MUTATIONS = [
 
   // --- MIFF-0 : lot d'entrée -----------------------------------------------------------------------
   mut('EN3-statut-sans-partage-actif', 'un statut peut être publié sans que la fiche ait le partage activé dans le lot',
-    [edit('&& getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;', '&& true;', 1, 2)],
+    [edit('&& getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;', '&& true;')],
     ['EN3', 'EN4']),
   mut('EN3-statut-ecrit-par-autrui', 'un membre écrit le statut d\'un autre dans le lot',
     [edit('allow create, update: if isSelf(uid) && validStatus(miffId, uid);', 'allow create, update: if isSignedIn() && validStatus(miffId, uid);')],
