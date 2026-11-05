@@ -286,7 +286,9 @@ class SessionManager(
                 }
 
                 is GoogleTokenResult.Failed -> {
-                    failure = token.failure
+                    // Whatever the cause of the dialog (no account, services, interrupted...), here the person is not signing
+                    // in: the plain neutral message is the only one that makes sense ("or continue with your e-mail" would not).
+                    failure = AuthFailure.UNKNOWN
                 }
             }
         }

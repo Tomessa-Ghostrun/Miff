@@ -34,6 +34,15 @@ enum class AuthFailure {
 
     /** Firebase wants a recent sign-in before deleting the account. */
     RECENT_LOGIN_REQUIRED,
+
+    /** Google dialog: no Google account can be used on this phone (none added, or none usable right now). */
+    GOOGLE_NO_ACCOUNT,
+
+    /** Google dialog: the Google services of the phone are missing, too old or cannot handle this request. */
+    GOOGLE_SERVICES_UNAVAILABLE,
+
+    /** Google dialog: Google did not answer this time (interrupted, short network problem): trying again is fine. */
+    GOOGLE_INTERRUPTED,
     UNKNOWN,
 }
 
@@ -109,7 +118,7 @@ sealed interface GoogleTokenResult {
     /** The person closed the dialog: NO message must be shown (criterion S7). */
     data object Cancelled : GoogleTokenResult
 
-    /** The sign-in cannot even start (no web OAuth client in the configuration, no Google services...). */
+    /** The sign-in cannot even start (no web OAuth client in the configuration): nothing the person can do about it. */
     data object Unavailable : GoogleTokenResult
 
     data class Failed(

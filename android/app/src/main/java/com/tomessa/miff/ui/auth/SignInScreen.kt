@@ -42,6 +42,8 @@ fun SignInScreen(
 
     AuthScaffold(paneTitle = stringResource(R.string.auth_signin_title), onBack = onBack) {
         GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
+        // Why Google did not work, right under the button that can be tapped again (nothing when the dialog was closed).
+        GoogleMessageArea(state.googleMessage)
         OrText()
 
         if (state.showAccountNotCreatedNote) {

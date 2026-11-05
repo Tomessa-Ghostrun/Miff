@@ -158,7 +158,7 @@ class AuthViewModelsTest {
             val vm = SignInViewModel(h.manager, FakeNetwork(), nowMillis = { currentTime })
             vm.submitGoogle(FakeGoogle(GoogleTokenResult.Token("t")))
             advanceUntilIdle()
-            assertEquals(AuthMessage.TOO_MANY_REQUESTS, vm.uiState.value.message)
+            assertEquals(AuthMessage.TOO_MANY_REQUESTS, vm.uiState.value.googleMessage)
         }
 
     @Test
