@@ -100,7 +100,9 @@ final class MiffScreenViewModelTests: MiffScreenTestCase {
                 await gate.wait()
                 return false
             },
-            onNameChanged: {}
+            onNameChanged: {},
+            deletions: deletions,
+            onLeft: { _ in }
         )
         let viewModel = MiffScreenViewModel(miffId: testMiffId, dependencies: dependencies)
         let first = Task {

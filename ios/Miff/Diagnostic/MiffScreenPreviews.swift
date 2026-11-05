@@ -145,7 +145,15 @@ struct MiffScreenPreview: View {
             onSaveName: noAction,
             onSharingRequested: noAction,
             onSharingConfirmed: noAction,
-            onSharingDismissed: noAction
+            onSharingDismissed: noAction,
+            onRemoveRequested: { _ in },
+            onRenewRequested: noAction,
+            onLeaveRequested: noAction,
+            onDeleteRequested: noAction,
+            onActionConfirmed: noAction,
+            onActionDismissed: noAction,
+            onInviteLater: noAction,
+            onDeletionRetry: noAction
         )
     }
 
@@ -190,6 +198,37 @@ struct MiffScreenPreview: View {
                     sharingEnabled: true
                 )
             }
+        default:
+            applyActionVariant(to: &state)
+        }
+    }
+
+    /// Les questions et la progression de MIFF-4 (retirer, renouveler, quitter, supprimer), pour les captures de la CI.
+    private func applyActionVariant(to state: inout MiffScreenState) {
+        switch name {
+        case "miff-screen-remove":
+            state.action = .remove(uid: "u2", firstName: "Ryadh")
+        case "miff-screen-removed":
+            state.action = .removedDone(firstName: "Ryadh", newCode: "BCDFGHK23456")
+        case "miff-screen-renew":
+            state.action = .renew
+        case "miff-screen-invite":
+            state.inviteToRenew = true
+        case "miff-screen-leave":
+            state.isOwner = false
+            state.myUid = "u2"
+            state.action = .leave
+        case "miff-screen-delete":
+            state.action = .delete(othersCount: 2)
+        case "miff-screen-delete-alone":
+            state.members = Array(members.prefix(1))
+            state.action = .delete(othersCount: 0)
+        case "miff-screen-deleting":
+            state.deletion = .running(resumed: false)
+        case "miff-screen-deleting-paused":
+            state.deletion = .waitingForNetwork
+        case "miff-screen-deleted":
+            state.deletion = .done
         default:
             break
         }

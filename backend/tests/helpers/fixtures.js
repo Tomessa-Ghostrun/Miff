@@ -67,6 +67,17 @@ export const PHONE = '+33612345678';
 export const PHONE_B = '+242061234567';
 export const profile = (first) => ({ firstName: first, lastName: 'Test', phone: PHONE });
 
+// R-LIEU-POS (dernière position connue) : le texte de consentement qui couvre la position est la version 3 ou plus. Les fixtures du
+// partage de base portent 'v1' (comptes sans position) ; sharingOnSeedV3 / sharingOnNowV3 portent une version qui autorise la position.
+export const CONSENT_POSITION = '2026-11-v03'; // AAAA-MM-vNN, largeur fixe (contrat de nommage)
+export const sharingOnSeedV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: T0, consentVersion: version, revokedAt: null });
+export const sharingOnNowV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: serverTs(), consentVersion: version, revokedAt: null });
+
+/** Dernière position telle qu'un client l'envoie : latitude, longitude, heure de la mesure (rien d'autre). */
+export const positionDoc = (over = {}) => ({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-5 * 60_000), ...over });
+/** Position déjà enregistrée (état injecté avec les règles désactivées). */
+export const positionSeed = (over = {}) => positionDoc({ measuredAt: T0, ...over });
+
 export const statusDoc = (over = {}) => ({
   presence: 'in_trusted',
   placeId: 'p1',
@@ -84,6 +95,7 @@ export const statusDoc = (over = {}) => ({
 export const placeSeed = (over = {}) => ({
   name: 'Maison',
   type: 'trusted',
+  category: 'home',
   address: null,
   lat: 48.8566,
   lng: 2.3522,
@@ -99,6 +111,7 @@ export const placeSeed = (over = {}) => ({
 export const placeInput = (uid, over = {}) => ({
   name: 'Ecole',
   type: 'trusted',
+  category: 'school',
   address: null,
   lat: 48.85,
   lng: 2.35,
@@ -232,7 +245,10 @@ export function createShareOps({ uid, miffId = ID.NEW, code = CODE.NEW, name = '
   };
 }
 
-/** Quitter une Miff (batch de 4 suppressions). */
+/**
+ * Quitter une Miff : variante EXACTE des applications actuelles (MIFF-1/2 Android, MIFF-3 iOS), 4 suppressions SANS la dernière position.
+ * Elle doit continuer à passer tant qu'aucune position n'existe (tests de main qui rejouent les lots du client).
+ */
 export function leaveOps(uid, miffId = ID.M1, key = 'free') {
   return {
     member: del(`miffs/${miffId}/members/${uid}`),
@@ -240,6 +256,12 @@ export function leaveOps(uid, miffId = ID.M1, key = 'free') {
     photo: del(`miffs/${miffId}/photos/${uid}`),
     index: del(`users/${uid}/memberships/${key}`),
   };
+}
+
+/** Quitter une Miff, variante des builds qui écrivent une position (R-LIEU-POS) : 5 suppressions, la position comprise. */
+export function leaveWithPositionOps(uid, miffId = ID.M1, key = 'free') {
+  const { member, status, photo, index } = leaveOps(uid, miffId, key);
+  return { member, status, photo, position: del(`miffs/${miffId}/positions/${uid}`), index };
 }
 
 // ---------------------------------------------------------------------------
@@ -365,8 +387,9 @@ export function suite({ extraProfiles = true } = {}) {
 export { seedBase };
 
 /**
- * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 6 écritures dans UN lot,
- * dont le renouvellement du code secret (nouveau code créé, ancien supprimé).
+ * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : variante EXACTE des applications actuelles, 6 écritures dans UN lot
+ * SANS la dernière position, dont le renouvellement du code secret (nouveau code créé, ancien supprimé). Doit continuer à passer tant
+ * qu'aucune position n'existe.
  */
 export function removeMemberOps({
   target,
@@ -382,5 +405,16 @@ export function removeMemberOps({
     miff: update(`miffs/${miffId}`, { joinCode: newCode }),
     newCode: set(`joinCodes/${newCode}`, { miffId, miffName: name, createdAt: serverTs() }),
     oldCode: del(`joinCodes/${oldCode}`),
+  };
+}
+
+/** Retrait d'un membre, variante des builds qui écrivent une position (R-LIEU-POS) : 7 écritures, la position de la cible comprise. */
+export function removeMemberWithPositionOps(args = {}) {
+  const ops = removeMemberOps(args);
+  const { target, miffId = ID.M1 } = args;
+  return {
+    member: ops.member, status: ops.status, photo: ops.photo,
+    position: del(`miffs/${miffId}/positions/${target}`),
+    miff: ops.miff, newCode: ops.newCode, oldCode: ops.oldCode,
   };
 }

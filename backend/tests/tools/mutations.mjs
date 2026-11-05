@@ -8,6 +8,7 @@
 
 import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
 import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
+import { POSITION_MUTATIONS } from './mutations-position.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -706,4 +707,6 @@ export const MUTATIONS = [
   ...DUR3_MUTATIONS,
   // --- ONB-B (téléphone) et MIFF-0 (lot d'entrée) : voir mutations-onbb.mjs ---
   ...ONBB_MUTATIONS,
+  // --- R-LIEU-POS (dernière position connue) : voir mutations-position.mjs ---
+  ...POSITION_MUTATIONS,
 ];

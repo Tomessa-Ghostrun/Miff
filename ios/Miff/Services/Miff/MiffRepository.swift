@@ -12,13 +12,13 @@ final class FirestoreMiffRepository: MiffRepository {
     static let maxCodeDraws = 3
     static let freeKey = "free"
 
-    private let store: MiffStore
+    let store: MiffStore
     private let observer: MiffObserver
     private let location: LocationAccessProbe
     /// Vide le cache du téléphone après un nettoyage dont personne n'est averti (voir `cleanUpSilently`).
     private let cache: CachePurger?
-    private let rules: MiffRepositoryRules
-    private let reader: MiffStateReader
+    let rules: MiffRepositoryRules
+    let reader: MiffStateReader
 
     init(
         store: MiffStore,
@@ -92,14 +92,14 @@ final class FirestoreMiffRepository: MiffRepository {
         }
     }
 
-    private enum CodeDraw {
+    enum CodeDraw {
         case free(String)
         case failed(MiffFailure)
     }
 
     /// Un code que personne n'utilise : une lecture par essai, trois essais (critère C7). Une collision est de l'ordre de
     /// 10^-13 : jamais visible.
-    private func freeCode() async -> CodeDraw {
+    func freeCode() async -> CodeDraw {
         let store = self.store
         for _ in 0..<Self.maxCodeDraws {
             let code = rules.newCode()
@@ -310,7 +310,7 @@ final class FirestoreMiffRepository: MiffRepository {
         premium ? miffId : Self.freeKey
     }
 
-    private func write(_ action: @escaping () async throws -> Void) async -> MiffWriteResult {
+    func write(_ action: @escaping () async throws -> Void) async -> MiffWriteResult {
         switch await guarded(action) {
         case .value:
             return .done
@@ -319,7 +319,7 @@ final class FirestoreMiffRepository: MiffRepository {
         }
     }
 
-    private func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
+    func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
         await guardedCall(timeoutSeconds: rules.timeoutSeconds, call)
     }
 }

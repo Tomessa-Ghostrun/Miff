@@ -144,8 +144,23 @@ struct MiffNotice: View {
                     .stroke((isError ? colorTextError : colorBorderStrong).color, lineWidth: strokeHairline)
             )
             .onAppear {
-                Announcer.announce(text)
+                MiffNoticeAnnouncements.announceOnce(text)
             }
+    }
+}
+
+/// Une même phrase calme n'est pas ré-annoncée par VoiceOver chaque fois que le bandeau réapparaît (défilement, retour à
+/// l'écran) : seulement si elle est nouvelle, ou si la dernière annonce date de plus de 10 secondes.
+@MainActor
+enum MiffNoticeAnnouncements {
+    private static var last: (text: String, date: Date)?
+
+    static func announceOnce(_ text: String, now: Date = Date()) {
+        if let last, last.text == text, now.timeIntervalSince(last.date) < 10 {
+            return
+        }
+        last = (text, now)
+        Announcer.announce(text)
     }
 }
 
@@ -218,41 +233,6 @@ struct MiffAvatar: View {
         .frame(width: size, height: size)
         .clipShape(Circle())
         .accessibilityHidden(true)
-    }
-}
-
-/// Un proche : photo ronde (ou initiales), prénom et nom, puis les étiquettes « Créateur » et « Toi ».
-struct MiffMemberRow: View {
-    let member: MiffMember
-    let isMe: Bool
-
-    var body: some View {
-        HStack(spacing: Spacing.md) {
-            MiffAvatar(jpeg: member.avatarJpeg, initials: Initials.of(first: member.firstName, last: member.lastName))
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(verbatim: member.displayName)
-                    .miffTextStyle(textDisplayLabel)
-                    .foregroundColor(colorTextPrimary.color)
-                if member.role == .owner || isMe {
-                    HStack(spacing: Spacing.xs) {
-                        if member.role == .owner {
-                            MiffRolePill(text: L10n.string("miff_role_owner"), isOwner: true)
-                        }
-                        if isMe {
-                            MiffRolePill(text: L10n.string("miff_role_you"), isOwner: false)
-                        }
-                    }
-                }
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(Spacing.sm + Spacing.xs)
-        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-        .overlay(
-            RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                .stroke(colorBorderDefault.color, lineWidth: strokeHairline)
-        )
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -344,91 +324,6 @@ struct SharingConsentCard: View {
                 .stroke(colorBorderAction.color, lineWidth: strokeAccent)
         )
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// Ce que dit une fenêtre de confirmation.
-struct MiffConfirmContent {
-    let title: String
-    let message: String?
-    let confirmLabel: String
-    let isBusy: Bool
-    let failure: ActionMessage?
-}
-
-struct MiffConfirmActions {
-    let onConfirm: () -> Void
-    let onCancel: () -> Void
-}
-
-/// LA fenêtre de confirmation du flux (un seul modèle pour toutes les questions, ticket §3.3) : un titre, une ou deux phrases
-/// calmes, le bouton principal, et « Annuler », qui est toujours la sortie sans risque. Pendant l'opération, le bouton
-/// principal est grisé, un indicateur tourne et rien d'autre n'est possible (un appui = une opération). Présentée en feuille :
-/// le lecteur d'écran y reste enfermé et la taille de texte maximale la fait défiler.
-struct MiffConfirmSheet<Extra: View>: View {
-    let content: MiffConfirmContent
-    let actions: MiffConfirmActions
-    let extra: Extra
-
-    init(content: MiffConfirmContent, actions: MiffConfirmActions, @ViewBuilder extra: () -> Extra) {
-        self.content = content
-        self.actions = actions
-        self.extra = extra()
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: Spacing.md) {
-                Text(verbatim: content.title)
-                    .miffTextStyle(textTitleBold20)
-                    .foregroundColor(colorTextPrimary.color)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                if let message = content.message {
-                    Text(verbatim: message)
-                        .miffTextStyle(textBodyRegular)
-                        .foregroundColor(colorTextDescription.color)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                extra
-                if let failure = content.failure {
-                    MiffNotice(text: actionMessageText(failure))
-                }
-                Button(action: actions.onConfirm) {
-                    Text(verbatim: content.confirmLabel)
-                }
-                .buttonStyle(.miffPrimaryFullWidth)
-                .disabled(content.isBusy)
-                if content.isBusy {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(colorActionPrimary.color)
-                        .accessibilityLabel("miff_dialog_working_a11y")
-                }
-                Button(action: actions.onCancel) {
-                    Text("common_cancel")
-                        .miffTextStyle(textBodyBold16)
-                        .foregroundColor(colorActionPrimary.color)
-                        .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
-                }
-                .disabled(content.isBusy)
-            }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
-        }
-        .background(colorBgSurface.color.ignoresSafeArea())
-        .interactiveDismissDisabled(content.isBusy)
-        .presentationDetents([.medium, .large])
-    }
-}
-
-extension MiffConfirmSheet where Extra == EmptyView {
-    init(content: MiffConfirmContent, actions: MiffConfirmActions) {
-        self.init(content: content, actions: actions) {
-            EmptyView()
-        }
     }
 }
 

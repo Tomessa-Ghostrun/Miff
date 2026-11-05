@@ -8,11 +8,12 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.GetCredentialInterruptedException
+import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
+import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.GoogleTokenResult
 import kotlinx.coroutines.CancellationException
@@ -26,56 +27,114 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** Opens the Google account dialog and returns an ID token for Firebase. Bound to a screen (needs an Activity). */
 interface GoogleIdTokenSource {
     suspend fun requestIdToken(): GoogleTokenResult
+
+    /**
+     * The same dialog, used to prove who the person is AGAIN before deleting the account they just created (refusal of the
+     * consent panel). There, closing the dialog must always stay silent: the quick-cancellation rule of the sign-in
+     * buttons does not apply. The default is the plain request (fakes, tests).
+     */
+    suspend fun requestIdTokenForReauthentication(): GoogleTokenResult = requestIdToken()
+}
+
+/**
+ * The part that talks to the system (Credential Manager), cut out so that every outcome can be played in a unit test.
+ * Returns the Google ID token, or null if the system answered with another kind of credential. Failures are thrown as
+ * the exceptions of `androidx.credentials` (or `GoogleIdTokenParsingException`); [CredentialManagerGoogleSource]
+ * turns them into a [GoogleTokenResult].
+ */
+fun interface GoogleCredentialClient {
+    suspend fun fetchIdToken(webClientId: String): String?
 }
 
 /**
  * Credential Manager + "Sign in with Google" option (the explicit button flow recommended by Google).
- * The ID token only travels to Firebase Authentication; it is not stored nor logged.
- *
  * [activityContext] MUST be an Activity: Credential Manager shows its dialog on top of it.
- * [webClientId] is the OAuth *web* client of the Firebase project (`default_web_client_id`, generated from
- * google-services.json); without it the sign-in cannot start ([GoogleTokenResult.Unavailable]).
  */
-class CredentialManagerGoogleSource(
+class CredentialManagerClient(
     private val activityContext: Context,
-    private val webClientId: String?,
-) : GoogleIdTokenSource {
-    override suspend fun requestIdToken(): GoogleTokenResult {
-        val clientId = webClientId?.takeIf { it.isNotBlank() } ?: return GoogleTokenResult.Unavailable
+) : GoogleCredentialClient {
+    override suspend fun fetchIdToken(webClientId: String): String? {
         val request =
             GetCredentialRequest
                 .Builder()
-                .addCredentialOption(GetSignInWithGoogleOption.Builder(clientId).build())
+                .addCredentialOption(GetSignInWithGoogleOption.Builder(webClientId).build())
                 .build()
-        return try {
-            // A dialog left open for ever must not freeze the screen: after this long, back to a stable state.
-            withTimeoutOrNull(DIALOG_TIMEOUT_MS) { askGoogle(request) } ?: GoogleTokenResult.Cancelled
-        } catch (e: GetCredentialCancellationException) {
-            GoogleTokenResult.Cancelled
-        } catch (e: NoCredentialException) {
-            GoogleTokenResult.Failed(AuthFailure.UNKNOWN)
-        } catch (e: GetCredentialException) {
-            GoogleTokenResult.Failed(AuthFailure.UNKNOWN)
-        } catch (e: GoogleIdTokenParsingException) {
-            GoogleTokenResult.Failed(AuthFailure.UNKNOWN)
-        } catch (e: CancellationException) {
-            throw e
-        }
-    }
-
-    private suspend fun askGoogle(request: GetCredentialRequest): GoogleTokenResult {
         val credential = CredentialManager.create(activityContext).getCredential(activityContext, request).credential
         return if (credential is CustomCredential &&
             credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
-            GoogleTokenResult.Token(GoogleIdTokenCredential.createFrom(credential.data).idToken)
+            GoogleIdTokenCredential.createFrom(credential.data).idToken
         } else {
-            GoogleTokenResult.Failed(AuthFailure.UNKNOWN)
+            null
+        }
+    }
+}
+
+/**
+ * Turns the outcome of the Google dialog into a [GoogleTokenResult]. The ID token only travels to Firebase
+ * Authentication; it is not stored nor logged, and neither are the account, the address or any message of the system
+ * (an error is reduced to its KIND here, nothing of it is kept).
+ *
+ * [webClientId] is the OAuth *web* client of the Firebase project (`default_web_client_id`, generated from
+ * google-services.json); without it the sign-in cannot start ([GoogleTokenResult.Unavailable]).
+ */
+class CredentialManagerGoogleSource(
+    private val client: GoogleCredentialClient,
+    private val webClientId: String?,
+    private val dialogTimeoutMs: Long = DIALOG_TIMEOUT_MS,
+    /** Monotonic clock in milliseconds; injected so that tests can place the cancellation on either side of the threshold. */
+    private val nowMillis: () -> Long = { System.nanoTime() / NANOS_PER_MILLI },
+) : GoogleIdTokenSource {
+    override suspend fun requestIdToken(): GoogleTokenResult = request(quickCancellationIsAFailure = true)
+
+    override suspend fun requestIdTokenForReauthentication(): GoogleTokenResult =
+        request(quickCancellationIsAFailure = false)
+
+    private suspend fun request(quickCancellationIsAFailure: Boolean): GoogleTokenResult {
+        val clientId = webClientId?.takeIf { it.isNotBlank() } ?: return GoogleTokenResult.Unavailable
+        val startedAt = nowMillis()
+        return try {
+            // A dialog left open for ever must not freeze the screen: after this long, back to a stable state.
+            withTimeoutOrNull(dialogTimeoutMs) {
+                // Another kind of credential, or an empty token: the system answered, but not with what we need.
+                client
+                    .fetchIdToken(clientId)
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { GoogleTokenResult.Token(it) }
+                    ?: GoogleTokenResult.Failed(AuthFailure.UNKNOWN)
+            } ?: GoogleTokenResult.Cancelled
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: GetCredentialCancellationException) {
+            // Android also reports some Google failures as a "cancellation" (status 16, e.g. account re-authentication that
+            // failed). A cancellation that comes back this quickly is far more likely such a failure than a person who
+            // looked at the dialog and closed it: it is told as a temporary failure. A slower one is a real closing and
+            // stays silent. The message of the exception is never read (Google-internal, fragile, could hold personal
+            // data). Not used when the dialog only re-checks who the person is (see [requestIdTokenForReauthentication]).
+            if (quickCancellationIsAFailure && nowMillis() - startedAt < FAST_CANCELLATION_MS) {
+                GoogleTokenResult.Failed(AuthFailure.GOOGLE_INTERRUPTED)
+            } else {
+                GoogleTokenResult.Cancelled
+            }
+        } catch (e: Exception) {
+            googleFailureOf(e)
         }
     }
 
     companion object {
         private const val DIALOG_TIMEOUT_MS = 180_000L
+        private const val NANOS_PER_MILLI = 1_000_000L
+
+        /**
+         * A cancellation that comes back LESS than this long after the request (strictly less) is told as a temporary
+         * failure instead of staying silent; exactly this value or more is a real closing. It is a compromise, not a proof:
+         * a status-16 failure of Google is generally almost immediate, while a person who opens the dialog and closes it at
+         * once by reflex needs a little more. Too high, a very quick closing would show a message that was not needed (an
+         * unwanted but harmless message); too low, a failure would stay silent (the very problem reported in the acceptance
+         * test, and the person would not know why nothing happened). Between the two, the message is the lesser evil.
+         * Default to be confirmed by the PM on the OPPO Find X5 Lite; it is changed here only.
+         */
+        const val FAST_CANCELLATION_MS = 1_000L
 
         /**
          * The web client id generated by the google-services plugin, looked up by name: if the configuration file has
@@ -88,6 +147,33 @@ class CredentialManagerGoogleSource(
         }
     }
 }
+
+/**
+ * What an error of the Google dialog means for the person (only the KIND of the exception is read, never its message):
+ * - the person closed the dialog: [GoogleTokenResult.Cancelled], no message at all (criterion S7). The caller
+ *   ([CredentialManagerGoogleSource]) tells a cancellation that comes back very quickly as a temporary failure;
+ * - [NoCredentialException]: the library uses it for almost any error of the "Sign in with Google" path (statuses other
+ *   than 7 and 20), not only when no account exists, and that includes a misconfigured app (DEVELOPER_ERROR: SHA-1 or
+ *   OAuth client). The wording stays careful ("Google could not offer an account for now"), never categorical;
+ * - Google services missing, too old or unable to serve this request (provider configuration / unsupported);
+ * - [GetCredentialInterruptedException]: the library uses it for the Google statuses 7 (network) and 20 only: try again;
+ * - everything else (unknown error of the system, token that cannot be read, any other exception) is the honest generic
+ *   [AuthFailure.UNKNOWN]: we do not know more, so we do not pretend to.
+ */
+internal fun googleFailureOf(error: Throwable): GoogleTokenResult =
+    when (error) {
+        is GetCredentialCancellationException -> GoogleTokenResult.Cancelled
+
+        is NoCredentialException -> GoogleTokenResult.Failed(AuthFailure.GOOGLE_NO_ACCOUNT)
+
+        is GetCredentialInterruptedException -> GoogleTokenResult.Failed(AuthFailure.GOOGLE_INTERRUPTED)
+
+        is GetCredentialProviderConfigurationException,
+        is GetCredentialUnsupportedException,
+        -> GoogleTokenResult.Failed(AuthFailure.GOOGLE_SERVICES_UNAVAILABLE)
+
+        else -> GoogleTokenResult.Failed(AuthFailure.UNKNOWN)
+    }
 
 /** Is there a network at all? Used to answer "no connection" at once instead of waiting for a long failure. */
 interface NetworkMonitor {

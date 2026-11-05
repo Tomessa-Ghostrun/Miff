@@ -23,6 +23,15 @@ enum class AuthMessage {
     NETWORK,
     UNKNOWN,
     ACCOUNT_UNAVAILABLE,
+
+    /** Google dialog: no usable Google account on the phone. Points to the e-mail way as an alternative. */
+    GOOGLE_NO_ACCOUNT,
+
+    /** Google dialog: the phone's Google services are missing, too old or do not answer. */
+    GOOGLE_SERVICES_UNAVAILABLE,
+
+    /** Google dialog: Google did not answer this time, trying again is fine. */
+    GOOGLE_INTERRUPTED,
 }
 
 fun AuthFailure.toMessage(): AuthMessage =
@@ -34,6 +43,9 @@ fun AuthFailure.toMessage(): AuthMessage =
         AuthFailure.EMAIL_ALREADY_IN_USE -> AuthMessage.EMAIL_IN_USE
         AuthFailure.LINKED_TO_OTHER_METHOD -> AuthMessage.OTHER_METHOD
         AuthFailure.RECENT_LOGIN_REQUIRED -> AuthMessage.UNKNOWN
+        AuthFailure.GOOGLE_NO_ACCOUNT -> AuthMessage.GOOGLE_NO_ACCOUNT
+        AuthFailure.GOOGLE_SERVICES_UNAVAILABLE -> AuthMessage.GOOGLE_SERVICES_UNAVAILABLE
+        AuthFailure.GOOGLE_INTERRUPTED -> AuthMessage.GOOGLE_INTERRUPTED
         AuthFailure.UNKNOWN -> AuthMessage.UNKNOWN
     }
 
@@ -51,6 +63,19 @@ fun GoogleTokenResult.toMessage(): AuthMessage? =
         is GoogleTokenResult.Token -> null
         GoogleTokenResult.Unavailable -> AuthMessage.UNKNOWN
         is GoogleTokenResult.Failed -> failure.toMessage()
+    }
+
+/**
+ * A failure whose cause may simply be that the phone has no network (the system dialog gives no clear signal, Firebase
+ * may fail late) says so when the phone is offline NOW: "no connection" is then the honest and useful answer.
+ */
+fun AuthMessage.orNoConnectionIf(offline: Boolean): AuthMessage =
+    if (offline &&
+        (this == AuthMessage.UNKNOWN || this == AuthMessage.GOOGLE_INTERRUPTED)
+    ) {
+        AuthMessage.NETWORK
+    } else {
+        this
     }
 
 @Composable
@@ -82,6 +107,18 @@ fun AuthMessage.text(): String =
 
         AuthMessage.UNKNOWN -> {
             stringResource(R.string.auth_error_unknown)
+        }
+
+        AuthMessage.GOOGLE_NO_ACCOUNT -> {
+            stringResource(R.string.auth_error_google_no_account)
+        }
+
+        AuthMessage.GOOGLE_SERVICES_UNAVAILABLE -> {
+            stringResource(R.string.auth_error_google_services)
+        }
+
+        AuthMessage.GOOGLE_INTERRUPTED -> {
+            stringResource(R.string.auth_error_google_interrupted)
         }
 
         AuthMessage.ACCOUNT_UNAVAILABLE -> {
