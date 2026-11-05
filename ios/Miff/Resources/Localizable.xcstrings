@@ -8783,6 +8783,23 @@
         }
       }
     },
+    "settings_delete_miffs_blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$@."
+          }
+        }
+      }
+    },
     "settings_delete_miffs_soon": {
       "extractionState": "manual",
       "localizations": {
@@ -9255,6 +9272,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "On réessaie…"
+          }
+        }
+      }
+    },
+    "settings_delete_signin_again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your session closed before the deletion of your account was finished. Sign in again with the same account and we’ll finish it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta session s’est fermée avant la fin de la suppression de ton compte. Reconnecte-toi avec le même compte : on la termine."
+          }
+        }
+      }
+    },
+    "settings_delete_signin_again_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me reconnecter"
           }
         }
       }
