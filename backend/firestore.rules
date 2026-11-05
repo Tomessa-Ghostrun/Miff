@@ -40,7 +40,7 @@ rules_version = '2';
 //     dans le MÊME lot que le statut et la photo (arrêt du partage, départ, retrait) : les règles le EXIGENT.
 //     L'écriture de position lit DEUX documents (Miff, fiche du membre) et ne doit jamais partager un lot avec des lieux.
 //     La version du texte de consentement est DÉCLARÉE par le client : aucune règle ne prouve quel texte a été affiché.
-// 10. Un compte, un seul appareil (SESS-1, mécanisme validé par le PM le 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ : un document de session
+// 10. Un compte, un seul appareil (SESS-1, mécanisme validé par le PM le 2026-11-01) — DÉPLOYÉ le 2026-11-05 : un document de session
 //     users/{uid}/session/active { deviceId, startedAt } écrit à chaque connexion (la dernière connexion gagne), supprimé à la
 //     déconnexion volontaire, lisible et écrivable par son propriétaire seul. Le statut et la dernière position portent la clé
 //     facultative `deviceId` ; si elle est présente elle DOIT être celle de la session (une lecture de règles de plus, seulement
