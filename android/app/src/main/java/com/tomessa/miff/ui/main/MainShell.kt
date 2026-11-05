@@ -46,7 +46,6 @@ import com.tomessa.miff.ui.miff.miffScreenRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
-import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.ProfileTabScreen
@@ -202,7 +201,6 @@ private fun MainNavigation(
                             scopeKey = scopeKey,
                             onOpenPlace = { miffId, placeId -> navController.open(PlaceDetailRoute(miffId, placeId)) },
                             onAddPlace = { navController.open(PlaceFormRoute()) },
-                            onOpenOffer = { reason -> navController.open(PlacePaywallRoute.of(reason)) },
                         )
                     }
                 },

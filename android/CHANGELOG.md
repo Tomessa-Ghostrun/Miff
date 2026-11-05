@@ -2,6 +2,25 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.10.2] - 2026-11-05 : correctif LOC-1, un abonnement « inconnu » n'est plus pris pour « gratuit »
+
+Trouvé par la revue indépendante du portage iOS de LOC-3 (défaut déjà présent dans LOC-1 Android, fusionné). **Aucune règle Firestore modifiée.**
+
+### Corrigé
+- **Symptôme** : un créateur Miff+ avec au moins 2 lieux pouvait voir « 2 lieux sur 2 avec la formule gratuite » et se voir refuser « Ajouter un lieu » (écran « Miff+ arrive bientôt » au lieu du formulaire) quand la lecture de son abonnement avait échoué, qu'il n'y avait pas de réponse du serveur, ou que la liste venait du cache hors connexion (« limite F1 » connue de MIFF-1 : `premium()` renvoyait `false`).
+- **« Ajouter un lieu » ouvre toujours le formulaire** (onglet Profil et écran de la Miff). Le formulaire relit l'abonnement sur le **serveur** et affiche lui-même l'offre si la limite est vraiment atteinte ; une lecture qui échoue donne « Réessayer », jamais l'offre. La liste ne décide plus rien : elle garde seulement la pastille « Miff+ » quand le plan gratuit est **connu**.
+- **Plan « inconnu » distinct de « gratuit »** : `MyMiffsLoad.Loaded.premiumKnown` / `DirectoryState.Ready.premiumKnown` (faux si la lecture de l'abonnement échoue ou si la réponse vient du cache) ; la liste des lieux reçoit `premiumOrNull` (null = inconnu) et n'affiche alors ni compteur « formule gratuite » ni pastille. `premium` reste un booléen pour la clé de l'index (inchangé : les règles décident pour de vrai).
+- **Même défaut dans le Feed, corrigé** (revue de la PR) : le sélecteur de Miff (changer de Miff, « + Rejoindre », « + Créer ») ne dépendait que de `premium` ; un Miff+ dont la lecture d'abonnement échouait (ou venait du cache) le perdait. Il reste désormais utilisable tant que le plan n'est pas **connu comme gratuit** (`premiumOrNull != false`). Par cohérence, `prepareCreate` / `prepareJoin` ne répondent plus « offre Miff+ » (`NeedsPremium`) sur un plan inconnu quand la personne a déjà une Miff : ils répondent l'échec calme « Réessayer » (`MiffFailure.OFFLINE`) ; un Miff+ lu dans le cache reste une bonne estimation pour la clé de l'index (les règles décident pour de vrai).
+- **Cache détecté à la lecture** : `MiffStore.readEntitlement` lit `snapshot.metadata.isFromCache` (`EntitlementRead.fromCache`) ; une réponse du cache, y compris « pas de document », rend le plan **inconnu**. La lecture reste hors `Source.SERVER` (elle doit rester utilisable hors connexion comme clé d'index).
+- **Limite connue (mineure) : horloge de l'appareil.** L'expiration de l'abonnement est comparée à l'horloge de l'appareil (`FirestorePlaceRepository.isActive`, `FirestoreMiffRepository.plan`), alors que les règles utilisent l'heure du serveur. Une horloge fausse peut au pire faire choisir la mauvaise clé d'index ou le mauvais écran ; les règles décident pour de vrai. Non modifié ici.
+- Tests ajoutés : cache = inconnu mais clé conservée, `prepareCreate` / `prepareJoin` sur plan inconnu (« Réessayer », jamais l'offre ; plan connu = réponse réelle), sélecteur du Feed avec plan inconnu, `MiffScreenHost` (« Ajouter un lieu » appelle le formulaire pour gratuit, Miff+ et inconnu), `PlaceAddEntryPointsTest` (câblage de `ProfilePlacesSection`, de l'onglet Profil et de `miffScreenRoute` : toujours le formulaire, jamais l'offre).
+- Code simplifié : `PlacesExtras.onAddPlace(atFreeLimit)` devient `onAddPlace()`, `ProfilePlacesSection` n'a plus `onOpenOffer`.
+- Tests : `MiffRepositoryTest` (lecture échouée = inconnu, pas de document = gratuit connu, cache = inconnu), `MiffDirectoryTest` (inconnu publié et conservé), `PlaceFormViewModelTest` (Miff+ avec 2 lieux = formulaire, lecture impossible = « Réessayer » sans offre ; gratuit réel = offre, existait déjà), `PlaceScreensTest` (plan inconnu : pas de « formule gratuite », « Ajouter un lieu » actif).
+
+### Comportement visible
+- Un compte gratuit qui a déjà 2 lieux et touche « Ajouter un lieu » voit toujours l'offre, mais **après** une courte lecture du serveur (au lieu d'immédiatement) ; hors connexion il voit un message calme avec « Réessayer » au lieu de l'offre. C'est voulu : une limite ne se décide que sur une réponse du serveur.
+- Aucun coût supplémentaire : l'ouverture du formulaire lisait déjà l'abonnement sur le serveur.
+
 ## [0.10.1] - 2026-11-04 : message clair quand la connexion Google échoue (retour de recette du PM)
 
 Retour de recette : « la connexion Google a échoué plusieurs fois de suite avant de marcher, et l'app n'a pas informé ». Avant : tous les échecs de la fenêtre Google donnaient le même message générique, affiché en bas du formulaire, loin du bouton Google (facile à ne pas voir), et ceux qu'Android signale comme une annulation restaient muets. Ticket `docs/tickets/authentification.md` (§7.3, §11 cas 3 et 4), `CLAUDE.md` (ton bienveillant, non anxiogène).

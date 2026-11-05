@@ -176,12 +176,14 @@ private fun MiffPill(
     onJoin: () -> Unit,
 ) {
     val name = state.active?.name ?: return
+    // An UNKNOWN plan (subscription not read, or answer from the cache) keeps the selector usable: never "free" on a doubt.
+    val selectable = state.premiumOrNull != false
     var open by remember { mutableStateOf(false) }
     Box {
         Pill(
             text = name,
-            selectable = state.premium,
-            contentLabel = if (state.premium) stringResource(R.string.feed_selector_a11y, name) else null,
+            selectable = selectable,
+            contentLabel = if (selectable) stringResource(R.string.feed_selector_a11y, name) else null,
             onClick = { open = true },
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {

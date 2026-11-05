@@ -33,7 +33,8 @@ class MiffDirectoryTest {
         lost: List<LostMiff> = emptyList(),
         premium: Boolean = false,
         fromCache: Boolean = false,
-    ) = MyMiffsLoad.Loaded(miffs, lost, premium, fromCache)
+        premiumKnown: Boolean = true,
+    ) = MyMiffsLoad.Loaded(miffs, lost, premium, fromCache, premiumKnown)
 
     private fun lost(
         id: String = MIFF_ID,
@@ -49,6 +50,24 @@ class MiffDirectoryTest {
             val state = directory.state.value as DirectoryState.Ready
             assertTrue(state.miffs.isEmpty())
             assertNull(state.active)
+        }
+
+    @Test
+    fun anUnknownPlan_isPublishedAsUnknown_andSurvivesAChoiceOfMiff() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult =
+                loaded(listOf(MiffSummary(MIFF_ID, "A"), MiffSummary(OTHER_MIFF_ID, "B")), premiumKnown = false)
+            directory.refresh()
+            assertNull((directory.state.value as DirectoryState.Ready).premiumOrNull)
+            directory.select(OTHER_MIFF_ID)
+            assertNull((directory.state.value as DirectoryState.Ready).premiumOrNull)
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = true)
+            directory.refresh()
+            assertEquals(true, (directory.state.value as DirectoryState.Ready).premiumOrNull)
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
+            directory.refresh()
+            assertEquals(false, (directory.state.value as DirectoryState.Ready).premiumOrNull)
         }
 
     @Test

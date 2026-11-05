@@ -254,6 +254,6 @@ class PlacesExtras(
     /** The name of the place just saved (the calm confirmation), or null. */
     val savedName: String? = null,
     val onOpenPlace: (Place) -> Unit = {},
-    /** "Ajouter un lieu": [atFreeLimit] says that the free plan is full, so the host opens the offer instead of the form. */
-    val onAddPlace: (atFreeLimit: Boolean) -> Unit = {},
+    /** "Ajouter un lieu": always the form, which reads the plan on the server and shows the offer itself at the real limit. */
+    val onAddPlace: () -> Unit = {},
 )

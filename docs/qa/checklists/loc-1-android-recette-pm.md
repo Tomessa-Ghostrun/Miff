@@ -51,7 +51,8 @@ Accès : Profil > « Lieux de la Miff » > **Ajouter un lieu** (ou la carte de l
 
 - [ ] Créez « Maison de Papa » (Maison, 150 m) puis « Foot de Thomas » (Sport) : après chaque enregistrement, **retour à la liste** avec « Le lieu « … » est enregistré. Tes proches le prendront en compte dès qu'ils ouvriront Miff, ou dans les prochaines heures. »
 - [ ] La liste montre, par ligne : l'icône de la catégorie, le nom, l'adresse, une flèche. Le compteur indique **« 2 lieux sur 2 avec la formule gratuite »**.
-- [ ] **« Ajouter un lieu » reste visible, avec la pastille Miff+**, et ouvre l'écran « Tu as atteint 2 lieux » (jamais un bouton caché ou grisé). Rien n'est écrit.
+- [ ] **« Ajouter un lieu » reste visible, avec la pastille Miff+**, et ouvre l'écran « Tu as atteint 2 lieux » (jamais un bouton caché ou grisé), **après** une courte lecture du serveur : le bouton ouvre toujours le formulaire, qui décide sur la réponse du serveur. Rien n'est écrit. Hors connexion : « Réessayer » (jamais l'offre).
+- [ ] **Compte Miff+ avec 2 lieux ou plus** : « Ajouter un lieu » ouvre le formulaire, sans compteur « formule gratuite » ni pastille ; si le plan n'a pas pu être lu (mode avion au lancement), la liste n'affiche ni compteur ni pastille.
 - [ ] Avec **B** (membre) : même liste, **sans** « Ajouter un lieu » ni compteur, avec « Les lieux de ta Miff, définis par son créateur. » ; toucher une ligne ouvre le détail **sans** « Modifier ».
 
 ## Partie D — Détail, modification, suppression (Temps 2, 10 min)

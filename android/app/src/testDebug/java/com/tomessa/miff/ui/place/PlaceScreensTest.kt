@@ -432,9 +432,14 @@ class PlaceScreensTest {
 
     @Test
     fun list_unknownPlan_claimsNothingAboutTheFreePlan() {
-        rows(PlaceListUi(two, isCreator = true, premium = null))
+        var added = 0
+        rows(PlaceListUi(two, isCreator = true, premium = null), onAdd = { added++ })
+        composeRule.onAllNodesWithText("formule gratuite", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("lieux sur 2", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.place_premium_pill)).assertCountEquals(0)
+        // The way in stays open: the form decides on the server's answer.
+        composeRule.onNodeWithText(text(R.string.place_list_add_action)).assertIsEnabled().performClick()
+        assertEquals(1, added)
     }
 
     @Test
