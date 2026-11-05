@@ -7,7 +7,12 @@
 	     une donnée (compte, localisation...) et par le release-manager avant la soumission : la fiche
 	     « confidentialité » d'App Store Connect doit lui correspondre.
 
-	     Position : l'app ne collecte AUCUNE position à ce stade (aucune clé NSLocation*, aucun accès à CoreLocation).
+	     Position (LOC-4a, décision du PM du 2026-11-01 : la dernière position connue est stockée côté serveur et lisible des
+	     membres de la Miff qui partagent aussi) : « position précise » (PreciseLocation), LIÉE à l'identité de la personne, pour le
+	     FONCTIONNEMENT de l'app seulement, jamais pour le suivi ni la publicité. LOC-4a ne lit encore AUCUNE position (il ne fait
+	     que demander l'autorisation) : la déclaration anticipe LOC-4b, pour que le manifeste, les étiquettes d'App Store Connect
+	     (docs/release/app-store-confidentialite-et-revue.md §2) et la politique de confidentialité disent la même chose. Les
+	     deux textes d'usage NSLocation* sont dans InfoPlist.xcstrings.
 	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
 
 	     Données du COMPTE (AUTH-3, ONB-6), liées à l'identité de la personne, pour le fonctionnement de l'app seulement
@@ -27,6 +32,18 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePreciseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeUserID</string>

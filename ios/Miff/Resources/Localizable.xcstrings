@@ -2977,125 +2977,6 @@
         }
       }
     },
-    "miff_consent_create": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "By creating this Miff, you share your status with its members; you can stop at any time in the Miff's settings."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
-          }
-        }
-      }
-    },
-    "miff_consent_join": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "By joining this Miff, you share your status with its members; you can stop at any time in the Miff's settings."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
-          }
-        }
-      }
-    },
-    "miff_consent_members_see_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your first name, last name, photo and phone number."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton prénom, ton nom, ta photo et ton numéro de téléphone."
-          }
-        }
-      }
-    },
-    "miff_consent_members_see_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What the members see of you"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ce que les membres voient de toi"
-          }
-        }
-      }
-    },
-    "miff_consent_places": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The trusted places of this Miff are chosen by its creator and visible to all its members."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres."
-          }
-        }
-      }
-    },
-    "miff_consent_system_note_create": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your phone will ask separately for access to your location. You can say no."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton téléphone te demandera séparément l'accès à ta position. Tu peux le refuser."
-          }
-        }
-      }
-    },
-    "miff_consent_system_note_join": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your phone will ask separately for access to your location. You can say no and still join."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton téléphone te demandera séparément l'accès à ta position. Tu peux le refuser : tu rejoins la Miff quand même."
-          }
-        }
-      }
-    },
     "miff_copy_code_action": {
       "extractionState": "manual",
       "localizations": {
@@ -4720,23 +4601,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reprendre le partage"
-          }
-        }
-      }
-    },
-    "miff_sharing_resume_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You share your status with the members of this Miff again; you can stop at any time."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu partages à nouveau ton statut avec les membres de cette Miff ; tu peux arrêter à tout moment."
           }
         }
       }
@@ -9799,6 +9663,346 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rien n'est enregistré tant que tu n'as pas accepté. Tu peux aussi quitter cette Miff."
+          }
+        }
+      }
+    },
+    "ios_permission_location_upgrade_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One more step!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus qu'une étape !"
+          }
+        }
+      }
+    },
+    "ios_permission_location_upgrade_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To let your Miff know even when the app is closed, Miff needs the \"Always\" option."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour te signaler à ta Miff même quand l'app est fermée, Miff a besoin de l'option « Toujours »."
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_open_miff": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the button below to open Miff's **Settings**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche le bouton ci-dessous pour ouvrir les **Réglages** de Miff"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_open_miff_short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Miff's **Settings**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre les **Réglages** de Miff"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_position": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap **Location**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche **Position**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_always": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose **Always**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis **Toujours**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on **Precise Location**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active **Position exacte**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_open_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir les Réglages"
+          }
+        }
+      }
+    },
+    "ios_permission_location_settings_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this choice at any time in your iPhone's Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pourras changer ce choix à tout moment dans les Réglages de ton iPhone."
+          }
+        }
+      }
+    },
+    "ios_permission_location_denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need your location"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a besoin de ta localisation"
+          }
+        }
+      }
+    },
+    "ios_permission_location_denied_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is turned off for Miff on your iPhone. Without it, your Miff can't know when you arrive at or leave your places."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La localisation est désactivée pour Miff sur ton iPhone. Sans elle, ta Miff ne peut pas savoir quand tu arrives ou pars de tes lieux."
+          }
+        }
+      }
+    },
+    "ios_permission_location_denied_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change your mind at any time in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu peux changer d'avis à tout moment dans les Réglages."
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location Services are turned off on your iPhone. For Miff to work, they need to be turned on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les services de localisation sont désactivés sur ton iPhone. Pour que Miff fonctionne, ils doivent être activés."
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_step_1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open your iPhone's **Settings**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre les **Réglages** de l'iPhone"
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_step_2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap **Privacy & Security**, then **Location Services**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche **Confidentialité et sécurité**, puis **Service de localisation**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_step_3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn it on, then choose **Always** for Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active-le, puis choisis **Toujours** pour Miff"
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this choice at any time."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pourras changer ce choix à tout moment."
+          }
+        }
+      }
+    },
+    "ios_permission_location_restricted_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is limited on your iPhone by a setting you can't change here."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La localisation est limitée sur ton iPhone par un réglage que tu ne peux pas modifier ici."
+          }
+        }
+      }
+    },
+    "ios_permission_location_approximate_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need your exact location"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a besoin de ta position exacte"
+          }
+        }
+      }
+    },
+    "ios_permission_location_approximate_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff needs your exact location, not an approximate area, to know when you arrive at or leave your places."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff a besoin de ta position exacte, et non d'une zone approximative, pour savoir quand tu arrives ou pars de tes lieux."
           }
         }
       }

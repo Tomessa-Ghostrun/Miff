@@ -199,7 +199,9 @@ struct JoinConfirmStep: View {
     }
 
     var body: some View {
-        MiffFrame(title: nil, onBack: nil) {
+        // Le texte du consentement (version 3) est long : il défile, et « Rejoindre et partager » / « Annuler » restent épinglés
+        // en bas (maquette 24 C et D).
+        MiffPinnedFrame(title: nil, onBack: nil) {
             VStack(spacing: Spacing.md) {
                 Text(verbatim: L10n.format("miff_join_confirm_title", state.miffName ?? ""))
                     .miffTextStyle(textDisplayHeadline)
@@ -208,30 +210,28 @@ struct JoinConfirmStep: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, Spacing.md)
                     .accessibilityAddTraits(.isHeader)
-                SharingConsentCard(
-                    sentence: L10n.string("miff_consent_join"),
-                    systemNote: L10n.string("miff_consent_system_note_join")
-                )
-                if let message = state.confirmMessage {
-                    MiffNotice(text: actionMessageText(message))
-                }
-                Button(action: actions.onConfirm) {
-                    Text(buttonKey)
-                }
-                .buttonStyle(.miffPrimaryFullWidth)
-                .disabled(state.joining)
-                if state.joining {
-                    LoadingIndicator()
-                }
-                Button(action: actions.onCancelConfirm) {
-                    Text("common_cancel")
-                        .miffTextStyle(textBodyBold16)
-                        .foregroundColor(colorActionPrimary.color)
-                        .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
-                }
-                .disabled(state.joining)
+                SharingConsentCard(sentence: L10n.string("miff_consent3_join"))
             }
             .frame(maxWidth: .infinity)
+        } footer: {
+            if let message = state.confirmMessage {
+                MiffNotice(text: actionMessageText(message))
+            }
+            Button(action: actions.onConfirm) {
+                Text(buttonKey)
+            }
+            .buttonStyle(.miffPrimaryFullWidth)
+            .disabled(state.joining)
+            if state.joining {
+                LoadingIndicator()
+            }
+            Button(action: actions.onCancelConfirm) {
+                Text("common_cancel")
+                    .miffTextStyle(textBodyBold16)
+                    .foregroundColor(colorActionPrimary.color)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
+            }
+            .disabled(state.joining)
         }
         .background(SwipeBackLock(isLocked: true))
     }

@@ -50,10 +50,10 @@ final class MiffDeletionTests: XCTestCase {
         store.commitsAsLots.joined().map { $0.path }
     }
 
-    /// Les codes écrits par les deux retraits (4e écriture de chaque lot).
+    /// Les codes écrits par les deux retraits (5e écriture de chaque lot : la fiche, le statut, la photo et la position viennent avant).
     private func removalCodes() -> [String] {
         store.commitsAsLots.prefix(2).compactMap { lot -> String? in
-            if case .string(let code)? = lot[3].data["joinCode"] {
+            if case .string(let code)? = lot[4].data["joinCode"] {
                 return code
             }
             return nil
@@ -66,8 +66,8 @@ final class MiffDeletionTests: XCTestCase {
         let result = await deletion().run(uid: uid, miffId: testMiffId)
 
         XCTAssertEqual(result, .deleted)
-        // Deux retraits de 6, les lieux 5 + 2, puis le dernier lot de 7.
-        XCTAssertEqual(lotSizes, [6, 6, 5, 2, 7])
+        // Deux retraits de 7 (la dernière position connue comprise), les lieux 5 + 2, puis le dernier lot de 8.
+        XCTAssertEqual(lotSizes, [7, 7, 5, 2, 8])
         XCTAssertEqual(
             store.commitsAsLots.prefix(2).compactMap { $0.first?.path },
             ["miffs/\(testMiffId)/members/uid-a", "miffs/\(testMiffId)/members/uid-b"]
@@ -99,7 +99,7 @@ final class MiffDeletionTests: XCTestCase {
         let result = await deletion().run(uid: uid, miffId: testMiffId)
 
         XCTAssertEqual(result, .deleted)
-        XCTAssertEqual(lotSizes, [7])
+        XCTAssertEqual(lotSizes, [8])
     }
 
     func testStoppedBeforeAnyLotAnywhereInTheSequenceThenRunAgainEndsDeletedWithoutADoubleWrite() async {
@@ -252,7 +252,7 @@ final class MiffDeletionTests: XCTestCase {
         let result = await deletion().run(uid: uid, miffId: testMiffId)
 
         XCTAssertEqual(result, .deleted)
-        XCTAssertEqual(lotSizes, [5])
+        XCTAssertEqual(lotSizes, [6])
         XCTAssertFalse(paths.contains { $0.hasPrefix("joinCodes/") || $0.hasPrefix("users/") })
     }
 

@@ -69,11 +69,30 @@ else
   report "advertisingIdentifier : aucune référence dans l'exécutable (OK)"
 fi
 
-# --- Info.plist du build : pas de localisation, pas d'exception ATS (I4), collecte éteinte (I5), apparence claire ---
-if plutil -p "$plist" | grep -q -E 'NSLocation|NSAppTransportSecurity'; then
-  fail "L'Info.plist du build contient une clé de localisation ou une exception ATS."
+# --- Info.plist du build : EXACTEMENT les deux clés de localisation de LOC-4a (IOS1), aucun mode d'arrière-plan, pas d'exception
+#     ATS (I4), collecte éteinte (I5), apparence claire ---
+location_keys="$(plutil -p "$plist" | grep -o -E 'NSLocation[A-Za-z]*' | sort -u | tr '\n' ' ')"
+expected_location_keys="NSLocationAlwaysAndWhenInUseUsageDescription NSLocationWhenInUseUsageDescription "
+if [ "$location_keys" = "$expected_location_keys" ]; then
+  report "Info.plist : exactement les deux clés de localisation NSLocationAlwaysAndWhenInUseUsageDescription et NSLocationWhenInUseUsageDescription (OK)"
 else
-  report "Info.plist : aucune clé NSLocation*, aucune exception ATS (OK)"
+  fail "Info.plist : clés de localisation « ${location_keys} » au lieu des deux attendues (NSLocationAlwaysAndWhenInUseUsageDescription, NSLocationWhenInUseUsageDescription)."
+fi
+if plutil -p "$plist" | grep -q -E 'UIBackgroundModes|NSAppTransportSecurity'; then
+  fail "L'Info.plist du build contient un mode d'arrière-plan (UIBackgroundModes) ou une exception ATS."
+else
+  report "Info.plist : aucun mode d'arrière-plan, aucune exception ATS (OK)"
+fi
+# Interrupteur de compilation du blocage de la localisation (décision du PM du 2026-11-01) : YES par défaut. Un build de
+# PUBLICATION qui le relâche est refusé, sauf demande expresse (MIFF_ALLOW_RELAXED_LOCATION_IN_RELEASE=1) : relâcher est une
+# décision prise APRÈS un refus d'Apple (ios/README.md), jamais un oubli.
+blocking="$(plutil -extract MiffLocationBlocking raw -o - "$plist" 2> /dev/null || echo absent)"
+if [ "$blocking" = "YES" ]; then
+  report "Info.plist : MiffLocationBlocking = YES, l'écran « Toujours » est bloquant (OK)"
+elif [ "$mode" = "release" ] && [ "${MIFF_ALLOW_RELAXED_LOCATION_IN_RELEASE:-0}" != "1" ]; then
+  fail "Info.plist : MiffLocationBlocking vaut « ${blocking} » dans un build de publication (attendu : YES, ou MIFF_ALLOW_RELAXED_LOCATION_IN_RELEASE=1 en toute connaissance de cause)."
+else
+  report "Info.plist : MiffLocationBlocking = ${blocking} (blocage RELÂCHÉ dans ce build, voulu ?)"
 fi
 for key in FIREBASE_ANALYTICS_COLLECTION_ENABLED FirebaseCrashlyticsCollectionEnabled FirebaseDataCollectionDefaultEnabled; do
   value="$(plutil -extract "$key" raw -o - "$plist" 2> /dev/null || echo absent)"

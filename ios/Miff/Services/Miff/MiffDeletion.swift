@@ -201,7 +201,7 @@ final class MiffDeletion: MiffDeleter {
             return .paused(failure)
         }
         for ref in refs where ref.miffId == miffId {
-            let writes = MiffWrites.dropIndex(uid: uid, membershipKey: ref.key)
+            let writes = MiffWrites.dropIndex(miffId: miffId, uid: uid, membershipKey: ref.key)
             let dropped = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(writes) }
             if case .failed(let failure, _) = dropped {
                 return .paused(failure)

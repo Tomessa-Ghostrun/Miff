@@ -64,7 +64,7 @@ Première moitié de LOC-2 (ticket `docs/tickets/lieux-de-confiance.md` §6.5, �
 - **11 (prérequis inter-plateformes)** : iOS n'a **pas encore** la suppression de `positions/{uid}` dans ses lots (data-model, « ordre de livraison », I1) ; tant que iOS/LOC-2b ne l'embarquent pas, un créateur iOS ne pourrait plus retirer un membre Android ni supprimer sa Miff dès que ce membre a une position.
 
 ### Modifié
-- `MiffSharingConsent.VERSION` : `2026-10-v2` devient `2026-11-v03` (largeur fixe). Les clés `miff_consent_*` et `miff_sharing_resume_body` ne sont plus utilisées par Android (conservées dans les catalogues tant qu'iOS n'a pas adopté la v3).
+- `MiffSharingConsent.VERSION` : `2026-10-v2` devient `2026-11-v03` (largeur fixe). Les clés `miff_consent_*` et `miff_sharing_resume_body` ne sont plus utilisées par Android ; **retirées des deux catalogues par la PR iOS LOC-4a** (iOS a adopté la v3).
 - `MiffFrame` : paramètre `footer` (bouton épinglé). `MiffWrites.dropIndex` prend la Miff. `PlacePrivacyTest` ne contrôle plus que `ACCESS_WIFI_STATE`.
 - Réglages > Confidentialité : le texte de la localisation ne dit plus « on te demandera avant » (une autorisation est maintenant demandée) mais reste vrai (rien n'est lu ni enregistré) ; le bloc complet de la maquette 23 n'est **pas** construit.
 
