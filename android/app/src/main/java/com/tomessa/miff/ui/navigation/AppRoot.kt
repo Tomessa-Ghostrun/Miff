@@ -48,7 +48,9 @@ import com.tomessa.miff.ui.auth.SignInScreen
 import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
+import com.tomessa.miff.ui.main.DeleteAccountRoute
 import com.tomessa.miff.ui.main.MainShell
+import com.tomessa.miff.ui.main.deleteAccountRoutes
 import com.tomessa.miff.ui.miff.MiffOnboardingHost
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
 import com.tomessa.miff.ui.permission.PermissionGate
@@ -70,6 +72,9 @@ data object SignInRoute
 
 @Serializable
 data object WelcomeRoute
+
+@Serializable
+data object LookupFailedRoute
 
 /** "Mot de passe oublié" (AUTH-2). [email] is the address already typed on the sign-in screen, if any. */
 @Serializable
@@ -110,10 +115,7 @@ fun AppRoot(container: AppContainer) {
         }
 
         SessionState.LookupFailed -> {
-            AccountLookupFailedScreen(
-                onRetry = session::retry,
-                onSignOut = { scope.launch { session.signOut() } },
-            )
+            LookupFailedHost(container)
         }
 
         is SessionState.Ready -> {
@@ -187,6 +189,25 @@ fun AppRoot(container: AppContainer) {
                 }
             }
         }
+    }
+}
+
+/** The screen of an account that could not be read, with the way to the deletion of the account (AUTH-5a, reachable here too). */
+@Composable
+private fun LookupFailedHost(container: AppContainer) {
+    val navController = rememberNavController()
+    val session = container.sessionManager
+    val scope = rememberCoroutineScope()
+    NavHost(navController = navController, startDestination = LookupFailedRoute) {
+        composable<LookupFailedRoute> {
+            AccountLookupFailedScreen(
+                onRetry = session::retry,
+                onSignOut = { scope.launch { session.signOut() } },
+                onDeleteAccount = { navController.navigate(DeleteAccountRoute) { launchSingleTop = true } },
+            )
+        }
+        deleteAccountRoutes(container, navController, "${session.currentUid}-${session.generation}")
+        passwordResetRoute(container, navController)
     }
 }
 

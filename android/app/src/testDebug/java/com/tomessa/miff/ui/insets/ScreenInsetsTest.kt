@@ -832,7 +832,7 @@ class ScreenInsetsTest {
     }
 
     @Test
-    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}) }
+    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}, {}) }
 
     @Test
     fun createMiff_nameStep_isInsideTheSafeArea() =
@@ -909,7 +909,7 @@ class ScreenInsetsTest {
 
     @Test
     fun miffChoice_inLandscapeWithACutout_staysInsideIt() =
-        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}) }
+        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}, {}) }
 
     @Test
     fun createMiff_inLandscapeWithACutout_staysInsideIt() =

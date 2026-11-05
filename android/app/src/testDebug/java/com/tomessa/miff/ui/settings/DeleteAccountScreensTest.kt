@@ -36,7 +36,9 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.account.AccountDeletionControls
 import com.tomessa.miff.data.account.AccountDeletionState
 import com.tomessa.miff.domain.auth.SignInProvider
+import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.AuthMessage
+import com.tomessa.miff.ui.miff.MiffChoiceScreen
 import com.tomessa.miff.ui.theme.MiffTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -486,5 +488,41 @@ class DeleteAccountScreensTest {
         shoot("delete-banner")
         composeRule.onNodeWithText(text(R.string.auth_account_deleted_notice)).assertIsDisplayed().performClick()
         assertEquals(1, dismissed)
+    }
+
+    // --- The entry from the waiting screens (a person without a Miff never sees Settings) ----------------------------------
+
+    @Test
+    fun theEntry_isOnTheCreateOrJoinScreen_nextToSignOut_aDiscreetRedTextLink() {
+        var deleted = 0
+        var signedOut = 0
+        show {
+            MiffChoiceScreen(
+                onCreate = {},
+                onJoin = {},
+                onSignOut = { signedOut++ },
+                onDeleteAccount = { deleted++ },
+            )
+        }
+        shoot("delete-entry-miff-choice")
+        composeRule.onNodeWithText(text(R.string.auth_signout_action)).assertHasClickAction()
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_entry))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, deleted)
+        assertEquals(0, signedOut)
+    }
+
+    @Test
+    fun theEntry_isOnTheScreenOfAnAccountThatCouldNotBeRead_too() {
+        var deleted = 0
+        show { AccountLookupFailedScreen(onRetry = {}, onSignOut = {}, onDeleteAccount = { deleted++ }) }
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_entry))
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, deleted)
     }
 }

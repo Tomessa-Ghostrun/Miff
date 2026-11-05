@@ -12,22 +12,22 @@
 - Le contact affiché dans l'app (tomessa.mfouka@gmail.com) est **provisoire** (décision Q11) : il sera remplacé avant la bêta externe.
 - Après chaque suppression, la console Firebase doit montrer : **plus d'utilisateur** dans Authentication, **plus de document** `users/{uid}`. Le document `entitlements/{uid}` (s'il existait) **reste** : c'est normal, vous le purgez à la main (rappel mensuel, décision Q4).
 
-## Comment obtenir un compte « sans Miff » (important)
+## Comment obtenir un compte « sans Miff »
 
-Le compte doit n'avoir **aucune Miff créée ni rejointe**. Dans cette version, l'écran « Mon compte » n'est atteignable qu'une fois l'onboarding terminé (l'app ouvre « Créer ou rejoindre une Miff » tant qu'il n'y a pas de Miff, sans accès aux Réglages). Deux chemins :
+Le compte doit n'avoir **aucune Miff créée ni rejointe**. Deux entrées existent pour la suppression :
 
-- **Chemin 1 (recommandé)** : créez le compte, son profil, **créez une Miff**, puis **supprimez cette Miff** depuis son écran (« Supprimer la Miff »). Vous restez dans l'application, sur le Feed sans Miff : Profil > Réglages > Mon compte est accessible.
-- **Chemin 2** : un second compte **rejoint** la Miff d'un premier avec le code, puis la **quitte** (« Quitter cette Miff »). Même résultat.
+- **Compte sans Miff** : après la création du compte et du profil, l'app ouvre « Choisis comment tu veux commencer » (créer ou rejoindre une Miff). **« Supprimer mon compte » y figure**, en lien texte rouge sous « Se déconnecter ». **C'est le chemin le plus direct** : créez un compte jetable, son profil, et arrêtez-vous là. Vous pouvez **fermer et rouvrir l'app** : vous retombez sur le même écran, avec le même lien.
+- **Compte qui avait une Miff** : Profil > Réglages > Mon compte (lien sous « Se déconnecter »). Pour ce parcours, **supprimez d'abord la Miff** depuis son écran (créateur) ou **quittez-la** (membre) : vous restez dans l'app, sur le Feed sans Miff.
 
-Si vous fermez puis rouvrez l'app avec un compte sans Miff, vous retombez sur « Créer ou rejoindre une Miff » (sans Réglages) : **point ouvert** pour le PM (voir la PR), il faudra décider si l'entrée « Supprimer mon compte » doit aussi exister à cet endroit.
+Le même lien existe aussi sur l'écran « On n'a pas pu lire ton compte » (compte connecté mais illisible, par exemple hors connexion au lancement), avec « Réessayer » et « Se déconnecter ».
 
 ## Partie A : l'entrée et l'écran d'information (5 min)
 
 Compte jetable **1** (e-mail + mot de passe), sans Miff.
 
-1. [ ] Profil > Réglages > **Mon compte** : sous le bouton « Se déconnecter », un **lien en texte rouge « Supprimer mon compte »** (pas un bouton plein, moins visible que « Se déconnecter »).
-2. [ ] Touchez-le : écran « Supprimer mon compte » avec, après un très court chargement (« Un instant, on vérifie tes Miffs… »), la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. », la ligne du contact (adresse en bleu, touchable : ouvre votre messagerie sans rien envoyer), et l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ».
-3. [ ] **Continuer** est actif ; **Annuler** est dessous. Touchez **Annuler** : retour à Mon compte. Recommencez et utilisez la **flèche retour**, puis le **retour du système** : même résultat, rien n'a changé (vous êtes toujours connecté, le Feed marche).
+1. [ ] Sur « Choisis comment tu veux commencer » (compte sans Miff), sous « Se déconnecter », un **lien en texte rouge « Supprimer mon compte »** (pas un bouton plein, moins visible que les deux cartes). **Fermez l'app et rouvrez-la** : même écran, même lien. Puis, avec un compte qui a une Miff (ou après l'avoir supprimée), le même lien sous « Se déconnecter » dans Profil > Réglages > **Mon compte**.
+2. [ ] Touchez-le (depuis l'un ou l'autre endroit : l'écran est le même) : écran « Supprimer mon compte » avec, après un très court chargement (« Un instant, on vérifie tes Miffs… »), la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. », la ligne du contact (adresse en bleu, touchable : ouvre votre messagerie sans rien envoyer), et l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ».
+3. [ ] **Continuer** est actif ; **Annuler** est dessous. Touchez **Annuler** : retour à l'écran d'où vous venez. Recommencez et utilisez la **flèche retour**, puis le **retour du système** : même résultat, rien n'a changé (vous êtes toujours connecté).
 4. [ ] **Mode avion**, ouvrez l'écran : « Pas de connexion pour le moment. Tes Miffs s'afficheront dès que tu auras du réseau. » et **Continuer grisé**. Réactivez le réseau : la page se complète **toute seule** et Continuer devient actif.
 5. [ ] Lisez tous les textes : **ton calme, aucun mot qui fait peur** (« irrécupérable », « instantanément », « danger »...). Notez tout ce que vous voudriez changer (les textes sont validés par défaut, vous pouvez les ajuster ici).
 

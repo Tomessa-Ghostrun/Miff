@@ -20,6 +20,9 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
+import com.tomessa.miff.ui.main.DeleteAccountRoute
+import com.tomessa.miff.ui.main.deleteAccountRoutes
+import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.place.ConsumeNoticeOnLeave
 import com.tomessa.miff.ui.place.PlaceDetailRoute
@@ -145,8 +148,12 @@ fun MiffOnboardingHost(container: AppContainer) {
                 onCreate = { navController.openMiffRoute(CreateMiffRoute) },
                 onJoin = { navController.openMiffRoute(JoinMiffRoute) },
                 onSignOut = { scope.launch { session.signOut() } },
+                onDeleteAccount = { navController.openMiffRoute(DeleteAccountRoute) },
             )
         }
+        // AUTH-5a: "Supprimer mon compte" from here too (information, then verification); nothing starts before the verification succeeds.
+        deleteAccountRoutes(container, navController, "${session.currentUid}-${session.generation}")
+        passwordResetRoute(container, navController)
         miffEntryRoutes(
             container = container,
             navController = navController,

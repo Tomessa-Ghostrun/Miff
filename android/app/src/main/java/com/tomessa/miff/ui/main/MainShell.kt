@@ -358,7 +358,7 @@ private fun MainNavigation(
  * Nothing is written on these screens; the controller only starts after a successful re-authentication, and then replaces the whole
  * Settings navigation with the deletion screens (see [com.tomessa.miff.ui.navigation.AppRoot]).
  */
-private fun NavGraphBuilder.deleteAccountRoutes(
+internal fun NavGraphBuilder.deleteAccountRoutes(
     container: AppContainer,
     navController: NavHostController,
     scopeKey: String,
