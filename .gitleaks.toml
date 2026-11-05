@@ -10,3 +10,10 @@ description = "Identifiants de fichiers Figma (fileKey) : identifiants de docume
 condition = "AND"
 targetRules = ["generic-api-key"]
 paths = ['''^design/figma-design-system-state\.json$''']
+
+[[allowlists]]
+description = "Clés de textes (identifiants de traduction) de l'écran de consentement iOS : des noms comme miff_consent3_body_... portés par une propriété nommée bodyKey. Ce sont des identifiants de chaînes de caractères du catalogue de traductions, pas des secrets. Faux positif de la règle generic-api-key (nom de propriété contenant « Key » + entropie du nom). Exception limitée à CE fichier et à des valeurs qui commencent par miff_ et ne contiennent que des minuscules, chiffres et tirets bas."
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = ['''^ios/Miff/Views/Miff/ConsentCards\.swift$''']
+regexes = ['''^miff_[a-z0-9_]+$''']
