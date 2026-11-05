@@ -468,6 +468,48 @@ Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un text
 | RC8 | Sondes X1, X1b (I1) : depuis un texte qui couvre la position, renouveler vers `2027-01-v01`, `v02`, `2026-12-v00`, `2027-01-v1`, `v2` ; vers `2027-01-v04` ; depuis un texte sans position vers un autre sans position | KO ×5 ; OK (la position reste écrivable et lisible) ; OK |
 | RC9 | Sonde Y6 : plusieurs mises à jour de la même fiche dans un lot ; la seconde sort de la couverture « position » | OK pour l'aller-retour qui reste couvert ; KO pour la sortie, rien de changé |
 
+## 21. SESS-1 : un compte, un seul appareil (mécanisme validé par le PM le 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ
+
+Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (propriétaire seul, schéma fermé, chemin fixe) ; clé `deviceId` **facultative** dans le statut et la dernière position (**temps 1**), **obligatoire** au **temps 2** (une seule ligne basculée : `deviceIdRequired()`), égale à celle de la session. +1 lecture de règles par statut / position écrits avec la clé ; rien d'autre ne lit la session. Mesure de COHÉRENCE, pas de sécurité. Tests : `tests/rules/22-session-appareil.test.js` (temps 1, règles telles que livrées), `23-session-appareil-temps2.test.js` (temps 2 : même fichier de règles, ligne basculée par `temps2()` de `fixtures.js`), `24-session-voie1-sonde.test.js` (sonde de la voie 1, écartée). Mutations `SS*` dans `tests/tools/mutations-session.mjs`. Budgets figés dans `tests/unit/budgets.test.js`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| SE1 | `alice` écrit sa session (identifiant + heure du serveur), la relit, la remplace par un autre identifiant (la dernière connexion gagne), puis reprend la place | OK partout |
+| SE2 | Schéma fermé : plateforme, position ou toute clé en plus ; clé manquante ; identifiant vide, de 15 ou 65 caractères, avec `/`, espace, retour à la ligne, accent, `null`, nombre, booléen, objet ; heure du client ; mise à jour partielle qui ajoute une clé. Bornes de 16 et 64 caractères | KO partout ; OK pour les deux bornes |
+| SE3 | La session de `bob` : `alice` (créatrice de sa Miff), `carol`, `zoe`, `eve` et un visiteur la lisent, l'écrivent, la suppriment | KO partout ; la session de `bob` ne change pas |
+| SE4 | Déconnexion volontaire : `bob` supprime sa session (même absente) ; `alice` supprime celle de `bob` ; lecture d'une session absente | OK ; KO ; « introuvable » sans erreur de droits |
+| SE5 | Un seul chemin : autre identifiant sous `session/`, `sessions/active`, liste de la sous-collection, sous-document ; les jetons de notification (`devices`) inchangés ; la session s'écrit sans profil | KO ×5 ; OK ; OK |
+| SE6 | Temps 1 : statut et position SANS `deviceId` (applications actuelles), sans session puis avec une session existante | OK partout (le trou du temps 1) |
+| SE7 | Statut avec `deviceId` : sans session ; égal à la session ; différent ; casse différente ; `null`, vide, nombre, booléen, tableau, objet ; mise à jour partielle qui l'envoie | KO ; OK ; KO ; KO ; KO ; OK |
+| SE8 | Scénario complet : A écrit, B se connecte, A refusé (le statut de B n'est pas écrasé), B accepté, A reprend la place, B refusé | OK / KO / OK / OK / KO / OK |
+| SE9 | `bob` utilise l'identifiant de la session d'`alice` pour son statut et sa position (sans session, puis avec la sienne) ; il écrit le statut d'`alice` | KO ; KO ; OK avec le sien ; KO |
+| SE10 | Session supprimée : statut et position portant le `deviceId` ; statut sans la clé | KO ; KO ; OK (temps 1) |
+| SE11 | Position : sans session ; égal ; différent après remplacement (la position de l'appareil actif n'est pas écrasée) ; `null` ; clé en plus (`accuracyM`) | KO ; OK ; KO ; KO ; KO |
+| SE12 | Lots d'entrée (rejoindre et partager, créer et partager gratuit, créer et partager premium avec emplacement gratuit conservé) : statut initial avec un `deviceId` faux, puis le bon | KO (rien n'est écrit) puis OK |
+| SE13 | Activer le partage (fiche + statut + position, un lot) et mise à jour manuelle (photo + statut) : appareil remplacé, puis appareil actif | KO en entier (la photo n'est pas écrite) ; OK |
+| SE14 | **Limite connue** : un appareil remplacé quitte une Miff (lot des applications actuelles) ; la créatrice retire un membre | OK (une suppression n'a pas de charge utile) |
+| SE15 | **Limite connue** : un appareil remplacé écrit un lieu, le supprime, met à jour sa fiche, écrit une photo seule, renouvelle son consentement | OK partout (actions manuelles, budget des lots de lieux préservé) |
+| SE16 | **Limite connue** : un membre autorisé lit le statut de `bob` avec son `deviceId` ; un étranger ne lit rien | OK ; KO |
+| SE17 | Régression : les écritures SANS `deviceId` d'avant (rejoindre, créer, statut invalide, batterie 101, clé en plus avec ou sans `deviceId`) | comme avant : OK / KO selon le cas |
+| SE18 | R-LIEU-1 + SESS-1 ensemble : statut de plus de 24 h, départ en mise à jour partielle avec `lastUpdateAt` ancien conservé : mauvais `deviceId`, `deviceId` nul, nouvelle valeur ancienne avec le bon `deviceId`, bon `deviceId` ; puis un autre appareil prend la place | KO ; KO ; KO ; OK (heure conservée) ; ancien appareil KO, nouveau OK |
+| SE19 | **Limite connue (temps 1)** : un `update` qui retire la clé `deviceId` (`FieldValue.delete()`) après remplacement de l'appareil | OK (refusé au temps 2 : SF11) |
+| SE20 | Ancienne application sur un compte déjà passé par une application SESS puis déconnecté (session supprimée, clé en base) : mise à jour partielle sans la clé ; `set` complet sans la clé ; mise à jour partielle ensuite | KO ; OK ; OK |
+| SF1 | Garde-fou : la bascule du temps 2 change exactement UNE ligne de `firestore.rules` | OK |
+| SF2 | Temps 2 : statut sans `deviceId` (avec ou sans session), avec un faux, avec `null` ; avec le bon ; mise à jour avec le bon | KO ; KO ; KO ; OK ; OK |
+| SF3 | Temps 2 : position sans `deviceId`, avec un faux (appareil remplacé), avec le bon | KO ; KO ; OK |
+| SF4 | Temps 2 : lots d'entrée (rejoindre, créer, créer en premium) sans `deviceId`, puis avec | KO ; OK |
+| SF5 | Temps 2 : entrée sans partage (aucun statut), lieux, fiche, photo seule, renouvellement du consentement, quitter (lot actuel), retrait | OK partout |
+| SF6 | Temps 2 : départ avec la position, sans session ni `deviceId` | OK |
+| SF7 | Temps 2 : activer le partage (fiche + statut + position) sans `deviceId` sur le statut, sans sur la position, avec les deux | KO ; KO ; OK |
+| SF8 | Temps 2 : la session s'écrit avant tout statut, un nouvel appareil prend la place | OK ; l'ancien refusé ; le nouveau OK |
+| SF9 | **Limite connue** : mise à jour PARTIELLE sans `deviceId`, jugée sur le document résultant | OK si la valeur en base est celle de la session ; KO si elle est périmée ; OK de nouveau quand l'appareil actif a écrit |
+| SF10 | Temps 2 + R-LIEU-1 : statut ancien sans `deviceId` en base, départ partiel sans clé, avec un faux, avec le bon | KO ; KO ; OK |
+| SF11 | Temps 2 : `update` qui retire la clé ; recréation du statut après suppression sans la clé, avec une fausse, avec la bonne | KO ; KO ; KO ; OK |
+| SF12 | Temps 2 : lot mixte statut avec la clé + position sans la clé (puis avec une fausse) ; puis les deux avec la bonne | KO en entier, rien d'écrit ; KO ; OK |
+| SV1 | Sonde (voie 1, écartée) : `request.auth.token.auth_time` est un entier utilisable dans une règle (l'écriture n'accepte que l'`auth_time` du jeton) | OK |
+| SV2 | Sonde : deux jetons de `auth_time` différents ; seul celui de la session passe | OK / KO |
+| SV3 | Sonde, limite : deux connexions de même `auth_time` (même seconde) ne sont pas distinguées | OK pour les deux |
+
 ## 20. R-LIEU-1 : statut dont les horodatages ont plus de 24 h (acceptée par le PM le 2026-11-01 ; demandée par le client Android LOC-2b) — PRÉPARÉ, NON DÉPLOYÉ
 
 `presenceAt` et `lastUpdateAt` restent bornés (pas plus de 24 h dans le passé, pas plus de 5 min dans le futur) **sauf si la valeur envoyée est identique, à la microseconde (précision de stockage de Firestore), à celle déjà enregistrée dans le même statut** : elle peut alors être conservée quel que soit son âge. Chaque champ n'est comparé qu'à lui-même ; le statut doit déjà exister ; tout le reste de la validation (clés, valeurs, heure serveur, consentement actif) est inchangé. `escalationDueAt` n'est PAS concerné (limite connue). **0 lecture de règles de plus** (`resource` ne coûte rien). Tests dans `tests/rules/21-statut-ancien.test.js` ; mutations `R-LIEU-1-*` dans `tests/tools/mutations-statut.mjs`.

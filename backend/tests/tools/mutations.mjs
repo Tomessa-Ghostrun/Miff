@@ -9,6 +9,7 @@
 import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
 import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
 import { POSITION_MUTATIONS } from './mutations-position.mjs';
+import { SESSION_MUTATIONS } from './mutations-session.mjs';
 import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
 
 const DB = '/databases/$(database)/documents';
@@ -421,7 +422,7 @@ export const MUTATIONS = [
   {
     id: 'H5d-duree-premium',
     why: 'les comptes premium obtiennent une durée de photo plus longue (7 jours) que les comptes gratuits',
-    edits: [edit("request.time + duration.value(25, 'h')", "request.time + (isPremium(uid) ? duration.value(7, 'd') : duration.value(25, 'h'))")],
+    edits: [edit("request.time + duration.value(25, 'h')", "request.time + (isPremiumOneRead(uid) ? duration.value(7, 'd') : duration.value(25, 'h'))")],
     tests: ['H5d'],
   },
   {
@@ -462,8 +463,8 @@ export const MUTATIONS = [
   },
   {
     id: 'X7-premium-inactif',
-    why: 'isPremium ignore le champ active (abonnement désactivé mais non expiré)',
-    edits: [edit(`&& get(${DB}/entitlements/$(uid)).data.active == true`, '&& true')],
+    why: 'isPremiumOneRead ignore le champ active (abonnement désactivé mais non expiré)',
+    edits: [edit('return e.active == true && e.expiresAt > request.time;', 'return e.expiresAt > request.time;')],
     tests: ['X7'],
   },
   // --- AUTH-B : consentement facultatif (b) statistiques / plantages et acceptation (a) des CGU (users/{uid}) ------
@@ -699,6 +700,8 @@ export const MUTATIONS = [
   ...ONBB_MUTATIONS,
   // --- R-LIEU-POS (dernière position connue) : voir mutations-position.mjs ---
   ...POSITION_MUTATIONS,
+  // --- SESS-1 (un compte, un seul appareil) : voir mutations-session.mjs ---
+  ...SESSION_MUTATIONS,
   // --- R-LIEU-1 (statut de plus de 24 h) et bornes d'horodatage du statut : voir mutations-statut.mjs ---
   ...STATUS_TIME_MUTATIONS,
 ];
