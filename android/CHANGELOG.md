@@ -16,6 +16,7 @@ Trouvé par la revue indépendante du portage iOS de LOC-3 (défaut déjà prés
 ### Comportement visible
 - Un compte gratuit qui a déjà 2 lieux et touche « Ajouter un lieu » voit toujours l'offre, mais **après** une courte lecture du serveur (au lieu d'immédiatement) ; hors connexion il voit un message calme avec « Réessayer » au lieu de l'offre. C'est voulu : une limite ne se décide que sur une réponse du serveur.
 - Aucun coût supplémentaire : l'ouverture du formulaire lisait déjà l'abonnement sur le serveur.
+
 ## [0.10.1] - 2026-11-04 : message clair quand la connexion Google échoue (retour de recette du PM)
 
 Retour de recette : « la connexion Google a échoué plusieurs fois de suite avant de marcher, et l'app n'a pas informé ». Avant : tous les échecs de la fenêtre Google donnaient le même message générique, affiché en bas du formulaire, loin du bouton Google (facile à ne pas voir), et ceux qu'Android signale comme une annulation restaient muets. Ticket `docs/tickets/authentification.md` (§7.3, §11 cas 3 et 4), `CLAUDE.md` (ton bienveillant, non anxiogène).
