@@ -49,6 +49,7 @@ class FakeMiffStore : MiffStore {
     /** What `get miffs/{id}` answers by id: a value, or an exception (a refusal of the rules, a network error). */
     val miffs = mutableMapOf<String, Any>()
     var entitlement: EntitlementRead? = null
+    var entitlementFailure: Exception? = null
     var reachable = true
     var profile: ProfileCopy? = ProfileCopy("Léa", "Martin", "+33612345678", null)
 
@@ -91,6 +92,7 @@ class FakeMiffStore : MiffStore {
 
     override suspend fun readEntitlement(uid: String): EntitlementRead? {
         calls += "entitlement"
+        entitlementFailure?.let { throw it }
         return entitlement
     }
 

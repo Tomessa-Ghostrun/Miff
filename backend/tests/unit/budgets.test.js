@@ -10,7 +10,8 @@
 //      et vérifiés <= à la borne haute calculée.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeCostModel } from '../helpers/rule-budget.js';
+import { readFileSync } from 'node:fs';
+import { makeCostModel, RULES_FILE, stripComments } from '../helpers/rule-budget.js';
 
 const LIMIT = 20;
 const model = makeCostModel();
@@ -165,4 +166,13 @@ test('BUDGET - la position n\'entre dans aucun lot de lieux ni dans la création
       for (const fn of positionFns) assert.ok(!expr.includes(fn), `${header} ${method} appelle ${fn}`);
     }
   }
+});
+
+test('BUDGET - R-LIEU-1 : la conservation des horodatages du statut ne coûte aucune lecture de règles (resource n\'est pas une lecture)', () => {
+  assert.equal(model.costOfFn('statusInstant'), 0);
+  assert.equal(model.costOfFn('validStatus'), 1); // le seul accès : getAfter du consentement
+  const text = readFileSync(RULES_FILE, 'utf8');
+  const body = stripComments(text.slice(text.indexOf('function statusInstant('), text.indexOf('function validStatus(')));
+  assert.match(body, /resource != null && resource\.data\.get\(key, null\) == v/);
+  assert.doesNotMatch(body.replace('resource.data.get(', ''), /\b(get|getAfter|exists|existsAfter)\(/);
 });

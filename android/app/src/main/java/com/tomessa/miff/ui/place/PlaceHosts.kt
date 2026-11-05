@@ -23,7 +23,6 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorTextForm
@@ -93,7 +92,6 @@ fun ProfilePlacesSection(
     scopeKey: String,
     onOpenPlace: (miffId: String, placeId: String) -> Unit,
     onAddPlace: () -> Unit,
-    onOpenOffer: (PaywallReason) -> Unit,
 ) {
     val active = directory.active ?: return
     val session = container.sessionManager
@@ -113,7 +111,7 @@ fun ProfilePlacesSection(
     val notice by container.placeNotices.notice.collectAsStateWithLifecycle()
     ConsumeNoticeOnLeave(container.placeNotices::consume)
     if (!state.loaded) return
-    val ui = PlaceListUi(state.places, state.isCreator, directory.premium, notice?.name)
+    val ui = PlaceListUi(state.places, state.isCreator, directory.premiumOrNull, notice?.name)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Text(
             text =
@@ -129,7 +127,9 @@ fun ProfilePlacesSection(
         PlaceRows(
             ui = ui,
             onOpen = { place -> onOpenPlace(active.id, place.id) },
-            onAdd = { if (ui.atFreeLimit) onOpenOffer(PaywallReason.LIMIT) else onAddPlace() },
+            // Always the form: it reads the subscription on the SERVER and shows the offer itself when the limit is really reached.
+            // The list only knows a copy of the plan, which may be unknown or stale: it must never close the door on a Miff+ creator.
+            onAdd = onAddPlace,
         )
     }
 }

@@ -152,6 +152,24 @@ class PlaceFormViewModelTest {
         assertEquals(PaywallReason.LIMIT, vm.state().paywall)
     }
 
+    @Test
+    fun opening_aMiffPlusCreatorWithTwoPlaces_opensTheForm_notTheOffer() {
+        val places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID))
+        val vm = viewModel(context = context(premium = true, places = places))
+        assertNull(vm.state().paywall)
+        assertNull(vm.state().loadFailed)
+        assertFalse(vm.state().loading)
+    }
+
+    @Test
+    fun opening_whenThePlanCannotBeRead_isARetry_neverTheOffer() {
+        repo.prepareFailure = MiffFailure.OFFLINE
+        val vm =
+            viewModel(context = context(places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID))))
+        assertNull(vm.state().paywall)
+        assertNotNull(vm.state().loadFailed)
+    }
+
     // --- The button (PL2) -------------------------------------------------------------------------------------------------------
 
     @Test
