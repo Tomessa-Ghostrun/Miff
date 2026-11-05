@@ -69,7 +69,7 @@ export const DUR3_MUTATIONS = [
     [edit('&& n.revokedAt == request.time', '&& true')],
     ['S6b']),
   mut('S7-statut-sans-partage-actif', 'un statut peut être écrit sans partage actif',
-    [edit(`&& getAfter(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;`, '&& true;', 1, 2)],
+    [edit(`&& getAfter(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;`, '&& true;')],
     ['S7']),
 
   // --- Statut et photo -----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ export const DUR3_MUTATIONS = [
     [edit('&& d.jpeg.size() > 0', '&& true')],
     ['S16b']),
   mut('S16-photo-cles', 'une photo accepte des clés inconnues',
-    [edit("return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt'])", 'return true')],
+    [edit("return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng'])", 'return true')],
     ['S16b']),
   mut('S16-photo-createdAt-client', 'createdAt de la photo peut être une date client',
     [edit('&& d.createdAt == request.time', '&& true', 4, 4)],

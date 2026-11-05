@@ -30,9 +30,9 @@ export const POSITION_MUTATIONS = [
     ['DP5'],
     "lire une clé absente (d.lat, d.lng, d.measuredAt) est une erreur d'évaluation => refus quand même (hasAll est redondant)"),
   mut('DP5-lat-sans-controle', 'la latitude n\'est plus contrôlée', [edit('&& isCoordinate(d.lat, 90)', '&& true')], ['DP5']),
-  mut('DP5-lng-sans-controle', 'la longitude n\'est plus contrôlée', [edit('&& isCoordinate(d.lng, 180)', '&& true')], ['DP5']),
+  mut('DP5-lng-sans-controle', 'la longitude n\'est plus contrôlée', [edit('&& isCoordinate(d.lng, 180)', '&& true', 1, 2)], ['DP5']),
   mut('DP5-lat-borne-large', 'la latitude peut aller jusqu\'à 91', [edit('&& isCoordinate(d.lat, 90)', '&& isCoordinate(d.lat, 91)')], ['DP5']),
-  mut('DP5-lng-borne-large', 'la longitude peut aller jusqu\'à 181', [edit('&& isCoordinate(d.lng, 180)', '&& isCoordinate(d.lng, 181)')], ['DP5']),
+  mut('DP5-lng-borne-large', 'la longitude peut aller jusqu\'à 181', [edit('&& isCoordinate(d.lng, 180)', '&& isCoordinate(d.lng, 181)', 1, 2)], ['DP5']),
   mut('DP5-lat-borne-etroite', 'la latitude 90 est refusée (bornes exclues)', [edit('&& isCoordinate(d.lat, 90)', '&& isCoordinate(d.lat, 89)')], ['DP5']),
   mut('DP5-coordonnee-min', 'une coordonnée peut être inférieure à la borne basse', [edit('return v is number && v >= -max && v <= max;', 'return v is number && v <= max;')], ['DP5']),
   mut('DP5-coordonnee-max', 'une coordonnée peut dépasser la borne haute', [edit('return v is number && v >= -max && v <= max;', 'return v is number && v >= -max;')], ['DP5']),
@@ -74,7 +74,7 @@ export const POSITION_MUTATIONS = [
     ['DP2'],
     'matches() exige que le texte ENTIER corresponde : les ancres ^ et $ sont redondantes'),
   mut('DP14b-consentement-avant-lot', "le consentement est lu avant le lot (get au lieu de getAfter) : activer le partage et écrire la position en un lot est refusé",
-    [edit(`let s = getAfter(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing;`, `let s = get(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing;`)],
+    [edit(`let s = getAfter(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing;`, `let s = get(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing;`, 1, 2)],
     ['DP14b', 'DP14']),
 
   // --- Lecture : réciprocité, aucun droit de plus ---------------------------------------------------------

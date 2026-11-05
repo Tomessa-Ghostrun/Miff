@@ -52,7 +52,9 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     fromActiveDevice: [1, 1],
     validStatus: [1, 2],
     validPosition: [1, 2],
-    validPhoto: [1, 1],
+    // R-PHOTO-LOC : 0 appel direct, 2 avec positionPublished + targetSharingOn (seulement pour une photo LOCALISÉE, court-circuit sinon).
+    photoLocationReadable: [0, 2],
+    validPhoto: [1, 1], // inchangé : la localisation réutilise le getAfter du consentement déjà lu (aucune lecture de plus à l'écriture)
   });
 });
 
@@ -61,7 +63,8 @@ test('BUDGET - coût figé de chaque règle « allow » (borne haute sans court-
   assert.deepEqual(cost('match /places/{placeId} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 3, update: 3, delete: 2 });
   assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 2, update: 2, delete: 1 }); // SESS-1 : +1 (session), seulement quand la clé deviceId est présente
   assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 4, delete: 8 });
-  assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 2, create: 1, delete: 2 });
+  // R-PHOTO-LOC : lecture 2 -> 4 en borne haute (Miff + mon partage + MA position + partage de l'auteur) ; 2 seulement pour une photo non localisée (court-circuit).
+  assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 4, create: 1, delete: 2 });
   // Dernière position (R-LIEU-POS) : écriture = Miff existante + fiche du membre ; lecture = Miff, mon partage, mon statut, ma position, partage de la cible.
   assert.deepEqual(cost('match /positions/{uid} {', ['get', 'create', 'update', 'delete']), { get: 5, create: 3, update: 3, delete: 1 }); // SESS-1 : écriture 2 -> 3 (+1 session)
   // SESS-1 : l'index premium lit le droit en UNE lecture (isPremiumOneRead) : 4 -> 2.

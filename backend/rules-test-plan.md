@@ -530,3 +530,29 @@ Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (prop
 | RL7 | Le reste ne bouge pas : `escalationDueAt` ancien conservé (limite connue) ; `updatedAt` client ; clé en trop (`lat`) ; `presence`, `locationAccess`, `batteryPct`, `updateText` invalides ; clé manquante | KO partout ; `escalationDueAt` nul : OK |
 | RL8 | Consentement exigé : partage arrêté, puis fiche retirée, avec les valeurs conservées | KO ; KO |
 | RL9 | Lecture inchangée : un statut ancien reste lisible par `alice` (membre qui partage), pas par un étranger ni un visiteur | OK ; KO ; KO |
+
+## 22. R-PHOTO-LOC : localisation de la photo d'update (décision du PM du 2026-11-05, « OK reco » sur la proposition de `docs/tickets/feed.md` §6.3) — PRÉPARÉ, NON DÉPLOYÉ
+
+Le document `miffs/{id}/photos/{uid}` accepte deux clés **facultatives** `lat` et `lng` (absentes, nulles, ou deux coordonnées valides) : la position figée au moment de la photo. Écriture : par l'intéressé seul ; une photo **localisée** exige en plus un consentement de version 03 ou plus (même condition que la dernière position). Lecture : une photo localisée n'est lisible que par son auteur ou par un membre qui a **publié sa propre position** et dont l'auteur partage encore. Expiration (24 h), suppression et lots de purge : **inchangés**. Fichiers : `tests/rules/25-photo-localisee.test.js` (PL1 à PL16), `tests/rules/26-photo-localisee-temps2.test.js` (PL17).
+
+| # | Cas | Attendu |
+|---|---|---|
+| PL1 | **Applications actuelles** : photo sans `lat` ni `lng` (consentement v1) écrite, remplacée, mise à jour partiellement ; `lat`/`lng` nuls ; lecture par un membre sans position publiée (photo non localisée) | OK partout |
+| PL2 | Schéma fermé : `deviceId`, précision, adresse, `measuredAt`, `locationAt`, vitesse, objet `position` en plus (avec ou sans localisation) ; `jpeg` ou `expiresAt` manquant | KO partout |
+| PL3 | Photo localisée avec le consentement `v1`, `2026-10-v1`, `2026-10-v2`, `v02`, `2026-11-v3` (sans zéro), `v00`, `v01`, `v003`, mois 13, nul ; la même photo sans localisation avec ces versions ; puis `2026-11-v03`, `2026-12-v04`, `2027-01-v05`, `2026-11-v99` | KO ; OK ; OK |
+| PL4 | Photo localisée : partage arrêté ; activer avec le texte v1 dans le même lot ; activer avec le texte v3 dans le même lot ; révoquer dans le même lot ; photo non localisée avec partage arrêté (contrôle) | KO ; KO ; OK ; KO ; KO |
+| PL5 | Écrire la photo localisée d'un autre : membre, créatrice, étranger, visiteur ; mise à jour de la localisation de la photo d'un autre ; l'intéressé | KO ×5 ; KO ; OK |
+| PL6 | Une seule clé, ou une valeur nulle et l'autre non ; bornes 90 / -90 / 180 / -180 / 0 ; juste au-delà ; NaN, infini, texte, booléen, tableau, objet ; mise à jour partielle qui ajoute une localisation (valide, puis `lat` 91) ; taille, durée, `createdAt` client avec localisation | KO ; OK ; KO ; KO ; OK puis KO ; KO |
+| PL7 | Lecture d'une photo localisée : sans position publiée ; avec ; la position publiée de la seule cible ne suffit pas | KO ; OK (coordonnées lues telles qu'écrites) ; KO |
+| PL8 | L'auteur relit sa photo localisée sans position publiée ; photo non localisée d'un autre sans position publiée (contrôle) | OK ; OK |
+| PL9 | Photo localisée : membre au partage arrêté (position injectée), étranger, membre d'une autre Miff, visiteur, liste de la sous-collection | KO partout (le cas nominal : OK) |
+| PL10 | La créatrice sans position publiée lit la photo localisée d'un membre ; puis avec sa position | KO ; OK (aucun droit de lecture de plus) |
+| PL11 | L'auteur ne partage plus (reliquat injecté) : photo localisée ; photo non localisée (comportement d'avant conservé) ; fiche d'auteur absente | KO ; OK ; KO |
+| PL12 | Photo localisée expirée (lecteur avec position, auteur) ; photo absente avec ou sans position publiée ; photo de 24 h 59 min | KO ; « introuvable » sans erreur de droits ; OK |
+| PL13 | Arrêt du partage et départ avec une photo localisée : lot sans la suppression de la photo, puis avec | KO ; OK (photo disparue) |
+| PL13b | Retrait par la créatrice (7 écritures) et suppression de la Miff avec la photo localisée : sans la photo, puis avec | KO ; OK (photo disparue) |
+| PL13c | Lots des applications actuelles (sans position, photo non localisée) : départ, retrait | OK |
+| PL14 | Suppression d'une photo localisée : membre (valide), étranger, visiteur ; auteur ; créatrice ; étranger (expirée) ; membre (expirée) | KO ; KO ; KO ; OK ; OK ; KO ; OK |
+| PL15 | SESS-1 : mise à jour manuelle (photo localisée + statut) avec un `deviceId` périmé puis le bon ; **limite connue** : photo localisée SEULE d'un appareil remplacé | KO en entier (photo non écrite) ; OK ; OK |
+| PL16 | Revue de schéma : clés de la photo = `jpeg, createdAt, expiresAt, lat, lng` exactement ; aucune clé de précision, adresse, `deviceId`, `measuredAt` ; le statut ne porte toujours aucune coordonnée | OK |
+| PL17 | Temps 2 de SESS-1 : photo localisée seule sans `deviceId` ; avec `deviceId` ; mise à jour manuelle sans `deviceId` ou avec un périmé, puis avec le bon | OK ; KO ; KO ; KO ; OK |

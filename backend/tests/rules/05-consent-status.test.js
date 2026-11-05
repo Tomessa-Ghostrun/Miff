@@ -119,7 +119,9 @@ s.tc('S18', 'la créatrice purge le statut d\'un membre ; l\'inverse est refusé
   await assertFails(db('bob').doc(`${M1}/status/alice`).delete());
 });
 
-s.tc('S19', 'revue de schéma : ni le statut ni la photo n\'ont de champ de coordonnées', async ({ admin }) => {
+// R-PHOTO-LOC (2026-11-05) : la photo accepte lat et lng (facultatives) et AUCUN autre champ de position ; le statut n'en a toujours aucun
+// (cas de la photo localisée : 25-photo-localisee.test.js, PL1 à PL17).
+s.tc('S19', 'revue de schéma : le statut n\'a aucun champ de coordonnées ; la photo n\'a que lat et lng (R-PHOTO-LOC)', async ({ admin }) => {
   const forbidden = ['lat', 'lng', 'latitude', 'longitude', 'coords', 'coordinates', 'geopoint', 'position', 'address'];
   const rules = readRules();
   // 1) Les listes de clés autorisées par les règles (hasOnly) du statut et de la photo.
@@ -128,7 +130,9 @@ s.tc('S19', 'revue de schéma : ni le statut ni la photo n\'ont de champ de coor
     const hasOnly = body.match(/hasOnly\(\[([^\]]*)\]\)/);
     if (!hasOnly) throw new Error(`liste hasOnly introuvable dans ${fn}`);
     const keys = hasOnly[1].split(',').map((k) => k.trim().replace(/'/g, ''));
-    const bad = keys.filter((k) => forbidden.includes(k.toLowerCase()));
+    // La photo peut porter lat et lng (R-PHOTO-LOC) et aucun autre champ de position.
+    const allowed = fn === 'validPhoto' ? ['lat', 'lng'] : [];
+    const bad = keys.filter((k) => forbidden.includes(k.toLowerCase()) && !allowed.includes(k.toLowerCase()));
     if (bad.length > 0) throw new Error(`${fn} autorise des champs de position : ${bad.join(', ')}`);
   }
   // 2) Les documents réellement présents dans les données de départ.
