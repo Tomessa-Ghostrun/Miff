@@ -318,7 +318,6 @@
     <string name="miff_message_generic">That didn\'t work. Please try again in a moment.</string>
     <string name="miff_message_one_miff">For now, this account can be part of one Miff at a time.</string>
     <string name="miff_message_no_profile">Some details of your profile are still missing. We\'re taking you back to that step to complete them.</string>
-    <string name="miff_consent_places">The trusted places of this Miff are chosen by its creator and visible to all its members.</string>
     <string name="miff_dialog_working_a11y">Working</string>
 
     <!-- Choice: create or join -->
@@ -327,14 +326,6 @@
     <string name="miff_choice_create_body">You can then invite your loved ones to join you.</string>
     <string name="miff_choice_join_title">Join an existing Miff</string>
     <string name="miff_choice_join_body">Did a loved one give you a code? Enter it to join their Miff.</string>
-
-    <!-- Explicit consent before "Create and share" / "Join and share" (version "2026-10-v2", MiffSharingConsent) -->
-    <string name="miff_consent_create">By creating this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
-    <string name="miff_consent_join">By joining this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
-    <string name="miff_consent_members_see_title">What the members see of you</string>
-    <string name="miff_consent_members_see_body">Your first name, last name, photo and phone number.</string>
-    <string name="miff_consent_system_note_create">Your phone will ask separately for access to your location. You can say no.</string>
-    <string name="miff_consent_system_note_join">Your phone will ask separately for access to your location. You can say no and still join.</string>
 
     <!-- Create -->
     <string name="miff_create_title">New Miff</string>
@@ -403,7 +394,6 @@
     <string name="miff_sharing_stop_body">Your status and update photo will be deleted for this circle. You can resume whenever you like.</string>
     <string name="miff_sharing_stop_action">Stop sharing</string>
     <string name="miff_sharing_resume_title">Resume sharing?</string>
-    <string name="miff_sharing_resume_body">You share your status with the members of this Miff again; you can stop at any time.</string>
     <string name="miff_sharing_resume_action">Resume sharing</string>
 
     <!-- Lost access (one message, the same for a removal and for a deleted Miff) -->

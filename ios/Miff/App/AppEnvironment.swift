@@ -15,6 +15,8 @@ struct MiffServices {
     /// La suppression d'une Miff, sans écran (MIFF-4) : utilisée par l'écran de la Miff, reprise au lancement, et plus tard par
     /// AUTH-5 (suppression d'un compte) et le ticket Premium (fin d'un abonnement).
     let deletions: MiffDeletionCoordinator
+    /// Le renouvellement du consentement des membres qui partagent sous un texte plus ancien (LOC-4a, règle R-LIEU-3).
+    let renewals: ConsentRenewals
 
     static func make(gateway: AuthGateway, cache: CachePurger, network: NetworkMonitor) -> MiffServices {
         let store = FirestoreMiffStore()
@@ -49,7 +51,8 @@ struct MiffServices {
             repository: repository,
             directory: directory,
             limiter: JoinAttemptLimiter(nowMillis: AppClock.live.nowMillis),
-            deletions: deletions
+            deletions: deletions,
+            renewals: FirestoreConsentRenewals(store: store)
         )
     }
 }
@@ -78,6 +81,12 @@ final class AppEnvironment {
     /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
     let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
+    /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
+    /// notifications déjà montré, et le renouvellement du consentement.
+    let consentRenewals: ConsentRenewals
+    let notificationAsks: NotificationAskStore
+    /// Créé à la première demande : aucun gestionnaire de localisation n'existe tant qu'aucun écran n'en a besoin.
+    lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
 
     private let userProfiles: UserProfileRepository
     /// Ce que la personne a saisi dans les étapes du profil : sur l'appareil seulement, effacé une fois le serveur ayant
@@ -138,6 +147,8 @@ final class AppEnvironment {
         miffDirectory = directory
         miffDeletions = deletions
         joinLimiter = miff.limiter
+        consentRenewals = miff.renewals
+        notificationAsks = UserDefaultsNotificationAskStore()
         userProfiles = FirestoreUserProfileRepository()
         profileDrafts = drafts
         avatarCodec = ImageAvatarCodec()
@@ -170,6 +181,26 @@ final class AppEnvironment {
             onEntered: { via in session.onMiffEntered(via: via) },
             onDirectoryChanged: { await directory.refresh() },
             onProfileMissing: { session.retry() }
+        )
+    }
+
+    /// Les écrans de consentement avant le Feed (LOC-4a) : autorisations, renouvellement du consentement, et « Quitter la Miff »
+    /// du flux existant pour la sortie de l'écran de renouvellement. Le blocage de la localisation est l'interrupteur de
+    /// COMPILATION (`LocationBlockingSwitch`, bloquant par défaut).
+    func makePermissionGate() -> PermissionGateViewModel {
+        let session = self.session
+        let directory = miffDirectory
+        let repository = miffRepository
+        return PermissionGateViewModel(
+            dependencies: PermissionGateDependencies(
+                permissions: devicePermissions,
+                asked: notificationAsks,
+                renewals: consentRenewals,
+                currentUid: { session.currentUid },
+                leaver: { uid, miffId in await repository.leave(uid: uid, miffId: miffId) },
+                onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
+            ),
+            settings: PermissionGateSettings(locationBlocking: LocationBlockingSwitch.current)
         )
     }
 

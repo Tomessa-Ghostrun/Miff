@@ -493,10 +493,10 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(store.commitsAsLots.count, 1)
     }
 
-    func testSetSharingStopIsTheLotOfThreeResumeTheLotOfTwo() async {
+    func testSetSharingStopIsTheLotOfFourResumeTheLotOfTwo() async {
         let stop = await repo().setSharing(miffId: testMiffId, uid: uid, enabled: false)
         XCTAssertEqual(stop, .done)
-        XCTAssertEqual(store.commitsAsLots.last?.count, 3)
+        XCTAssertEqual(store.commitsAsLots.last?.count, 4)
 
         let resume = await repo().setSharing(miffId: testMiffId, uid: uid, enabled: true)
 
@@ -517,7 +517,7 @@ final class MiffRepositoryTests: XCTestCase {
         let lost = LostMiff(ref: MembershipRef(key: "free", miffId: testMiffId), name: "Chez nous")
         let first = await repo().cleanUpLost(uid: uid, lost: lost)
         XCTAssertTrue(first)
-        XCTAssertEqual(store.commitsAsLots.first?.count, 4)
+        XCTAssertEqual(store.commitsAsLots.first?.count, 5)
         store.clearLots()
         store.commitFailures = [firestoreError(FirestoreErrorNumber.permissionDenied), nil]
 
