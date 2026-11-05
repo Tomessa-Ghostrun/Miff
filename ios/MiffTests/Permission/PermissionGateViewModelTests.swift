@@ -541,3 +541,4 @@ final class PermissionGateViewModelTests: XCTestCase {
         XCTAssertFalse(String(describing: check).contains("Zorglub"))
     }
 }
+// swiftlint:enable type_body_length

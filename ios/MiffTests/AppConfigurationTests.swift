@@ -1,4 +1,5 @@
 import XCTest
+@testable import Miff
 
 /// Vérifie, dans l'app réellement construite, les réglages sensibles exigés par le ticket
 /// « Initialisation technique » (critères I1, I4, I5, I8). Les tests de l'app tournent dans
