@@ -54,7 +54,8 @@ final class MiffRepositorySessionTests: XCTestCase {
     }
 
     private func statuses() -> [DocWrite] {
-        store.commitsAsLots.joined().filter { $0.path.contains("/status/") }
+        // Les statuts écrits (créés ou mis à jour) : une suppression de statut n'écrit rien.
+        store.commitsAsLots.joined().filter { $0.path.contains("/status/") && $0.kind != .delete }
     }
 
     // MARK: - Le statut initial porte l'identifiant
