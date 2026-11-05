@@ -242,6 +242,49 @@ class MiffRepositoryTest {
             assertFalse(load.premiumKnown)
         }
 
+    @Test
+    fun myMiffs_aCachedSubscription_isUnknown_butStillPicksTheKey() =
+        runTest {
+            store.entitlement = EntitlementRead(active = true, expiresAtMillis = now + 10_000, fromCache = true)
+            val load = repo().myMiffs(uid) as MyMiffsLoad.Loaded
+            assertTrue("the cached Miff+ still chooses the key of the index offline", load.premium)
+            assertFalse("but it proves nothing", load.premiumKnown)
+            // A missing document in the cache proves nothing either: not "free".
+            store.entitlement = EntitlementRead(active = false, expiresAtMillis = null, fromCache = true)
+            assertFalse((repo().myMiffs(uid) as MyMiffsLoad.Loaded).premiumKnown)
+        }
+
+    @Test
+    fun create_withAMiffAndAnUnknownPlan_isATryAgain_neverTheOffer() =
+        runTest {
+            store.memberships = listOf(MembershipRef("free", OTHER_MIFF_ID))
+            store.miffs[OTHER_MIFF_ID] = miffDetails(id = OTHER_MIFF_ID)
+            store.entitlementFailure = firestoreError(Code.UNAVAILABLE)
+            assertEquals(CreatePreparation.Failed(MiffFailure.OFFLINE), repo().prepareCreate(uid))
+            store.entitlementFailure = null
+            store.entitlement = EntitlementRead(active = false, expiresAtMillis = null, fromCache = true)
+            assertEquals(CreatePreparation.Failed(MiffFailure.OFFLINE), repo().prepareCreate(uid))
+            // Once the plan is known, the answer is the real one.
+            store.entitlement = null
+            assertEquals(CreatePreparation.NeedsPremium, repo().prepareCreate(uid))
+            assertTrue(store.commitsAsLots.isEmpty())
+        }
+
+    @Test
+    fun join_withAMiffAndAnUnknownPlan_isATryAgain_neverTheOffer_andAMiffPlusGoesThrough() =
+        runTest {
+            joinable()
+            store.memberships = listOf(MembershipRef("free", OTHER_MIFF_ID))
+            store.miffs[OTHER_MIFF_ID] = miffDetails(id = OTHER_MIFF_ID, name = "Autre")
+            store.entitlementFailure = firestoreError(Code.UNAVAILABLE)
+            assertEquals(JoinPreparation.Failed(MiffFailure.OFFLINE), repo().prepareJoin(uid, CODE))
+            // A Miff+ read from the cache is a good guess for the key: the rules decide for real.
+            store.entitlementFailure = null
+            store.entitlement = EntitlementRead(active = true, expiresAtMillis = now + 10_000, fromCache = true)
+            assertTrue(ready(repo().prepareJoin(uid, CODE)).premium)
+            assertTrue(store.commitsAsLots.isEmpty())
+        }
+
     // --- Join: the lot (ticket 5.4 step 7) ------------------------------------------------------------------------
 
     @Test

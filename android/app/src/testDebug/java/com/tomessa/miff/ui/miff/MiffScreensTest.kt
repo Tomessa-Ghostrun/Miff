@@ -538,6 +538,22 @@ class MiffScreensTest {
     }
 
     @Test
+    fun feed_unknownPlan_keepsTheSelectorUsable_withJoinAndCreate() {
+        showFeed(
+            DirectoryState.Ready(
+                listOf(MiffSummary(miffId, "Famille Martin")),
+                miffId,
+                premium = false,
+                fromCache = false,
+                premiumKnown = false,
+            ),
+        )
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_join)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_create)).assertIsDisplayed()
+    }
+
+    @Test
     fun feed_unableToRead_isCalm_withRetry() {
         showFeed(DirectoryState.Unavailable)
         composeRule.onNodeWithText(text(R.string.feed_unavailable)).assertIsDisplayed()
