@@ -1,8 +1,8 @@
 # Ticket — Supprimer mon compte (AUTH-5, exigé par Apple et Google Play)
 
-**Statut** : brouillon issu de l'étape « challenge » ; **aucune décision du PM encore enregistrée** (les questions sont en §16, chacune avec ma recommandation) ; reste à valider avant tout développement (aucun développement lancé).
+**Statut** : **décisions du PM enregistrées** (2026-10-31 : premières réponses ; **2026-11-05 : toutes les recommandations de §16 validées**, voir « Décisions du PM (2026-11-05) » en fin de document) ; **maquettes dessinées** (`design/screens/suppression-compte/`, PNG dans `design/exports/suppression-compte/claude/`) et **à valider par le PM** ; reste à fournir par le PM : la configuration Apple de la console Firebase avant AUTH-5c (§10). Aucun développement lancé.
 **Rédigé le** : 2026-10-31 (agent `product-specs`, étape « challenge » du process par ticket). Branche `docs/challenge-suppression-compte`.
-**Remplace / précise** : le cadrage de §7.7 et les critères D1 à D9 de `docs/tickets/authentification.md` (qui décrivaient AUTH-5 en quelques lignes), ainsi que la ligne « Suppression de compte » de `backend/data-model.md` §8 et §10. Ce ticket est le détail de référence ; les écarts avec ces documents sont listés en §4 et à répercuter en §15. Notion n'a pas été consulté dans cette session (pas d'accès) et aucun statut n'a été changé.
+**Remplace / précise** : le cadrage de §7.7 et les critères D1 à D9 de `docs/tickets/authentification.md` (qui décrivaient AUTH-5 en quelques lignes), ainsi que la ligne « Suppression de compte » de `backend/data-model.md` §8 et §10. Ce ticket est le détail de référence ; les écarts avec ces documents sont listés en §4 et à répercuter en §15. Notion n'a pas été consulté dans cette session (pas d'accès) et aucun statut n'a été changé. **Mise à jour du 2026-11-05** : décisions du PM, relecture des règles Firestore **déployées** (`backend/firestore.rules` sur `origin/main`, déploiement du 2026-11-04) et du code de suppression de Miff déjà fusionné (MIFF-2 Android, MIFF-4 iOS), voir §5.13, §6 et §12.
 **Sources lues** : `CLAUDE.md` ; `docs/tickets/authentification.md` (en entier : §5, §6, §7.6, §7.7, §7.8, §11, §13, §15, §16, §17, §18) ; `docs/tickets/miff.md` (§5.1 à §5.13, §6, §9, §10, §13, §14, §15) et `miff-questions-pm.md` ; `docs/tickets/feed-profil-reglages.md` (lignes sur « Mon compte » et la suppression) ; `docs/tickets/durcissement-regles-firestore.md` (§6.1 à §6.4) ; `docs/specs/paywall-premium.md` (décision Miff+ du 2026-10-31) ; `backend/firestore.rules` (en entier) et `backend/data-model.md` (en entier) ; `docs/legal/politique-confidentialite.fr.md` (§7 et §8) ; `docs/contracts/analytics-events.md` et `i18n-keys.md` ; la page web `web/src/fr/supprimer-mon-compte.html` ; en lecture rapide, l'état du code : `android/.../data/auth/AccountRepository.kt`, `SessionManager.kt`, `AuthFailure.kt`, `ios/.../FirebaseAuthGateway.swift` (méthodes `reauthenticate` et `deleteCurrentAccount` déjà présentes pour le refus du panneau de consentement). Documentation Firebase consultée en ligne le 2026-10-31 : « Manage users » (Android) et « Sign in with Apple » (iOS).
 **Limites de cette lecture (à connaître)** :
 - La **décision du PM du 2026-10-31** citée dans la demande (« une sortie volontaire ne renouvelle pas le code », MIFF-2) **n'est pas dans ma copie du dépôt** (`miff-questions-pm.md` s'arrête aux décisions du 2026-10-24 ; seule la décision Q1 du 2026-10-22 « départ volontaire : aucun changement de code imposé » y figure). Je l'applique telle que rapportée ; à confirmer (Q9).
@@ -29,7 +29,7 @@ Le point central : **tout ce qu'il faut est déjà permis par les règles de sé
 | 7 | **L'abonnement du magasin n'est pas résilié** par la suppression du compte (Apple et Google ne le font pas). Pendant l'**essai gratuit de 7 jours**, l'abonnement annuel démarre tout seul à la fin de l'essai (décision Miff+ du 2026-10-31). | Message dédié, plus visible pendant l'essai, avec lien vers la gestion d'abonnement du magasin (§5.9). Aujourd'hui le Premium est accordé à la main (aucun achat réel) : la logique est construite, le message ne s'affiche que pour une source « magasin ». |
 | 8 | **Créateur de Miff** : ses Miffs sont supprimées, leurs membres perdent l'accès (décision PM du 2026-10-24, **non remise en cause**). | Confirmation avec la liste des Miffs et le nombre de proches, bouton facultatif « Prévenir mes proches » (réutilise QM9), message d'accès perdu **unique** QM8 côté membres (remplace « La Miff n'existe plus » du critère D8). |
 | 9 | **Les personnes qui ne peuvent plus se connecter** (mot de passe oublié, app désinstallée) passent par la page web / l'e-mail, qui **n'est pas automatisable sur Spark** : le PM supprime à la main dans la console. | Procédure manuelle écrite (« runbook », AUTH-5-W), vérification d'identité, délai d'un mois déjà promis par les textes (Q5). Signal pour reconsidérer Blaze : §11. |
-| 10 | **Dépendance** : aucune Miff ne peut être créée dans l'app aujourd'hui (MIFF-1 et MIFF-2 ne sont pas développés) ; AUTH-5 réutilise leurs procédures « sans interface ». | **Découpage en deux étapes** (§12) : d'abord la suppression d'un compte **sans Miff** (valide dès maintenant la ré-authentification, la reprise et la révocation Apple, les risques les plus incertains), puis l'ajout des Miffs après MIFF-2. |
+| 10 | **Dépendance** (mise à jour du 2026-11-05) : **MIFF-2 (Android) et MIFF-4 (iOS) sont fusionnés** ; leurs procédures « sans interface » (`MiffDeletion`, `MiffDeletionCoordinator`, `MiffRepository.leave` / `removeMember` / `cleanUpLost`) existent sur `main` et AUTH-5 les réutilise (§5.13). Le cas du créateur est donc faisable tout de suite. | **Découpage en quatre sous-tickets** décidé le 2026-11-05 (§12) : AUTH-5a (Android, compte sans Miff), AUTH-5b (Android, Miffs), AUTH-5c (iOS, compte sans Miff), AUTH-5d (iOS, Miffs). Valide d'abord la ré-authentification, la reprise et la révocation Apple, les risques les plus incertains. |
 | 11 | **Pas de projet Firebase de développement** (un seul projet) alors que `authentification.md` D3 interdit de vérifier la suppression « sur la production ». | Tests destructifs **à l'émulateur uniquement** ; la recette du PM sur téléphone utilise des comptes jetables sur l'unique projet, **avec ton accord explicite** (Q10). |
 
 **Taille globale (relative, sans durée)** : L (Android M à L en deux PR, iOS M à L en deux PR, plus petits travaux web / documents / tests de règles, §12). **Coût : 0 €** (§11).
@@ -90,7 +90,7 @@ Pause / reprise : E. Pas de réseau, ou application relancée en cours de route 
 
 Entrée « Supprimer mon compte » : style discret (texte, pas bouton plein), en bas de « Mon compte », **sous** « Se déconnecter » (la maquette `reglages-4` la rendait aussi visible que l'action principale). Accessible au lecteur d'écran, taille de police maximale sans masquer « Continuer ».
 
-**Rappel du process (CLAUDE.md)** : avant de développer, le PM fournit l'**export PNG** des écrans A à F corrigés (Figma « Miff - Claude »), rangés dans `design/exports/<flux>/`.
+**Maquettes (2026-11-05)** : écrans A à G **dessinés sans Figma** (HTML autonomes + PNG @2x, comme les maquettes des lieux) : fiches dans `design/screens/suppression-compte/` (README « décisions de design à valider »), HTML dans `design/screens/suppression-compte/mockups/`, PNG dans `design/exports/suppression-compte/claude/`. Elles couvrent aussi l'entrée dans Mon compte, le cas du créateur avec « Prévenir mes proches » et la limite Apple (Android et iOS). **Elles sont à valider par le PM avant le développement** ; elles tiennent lieu, pour ce ticket, de l'export PNG de Figma prévu par le process de `CLAUDE.md` (les écarts avec les textes du §8 sont listés dans le README).
 
 ---
 
@@ -127,7 +127,8 @@ Entrée « Supprimer mon compte » : style discret (texte, pas bouton plein), en
 | Profil `users/{uid}` : prénom, nom, **photo de profil** (octets stockés dans le profil), téléphone, consentements (a) et (b) | **Supprimé** | suppression du document, en tout dernier avant l'authentification | La preuve de consentement disparaît avec (`data-model.md` §10) ; aucune conservation. |
 | Index `users/{uid}/memberships/*` | **Supprimé** | dans chaque lot « Quitter » / « final » ; index seul si périmé | Sous-collection : **jamais** supprimée par la suppression du parent. |
 | Appareils `users/{uid}/devices/*` | **Supprimé** | une suppression par appareil | Vide tant qu'aucun push n'existe. |
-| Fiches de membre (nom, photo, téléphone copiés), statut, photo de mise à jour, dans **chaque** Miff | **Supprimé** | lots « Quitter » (Miffs rejointes) et lot final (Miffs créées) | Aucune photo n'est stockée ailleurs que dans Firestore (pas de Cloud Storage). |
+| Fiches de membre (nom, photo, téléphone copiés), statut, photo de mise à jour, **dernière position connue** (`positions/{uid}`), dans **chaque** Miff | **Supprimé** | lots « Quitter » (Miffs rejointes) et lot final (Miffs créées) ; les règles **exigent** la suppression de la position dans le même lot que la fiche | Aucune photo n'est stockée ailleurs que dans Firestore (pas de Cloud Storage). Une position laissée seule (retrait par une ancienne version de l'app) est supprimée par la personne elle-même (repli « index seul », §5.13). |
+| Session « un compte, un appareil » (`users/{uid}/session/active`, **n'existe pas encore**) | **Supprimée le jour où elle existera** | une suppression, avant le profil (§5.13) | `docs/tickets/session-appareil-unique.md`, critère SES4 : « la suppression de compte aussi ». |
 | Miffs **créées** : Miff, code, lieux, fiches des autres membres, leurs statuts et photos | **Supprimé** | retraits un par un, lieux, lot final avec pierre tombale | Les autres membres perdent l'accès (§5.7). |
 | Pierre tombale `miffsDeleted/{id}` | **Créée, conservée** | lot final | Identifiant de Miff + date, aucune donnée personnelle (`data-model.md` §2.11). |
 | `entitlements/{uid}` (état Premium) | **Non supprimable depuis l'app** | purge manuelle par le PM | Politique : « suppression 30 jours après » (Q4). |
@@ -166,12 +167,12 @@ Chaque ligne est **idempotente** (rejouer ne casse rien) et ne dépend que de **
 
 | # | Étape | Détail |
 |---|---|---|
-| 0 | **Préparation** | Réseau présent. **Arrêter les écoutes Firestore, la surveillance des lieux (géofences) et toute écriture de statut** : sans cela, les écouteurs recevraient des refus au fil des suppressions et lanceraient à tort le nettoyage « accès perdu », et un événement de géofence pourrait réécrire un statut. Poser le marqueur local « suppression en cours » (§5.6). Garder l'écran allumé. |
+| 0 | **Préparation** | Réseau présent. **Arrêter les écoutes Firestore, la surveillance des lieux (géofences) et toute écriture de statut ou de position** : sans cela, les écouteurs recevraient des refus au fil des suppressions et lanceraient à tort le nettoyage « accès perdu », un événement de géofence pourrait réécrire un statut, et une mise à jour de position (LOC-2b) recréerait une position juste après sa suppression. Poser le marqueur local « suppression en cours » (§5.6). Garder l'écran allumé. |
 | 1 | **Ré-authentification** (+ révocation Apple sur iOS) | §5.4. Point de non-retour : après la réussite, la suppression se poursuit jusqu'au bout (reprise possible, annulation non). |
 | 2 | **Inventaire serveur** | Lire les index `memberships` ; pour chacun `get miffs/{id}` : **créée** (`ownerUid` = moi), **rejointe** (je suis membre non créateur), **périmée** (refus ou introuvable). |
-| 3 | **Miffs rejointes** : lot « Quitter » | Un lot de 4 suppressions (fiche, statut, photo, index) par Miff (§6). Aucun renouvellement de code (sortie volontaire, décision du 2026-10-31 telle que rapportée). Index **périmé** : essayer le lot « Quitter », et **en repli** supprimer l'index seul (`data-model.md` §8, « Nettoyage au lancement »). |
-| 4 | **Miffs créées**, une par une | (a) relire la liste des membres ; (b) pour chaque autre membre : **lot de retrait** (6 écritures, code renouvelé) ; (c) supprimer les lieux, 5 au plus par lot ; (d) **relire la liste des membres** : s'il en reste (arrivés entre-temps), les retirer à leur tour, jusqu'à 3 passes ; (e) **lot final** (§6) : Miff, pierre tombale, code, ma fiche, mon statut, ma photo, mon index. Un lot de retrait dans le lot final est refusé par les règles : il se fait avant. Lots **strictement séquentiels** (chaque retrait lit le code courant). |
-| 5 | **Appareils** | Supprimer chaque `users/{uid}/devices/*` (et, le jour où le push existera, le jeton de notification de l'appareil). |
+| 3 | **Miffs rejointes** : lot « Quitter » | Un lot de 5 suppressions (fiche, statut, photo, **dernière position**, index) par Miff (§6) : c'est `MiffRepository.leave` du code existant. Aucun renouvellement de code (sortie volontaire, décision du 2026-10-31 telle que rapportée). Index **périmé** : essayer le lot « Quitter », et **en repli** supprimer l'index seul (`data-model.md` §8, « Nettoyage au lancement »). |
+| 4 | **Miffs créées**, une par une | (a) relire la liste des membres ; (b) pour chaque autre membre : **lot de retrait** (7 écritures dont la position de la cible, code renouvelé : `MiffRepository.removeMember`) ; (c) supprimer les lieux, 5 au plus par lot ; (d) **relire la liste des membres** : s'il en reste (arrivés entre-temps), les retirer à leur tour, jusqu'à 3 passes ; (e) **lot final** (§6) : Miff, pierre tombale, code, ma fiche, mon statut, ma photo, **ma position**, mon index. Les étapes (a) à (e) sont **déjà écrites** : c'est `MiffDeletion.run(uid, miffId)` du code existant (§5.13), à appeler sans la réécrire. Un lot de retrait dans le lot final est refusé par les règles : il se fait avant. Lots **strictement séquentiels** (chaque retrait lit le code courant). |
+| 5 | **Appareils et session** | Supprimer chaque `users/{uid}/devices/*` (et, le jour où le push existera, le jeton de notification de l'appareil), puis, **le jour où elle existera**, la session `users/{uid}/session/active` (§5.13 : ordre à confirmer par `backend-data` selon la voie retenue pour les écritures de statut). |
 | 6 | **Vérification finale** | Relire `memberships` côté serveur : **doit être vide**, sinon revenir à l'étape 2. |
 | 7 | **Profil** | Supprimer `users/{uid}`. En dernier de tous les documents, pour que le profil serve de marqueur côté serveur tant que le reste n'est pas fini. |
 | 8 | **Compte d'authentification** | Poser le drapeau « purge du cache à faire » ; `waitForPendingWrites` (délai court) ; supprimer l'utilisateur. Si Firebase réclame une connexion plus récente : écran « Dernière vérification avant de terminer » (+ nouvelle révocation Apple sur iOS), puis réessayer. |
@@ -225,27 +226,47 @@ Chaque ligne est **idempotente** (rejouer ne casse rien) et ne dépend que de **
 - C'est **cette adresse** que le PM saisit dans la section « Sécurité des données » de Google Play (action PM, §10).
 - **Demande par e-mail = procédure manuelle du PM** dans la console Firebase (aucune automatisation sur Spark). Le **runbook** (document `docs/dev/suppression-manuelle.md`, AUTH-5-W) couvre : vérification d'identité (demande reçue **depuis l'adresse du compte**, vue dans Authentication ; pour un compte Apple à adresse relais : question de contrôle, Q5) ; ordre des suppressions (lister `users/{uid}/memberships`, traiter les Miffs créées en premier ; suppression du document `miffs/{id}` **avec** création de la pierre tombale à la main ; suppression de `users/{uid}`, `entitlements/{uid}`, puis de l'utilisateur) ; réponse type bienveillante ; consignation de la demande (date, sans donnée inutile) ; délai maximal d'un mois ; **jamais depuis le projet `ghostrun-app`** (toute commande ou action porte `miff-3d283`).
 
+### 5.13 Ce que la suppression doit purger, et ce qui existe déjà dans le code (relu le 2026-11-05 sur `origin/main`)
+
+**Règles Firestore déployées** (`backend/firestore.rules`, déploiement du 2026-11-04 : lieux, dernière position R-LIEU-POS, renouvellement de consentement) : la suppression de compte doit maintenant purger, **en plus** de ce que décrit §5.2 :
+
+| À purger | Où | Contrainte des règles | Statut |
+|---|---|---|---|
+| **Dernière position connue** | `miffs/{id}/positions/{uid}`, une par Miff où la personne partage | `memberDeleteOk` **refuse** la suppression de la fiche si la position existe encore après le lot : elle part **dans le même lot** que la fiche, le statut et la photo. Soi-même ou le créateur peuvent la supprimer **à tout moment** ; un ex-membre efface lui-même sa position. | **Déjà dans les lots existants** (`leave`, `removeMember`, `finalDelete`, `dropIndex` : la position y figure). Rien à ajouter ; à **tester** (SC-B). Aucune position n'est encore écrite tant que LOC-2b n'est pas livré, mais la règle est déployée : le test doit la couvrir dès maintenant. |
+| **Statut et photo de mise à jour** | `miffs/{id}/status/{uid}`, `photos/{uid}` | dans le même lot que la fiche (idem) | déjà dans les lots existants |
+| **Session « un compte, un appareil »** | `users/{uid}/session/active` (chemin **proposé**, non déployé : `docs/tickets/session-appareil-unique.md` §3) | lisible et écrivable par son propriétaire seul ; les écritures de statut / lieux / fiches pourraient **exiger** la session (voie 1 ou 2, à trancher par `backend-data`) | **À ajouter le jour où elle existe** : une suppression, **après** les lots de Miffs (si les règles de statut exigent la session, la supprimer d'abord ferait refuser les lots) et **avant** le profil ; ordre définitif à fixer avec la conception des règles de session. L'écoute « appareil remplacé » de **ce** téléphone doit être arrêtée à l'étape 0 : supprimer sa propre session ne doit **jamais** afficher l'écran « appareil remplacé » (SES) ; les **autres** téléphones, eux, voient la disparition et se déconnectent (§5.11). |
+| Index `memberships/*`, appareils `devices/*`, profil `users/{uid}` | sous-collections de `users/{uid}` | suppressions simples par le propriétaire ; l'index exige que la fiche n'existe plus après le lot | inchangé (§6.1) |
+| `entitlements/{uid}` | — | écriture client interdite (`allow write: if false`) | non supprimable : purge manuelle mensuelle par le PM (décision Q4, 2026-11-05) |
+| Données locales de **position** et de **lieux surveillés** | téléphone | — | arrêtées à l'étape 0 puis purgées à l'étape 9 (§5.10) : dernière position gardée localement (ticket Lieux), liste locale des lieux, état « lieux où je suis » |
+
+**Ce qui existe déjà et se réutilise** (Android MIFF-2, iOS MIFF-4, déjà fusionnés ; code lu, pas modifié) :
+- **`MiffDeletion` / `MiffDeleter.run(uid, miffId)`** (Android `data/miff/MiffDeletion.kt`, iOS `Services/Miff/MiffDeletion.swift`) : lit la Miff **sur le serveur** (refusée ou absente alors que le serveur répond = déjà supprimée), refuse si la personne n'est pas la créatrice (`NotOwner`), retire les autres membres un par un (relecture, **4 passes** au plus dans le code : le ticket disait 3, **le code fait foi**), supprime les lieux (5 par lot), puis le lot final (Miff, pierre tombale, code, statut, photo, position, fiche, index) ; **idempotente et reprenable** ; rend `Deleted`, `NotOwner` ou `Paused(failure)`. **AUTH-5 l'appelle pour chaque Miff créée, sans la réécrire.**
+- **`MiffRepository.leave(uid, miffId)`** (lot « Quitter », 5 écritures avec la position) pour les Miffs rejointes ; **`cleanUpLost`** (lot « Quitter », sinon index seul, sans message) pour les index périmés ; **`myMiffs(uid)`** pour l'inventaire ; **`removeMember`** (déjà appelé par `MiffDeletion`).
+- **`MiffDeletionCoordinator` + `PendingDeletionStore`** (marqueur local par Miff, reprise au lancement, pause hors connexion, 3 échecs puis « bloquée », pauses de 5 s doublées jusqu'à 60 s) : **modèle à reprendre pour le marqueur de compte**, avec **un marqueur de compte distinct** (identifiant du compte seulement) qui prime sur le routage. **Pièges à traiter** : (1) ne **pas** faire passer les Miffs créées par `coordinator.start` pendant la suppression de compte : son hook `onDeleted` purge le cache local et rafraîchit la liste **à chaque Miff**, ce qu'on ne veut pas au milieu de la procédure ; appeler `MiffDeleter.run` directement, séquentiellement ; (2) **`resumePending()` au lancement ne doit pas tourner en même temps** que la reprise de la suppression de compte (deux procédures sur la même Miff) : quand le marqueur de compte existe, il est repris en premier et les marqueurs par Miff sont ignorés ; (3) le crochet `onStarted` (ne jamais annoncer « accès perdu » au créateur) est couvert ici par l'arrêt des écoutes de l'étape 0.
+- **Passerelle d'authentification** : `reauthenticate` et `deleteCurrentAccount` (iOS `FirebaseAuthGateway`), `AuthFailure.RECENT_LOGIN_REQUIRED` / `requiresRecentLogin` ; purge du cache (`CachePurger` Android).
+- **À écrire pour AUTH-5** : le marqueur et la procédure de compte, l'inventaire (Miffs rejointes d'abord, puis créées : décision Q7), les écrans, la ré-authentification multi-méthodes, la révocation Apple (iOS), le nettoyage local (§5.10), les tests.
+
 ---
 
 ## 6. Contrat avec les règles Firestore
 
-**Verdict** (lecture de `backend/firestore.rules` le 2026-10-31) : **aucune règle ne bloque la séquence, aucune règle n'est à modifier ni à déployer.** Les limites à respecter sont celles des lots.
+**Verdict** (lecture de `backend/firestore.rules` le 2026-10-31, **relu le 2026-11-05 sur les règles déployées** : ajout de `positions/{uid}`, pas d'autre changement qui concerne la suppression) : **aucune règle ne bloque la séquence, aucune règle n'est à modifier ni à déployer.** Les limites à respecter sont celles des lots. **Les lots existants du code portent déjà la suppression de la position** ; les comptes du tableau ci-dessous reprennent les valeurs de `backend/data-model.md` §8 et §12 après la position.
 
 ### 6.1 Les lots, avec leur coût en lectures de règles (limite : 20 par lot)
 Comptage **manuel**, sans cache, en comptant chaque `get` / `exists` / `getAfter` / `existsAfter` évalué ; les opérateurs `||` sont comptés comme court-circuités (le comportement n'est pas établi dans l'émulateur, `data-model.md` §12 : à confirmer par le test SC-B).
 
 | Lot | Écritures | Lectures de règles (pire cas) | Source / marge |
 |---|---|---|---|
-| **Quitter** (Miff rejointe) | delete `members/{moi}`, `status/{moi}`, `photos/{moi}`, `users/{moi}/memberships/{key}` | fiche : 2 (`existsAfter` statut et photo) ; index : 1 ; statut et photo : 0 (`isSelf`) = **3** | non mesuré par la suite actuelle : à ajouter (SC-B) ; marge > 15 |
-| **Index seul** (Miff périmée) | delete `memberships/{key}` | 1 (`existsAfter` de la fiche) | idem |
-| **Retrait d'un membre** (par le créateur) | delete fiche, statut, photo de la cible ; update `miffs/{id}.joinCode` ; create `joinCodes/{nouveau}` ; delete `joinCodes/{ancien}` (6 écritures) | **18 sur 20** au pire cas (mesure émulateur : 2) | `data-model.md` §12 ; **ne rien ajouter à ce lot** (marge 2) |
+| **Quitter** (Miff rejointe) | delete `members/{moi}`, `status/{moi}`, `photos/{moi}`, **`positions/{moi}`**, `users/{moi}/memberships/{key}` (5 écritures) | fiche : 3 (`existsAfter` statut, photo, position) ; index : 1 ; statut, photo, position : 0 (`isSelf`) = **4** (valeur de `data-model.md` §8) | non mesuré par la suite actuelle : à ajouter (SC-B) ; marge 16 |
+| **Index seul** (Miff périmée) | delete `positions/{moi}` (si restée) + `memberships/{key}` | 1 (`existsAfter` de la fiche) | idem |
+| **Retrait d'un membre** (par le créateur) | delete fiche, statut, photo, **position** de la cible ; update `miffs/{id}.joinCode` ; create `joinCodes/{nouveau}` ; delete `joinCodes/{ancien}` (**7 écritures**) | **18 sur 20** au pire cas (inchangé : les purges du créateur utilisent `isOwnerOneRead`, 1 lecture au lieu de 2) ; mesure émulateur : 2 | `data-model.md` §8 et §12 ; **ne rien ajouter à ce lot** (marge 2) |
 | **Lieux** | ≤ 5 delete `places/{id}` | 2 par suppression (`isOwner`) = **≤ 10** | marge ≥ 10 |
-| **Final du créateur** | delete `miffs/{id}` ; create `miffsDeleted/{id}` ; delete `joinCodes/{code courant}` ; delete mon statut, ma photo, ma fiche ; delete mon index (7 écritures) | **12 sur 20** (mesure : 3) | `data-model.md` §12 ; marge 8 |
+| **Final du créateur** | delete `miffs/{id}` ; create `miffsDeleted/{id}` ; delete `joinCodes/{code courant}` ; delete mon statut, ma photo, **ma position**, ma fiche ; delete mon index (**8 écritures**, 7 comptées par le contrat des règles : la photo n'y entre pas) | **13 sur 20** au pire cas (12 avant la position ; mesure : 3) | `data-model.md` §8 et §12 ; marge 7 |
 | **Appareils** | delete `devices/{id}` (un par appareil) | 0 | — |
 | **Profil** | delete `users/{moi}` | 0 | `allow delete: if isSelf(uid)` |
 
 ### 6.2 Contraintes imposées par les règles (à respecter à la lettre)
-1. **Fiche de membre** : sa suppression est refusée si, **après le lot**, le statut ou la photo existent encore ; ils sont donc supprimés dans le **même** lot (la suppression d'un document absent est sans effet).
+1. **Fiche de membre** : sa suppression est refusée si, **après le lot**, le statut, la photo ou **la dernière position** existent encore ; ils sont donc supprimés dans le **même** lot (la suppression d'un document absent est sans effet).
 2. **Fiche d'un créateur** : sa suppression n'est permise que dans le lot qui supprime la Miff.
 3. **Index** : sa suppression est refusée tant que la fiche existe encore après le lot ; elle est dans le même lot que la fiche (ou seule si la fiche n'existe plus).
 4. **Retrait d'un autre membre** : refusé si `joinCode` n'est pas renouvelé dans le même lot (la liste des écritures du retrait est figée par `data-model.md` §8). **Pas de retrait dans le lot final** (le contrôle lit la Miff après le lot, qui n'existe plus : refus).
@@ -258,11 +279,11 @@ Comptage **manuel**, sans cache, en comptant chaque `get` / `exists` / `getAfter
 
 ### 6.3 Budget d'écritures et de lectures de ce ticket (estimation, pas une mesure)
 - **Cas fréquent** (membre simple d'une Miff, ou aucune) : lectures ≈ 5 ; écritures ≈ 6.
-- **Cas lourd** (créateur d'une Miff de 15 membres) : 14 retraits × 6 écritures + lieux + lot final + profil ≈ **100 écritures et suppressions**, ≈ 250 lectures de règles facturées au pire cas, plus les lectures de liste. À comparer aux quotas Spark : 20 000 écritures et 20 000 suppressions par jour, 50 000 lectures par jour : sans effet sur le quota tant qu'il n'y a pas des dizaines de suppressions lourdes le même jour.
+- **Cas lourd** (créateur d'une Miff de 15 membres) : 14 retraits × 7 écritures (position comprise) + lieux + lot final (8) + profil ≈ **110 écritures et suppressions**, ≈ 250 lectures de règles facturées au pire cas, plus les lectures de liste. (Chiffres du 2026-10-31 recalculés avec la position ; la session « un compte un appareil » ajoutera 1 suppression.) À comparer aux quotas Spark : 20 000 écritures et 20 000 suppressions par jour, 50 000 lectures par jour : sans effet sur le quota tant qu'il n'y a pas des dizaines de suppressions lourdes le même jour.
 - **Cas extrême** (Premium, 10 Miffs de 15) : ≈ 1 000 écritures ; durée de plusieurs minutes (écran allumé, reprise possible).
 
 ### 6.4 Test demandé à `backend-data` (SC-B), sans changer les règles
-Nouveau fichier de tests d'émulateur (par exemple `backend/tests/rules/17-suppression-compte.test.js`, dans l'esprit des tests existants) qui rejoue la séquence complète sous les règles actuelles, avec fixtures : membre simple ; créateur de 1 Miff à 15 membres ; Premium avec deux index (`free` + clé par Miff) ; index périmé (Miff supprimée, membre retiré) ; **rejeu après interruption à chaque étape** ; membre arrivé entre deux passes ; lot « Quitter » mesuré (lectures de règles, marge ≥ 2, comme pour les autres lots). Les mutations habituelles prouvent que chaque contrainte de §6.2 est réellement testée. Aucun test ne vise la production ni un projet autre que `demo-*` (garde-fou DUR-3).
+Nouveau fichier de tests d'émulateur (par exemple `backend/tests/rules/17-suppression-compte.test.js`, dans l'esprit des tests existants) qui rejoue la séquence complète sous les règles actuelles, avec fixtures **(dont une dernière position par membre et par Miff, règle R-LIEU-POS déployée)** : membre simple ; créateur de 1 Miff à 15 membres ; Premium avec deux index (`free` + clé par Miff) ; index périmé (Miff supprimée, membre retiré) ; **rejeu après interruption à chaque étape** ; membre arrivé entre deux passes ; lot « Quitter » mesuré (lectures de règles, marge ≥ 2, comme pour les autres lots). Les mutations habituelles prouvent que chaque contrainte de §6.2 est réellement testée. Aucun test ne vise la production ni un projet autre que `demo-*` (garde-fou DUR-3).
 
 ---
 
@@ -283,7 +304,9 @@ Nouveau fichier de tests d'émulateur (par exemple `backend/tests/rules/17-suppr
 
 ---
 
-## 8. Textes proposés (tutoiement, **tous à valider par le PM**)
+## 8. Textes (tutoiement ; **validés par défaut par le PM le 2026-11-05**, qui pourra les ajuster à la recette)
+
+*Les maquettes (`design/screens/suppression-compte/`) reprennent ces textes à l'identique et en ajoutent quelques-uns, marqués « proposé » dans leurs fiches (ligne de position effacée, variante sans Miff, pluriels « 1 autre proche », étapes de progression, titres des écrans de pause et d'échec, encart de la limite Apple, etc.) : leur liste est dans le README des maquettes ; le PM les valide avec les maquettes (Q13). Les blocs d'abonnement (`settings_delete_sub_*`) ne sont **pas construits** (décision du 2026-10-31).*
 
 Principes : phrases courtes ; aucun mot alarmiste ou culpabilisant (« irrécupérable », « perdre », « irréversible » sont évités ; « Ce n'est pas réversible » est la formule déjà retenue par `authentification.md` §7.7) ; jamais de reproche, même à l'annulation ; les noms de Miff et les nombres s'insèrent par paramètres. Clés proposées sous le préfixe `settings_` (Réglages) et `auth_` (message d'entrée), identiques sur les deux plateformes (parité contrôlée par la CI, `i18n-keys.md`).
 
@@ -365,14 +388,15 @@ Les textes sont des **propositions** : ils parlent d'une action sérieuse sans l
 
 ## 10. Ce que le PM doit fournir ou faire (rien n'est fait par un agent)
 
-1. **Décider** les questions de §16.
-2. **Console Firebase > Authentication > Sign-in method > Apple** : renseigner « Services ID » et « OAuth code flow » (identifiant d'équipe, identifiant de clé, clé privée `.p8`, à ranger dans le gestionnaire de mots de passe, **jamais** dans le dépôt ni dans une conversation) ; sans cela, la révocation Apple est impossible. Couvert par le compte Apple Developer existant. À faire **avant** AUTH-5-I.
-3. **Exports PNG** des écrans A à F corrigés (process des maquettes, CLAUDE.md).
+1. ~~**Décider** les questions de §16~~ : **fait le 2026-11-05** (voir « Décisions du PM (2026-11-05) »).
+2. **Console Firebase > Authentication > Sign-in method > Apple** : renseigner « Services ID » et « OAuth code flow » (identifiant d'équipe, identifiant de clé, clé privée `.p8`, à ranger dans le gestionnaire de mots de passe, **jamais** dans le dépôt ni dans une conversation) ; sans cela, la révocation Apple est impossible. Couvert par le compte Apple Developer existant. **Prérequis PM avant AUTH-5c** (premier sous-ticket iOS).
+3. **Valider les maquettes** `design/screens/suppression-compte/` (README « décisions de design à valider ») ; elles tiennent lieu d'export PNG de Figma.
 4. **Comptes jetables** de test (au moins : e-mail + mot de passe, Google, Apple ; l'un créateur d'une Miff avec au moins deux autres comptes membres) et **deux appareils** pour voir « l'accès perdu » en direct.
 5. **Google Play Console > Contenu de l'application > Sécurité des données** : déclarer la suppression de compte et l'adresse web (`https://miff-3d283.web.app/fr/supprimer-mon-compte`, à confirmer avec la page publiée). Préparée par `release-manager`, saisie par le PM.
-6. **Routine de purge** de `entitlements/{uid}` (Q4) et **traitement des demandes par e-mail** (Q5) : mettre en place un rappel (agenda) pendant la bêta.
-7. **Valider les textes** de §8.
-8. Aucun moyen de paiement, aucun compte à créer.
+6. **Routine de purge** de `entitlements/{uid}` (Q4 : **tâche manuelle mensuelle du PM** dans la console, pendant la bêta) et **traitement des demandes par e-mail** (Q5) : mettre en place un rappel (agenda). Si la charge devient réelle, assouplir la phrase de la politique (« supprimé dès que possible »).
+7. **Textes de §8** : validés par défaut ; ajustables à la recette.
+8. **Remplacer le contact provisoire** affiché dans l'app (Q11) par l'adresse dédiée **avant la bêta externe**.
+9. Aucun moyen de paiement, aucun compte à créer.
 
 ---
 
@@ -398,16 +422,16 @@ Une branche et une PR par plateforme et par sous-ticket, jamais de push direct s
 
 | # | Sous-ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
-| AUTH-5-0 | **Décisions, maquettes, console** (PM, `design-system`) | Réponses à §16 ; écrans A à F dessinés et exportés ; configuration Apple (§10 point 2) | S à M | Validation de ce ticket |
-| SC-B | **Test d'émulateur de la séquence** (`backend-data`) | §6.4 ; aucun changement de règles ; mise à jour de `data-model.md` §8 et §10 (ordre, repli, tests) | S | AUTH-5-0 |
-| AUTH-5-W | **Pages web et runbook manuel** | Compléter les pages FR/EN (§5.12) ; `docs/dev/suppression-manuelle.md` ; répercussion sur la politique (§15) | S | Q4, Q5 ; déploiement des pages = accord explicite du PM, en local, `--project miff-3d283` |
-| AUTH-5-A1 | **Android, étape 1 : compte sans Miff** | Entrée dans Mon compte ; écrans A à F ; ré-authentification e-mail et Google ; **reprise** par marqueur et priorité sur le routage ; étapes 0, 1, 5 à 9 ; purge ; textes FR + EN ; tests (fausse passerelle : ordre, rejeu à chaque interruption, seconde ré-authentification, session invalide = succès) ; accessibilité | M | ONB-3b, AUTH-1, AUTH-2, AUTH-5-0 |
-| AUTH-5-A2 | **Android, étape 2 : avec Miffs** | Inventaire serveur ; lots « Quitter » / index seul ; Miffs créées (retrait un par un, lieux, relectures, lot final) en **appelant les procédures sans interface de MIFF-2** ; liste des Miffs sur A ; « Prévenir mes proches » ; abonnement (§5.9) ; tests d'interruption à chaque lot | M à L | AUTH-5-A1, **MIFF-2**, SC-B |
-| AUTH-5-I1 | **iOS, étape 1** | Mêmes livrables que A1 + **révocation Apple** (essai sur l'iPhone via TestFlight) ; XCTest équivalents | M | AUTH-3, AUTH-5-A1, console Apple |
-| AUTH-5-I2 | **iOS, étape 2** | Mêmes livrables que A2 | M à L | AUTH-5-I1, MIFF-4, AUTH-5-A2 |
+| AUTH-5-0 | **Décisions, maquettes, console** (PM, `design-system`) | **Décisions : faites (2026-11-05)** ; maquettes écrans A à G dessinées (`design/screens/suppression-compte/`) : **à valider par le PM** ; configuration Apple de la console (§10 point 2) : **prérequis PM avant AUTH-5c** | S | — |
+| SC-B | **Test d'émulateur de la séquence** (`backend-data`) | §6.4 (dont la position) ; aucun changement de règles ; mise à jour de `data-model.md` §8 et §10 (ordre rejointes puis créées, repli, tests) | S | — (peut se faire tout de suite) |
+| AUTH-5-W | **Pages web et runbook manuel** | Compléter les pages FR/EN (§5.12) ; `docs/dev/suppression-manuelle.md` ; répercussion sur la politique (§15) | S | Q4, Q5 (décidées) ; déploiement des pages = accord explicite du PM, en local, `--project miff-3d283` |
+| **AUTH-5a** | **Android, compte sans Miff** | Entrée dans Mon compte ; écrans A à G (liste des Miffs vide) ; ré-authentification e-mail et Google ; **marqueur de compte** et reprise prioritaire sur le routage ; étapes 0, 1, 5 à 9 ; purge (§5.10) ; textes FR + EN ; tests (fausse passerelle : ordre, rejeu à chaque interruption, seconde ré-authentification, session invalide = succès) ; accessibilité | M | ONB-3b, AUTH-1, AUTH-2, maquettes validées |
+| **AUTH-5b** | **Android, Miffs** | Inventaire serveur ; Miffs rejointes d'abord (`MiffRepository.leave` / `cleanUpLost`), puis Miffs créées en **appelant `MiffDeleter.run`** (déjà fusionné, §5.13) ; liste des Miffs sur A ; « Prévenir mes proches » (facultatif) ; compte lié à Apple (encart, §3.2 H) ; tests d'interruption à chaque lot | M | AUTH-5a, SC-B (**MIFF-2 déjà fusionné**) |
+| **AUTH-5c** | **iOS, compte sans Miff** | Mêmes livrables que AUTH-5a + **révocation Apple** (essai sur l'iPhone via TestFlight ; un échec de révocation n'arrête pas la suppression mais bloque la **soumission**, décision Q8a) ; XCTest équivalents | M | AUTH-3, AUTH-5a, **console Firebase configurée pour Apple (prérequis PM)** |
+| **AUTH-5d** | **iOS, Miffs** | Mêmes livrables que AUTH-5b (`MiffDeleter` iOS déjà fusionné, MIFF-4) | M | AUTH-5c, AUTH-5b, SC-B |
 
-**Pourquoi deux étapes** : l'étape 1 est livrable **avant** MIFF-1 / MIFF-2 (aucune Miff n'existe encore dans les apps), valide le plus incertain (fenêtre de connexion récente, reprise, révocation Apple) et réduit le risque de découvrir un défaut le jour de la soumission aux stores. **Ce qui est obligatoire avant la soumission** : A1 + A2 + I1 + I2 + AUTH-5-W.
-Ordre recommandé : AUTH-5-0, SC-B et AUTH-5-W en parallèle, A1, I1, puis (après MIFF-2 / MIFF-4) A2 et I2. Chaque PR : revue de code en contexte neuf, revue de sécurité (ré-authentification, jetons, journaux, marqueur local, erreurs), QA, recette du PM, fusion par Claude après « oui » explicite du PM pour chaque PR.
+**Pourquoi quatre sous-tickets** (Q12, 2026-11-05) : AUTH-5a et AUTH-5c, livrables sans attendre quoi que ce soit, valident le plus incertain (fenêtre de connexion récente, reprise, révocation Apple) et réduisent le risque de découvrir un défaut le jour de la soumission aux stores. **Mise à jour du 2026-11-05 : MIFF-2 et MIFF-4 sont déjà fusionnés**, donc rien n'empêche d'enchaîner AUTH-5b juste après AUTH-5a ; la séparation sert à garder des PR de taille raisonnable et une recette progressive. **Ce qui est obligatoire avant la soumission** : AUTH-5a + 5b + 5c + 5d + AUTH-5-W (et la preuve de révocation Apple sur l'iPhone, SI1).
+Ordre : SC-B et AUTH-5-W en parallèle ; AUTH-5a puis AUTH-5b (Android) ; AUTH-5c puis AUTH-5d (iOS) dès que la console Apple est configurée. Une branche et une PR par sous-ticket. Chaque PR : revue de code en contexte neuf, revue de sécurité (ré-authentification, jetons, journaux, marqueur local, erreurs), QA, recette du PM ; fusion par Claude selon la règle de `CLAUDE.md` (CI verte, revues faites, recette validée par le PM si elle est nécessaire).
 
 ---
 
@@ -458,8 +482,8 @@ Codes : **SC** = suppression de compte (communs aux deux plateformes), **SA** = 
 
 ### Procédure et données
 - [ ] **SC15** Avant la première suppression : écoutes Firestore, surveillance des lieux et écritures de statut sont arrêtées ; un test prouve qu'un refus d'écoute pendant la procédure ne déclenche pas le nettoyage « accès perdu ».
-- [ ] **SC16** Simple membre d'une Miff : après la procédure, la fiche, le statut, la photo et l'index de la personne n'existent plus (vérifié à l'émulateur) ; le code de la Miff n'a **pas** changé ; les autres membres voient la personne disparaître de la liste.
-- [ ] **SC17** Créateur d'une Miff à N autres membres : les N membres sont retirés **un par un**, chaque retrait renouvelant le code ; les lieux sont supprimés (5 au plus par lot) ; le lot final supprime la Miff, crée `miffsDeleted/{id}`, supprime le code et la fiche, le statut, la photo et l'index du créateur ; **il ne reste ni lieu, ni statut, ni photo, ni fiche** dans la Miff.
+- [ ] **SC16** Simple membre d'une Miff : après la procédure, la fiche, le statut, la photo, **la dernière position** et l'index de la personne n'existent plus (vérifié à l'émulateur) ; le code de la Miff n'a **pas** changé ; les autres membres voient la personne disparaître de la liste.
+- [ ] **SC17** Créateur d'une Miff à N autres membres : les N membres sont retirés **un par un**, chaque retrait renouvelant le code ; les lieux sont supprimés (5 au plus par lot) ; le lot final supprime la Miff, crée `miffsDeleted/{id}`, supprime le code et la fiche, le statut, la photo, **la position** et l'index du créateur ; **il ne reste ni lieu, ni statut, ni photo, ni position, ni fiche** dans la Miff.
 - [ ] **SC18** Aucun lot ne dépasse les écritures décrites en §6.1 ; aucun lot de retrait n'est mêlé au lot final ; aucune écriture ajoutée au lot de retrait (test SC-B : marge de lectures de règles ≥ 2).
 - [ ] **SC19** Miffs rejointes traitées **avant** les Miffs créées (§5.5) ; plusieurs Miffs créées traitées l'une après l'autre.
 - [ ] **SC20** Index périmé (retiré, Miff supprimée) : supprimé seul après un refus du lot « Quitter », sans message ni boucle.
@@ -487,7 +511,8 @@ Codes : **SC** = suppression de compte (communs aux deux plateformes), **SA** = 
 - [ ] **SC36** La purge du cache est enregistrée **avant** la suppression du compte d'authentification ; si l'app est tuée entre les deux, la purge est faite au lancement suivant avant tout accès à Firestore.
 - [ ] **SC37** Les préférences liées à la personne (version des CGU conservée, choix local de statistiques, Miff active, marqueurs) sont effacées ; la langue et le fait d'avoir vu le carrousel sont conservés.
 - [ ] **SC38** La collecte Analytics / Crashlytics est coupée à la fin, aucun événement n'est envoyé pendant ni après la suppression (test de non-envoi) ; l'identifiant d'installation d'Analytics est réinitialisé ; aucun identifiant de compte, e-mail ou nom de Miff n'apparaît dans un journal ou un événement (contrôle `NoSensitiveLoggingTest` et QA3 de l'authentification).
-- [ ] **SC39** La surveillance des lieux ne repart pas et aucun événement système ne tente d'écrire un statut après la suppression.
+- [ ] **SC39** La surveillance des lieux ne repart pas et aucun événement système ne tente d'écrire un statut **ni une position** après la suppression.
+- [ ] **SC39b** *(ajouté le 2026-11-05)* Quand la session « un compte, un appareil » existera : elle est supprimée dans la procédure (après les lots de Miffs, avant le profil), le téléphone qui supprime n'affiche jamais « appareil remplacé », et un second téléphone connecté revient à l'entrée (SC31).
 
 ### Côté autres membres
 - [ ] **SC40** À leur prochain lancement, les membres d'une Miff supprimée reçoivent **uniquement** le message QM8, sans reproche, ne peuvent plus lire aucune donnée de cette Miff, et leur app nettoie son index et son cache (recette à deux appareils).
@@ -543,7 +568,7 @@ Critères cochés, décisions de §16 enregistrées, revue de code en contexte n
 
 | Avec | Nature |
 |---|---|
-| **ONB-3b** (Mon compte, Android) | Cache la ligne « Supprimer mon compte » jusqu'à AUTH-5 (B4) ; AUTH-5-A1 l'active. |
+| **ONB-3b** (Mon compte, Android) | Cache la ligne « Supprimer mon compte » jusqu'à AUTH-5 (B4) ; AUTH-5a l'active. |
 | **AUTH-1 à AUTH-4** | Passerelle d'authentification (`reauthenticate`, `deleteCurrentAccount` déjà présentes côté iOS), purge du cache, session, « Mot de passe oublié ». |
 | **MIFF-1 / MIFF-2 / MIFF-4** | Procédures sans interface : quitter, retirer, supprimer une Miff, générateur de code ; message QM8 ; invitation au créateur (Q9). |
 | **Ticket Premium** | État d'un achat réel et lien de gestion d'abonnement ; purge de `entitlements` ; Blaze. |
@@ -559,45 +584,84 @@ Critères cochés, décisions de §16 enregistrées, revue de code en contexte n
 
 ## 16. Questions pour le PM
 
-Aucune n'est tranchée ici. Chaque question donne l'impact et ma recommandation.
+**Mise à jour du 2026-11-05 : toutes les questions sont tranchées** (chacune porte sa décision sous son intitulé, en citation ; le texte d'origine est conservé en dessous). Chaque question donnait l'impact et ma recommandation.
 
 **Q1. Quel écran après la suppression ?**
+
+> **Décidé le 2026-10-31 : le carrousel de bienvenue** (pas l'écran d'inscription directement, contre ma recommandation) : « Ton compte a été supprimé » puis carrousel puis inscription / connexion. Maquettes : F1 puis G1.
+
 Choix : (a) écran « Ton compte a été supprimé » puis écran d'**inscription**, sans carrousel ; (b) retour à l'écran de **connexion** comme après une déconnexion (décision Q11 de l'authentification) ; (c) fermer l'app. *Recommandation : (a).* Une personne qui vient de supprimer son compte ne veut pas « se connecter » ; le carrousel reste réservé à la première ouverture.
 
 **Q2. « Prévenir mes proches » dans le parcours de suppression de compte du créateur ?**
+
+> **Décidé le 2026-11-05 : oui** (recommandation retenue). « Prévenir mes proches » est facultatif pendant la suppression du compte d'un créateur ayant au moins un autre proche. Maquettes : A7 à A9.
+
 Choix : oui (réutilise QM9, facultatif) / non. *Recommandation : oui.* Seul moyen de limiter la surprise des membres sans notification ; aucune écriture, aucun coût.
 
 **Q3. Rappel d'abonnement : ce qu'on affiche tant que la validation des achats n'existe pas.**
+
+> **Décidé le 2026-10-31 : aucun rappel pour l'instant** (plus strict que (a)) : le bloc d'abonnement n'est pas construit dans cette première version ; à reprendre avec le ticket Premium. Confirmé le 2026-11-05 (rien n'a changé).
+
 Aujourd'hui le Premium est accordé à la main : le rappel ne s'afficherait pour personne. Une fois les achats réels ouverts, l'état d'un achat peut ne pas encore être dans `entitlements`. Choix : (a) afficher le rappel **seulement** quand `entitlements` indique une source de magasin ; (b) afficher à **tout le monde** une ligne prudente (« Si tu as un abonnement Miff+, supprimer ton compte ne le résilie pas… ») dès l'ouverture des achats réels. *Recommandation : (a) maintenant, passer à (b) dans le ticket Premium.* Les textes de §8 sont à valider.
 
 **Q4. `entitlements/{uid}` : la politique promet « suppression 30 jours après la suppression de ton compte », mais le téléphone ne peut pas le supprimer.**
+
+> **Décidé le 2026-11-05 : (a)** tâche manuelle du PM : purge mensuelle d'`entitlements/{uid}` dans la console pendant la bêta ; la phrase de la politique sera assouplie (b) si la charge devient réelle ; (c) seulement au premier achat réel, sur décision explicite.
+
 Choix : (a) **tâche manuelle du PM** (console, une fois par mois, avec un petit rappel) tant qu'il n'y a pas de serveur ; (b) assouplir la phrase de la politique (« supprimé dès que possible ») ; (c) passer à Blaze plus tôt. *Recommandation : (a) pendant la bêta + (b) si la charge devient réelle ; (c) seulement au premier achat réel, avec décision explicite.* Aucune relecture juridique n'est prévue : tout engagement écrit doit rester tenable.
 
 **Q5. Demandes de suppression par e-mail / page web (personnes qui ne peuvent plus se connecter).**
+
+> **Décidé le 2026-10-31 : recommandations acceptées** ((a) à (d)) ; dans l'app, la suppression du compte est bloquée tant qu'une Miff créée subsiste après un échec (SC23). Voir la lecture retenue dans « Décisions du PM (2026-11-05) ».
+
 À arrêter : (a) la **vérification d'identité** (demande reçue depuis l'adresse du compte ; pour un compte Apple à adresse relais, une question de contrôle) ; (b) le **délai** (un mois est déjà promis par la page web et la politique) ; (c) **qui** supprime (le PM, à la main, avec un runbook) ; (d) si une suppression manuelle ne peut pas aboutir (Miff d'un créateur dont les membres ne peuvent pas être retirés à la main), accepter de **laisser** les données de la Miff (illisibles pour tous sauf ses membres) ou bloquer. *Recommandation : (a) comme décrit, (b) un mois mais viser sous une semaine, (c) le PM avec runbook, (d) supprimer d'abord les Miffs créées à la main, et ne jamais supprimer un compte créateur en laissant une Miff sans propriétaire.* Même question dans l'app : si une étape échoue durablement, on **bloque** la suppression du compte (SC23) et on propose le contact, plutôt que de laisser une Miff sans propriétaire.
 
 **Q6. Ré-authentification : une ou deux demandes ?**
+
+> **Décidé le 2026-11-05 : (a)** une ré-authentification au début, puis une seconde **seulement si Firebase la réclame** ; **aucun mot de passe gardé en mémoire**.
+
 La procédure peut être plus longue que la « connexion récente » de Firebase. Choix : (a) une demande au début + **une seconde seulement si Firebase la réclame** (rare, texte « Dernière vérification ») ; (b) garder le mot de passe **en mémoire** pendant la procédure pour se ré-authentifier en silence. *Recommandation : (a).* (b) garde un secret en mémoire plusieurs minutes, ce que je préfère éviter ; Google et Apple ne s'y prêtent de toute façon pas.
 
 **Q7. Ordre : Miffs rejointes d'abord ou Miffs créées d'abord ?**
+
+> **Décidé le 2026-11-05 : Miffs rejointes d'abord, puis Miffs créées.**
+
 Les documents se contredisent (§4 #1). *Recommandation : rejointes d'abord.* Elles sont rapides, retirent tout de suite le statut de la personne des cercles où elle n'est que membre, et évitent qu'un proche voie un statut qui « vieillit » (orange, rouge) à cause de la suppression ; l'effet pour les Miffs créées est identique dans les deux ordres.
 
 **Q8. Apple : révocation, et comptes liés à Apple supprimés depuis Android.**
+
+> **Décidé le 2026-11-05 : (a)** si la révocation Apple échoue sur iOS, la suppression **se poursuit** en le signalant (journal technique sans donnée personnelle, remontée au QA et au PM) ; la **soumission à l'App Store est bloquée** tant que la révocation n'est pas prouvée sur l'iPhone (SI1). **(b)** Compte lié à Apple supprimé depuis Android : **limite acceptée** ; l'écran final dit comment retirer l'autorisation dans les réglages Apple (maquettes H1 à H3).
+
 (a) Si la **révocation Apple échoue** sur iOS (réseau, code expiré, console mal configurée) : on poursuit la suppression en la signalant (recommandé : l'utilisateur ne doit pas rester bloqué), ou on bloque ? (b) Un compte lié à Apple supprimé depuis **Android** ne peut pas être révoqué : on accepte la limite et on indique à l'écran final comment retirer l'autorisation dans les réglages Apple ? *Recommandation : (a) poursuivre + alerte au QA/ au PM, mais bloquer la **soumission** tant que la révocation n'est pas prouvée sur l'iPhone (SI1) ; (b) accepter.* Action PM associée : §10 point 2.
 
 **Q9. La décision du 2026-10-31 « une sortie volontaire ne renouvelle pas le code ».**
+
+> **Décidé le 2026-10-31 : confirmé** (a) ; une sortie volontaire, y compris par suppression de compte d'un simple membre, ne renouvelle pas le code. Le point (b) n'a pas de décision écrite : par défaut, **aucune invitation** n'est déclenchée par une suppression de compte (cohérent avec « pas d'alarme »).
+
 Je ne la retrouve pas dans mon dépôt. À confirmer : (a) une **suppression de compte d'un simple membre** est bien une sortie volontaire : aucun renouvellement de code (je l'ai appliqué) ; (b) l'**invitation discrète** faite au créateur après un départ (critère N3 de `miff.md`) existe-t-elle encore, et se déclenche-t-elle aussi après une suppression de compte ? *Recommandation : (a) oui ; (b) selon ta décision du 2026-10-31, sinon pas d'invitation (cohérent avec « pas d'alarme »).*
 
 **Q10. Tests destructifs : un seul projet Firebase.**
+
+> **Décidé le 2026-11-05 : comptes jetables sur le projet actuel** pour la recette ; projet de développement dès qu'il existe.
+
 Les tests automatiques se font à l'émulateur uniquement. Mais ta recette sur téléphone supprime de vraies données sur `miff-3d283`. Acceptes-tu de la faire avec des **comptes jetables créés pour l'occasion** sur ce projet (les règles empêchent d'atteindre les données d'un autre compte), ou préfères-tu attendre le **projet de développement** annoncé avant les testeurs externes ? *Recommandation : comptes jetables maintenant (le critère D3 de l'authentification vise les tests automatisés à l'émulateur), projet de développement dès qu'il existe.* Risque connu : un défaut de la procédure ne toucherait que les comptes de test.
 
 **Q11. Contact affiché dans l'app pour demander une copie des données.**
+
+> **Décidé le 2026-11-05 : oui**, le contact provisoire est affiché dans l'app ; **à remplacer par l'adresse dédiée avant la bêta externe** (§10 point 8).
+
 L'écran d'information affiche le contact provisoire (**Tomessa MFOUKA, `tomessa.mfouka@gmail.com`**), donc public dans l'app. Accord ? *Recommandation : oui (cohérent avec la politique et la décision du 2026-10-24) ; à remplacer par l'adresse dédiée prévue avant la bêta externe.* Sinon la phrase renvoie seulement à la page web.
 
 **Q12. Découpage en deux étapes (compte sans Miff d'abord, Miffs après MIFF-2) ?**
+
+> **Décidé le 2026-11-05 : oui, en deux étapes**, puis découpé par plateforme : AUTH-5a (Android, compte sans Miff), AUTH-5b (Android, Miffs), AUTH-5c (iOS, compte sans Miff), AUTH-5d (iOS, Miffs) : §12. MIFF-2 et MIFF-4 étant déjà fusionnés, l'attente d'origine n'existe plus.
+
 *Recommandation : oui (§12)* : valide très tôt la ré-authentification, la reprise et la révocation Apple, sans attendre MIFF-2. La contrepartie : deux PR par plateforme. Si tu préfères une seule PR après MIFF-2, la soumission aux stores ne change pas.
 
 **Q13. Validation des textes de §8** (FR/EN), de la liste de l'écran A, et des **maquettes à dessiner** (A à F, G) avant le développement.
+
+> **Décidé le 2026-11-05 : textes de §8 validés par défaut** (ajustables à la recette) ; **maquettes à dessiner** : faites, à valider (`design/screens/suppression-compte/`).
+
 
 **Questions déjà tranchées, rappelées pour mémoire (aucune action)** : créateur : Miffs supprimées, aucun transfert (2026-10-24) ; pas de relecture juridique (2026-10-23) ; contact provisoire (2026-10-24) ; solution gratuite d'abord (2026-10-21) ; pas de Blaze pour l'instant.
 
@@ -614,3 +678,28 @@ L'écran d'information affiche le contact provisoire (**Tomessa MFOUKA, `tomessa
 - **Demandes par e-mail ou page web (question 5)** : **accepté tel que recommandé** : demande reçue depuis l'adresse du compte (question de contrôle pour une adresse relais Apple), délai d'un mois en visant moins d'une semaine, traitement par le PM avec un runbook ; dans l'app, la suppression du compte est **bloquée tant qu'une Miff créée subsiste** (la personne doit d'abord supprimer ses Miffs ou en transférer la propriété si cela existe un jour).
 - **Sortie volontaire d'une Miff (question 9)** : confirmé : une sortie volontaire, y compris par suppression de compte d'un simple membre, **ne renouvelle pas le code** ; seul le retrait d'un membre par le créateur le renouvelle.
 - **Toujours ouvertes** : les autres questions du §16 (ordre de la procédure, ré-authentification, Apple, comptes jetables, contact provisoire, découpage en deux étapes, textes et maquettes).
+
+## Décisions du PM (2026-11-05)
+
+Le PM a validé **toutes les recommandations du §16** (relayées par `product-specs`). Chaque décision est aussi reportée sous la question correspondante dans le §16.
+
+- **Q2, « Prévenir mes proches »** : oui, facultatif, pendant la suppression du compte d'un créateur (au moins un autre proche). Réutilise QM9 ; rien n'est envoyé sans geste de la personne.
+- **Q4, `entitlements/{uid}`** : **tâche manuelle du PM**, une purge mensuelle dans la console pendant la bêta ; la phrase de la politique de confidentialité sera assouplie si la charge devient réelle ; Blaze seulement au premier achat réel et sur décision explicite.
+- **Q6, ré-authentification** : une au début, **une seconde seulement si Firebase la réclame** ; aucun mot de passe gardé en mémoire.
+- **Q7, ordre** : **Miffs rejointes d'abord, puis Miffs créées.**
+- **Q8, Apple** : (a) échec de la révocation sur iOS : la suppression **se poursuit** en le signalant, mais la **soumission est bloquée** tant que la révocation n'est pas prouvée sur l'iPhone ; (b) compte lié à Apple supprimé depuis Android : **limite acceptée**, l'écran final dit comment retirer l'autorisation dans les réglages Apple.
+- **Q10, tests destructifs** : recette avec des **comptes jetables** sur le projet Firebase actuel.
+- **Q11, contact** : le contact provisoire est affiché dans l'app ; **à remplacer par l'adresse dédiée avant la bêta externe**.
+- **Q12, découpage** : compte sans Miff d'abord, Miffs ensuite, **par plateforme** : AUTH-5a (Android, compte sans Miff), AUTH-5b (Android, Miffs), AUTH-5c (iOS, compte sans Miff), AUTH-5d (iOS, Miffs) (§12).
+- **Q13, textes et maquettes** : textes de §8 **validés par défaut** (le PM pourra les ajuster à la recette) ; **maquettes à dessiner** : dessinées le 2026-11-05 (`design/screens/suppression-compte/`), à valider par le PM.
+- **Rappel des décisions du 2026-10-31** (inchangées) : carrousel après la suppression (Q1), pas de rappel d'abonnement dans cette version (Q3), demandes par e-mail traitées par le PM avec runbook (Q5), sortie volontaire sans renouvellement de code (Q9).
+
+**Prérequis PM** : configuration du fournisseur Apple dans la console Firebase (Services ID, « OAuth code flow », identifiant d'équipe, identifiant de clé, clé `.p8` ; §10 point 2) **avant AUTH-5c**. Rappel agenda pour la purge mensuelle d'`entitlements`. Valider les maquettes.
+
+**Lecture retenue (à confirmer par le PM)** : la décision du 2026-10-31 « la suppression du compte est bloquée tant qu'une Miff créée subsiste » est lue comme **« le compte d'authentification n'est jamais supprimé tant qu'une Miff créée subsiste »** (SC23, échec durable d'une étape), et non comme « la personne doit d'abord supprimer ses Miffs à la main » : la décision Q2 du 2026-11-05 (« Prévenir mes proches » pendant la suppression de compte d'un créateur) et le découpage AUTH-5b (suppression des Miffs créées par la procédure) supposent que la procédure supprime elle-même ces Miffs. Si le PM voulait la seconde lecture, l'écran A du créateur serait remplacé par un renvoi vers « Supprimer la Miff ».
+
+**Nouveautés de la relecture du 2026-11-05** (détail §5.13, §6.1 et §12) :
+- MIFF-2 / MIFF-4 étant fusionnés, AUTH-5 **réutilise** `MiffDeleter.run`, `MiffRepository.leave` / `cleanUpLost` et le modèle de `MiffDeletionCoordinator` (code lu, non modifié) ; deux pièges notés (hook `onDeleted` du coordinateur, reprise concurrente par `resumePending`).
+- Règles déployées : la suppression doit purger la **dernière position** (`positions/{uid}`, dans le même lot que la fiche : déjà fait par les lots existants) ; lots recomptés (Quitter 5 écritures / 4 lectures de règles, retrait 7 / 18, final 8 / 13) ; à tester (SC-B).
+- Quand la session « un compte, un appareil » existera : une suppression de plus (SC39b).
+- Maquettes : les textes ajoutés par les maquettes (listés dans leur README) sont à valider avec elles.
