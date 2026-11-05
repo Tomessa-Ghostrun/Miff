@@ -2,6 +2,8 @@ package com.tomessa.miff.data.tracking
 
 import com.tomessa.miff.data.miff.Guarded
 import com.tomessa.miff.data.miff.guardedCall
+import com.tomessa.miff.data.session.ActiveDevice
+import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MiffFailure
@@ -42,6 +44,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  *   [stop] is STICKY for the session that ended (review I4): nothing is rebuilt until the session changes.
  * - A zone is named by its [ZoneKey] (identifier + geometry + type), never by the identifier alone (review B1). The key holds coordinates: it is never
  *   logged or journaled; the journal and the status only get the place identifier.
+ * - "Un compte, un seul appareil" (SESS-2): NOTHING is written (status, access, position) unless [ActiveDevice.clearance] says this phone holds the session, checked
+ *   against the server before the first write of a pass (and again at the return of the network); every write carries the identifier of the session. A phone that
+ *   was replaced keeps what waits (it is erased by [stop], which the forced sign-out calls) and writes nothing; a refused write makes the session be looked at again.
  * No log, no analytics event: only the local journal of the debug build, which cannot hold a coordinate.
  */
 class TrackingEngine(
@@ -52,6 +57,8 @@ class TrackingEngine(
     private val geofences: GeofenceArming,
     private val movement: MovementUpdates,
     private val networkWake: NetworkWake,
+    /** Who holds the session of the account: the writes below only leave with its identifier. */
+    private val device: ActiveDevice,
     private val journal: DetectionJournal = NoDetectionJournal,
     private val timeoutMillis: Long = 15_000L,
     /** Goes up at every end of a session (`SessionManager.generation`): what [stop] stopped stays stopped until it changes. */
@@ -67,6 +74,35 @@ class TrackingEngine(
     private var stoppedGeneration = NEVER
 
     private fun sessionEnded(): Boolean = stoppedGeneration == generation()
+
+    /**
+     * The permission to write during ONE pass (a refresh, an event, the return of the network): the session is verified at the FIRST write only (a pass that
+     * writes nothing costs no read), the answer is kept for the rest of the pass, and a refusal that turns out to be a replacement closes it at once.
+     * [recheck]: the server is asked even if a recent verification exists (opening, restart, return of the network).
+     */
+    private inner class WriteGate(
+        private val recheck: Boolean,
+    ) {
+        private var asked = false
+        private var deviceId: String? = null
+
+        /** The identifier to write, or null: nothing may be written now (replaced, or the server could not be asked). */
+        suspend fun deviceId(): String? {
+            if (!asked) {
+                asked = true
+                deviceId = (device.clearance(recheck) as? Clearance.Cleared)?.deviceId
+            }
+            return deviceId
+        }
+
+        /** A write was refused: was it because the session is no longer ours? Then nothing else is written in this pass. */
+        suspend fun refused() {
+            if (device.afterRefusal()) {
+                asked = true
+                deviceId = null
+            }
+        }
+    }
 
     /** The app came to the front, went to the back, the provider reported a move, the phone restarted, the sharing changed. */
     suspend fun refresh(
@@ -112,8 +148,9 @@ class TrackingEngine(
                 local.save(LocalState(uid, checkedAtMillis = synced.state.checkedAtMillis))
                 return@withLock
             }
-            // Not verified (no answer): it stays waiting and nothing is written on an assumption.
-            val next = if (synced.verified) flushPending(uid, synced.state) else synced.state
+            // Not verified (no answer): it stays waiting and nothing is written on an assumption. SESS-2: the session is verified AGAIN before the first write
+            // (a phone that was offline may have been replaced meanwhile: what waits is then never written).
+            val next = if (synced.verified) flushPending(uid, synced.state, WriteGate(recheck = true)) else synced.state
             local.save(next)
             updateNetworkWake(next)
         }
@@ -207,6 +244,12 @@ class TrackingEngine(
             state = state.copyWith(armed = emptySet(), updatesArmed = false)
         }
         val permissions = env.permissions()
+        // One permission for the whole pass; the session is verified against the server at the first write, again at an opening, a restart, a return of the network.
+        val gate =
+            WriteGate(
+                recheck =
+                    reason == Reason.OPENED || reason == Reason.REARM || reason == Reason.NETWORK_BACK,
+            )
 
         state = syncMiffs(uid, state, reason, now).state
 
@@ -222,7 +265,7 @@ class TrackingEngine(
         if (!permissions.locationComplete) {
             // "Toujours" + precise are not there: no detection, no position (AUT7). The Miffs are told, once, that the access changed.
             state = disarm(state)
-            state = syncAccess(uid, state, now)
+            state = syncAccess(uid, state, now, gate)
             local.save(state)
             return
         }
@@ -244,9 +287,9 @@ class TrackingEngine(
         if (fix != null && allZones(state).size > ZoneSelection.MAX_WATCHED) state = armZones(state, fix, false)
         local.save(state)
 
-        state = flushPending(uid, state)
-        state = publishPosition(uid, state, fix, now)
-        state = syncAccess(uid, state, now)
+        state = flushPending(uid, state, gate)
+        state = publishPosition(uid, state, fix, now, gate)
+        state = syncAccess(uid, state, now, gate)
         local.save(state)
         updateNetworkWake(state)
     }
@@ -602,7 +645,7 @@ class TrackingEngine(
         }
         var next = state.copyWith(miffs = miffs, inside = inside)
         local.save(next)
-        next = flushPending(uid, next)
+        next = flushPending(uid, next, WriteGate(recheck = false))
         local.save(next)
         updateNetworkWake(next)
         // "À chaque entrée détectée dans une zone, la liste est recalculée" (ticket 6.5), and the position is read again.
@@ -625,6 +668,7 @@ class TrackingEngine(
     private suspend fun flushPending(
         uid: String,
         start: LocalState,
+        gate: WriteGate,
     ): LocalState {
         var state = start
         var served: String? = null
@@ -650,13 +694,18 @@ class TrackingEngine(
                 journal.record(JournalKind.STATUS_WAITING, pending.placeId)
                 continue
             }
+            // SESS-2: no identifier of session = nothing is written (replaced, or the server could not be asked): the status keeps waiting.
+            val deviceId = gate.deviceId()
+            if (deviceId == null) {
+                journal.record(JournalKind.STATUS_WAITING, pending.placeId)
+                continue
+            }
             served = miffId
             val access = accessNow()
-            var outcome = writeStatus(uid, miffId, fact, at, access, alsoLastUpdate = fact.setLastUpdate)
-            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED && !fact.setLastUpdate) {
-                // `lastUpdateAt` kept from long ago is refused by the rules (more than 24 h): it is moved to the time of this event (ticket 6.6).
-                outcome = writeStatus(uid, miffId, fact, at, access, alsoLastUpdate = true)
-            }
+            // R-LIEU-1 (deployed): the update leaves `presenceAt` / `lastUpdateAt` alone unless the event changes them (the stored `lastUpdateAt` is accepted whatever its
+            // age), so a refusal is never answered by writing the time of the event into `lastUpdateAt`.
+            val outcome = writeStatus(uid, miffId, fact, at, access, deviceId)
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
             state =
                 when (outcome) {
                     is Guarded.Value -> {
@@ -696,24 +745,27 @@ class TrackingEngine(
         fact: StatusFact,
         at: Long,
         access: LocationAccess,
-        alsoLastUpdate: Boolean,
+        deviceId: String,
     ): Guarded<Unit> =
         guardedCall(timeoutMillis) {
-            store.commit(
-                listOf(TrackingWrites.statusUpdate(miffId, uid, fact, at, env.batteryPct(), access, alsoLastUpdate)),
+            val battery = env.batteryPct()
+            store.commitStatus(
+                update = TrackingWrites.statusUpdate(miffId, uid, fact, at, battery, access, deviceId),
+                // Only used when the status was deleted meanwhile: a complete first status, with recent times.
+                create = TrackingWrites.statusCreate(miffId, uid, fact, at, battery, access, deviceId),
             )
         }
 
     /**
      * The access to the location changed (the permission was withdrawn, the location of the phone switched off): written once per change, with the
-     * battery; never the presence (ticket 6.7). LIMIT (rule R-LIEU-1, accepted by the PM, not delivered yet): the rules refuse an update of a status whose
-     * `presenceAt` / `lastUpdateAt` is more than 24 h old. Such a refusal is marked as done (no loop), so for someone who stayed more than 24 h in the same
-     * place the server keeps `background` / `in_trusted` after a withdrawal of "Toujours" until the next event rewrites it.
+     * battery; never the presence (ticket 6.7). The update sends neither `presenceAt` nor `lastUpdateAt`, so (rule R-LIEU-1, deployed) it passes even for someone
+     * who stayed more than 24 h in the same place. Whatever the answer, it is not tried again until the access changes again (no loop).
      */
     private suspend fun syncAccess(
         uid: String,
         start: LocalState,
         now: Long,
+        gate: WriteGate,
     ): LocalState {
         val access = accessNow()
         var state = start
@@ -725,10 +777,13 @@ class TrackingEngine(
             }
             val day = WriteBreaker.dayKey(now)
             if (!WriteBreaker.canWriteStatus(state.breaker?.toState(), day) || !env.isOnline()) continue
+            // SESS-2: without the identifier of the session nothing is written, and the change stays to be told (the access is not marked as done).
+            val deviceId = gate.deviceId() ?: continue
             val outcome =
                 guardedCall(timeoutMillis) {
-                    store.commit(listOf(TrackingWrites.accessUpdate(miffId, uid, env.batteryPct(), access)))
+                    store.commit(listOf(TrackingWrites.accessUpdate(miffId, uid, env.batteryPct(), access, deviceId)))
                 }
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
             state =
                 when (outcome) {
                     is Guarded.Value -> {
@@ -756,6 +811,7 @@ class TrackingEngine(
         start: LocalState,
         fix: Fix?,
         now: Long,
+        gate: WriteGate,
     ): LocalState {
         if (fix == null) return start
         val measuredAt = EventTime.forWrite(fix.measuredAtMillis, now) ?: return start
@@ -775,11 +831,14 @@ class TrackingEngine(
                 continue
             }
             if (!env.isOnline()) continue
+            // SESS-2: a position never leaves a phone that does not hold the session (it would tell the loved ones where the OLD phone is).
+            val deviceId = gate.deviceId() ?: continue
             served = miffId
             val outcome =
                 guardedCall(timeoutMillis) {
-                    store.commit(listOf(TrackingWrites.position(miffId, uid, fix.lat, fix.lng, measuredAt)))
+                    store.commit(listOf(TrackingWrites.position(miffId, uid, fix.lat, fix.lng, measuredAt, deviceId)))
                 }
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
             state =
                 when (outcome) {
                     is Guarded.Value -> {

@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.permission.PermissionSnapshot
+import com.tomessa.miff.testsupport.DEVICE_A
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -125,11 +126,29 @@ class TrackingLimitsTest {
     @Test
     fun aStatusUpdate_hasNoCoordinate_andOnlyTheFieldsThatChange() {
         val fact = StatusFact(PresenceValue.OUT, "home", now - 5 * minute, setLastUpdate = false)
-        val write = TrackingWrites.statusUpdate("miffA", "uid1", fact, now - 5 * minute, 80, LocationAccess.BACKGROUND)
+        val write =
+            TrackingWrites.statusUpdate(
+                "miffA",
+                "uid1",
+                fact,
+                now - 5 * minute,
+                80,
+                LocationAccess.BACKGROUND,
+                DEVICE_A,
+            )
         assertEquals("miffs/miffA/status/uid1", write.path)
         assertEquals(WriteKind.UPDATE, write.kind)
         assertEquals(
-            setOf("presence", "placeId", "presenceAt", "batteryPct", "locationAccess", "escalationDueAt", "updatedAt"),
+            setOf(
+                "presence",
+                "placeId",
+                "presenceAt",
+                "batteryPct",
+                "locationAccess",
+                "escalationDueAt",
+                "updatedAt",
+                "deviceId",
+            ),
             write.data.keys,
         )
         // updateText, hasPhoto and lastUpdateAt are NOT in the update: they stay as the person left them.
@@ -146,7 +165,7 @@ class TrackingLimitsTest {
     @Test
     fun anArrivalInATrustedZone_alsoMovesTheLastUpdate_toTheEventTime() {
         val fact = StatusFact(PresenceValue.IN_TRUSTED, "home", now, setLastUpdate = true)
-        val write = TrackingWrites.statusUpdate("miffA", "uid1", fact, now, null, LocationAccess.BACKGROUND)
+        val write = TrackingWrites.statusUpdate("miffA", "uid1", fact, now, null, LocationAccess.BACKGROUND, DEVICE_A)
         assertEquals(Timestamp(java.util.Date(now)), write.data["lastUpdateAt"])
         assertNull(write.data["batteryPct"])
     }
@@ -154,22 +173,24 @@ class TrackingLimitsTest {
     @Test
     fun aBatteryOutOfRange_isNotWritten() {
         val fact = StatusFact(PresenceValue.OUT, "home", now, false)
-        assertNull(TrackingWrites.statusUpdate("m", "u", fact, now, 140, LocationAccess.BACKGROUND).data["batteryPct"])
-        assertNull(TrackingWrites.statusUpdate("m", "u", fact, now, -1, LocationAccess.BACKGROUND).data["batteryPct"])
+        val tooHigh = TrackingWrites.statusUpdate("m", "u", fact, now, 140, LocationAccess.BACKGROUND, DEVICE_A)
+        val negative = TrackingWrites.statusUpdate("m", "u", fact, now, -1, LocationAccess.BACKGROUND, DEVICE_A)
+        assertNull(tooHigh.data["batteryPct"])
+        assertNull(negative.data["batteryPct"])
     }
 
     @Test
     fun anAccessUpdate_changesTheAccessAndTheBatteryOnly() {
-        val write = TrackingWrites.accessUpdate("m", "u", 50, LocationAccess.FOREGROUND)
-        assertEquals(setOf("batteryPct", "locationAccess", "updatedAt"), write.data.keys)
+        val write = TrackingWrites.accessUpdate("m", "u", 50, LocationAccess.FOREGROUND, DEVICE_A)
+        assertEquals(setOf("batteryPct", "locationAccess", "updatedAt", "deviceId"), write.data.keys)
     }
 
     @Test
     fun thePosition_isLatLngAndTheMeasureTime_withFiveDecimals_nothingElse() {
-        val write = TrackingWrites.position("miffA", "uid1", 48.856614123, 2.352222987, now)
+        val write = TrackingWrites.position("miffA", "uid1", 48.856614123, 2.352222987, now, DEVICE_A)
         assertEquals("miffs/miffA/positions/uid1", write.path)
         assertEquals(WriteKind.SET, write.kind)
-        assertEquals(setOf("lat", "lng", "measuredAt"), write.data.keys)
+        assertEquals(setOf("lat", "lng", "measuredAt", "deviceId"), write.data.keys)
         assertEquals(48.85661, write.data["lat"] as Double, 0.0)
         assertEquals(2.35222, write.data["lng"] as Double, 0.0)
         assertEquals(Timestamp(java.util.Date(now)), write.data["measuredAt"])

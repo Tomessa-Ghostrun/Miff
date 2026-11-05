@@ -64,7 +64,11 @@ import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.data.profile.CurrentProfile
 import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
 import com.tomessa.miff.data.profile.MyProfileRepository
+import com.tomessa.miff.data.session.Clearance
+import com.tomessa.miff.data.session.DeviceSession
+import com.tomessa.miff.data.session.FirestoreSessionDocuments
 import com.tomessa.miff.data.session.SessionManager
+import com.tomessa.miff.data.session.SharedPreferencesDeviceIdStore
 import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
@@ -189,6 +193,22 @@ class AppContainer(
     val cachePurger: CachePurger by lazy { FirestoreCachePurger(flags = sessionFlags) }
 
     /**
+     * SESS-2, "un compte, un seul appareil": the session of this phone (identifier in a private file not backed up, document `users/{uid}/session/active`).
+     * Used by the session manager (sign-in, launch, sign-out), by the detection engine and the Miff repository (nothing is written without it) and by the
+     * deletion of a Miff. `onReplaced` only schedules the forced sign-out (the engine that may be calling must be able to release its lock).
+     */
+    val deviceSession: DeviceSession by lazy {
+        DeviceSession(
+            ids = SharedPreferencesDeviceIdStore(context),
+            documents = FirestoreSessionDocuments(),
+            network = networkMonitor,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            onReplaced = { sessionManager.onDeviceReplaced() },
+        )
+    }
+
+    /**
      * Create, join, rename, stop / resume sharing, clean-up after a loss of access, live view of a Miff (Miff ticket).
      * Built on first use. Constructing it never reaches Firestore (the store and the observer take it through a function,
      * only called when a request is made), and every request comes from a screen shown after [MiffApplication.startSession]
@@ -201,6 +221,7 @@ class AppContainer(
             store = miffStore,
             observer = FirestoreMiffObserver(),
             location = AndroidLocationAccessProbe(context),
+            device = deviceSession,
             cache = cachePurger,
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
@@ -250,6 +271,7 @@ class AppContainer(
             geofences = PlayGeofenceArming(context),
             movement = FusedMovementUpdates(context),
             networkWake = ConnectivityNetworkWake(context),
+            device = deviceSession,
             journal = detectionJournal,
             // What the end of a session stopped stays stopped until the session changes (a lambda: the session manager lists this engine in its teardown).
             generation = { sessionManager.generation },
@@ -311,6 +333,8 @@ class AppContainer(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
             onStarted = miffDirectory::expectDeparture,
             onDeleted = { miffId -> onMiffLeft(miffId) },
+            // SESS-2: a phone that was replaced stops a deletion it started (the rules do not look at deletions).
+            replaced = { deviceSession.clearance(recheck = false) is Clearance.Replaced },
         )
     }
 
@@ -388,6 +412,7 @@ class AppContainer(
                         mapTileCache,
                     ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+                device = deviceSession,
                 drafts = profileDrafts,
                 withdrawals = pendingWithdrawals,
                 onAccountResolved = consentWithdrawals::resume,

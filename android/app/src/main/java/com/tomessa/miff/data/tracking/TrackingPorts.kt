@@ -1,6 +1,7 @@
 package com.tomessa.miff.data.tracking
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.SharingConsentRead
@@ -83,6 +84,23 @@ interface TrackingStore {
     suspend fun places(miffId: String): List<PlaceFact>
 
     suspend fun commit(writes: List<DocWrite>)
+
+    /**
+     * The automatic status of one event: the [update] (partial, nothing else of the document is touched); if the status does not exist any more (deleted
+     * meanwhile: Firestore answers NOT_FOUND), the [create] instead, a complete first status with recent times (R-LIEU-1: nothing old is written back).
+     * Any other failure, a refusal included, is the caller's to handle.
+     */
+    suspend fun commitStatus(
+        update: DocWrite,
+        create: DocWrite,
+    ) {
+        try {
+            commit(listOf(update))
+        } catch (e: FirebaseFirestoreException) {
+            if (e.code != FirebaseFirestoreException.Code.NOT_FOUND) throw e
+            commit(listOf(create))
+        }
+    }
 }
 
 class FirestoreTrackingStore(
