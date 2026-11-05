@@ -20,7 +20,14 @@ final class MiffWritesTests: XCTestCase {
         access: LocationAccess = .unknown,
         profile customProfile: ProfileCopy? = nil
     ) -> MiffEntry {
-        MiffEntry(uid: uid, miffId: miffId, membershipKey: key, profile: customProfile ?? profile, access: access)
+        MiffEntry(
+            uid: uid,
+            miffId: miffId,
+            membershipKey: key,
+            profile: customProfile ?? profile,
+            access: access,
+            deviceId: testDeviceId
+        )
     }
 
     private func write(_ writes: [DocWrite], _ path: String) throws -> DocWrite {
@@ -118,9 +125,10 @@ final class MiffWritesTests: XCTestCase {
             Set(status.keys),
             [
                 "presence", "placeId", "presenceAt", "lastUpdateAt", "updateText", "hasPhoto", "batteryPct",
-                "locationAccess", "escalationDueAt", "updatedAt"
+                "locationAccess", "escalationDueAt", "updatedAt", "deviceId"
             ]
         )
+        XCTAssertEqual(status["deviceId"], .string(testDeviceId))
         XCTAssertEqual(status["presence"], .string("unknown"))
         XCTAssertEqual(status["locationAccess"], .string("foreground"))
         XCTAssertEqual(status["hasPhoto"], .bool(false))
@@ -139,7 +147,7 @@ final class MiffWritesTests: XCTestCase {
             + MiffWrites.join(entry: entry(), code: code)
             + MiffWrites.rename(miffId: miffId, code: code, name: "Nouveau")
             + MiffWrites.stopSharing(miffId: miffId, uid: uid)
-            + MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .unknown)
+            + MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .unknown, deviceId: testDeviceId)
             + MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: "free")
 
         for item in all {
@@ -214,7 +222,7 @@ final class MiffWritesTests: XCTestCase {
     }
 
     func testResumeSharingWritesANewConsentAndTheInitialStatus() throws {
-        let writes = MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .background)
+        let writes = MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .background, deviceId: testDeviceId)
 
         XCTAssertEqual(writes.count, 2)
         let card = try write(writes, "miffs/\(miffId)/members/\(uid)")
@@ -227,6 +235,7 @@ final class MiffWritesTests: XCTestCase {
         XCTAssertEqual(status.kind, .set)
         XCTAssertEqual(status.data["presence"], .string("unknown"))
         XCTAssertEqual(status.data["locationAccess"], .string("background"))
+        XCTAssertEqual(status.data["deviceId"], .string(testDeviceId))
     }
 
     // MARK: - Nettoyage

@@ -23,7 +23,7 @@ struct ScreenPreview: View {
             WelcomeCarouselView(initialPage: 2, onStart: ignoreAction, onHaveAccount: ignoreAction)
         case "signup", "signup-loading", "signup-in-use":
             SignUpContent(state: signUpState, onBack: ignoreAction, actions: actions)
-        case "signin", "signin-error", "signin-note":
+        case "signin", "signin-error", "signin-note", "signin-session-replaced":
             SignInContent(state: signInState, onBack: ignoreAction, actions: actions)
         case "reset", "reset-sent":
             PasswordResetContent(
@@ -82,6 +82,8 @@ struct ScreenPreview: View {
             return SignInUiState(message: .invalidCredentials)
         case "signin-note":
             return SignInUiState(showAccountNotCreatedNote: true)
+        case "signin-session-replaced":
+            return SignInUiState(showSessionReplacedNote: true)
         default:
             return SignInUiState()
         }

@@ -71,6 +71,9 @@ struct MiffEntry {
     let membershipKey: String
     let profile: ProfileCopy
     let access: LocationAccess
+    /// L'identifiant de la session de cet appareil, CONFIRMÉ par le serveur (`DeviceSession.currentDeviceId`) : il part dans le
+    /// premier statut du lot (SESS-3). Un identifiant mal formé fait refuser le lot avant envoi.
+    let deviceId: String
 }
 
 /// Les lots du ticket Miff §5.4, §5.7 et §5.13, en données : testés sans Firestore, appliqués chacun par UNE transaction. Un
@@ -88,20 +91,24 @@ enum MiffWrites {
 
     /// Le premier statut, écrit dans le même lot que le consentement : « unknown » (jamais « tout va bien » avant un vrai
     /// signal), la permission du téléphone telle qu'elle est, aucune coordonnée. Sans lui la personne ne pourrait pas lire
-    /// les autres (backend/data-model.md §8, réciprocité).
-    static func initialStatus(_ access: LocationAccess) -> [String: FieldValueSpec] {
-        [
-            "presence": .string("unknown"),
-            "placeId": .null,
-            "presenceAt": .serverTimestamp,
-            "lastUpdateAt": .serverTimestamp,
-            "updateText": .null,
-            "hasPhoto": .bool(false),
-            "batteryPct": .null,
-            "locationAccess": .string(access.rawValue),
-            "escalationDueAt": .null,
-            "updatedAt": .serverTimestamp
-        ]
+    /// les autres (backend/data-model.md §8, réciprocité). Il porte `deviceId`, l'identifiant de la session de cet appareil : les
+    /// règles le comparent à `users/{uid}/session/active` (SESS-1, un compte, un seul appareil).
+    static func initialStatus(_ access: LocationAccess, deviceId: String) -> [String: FieldValueSpec] {
+        SessionWriteGuard.stamped(
+            [
+                "presence": .string("unknown"),
+                "placeId": .null,
+                "presenceAt": .serverTimestamp,
+                "lastUpdateAt": .serverTimestamp,
+                "updateText": .null,
+                "hasPhoto": .bool(false),
+                "batteryPct": .null,
+                "locationAccess": .string(access.rawValue),
+                "escalationDueAt": .null,
+                "updatedAt": .serverTimestamp
+            ],
+            deviceId: deviceId
+        )
     }
 
     private static func card(role: MiffRole, profile: ProfileCopy, joinCode: String?) -> [String: FieldValueSpec] {
@@ -130,7 +137,7 @@ enum MiffWrites {
     /// « Créer et partager » : 5 écritures en UN lot (critère C4).
     static func create(entry: MiffEntry, code: String, name: String) -> [DocWrite] {
         let stored = MiffName.stored(name)
-        guard JoinCode.isValid(code), MiffName.isValid(stored) else {
+        guard JoinCode.isValid(code), MiffName.isValid(stored), DeviceId.isValid(entry.deviceId) else {
             return []
         }
         let miffId = entry.miffId
@@ -157,13 +164,17 @@ enum MiffWrites {
                 data: card(role: .owner, profile: entry.profile, joinCode: nil)
             ),
             DocWrite(path: "users/\(uid)/memberships/\(entry.membershipKey)", kind: .set, data: index(miffId)),
-            DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .set, data: initialStatus(entry.access))
+            DocWrite(
+                path: "miffs/\(miffId)/status/\(uid)",
+                kind: .set,
+                data: initialStatus(entry.access, deviceId: entry.deviceId)
+            )
         ]
     }
 
     /// « Rejoindre et partager » : 3 écritures en UN lot (critère K2).
     static func join(entry: MiffEntry, code: String) -> [DocWrite] {
-        guard JoinCode.isValid(code) else {
+        guard JoinCode.isValid(code), DeviceId.isValid(entry.deviceId) else {
             return []
         }
         let miffId = entry.miffId
@@ -175,7 +186,11 @@ enum MiffWrites {
                 data: card(role: .member, profile: entry.profile, joinCode: code)
             ),
             DocWrite(path: "users/\(uid)/memberships/\(entry.membershipKey)", kind: .set, data: index(miffId)),
-            DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .set, data: initialStatus(entry.access))
+            DocWrite(
+                path: "miffs/\(miffId)/status/\(uid)",
+                kind: .set,
+                data: initialStatus(entry.access, deviceId: entry.deviceId)
+            )
         ]
     }
 
@@ -207,8 +222,11 @@ enum MiffWrites {
     }
 
     /// Reprendre le partage (critère K6) : un nouveau consentement (date et version) et le premier statut de nouveau.
-    static func resumeSharing(miffId: String, uid: String, access: LocationAccess) -> [DocWrite] {
-        [
+    static func resumeSharing(miffId: String, uid: String, access: LocationAccess, deviceId: String) -> [DocWrite] {
+        guard DeviceId.isValid(deviceId) else {
+            return []
+        }
+        return [
             DocWrite(
                 path: "miffs/\(miffId)/members/\(uid)",
                 kind: .update,
@@ -219,7 +237,7 @@ enum MiffWrites {
                     "sharing.revokedAt": .null
                 ]
             ),
-            DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .set, data: initialStatus(access))
+            DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .set, data: initialStatus(access, deviceId: deviceId))
         ]
     }
 

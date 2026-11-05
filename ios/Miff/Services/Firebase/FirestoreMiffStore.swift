@@ -32,11 +32,17 @@ enum FirestoreFieldConversion {
 
 extension MiffRepositoryRules {
     /// Les règles de l'app : l'identifiant d'une nouvelle Miff vient du SDK (20 lettres et chiffres, tiré en local, aucun
-    /// réseau), le code d'un tirage cryptographique, l'heure de l'horloge du téléphone.
-    static func live() -> MiffRepositoryRules {
-        MiffRepositoryRules(newMiffId: {
-            Firestore.firestore().collection("miffs").document().documentID
-        })
+    /// réseau), le code d'un tirage cryptographique, l'heure de l'horloge du téléphone. `deviceId` et `recheckSession` viennent de la
+    /// session de l'appareil (SESS-3).
+    static func live(
+        deviceId: @escaping () -> String?,
+        recheckSession: @escaping () async -> Void
+    ) -> MiffRepositoryRules {
+        MiffRepositoryRules(
+            newMiffId: { Firestore.firestore().collection("miffs").document().documentID },
+            deviceId: deviceId,
+            recheckSession: recheckSession
+        )
     }
 }
 
@@ -160,7 +166,8 @@ final class FirestoreMiffStore: MiffStore {
                     return nil
                 }
                 let writes = build(profile)
-                guard !writes.isEmpty else {
+                // Un lot vide, ou un statut / une position sans l'identifiant de session (SESS-3), n'est jamais envoyé.
+                guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes) else {
                     errorPointer?.pointee = NSError(domain: InvalidWriteError.domain, code: 1)
                     return nil
                 }
@@ -173,7 +180,8 @@ final class FirestoreMiffStore: MiffStore {
     }
 
     func commit(_ writes: [DocWrite]) async throws {
-        guard !writes.isEmpty else {
+        // Un statut ou une position sans l'identifiant de la session (SESS-3) n'est jamais envoyé : contrat I-1 de SESS-1.
+        guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes) else {
             throw InvalidWriteError()
         }
         let database = try firestore()
