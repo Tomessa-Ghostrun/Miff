@@ -112,12 +112,12 @@ final class MiffRepositoryMemberActionsTests: XCTestCase {
         XCTAssertTrue(store.commitsAsLots.isEmpty)
     }
 
-    func testWhenTheOldCodeDocumentIsMissingTheLotHasFiveWrites() async {
+    func testWhenTheOldCodeDocumentIsMissingTheLotHasSixWrites() async {
         store.codeDocumentExists = false
 
         _ = await repo().removeMember(miffId: testMiffId, targetUid: "uid-2")
 
-        XCTAssertEqual(store.commitsAsLots.first?.count, 5)
+        XCTAssertEqual(store.commitsAsLots.first?.count, 6)
     }
 
     func testAnIdentifierThatCouldLeaveItsPathWritesNothing() async {

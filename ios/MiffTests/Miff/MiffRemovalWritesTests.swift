@@ -42,10 +42,10 @@ final class MiffRemovalWritesTests: XCTestCase {
             miffId: miffId, targetUid: "uid-2", name: "Chez nous", oldCode: oldCode, newCode: newCode
         )
 
-        XCTAssertEqual(lot[3].data, ["joinCode": .string(newCode)])
-        XCTAssertEqual(lot[4].data["miffId"], .string(miffId))
-        XCTAssertEqual(lot[4].data["miffName"], .string("Chez nous"))
-        XCTAssertEqual(Set(lot[4].data.keys), ["miffId", "miffName", "createdAt"])
+        XCTAssertEqual(lot[4].data, ["joinCode": .string(newCode)])
+        XCTAssertEqual(lot[5].data["miffId"], .string(miffId))
+        XCTAssertEqual(lot[5].data["miffName"], .string("Chez nous"))
+        XCTAssertEqual(Set(lot[5].data.keys), ["miffId", "miffName", "createdAt"])
     }
 
     func testARemovalThatKeepsTheCodeOrUsesAMalformedOneIsRefusedBeforeAnyLotIsBuilt() {
@@ -78,7 +78,7 @@ final class MiffRemovalWritesTests: XCTestCase {
             oldCodeExists: false
         )
 
-        XCTAssertEqual(lot.count, 5)
+        XCTAssertEqual(lot.count, 6)
         XCTAssertFalse(lot.contains { $0.path == "joinCodes/\(oldCode)" })
     }
 

@@ -163,7 +163,11 @@ final class MiffDeletionTests: XCTestCase {
         let result = await deletion().run(uid: uid, miffId: testMiffId)
 
         XCTAssertEqual(result, .deleted)
-        XCTAssertEqual(paths, ["users/\(uid)/memberships/free"])
+        // Le repli emporte aussi une dernière position connue laissée par un retrait d'un build plus ancien.
+        XCTAssertEqual(
+            paths,
+            ["miffs/\(testMiffId)/positions/\(uid)", "users/\(uid)/memberships/free"]
+        )
     }
 
     func testWhenTheMiffIsRefusedButTheServerCannotBeTrustedNothingIsConcluded() async {

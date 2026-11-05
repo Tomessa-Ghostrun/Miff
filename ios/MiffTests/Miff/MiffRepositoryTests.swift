@@ -180,7 +180,10 @@ final class MiffRepositoryTests: XCTestCase {
             return XCTFail("l'entrée devrait continuer")
         }
         XCTAssertEqual(store.commitsAsLots.count, 1, "seul le lot qui est passé est enregistré")
-        XCTAssertEqual(store.commitsAsLots.first?.map { $0.path }, ["users/\(uid)/memberships/free"])
+        XCTAssertEqual(
+            store.commitsAsLots.first?.map { $0.path },
+            ["miffs/\(testOtherMiffId)/positions/\(uid)", "users/\(uid)/memberships/free"]
+        )
         XCTAssertEqual(commitCount(), 2)
     }
 
@@ -524,7 +527,8 @@ final class MiffRepositoryTests: XCTestCase {
         let second = await repo().cleanUpLost(uid: uid, lost: lost)
 
         XCTAssertTrue(second)
-        XCTAssertEqual(store.commitsAsLots.first?.count, 1)
+        // Le repli : la dernière position connue (si un retrait plus ancien en a laissé une) et l'index.
+        XCTAssertEqual(store.commitsAsLots.first?.count, 2)
     }
 
     func testAStaleIndexCleanedWhileCreatingOrJoiningNeverLeavesThatMiffReadableOffline() async {
