@@ -241,3 +241,12 @@ test('BUDGET - R-LIEU-1 : la conservation des horodatages du statut ne coûte au
   assert.match(body, /resource != null && resource\.data\.get\(key, null\) == v/);
   assert.doesNotMatch(body.replace('resource.data.get(', ''), /\b(get|getAfter|exists|existsAfter)\(/);
 });
+
+test('BUDGET - SESS-1 (M-4) : activer le partage + statut + position = 5 par Miff : 3 Miffs au plus par lot (15 sur 20), 4 = 20 sans marge', () => {
+  const parMiff = DOCUMENTED.activerPartageStatutPosition;
+  assert.equal(parMiff, 5);
+  assert.equal(3 * parMiff, 15);
+  assert.ok(LIMIT - 3 * parMiff >= 2);
+  assert.equal(4 * parMiff, 20); // aucune marge : le client ne dépasse pas 3
+  assert.ok(5 * parMiff > LIMIT);
+});

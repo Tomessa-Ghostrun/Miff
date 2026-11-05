@@ -8,7 +8,7 @@
 //     seule, renouvellement du consentement.
 import {
   ID, CODE, T0, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs,
-  FieldPath, Timestamp, DAY, statusDoc, statusInitial, photoDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
+  FieldPath, FieldValue, Timestamp, DAY, statusDoc, statusInitial, photoDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
   joinShareOps, createShareOps, leaveOps, removeMemberOps, placeInput,
   DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH,
 } from '../helpers/fixtures.js';
@@ -262,4 +262,22 @@ s.tc('SE18', "R-LIEU-1 et SESS-1 ensemble : un statut ANCIEN (plus de 24 h) mis 
   await writeSession(h, 'bob', DEVICE_B); // un autre appareil prend la place
   await assertFails(depart(DEVICE_A));
   await assertSucceeds(depart(DEVICE_B, { presenceAt: Timestamp.fromMillis(Date.now() - 30_000) }));
+});
+
+s.tc('SE19', "limite connue (temps 1) : un update qui RETIRE la clé deviceId (FieldValue.delete) passe, car une écriture sans la clé est acceptée au temps 1", async (h) => {
+  await seedSession(h, 'bob', DEVICE_A);
+  await assertSucceeds(status(h, 'bob', { deviceId: DEVICE_A }));
+  await writeSession(h, 'bob', DEVICE_B); // l'appareil A est remplacé
+  await assertSucceeds(h.db('bob').doc(`${M1}/status/bob`).update({ deviceId: FieldValue.delete(), presence: 'out', updatedAt: serverTs() }));
+  if ('deviceId' in (await read(h, `${M1}/status/bob`))) throw new Error('la clé devait être retirée');
+});
+
+s.tc('SE20', "ancienne application sur un compte déjà passé par une application SESS puis déconnecté (session supprimée, clé encore en base) : mise à jour partielle refusée jusqu'à un set complet sans la clé", async (h) => {
+  await seedSession(h, 'bob', DEVICE_A);
+  await assertSucceeds(status(h, 'bob', { deviceId: DEVICE_A }));
+  await assertSucceeds(h.db('bob').doc(SESSION_PATH('bob')).delete()); // déconnexion volontaire de l'application SESS
+  const partial = () => h.db('bob').doc(`${M1}/status/bob`).update({ hasPhoto: false, updatedAt: serverTs() }); // ancienne application : n'envoie pas la clé
+  await assertFails(partial()); // le document résultant garde la clé, la session n'existe plus
+  await assertSucceeds(status(h, 'bob')); // set complet sans la clé : accepté (temps 1)
+  await assertSucceeds(partial()); // plus de clé en base : les mises à jour partielles repassent
 });

@@ -42,8 +42,7 @@ export const SESSION_MUTATIONS = [
   mut('SS2-identifiant-separateur', "l'identifiant peut contenir « / » (séparateur de chemin)",
     [edit("'^[A-Za-z0-9_-]{16,64}$'", "'^[A-Za-z0-9_/-]{16,64}$'")], ['SE2']),
   mut('SS2-identifiant-type', "l'identifiant peut ne pas être un texte",
-    [edit("return v is string && v.matches('^[A-Za-z0-9_-]{16,64}$');", "return !(v is string) || v.matches('^[A-Za-z0-9_-]{16,64}$');")], ['SE2'],
-    "matches() sur une valeur non textuelle est une erreur d'évaluation => refus quand même (le contrôle de type est redondant)"),
+    [edit("return v is string && v.matches('^[A-Za-z0-9_-]{16,64}$');", "return !(v is string) || v.matches('^[A-Za-z0-9_-]{16,64}$');")], ['SE2']),
   mut('SS2-session-heure-client', "l'heure de début peut être fournie par le client",
     [edit('&& d.startedAt == request.time;', '&& d.startedAt is timestamp;')], ['SE2']),
 

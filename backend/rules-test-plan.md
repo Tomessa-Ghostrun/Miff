@@ -492,6 +492,8 @@ Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (prop
 | SE16 | **Limite connue** : un membre autorisé lit le statut de `bob` avec son `deviceId` ; un étranger ne lit rien | OK ; KO |
 | SE17 | Régression : les écritures SANS `deviceId` d'avant (rejoindre, créer, statut invalide, batterie 101, clé en plus avec ou sans `deviceId`) | comme avant : OK / KO selon le cas |
 | SE18 | R-LIEU-1 + SESS-1 ensemble : statut de plus de 24 h, départ en mise à jour partielle avec `lastUpdateAt` ancien conservé : mauvais `deviceId`, `deviceId` nul, nouvelle valeur ancienne avec le bon `deviceId`, bon `deviceId` ; puis un autre appareil prend la place | KO ; KO ; KO ; OK (heure conservée) ; ancien appareil KO, nouveau OK |
+| SE19 | **Limite connue (temps 1)** : un `update` qui retire la clé `deviceId` (`FieldValue.delete()`) après remplacement de l'appareil | OK (refusé au temps 2 : SF11) |
+| SE20 | Ancienne application sur un compte déjà passé par une application SESS puis déconnecté (session supprimée, clé en base) : mise à jour partielle sans la clé ; `set` complet sans la clé ; mise à jour partielle ensuite | KO ; OK ; OK |
 | SF1 | Garde-fou : la bascule du temps 2 change exactement UNE ligne de `firestore.rules` | OK |
 | SF2 | Temps 2 : statut sans `deviceId` (avec ou sans session), avec un faux, avec `null` ; avec le bon ; mise à jour avec le bon | KO ; KO ; KO ; OK ; OK |
 | SF3 | Temps 2 : position sans `deviceId`, avec un faux (appareil remplacé), avec le bon | KO ; KO ; OK |
@@ -502,6 +504,8 @@ Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (prop
 | SF8 | Temps 2 : la session s'écrit avant tout statut, un nouvel appareil prend la place | OK ; l'ancien refusé ; le nouveau OK |
 | SF9 | **Limite connue** : mise à jour PARTIELLE sans `deviceId`, jugée sur le document résultant | OK si la valeur en base est celle de la session ; KO si elle est périmée ; OK de nouveau quand l'appareil actif a écrit |
 | SF10 | Temps 2 + R-LIEU-1 : statut ancien sans `deviceId` en base, départ partiel sans clé, avec un faux, avec le bon | KO ; KO ; OK |
+| SF11 | Temps 2 : `update` qui retire la clé ; recréation du statut après suppression sans la clé, avec une fausse, avec la bonne | KO ; KO ; KO ; OK |
+| SF12 | Temps 2 : lot mixte statut avec la clé + position sans la clé (puis avec une fausse) ; puis les deux avec la bonne | KO en entier, rien d'écrit ; KO ; OK |
 | SV1 | Sonde (voie 1, écartée) : `request.auth.token.auth_time` est un entier utilisable dans une règle (l'écriture n'accepte que l'`auth_time` du jeton) | OK |
 | SV2 | Sonde : deux jetons de `auth_time` différents ; seul celui de la session passe | OK / KO |
 | SV3 | Sonde, limite : deux connexions de même `auth_time` (même seconde) ne sont pas distinguées | OK pour les deux |

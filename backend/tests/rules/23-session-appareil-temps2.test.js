@@ -3,7 +3,7 @@
 // ce fichier prouve que le deuxième déploiement ne demande aucune autre modification, ce qu'il refuse (les applications qui n'écrivent
 // pas encore la session) et ce qu'il continue d'accepter (tout ce qui n'est ni un statut ni une position).
 import {
-  ID, CODE, T0, Timestamp, DAY, suite, assertFails, assertSucceeds, commit, update, set, serverTs,
+  ID, CODE, T0, Timestamp, DAY, FieldValue, suite, assertFails, assertSucceeds, commit, update, set, serverTs,
   statusDoc, statusInitial, photoDoc, positionDoc, sharingOnNow, CONSENT_POSITION,
   joinShareOps, createShareOps, createMiffOps, joinOps, leaveOps, leaveWithPositionOps, removeMemberOps, placeInput,
   DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH, temps2, readRules, sharingOff,
@@ -124,4 +124,25 @@ s.tc('SF10', "temps 2 + R-LIEU-1 : un statut ancien sans deviceId en base est re
   await assertFails(depart());
   await assertFails(depart({ deviceId: DEVICE_B }));
   await assertSucceeds(depart({ deviceId: DEVICE_A }));
+});
+
+s.tc('SF11', "temps 2 : un update qui retire la clé deviceId (FieldValue.delete) est refusé, même avec une session ; recréer le statut après suppression sans la clé est refusé, avec la clé accepté", async (h) => {
+  await seedSession(h, 'bob', DEVICE_A);
+  await assertSucceeds(status(h, 'bob', { deviceId: DEVICE_A }));
+  await assertFails(h.db('bob').doc(`${M1}/status/bob`).update({ deviceId: FieldValue.delete(), presence: 'out', updatedAt: serverTs() }));
+  await assertSucceeds(h.db('bob').doc(`${M1}/status/bob`).delete());
+  await assertFails(status(h, 'bob')); // recréation sans la clé
+  await assertFails(status(h, 'bob', { deviceId: DEVICE_B }));
+  await assertSucceeds(status(h, 'bob', { deviceId: DEVICE_A }));
+});
+
+s.tc('SF12', "temps 2 : lot mixte, statut AVEC la clé + position SANS la clé = refusé en entier (rien n'est écrit) ; avec la clé sur les deux, accepté", async (h) => {
+  await seedSession(h, 'bob', DEVICE_A);
+  await setV3(h, 'bob');
+  const lot = (po) => [set(`${M1}/status/bob`, statusDoc({ presence: 'out', deviceId: DEVICE_A })), set(`${M1}/positions/bob`, positionDoc(po))];
+  await assertFails(commit(h.db('bob'), lot({})));
+  const snap = await h.admin(async (f) => { if ((await f.doc(`${M1}/positions/bob`).get()).exists) throw new Error('aucune position ne devait être écrite'); });
+  void snap;
+  await assertFails(commit(h.db('bob'), lot({ deviceId: DEVICE_B })));
+  await assertSucceeds(commit(h.db('bob'), lot({ deviceId: DEVICE_A })));
 });
