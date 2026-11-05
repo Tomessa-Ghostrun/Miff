@@ -160,7 +160,7 @@ s.tc('RL7', 'les autres bornes du statut ne bougent pas : escalationDueAt ancien
   await assertFails(write(h, { presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE, escalationDueAt: OLD_PRESENCE })); // R-LIEU-1 ne couvre pas escalationDueAt
   await assertSucceeds(write(h, { presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE, escalationDueAt: null }));
   const keep = { presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE };
-  await assertFails(write(h, { ...keep, updatedAt: Timestamp.now() })); // heure client
+  await assertFails(write(h, { ...keep, updatedAt: inMs(-2 * HOUR) })); // heure client (sans coïncidence possible avec l'heure du serveur, contrairement à Timestamp.now() sur une machine rapide)
   await assertFails(write(h, { ...keep, lat: 48.85 })); // coordonnée
   await assertFails(write(h, { ...keep, presence: 'banane' }));
   await assertFails(write(h, { ...keep, locationAccess: 'toujours' }));
