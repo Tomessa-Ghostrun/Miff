@@ -1,7 +1,7 @@
 // Plan de test, section 22 (suite) : localisation de la photo (R-PHOTO-LOC) au TEMPS 2 de SESS-1 (clé deviceId obligatoire dans le statut
 // et la position), cas PL17. Mêmes règles que firestore.rules avec la seule ligne du temps 2 basculée (voir `temps2` dans fixtures.js).
 import {
-  ID, suite, assertFails, assertSucceeds, commit, set, statusDoc, photoDoc, DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH, temps2,
+  ID, inMs, suite, assertFails, assertSucceeds, commit, set, statusDoc, photoDoc, DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH, temps2,
   CONSENT_POSITION,
 } from '../helpers/fixtures.js';
 
@@ -13,7 +13,7 @@ s.tc('PL17', "temps 2 : la photo (localisée ou non) ne porte toujours PAS de de
     await f.doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': CONSENT_POSITION });
     await f.doc(SESSION_PATH('bob')).set(sessionSeed(DEVICE_A));
   });
-  const photo = (over) => photoDoc({ lat: 48.85661, lng: 2.35222, ...over });
+  const photo = (over) => photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000), ...over });
   await assertSucceeds(h.db('bob').doc(`${M1}/photos/bob`).set(photo())); // photo seule localisée, sans clé : acceptée (comme SF5 pour la photo seule)
   await assertSucceeds(h.db('bob').doc(`${M1}/photos/bob`).set(photoDoc()));
   await assertFails(h.db('bob').doc(`${M1}/photos/bob`).set(photo({ deviceId: DEVICE_A }))); // schéma fermé : pas de deviceId dans la photo

@@ -111,7 +111,7 @@ export const DUR3_MUTATIONS = [
     [edit('&& d.jpeg.size() > 0', '&& true')],
     ['S16b']),
   mut('S16-photo-cles', 'une photo accepte des clés inconnues',
-    [edit("return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng'])", 'return true')],
+    [edit("return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])", 'return true')],
     ['S16b']),
   mut('S16-photo-createdAt-client', 'createdAt de la photo peut être une date client',
     [edit('&& d.createdAt == request.time', '&& true', 4, 4)],

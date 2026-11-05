@@ -1,9 +1,9 @@
-// Plan de test, section 22 : localisation de la photo d'update (R-PHOTO-LOC, décision du PM du 2026-11-05), cas PL1 à PL13.
-// Règles PRÉPARÉES et NON déployées. Le document photo accepte deux clés FACULTATIVES `lat` et `lng` (la position figée au moment de la
-// photo) ; elles sont effacées avec la photo ; une photo localisée n'est lisible que par son auteur ou par un membre qui a publié sa propre
+// Plan de test, section 22 : localisation de la photo d'update (R-PHOTO-LOC, décision du PM du 2026-11-05), cas PL1 à PL20.
+// Règles PRÉPARÉES et NON déployées. Le document photo accepte trois clés FACULTATIVES `lat`, `lng` et `measuredAt` (la position figée au moment de la
+// photo et l'heure de sa mesure, décision du PM du 2026-11-06 : measuredAt obligatoire avec la paire, interdite sans) ; elles sont effacées avec la photo ; une photo localisée n'est lisible que par son auteur ou par un membre qui a publié sa propre
 // position. Les applications actuelles (photo sans lat ni lng, photo supprimée dans les lots) ne doivent JAMAIS être refusées à tort.
 import {
-  ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, inMs, bytes,
+  ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, inMs, bytes, FieldValue,
   statusDoc, photoDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
   leaveOps, leaveWithPositionOps, removeMemberOps, removeMemberWithPositionOps,
   DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH, readRules,
@@ -24,7 +24,7 @@ const seedPositions = (h, ...uids) =>
   });
 /** Photo localisée déjà enregistrée (état injecté). */
 const seedLocPhoto = (h, uid, over = {}) =>
-  h.admin((f) => f.doc(`${M1}/photos/${uid}`).set(photoDoc({ createdAt: T0, lat: 48.85661, lng: 2.35222, ...over })));
+  h.admin((f) => f.doc(`${M1}/photos/${uid}`).set(photoDoc({ createdAt: T0, lat: 48.85661, lng: 2.35222, measuredAt: T0, ...over })));
 const seedPlainPhoto = (h, uid, over = {}) => h.admin((f) => f.doc(`${M1}/photos/${uid}`).set(photoDoc({ createdAt: T0, ...over })));
 const docExists = async (h, path) => {
   let found;
@@ -34,7 +34,11 @@ const docExists = async (h, path) => {
   return found;
 };
 const photoRef = (h, as, of = as) => h.db(as).doc(`${M1}/photos/${of}`);
-const loc = (over = {}) => ({ lat: 48.85661, lng: 2.35222, ...over });
+const MIN = 60_000;
+/** Heure de mesure récente (une minute avant la photo). */
+const mAt = () => inMs(-MIN);
+/** Localisation telle qu'un client l'écrit : la paire lat / lng ET l'heure de la mesure (R-PHOTO-LOC, décision du PM du 2026-11-06). */
+const loc = (over = {}) => ({ lat: 48.85661, lng: 2.35222, measuredAt: mAt(), ...over });
 const bobRevoke = () => ({ enabled: false, consentedAt: T0, consentVersion: V3, revokedAt: serverTs() });
 
 // --- Compatibilité : les applications actuelles ----------------------------------------------------------------
@@ -51,11 +55,11 @@ s.tc('PL1', 'applications actuelles : une photo SANS lat ni lng (consentement v1
   await assertSucceeds(photoRef(h, 'bob', 'alice').get());
 });
 
-s.tc('PL2', 'schéma fermé : aucune autre clé que jpeg, createdAt, expiresAt, lat, lng (ni deviceId, ni précision, ni adresse, ni heure de mesure)', async (h) => {
+s.tc('PL2', 'schéma fermé : aucune autre clé que jpeg, createdAt, expiresAt, lat, lng, measuredAt (ni deviceId, ni précision, ni adresse, ni autre heure)', async (h) => {
   await consentV3(h, 'bob');
   const ref = photoRef(h, 'bob');
   await assertSucceeds(ref.set(photoDoc(loc())));
-  for (const extra of [{ deviceId: DEVICE_A }, { accuracyM: 5 }, { address: 'Paris' }, { measuredAt: serverTs() }, { locationAt: serverTs() }, { speed: 1 }, { position: { lat: 1, lng: 1 } }]) {
+  for (const extra of [{ deviceId: DEVICE_A }, { accuracyM: 5 }, { address: 'Paris' }, { locationAt: serverTs() }, { updatedAt: serverTs() }, { speed: 1 }, { position: { lat: 1, lng: 1 } }]) {
     await assertFails(ref.set(photoDoc({ ...loc(), ...extra })));
     await assertFails(ref.set(photoDoc(extra)));
   }
@@ -106,26 +110,29 @@ s.tc('PL6', 'coordonnées : lat et lng vont ensemble (nombres valides ou nulles)
   await consentV3(h, 'bob');
   const ref = photoRef(h, 'bob');
   // Une seule clé, ou une seule valeur : refusé.
-  await assertFails(ref.set(photoDoc({ lat: 48.85661 })));
-  await assertFails(ref.set(photoDoc({ lng: 2.35222 })));
-  await assertFails(ref.set(photoDoc({ lat: 48.85661, lng: null })));
+  await assertFails(ref.set(photoDoc({ lat: 48.85661, measuredAt: mAt() })));
+  await assertFails(ref.set(photoDoc({ lng: 2.35222, measuredAt: mAt() })));
+  await assertFails(ref.set(photoDoc({ lat: 48.85661, lng: null, measuredAt: mAt() })));
+  await assertFails(ref.set(photoDoc({ lat: null, lng: 2.35222, measuredAt: mAt() })));
+  // Paire à moitié nulle SANS heure de mesure (seule la photo sans localisation n'en porte pas) : refusé, la valeur non nulle n'est jamais stockée sans contrôle.
   await assertFails(ref.set(photoDoc({ lat: null, lng: 2.35222 })));
+  await assertFails(ref.set(photoDoc({ lat: 48.85661, lng: null })));
   await assertFails(ref.set(photoDoc({ lat: null })));
   await assertFails(ref.set(photoDoc({ lng: null })));
   // Bornes.
-  for (const [lat, lng] of [[90, 180], [-90, -180], [0, 0], [-0.00001, 0.00001]]) await assertSucceeds(ref.set(photoDoc({ lat, lng })));
+  for (const [lat, lng] of [[90, 180], [-90, -180], [0, 0], [-0.00001, 0.00001]]) await assertSucceeds(ref.set(photoDoc(loc({ lat, lng }))));
   for (const [lat, lng] of [[90.00001, 0], [-90.00001, 0], [0, 180.00001], [0, -180.00001], [91, 0], [0, 181], [1000, 1000]]) {
-    await assertFails(ref.set(photoDoc({ lat, lng })));
+    await assertFails(ref.set(photoDoc(loc({ lat, lng }))));
   }
   // Types et valeurs non finies.
   for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, '48.85', true, [1], { v: 1 }]) {
-    await assertFails(ref.set(photoDoc({ lat: bad, lng: 2.35 })));
-    await assertFails(ref.set(photoDoc({ lat: 48.85, lng: bad })));
+    await assertFails(ref.set(photoDoc(loc({ lat: bad, lng: 2.35 }))));
+    await assertFails(ref.set(photoDoc(loc({ lat: 48.85, lng: bad }))));
   }
   // Mise à jour partielle qui ajoute une localisation à une photo existante sans localisation : jugée sur le résultat.
   await assertSucceeds(ref.set(photoDoc()));
-  await assertSucceeds(ref.update({ createdAt: serverTs(), lat: 48.85661, lng: 2.35222 }));
-  await assertFails(ref.update({ createdAt: serverTs(), lat: 91 }));
+  await assertSucceeds(ref.update({ createdAt: serverTs(), lat: 48.85661, lng: 2.35222, measuredAt: mAt() }));
+  await assertFails(ref.update({ createdAt: serverTs(), lat: 91 })); // la paire et l'heure restent complètes, lat hors plage
   // Les autres contrôles de la photo restent actifs avec une localisation.
   await assertFails(ref.set(photoDoc(loc({ jpeg: bytes(150001) }))));
   await assertFails(ref.set(photoDoc(loc({ jpeg: bytes(0) }))));
@@ -142,7 +149,7 @@ s.tc('PL7', 'lecture d\'une photo localisée : par un membre qui a publié sa pr
   await assertFails(photoRef(h, 'alice', 'bob').get()); // alice n'a publié aucune position
   await seedPositions(h, 'alice');
   const snap = await assertSucceeds(photoRef(h, 'alice', 'bob').get());
-  if (snap.data().lat !== 48.85661 || snap.data().lng !== 2.35222) throw new Error('la localisation devrait être lue telle qu\'enregistrée');
+  if (snap.data().lat !== 48.85661 || snap.data().lng !== 2.35222 || !snap.data().measuredAt) throw new Error('la localisation et son heure de mesure devraient être lues telles qu\'enregistrées');
   // La position publiée de la CIBLE ne suffit pas à son lecteur : seule la position du lecteur compte.
   await h.admin((f) => f.doc(`${M1}/positions/alice`).delete());
   await seedPositions(h, 'bob');
@@ -175,18 +182,23 @@ s.tc('PL10', 'la créatrice n\'a aucun droit de lecture de plus : sans position 
   await assertSucceeds(photoRef(h, 'alice', 'bob').get());
 });
 
-s.tc('PL11', 'ceinture et bretelles : si l\'auteur ne partage plus (reliquat injecté), sa photo localisée n\'est plus lisible ; sa photo non localisée garde le comportement d\'avant', async (h) => {
+s.tc('PL11', "reliquat (décision du PM du 2026-11-06, pas de contrôle « l'auteur partage encore ») : une photo localisée restée après l'arrêt du partage de son auteur reste lisible jusqu'à son expiration seulement ; la photo non localisée garde le comportement d'avant", async (h) => {
   await consentV3(h, 'alice');
   await seedPositions(h, 'alice');
-  await seedLocPhoto(h, 'bob');
+  await seedLocPhoto(h, 'bob', { expiresAt: inMs(DAY) });
   await seedPlainPhoto(h, 'carol'); // carol ne partage pas : sa photo non localisée ne devrait pas exister, comportement d'avant conservé
   await assertSucceeds(photoRef(h, 'alice', 'bob').get());
+  // État impossible par les règles (les lots de purge exigent la suppression de la photo avec l'arrêt du partage) : reliquat injecté.
   await h.admin((f) => f.doc(`${M1}/members/bob`).update({ sharing: { enabled: false, consentedAt: T0, consentVersion: V3, revokedAt: T0 } }));
-  await assertFails(photoRef(h, 'alice', 'bob').get());
+  await assertSucceeds(photoRef(h, 'alice', 'bob').get()); // exposition bornée par expiresAt, pas par un contrôle de l'auteur
   await assertSucceeds(photoRef(h, 'alice', 'carol').get()); // inchangé (non localisée)
-  // Fiche d'auteur absente (reliquat d'un membre parti) : refusé aussi.
-  await seedLocPhoto(h, 'zoe');
-  await assertFails(photoRef(h, 'alice', 'zoe').get());
+  // Le reliquat expiré n'est plus lisible (l'expiration est le seul garde-fou du reliquat).
+  await seedLocPhoto(h, 'bob', { expiresAt: inMs(-60_000) });
+  await assertFails(photoRef(h, 'alice', 'bob').get());
+  // Un lecteur qui a lui-même arrêté son partage ne lit rien, reliquat ou non.
+  await seedLocPhoto(h, 'bob', { expiresAt: inMs(DAY) });
+  await h.admin((f) => f.doc(`${M1}/positions/carol`).set(positionSeed()));
+  await assertFails(photoRef(h, 'carol', 'bob').get());
 });
 
 s.tc('PL12', 'expiration inchangée : une photo localisée expirée est illisible pour tous (auteur compris) ; absente = introuvable sans erreur de droits ; 24 h + 1 h tolérée', async (h) => {
@@ -195,7 +207,9 @@ s.tc('PL12', 'expiration inchangée : une photo localisée expirée est illisibl
   await seedLocPhoto(h, 'bob', { expiresAt: inMs(-60_000) });
   await assertFails(photoRef(h, 'alice', 'bob').get());
   await assertFails(photoRef(h, 'bob').get());
-  // Photo absente : « introuvable » sans erreur de droits, que l'on ait publié sa position ou non (aucune fuite sur l'existence d'une photo localisée).
+  // Photo ABSENTE : « introuvable » sans erreur de droits, que l'on ait publié sa position ou non : aucune fuite sur l'existence d'une photo. Cela ne vaut
+  // QUE pour une photo absente : pour une photo PRÉSENTE, le refus (sans position publiée) face à la lecture réussie d'une photo non localisée apprend
+  // qu'elle est localisée. Acceptable : status.hasPhoto révèle déjà qu'une photo existe, et l'information « localisée » n'est pas une coordonnée.
   await h.admin((f) => f.doc(`${M1}/photos/bob`).delete());
   const withPosition = await assertSucceeds(photoRef(h, 'alice', 'bob').get());
   if (withPosition.exists) throw new Error('aucune photo attendue');
@@ -305,10 +319,69 @@ s.tc('PL16', 'revue de schéma : la photo est le SEUL document, avec la position
     return m[1].split(',').map((k) => k.trim().replace(/'/g, ''));
   };
   const photoKeys = keysOf('validPhoto');
-  if (JSON.stringify(photoKeys) !== JSON.stringify(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng'])) throw new Error(`clés de photo inattendues : ${photoKeys}`);
-  const forbidden = ['latitude', 'longitude', 'coords', 'coordinates', 'geopoint', 'position', 'address', 'accuracy', 'deviceId', 'measuredAt'];
+  if (JSON.stringify(photoKeys) !== JSON.stringify(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])) throw new Error(`clés de photo inattendues : ${photoKeys}`);
+  const forbidden = ['latitude', 'longitude', 'coords', 'coordinates', 'geopoint', 'position', 'address', 'accuracy', 'deviceId'];
   const bad = photoKeys.filter((k) => forbidden.includes(k));
   if (bad.length > 0) throw new Error(`la photo autorise : ${bad.join(', ')}`);
   const statusKeys = keysOf('validStatus');
   if (statusKeys.some((k) => ['lat', 'lng', 'latitude', 'longitude', 'position'].includes(k))) throw new Error('le statut ne doit porter aucune coordonnée');
+});
+
+// --- Heure de la mesure (décision du PM du 2026-11-06) ------------------------------------------------------------
+s.tc('PL18', 'measuredAt : OBLIGATOIRE avec lat / lng, INTERDITE sans ; horodatage ; de -24 h à +5 min ; mises à jour partielles jugées sur le résultat', async (h) => {
+  await consentV3(h, 'bob');
+  const ref = photoRef(h, 'bob');
+  // Obligatoire avec la paire : absente, nulle, ou d'un autre type : refusé.
+  const { measuredAt: _m, ...noMeasure } = loc();
+  await assertFails(ref.set(photoDoc(noMeasure)));
+  await assertFails(ref.set(photoDoc(loc({ measuredAt: null }))));
+  for (const bad of ['2026-11-06T10:00:00Z', 1_700_000_000_000, true, { s: 1 }]) await assertFails(ref.set(photoDoc(loc({ measuredAt: bad }))));
+  await assertSucceeds(ref.set(photoDoc(loc())));
+  // Interdite sans localisation : sans paire, ou avec une paire nulle : refusé ; nulle sans paire : comme avant (accepté).
+  await assertFails(ref.set(photoDoc({ measuredAt: mAt() })));
+  await assertFails(ref.set(photoDoc({ lat: null, lng: null, measuredAt: mAt() })));
+  await assertSucceeds(ref.set(photoDoc({ measuredAt: null })));
+  await assertSucceeds(ref.set(photoDoc({ lat: null, lng: null, measuredAt: null })));
+  await assertSucceeds(ref.set(photoDoc()));
+  // Bornes : comme positions/{uid}.measuredAt (24 h dans le passé, 5 min dans le futur, par rapport à l'heure de la photo = l'heure du serveur).
+  for (const ms of [0, -MIN, -2 * HOUR, -23 * HOUR, 4 * MIN]) await assertSucceeds(ref.set(photoDoc(loc({ measuredAt: inMs(ms) }))));
+  for (const ms of [-25 * HOUR, -3 * DAY, 10 * MIN, 30 * MIN, DAY]) await assertFails(ref.set(photoDoc(loc({ measuredAt: inMs(ms) }))));
+  // Mises à jour PARTIELLES (le document résultant est jugé) : on retire l'heure d'une photo localisée => refusé ; on retire toute la localisation => accepté ;
+  // on efface la paire en laissant l'heure => refusé ; on ajoute une heure à une photo sans localisation => refusé ; on renouvelle l'heure => accepté.
+  await assertSucceeds(ref.set(photoDoc(loc())));
+  await assertFails(ref.update({ createdAt: serverTs(), measuredAt: FieldValue.delete() }));
+  await assertFails(ref.update({ createdAt: serverTs(), lat: null, lng: null }));
+  await assertSucceeds(ref.update({ createdAt: serverTs(), measuredAt: mAt() }));
+  await assertSucceeds(ref.update({ createdAt: serverTs(), lat: null, lng: null, measuredAt: null }));
+  await assertFails(ref.update({ createdAt: serverTs(), measuredAt: mAt() })); // la photo n'a plus de localisation
+  await assertSucceeds(ref.update({ createdAt: serverTs(), lat: 48.9, lng: 2.4, measuredAt: mAt() })); // et la regagne avec son heure
+  // Un autre membre ne peut pas écrire l'heure d'une photo qui n'est pas la sienne.
+  await assertFails(photoRef(h, 'alice', 'bob').update({ createdAt: serverTs(), measuredAt: mAt() }));
+});
+
+s.tc('PL19', 'suppression d\'UNE seule clé de la localisation (FieldValue.delete) : refusée ; supprimer les trois à la fois : acceptée (photo non localisée)', async (h) => {
+  await consentV3(h, 'bob');
+  const ref = photoRef(h, 'bob');
+  await assertSucceeds(ref.set(photoDoc(loc())));
+  await assertFails(ref.update({ createdAt: serverTs(), lat: FieldValue.delete() }));
+  await assertFails(ref.update({ createdAt: serverTs(), lng: FieldValue.delete() }));
+  await assertFails(ref.update({ createdAt: serverTs(), lat: FieldValue.delete(), measuredAt: FieldValue.delete() }));
+  await assertFails(ref.update({ createdAt: serverTs(), measuredAt: FieldValue.delete() }));
+  await assertSucceeds(ref.update({ createdAt: serverTs(), lat: FieldValue.delete(), lng: FieldValue.delete(), measuredAt: FieldValue.delete() }));
+  const snap = await ref.get();
+  if (snap.data().lat !== undefined || snap.data().lng !== undefined || snap.data().measuredAt !== undefined) throw new Error('la photo ne devrait plus porter de localisation');
+});
+
+s.tc('PL20', 'un non-membre ne lit rien, même avec une position injectée et un reliquat : photo localisée ou non', async (h) => {
+  await seedLocPhoto(h, 'bob');
+  await seedPlainPhoto(h, 'alice');
+  // eve (étrangère à la Miff) a un document de position injecté dans M1 (état impossible par les règles : reliquat ou import) : toujours refusée.
+  await h.admin((f) => f.doc(`${M1}/positions/eve`).set(positionSeed()));
+  await assertFails(photoRef(h, 'eve', 'bob').get());
+  await assertFails(photoRef(h, 'eve', 'alice').get());
+  // Un ex-membre dont la fiche a disparu mais dont la position est restée : même refus.
+  await h.admin((f) => f.doc(`${M1}/positions/carol`).set(positionSeed()));
+  await h.admin((f) => f.doc(`${M1}/members/carol`).delete());
+  await assertFails(photoRef(h, 'carol', 'bob').get());
+  await assertFails(h.anon().doc(`${M1}/photos/bob`).get());
 });
