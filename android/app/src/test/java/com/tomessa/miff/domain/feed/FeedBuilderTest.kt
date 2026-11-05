@@ -1,0 +1,559 @@
+package com.tomessa.miff.domain.feed
+
+import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.miff.MiffRole
+import com.tomessa.miff.domain.place.PlaceCategory
+import com.tomessa.miff.domain.place.PlaceType
+import com.tomessa.miff.domain.tracking.PresenceValue
+import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.tracking.StatusThresholds
+import com.tomessa.miff.testsupport.testPlace
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.time.Instant
+import java.time.ZoneOffset
+
+/**
+ * The logic of the Feed (ticket FEED, criteria B1 to B6, C1 to C7), with no screen: the colour of the Miff, the bubble, the labels, the
+ * lines of time, the battery, the order, the states of sharing. The thresholds are NOT written here: they are read from [StatusThresholds]
+ * (criterion STA9), and the limits 0 h 59, 1 h 00, 2 h 00, 2 h 01 are built from them.
+ */
+class FeedBuilderTest {
+    private val zone = ZoneOffset.UTC
+    private val now = Instant.parse("2026-11-05T17:00:00Z").toEpochMilli()
+    private val minute = 60_000L
+    private val hour = 60 * minute
+
+    private val me = "me"
+
+    private fun member(
+        uid: String,
+        first: String,
+        sharing: Boolean = true,
+        phone: String? = "+33612345678",
+    ) = MiffMember(uid, first, "X", null, if (uid == me) MiffRole.OWNER else MiffRole.MEMBER, sharing, phone)
+
+    private fun status(
+        presence: PresenceValue? = PresenceValue.IN_TRUSTED,
+        placeId: String? = "p1",
+        presenceAgo: Long = 12 * minute,
+        lastUpdateAgo: Long? = presenceAgo,
+        battery: Int? = 85,
+        updatedAgo: Long = 2 * minute,
+        access: MemberLocationAccess? = MemberLocationAccess.BACKGROUND,
+    ) = MemberStatus(
+        presence = presence,
+        placeId = placeId,
+        presenceAtMillis = now - presenceAgo,
+        lastUpdateAtMillis = lastUpdateAgo?.let { now - it },
+        hasPhoto = false,
+        batteryPct = battery,
+        locationAccess = access,
+        updatedAtMillis = now - updatedAgo,
+    )
+
+    private fun input(
+        members: List<MiffMember>,
+        statuses: StatusesView,
+        waiting: Boolean = false,
+        offline: Boolean = false,
+        places: List<com.tomessa.miff.domain.place.Place> =
+            listOf(
+                testPlace("p1", "Chez Mamie", category = PlaceCategory.HOME),
+                testPlace("p2", "Chez Léa", category = PlaceCategory.RELATIVE),
+                testPlace("p3", "Zone chantier", type = PlaceType.RISK, category = PlaceCategory.OTHER),
+            ),
+    ) = FeedInput("m1", "Chez nous", "CODE12345678", members, places, me, statuses, waiting, offline)
+
+    private fun build(
+        members: List<MiffMember>,
+        statuses: Map<String, MemberStatus>,
+        waiting: Boolean = false,
+        offline: Boolean = false,
+    ) = FeedBuilder.build(input(members, StatusesView.Loaded(statuses), waiting, offline), now, zone)
+
+    private val trio = listOf(member(me, "Camille"), member("t", "Thomas"), member("a", "Amandine"))
+
+    private fun card(
+        content: FeedContent,
+        uid: String,
+    ) = content.cards.first { it.member.uid == uid }
+
+    // --- Colour of the Miff (B1) ---------------------------------------------------------------------------------
+
+    @Test
+    fun miffColour_oneRedAmongGreens_isRed() {
+        assertEquals(
+            StatusLevel.RED,
+            FeedBuilder.miffLevel(listOf(StatusLevel.GREEN, StatusLevel.RED, StatusLevel.GREEN)),
+        )
+    }
+
+    @Test
+    fun miffColour_orangeAndGreen_isOrange_redWinsOverOrange_allGreenIsGreen() {
+        assertEquals(StatusLevel.ORANGE, FeedBuilder.miffLevel(listOf(StatusLevel.ORANGE, StatusLevel.GREEN)))
+        assertEquals(StatusLevel.RED, FeedBuilder.miffLevel(listOf(StatusLevel.ORANGE, StatusLevel.RED)))
+        assertEquals(StatusLevel.GREEN, FeedBuilder.miffLevel(listOf(StatusLevel.GREEN, StatusLevel.GREEN)))
+    }
+
+    @Test
+    fun miffColour_neutralMembersAreIgnored_andNobodyKnownIsNeutral() {
+        assertEquals(
+            StatusLevel.GREEN,
+            FeedBuilder.miffLevel(listOf(StatusLevel.GREEN, StatusLevel.NEUTRAL, StatusLevel.GREEN)),
+        )
+        assertEquals(StatusLevel.ORANGE, FeedBuilder.miffLevel(listOf(StatusLevel.NEUTRAL, StatusLevel.ORANGE)))
+        assertEquals(StatusLevel.NEUTRAL, FeedBuilder.miffLevel(listOf(StatusLevel.NEUTRAL, StatusLevel.NEUTRAL)))
+        assertEquals(StatusLevel.NEUTRAL, FeedBuilder.miffLevel(emptyList()))
+    }
+
+    // --- Thresholds, from the constants of LOC-2b (C2) -------------------------------------------------------------
+
+    private fun levelAfter(elapsed: Long): StatusLevel {
+        val content =
+            build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = elapsed, lastUpdateAgo = elapsed)))
+        return card(content, "t").level
+    }
+
+    @Test
+    fun levels_atTheLimits_use_theConstantsOfStatusThresholds() {
+        val orange = StatusThresholds.ORANGE_AFTER_MILLIS
+        val red = StatusThresholds.RED_AFTER_MILLIS
+        assertEquals(StatusLevel.GREEN, levelAfter(orange - minute)) // 0 h 59
+        assertEquals(StatusLevel.ORANGE, levelAfter(orange)) // 1 h 00
+        assertEquals(StatusLevel.ORANGE, levelAfter(red)) // 2 h 00 included
+        assertEquals(StatusLevel.RED, levelAfter(red + minute)) // 2 h 01
+    }
+
+    @Test
+    fun theColourOfAMemberMovesWithTheClock_withoutAnyNewReading() {
+        val statuses = mapOf("t" to status(PresenceValue.OUT, presenceAgo = 50 * minute, lastUpdateAgo = 50 * minute))
+        val before = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now, zone)
+        val later = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + 15 * minute, zone)
+        assertEquals(StatusLevel.GREEN, card(before, "t").level)
+        assertEquals(StatusLevel.ORANGE, card(later, "t").level)
+    }
+
+    // --- Cards (C1, C7) --------------------------------------------------------------------------------------------
+
+    @Test
+    fun cards_areMineFirst_thenInTheOrderOfTheList_neverByUrgency() {
+        val members = listOf(member("t", "Thomas"), member(me, "Camille"), member("a", "Amandine"))
+        val content =
+            build(
+                members,
+                mapOf(
+                    "t" to status(PresenceValue.IN_TRUSTED),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour, lastUpdateAgo = 3 * hour),
+                    me to status(PresenceValue.IN_TRUSTED),
+                ),
+            )
+        assertEquals(listOf(me, "t", "a"), content.cards.map { it.member.uid })
+        assertEquals(StatusLevel.RED, card(content, "a").level)
+    }
+
+    @Test
+    fun myCard_hasNoGesture_andOthersHaveThem_whenKnown() {
+        val content = build(trio, mapOf(me to status(), "t" to status(), "a" to status()))
+        val mine = card(content, me)
+        assertTrue(mine.isMe)
+        assertNull(mine.phone)
+        assertFalse(mine.canLocate)
+        val thomas = card(content, "t")
+        assertEquals("+33612345678", thomas.phone)
+        assertTrue(thomas.canLocate)
+    }
+
+    @Test
+    fun aMemberWithoutANumber_hasNoMessageNorCall_butCanBeLocated() {
+        val members = listOf(member(me, "Camille"), member("t", "Thomas", phone = null))
+        val thomas = card(build(members, mapOf("t" to status())), "t")
+        assertNull(thomas.phone)
+        assertTrue(thomas.canLocate)
+    }
+
+    @Test
+    fun aNeutralMember_cannotBeLocated_butCanStillBeCalled() {
+        val content = build(trio, mapOf(me to status(), "t" to status(PresenceValue.UNKNOWN, placeId = null)))
+        val thomas = card(content, "t")
+        assertEquals(StatusLevel.NEUTRAL, thomas.level)
+        assertEquals(StateLabel.NoNews, thomas.label)
+        assertFalse(thomas.canLocate)
+        assertNotNull(thomas.phone)
+        assertEquals(TimeLine.None, thomas.time)
+    }
+
+    @Test
+    fun aMemberWhoStoppedSharing_isNeutral_andSaysSo() {
+        val members = listOf(member(me, "Camille"), member("t", "Thomas", sharing = false))
+        val content = build(members, mapOf(me to status()))
+        val thomas = card(content, "t")
+        assertEquals(StateLabel.SharingStopped, thomas.label)
+        assertEquals(StatusLevel.NEUTRAL, thomas.level)
+        assertFalse(thomas.canLocate)
+    }
+
+    // --- Labels (C2) -----------------------------------------------------------------------------------------------
+
+    @Test
+    fun labels_categoryForHomeWorkSchoolSport_nameForTheOthers() {
+        val home = card(build(trio, mapOf("t" to status(placeId = "p1"))), "t")
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.HOME)), home.label)
+        val relative = card(build(trio, mapOf("t" to status(placeId = "p2"))), "t")
+        assertEquals(StateLabel.At(PlaceRef.Named("Chez Léa")), relative.label)
+    }
+
+    @Test
+    fun labels_leftAPlace_keepsThePlace_inTheColourOfTheLevel() {
+        val left = card(build(trio, mapOf("t" to status(PresenceValue.OUT, "p1", 30 * minute, 30 * minute))), "t")
+        assertEquals(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME)), left.label)
+        assertEquals(StatusLevel.GREEN, left.level)
+        assertEquals(TimeLine.DepartedAgo(Age.Minutes(30)), left.time)
+    }
+
+    @Test
+    fun labels_aDeletedPlace_isGeneric_neverAGuess() {
+        val gone = card(build(trio, mapOf("t" to status(placeId = "zzz"))), "t")
+        assertEquals(StateLabel.At(PlaceRef.Unknown), gone.label)
+        val goneLeft = card(build(trio, mapOf("t" to status(PresenceValue.OUT, "zzz", 90 * minute, 90 * minute))), "t")
+        assertEquals(StateLabel.Left(PlaceRef.Unknown), goneLeft.label)
+    }
+
+    @Test
+    fun labels_aDangerZone_isRed_withItsOwnLabel() {
+        val danger = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 20 * minute))), "t")
+        assertEquals(StatusLevel.RED, danger.level)
+        assertEquals(StateLabel.Danger, danger.label)
+        assertEquals(TimeLine.InDangerSince(Moment(now - 20 * minute, Day.TODAY)), danger.time)
+    }
+
+    // --- Lines of time (C2) ----------------------------------------------------------------------------------------
+
+    @Test
+    fun timeLines_relativeWhileGreen_absoluteFromOrange() {
+        val inside = card(build(trio, mapOf("t" to status(presenceAgo = 12 * minute))), "t")
+        assertEquals(TimeLine.Since(Age.Minutes(12)), inside.time)
+        val hours = card(build(trio, mapOf("t" to status(presenceAgo = 3 * hour))), "t")
+        assertEquals(TimeLine.Since(Age.Hours(3)), hours.time)
+        val orange = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 70 * minute))), "t")
+        assertEquals(TimeLine.LatestNews(Moment(now - 70 * minute, Day.TODAY)), orange.time)
+        val red = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 3 * hour))), "t")
+        assertEquals(TimeLine.NoNewsSince(Moment(now - 3 * hour, Day.TODAY)), red.time)
+    }
+
+    @Test
+    fun timeLine_afterMidnight_saysYesterday() {
+        val yesterday = card(build(trio, mapOf("t" to status(presenceAgo = 20 * hour))), "t")
+        assertEquals(TimeLine.Since(Age.Hours(20)), yesterday.time)
+        val older = card(build(trio, mapOf("t" to status(presenceAgo = 30 * hour))), "t")
+        assertEquals(TimeLine.Since(Age.Yesterday(now - 30 * hour)), older.time)
+        val redYesterday =
+            card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 18 * hour))), "t").time
+        assertEquals(TimeLine.NoNewsSince(Moment(now - 18 * hour, Day.YESTERDAY)), redYesterday)
+    }
+
+    @Test
+    fun anAgeNeverSaysZeroMinutes_andAFutureReferenceIsOneMinute() {
+        assertEquals(Age.Minutes(1), Age.of(now - 10_000, now, zone))
+        assertEquals(Age.Minutes(1), Age.of(now + 5 * minute, now, zone))
+    }
+
+    // --- Battery (C4) ----------------------------------------------------------------------------------------------
+
+    @Test
+    fun battery_isPlainWhenRecent_datedAfterAnHour_hiddenAfterADay_orWhenAbsent() {
+        val recent = card(build(trio, mapOf("t" to status(updatedAgo = 59 * minute))), "t")
+        assertEquals(Battery(85, null), recent.battery)
+        val dated = card(build(trio, mapOf("t" to status(updatedAgo = 90 * minute))), "t")
+        assertEquals(Battery(85, Moment(now - 90 * minute, Day.TODAY)), dated.battery)
+        val old = card(build(trio, mapOf("t" to status(updatedAgo = 25 * hour))), "t")
+        assertNull(old.battery)
+        val absent = card(build(trio, mapOf("t" to status(battery = null))), "t")
+        assertNull(absent.battery)
+    }
+
+    // --- "Localisation limitée" (C5) ---------------------------------------------------------------------------------
+
+    @Test
+    fun limitedLocation_isABadge_withNoEffectOnTheColourOrTheBubble() {
+        val content =
+            build(
+                trio,
+                mapOf(
+                    me to status(),
+                    "t" to status(access = MemberLocationAccess.DENIED),
+                    "a" to status(access = MemberLocationAccess.FOREGROUND),
+                ),
+            )
+        assertTrue(card(content, "t").limitedLocation)
+        assertTrue(card(content, "a").limitedLocation)
+        assertFalse(card(content, me).limitedLocation)
+        assertEquals(StatusLevel.GREEN, card(content, "t").level)
+        assertTrue(content.bubble is Bubble.AllGood)
+    }
+
+    // --- Bubble (B2 to B6) -----------------------------------------------------------------------------------------
+
+    @Test
+    fun bubble_allGood_needsAtLeastOneOtherKnown_andAllKnownGreen() {
+        val content = build(trio, mapOf(me to status(), "t" to status(presenceAgo = 25 * minute), "a" to status()))
+        val bubble = content.bubble as Bubble.AllGood
+        // "Dernière nouvelle": the most recent of the OTHERS, never mine.
+        assertEquals(Age.Minutes(12), bubble.latestNews)
+        assertNull(bubble.answered)
+        assertEquals(StatusLevel.GREEN, content.miffLevel)
+    }
+
+    @Test
+    fun bubble_latestNews_neverUsesMyOwnUpdate() {
+        val content =
+            build(
+                trio,
+                mapOf(
+                    me to status(presenceAgo = 1 * minute),
+                    "t" to status(presenceAgo = 40 * minute),
+                    "a" to status(presenceAgo = 50 * minute),
+                ),
+            )
+        assertEquals(Age.Minutes(40), (content.bubble as Bubble.AllGood).latestNews)
+    }
+
+    @Test
+    fun bubble_withSilentMembers_addsNOutOfM_andStaysGreen() {
+        val four = trio + member("n", "Nathan")
+        val content = build(four, mapOf(me to status(), "t" to status(), "a" to status()))
+        val bubble = content.bubble as Bubble.AllGood
+        assertEquals(3, bubble.answered)
+        assertEquals(4, bubble.total)
+    }
+
+    @Test
+    fun bubble_noOtherKnown_isNeutral_neverASentenceOfSafety() {
+        val content = build(trio, mapOf(me to status()))
+        assertEquals(Bubble.NoNews, content.bubble)
+        assertEquals(StatusLevel.NEUTRAL, content.bubble.level)
+        val none = build(trio, emptyMap())
+        assertEquals(Bubble.NoNews, none.bubble)
+    }
+
+    @Test
+    fun bubble_aloneInTheMiff_isNeutral() {
+        val content = build(listOf(member(me, "Camille")), mapOf(me to status()))
+        assertEquals(Bubble.Alone, content.bubble)
+        assertEquals(1, content.cards.size)
+    }
+
+    @Test
+    fun bubble_alerts_redFirst_thenOrange_oldestFirstInALevel() {
+        val four = trio + member("n", "Nathan")
+        val content =
+            build(
+                four,
+                mapOf(
+                    me to status(),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                    "n" to status(PresenceValue.OUT, presenceAgo = 100 * minute),
+                ),
+            )
+        val bubble = content.bubble as Bubble.Alerts
+        // Amandine is red; between the two oranges the OLDEST reference (Nathan, 100 min) comes first.
+        assertEquals(listOf("a", "n", "t"), bubble.pages.map { it.member.uid })
+        assertEquals(StatusLevel.RED, bubble.level)
+        assertEquals(StatusLevel.RED, content.miffLevel)
+    }
+
+    @Test
+    fun bubble_aliveAlertDisappearing_removesItsPage() {
+        val before =
+            build(
+                trio,
+                mapOf(
+                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 90 * minute),
+                ),
+            )
+        assertEquals(2, (before.bubble as Bubble.Alerts).pages.size)
+        val after =
+            build(
+                trio,
+                mapOf(
+                    "t" to status(PresenceValue.IN_TRUSTED),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 90 * minute),
+                ),
+            )
+        assertEquals(1, (after.bubble as Bubble.Alerts).pages.size)
+    }
+
+    @Test
+    fun alertKinds_orangeLeft_redStale_dangerZone() {
+        val content =
+            build(
+                trio + member("n", "Nathan"),
+                mapOf(
+                    "t" to status(PresenceValue.OUT, "p1", 70 * minute, 70 * minute),
+                    "a" to status(PresenceValue.OUT, "p2", 3 * hour, 3 * hour),
+                    "n" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 20 * minute),
+                ),
+            )
+        val pages = (content.bubble as Bubble.Alerts).pages.associateBy { it.member.uid }
+        assertEquals(
+            AlertKind.Left(PlaceRef.Category(PlaceKind.HOME), Moment(now - 70 * minute, Day.TODAY)),
+            pages.getValue("t").kind,
+        )
+        assertEquals(AlertKind.NoNewsSince(Moment(now - 3 * hour, Day.TODAY)), pages.getValue("a").kind)
+        // The danger zone says its NAME for the loved ones ("{Prénom} est à {lieu}").
+        assertEquals(
+            AlertKind.Danger(PlaceRef.Named("Zone chantier"), Moment(now - 20 * minute, Day.TODAY)),
+            pages.getValue("n").kind,
+        )
+    }
+
+    @Test
+    fun message_isOfferedForAnotherMemberWithANumber_neverOnMyOwnPage() {
+        val members = listOf(member(me, "Camille"), member("t", "Thomas"), member("a", "Amandine", phone = null))
+        val content =
+            build(
+                members,
+                mapOf(
+                    me to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                ),
+            )
+        val pages = (content.bubble as Bubble.Alerts).pages.associateBy { it.member.uid }
+        assertFalse(pages.getValue(me).canMessage)
+        assertTrue(pages.getValue(me).isMe)
+        assertTrue(pages.getValue("t").canMessage)
+        assertFalse(pages.getValue("a").canMessage)
+    }
+
+    @Test
+    fun iAmTheOnlyOrangeOrRed_theBubbleSpeaksToMe() {
+        val content =
+            build(trio, mapOf(me to status(PresenceValue.OUT, "p1", 70 * minute, 70 * minute), "t" to status()))
+        val pages = (content.bubble as Bubble.Alerts).pages
+        assertEquals(1, pages.size)
+        assertTrue(pages.single().isMe)
+        assertEquals(StatusLevel.ORANGE, content.myLevel)
+    }
+
+    // --- Sharing and hidden states (V6, V7, V8) --------------------------------------------------------------------
+
+    @Test
+    fun iStoppedSharing_theOthersAreHidden_neutral_andTheBubbleSaysSo() {
+        val members = listOf(member(me, "Camille", sharing = false), member("t", "Thomas"))
+        val content =
+            FeedBuilder.build(input(members, StatusesView.Off), now, zone)
+        assertEquals(Bubble.SharingStopped, content.bubble)
+        assertEquals(StateLabel.SharingStopped, card(content, me).label)
+        val thomas = card(content, "t")
+        assertEquals(StateLabel.NewsHidden, thomas.label)
+        assertEquals(StatusLevel.NEUTRAL, thomas.level)
+        assertFalse(thomas.canLocate)
+        // Message and call stay.
+        assertNotNull(thomas.phone)
+    }
+
+    @Test
+    fun waitingForMyAgreement_nothingIsShown_theBubbleIsNeutral_myCardSaysWhy() {
+        val content =
+            FeedBuilder.build(input(trio, StatusesView.Off, waiting = true), now, zone)
+        assertEquals(Bubble.AwaitingAgreement, content.bubble)
+        assertEquals(StateLabel.WaitingAgreement, card(content, me).label)
+        assertEquals(StateLabel.NewsHidden, card(content, "t").label)
+        assertEquals(StatusLevel.NEUTRAL, content.miffLevel)
+    }
+
+    @Test
+    fun whileMyStatusIsNotPublished_aBannerSaysSo_andNothingIsAnError() {
+        val content = FeedBuilder.build(input(trio, StatusesView.Pending), now, zone)
+        assertTrue(content.banners.contains(FeedBanner.Publishing))
+        assertEquals(Bubble.NoNews, content.bubble)
+        assertEquals(StatusLevel.NEUTRAL, content.miffLevel)
+    }
+
+    @Test
+    fun theBannerOfPublishingIsNotShownWhenISharenothing() {
+        val members = listOf(member(me, "Camille", sharing = false), member("t", "Thomas"))
+        val content = FeedBuilder.build(input(members, StatusesView.Pending), now, zone)
+        assertFalse(content.banners.contains(FeedBanner.Publishing))
+    }
+
+    // --- Offline (E4) ----------------------------------------------------------------------------------------------
+
+    @Test
+    fun offline_aBannerGivesTheDateOfTheLatestInformation_andAnAlertAddsItsOwn() {
+        val content =
+            build(
+                trio,
+                mapOf(
+                    me to status(updatedAgo = 5 * minute),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute, updatedAgo = 40 * minute),
+                ),
+                offline = true,
+            )
+        val banner = content.banners.filterIsInstance<FeedBanner.Offline>().single()
+        assertEquals(Moment(now - 5 * minute, Day.TODAY), banner.latest)
+        val page = (content.bubble as Bubble.Alerts).pages.single()
+        assertEquals(Moment(now - 5 * minute, Day.TODAY), page.offlineSince)
+    }
+
+    @Test
+    fun offline_withNothingKnown_hasNoDate_andNeverAGreenBubble() {
+        val content = FeedBuilder.build(input(trio, StatusesView.Loaded(emptyMap()), offline = true), now, zone)
+        assertNull(
+            content.banners
+                .filterIsInstance<FeedBanner.Offline>()
+                .single()
+                .latest,
+        )
+        assertEquals(Bubble.NoNews, content.bubble)
+    }
+
+    @Test
+    fun online_noOfflineBanner() {
+        val content = build(trio, mapOf(me to status(), "t" to status()))
+        assertTrue(content.banners.isEmpty())
+    }
+
+    // --- Miff full, announcements, privacy -------------------------------------------------------------------------
+
+    @Test
+    fun aMiffOfFifteenMembers_isFull() {
+        val many = (1..14).map { member("u$it", "P$it") } + member(me, "Camille")
+        assertTrue(build(many, emptyMap()).isFull)
+        assertFalse(build(many.drop(1), emptyMap()).isFull)
+    }
+
+    @Test
+    fun announceKey_changesWithTheLevelOrTheAlerts_notWithTheMinutes() {
+        val statuses = mapOf("t" to status(PresenceValue.OUT, presenceAgo = 70 * minute, lastUpdateAgo = 70 * minute))
+        val first = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now, zone)
+        val later = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + 3 * minute, zone)
+        assertEquals(first.announceKey, later.announceKey)
+        val calm = build(trio, mapOf("t" to status()))
+        assertTrue(first.announceKey != calm.announceKey)
+        val red = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + hour, zone)
+        assertTrue(first.announceKey != red.announceKey)
+    }
+
+    @Test
+    fun theClassesThatCarryPersonalDataHideThemInToString() {
+        val content = build(trio, mapOf("t" to status()))
+        listOf<Any>(
+            content,
+            card(content, "t"),
+            status(),
+            PlaceRef.Named("Chez Mamie"),
+            input(trio, StatusesView.Loaded(emptyMap())),
+        ).forEach {
+            val text = it.toString()
+            assertFalse(text, "Thomas" in text || "Mamie" in text || "CODE12345678" in text)
+        }
+    }
+}
