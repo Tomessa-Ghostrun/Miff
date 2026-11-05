@@ -217,6 +217,8 @@ Ticket `docs/tickets/lieux-de-confiance.md` (§6.5, §7, §8, §10, §11, §15 ;
 9. **Écran 22A** : « On enregistre ton accord… » avec boutons inactifs et indicateur.
 10. **Écran 23** (« En attente de ton accord ») : **non construit**, comme sur Android : sans écriture de position il n'a pas d'effet à montrer ; à faire avec LOC-4b.
 11. **Lecteur d'écran** : chaque ligne du consentement est lue d'un bloc (intitulé puis phrase), pas la carte entière d'un seul tenant.
+12. **Boutons épinglés et consentement (décision de design D1, héritée d'Android, critère K1)** : sur « Nouvelle Miff », « Rejoindre la Miff « X » ? » et la feuille « Reprendre le partage », le bouton d'accord reste visible en bas pendant que le texte défile : en grande police, on peut donc le toucher **sans avoir fait défiler** les lignes du consentement. Choix du design (le texte v3 est trop long pour tenir sans défilement) ; l'accord n'est jamais écrit avant un toucher, et la phrase qui vaut accord est au-dessus des lignes. À confirmer par le PM (recette partie H).
+13. **Textes mis à jour en LOC-4a (Android et iOS)** : `miff_sharing_stop_body` cite maintenant la dernière position (le lot l'efface) ; `settings_privacy_location_body` reprend le texte d'Android (une autorisation est demandée, rien n'est lu). Les textes de départ, de retrait et de suppression (`miff_leave_*`, `miff_remove_body`, `miff_delete_body_*`) ne listent pas la position : laissés tels quels (la position part avec le lot, le consentement v3 le promet). Un test (`SharedTextsParityTests`) compare le CONTENU des textes partagés entre les deux plateformes.
 
 ### Limites connues et à vérifier sur l'iPhone (LOC-4a)
 

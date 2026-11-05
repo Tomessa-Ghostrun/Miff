@@ -391,7 +391,7 @@
     <string name="miff_sharing_state_on">On</string>
     <string name="miff_sharing_state_off">Off</string>
     <string name="miff_sharing_stop_title">Stop sharing your status with this Miff?</string>
-    <string name="miff_sharing_stop_body">Your status and update photo will be deleted for this circle. You can resume whenever you like.</string>
+    <string name="miff_sharing_stop_body">Your status, update photo and last known location will be deleted for this circle. You can resume whenever you like.</string>
     <string name="miff_sharing_stop_action">Stop sharing</string>
     <string name="miff_sharing_resume_title">Resume sharing?</string>
     <string name="miff_sharing_resume_action">Resume sharing</string>

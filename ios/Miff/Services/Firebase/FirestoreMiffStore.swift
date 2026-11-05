@@ -174,7 +174,10 @@ final class FirestoreMiffStore: MiffStore {
                     return nil
                 }
                 let sharing = snapshot.data()?["sharing"] as? [String: Any]
-                if snapshot.exists, (sharing?["enabled"] as? Bool) == true {
+                let version = sharing?["consentVersion"] as? String
+                // Seulement où je partage ENCORE et où le texte accepté est ENCORE un ancien : une Miff renouvelée entre-temps
+                // (autre téléphone) n'est pas réécrite (les règles refuseraient une version qui n'est pas plus récente).
+                if snapshot.exists, (sharing?["enabled"] as? Bool) == true, MiffSharingConsent.isRenewalDue(version) {
                     active.append(miffId)
                 }
             }

@@ -52,8 +52,9 @@ protocol MiffStore {
     func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead?
 
     /// UNE transaction (LOC-4a, renouvellement du consentement) : ma fiche est LUE dans chacune des Miffs de `miffIds` DANS la
-    /// transaction, et `build` fait le lot pour celles où je partage ENCORE (`sharing.enabled` vrai) seulement ; rien n'est écrit
-    /// pour les autres (un partage arrêté entre-temps, sur un autre téléphone, n'est jamais rallumé par un renouvellement).
+    /// transaction, et `build` fait le lot pour celles où je partage ENCORE (`sharing.enabled` vrai) ET où le texte accepté est ENCORE
+    /// un ancien (`MiffSharingConsent.isRenewalDue`) seulement : rien n'est écrit pour les autres (un partage arrêté entre-temps, ou
+    /// une Miff déjà renouvelée sur un autre téléphone, n'est jamais réécrit par un renouvellement).
     /// Rend les identifiants écrits (vide : rien n'a été écrit).
     func commitWhereSharing(
         uid: String,

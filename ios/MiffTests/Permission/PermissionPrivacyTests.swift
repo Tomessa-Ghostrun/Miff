@@ -48,11 +48,11 @@ final class PermissionPrivacyTests: XCTestCase {
         let forbidden = [
             "startUpdatingLocation", "stopUpdatingLocation", "requestLocation(", "startMonitoring",
             "startMonitoringSignificantLocationChanges", "startMonitoringVisits", "startRangingBeacons",
-            "CLRegion", "CLCircularRegion", "CLBeaconRegion", "CLGeocoder", "CLLocation(", "CLLocationCoordinate2D",
+            "CLRegion", "CLCircularRegion", "CLBeaconRegion", "CLGeocoder", "CLLocation(",
             "CLMonitor", "CLLocationUpdate", "CLServiceSession", "allowsBackgroundLocationUpdates", "distanceFilter",
             "desiredAccuracy", "pausesLocationUpdatesAutomatically", "showsBackgroundLocationIndicator",
-            "manager.location", "didUpdateLocations", "didEnterRegion", "didExitRegion", "MKUserLocation",
-            "showsUserLocation"
+            "manager.location", "CLLocationManager().location", "locationManager.location", ".requestLocation()",
+            "didUpdateLocations", "didEnterRegion", "didExitRegion"
         ]
 
         XCTAssertEqual(
@@ -60,6 +60,22 @@ final class PermissionPrivacyTests: XCTestCase {
             [],
             "aucune position ne peut être lue avant LOC-4b (et jamais avant l'accord de la personne)"
         )
+    }
+
+    /// Les cartes (MapKit) et les coordonnées appartiennent aux écrans des LIEUX (LOC-3 : fichiers dont le chemin contient
+    /// « Place ») : nulle part ailleurs, et jamais la position de la personne (`showsUserLocation`, `MKUserLocation`).
+    func testMapsAndCoordinatesLiveOnlyInThePlaceFilesAndNeverShowThePersonsPosition() throws {
+        let sources = try appSources()
+        let outsidePlaces = sources.filter { !$0.path.contains("Place") }
+
+        let imports = outsidePlaces.filter { $0.lines.contains { $0.contains("import MapKit") } }.map { $0.path }
+        XCTAssertEqual(imports, [], "MapKit hors des fichiers des lieux")
+        XCTAssertEqual(
+            offenders(in: outsidePlaces, matching: ["CLLocationCoordinate2D", ".coordinate"]),
+            [],
+            "aucune coordonnée hors des fichiers des lieux"
+        )
+        XCTAssertEqual(offenders(in: sources, matching: ["showsUserLocation", "MKUserLocation"]), [])
     }
 
     func testCoreLocationIsImportedByOneFileOnlyToReadTheStateOfTheAuthorization() throws {

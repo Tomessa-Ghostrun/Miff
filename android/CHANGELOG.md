@@ -43,6 +43,7 @@ Retour de recette : « la connexion Google a échoué plusieurs fois de suite av
 - Aucun code technique, aucun reproche. Rien n'est journalisé : ni compte, ni adresse, ni jeton, ni message du système (une erreur est réduite à sa nature avant d'arriver à l'écran).
 
 ### Modifié
+- `miff_sharing_stop_body` cite la dernière position ("Ton statut, ta photo d'update et ta dernière position seront supprimés…", FR et EN), aligné sur iOS (PR #74).
 - `CredentialManagerGoogleSource` prend maintenant un `GoogleCredentialClient` (la partie qui parle au système, `CredentialManagerClient`) : chaque issue est jouable en test. Toute exception autre que l'annulation de la coroutine devient un échec (avant, une exception inattendue pouvait faire planter l'app).
 - `AuthFailure` : `GOOGLE_NO_ACCOUNT`, `GOOGLE_SERVICES_UNAVAILABLE`, `GOOGLE_INTERRUPTED`. `AuthMessage` : les mêmes trois. États d'écran : `googleMessage` (séparé du `message` du formulaire e-mail).
 - Textes `auth_error_google_no_account`, `auth_error_google_services`, `auth_error_google_interrupted` FR/EN et catalogue iOS (parité des clés vérifiée ; le code iOS n'est pas touché).

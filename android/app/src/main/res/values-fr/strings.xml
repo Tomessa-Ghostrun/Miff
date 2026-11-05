@@ -367,7 +367,7 @@
     <string name="miff_sharing_state_on">Activé</string>
     <string name="miff_sharing_state_off">Désactivé</string>
     <string name="miff_sharing_stop_title">Arrêter de partager ton statut avec cette Miff ?</string>
-    <string name="miff_sharing_stop_body">Ton statut et ta photo d\'update seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
+    <string name="miff_sharing_stop_body">Ton statut, ta photo d\'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
     <string name="miff_sharing_stop_action">Arrêter le partage</string>
     <string name="miff_sharing_resume_title">Reprendre le partage ?</string>
     <string name="miff_sharing_resume_action">Reprendre le partage</string>

@@ -4679,13 +4679,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your status and update photo will be deleted for this circle. You can resume whenever you like."
+            "value": "Your status, update photo and last known location will be deleted for this circle. You can resume whenever you like."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton statut et ta photo d'update seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux."
+            "value": "Ton statut, ta photo d'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux."
           }
         }
       }
@@ -8568,13 +8568,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For now, Miff does not use your phone's location. If that changes, we will explain it clearly before asking you for anything."
+            "value": "For now, Miff does not use your phone's location. Miff asks for the permission in advance, to be ready when arrivals and departures are noticed: nothing is read or saved for now."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour l'instant, Miff n'utilise pas la position de ton téléphone. Si cela change, on te l'expliquera clairement avant de te demander quoi que ce soit."
+            "value": "Pour l'instant, Miff n'utilise pas la position de ton téléphone. Miff te demande l'autorisation à l'avance, pour être prête quand les arrivées et les départs seront repérés : rien n'est lu ni enregistré pour l'instant."
           }
         }
       }

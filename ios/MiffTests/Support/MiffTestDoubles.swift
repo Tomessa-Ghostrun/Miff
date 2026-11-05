@@ -177,7 +177,12 @@ final class FakeMiffStore: MiffStore {
         build: @escaping ([String]) -> [DocWrite]
     ) async throws -> [String] {
         calls.append("commitWhereSharing")
-        let active = miffIds.filter { (consents[$0] as? SharingConsentRead)?.enabled == true }
+        let active = miffIds.filter { id in
+            guard let read = consents[id] as? SharingConsentRead else {
+                return false
+            }
+            return read.enabled && MiffSharingConsent.isRenewalDue(read.version)
+        }
         guard !active.isEmpty else {
             return []
         }

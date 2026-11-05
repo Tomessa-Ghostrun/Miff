@@ -18,6 +18,8 @@ Changé : les lots `stopSharing` (4 écritures), `leave` (5), `removeMember` (7)
 
 **Choix économiques** : aucun service, aucune dépendance, aucune clé ajoutés ; 0 €. **Aucune règle Firestore modifiée.** Lectures : la vérification du consentement lit l'index (1 lecture) et ma fiche de chaque Miff (2 lectures de règles chacune), une fois par lancement ; 1 Miff pour un compte gratuit. Écritures : un renouvellement = une écriture par Miff, une seule fois.
 
+**Après la revue indépendante** : `settings_privacy_location_body` corrigé (Android et iOS identiques) ; `miff_sharing_stop_body` cite la dernière position (Android et iOS) ; le renouvellement ne réécrit plus une Miff déjà renouvelée ailleurs (filtre sur la version dans la transaction) ; tests de parité de CONTENU des textes partagés, interdits MapKit/coordonnées hors fichiers des lieux ; recette : feuilles à boutons épinglés et décision D1.
+
 **Points ouverts (décisions du PM en attente, une ligne chacun : `GatePolicy`)** : accord avant « Toujours » (`consentBeforeLocation`) ; lien « Se déconnecter » sur les écrans bloquants (`exitLinksOnBlockingScreens`) ; « Pas maintenant » ouvre le Feed sans localisation (état hérité par LOC-4b) ; re-consentement à chaque lancement ; écran des notifications une seule fois par compte.
 
 ### MIFF-4 - Retirer un proche, quitter, supprimer la Miff, créer un nouveau code, « Prévenir mes proches » (miroir d'Android MIFF-2)

@@ -149,6 +149,19 @@ final class ConsentRenewalsTests: XCTestCase {
         XCTAssertEqual(sharing["revokedAt"], .null)
     }
 
+    func testRenewNeverRewritesAMiffAlreadyRenewedMeanwhileOnAnotherPhone() async {
+        // A est due ; B a été renouvelée ailleurs entre la vérification et le « J'accepte » : seule A est écrite (les règles
+        // refuseraient B, et tout le lot avec elle : la personne verrait un échec pour rien).
+        member(first, version: "2026-10-v2")
+        member(second, version: MiffSharingConsent.version)
+
+        let result = await renewals().renew(uid: uid, miffIds: [first, second])
+
+        XCTAssertEqual(result, .done)
+        XCTAssertEqual(store.commitsAsLots.count, 1)
+        XCTAssertEqual(store.commitsAsLots.first?.map { $0.path }, ["miffs/\(first)/members/\(uid)"])
+    }
+
     func testRenewReadsTheCardInTheTransactionAndNeverTurnsAStoppedSharingBackOn() async {
         member(first)
         // Arrêté entre-temps (autre téléphone) : rien n'est écrit pour elle, l'autre Miff est renouvelée.
