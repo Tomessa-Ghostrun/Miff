@@ -673,7 +673,7 @@ class ScreenInsetsTest {
     @Test
     fun account_isInsideTheSafeArea() =
         assertScreenIsSafe("account", withBackArrow = true) {
-            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {})
+            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {}, {})
         }
 
     @Test

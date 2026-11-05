@@ -110,4 +110,45 @@ class AuthFailureTest {
         assertEquals(AuthMessage.UNKNOWN, GoogleTokenResult.Unavailable.toMessage())
         assertEquals(AuthMessage.NETWORK, GoogleTokenResult.Failed(AuthFailure.NETWORK).toMessage())
     }
+
+    // --- AUTH-5: re-authentication and deletion of the account ---------------------------------------------------------------
+
+    @Test
+    fun reauthenticationWithAWrongPassword_isTheCalmWrongPasswordFailure() {
+        val error = FirebaseAuthInvalidCredentialsException("ERROR_WRONG_PASSWORD", "bad")
+        assertEquals(AuthFailure.INVALID_CREDENTIALS, interpret(error, AuthAttempt.REAUTH_EMAIL))
+        // For Google, "invalid credential" never means "wrong password".
+        assertEquals(AuthFailure.UNKNOWN, interpret(error, AuthAttempt.REAUTH_SOCIAL))
+    }
+
+    @Test
+    fun aCredentialOfAnotherAccount_isTheWrongAccountFailure() {
+        val error = FirebaseAuthInvalidCredentialsException("ERROR_USER_MISMATCH", "mismatch")
+        assertEquals(AuthFailure.WRONG_ACCOUNT, interpret(error, AuthAttempt.REAUTH_SOCIAL))
+        assertEquals(AuthMessage.REAUTH_WRONG_ACCOUNT, AuthFailure.WRONG_ACCOUNT.toMessage())
+    }
+
+    @Test
+    fun aSessionThatIsGone_isTheAccountGoneFailure_forTheAttemptsOnTheOpenSession_only() {
+        for (code in listOf("ERROR_USER_NOT_FOUND", "ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")) {
+            val error = FirebaseAuthInvalidUserException(code, "gone")
+            assertEquals(code, AuthFailure.ACCOUNT_GONE, interpret(error, AuthAttempt.DELETE_ACCOUNT))
+            assertEquals(code, AuthFailure.ACCOUNT_GONE, interpret(error, AuthAttempt.CHECK_SESSION))
+            assertEquals(code, AuthFailure.ACCOUNT_GONE, interpret(error, AuthAttempt.REAUTH_EMAIL))
+        }
+        // At sign-in, "user not found" stays the ONE message of "unknown address or wrong password" (no enumeration).
+        val notFound = FirebaseAuthInvalidUserException("ERROR_USER_NOT_FOUND", "gone")
+        assertEquals(AuthFailure.INVALID_CREDENTIALS, interpret(notFound, AuthAttempt.SIGN_IN_EMAIL))
+    }
+
+    @Test
+    fun aDisabledAccount_isNotConfusedWithAGoneOne() {
+        val disabled = FirebaseAuthInvalidUserException("ERROR_USER_DISABLED", "disabled")
+        assertEquals(AuthFailure.ACCOUNT_DISABLED, interpret(disabled, AuthAttempt.DELETE_ACCOUNT))
+    }
+
+    @Test
+    fun theNewFailures_neverShowATechnicalCode() {
+        assertEquals(AuthMessage.REAUTH_EXPIRED, AuthFailure.ACCOUNT_GONE.toMessage())
+    }
 }

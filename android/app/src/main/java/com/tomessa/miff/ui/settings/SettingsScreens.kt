@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -66,6 +67,11 @@ fun SettingsScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * A footer pinned under the scrolling content (the buttons of the deletion of the account): it keeps the safe areas of the
+     * bottom (navigation bar, keyboard) together with the body, so that nothing is padded twice.
+     */
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -106,20 +112,45 @@ fun SettingsScaffold(
                         .semantics { heading() },
             )
         }
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .miffBottomInsets()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.l, vertical = Spacing.m),
-            content = content,
-        )
+        // At the largest font sizes a pinned footer would eat the screen: it moves into the scrolling flow (mockup notes, criterion SC49).
+        val footerInFlow = footer != null && LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+        if (footer == null || footerInFlow) {
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .miffBottomInsets()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Spacing.l, vertical = Spacing.m),
+            ) {
+                content()
+                if (footer != null) footer()
+            }
+        } else {
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().miffBottomInsets()) {
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = Spacing.l, vertical = Spacing.m),
+                    content = content,
+                )
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = Spacing.s),
+                    content = footer,
+                )
+            }
+        }
     }
 }
 
 private val TopBarHeight = 56.dp
+
+/** From this font scale on, the footer of a screen with pinned buttons scrolls with the content. */
+private const val LARGE_FONT_SCALE = 1.8f
 
 /** One line of the Settings list: a pale blue tile with the icon, the title and its one-line help, and the chevron. */
 @Composable

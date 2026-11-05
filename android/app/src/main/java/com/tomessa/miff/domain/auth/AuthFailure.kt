@@ -1,5 +1,7 @@
 package com.tomessa.miff.domain.auth
 
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
@@ -14,8 +16,20 @@ enum class AuthAttempt {
     /** Google (ID token exchanged with Firebase), also used to re-authenticate. */
     SOCIAL,
 
-    /** Deletion of the account that was just created (refusal of the consent panel). */
+    /** Deletion of the account that was just created (refusal of the consent panel), or deletion of the account (AUTH-5). */
     DELETE_ACCOUNT,
+
+    /**
+     * Proving who the person is again with the password, before the deletion of the account (AUTH-5). The person is already
+     * signed in: a wrong password is a plain "that password does not match", not an account enumeration.
+     */
+    REAUTH_EMAIL,
+
+    /** Proving who the person is again with Google (AUTH-5). */
+    REAUTH_SOCIAL,
+
+    /** Asking Firebase whether the session still exists (AUTH-5, resuming a deletion). */
+    CHECK_SESSION,
 }
 
 /** Why an authentication step did not work, in terms the UI can word kindly. No technical detail leaks. */
@@ -44,7 +58,30 @@ enum class AuthFailure {
     /** Google dialog: Google did not answer this time (interrupted, short network problem): trying again is fine. */
     GOOGLE_INTERRUPTED,
     UNKNOWN,
+
+    /** Re-authentication with a Google account that is not the one of the session (AUTH-5, criterion SC11). */
+    WRONG_ACCOUNT,
+
+    /**
+     * The account no longer exists or its session can no longer be used (deleted from the console or from another phone, token
+     * revoked). Only answered for the attempts on the open session; for the deletion of the account it means "already done"
+     * (AUTH-5, criterion SC28).
+     */
+    ACCOUNT_GONE,
 }
+
+/** Firebase error codes that say "this user does not exist any more, or this session can no longer be used". */
+private val accountGoneCodes = setOf("ERROR_USER_NOT_FOUND", "ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")
+
+/** `ERROR_USER_MISMATCH`: the credential given belongs to another account than the one of the session. */
+private const val USER_MISMATCH_CODE = "ERROR_USER_MISMATCH"
+
+/** The attempts on the session already open: there, "user not found" means "the account is gone", not "wrong address". */
+private fun AuthAttempt.isAboutTheSession(): Boolean =
+    this == AuthAttempt.DELETE_ACCOUNT ||
+        this == AuthAttempt.REAUTH_EMAIL ||
+        this == AuthAttempt.REAUTH_SOCIAL ||
+        this == AuthAttempt.CHECK_SESSION
 
 /**
  * Turns any error of the authentication calls into an [AuthFailure]. Never exposes a code or a message.
@@ -57,6 +94,12 @@ fun interpretAuthError(
     attempt: AuthAttempt,
 ): AuthFailure {
     if (error is FirebaseAuthRecentLoginRequiredException) return AuthFailure.RECENT_LOGIN_REQUIRED
+    if (error is FirebaseAuthException && error.errorCode == USER_MISMATCH_CODE) return AuthFailure.WRONG_ACCOUNT
+    if (error is FirebaseAuthInvalidUserException && error.errorCode in accountGoneCodes &&
+        attempt.isAboutTheSession()
+    ) {
+        return AuthFailure.ACCOUNT_GONE
+    }
     if (error is FirebaseAuthUserCollisionException) {
         return when (error.errorCode) {
             "ERROR_EMAIL_ALREADY_IN_USE" -> {
@@ -76,7 +119,11 @@ fun interpretAuthError(
     }
     return when (interpretSignInError(error)) {
         SignInFailure.INVALID_CREDENTIALS -> {
-            if (attempt == AuthAttempt.SIGN_IN_EMAIL) AuthFailure.INVALID_CREDENTIALS else AuthFailure.UNKNOWN
+            if (attempt == AuthAttempt.SIGN_IN_EMAIL || attempt == AuthAttempt.REAUTH_EMAIL) {
+                AuthFailure.INVALID_CREDENTIALS
+            } else {
+                AuthFailure.UNKNOWN
+            }
         }
 
         SignInFailure.NETWORK -> {

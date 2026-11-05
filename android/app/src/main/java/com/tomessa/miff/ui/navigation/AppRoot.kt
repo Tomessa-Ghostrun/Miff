@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.os.SystemClock
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -51,6 +55,8 @@ import com.tomessa.miff.ui.permission.PermissionGate
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.ProfileFlow
 import com.tomessa.miff.ui.profile.ProfileViewModel
+import com.tomessa.miff.ui.settings.AccountDeletedBanner
+import com.tomessa.miff.ui.settings.AccountDeletionHost
 import com.tomessa.miff.ui.startup.StartupSlot
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -165,6 +171,11 @@ fun AppRoot(container: AppContainer) {
                     MiffOnboardingHost(container)
                 }
 
+                AppDestination.ACCOUNT_DELETION -> {
+                    // The deletion of the account is under way (or taken up again at launch): it has PRIORITY over every other screen.
+                    AccountDeletionHost(container)
+                }
+
                 AppDestination.FEED -> {
                     // LOC-2a: the notification screen, the renewal of the consent and the blocking location screen come BEFORE the Feed.
                     PermissionGate(container) {
@@ -179,8 +190,23 @@ fun AppRoot(container: AppContainer) {
     }
 }
 
+/** The signed-out screens, and over them the one-time banner of a deletion of the account that finished behind the screen. */
 @Composable
 private fun SignedOutHost(
+    container: AppContainer,
+    start: AppDestination,
+    googleSource: GoogleIdTokenSource,
+) {
+    // The deletion was finished behind the screen (app relaunched): one calm banner above the carousel, then it disappears.
+    var deletedNotice by remember { mutableStateOf(container.sessionManager.consumeAccountDeletedNotice()) }
+    Box(modifier = Modifier.fillMaxSize()) {
+        SignedOutNavigation(container, start, googleSource)
+        if (deletedNotice) AccountDeletedBanner(onDismiss = { deletedNotice = false })
+    }
+}
+
+@Composable
+private fun SignedOutNavigation(
     container: AppContainer,
     start: AppDestination,
     googleSource: GoogleIdTokenSource,
@@ -190,8 +216,13 @@ private fun SignedOutHost(
     val currentEntry by navController.currentBackStackEntryAsState()
     val canGoBack = currentEntry != null && navController.previousBackStackEntry != null
 
-    // The carousel only on the very first opening (no session, app never used, carousel never validated).
-    val showCarousel = remember { shouldShowWelcomeCarousel(start, container.onboardingFlags.carouselSeen) }
+    // The carousel on the very first opening (no session, app never used, carousel never validated), and once after the deletion of an
+    // account (decision of the PM, 2026-10-31): "Ton compte a été supprimé", then the carousel, then sign-up / sign-in. Both are read ONCE.
+    val showCarousel =
+        remember {
+            val afterDeletion = container.sessionManager.consumeCarouselAfterDeletion()
+            afterDeletion || shouldShowWelcomeCarousel(start, container.onboardingFlags.carouselSeen)
+        }
     val startDestination: Any =
         when {
             showCarousel -> WelcomeRoute
@@ -256,38 +287,46 @@ private fun SignedOutHost(
                 },
             )
         }
-        composable<PasswordResetRoute> { entry ->
-            val route = entry.toRoute<PasswordResetRoute>()
-            val viewModel: PasswordResetViewModel =
-                viewModel(
-                    factory =
-                        viewModelFactory {
-                            initializer {
-                                PasswordResetViewModel(
-                                    gateway = container.passwordResetGateway,
-                                    network = container.networkMonitor,
-                                    cooldown = container.passwordResetCooldown,
-                                    nowMillis = SystemClock::elapsedRealtime,
-                                )
-                            }
-                        },
-                )
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-            PasswordResetScreen(
-                state = uiState,
-                initialEmail = route.email,
-                // System back and the predictive back gesture pop this screen too (NavHost), like the arrow.
-                onBack = { navController.popBackStackIfSafe() },
-                onEmailChanged = viewModel::onEmailChanged,
-                onSubmit = viewModel::submit,
-                onBackToSignIn = { navController.popBackStackIfSafe() },
+        passwordResetRoute(container, navController)
+    }
+}
+
+/** "Mot de passe oublié" (AUTH-2), shared by the signed-out screens and the re-authentication of the deletion of the account (AUTH-5). */
+internal fun NavGraphBuilder.passwordResetRoute(
+    container: AppContainer,
+    navController: NavController,
+) {
+    composable<PasswordResetRoute> { entry ->
+        val route = entry.toRoute<PasswordResetRoute>()
+        val viewModel: PasswordResetViewModel =
+            viewModel(
+                factory =
+                    viewModelFactory {
+                        initializer {
+                            PasswordResetViewModel(
+                                gateway = container.passwordResetGateway,
+                                network = container.networkMonitor,
+                                cooldown = container.passwordResetCooldown,
+                                nowMillis = SystemClock::elapsedRealtime,
+                            )
+                        }
+                    },
             )
-        }
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        PasswordResetScreen(
+            state = uiState,
+            initialEmail = route.email,
+            // System back and the predictive back gesture pop this screen too (NavHost), like the arrow.
+            onBack = { navController.popBackStackIfSafe() },
+            onEmailChanged = viewModel::onEmailChanged,
+            onSubmit = viewModel::submit,
+            onBackToSignIn = { navController.popBackStackIfSafe() },
+        )
     }
 }
 
 /** Credential Manager needs an Activity to show its dialog: unwrap the themed contexts of Compose. */
-private fun googleSourceFor(context: Context): GoogleIdTokenSource {
+internal fun googleSourceFor(context: Context): GoogleIdTokenSource {
     var current: Context = context
     while (current is ContextWrapper && current !is Activity) current = current.baseContext
     return CredentialManagerGoogleSource(
