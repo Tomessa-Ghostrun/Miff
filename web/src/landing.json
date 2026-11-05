@@ -1,5 +1,5 @@
 {
-  "_comment": "Textes de la page d'accueil (landing). Mêmes clés en fr et en en (un test le vérifie), toutes utilisées par landing.html ou landing-cta.html. Seules les balises <em> et <strong> sont permises ; pas de guillemet droit. Aucun prix, aucune offre Premium, aucune promesse de sécurité (voir web/README.md).",
+  "_comment": "Textes de la page d'accueil (landing). Mêmes clés en fr et en en (un test le vérifie), toutes utilisées par landing.html ou landing-cta.html. Seules les balises <em> et <strong> sont permises ; pas de guillemet droit. Aucun prix (il est affiché par les stores et dans l'app, jamais en dur ici), l'offre s'appelle Miff+, aucune promesse de sécurité (voir web/README.md).",
   "fr": {
     "heroEyebrow": "Bientôt sur iPhone et Android",
     "heroTitle": "Savoir que tes proches vont bien, <em>sans les déranger.</em>",
@@ -85,14 +85,14 @@
     "u3Text": "Un coup d’œil pour savoir que l’autre est bien arrivé(e), chacun gardant son espace et la liberté de partager… ou non.",
 
     "pricingTitle": "Gratuit pour commencer",
-    "pricingText": "Tu peux utiliser Miff gratuitement avec 2 lieux de confiance et 1 Miff. Premium permettra d’en avoir davantage.",
+    "pricingText": "Tu peux utiliser Miff gratuitement avec 2 lieux de confiance et 1 Miff. Miff+ permettra d’en avoir davantage.",
     "planFree": "Gratuit",
     "planFreeItem1": "2 lieux de confiance",
     "planFreeItem2": "1 Miff",
-    "planPremium": "Premium",
+    "planPremium": "Miff+",
     "planPremiumItem1": "Plus de lieux de confiance",
     "planPremiumItem2": "Plus de Miffs",
-    "pricingNote": "Les détails de Premium ne sont pas encore définis.",
+    "pricingNote": "Le prix de Miff+ est affiché dans l’application, avant tout abonnement.",
 
     "faqTitle": "Questions fréquentes",
     "q1": "Mes proches peuvent-ils me suivre en direct ?",
@@ -104,7 +104,7 @@
     "q4": "Miff est-il un service d’urgence ?",
     "a4": "Non. Miff aide à se rassurer au quotidien, mais il ne remplace ni la discussion entre proches, ni les secours. En cas de danger ou de doute sérieux, appelle le 112.",
     "q5": "Combien ça coûte ?",
-    "a5": "Miff est gratuit avec 2 lieux de confiance et 1 Miff. Premium permettra d’en avoir plus ; ses détails ne sont pas encore définis.",
+    "a5": "Miff est gratuit avec 2 lieux de confiance et 1 Miff. Miff+ permettra d’en avoir plus ; son prix est affiché dans l’application avant tout abonnement.",
     "q6": "Quand pourrai-je télécharger Miff ?",
     "a6": "Miff n’est pas encore publié sur l’App Store ni sur Google Play. Utilise le lien « Être prévenu(e) du lancement » : nous te préviendrons à sa sortie, et ton adresse ne servira qu’à ça.",
 
@@ -207,14 +207,14 @@
     "u3Text": "One glance to know the other has arrived, each keeping their own space and the freedom to share… or not.",
 
     "pricingTitle": "Free to start",
-    "pricingText": "You can use Miff for free with 2 trusted places and 1 Miff. Premium will let you have more.",
+    "pricingText": "You can use Miff for free with 2 trusted places and 1 Miff. Miff+ will let you have more.",
     "planFree": "Free",
     "planFreeItem1": "2 trusted places",
     "planFreeItem2": "1 Miff",
-    "planPremium": "Premium",
+    "planPremium": "Miff+",
     "planPremiumItem1": "More trusted places",
     "planPremiumItem2": "More Miffs",
-    "pricingNote": "Premium details have not been defined yet.",
+    "pricingNote": "The price of Miff+ is shown in the app before you subscribe.",
 
     "faqTitle": "Frequently asked questions",
     "q1": "Can my loved ones follow me live?",
@@ -226,7 +226,7 @@
     "q4": "Is Miff an emergency service?",
     "a4": "No. Miff helps you feel reassured day to day, but it replaces neither a conversation between loved ones nor the emergency services. In case of danger or serious doubt, call your local emergency number (112 in Europe).",
     "q5": "How much does it cost?",
-    "a5": "Miff is free with 2 trusted places and 1 Miff. Premium will let you have more; its details have not been defined yet.",
+    "a5": "Miff is free with 2 trusted places and 1 Miff. Miff+ will let you have more; its price is shown in the app before you subscribe.",
     "q6": "When can I download Miff?",
     "a6": "Miff is not yet published on the App Store or Google Play. Use the “Get notified at launch” link: we will let you know when it is out, and your address will only be used for that.",
 

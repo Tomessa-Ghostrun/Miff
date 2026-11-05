@@ -141,7 +141,7 @@ miffs/{miffId}                           le cercle
   status/{uid}                           ÉTAT COURANT (sensible), existe seulement si partage activé
   positions/{uid}                        DERNIÈRE POSITION CONNUE (TRÈS sensible), lat/lng/heure, sans historique (R-LIEU-POS)
   photos/{uid}                           photo de la dernière update (sensible), durée de vie courte
-  places/{placeId}                       lieux : zone de confiance / zone à risque
+  places/{placeId}                       lieux : zone de confiance / zone de danger
 ```
 
 Conventions : `{uid}` = UID Firebase Auth. `miffId` = ID auto Firestore (20 caractères alphanumériques, imposé par les règles). Tous les horodatages sont des `Timestamp` Firestore. **Écrire toutes les clés d'un document à chaque écriture** (valeur `null` si non applicable) : les règles exigent le jeu de clés complet et refusent les clés inconnues.
@@ -332,7 +332,7 @@ Les trois clés sont **toujours présentes**, aucune autre n'est acceptée (ni p
 
 ## 3. Statuts : ce qui est stocké, ce qui est calculé
 
-**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : les seuils ci-dessous (2 h / 4 h) et la priorité « zone à risque » sont ceux d'avant les décisions du 2026-11-01 (1 h / 2 h, zone de confiance prioritaire, ticket Lieux §6.9) ; ils seront réécrits avec le ticket Tracking, hors de cette PR.
+**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : les seuils ci-dessous (2 h / 4 h) et la priorité « zone de danger » sont ceux d'avant les décisions du 2026-11-01 (1 h / 2 h, zone de confiance prioritaire, ticket Lieux §6.9) ; ils seront réécrits avec le ticket Tracking, hors de cette PR.
 **Calculé par chaque client à l'affichage** (algorithme identique iOS/Android, paramètres en constantes partagées) :
 
 ```
@@ -361,9 +361,9 @@ niveau(membre, statut, maintenant):
 |---|---|
 | Entrée zone de confiance | `presence=in_trusted`, `placeId`, `presenceAt=t`, `lastUpdateAt=t`, `escalationDueAt=null` |
 | Sortie zone de confiance | `presence=out`, `placeId` (lieu quitté), `presenceAt=t`, `escalationDueAt=t+2h` |
-| Entrée zone à risque | `presence=in_risk`, `placeId`, `presenceAt=t` (alerte immédiate = notification, Blaze) |
-| Sortie zone à risque | `presence=out`, `presenceAt=t`, `escalationDueAt=t+2h` |
-Si un lieu de confiance et une zone à risque se chevauchent, la zone à risque prime **[Hypothèse]**.
+| Entrée zone de danger | `presence=in_risk`, `placeId`, `presenceAt=t` (alerte immédiate = notification, Blaze) |
+| Sortie zone de danger | `presence=out`, `presenceAt=t`, `escalationDueAt=t+2h` |
+Si un lieu de confiance et une zone de danger se chevauchent, la zone de danger prime **[Hypothèse]**.
 
 ---
 
@@ -406,8 +406,8 @@ Le client ne peut jamais s'attribuer le premium (`entitlements` en écriture int
 | Limite | Mécanisme | Failles / limites connues |
 |---|---|---|
 | **1 Miff à la fois (gratuit)** | L'index `users/{uid}/memberships/free` ne peut être créé qu'une fois (un second `create` devient un `update`, interdit). Un document membre n'est accepté que si un index pointant vers la Miff existe dans le même batch. Une clé autre que `free` exige `entitlements` actif. | (a) **Fin du Premium (décision PM du 2026-10-24)** : les Miffs au-delà de la limite gratuite, **les dernières ajoutées**, sont **supprimées** (celles que l'utilisateur a créées : séquence « Supprimer une Miff » du §8 ; celles qu'il a rejointes : lot « Quitter »). L'ancienne règle « les Miffs restent conservées après expiration » est **abandonnée**. Les règles actuelles ne l'appliquent pas (elles tolèrent l'excédent) : préavis, notification bienveillante et choix de l'élément conservé seront définis dans le ticket Premium. (b) Si un membre est retiré, son index reste jusqu'à ce que son appli le nettoie (au lancement) : tant que ce n'est pas fait il ne peut pas rejoindre une autre Miff en gratuit. (c) Un client modifié peut ouvrir un second **compte** gratuit : propre à tout freemium. |
-| **2 lieux de confiance (gratuit)** (avant le 2026-11-01 : 1) | En gratuit, seuls les identifiants `p1` et `p2` et le type `trusted` sont acceptés pour créer un lieu. Premium : identifiants libres et zones à risque. **Passer un lieu existant à `risk` exige aussi le premium** (R-LIEU-6). | (a) Le compte "lieux" est par Miff ; comme un compte gratuit n'a qu'une Miff, cela revient à 2 lieux. Un ancien premium propriétaire de plusieurs Miffs peut avoir 2 lieux par Miff. (b) **Fin du Premium (décision PM du 2026-10-24)** : les lieux au-delà de la formule gratuite (2 lieux de confiance), **les derniers ajoutés**, zones à risque comprises, sont **supprimés** ; l'ancienne règle « les lieux premium sont conservés » est **abandonnée**. Non appliqué par les règles actuelles ; préavis, notification bienveillante et choix de l'élément conservé : ticket Premium. (c) Un membre gratuit d'une Miff dont le créateur est premium bénéficie des lieux : voulu par la spec ("les membres héritent"). |
-| **Zones à risque / notifications intelligentes (premium)** | Création d'une zone `risk` : exige le premium du créateur. Les notifications intelligentes sont du ressort du serveur (Blaze). | Savoir si le premium est "par utilisateur" ou "par Miff" : Q3. |
+| **2 lieux de confiance (gratuit)** (avant le 2026-11-01 : 1) | En gratuit, seuls les identifiants `p1` et `p2` et le type `trusted` sont acceptés pour créer un lieu. Premium : identifiants libres et zones de danger. **Passer un lieu existant à `risk` exige aussi le premium** (R-LIEU-6). | (a) Le compte "lieux" est par Miff ; comme un compte gratuit n'a qu'une Miff, cela revient à 2 lieux. Un ancien premium propriétaire de plusieurs Miffs peut avoir 2 lieux par Miff. (b) **Fin du Premium (décision PM du 2026-10-24)** : les lieux au-delà de la formule gratuite (2 lieux de confiance), **les derniers ajoutés**, zones de danger comprises, sont **supprimés** ; l'ancienne règle « les lieux premium sont conservés » est **abandonnée**. Non appliqué par les règles actuelles ; préavis, notification bienveillante et choix de l'élément conservé : ticket Premium. (c) Un membre gratuit d'une Miff dont le créateur est premium bénéficie des lieux : voulu par la spec ("les membres héritent"). |
+| **Zones de danger / notifications intelligentes (premium)** | Création d'une zone `risk` : exige le premium du créateur. Les notifications intelligentes sont du ressort du serveur (Blaze). | Savoir si le premium est "par utilisateur" ou "par Miff" : Q3. |
 | **Premium actif** | `entitlements.active == true` et `expiresAt > heure serveur` (les règles évaluent l'expiration elles-mêmes). | Tant qu'aucune fonction ne valide les achats, l'octroi est **manuel** (console) : ne pas ouvrir le paywall payant au public avant d'avoir la validation serveur (Blaze, §13). |
 
 La consommation en lectures des règles (get/exists) est facturée (§12) : c'est le prix de cette approche sans Cloud Function.
@@ -422,7 +422,7 @@ Algorithme proposé (client, en local ; priorisation exacte à valider, Q9) :
 1. Récupérer les `places` de toutes les Miffs de l'utilisateur (listener ; déjà en cache hors ligne).
 2. Fusionner les lieux quasi identiques de plusieurs Miffs (un seul géofence système, plusieurs destinataires) pour économiser les emplacements.
 3. Si le total dépasse 20 (iOS) / 100 (Android) : trier par `priority` croissante puis `createdAt`, puis préférer les lieux les plus proches de la position courante **calculée sur l'appareil** (changements significatifs de position), et ré-enregistrer les géofences au fil des déplacements.
-4. Réserver une partie du quota iOS aux zones à risque si elles existent (**[Hypothèse]**).
+4. Réserver une partie du quota iOS aux zones de danger si elles existent (**[Hypothèse]**).
 5. Un lieu non surveillé à cause de la limite : état local ("Ce lieu n'est pas surveillé actuellement") ; rien à écrire côté serveur.
 
 ---
@@ -701,7 +701,7 @@ Cloud Functions n'existent pas sur Spark. Aucune fonction n'est écrite à ce st
 | Octroi du premium | **Manuel** par le PM dans la console (testeurs) | Webhook de validation d'achat (RevenueCat ou notifications App Store/Google Play) qui écrit `entitlements` : **indispensable avant tout paywall réel**, sinon on ne peut pas prouver un achat |
 | **Notifications push** aux proches (entrée/sortie de lieu, arrivée dans une Miff) | **Non** : envoyer un push exige des identifiants serveur qu'on ne met jamais dans l'app | Fonction déclenchée à l'écriture de `status` → FCM |
 | **Escalade orange/rouge quand l'app du proche est fermée** | **Non** : le niveau n'est visible que si l'app d'un proche est ouverte | Fonction planifiée (toutes les ~10 min) qui interroge `status` où `escalationDueAt <= maintenant` (ajouter un index de groupe de collections sur ce champ), notifie, puis avance l'échéance |
-| Alerte zone à risque (premium) | Visible dans le feed seulement | Même fonction que le push |
+| Alerte zone de danger (premium) | Visible dans le feed seulement | Même fonction que le push |
 | Photos hébergées dans Cloud Storage | **Non** (Storage exige Blaze) → photos ≤ 150 Ko dans Firestore | Migration possible : le champ `jpeg` serait remplacé par un chemin |
 | Suppression de compte fiable (cascade) | Partielle, côté client (§10) | Extension "Delete User Data" ou fonction `onDelete` |
 | Anti brute force du code | App Check + entropie | Fonction appelable "rejoindre" avec compteur de tentatives |
@@ -755,9 +755,9 @@ Les autres questions ci-dessous seront tranchées au fil des tickets, quand la f
 
 1. **Blaze** (décision reportée par le PM le 2026-10-22, **à trancher avant la première bêta externe** ; signaux déclencheurs en §12) : accord pour passer en Blaze (carte bancaire + alerte de budget) avant la première bêta externe ? Sinon, accepter qu'il n'y ait ni push, ni escalade app fermée, ni paywall réel.
 2. **Photos** : Firestore (≤ 150 Ko, 24 h, sans Blaze) ou Cloud Storage (meilleure qualité, exige Blaze) ? Durée de vie de la photo d'update (24 h proposé) ? La photo est-elle obligatoire dans une update ?
-3. **Premium** : par utilisateur ou par Miff ? Qui bénéficie des zones à risque et des notifications intelligentes (le créateur premium, ou tout le cercle) ? Que devient l'excédent (lieux, Miffs) à l'expiration ? **Décidé le 2026-10-24** : l'excédent (les derniers lieux et Miffs ajoutés) est supprimé ; préavis, notification et choix de l'élément conservé restent à définir dans le ticket Premium.
+3. **Premium** : par utilisateur ou par Miff ? Qui bénéficie des zones de danger et des notifications intelligentes (le créateur premium, ou tout le cercle) ? Que devient l'excédent (lieux, Miffs) à l'expiration ? **Décidé le 2026-10-24** : l'excédent (les derniers lieux et Miffs ajoutés) est supprimé ; préavis, notification et choix de l'élément conservé restent à définir dans le ticket Premium.
 4. ~~**Compte du quota "1 lieu"**~~ **Tranché le 2026-11-01 : gratuit = 2 lieux de confiance, la zone de danger est réservée au premium (création et changement de type), illimité en premium.**
-5. **Qui définit les zones à risque** : le créateur seulement (supposé) ou chaque membre pour lui-même ? Que déclenche l'entrée (alerte immédiate à tout le cercle) ?
+5. **Qui définit les zones de danger** : le créateur seulement (supposé) ou chaque membre pour lui-même ? Que déclenche l'entrée (alerte immédiate à tout le cercle) ?
 6. **Réciprocité** : confirmer qu'un membre qui ne partage pas sa position ne voit pas celle des autres (supposé, pour limiter le risque de surveillance à sens unique). Un parent doit-il pouvoir voir un enfant sans partager la sienne (ce qui lèverait la réciprocité) ?
 7. **Code d'invitation** : visible par tous les membres (supposé) ou seulement le créateur ? Régénération (prévue) ? ~~Faut-il bloquer le retour d'un membre retiré ?~~ **Tranché le 2026-10-22 : le retrait d'un membre renouvelle le code (imposé par les règles, DUR-2) ; le départ volontaire ne change rien.** Validation du créateur à l'arrivée ? Taille maximale d'une Miff (coût du feed proportionnel) ?
 8. **Créateur qui part** : suppression de la Miff (supposé), transfert de propriété, ou impossible tant que d'autres membres restent ?

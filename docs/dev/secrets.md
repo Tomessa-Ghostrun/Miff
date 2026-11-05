@@ -1,6 +1,6 @@
 # Gestion des secrets
 
-**Règle d'or : un secret ne va jamais dans le dépôt, un chat, un ticket, une capture d'écran ni un message de commit.** Ni « temporairement », ni « dans une branche jetable ». Le dépôt est privé, mais un secret commité reste dans l'historique git pour toujours.
+**Règle d'or : un secret ne va jamais dans le dépôt, un chat, un ticket, une capture d'écran ni un message de commit.** Ni « temporairement », ni « dans une branche jetable ». Le dépôt est **public** (vérifié le 2026-11-04) : un secret commité est lisible de tous dès le push, et reste dans l'historique git pour toujours.
 
 Ce document dit : quels secrets existent, comment les créer dans GitHub, comment les utiliser en CI, et quoi faire en cas de fuite. Le PM crée les secrets lui-même (aucun agent n'a accès à la console GitHub, Firebase ou Apple).
 
@@ -80,7 +80,7 @@ Toujours avec `--project miff-3d283`. Ne jamais cibler `ghostrun-app`.
 
 - `.gitignore` empêche l'ajout par accident ; le job CI `hygiene` échoue si un fichier interdit (liste dans `.github/workflows/hygiene.yml`) ou un motif de secret (outil gitleaks) apparaît dans une PR.
 - Ces contrôles réduisent le risque, ils ne le suppriment pas : un secret collé dans un fichier texte ordinaire peut échapper à la détection. La revue de code regarde aussi ce point.
-- Le blocage automatique à l'envoi (« push protection ») de GitHub n'est pas supposé disponible sur un dépôt privé gratuit (à vérifier dans les réglages du dépôt).
+- Le blocage automatique à l'envoi (« push protection ») de GitHub n'était pas supposé disponible sur un dépôt privé gratuit. **Le dépôt étant public (2026-11-04), cette limite ne s'applique probablement plus** : à vérifier dans les réglages du dépôt (Settings > Code security) et à activer si disponible.
 
 ## En cas de fuite (ou de doute)
 

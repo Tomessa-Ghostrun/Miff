@@ -60,13 +60,13 @@ Notes :
 - EN : "Miff uses your phone's location, including in the background and even when the app is closed, to detect your arrivals and departures at trusted places and to share your status and last known location with the members of your Miff who also share. You can stop at any time."
 - Éviter dans la fiche : « suivi », « surveillance », « espionner », « en temps réel », « sécurité garantie ».
 
-## 6. Politique « stalkerware » de Google : point d'attention (point ouvert O8 du README)
+## 6. Politique « stalkerware » de Google : point d'attention (O8 du README, risque assumé par le PM le 2026-11-04)
 
 Texte lu le 2026-11-04 (politique « Device and Network Abuse », section stalkerware, en vigueur depuis le 1er octobre 2020) :
 - seules des apps « conçues et commercialisées exclusivement pour les parents (pour suivre leurs enfants) » ou pour la gestion d'entreprise sont admises comme apps de suivi, et « ne peuvent pas servir à suivre quelqu'un d'autre (un conjoint, par exemple) », **même avec l'accord de la personne** ;
 - les autres apps qui suivent un comportement ne doivent pas se présenter comme une solution d'espionnage ou de surveillance secrète, ne doivent pas cacher le suivi, doivent afficher **une notification persistante en permanence** pendant que l'app tourne et **une icône unique** qui l'identifie.
 
-**Pourquoi c'est un point d'attention** : Miff s'adresse aussi aux amis et aux couples (CLAUDE.md), pas seulement aux parents ; le partage est **réciproque, consenti par chaque membre et visible** (écran de consentement, lieux visibles de tous), ce qui est l'inverse d'un suivi caché, mais la lettre de la politique parle de « suivre quelqu'un d'autre ». Je ne peux pas dire comment Google l'appliquera à Miff. **Ce risque n'est pas dans ceux que le PM a assumés** (R1, R3, R4, R15, R16, R18). Une zone de danger qui met un proche en rouge (R16) et la lisibilité de la position (R18) renforcent la sensibilité.
+**Pourquoi c'est un point d'attention** : Miff s'adresse aussi aux amis et aux couples (CLAUDE.md), pas seulement aux parents ; le partage est **réciproque, consenti par chaque membre et visible** (écran de consentement, lieux visibles de tous), ce qui est l'inverse d'un suivi caché, mais la lettre de la politique parle de « suivre quelqu'un d'autre ». Je ne peux pas dire comment Google l'appliquera à Miff. **Ce risque est assumé par le PM depuis le 2026-11-04**, en plus de R1, R3, R4, R15, R16 et R18 (écrit comme tel, jamais « à valider »). Une zone de danger qui met un proche en rouge (R16) et la lisibilité de la position (R18) renforcent la sensibilité.
 
 **Ce que le dossier prévoit pour limiter le risque** (rien de tout cela ne garantit l'issue) :
 - fiche et captures sans vocabulaire de surveillance ; accent sur « réassurance », « sans les déranger », « tu choisis ce que tu partages » ;
