@@ -123,7 +123,7 @@ struct PlaceFormContent: View {
     let state: PlaceFormState
     let actions: PlaceFormActions
 
-    @Environment(.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var title: String {
         L10n.string(state.mode == .create ? "place_form_title_new" : "place_form_title_edit")
