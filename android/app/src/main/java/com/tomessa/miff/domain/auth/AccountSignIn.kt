@@ -15,8 +15,11 @@ enum class SessionCheck {
     /** The account exists and its session is valid. */
     VALID,
 
-    /** The account was deleted or its session can no longer be used: for a deletion in progress, that is a success. */
+    /** Firebase says the account does not exist any more (`ERROR_USER_NOT_FOUND`): for a deletion in progress, that is a success. */
     GONE,
+
+    /** The session can no longer be used (token expired or revoked) but the account may still exist: NEVER a success, sign in again. */
+    EXPIRED,
 
     /** No network, or the answer is unclear: nothing can be concluded. */
     UNKNOWN,

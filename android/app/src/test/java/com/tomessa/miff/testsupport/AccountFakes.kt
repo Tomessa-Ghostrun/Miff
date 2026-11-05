@@ -106,7 +106,12 @@ class FakeDeletionSession(
     private val timeline: Timeline,
 ) : AccountDeletionSession {
     var begins = 0
+    var cancels = 0
+    var keptMarkerSignOuts = 0
     var erased = mutableListOf<String>()
+
+    /** Runs when the local cleaning starts (to look at the state of the marker at that moment). */
+    var onErase: () -> Unit = {}
 
     override suspend fun beginAccountDeletion() {
         begins++
@@ -114,7 +119,18 @@ class FakeDeletionSession(
     }
 
     override suspend fun eraseAfterAccountDeletion(uid: String) {
+        onErase()
         erased += uid
         timeline += "erase"
+    }
+
+    override suspend fun cancelAccountDeletion() {
+        cancels++
+        timeline += "cancel"
+    }
+
+    override suspend fun endSessionKeepingDeletionMarker() {
+        keptMarkerSignOuts++
+        timeline += "endSessionKeepingMarker"
     }
 }

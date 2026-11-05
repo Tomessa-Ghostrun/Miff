@@ -59,6 +59,7 @@ import com.tomessa.miff.ui.profile.ProfileFlow
 import com.tomessa.miff.ui.profile.ProfileViewModel
 import com.tomessa.miff.ui.settings.AccountDeletedBanner
 import com.tomessa.miff.ui.settings.AccountDeletionHost
+import com.tomessa.miff.ui.settings.DeletionBlockedNotice
 import com.tomessa.miff.ui.startup.StartupSlot
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -190,6 +191,8 @@ fun AppRoot(container: AppContainer) {
             }
         }
     }
+    // A deletion cancelled because a Miff showed up: one calm message over whatever screen the routing chose (AUTH-5a).
+    DeletionBlockedNotice(session)
 }
 
 /** The screen of an account that could not be read, with the way to the deletion of the account (AUTH-5a, reachable here too). */

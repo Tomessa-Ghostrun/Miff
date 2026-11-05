@@ -150,6 +150,11 @@ class DeleteReauthViewModel(
         )
     val uiState: StateFlow<DeleteReauthUiState> = mutableState.asStateFlow()
 
+    /** The screen was left (the deletion went on or stopped): a later visit starts with nothing busy and no old message. */
+    fun resetBusy() {
+        mutableState.update { it.copy(busy = false, message = null) }
+    }
+
     /** "Confirmer" with a password. [password] is used once and not kept. */
     fun submitPassword(password: String) {
         if (mutableState.value.busy || password.isEmpty() || !mutableState.value.hasPassword) return
@@ -170,7 +175,7 @@ class DeleteReauthViewModel(
         viewModelScope.launch {
             when (val token = source.requestIdTokenForReauthentication()) {
                 is GoogleTokenResult.Token -> {
-                    finish(gateway.reauthenticateWithGoogle(token.idToken), google = true)
+                    finish(gateway.reauthenticateWithGoogleForDeletion(token.idToken), google = true)
                 }
 
                 GoogleTokenResult.Cancelled -> {

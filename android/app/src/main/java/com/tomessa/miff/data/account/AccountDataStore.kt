@@ -18,7 +18,8 @@ import kotlinx.coroutines.tasks.await
 interface AccountDataStore {
     /**
      * How many documents `users/{uid}/memberships` holds, read from the SERVER (throws offline). EVERY document counts, even one
-     * that does not have the shape of an index: nothing may be left behind a profile that is deleted.
+     * that does not have the shape of an index: nothing may be left behind a profile that is deleted. A STALE index (its Miff deleted, the
+     * person removed) counts too: AUTH-5b cleans those first.
      */
     suspend fun membershipCount(uid: String): Int
 

@@ -73,6 +73,7 @@ import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
 import com.tomessa.miff.data.profile.MyProfileRepository
 import com.tomessa.miff.data.session.LocalDataEraser
 import com.tomessa.miff.data.session.SessionManager
+import com.tomessa.miff.data.session.accountLocalDataErasers
 import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
@@ -338,10 +339,7 @@ class AppContainer(
 
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
-        listOf(
-            LocalDataEraser { uid -> notificationAsks.forget(uid) },
-            LocalDataEraser { uid -> pendingMiffDeletions.ids(uid).forEach { pendingMiffDeletions.remove(uid, it) } },
-        )
+        accountLocalDataErasers(notificationAsks, pendingMiffDeletions)
     }
 
     val sessionManager: SessionManager by lazy {

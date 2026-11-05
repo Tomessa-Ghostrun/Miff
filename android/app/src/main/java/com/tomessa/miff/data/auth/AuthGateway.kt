@@ -45,6 +45,12 @@ interface AuthGateway {
     suspend fun reauthenticateWithGoogle(idToken: String): AuthFailure?
 
     /**
+     * The same proof for the deletion of the account (AUTH-5): the errors are read as errors on the OPEN session (wrong Google account,
+     * session expired...). The refusal of the consent panel keeps [reauthenticateWithGoogle].
+     */
+    suspend fun reauthenticateWithGoogleForDeletion(idToken: String): AuthFailure?
+
+    /**
      * Proves who the person is again with the password of the account (AUTH-5). Null = done. The password goes to Firebase and
      * nowhere else: it is not kept, not logged, not part of any message of ours.
      */
@@ -119,6 +125,12 @@ class FirebaseAuthGateway(
             user.reauthenticate(GoogleAuthProvider.getCredential(idToken, null)).await()
         }
 
+    override suspend fun reauthenticateWithGoogleForDeletion(idToken: String): AuthFailure? =
+        runCatchingAuth(AuthAttempt.REAUTH_SOCIAL) {
+            val user = auth.currentUser ?: throw IllegalStateException("no session")
+            user.reauthenticate(GoogleAuthProvider.getCredential(idToken, null)).await()
+        }
+
     override suspend fun reauthenticateWithPassword(password: String): AuthFailure? {
         val user = auth.currentUser
         val email = user?.email
@@ -135,25 +147,17 @@ class FirebaseAuthGateway(
         }
 
     override fun linkedProviders(): Set<SignInProvider> =
-        auth.currentUser
-            ?.providerData
-            .orEmpty()
-            .mapNotNull {
-                when (it.providerId) {
-                    EmailAuthProvider.PROVIDER_ID -> SignInProvider.PASSWORD
-                    GoogleAuthProvider.PROVIDER_ID -> SignInProvider.GOOGLE
-                    APPLE_PROVIDER_ID -> SignInProvider.APPLE
-                    else -> null
-                }
-            }.toSet()
+        providersFrom(
+            auth.currentUser
+                ?.providerData
+                .orEmpty()
+                .map { it.providerId },
+        )
 
     override suspend fun checkSession(): SessionCheck {
-        val user = auth.currentUser ?: return SessionCheck.GONE
-        return when (runCatchingAuth(AuthAttempt.CHECK_SESSION) { user.reload().await() }) {
-            null -> SessionCheck.VALID
-            AuthFailure.ACCOUNT_GONE -> SessionCheck.GONE
-            else -> SessionCheck.UNKNOWN
-        }
+        // Nobody signed in: the account may exist or not, we cannot tell: never "gone".
+        val user = auth.currentUser ?: return SessionCheck.EXPIRED
+        return sessionCheckOf(runCatchingAuth(AuthAttempt.CHECK_SESSION) { user.reload().await() })
     }
 
     override fun signInMethod(): AnalyticsEvent.Method? {
@@ -203,8 +207,29 @@ class FirebaseAuthGateway(
             AuthOutcome.Failure(interpretAuthError(e, attempt))
         }
 
-    private companion object {
+    internal companion object {
         const val APPLE_PROVIDER_ID = "apple.com"
+
+        /** The sign-in methods Miff knows, from the provider ids Firebase holds for the user. */
+        fun providersFrom(providerIds: List<String>): Set<SignInProvider> =
+            providerIds
+                .mapNotNull {
+                    when (it) {
+                        EmailAuthProvider.PROVIDER_ID -> SignInProvider.PASSWORD
+                        GoogleAuthProvider.PROVIDER_ID -> SignInProvider.GOOGLE
+                        APPLE_PROVIDER_ID -> SignInProvider.APPLE
+                        else -> null
+                    }
+                }.toSet()
+
+        /** What a `reload` answer means: only `ERROR_USER_NOT_FOUND` says "gone"; an expired or revoked token says "sign in again". */
+        fun sessionCheckOf(failure: AuthFailure?): SessionCheck =
+            when (failure) {
+                null -> SessionCheck.VALID
+                AuthFailure.ACCOUNT_GONE -> SessionCheck.GONE
+                AuthFailure.SESSION_EXPIRED -> SessionCheck.EXPIRED
+                else -> SessionCheck.UNKNOWN
+            }
     }
 
     private suspend fun runCatchingAuth(

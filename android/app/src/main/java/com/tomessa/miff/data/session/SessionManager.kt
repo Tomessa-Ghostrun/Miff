@@ -56,6 +56,12 @@ enum class SignedOutNotice {
      * welcome carousel says it once, calmly ("Ton compte a été supprimé.").
      */
     ACCOUNT_DELETED,
+
+    /**
+     * The session was closed behind our back while a deletion of the account was under way (token expired or revoked, forced sign-out): the
+     * account may still exist, so NOTHING says "deleted". The marker stays; signing in again with the same account resumes the deletion.
+     */
+    DELETION_PENDING,
 }
 
 sealed interface RefuseResult {
@@ -521,7 +527,13 @@ class SessionManager(
             return false
         }
         if (uid == null) {
-            finishDeletionBehindTheScreen(mark.uid)
+            if (mark.accountDeleted) {
+                // Firebase confirmed the deletion before the app was killed: that is a success, not a failure.
+                finishDeletionBehindTheScreen(mark.uid)
+            } else {
+                // No session and no proof of deletion (forced sign-out, token revoked...): neutral and honest, the marker stays.
+                endSessionKeepingDeletionMarker()
+            }
             return true
         }
         sessionActive = true
@@ -537,6 +549,37 @@ class SessionManager(
     }
 
     // --- Deletion of the account (AUTH-5) ------------------------------------------------------------------
+
+    private val mutableDeletionBlocked = MutableStateFlow(false)
+
+    /** True after a deletion cancelled because a Miff showed up: one calm message, shown over the app until it is acknowledged. */
+    val deletionBlockedNotice: StateFlow<Boolean> = mutableDeletionBlocked.asStateFlow()
+
+    fun dismissDeletionBlockedNotice() {
+        mutableDeletionBlocked.value = false
+    }
+
+    override suspend fun cancelAccountDeletion() {
+        withContext(NonCancellable) {
+            // What stopped for the deletion starts again: a new generation (tracking and the screens keyed on it), then the usual routing.
+            generation++
+            ending = false
+            sessionActive = true
+            mutableDeletionBlocked.value = true
+            resolveCurrent()
+        }
+    }
+
+    override suspend fun endSessionKeepingDeletionMarker() {
+        withContext(NonCancellable) {
+            ending = true
+            cache.markPurgePending()
+            stopEverything()
+            cache.purge()
+            // Not "account unavailable": the sign-in screen says the deletion will be finished once the person is back.
+            finishSignedOut(AppDestination.SIGN_IN, SignedOutNotice.DELETION_PENDING, markReturning = true)
+        }
+    }
 
     /**
      * Step 0 of the deletion (criterion SC15): from now on the app shows the deletion screens, and every listener, the monitoring of the
@@ -616,6 +659,12 @@ class SessionManager(
         signUpConsent: ConsentChoice?,
     ) {
         sessionActive = true
+        // The same account signs in again while its deletion is pending (session closed behind our back): the deletion resumes, it is not
+        // routed as a normal account (its profile may be gone already).
+        if (deletionMarker?.read()?.uid == uid) {
+            beginAccountDeletion()
+            return
+        }
         // Nothing is collected until the account's own choice has been read (paused, nothing deleted yet).
         privacy.pauseCollection()
         if (signUpConsent != null) {

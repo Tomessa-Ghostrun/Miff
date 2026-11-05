@@ -10,7 +10,9 @@ import com.tomessa.miff.data.privacy.WithdrawalStorage
 import com.tomessa.miff.data.session.LocalDataEraser
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.session.SessionState
+import com.tomessa.miff.data.session.SignedOutNotice
 import com.tomessa.miff.domain.auth.AppDestination
+import com.tomessa.miff.domain.auth.AuthOutcome
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeMiffRepository
@@ -111,9 +113,9 @@ class SessionManagerAccountDeletionTest {
     // --- A session that is gone = success --------------------------------------------------------------------
 
     @Test
-    fun aMarkerButNoSessionAnyMore_isASuccess_theDataIsErased_theCarouselSaysItOnce() =
+    fun aMarkerConfirmedAsDeleted_butNoSessionAnyMore_isASuccess_theDataIsErased_theCarouselSaysItOnce() =
         run { h ->
-            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false, accountDeleted = true)
             h.gateway.setSignedIn(null)
             h.manager.start()
             assertEquals(AppDestination.SIGN_UP, h.manager.destination())
@@ -127,6 +129,82 @@ class SessionManagerAccountDeletionTest {
             assertFalse(h.manager.consumeCarouselAfterDeletion())
             // And it is not the "session lost" message of the sign-in screen.
             assertNull(h.manager.consumeNotice())
+        }
+
+    @Test
+    fun aMarkerNotConfirmedAsDeleted_andNoSession_isNeverAnnouncedAsDeleted_theMarkerStays() =
+        run { h ->
+            // Signed out behind our back (token revoked...): "deleted" cannot be told from "signed out": neutral and honest.
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            h.manager.start()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            assertEquals(AccountDeletionMark("uid-1", appleLinked = false), marker.stored)
+            assertFalse(h.manager.consumeAccountDeletedNotice())
+            assertFalse(h.manager.consumeCarouselAfterDeletion())
+            assertEquals(SignedOutNotice.DELETION_PENDING, h.manager.consumeNotice())
+            assertTrue("the local data of the account is not erased as if it were deleted", erasedFor.isEmpty())
+        }
+
+    @Test
+    fun signingInAgainWithTheSameAccount_resumesTheDeletion_neverTheUsualRouting() =
+        run { h ->
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            h.manager.start()
+            h.gateway.signInResult = AuthOutcome.Success("uid-1", isNewUser = false)
+            h.accounts.setLoaded(profileExists = false)
+            h.manager.signInWithEmail("a@b.c", "secret")
+            assertEquals(AppDestination.ACCOUNT_DELETION, h.manager.destination())
+            assertEquals(0, h.accounts.loadCalls)
+            assertEquals(AccountDeletionMark("uid-1", appleLinked = false), marker.stored)
+        }
+
+    @Test
+    fun signingInWithAnotherAccount_leavesTheMarkerAlone_andRoutesAsUsual() =
+        run { h ->
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            h.manager.start()
+            h.gateway.signInResult = AuthOutcome.Success("uid-2", isNewUser = false)
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.signInWithEmail("b@b.c", "secret")
+            assertEquals(AppDestination.FEED, h.manager.destination())
+            assertEquals("uid-1", marker.stored?.uid)
+        }
+
+    @Test
+    fun endingTheSessionForTheDeletion_keepsTheMarker_purgesTheCache_andAsksToSignInAgain() =
+        run { h ->
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            h.gateway.setSignedIn("uid-1")
+            h.manager.start()
+            h.manager.endSessionKeepingDeletionMarker()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            assertEquals("uid-1", marker.stored?.uid)
+            assertEquals(1, h.cache.purgeCalls)
+            assertEquals(SignedOutNotice.DELETION_PENDING, h.manager.consumeNotice())
+        }
+
+    // --- A Miff showed up: the deletion is a cancellation, not a dead end ------------------------------------
+
+    @Test
+    fun aCancelledDeletion_putsTheAppBackOnTrack_withTheUsualRouting_andOneCalmMessage() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.start()
+            val generation = h.manager.generation
+            h.manager.beginAccountDeletion()
+            assertEquals(AppDestination.ACCOUNT_DELETION, h.manager.destination())
+            marker.stored = null // the controller erases it BEFORE calling this
+            h.manager.cancelAccountDeletion()
+            // The routing is the usual one again (the feed), what stopped can start again (a new generation).
+            assertEquals(AppDestination.FEED, h.manager.destination())
+            assertTrue(h.manager.generation > generation)
+            assertTrue(h.manager.deletionBlockedNotice.value)
+            h.manager.dismissDeletionBlockedNotice()
+            assertFalse(h.manager.deletionBlockedNotice.value)
+            // And our own end of session is armed again: losing the session is a loss like any other.
+            h.gateway.setSignedIn(null)
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
         }
 
     // --- Our own end of session is not a loss ----------------------------------------------------------------

@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
@@ -67,6 +68,8 @@ fun SettingsScaffold(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The title of the bar: bold on the deletion of the account (mockups 02 to 06), the usual title elsewhere. */
+    titleStyle: TextStyle = textDisplayTitle,
     /**
      * A footer pinned under the scrolling content (the buttons of the deletion of the account): it keeps the safe areas of the
      * bottom (navigation bar, keyboard) together with the body, so that nothing is padded twice.
@@ -103,7 +106,7 @@ fun SettingsScaffold(
             }
             Text(
                 text = title,
-                style = textDisplayTitle,
+                style = titleStyle,
                 color = colorTextForm,
                 textAlign = TextAlign.Center,
                 modifier =

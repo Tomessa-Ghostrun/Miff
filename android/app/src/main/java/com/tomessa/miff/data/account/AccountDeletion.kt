@@ -32,8 +32,17 @@ sealed interface Inventory {
 
 /** How one run of the procedure ended. Running it again always carries on from the state read on the server. */
 sealed interface DeletionRun {
-    /** The authentication account is deleted (by this run, or it was already gone: both are a success). */
+    /**
+     * The authentication account is DELETED: by this run, or Firebase says it does not exist any more (`ERROR_USER_NOT_FOUND`). Only that
+     * counts: no session, an expired or revoked token are NOT a deletion ([SessionExpired]).
+     */
     data object Completed : DeletionRun
+
+    /**
+     * The session can no longer be used (nobody is signed in any more, token expired or revoked) while the account may still exist: the
+     * marker stays, nothing says "deleted", the person signs in again and the deletion resumes (same account).
+     */
+    data object SessionExpired : DeletionRun
 
     /** Stopped for lack of network: nothing is lost, it carries on when the network is back. */
     data object Offline : DeletionRun
@@ -43,7 +52,10 @@ sealed interface DeletionRun {
 
     /**
      * An index of a Miff is still there: this version cannot delete a Miff (AUTH-5b), and a profile or an account is never deleted
-     * with a Miff behind it. Nothing of the profile was deleted.
+     * with a Miff behind it. Nothing of the profile was deleted; at most the push tokens of `devices` (read after the first check, they
+     * are written again by the next sign-in on that phone). The controller treats it as a CANCELLATION: marker erased, app back on track.
+     * NOTE for AUTH-5b: an account whose only indexes are STALE (Miff deleted, member removed: the index is still there) counts as "has
+     * Miffs" here, since [AccountDataStore.membershipCount] counts every document; AUTH-5b cleans those up (`cleanUpLost`) before this check.
      */
     data object MiffsRemain : DeletionRun
 
@@ -87,7 +99,8 @@ class AccountDeletion(
 
     override suspend fun run(uid: String): DeletionRun {
         // The marker belongs to ONE account: another one is never deleted by a marker that is not theirs.
-        val current = gateway.currentUid ?: return DeletionRun.Completed
+        // Nobody signed in: the account may exist or not (forced sign-out, token revoked...): never taken for "deleted".
+        val current = gateway.currentUid ?: return DeletionRun.SessionExpired
         if (current != uid) return DeletionRun.Failed
 
         // 1. Nothing is touched while a Miff is there.
@@ -122,8 +135,11 @@ class AccountDeletion(
         // 5. The purge is recorded BEFORE the account goes: killed in between, the next launch purges before any other access.
         cache.markPurgePending()
         cache.flushPendingWrites()
+        // `deleteCurrentAccount` answers "done" when nobody is signed in: that would not be a deletion.
+        if (gateway.currentUid != uid) return DeletionRun.SessionExpired
         return when (gateway.deleteCurrentAccount()) {
             null, AuthFailure.ACCOUNT_GONE -> DeletionRun.Completed
+            AuthFailure.SESSION_EXPIRED -> DeletionRun.SessionExpired
             AuthFailure.RECENT_LOGIN_REQUIRED -> DeletionRun.NeedsRecentLogin
             AuthFailure.NETWORK -> DeletionRun.Offline
             else -> afterRefusal(MiffFailure.UNKNOWN)
@@ -135,6 +151,7 @@ class AccountDeletion(
         if (failure == MiffFailure.OFFLINE) return DeletionRun.Offline
         return when (gateway.checkSession()) {
             SessionCheck.GONE -> DeletionRun.Completed
+            SessionCheck.EXPIRED -> DeletionRun.SessionExpired
             SessionCheck.VALID, SessionCheck.UNKNOWN -> DeletionRun.Failed
         }
     }

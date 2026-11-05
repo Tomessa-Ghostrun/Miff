@@ -28,10 +28,14 @@ sealed interface AccountDeletionState {
     /** Firebase asks for a more recent sign-in: the "Dernière vérification" screen. */
     data object NeedsRecentLogin : AccountDeletionState
 
-    /** Stopped after several tries ([miffsRemain] false), or because a Miff is still there (AUTH-5b): contact and "Réessayer". */
-    data class Stuck(
-        val miffsRemain: Boolean,
-    ) : AccountDeletionState
+    /** Stopped after several tries (or a network that is "there" but does not carry): the contact and "Réessayer". */
+    data object Stuck : AccountDeletionState
+
+    /**
+     * The session can no longer be used (closed behind our back, token expired or revoked) while the account may still exist: NOTHING says
+     * "deleted"; the marker stays and the person signs in again with the same account, which takes the deletion up again.
+     */
+    data object NeedsSignIn : AccountDeletionState
 
     /** Everything is deleted and the local data cleaned up. [appleLinked]: the Apple authorization is still to be removed by hand. */
     data class Done(
@@ -57,6 +61,9 @@ interface AccountDeletionControls {
 
     /** The end screen was dismissed. */
     fun acknowledge()
+
+    /** "Me reconnecter" on the [AccountDeletionState.NeedsSignIn] screen: the session is closed, the marker stays. */
+    fun signInAgain()
 }
 
 /** What the controller asks of the session (implemented by the SessionManager). */
@@ -72,6 +79,16 @@ interface AccountDeletionSession {
      * erases the marker LAST (an app killed before that purges again at the next launch).
      */
     suspend fun eraseAfterAccountDeletion(uid: String)
+
+    /**
+     * A Miff showed up after the information screen (AUTH-5a cannot delete it): the deletion is CANCELLED. The marker is already erased; the
+     * app goes back on track (the account is read again and the routing decided as usual, what was stopped starts again) and says calmly,
+     * once, that the account was not deleted.
+     */
+    suspend fun cancelAccountDeletion()
+
+    /** The session cannot be used: closed, local cache purged, back to the sign-in screen with the marker KEPT and a calm sentence. */
+    suspend fun endSessionKeepingDeletionMarker()
 }
 
 /**
@@ -89,6 +106,7 @@ class AccountDeletionController(
     private val isAppleLinked: () -> Boolean,
     private val scope: CoroutineScope,
     private val retryPauseMillis: Long = RETRY_PAUSE_MS,
+    private val maxOnlineFailures: Int = MAX_ONLINE_FAILURES,
 ) : AccountDeletionControls {
     private val mutableState = MutableStateFlow<AccountDeletionState>(AccountDeletionState.Idle)
     override val state: StateFlow<AccountDeletionState> = mutableState.asStateFlow()
@@ -127,6 +145,10 @@ class AccountDeletionController(
         if (mutableState.value is AccountDeletionState.Done) mutableState.value = AccountDeletionState.Idle
     }
 
+    override fun signInAgain() {
+        scope.launch { session.endSessionKeepingDeletionMarker() }
+    }
+
     private fun isRunning() = job?.isActive == true
 
     private fun launch(
@@ -146,6 +168,7 @@ class AccountDeletionController(
         session.beginAccountDeletion()
         val apple = marker.read()?.appleLinked ?: false
         var failures = 0
+        var offlineWhileOnline = 0
         var pause = retryPauseMillis
         while (true) {
             mutableState.value = AccountDeletionState.Running(resumed, retrying && failures == 0)
@@ -161,11 +184,24 @@ class AccountDeletionController(
                 }
 
                 DeletionRun.MiffsRemain -> {
-                    mutableState.value = AccountDeletionState.Stuck(miffsRemain = true)
+                    // A CANCELLATION, never a dead end: the marker goes, the app is put back on track and says so calmly.
+                    marker.clear()
+                    mutableState.value = AccountDeletionState.Idle
+                    session.cancelAccountDeletion()
+                    return
+                }
+
+                DeletionRun.SessionExpired -> {
+                    mutableState.value = AccountDeletionState.NeedsSignIn
                     return
                 }
 
                 DeletionRun.Offline -> {
+                    // The phone says it is online and still nothing goes through: after a few tries, a calm stop and "Réessayer".
+                    if (network.isOnline() && ++offlineWhileOnline >= maxOnlineFailures) {
+                        mutableState.value = AccountDeletionState.Stuck
+                        return
+                    }
                     mutableState.value = AccountDeletionState.WaitingForNetwork
                     network.onlineChanges().first { it }
                     delay(pause)
@@ -174,7 +210,7 @@ class AccountDeletionController(
 
                 DeletionRun.Failed -> {
                     if (++failures >= MAX_FAILURES) {
-                        mutableState.value = AccountDeletionState.Stuck(miffsRemain = false)
+                        mutableState.value = AccountDeletionState.Stuck
                         return
                     }
                     delay(pause)
@@ -188,6 +224,8 @@ class AccountDeletionController(
         uid: String,
         apple: Boolean,
     ) {
+        // Firebase confirmed: from now on a launch with no session means "deleted", not "signed out behind our back".
+        marker.read()?.let { marker.write(it.copy(accountDeleted = true)) }
         try {
             session.eraseAfterAccountDeletion(uid)
         } catch (e: CancellationException) {
@@ -202,5 +240,6 @@ class AccountDeletionController(
         const val RETRY_PAUSE_MS = 5_000L
         const val MAX_PAUSE_MS = 60_000L
         const val MAX_FAILURES = 3
+        const val MAX_ONLINE_FAILURES = 6
     }
 }

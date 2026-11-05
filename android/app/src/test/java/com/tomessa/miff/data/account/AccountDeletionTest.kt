@@ -172,11 +172,37 @@ class AccountDeletionTest {
     // --- A session that is gone = success (criterion SC28) ---------------------------------------------------
 
     @Test
-    fun noSessionAtAll_isASuccess_andNothingIsWritten() =
+    fun noSessionAtAll_isNeverTakenForADeletion_nothingIsWritten() =
         runTest {
+            // Signed out behind our back: the account may well still exist. Not "Completed".
             gateway.setSignedIn(null)
-            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            assertEquals(DeletionRun.SessionExpired, deletion.run("uid-1"))
             assertTrue(timeline.entries.isEmpty())
+        }
+
+    @Test
+    fun anExpiredOrRevokedToken_atTheLastCall_isNotASuccess() =
+        runTest {
+            gateway.deleteResults += AuthFailure.SESSION_EXPIRED
+            assertEquals(DeletionRun.SessionExpired, deletion.run("uid-1"))
+        }
+
+    @Test
+    fun aRefusalWithAnExpiredToken_isNotASuccess_theSessionIsToBeRenewed() =
+        runTest {
+            store.failures += FakeAccountDataStore.refused()
+            gateway.sessionCheck = SessionCheck.EXPIRED
+            assertEquals(DeletionRun.SessionExpired, deletion.run("uid-1"))
+            assertEquals(0, gateway.deleteCalls)
+        }
+
+    @Test
+    fun theSessionClosesJustBeforeTheLastCall_isNotASuccess_theAccountIsNotAsked() =
+        runTest {
+            // deleteCurrentAccount answers "done" when nobody is signed in: that must never count as a deletion.
+            store.onCall = { name -> if (name == "profile.delete") gateway.setSignedIn(null) }
+            assertEquals(DeletionRun.SessionExpired, deletion.run("uid-1"))
+            assertEquals(0, gateway.deleteCalls)
         }
 
     @Test

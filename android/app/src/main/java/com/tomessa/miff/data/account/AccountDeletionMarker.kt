@@ -15,6 +15,11 @@ import androidx.core.content.edit
 data class AccountDeletionMark(
     val uid: String,
     val appleLinked: Boolean,
+    /**
+     * Firebase CONFIRMED the deletion of the authentication account (written before the local cleaning starts). It is the only thing that
+     * tells, at a launch with no session, "the account is deleted" from "the session was closed behind our back".
+     */
+    val accountDeleted: Boolean = false,
 ) {
     // The id of an account identifies a person: it never ends up in a log or an error message through the default toString.
     override fun toString(): String = "AccountDeletionMark(redacted)"
@@ -36,13 +41,14 @@ class SharedPreferencesAccountDeletionMarker(
 
     override fun read(): AccountDeletionMark? {
         val uid = prefs.getString(KEY_UID, null)?.takeIf { it.isNotEmpty() } ?: return null
-        return AccountDeletionMark(uid, prefs.getBoolean(KEY_APPLE, false))
+        return AccountDeletionMark(uid, prefs.getBoolean(KEY_APPLE, false), prefs.getBoolean(KEY_DELETED, false))
     }
 
     override fun write(mark: AccountDeletionMark) {
         prefs.edit(commit = true) {
             putString(KEY_UID, mark.uid)
             putBoolean(KEY_APPLE, mark.appleLinked)
+            putBoolean(KEY_DELETED, mark.accountDeleted)
         }
     }
 
@@ -53,5 +59,6 @@ class SharedPreferencesAccountDeletionMarker(
     private companion object {
         const val KEY_UID = "uid"
         const val KEY_APPLE = "apple_linked"
+        const val KEY_DELETED = "account_deleted"
     }
 }

@@ -61,8 +61,9 @@ class AccountDeletionControllerTest {
             val controller = controller()
             controller.start()
             advanceUntilIdle()
-            // The marker is on the disk, then the listeners and the monitoring are stopped, THEN the procedure (the first write).
-            assertEquals(listOf("marker.write", "begin", "run", "erase"), timeline.entries)
+            // The marker is on the disk, then the listeners and the monitoring are stopped, THEN the procedure (the first write); the marker is
+            // rewritten as "deleted" (Firebase confirmed) just before the local cleaning.
+            assertEquals(listOf("marker.write", "begin", "run", "marker.write", "erase"), timeline.entries)
         }
 
     @Test
@@ -159,7 +160,7 @@ class AccountDeletionControllerTest {
             val controller = controller()
             controller.start()
             advanceUntilIdle()
-            assertEquals(AccountDeletionState.Stuck(miffsRemain = false), controller.state.value)
+            assertEquals(AccountDeletionState.Stuck, controller.state.value)
             assertEquals(AccountDeletionController.MAX_FAILURES, procedure.runs)
             assertNotNull(marker.stored)
             assertEquals(emptyList<String>(), session.erased)
@@ -179,15 +180,94 @@ class AccountDeletionControllerTest {
         }
 
     @Test
-    fun aMiffThatRemains_stopsCalmly_nothingIsErased_neverTheAccount() =
+    fun aMiffThatShowsUp_isACancellation_markerErased_appBackOnTrack_nothingErased_noDeadEnd() =
         runTest {
             procedure.results += DeletionRun.MiffsRemain
             val controller = controller()
             controller.start()
             advanceUntilIdle()
-            assertEquals(AccountDeletionState.Stuck(miffsRemain = true), controller.state.value)
+            // The marker is gone BEFORE the app is put back on track (a kill in between must never resume a cancelled deletion).
+            assertEquals(listOf("marker.write", "begin", "marker.clear", "cancel"), timeline.entries)
+            assertNull(marker.stored)
+            assertEquals(1, session.cancels)
             assertEquals(emptyList<String>(), session.erased)
             assertEquals(1, procedure.runs)
+            // Not a state the person is stuck in: the screens are replaced by the usual ones.
+            assertEquals(AccountDeletionState.Idle, controller.state.value)
+        }
+
+    @Test
+    fun aCancelledDeletion_canBeStartedAgainLater_fromScratch() =
+        runTest {
+            procedure.results += listOf(DeletionRun.MiffsRemain, DeletionRun.Completed)
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Done(false), controller.state.value)
+            assertEquals(2, procedure.runs)
+        }
+
+    @Test
+    fun aMiffThatShowsUpAtResume_cancelsToo_theNextLaunchIsNormal() =
+        runTest {
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            procedure.results += DeletionRun.MiffsRemain
+            val controller = controller()
+            controller.resume()
+            advanceUntilIdle()
+            assertNull(marker.stored)
+            assertEquals(1, session.cancels)
+        }
+
+    @Test
+    fun anExpiredSession_isNeverDone_theMarkerStays_andNothingSaysDeleted() =
+        runTest {
+            procedure.results += DeletionRun.SessionExpired
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.NeedsSignIn, controller.state.value)
+            assertNotNull(marker.stored)
+            assertEquals(false, marker.stored?.accountDeleted)
+            assertEquals(emptyList<String>(), session.erased)
+        }
+
+    @Test
+    fun signInAgain_closesTheSession_withTheMarkerKept() =
+        runTest {
+            procedure.results += DeletionRun.SessionExpired
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            controller.signInAgain()
+            advanceUntilIdle()
+            assertEquals(1, session.keptMarkerSignOuts)
+            assertNotNull(marker.stored)
+        }
+
+    @Test
+    fun theDeletionIsMarkedConfirmed_beforeTheLocalCleaning() =
+        runTest {
+            var confirmedWhenErasing: Boolean? = null
+            val controller = controller()
+            session.onErase = { confirmedWhenErasing = marker.stored?.accountDeleted }
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(true, confirmedWhenErasing)
+        }
+
+    @Test
+    fun aNetworkThatIsThereButDoesNotCarry_endsOnACalmStop_afterAFewTries() =
+        runTest {
+            // The phone says "online", every try says "offline": not an endless loop.
+            procedure.results += DeletionRun.Offline
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Stuck, controller.state.value)
+            assertEquals(AccountDeletionController.MAX_ONLINE_FAILURES, procedure.runs)
         }
 
     @Test

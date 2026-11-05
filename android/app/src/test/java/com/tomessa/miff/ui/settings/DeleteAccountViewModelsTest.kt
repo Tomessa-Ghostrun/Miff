@@ -217,6 +217,7 @@ class DeleteAccountViewModelsTest {
                     AuthFailure.TOO_MANY_ATTEMPTS to AuthMessage.TOO_MANY_ATTEMPTS,
                     AuthFailure.NETWORK to AuthMessage.NETWORK,
                     AuthFailure.ACCOUNT_GONE to AuthMessage.REAUTH_EXPIRED,
+                    AuthFailure.SESSION_EXPIRED to AuthMessage.REAUTH_EXPIRED,
                     AuthFailure.UNKNOWN to AuthMessage.UNKNOWN,
                     AuthFailure.RECENT_LOGIN_REQUIRED to AuthMessage.UNKNOWN,
                 )
@@ -242,6 +243,20 @@ class DeleteAccountViewModelsTest {
             assertEquals(AuthMessage.NETWORK, vm.uiState.value.message)
             assertEquals(0, gateway.passwordReauthCalls)
             assertEquals(0, spy.verified)
+        }
+
+    @Test
+    fun whenTheScreenIsLeft_nothingStaysBusy_andNoOldMessageStays() =
+        runTest(dispatcher) {
+            val vm = reauth(Spy())
+            // The proof was accepted (the screen stays "busy" while the deletion starts)...
+            vm.submitPassword("again")
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.busy)
+            // ...and the screen is left (the deletion went on, or stopped and came back): the next visit starts clean.
+            vm.resetBusy()
+            assertFalse(vm.uiState.value.busy)
+            assertNull(vm.uiState.value.message)
         }
 
     @Test

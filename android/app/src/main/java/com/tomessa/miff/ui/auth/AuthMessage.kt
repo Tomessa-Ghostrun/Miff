@@ -57,7 +57,7 @@ fun AuthFailure.toMessage(): AuthMessage =
         AuthFailure.GOOGLE_INTERRUPTED -> AuthMessage.GOOGLE_INTERRUPTED
         AuthFailure.UNKNOWN -> AuthMessage.UNKNOWN
         AuthFailure.WRONG_ACCOUNT -> AuthMessage.REAUTH_WRONG_ACCOUNT
-        AuthFailure.ACCOUNT_GONE -> AuthMessage.REAUTH_EXPIRED
+        AuthFailure.ACCOUNT_GONE, AuthFailure.SESSION_EXPIRED -> AuthMessage.REAUTH_EXPIRED
     }
 
 /** For the screens where "reset your password" would make no sense as advice (sign-up, Google, reset e-mail). */

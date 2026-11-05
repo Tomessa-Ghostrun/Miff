@@ -187,6 +187,11 @@ class FakeAuthGateway(
         return reauthResult
     }
 
+    override suspend fun reauthenticateWithGoogleForDeletion(idToken: String): AuthFailure? {
+        timeline += "reauth"
+        return reauthResult
+    }
+
     override suspend fun reauthenticateWithPassword(password: String): AuthFailure? {
         passwordReauthCalls++
         timeline += "reauth"

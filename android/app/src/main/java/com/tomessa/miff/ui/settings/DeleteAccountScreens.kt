@@ -83,6 +83,7 @@ import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyLarge
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
+import com.tomessa.miff.ui.theme.textDisplayTitle
 import com.tomessa.miff.ui.theme.textTitleBold20
 
 /*
@@ -261,6 +262,7 @@ fun DeleteAccountInfoScreen(
     SettingsScaffold(
         title = stringResource(R.string.settings_delete_title),
         onBack = onBack,
+        titleStyle = DeleteTitleStyle,
         footer = {
             MiffButton(
                 text = stringResource(R.string.settings_delete_continue),
@@ -321,7 +323,10 @@ fun DeleteAccountInfoScreen(
                     color = colorTextForm,
                 )
                 Spacer(Modifier.size(Spacing.m))
-                InfoCard(icon = R.drawable.ic_person, text = stringResource(R.string.settings_delete_you_nomiff))
+                InfoCard(
+                    icon = R.drawable.ic_person_outline,
+                    text = stringResource(R.string.settings_delete_you_nomiff),
+                )
                 Spacer(Modifier.size(Spacing.s))
                 ContactSentence(
                     format = R.string.settings_delete_copy,
@@ -402,6 +407,9 @@ fun DeleteAccountConfirmDialog(
 
 private val DialogMaxWidth = 320.dp
 
+/** The title of the screens of the deletion is BOLD in the mockups (02 to 06). */
+private val DeleteTitleStyle = textDisplayTitle.copy(fontWeight = FontWeight.Bold)
+
 /**
  * C. "Une dernière vérification" (and the same screen as "Dernière vérification avant de terminer" when [DeleteReauthUiState.last]).
  * Full screen, not a window: everything stays visible with the keyboard. Only the methods really linked to the account are offered
@@ -426,6 +434,7 @@ fun DeleteAccountReauthScreen(
     SettingsScaffold(
         title = stringResource(R.string.settings_delete_reauth_title),
         onBack = onBack,
+        titleStyle = DeleteTitleStyle,
         footer = {
             if (state.hasPassword) {
                 MiffButton(

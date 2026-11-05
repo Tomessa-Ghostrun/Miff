@@ -63,15 +63,24 @@ enum class AuthFailure {
     WRONG_ACCOUNT,
 
     /**
-     * The account no longer exists or its session can no longer be used (deleted from the console or from another phone, token
-     * revoked). Only answered for the attempts on the open session; for the deletion of the account it means "already done"
-     * (AUTH-5, criterion SC28).
+     * Firebase says the account DOES NOT EXIST any more (`ERROR_USER_NOT_FOUND`: deleted from the console or from another phone). Only
+     * answered for the attempts on the open session; for the deletion of the account it means "already done" (AUTH-5, criterion SC28).
+     * An expired or revoked token is NOT this: see [SESSION_EXPIRED].
      */
     ACCOUNT_GONE,
+
+    /**
+     * The session can no longer be used (`ERROR_USER_TOKEN_EXPIRED`, `ERROR_INVALID_USER_TOKEN`: token expired or revoked, password changed
+     * elsewhere...) while the account may well still exist. NEVER a success: nothing may say "deleted"; the person signs in again.
+     */
+    SESSION_EXPIRED,
 }
 
-/** Firebase error codes that say "this user does not exist any more, or this session can no longer be used". */
-private val accountGoneCodes = setOf("ERROR_USER_NOT_FOUND", "ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")
+/** The ONLY Firebase code that proves the account is gone. */
+private const val USER_NOT_FOUND_CODE = "ERROR_USER_NOT_FOUND"
+
+/** Codes of a session that cannot be used any more without proving the account is gone (token expired or revoked). */
+private val sessionExpiredCodes = setOf("ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")
 
 /** `ERROR_USER_MISMATCH`: the credential given belongs to another account than the one of the session. */
 private const val USER_MISMATCH_CODE = "ERROR_USER_MISMATCH"
@@ -95,10 +104,11 @@ fun interpretAuthError(
 ): AuthFailure {
     if (error is FirebaseAuthRecentLoginRequiredException) return AuthFailure.RECENT_LOGIN_REQUIRED
     if (error is FirebaseAuthException && error.errorCode == USER_MISMATCH_CODE) return AuthFailure.WRONG_ACCOUNT
-    if (error is FirebaseAuthInvalidUserException && error.errorCode in accountGoneCodes &&
-        attempt.isAboutTheSession()
-    ) {
-        return AuthFailure.ACCOUNT_GONE
+    if (error is FirebaseAuthInvalidUserException && attempt.isAboutTheSession()) {
+        when (error.errorCode) {
+            USER_NOT_FOUND_CODE -> return AuthFailure.ACCOUNT_GONE
+            in sessionExpiredCodes -> return AuthFailure.SESSION_EXPIRED
+        }
     }
     if (error is FirebaseAuthUserCollisionException) {
         return when (error.errorCode) {

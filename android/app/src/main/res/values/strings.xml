@@ -710,4 +710,7 @@
     <string name="settings_delete_apple_howto_step3">Choose Miff, then stop using Apple ID with this app.</string>
     <string name="auth_account_deleted_notice">Your account has been deleted.</string>
     <string name="settings_delete_reauth_expired">Your session has expired. Sign out, sign back in, then try again.</string>
+    <string name="settings_delete_miffs_blocked">You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$s.</string>
+    <string name="settings_delete_signin_again">Your session closed before the deletion of your account was finished. Sign in again with the same account and we’ll finish it.</string>
+    <string name="settings_delete_signin_again_action">Sign in again</string>
 </resources>

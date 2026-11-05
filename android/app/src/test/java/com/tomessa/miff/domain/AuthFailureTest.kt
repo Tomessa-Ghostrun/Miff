@@ -129,16 +129,34 @@ class AuthFailureTest {
     }
 
     @Test
-    fun aSessionThatIsGone_isTheAccountGoneFailure_forTheAttemptsOnTheOpenSession_only() {
-        for (code in listOf("ERROR_USER_NOT_FOUND", "ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")) {
-            val error = FirebaseAuthInvalidUserException(code, "gone")
-            assertEquals(code, AuthFailure.ACCOUNT_GONE, interpret(error, AuthAttempt.DELETE_ACCOUNT))
-            assertEquals(code, AuthFailure.ACCOUNT_GONE, interpret(error, AuthAttempt.CHECK_SESSION))
-            assertEquals(code, AuthFailure.ACCOUNT_GONE, interpret(error, AuthAttempt.REAUTH_EMAIL))
+    fun aUserThatDoesNotExistAnyMore_isTheAccountGoneFailure_forTheAttemptsOnTheOpenSession_only() {
+        val error = FirebaseAuthInvalidUserException("ERROR_USER_NOT_FOUND", "gone")
+        for (
+        attempt in
+        listOf(
+            AuthAttempt.DELETE_ACCOUNT,
+            AuthAttempt.CHECK_SESSION,
+            AuthAttempt.REAUTH_EMAIL,
+            AuthAttempt.REAUTH_SOCIAL,
+        )
+        ) {
+            assertEquals("$attempt", AuthFailure.ACCOUNT_GONE, interpret(error, attempt))
         }
         // At sign-in, "user not found" stays the ONE message of "unknown address or wrong password" (no enumeration).
         val notFound = FirebaseAuthInvalidUserException("ERROR_USER_NOT_FOUND", "gone")
         assertEquals(AuthFailure.INVALID_CREDENTIALS, interpret(notFound, AuthAttempt.SIGN_IN_EMAIL))
+    }
+
+    @Test
+    fun anExpiredOrRevokedToken_isNEVERTheAccountGone_itIsASessionToRenew() {
+        // Honest wording: an expired or revoked token does not prove the account was deleted.
+        for (code in listOf("ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")) {
+            val error = FirebaseAuthInvalidUserException(code, "token")
+            for (attempt in listOf(AuthAttempt.DELETE_ACCOUNT, AuthAttempt.CHECK_SESSION, AuthAttempt.REAUTH_EMAIL)) {
+                assertEquals("$code $attempt", AuthFailure.SESSION_EXPIRED, interpret(error, attempt))
+            }
+        }
+        assertEquals(AuthMessage.REAUTH_EXPIRED, AuthFailure.SESSION_EXPIRED.toMessage())
     }
 
     @Test

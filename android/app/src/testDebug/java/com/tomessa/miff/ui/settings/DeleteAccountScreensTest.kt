@@ -373,6 +373,11 @@ class DeleteAccountScreensTest {
         override val state: StateFlow<AccountDeletionState> = MutableStateFlow(initial)
         var retries = 0
         var acknowledged = 0
+        var signInAgains = 0
+
+        override fun signInAgain() {
+            signInAgains++
+        }
 
         override fun start() = Unit
 
@@ -432,13 +437,51 @@ class DeleteAccountScreensTest {
 
     @Test
     fun stuck_givesTheContact_andARetryButton_withoutAlarm() {
-        val controls = Controls(AccountDeletionState.Stuck(miffsRemain = false))
-        host(AccountDeletionState.Stuck(miffsRemain = false), controls)
+        val controls = Controls(AccountDeletionState.Stuck)
+        host(AccountDeletionState.Stuck, controls)
         shoot("delete-stuck")
         composeRule.onNodeWithText(text(R.string.settings_delete_failed_title)).assertExists()
         composeRule.onNodeWithText(BuildConfig.SUPPORT_EMAIL, substring = true).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_delete_retry)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals(1, controls.retries)
+    }
+
+    @Test
+    fun aSessionToRenew_saysSoHonestly_neverDeleted_andOffersToSignInAgain() {
+        val controls = Controls(AccountDeletionState.NeedsSignIn)
+        host(AccountDeletionState.NeedsSignIn, controls)
+        shoot("delete-needs-sign-in")
+        composeRule.onNodeWithText(text(R.string.settings_delete_failed_title)).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_signin_again)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_done_title)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_signin_again_action))
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, controls.signInAgains)
+    }
+
+    @Test
+    fun theScreenStaysOnOnlyWhileTheProcedureRuns() {
+        assertEquals(true, keepsScreenOn(AccountDeletionState.Idle))
+        assertEquals(true, keepsScreenOn(AccountDeletionState.Running(resumed = false)))
+        assertEquals(true, keepsScreenOn(AccountDeletionState.Running(resumed = true, retrying = true)))
+        assertEquals(false, keepsScreenOn(AccountDeletionState.WaitingForNetwork))
+        assertEquals(false, keepsScreenOn(AccountDeletionState.NeedsRecentLogin))
+        assertEquals(false, keepsScreenOn(AccountDeletionState.NeedsSignIn))
+        assertEquals(false, keepsScreenOn(AccountDeletionState.Stuck))
+        assertEquals(false, keepsScreenOn(AccountDeletionState.Done(appleLinked = false)))
+    }
+
+    @Test
+    fun aDeletionCancelledByAMiff_saysSoCalmly_andNeverClaimsTheAccountIsDeleted() {
+        var closed = 0
+        show { DeletionBlockedDialog(onDismiss = { closed++ }) }
+        composeRule.onNodeWithText("not deleted", substring = true).assertExists()
+        composeRule.onNodeWithText(BuildConfig.SUPPORT_EMAIL, substring = true).assertExists()
+        composeRule.onAllNodesWithText("has been deleted", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.miff_lost_ok_action)).assertHeightIsAtLeast(48.dp).performClick()
+        assertEquals(1, closed)
     }
 
     @Test

@@ -14,14 +14,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +52,7 @@ import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.account.AccountDeletionControls
 import com.tomessa.miff.data.account.AccountDeletionState
+import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.ui.auth.LoadingIndicator
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.miffScreenInsets
@@ -104,7 +108,8 @@ fun AccountDeletionContent(
     onLeave: () -> Unit,
 ) {
     val finished = state is AccountDeletionState.Done
-    KeepScreenOn(!finished && state !is AccountDeletionState.Stuck)
+    // On ONLY while the procedure runs: not on a pause (no network), a stop, a re-authentication or the end.
+    KeepScreenOn(keepsScreenOn(state))
     // Nothing to go back to: the system back is ignored, except on the end screen where it means "Continuer".
     BackHandler(enabled = true) { if (finished) onLeave() }
     when (state) {
@@ -157,14 +162,25 @@ fun AccountDeletionContent(
             reauthHost()
         }
 
-        is AccountDeletionState.Stuck -> {
+        AccountDeletionState.Stuck -> {
             Notice(
                 icon = R.drawable.ic_loc_info,
                 title = R.string.settings_delete_failed_title,
-                body = if (state.miffsRemain) R.string.settings_delete_miffs_soon else R.string.settings_delete_failed,
+                body = R.string.settings_delete_failed,
                 extra = R.string.settings_delete_paused_leave,
                 bodyHasContact = true,
                 retry = R.string.settings_delete_retry to controls::retry,
+            )
+        }
+
+        AccountDeletionState.NeedsSignIn -> {
+            // The session cannot be used: NOT "deleted". The marker stays; signing in again with the same account resumes the deletion.
+            Notice(
+                icon = R.drawable.ic_loc_info,
+                title = R.string.settings_delete_failed_title,
+                body = R.string.settings_delete_signin_again,
+                extra = null,
+                retry = R.string.settings_delete_signin_again_action to controls::signInAgain,
             )
         }
 
@@ -173,6 +189,10 @@ fun AccountDeletionContent(
         }
     }
 }
+
+/** On ONLY while the procedure runs: not on a pause (no network), a stop, a re-authentication, a sign-in request or the end. */
+internal fun keepsScreenOn(state: AccountDeletionState): Boolean =
+    state == AccountDeletionState.Idle || state is AccountDeletionState.Running
 
 /** The screen stays on while the procedure runs, and only then (criterion of the ticket, section 3.2 D). */
 @Composable
@@ -255,7 +275,7 @@ private fun Notice(
     icon: Int,
     title: Int,
     body: Int,
-    extra: Int,
+    extra: Int?,
     bodyHasContact: Boolean = false,
     retry: Pair<Int, () -> Unit>? = null,
 ) {
@@ -279,12 +299,14 @@ private fun Notice(
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
             )
-            Text(
-                text = stringResource(extra),
-                style = textBodyRegular,
-                color = colorTextDescription,
-                textAlign = TextAlign.Center,
-            )
+            if (extra != null) {
+                Text(
+                    text = stringResource(extra),
+                    style = textBodyRegular,
+                    color = colorTextDescription,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
         if (retry != null) {
             MiffButton(
@@ -397,6 +419,8 @@ private fun ReauthLast(
                 },
         )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // The view model outlives this screen (it is kept by its key): when the state leaves "Dernière vérification", nothing stays busy.
+    DisposableEffect(viewModel) { onDispose { viewModel.resetBusy() } }
     DeleteAccountReauthScreen(
         state = state,
         // No way back: the point of no return is behind us. "Plus tard" puts the app away; the deletion resumes at the next launch.
@@ -459,3 +483,34 @@ fun AccountDeletedBanner(onDismiss: () -> Unit) {
 
 /** Long enough to be read, short enough not to stay in the way (mockup notes: 6 seconds at least). */
 private const val BANNER_MILLIS = 6_000L
+
+/**
+ * The deletion was CANCELLED because a Miff showed up after the information screen (AUTH-5a cannot delete Miffs): nothing was deleted, the
+ * app is back on its normal screen, and this says so once, calmly, with the way forward. "Compris" closes it.
+ */
+@Composable
+fun DeletionBlockedNotice(session: SessionManager) {
+    val blocked by session.deletionBlockedNotice.collectAsStateWithLifecycle()
+    if (blocked) DeletionBlockedDialog(onDismiss = session::dismissDeletionBlockedNotice)
+}
+
+/** The message itself (stateless, so that it can be looked at on its own). */
+@Composable
+fun DeletionBlockedDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            Text(
+                text = stringResource(R.string.settings_delete_miffs_blocked, BuildConfig.SUPPORT_EMAIL),
+                style = textBodyRegular,
+                color = colorTextForm,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
+                Text(stringResource(R.string.miff_lost_ok_action), style = textBodyBold16, color = colorActionPrimary)
+            }
+        },
+        containerColor = colorBgSurface,
+    )
+}

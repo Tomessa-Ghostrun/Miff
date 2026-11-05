@@ -79,6 +79,13 @@ La procédure est courte pour un compte sans Miff (quelques secondes) : pour avo
 27. [ ] **App tuée après la suppression, avant d'avoir vu l'écran final** (difficile à provoquer : facultatif) : au lancement suivant, le carrousel s'ouvre avec le bandeau « **Ton compte a été supprimé.** » (une seule fois, il disparaît seul après quelques secondes ou au toucher).
 28. [ ] **Mise en arrière-plan pendant la progression** (touche Accueil, puis retour à l'app) : la suppression continue ou reprend, sans doublon.
 
+## Partie F bis : une Miff apparaît pendant la procédure, session fermée (facultatif, 6 min)
+
+Ces deux cas sont rares et demandent un second téléphone ; s'ils sont trop lourds, notez-le simplement.
+
+- [ ] **Une Miff apparaît après l'écran d'information** : compte jetable sans Miff **connecté sur deux téléphones** (ou téléphone + émulateur). Sur le téléphone 1, ouvrez « Supprimer mon compte » jusqu'à l'écran d'information et **ne continuez pas encore**. Sur le téléphone 2, **créez une Miff** avec ce compte. Sur le téléphone 1, continuez et confirmez avec le mot de passe : l'app **revient à son écran habituel** (Feed avec la Miff, pas d'écran bloqué) avec **un seul message calme** « Tu fais partie d'au moins une Miff : ton compte n'a donc pas été supprimé… » et « Compris ». **Rien n'est supprimé**, vous pouvez continuer à utiliser l'app (statut, Miff), puis fermer et rouvrir l'app : tout est normal, pas d'écran « On termine la suppression ».
+- [ ] **Session fermée en cours de route** (mot de passe changé ailleurs, jeton révoqué : difficile à provoquer ; si cela arrive) : l'app **ne dit jamais « Ton compte a été supprimé »** tant que ce n'est pas vrai ; elle dit « La suppression n'est pas terminée » / « Ta session s'est fermée… Reconnecte-toi avec le même compte : on la termine », avec **Me reconnecter**. Reconnectez-vous avec le même compte : la suppression reprend et se termine.
+
 ## Partie G : « Dernière vérification » (rare) et accessibilité (4 min)
 
 29. [ ] **Si** votre connexion était très ancienne, Firebase peut demander une seconde vérification **à la fin** : l'écran « Dernière vérification avant de terminer. Ta suppression est presque finie. » (même écran, **sans Annuler**, avec **Plus tard**). « Plus tard » met l'app de côté ; au lancement suivant la suppression reprend. *Ce cas est rare et difficile à provoquer : s'il ne se présente pas, notez-le simplement.*
