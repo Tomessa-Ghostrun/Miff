@@ -235,7 +235,7 @@ Le serveur ne peut pas prévenir un téléphone fermé. Un proche apprend un cha
 | Événement | Écriture dans `status/{moi}` de chaque Miff partagée concernée |
 |---|---|
 | Arrivée dans une **zone de confiance** | `presence = "in_trusted"`, `placeId`, `presenceAt` = heure de l'événement, `lastUpdateAt` = idem, `escalationDueAt = null` |
-| Départ d'une zone de confiance | `presence = "out"`, `placeId` = lieu quitté, `presenceAt` = heure de l'événement, `escalationDueAt` : **inutile sur Spark** (valeur à fixer par `backend-data` : `null`, ou « prochaine échéance » = départ + 1 h avec les nouveaux seuils ; aucun effet visible) ; `lastUpdateAt` conservé, relevé à l'heure du départ s'il a plus de 24 h |
+| Départ d'une zone de confiance | `presence = "out"`, `placeId` = lieu quitté, `presenceAt` = heure de l'événement, `escalationDueAt` : **inutile sur Spark** (valeur à fixer par `backend-data` : `null`, ou « prochaine échéance » = départ + 1 h avec les nouveaux seuils ; aucun effet visible) ; `lastUpdateAt` **conservé tel quel** en base, même s'il a plus de 24 h (R-LIEU-1, `backend/data-model.md`) : ne jamais le relever à l'heure du départ |
 | Arrivée dans une **zone de danger** (et dans **aucune** zone de confiance) | `presence = "in_risk"`, `placeId`, `presenceAt` ; la personne apparaît **rouge** à ses proches (§6.9) |
 | Départ d'une zone de danger (sans être dans une zone de confiance) | `presence = "out"`, `presenceAt`, `placeId` = zone quittée ; chronomètre : §6.9 et §16 N2 |
 | À chaque écriture | `updateText` et `hasPhoto` **conservés** ; `batteryPct` = niveau du moment ; `locationAccess` = §6.7 ; `updatedAt` = heure serveur |
@@ -286,7 +286,7 @@ Bornes prises **à la lettre de Notion** (« moins d'1 h » vert, « entre 1 h e
 
 **Quand la couleur est recalculée chez le proche** [Proposé, détail visible = « la couleur change toute seule »] : à l'ouverture et au retour au premier plan ; **toutes les minutes** tant que l'écran qui l'affiche est visible ; à chaque changement du document de statut. **Sur un téléphone de proche fermé ou verrouillé, rien ne se calcule et rien n'est notifié** (Spark ; `feed-profil-reglages.md` §5.3). L'heure affichée est **absolue** (« depuis 16 h 02 ») pour orange et rouge (décision du Feed).
 
-**Exemple (nouveaux seuils)** : la personne arrive à la maison à 08 h 00 (`in_trusted`, `presenceAt = lastUpdateAt = 08:00`), part à 15 h 00 (`out`, `presenceAt = 15:00`, `lastUpdateAt` conservé ou relevé). Chez le proche : vert jusqu'à 16 h 00 (exclu), **orange de 16 h 00 à 17 h 00 (inclus)**, **rouge après 17 h 00** ; une update manuelle à 16 h 30 repousse le repère (vert jusqu'à 17 h 30). Si la personne entre dans une zone de confiance à 16 h 40, le document passe `in_trusted` : vert.
+**Exemple (nouveaux seuils)** : la personne arrive à la maison à 08 h 00 (`in_trusted`, `presenceAt = lastUpdateAt = 08:00`), part à 15 h 00 (`out`, `presenceAt = 15:00`, `lastUpdateAt` conservé tel quel). Chez le proche : vert jusqu'à 16 h 00 (exclu), **orange de 16 h 00 à 17 h 00 (inclus)**, **rouge après 17 h 00** ; une update manuelle à 16 h 30 repousse le repère (vert jusqu'à 17 h 30). Si la personne entre dans une zone de confiance à 16 h 40, le document passe `in_trusted` : vert.
 
 **Ce que voit-on si le téléphone de la personne est éteint ou sans réseau**
 | Situation | Ce que le proche voit | Pourquoi |
