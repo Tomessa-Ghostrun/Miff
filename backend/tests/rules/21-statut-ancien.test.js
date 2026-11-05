@@ -3,7 +3,7 @@
 // Règle : presenceAt et lastUpdateAt restent bornés (-24 h / +5 min) SAUF s'ils sont ÉGAUX à la valeur déjà en base
 // (conservés tels quels). Une nouvelle valeur ancienne, un recul ou une avance restent refusés.
 import {
-  ID, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, update, set, Timestamp,
+  ID, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, update, set, del, Timestamp,
   statusDoc, statusInitial, inMs, sharingOnNow,
 } from '../helpers/fixtures.js';
 
@@ -63,7 +63,7 @@ s.tc('RL2', 'refus : une NOUVELLE valeur de plus de 24 h (même d\'une milliseco
   await assertFails(write(h, { presenceAt: Timestamp.fromMillis(OLD_PRESENCE.toMillis() + 1), lastUpdateAt: inMs(-MIN) }));
   await assertFails(write(h, { presenceAt: inMs(-3 * DAY), lastUpdateAt: inMs(-MIN) }));
   await assertFails(write(h, { presenceAt: Timestamp.fromMillis(0), lastUpdateAt: Timestamp.fromMillis(0) }));
-  // Même valeur de nanosecondes différente : la comparaison est exacte.
+  // Écart d'une microseconde (précision de stockage de Firestore) : la comparaison est exacte.
   await assertFails(write(h, { presenceAt: inMs(-MIN), lastUpdateAt: new Timestamp(OLD_UPDATE.seconds, OLD_UPDATE.nanoseconds + 1000) }));
 });
 
@@ -87,6 +87,17 @@ s.tc('RL3', 'refus : la conservation exige un statut déjà en base (création, 
   await h.admin((f) => f.doc(`${M1}/status/bob`).delete());
   await assertFails(write(h, { presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE }));
   await assertSucceeds(write(h, { presenceAt: inMs(-MIN), lastUpdateAt: inMs(-MIN) }));
+});
+
+s.tc('RL3b', "resource vaut l'état d'AVANT le lot : [supprimer, recréer avec les anciennes valeurs] est accepté (équivaut à une mise à jour) ; avec une nouvelle ancienne valeur, refusé", async (h) => {
+  await seedOld(h);
+  const ref = `${M1}/status/bob`;
+  await assertSucceeds(commit(h.db('bob'), [del(ref), set(ref, statusDoc({ presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE }))]));
+  const after = await readStatus(h);
+  if (after.lastUpdateAt.toMillis() !== OLD_UPDATE.toMillis()) throw new Error('les anciennes valeurs auraient dû être conservées');
+  await assertFails(
+    commit(h.db('bob'), [del(ref), set(ref, statusDoc({ presenceAt: OLD_PRESENCE, lastUpdateAt: Timestamp.fromMillis(OLD_UPDATE.toMillis() + 1000) }))]),
+  );
 });
 
 s.tc('RL4', 'refus : le statut d\'un autre membre, même avec ses valeurs conservées ; la valeur d\'un autre membre n\'est pas « celle de la base » de bob', async (h) => {
@@ -123,6 +134,25 @@ s.tc('RL6', 'type : une valeur conservée doit être un horodatage ; null, texte
   await assertFails(write(h, { presenceAt: inMs(-MIN), lastUpdateAt: null }));
   await seedOld(h, 'bob', { presenceAt: null });
   await assertFails(write(h, { presenceAt: null, lastUpdateAt: inMs(-MIN) }));
+});
+
+s.tc('RL6b', "base injectée SANS lastUpdateAt (ou sans presenceAt) : une ancienne valeur n'est pas « conservée » (une clé absente ne vaut pas la valeur envoyée)", async (h) => {
+  for (const missing of ['lastUpdateAt', 'presenceAt']) {
+    await h.admin((f) => {
+      const doc = statusDoc({ presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE, updatedAt: T0 });
+      delete doc[missing];
+      return f.doc(`${M1}/status/bob`).set(doc);
+    });
+    // Le champ absent en base ne peut pas être « conservé » ; l'autre champ, présent en base, le peut (contrôle).
+    const old = { presenceAt: OLD_PRESENCE, lastUpdateAt: OLD_UPDATE };
+    const recent = () => ({ presenceAt: inMs(-MIN), lastUpdateAt: inMs(-MIN) });
+    const withMissingOld = { ...recent(), [missing]: old[missing] };
+    const withPresentOld = { ...recent(), [missing === 'lastUpdateAt' ? 'presenceAt' : 'lastUpdateAt']: missing === 'lastUpdateAt' ? OLD_PRESENCE : OLD_UPDATE };
+    await assertFails(write(h, old)); // les deux anciens : le champ absent bloque
+    await assertFails(write(h, withMissingOld)); // seule l'ancienne valeur du champ absent
+    await assertSucceeds(write(h, withPresentOld)); // contrôle : l'autre champ ancien et présent en base est conservé
+    await assertSucceeds(write(h, recent())); // heures récentes : toujours acceptées
+  }
 });
 
 s.tc('RL7', 'les autres bornes du statut ne bougent pas : escalationDueAt ancien conservé est refusé (limite connue), updatedAt, clés, valeurs', async (h) => {

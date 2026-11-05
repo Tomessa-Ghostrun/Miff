@@ -48,6 +48,8 @@ export const STATUS_TIME_MUTATIONS = [
     [edit('resource.data.get(key, null) == v', 'resource.data.get(key, null) <= v')], ['RL2', 'RL5']),
   mut('RL-conservation-sans-type', 'la conservation accepte n\'importe quel type (null conservé quand la base contient null)',
     [edit('return v is timestamp\n', 'return true\n')], ['RL6']),
+  mut('RL-conservation-get-defaut-v', 'une clé absente en base vaut « la valeur envoyée » (valeur par défaut = v au lieu de null)',
+    [edit('resource.data.get(key, null) == v', 'resource.data.get(key, v) == v')], ['RL6b']),
   mut('RL-conservation-creation', 'la conservation ne vérifie plus qu\'un statut existe déjà (création)',
     [edit('(resource != null && resource.data.get(key, null) == v)', '(resource.data.get(key, null) == v)')], ['RL3'],
     'défense en profondeur : sur une création resource est nul, lire resource.data est une erreur d\'évaluation => refus quand même ; le test RL3 reste le garde-fou si cette propriété changeait'),

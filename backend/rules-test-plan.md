@@ -470,7 +470,7 @@ Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un text
 
 ## 20. R-LIEU-1 : statut dont les horodatages ont plus de 24 h (acceptée par le PM le 2026-11-01 ; demandée par le client Android LOC-2b) — PRÉPARÉ, NON DÉPLOYÉ
 
-`presenceAt` et `lastUpdateAt` restent bornés (pas plus de 24 h dans le passé, pas plus de 5 min dans le futur) **sauf si la valeur envoyée est identique, à la nanoseconde, à celle déjà enregistrée dans le même statut** : elle peut alors être conservée quel que soit son âge. Chaque champ n'est comparé qu'à lui-même ; le statut doit déjà exister ; tout le reste de la validation (clés, valeurs, heure serveur, consentement actif) est inchangé. `escalationDueAt` n'est PAS concerné (limite connue). **0 lecture de règles de plus** (`resource` ne coûte rien). Tests dans `tests/rules/21-statut-ancien.test.js` ; mutations `R-LIEU-1-*` dans `tests/tools/mutations-statut.mjs`.
+`presenceAt` et `lastUpdateAt` restent bornés (pas plus de 24 h dans le passé, pas plus de 5 min dans le futur) **sauf si la valeur envoyée est identique, à la microseconde (précision de stockage de Firestore), à celle déjà enregistrée dans le même statut** : elle peut alors être conservée quel que soit son âge. Chaque champ n'est comparé qu'à lui-même ; le statut doit déjà exister ; tout le reste de la validation (clés, valeurs, heure serveur, consentement actif) est inchangé. `escalationDueAt` n'est PAS concerné (limite connue). **0 lecture de règles de plus** (`resource` ne coûte rien). Tests dans `tests/rules/21-statut-ancien.test.js` ; mutations `R-LIEU-1-*` dans `tests/tools/mutations-statut.mjs`.
 
 | # | Cas | Attendu |
 |---|---|---|
@@ -479,7 +479,9 @@ Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un text
 | RL1c | Régression : deux horodatages récents (statut récent, puis statut ancien), jusqu'à +4 min 55 s dans le futur | OK partout |
 | RL2 | Nouvelle valeur ancienne : à ±1 ms de celle de la base, avancée de 1 h mais encore ancienne, il y a 3 jours, 1970, ±1 microseconde ; pour `lastUpdateAt` puis pour `presenceAt` | KO partout |
 | RL2b | La valeur de `lastUpdateAt` mise dans `presenceAt` et inversement ; puis chacune à sa place | KO ; KO ; OK |
-| RL3 | Conservation sans statut en base : création d'un statut (activation du partage, valeurs anciennes) ; recréation après suppression avec les anciennes valeurs | KO ; KO ; (valeurs récentes : OK) |
+| RL3 | Conservation sans statut en base : création d'un statut (activation du partage, valeurs anciennes) ; recréation après suppression dans une écriture SÉPARÉE avec les anciennes valeurs | KO ; KO ; (valeurs récentes : OK) |
+| RL3b | `resource` vaut l'état d'AVANT le lot : un lot `[supprimer son statut, le recréer avec les anciennes valeurs]` est accepté (équivaut à une mise à jour, inoffensif : aucune valeur nouvelle) ; le même lot avec une nouvelle ancienne valeur est refusé | OK ; KO |
+| RL6b | Base injectée (règles désactivées) SANS `lastUpdateAt` (puis sans `presenceAt`) : une ancienne valeur n'est pas acceptée (une clé absente en base ne vaut jamais « conservée ») | KO ; KO |
 | RL4 | `bob` écrit le statut d'`alice` avec les valeurs d'`alice` conservées, ou avec les siennes ; `bob` recopie dans son statut la valeur ancienne d'`alice` ; visiteur ; membre d'une autre Miff (`zoe`) | KO partout |
 | RL5 | L'avenir reste borné : +10 min (conservé ou non), +1 jour ; une valeur de +4 min écrite puis conservée | KO ; KO ; KO ; OK |
 | RL6 | Type : `null`, texte, nombre, booléen, objet à la place d'un horodatage (les deux champs) ; base contenant `null` et `null` renvoyé | KO partout |

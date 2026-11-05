@@ -526,7 +526,8 @@ service cloud.firestore {
 
     // Horodatage du statut (presenceAt, lastUpdateAt), fourni par l'appareil. Accepté dans l'un de ces deux cas (R-LIEU-1) :
     //  - récent : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur (comme avant) ;
-    //  - conservé : IDENTIQUE à la valeur que le même champ du même statut a déjà en base, quel que soit son âge. Un téléphone resté
+    //  - conservé : IDENTIQUE (à la microseconde, précision de stockage de Firestore) à la valeur que le même champ du même statut a
+    //    déjà en base, quel que soit son âge. Un téléphone resté
     //    plus de 24 h dans la même situation peut ainsi réécrire son statut sans mentir sur l'heure qu'il ne change pas.
     // La valeur conservée n'est jamais choisie par le client : elle doit être égale à celle de la base (aucune nouvelle ancienne
     // heure, aucun recul, aucune avance hors fenêtre, jamais la valeur d'un autre champ ni d'un autre document). À la création
