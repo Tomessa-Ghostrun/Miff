@@ -6,8 +6,10 @@
 Filet de sécurité complémentaire au geofencing (voir [localisation-lieux-de-confiance.md](localisation-lieux-de-confiance.md)) : si un membre quitte un lieu de confiance et ne redonne pas de nouvelles, son statut s'aggrave progressivement pour alerter son cercle sans qu'il ait à faire quoi que ce soit de dramatique — juste ne rien faire.
 
 ## Règles métier actées (issues des notes du PM)
-1. Un membre qui quitte une "zone verte" (lieu de confiance) **et** ne publie pas d'update depuis plus de 2h → passe **orange**.
-2. Un membre **orange** qui ne publie pas d'update pendant 2h supplémentaires → passe **rouge**.
+1. Un membre qui quitte une "zone verte" (lieu de confiance) **et** ne publie pas d'update depuis plus de **1 h** → passe **orange**.
+2. Un membre qui ne publie toujours pas d'update **2 h** après son départ (soit 1 h après être passé orange) → passe **rouge**.
+
+*Seuils mis à jour le 2026-11-01 (ticket Notion « Statut », décision du PM) : orange à 1 h, rouge à 2 h. Les notes d'origine disaient 2 h puis 2 h supplémentaires (rouge à 4 h).*
 3. Un membre **rouge** doit donner une update toutes les heures (tant qu'il reste rouge).
 
 ## User stories

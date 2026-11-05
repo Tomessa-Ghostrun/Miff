@@ -1,19 +1,21 @@
 # Politique de confidentialité de Miff
 
-**Version 0.1 — dernière mise à jour : 30 octobre 2026**
+**Version 0.1 — dernière mise à jour : 4 novembre 2026**
 
 Miff est une app pour savoir que tes proches vont bien, sans les déranger. Pour que ça marche, Miff traite quelques données personnelles, dont des informations liées à ta localisation. Cette page t'explique, simplement, ce qui est collecté, pourquoi, qui peut le voir, combien de temps c'est gardé, et comment garder la main.
 
-## 1. L'essentiel en 8 points
+## 1. L'essentiel en 10 points
 
-1. **Miff ne stocke pas ta position GPS.** Ton téléphone surveille lui-même s'il est dans un « lieu de confiance » ou non. Seul le résultat est envoyé (par exemple « à la Maison » ou « hors d'un lieu de confiance »), avec l'heure. Il n'y a pas d'historique de trajets.
-2. **Le partage est ton choix, Miff par Miff.** Il ne démarre qu'après ton accord explicite, et tu peux l'arrêter à tout moment.
-3. **Si tu arrêtes le partage, ton statut et ta photo de mise à jour sont supprimés** de ce que voit ton cercle.
-4. **Seuls les membres de tes Miffs** voient ce que tu partages. Pour voir le statut des autres, tu dois partager le tien.
-5. **Les photos de mise à jour disparaissent après 24 heures.**
-6. **Les statistiques d'usage et les rapports de plantage sont activés quand tu cliques sur « Rejoindre »** (ou sur « Continuer avec Google ») à l'inscription (il n'y a pas de case à cocher), et tu peux les désactiver à tout moment dans les Réglages, en un seul choix. Avant ce clic, rien n'est envoyé.
-7. **Aucune publicité, aucune revente de données.**
-8. **Tu peux supprimer ton compte depuis l'app** et nous écrire pour exercer tes droits.
+1. **Miff garde ta dernière position connue, et seulement elle.** Il s'agit de la latitude, de la longitude et de l'heure de la mesure, enregistrées sur nos serveurs (Firebase, région de Paris). Il n'y a pas d'historique de trajets : chaque nouvelle position remplace la précédente.
+2. **Ce n'est pas un suivi en direct.** Ton téléphone surveille lui-même les lieux de confiance. Ta position est enregistrée à certains moments (par exemple quand tu ouvres ou quittes l'app, après un déplacement important, ou en arrivant dans un lieu de confiance), et tes proches voient la dernière position enregistrée, avec l'heure.
+3. **Le partage est ton choix, Miff par Miff.** Rien n'est enregistré sans ton accord explicite, et tu peux arrêter à tout moment.
+4. **Seuls les membres de la même Miff qui partagent aussi voient ta position** : pour voir celle des autres, tu dois partager la tienne. Le créateur de la Miff n'a aucun droit de plus que les autres membres.
+5. **Ta position est effacée** quand tu arrêtes le partage, quittes la Miff, es retiré(e) de la Miff, ou quand la Miff ou ton compte est supprimé. **Après 24 heures**, l'app ne l'affiche plus que masquée, avec sa date ; elle reste toutefois stockée jusqu'à ce qu'elle soit remplacée ou effacée (voir l'article 7).
+6. **Miff a besoin de la localisation « Toujours »** (en arrière-plan, même quand l'app est fermée) pour fonctionner : c'est ce qui permet de repérer tes arrivées et tes départs sans que tu aies à ouvrir l'app. Les notifications, elles, sont facultatives.
+7. **Les photos de mise à jour disparaissent après 24 heures.**
+8. **Les statistiques d'usage et les rapports de plantage sont activés quand tu cliques sur « Rejoindre »** (ou sur « Continuer avec Google ») à l'inscription (il n'y a pas de case à cocher), et tu peux les désactiver à tout moment dans les Réglages, en un seul choix. Avant ce clic, rien n'est envoyé. **Ta position n'est jamais envoyée à Google Analytics ni à Crashlytics.**
+9. **Aucune publicité, aucune revente de données.**
+10. **Un compte, un seul téléphone à la fois**, et tu peux supprimer ton compte depuis l'app et nous écrire pour exercer tes droits.
 
 ## 2. Qui est responsable de tes données ?
 
@@ -35,13 +37,16 @@ Le RGPD demande d'indiquer pour chaque usage sa « base légale », c'est-à-dir
 | **Profil** : prénom, nom, photo de profil | Que tes proches te reconnaissent dans l'app | Contrat |
 | **Numéro de téléphone** (demandé à la création de ton profil) : saisi par toi (pays et numéro), enregistré au format international. Nous ne le vérifions pas. | Permettre aux membres de tes Miffs de t'appeler ou de t'écrire. L'écran de saisie t'indique que seuls les membres de tes Miffs le verront. | Contrat |
 | **Appartenance à une Miff** : quelles Miffs tu as créées ou rejointes, ton rôle (créateur ou membre), date d'arrivée, code secret utilisé pour rejoindre | Faire fonctionner ton cercle de confiance | Contrat |
-| **Lieux de confiance** : nom, adresse éventuelle, coordonnées du lieu, rayon. Ces lieux sont créés par le créateur de la Miff et visibles par ses membres. **Ce sont les coordonnées du lieu, pas les tiennes.** | Savoir quand tu arrives ou pars d'un lieu | Contrat ; consentement pour le partage de ta présence |
-| **Statut automatique** (si tu actives le partage) : « dans un lieu de confiance / hors lieu / zone à risque / inconnu », le lieu concerné, l'heure de l'événement, l'heure de la dernière mise à jour | Rassurer ton cercle sans conversation | **Consentement** explicite et révocable |
+| **Lieux de confiance** : nom, **adresse** (obligatoire), coordonnées du lieu, rayon, type (lieu de confiance, ou « zone de danger », réservée à Miff+), catégorie (maison, travail, école…). Ces lieux sont créés par le créateur de la Miff et **visibles de tous ses membres, adresse comprise**. **Ce sont les coordonnées du lieu, pas les tiennes.** Un lieu peut être l'adresse d'une autre personne (par exemple « chez un proche ») : celui qui le crée doit pouvoir l'enregistrer. | Savoir quand tu arrives ou pars d'un lieu | Contrat ; consentement pour le partage de ta présence |
+| **Statut automatique** (si tu actives le partage) : « dans un lieu de confiance / hors lieu / zone de danger / inconnu », le lieu concerné, l'heure de l'événement, l'heure de la dernière mise à jour. Si tu entres dans une zone de danger définie par le créateur de ta Miff, ton statut s'affiche en rouge pour ton cercle. | Rassurer ton cercle sans conversation | **Consentement** explicite et révocable |
+| **Dernière position connue** (si tu actives le partage, après ton accord au texte de consentement de version 3) : latitude, longitude et heure de la mesure, avec la précision fournie par ton téléphone (elle n'est pas floutée). Elle est enregistrée à certains moments (par exemple à l'ouverture ou à la fermeture de l'app, après un déplacement important, en arrivant dans un lieu de confiance) et **remplace la précédente : il n'y a aucun historique**. Une copie par Miff où tu partages. | Permettre à tes proches de voir où tu étais à la dernière mise à jour (par exemple avec le bouton « Localiser » dans l'app) | **Consentement** explicite, distinct, donné Miff par Miff et révocable (voir article 4) |
 | **Mise à jour manuelle** (facultative) : petit texte (140 caractères au plus) et photo | Donner des nouvelles quand tu en as envie | **Consentement** (c'est toi qui envoies) |
 | **État du téléphone** (si tu actives le partage) : niveau de batterie, et si la localisation est autorisée « en arrière-plan », « pendant l'utilisation » ou refusée | Que ton cercle comprenne pourquoi un statut peut être en retard (ex. batterie faible) | Contrat / intérêt légitime |
-| **Preuves de consentement** : date et version des CGU acceptées au clic sur « Rejoindre », date et version du texte de consentement à la localisation. Ton choix sur les statistiques et les plantages est enregistré avec ton compte (sur nos serveurs Firebase), avec sa date et la version du texte que tu as vu ; une copie de ce choix est aussi gardée sur ton téléphone. | Pouvoir démontrer ton accord | Obligation de pouvoir démontrer le consentement |
-| **Abonnement Premium** : état (actif ou non), date de fin, origine (App Store, Google Play, ou accès offert par l'équipe). Nous ne recevons ni ton numéro de carte ni tes données de paiement. | Activer les fonctions Premium | Contrat |
-| **Statistiques d'usage (Google Analytics for Firebase)** — **activées au clic sur « Rejoindre », désactivables à tout moment** : quelques événements simples (ex. inscription terminée, Miff créée ou rejointe, écran Premium affiché), des événements automatiques du service, des données techniques de l'appareil et une zone géographique approximative déduite de l'adresse IP (voir ci-dessous). **Jamais de position précise, de lieu, de nom de Miff, de code ni de texte libre dans les événements que nous choisissons.** | Comprendre si l'app est claire et corriger ce qui bloque | **Consentement** donné au clic sur « Rejoindre », retirable à tout moment (voir ci-dessous) |
+| **Preuves de consentement** : date et version des CGU acceptées au clic sur « Rejoindre », date et version du texte de consentement à la localisation (la position n'est enregistrée qu'avec un texte de version 3 ou plus récent). Ton choix sur les statistiques et les plantages est enregistré avec ton compte (sur nos serveurs Firebase), avec sa date et la version du texte que tu as vu ; une copie de ce choix est aussi gardée sur ton téléphone. | Pouvoir démontrer ton accord | Obligation de pouvoir démontrer le consentement |
+| **Session de l'appareil** (un compte = un seul téléphone) : un identifiant aléatoire de l'installation (sans lien avec ton téléphone lui-même), la plateforme (iPhone ou Android) et l'heure de la connexion, enregistrés avec ton compte | Savoir quel téléphone est le tien en ce moment : quand tu te connectes sur un nouveau téléphone, l'ancien est déconnecté, pour qu'il n'envoie plus de statut périmé à ton cercle | Contrat / intérêt légitime (fiabilité du statut) |
+| **Recherche d'adresse et carte** (quand le créateur d'une Miff définit un lieu) : le texte tapé pour chercher une adresse et les morceaux de carte affichés sont demandés à des services de cartes (voir article 6). Miff ne garde pas ces requêtes. | Choisir l'adresse d'un lieu et le voir sur une carte | Contrat |
+| **Abonnement Miff+** : état (actif ou non), date de fin, origine (App Store, Google Play, ou accès offert par l'équipe). Nous ne recevons ni ton numéro de carte ni tes données de paiement. | Activer les fonctions Miff+ | Contrat |
+| **Statistiques d'usage (Google Analytics for Firebase)** — **activées au clic sur « Rejoindre », désactivables à tout moment** : quelques événements simples (ex. inscription terminée, Miff créée ou rejointe, écran Miff+ affiché), des événements automatiques du service, des données techniques de l'appareil et une zone géographique approximative déduite de l'adresse IP (voir ci-dessous). **Jamais de position précise, de lieu, de nom de Miff, de code ni de texte libre dans les événements que nous choisissons.** | Comprendre si l'app est claire et corriger ce qui bloque | **Consentement** donné au clic sur « Rejoindre », retirable à tout moment (voir ci-dessous) |
 | **Rapports de plantage (Firebase Crashlytics)** — **activés au clic sur « Rejoindre », désactivables à tout moment** : informations techniques sur un plantage (modèle de téléphone, version du système, version de l'app, état de l'app au moment du plantage) | Corriger les bugs | **Consentement** donné au clic sur « Rejoindre », retirable à tout moment (voir ci-dessous) |
 | **Données techniques de sécurité** : vérification que la requête vient bien de la vraie app Miff (Firebase App Check, qui s'appuie sur Play Integrity côté Android et App Attest côté iOS), adresse IP et journaux techniques traités par les services de Google | Protéger le service contre les abus | Intérêt légitime (sécurité) |
 | **Messages que tu nous envoies** (par e-mail) | Répondre à ta demande. Si tu écris pour être prévenu(e) du lancement de l’app, ton adresse sert uniquement à t’avertir de sa sortie, puis nous la supprimons | Intérêt légitime / obligation légale pour les demandes de droits ; ta demande pour le message de lancement |
@@ -55,37 +60,47 @@ Le RGPD demande d'indiquer pour chaque usage sa « base légale », c'est-à-dir
 - **Comment les retirer** : dans les **Réglages** de l'app, tu peux désactiver à tout moment les statistiques d'usage et les rapports de plantage. C'est **un seul choix pour les deux** (pas deux interrupteurs séparés). Ça ne change rien à ton compte ni à ton usage de Miff.
 - **Effet du retrait** : l'envoi s'arrête à partir de ce moment. Ce qui a déjà été envoyé n'est pas effacé immédiatement : il est conservé jusqu'à la fin de la durée de conservation de Google (voir article 7).
 - **Le partage de ta localisation n'est pas concerné par ce clic.** Il demande un accord distinct, donné Miff par Miff (voir article 4).
-**Notifications.** Aujourd'hui, Miff ne t'envoie aucune notification push (envoyée depuis nos serveurs) et n'enregistre aucun jeton de notification (l'identifiant technique de ton téléphone qui sert à en envoyer). Lorsque les notifications seront activées, nous t'en informerons dans l'app et nous te demanderons ton accord avant d'enregistrer un jeton. Cette politique sera alors mise à jour pour décrire les services concernés (notamment les services de notification d'Apple et de Google). Tu pourras toujours couper les notifications dans les réglages de ton téléphone.
+**Notifications.** L'app peut te demander l'autorisation d'afficher des notifications : ce choix est facultatif et ne bloque pas l'usage de l'app. Aujourd'hui, Miff ne t'envoie aucune notification push (envoyée depuis nos serveurs) et n'enregistre aucun jeton de notification (l'identifiant technique de ton téléphone qui sert à en envoyer). Lorsque l'envoi de notifications sera activé, nous t'en informerons dans l'app, et cette politique sera mise à jour pour décrire les services concernés (notamment les services de notification d'Apple et de Google). Tu pourras toujours couper les notifications dans les réglages de ton téléphone.
 
-**Ce que Miff ne collecte pas** : ta position GPS brute, un historique de tes déplacements, ta liste de contacts, ton identifiant publicitaire pour de la publicité. Miff ne te demande ni ton âge ni ta date de naissance.
+**Ce que Miff ne collecte pas** : un historique de tes déplacements (seule ta dernière position connue est gardée), ta liste de contacts, ton identifiant publicitaire pour de la publicité. Miff ne te demande ni ton âge ni ta date de naissance. **Ta position n'est jamais envoyée à Google Analytics ni à Crashlytics, ni écrite dans les journaux techniques de l'app.**
 
-## 4. La localisation en arrière-plan, expliquée
+## 4. La localisation et ta position, expliquées
 
 C'est la partie la plus sensible, donc voici tout.
 
-**Pourquoi Miff te demande la localisation « tout le temps » (en arrière-plan).** Pour signaler automatiquement à ton cercle que tu es arrivé ou parti d'un lieu de confiance, sans que tu aies à ouvrir l'app. Sans cette autorisation, Miff reste utilisable : tu peux envoyer une mise à jour à la main.
+**Pourquoi Miff te demande la localisation « Toujours » (en arrière-plan, même quand l'app est fermée).** Pour signaler automatiquement à ton cercle que tu es arrivé(e) à un lieu de confiance ou que tu l'as quitté, sans que tu aies à ouvrir l'app. **Miff a besoin de cette autorisation (« Toujours », avec la position précise) pour fonctionner** : tant qu'elle n'est pas accordée, l'app te la redemande et l'écran d'autorisation reste affiché. Tu peux la retirer à tout moment dans les réglages de ton téléphone ; l'app te la redemandera alors. Retirer cette autorisation n'a aucune conséquence sur ton compte, mais Miff ne peut pas fonctionner sans elle. Les notifications sont facultatives.
 
-**Comment ça fonctionne.** Miff utilise les fonctions de « surveillance de zones » d'iOS et d'Android. C'est ton téléphone qui détecte, tout seul, quand tu entres ou sors d'une zone. Miff n'enregistre pas de suivi continu de ta position et ne construit pas d'historique de trajets. Seul le résultat (entrée ou sortie, lieu, heure) est envoyé, et uniquement vers les Miffs pour lesquelles tu as activé le partage.
+**Comment ça fonctionne.**
+- Miff utilise les fonctions de « surveillance de zones » d'iOS et d'Android : c'est ton téléphone qui détecte, tout seul, quand tu entres ou sors d'un lieu de confiance. Pour choisir quels lieux surveiller (les 20 plus proches de toi, à cause d'une limite des téléphones), il lit sa position à certains moments et en garde une copie sur le téléphone.
+- Miff **ne suit pas ta position en continu** et **ne construit pas d'historique de trajets**.
+- Quand ton partage est actif, ton téléphone écrit ton statut (par exemple « à la maison ») et ta **dernière position connue** dans chaque Miff où tu partages. L'app y écrit à certains moments : à l'ouverture, à la fermeture, après un déplacement important, en arrivant dans un lieu de confiance. Tes proches voient donc la dernière position **enregistrée**, avec l'heure de sa mesure : elle peut dater de plusieurs heures et n'est pas ta position en direct.
+
+**Ta dernière position connue, en détail.**
+- **Ce qui est enregistré** : la latitude, la longitude et l'heure de la mesure, rien d'autre. Pas d'historique : chaque position remplace la précédente.
+- **Qui peut la voir** : uniquement les membres de la **même Miff** dont le partage est actif, et **seulement s'ils partagent aussi la leur** (réciprocité). Le créateur de la Miff n'a aucun droit supplémentaire. Les personnes qui ne sont pas dans la Miff ne voient rien.
+- **Quand elle est effacée** : quand tu arrêtes le partage avec cette Miff, quand tu la quittes, quand le créateur te retire, quand la Miff est supprimée, et quand tu supprimes ton compte. Elle est effacée en même temps que ton statut et ta photo de mise à jour, sans dépendre d'un traitement automatique différé.
+- **Affichage au bout de 24 heures** : l'app n'affiche plus une position de plus de 24 heures qu'en la masquant, avec sa date toujours visible. Attention : « masquée » ne veut pas dire « effacée ». Elle reste stockée sur nos serveurs jusqu'à son remplacement ou son effacement, selon les cas ci-dessus (voir article 7).
+- **Jamais ailleurs** : ta position n'est jamais envoyée à Google Analytics ni à Crashlytics, ni écrite dans les journaux techniques de l'app, ni dans un message de partage.
 
 **Ton consentement.**
-- Avant toute demande d'autorisation au système, Miff t'explique à quoi sert la localisation, dans l'app.
-- **Cet accord est distinct de ton clic sur « Rejoindre »** : accepter les conditions et les statistiques ne partage jamais ta localisation.
-- Le partage avec une Miff ne s'active que si tu le décides, et il est enregistré avec la date et la version du texte que tu as vu. Personne ne peut l'activer à ta place.
-- Il est indépendant d'une Miff à l'autre : tu peux partager avec l'une et pas avec l'autre.
-- Tu peux **retirer ton consentement à tout moment**, dans les réglages de l'app (arrêt du partage), ou en retirant l'autorisation de localisation dans les réglages de ton téléphone. Retirer ton consentement n'a aucune conséquence sur ton compte. Dès que tu arrêtes le partage d'une Miff, ton statut et ta photo de mise à jour pour cette Miff sont supprimés.
-- Si tu refuses la localisation en arrière-plan, tu peux continuer à utiliser Miff avec des mises à jour manuelles.
+- Avant toute demande d'autorisation au système, Miff t'explique à quoi sert la localisation, dans l'app, y compris le fait qu'elle fonctionne même quand l'app est fermée.
+- **Cet accord est distinct de ton clic sur « Rejoindre »** : accepter les conditions et les statistiques ne partage jamais ta position.
+- Le partage avec une Miff ne s'active que si tu le décides. L'accord est donné **Miff par Miff**, et il est enregistré avec sa date et la version du texte que tu as vu. Personne ne peut l'activer à ta place.
+- **Ta position n'est enregistrée qu'après ton accord à un texte de consentement de version 3 ou plus récent**, qui dit clairement que les membres de ta Miff voient ta dernière position connue. Si tu avais accepté une version plus ancienne du texte (qui ne parlait pas de la position), Miff te demande ton accord à nouveau avant d'enregistrer ta position.
+- Tu peux **retirer ton consentement à tout moment**, Miff par Miff, dans les réglages de l'app (arrêt du partage), ou en retirant l'autorisation de localisation dans les réglages de ton téléphone. Dès que tu arrêtes le partage d'une Miff, ton statut, ta photo de mise à jour et ta dernière position pour cette Miff sont supprimés.
+- **À savoir** : comme Miff ne fonctionne pas sans la localisation « Toujours », il n'existe pas d'usage de l'app avec seulement des mises à jour manuelles. Si tu ne souhaites pas partager ta position, tu peux ne pas utiliser Miff, ou supprimer ton compte.
 
-**Pas de pistage caché.** Miff n'est pas fait pour suivre quelqu'un à son insu. La personne concernée doit être au courant et d'accord.
+**Pas de pistage caché.** Miff n'est pas fait pour suivre quelqu'un à son insu. La personne concernée doit être au courant et d'accord. Et ton compte ne fonctionne que sur **un seul téléphone à la fois**, pour qu'un ancien téléphone n'envoie pas à ton cercle un statut qui ne te correspond plus.
 
 ## 5. Qui voit quoi ?
 
 Les membres d'une Miff voient :
 - ton prénom, ton nom, ta photo de profil et **ton numéro de téléphone** (visible des membres de chacune de tes Miffs, que tu partages ton statut ou non) ;
-- les lieux de confiance de la Miff (nom, adresse éventuelle, rayon) ;
-- **si tu partages** : ton statut (dans un lieu, hors lieu…), l'heure, ton éventuelle mise à jour (texte, photo), ton niveau de batterie et l'état de ton autorisation de localisation ;
+- les lieux de confiance de la Miff : nom, **adresse**, position sur la carte, rayon, type et catégorie ;
+- **si tu partages** : ton statut (dans un lieu, hors lieu, dans une zone de danger…), l'heure, **ta dernière position connue avec l'heure de sa mesure** (seulement si eux aussi partagent leur position), ton éventuelle mise à jour (texte, photo), ton niveau de batterie et l'état de ton autorisation de localisation ;
 - si tu ne partages pas, que ton partage est désactivé.
 
-Pour voir le statut des autres, tu dois partager le tien. Les personnes qui ne sont pas dans la Miff ne voient rien. Une personne qui connaît le code secret d'une Miff peut la rejoindre : ne le donne qu'à des personnes de confiance.
+Pour voir le statut et la position des autres, tu dois partager les tiens. Les personnes qui ne sont pas dans la Miff ne voient rien. Le créateur de la Miff n'a **aucun droit de lecture supplémentaire** sur ton statut ni sur ta position. Une personne qui connaît le code secret d'une Miff peut la rejoindre : ne le donne qu'à des personnes de confiance, et sache que ses membres voient l'adresse des lieux de la Miff.
 
 L'accès de l'équipe Miff à la base de données est limité aux personnes habilitées et à ce qui est nécessaire (maintenance, support, sécurité).
 
@@ -97,14 +112,19 @@ Miff s'appuie sur des services de **Google (Google Firebase)** et de **Apple / G
 
 | Prestataire et service | Rôle | Où les données sont traitées |
 |---|---|---|
-| **Google Firebase — Cloud Firestore** | Base de données de l'app (profil, Miffs, lieux, statuts, photos) | **Région de Paris (europe-west9)** |
+| **Google Firebase — Cloud Firestore** | Base de données de l'app (profil, Miffs, lieux, statuts, dernières positions connues, photos) | **Région de Paris (europe-west9)** |
 | **Google Firebase — Authentication** | Création de compte et connexion | Selon la documentation de Google, ce service fonctionne **depuis des centres de données situés aux États-Unis** |
 | **Google Firebase — App Check** | Vérifier que la requête vient de la vraie app | Centres de données Google, localisation non précisée par service |
 | **Google Analytics for Firebase** (activé au clic sur « Rejoindre », désactivable) | Statistiques d'usage | Centres de données Google, y compris possiblement hors UE |
 | **Firebase Crashlytics** (activé au clic sur « Rejoindre », désactivable) | Rapports de plantage | Centres de données Google, y compris possiblement hors UE |
+| **Photon (service public exploité par Komoot, données OpenStreetMap)** — sur Android | Suggestions d'adresse quand le créateur d'une Miff définit un lieu | Il reçoit **le texte tapé** (à partir de 3 caractères) et **ton adresse IP**, ce qui est inévitable pour répondre. Miff n'y envoie pas ta position. Miff n'a pas de contrat avec ce service gratuit, qui ne garantit pas sa disponibilité ; sa propre politique de confidentialité s'applique, et nous n'avons pas d'information précise sur le pays où il traite les données |
+| **OpenFreeMap** (cartes construites à partir des données OpenStreetMap) — sur Android | Affichage de la carte (écran d'un lieu) | Il reçoit **ton adresse IP** et **les morceaux de carte demandés** (donc la zone de carte affichée à l'écran, par exemple autour du lieu défini). Selon sa politique, il n'utilise pas de cookies, anonymise ses journaux d'accès et les supprime au bout de 7 jours ; l'adresse IP ne figure pas dans les journaux d'accès par défaut, mais peut figurer dans ses journaux d'erreur (7 jours) ou lors d'un incident de sécurité (30 jours au plus). Il peut s'appuyer sur un réseau de diffusion (Cloudflare) |
+| **Services de cartes et de recherche d'adresse d'Apple** — sur iPhone | Affichage de la carte et suggestions d'adresse d'un lieu | Apple les traite selon sa propre politique de confidentialité |
 | **Google Sign-In** | Connexion avec ton compte Google (si tu choisis cette option) | Selon la politique de Google |
 | **Sign in with Apple** | Connexion avec ton identifiant Apple (si tu choisis cette option). Avec Apple, tu peux choisir de masquer ton adresse e-mail. | Selon la politique d'Apple |
 | **App Store (Apple) / Google Play** | Téléchargement de l'app, paiement et gestion des abonnements | Selon les politiques d'Apple et de Google |
+
+**Cartes et adresses.** Ces services de cartes et d'adresses sont utilisés quand le créateur définit ou consulte un lieu. Ils reçoivent ce que ton téléphone leur envoie pour répondre (texte tapé, zone de carte, adresse IP), **jamais la dernière position connue que ton téléphone envoie à ta Miff**. Leurs propres règles s'appliquent à ce qu'ils reçoivent. Ce sont des services gratuits sans garantie de disponibilité : s'ils sont indisponibles, la création d'un lieu peut être impossible pendant un moment.
 
 **Notifications push.** Aucun service de notification push (Firebase Cloud Messaging, service de notification push d'Apple) n'est utilisé aujourd'hui. S'ils le deviennent, ils seront ajoutés à ce tableau avant leur activation (voir l'article 3).
 
@@ -114,27 +134,29 @@ Ces prestataires agissent pour notre compte (sous-traitants). Google et Apple ag
 
 ## 7. Combien de temps gardons-nous tes données ?
 
-Miff ne garde pas d'historique : le statut est un « état courant », écrasé à chaque événement.
+Miff ne garde pas d'historique : le statut et la dernière position connue sont des « états courants », écrasés à chaque événement.
 
 | Donnée | Durée de conservation |
 |---|---|
 | Compte et profil | Jusqu'à la suppression de ton compte. Pour le moment, Miff ne supprime pas automatiquement les comptes inactifs. |
 | Statut (présence, heures, batterie, état de la localisation) | Un seul état, remplacé à chaque événement. Supprimé quand tu arrêtes le partage, quand tu quittes la Miff, quand tu es retiré de la Miff, ou quand tu supprimes ton compte. |
+| **Dernière position connue** | **Une seule position par Miff où tu partages**, remplacée à chaque mise à jour. Supprimée **en même temps que ton statut** : quand tu arrêtes le partage, quittes la Miff, es retiré(e) de la Miff, ou quand la Miff ou ton compte est supprimé. **Au-delà de 24 heures, l'app ne l'affiche plus que masquée (sa date reste visible), mais Miff ne la supprime pas automatiquement à ce moment-là** : elle reste stockée, et techniquement lisible par les membres autorisés de la Miff, jusqu'à son remplacement ou son effacement. |
+| Session de l'appareil | Jusqu'à ta déconnexion, jusqu'à ce que tu te connectes sur un autre téléphone (la session est alors remplacée), ou jusqu'à la suppression de ton compte. |
 | **Photo de mise à jour** | **Illisible pour les membres après 24 heures.** Elle est ensuite supprimée de nos serveurs dès que possible, par l'app de son auteur ou d'un membre de la Miff lors d'une ouverture de l'app. Elle est aussi supprimée si tu arrêtes le partage, quitte la Miff ou supprimes ton compte. La suppression physique exactement à la 24e heure n'est pas garantie : en attendant, la photo n'est lisible par personne. |
 | Numéro de téléphone | Avec ton profil, jusqu'à la suppression de ton compte. |
 | Photo, nom et numéro de téléphone copiés dans une Miff | Jusqu'à ce que tu quittes la Miff, que tu en sois retiré, que la Miff soit supprimée, ou que tu supprimes ton compte. |
-| Lieux de confiance | Jusqu'à leur suppression par le créateur ou la suppression de la Miff. |
+| Lieux de confiance (adresse comprise) | Jusqu'à leur suppression par le créateur (dans toutes les Miffs où ils figurent) ou la suppression de la Miff. |
 | Code secret d'une Miff | Jusqu'à son renouvellement ou la suppression de la Miff. Quand le créateur retire un membre, le code est renouvelé automatiquement. |
-| Preuves de consentement | Tant que tu es membre de la Miff concernée (pour le consentement à la localisation) ; avec ton compte (pour les CGU). Nous ne conservons pas cette preuve après ton départ de la Miff. |
-| État de l'abonnement Premium | Pendant la durée de l'abonnement, puis suppression 30 jours après la suppression de ton compte. |
+| Preuves de consentement | Tant que tu es membre de la Miff concernée (pour le consentement à la localisation et à la position) ; avec ton compte (pour les CGU). Nous ne conservons pas cette preuve après ton départ de la Miff. |
+| État de l'abonnement Miff+ | Pendant la durée de l'abonnement, puis suppression 30 jours après la suppression de ton compte. |
 | Statistiques d'usage (tant qu'elles sont activées) | **2 mois** pour les données détaillées (au niveau de chaque événement et de chaque utilisateur) : c'est la durée la plus courte proposée par Google Analytics, et nous ne l'allongeons pas. La suppression est faite par Google lors de ses traitements périodiques. Google Analytics peut garder plus longtemps des chiffres agrégés (des totaux, sans lien avec une personne). |
 | Rapports de plantage (tant qu'ils sont activés) | **90 jours**, durée indiquée par Firebase pour les rapports de plantage et les identifiants associés. Google commence ensuite à les supprimer de ses systèmes actifs et de ses sauvegardes, ce qui peut prendre un peu plus de temps. |
 | Identifiant d'installation Firebase | Conservé par Firebase tant que l'app est utilisée ; supprimé par Firebase après environ 270 jours sans utilisation de l'app (durée indiquée dans la documentation de Firebase, susceptible de changer). Il peut aussi être renouvelé si tu réinstalles l'app. |
 | Messages envoyés à notre adresse de contact | Le temps de traiter ta demande, puis 1 an, après quoi ils sont supprimés. |
 | Sauvegardes | Nous n'activons pas de sauvegarde de la base de données. |
-| Données stockées sur ton téléphone (copie de travail hors ligne) | Effacées quand tu te déconnectes, supprimes ton compte, ou perds l'accès à une Miff. |
+| Données stockées sur ton téléphone (copie de travail hors ligne, dernière position connue servant à choisir les lieux à surveiller) | Effacées quand tu te déconnectes, supprimes ton compte, ou perds l'accès à une Miff. |
 
-**Cas particulier : une Miff supprimée.** Quand un créateur supprime sa Miff (ou son compte, ce qui supprime aussi les Miffs qu'il a créées), les autres membres sont retirés. Si l'app d'un ancien membre n'a pas encore été ouverte, les données qui le concernent dans cette Miff (fiche de membre, éventuel statut ou photo) deviennent illisibles pour tout le monde immédiatement, mais ne sont effacées physiquement qu'à la prochaine ouverture de son app.
+**Cas particulier : une Miff supprimée.** Quand un créateur supprime sa Miff (ou son compte, ce qui supprime aussi les Miffs qu'il a créées), les autres membres sont retirés. Si l'app d'un ancien membre n'a pas encore été ouverte, les données qui le concernent dans cette Miff (fiche de membre, éventuel statut, dernière position ou photo) deviennent illisibles pour tout le monde immédiatement, mais ne sont effacées physiquement qu'à la prochaine ouverture de son app.
 
 ## 8. Tes droits et comment les exercer
 
@@ -149,8 +171,8 @@ Tu as le droit de :
 - **définir des directives** sur le sort de tes données après ton décès (loi française).
 
 **Comment faire :**
-- **Supprimer ton compte** : directement dans l'app, dans les réglages. Cela supprime ton compte et les données associées décrites ci-dessus. Si tu es le **créateur** d'une Miff, la suppression de ton compte supprime aussi cette Miff, avec ses lieux, ses statuts et ses photos. Les autres membres n'y ont alors plus accès : l'app leur indique simplement, sans alarme, que la Miff n'existe plus, et les données qui les concernent dans cette Miff, devenues illisibles, sont effacées à la prochaine ouverture de leur app. Leur propre compte n'est pas touché et ils peuvent créer ou rejoindre une autre Miff. Si tu le souhaites, préviens tes proches avant de supprimer ton compte..
-- **Arrêter le partage de ta position** : dans les réglages de l'app, Miff par Miff.
+- **Supprimer ton compte** : directement dans l'app, dans les réglages. Cela supprime ton compte et les données associées décrites ci-dessus. Si tu es le **créateur** d'une Miff, la suppression de ton compte supprime aussi cette Miff, avec ses lieux, ses statuts, les dernières positions connues et ses photos. Les autres membres n'y ont alors plus accès : l'app leur indique simplement, sans alarme, que la Miff n'existe plus, et les données qui les concernent dans cette Miff, devenues illisibles, sont effacées à la prochaine ouverture de leur app. Leur propre compte n'est pas touché et ils peuvent créer ou rejoindre une autre Miff. Si tu le souhaites, préviens tes proches avant de supprimer ton compte.
+- **Arrêter le partage de ta position** : dans les réglages de l'app, Miff par Miff. Cela supprime en même temps ton statut, ta photo de mise à jour et ta dernière position connue pour cette Miff.
 - **Statistiques et rapports de plantage** : un seul interrupteur dans les Réglages de l'app (les deux sont liés). Le désactiver arrête l'envoi à partir de ce moment ; ce qui a déjà été envoyé reste conservé selon les durées indiquées à l'article 7.
 - **Accéder à tes données ou les exporter** : pendant la phase de test (bêta), écris-nous à **tomessa.mfouka@gmail.com**. Nous te répondons avec tes données dans un format lisible.
 - **Toute autre demande** : écris-nous à **tomessa.mfouka@gmail.com**. Nous pouvons te demander de confirmer ton identité, pour éviter qu'on se fasse passer pour toi.
@@ -161,7 +183,7 @@ Nous répondons dans un délai d'**un mois** au plus (prolongeable dans les cas 
 
 ## 9. Sécurité
 
-Nous protégeons tes données avec des mesures adaptées : règles d'accès strictes (seuls les membres d'une Miff accèdent aux informations de cette Miff), connexion chiffrée, chiffrement des données au repos assuré par Google, vérification que les requêtes viennent de la vraie app (App Check), et accès aux outils d'administration limité aux personnes habilitées. Aucun système n'est infaillible. En cas de violation de données susceptible de te porter préjudice, nous préviendrons la CNIL et, si nécessaire, toi, comme la loi l'exige.
+Nous protégeons tes données avec des mesures adaptées : règles d'accès strictes (seuls les membres d'une Miff accèdent aux informations de cette Miff ; la dernière position d'un membre n'est lisible que par les membres de la même Miff dont le partage est actif et qui partagent aussi la leur), connexion chiffrée, chiffrement des données au repos assuré par Google, vérification que les requêtes viennent de la vraie app (App Check), et accès aux outils d'administration limité aux personnes habilitées. Aucun système n'est infaillible. En cas de violation de données susceptible de te porter préjudice, nous préviendrons la CNIL et, si nécessaire, toi, comme la loi l'exige.
 
 Pense aussi à protéger ton téléphone (code de verrouillage) et à ne partager le code secret d'une Miff qu'avec des personnes de confiance.
 
@@ -171,14 +193,14 @@ Miff n'impose pas d'âge minimum et ne demande pas ton âge. Miff est conçu pou
 
 Si tu es mineur, nous te conseillons d'utiliser Miff avec l'accord de tes parents. Si tu es parent et que tu penses que les données d'un enfant ont été collectées sans ton accord, écris à **tomessa.mfouka@gmail.com** : nous supprimerons son compte et ses données.
 
-Chaque membre donne lui-même son consentement au partage de sa localisation, et peut l'arrêter à tout moment.
+Chaque membre donne lui-même son consentement au partage de sa localisation, et peut l'arrêter à tout moment. Cela vaut aussi pour une personne mineure : si elle utilise Miff et partage, sa dernière position connue est visible des autres membres de sa Miff, comme celle de n'importe quel membre.
 
 **À savoir :** Miff ne contrôle pas l'âge de ses utilisateurs. Nous ne pouvons donc pas vérifier si l'accord d'un parent a été donné quand la loi l'exige.
 
 ## 11. Traceurs, identifiants et stockage sur ton téléphone
 
 Miff n'utilise pas de cookies. L'app utilise :
-- **le stockage local de ton téléphone** : session de connexion, tes préférences (dont tes choix sur les statistiques et les plantages), et une copie de travail des données de tes Miffs pour fonctionner hors ligne. Ces éléments sont nécessaires au fonctionnement de l'app ;
+- **le stockage local de ton téléphone** : session de connexion, tes préférences (dont tes choix sur les statistiques et les plantages), et une copie de travail des données de tes Miffs pour fonctionner hors ligne, ta dernière position connue (pour choisir les lieux à surveiller) et l'identifiant aléatoire de ta session. Ces éléments sont nécessaires au fonctionnement de l'app ;
 - **des identifiants techniques** de Firebase (identifiant d'installation) pour faire fonctionner les services. **Pour les statistiques et les rapports de plantage, ils ne sont utilisés qu'à partir de ton clic sur « Rejoindre », et jusqu'à ce que tu désactives ces options dans les Réglages.**
 
 Miff n'affiche pas de publicité et ne te « suit » pas d'une app à l'autre. **Miff n'utilise aucun identifiant publicitaire, ni sur Android ni sur iOS** : l'app n'en demande pas l'accès, la collecte correspondante est désactivée dans la configuration de Google Analytics for Firebase, et Miff ne te demande pas l'autorisation de « suivi » d'Apple (App Tracking Transparency), dont elle n'a pas besoin.
@@ -189,7 +211,7 @@ Tu peux changer d'avis à tout moment dans les réglages de l'app.
 
 ## 12. Modifications de cette politique
 
-Nous pouvons modifier cette politique, par exemple si l'app évolue. En cas de changement important, nous te prévenons dans l'app avant qu'il s'applique. Si le changement touche à la localisation ou à un usage nécessitant ton accord, nous te redemandons ton consentement. La date et la version en haut de la page indiquent la version en vigueur.
+Nous pouvons modifier cette politique, par exemple si l'app évolue. En cas de changement important, nous te prévenons dans l'app avant qu'il s'applique. Si le changement touche à la localisation ou à un usage nécessitant ton accord, nous te redemandons ton consentement : c'est le cas, par exemple, du texte de consentement de version 3, qui décrit l'enregistrement de ta dernière position connue. La date et la version en haut de la page indiquent la version en vigueur.
 
 ## 13. Droit applicable
 

@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
 }
 
+// LOC-2a. -Pmiff.locationBlocking=false relaxes the blocking of the location screen (see defaultConfig). That is a TEST option: a RELEASE
+// build (release, releaseLike) refuses it unless -Pmiff.allowRelaxedLocationInRelease=true is ALSO given, on purpose (a decision of the PM, for
+// instance if a store refuses the blocking). The default is "true" everywhere. Checked by PermissionPrivacyTest.
+val locationBlockingProperty: String = providers.gradleProperty("miff.locationBlocking").getOrElse("true")
+
 android {
     namespace = "com.tomessa.miff"
     // compileSdk 37 (not 36): the current AndroidX releases (Compose 1.12, Navigation 2.10, Core 1.19) require it.
@@ -31,6 +36,29 @@ android {
         require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
         buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
+        // LOC-1 (places). Providers of the map and of the address suggestions: all free, none needs a key (decision of the ticket,
+        // section 12). Override without editing the code: -Pmiff.mapStyleUrl=..., -Pmiff.photonUrl=... (https only).
+        // The optional fallback of the suggestions (Geoapify, free plan) is OFF unless a key is given at build time with
+        // -Pmiff.geoapifyKey=... (in your own ~/.gradle/gradle.properties): NO key is ever committed. A key inside an app can be
+        // extracted: turning the fallback on in a published build is a decision of the PM (see docs/dev/lieux-fournisseurs-gratuits.md).
+        val mapStyleUrl =
+            providers.gradleProperty("miff.mapStyleUrl").getOrElse("https://tiles.openfreemap.org/styles/positron")
+        val photonUrl = providers.gradleProperty("miff.photonUrl").getOrElse("https://photon.komoot.io/api/")
+        val geoapifyKey = providers.gradleProperty("miff.geoapifyKey").getOrElse("")
+        require(mapStyleUrl.startsWith("https://")) { "miff.mapStyleUrl must be an https:// address (no clear text)" }
+        require(photonUrl.startsWith("https://")) { "miff.photonUrl must be an https:// address (no clear text)" }
+        require(Regex("[A-Za-z0-9]*").matches(geoapifyKey)) { "miff.geoapifyKey must only hold letters and digits" }
+        buildConfigField("String", "PLACE_MAP_STYLE_URL", "\"$mapStyleUrl\"")
+        buildConfigField("String", "PHOTON_URL", "\"$photonUrl\"")
+        buildConfigField("String", "GEOAPIFY_KEY", "\"$geoapifyKey\"")
+        // LOC-2a. Compile-time switch (AUT6, decision (e) of the PM): the location screen "Toujours autoriser" is BLOCKING by default, because
+        // Miff only works with the precise location all the time. -Pmiff.locationBlocking=false relaxes it (a "Plus tard" link appears) in
+        // case a store refuses the blocking (Apple 5.1.2(i) is the known risk, assumed by the PM). Only "true" or "false" are accepted.
+        val locationBlocking = locationBlockingProperty
+        require(
+            locationBlocking == "true" || locationBlocking == "false",
+        ) { "miff.locationBlocking must be true or false" }
+        buildConfigField("boolean", "LOCATION_BLOCKING", locationBlocking)
         // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
         buildConfigField("boolean", "STARTUP_METRICS", "false")
     }
@@ -156,6 +184,9 @@ dependencies {
     implementation(libs.libphonenumber)
     implementation(libs.androidx.exifinterface)
 
+    // Map with the perimeter of a place (LOC-1): MapLibre Native, BSD-2-Clause, free. See docs/dev/lieux-fournisseurs-gratuits.md.
+    implementation(libs.maplibre.android)
+
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)
@@ -175,4 +206,19 @@ dependencies {
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+run {
+    val relaxed = locationBlockingProperty == "false"
+    val allowedInRelease = providers.gradleProperty("miff.allowRelaxedLocationInRelease").orNull == "true"
+    if (relaxed && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.locationBlocking=false is not allowed in a release build (the location screen must block). " +
+                        "Add -Pmiff.allowRelaxedLocationInRelease=true only if the PM decided to relax it.",
+                )
+            }
+        }
+    }
 }

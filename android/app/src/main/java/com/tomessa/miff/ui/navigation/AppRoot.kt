@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.BuildConfig
+import com.tomessa.miff.data.auth.CredentialManagerClient
 import com.tomessa.miff.data.auth.CredentialManagerGoogleSource
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.data.session.SessionState
@@ -36,7 +37,6 @@ import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelViewModel
-import com.tomessa.miff.ui.auth.NextStepPlaceholderScreen
 import com.tomessa.miff.ui.auth.PasswordResetScreen
 import com.tomessa.miff.ui.auth.PasswordResetViewModel
 import com.tomessa.miff.ui.auth.SessionLoadingScreen
@@ -45,7 +45,9 @@ import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
 import com.tomessa.miff.ui.main.MainShell
+import com.tomessa.miff.ui.miff.MiffOnboardingHost
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.permission.PermissionGate
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.ProfileFlow
 import com.tomessa.miff.ui.profile.ProfileViewModel
@@ -158,23 +160,19 @@ fun AppRoot(container: AppContainer) {
                 }
 
                 AppDestination.MIFF_CHOICE -> {
-                    // Debug builds only: look at the tabs without a Miff (the code is removed from the release build).
-                    var previewTabs by rememberSaveable { mutableStateOf(false) }
-                    if (BuildConfig.DEBUG && previewTabs) {
-                        MainShell(container = container, tabBar = TabBarConfig.forBuild(isInternalBuild = true))
-                    } else {
-                        NextStepPlaceholderScreen(
-                            onSignOut = { scope.launch { session.signOut() } },
-                            onPreviewTabs = if (BuildConfig.DEBUG) ({ previewTabs = true }) else null,
-                        )
-                    }
+                    // Create or join a Miff (Miff ticket). The onboarding is complete only with a Miff: this host is left
+                    // when the session moves on to the Feed.
+                    MiffOnboardingHost(container)
                 }
 
                 AppDestination.FEED -> {
-                    MainShell(
-                        container = container,
-                        tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
-                    )
+                    // LOC-2a: the notification screen, the renewal of the consent and the blocking location screen come BEFORE the Feed.
+                    PermissionGate(container) {
+                        MainShell(
+                            container = container,
+                            tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
+                        )
+                    }
                 }
             }
         }
@@ -292,7 +290,10 @@ private fun SignedOutHost(
 private fun googleSourceFor(context: Context): GoogleIdTokenSource {
     var current: Context = context
     while (current is ContextWrapper && current !is Activity) current = current.baseContext
-    return CredentialManagerGoogleSource(current, CredentialManagerGoogleSource.webClientIdFrom(context))
+    return CredentialManagerGoogleSource(
+        CredentialManagerClient(current),
+        CredentialManagerGoogleSource.webClientIdFrom(context),
+    )
 }
 
 /**

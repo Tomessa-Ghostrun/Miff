@@ -286,7 +286,9 @@ class SessionManager(
                 }
 
                 is GoogleTokenResult.Failed -> {
-                    failure = token.failure
+                    // Whatever the cause of the dialog (no account, services, interrupted...), here the person is not signing
+                    // in: the plain neutral message is the only one that makes sense ("or continue with your e-mail" would not).
+                    failure = AuthFailure.UNKNOWN
                 }
             }
         }
@@ -329,6 +331,28 @@ class SessionManager(
             applyAccount(uid, snapshot, method = null, signUpGesture = false)
         }
     }
+
+    /**
+     * A Miff was just created or joined and the server CONFIRMED it (Miff ticket). The account now counts as having a Miff.
+     * The end of the onboarding is only counted (`onboarding_completed`, once, if the consent allows) when the person was on
+     * the "create or join" step; the app does NOT move on here (the "Ta Miff est prête" screen still has to be seen): see
+     * [continueAfterMiff].
+     */
+    fun onMiffEntered(via: AnalyticsEvent.OnboardingVia) {
+        accountSnapshot = accountSnapshot?.copy(hasMembership = true)
+        if (currentDestination() == AppDestination.MIFF_CHOICE) tracker.track(AnalyticsEvent.OnboardingCompleted(via))
+    }
+
+    /** From the "create or join" step to the feed (no effect anywhere else). */
+    fun continueAfterMiff() {
+        if (currentDestination() ==
+            AppDestination.MIFF_CHOICE
+        ) {
+            mutableState.value = SessionState.Ready(AppDestination.FEED)
+        }
+    }
+
+    private fun currentDestination(): AppDestination? = (mutableState.value as? SessionState.Ready)?.destination
 
     /**
      * Does the server already hold a complete profile (with its phone number) for the person signed in? Used after a refused

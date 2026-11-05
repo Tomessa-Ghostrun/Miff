@@ -7,8 +7,8 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
-  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
-  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B,
+  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, leaveWithPositionOps, removeMemberWithPositionOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
+  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, positionDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -39,6 +39,20 @@ const seedBobPhoto = (env) =>
   env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/bob`).set(photoDoc({ createdAt: T0 })));
 const seedAlicePhoto = (env) =>
   env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0 })));
+
+// R-LIEU-POS : consentement v3 et dernière position enregistrés pour bob / alice (les deux ont déjà un statut dans le jeu de départ).
+const seedV3Position = (uid) => (env) =>
+  env.withSecurityRulesDisabled(async (ctx) => {
+    const f = ctx.firestore();
+    await f.doc(`${M1}/members/${uid}`).update({ 'sharing.consentVersion': CONSENT_POSITION });
+    await f.doc(`${M1}/positions/${uid}`).set(positionSeed());
+  });
+const seedBobV3Position = seedV3Position('bob');
+const seedAliceV3Position = seedV3Position('alice');
+const seedAliceBobV3Positions = async (env) => {
+  await seedAliceV3Position(env);
+  await seedBobV3Position(env);
+};
 
 // `lot: true` : plusieurs écritures dans un lot. `hosts` = UNE règle hôte par écriture du lot (mesure par écriture puis lot entier).
 // Sinon : une seule opération (get, liste, écriture simple), `hosts` = la règle mesurée.
@@ -80,27 +94,32 @@ const scenarios = [
   },
   {
     id: 'READS-leave',
-    title: 'quitter une Miff (batch de 4)',
-    name: 'Quitter une Miff (batch de 4)',
+    title: 'quitter une Miff (batch de 5, avec la dernière position)',
+    name: 'Quitter une Miff (batch de 5)',
     lot: true,
-    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.membershipsDelete],
-    run: (env) => commit(db(env, 'bob'), all(leaveOps('bob'))),
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.positionsDelete, H.membershipsDelete],
+    prepare: seedBobV3Position,
+    run: (env) => commit(db(env, 'bob'), all(leaveWithPositionOps('bob'))),
   },
   {
     id: 'READS-remove-member',
-    title: 'retirer un membre avec renouvellement du code (batch de 6, avec photo)',
-    name: 'Retirer un membre + nouveau code (batch de 6)',
+    title: 'retirer un membre avec renouvellement du code (batch de 7, avec photo et dernière position)',
+    name: 'Retirer un membre + nouveau code (batch de 7)',
     lot: true,
-    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
-    prepare: seedBobPhoto,
-    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.positionsDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
+    prepare: async (env) => {
+      await seedBobPhoto(env);
+      await seedBobV3Position(env);
+    },
+    run: (env) => commit(db(env, 'alice'), all(removeMemberWithPositionOps({ target: 'bob' }))),
   },
   {
     id: 'READS-delete-miff',
-    title: 'la créatrice supprime la Miff (batch de 6, avec pierre tombale)',
-    name: 'Supprimer la Miff (batch de 6, avec pierre tombale)',
+    title: 'la créatrice supprime la Miff (batch de 7, avec pierre tombale et sa dernière position)',
+    name: 'Supprimer la Miff (batch de 7, avec pierre tombale)',
     lot: true,
-    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.membersDelete, H.statusDelete, H.membershipsDelete],
+    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.membersDelete, H.statusDelete, H.positionsDelete, H.membershipsDelete],
+    prepare: seedAliceV3Position,
     run: (env) =>
       commit(db(env, 'alice'), [
         del(M1),
@@ -108,8 +127,58 @@ const scenarios = [
         del(`joinCodes/${CODE.M1}`),
         del(`${M1}/members/alice`),
         del(`${M1}/status/alice`),
+        del(`${M1}/positions/alice`),
         del('users/alice/memberships/free'),
       ]),
+  },
+  {
+    // MIFF-2 : le lot final de la suppression, tel que le client l'écrit (avec la photo de la créatrice : 7 écritures).
+    id: 'READS-delete-miff-final',
+    title: 'suppression de la Miff, lot final du client (batch de 7 : Miff, pierre tombale, code, statut, photo, fiche, index, MIFF-2)',
+    name: 'Supprimer la Miff, lot final (batch de 7, MIFF-2)',
+    lot: true,
+    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.statusDelete, H.photosDelete, H.membersDelete, H.membershipsDelete],
+    prepare: seedAlicePhoto,
+    run: (env) =>
+      commit(db(env, 'alice'), [
+        del(M1),
+        set(`miffsDeleted/${ID.M1}`, { deletedAt: serverTs() }),
+        del(`joinCodes/${CODE.M1}`),
+        del(`${M1}/status/alice`),
+        del(`${M1}/photos/alice`),
+        del(`${M1}/members/alice`),
+        del('users/alice/memberships/free'),
+      ]),
+  },
+  {
+    // MIFF-2 : cinq lieux supprimés dans un même lot (étape 2 de la suppression). Une seule règle hôte : les cinq écritures évaluent
+    // la même règle sur les mêmes documents (comptés une fois avec le cache de l'émulateur ; au pire 5 fois sans cache).
+    id: 'READS-delete-places',
+    title: 'suppression de 5 lieux dans un lot (MIFF-2)',
+    name: 'Supprimer 5 lieux (batch de 5, MIFF-2)',
+    limit: 20,
+    hosts: [H.placesDelete],
+    prepare: (env) =>
+      env.withSecurityRulesDisabled(async (ctx) => {
+        const f = ctx.firestore();
+        for (const id of ['p2', 'p3', 'p4', 'p5']) await f.doc(`${M1}/places/${id}`).set(placeSeed({ createdBy: 'alice' }));
+      }),
+    run: (env) => commit(db(env, 'alice'), ['p1', 'p2', 'p3', 'p4', 'p5'].map((id) => del(`${M1}/places/${id}`))),
+  },
+  {
+    // MIFF-2 : retrait d'une cible déjà partie (fiche et statut absents) : même lot de 6, avec des suppressions de documents absents.
+    id: 'READS-remove-member-gone',
+    title: 'retirer un membre déjà parti avec renouvellement du code (batch de 6, MIFF-2)',
+    name: 'Retirer un membre déjà parti + nouveau code (batch de 6, MIFF-2)',
+    lot: true,
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
+    prepare: (env) =>
+      env.withSecurityRulesDisabled(async (ctx) => {
+        const f = ctx.firestore();
+        await f.doc(`${M1}/members/bob`).delete();
+        await f.doc(`${M1}/status/bob`).delete();
+      }),
+    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
   },
   {
     id: 'READS-regen-code',
@@ -126,17 +195,19 @@ const scenarios = [
   },
   {
     id: 'READS-consent-off',
-    title: 'désactiver le partage (batch de 3)',
-    name: 'Désactiver le partage (batch de 3)',
+    title: 'désactiver le partage (batch de 4, avec la dernière position)',
+    name: 'Désactiver le partage (batch de 4)',
     lot: true,
-    hosts: [H.membersUpdate, H.statusDelete, H.photosDelete],
+    hosts: [H.membersUpdate, H.statusDelete, H.photosDelete, H.positionsDelete],
+    prepare: seedBobV3Position,
     run: (env) =>
       commit(db(env, 'bob'), [
         update(`${M1}/members/bob`, {
-          sharing: { enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: serverTs() },
+          sharing: { enabled: false, consentedAt: T0, consentVersion: CONSENT_POSITION, revokedAt: serverTs() },
         }),
         del(`${M1}/status/bob`),
         del(`${M1}/photos/bob`),
+        del(`${M1}/positions/bob`),
       ]),
   },
   {
@@ -164,6 +235,38 @@ const scenarios = [
     hosts: [H.placesCreate],
     prepare: seedDaveMiff,
     run: (env) => db(env, 'dave').collection(`miffs/${ID.M3}/places`).doc().set(placeInput('dave')),
+  },
+  {
+    // Lieux, évolutions du 2026-11-01 (R-LIEU-5, -6) : coût PAR DOCUMENT ; un lot de N Miffs coûte au plus N fois le coût sans cache
+    // (comptage manuel dans data-model.md §12 : création premium 3, gratuite p1/p2 2, passage à risk 3, suppression 2 -> 5 Miffs = 15, 10, 15, 10 sur 20).
+    // Les lectures factices (zz_pad) ont des chemins fixes que l'émulateur met en cache d'une écriture à l'autre du lot : un lot de N
+    // écritures identiques ne se mesure donc pas par injection ; on mesure une écriture et on multiplie par le pire cas manuel.
+    id: 'READS-place-create-free',
+    title: "création d'un lieu gratuit sous p2 (écriture simple)",
+    name: "Création d'un lieu gratuit p2 (écriture simple)",
+    limit: 10,
+    hosts: [H.placesCreate],
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p2`).set(placeInput('alice')),
+  },
+  {
+    id: 'READS-place-update-risk',
+    title: "passage d'un lieu à la zone de danger, premium (écriture simple)",
+    name: "Lieu : passage à risk, premium (écriture simple)",
+    limit: 10,
+    hosts: [H.placesUpdate],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`miffs/${ID.M3}/places/abc`).set(placeSeed({ createdBy: 'dave' })));
+    },
+    run: (env) => db(env, 'dave').doc(`miffs/${ID.M3}/places/abc`).update({ type: 'risk', updatedAt: serverTs() }),
+  },
+  {
+    id: 'READS-place-delete',
+    title: "suppression d'un lieu (écriture simple)",
+    name: "Suppression d'un lieu (écriture simple)",
+    limit: 10,
+    hosts: [H.placesDelete],
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p1`).delete(),
   },
   {
     // Cause de la mesure « non concluante » du premier jet (R15) : l'émulateur accepte 20 lectures de règles pour une LISTE
@@ -300,6 +403,59 @@ const scenarios = [
     limit: 10,
     hosts: [H.usersUpdate],
     run: (env) => db(env, 'bob').doc('users/bob').update({ phone: PHONE_B }),
+  },
+  {
+    // R-LIEU-POS : la dernière position est une écriture ISOLÉE (jamais dans un lot de lieux). Une lecture de règles : getAfter de la
+    // fiche du membre (partage actif + texte de version 3 ou plus). Un lot de N Miffs coûte N (comptage manuel, data-model.md §12).
+    id: 'READS-position-write',
+    title: 'écrire sa dernière position (écriture simple, R-LIEU-POS)',
+    name: 'Écriture de la dernière position (écriture simple)',
+    limit: 10,
+    hosts: [H.positionsCreate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': CONSENT_POSITION })),
+    run: (env) => db(env, 'bob').doc(`${M1}/positions/bob`).set(positionDoc()),
+  },
+  {
+    id: 'READS-position-get',
+    title: "lecture de la dernière position d'un autre membre (get, R-LIEU-POS)",
+    name: "Lecture de la dernière position d'un membre (get)",
+    limit: 10,
+    hosts: [H.positionsGet],
+    prepare: seedAliceBobV3Positions,
+    run: (env) => db(env, 'bob').doc(`${M1}/positions/alice`).get(),
+  },
+  {
+    id: 'READS-position-delete-owner',
+    title: "la créatrice supprime la position d'un membre (écriture simple, R-LIEU-POS)",
+    name: "Suppression de la position d'un membre par la créatrice (écriture simple)",
+    limit: 10,
+    hosts: [H.positionsDelete],
+    prepare: seedBobV3Position,
+    run: (env) => db(env, 'alice').doc(`${M1}/positions/bob`).delete(),
+  },
+  {
+    id: 'READS-position-activate',
+    title: 'activer le partage (texte v3) + statut + dernière position (batch de 3, R-LIEU-POS)',
+    name: 'Activer le partage + statut + position (batch de 3)',
+    lot: true,
+    hosts: [H.membersUpdate, H.statusCreate, H.positionsCreate],
+    run: (env) =>
+      commit(db(env, 'carol'), [
+        update(`${M1}/members/carol`, { sharing: sharingOnNowV3() }),
+        set(`${M1}/status/carol`, statusDoc()),
+        set(`${M1}/positions/carol`, positionDoc()),
+      ]),
+  },
+  {
+    // R-LIEU-3 : renouveler un consentement actif = une écriture de fiche, aucune lecture de règles.
+    id: 'READS-consent-renew',
+    title: 'renouveler un consentement de partage actif (écriture simple, R-LIEU-3)',
+    name: 'Renouvellement du consentement de partage (écriture simple)',
+    limit: 10,
+    hosts: [H.membersUpdate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': '2026-10-v2' })),
+    run: (env) =>
+      db(env, 'bob').doc(`${M1}/members/bob`).update({ sharing: { enabled: true, consentedAt: serverTs(), consentVersion: CONSENT_POSITION, revokedAt: null } }),
   },
   {
     id: 'READS-code-lookup',

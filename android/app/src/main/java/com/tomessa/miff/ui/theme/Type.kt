@@ -80,3 +80,6 @@ val textCaptionTag8 = style(FontFamilyHanken, 8, 10)
 
 /** Brand headline: title/bold-24 filled with [GradientBrandTitle] (used for "Bienvenue", Paywall). */
 val textTitleBold24Gradient: TextStyle = textTitleBold24.copy(brush = GradientBrandTitle)
+
+/** Letter spacing of a join code drawn large (design fiche `miff-creation.md`: the design system has no monospaced font). */
+val CodeLetterSpacing = 2.sp

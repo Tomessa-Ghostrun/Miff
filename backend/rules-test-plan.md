@@ -131,18 +131,37 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | # | Cas | Attendu |
 |---|---|---|
 | P1 | `alice` (gratuite) crée `places/p1` type `trusted` dans une Miff sans lieu | OK |
-| P2 | `alice` (gratuite) crée un 2e lieu (ID auto) | KO |
-| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
+| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1` et `p2`) | KO |
+| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type` vers `risk`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
 | P4 | `alice` (gratuite) crée un lieu `type="risk"` (ID `p1`) | KO |
 | P5 | `dave` (premium) crée 3 lieux (ID auto) dont 1 `risk` | OK |
 | P6 | `frank` (premium expiré) crée un 2e lieu | KO |
 | P7 | `bob` (membre) crée / modifie / supprime un lieu | KO |
-| P8 | `alice` change le `type` d'un lieu existant | KO |
+| P8 | `alice` (gratuite) passe le `type` d'un lieu existant à `risk` ; puis, sur un lieu `risk` hérité, repasse à `trusted` (R-LIEU-6) | KO ; OK |
 | P9 | `alice` : `radiusM=10` ou `5000`, `lat=95`, `lng=200`, nom vide | KO |
 | P10 | `alice` supprime puis recrée `p1` | OK |
 | P11 | `alice` modifie `createdBy` d'un lieu | KO |
 | P12 | Lieu avec `createdAt` client | KO |
 | P13 | `eve` lit `places` de M1 | KO |
+| P14 | `alice` (gratuite, `p1` existe) crée `p2` `trusted` ; puis `p3`, un ID auto, `P2` | OK ; KO ×3 (R-LIEU-5 : 2 lieux gratuits) |
+| P14b | `alice` (gratuite) crée `p2` en `risk` ; crée `p2` en `trusted` ; supprime `p1` puis le recrée | KO ; OK ; OK ; OK |
+| P15 | Création sans `category`, ou avec `""`, `maison`, `Home`, `HOME`, ` home`, `home `, `danger`, `null`, `3`, liste, objet ; puis avec `home` (R-LIEU-2) | KO ×11 + sans clé ; OK |
+| P15b | `dave` (premium) crée un lieu pour chacune des 7 catégories (`home`, `work`, `school`, `sport`, `relative`, `leisure`, `other`) | OK ×7 |
+| P16 | `alice` change la `category` (valide), puis invalide (`maison`, `""`, `null`, `7`) ; un lieu sans `category` (hérité) : nom seul, puis nom + catégorie | OK ; KO ×4 ; KO ; OK |
+| P17 | `dave` (premium) : `trusted` vers `risk` (+ catégorie), `risk` vers `trusted`, `type="banane"` (R-LIEU-6) | OK ; OK ; KO |
+| P18 | `alice` (gratuite) : `trusted` vers `risk` (seul, ou avec catégorie et nom) ; nom + rayon + catégorie | KO ×2 ; OK |
+| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`, `p2` en `trusted` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; KO ; OK ; KO |
+| P20 | `dave` (premium, 5 Miffs) crée en UN lot 5 lieux de même identifiant, un par Miff | OK |
+| P20b | Même lot dont une Miff est celle d'`alice` | KO, rien n'est écrit dans les 4 autres |
+| P20c | Même lot avec une catégorie invalide dans une seule copie ; avec un identifiant invalide dans une seule copie | KO ; KO |
+| P21 | `dave` modifie (`type="risk"`, catégorie) puis supprime ce lieu dans 5 Miffs, un lot chacune | OK ; OK |
+| P22 | `bob` (membre) crée `p2`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×4 |
+| P23 | `alice` modifie `createdBy` ou `createdAt` en même temps que le type ou la catégorie | KO ×2 |
+| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1` et `p2` dans CHACUNE ; un identifiant libre ou le passage à `risk` | OK ×4 (4 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO |
+| P25 | Échange de Miffs d'un lieu : 2 suppressions + 2 créations en UN lot ; même lot avec une Miff d'un autre créateur | OK ; KO, rien n'est écrit (au-delà de 4 + 4 le changement se fait en deux lots NON atomiques : budget figé dans `tests/unit/budgets.test.js`) |
+| P26 | Abonnement dont `expiresAt` ou `active` n'a pas le bon type | KO (traité comme absent) |
+| P27 | `alice` (gratuite) fait un `set` complet de `p1` existant avec `type="risk"` | KO |
+| P28 | Contrats du client NON imposés par les règles : adresse nulle, rayon de 2000 m | OK (comportement figé) |
 
 ## 7. Premium et attaques de privilèges
 
@@ -346,3 +365,105 @@ Un lot atomique contient : **adhésion** `members/{moi}` (partage **activé** : 
 | EN6 | Après le lot : le nouveau membre lit les statuts, les autres lisent le sien, `carol` (partage désactivé) toujours pas ; un créateur est lu par le membre qui le suit | OK / KO comme indiqué |
 
 Lectures de règles de ces lots : voir `rules-test-report.md` (section ONB-B / MIFF-0) et `data-model.md` §12.
+
+## 16. MIFF-1 : longueur du nom d'une Miff (ticket `docs/tickets/miff.md`, §5.2, décision QM6)
+
+Constat à établir avant le développement Android : comment les règles comptent la longueur d'un nom (`isStr(d.name, 1, 40)`) avec des emojis et des lettres accentuées. **Aucune règle n'est modifiée** : ces cas documentent un comportement existant dont le client dépend (il limite à 40 unités UTF-16, `String.length` en Kotlin).
+
+| # | Cas | Attendu |
+|---|---|---|
+| ND1 | `eve` crée une Miff dont le nom a 41, puis 40 caractères ASCII | KO, puis OK |
+| ND1b | Le créateur renomme (Miff + nom du code, un lot) : 41, puis 40 caractères | KO, puis OK |
+| ND2 | Nom de 20 emojis (40 unités UTF-16, 20 code points, 80 octets UTF-8) | OK |
+| ND2b | Nom de 40 lettres « é » (40 unités, 80 octets UTF-8) : les règles comptent des caractères, pas des octets | OK |
+| ND3 | Mesure d'information : 30 emojis (30 code points, 60 unités UTF-16) | **Refusé** constaté : les règles comptent des unités UTF-16 (le cas n'échoue jamais, il imprime le constat) |
+
+## 17. MIFF-2 : renouveler le code, retirer, quitter, supprimer la Miff (ticket `docs/tickets/miff.md`, §5.3, §5.6, critères N, R, Q, S)
+
+Les lots sont ceux que le client Android écrit (`MiffWrites.kt`) : mêmes chemins, mêmes clés, même ordre. **Aucune règle n'est modifiée** : ces cas figent le contrat dont le client dépend (dont deux refus qui expliquent des choix du client : supprimer un document **absent** d'un code ou d'un index est refusé, donc le client lit leur existence avant). Tests dans `tests/rules/18-miff2-retirer-quitter-supprimer.test.js` ; mesures de lectures dans `09-rule-reads.test.js` (`READS-delete-miff-final`, `READS-delete-places`, `READS-remove-member-gone`).
+
+| # | Cas | Attendu |
+|---|---|---|
+| MN1 | `alice` renouvelle le code (lot de 3 : Miff, nouveau code, suppression de l'ancien) ; `bob` reste membre et lit le nouveau code ; `eve` essaie l'ancien code puis le nouveau | OK ; ancien code KO pour `eve`, nouveau OK |
+| MN2 | Un membre simple ; lot sans nouveau code ; lot sans suppression de l'ancien ; nouveau code vers une autre Miff ; nom différent ; code mal formé ; créatrice d'une autre Miff | KO, **rien n'est écrit** ; le lot correct : OK |
+| MN3 | Deux renouvellements de suite ; lot calculé sur un code périmé | OK ; KO pour le lot périmé |
+| MR1 | `alice` retire `bob` (statut et photo présents) : lot de 6 | OK ; fiche, statut, photo supprimés, code renouvelé ; `bob` ne lit plus et ne revient pas avec l'ancien code |
+| MR2 | Retrait d'une cible déjà partie (documents absents) | OK, le code est renouvelé quand même |
+| MR3 | Retrait d'un membre sans statut ni photo, puis du dernier proche | OK ; la créatrice reste seule |
+| MR4 | Lot sans changement de code ; ancien code conservé ; nouveau code absent ou vers une autre Miff ; statut oublié ; photo oubliée alors qu'elle existe | KO, `bob` toujours là, code inchangé ; le lot correct : OK |
+| MR5 | `bob` ou `zoe` retire `carol` ; `alice` se retire elle-même avec code renouvelé | KO |
+| MR6 | Après le retrait, l'index de `bob` reste : la créatrice ne peut pas le supprimer, `bob` ne peut pas rejoindre une autre Miff avant, puis le peut après avoir libéré son index | KO / KO / OK / OK |
+| MR7 | Code courant absent (incohérence) : lot avec suppression de l'ancien code, puis sans | KO, puis OK |
+| MQ1 | `bob` quitte (statut et photo présents) : lot de 4 ; le code n'est pas renouvelé ; il rejoint ensuite une autre Miff | OK |
+| MQ2 | `carol` quitte avec partage arrêté (ni statut ni photo) | OK |
+| MQ3 | Supprimer un index absent ; lot de 4 avec index absent ; lot de 3 sans index | KO ; KO ; OK |
+| MQ4 | `alice` (créatrice) quitte sans supprimer la Miff ; lot sans statut | KO, rien n'est écrit |
+| MS1 | Suppression complète : retrait de `bob`, retrait de `carol`, lieux, lot final de 7 (Miff, pierre tombale, code courant, statut, photo, fiche, index) ; relecture, recréation avec le même identifiant, création d'une autre Miff | OK ; Miff illisible ; recréation KO (pierre tombale) ; autre Miff OK (index libéré) |
+| MS2 | Reprise après chaque étape : lieu déjà supprimé, membre déjà parti, relancés | OK |
+| MS2b | Lot final sans index (non trouvé) : Miff illisible ensuite, l'index se supprime seul | OK |
+| MS3 | Lot final sans pierre tombale, sans suppression du code, avec un retrait de membre dedans, par un membre simple, avec un autre code | KO, rien n'est supprimé |
+| MS3b | **Limite constatée** : lot final accepté malgré des fiches restantes ; le survivant lit « Miff inexistante » (document absent, pas une erreur) et ne lit ni membres ni statuts | OK / lecture vide / KO |
+| MS4 | Lot final sans statut ni photo de la créatrice (partage arrêté) | OK |
+| MS5 | Cinq lieux supprimés dans un lot par la créatrice ; par un membre ; lieu absent | OK ; KO ; OK |
+| MS6 | Code courant absent : lot final avec sa suppression, puis sans | KO, puis OK |
+| MS7 | Après la suppression : arrivée avec le dernier code connu ou un ancien code | KO |
+
+## 18. R-LIEU-POS : dernière position connue (ticket `docs/tickets/lieux-de-confiance.md` v3 §6.9, §7, risques R16 à R18 ; décisions du PM du 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ
+
+Un document `miffs/{id}/positions/{uid}` = `{ lat, lng, measuredAt }` par membre et par Miff, **séparé du statut** (le statut garde un schéma fermé sans coordonnées : S11, S19). Écrit par son auteur seul, **Miff existante**, avec partage actif **et** texte de consentement de version 3 ou plus, au format **`AAAA-MM-vNN` de largeur fixe** (2 lectures de règles : Miff + `getAfter` de la fiche). Lu (`get` uniquement, jamais de liste) par soi-même, ou par un autre membre qui remplit les conditions des statuts (Miff existante, partage actif, statut publié) **plus** sa propre position publiée (réciprocité **formelle** : elle prouve qu'un document existe, pas que la position est vraie) et si la cible partage encore. Le créateur n'a aucun droit de plus. Supprimé **dans le même lot** que le statut et la photo (arrêt du partage, départ, retrait). Tests dans `tests/rules/19-derniere-position.test.js` ; mutations dans `tests/tools/mutations-position.mjs` ; mesures de lectures dans `tests/rules/09-rule-reads.test.js` (`READS-position-*`). Fixtures : `bothPublished` = alice et bob ont le texte v3 et une position (leur statut existe déjà dans le jeu de départ).
+
+| # | Cas | Attendu |
+|---|---|---|
+| DP1 | `bob` (partage actif, texte v3) écrit, remplace puis modifie sa position | OK ; un seul document dans `positions` (aucun historique) |
+| DP2 | Version du consentement : `v1`, `2026-10-v1`, `2026-10-v2`, `2026-10-v02`, `2026-11-v01`, `2026-09-v1` ; formats invalides (`v3`, `2026-11-v3` sans zéro de tête, `2026-11-v100`, `2026-13-v03`, espace, retour à la ligne, NUL, chiffres non latins) ; puis `2026-11-v03`, `2026-10-v03`, `2027-01-v04`, `2026-12-v09`, `2026-12-v10`, `2027-02-v99` | KO pour les deux premiers groupes ; OK pour le dernier (contrat de nommage : `AAAA-MM-vNN` de largeur fixe, NN de 03 à 99, quel que soit le mois ; sonde Y1) |
+| DP2b | Version du consentement de la fiche `null` ou numérique | KO |
+| DP3 | Partage jamais activé (`carol`) ou arrêté (`bob`, `revokedAt` renseigné), même avec le texte v3 | KO |
+| DP4 | `bob` écrit `positions/alice` ; `alice` (créatrice) crée ou modifie `positions/bob` ; `eve`, visiteur, membre d'une autre Miff (`zoe`) | KO partout |
+| DP5 | Clé en trop (`accuracyM`, `speed`, `altitude`, `updatedAt`, `history`, `address`, `placeId`), clé manquante (chacune des trois), `lat` > 90 ou < -90, `lng` > 180 ou < -180, NaN, infini, texte, `null`, booléen | KO ; bornes incluses (90, -90, 180, -180, 0) : OK |
+| DP5b | `measuredAt` à -25 h, -3 jours, +10 min, +1 jour ; `null`, texte, nombre, booléen, 1970 | KO ; -23 h, +4 min, heure serveur : OK |
+| DP6 | `bob` et `alice` (texte v3, position publiée, statut publié) lisent la position l'un de l'autre | OK ; la valeur lue est celle enregistrée |
+| DP6b | `bob` sans sa propre position publiée ; sans son statut publié ; partage arrêté (état injecté) ; fiche retirée | KO pour chacun ; OK dès que la condition est rétablie |
+| DP6c | `carol` (partage désactivé), `eve`, `zoe` (autre Miff), visiteur ; Miff supprimée (survivant) | KO partout |
+| DP6d | Lecteur au consentement antérieur (texte sans position), statut publié, sans position : il ne lit rien ; il ne peut pas écrire sa position ; avec le texte v3 et sa position, il lit | KO, KO, puis OK |
+| DP7 | La créatrice lit celle d'un membre dans les mêmes conditions ; sans sa propre position, ou partage arrêté, ou dans une autre Miff : aucune exception | OK dans les conditions communes ; KO sinon |
+| DP8 | `list` de `positions` (membre qui partage, créatrice, requête filtrée, groupe de collections `positions`, étranger, visiteur) | KO partout |
+| DP9 | On relit toujours sa propre position, même partage arrêté ; pas celle des autres dans ce cas | OK / KO |
+| DP10 | Une position mesurée il y a plusieurs mois reste lisible : les règles n'appliquent pas de durée (le masquage après 24 h est un affichage du client, date toujours affichée) | OK (comportement figé, voir `data-model.md` §2.12) |
+| DP11 | `bob` arrête son partage : lot sans la suppression de la position ; lot avec la position seule ; lot complet (fiche + statut + photo + position) | KO, KO, OK ; la position a disparu et un autre membre ne la lit plus |
+| DP11b | Arrêt du partage sans aucune position enregistrée, lot de 3 comme avant | OK (rien à supprimer) |
+| DP12 | `bob` quitte la Miff : lot sans la position ; lot complet de 5 | KO ; OK |
+| DP12b | `alice` retire `bob` : lot sans la position ; lot de 7 (position comprise, nouveau code) | KO ; OK |
+| DP12c | `alice` supprime la Miff : lot final sans sa position ; avec | KO ; OK |
+| DP13 | Suppression d'une position par un autre membre, un étranger, un membre d'une autre Miff, un visiteur ; par la créatrice (retrait) ; par soi ; par un ex-membre dont la fiche a disparu | KO pour les quatre premiers ; OK pour les trois derniers |
+| DP13b | Le droit de suppression de la créatrice ne lui donne ni l'écriture de la position d'un membre ni sa lecture sans les conditions communes | KO |
+| DP14 | Après un arrêt, réactivation avec l'ancien texte : la présence repart, la position reste refusée ; arrêt puis réactivation avec le texte v3 : position acceptée | KO, puis OK |
+| DP14b | `carol` active le partage (texte v3) et écrit statut + position en UN lot ; même lot avec l'ancien texte (rien d'écrit) ; `bob` révoque et écrit sa position dans le même lot | OK ; KO ; KO |
+| DP15 | Aucune coordonnée ailleurs : statut (`lat`, `lng`, `measuredAt`), fiche de membre, profil, `positions/bob` hors d'une Miff, `users/bob/positions/x`, `places`, `photos`, chemin `position` | KO partout |
+| DP16 | Un compte premium écrit sa position pour 8 Miffs dans UN lot | OK (2 lectures de règles par Miff : 16 sur 20) |
+| DP16b | Le même pour 11 Miffs (22 lectures) | KO en bloc, rien d'écrit (limite de 20) : le client écrit 8 Miffs au plus par lot |
+| DP6e | Sonde Y4 : position de reliquat d'un non-membre (`zoe`) ou d'un membre dont le partage est arrêté (`carol`) ; contrôle : un membre qui partage reste lisible | KO ; KO ; OK |
+| DP17 | Sonde X4 / Y5 (assumé) : la créatrice supprime la position d'un membre à tout moment, hors lot de retrait ; elle ne gagne ni écriture ni lecture | OK ; KO ; KO |
+| DP18 | Sonde X2 : position écrite ou modifiée sous une Miff supprimée par un membre survivant ; il peut effacer la sienne | KO ; KO ; OK |
+| DP19 | Aucun chemin de suppression de fiche (soi, créatrice qui retire, créatrice qui part) ni d'arrêt du partage (seul, sans photo, avec une position écrite dans le lot, avec la position d'un autre) ne laisse la position | KO partout, aucune position supprimée ; le lot complet : OK |
+| DP20 | Contrat client : arrêt du partage dans 6 Miffs en UN lot (3 × 6 = 18), départ de 4 Miffs (4 × 4 = 16) | OK (budgets figés dans `tests/unit/budgets.test.js` : l'émulateur accepte aussi des lots plus gros, grâce à son cache) |
+
+Cas touchés dans les sections précédentes : `leaveOps` (quitter) passe à 5 écritures et `removeMemberOps` (retrait) à 7 (la suppression de la position y est ajoutée : S4, M-retrait, H5 et les autres cas qui les réutilisent restent valables, la position n'existant pas dans le jeu de départ) ; les mesures `READS-leave`, `READS-remove-member`, `READS-delete-miff` et `READS-consent-off` incluent la suppression de la position. Les cas S11 et S19 (statut sans coordonnées) restent inchangés.
+
+## 19. R-LIEU-3 : renouvellement d'un consentement de partage actif (acceptée par le PM, confirmée le 2026-11-01 « avant le Tracking ») — PRÉPARÉ, NON DÉPLOYÉ
+
+Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un texte plus récent, **sans arrêter le partage** (donc sans perdre statut, photo ni position, et sans rien exiger dans le lot). Conditions : `consentedAt` = heure serveur, `consentVersion` au format **`AAAA-MM-vNN` de largeur fixe** (sinon l'ordre alphabétique n'est pas l'ordre chronologique) et **strictement supérieure** à l'ancienne, **jamais de sortie de la couverture « position »** (si l'ancienne version couvre la position, la nouvelle aussi), `revokedAt` nul, les quatre clés exactes. **0 lecture de règles.** Tests dans `tests/rules/20-renouvellement-consentement.test.js` ; mutations dans `tests/tools/mutations-position.mjs` (RC-*) ; mesure `READS-consent-renew`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| RC1 | `bob` (partage actif, texte `2026-10-v2`) renouvelle avec `2026-11-v03`, avec photo et position déjà enregistrées | OK ; version et date mises à jour, `enabled` vrai, `revokedAt` nul ; statut, photo et position conservés |
+| RC1b | Régression : `2026-10-v1` -> `2026-10-v2` -> `2026-11-v03` -> `2026-12-v04` ; position refusée en v2, permise dès la v3, conservée au renouvellement suivant | OK ; KO puis OK |
+| RC1c | Renouvellement et écriture de la position dans le même lot | OK |
+| RC2 | Même version, version plus ancienne (autre mois ou même mois), texte vide, `null`, nombre | KO ; `2026-12-v04` : OK |
+| RC2b | `consentedAt` du client, conservé ou nul ; `revokedAt` renseigné ; clé en trop, clé manquante, bloc nul | KO partout |
+| RC3 | `enabled=false` avec une version supérieure, sans purge (seul, avec statut et photo supprimés, ou avec la position supprimée mais déguisé en renouvellement) | KO : le renouvellement ne contourne pas l'arrêt du partage |
+| RC4 | Renouvellement par la créatrice, un autre membre, un étranger, un visiteur ; partage arrêté (désactivé -> désactivé) ; l'activation d'un partage arrêté reste celle d'avant | KO ; OK pour l'activation |
+| RC5 | Régression sur `2026-10-v2` : arrêt sans purge KO, arrêt avec purge OK, réactivation OK | KO ; OK ; OK |
+| RC6 | Sondes X1, X1b, X1c (I1) : `2026-11-v10` -> `2026-11-v2` (alphabétiquement plus haut), `v9` sans zéro, texte libre `zzzzzzzz`, `v1000`, retour à la ligne, mois 13, `v09` plus ancienne ; puis `v11`, `2027-01-v12` ; `2026-10-v2` -> `2026-11-v02` | KO pour les sept premiers ; OK pour les suivants |
+| RC7 | Renouvellement dans deux Miffs en un lot | OK |
+| RC8 | Sondes X1, X1b (I1) : depuis un texte qui couvre la position, renouveler vers `2027-01-v01`, `v02`, `2026-12-v00`, `2027-01-v1`, `v2` ; vers `2027-01-v04` ; depuis un texte sans position vers un autre sans position | KO ×5 ; OK (la position reste écrivable et lisible) ; OK |
+| RC9 | Sonde Y6 : plusieurs mises à jour de la même fiche dans un lot ; la seconde sort de la couverture « position » | OK pour l'aller-retour qui reste couvert ; KO pour la sortie, rien de changé |

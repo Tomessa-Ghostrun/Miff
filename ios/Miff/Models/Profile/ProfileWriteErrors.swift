@@ -7,6 +7,7 @@ enum FirestoreErrorNumber {
     static let cancelled = 1
     static let deadlineExceeded = 4
     static let permissionDenied = 7
+    static let resourceExhausted = 8
     static let unavailable = 14
     static let unauthenticated = 16
 }

@@ -42,6 +42,50 @@ private struct MiffPrimaryButtonBody: View {
     }
 }
 
+/// Bouton secondaire : fond blanc, texte bleu et trait bleu de 2 pt (l'« Annuler » des maquettes). Pour les actions qui ne
+/// doivent pas ressembler à la chose principale à faire. Même hauteur, même arrondi et même retour à la ligne que le bouton
+/// primaire ; désactivé = texte et trait à 30 %.
+struct MiffSecondaryButtonStyle: ButtonStyle {
+    var fillsWidth = false
+
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+        MiffSecondaryButtonBody(configuration: configuration, fillsWidth: fillsWidth)
+    }
+}
+
+private struct MiffSecondaryButtonBody: View {
+    @Environment(\.isEnabled) private var isEnabled
+    let configuration: ButtonStyleConfiguration
+    let fillsWidth: Bool
+
+    private var tint: Color {
+        (isEnabled ? colorActionPrimary : colorActionPrimaryTint30).color
+    }
+
+    var body: some View {
+        configuration.label
+            .miffTextStyle(textBodyLarge)
+            .foregroundColor(tint)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: Spacing.minTouchTarget)
+            .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
+            .overlay(
+                RoundedRectangle(cornerRadius: radiusMd, style: .continuous).stroke(tint, lineWidth: strokeAccent)
+            )
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .padding(.vertical, Spacing.xs)
+    }
+}
+
+extension ButtonStyle where Self == MiffSecondaryButtonStyle {
+    /// Le bouton secondaire sur toute la largeur.
+    static var miffSecondaryFullWidth: MiffSecondaryButtonStyle {
+        MiffSecondaryButtonStyle(fillsWidth: true)
+    }
+}
+
 extension ButtonStyle where Self == MiffPrimaryButtonStyle {
     static var miffPrimary: MiffPrimaryButtonStyle {
         MiffPrimaryButtonStyle()
@@ -50,5 +94,49 @@ extension ButtonStyle where Self == MiffPrimaryButtonStyle {
     /// Le bouton primaire sur toute la largeur.
     static var miffPrimaryFullWidth: MiffPrimaryButtonStyle {
         MiffPrimaryButtonStyle(fillsWidth: true)
+    }
+}
+
+/// Bouton d'une action SENSIBLE (retirer, quitter, supprimer : fiche `miff-dialogues.md`, `Tone=Sensitive`) : fond blanc, texte
+/// et trait de 2 pt en `text/error`. JAMAIS de fond rouge plein : le ton reste calme, la couleur n'est pas le seul signal (le
+/// libellé dit l'action). Désactivé = texte et trait à 50 %.
+struct MiffSensitiveButtonStyle: ButtonStyle {
+    var fillsWidth = false
+
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+        MiffSensitiveButtonBody(configuration: configuration, fillsWidth: fillsWidth)
+    }
+}
+
+private struct MiffSensitiveButtonBody: View {
+    @Environment(\.isEnabled) private var isEnabled
+    let configuration: ButtonStyleConfiguration
+    let fillsWidth: Bool
+
+    private var tint: Color {
+        colorTextError.color.opacity(isEnabled ? 1 : 0.5)
+    }
+
+    var body: some View {
+        configuration.label
+            .miffTextStyle(textBodyBold16)
+            .foregroundColor(tint)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: Spacing.minTouchTarget)
+            .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
+            .overlay(
+                RoundedRectangle(cornerRadius: radiusMd, style: .continuous).stroke(tint, lineWidth: strokeAccent)
+            )
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .padding(.vertical, Spacing.xs)
+    }
+}
+
+extension ButtonStyle where Self == MiffSensitiveButtonStyle {
+    /// Le bouton d'une action sensible sur toute la largeur.
+    static var miffSensitiveFullWidth: MiffSensitiveButtonStyle {
+        MiffSensitiveButtonStyle(fillsWidth: true)
     }
 }

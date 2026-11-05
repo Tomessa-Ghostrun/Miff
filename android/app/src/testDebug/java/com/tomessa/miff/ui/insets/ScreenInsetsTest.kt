@@ -24,10 +24,13 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,11 +39,19 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.onboarding.DraftStep
 import com.tomessa.miff.data.profile.BitmapPhoto
+import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.miff.MiffRole
+import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.AddressSuggestion
+import com.tomessa.miff.domain.place.OwnedMiff
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.settings.AppLanguage
+import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelUiState
 import com.tomessa.miff.ui.auth.PasswordResetScreen
@@ -58,7 +69,27 @@ import com.tomessa.miff.ui.components.WindowArea
 import com.tomessa.miff.ui.components.miffSystemBarsFallbackInUse
 import com.tomessa.miff.ui.home.HomeScreen
 import com.tomessa.miff.ui.main.MainTabs
+import com.tomessa.miff.ui.miff.AccessLostScreen
+import com.tomessa.miff.ui.miff.CreateMiffScreen
+import com.tomessa.miff.ui.miff.CreateStep
+import com.tomessa.miff.ui.miff.CreateUiState
+import com.tomessa.miff.ui.miff.CreatedMiff
+import com.tomessa.miff.ui.miff.JoinMiffScreen
+import com.tomessa.miff.ui.miff.JoinStep
+import com.tomessa.miff.ui.miff.JoinUiState
+import com.tomessa.miff.ui.miff.MiffChoiceScreen
+import com.tomessa.miff.ui.miff.MiffScreenState
+import com.tomessa.miff.ui.miff.MiffScreenStatus
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.place.LocalPlaceMapRenderer
+import com.tomessa.miff.ui.place.PlaceDetailScreen
+import com.tomessa.miff.ui.place.PlaceDetailState
+import com.tomessa.miff.ui.place.PlaceDetailStatus
+import com.tomessa.miff.ui.place.PlaceFormActions
+import com.tomessa.miff.ui.place.PlaceFormMode
+import com.tomessa.miff.ui.place.PlaceFormScreen
+import com.tomessa.miff.ui.place.PlaceFormState
+import com.tomessa.miff.ui.place.PlacePaywallScreen
 import com.tomessa.miff.ui.profile.CropState
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.PhoneStepScreen
@@ -89,6 +120,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 import kotlin.math.roundToInt
+import com.tomessa.miff.ui.miff.MiffScreen as MiffDetailScreen
 
 /**
  * Safe areas, screen by screen (PM recipe on the OPPO, 2026-10-31: "the logo is drawn over the clock"). A phone is simulated
@@ -281,20 +313,40 @@ class ScreenInsetsTest {
         assertTrue(b.bottom <= root.bottom - px(phone.navigationBottom) + TOLERANCE)
     }
 
+    @Composable
+    private fun TabsUnderTest(
+        profile: ProfileTabUiState,
+        miffs: DirectoryState,
+    ) {
+        MainTabs(
+            tabBar = TabBarConfig.forBuild(isInternalBuild = true),
+            profileState = profile,
+            onOpenMyInfo = {},
+            onOpenSettings = {},
+            onRetryProfile = {},
+            miffs = miffs,
+            onRetryMiffs = {},
+            onSelectMiff = {},
+            onCreateMiff = {},
+            onJoinMiff = {},
+            onOpenMiff = {},
+        )
+    }
+
     // --- Tabs (the screen of the PM's capture) --------------------------------------------------------------------------------------
 
-    private fun tabs(selectedProfile: Boolean = false) {
+    private fun tabs(
+        selectedProfile: Boolean = false,
+        miffs: DirectoryState = DirectoryState.Loading,
+    ) {
         show {
-            MainTabs(
-                tabBar = TabBarConfig.forBuild(isInternalBuild = true),
-                profileState =
+            TabsUnderTest(
+                profile =
                     ProfileTabUiState(
                         ProfileTabStatus.READY,
                         MyProfile("Emmanuelle", "Martin", "+33612345678", null),
                     ),
-                onOpenMyInfo = {},
-                onOpenSettings = {},
-                onRetryProfile = {},
+                miffs = miffs,
             )
         }
         applyInsets(phone)
@@ -330,12 +382,10 @@ class ScreenInsetsTest {
     @Test
     fun tabs_withTheLargestFont_stayBelowTheStatusBar() {
         show(fontScale = 2f) {
-            MainTabs(
-                tabBar = TabBarConfig.forBuild(isInternalBuild = true),
-                profileState = ProfileTabUiState(ProfileTabStatus.LOADING, null),
-                onOpenMyInfo = {},
-                onOpenSettings = {},
-                onRetryProfile = {},
+            TabsUnderTest(
+                profile =
+                    ProfileTabUiState(ProfileTabStatus.LOADING, null),
+                miffs = DirectoryState.Loading,
             )
         }
         applyInsets(phone)
@@ -356,12 +406,10 @@ class ScreenInsetsTest {
 
     private fun feedWithFallback() {
         show(systemBarsFallback = true) {
-            MainTabs(
-                tabBar = TabBarConfig.forBuild(isInternalBuild = true),
-                profileState = ProfileTabUiState(ProfileTabStatus.LOADING, null),
-                onOpenMyInfo = {},
-                onOpenSettings = {},
-                onRetryProfile = {},
+            TabsUnderTest(
+                profile =
+                    ProfileTabUiState(ProfileTabStatus.LOADING, null),
+                miffs = DirectoryState.Loading,
             )
         }
     }
@@ -463,13 +511,7 @@ class ScreenInsetsTest {
     @Test
     fun feed_inLandscape_theBottomOfTheFallbackIsOff() {
         show(systemBarsFallback = true, landscape = true) {
-            MainTabs(
-                tabBar = TabBarConfig.forBuild(isInternalBuild = true),
-                profileState = ProfileTabUiState(ProfileTabStatus.LOADING, null),
-                onOpenMyInfo = {},
-                onOpenSettings = {},
-                onRetryProfile = {},
-            )
+            TabsUnderTest(profile = ProfileTabUiState(ProfileTabStatus.LOADING, null), miffs = DirectoryState.Loading)
         }
         val base = gapWithReported(20.dp) - px(20.dp)
         applyInsets(Phone(statusBar = 40.dp, navigationBottom = 0.dp))
@@ -718,6 +760,340 @@ class ScreenInsetsTest {
     }
 
     private fun profileState(step: DraftStep) = ProfileUiState(mode = OnboardingMode.FULL, step = step)
+
+    // --- Ticket MIFF-1: create, join, the screen of a Miff, the Feed and the Profile cards, the lost-access message --------------
+
+    private val oneMiff =
+        DirectoryState.Ready(listOf(MiffSummary("miff-id-1", "Famille Alberta")), "miff-id-1", false, false)
+    private val noMiff = DirectoryState.Ready(emptyList(), null, false, false)
+
+    private fun createdState() =
+        CreateUiState(step = CreateStep.READY, created = CreatedMiff("miff-id-1", "Famille Alberta", "ABCDEFGHJKMN"))
+
+    private fun miffScreenState(owner: Boolean = true) =
+        MiffScreenState(
+            status = MiffScreenStatus.READY,
+            miffId = "miff-id-1",
+            name = "Famille Alberta",
+            joinCode = "ABCDEFGHJKMN",
+            isOwner = owner,
+            members =
+                listOf(
+                    MiffMember(
+                        "me",
+                        "Emmanuelle",
+                        "Martin",
+                        null,
+                        if (owner) MiffRole.OWNER else MiffRole.MEMBER,
+                        true,
+                    ),
+                    MiffMember("other", "Thomas", "Alberta", null, MiffRole.MEMBER, true),
+                ),
+            places = listOf(testPlace("p1", "Maison")),
+            myUid = "me",
+            sharing = true,
+            nameInput = "Famille Alberta",
+        )
+
+    @Composable
+    private fun MiffDetail(state: MiffScreenState = miffScreenState()) =
+        MiffDetailScreen(state, {}, {}, {}, {}, {}, {}, {})
+
+    @Test
+    fun feed_withAMiff_isInsideTheSafeArea() {
+        tabs(miffs = oneMiff)
+        shoot("insets-feed-with-miff")
+        assertBelowStatusBar(text(R.string.home_logo_a11y), phone)
+        assertAllContentInsideSafeArea(phone)
+        assertAboveNavigationBar(text(R.string.tabbar_feed_a11y), phone)
+    }
+
+    @Test
+    fun feed_withoutAMiff_isInsideTheSafeArea() {
+        tabs(miffs = noMiff)
+        shoot("insets-feed-no-miff")
+        assertBelowStatusBar(text(R.string.home_logo_a11y), phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun feed_whenTheMiffsCannotBeRead_isInsideTheSafeArea() {
+        tabs(miffs = DirectoryState.Unavailable)
+        assertBelowStatusBar(text(R.string.home_logo_a11y), phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun profileTab_withTheMiffCards_isInsideTheSafeArea() {
+        tabs(selectedProfile = true, miffs = oneMiff)
+        shoot("insets-profile-tab-miffs")
+        assertAllContentInsideSafeArea(phone)
+        assertAboveNavigationBar(text(R.string.tabbar_profile_a11y), phone)
+    }
+
+    @Test
+    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}) }
+
+    @Test
+    fun createMiff_nameStep_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-create", withBackArrow = true) { CreateMiffScreen(CreateUiState(), {}, {}, {}, {}) }
+
+    @Test
+    fun createMiff_readyStep_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-created") { CreateMiffScreen(createdState(), {}, {}, {}, {}) }
+
+    @Test
+    fun joinMiff_codeStep_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-join", withBackArrow = true) {
+            JoinMiffScreen(JoinUiState(), {}, {}, {}, {}, {}, {})
+        }
+
+    @Test
+    fun joinMiff_confirmStep_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-join-confirm") {
+            val state = JoinUiState(step = JoinStep.CONFIRM, code = "ABCDEFGHJKMN", miffName = "Famille Alberta")
+            JoinMiffScreen(state, {}, {}, {}, {}, {}, {})
+        }
+
+    @Test
+    fun miffScreen_asOwner_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-screen-owner", withBackArrow = true) { MiffDetail() }
+
+    @Test
+    fun miffScreen_asMember_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-screen-member", withBackArrow = true) { MiffDetail(miffScreenState(owner = false)) }
+
+    // MIFF-2: the creator's screen with the invitation to renew the code ("⋯" menus, "Créer un nouveau code", "Supprimer la Miff")
+    // and the member's screen with "Quitter la Miff" at the bottom. The questions themselves are system windows
+    // (MiffConfirmDialog), placed by Android outside the bars, like the dialogs of MIFF-1.
+    @Test
+    fun miffScreen_asOwnerWithTheRenewInvitation_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-screen-owner-invite", withBackArrow = true) {
+            MiffDetail(miffScreenState().copy(inviteToRenew = true, codeRenewed = true))
+        }
+
+    @Test
+    fun miffScreen_asOwnerWithTheRenewInvitation_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { MiffDetail(miffScreenState().copy(inviteToRenew = true)) }
+
+    @Test
+    fun miffScreen_asMember_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { MiffDetail(miffScreenState(owner = false)) }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun miffScreen_withTheKeyboardOpen_theLastLinkOfTheOwnerCanBeReachedAboveIt() {
+        show { MiffDetail() }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.miff_delete_link))
+    }
+
+    @Test
+    fun miffScreen_withTheKeyboardOpen_theLastLinkOfAMemberCanBeReachedAboveIt() {
+        show { MiffDetail(miffScreenState(owner = false)) }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.miff_leave_link))
+    }
+
+    @Test
+    fun miffScreen_whileLoading_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-screen-loading", withBackArrow = true) { MiffDetail(MiffScreenState()) }
+
+    @Test
+    fun accessLost_isInsideTheSafeArea() =
+        assertScreenIsSafe("miff-access-lost") {
+            AccessLostScreen("Famille Alberta", {})
+        }
+
+    @Test
+    fun miffChoice_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}) }
+
+    @Test
+    fun createMiff_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { CreateMiffScreen(CreateUiState(), {}, {}, {}, {}) }
+
+    @Test
+    fun miffScreen_inLandscapeWithACutout_staysInsideIt() = assertScreenIsSafeInLandscape { MiffDetail() }
+
+    @Test
+    fun feed_inLandscapeWithACutout_staysInsideIt() {
+        tabs(miffs = oneMiff)
+        applyInsets(threeButtonsLandscape)
+        assertAllContentInsideSafeArea(threeButtonsLandscape)
+    }
+
+    @Test
+    fun createMiff_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { CreateMiffScreen(CreateUiState(), {}, {}, {}, {}) }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun miffScreen_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { MiffDetail() }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    /** The last item of a long, scrolling screen, once scrolled to, must stay ABOVE the keyboard (the viewport shrinks). */
+    private fun assertLastItemAboveKeyboard(lastItemText: String) {
+        val keyboardPhone = phone.copy(keyboard = 300.dp)
+        applyInsets(keyboardPhone)
+        composeRule.onAllNodesWithText(lastItemText).onFirst().performScrollTo()
+        composeRule.waitForIdle()
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val bottom =
+            composeRule
+                .onAllNodesWithText(lastItemText)
+                .onFirst()
+                .fetchSemanticsNode()
+                .boundsInRoot.bottom
+        assertTrue(
+            "\"$lastItemText\" bottom=$bottom is under the keyboard (starts at ${root.bottom -
+                px(
+                    keyboardPhone.keyboard,
+                )
+            } px)",
+            bottom <= root.bottom - px(keyboardPhone.keyboard) + TOLERANCE,
+        )
+    }
+
+    @Test
+    fun createMiff_withTheKeyboardOpen_theButtonCanBeReachedAboveIt() {
+        show { CreateMiffScreen(CreateUiState(name = "Famille"), {}, {}, {}, {}) }
+        // LOC-2a: the button is PINNED under the scrolling text (no scrolling needed): it must sit above the keyboard as it is.
+        val keyboardPhone = phone.copy(keyboard = 300.dp)
+        applyInsets(keyboardPhone)
+        composeRule.waitForIdle()
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val bottom =
+            composeRule
+                .onNodeWithText(text(R.string.miff_create_action))
+                .fetchSemanticsNode()
+                .boundsInRoot.bottom
+        assertTrue("the pinned button is under the keyboard", bottom <= root.bottom - px(keyboardPhone.keyboard) + 1f)
+    }
+
+    @Test
+    fun joinMiff_withTheKeyboardOpen_theButtonCanBeReachedAboveIt() {
+        show { JoinMiffScreen(JoinUiState(code = "ABCD"), {}, {}, {}, {}, {}, {}) }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.miff_join_continue_action))
+    }
+
+    @Test
+    fun miffScreen_withTheKeyboardOpen_theLastSectionCanBeReachedAboveIt() {
+        show { MiffDetail() }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard("Maison")
+    }
+
+    // --- LOC-1: the places (form, detail, offer). The map of the real app is MapLibre (native library): a plain box stands in. ---------
+
+    @Composable
+    private fun WithStubMap(content: @Composable () -> Unit) {
+        CompositionLocalProvider(LocalPlaceMapRenderer provides { _, _, modifier -> Box(modifier) }) { content() }
+    }
+
+    private val placeSuggestion =
+        AddressSuggestion("17 Avenue d'Italie", "75013 Paris, France", "17 Avenue d'Italie, 75013 Paris", 48.8, 2.3)
+
+    private fun placeForm() =
+        PlaceFormState(
+            loading = false,
+            name = "Maison du père de Nathan",
+            owned = listOf(OwnedMiff("m1", "Famille", 1L), OwnedMiff("m2", "Les tuches", 2L)),
+            selectedMiffIds = listOf("m1", "m2"),
+            addressText = placeSuggestion.label,
+            chosen = placeSuggestion,
+        )
+
+    private val placeDetail =
+        PlaceDetailState(
+            status = PlaceDetailStatus.READY,
+            place = testPlace("p1", "Maison de Papa", address = "26 rue du Volnay, 21000 Dijon, France"),
+            miffName = "Famille Martin",
+            creatorName = "Emmanuelle Martin",
+            canEdit = true,
+        )
+
+    @Test
+    fun placeForm_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-form", withBackArrow = true) {
+            WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) }
+        }
+
+    @Test
+    fun placeForm_inEditMode_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-form-edit", withBackArrow = true) {
+            WithStubMap { PlaceFormScreen(placeForm().copy(mode = PlaceFormMode.EDIT), PlaceFormActions()) }
+        }
+
+    @Test
+    fun placeForm_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+
+    @Test
+    fun placeForm_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun placeForm_withTheKeyboardOpen_theFixedSaveButtonStaysAboveIt() {
+        // The button is in the fixed foot (it does not scroll): it must rise with the keyboard, never go under it.
+        show { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+        val keyboardPhone = phone.copy(keyboard = 300.dp)
+        applyInsets(keyboardPhone)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val bottom =
+            composeRule
+                .onNodeWithText(
+                    text(R.string.place_save_action),
+                ).fetchSemanticsNode()
+                .boundsInRoot.bottom
+        assertTrue(
+            "the save button (bottom=$bottom) is under the keyboard",
+            bottom <= root.bottom - px(keyboardPhone.keyboard) + TOLERANCE,
+        )
+    }
+
+    @Test
+    fun placeForm_withTheKeyboardOpen_theLastCategoryCanBeReachedAboveIt() {
+        show { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.place_category_other))
+    }
+
+    @Test
+    fun placeDetail_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-detail", withBackArrow = true) {
+            WithStubMap { PlaceDetailScreen(placeDetail, {}, {}, {}) }
+        }
+
+    @Test
+    fun placeDetail_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { WithStubMap { PlaceDetailScreen(placeDetail, {}, {}, {}) } }
+
+    @Test
+    fun placeDetail_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { WithStubMap { PlaceDetailScreen(placeDetail, {}, {}, {}) } }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun placeOffer_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-offer") { PlacePaywallScreen(PaywallReason.LIMIT, {}) }
+
+    @Test
+    fun placeOffer_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { PlacePaywallScreen(PaywallReason.DANGER, {}) }
 
     // --- Helpers ---------------------------------------------------------------------------------------------------------------------
 

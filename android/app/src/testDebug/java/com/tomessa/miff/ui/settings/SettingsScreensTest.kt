@@ -47,11 +47,13 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.settings.AppLanguage
-import com.tomessa.miff.ui.feed.FeedPlaceholderScreen
+import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.main.MainTabBar
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabStatus
@@ -208,7 +210,22 @@ class SettingsScreensTest {
 
     @Test
     fun feed_saysHonestlyThatItIsNotBuiltYet_noBell_noInventedPerson_noPromiseOfSafety() {
-        show { FeedPlaceholderScreen(scrollToTopSignal = 0) }
+        show {
+            FeedScreen(
+                state =
+                    DirectoryState.Ready(
+                        listOf(MiffSummary("A".repeat(20), "Chez nous")),
+                        "A".repeat(20),
+                        premium = false,
+                        fromCache = false,
+                    ),
+                scrollToTopSignal = 0,
+                onRetry = {},
+                onSelect = {},
+                onCreate = {},
+                onJoin = {},
+            )
+        }
         shoot("feed-placeholder")
         composeRule.onNodeWithText(text(R.string.feed_empty_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.feed_empty_body)).assertExists()

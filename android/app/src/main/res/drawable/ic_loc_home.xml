@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home (category). Provisional drawing ported from the mockups of design/screens/lieux (the design owner exports the final ones from Figma). 1.8 stroke, round ends, 24 grid. Colour given by the tint of the Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#222222"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M3 11l9-8 9 8 M5 10v10h14V10 M10 20v-6h4v6" />
+</vector>

@@ -25,7 +25,7 @@ Les noms de code ci-dessous sont ceux enregistrés dans Figma (`codeSyntax`) : l
 |---|---|---|---|
 | En sécurité | `status/safe` `#d1d828` | `status/safe-tint` | Dans un lieu de confiance / update récente |
 | Attention | `status/warning` `#ffb650` (orange) | `status/warning-tint` | Palier orange (voir `docs/specs/update-et-escalade-statut.md`) |
-| Danger | `status/danger` `#ff5650` | `status/danger-tint` | Palier rouge, zone à risque |
+| Danger | `status/danger` `#ff5650` | `status/danger-tint` | Palier rouge, zone de danger |
 
 Noms de code : `colorStatusSafe`, `colorStatusWarning`, `colorStatusDanger` et leurs `…Tint`. Le texte d'erreur de formulaire utilise `text/error` (`colorTextError`), qui pointe vers le rouge plus foncé `status/red-700` `#d60700` (même teinte que le statut danger, contraste 5,4:1 sur blanc, au-dessus du minimum WCAG AA de 4,5:1). `#ff5650` ne sert qu'aux anneaux, fonds et pastilles, jamais au texte (3,0:1, insuffisant).
 

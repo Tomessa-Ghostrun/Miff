@@ -2,9 +2,11 @@ package com.tomessa.miff
 
 import android.content.Context
 import android.os.SystemClock
+import com.google.firebase.firestore.FirebaseFirestore
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
+import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.auth.FirebaseAuthGateway
 import com.tomessa.miff.data.auth.FirebasePasswordResetGateway
 import com.tomessa.miff.data.auth.FirestoreAccountRepository
@@ -15,10 +17,37 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
+import com.tomessa.miff.data.miff.ConsentRenewals
+import com.tomessa.miff.data.miff.FirestoreConsentRenewals
+import com.tomessa.miff.data.miff.FirestoreMiffObserver
+import com.tomessa.miff.data.miff.FirestoreMiffRepository
+import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.MiffDeletion
+import com.tomessa.miff.data.miff.MiffDeletionCoordinator
+import com.tomessa.miff.data.miff.MiffDirectory
+import com.tomessa.miff.data.miff.MiffRepository
+import com.tomessa.miff.data.miff.MiffStore
+import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
+import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
+import com.tomessa.miff.data.permission.AndroidDevicePermissions
+import com.tomessa.miff.data.permission.DevicePermissions
+import com.tomessa.miff.data.permission.NotificationAskStore
+import com.tomessa.miff.data.permission.SharedPreferencesNotificationAskStore
+import com.tomessa.miff.data.place.CachedAddressSearch
+import com.tomessa.miff.data.place.FallbackAddressSearch
+import com.tomessa.miff.data.place.FirestorePlaceRepository
+import com.tomessa.miff.data.place.FirestorePlaceStore
+import com.tomessa.miff.data.place.GeoapifyAddressSearch
+import com.tomessa.miff.data.place.MapTileCachePurger
+import com.tomessa.miff.data.place.PhotonAddressSearch
+import com.tomessa.miff.data.place.PlaceNotices
+import com.tomessa.miff.data.place.PlaceRepository
+import com.tomessa.miff.data.place.UrlConnectionFetcher
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
 import com.tomessa.miff.data.privacy.FirebaseAnalyticsSink
@@ -39,6 +68,7 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
+import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.startup.StartupTrace
 import kotlinx.coroutines.CoroutineScope
@@ -142,6 +172,132 @@ class AppContainer(
 
     val accountRepository: AccountRepository by lazy { FirestoreAccountRepository() }
 
+    /** Local Firestore cache purge (sign-out, refusal of the panel, and loss of access to a Miff). One instance for all. */
+    val cachePurger: CachePurger by lazy { FirestoreCachePurger(flags = sessionFlags) }
+
+    /**
+     * Create, join, rename, stop / resume sharing, clean-up after a loss of access, live view of a Miff (Miff ticket).
+     * Built on first use. Constructing it never reaches Firestore (the store and the observer take it through a function,
+     * only called when a request is made), and every request comes from a screen shown after [MiffApplication.startSession]
+     * has resolved the session, hence after the cache purge of a failed sign-out.
+     */
+    private val miffStore: MiffStore by lazy { FirestoreMiffStore() }
+
+    val miffRepository: MiffRepository by lazy {
+        FirestoreMiffRepository(
+            store = miffStore,
+            observer = FirestoreMiffObserver(),
+            location = AndroidLocationAccessProbe(context),
+            cache = cachePurger,
+            // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
+            newMiffId = {
+                FirebaseFirestore
+                    .getInstance()
+                    .collection("miffs")
+                    .document()
+                    .id
+            },
+        )
+    }
+
+    /**
+     * LOC-2a: what the phone says about the permissions of Miff (state only, never a position), the flag "notification screen already shown",
+     * and the renewal of the consent of the members who share under an older text.
+     */
+    val devicePermissions: DevicePermissions by lazy { AndroidDevicePermissions(context) }
+
+    val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
+
+    val consentRenewals: ConsentRenewals by lazy { FirestoreConsentRenewals(miffStore) }
+
+    /**
+     * The pause after 5 wrong codes lives as long as the process, not as long as the screen: leaving and coming back does not
+     * give a free new series. An aid of the interface, not a protection (ticket Miff 5.3).
+     */
+    val joinLimiter: JoinAttemptLimiter by lazy { JoinAttemptLimiter(nowMillis = SystemClock::elapsedRealtime) }
+
+    /** The Miffs of the person signed in, in memory for the session (Feed, Profile tab); also deals with a loss of access. */
+    val miffDirectory: MiffDirectory by lazy {
+        MiffDirectory(
+            repository = miffRepository,
+            currentUid = { authGateway.currentUid },
+            activeStore = SharedPreferencesActiveMiffStore(context),
+            cache = cachePurger,
+        )
+    }
+
+    /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
+    suspend fun onMiffLeft(miffId: String) {
+        miffDirectory.expectDeparture(miffId)
+        cachePurger.markPurgePending()
+        cachePurger.purge()
+        miffDirectory.refresh()
+    }
+
+    /**
+     * Deletion of a Miff, with no screen: used by the Miff screen now, and later by the deletion of an account (AUTH-5) and by the
+     * end of a subscription (Premium ticket). Runs as long as the app lives and resumes at launch from a local marker. Built on
+     * first use: the main shell (shown only once the session is resolved) is the first to use it, so nothing here reaches Firestore
+     * before [MiffApplication.startSession].
+     */
+    val miffDeletions: MiffDeletionCoordinator by lazy {
+        MiffDeletionCoordinator(
+            deletion = MiffDeletion(store = miffStore, repository = miffRepository),
+            pending = SharedPreferencesPendingDeletionStore(context),
+            network = networkMonitor,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            onStarted = miffDirectory::expectDeparture,
+            onDeleted = { miffId -> onMiffLeft(miffId) },
+        )
+    }
+
+    /**
+     * The places (ticket LOC-1): create, edit, delete, in the Miffs the person created. Reads that decide a limit come from the
+     * server; every write is a transaction (nothing is queued offline). Built on first use, like the rest of the Miff data.
+     */
+    val placeRepository: PlaceRepository by lazy {
+        FirestorePlaceRepository(
+            store = FirestorePlaceStore(miffStore),
+            // An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place.
+            newId = {
+                FirebaseFirestore
+                    .getInstance()
+                    .collection("miffs")
+                    .document()
+                    .collection("places")
+                    .document()
+                    .id
+            },
+        )
+    }
+
+    /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */
+    val placeNotices: PlaceNotices by lazy { PlaceNotices() }
+
+    /**
+     * The suggestions of address of the form: Photon (free, no key) with the session cache; the Geoapify fallback exists only when a
+     * key was given at build time (never committed, see app/build.gradle.kts and docs/dev/lieux-fournisseurs-gratuits.md).
+     */
+    val addressSearch: CachedAddressSearch by lazy {
+        val fetcher = UrlConnectionFetcher(userAgent = "Miff-Android/${BuildConfig.VERSION_NAME}")
+        CachedAddressSearch(
+            FallbackAddressSearch(
+                primary = PhotonAddressSearch(BuildConfig.PHOTON_URL, fetcher),
+                fallback =
+                    BuildConfig.GEOAPIFY_KEY.takeIf { it.isNotEmpty() }?.let {
+                        GeoapifyAddressSearch(
+                            it,
+                            fetcher,
+                        )
+                    },
+            ),
+        )
+    }
+
+    /** The tiles of the map are the picture of where the person goes: erased with the session (sign-out, account deletion). */
+    val mapTileCache: MapTileCachePurger by lazy { MapTileCachePurger.forContext(context) }
+
     val sessionManager: SessionManager by lazy {
         StartupTrace.section("Miff.container.sessionManager") {
             SessionManager(
@@ -151,11 +307,20 @@ class AppContainer(
                 flags = sessionFlags,
                 privacy = privacySettings,
                 tracker = analyticsTracker,
-                cache = FirestoreCachePurger(flags = sessionFlags),
+                cache = cachePurger,
                 // The profile draft (names, photo, phone number) goes with the session. The feed (listeners), geofencing
                 // (monitoring, status writes) and push (token) tickets add their own SessionTeardown here, so that a
                 // sign-out stops them (ticket 7.6).
-                teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals),
+                teardown =
+                    listOf(
+                        profileDrafts.asTeardown(),
+                        currentProfile,
+                        consentWithdrawals,
+                        miffDirectory,
+                        placeNotices,
+                        addressSearch,
+                        mapTileCache,
+                    ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
                 drafts = profileDrafts,
                 withdrawals = pendingWithdrawals,
