@@ -137,6 +137,57 @@
         }
       }
     },
+    "auth_error_google_interrupted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing in with Google did not go through. Please try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion avec Google n'a pas abouti. Réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "auth_error_google_no_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google could not offer an account on this phone for now. You can add one in the phone settings, or continue with your e-mail address."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google n'a pas pu proposer de compte sur ce téléphone pour le moment. Tu peux en ajouter un dans les réglages du téléphone, ou continuer avec ton adresse e-mail."
+          }
+        }
+      }
+    },
+    "auth_error_google_services": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google services are not responding on this phone for now. Check that they are up to date, or continue with your e-mail address."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les services Google ne répondent pas sur ce téléphone pour le moment. Vérifie qu'ils sont à jour, ou continue avec ton adresse e-mail."
+          }
+        }
+      }
+    },
     "auth_error_invalid_credentials": {
       "extractionState": "manual",
       "localizations": {
