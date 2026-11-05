@@ -133,6 +133,11 @@ sealed interface MyMiffsLoad {
         val premium: Boolean,
         /** True when the answer comes from the phone's cache because the server could not be reached. */
         val fromCache: Boolean,
+        /**
+         * False when [premium] is only a guess: the read of the subscription failed, or the whole answer comes from the cache.
+         * Screens then claim nothing about the plan (never "free plan" on a doubt).
+         */
+        val premiumKnown: Boolean = true,
     ) : MyMiffsLoad {
         override fun toString(): String = "Loaded(redacted)"
     }
@@ -522,6 +527,7 @@ class FirestoreMiffRepository(
             lost = state.lost,
             premium = state.premium,
             fromCache = state.fromCache,
+            premiumKnown = state.premiumKnown,
         )
     }
 
@@ -565,7 +571,7 @@ class FirestoreMiffRepository(
         uid: String,
         withNames: Boolean = false,
     ): StateRead {
-        val premium = premium(uid)
+        val premiumRead = premiumOrNull(uid)
         var fromCache = false
         val refs =
             when (val server = guarded { store.readMemberships(uid, fromServer = true) }) {
@@ -622,7 +628,19 @@ class FirestoreMiffRepository(
                 }
             }
         }
-        return StateRead.Value(State(valid, summaries, lost, premium, fromCache))
+        // A failed read (or an answer taken from the cache) leaves the plan UNKNOWN: it still picks the key of the index (limit F1
+        // of MIFF-1, the rules decide for real) but no screen may present it as "free".
+        return StateRead.Value(
+            State(
+                valid,
+                summaries,
+                lost,
+                premiumRead ?: false,
+                fromCache,
+                premiumKnown =
+                    premiumRead != null && !fromCache,
+            ),
+        )
     }
 
     private suspend fun cachedName(miffId: String): String? =
@@ -639,6 +657,7 @@ class FirestoreMiffRepository(
         val lost: List<LostMiff>,
         val premium: Boolean,
         val fromCache: Boolean,
+        val premiumKnown: Boolean = true,
     )
 
     private sealed interface StateRead {
@@ -652,8 +671,13 @@ class FirestoreMiffRepository(
     }
 
     /** Premium = an active entitlement that has not expired (the rules decide for real: this only chooses the key). */
-    private suspend fun premium(uid: String): Boolean {
-        val read = (guarded { store.readEntitlement(uid) } as? Guarded.Value)?.value ?: return false
+    private suspend fun premiumOrNull(uid: String): Boolean? {
+        // Null = the read failed: the plan is unknown (not "free"). No document at all = free.
+        val read =
+            when (val answer = guarded { store.readEntitlement(uid) }) {
+                is Guarded.Value -> answer.value ?: return false
+                is Guarded.Failed -> return null
+            }
         val expires = read.expiresAtMillis ?: return false
         return read.active && expires > nowMillis()
     }

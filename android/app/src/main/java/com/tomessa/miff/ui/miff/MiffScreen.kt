@@ -322,11 +322,7 @@ private fun MiffContent(
         PlaceRows(
             ui = PlaceListUi(state.places, state.isOwner, placesExtras.premium, placesExtras.savedName),
             onOpen = placesExtras.onOpenPlace,
-            onAdd = {
-                placesExtras.onAddPlace(
-                    PlaceListUi(state.places, state.isOwner, placesExtras.premium).atFreeLimit,
-                )
-            },
+            onAdd = placesExtras.onAddPlace,
         )
     }
     MiffFoot(state = state, onLeaveRequested = onLeaveRequested, onDeleteRequested = onDeleteRequested)

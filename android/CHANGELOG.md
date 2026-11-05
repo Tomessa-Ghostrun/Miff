@@ -2,6 +2,21 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.10.1] - 2026-11-05 : correctif LOC-1, un abonnement « inconnu » n'est plus pris pour « gratuit »
+
+Trouvé par la revue indépendante du portage iOS de LOC-3 (défaut déjà présent dans LOC-1 Android, fusionné). **Aucune règle Firestore modifiée.**
+
+### Corrigé
+- **Symptôme** : un créateur Miff+ avec au moins 2 lieux pouvait voir « 2 lieux sur 2 avec la formule gratuite » et se voir refuser « Ajouter un lieu » (écran « Miff+ arrive bientôt » au lieu du formulaire) quand la lecture de son abonnement avait échoué, qu'il n'y avait pas de réponse du serveur, ou que la liste venait du cache hors connexion (« limite F1 » connue de MIFF-1 : `premium()` renvoyait `false`).
+- **« Ajouter un lieu » ouvre toujours le formulaire** (onglet Profil et écran de la Miff). Le formulaire relit l'abonnement sur le **serveur** et affiche lui-même l'offre si la limite est vraiment atteinte ; une lecture qui échoue donne « Réessayer », jamais l'offre. La liste ne décide plus rien : elle garde seulement la pastille « Miff+ » quand le plan gratuit est **connu**.
+- **Plan « inconnu » distinct de « gratuit »** : `MyMiffsLoad.Loaded.premiumKnown` / `DirectoryState.Ready.premiumKnown` (faux si la lecture de l'abonnement échoue ou si la réponse vient du cache) ; la liste des lieux reçoit `premiumOrNull` (null = inconnu) et n'affiche alors ni compteur « formule gratuite » ni pastille. `premium` reste un booléen pour la clé de l'index (inchangé : les règles décident pour de vrai).
+- Code simplifié : `PlacesExtras.onAddPlace(atFreeLimit)` devient `onAddPlace()`, `ProfilePlacesSection` n'a plus `onOpenOffer`.
+- Tests : `MiffRepositoryTest` (lecture échouée = inconnu, pas de document = gratuit connu, cache = inconnu), `MiffDirectoryTest` (inconnu publié et conservé), `PlaceFormViewModelTest` (Miff+ avec 2 lieux = formulaire, lecture impossible = « Réessayer » sans offre ; gratuit réel = offre, existait déjà), `PlaceScreensTest` (plan inconnu : pas de « formule gratuite », « Ajouter un lieu » actif).
+
+### Comportement visible
+- Un compte gratuit qui a déjà 2 lieux et touche « Ajouter un lieu » voit toujours l'offre, mais **après** une courte lecture du serveur (au lieu d'immédiatement) ; hors connexion il voit un message calme avec « Réessayer » au lieu de l'offre. C'est voulu : une limite ne se décide que sur une réponse du serveur.
+- Aucun coût supplémentaire : l'ouverture du formulaire lisait déjà l'abonnement sur le serveur.
+
 ## [0.10.0] - 2026-11-04 : LOC-2a, autorisations de localisation et de notifications, consentement version 3
 
 Première moitié de LOC-2 (ticket `docs/tickets/lieux-de-confiance.md` §6.5, §6.7, §7, §10, §11, §17 : AUT1 à AUT7, VIE1 à VIE4, POS5 à POS7 ; décisions du PM du 2026-11-01 et du 2026-11-04 ; texte `docs/legal/consentement-localisation-v3.md` et `docs/release/google-play-localisation-arriere-plan.md` de la PR #61 ; maquettes `design/exports/pop-ins/` et `design/exports/lieux/claude/` 11 à 13, 21, 22, 24). **Aucune position n'est lue ni écrite** (LOC-2b). Empilée sur la PR #56 (LOC-1). Recette : `docs/qa/checklists/loc-2a-android-recette-pm.md`.
