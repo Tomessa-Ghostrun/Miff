@@ -16,9 +16,13 @@ import com.tomessa.miff.testsupport.FakeTrackingEnv
 import com.tomessa.miff.testsupport.FakeTrackingStore
 import com.tomessa.miff.testsupport.SessionHarness
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -114,6 +118,45 @@ class DeviceSessionTest {
             assertNull("nobody stays signed in without a session", h.gateway.currentUid)
             assertNull(h.deviceIds.id)
             assertTrue(h.sessions.changes.isEmpty())
+        }
+
+    @Test
+    fun aGoogleSignInToAnExistingAccount_thatCannotWriteItsSession_isUndoneToo() =
+        run { h ->
+            h.sessions.offline = true
+            h.manager.start()
+            assertEquals(AuthFailure.NETWORK, h.manager.signInWithGoogle("token", signUpConsent = null))
+            assertNull(h.gateway.currentUid)
+            assertTrue(h.sessions.changes.isEmpty())
+        }
+
+    @Test
+    fun aNewAccount_staysSignedIn_whenItsSessionCannotBeWritten_andTheSessionComesAtTheReturnOfTheNetwork() =
+        run { h ->
+            h.manager.start()
+            // The network drops right after the account was created.
+            h.sessions.offline = true
+            val failure = h.manager.createAccountWithEmail("a@b.fr", "password-1", ConsentChoice.IMPLICIT)
+            assertNull("no failure shown: the account exists", failure)
+            assertEquals("never undone: a second sign-up would say the address is used", 0, h.gateway.signOutCalls)
+            assertEquals(1, h.gateway.createCalls)
+            assertEquals(uid, h.gateway.currentUid)
+            assertEquals("the acceptance of the terms is kept", uid, h.pending.stored?.uid)
+            assertEquals(AppDestination.PROFILE, h.manager.destination())
+            assertNull("no identifier kept for a session that does not exist", h.deviceIds.id)
+            val clearance = h.device.clearance(recheck = false)
+            assertEquals("nothing is written without a verified session", Clearance.Unverified, clearance)
+            assertTrue(h.sessions.changes.isEmpty())
+
+            // The network is back: no identifier here + no session there = the watcher writes the session itself.
+            h.sessions.offline = false
+            h.sessionNetwork.online = false
+            h.sessionNetwork.online = true
+            assertEquals(h.deviceIds.id, h.sessions.sessions[uid])
+            assertTrue(DeviceIds.isValid(h.deviceIds.id))
+            assertTrue(h.device.clearance(recheck = false) is Clearance.Cleared)
+            assertEquals(0, h.gateway.signOutCalls)
+            assertEquals(AppDestination.PROFILE, h.manager.destination())
         }
 
     // --- Another phone signs in: this one is signed out (b) ------------------------------------------------------------
@@ -251,6 +294,52 @@ class DeviceSessionTest {
             assertEquals("nothing could be deleted: the next sign-in overwrites it", mine, h.sessions.sessions[uid])
             assertNull(h.gateway.currentUid)
             assertNull(h.deviceIds.id)
+        }
+
+    // --- A stop that is late does not keep the person on "Chargement" (review of PR #80) -----------------------------------------------
+
+    private fun harnessWithAStopThatNeverEnds(
+        scope: kotlinx.coroutines.CoroutineScope,
+    ): Pair<SessionHarness, () -> Int> {
+        var after = 0
+        val h =
+            SessionHarness(
+                scope,
+                extraTeardown = listOf(SessionTeardown { awaitCancellation() }, SessionTeardown { after++ }),
+            )
+        return h to { after }
+    }
+
+    @Test
+    fun aVoluntarySignOut_waitsFiveSecondsAtMost_forAStopThatNeverEnds_andTheOthersStillRun() =
+        runTest(UnconfinedTestDispatcher()) {
+            val (h, after) = harnessWithAStopThatNeverEnds(backgroundScope)
+            h.signedInWithAFeed()
+            h.manager.start()
+            h.manager.signInWithEmail("a@b.fr", "password-1")
+            val before = currentTime
+            h.manager.signOut()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            val waited = currentTime - before
+            assertTrue("waited 5 s at most for the stop that hangs", waited <= SessionManager.STOP_WAIT_MILLIS)
+            assertEquals("the stop after the hanging one still ran", 1, after())
+        }
+
+    @Test
+    fun aForcedSignOut_waitsFiveSecondsAtMost_forAStopThatNeverEnds_andTheOthersStillRun() =
+        runTest(UnconfinedTestDispatcher()) {
+            val (h, after) = harnessWithAStopThatNeverEnds(backgroundScope)
+            h.signedInWithAFeed()
+            h.manager.start()
+            h.manager.signInWithEmail("a@b.fr", "password-1")
+            h.sessions.takeOver(uid, DEVICE_B)
+            // The forced sign-out waits for the hanging stop, but not longer than the bound.
+            advanceTimeBy(SessionManager.STOP_WAIT_MILLIS - 1)
+            assertEquals(SessionState.Loading, h.manager.state.value)
+            advanceTimeBy(2)
+            runCurrent()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            assertEquals("the stop after the hanging one still ran", 1, after())
         }
 
     // --- Launch (c) --------------------------------------------------------------------------------------------------------

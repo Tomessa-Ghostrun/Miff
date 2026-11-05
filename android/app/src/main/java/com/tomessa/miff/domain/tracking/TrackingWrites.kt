@@ -52,39 +52,6 @@ object TrackingWrites {
         return DocWrite("miffs/$miffId/status/$uid", WriteKind.UPDATE, data)
     }
 
-    /**
-     * The status when it does not exist (deleted meanwhile: an update then finds nothing to update): a COMPLETE first status for this event, with RECENT
-     * times only (`presenceAt` has been through [EventTime.forWrite]; `lastUpdateAt` is the server's time), no text, no photo: nothing old is invented.
-     */
-    fun statusCreate(
-        miffId: String,
-        uid: String,
-        fact: StatusFact,
-        presenceAtMillis: Long,
-        batteryPct: Int?,
-        access: LocationAccess,
-        deviceId: String,
-    ): DocWrite {
-        requireDeviceId(deviceId)
-        return DocWrite(
-            "miffs/$miffId/status/$uid",
-            WriteKind.SET,
-            mapOf(
-                "presence" to fact.presence.wire,
-                "placeId" to fact.placeId,
-                "presenceAt" to Timestamp(Date(presenceAtMillis)),
-                "lastUpdateAt" to FieldValue.serverTimestamp(),
-                "updateText" to null,
-                "hasPhoto" to false,
-                "batteryPct" to batteryPct?.takeIf { it in 0..100 },
-                "locationAccess" to access.value,
-                "escalationDueAt" to null,
-                "updatedAt" to FieldValue.serverTimestamp(),
-                "deviceId" to deviceId,
-            ),
-        )
-    }
-
     /** Only the battery and the access to the location (when the permission changed): the presence is not touched. */
     fun accessUpdate(
         miffId: String,

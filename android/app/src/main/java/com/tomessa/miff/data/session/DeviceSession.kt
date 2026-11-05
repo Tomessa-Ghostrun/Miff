@@ -36,9 +36,21 @@ interface DeviceIdStore {
     /** The identifier, or null when there is none (or when what is stored does not have the shape of an identifier). */
     fun read(): String?
 
-    fun save(id: String)
+    /** Keeps the identifier ON THE DISK. False when the disk did not confirm: the caller then does not go on (no session written with an identifier nobody keeps). */
+    fun save(id: String): Boolean
 
     fun clear()
+
+    /**
+     * The marker "this phone was replaced" (survives a kill of the process): set BEFORE the forced sign-out starts, so that a process killed in the middle
+     * of it does not wake up as a phone that may write (or write a NEW session for an account it was thrown out of). Cleared by the next sign-in
+     * ([begin][DeviceSession.begin]) or a voluntary sign-out.
+     */
+    fun isReplaced(): Boolean
+
+    fun markReplaced()
+
+    fun clearReplaced()
 }
 
 /** `users/{uid}/session/active`, as the app uses it. Every call reaches the SERVER (a transaction) or fails: nothing is queued. */
@@ -117,9 +129,12 @@ class DeviceSession(
     @Volatile
     private var listening = false
 
-    /** Set when the session was found to be someone else's: nothing is written until a new sign-in ([begin]). */
+    /**
+     * Set when the session was found to be someone else's: nothing is written until a new sign-in ([begin]). Read from the disk at the start of the
+     * process: a process killed in the middle of a forced sign-out wakes up still replaced (it never writes a NEW session for an account it was thrown out of).
+     */
     @Volatile
-    private var revoked = false
+    private var revoked = ids.isReplaced()
 
     private var watchJob: Job? = null
 
@@ -134,6 +149,15 @@ class DeviceSession(
         lock.withLock {
             val id = newId()
             if (!DeviceIds.isValid(id) || currentUid() != uid) return@withLock false
+            // A new sign-in supersedes "replaced" (also when the write below fails: the person chose to sign in here).
+            ids.clearReplaced()
+            revoked = false
+            verifiedAtMillis = NEVER
+            // The identifier is on the DISK before the server hears of it: a session written with an identifier that nobody kept would sign this phone out.
+            if (!ids.save(id)) {
+                ids.clear()
+                return@withLock false
+            }
             var written = false
             var tries = 0
             while (!written && tries < BEGIN_TRIES) {
@@ -144,8 +168,6 @@ class DeviceSession(
                 ids.clear()
                 return@withLock false
             }
-            ids.save(id)
-            revoked = false
             verifiedAtMillis = nowMillis()
             true
         }
@@ -158,7 +180,11 @@ class DeviceSession(
      */
     suspend fun ensure(uid: String): Ensured =
         lock.withLock {
-            if (revoked) return@withLock Ensured.REPLACED
+            if (revoked) {
+                // Still signed in although replaced (a forced sign-out interrupted by the death of the process): it is taken up again, nothing is written.
+                if (currentUid() == uid) onReplaced()
+                return@withLock Ensured.REPLACED
+            }
             if (currentUid() != uid) return@withLock Ensured.UNREACHABLE
             val local = ids.read()
             val remote = attempt { documents.read(uid) }.getOrElse { return@withLock Ensured.UNREACHABLE }
@@ -170,11 +196,11 @@ class DeviceSession(
 
                 SessionVerdict.WRITE_NEW -> {
                     val id = newId()
-                    if (DeviceIds.isValid(id) && attempt { documents.write(uid, id) }.isSuccess) {
-                        ids.save(id)
+                    if (DeviceIds.isValid(id) && ids.save(id) && attempt { documents.write(uid, id) }.isSuccess) {
                         verifiedAtMillis = nowMillis()
                         Ensured.VERIFIED
                     } else {
+                        ids.clear()
                         Ensured.UNREACHABLE
                     }
                 }
@@ -187,7 +213,10 @@ class DeviceSession(
         }
 
     override suspend fun clearance(recheck: Boolean): Clearance {
-        if (revoked) return Clearance.Replaced
+        if (revoked) {
+            if (currentUid() != null) onReplaced()
+            return Clearance.Replaced
+        }
         val uid = currentUid() ?: return Clearance.Unverified
         if (!recheck && isFresh()) ids.read()?.let { return Clearance.Cleared(it) }
         return when (ensure(uid)) {
@@ -198,7 +227,10 @@ class DeviceSession(
     }
 
     override suspend fun afterRefusal(): Boolean {
-        if (revoked) return true
+        if (revoked) {
+            if (currentUid() != null) onReplaced()
+            return true
+        }
         val uid = currentUid() ?: return false
         val at = verifiedAtMillis
         // The session was verified a moment ago (typically just before this write): the refusal has another cause, and no read is spent on it.
@@ -217,6 +249,8 @@ class DeviceSession(
     }
 
     private fun revoke() {
+        // The marker goes to the disk FIRST: whatever happens next (the process is killed, the purge is cut), this phone stays replaced.
+        ids.markReplaced()
         revoked = true
         verifiedAtMillis = NEVER
         ids.clear()
@@ -237,20 +271,32 @@ class DeviceSession(
         watchJob =
             scope.launch {
                 network.onlineChanges().distinctUntilChanged().collectLatest { online ->
-                    val skipLook = first && verifiedJustNow()
+                    var skipLook = first && verifiedJustNow()
                     first = false
                     if (!online) return@collectLatest
                     var pauses = 0
-                    while (!skipLook && ensure(uid) == Ensured.UNREACHABLE) {
-                        val pause = retryPausesMillis.getOrNull(pauses++) ?: return@collectLatest
-                        delay(pause)
-                    }
-                    if (revoked) return@collectLatest
-                    listening = true
-                    try {
-                        documents.observe(uid).collect { remote -> judgeLive(remote) }
-                    } finally {
-                        listening = false
+                    while (true) {
+                        while (!skipLook && ensure(uid) == Ensured.UNREACHABLE) {
+                            val pause = retryPausesMillis.getOrNull(pauses++) ?: return@collectLatest
+                            delay(pause)
+                        }
+                        skipLook = false
+                        if (revoked) return@collectLatest
+                        listening = true
+                        try {
+                            documents.observe(uid).collect { remote -> judgeLive(remote) }
+                            return@collectLatest
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            // The listener died (error of the server, token...): what was verified no longer counts, and it starts over (verify, then listen),
+                            // a few times only.
+                            verifiedAtMillis = NEVER
+                            val pause = retryPausesMillis.getOrNull(pauses++) ?: return@collectLatest
+                            delay(pause)
+                        } finally {
+                            listening = false
+                        }
                     }
                 }
             }
@@ -288,6 +334,7 @@ class DeviceSession(
             // Offline there is nothing to try (a transaction needs the server): no waiting for a timeout at the sign-out.
             if (uid != null && id != null && !revoked && network.isOnline()) attempt { documents.deleteIfMine(uid, id) }
             ids.clear()
+            ids.clearReplaced()
             verifiedAtMillis = NEVER
             revoked = false
         }
@@ -299,6 +346,7 @@ class DeviceSession(
      */
     fun forget() {
         stopWatching()
+        ids.markReplaced()
         ids.clear()
         verifiedAtMillis = NEVER
         revoked = true

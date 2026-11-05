@@ -1,7 +1,6 @@
 package com.tomessa.miff.data.tracking
 
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.miff.SharingConsentRead
 import com.tomessa.miff.data.session.Clearance
@@ -67,8 +66,6 @@ class TrackingEngineSessionTest {
     }
 
     private fun refused() = FirebaseFirestoreException("x", FirebaseFirestoreException.Code.PERMISSION_DENIED)
-
-    private fun notFound() = FirebaseFirestoreException("x", FirebaseFirestoreException.Code.NOT_FOUND)
 
     private fun statusWrites() = store.writesTo("/status/")
 
@@ -277,29 +274,37 @@ class TrackingEngineSessionTest {
             assertTrue(statusWrites().none { "lastUpdateAt" in it.data })
         }
 
-    // --- A status deleted meanwhile is written again with recent times ----------------------------------------------------------------------
+    // --- A status deleted meanwhile is NOT recreated (the real rules answer PERMISSION_DENIED to an update of a missing status) ----------------
 
     @Test
-    fun aStatusThatWasDeleted_isWrittenAgain_completeWithRecentTimes_andTheIdentifier() =
+    fun aStatusThatWasDeleted_answersPermissionDenied_isNotRecreated_andTheMiffIsLookedAtAgainSoon() =
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
             store.commits.clear()
-            // The update finds nothing to update (NOT_FOUND); the second write is accepted.
-            store.failuresByPath["miffs/miffA/status/uid1"] = ArrayDeque(listOf(notFound()))
+            val readsBefore = store.readCalls
+            // Probe on the emulator with the real rules: an update of a status that does not exist is refused (PERMISSION_DENIED), never NOT_FOUND.
+            store.alwaysFailing["miffs/miffA/status/uid1"] = refused()
             engine.onTransition(TransitionKind.ENTER, home.key, env.now)
-            val created = statusWrites().single()
-            assertEquals(WriteKind.SET, created.kind)
-            assertEquals("in_trusted", created.data["presence"])
-            assertEquals(Timestamp(Date(env.now)), created.data["presenceAt"])
-            assertEquals("the server's time, nothing old", FieldValue.serverTimestamp(), created.data["lastUpdateAt"])
-            assertNull(created.data["updateText"])
-            assertEquals(false, created.data["hasPhoto"])
-            assertEquals(DEVICE_A, created.data["deviceId"])
-            assertEquals(
-                "the same keys as the first status of the lots of entry",
-                MiffWrites.initialStatus(com.tomessa.miff.domain.miff.LocationAccess.UNKNOWN, DEVICE_A).keys,
-                created.data.keys,
+            assertTrue(
+                "nothing is recreated: no complete status is written",
+                store.commits.none { lot ->
+                    lot.any {
+                        it.kind ==
+                            WriteKind.SET &&
+                            "/status/" in it.path
+                    }
+                },
+            )
+            assertTrue(statusWrites().isEmpty())
+            assertTrue(JournalKind.STATUS_REFUSED in journal.kinds)
+            assertNull("the refused status is not kept waiting (no loop)", pendingOf(miffA))
+            assertEquals("a refusal is looked at on the next pass, not at once", readsBefore, store.readCalls)
+            env.now += 6 * minute
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(
+                "the Miff is read again soon (sharing stopped elsewhere, consent...)",
+                store.readCalls > readsBefore,
             )
         }
 

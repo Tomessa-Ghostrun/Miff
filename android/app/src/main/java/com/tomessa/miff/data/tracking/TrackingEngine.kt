@@ -158,10 +158,10 @@ class TrackingEngine(
 
     /** Sign-out, deletion of the account, session lost (a [SessionTeardown]): everything stops and is erased, and stays stopped for this session. */
     override suspend fun stop() {
-        mutex.withLock {
-            stoppedGeneration = generation()
-            doStop()
-        }
+        // Marked BEFORE the wait for the lock: a pass that has not started will not (the sign-out does not wait for the pass in progress for more than a few
+        // seconds, see SessionManager.stopEverything), and the erasing below still happens when that pass ends.
+        stoppedGeneration = generation()
+        mutex.withLock { doStop() }
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------
@@ -747,13 +747,10 @@ class TrackingEngine(
         access: LocationAccess,
         deviceId: String,
     ): Guarded<Unit> =
+        // A status that does not exist any more (deleted meanwhile) is NOT recreated here: with the real rules an update of a missing status answers
+        // PERMISSION_DENIED (probe on the emulator), i.e. the ordinary refusal below ("look at the Miff again soon"), as before SESS-2.
         guardedCall(timeoutMillis) {
-            val battery = env.batteryPct()
-            store.commitStatus(
-                update = TrackingWrites.statusUpdate(miffId, uid, fact, at, battery, access, deviceId),
-                // Only used when the status was deleted meanwhile: a complete first status, with recent times.
-                create = TrackingWrites.statusCreate(miffId, uid, fact, at, battery, access, deviceId),
-            )
+            store.commit(listOf(TrackingWrites.statusUpdate(miffId, uid, fact, at, env.batteryPct(), access, deviceId)))
         }
 
     /**

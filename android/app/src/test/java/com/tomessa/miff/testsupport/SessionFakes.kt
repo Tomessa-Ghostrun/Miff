@@ -22,16 +22,34 @@ class MemoryDeviceIdStore(
 ) : DeviceIdStore {
     var clears = 0
 
+    /** The disk refuses to keep the identifier (`commit()` answers false). */
+    var failSave = false
+
+    /** The marker "replaced", as it is on the disk (survives a new DeviceSession built on the same store: a restart of the process). */
+    var replaced = false
+
     override fun read(): String? = id
 
-    override fun save(id: String) {
+    override fun save(id: String): Boolean {
         require(DeviceIds.isValid(id))
+        if (failSave) return false
         this.id = id
+        return true
     }
 
     override fun clear() {
         clears++
         id = null
+    }
+
+    override fun isReplaced(): Boolean = replaced
+
+    override fun markReplaced() {
+        replaced = true
+    }
+
+    override fun clearReplaced() {
+        replaced = false
     }
 }
 
@@ -44,6 +62,12 @@ class FakeSessionDocuments(
 ) : SessionDocuments {
     val sessions = mutableMapOf<String, String>()
     var offline = false
+
+    /** Runs when a write reaches the server, before it is applied (to look at what the phone holds at that moment). */
+    var beforeWrite: (String) -> Unit = {}
+
+    /** The next listenings end with this error (the listener of Firestore dies), this many times. */
+    var observeErrors = 0
 
     /** Every write / deletion that REACHED the server, in order: "write:uid:id", "delete:uid:id". */
     val changes = mutableListOf<String>()
@@ -79,6 +103,7 @@ class FakeSessionDocuments(
     ) {
         check()
         require(DeviceIds.isValid(deviceId))
+        beforeWrite(deviceId)
         sessions[uid] = deviceId
         changes += "write:$uid:$deviceId"
         timeline += "session-write"
@@ -108,7 +133,13 @@ class FakeSessionDocuments(
         live
             .filter { it.first == uid }
             .map { it.second }
-            .onStart { emit(current(uid)) }
+            .onStart {
+                if (observeErrors > 0) {
+                    observeErrors--
+                    throw IOException("listener died")
+                }
+                emit(current(uid))
+            }
 }
 
 /** The answer of the session to the writers of statuses and positions, set by the test; counts what it was asked. */

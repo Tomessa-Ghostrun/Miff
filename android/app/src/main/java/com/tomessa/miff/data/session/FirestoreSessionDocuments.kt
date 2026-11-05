@@ -79,8 +79,13 @@ class FirestoreSessionDocuments(
         callbackFlow {
             val registration =
                 reference(firestore(), uid).addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, error ->
-                    // An error (the account is gone, the sign-out is under way) ends the listening quietly: the next verification starts it again.
-                    if (error != null || snapshot == null) return@addSnapshotListener
+                    // An error (token, server, the sign-out under way) ENDS the flow with it: the loop that listens notices, forgets what it had verified and
+                    // starts over (verify, then listen), a few times at most. A dead listener must never look like a healthy one.
+                    if (error != null) {
+                        close(error)
+                        return@addSnapshotListener
+                    }
+                    if (snapshot == null) return@addSnapshotListener
                     // A copy from the local cache proves nothing (offline, nobody is signed out): only the server's word counts.
                     if (snapshot.metadata.isFromCache) return@addSnapshotListener
                     trySend(
@@ -109,16 +114,28 @@ class SharedPreferencesDeviceIdStore(
 
     override fun read(): String? = prefs.getString(KEY, null)?.takeIf(DeviceIds::isValid)
 
-    override fun save(id: String) {
+    /** The result of `commit()` is the answer: false = the disk did not confirm. */
+    override fun save(id: String): Boolean {
         require(DeviceIds.isValid(id)) { "device id shape" }
-        prefs.edit().putString(KEY, id).commit()
+        return prefs.edit().putString(KEY, id).commit()
     }
 
     override fun clear() {
         prefs.edit().remove(KEY).commit()
     }
 
+    override fun isReplaced(): Boolean = prefs.getBoolean(KEY_REPLACED, false)
+
+    override fun markReplaced() {
+        prefs.edit().putBoolean(KEY_REPLACED, true).commit()
+    }
+
+    override fun clearReplaced() {
+        prefs.edit().remove(KEY_REPLACED).commit()
+    }
+
     private companion object {
         const val KEY = "device_id"
+        const val KEY_REPLACED = "replaced"
     }
 }

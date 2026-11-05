@@ -63,6 +63,12 @@
 - [ ] Sur B, désactivez le mode avion. **Au retour du réseau**, B revient à l'écran de connexion avec la note, **sans avoir écrit** son état en attente (la console garde le statut de A).
 - [ ] **Déconnexion volontaire hors connexion** : sur A, mode avion, « Se déconnecter » : A se déconnecte quand même ; la console peut garder `session/active` (rien n'a pu être supprimé hors connexion), c'est attendu : la prochaine connexion l'écrase.
 
+## Partie F bis — Inscription sans réseau (facultatif, 3 min)
+
+- [ ] Sur un appareil sans compte : créez un **nouveau compte** par e-mail, et coupez le réseau (mode avion) **juste après** avoir touché « Rejoindre ». Vous **restez connecté**, vous arrivez sur les étapes du profil, sans message d'erreur ni demande de recréer le compte. (Console : pas encore de `session/active` pour ce compte.)
+- [ ] Remettez le réseau : au bout de quelques secondes, `session/active` apparaît pour ce compte, sans rien faire.
+- [ ] À l'inverse, **connexion à un compte existant** en mode avion : le message « pas de connexion » s'affiche et vous restez sur l'écran de connexion (rien n'est à défaire).
+
 ## Partie G — Ancienne installation (facultatif, 2 min)
 
 - [ ] Si vous avez encore un téléphone avec **l'app d'avant** (même compte connecté, sans session dans la console), mettez-la à jour **sans la désinstaller** : à l'ouverture, elle reste connectée et la console montre un nouveau `session/active` (elle en a écrit une). Rien à faire d'autre.
@@ -70,5 +76,6 @@
 ## Ce que vous notez dans le compte rendu
 
 - Le délai entre la connexion sur B et la note sur A (app ouverte) : en secondes.
+- Le temps que met l'ancien appareil à revenir à l'écran de connexion (« Chargement » ne doit pas durer plus de quelques secondes, même juste après une sortie de zone).
 - Si un message d'erreur inattendu est apparu (« Ça n'a pas fonctionné » en créant / rejoignant une Miff juste après un remplacement, par exemple).
 - Tout écran où la note est mal affichée (coupée, trop proche de la barre d'état).

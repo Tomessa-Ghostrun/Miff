@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 sealed interface SessionState {
     /** Something is being checked (account read, sign-out in progress). */
@@ -219,7 +220,8 @@ class SessionManager(
                 }
 
                 is AuthOutcome.Success -> {
-                    openDeviceSession(outcome.uid)
+                    // A NEW account stays signed in even if its session could not be written (see openDeviceSession).
+                    openDeviceSession(outcome.uid, newAccount = true)
                         ?: run {
                             completeEmailSignUp(outcome.uid, consent)
                             null
@@ -464,15 +466,25 @@ class SessionManager(
         }
     }
 
+    /**
+     * Stops everything that runs for the session, one after the other. Each stop is waited for at most [STOP_WAIT_MILLIS]: the detection engine, for
+     * instance, may be in the middle of a pass of several network calls, and the person must not stay on "Chargement" for the whole of it. A stop that is
+     * late carries on in the background (it only erases local data, and the engine refuses new passes from the moment it is asked, see
+     * [com.tomessa.miff.data.tracking.TrackingEngine.stop]).
+     */
     private suspend fun stopEverything() {
-        teardown.forEach {
-            try {
-                it.stop()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // A listener that does not stop must not keep the person signed in.
-            }
+        teardown.forEach { item ->
+            val stopping =
+                scope.launch {
+                    try {
+                        item.stop()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // A listener that does not stop must not keep the person signed in.
+                    }
+                }
+            withTimeoutOrNull(STOP_WAIT_MILLIS) { stopping.join() }
         }
     }
 
@@ -496,6 +508,9 @@ class SessionManager(
     /** Cold start and "Réessayer": the same rule, whatever happened before. */
     private suspend fun resolveCurrent() {
         val uid = gateway.currentUid
+        // INTEGRATION POINT (AUTH-5a, after PR #75 is merged): `if (resolveAccountDeletion(uid)) return` goes HERE, before anything below, so that a
+        // deletion of the account under way never gets a session verified or written for an account that is disappearing (and, through
+        // [readAccountAndCheckSession] with checkSession = false, never a "used on another phone" note during a deletion).
         if (uid == null) {
             sessionActive = false
             // No session = no consent to send anything: a report left by a crash before the person said yes goes away.
@@ -516,11 +531,7 @@ class SessionManager(
         mutableState.value = SessionState.Loading
         // SESS-2: the session is verified on the server AT THE SAME TIME as the account is read (no longer wait for the launch), and BEFORE anything is written
         // (the engine asks again at its first write). Replaced: the forced sign-out is under way and the account read is dropped.
-        val (load, ensured) =
-            coroutineScope {
-                val check = async { device.ensure(uid) }
-                accounts.load(uid) to check.await()
-            }
+        val (load, ensured) = readAccountAndCheckSession(uid)
         // The session may have been lost while we were reading: the loss handler already put the app back to sign-in.
         if (gateway.currentUid != uid || ensured == Ensured.REPLACED) return
         // From here the session is listened to (verified again when the network comes back, if the server could not be asked now).
@@ -532,14 +543,35 @@ class SessionManager(
     }
 
     /**
+     * Reads the account and, at the same time, verifies the session of this phone (null when [checkSession] is false). One place for both, so that the
+     * launch of an account in the middle of its deletion (AUTH-5a) can skip the session without touching the rest of the routing.
+     */
+    private suspend fun readAccountAndCheckSession(
+        uid: String,
+        checkSession: Boolean = true,
+    ): Pair<AccountLoad, Ensured?> =
+        coroutineScope {
+            val check = if (checkSession) async { device.ensure(uid) } else null
+            accounts.load(uid) to check?.await()
+        }
+
+    /**
      * Sign-in, second step: the session of this phone is written (and confirmed by the server) and listened to. A phone with no session would write
      * nothing and be signed out at its next launch, so when the server cannot confirm, the sign-in is undone and the person is told there is no
      * connection. Null = done.
      */
-    private suspend fun openDeviceSession(uid: String): AuthFailure? {
+    private suspend fun openDeviceSession(
+        uid: String,
+        newAccount: Boolean = false,
+    ): AuthFailure? {
         if (!device.begin(uid)) {
-            gateway.signOut()
-            return AuthFailure.NETWORK
+            // A NEW account (e-mail sign-up) is never undone: it exists, its terms were just accepted on this phone, and a second attempt to create it would
+            // only say "this address is already used". It stays signed in; the watcher writes the session (no identifier here + no session there =
+            // an installation from before the feature) as soon as the server answers, and nothing is written meanwhile (no verified session).
+            if (!newAccount) {
+                gateway.signOut()
+                return AuthFailure.NETWORK
+            }
         }
         flags.put(KEY_REPLACED_NOTICE_PENDING, false)
         device.watch(uid)
@@ -648,6 +680,9 @@ class SessionManager(
 
     companion object {
         const val KEY_RETURNING_USER = "returning_user"
+
+        /** The longest wait for one thing that must stop at the end of a session (the rest of its stop goes on in the background). */
+        const val STOP_WAIT_MILLIS = 5_000L
 
         /** The calm "used on another phone" note has not been shown yet (written by the forced sign-out, read at the next start). */
         const val KEY_REPLACED_NOTICE_PENDING = "session_replaced_notice_pending"

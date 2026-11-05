@@ -39,7 +39,6 @@ class DeviceIdInEveryWriteTest {
             listOf(
                 TrackingWrites.statusUpdate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, DEVICE_A),
                 TrackingWrites.statusUpdate(miffId, uid, departure, now, null, LocationAccess.BACKGROUND, DEVICE_A),
-                TrackingWrites.statusCreate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, DEVICE_A),
                 TrackingWrites.accessUpdate(miffId, uid, 50, LocationAccess.DENIED, DEVICE_A),
                 TrackingWrites.position(miffId, uid, 48.8566, 2.3522, now, DEVICE_A),
             ) +
@@ -47,8 +46,8 @@ class DeviceIdInEveryWriteTest {
                 MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, DEVICE_A)
         val statusAndPositionWrites = writes.filter { isStatusOrPosition(it) }
-        // 5 builders of tracking + the status of create, join and resume.
-        assertEquals(8, statusAndPositionWrites.size)
+        // 4 writes of tracking (the status update twice) + the status of create, join and resume.
+        assertEquals(7, statusAndPositionWrites.size)
         statusAndPositionWrites.forEach { write ->
             val what = "${write.kind} of ${write.path.split("/")[2]}"
             assertTrue("$what is a set or a (partial) update", write.kind != WriteKind.DELETE)
@@ -83,7 +82,6 @@ class DeviceIdInEveryWriteTest {
             val builders =
                 listOf<() -> Any>(
                     { TrackingWrites.statusUpdate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, id) },
-                    { TrackingWrites.statusCreate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, id) },
                     { TrackingWrites.accessUpdate(miffId, uid, 50, LocationAccess.DENIED, id) },
                     { TrackingWrites.position(miffId, uid, 48.8566, 2.3522, now, id) },
                     { MiffWrites.initialStatus(LocationAccess.UNKNOWN, id) },
@@ -110,20 +108,48 @@ class DeviceIdInEveryWriteTest {
         }
     }
 
+    private val sourceRoot = File("src/main/java")
+
+    private fun kotlinSources(): List<File> {
+        assertTrue("source folder not found from ${File(".").absolutePath}", sourceRoot.exists())
+        return sourceRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+    }
+
+    // A construction of a write on a status or a position that is not a deletion: `DocWrite("miffs/..../status/...", WriteKind.SET|UPDATE`.
+    private val statusOrPositionWrite =
+        Regex("""DocWrite\(\s*"[^"]*/(status|positions)/[^"]*"\s*,\s*WriteKind\.(SET|UPDATE)""")
+
     @Test
-    fun noSourceFileWritesAStatusOrAPositionOutsideTheTwoBuilders() {
-        // A new writer of a status or of a position added anywhere else would escape the tests above: it must go through TrackingWrites / MiffWrites.
-        val allowed = setOf("TrackingWrites.kt", "MiffWrites.kt")
-        val root = File("src/main/java")
-        assertTrue("source folder not found from ${File(".").absolutePath}", root.exists())
-        val pathOfADocWrite = Regex("""DocWrite\(\s*"[^"]*/(status|positions)/""")
+    fun theTwoBuilderFiles_areNotExemptInBulk_theirWritesAreCounted() {
+        // 3 in TrackingWrites (status update, access update, position) + 3 in MiffWrites (first status of create, join, resume).
+        // A new write of a status or a position there forces this number, and the test of the builders above, to be updated on purpose.
+        val counts =
+            kotlinSources()
+                .filter { it.name == "TrackingWrites.kt" || it.name == "MiffWrites.kt" }
+                .associate { it.name to statusOrPositionWrite.findAll(it.readText()).count() }
+        assertEquals(mapOf("TrackingWrites.kt" to 3, "MiffWrites.kt" to 3), counts)
+    }
+
+    @Test
+    fun noOtherSourceFileWritesAStatusOrAPosition() {
         val offenders =
-            root
-                .walkTopDown()
-                .filter { it.isFile && it.extension == "kt" && it.name !in allowed }
-                .filter { file -> pathOfADocWrite.containsMatchIn(file.readText()) }
+            kotlinSources()
+                .filter { it.name != "TrackingWrites.kt" && it.name != "MiffWrites.kt" }
+                .filter { statusOrPositionWrite.containsMatchIn(it.readText()) }
                 .map { it.name }
-                .toList()
         assertTrue("these files write a status or a position by themselves: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun noSourceFileGoesToTheStatusOrPositionCollectionByItself() {
+        // Another way to write one: `collection("status").document(..).set(..)`. There is no reader of these collections in the app today; one that appears
+        // must be reviewed (and this test adjusted) rather than slip a write past the contract.
+        val byCollection = Regex("""collection\(\s*"(status|positions)"\s*\)""")
+        val byPathString = Regex("""document\(\s*"[^"]*/(status|positions)/""")
+        val offenders =
+            kotlinSources()
+                .filter { byCollection.containsMatchIn(it.readText()) || byPathString.containsMatchIn(it.readText()) }
+                .map { it.name }
+        assertTrue("these files reach status / positions without the builders: $offenders", offenders.isEmpty())
     }
 }
