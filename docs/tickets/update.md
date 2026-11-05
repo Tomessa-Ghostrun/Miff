@@ -1,15 +1,15 @@
 # Ticket : UPDATE, l'écran « à la Snapchat » (photo du moment, bouton central coloré, alertes d'incitation)
 
-**Statut** : challenge **validé par le PM le 2026-11-05** (les 5 questions du §17 sont **décidées** : D16 à D20) ; **reste ouvert un seul point, non décisionnel** : l'export PNG des 4 images de l'Update dans Notion (§15, §16). Aucun développement lancé, aucun statut Notion modifié. Ticket Notion concerné : « Update » (statut Notion : « Spec en attente de review IA », page du 2026-09-30) ; liés : « Statut utilisateur (Vert, orange, rouge) », « Feed », « Tabbar » (page vide), « Premium » (rien sur l'Update).
+**Statut** : challenge **validé par le PM le 2026-11-05** (les 5 questions du §17 sont **décidées** : D16 à D20) ; **décision du 2026-11-06 : D21 remplace D17** (message d'incitation = bulle des maquettes) ; **maquettes de l'Update fournies par le PM le 2026-11-06** (7 PNG), les écrans manquants sont confiés à l'agent design (§16). Aucun développement lancé, aucun statut Notion modifié. Ticket Notion concerné : « Update » (statut Notion : « Spec en attente de review IA », page du 2026-09-30) ; liés : « Statut utilisateur (Vert, orange, rouge) », « Feed », « Tabbar » (page vide), « Premium » (rien sur l'Update).
 **Rédigé le** : 2026-11-05 (agent `product-specs`, étape « challenge » du process par ticket). Branche `docs/challenge-update`.
 **Complète** : `docs/tickets/feed.md` (PR #72, FEED-4 = affichage de la photo) ; **reprend** les décisions de `docs/tickets/lieux-de-confiance.md` (§6.9, N1 à N6, L7, « Décisions du PM » du 2026-11-01) et de `docs/tickets/feed-profil-reglages.md` (§13, Q1, Q15). **Remplace**, une fois validé, `docs/specs/update-et-escalade-statut.md` (écarts listés en §4, C4 et C5). **Ne remplace aucun autre document.**
 **Règle de hiérarchie** : décisions du PM > Notion > ce ticket > reste du dépôt. Une réponse déjà présente dans un ticket Notion ou une décision du PM est une **décision**, pas une question (§3 les liste avec leur source).
 **Sources lues** :
-- **Notion, relu directement le 2026-11-05** : « Update », « Statut utilisateur », « Feed », « Tabbar » (vide), « Premium ». **Limite** : les quatre blocs image de « Update » (deux écrans, message d'alerte orange, message d'alerte rouge) sont des objets externes **illisibles** par l'outil. **Aucune maquette de l'Update n'existe dans le dépôt** (ni `design/exports/`, ni `design/screens/`) : les écrans sont à fournir (export des 4 images) et les **textes d'alerte** du §7, validés par le PM (D17), sont à confronter à cet export (§16).
+- **Notion, relu directement le 2026-11-05** : « Update », « Statut utilisateur », « Feed », « Tabbar » (vide), « Premium ». **Limite** : les quatre blocs image de « Update » (deux écrans, message d'alerte orange, message d'alerte rouge) sont des objets externes **illisibles** par l'outil. **Mise à jour du 2026-11-06** : le PM a fourni **7 PNG** « Welcoming screen* » de l'Update, rangés dans `design/exports/update/` du dossier de travail `C:\dev\miff` (non encore commités à la date de ce document) ; je les ai tous regardés. Ils montrent : le Feed avec la **bulle d'incitation orange** et **rouge** posée au-dessus de la barre d'onglets (avec une petite queue vers le bouton central), le Feed nominal sans bulle, le **viseur** (selfie, plein écran) et l'**aperçu** (croix en haut à gauche, bouton rond de reprise, bouton bleu « Publier »), chacun avec le **point coloré du bouton central** (orange, rouge). Le wording de la bulle est celui des maquettes (D21). Le PM a choisi de les suivre.
 - Dépôt (`origin/main`, `4171688`) : `CLAUDE.md` ; `backend/firestore.rules` (`validPhoto`, `validStatus`, `match /photos/{uid}`, lots d'arrêt du partage) et `backend/data-model.md` (§2.7, §2.8, §3, §8 « Update manuelle », §11, §12) ; `docs/dev/surveillance-quotas.md` ; `docs/legal/*` (CGU art. 8, politique, `consentement-localisation-v3.md` O4, README J2, J8, J31) ; `docs/release/google-play-data-safety.md`, `app-store-confidentialite-et-revue.md` ; `docs/tickets/suppression-compte.md` (PR #51) ; maquettes `design/exports/feed/` (9 PNG du PM, dont la barre d'onglets) et `design/exports/feed/claude/09-photo-plein-ecran.png` (PR #72).
 - Code Android existant (lu, non modifié) : `ui/main/MainTabBar.kt` et `domain/navigation/MainTab.kt` (bouton central **inactif**, anneau jaune-vert, masqué dans les builds de diffusion) ; `data/profile/AndroidAvatarCodec.kt` et `domain/profile/Avatar.kt` (photo de profil : **pas de permission caméra**, photo du système, ré-encodage sans métadonnées, 20 000 octets) ; `AndroidManifest.xml` (**aucune** permission `CAMERA`) ; `ui/permission/PermissionGate*` (localisation uniquement) ; `domain/tracking/StatusLevel.kt` et `TrackingWrites.kt` (fusionnés, LOC-2b) ; `ui/components/RecentsPrivacy.kt`. **Aucune bibliothèque de caméra** (pas de CameraX) dans `libs.versions.toml`. iOS : rien de caméra (la CI vérifie l'absence de `NSLocation*`, pas de `NSCamera*`).
 - Web (lu le 2026-11-05) : page des tarifs Firebase (Cloud Storage) et page des quotas Firestore (taille de document).
-**Convention** : **[Décidé]** = décision du PM (source citée) ; **[Notion]** = repris du ticket Notion ; **[Proposé]** = ma proposition, applicable sauf objection du PM (§5.9) ; **[À vérifier]** = non confirmé. Les repères Q1 à Q5 sont **conservés** comme références historiques : ce sont maintenant les décisions D16 à D20. Je ne tranche aucune décision produit ou légale. Je n'ai modifié ni le code, ni Notion, ni Figma, ni les règles Firestore, ni `backend/data-model.md`, ni les textes légaux.
+**Convention** : **[Décidé]** = décision du PM (source citée) ; **[Notion]** = repris du ticket Notion ; **[Proposé]** = ma proposition, applicable sauf objection du PM (§5.9) ; **[À vérifier]** = non confirmé. Les repères Q1 à Q5 sont **conservés** comme références historiques : ce sont maintenant les décisions D16 à D20 (D17 est **remplacée par D21** le 2026-11-06). Je ne tranche aucune décision produit ou légale. Je n'ai modifié ni le code, ni Notion, ni Figma, ni les règles Firestore, ni `backend/data-model.md`, ni les textes légaux.
 
 ---
 
@@ -29,8 +29,8 @@ En une phrase : l'Update est **le geste volontaire qui complète la détection a
 | 4 | **La localisation de la photo n'est pas livrable avec les règles déployées** (`validPhoto` n'accepte que `jpeg`, `createdAt`, `expiresAt`). Décision du PM : localisation **figée au moment de la photo** (règle R-PHOTO-LOC en préparation par `backend-data`). | L'Update est livré **sans localisation d'abord** ; la localisation s'ajoute (UPDATE-1b) **après** le déploiement de R-PHOTO-LOC (sur ton « oui »). Le texte de consentement v3 est amendé pour citer la photo localisée (ou passe en v4) : **décidé, D20**. |
 | 5 | **Photo = donnée sensible** (visage, intérieur d'un domicile, tiers, mineurs, métadonnées EXIF dont la position). | Photo **ré-encodée depuis les pixels** (aucune métadonnée), jamais écrite dans la galerie, jamais sur disque côté viseur intégré, 24 h, écrasée à chaque publication, effacée avec le partage. Risques de modération des stores listés (R4). |
 | 6 | **Une contradiction, tranchée par le PM le 2026-11-05** : la décision du 2026-10-30 (`feed-profil-reglages.md` §10 Q1, « OK pour tout ») décrivait « Je vais bien », **photo facultative** ; le ticket Notion Update décrit **une photo** (« prendre une photo et la publier »). | **Décidé : la photo est obligatoire pour publier un update en v1** (D16). Pas de « Je vais bien » sans photo en v1 ; un tel geste pourra s'ajouter plus tard sans changer les règles. |
-| 7 | **Le message d'alerte ne peut pas être une notification** (plan Spark, décidé) : il n'existe que **dans l'app ouverte**, précisément quand la personne n'a probablement pas l'app ouverte. | Limite connue, assumée (R2) ; forme et textes **validés par le PM le 2026-11-05** (D17, §7) ; pas de piste cachée : une notification locale (sans serveur) est techniquement possible mais **hors décision actuelle**. |
-| 8 | **Aucune maquette de l'Update dans le dépôt.** | **Seul point encore ouvert** : §16, le PM exporte en PNG les 4 images de Notion, puis `design-system` complète. |
+| 7 | **Le message d'alerte ne peut pas être une notification** (plan Spark, décidé) : il n'existe que **dans l'app ouverte**, précisément quand la personne n'a probablement pas l'app ouverte. | Limite connue, assumée (R2) ; forme et textes **fixés par les maquettes du PM** (D21, §7) ; pas de piste cachée : une notification locale (sans serveur) est techniquement possible mais **hors décision actuelle**. |
+| 8 | **Maquettes de l'Update fournies le 2026-11-06** (7 PNG : bulle orange et rouge, viseur, aperçu, boutons). | Elles ne couvrent pas tous les états : permission caméra, publication en cours, échec, confirmation, carte du Feed avec photo sont **confiés à l'agent design** (branche `design/update-tabbar`, PR à venir) ; §16. |
 
 **Coût : 0 €.** CameraX est gratuit (licence Apache 2.0) ; aucune clé, aucun service. Budget Spark au §11 : **2 écritures par publication gratuite** (+2 de nettoyage par photo expirée), ~4 lectures par proche et par publication, ~150 Ko transférés par proche qui ouvre la photo. **Taille globale** (relative) : L, en deux PR Android puis deux PR iOS, plus une PR de localisation.
 
@@ -81,7 +81,8 @@ En une phrase : l'Update est **le geste volontaire qui complète la détection a
 | D14 | Le bouton central est **masqué** dans les builds de diffusion et **visible mais désactivé** dans les builds internes **tant que l'Update n'existe pas**. | `feed-profil-reglages.md` §13 Q1 ; `domain/navigation/MainTab.kt` |
 | D15 | Les CGU interdisent déjà de publier une photo où figure une personne sans son accord ou un enfant dont on n'a pas l'autorité parentale ; la photo est visible des seuls membres de mes Miffs. | `docs/legal/cgu.*.md` art. 8 |
 | D16 *(ex-Q1)* | **La photo est obligatoire pour publier un update en v1** : il n'existe **pas** de bouton « Je vais bien » sans photo ; « Publier » n'est possible qu'avec une photo prise. Un tel geste pourra s'ajouter plus tard **sans changer les règles** (`lastUpdateAt` seul, `hasPhoto = false`). Remplace sur ce point la décision du 2026-10-30 (`feed-profil-reglages.md` §10 Q1). | **PM, 2026-11-05** |
-| D17 *(ex-Q2)* | **Les messages d'incitation sont un bandeau en haut du Feed**, au-dessus de la bulle, **non fermable, sans son ni vibration** (ni clignotement ni fenêtre bloquante) ; **titre unique « Un petit signe à tes proches ? »** et **trois phrases** (orange, rouge d'ancienneté, rouge de zone de danger) du §7 ; bouton « Donner des nouvelles ». Les textes restent à relire à voix haute et à confronter aux images de Notion une fois exportées (ajustement de détail, pas de nouvelle décision). | **PM, 2026-11-05** |
+| ~~D17~~ *(ex-Q2)* | **REMPLACÉE par D21 le 2026-11-06.** (Elle prévoyait un bandeau en haut du Feed avec un titre « Un petit signe à tes proches ? » et un bouton « Donner des nouvelles » : abandonnés.) | PM, 2026-11-05, remplacée |
+| **D21** *(remplace D17)* | **Le message d'incitation est la bulle des maquettes de l'Update** : une bulle de la **couleur du niveau (orange ou rouge)**, posée **juste au-dessus de la barre d'onglets**, avec une **petite queue qui pointe vers le bouton central**. **Ni titre, ni bouton, ni bouton de fermeture.** **Textes des maquettes, conservés tels quels** : orange « Tu es passé en orange, indique à la Miff que tout va bien en publiant une update » ; rouge « Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update ». **Principes conservés** : sans son, sans vibration, sans clignotement, sans fenêtre bloquante, **non fermable**, disparition selon **D18**, couleur et apparition selon la **Miff affichée dans le Feed (D19)**. **Zone de danger** : les maquettes ne donnent qu'un texte rouge ; **le même texte rouge est utilisé** (« Tu es passé en rouge… ») — **à confirmer** (le PM n'a pas vu de variante dédiée à la zone de danger). L'anneau autour de ma photo en haut à gauche prend aussi la couleur du statut, et le bouton central porte **un point de la couleur du statut**. | **PM, 2026-11-06** (maquettes `design/exports/update/`) |
 | D18 *(ex-Q3)* | **Le message disparaît aussi quand la couleur redevient verte sans publication** (arrivée dans une zone de confiance) ; il ne disparaît ni avec le temps ni par un geste ; en zone de danger, il disparaît à la publication d'une update après mon entrée (C8). | **PM, 2026-11-05** |
 | D19 *(ex-Q4)* | **La couleur du bouton central (et le message d'incitation) suivent la Miff affichée dans le Feed** (un seul écouteur, aucune lecture en plus) ; publier met à jour **toutes** mes Miffs. Limite connue (Premium seulement) : le bouton peut être vert alors qu'une autre Miff me voit orange. | **PM, 2026-11-05** |
 | D20 *(ex-Q5)* | **Le texte de consentement v3 est amendé pour citer la photo localisée si aucun testeur externe ne l'a accepté ; sinon on passe en v4** (re-consentement, mécanisme déjà préparé). Cela ne bloque que **UPDATE-1b**, après R-PHOTO-LOC. **Vérification « aucun testeur externe n'a accepté v3 » : à faire au moment de UPDATE-1b** (par `release-manager` / `backend-data`, [À vérifier]). | **PM, 2026-11-05** |
@@ -99,7 +100,7 @@ En une phrase : l'Update est **le geste volontaire qui complète la détection a
 | C4 | **Notion : photo seulement** ; `update-et-escalade-statut.md` : « photo **et texte court** » ; politique de confidentialité : « petit texte (140 caractères) et photo » ; schéma : `updateText` ≤ 140. | **Pas de texte en v1** (Notion l'emporte) : `updateText` = `null` à chaque publication. La spec est à réécrire ; les textes légaux décrivent un ensemble plus large (inexact par excès, sans risque) : à aligner plus tard par `release-manager`. |
 | C5 | **Spec** : orange après 2 h sans update, rouge 2 h après, « update toutes les heures en rouge », « une update ramène à vert ». **Notion Statut** et décisions : orange à 1 h, rouge à 2 h, règle horaire abandonnée, **en zone de danger l'update ne ramène pas au vert**. | Notion et décisions du PM l'emportent (D8). La phrase « une update manuelle ramène à vert » n'est vraie **que hors zone de danger**. |
 | C6 | **Décision du 2026-10-30** (« Je vais bien », photo facultative) contre **Notion Update** (photo). | **Tranché par le PM le 2026-11-05 (D16)** : photo obligatoire en v1 ; la décision du 2026-10-30 est remplacée sur ce point. |
-| C7 | **Notion : « dispo depuis la tabbar »** ; le code traite le bouton central comme un **onglet sélectionnable** (`MainTab.UPDATE`). | Un viseur n'est pas un onglet : écran **plein écran sans barre**, bouton de fermeture, retour système vers l'onglet précédent (V1) [Proposé]. |
+| C7 | **Notion : « dispo depuis la tabbar »** ; le code traite le bouton central comme un **onglet sélectionnable** (`MainTab.UPDATE`). | **Tranché par les maquettes (2026-11-06)** : le viseur est **plein écran derrière la barre d'onglets**, qui **reste visible** avec le bouton central **sélectionné** ; on en sort par un autre onglet ou le retour système (V1). La croix en haut à gauche n'existe que sur l'**aperçu**. |
 | C8 | **« Le message ne disparaît que lorsqu'un update est publié »** contre la couleur qui peut redevenir verte **sans update** (arrivée dans une zone de confiance, `lastUpdateAt` = heure d'arrivée). | **Lecture retenue** : pas de bouton de fermeture, pas de disparition par le temps ; le message disparaît dès que **je ne suis plus orange ni rouge** (update **ou** arrivée en zone de confiance), et, en zone de danger (rouge qui ne change pas), **dès qu'une update est publiée après mon entrée** (`lastUpdateAt ≥ presenceAt`). Rappeler à quelqu'un déjà revenu à la maison de « donner des nouvelles » serait absurde et anxiogène. **Confirmé par le PM le 2026-11-05 (D18).** |
 | C9 | **Notion Feed : « l'heure à laquelle l'utilisateur a pris la photo »** ; le document photo ne porte que `createdAt` = **heure serveur de la publication**. | Heure affichée = publication ; écart borné en limitant la durée entre la prise de vue et Publier à **5 minutes** (V6). |
 | C10 | **Un seul bouton central, plusieurs Miffs** : le statut est **par Miff** (les lieux sont par Miff) ; avec deux Miffs, je peux être vert dans l'une et orange dans l'autre. | Couleur et alertes lisent le statut de **la Miff affichée dans le Feed** (`feed.md` §5.1, un seul jeu d'écouteurs) ; **Premium seulement** (gratuit : 1 Miff). **Confirmé par le PM le 2026-11-05 (D19).** Publier **résout tout** (écrit dans toutes les Miffs). |
@@ -109,10 +110,14 @@ En une phrase : l'Update est **le geste volontaire qui complète la détection a
 | C14 | **`StatusColor.level` d'un membre « jamais passé en zone de confiance »** (`unknown`) est **neutre** : publier ne change rien à sa couleur. | Normal (N4) ; le retour visuel dit « Photo partagée », jamais « tu es vert ». |
 
 ### 4.2 Écarts avec les maquettes et Notion (à lister dans la PR)
-Aucune maquette de l'Update n'est lisible : **tout est à confronter aux 4 images de Notion** une fois exportées. Écarts **déjà prévisibles** : bouton visible de bascule de caméra en plus du double toucher (accessibilité, §5.9 V3) ; astuce « Touche deux fois l'écran… » à la première ouverture ; message d'avertissement sur la visibilité de la photo ; états de permission, de caméra indisponible, de hors connexion, de partage arrêté (jamais dessinés) ; **« zone de danger »** au lieu de « zone à risque » ; textes d'alerte reformulés au tutoiement non anxiogène.
+Maquettes de l'Update du PM (2026-11-06, `design/exports/update/`, 7 PNG) : **l'implémentation les suit au plus près** ; les écarts ci-dessous sont à lister et justifier dans chaque PR.
+- **Ajouts hors maquette (justifiés)** : bouton visible de bascule de caméra en plus du double toucher (accessibilité, V3) ; astuce « Touche deux fois l'écran… » et aide « Un selfie, la vue, ton repas… » ; ligne sur la visibilité de la photo à l'aperçu ; noms parlés pour les boutons **sans texte** (Recommencer est une icône ronde, la croix) ; états de permission, de caméra indisponible, de publication en cours, d'échec, de hors connexion, de partage arrêté, de confirmation (**non dessinés** : confiés à l'agent design, §16).
+- **Maquettes à ne pas suivre sur un point** : la **bulle de la Miff en haut du Feed** reste verte (« Tout le monde est en sécurité ») sur les deux écrans orange et rouge : c'est un montage ; **les règles de `feed.md` §5.2 l'emportent** (la bulle de la Miff devient orange ou rouge, « Tout va bien » remplace « Tout le monde est en sécurité », la cloche disparaît).
+- **Wording conservé tel quel** malgré les formulations du reste de l'app (« update » anglicisme, « Tu es passé en rouge », « indique à la Miff que tout va bien ») : choix du PM (D21, R1). Le mot « zone de danger » n'apparaît pas dans la bulle (texte rouge unique).
+- **Bouton central** : les maquettes montrent le point coloré orange et rouge ; le point **vert** et l'état **neutre** ne sont pas dessinés (§5.4).
 
 ### 4.3 Ambiguïtés restantes (non devinées)
-**Aucune ambiguïté décisionnelle ne reste ouverte** : les cinq points qu'aucun ticket ne couvrait (photo obligatoire, forme et texte des alertes, disparition au retour au vert, couleur avec plusieurs Miffs, texte de consentement et photo localisée) ont été **décidés par le PM le 2026-11-05** (D16 à D20). Tout le reste est décidé (§3) ou fixé par défaut (§5.9). Seul reste à fournir : l'export PNG des 4 images de Notion (§15, §16).
+**Aucune ambiguïté décisionnelle ne reste ouverte** : les cinq points qu'aucun ticket ne couvrait (photo obligatoire, forme et texte des alertes, disparition au retour au vert, couleur avec plusieurs Miffs, texte de consentement et photo localisée) ont été **décidés par le PM le 2026-11-05** (D16 à D20), la forme et le texte de l'alerte étant ensuite **fixés par les maquettes** (D21, 2026-11-06). Tout le reste est décidé (§3) ou fixé par défaut (§5.9). **Un seul point reste « à confirmer », sans bloquer** : le texte de la bulle pour la **zone de danger** (le même texte rouge est utilisé, D21) ; trois détails de maquette sont à confirmer par l'agent design : sur quels onglets la bulle apparaît (les maquettes ne la montrent que sur le Feed), le comportement exact de la croix de l'aperçu, et le point vert / l'état neutre du bouton central (§5.4, §16).
 
 ---
 
@@ -121,11 +126,11 @@ Aucune maquette de l'Update n'est lisible : **tout est à confronter aux 4 image
 ### 5.1 Parcours nominal
 1. Dans le Feed, je vois le **bouton central coloré** (§5.4). Je le touche.
 2. **Première fois** : écran d'explication (ce que la caméra sert à faire, qui voit la photo, combien de temps, rien dans la galerie) puis boîte du système. Les fois suivantes : directement le viseur.
-3. **Viseur** : plein écran, caméra **frontale**, rond central, bouton fermer, bouton de bascule. Deux touchers rapides **hors des boutons** = bascule frontale ↔ arrière.
-4. Je touche le rond : **photo prise** (obturateur discret, pas de son imposé par l'app) ; **aperçu** de la photo avec **Recommencer** et **Publier**. **Rien n'a quitté le téléphone.**
+3. **Viseur** [maquettes] : **plein écran** (la barre d'onglets reste visible par-dessus, bouton central sélectionné et son point coloré), caméra **frontale**, **rond bleu** central pour l'obturateur ; bouton de bascule visible (ajout hors maquette). Deux touchers rapides **hors des boutons** = bascule frontale ↔ arrière.
+4. Je touche le rond : **photo prise** (obturateur discret, pas de son imposé par l'app) ; **aperçu** [maquettes] : **croix en haut à gauche**, bouton rond **Recommencer** (icône de flèche circulaire, fond blanc), bouton bleu **Publier** (icône d'envoi). **Rien n'a quitté le téléphone.**
 5. **Recommencer** : retour au viseur, la photo prise est **oubliée** (mémoire libérée).
 6. **Publier** : « Partage en cours… » ; écriture dans **toutes mes Miffs où je partage** (§6) ; à l'acceptation du serveur : retour au **Feed** avec un retour visuel calme (« Photo partagée avec ton cercle »), ma carte en haut montre la photo.
-7. La couleur du bouton et les messages d'incitation se mettent à jour d'eux-mêmes.
+7. Le point du bouton, l'anneau de ma photo et la bulle d'incitation se mettent à jour d'eux-mêmes.
 
 ### 5.2 États de l'écran (à dessiner : §16)
 | État | Contenu | Sortie |
@@ -134,8 +139,8 @@ Aucune maquette de l'Update n'est lisible : **tout est à confronter aux 4 image
 | **B. Permission non accordée, redemande possible** | Message calme + **Réessayer** | boîte du système |
 | **C. Permission refusée définitivement** (Android : après deux refus ; iOS : dès le refus) | « La caméra est désactivée » + **Ouvrir les réglages** + **Utiliser l'appareil photo du téléphone** + **Fermer** | réglages du système / appareil photo du système (V10) |
 | **D. Caméra indisponible** (utilisée par une autre application, désactivée par une politique, erreur) | Message calme + **Réessayer** + appareil photo du système + Fermer | |
-| **E. Viseur** (frontal ou arrière) | Aperçu, rond, fermer, bascule ; astuce du double toucher (3 premières ouvertures, V3) | |
-| **F. Aperçu** | Photo, **Recommencer**, **Publier**, ligne sur la visibilité (§7) ; si la prise de vue a plus de 5 min : « Cette photo date un peu : reprends-en une » | |
+| **E. Viseur** (frontal ou arrière) | Aperçu plein écran, rond bleu, bascule ; barre d'onglets visible ; astuce du double toucher (3 premières ouvertures, V3) ; **pas de croix** sur le viseur (maquettes) | autre onglet / retour système |
+| **F. Aperçu** | Photo, **croix** en haut à gauche, **Recommencer** (rond), **Publier** (bleu), ligne sur la visibilité (§7) ; si la prise de vue a plus de 5 min : « Cette photo date un peu : reprends-en une » | croix : abandonner la photo (retour au Feed ; **comportement exact à confirmer par l'agent design**, les maquettes ne le précisent pas) ; Recommencer : viseur |
 | **G. Publication en cours** | Indicateur, boutons inactifs, **pas d'annulation** une fois l'envoi parti (§6.3) | succès / H / I |
 | **H. Échec : hors connexion ou refus** | Message calme, **la photo reste à l'écran**, **Réessayer** ; **rien n'est parti** (critère OF1) | |
 | **I. Succès partiel** (Premium, plusieurs lots) | « Photo partagée dans {n} de tes {m} Miffs » + **Réessayer pour les autres** | |
@@ -144,28 +149,30 @@ Aucune maquette de l'Update n'est lisible : **tout est à confronter aux 4 image
 
 ### 5.3 Viseur : règles
 - **Selfie par défaut** à chaque ouverture [Notion]. Sans caméra frontale : caméra arrière, **bouton de bascule masqué** ; sans aucune caméra : état D.
-- **Double toucher** : **deux touchers rapides en dehors du rond central** (et des boutons fermer / bascule) = bascule ; le même geste **revient** à la frontale [Proposé : Notion dit « met la caméra arrière », sans retour possible un utilisateur serait bloqué]. Deux touchers sur le rond **ne prennent qu'une photo** (la seconde prise de vue est ignorée tant que la première n'est pas terminée).
-- **Bouton de bascule visible** [Proposé] : le double toucher est invisible, difficile avec un tremblement ou un lecteur d'écran, et ne se découvre pas.
+- **Double toucher** : **deux touchers rapides en dehors du rond central** (et des boutons de bascule, de la barre d'onglets) = bascule ; le même geste **revient** à la frontale [Proposé : Notion dit « met la caméra arrière », sans retour possible un utilisateur serait bloqué]. Deux touchers sur le rond **ne prennent qu'une photo** (la seconde prise de vue est ignorée tant que la première n'est pas terminée).
+- **Bouton de bascule visible** [Proposé, **absent des maquettes** : écart justifié] : le double toucher est invisible, difficile avec un tremblement ou un lecteur d'écran, et ne se découvre pas.
 - **Pas de flash, de zoom, de filtre, de minuterie, de texte, de dessin, de galerie** (non demandés). **Pas de choix d'une photo ancienne** : l'Update signifie « voilà où j'en suis maintenant » ; une photo de galerie donnerait une fausse réassurance (R2).
 - L'aperçu **frontal est en miroir** (comme un miroir) ; **la photo publiée n'est pas en miroir** (le texte photographié reste lisible) ; l'**aperçu de validation montre l'image telle qu'elle sera publiée**.
 - **La caméra n'est active que si l'écran est visible** : elle s'arrête dès que l'application passe en arrière-plan, que l'écran se verrouille ou qu'on le quitte. **Miff n'ouvre jamais la caméra de lui-même et ne peut pas être déclenché à distance** (point de confiance, critère PR1).
 - **`RecentsPrivacy`** appliqué à l'écran (ni le viseur ni la photo n'apparaissent dans les applications récentes).
 
-### 5.4 Bouton central de la barre
-| Niveau de **mon** statut (Miff affichée, C10) | Rendu | Nom parlé |
+### 5.4 Bouton central de la barre et anneau de la photo
+Maquettes (2026-11-06) : le bouton central est un **anneau** qui porte **un point de la couleur de mon statut** (orange et rouge dessinés ; sélectionné sur les écrans viseur et aperçu, avec le fond bleu pâle des onglets) ; l'**anneau autour de ma photo** en haut à gauche du Feed prend la **même couleur** (`feed.md` H1).
+| Niveau de **mon** statut (Miff affichée, D19) | Rendu du bouton central | Nom parlé |
 |---|---|---|
-| Vert | couleur « sûr » | « Donner des nouvelles, tout va bien » |
-| Orange | couleur « attention » | « Donner des nouvelles, tu es en orange » |
-| Rouge | couleur « danger » | « Donner des nouvelles, tu es en rouge » |
-| Neutre (statut inconnu, partage arrêté) | anneau actuel (jaune-vert de marque) | « Donner des nouvelles » |
+| Vert | point vert (couleur « sûr ») **[non dessiné : proposé]** | « Donner des nouvelles, tout va bien » |
+| Orange | point orange (couleur « attention ») | « Donner des nouvelles, tu es en orange » |
+| Rouge | point rouge (couleur « danger ») | « Donner des nouvelles, tu es en rouge » |
+| Neutre (statut inconnu, partage arrêté) | anneau actuel (jaune-vert de marque), **sans point [non dessiné : proposé]** | « Donner des nouvelles » |
 - La couleur seule n'est **jamais** l'information (nom parlé ; bords et remplissage distincts) ; contraste conforme au design system ; **le bouton est actif** dès qu'il y a une Miff (D14 levée par ce ticket, y compris en diffusion).
 - Calcul : **`StatusColor.level` inchangé**, recalculé chaque minute avec le Feed (aucune lecture serveur en plus, un seul écouteur).
 
 ### 5.5 Messages d'incitation (D5, D10)
-- **Forme** [Décidé, D17 ; détail de dessin à confronter aux images de Notion une fois exportées] : un **bandeau** en haut du Feed, au-dessus de la bulle, teinte douce de la couleur du niveau, **un titre, une phrase, un bouton « Donner des nouvelles »** qui ouvre l'écran Update. **Ni fenêtre bloquante, ni son, ni vibration, ni clignotement, ni bouton de fermeture** (Notion : ne disparaît que par une update).
-- **Quand** : mon niveau (Miff affichée) est **orange** ou **rouge** ; en zone de danger : tant qu'aucune update n'a été publiée depuis mon entrée.
-- **Disparition** [Décidé, D18] : voir C8. La page de ma bulle à la 2e personne (`feed.md` §5.2) **reste** (elle décrit l'état de la Miff), **sans bouton** pour ne pas doubler l'appel à l'action.
-- **Textes** : §7. Un seul titre pour les trois cas, pour garder un ton constant et sans surenchère ; la phrase donne le fait, jamais un reproche.
+- **Forme** [Décidé, **D21**, maquettes `Welcoming screen.png` (orange) et `Welcoming screen-5.png` (rouge)] : une **bulle de la couleur du niveau**, **posée juste au-dessus de la barre d'onglets**, avec une **petite queue qui pointe vers le bouton central**. **Ni titre, ni bouton, ni bouton de fermeture** : le geste est le bouton central lui-même. **Ni fenêtre bloquante, ni son, ni vibration, ni clignotement.** La bulle est **fixe** (elle ne défile pas avec le fil) ; le fil reçoit une **marge basse** égale à sa hauteur pour qu'aucune carte ni aucun bouton ne reste inaccessible dessous ; elle est annoncée au lecteur d'écran comme **région** (une fois à son apparition, pas à chaque minute) et le bouton central, que la queue désigne, porte le nom parlé du §5.4.
+- **Où** : sur le **Feed** (seul écran montré par les maquettes) ; **sur les autres onglets : à confirmer par l'agent design** (la bulle est liée à la barre, donc visible partout, ou limitée au Feed). Jamais sur l'écran Update lui-même.
+- **Quand** : mon niveau (Miff affichée, D19) est **orange** ou **rouge** ; en zone de danger : tant qu'aucune update n'a été publiée depuis mon entrée.
+- **Disparition** [Décidé, D18] : voir C8. **Coexistence avec la bulle de la Miff en haut du Feed** (`feed.md` §5.2, vérifié) : quand je suis le seul orange ou rouge, la bulle du haut montre **ma page à la 2e personne** (« Tu as quitté {lieu} à 16 h 40 », « Tes proches n'ont pas eu de tes nouvelles depuis 16 h 02 ») et la couleur de la Miff ; la **bulle d'incitation** du bas **ne la remplace pas** : l'une **décrit l'état de la Miff** (en haut), l'autre **invite au geste** (en bas, vers le bouton). Elles disent des choses différentes avec des mots différents, **aucun doublon de bouton** (la page du haut n'a pas de bouton « Envoyer un message » sur ma propre page, `feed.md` B6). Charge cognitive : deux messages sur le même fait ; **à regarder à la recette**. Quand la Miff compte **plusieurs alertes** (carrousel du haut), la bulle du bas ne concerne que **moi**.
+- **Textes** : §7, **ceux des maquettes, inchangés** ; un seul texte par niveau (orange, rouge) ; le texte rouge sert aussi à la zone de danger (**à confirmer**, D21).
 - **Limite connue** : le message n'existe que si l'app est ouverte (pas de notification) ; il ne remplace pas la bulle que **les proches** voient.
 
 ### 5.6 Photo : fabrication (côté téléphone)
@@ -196,7 +203,7 @@ Aucune maquette de l'Update n'est lisible : **tout est à confronter aux 4 image
 ### 5.9 Valeurs par défaut retenues (applicables sauf objection du PM)
 | # | Sujet | Valeur retenue |
 |---|---|---|
-| V1 | Écran | **Plein écran, sans barre d'onglets**, bouton fermer en haut à gauche, retour système vers l'onglet précédent |
+| V1 | Écran | **Viseur et aperçu plein écran, barre d'onglets visible par-dessus** (bouton central sélectionné), **fidèle aux maquettes** ; croix en haut à gauche **seulement sur l'aperçu** ; retour système vers l'onglet précédent |
 | V2 | Caméra au départ | **Frontale** ; sinon arrière |
 | V3 | Bascule | Double toucher (aller et retour) **et** bouton visible ; astuce du double toucher à l'écran pendant les **3 premières** ouvertures |
 | V4 | Fonctions absentes | flash, zoom, filtres, minuterie, texte, dessin, galerie |
@@ -207,7 +214,7 @@ Aucune maquette de l'Update n'est lisible : **tout est à confronter aux 4 image
 | V9 | Miff rejointe après la publication | **Aucune copie** de la photo ; elle apparaît à la prochaine publication |
 | V10 | Repli | **Appareil photo du système** (sans permission, photo du moment) quand la permission est refusée ou la caméra intégrée indisponible ; mêmes règles de ré-encodage ; **jamais de galerie** |
 | V11 | Retour visuel | Message calme (« Photo partagée avec ton cercle »), sans son ni vibration ; ma carte montre la photo |
-| V12 | Message d'alerte | Bandeau fixe au-dessus de la bulle, sans fermeture (**décidé, D17**) |
+| V12 | Message d'alerte | **Bulle fixe au-dessus de la barre d'onglets**, queue vers le bouton central, sans titre, sans bouton, sans fermeture, textes des maquettes (**décidé, D21**, qui remplace D17) |
 
 ---
 
@@ -274,7 +281,7 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 | Bascule (parlé) | « Changer de caméra » | « Switch camera » |
 | Fermer (parlé) | « Fermer » | « Close » |
 | Photo prise (annonce) | « Photo prise. Tu peux la publier ou recommencer. » | « Photo taken. You can publish it or retake it. » |
-| Aperçu, boutons | « Recommencer » / « Publier » | « Retake » / « Publish » |
+| Aperçu, boutons | « Publier » (texte, maquette) ; « Recommencer » (**icône seule** dans la maquette : nom parlé obligatoire) | « Publish » ; « Retake » |
 | Visibilité | « Tes proches verront cette photo pendant 24 h. » | « Your loved ones will see this photo for 24 hours. » |
 | Visibilité + lieu (si localisée) | « Tes proches verront cette photo pendant 24 h. Ceux qui partagent aussi leur position verront où tu l'as prise. » | « Your loved ones will see this photo for 24 hours. Those who also share their position will see where you took it. » |
 | Trop ancienne | « Cette photo date un peu : reprends-en une. » | « This photo is a bit old: take a new one. » |
@@ -291,13 +298,15 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 | Trop de photos | « Tu as déjà partagé beaucoup de photos aujourd'hui. Réessaie un peu plus tard. » | « You've already shared a lot of photos today. Try again a little later. » |
 | Autre appareil / accès perdu | textes existants de SESS-1 et de la perte d'accès | idem |
 
-### Messages d'incitation (titre et trois phrases **validés par le PM le 2026-11-05**, D17 ; images de Notion illisibles : à confronter à l'export, relecture à voix haute à la recette)
-| Cas | Titre (commun) | Phrase | Bouton |
-|---|---|---|---|
-| Orange | « Un petit signe à tes proches ? » / « A little sign for your loved ones? » | « Tu as quitté {lieu} à 16 h 40. Une photo suffit pour partager de tes nouvelles. » / « You left {place} at 4:40 PM. One photo is enough to share your news. » | « Donner des nouvelles » / « Share news » |
-| Rouge, ancienneté | idem | « Tes proches n'ont pas eu de tes nouvelles depuis 16 h 02. Une photo suffit pour leur en donner. » / « Your loved ones haven't heard from you since 4:02 PM. One photo is enough to let them know. » | idem |
-| Rouge, zone de danger | idem | « Tu es dans une zone de danger de ta Miff. Une photo leur donne de tes nouvelles. » / « You're in a danger zone of your Miff. A photo shares your news with them. » | idem |
-- **Jamais** : « urgent », « attention », « inquiets », point d'exclamation, majuscules, rouge plein écran. La couleur du bandeau est **une teinte douce**.
+### Bulle d'incitation (**textes des maquettes du PM, conservés tels quels**, D21 ; sans titre ni bouton)
+| Cas | FR (maquette) | EN (traduction proposée, à relire) |
+|---|---|---|
+| Orange | « Tu es passé en orange, indique à la Miff que tout va bien en publiant une update » | « You've turned orange, let the Miff know all is well by publishing an update » |
+| Rouge, ancienneté | « Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update » | « You've turned red, let the Miff know all is well by publishing an update » |
+| Rouge, zone de danger | **même texte rouge** (les maquettes ne donnent pas de variante dédiée : **à confirmer**) | idem |
+- **Texte non modifié par l'agent** : la formulation « Tu es passé en rouge » (et « tout va bien », « update ») est celle des maquettes, **choisie par le PM en connaissance du risque de ton** (R1). Remarque, **sans modifier le texte** : « passé » est au masculin, alors que le reste de l'app évite l'accord de genre (`feed.md` D15) ; à ne changer que sur décision du PM.
+- Les textes d'incitation de la version précédente (D17 : titre « Un petit signe à tes proches ? », phrases « Une photo suffit… », bouton « Donner des nouvelles ») sont **supprimés**.
+- **Jamais** (rappel de ton pour tout ajout) : « urgent », « attention », point d'exclamation, majuscules, rouge plein écran. La bulle est **une teinte douce** de la couleur du niveau.
 - Noms parlés du bouton central : « Donner des nouvelles, tout va bien » / « …, tu es en orange » / « …, tu es en rouge » (EN : « Share news, all good » / « …, you're in orange » / « …, you're in red »).
 
 ---
@@ -320,8 +329,10 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 14. **Je suis vert** (à la maison) : l'Update reste possible « à tout moment » ; aucun message d'incitation.
 15. **Orange puis arrivée à la maison sans update** : vert, le message disparaît (C8, **décidé D18**).
 15 bis. **Personne qui ne veut ou ne peut pas se photographier** (lieu public, gêne) : la photo reste **obligatoire** (D16), mais elle peut montrer **n'importe quoi** (la vue, un repas) : c'est le sens de l'aide sous le viseur ; si la caméra intégrée est inutilisable, le repli appareil photo du système (V10) fournit toujours **une photo**, jamais une publication sans photo. Pas de bouton « Je vais bien » en v1.
-15 ter. **Plusieurs Miffs (Premium), couleurs différentes selon la Miff** : le bouton et le bandeau suivent **la Miff affichée dans le Feed** (D19) ; changer de Miff dans le Feed change la couleur du bouton et le bandeau ; publier met à jour toutes les Miffs, donc résout l'alerte dans chacune.
-15 quater. **Bandeau d'incitation et page de bulle à la 2e personne** : les deux coexistent, **un seul bouton** (celui du bandeau) ; le bandeau ne peut pas être fermé : il disparaît seulement selon D18.
+15 ter. **Plusieurs Miffs (Premium), couleurs différentes selon la Miff** : le point du bouton, l'anneau de ma photo et la bulle d'incitation suivent **la Miff affichée dans le Feed** (D19) ; changer de Miff dans le Feed les met à jour ; publier met à jour toutes les Miffs, donc résout l'alerte dans chacune.
+15 quater. **Bulle d'incitation (D21) et page à la 2e personne de la bulle de la Miff en haut du Feed** : les deux **coexistent** (cohérence vérifiée avec `feed.md` §5.2 : la page du haut décrit l'état, la bulle du bas invite à publier ; aucun doublon de bouton) ; la bulle d'incitation ne peut pas être fermée, elle disparaît seulement selon D18 ; avec **plusieurs alertes** de la Miff (carrousel du haut), la bulle du bas ne parle que de **moi** ; texte de la bulle du haut et de la bulle du bas **différents** (état / invitation).
+15 quinquies. **Bulle fixe et contenu du fil** : le fil a une marge basse égale à la hauteur de la bulle ; avec le **texte maximal** ou en **droite-à-gauche**, la bulle grandit sans masquer le bouton central, et la queue pointe toujours vers lui (inversée en droite-à-gauche si le bouton change de côté).
+15 sexies. **Bulle sur un autre onglet que le Feed** : à confirmer par l'agent design (§5.5) ; tant que ce n'est pas tranché, **Feed seulement** (comme les maquettes).
 16. **Horloge du téléphone décalée** : `lastUpdateAt` et `expiresAt` sont bornés par les règles ; si l'horloge est en avance de plus d'1 h, le lot est refusé (message neutre « réessaie », sans accuser l'horloge) ; `expiresAt` à 23 h laisse 2 h de marge.
 17. **Photo impossible à faire tenir en 150 000 octets** : message, aucune écriture.
 18. **Photo de tiers, d'un enfant, d'une pièce du domicile** : voir R3 ; aucun filtre automatique possible.
@@ -339,9 +350,9 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 
 | # | Ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
-| **UPDATE-0** | **Décisions, maquettes, règles** (PM, `design-system`, `backend-data`) | Export PNG des 4 images de Notion + maquettes complétées (§16) ; R-PHOTO-LOC préparée (sur « oui ») ; réécriture de `update-et-escalade-statut.md` ; alignement des textes légaux et de `data-model.md` (C12, D20) ; décisions D16 à D20 déjà prises | S à M | Validation de ce document |
+| **UPDATE-0** | **Décisions, maquettes, règles** (PM, `design-system`, `backend-data`) | **Maquettes fournies le 2026-11-06** ; écrans manquants confiés à l'agent design (branche `design/update-tabbar`, §16) ; R-PHOTO-LOC préparée (sur « oui ») ; réécriture de `update-et-escalade-statut.md` ; alignement des textes légaux et de `data-model.md` (C12, D20) ; décisions D16 à D21 déjà prises | S à M | Validation de ce document |
 | **UPDATE-1** | **Android : écran Update et publication** | Permission et explication, viseur CameraX (selfie, bascule, obturateur), aperçu, Recommencer / Publier, codec photo (ré-encodage, 150 000 octets), écriture multi-Miff (lots de 5), nettoyage auteur, retour au Feed, bouton central **actif** (couleur neutre), repli appareil photo du système, manifeste / test / CI mis à jour | L | MIFF-1, LOC-2b (fusionnés), FEED-1 (carte « moi ») ; D16 (photo obligatoire : **aucun** chemin de publication sans photo) |
-| **UPDATE-2** | **Android : couleur du bouton et messages d'incitation** | Couleur du bouton central (`StatusColor.level`), noms parlés, bandeau d'incitation et disparition (C8) | S à M | UPDATE-1, **FEED-2** (écouteur de mon statut) ; D17 (bandeau), D18 (disparition), D19 (Miff affichée) ; maquettes du bandeau (export Notion) |
+| **UPDATE-2** | **Android : point du bouton, anneau de la photo et bulle d'incitation** | Point coloré du bouton central (`StatusColor.level`), noms parlés, **bulle d'incitation fidèle aux maquettes** (au-dessus de la barre, queue vers le bouton, sans titre ni bouton ni fermeture, textes des maquettes), marge basse du fil, disparition (C8, D18) | S à M | UPDATE-1, **FEED-2** (écouteur de mon statut) ; D21 (bulle, remplace D17), D18 (disparition), D19 (Miff affichée) ; maquettes `design/exports/update/` (fournies) ; **à confirmer** : texte de la zone de danger, onglets où la bulle apparaît |
 | **FEED-4** *(`feed.md`)* | **Android : affichage de la photo** | Lecture paresseuse, copie locale, plein écran | M | UPDATE-1, FEED-2 |
 | **UPDATE-1b** | **Android : localisation figée de la photo** | Mesure à l'obturateur, `lat` / `lng` dans le document photo, ligne de visibilité | S à M | UPDATE-1, **R-PHOTO-LOC déployée**, D20 (texte de consentement v3 amendé ou v4 ; **vérification « aucun testeur externe n'a accepté v3 » à faire au début de UPDATE-1b**) ; FEED-4 (affichage « Voir où c'était ») |
 | **UPDATE-3 à UPDATE-4** | **iOS** : mêmes livrables que UPDATE-1 et UPDATE-2 | AVFoundation, `NSCameraUsageDescription`, manifeste de confidentialité, CI ; spécificités §10 | Même taille | Équivalents Android, INIT-4 |
@@ -390,7 +401,7 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 
 | # | Risque | Effet | Mitigation |
 |---|---|---|---|
-| R1 | **Ton anxiogène** : bandeau rouge persistant sur **son propre** téléphone, « zone de danger », sans possibilité de le fermer | Perte de confiance, contre-sens avec CLAUDE.md | Titre unique et doux, phrase factuelle, teinte douce, aucun son ni clignotement, action simple ; texte relu à voix haute par le PM (forme et textes validés, D17) |
+| R1 | **Ton anxiogène** : bulle rouge persistante sur **son propre** téléphone, non fermable ; **la formulation « Tu es passé en rouge, indique à la Miff que tout va bien… » est celle des maquettes, choisie par le PM en connaissance du risque de ton** (D21) : elle n'est **pas modifiée** par ce ticket ; le même texte rouge sert à la zone de danger (à confirmer) | Perte de confiance, contre-sens avec CLAUDE.md ; la phrase « tout va bien » demandée à la personne peut aussi être lue comme une promesse (R2) | Teinte douce, aucun son, aucune vibration, aucun clignotement, aucune fenêtre bloquante, aucun titre ni bouton ; disparition dès que le niveau redevient vert (D18) ; à **observer à la recette** ; toute reformulation passe par une décision du PM |
 | R2 | **Fausse réassurance** : une photo n'est pas une preuve que tout va bien (photo mise en scène, de la maison alors qu'on est ailleurs) ; l'alerte n'atteint pas quelqu'un dont l'app est fermée ; une update ramène à vert **sans** avoir vérifié le lieu | Un proche croit que tout va bien | Photo **toujours datée** (« Photo de 15 h 40 »), jamais « en sécurité » ; **aucune photo de galerie** ; en zone de danger l'update **ne** ramène **pas** au vert ; limite « pas de notification » **assumée** (D10) |
 | R3 | **Photo = donnée sensible** : visage, intérieur d'un domicile, fond révélant un lieu, **tiers** (CGU art. 8 le déconseille mais ne peut pas l'empêcher), **mineurs** (aucun âge minimum, J2 / J31 assumés) ; une personne qui obtient le code d'une Miff voit **les photos et les positions** de ses membres (R2 / R4 assumés) | Atteinte à la vie privée, plainte, rejet des stores | Visible des seuls membres, **24 h**, écrasée, effacée avec le partage ; le créateur peut **retirer** un membre (code renouvelé) ; texte de visibilité à l'aperçu ; aucune analyse du contenu ; **risque assumé par le PM** (décisions du 2026-10-23 et du 2026-11-01), jamais présenté comme relu par un juriste |
 | R4 | **Contenu publié par les utilisateurs (modération)** : les règles des stores sur les contenus générés par les utilisateurs (Apple 1.2, politique Google Play équivalente) demandent en général un moyen de **signaler**, de **bloquer** et un contact ; **aucune analyse automatique des images n'est possible sur Spark** (aucune Cloud Function) | Rejet ou retrait de l'app | **[À vérifier par `release-manager`]** : exigences exactes pour un cercle fermé sur invitation ; pistes gratuites : retrait d'un membre par le créateur (existe), contact de signalement (e-mail du support) ; **jamais** rédigé comme « modéré » |
@@ -439,10 +450,10 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 - [ ] **U8** L'Update **n'écrit jamais** `positions/{moi}` ni `presence`, `placeId`, `presenceAt`, et ne lit rien d'autre que ce que le Feed lit déjà.
 
 **Messages d'incitation**
-- [ ] **A1** (D17) Le message est un **bandeau en haut du Feed, au-dessus de la bulle**, qui apparaît quand **mon** niveau (Miff affichée) est orange ou rouge, avec le **titre unique « Un petit signe à tes proches ? »** et la phrase du cas (§7) ; **aucun** bouton de fermeture, aucun son, aucune vibration, aucun clignotement, aucune fenêtre bloquante.
+- [ ] **A1** (D21) Le message est une **bulle de la couleur du niveau, posée au-dessus de la barre d'onglets, avec une queue qui pointe vers le bouton central**, qui apparaît quand **mon** niveau (Miff affichée) est orange ou rouge, avec **exactement** le texte des maquettes du §7 (orange : « Tu es passé en orange, indique à la Miff que tout va bien en publiant une update » ; rouge : « Tu es passé en rouge, … ») ; **aucun titre, aucun bouton, aucun bouton de fermeture**, aucun son, aucune vibration, aucun clignotement, aucune fenêtre bloquante ; **aucune carte du fil n'est inaccessible** dessous (marge basse) ; annoncée au lecteur d'écran une fois à l'apparition ; fidélité visuelle aux maquettes vérifiée et écarts listés dans la PR.
 - [ ] **A2** (D18) Il disparaît **dès que je ne suis plus orange ni rouge** (update **ou** arrivée dans une zone de confiance sans publication), et, en zone de danger, **dès qu'une update est publiée après mon entrée** (`lastUpdateAt ≥ presenceAt`) ; il ne disparaît **pas** avec le temps ni par un geste ; tests unitaires de ces cas, dont « orange puis arrivée à la maison sans publier ».
-- [ ] **A5** (D19) La couleur du bouton central et le bandeau suivent **la Miff affichée dans le Feed** : changer de Miff dans le Feed les met à jour ; **aucun écouteur ni lecture de plus** ; test avec deux Miffs aux niveaux différents.
-- [ ] **A3** Le bouton du message ouvre l'écran Update ; **aucun bouton** n'est ajouté à la page de bulle à la 2e personne.
+- [ ] **A5** (D19) Le point du bouton central, l'anneau de ma photo et la bulle d'incitation suivent **la Miff affichée dans le Feed** : changer de Miff dans le Feed les met à jour ; **aucun écouteur ni lecture de plus** ; test avec deux Miffs aux niveaux différents.
+- [ ] **A3** (D21) **La bulle n'a aucun bouton** : le geste est le **bouton central** (qu'elle désigne) qui ouvre l'écran Update ; elle **coexiste** avec la page à la 2e personne de la bulle de la Miff (`feed.md` §5.2) sans la remplacer ni la modifier, **sans doublon de bouton** ; avec plusieurs alertes dans le carrousel du haut, la bulle du bas ne parle que de moi ; le **texte rouge** est utilisé aussi en zone de danger (**à confirmer**) ; l'**anneau de ma photo** et le **point du bouton central** ont la couleur du niveau.
 - [ ] **A4** **Aucune notification** n'est émise ; le message n'existe que dans l'app ouverte.
 
 **Localisation de la photo (UPDATE-1b, après R-PHOTO-LOC)**
@@ -480,50 +491,50 @@ Clés `update_` (nouveau préfixe à ajouter à `docs/contracts/i18n-keys.md` et
 | Texte de consentement (v3 amendé ou v4) citant la photo localisée | **Décidé (D20)** ; vérification « aucun testeur externe n'a accepté v3 » **à faire au moment de UPDATE-1b** ; bloque seulement UPDATE-1b |
 | Déclarations des stores et textes légaux (caméra, photos, contenus, captures d'écran, suppression par l'auteur) | `release-manager` (§15) |
 | CameraX (androidx.camera, licence Apache 2.0, gratuit) | À ajouter par `android-dev` (version publiée depuis plus de deux semaines) ; iOS : AVFoundation (système, rien à ajouter) |
-| Export PNG des 4 images de Notion + maquettes complétées | **Le PM** (§15) |
+| Maquettes de l'Update (7 PNG, 2026-11-06) ; écrans manquants (permission, publication, échec, confirmation, carte avec photo) | Fournies par le PM ; le reste par l'agent design (branche `design/update-tabbar`, §16) |
 
 ---
 
 ## 15. Ce que le PM doit fournir ou faire
 
 Rien de ceci n'est fait par un agent.
-1. *(Questions Q1 à Q5 : toutes décidées le 2026-11-05, D16 à D20 ; rien à répondre.)*
-2. **Exporter en PNG** les **4 images** du ticket Notion « Update » (les deux écrans, le message orange, le message rouge) dans `design/exports/update/` (règle du 2026-10-28) : **seul point encore ouvert**.
-3. **Fournir les maquettes manquantes** (§16) ou valider celles de `design-system` dans « Miff - Claude ».
+1. *(Questions Q1 à Q5 : toutes décidées le 2026-11-05 ; forme et texte de l'alerte fixés par les maquettes le 2026-11-06, D21 ; rien à répondre.)*
+2. *(**Maquettes déjà fournies** le 2026-11-06 : 7 PNG dans `design/exports/update/` ; **plus d'export demandé**. À commiter dans le dépôt avec la PR de design ou celle du développement, règle du 2026-10-28.)*
+3. **Valider** les écrans manquants que l'agent design dessine (§16) ; **confirmer**, sans urgence, le texte de la bulle pour la zone de danger (même texte rouge pour l'instant) et les onglets où la bulle apparaît.
 4. **Autoriser** la préparation puis le déploiement de **R-PHOTO-LOC** (« oui » explicite, `docs/dev/deploiement-regles.md`).
 5. **Demander à `release-manager`** (notes, sans texte juridique) : déclarations Play et App Store pour la caméra et les photos, règles sur les contenus des utilisateurs (R4), âge et mineurs (J2, J31), alignement de la politique (photo supprimée « par l'app de son auteur », captures d'écran, texte facultatif non collecté)  ; texte de consentement : v3 amendé ou v4 (D20), **à trancher en fait au début de UPDATE-1b** après avoir vérifié qu'aucun testeur externe n'a accepté v3.
-6. **Aligner la page Notion « Update »** sur les décisions ci-dessus (ses images d'alerte devront parler de « zone de danger », pas de « zone à risque », et ne plus être des notifications) ; compléter la page vide « Tabbar ».
+6. **Aligner la page Notion « Update »** sur les décisions ci-dessus (ses images d'alerte ne doivent plus être lues comme des notifications ; la zone de danger reste à confirmer, D21) ; compléter la page vide « Tabbar ». *(Je ne modifie pas Notion.)*
 7. Pour la recette : **deux appareils** (OPPO Find X5 Lite, iPhone 11 Pro via TestFlight) et deux comptes dans la même Miff.
 
 ---
 
-## 16. Maquettes manquantes (liste pour `design-system`, dans « Miff - Claude » uniquement)
+## 16. Maquettes : fournies, et écrans manquants confiés à l'agent design
 
-**Aucune maquette de l'Update n'est lisible aujourd'hui** : le PM exporte d'abord en PNG les 4 images de Notion (`design/exports/update/`) ; ce qui est ensuite à produire (en partant des deux écrans de Notion une fois exportés) :
-1. **Barre d'onglets** avec le **bouton central** en vert, orange, rouge et neutre (le dessin du PM montre l'anneau jaune-vert), états normal et pressé.
-2. **Écran d'explication de permission** et **états B, C, D** (caméra désactivée, indisponible).
-3. **Viseur** : frontal et arrière, rond central (≥ 72 dp), bouton fermer, **bouton de bascule**, aide sous le viseur, astuce du double toucher ; **sans barre d'onglets**.
-4. **Aperçu** : photo, **Recommencer**, **Publier**, ligne de visibilité (avec et sans lieu), message « photo qui date ».
-5. **Publication** : en cours, succès (retour au Feed), hors connexion, succès partiel, partage arrêté, trop de photos.
-6. **Messages d'incitation** : orange, rouge d'ancienneté, rouge de zone de danger (avec le bandeau placé au-dessus de la bulle du Feed), états avec et sans bouton.
-7. **Ma carte** après publication (avec la photo) : à fournir avec FEED-4.
-8. **Variante iOS** : aucune différence de dessin attendue ; confirmer que le même export sert aux deux plateformes.
+**Fournies par le PM le 2026-11-06** (`design/exports/update/`, 7 PNG « Welcoming screen* », tous regardés) : Feed avec **bulle orange**, Feed avec **bulle rouge**, Feed nominal (sans bulle), **viseur** avec point orange et avec point rouge, **aperçu** avec point orange et avec point rouge. **Plus d'export à demander au PM.**
+
+**Écrans manquants, confiés à l'agent design** (branche `design/update-tabbar`, PR à venir, dans « Miff - Claude » uniquement) :
+1. **Permission caméra** : écran d'explication (§7) et états B, C, D (désactivée, indisponible).
+2. **Publication en cours** (état G), **échec** (hors connexion, refus, succès partiel, trop de photos : états H, I, K) et **partage arrêté** (état J).
+3. **Confirmation** de la publication (retour au Feed, message « Photo partagée avec ton cercle »).
+4. **Carte du Feed avec photo** (ma carte et celle d'un proche) et photo en plein écran : avec **FEED-4** (`feed/claude/09-photo-plein-ecran.png` en donne déjà une base).
+5. **À confirmer par l'agent design** (non précisé par les maquettes) : comportement de la **croix de l'aperçu** ; **point vert** et **état neutre** du bouton central ; **onglets où la bulle apparaît** ; **bouton de bascule visible** et **astuce du double toucher** (ajouts d'accessibilité hors maquette) ; texte de la bulle en **zone de danger** (même texte rouge pour l'instant, D21).
+6. **Variante iOS** : aucune différence de dessin attendue ; confirmer que le même export sert aux deux plateformes.
 
 ---
 
-## 17. Questions pour le PM : **toutes décidées le 2026-11-05**
+## 17. Questions pour le PM : **toutes décidées** (2026-11-05, puis D21 le 2026-11-06)
 
-Le PM a validé les recommandations de l'agent `product-specs` pour les cinq questions. Elles sont reprises au §3 (D16 à D20) ; les repères Q1 à Q5 sont gardés pour s'y retrouver. **Il n'y a plus de question ouverte.**
+Le PM a validé les recommandations de l'agent `product-specs` pour les cinq questions. Elles sont reprises au §3 (D16 à D20, D17 étant remplacée par D21) ; les repères Q1 à Q5 sont gardés pour s'y retrouver. **Il n'y a plus de question ouverte.**
 
 | Question | Décision | Réf. |
 |---|---|---|
 | **Q1.** Photo obligatoire, ou un « Je vais bien » sans photo ? | **Photo obligatoire en v1** ; pas de bouton « Je vais bien » ; un tel geste pourra s'ajouter plus tard sans changer les règles | D16 |
-| **Q2.** Forme et texte des messages d'incitation | **Bandeau** en haut du Feed, non fermable, sans son ni vibration ; titre « Un petit signe à tes proches ? » et trois phrases (§7) | D17 |
+| **Q2.** Forme et texte des messages d'incitation | *(2026-11-05 : bandeau avec titre, **remplacé le 2026-11-06**)* **Bulle des maquettes** au-dessus de la barre d'onglets, queue vers le bouton central, sans titre ni bouton ni fermeture, textes des maquettes conservés tels quels ; texte rouge repris pour la zone de danger (**à confirmer**) | ~~D17~~ → **D21** |
 | **Q3.** Disparition au retour au vert sans publication | **Oui**, le message disparaît aussi | D18 |
 | **Q4.** Plusieurs Miffs : quelle Miff pour la couleur du bouton ? | **La Miff affichée dans le Feed** | D19 |
 | **Q5.** Texte de consentement et photo localisée | **v3 amendé** si aucun testeur externe ne l'a accepté, sinon **v4** ; ne bloque que UPDATE-1b ; **vérification à faire au moment de UPDATE-1b** | D20 |
 
-**Seul reste ouvert, sans décision à prendre** : l'**export PNG des 4 images** de l'Update dans Notion (§15, §16), à fournir par le PM.
+**Rien d'ouvert côté décisions.** Restent seulement des **confirmations sans blocage** (texte de la bulle en zone de danger, détails de maquette du §16) et les **écrans manquants** de l'agent design (§16).
 
 ---
 
