@@ -23,7 +23,7 @@ export const POSITION_MUTATIONS = [
     [edit('allow create, update: if isSelf(uid) && miffAlive(miffId) && validPosition(miffId, uid);', 'allow create, update: if isSelf(uid) && miffAlive(miffId);')],
     ['DP2', 'DP3', 'DP5', 'DP5b']),
   mut('DP5-cles-inconnues', 'une position accepte des clés en plus (précision, vitesse, historique...)',
-    [edit(`return d.keys().hasOnly(${POSITION_KEYS})`, 'return true')],
+    [edit(`return d.keys().hasOnly(['lat', 'lng', 'measuredAt', 'deviceId'])`, 'return true')],
     ['DP5']),
   mut('DP5-cles-manquantes', 'une position peut manquer de clés (hasAll retiré)',
     [edit(`&& d.keys().hasAll(${POSITION_KEYS})`, '&& true')],

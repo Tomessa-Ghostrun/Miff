@@ -32,7 +32,6 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     positionPublished: [1, 1],
     targetSharingOn: [1, 1],
     codeRenewed: [2, 2],
-    isPremium: [3, 3],
     phoneMatchesProfile: [1, 1],
     validSharingChange: [3, 3],
     indexAfterOk: [4, 4],
@@ -48,8 +47,10 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     isPremiumOneRead: [1, 1],
     validPlaceCreate: [0, 1],
     validPlaceUpdate: [0, 1],
-    validStatus: [1, 1],
-    validPosition: [1, 1],
+    // SESS-1 : fromActiveDevice = la lecture de la session (users/{uid}/session/active), évaluée seulement quand la clé deviceId est présente.
+    fromActiveDevice: [1, 1],
+    validStatus: [1, 2],
+    validPosition: [1, 2],
     validPhoto: [1, 1],
   });
 });
@@ -57,12 +58,15 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
 test('BUDGET - coût figé de chaque règle « allow » (borne haute sans court-circuit)', () => {
   const cost = (header, methods) => Object.fromEntries(methods.map((m) => [m, allow(header, m)]));
   assert.deepEqual(cost('match /places/{placeId} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 3, update: 3, delete: 2 });
-  assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 1, update: 1, delete: 1 });
+  assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 2, update: 2, delete: 1 }); // SESS-1 : +1 (session), seulement quand la clé deviceId est présente
   assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 4, delete: 8 });
   assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 2, create: 1, delete: 2 });
   // Dernière position (R-LIEU-POS) : écriture = Miff existante + fiche du membre ; lecture = Miff, mon partage, mon statut, ma position, partage de la cible.
-  assert.deepEqual(cost('match /positions/{uid} {', ['get', 'create', 'update', 'delete']), { get: 5, create: 2, update: 2, delete: 1 });
-  assert.deepEqual(cost('match /memberships/{key} {', ['create', 'delete']), { create: 4, delete: 1 });
+  assert.deepEqual(cost('match /positions/{uid} {', ['get', 'create', 'update', 'delete']), { get: 5, create: 3, update: 3, delete: 1 }); // SESS-1 : écriture 2 -> 3 (+1 session)
+  // SESS-1 : l'index premium lit le droit en UNE lecture (isPremiumOneRead) : 4 -> 2.
+  assert.deepEqual(cost('match /memberships/{key} {', ['create', 'delete']), { create: 2, delete: 1 });
+  // SESS-1 : le document de session ne lit rien (propriétaire seul, schéma fermé).
+  assert.deepEqual(cost('match /session/active {', ['get', 'create', 'update', 'delete']), { get: 0, create: 0, update: 0, delete: 0 });
   assert.deepEqual(cost('match /miffs/{miffId} {', ['get', 'create', 'update', 'delete']), { get: 1, create: 3, update: 4, delete: 4 });
   assert.deepEqual(cost('match /joinCodes/{code} {', ['create', 'update', 'delete']), { create: 3, update: 2, delete: 1 });
 });
@@ -115,10 +119,13 @@ const upper = {
 };
 const DOCUMENTED = {
   retraitUnMembre: 18, // fiche 7 (3 existsAfter + propriétaire 2 + code renouvelé 2) + statut 1 + photo 1 + position 1 + Miff 4 + code créé 3 + code supprimé 1
-  creerEtPartagerPremium: 19, // marge de 1 : AUCUN appel de plus dans ce lot (la position n'y entre jamais)
+  // SESS-1 : 19 -> 18. Fiche 8 (téléphone 1 + CGU 1 + !exists de la Miff 1 + getAfter de la Miff 1 + indexAfterOk 4) + Miff 3 + code 3 + index premium 2
+  // (isPremiumOneRead au lieu d'isPremium : 4 -> 2) + statut 2 (consentement 1 + session 1) = 18, marge 2. Avec une application qui n'écrit pas encore le
+  // deviceId (temps 1) : 17. La position n'y entre jamais.
+  creerEtPartagerPremium: 18,
   arretDuPartageUneMiff: 3, // 3 existsAfter (statut, photo, position)
   quitterUneMiff: 4, // fiche 3 existsAfter + index 1
-  activerPartageStatutPosition: 3, // getAfter du statut 1 + Miff 1 + getAfter de la fiche 1
+  activerPartageStatutPosition: 5, // getAfter du statut 1 + session 1 (statut) + Miff 1 + getAfter de la fiche 1 + session 1 (position) ; 3 sans deviceId
   supprimerLaMiff: 13, // Miff 4 + pierre tombale 3 + code 1 + fiche 4 + index 1
 };
 
@@ -130,18 +137,18 @@ test('BUDGET - lots documentés : sous la limite de 20 et sous la borne haute ca
   assert.ok(DOCUMENTED.quitterUneMiff <= upper.quitterUneMiff, 'quitter');
   assert.ok(DOCUMENTED.activerPartageStatutPosition <= upper.activer, 'activation');
   assert.ok(DOCUMENTED.supprimerLaMiff <= upper.supprimerMiff + A('match /miffsDeleted/{miffId} {', 'create'), 'suppression de la Miff');
-  assert.equal(LIMIT - DOCUMENTED.creerEtPartagerPremium, 1, 'marge de 1 documentée : tout ajout de lecture à ce lot le fait dépasser 20');
+  assert.equal(LIMIT - DOCUMENTED.creerEtPartagerPremium, 2, 'marge de 2 (SESS-1 : isPremiumOneRead libère 2 appels, la session en prend 1)');
   assert.equal(LIMIT - DOCUMENTED.retraitUnMembre, 2, 'retrait : marge de 2, inchangée par la position (isOwnerOneRead)');
 });
 
 // --- Dernière position (R-LIEU-POS) et contrat client des lots multi-Miffs (revue de sécurité, I2 / M1) -----------------------------
-test('BUDGET - position : écriture isolée = 2 (Miff + fiche) ; au plus 8 Miffs par lot (16 sur 20, marge 4) ; 11 = 22 dépasse', () => {
+test('BUDGET - position : écriture isolée = 3 (Miff + fiche + session) ; au plus 6 Miffs par lot (18 sur 20, marge 2) ; 7 = 21 dépasse (SESS-1 : 8 Miffs avant)', () => {
   const write = A('match /positions/{uid} {', 'create');
-  assert.equal(write, 2);
-  assert.equal(8 * write, 16);
-  assert.ok(LIMIT - 8 * write >= 2);
-  assert.equal(10 * write, 20); // limite atteinte, aucune marge : le client ne dépasse pas 8
-  assert.ok(11 * write > LIMIT);
+  assert.equal(write, 3);
+  assert.equal(6 * write, 18);
+  assert.ok(LIMIT - 6 * write >= 2);
+  assert.ok(7 * write > LIMIT); // 21 : le client ne dépasse pas 6 (avant SESS-1 : 8 Miffs, 2 appels chacune)
+  assert.equal(write - 1, 2); // sans deviceId (temps 1, application actuelle) : 2 par Miff, comme avant
   assert.equal(A('match /positions/{uid} {', 'get'), 5); // 5 sur 10 : marge 5
 });
 
@@ -157,7 +164,7 @@ test('BUDGET - contrat client : arrêt du partage 6 Miffs au plus par lot (3 × 
 
 test('BUDGET - la position n\'entre dans aucun lot de lieux ni dans la création de Miff : budgets de ces lots inchangés par la position', () => {
   assert.equal(5 * PLACE.createPremium, 15);
-  assert.equal(DOCUMENTED.creerEtPartagerPremium, 19);
+  assert.equal(DOCUMENTED.creerEtPartagerPremium, 18);
   // Aucune règle de lieu ni de création n'appelle de fonction de position.
   const positionFns = ['validPosition', 'positionPublished', 'targetSharingOn', 'isPositionConsentVersion'];
   for (const header of ['match /places/{placeId} {', 'match /miffs/{miffId} {', 'match /joinCodes/{code} {', 'match /memberships/{key} {']) {
@@ -165,4 +172,62 @@ test('BUDGET - la position n\'entre dans aucun lot de lieux ni dans la création
       for (const fn of positionFns) assert.ok(!expr.includes(fn), `${header} ${method} appelle ${fn}`);
     }
   }
+});
+
+// --- SESS-1 : un compte, un seul appareil -----------------------------------------------------------------------------------------
+// La session ajoute UNE lecture de règles par statut et par position écrits avec la clé deviceId (rien quand la clé est absente, temps 1).
+// Les lieux, les fiches, les photos seules, les suppressions et le renouvellement du consentement ne la lisent pas : leurs budgets sont inchangés.
+test('BUDGET - SESS-1 : la session coûte 1 par statut / position écrits (borne haute) ; les autres écritures ne la lisent pas', () => {
+  const status = A('match /status/{uid} {', 'create');
+  const position = A('match /positions/{uid} {', 'create');
+  assert.equal(status, 2);
+  assert.equal(position, 3);
+  assert.equal(model.costOfFn('fromActiveDevice'), 1);
+  assert.equal(model.costOfFn('validStatus') - 1, 1);
+  assert.equal(model.costOfFn('validPosition') - 1, 1);
+  // Aucune autre règle n'appelle la fonction de session ni ne lit un document de session.
+  for (const header of ['match /places/{placeId} {', 'match /members/{uid} {', 'match /photos/{uid} {', 'match /miffs/{miffId} {', 'match /joinCodes/{code} {', 'match /memberships/{key} {', 'match /miffsDeleted/{miffId} {']) {
+    for (const [method, expr] of Object.entries(model.allowRules(header))) {
+      assert.ok(!expr.includes('fromActiveDevice') && !expr.includes('validStatus') && !expr.includes('validPosition'), `${header} ${method}`);
+    }
+  }
+});
+
+test('BUDGET - SESS-1 : pire cas de CHAQUE lot des applications avec la session (comptage manuel sans cache) : aucun ne dépasse 20, marge de 2 au moins', () => {
+  const worst = {
+    // [pire cas SESS-1, pire cas avant SESS-1 / application sans deviceId]
+    rejoindreEtPartager: [9, 8], // fiche 6 + index 1 + statut 1 + session 1
+    profilEtRejoindre: [9, 8],
+    creerEtPartagerGratuit: [15, 14],
+    creerEtPartagerPremium: [DOCUMENTED.creerEtPartagerPremium, 17], // 19 avant SESS-1 (isPremium)
+    profilEtCreerGratuit: [15, 14],
+    activerPartage: [2, 1], // fiche 0 + statut 2 (avec la position : 5)
+    activerPartageAvecPosition: [DOCUMENTED.activerPartageStatutPosition, 3],
+    statutSeul: [2, 1], // événement de géofence (LOC-2b) : un document par lot
+    majManuelle: [3, 2], // photo 1 + statut 2
+    positionSeule: [3, 2], // LOC-2b : un document par lot
+    lotPositions6Miffs: [18, 12],
+    lotStatuts8Miffs: [16, 8],
+    lieuxPremium5Miffs: [15, 15], // inchangé
+    retraitUnMembre: [DOCUMENTED.retraitUnMembre, 18], // inchangé (aucune écriture de statut ni de position)
+    arretDuPartage: [DOCUMENTED.arretDuPartageUneMiff, 3],
+    quitter: [DOCUMENTED.quitterUneMiff, 4],
+    supprimerLaMiff: [DOCUMENTED.supprimerLaMiff, 13],
+    renouvelerConsentement5Miffs: [0, 0],
+  };
+  for (const [name, [now, before]] of Object.entries(worst)) {
+    const limit = name === 'statutSeul' || name === 'positionSeule' || name === 'activerPartage' ? 10 : LIMIT;
+    assert.ok(now <= limit - 2, `${name} : ${now} (marge ${limit - now} sur ${limit})`);
+    assert.ok(now >= before, name);
+  }
+  // Rien n'a augmenté pour les lots qui ne portent ni statut ni position.
+  for (const name of ['lieuxPremium5Miffs', 'retraitUnMembre', 'arretDuPartage', 'quitter', 'supprimerLaMiff', 'renouvelerConsentement5Miffs']) {
+    assert.equal(worst[name][0], worst[name][1], name);
+  }
+});
+
+test('BUDGET - SESS-1 : l index premium (isPremiumOneRead) coûte 2 ; l ancienne fonction isPremium (3 appels) n existe plus', () => {
+  assert.equal(A('match /memberships/{key} {', 'create'), 2);
+  assert.equal(model.fns.isPremium, undefined);
+  assert.equal(model.costOfFn('isPremiumOneRead'), 1);
 });

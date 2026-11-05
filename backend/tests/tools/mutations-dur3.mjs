@@ -11,7 +11,7 @@ const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...
 
 const PLACE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt']";
 const PLACE_UPDATE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt']";
-const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt']";
+const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId']";
 const SHARING_KEYS = "['enabled', 'consentedAt', 'consentVersion', 'revokedAt']";
 const MEMBERS_UID_DELETE = `!existsAfter(${DB}/miffs/$(resource.data.miffId)/members/$(uid))`;
 const CODE_MIFF_ID = `get(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId`;
@@ -205,12 +205,12 @@ export const DUR3_MUTATIONS = [
 
   // --- Slots et premium ----------------------------------------------------------------------------
   mut('C9-index-miffId-sans-premium', "la clé d'index = miffId n'exige plus le premium (plusieurs Miffs gratuites)",
-    [edit('|| (key == request.resource.data.miffId && isPremium(uid))', '|| (key == request.resource.data.miffId)')],
+    [edit('|| (key == request.resource.data.miffId && isPremiumOneRead(uid))', '|| (key == request.resource.data.miffId)')],
     ['C9', 'J11']),
   mut('C9-index-cle-libre', "n'importe quelle clé d'index est acceptée pour un compte gratuit (slots illimités)",
     [edit("key == 'free'\n            ||", 'true\n            ||')], ['C8', 'C9', 'J10']),
   mut('A10-premium-expire', "un abonnement premium expiré reste actif (expiresAt n'est plus comparé à l'heure serveur)",
-    [edit(`\n        && get(${DB}/entitlements/$(uid)).data.expiresAt > request.time;`, ';')],
+    [edit('return e.active == true && e.expiresAt > request.time;', 'return e.active == true;')],
     ['A10', 'C11', 'P6']),
   mut('A1-entitlements-ecriture', 'un utilisateur peut écrire son propre document entitlements (se donner le premium)',
     [edit('allow write: if false;', 'allow write: if isSelf(uid);')], ['A1']),

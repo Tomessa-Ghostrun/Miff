@@ -40,6 +40,14 @@ rules_version = '2';
 //     dans le MÊME lot que le statut et la photo (arrêt du partage, départ, retrait) : les règles le EXIGENT.
 //     L'écriture de position lit DEUX documents (Miff, fiche du membre) et ne doit jamais partager un lot avec des lieux.
 //     La version du texte de consentement est DÉCLARÉE par le client : aucune règle ne prouve quel texte a été affiché.
+// 10. Un compte, un seul appareil (SESS-1, mécanisme validé par le PM le 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ : un document de session
+//     users/{uid}/session/active { deviceId, startedAt } écrit à chaque connexion (la dernière connexion gagne), supprimé à la
+//     déconnexion volontaire, lisible et écrivable par son propriétaire seul. Le statut et la dernière position portent la clé
+//     facultative `deviceId` ; si elle est présente elle DOIT être celle de la session (une lecture de règles de plus, seulement
+//     quand la clé est présente), donc un appareil remplacé ne peut plus écrire de statut ni de position. DEUX TEMPS de
+//     déploiement (deviceIdRequired) : temps 1 = clé facultative (les applications actuelles, qui ne l'écrivent pas, continuent à
+//     passer) ; temps 2 = clé obligatoire. MESURE DE COHÉRENCE, PAS DE SÉCURITÉ : un client modifié peut mentir, et une écriture
+//     sans charge utile (suppression) ou sur un autre document (lieu, fiche, photo seule) n'est pas contrôlée (data-model.md).
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -162,15 +170,6 @@ service cloud.firestore {
     function codeRenewed(miffId) {
       return getAfter(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode
         != get(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode;
-    }
-
-    // Premium = document entitlements/{uid} écrit UNIQUEMENT par le serveur / la
-    // console, actif et non expiré (expiration vérifiée côté règles : pas besoin
-    // de Cloud Function pour "éteindre" un abonnement arrivé à échéance).
-    function isPremium(uid) {
-      return exists(/databases/$(database)/documents/entitlements/$(uid))
-        && get(/databases/$(database)/documents/entitlements/$(uid)).data.active == true
-        && get(/databases/$(database)/documents/entitlements/$(uid)).data.expiresAt > request.time;
     }
 
     // -------------------------------------------------------------------------
@@ -487,9 +486,13 @@ service cloud.firestore {
         && (d.priority == null || (d.priority is int && d.priority >= 0 && d.priority <= 999));
     }
 
-    // Premium en UNE seule lecture de règles (budget des lots multi-Miffs : data-model.md §12), contre 3 appels pour
-    // isPremium. Différence : sans document entitlements/{uid}, get() échoue et la requête est refusée, ce qui est bien le
-    // résultat voulu (pas de premium). À n'utiliser que dans une conjonction ou une disjonction POSITIVE, jamais derrière « ! ».
+    // Premium = document entitlements/{uid} écrit UNIQUEMENT par le serveur / la console, actif et non expiré (expiration
+    // vérifiée côté règles : pas besoin de Cloud Function pour "éteindre" un abonnement arrivé à échéance), en UNE seule
+    // lecture de règles (budget des lots multi-Miffs : data-model.md §12). Sans document entitlements/{uid}, get() échoue et la
+    // requête est refusée, ce qui est bien le résultat voulu (pas de premium). À n'utiliser que dans une conjonction ou une
+    // disjonction POSITIVE, jamais derrière « ! ». SESS-1 : cette fonction remplace l'ancienne isPremium (exists + 2 get = 3
+    // appels) dans la règle de création d'un index premium, ce qui ramène la création de Miff premium de 19 à 17 appels et
+    // laisse la place à la lecture de la session (18 sur 20, marge de 2). Même résultat : un compte sans document ou expiré est refusé.
     function isPremiumOneRead(uid) {
       let e = get(/databases/$(database)/documents/entitlements/$(uid)).data;
       return e.active == true && e.expiresAt > request.time;
@@ -529,9 +532,11 @@ service cloud.firestore {
     // Toutes les clés sont toujours présentes (null si non applicable).
     function validStatus(miffId, uid) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
+      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId'])
         && d.keys().hasAll(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
         && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']
+        // Un compte, un seul appareil (SESS-1) : clé facultative `deviceId` (temps 1), égale à celle de la session si présente.
+        && fromActiveDevice(d, uid)
         && (d.placeId == null || isStr(d.placeId, 1, 40))
         // Horodatages d'événement fournis par l'appareil (utile hors-ligne),
         // bornés : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur.
@@ -560,6 +565,43 @@ service cloud.firestore {
       return v is number && v >= -max && v <= max;
     }
 
+    // -------------------------------------------------------------------------
+    // Un compte, un seul appareil (SESS-1). Document de session users/{uid}/session/active { deviceId, startedAt }.
+    // -------------------------------------------------------------------------
+    // TEMPS DU DÉPLOIEMENT (data-model.md, « Un compte, un seul appareil ») :
+    //  false = TEMPS 1 : la clé deviceId est FACULTATIVE dans le statut et la dernière position. Absente : écriture acceptée comme avant
+    //          (applications actuelles, qui ne connaissent pas la session). Présente : elle doit être celle de la session.
+    //  true  = TEMPS 2 : la clé est OBLIGATOIRE (et la session doit exister). À ne passer à true qu'après la livraison des applications
+    //          qui écrivent la session ET la clé : sinon un téléphone à jour de l'ancienne version ne peut plus écrire son statut.
+    // Un seul endroit à changer entre les deux temps ; les tests (22 et 23-session-appareil) rejouent les deux.
+    function deviceIdRequired() {
+      return false;
+    }
+
+    // Identifiant d'appareil : aléatoire, généré par l'application à chaque connexion, sans lien avec l'appareil physique (ni
+    // numéro de série, ni identifiant publicitaire). 16 à 64 caractères d'un alphabet sans séparateur de chemin.
+    function isDeviceId(v) {
+      return v is string && v.matches('^[A-Za-z0-9_-]{16,64}$');
+    }
+
+    // Session valide : exactement deux clés, un identifiant bien formé, l'heure du début fournie par le serveur.
+    function validSession() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['deviceId', 'startedAt'])
+        && d.keys().hasAll(['deviceId', 'startedAt'])
+        && isDeviceId(d.deviceId)
+        && d.startedAt == request.time;
+    }
+
+    // L'écriture (statut, position) vient-elle de l'appareil actif ? Sans clé deviceId : acceptée au temps 1, refusée au temps 2
+    // (aucune lecture). Avec la clé : elle doit égaler celle de la session du même compte (UNE lecture de règles ; si la session
+    // n'existe pas, get() échoue et l'écriture est refusée). Mesure de COHÉRENCE : un client modifié peut recopier l'identifiant
+    // lu dans sa propre session, donc ce n'est pas une barrière de sécurité.
+    function fromActiveDevice(d, uid) {
+      return ('deviceId' in d && d.deviceId == get(/databases/$(database)/documents/users/$(uid)/session/active).data.deviceId)
+        || (!('deviceId' in d) && !deviceIdRequired());
+    }
+
     // Dernière position connue du membre dans UNE Miff (R-LIEU-POS). SEULEMENT latitude, longitude et heure de la mesure
     // (aucune précision, aucune vitesse, aucune altitude, aucun historique : le document est écrasé). Données sensibles.
     //  - lat / lng : nombres dans les plages valides (NaN et l'infini sont refusés par les comparaisons) ;
@@ -572,13 +614,15 @@ service cloud.firestore {
     function validPosition(miffId, uid) {
       let d = request.resource.data;
       let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
-      return d.keys().hasOnly(['lat', 'lng', 'measuredAt'])
+      return d.keys().hasOnly(['lat', 'lng', 'measuredAt', 'deviceId'])
         && d.keys().hasAll(['lat', 'lng', 'measuredAt'])
         && isCoordinate(d.lat, 90)
         && isCoordinate(d.lng, 180)
         && d.measuredAt is timestamp
         && d.measuredAt >= request.time - duration.value(1, 'd')
         && d.measuredAt <= request.time + duration.value(5, 'm')
+        // Un compte, un seul appareil (SESS-1) : même contrôle que le statut (une lecture de règles de plus quand la clé est présente).
+        && fromActiveDevice(d, uid)
         && s.enabled == true
         && isPositionConsentVersion(s.consentVersion);
     }
@@ -635,6 +679,19 @@ service cloud.firestore {
       // Suppression de compte : le client supprime ses données puis son compte Auth.
       allow delete: if isSelf(uid);
 
+      // ---- Session « un compte, un seul appareil » (SESS-1) -------------------
+      // Un seul document, de chemin fixe `active` (aucun autre identifiant, aucune liste). Lisible et écrivable par son propriétaire
+      // SEUL : ni le créateur d'une Miff, ni un co-membre ne le lit. Écrit à chaque connexion (la dernière gagne, `set` complet),
+      // supprimé à la déconnexion volontaire et à la suppression du compte. Les règles ne savent pas QUI supprime : un client ne doit
+      // supprimer la session que si elle porte SON identifiant (transaction), sinon il effacerait celle du nouvel appareil.
+      // (Écrit « request.auth.uid == uid » plutôt que isSelf(uid) : les tests par mutation repèrent les règles par leur texte et leur rang.
+      // Aucune règle « list » : une requête sur la sous-collection est refusée par défaut, comme tout ce qui n'est pas écrit.)
+      match /session/active {
+        allow get: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid && validSession();
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
       // ---- Index des appartenances (liste "mes Miffs" + slot freemium) -------
       // Clé 'free' = slot gratuit (1 seul possible) ; clé = miffId = premium.
       match /memberships/{key} {
@@ -647,7 +704,7 @@ service cloud.firestore {
           && request.resource.data.joinedAt == request.time
           && (
             key == 'free'
-            || (key == request.resource.data.miffId && isPremium(uid))
+            || (key == request.resource.data.miffId && isPremiumOneRead(uid))
           )
           // Le document membre correspondant est créé dans le même batch.
           && existsAfter(/databases/$(database)/documents/miffs/$(request.resource.data.miffId)/members/$(uid));
