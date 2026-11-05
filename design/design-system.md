@@ -107,7 +107,7 @@ Arrondis rares vus dans les maquettes (3, 15, 20) : à traiter comme des écarts
 | **Button** | `Style=Primary / Secondary` | Primaire : fond `action/primary`, ombre `shadow/default`, arrondi `radius/md`. Propriété texte `Label`. État désactivé = fond à 30 %. |
 | **Badge** | `Status=Safe / Warning / Danger` | Fond teinte 30 %, texte en couleur pleine, arrondi `radius/sm`. Propriété texte `Label`. |
 | **StatusCard** | — | Avatar + nom + badge + % batterie + horodatage + photo. Contient des instances d'Avatar et de Badge. |
-| **Tabbar** | — | Importée telle quelle comme image vectorielle (maison / bouton central / profil). Icônes non recolorables pour l'instant. |
+| **Tabbar** | — | Barre flottante à 3 entrées (maison / bouton central / profil) **en verre translucide** : Liquid Glass natif sous iOS 26 (repli matériau sous iOS 16 à 25), flou d'arrière-plan sous Android 12+ (repli sans flou, puis opaque), deux variantes (claire, sur photo), bouton central à la couleur du statut. Spécification complète, tokens `tabbar/*`, contrastes et accessibilité : `design/tab-bar-liquid-glass.md` ; écran Update : `design/screens/update.md`. L'image vectorielle importée dans Figma reste la référence de dessin des icônes (non recolorables pour l'instant). |
 
 ### Composants ajoutés pour le flux Miff (2026-10-27, page « Composants », section « Flux Miff — composants (MIFF-0) »)
 Créés dans Figma, **non encore contrôlés visuellement** (quota d'appels atteint juste après la création). Détail dans `design/screens/miff-*.md`.
