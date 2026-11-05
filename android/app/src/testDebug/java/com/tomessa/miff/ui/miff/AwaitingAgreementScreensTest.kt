@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -19,8 +20,14 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.feed.FeedBuilder
+import com.tomessa.miff.domain.feed.FeedInput
+import com.tomessa.miff.domain.feed.StatusesView
+import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.ui.feed.FeedScreen
+import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.settings.LocationBlock
 import com.tomessa.miff.ui.settings.LocationPrivacyUi
 import com.tomessa.miff.ui.theme.MiffTheme
@@ -32,6 +39,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import java.time.ZoneOffset
 
 /** "En attente de ton accord" (design 23) on the JVM: what the Feed, the screen of a Miff and Settings say while "Pas maintenant" is the answer. */
 @RunWith(RobolectricTestRunner::class)
@@ -61,9 +69,32 @@ class AwaitingAgreementScreensTest {
             fromCache = false,
         )
 
+    private val member = MiffMember("me", "Camille", "X", null, MiffRole.OWNER, true)
+
+    /** What the Feed shows while the agreement waits: nothing is shared, the statuses are not read, the bubble is neutral. */
+    private fun waitingContent() =
+        FeedUiState.Ready(
+            FeedBuilder.build(
+                FeedInput(
+                    "miffA",
+                    "Famille Mfouka",
+                    "XTZRSP367988",
+                    listOf(member),
+                    emptyList(),
+                    "me",
+                    StatusesView.Off,
+                    true,
+                    false,
+                ),
+                nowMillis = 1_700_000_000_000L,
+                zone = ZoneOffset.UTC,
+            ),
+        )
+
     private fun feed(
         agreement: AgreementUi,
         state: DirectoryState = directory,
+        feed: FeedUiState = FeedUiState.Loading,
     ) = show {
         FeedScreen(
             state = state,
@@ -73,15 +104,17 @@ class AwaitingAgreementScreensTest {
             onCreate = {},
             onJoin = {},
             agreement = agreement,
+            feed = feed,
         )
     }
 
     @Test
     fun feed_whileTheAgreementWaits_showsTheCard_theTruth_andOneWayBack() {
         var reviews = 0
-        feed(AgreementUi(setOf("miffA"), onReview = { reviews++ }))
+        feed(AgreementUi(setOf("miffA"), onReview = { reviews++ }), feed = waitingContent())
         shoot("loc2b-23a-feed-en-attente")
-        composeRule.onNodeWithText(text(R.string.miff_waiting_title)).assertIsDisplayed()
+        // The card and my own card say the same truth: nothing is shared with that Miff.
+        composeRule.onAllNodesWithText(text(R.string.miff_waiting_title)).assertCountEquals(2)
         composeRule
             .onNodeWithText(
                 "Miff ne met plus à jour ton statut avec « Famille Mfouka » tant que tu n'as pas donné ton accord.",
@@ -97,7 +130,8 @@ class AwaitingAgreementScreensTest {
     fun feed_withNothingWaiting_hasNoCard() {
         feed(AgreementUi())
         composeRule.onAllNodesWithText(text(R.string.miff_waiting_title)).assertCountEquals(0)
-        composeRule.onNodeWithText(text(R.string.feed_empty_title)).assertIsDisplayed()
+        // No provisional sentence any more: the skeleton, until the Feed is read.
+        composeRule.onAllNodesWithContentDescription(text(R.string.feed_loading_a11y)).assertCountEquals(1)
     }
 
     @Test

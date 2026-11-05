@@ -1,0 +1,209 @@
+package com.tomessa.miff.ui.feed
+
+import android.app.Application
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.tomessa.miff.domain.feed.Age
+import com.tomessa.miff.domain.feed.AlertKind
+import com.tomessa.miff.domain.feed.AlertPage
+import com.tomessa.miff.domain.feed.Battery
+import com.tomessa.miff.domain.feed.Day
+import com.tomessa.miff.domain.feed.Moment
+import com.tomessa.miff.domain.feed.PlaceKind
+import com.tomessa.miff.domain.feed.PlaceRef
+import com.tomessa.miff.domain.feed.StateLabel
+import com.tomessa.miff.domain.feed.TimeLine
+import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.miff.MiffRole
+import com.tomessa.miff.domain.tracking.StatusLevel
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.time.Instant
+import java.time.ZoneOffset
+
+/** The times are written with non-breaking spaces ('16 h 02', '4:40 PM'): the expected sentences are given with plain ones. */
+fun String.t(): String =
+    replace(Regex("(\\d) h (\\d)"), "$1\u00A0h\u00A0$2").replace(Regex("(\\d) (AM|PM)"), "$1\u00A0$2")
+
+private val AT_16_02 = Instant.parse("2026-11-03T16:02:00Z").toEpochMilli()
+private val AT_16_40 = Instant.parse("2026-11-05T16:40:00Z").toEpochMilli()
+
+private fun member(
+    first: String = "Thomas",
+    phone: String? = "+33612345678",
+) = MiffMember("t", first, "X", null, MiffRole.MEMBER, true, phone)
+
+private fun page(
+    kind: AlertKind,
+    isMe: Boolean = false,
+    level: StatusLevel = StatusLevel.ORANGE,
+) = AlertPage(member(), isMe, level, kind, canMessage = !isMe, offlineSince = null)
+
+/** The sentences of the Feed in French (ticket 7): the times follow the language ("16 h 02".t()), the places read well in a sentence. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], application = Application::class, qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
+class FeedTextsFrenchTest {
+    private val texts = FeedTexts(ApplicationProvider.getApplicationContext<Context>(), ZoneOffset.UTC)
+
+    @Test
+    fun theThreeFamiliesOfMoments_inTheThreeCases() {
+        assertEquals("à 16 h 40".t(), texts.at(Moment(AT_16_40, Day.TODAY)))
+        assertEquals("hier à 16 h 40".t(), texts.at(Moment(AT_16_40, Day.YESTERDAY)))
+        assertEquals("le 3 nov. à 16 h 02".t(), texts.at(Moment(AT_16_02, Day.OTHER)))
+        assertEquals("16 h 40".t(), texts.since(Moment(AT_16_40, Day.TODAY)))
+        assertEquals("hier à 16 h 40".t(), texts.since(Moment(AT_16_40, Day.YESTERDAY)))
+        assertEquals("de 16 h 40".t(), texts.from(Moment(AT_16_40, Day.TODAY)))
+        assertEquals("d'hier à 16 h 40".t(), texts.from(Moment(AT_16_40, Day.YESTERDAY)))
+        assertEquals("du 3 nov. à 16 h 02".t(), texts.from(Moment(AT_16_02, Day.OTHER)))
+    }
+
+    @Test
+    fun labels_readLikeTheMockups() {
+        assertEquals("À la maison", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.HOME))))
+        assertEquals("Au travail", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.WORK))))
+        assertEquals("À l'école", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL))))
+        assertEquals("Au sport", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("À Chez Léa", texts.label(StateLabel.At(PlaceRef.Named("Chez Léa"))))
+        assertEquals("A quitté le travail", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.WORK))))
+        assertEquals("A quitté Chez Léa", texts.label(StateLabel.Left(PlaceRef.Named("Chez Léa"))))
+        assertEquals("Dans un lieu de confiance", texts.label(StateLabel.At(PlaceRef.Unknown)))
+        assertEquals("A quitté un lieu de confiance", texts.label(StateLabel.Left(PlaceRef.Unknown)))
+        assertEquals("Dans une zone de danger", texts.label(StateLabel.Danger))
+        assertEquals("Pas encore de nouvelles", texts.label(StateLabel.NoNews))
+        assertEquals("Partage arrêté", texts.label(StateLabel.SharingStopped))
+        assertEquals("Nouvelles masquées", texts.label(StateLabel.NewsHidden))
+    }
+
+    @Test
+    fun timeLines() {
+        assertEquals("Depuis 12 min", texts.timeLine(TimeLine.Since(Age.Minutes(12))))
+        assertEquals("Depuis 3 h", texts.timeLine(TimeLine.Since(Age.Hours(3))))
+        assertEquals("Depuis hier à 16 h 40".t(), texts.timeLine(TimeLine.Since(Age.Yesterday(AT_16_40))))
+        assertEquals("Depuis le 3 nov. à 16 h 02".t(), texts.timeLine(TimeLine.Since(Age.Date(AT_16_02))))
+        assertEquals("Départ il y a 12 min", texts.timeLine(TimeLine.DepartedAgo(Age.Minutes(12))))
+        assertEquals(
+            "Dernière nouvelle à 16 h 40".t(),
+            texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))),
+        )
+        assertEquals(
+            "Pas de nouvelles depuis 16 h 40".t(),
+            texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_40, Day.TODAY))),
+        )
+        assertEquals("Depuis 16 h 40".t(), texts.timeLine(TimeLine.InDangerSince(Moment(AT_16_40, Day.TODAY))))
+        assertEquals(null, texts.timeLine(TimeLine.None))
+    }
+
+    @Test
+    fun battery() {
+        assertEquals("85 %", texts.battery(Battery(85, null)))
+        assertEquals("12 % · 16 h 40".t(), texts.battery(Battery(12, Moment(AT_16_40, Day.TODAY))))
+        assertEquals("Batterie à 85 %", texts.batteryA11y(Battery(85, null)))
+        assertEquals("Batterie à 12 % à 16 h 40".t(), texts.batteryA11y(Battery(12, Moment(AT_16_40, Day.TODAY))))
+    }
+
+    @Test
+    fun latestNews() {
+        assertEquals("Dernière nouvelle il y a 2 min", texts.latestNews(Age.Minutes(2)))
+        assertEquals("Dernière nouvelle il y a 3 h", texts.latestNews(Age.Hours(3)))
+        assertEquals("Dernière nouvelle hier à 16 h 40".t(), texts.latestNews(Age.Yesterday(AT_16_40)))
+    }
+
+    @Test
+    fun alertSentences_areTheOnesOfThePmAndTheTicket() {
+        val left = AlertKind.Left(PlaceRef.Category(PlaceKind.HOME), Moment(AT_16_40, Day.TODAY))
+        assertEquals("Thomas a quitté la maison à 16 h 40".t(), texts.alertTitle(page(left)))
+        assertEquals("Tu as quitté la maison à 16 h 40".t(), texts.alertTitle(page(left, isMe = true)))
+        assertEquals(
+            "Thomas a quitté un lieu de confiance à 16 h 40".t(),
+            texts.alertTitle(page(AlertKind.Left(PlaceRef.Unknown, Moment(AT_16_40, Day.TODAY)))),
+        )
+        val stale = AlertKind.NoNewsSince(Moment(AT_16_02, Day.TODAY))
+        assertEquals(
+            "Pas de nouvelles de Thomas depuis 16 h 02".t(),
+            texts.alertTitle(page(stale, level = StatusLevel.RED)),
+        )
+        assertEquals(
+            "Tes proches n'ont pas eu de tes nouvelles depuis 16 h 02".t(),
+            texts.alertTitle(page(stale, isMe = true, level = StatusLevel.RED)),
+        )
+        val danger = AlertKind.Danger(PlaceRef.Named("Zone chantier"), Moment(AT_16_02, Day.TODAY))
+        assertEquals("Thomas est à Zone chantier", texts.alertTitle(page(danger, level = StatusLevel.RED)))
+        assertEquals(
+            "Tu es dans une zone de danger de ta Miff",
+            texts.alertTitle(page(danger, isMe = true, level = StatusLevel.RED)),
+        )
+        // Without a name for the zone, the wording of the PM for "danger" is the fallback.
+        assertEquals(
+            "Thomas est dans une zone de danger",
+            texts.alertTitle(
+                page(AlertKind.Danger(PlaceRef.Unknown, Moment(AT_16_02, Day.TODAY)), level = StatusLevel.RED),
+            ),
+        )
+        assertEquals("Depuis 16 h 02".t(), texts.alertDetail(page(danger, level = StatusLevel.RED)))
+        assertEquals(null, texts.alertDetail(page(left)))
+    }
+
+    @Test
+    fun theCardIsReadAsOneSentence() {
+        val card =
+            com.tomessa.miff.domain.feed.MemberCard(
+                member = member(),
+                isMe = false,
+                level = StatusLevel.GREEN,
+                label = StateLabel.At(PlaceRef.Category(PlaceKind.HOME)),
+                time = TimeLine.Since(Age.Minutes(12)),
+                battery = Battery(85, null),
+                limitedLocation = false,
+                phone = "+33612345678",
+                canLocate = true,
+            )
+        assertEquals("Thomas, À la maison, Depuis 12 min, Batterie à 85 %", texts.cardDescription(card))
+    }
+}
+
+/** The same in English: 12-hour clock in English ("4:40 PM".t()), "left home", "No news from Thomas since 4:02 PM".t(). */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], application = Application::class, qualifiers = "en-rUS-w360dp-h800dp-port-xxhdpi")
+class FeedTextsEnglishTest {
+    private val texts = FeedTexts(ApplicationProvider.getApplicationContext<Context>(), ZoneOffset.UTC)
+
+    @Test
+    fun moments() {
+        assertEquals("at 4:40 PM".t(), texts.at(Moment(AT_16_40, Day.TODAY)))
+        assertEquals("yesterday at 4:40 PM".t(), texts.at(Moment(AT_16_40, Day.YESTERDAY)))
+        assertEquals("on Nov 3 at 4:02 PM".t(), texts.at(Moment(AT_16_02, Day.OTHER)))
+        assertEquals("4:40 PM".t(), texts.since(Moment(AT_16_40, Day.TODAY)))
+        assertEquals("from 4:40 PM".t(), texts.from(Moment(AT_16_40, Day.TODAY)))
+    }
+
+    @Test
+    fun alertSentences() {
+        val left = AlertKind.Left(PlaceRef.Category(PlaceKind.HOME), Moment(AT_16_40, Day.TODAY))
+        assertEquals("Thomas left home at 4:40 PM".t(), texts.alertTitle(page(left)))
+        assertEquals("You left home at 4:40 PM".t(), texts.alertTitle(page(left, isMe = true)))
+        val stale = AlertKind.NoNewsSince(Moment(AT_16_02, Day.TODAY))
+        assertEquals("No news from Thomas since 4:02 PM".t(), texts.alertTitle(page(stale, level = StatusLevel.RED)))
+        val danger = AlertKind.Danger(PlaceRef.Named("Zone chantier"), Moment(AT_16_02, Day.TODAY))
+        assertEquals("Thomas is at Zone chantier", texts.alertTitle(page(danger, level = StatusLevel.RED)))
+        assertEquals(
+            "You're in a danger zone of your Miff",
+            texts.alertTitle(page(danger, isMe = true, level = StatusLevel.RED)),
+        )
+    }
+
+    @Test
+    fun labelsAndTimes() {
+        assertEquals("At home", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.HOME))))
+        assertEquals("Left home", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME))))
+        assertEquals("In a danger zone", texts.label(StateLabel.Danger))
+        assertEquals("For 12 min", texts.timeLine(TimeLine.Since(Age.Minutes(12))))
+        assertEquals("Left 12 min ago", texts.timeLine(TimeLine.DepartedAgo(Age.Minutes(12))))
+        assertEquals("Latest news at 4:40 PM".t(), texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))))
+        assertEquals("No news since 4:02 PM".t(), texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_02, Day.TODAY))))
+        assertEquals("Latest news 2 min ago", texts.latestNews(Age.Minutes(2)))
+        assertEquals("85 % · 4:40 PM".t(), texts.battery(Battery(85, Moment(AT_16_40, Day.TODAY))))
+    }
+}
