@@ -9,6 +9,7 @@
 import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
 import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
 import { POSITION_MUTATIONS } from './mutations-position.mjs';
+import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -317,18 +318,7 @@ export const MUTATIONS = [
     tests: ['S15'],
     equivalent: 'chaque clé est lue ensuite par les règles ; lire une clé absente est une erreur => refus quand même (hasAll est redondant)',
   },
-  {
-    id: 'X5-lastUpdateAt-passe',
-    why: 'lastUpdateAt peut être trop ancien',
-    edits: [edit("&& d.lastUpdateAt >= request.time - duration.value(1, 'd')", '&& true')],
-    tests: ['X5'],
-  },
-  {
-    id: 'X5-lastUpdateAt-futur',
-    why: 'lastUpdateAt peut être dans le futur',
-    edits: [edit("&& d.lastUpdateAt <= request.time + duration.value(5, 'm')", '&& true')],
-    tests: ['X5'],
-  },
+  // X5-lastUpdateAt-* : voir mutations-statut.mjs (R-LIEU-1 : les bornes sont dans statusInstant).
   {
     id: 'X5-locationAccess',
     why: 'locationAccess accepte n\'importe quelle valeur',
@@ -709,4 +699,6 @@ export const MUTATIONS = [
   ...ONBB_MUTATIONS,
   // --- R-LIEU-POS (dernière position connue) : voir mutations-position.mjs ---
   ...POSITION_MUTATIONS,
+  // --- R-LIEU-1 (statut de plus de 24 h) et bornes d'horodatage du statut : voir mutations-statut.mjs ---
+  ...STATUS_TIME_MUTATIONS,
 ];

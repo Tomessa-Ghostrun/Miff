@@ -528,6 +528,19 @@ service cloud.firestore {
         && (!affected().hasAny(['type']) || d.type == 'trusted' || isPremiumOneRead(request.auth.uid));
     }
 
+    // Horodatage du statut (presenceAt, lastUpdateAt), fourni par l'appareil. Accepté dans l'un de ces deux cas (R-LIEU-1) :
+    //  - récent : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur (comme avant) ;
+    //  - conservé : IDENTIQUE à la valeur que le même champ du même statut a déjà en base, quel que soit son âge. Un téléphone resté
+    //    plus de 24 h dans la même situation peut ainsi réécrire son statut sans mentir sur l'heure qu'il ne change pas.
+    // La valeur conservée n'est jamais choisie par le client : elle doit être égale à celle de la base (aucune nouvelle ancienne
+    // heure, aucun recul, aucune avance hors fenêtre, jamais la valeur d'un autre champ ni d'un autre document). À la création
+    // (resource nul) seul le cas « récent » existe. resource n'est pas une lecture de règles (aucun coût ajouté, budget inchangé).
+    function statusInstant(v, key) {
+      return v is timestamp
+        && ((v >= request.time - duration.value(1, 'd') && v <= request.time + duration.value(5, 'm'))
+            || (resource != null && resource.data.get(key, null) == v));
+    }
+
     // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :
     // uniquement l'état (dans un lieu / hors lieu / zone à risque) + horodatages.
     // Toutes les clés sont toujours présentes (null si non applicable).
@@ -537,14 +550,10 @@ service cloud.firestore {
         && d.keys().hasAll(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
         && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']
         && (d.placeId == null || isStr(d.placeId, 1, 40))
-        // Horodatages d'événement fournis par l'appareil (utile hors-ligne),
-        // bornés : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur.
-        && d.presenceAt is timestamp
-        && d.presenceAt >= request.time - duration.value(1, 'd')
-        && d.presenceAt <= request.time + duration.value(5, 'm')
-        && d.lastUpdateAt is timestamp
-        && d.lastUpdateAt >= request.time - duration.value(1, 'd')
-        && d.lastUpdateAt <= request.time + duration.value(5, 'm')
+        // Horodatages d'événement fournis par l'appareil (utile hors-ligne) : bornés (-24 h / +5 min) OU conservés à
+        // l'identique de la valeur déjà en base (R-LIEU-1), voir statusInstant.
+        && statusInstant(d.presenceAt, 'presenceAt')
+        && statusInstant(d.lastUpdateAt, 'lastUpdateAt')
         && isNullOrStr(d.updateText, 140)
         && d.hasPhoto is bool
         && (d.batteryPct == null || (d.batteryPct is int && d.batteryPct >= 0 && d.batteryPct <= 100))
