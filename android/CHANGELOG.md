@@ -2,6 +2,35 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.11.0] - 2026-11-04 : LOC-2b, détection des arrivées et des départs, statut et dernière position
+
+Seconde moitié de LOC-2 (ticket `docs/tickets/lieux-de-confiance.md` : POS1 à POS8, DET1 à DET4, STA1 à STA4, STA6 à STA9, VIE1 à VIE4, HOR1, AND1, AND2 ; décisions du PM du 2026-11-01 et du 2026-11-04 ; maquette 23). Empilée sur LOC-2a (PR #64, elle-même sur LOC-1, PR #56). Recette : `docs/qa/checklists/loc-2b-android-recette-pm.md`. Détail technique : `README.md`, section « Détection des arrivées et des départs ».
+
+### Ajouté
+- **Moteur de détection** (`data/tracking`, `domain/tracking`) : position lue (fournisseur fusionné, 250 m) à l'ouverture, au passage en arrière-plan, sur un déplacement de plus de 250 m et à l'entrée dans une zone ; **les 20 lieux les plus proches** (distance au bord, zones où l'on se trouve gardées, un lieu de plusieurs Miffs = une zone) choisis sur une **liste locale** ; géofencing `ENTER` / `EXIT` (`GeofencingClient`, `PendingIntent` + un récepteur non exporté), **réarmé au redémarrage du téléphone et après une mise à jour**.
+- **Statut** (§6.6) : `in_trusted` / `out` / `in_risk` / `unknown`, `placeId`, `presenceAt` = heure réelle de l'événement, `lastUpdateAt` (arrivée en zone de confiance), `batteryPct`, `locationAccess` ; une écriture indépendante par Miff où le partage est actif et le consentement v3 donné ; la zone de confiance l'emporte ; état initial sans `out` inventé ; lieu supprimé ou modifié = `unknown` ; **hors connexion** : l'état le plus récent est gardé et écrit au retour du réseau (même app tuée) avec son heure réelle, abandonné au-delà de 24 h.
+- **Dernière position** `positions/{moi}` (5 décimales, heure de la mesure, sans historique, seulement Firestore, jamais dans un lot de lieux) pour les seules Miffs où partage actif + v3 ; **garde-fou 15 min ou 250 m (plancher 2 min)** ; **disjoncteurs** 60 statuts et 150 positions par jour et par téléphone.
+- **Couleur vert / orange / rouge** : fonction pure partagée `StatusColor` et constantes 1 h / 2 h uniques (le Feed l'appellera : hors périmètre), tests de toutes les bornes.
+- **Nettoyage** : arrêt de la surveillance et effacement de la copie locale et du journal à la déconnexion, la suppression de compte, la session perdue ; partage arrêté, Miff quittée / retirée / supprimée : zones et état de cette Miff oubliés.
+- **Journal local de détection** (builds debug seulement, sans coordonnées, purgé à la déconnexion, **absent de la publication** : test + contrôle CI).
+- **Écran « En attente de ton accord »** (maquette 23 : Feed, écran de la Miff, Réglages > Confidentialité) et aide batterie non bloquante (« Si les détections tardent »).
+- Tests : sélection (22 lieux sur 2 Miffs), toutes les bornes de la couleur, machine de présence, limites et documents écrits, **moteur avec des doubles** (événements vers écritures, hors connexion, disjoncteur, nettoyage, refus, redémarrage), vie privée sur les sources (récepteur qui ne lit jamais la position de l'événement, journal absent de la release, aucune coordonnée dans un statut), écrans de la maquette 23, passerelle.
+
+### Modifié
+- `PermissionPrivacyTest` : la position n'est lue que dans `data/tracking` ; `RECEIVE_BOOT_COMPLETED` déclarée. CI : liste de permissions du manifeste fusionné et marqueur du journal dans le bundle release.
+- `CachePurger.purgeIfPending` : un seul à la fois (le démarrage de session, le récepteur et le moteur peuvent le demander avant leur premier accès à Firestore).
+- `FirestoreMiffRepository`, `FirestoreConsentRenewals` : un rappel `onSharingChanged` / `onRenewed` (sans donnée) après une écriture qui change avec qui la personne partage.
+- Textes Android corrigés : Réglages > Confidentialité > Localisation et texte provisoire du Feed ne disent plus « la position n'est pas utilisée » (devenu faux). Catalogue iOS : seules les clés **nouvelles** sont ajoutées (parité), les textes iOS existants restent (iOS ne lit pas de position).
+
+### Corrigé après la revue indépendante de la PR #68
+- **B1** zones nommées par une clé (identifiant + géométrie + type) : deux lieux `p1` de deux créateurs gratuits ne sont plus confondus (fausse arrivée « chez B »). **B2** réinscription complète des zones et de la demande de déplacement à chaque ouverture, redémarrage et changement de partage ; erreur du géofencing = redémarrage.
+- **I1** zones armées avant l'attente de la position (bornée à 3 s). **I2** aucune position de plus de 10 min utilisée (repli du système : 2 min). **I3** retour du réseau : accès, consentement v3 et partage revérifiés avant d'écrire ; accès retiré : état en attente, position et copie effacés. **I4** arrêt collant (génération de session). **I5** Miffs servies à tour de rôle par les disjoncteurs ; limites documentées (ancien vert sans signal, fuseau du quota Spark, 20 000 écritures pour tout le projet). **I6** en attente d'accord, l'interrupteur « arrêter de partager » reste utilisable et les textes ne disent plus « rien n'est partagé » (le dernier statut reste visible). **I7** estimation des lectures par réveil dans `docs/dev/surveillance-quotas.md`.
+- Mineurs : refus du serveur = nouvelle vérification 5 minutes plus tard (pas à chaque réveil) ; commentaire de l'heure de l'événement corrigé ; marqueur du journal référencé et gardé par R8 ; gestionnaire d'exception de haut niveau (récepteur, lancement de la détection) ; `WAKE_BOOT` / `WAKE_UPDATE` remplacés par `WAKE_REARM` (utilisé) ; limite Android 100 géofences (20 = décision du PM) ; limite R-LIEU-1 documentée.
+
+### Choix économiques et limites
+- **0 €** : une dépendance gratuite (Play services location 21.4.0). Écritures bornées par les disjoncteurs ; **à mesurer à la recette**. Limite connue : l'heure de l'événement est celle où il arrive à l'app (retard de livraison d'Android : 2 à 6 min selon la documentation) ; une surcouche qui tue l'app retarde ou perd des événements (réglages à vérifier dans le README).
+- **Limite connue** : un téléphone éteint ou sans réseau avant que le départ ne soit écrit reste « vert, à la maison » (§6.9, N9, acceptée en v1).
+
 ## [0.10.2] - 2026-11-05 : correctif LOC-1, un abonnement « inconnu » n'est plus pris pour « gratuit »
 
 Trouvé par la revue indépendante du portage iOS de LOC-3 (défaut déjà présent dans LOC-1 Android, fusionné). **Aucune règle Firestore modifiée.**

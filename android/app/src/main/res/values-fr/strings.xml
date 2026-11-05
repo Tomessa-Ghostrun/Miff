@@ -256,7 +256,7 @@
     <string name="tabbar_profile_a11y">Profil</string>
     <string name="feed_pane_a11y">Fil de ta Miff</string>
     <string name="feed_empty_title">Ton fil n\'est pas encore prêt</string>
-    <string name="feed_empty_body">Cet écran est encore en construction. Quand il sera prêt, tu y verras les nouvelles de tes proches. Ta position n\'est pas utilisée pour l\'instant.</string>
+    <string name="feed_empty_body">Cet écran est encore en construction. Quand il sera prêt, tu y verras les nouvelles de tes proches.</string>
     <string name="profile_tab_pane_a11y">Ton profil</string>
     <string name="profile_tab_you_label">C\'est toi</string>
     <string name="profile_tab_open_my_info_a11y">ouvrir Mes informations</string>
@@ -416,7 +416,7 @@
     <string name="settings_privacy_withdrawal_not_recorded">C\'est coupé sur ce téléphone, même après un redémarrage. Ton choix sera enregistré dès que la connexion revient ; tu peux aussi toucher « Enregistrer mon choix ».</string>
     <string name="settings_privacy_retry_action">Enregistrer mon choix</string>
     <string name="settings_privacy_location_title">Localisation</string>
-    <string name="settings_privacy_location_body">Pour l\'instant, Miff n\'utilise pas la position de ton téléphone. Miff te demande l\'autorisation à l\'avance, pour être prête quand les arrivées et les départs seront repérés : rien n\'est lu ni enregistré pour l\'instant.</string>
+    <string name="settings_privacy_location_body">Miff utilise la localisation de ton téléphone, même quand l\'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d\'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l\'heure. Aucun historique de trajets n\'est gardé. Tu peux arrêter de partager à tout moment : ta position est alors effacée.</string>
     <string name="settings_privacy_notifications_title">Notifications</string>
     <string name="settings_privacy_notifications_body">Les notifications arrivent bientôt. Rien n\'est envoyé pour l\'instant.</string>
     <string name="settings_privacy_open_phone_settings">Ouvrir les réglages du téléphone</string>
@@ -632,4 +632,25 @@
     <string name="miff_renewal_later">Pas maintenant</string>
     <string name="miff_renewal_saving">On enregistre ton accord…</string>
     <string name="miff_renewal_error_extra">Ton accord n\'est pas enregistré : rien n\'est partagé pour l\'instant.</string>
+
+    <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
+    <string name="miff_waiting_title">En attente de ton accord</string>
+    <string name="miff_waiting_feed_body">Miff ne met plus à jour ton statut avec « %1$s » tant que tu n\'as pas donné ton accord.</string>
+    <string name="miff_waiting_feed_note">Tu verras de nouveau les statuts de tes proches ici dès que tu auras donné ton accord.</string>
+    <string name="miff_waiting_miff_body">Miff ne met plus à jour ton statut avec cette Miff tant que tu n\'as pas donné ton accord. Ton dernier statut reste visible de ses membres jusqu\'à ce que tu arrêtes de partager. Tu peux aussi la quitter.</string>
+    <string name="miff_waiting_miff_body_owner">Miff ne met plus à jour ton statut avec cette Miff tant que tu n\'as pas donné ton accord. Ton dernier statut reste visible de ses membres jusqu\'à ce que tu arrêtes de partager.</string>
+    <string name="miff_waiting_review">Revoir et accepter</string>
+    <string name="miff_sharing_waiting_description">En attente de ton accord : ton statut n\'est plus mis à jour. Tu peux arrêter de partager.</string>
+    <string name="settings_privacy_location_status_ok">Toujours autorisée</string>
+    <string name="settings_privacy_location_status_todo">À compléter dans les réglages du téléphone</string>
+    <string name="settings_privacy_miff_waiting_pill">En attente</string>
+    <string name="settings_privacy_miff_waiting_body">Ton accord est en attente : Miff ne met plus à jour ton statut avec cette Miff. Tu peux arrêter de partager depuis l\'écran de la Miff.</string>
+    <string name="settings_privacy_detection_help_link">Si les détections tardent</string>
+    <string name="settings_detection_help_title">Si les arrivées et départs tardent</string>
+    <string name="settings_detection_help_intro">Certains téléphones (Oppo, Xiaomi, Samsung, Huawei...) arrêtent les applications en arrière-plan pour économiser la batterie. Miff peut alors repérer une arrivée ou un départ avec du retard. Ces réglages sont facultatifs : ils peuvent aider, et Miff fonctionne sans.</string>
+    <string name="settings_detection_help_step_battery">1. Dans les réglages de Miff, ouvre « Batterie » (ou « Consommation d\'énergie ») et choisis « Aucune restriction » (ou « Ne pas optimiser »).</string>
+    <string name="settings_detection_help_step_background">2. Autorise l\'activité en arrière-plan de Miff si le téléphone le propose.</string>
+    <string name="settings_detection_help_step_autostart">3. Sur Oppo, OnePlus ou Realme (ColorOS) : autorise aussi le « démarrage automatique » de Miff, et ne la ferme pas en la balayant dans la liste des applications récentes.</string>
+    <string name="settings_detection_help_step_saver">4. Si possible, évite l\'économiseur de batterie en continu, surtout pendant tes déplacements.</string>
+    <string name="settings_detection_help_outro">Les noms exacts des réglages changent selon le téléphone et la version d\'Android.</string>
 </resources>

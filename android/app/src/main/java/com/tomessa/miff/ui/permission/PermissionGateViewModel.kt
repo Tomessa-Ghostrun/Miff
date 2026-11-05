@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.permission
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewalCheck
 import com.tomessa.miff.data.miff.ConsentRenewals
 import com.tomessa.miff.data.miff.MiffWriteResult
@@ -69,6 +70,8 @@ class PermissionGateViewModel(
     /** What the app does once a Miff was left (purge of the cache, fresh list of Miffs). */
     private val onLeft: suspend (String) -> Unit,
     private val consentBeforeLocation: Boolean = com.tomessa.miff.domain.permission.GatePolicy.CONSENT_BEFORE_LOCATION,
+    /** LOC-2b (design 23): which Miffs wait for the agreement, for the Feed, the Miff screen and Settings; and "Revoir et accepter". */
+    private val awaiting: AwaitingAgreement = AwaitingAgreement(),
 ) : ViewModel() {
     private var snapshot: PermissionSnapshot = permissions.snapshot()
     private var attempt = LocationAttempt()
@@ -87,6 +90,20 @@ class PermissionGateViewModel(
     val uiState: StateFlow<GateUiState> = mutableState.asStateFlow()
 
     init {
+        // "Revoir et accepter" (Feed, Miff screen, Settings): the renewal screen comes back, as it was at the opening.
+        var reviews = awaiting.reviewRequests.value
+        viewModelScope.launch {
+            awaiting.reviewRequests.collect { count ->
+                if (count != reviews) {
+                    reviews = count
+                    if (renewalState == RenewalState.DUE && !renewalBusy) {
+                        renewalDeferred = false
+                        renewalMessage = null
+                        publish()
+                    }
+                }
+            }
+        }
         val uid = currentUid()
         if (uid != null) {
             viewModelScope.launch {
@@ -96,10 +113,12 @@ class PermissionGateViewModel(
                     is ConsentRenewalCheck.Due -> {
                         due = check.miffs
                         renewalState = RenewalState.DUE
+                        awaiting.replace(check.miffs.map { it.miffId }.toSet())
                     }
 
                     ConsentRenewalCheck.NothingToRenew -> {
                         renewalState = RenewalState.NOTHING_DUE
+                        awaiting.replace(emptySet())
                     }
 
                     // Not known: nothing is claimed and nothing is blocked any more; the next launch asks again.
@@ -165,6 +184,7 @@ class PermissionGateViewModel(
                 MiffWriteResult.Done -> {
                     due = emptyList()
                     renewalState = RenewalState.NOTHING_DUE
+                    awaiting.replace(emptySet())
                 }
 
                 is MiffWriteResult.Failed -> {
@@ -203,6 +223,7 @@ class PermissionGateViewModel(
                     onLeft(miff.miffId)
                     due = emptyList()
                     renewalState = RenewalState.NOTHING_DUE
+                    awaiting.remove(miff.miffId)
                     leaveAsked = false
                 }
 
