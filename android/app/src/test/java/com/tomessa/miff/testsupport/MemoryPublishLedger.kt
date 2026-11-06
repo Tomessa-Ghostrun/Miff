@@ -13,7 +13,7 @@ class MemoryPublishLedger : PublishLedger {
     var photoAt: Long? = null
     var photoUid: String? = null
     var explained = false
-    var openings = 0
+    var doubleTap = false
 
     /** Every note written, in order: ("uid", millis) or ("clear", 0). */
     val notes = mutableListOf<Pair<String, Long>>()
@@ -57,10 +57,10 @@ class MemoryPublishLedger : PublishLedger {
         explained = true
     }
 
-    override fun viewfinderOpenings() = openings
+    override fun doubleTapUsed() = doubleTap
 
-    override fun countViewfinderOpening() {
-        openings++
+    override fun markDoubleTapUsed() {
+        doubleTap = true
     }
 
     /** Sign-out: everything but the note of the photo, as the real one. */
@@ -69,6 +69,6 @@ class MemoryPublishLedger : PublishLedger {
         count = 0
         last = null
         explained = false
-        openings = 0
+        // the double tap is about the installation: kept
     }
 }

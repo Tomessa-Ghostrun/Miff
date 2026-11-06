@@ -26,7 +26,7 @@ class PublishLedgerTest {
         ledger.notePhotoSent("uid-1", 1_234L)
         ledger.recordPublication(1_234L, "2026-11-06", 3)
         ledger.markCameraExplained()
-        ledger.countViewfinderOpening()
+        ledger.markDoubleTapUsed()
 
         ledger.clear()
 
@@ -36,7 +36,8 @@ class PublishLedgerTest {
         assertEquals(0, ledger.countToday())
         assertNull(ledger.lastPublishMillis())
         assertFalse(ledger.cameraExplained())
-        assertEquals(0, ledger.viewfinderOpenings())
+        // What is about the INSTALLATION (the double tap already used) is not erased with the account.
+        assertTrue(ledger.doubleTapUsed())
         // A new instance on the same file (a restart of the process) still has it.
         assertEquals(1_234L, ledger().photoSentMillis("uid-1"))
     }
@@ -51,5 +52,13 @@ class PublishLedgerTest {
         ledger.clearPhotoSent()
         assertNull(ledger.photoSentMillis("uid-2"))
         assertTrue(ledger.countToday() == 0)
+    }
+
+    @Test
+    fun theDoubleTapIsRemembered_neverUsedBeforeTheFirstOne_andSurvivesARestartOfTheApp() {
+        assertFalse("never used on a fresh installation", ledger().doubleTapUsed())
+        ledger().markDoubleTapUsed()
+        // A new instance on the same private file = a restart of the app.
+        assertTrue(ledger().doubleTapUsed())
     }
 }

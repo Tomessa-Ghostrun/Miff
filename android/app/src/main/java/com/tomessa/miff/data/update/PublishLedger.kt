@@ -46,12 +46,15 @@ interface PublishLedger {
 
     fun markCameraExplained()
 
-    /** How many times the viewfinder was opened (for the tip of the double tap: the first three times). */
-    fun viewfinderOpenings(): Int
+    /**
+     * The person switched the camera by a double tap at least once: the tip "Touche deux fois l'écran…" is gone for good (PM, 2026-11-06). Kept for the
+     * installation, NOT erased at sign-out (it is about the phone, not the account).
+     */
+    fun doubleTapUsed(): Boolean
 
-    fun countViewfinderOpening()
+    fun markDoubleTapUsed()
 
-    /** Sign-out: everything but the note of the photo (see above). */
+    /** Sign-out: everything but the note of the photo (see above) and what is about the installation (the double tap). */
     fun clear()
 }
 
@@ -108,10 +111,10 @@ class SharedPreferencesPublishLedger(
         prefs.edit().putBoolean(KEY_EXPLAINED, true).apply()
     }
 
-    override fun viewfinderOpenings(): Int = prefs.getInt(KEY_OPENINGS, 0)
+    override fun doubleTapUsed(): Boolean = prefs.getBoolean(KEY_DOUBLE_TAP, false)
 
-    override fun countViewfinderOpening() {
-        prefs.edit().putInt(KEY_OPENINGS, prefs.getInt(KEY_OPENINGS, 0) + 1).apply()
+    override fun markDoubleTapUsed() {
+        prefs.edit().putBoolean(KEY_DOUBLE_TAP, true).apply()
     }
 
     override fun clear() {
@@ -121,7 +124,6 @@ class SharedPreferencesPublishLedger(
             .remove(KEY_COUNT)
             .remove(KEY_LAST)
             .remove(KEY_EXPLAINED)
-            .remove(KEY_OPENINGS)
             .apply()
     }
 
@@ -132,7 +134,7 @@ class SharedPreferencesPublishLedger(
         const val KEY_PHOTO = "photo_sent"
         const val KEY_PHOTO_UID = "photo_sent_uid"
         const val KEY_EXPLAINED = "camera_explained"
-        const val KEY_OPENINGS = "viewfinder_openings"
+        const val KEY_DOUBLE_TAP = "double_tap_used"
         const val NONE = Long.MIN_VALUE
     }
 }

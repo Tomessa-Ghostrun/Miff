@@ -165,10 +165,15 @@ class UpdateViewModel(
     }
 
     private fun viewfinder(): UpdateStage.Viewfinder {
-        // The tip of the double tap: the first three openings only (V3).
-        val openings = ledger.viewfinderOpenings()
-        ledger.countViewfinderOpening()
-        return UpdateStage.Viewfinder(showTip = openings < TIP_OPENINGS)
+        // The tip of the double tap shows until the person has switched the camera by a double tap once (PM, 2026-11-06), then never again.
+        return UpdateStage.Viewfinder(showTip = !ledger.doubleTapUsed())
+    }
+
+    /** The camera was switched by a double tap: the tip goes away, for good (kept on the installation). */
+    fun onSwitchedByDoubleTap() {
+        ledger.markDoubleTapUsed()
+        val current = mutableStage.value as? UpdateStage.Viewfinder ?: return
+        mutableStage.value = current.copy(showTip = false)
     }
 
     /** The viewfinder is back (after a refusal on the way, or a "Réessayer"). */
@@ -211,7 +216,7 @@ class UpdateViewModel(
 
                 is UpdateStage.CameraUnavailable, is UpdateStage.PermissionDisabled -> {
                     UpdateStage.Viewfinder(
-                        showTip = false,
+                        showTip = !ledger.doubleTapUsed(),
                         prepareFailed = true,
                     )
                 }
@@ -229,7 +234,7 @@ class UpdateViewModel(
     fun onRetake() {
         val current = mutableStage.value as? UpdateStage.Preview ?: return
         if (current.publishing) return
-        mutableStage.value = UpdateStage.Viewfinder(showTip = false)
+        mutableStage.value = UpdateStage.Viewfinder(showTip = !ledger.doubleTapUsed())
     }
 
     /** The person left the Update (another tab, back): the photo is forgotten, whatever happened. A publication already sent keeps going. */
@@ -295,9 +300,5 @@ class UpdateViewModel(
     override fun onCleared() {
         // The view model of the session goes with the account: no photo stays in memory.
         mutableStage.value = UpdateStage.Idle
-    }
-
-    private companion object {
-        const val TIP_OPENINGS = 3
     }
 }

@@ -42,12 +42,11 @@ Première ouverture : réglages du téléphone > Applications > Miff > Autorisat
 ## B. Viseur et prise de vue (compte A, 8 min)
 
 - [ ] Le viseur est **plein cadre** (au-dessus de la barre, qui reste visible), en **selfie** ; **pas de croix**. Le bouton rond du milieu de la barre est **sélectionné**. Les icônes de la barre d'état sont blanches.
-- [ ] Une aide « Un selfie, la vue, ton repas : comme tu veux. » ; **les 3 premières fois** une astuce « Touche deux fois l'écran pour changer de caméra. ».
+- [ ] Une aide « Un selfie, la vue, ton repas : comme tu veux. » ; **tant que vous n'avez jamais basculé la caméra par un double toucher**, une astuce « Touche deux fois l'écran pour changer de caméra. » : elle revient à chaque ouverture, **disparaît pour toujours** après votre **premier double toucher** réussi (changement de caméra), **y compris après avoir fermé et rouvert l'application** ; le **bouton de bascule** reste. Réinstallez l'application pour la revoir.
 - [ ] **Bouton de bascule** en haut à droite : caméra arrière, puis selfie. **Deux touchers rapides** sur l'image : même effet. Deux touchers sur le **rond de prise de vue** : **une seule** photo.
 - [ ] **Pas de flash, de zoom, de filtre, de minuterie.**
 - [ ] Touchez le **rond** : l'**aperçu** apparaît, la photo est **un peu plus petite** que l'écran (marges, coins arrondis, fond sombre), **la croix** en haut à gauche, puis, dessous, « Tes proches verront cette photo pendant 24 h. », la ligne avec l'épingle « **Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l'as prise.** », le bouton rond **Recommencer** et le bouton bleu **Publier**.
-- [ ] **Miroir du viseur avant (à signaler)** : en selfie, le **viseur est en miroir** (comme un miroir) mais la **photo enregistrée et l'aperçu ne le sont pas** : un écriteau pris en selfie se lit à l'endroit sur la photo. Dites-nous si cela surprend ; sur l'OPPO, vérifiez que la photo arrière et la photo avant ne sont ni retournées ni couchées (ColorOS).
-- [ ] La photo de l'aperçu **n'est pas en miroir** (écrivez quelque chose sur une feuille : le texte se lit à l'endroit).
+- [ ] **Selfie = reflet du viseur** : en caméra **frontale**, la photo de l'**aperçu** est **identique à ce que montrait le viseur** (comme un miroir : écrivez un mot sur une feuille, il apparaît **à l'envers** dans le viseur **et** sur l'aperçu, la photo publiée, la carte du Feed et le plein écran ; votre grain de beauté à gauche dans le viseur est à gauche sur la photo). En caméra **arrière**, la photo n'est **jamais** retournée (le mot se lit à l'endroit). Vérifiez que ni l'une ni l'autre n'est couchée ni la tête en bas (ColorOS).
 - [ ] **La croix** et **Recommencer** font **exactement la même chose** : retour au viseur, la photo est oubliée, **rien n'est publié, aucune question**.
 - [ ] Ouvrez l'aperçu, laissez le téléphone **5 minutes**, rallumez : « Cette photo date un peu : reprends-en une. », **Publier** est grisé, **Recommencer** marche.
 - [ ] Ouvrez l'aperçu, touchez **Profil** puis revenez à l'Update : la photo **n'est plus là** (on repart du viseur).
@@ -84,7 +83,7 @@ Première ouverture : réglages du téléphone > Applications > Miff > Autorisat
 ## E. Le Feed et la photo en plein écran (compte B regarde la photo de A, 8 min)
 
 Compte **B** : il doit avoir **publié sa propre position** (ouvrir l'application avec la localisation « Toujours » suffit après quelques secondes) pour voir la photo de A.
-- [ ] La carte de A montre la photo (fenêtre de 108 px, recadrée un peu au-dessus du milieu), « Photo de 16 h 05 » en pastille blanche.
+- [ ] La carte de A montre la photo (un **carré** aussi large que la carte, **centré sur le milieu** de la photo, la photo complète au toucher), « Photo de 16 h 05 » en pastille blanche.
 - [ ] Touchez la photo : **plein écran, fond noir**, la photo **entière** (jamais rognée), « Photo de A · 16 h 05 », « Position mesurée à 16 h 02. », bouton **« Voir où c'était »** (ouvre les cartes du téléphone sur les coordonnées seules, **sans nom**), bouton de fermeture en haut à gauche (48 px), **pincer** pour zoomer, **retour système** pour fermer.
 - [ ] Une photo **expirée** (modifiez `expiresAt` à « il y a 1 h » dans la console) : **aucune photo, aucun message**. **Rien n'est supprimé** (console : le document photo est toujours là).
 - [ ] **Réciprocité** : sur un compte qui **n'a pas publié sa position**, la photo de A est remplacée par une tuile bleu pâle avec un cadenas : « **Partage ta position pour voir cette photo.** » (jamais le mot « erreur »). **Rien n'est supprimé** de la photo de A.

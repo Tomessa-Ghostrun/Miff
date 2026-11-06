@@ -259,4 +259,82 @@ class AndroidPhotoEncoderTest {
         val turnedBack = encoder.upright(upright, 360 + 270)
         assertEquals(2000, turnedBack.width)
     }
+
+    // --- The front camera gives the REFLECTION, as the viewfinder shows it; the back camera is never mirrored (PM, 2026-11-06) ---------------------
+
+    /** A captured image: red on the left half, blue on the right half, a green band on top (to tell top from bottom). */
+    private fun leftRedRightBlue(
+        width: Int,
+        height: Int,
+    ): Bitmap {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val paint = Paint()
+        paint.color = Color.RED
+        canvas.drawRect(0f, 0f, width / 2f, height.toFloat(), paint)
+        paint.color = Color.BLUE
+        canvas.drawRect(width / 2f, 0f, width.toFloat(), height.toFloat(), paint)
+        paint.color = Color.GREEN
+        canvas.drawRect(0f, 0f, width.toFloat(), height / 10f, paint)
+        return bitmap
+    }
+
+    private fun published(
+        captured: Bitmap,
+        rotation: Int,
+        mirror: Boolean,
+    ): Bitmap {
+        val upright = encoder.upright(captured, rotation, mirror)
+        val photo = encode(upright, UpdatePhotoFormat.MAX_ASPECT)!!
+        assertTrue(photo.jpeg.size <= UpdatePhotoFormat.MAX_BYTES)
+        return BitmapFactory.decodeByteArray(photo.jpeg, 0, photo.jpeg.size)
+    }
+
+    private fun isRed(pixel: Int) = Color.red(pixel) > 180 && Color.blue(pixel) < 90 && Color.green(pixel) < 90
+
+    private fun isBlue(pixel: Int) = Color.blue(pixel) > 180 && Color.red(pixel) < 90 && Color.green(pixel) < 90
+
+    @Test
+    fun theFrontCamera_givesTheReflection_whatIsOnTheLeftOfTheCapturedImageIsOnTheRightOfThePhoto_likeTheViewfinder() {
+        // The viewfinder of the front camera shows the captured image flipped: its left half (red) appears on the RIGHT. The published photo is the same.
+        val photo = published(leftRedRightBlue(1200, 1600), rotation = 0, mirror = true)
+        val y = photo.height / 2
+        assertTrue("the red half is now on the right", isRed(photo.getPixel(photo.width - 12, y)))
+        assertTrue("the blue half is now on the left", isBlue(photo.getPixel(12, y)))
+    }
+
+    @Test
+    fun theBackCamera_isNeverMirrored_theLeftStaysOnTheLeft() {
+        val photo = published(leftRedRightBlue(1200, 1600), rotation = 0, mirror = false)
+        val y = photo.height / 2
+        assertTrue(isRed(photo.getPixel(12, y)))
+        assertTrue(isBlue(photo.getPixel(photo.width - 12, y)))
+    }
+
+    @Test
+    fun theMirrorIsAppliedAfterTheTurn_neverUpsideDown_withARotationOfTheSensor() {
+        // A landscape capture (red left, blue right, green band on top) that the sensor says to turn by 90 degrees: red goes to the TOP, the green band to the RIGHT.
+        // The mirror (horizontal symmetry, after the turn) moves the green band to the LEFT and leaves the red on TOP: it never swaps top and bottom.
+        val plain = encoder.upright(leftRedRightBlue(1600, 1200), 90, mirror = false)
+        val mirrored = encoder.upright(leftRedRightBlue(1600, 1200), 90, mirror = true)
+
+        fun isGreen(pixel: Int) = Color.green(pixel) > 180 && Color.red(pixel) < 90 && Color.blue(pixel) < 90
+        assertEquals(1200, plain.width)
+        assertEquals(1600, plain.height)
+        assertTrue(isRed(plain.getPixel(plain.width / 2, 200)))
+        assertTrue(isGreen(plain.getPixel(plain.width - 5, plain.height / 2)))
+        assertTrue(isRed(mirrored.getPixel(mirrored.width / 2, 200)))
+        assertTrue(isGreen(mirrored.getPixel(5, mirrored.height / 2)))
+        assertTrue(isBlue(mirrored.getPixel(mirrored.width / 2, mirrored.height - 200)))
+    }
+
+    @Test
+    fun theMirroredPhoto_stillHasNoMetadata_andFitsTheLimit() {
+        val photo = encode(encoder.upright(gradient(3000, 4000), 0, mirror = true))!!
+        assertTrue(photo.jpeg.size in 1..UpdatePhotoFormat.MAX_BYTES)
+        listOf("Exif", "GPS", "xap", "http://ns.adobe.com").forEach {
+            assertFalse("the JPEG holds '$it'", contains(photo.jpeg, it))
+        }
+        assertNull(ExifInterface(photo.jpeg.inputStream()).latLong)
+    }
 }

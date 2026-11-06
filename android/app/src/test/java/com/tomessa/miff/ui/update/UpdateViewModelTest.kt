@@ -132,7 +132,7 @@ class UpdateViewModelTest {
     }
 
     @Test
-    fun aGrantedPermission_opensTheViewfinder_andTheTipShowsThreeTimesOnly() {
+    fun theTipOfTheDoubleTap_showsAsLongAsItWasNeverUsed_everyTime_andNeverAfterTheFirstDoubleTap() {
         val vm = viewModel()
         val tips = mutableListOf<Boolean>()
         repeat(5) {
@@ -140,17 +140,31 @@ class UpdateViewModelTest {
             tips += (vm.stage.value as UpdateStage.Viewfinder).showTip
             vm.onClosed()
         }
-        assertEquals(listOf(true, true, true, false, false), tips)
+        // Opening the viewfinder is not using it: the tip stays.
+        assertEquals(listOf(true, true, true, true, true), tips)
+        vm.onOpened(true, false, false)
+        vm.onSwitchedByDoubleTap()
+        assertFalse((vm.stage.value as UpdateStage.Viewfinder).showTip)
+        assertTrue("remembered for the installation", ledger.doubleTapUsed())
+        // After that: never again, on a new opening, after a retake, after a restart of the app (a new view model on the same ledger).
+        vm.onClosed()
+        vm.onOpened(true, false, false)
+        assertFalse((vm.stage.value as UpdateStage.Viewfinder).showTip)
+        val restarted = viewModel()
+        restarted.onOpened(true, false, false)
+        assertFalse((restarted.stage.value as UpdateStage.Viewfinder).showTip)
+        restarted.onPhotoReady(photo)
+        restarted.onRetake()
+        assertFalse((restarted.stage.value as UpdateStage.Viewfinder).showTip)
     }
 
     @Test
-    fun comingBackToTheForeground_doesNotCountANewOpening_noRestartOfTheViewfinder() {
+    fun comingBackToTheForeground_noRestartOfTheViewfinder() {
         val vm = viewModel()
         vm.onOpened(true, false, false)
         val first = vm.stage.value
         vm.onOpened(true, false, false)
         assertSame(first, vm.stage.value)
-        assertEquals(1, ledger.openings)
     }
 
     @Test
@@ -206,7 +220,10 @@ class UpdateViewModelTest {
                 }
             results.forEach {
                 assertTrue(it is UpdateStage.Viewfinder)
-                assertFalse((it as UpdateStage.Viewfinder).showTip)
+                assertTrue(
+                    "the tip is back while the double tap was never used",
+                    (it as UpdateStage.Viewfinder).showTip,
+                )
             }
             assertEquals("no write, no network", 0, store.commits)
         }

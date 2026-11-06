@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,7 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -95,7 +95,8 @@ class OpenedPhoto(
     override fun toString(): String = "OpenedPhoto(redacted)"
 }
 
-private val CardPhotoHeight = 108.dp
+/** The tile "Partage ta position…" keeps a modest height; the photo itself is a SQUARE (PM, 2026-11-06). */
+private val NeedsPositionTileHeight = 108.dp
 private const val MAX_PHOTO_PIXELS = 4_000_000L
 
 /** The picture of a photo read from the network, or null when it is not an image or is far too big (somebody else wrote it). */
@@ -157,17 +158,18 @@ private fun PhotoWindow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(CardPhotoHeight)
+                // A SQUARE as wide as the card, centred on the middle of the photo (a centred crop, never stretched); the whole photo is in full screen.
+                .aspectRatio(1f)
                 .clip(ShapeSm)
                 .clickable(role = Role.Button) { onOpen(OpenedPhoto(name, photo)) }
                 .semantics { contentDescription = "$openName. $label" },
     ) {
-        // A fixed window: the photo is centred, a little above the middle (a face is rarely in the middle); the whole photo is in full screen.
+        // A square window centred on the middle of the photo; the whole photo is in full screen.
         Image(
             bitmap = bitmap,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            alignment = BiasAlignment(0f, -0.3f),
+            alignment = Alignment.Center,
             modifier = Modifier.fillMaxSize(),
         )
         Text(
@@ -192,7 +194,7 @@ private fun NeedsPositionTile() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(CardPhotoHeight)
+                .height(NeedsPositionTileHeight)
                 .clip(ShapeSm)
                 .background(colorActionPrimaryTint5)
                 .border(StrokeHairline, colorBorderAction.copy(alpha = 0.4f), ShapeSm)

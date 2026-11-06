@@ -67,14 +67,23 @@ class AndroidPhotoEncoder(
             }
         }
 
-    /** The bitmap turned by [degrees] (the rotation the sensor reports), so that the pixels are upright. The source is recycled when a new one is made. */
+    /**
+     * The bitmap turned by [degrees] (the rotation the sensor reports), so that the pixels are upright. The source is recycled when a new one is made.
+     * [mirror] (the FRONT camera only, decision of the PM of 2026-11-06): a horizontal symmetry applied AFTER the turn, so that the photo is the REFLECTION of the
+     * scene, exactly what the viewfinder of the front camera shows (the preview is mirrored by the system, the captured image is not). The back camera is never mirrored.
+     */
     fun upright(
         bitmap: Bitmap,
         degrees: Int,
+        mirror: Boolean = false,
     ): Bitmap {
         val turn = ((degrees % FULL_TURN) + FULL_TURN) % FULL_TURN
-        if (turn == 0) return bitmap
-        val matrix = Matrix().apply { postRotate(turn.toFloat()) }
+        if (turn == 0 && !mirror) return bitmap
+        val matrix =
+            Matrix().apply {
+                postRotate(turn.toFloat())
+                if (mirror) postScale(-1f, 1f)
+            }
         val turned = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         if (turned !== bitmap) bitmap.recycle()
         return turned

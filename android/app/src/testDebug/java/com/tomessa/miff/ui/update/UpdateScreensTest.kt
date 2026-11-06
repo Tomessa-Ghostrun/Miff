@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.data.feed.PhotoCache
+import com.tomessa.miff.data.feed.PhotoLookup
+import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.profile.AndroidAvatarCodec
 import com.tomessa.miff.data.tracking.PhotoPosition
@@ -63,6 +65,7 @@ import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
+import com.tomessa.miff.domain.update.SharedPhoto
 import com.tomessa.miff.domain.update.UpdatePhoto
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeNetwork
@@ -391,6 +394,7 @@ class UpdateScreensTest {
     private fun feedWith(
         ago: Long,
         presence: PresenceValue = PresenceValue.OUT,
+        hasPhoto: Boolean = false,
     ): FeedUiState.Ready {
         val members = listOf(MiffMember(me, "Camille", "X", null, MiffRole.OWNER, true, "+33612345678"))
         val status =
@@ -399,7 +403,7 @@ class UpdateScreensTest {
                 "p1",
                 now - ago,
                 now - ago,
-                false,
+                hasPhoto,
                 80,
                 MemberLocationAccess.BACKGROUND,
                 now - minute,
@@ -437,6 +441,7 @@ class UpdateScreensTest {
     private fun Tabs(
         feed: FeedUiState,
         vm: UpdateViewModel = remember { viewModel() },
+        photos: PhotoReader? = null,
     ) = MainTabs(
         tabBar = TabBarConfig.forBuild(true),
         profileState = ProfileTabUiState(),
@@ -449,7 +454,7 @@ class UpdateScreensTest {
         onCreateMiff = {},
         onJoinMiff = {},
         onOpenMiff = {},
-        feed = FeedHost(state = feed),
+        feed = FeedHost(state = feed, photos = photos),
         update = UpdateHost(vm, AndroidAvatarCodec(context())),
     )
 
@@ -566,5 +571,42 @@ class UpdateScreensTest {
         // The central button is still there and reachable.
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_red_a11y)).assertExists()
         shoot("update-bulle-plafonnee")
+    }
+
+    // --- FEED-4: the photo on the card is a SQUARE, centred (PM, 2026-11-06) ----------------------------------------------------------------
+
+    private class OnePhoto(
+        private val photo: SharedPhoto,
+    ) : PhotoReader {
+        override suspend fun read(
+            miffId: String,
+            uid: String,
+            lastUpdateAtMillis: Long,
+        ): PhotoLookup = PhotoLookup.Found(photo)
+    }
+
+    @Test
+    fun thePhotoOnTheCard_isASquare_asWideAsTheCard_andOpensInFullScreenOnATouch() {
+        val reader = OnePhoto(SharedPhoto(jpeg(), now, now + 3_600_000L, null))
+        show {
+            Tabs(
+                feedWith(ago = 10 * minute, presence = PresenceValue.IN_TRUSTED, hasPhoto = true),
+                photos = reader,
+            )
+        }
+        val node =
+            composeRule.onNode(
+                androidx.compose.ui.test
+                    .hasContentDescription("Ouvrir la photo de", substring = true),
+            )
+        node.assertExists()
+        val bounds = node.getUnclippedBoundsInRoot()
+        val width = bounds.right - bounds.left
+        val height = bounds.bottom - bounds.top
+        assertTrue("a square: $width x $height", kotlin.math.abs(width.value - height.value) < 1f)
+        assertTrue("taller than the old window of 108 dp: $height", height.value > 200f)
+        shoot("update-photo-carre-feed")
+        node.performClick()
+        composeRule.onNodeWithContentDescription("Fermer la photo").assertExists()
     }
 }

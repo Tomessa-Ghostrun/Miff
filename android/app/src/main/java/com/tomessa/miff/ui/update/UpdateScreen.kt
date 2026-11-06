@@ -275,6 +275,7 @@ fun UpdateTab(
             is UpdateStage.Viewfinder -> {
                 ViewfinderStage(
                     showTip = current.showTip,
+                    onDoubleTapSwitch = viewModel::onSwitchedByDoubleTap,
                     prepareFailed = current.prepareFailed,
                     encoder = encoder,
                     onPhoto = viewModel::onPhotoReady,
@@ -382,6 +383,7 @@ private val FlipSize = 48.dp
 @Composable
 private fun ViewfinderStage(
     showTip: Boolean,
+    onDoubleTapSwitch: () -> Unit,
     prepareFailed: Boolean,
     encoder: AndroidPhotoEncoder,
     onPhoto: (UpdatePhoto) -> Unit,
@@ -410,8 +412,17 @@ private fun ViewfinderStage(
                     .align(Alignment.Center)
                     .size(boxWidth, boxHeight)
                     // Two quick taps OUTSIDE the buttons switch the camera, and back. The buttons keep their own taps (they sit above this).
-                    .pointerInput(handle) { detectTapGestures(onDoubleTap = { handle.switchLens() }) }
-                    .semantics {
+                    .pointerInput(handle) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                if (handle.canSwitch) {
+                                    handle.switchLens()
+                                    // The tip is useless from now on, for good.
+                                    onDoubleTapSwitch()
+                                }
+                            },
+                        )
+                    }.semantics {
                         if (handle.canSwitch) {
                             customActions =
                                 listOf(CustomAccessibilityAction(switchName) { handle.switchLens().let { true } })
@@ -471,12 +482,17 @@ private fun ViewfinderStage(
                         },
                 )
                 Shutter {
+                    // The front camera: the photo is the reflection of the scene, as the viewfinder shows it; the back camera is left as it is.
+                    val front = handle.lens == CameraLens.FRONT
                     handle.takePhoto(context) { bitmap, rotation ->
                         if (bitmap == null) {
                             onPhotoFailed()
                         } else {
                             scope.launch {
-                                val upright = withContext(Dispatchers.Default) { encoder.upright(bitmap, rotation) }
+                                val upright =
+                                    withContext(
+                                        Dispatchers.Default,
+                                    ) { encoder.upright(bitmap, rotation, mirror = front) }
                                 val photo = encoder.encode(upright, aspect)
                                 upright.recycle()
                                 if (photo != null) onPhoto(photo) else onPhotoFailed()
@@ -561,7 +577,7 @@ private fun PreviewStage(
     actions: UpdateActions,
 ) {
     val photo = stage.photo
-    // What is drawn is the very JPEG that will be published (no mirror, the same crop): the preview is the truth.
+    // What is drawn is the very JPEG that will be published (selfie: the reflection, as in the viewfinder; the same crop): the preview is the truth.
     val bitmap = remember(photo) { BitmapFactory.decodeByteArray(photo.jpeg, 0, photo.jpeg.size)?.asImageBitmap() }
     val takenAnnouncement = stringResource(R.string.update_preview_taken_a11y)
     val canPublish = !stage.publishing && stage.notice != PreviewNotice.Stale && stage.notice != PreviewNotice.TooMany
