@@ -9,7 +9,7 @@ import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, leaveWithPositionOps, removeMemberWithPositionOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
   serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, positionDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
-  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH,
+  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH, inMs,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -539,6 +539,50 @@ const scenarios = [
     hosts: [H.photosCreate, H.statusUpdate],
     prepare: seedSessions('bob'),
     run: (env) => commit(db(env, 'bob'), [set(`${M1}/photos/bob`, photoDoc()), set(`${M1}/status/bob`, statusDoc({ hasPhoto: true, deviceId: DEVICE_A }))]),
+  },
+  // R-PHOTO-LOC : localisation de la photo d'update. Seule la lecture d'une photo localisée coûte plus (2 -> 4) ; l'écriture reste à 1 lecture.
+  {
+    id: 'READS-photo-loc-read',
+    title: "R-PHOTO-LOC : lecture de la photo LOCALISÉE d'un autre membre (get : Miff + mon partage + MA position)",
+    name: "Lecture d'une photo localisée (get)",
+    limit: 10,
+    hosts: [H.photosGet],
+    prepare: async (env) => {
+      await seedAliceBobV3Positions(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0, lat: 48.85661, lng: 2.35222, measuredAt: T0 })));
+    },
+    run: (env) => db(env, 'bob').doc(`${M1}/photos/alice`).get(),
+  },
+  {
+    id: 'READS-photo-loc-manual-update',
+    title: 'R-PHOTO-LOC : mise à jour manuelle avec photo LOCALISÉE + statut avec le deviceId (batch de 2)',
+    name: 'Mise à jour manuelle avec photo localisée (batch de 2)',
+    lot: true,
+    hosts: [H.photosCreate, H.statusUpdate],
+    prepare: async (env) => {
+      await seedBobV3Position(env);
+      await seedSessions('bob')(env);
+    },
+    run: (env) =>
+      commit(db(env, 'bob'), [
+        set(`${M1}/photos/bob`, photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000) })),
+        set(`${M1}/status/bob`, statusDoc({ hasPhoto: true, deviceId: DEVICE_A })),
+      ]),
+  },
+  {
+    id: 'READS-photo-loc-activate-all',
+    title: 'R-PHOTO-LOC : pire cas (non recommandé) activer le partage + statut + position + photo localisée dans un lot de 4, avec le deviceId',
+    name: 'Activation + statut + position + photo localisée (batch de 4)',
+    lot: true,
+    hosts: [H.membersUpdate, H.statusCreate, H.positionsCreate, H.photosCreate],
+    prepare: seedSessions('carol'),
+    run: (env) =>
+      commit(db(env, 'carol'), [
+        update(`${M1}/members/carol`, { sharing: sharingOnNowV3() }),
+        set(`${M1}/status/carol`, statusDoc({ deviceId: DEVICE_A })),
+        set(`${M1}/positions/carol`, positionDoc({ deviceId: DEVICE_A })),
+        set(`${M1}/photos/carol`, photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000) })),
+      ]),
   },
   {
     id: 'READS-code-lookup',

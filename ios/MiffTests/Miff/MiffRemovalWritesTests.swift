@@ -13,7 +13,7 @@ final class MiffRemovalWritesTests: XCTestCase {
         lot.map { "\($0.path) \($0.kind)" }
     }
 
-    func testRemovingIsExactlySixWritesThePersonsThreeThenTheNewCodesThreeAndNothingElse() {
+    func testRemovingIsExactlySevenWritesThePersonsFourThenTheNewCodesThreeAndNothingElse() {
         let lot = MiffWrites.removeMember(
             miffId: miffId, targetUid: "uid-2", name: "Chez nous", oldCode: oldCode, newCode: newCode
         )
@@ -24,13 +24,15 @@ final class MiffRemovalWritesTests: XCTestCase {
                 "miffs/\(miffId)/members/uid-2 delete",
                 "miffs/\(miffId)/status/uid-2 delete",
                 "miffs/\(miffId)/photos/uid-2 delete",
+                "miffs/\(miffId)/positions/uid-2 delete",
                 "miffs/\(miffId) update",
                 "joinCodes/\(newCode) set",
                 "joinCodes/\(oldCode) delete"
             ]
         )
-        // Rien n'est ajouté à ce lot : avec ces six écritures les règles lisent jusqu'à 18 documents sur 20 (critère R2).
-        XCTAssertEqual(lot.count, 6)
+        // Rien n'est ajouté à ce lot : les règles lisent jusqu'à 18 documents sur 20 (critère R2) ; supprimer la dernière
+        // position connue de la personne (LOC-4a, comme Android) n'en lit aucun de plus.
+        XCTAssertEqual(lot.count, 7)
         let touchesUserIndex = lot.contains { $0.path.hasPrefix("users/") }
         XCTAssertFalse(touchesUserIndex, "le créateur ne touche jamais à l'index de la personne")
     }
@@ -40,10 +42,10 @@ final class MiffRemovalWritesTests: XCTestCase {
             miffId: miffId, targetUid: "uid-2", name: "Chez nous", oldCode: oldCode, newCode: newCode
         )
 
-        XCTAssertEqual(lot[3].data, ["joinCode": .string(newCode)])
-        XCTAssertEqual(lot[4].data["miffId"], .string(miffId))
-        XCTAssertEqual(lot[4].data["miffName"], .string("Chez nous"))
-        XCTAssertEqual(Set(lot[4].data.keys), ["miffId", "miffName", "createdAt"])
+        XCTAssertEqual(lot[4].data, ["joinCode": .string(newCode)])
+        XCTAssertEqual(lot[5].data["miffId"], .string(miffId))
+        XCTAssertEqual(lot[5].data["miffName"], .string("Chez nous"))
+        XCTAssertEqual(Set(lot[5].data.keys), ["miffId", "miffName", "createdAt"])
     }
 
     func testARemovalThatKeepsTheCodeOrUsesAMalformedOneIsRefusedBeforeAnyLotIsBuilt() {
@@ -76,7 +78,7 @@ final class MiffRemovalWritesTests: XCTestCase {
             oldCodeExists: false
         )
 
-        XCTAssertEqual(lot.count, 5)
+        XCTAssertEqual(lot.count, 6)
         XCTAssertFalse(lot.contains { $0.path == "joinCodes/\(oldCode)" })
     }
 
@@ -90,7 +92,7 @@ final class MiffRemovalWritesTests: XCTestCase {
         XCTAssertFalse(lot.contains { $0.path.contains("/members/") }, "renouveler ne touche à aucun membre")
     }
 
-    func testLeavingIsFourDeletionsAndTheIndexIsLeftOutOnlyWhenItWasNotFound() {
+    func testLeavingIsFiveDeletionsAndTheIndexIsLeftOutOnlyWhenItWasNotFound() {
         let lot = MiffWrites.leave(miffId: miffId, uid: "uid-2", membershipKey: "free")
 
         XCTAssertEqual(
@@ -99,11 +101,12 @@ final class MiffRemovalWritesTests: XCTestCase {
                 "miffs/\(miffId)/members/uid-2",
                 "miffs/\(miffId)/status/uid-2",
                 "miffs/\(miffId)/photos/uid-2",
+                "miffs/\(miffId)/positions/uid-2",
                 "users/uid-2/memberships/free"
             ]
         )
         XCTAssertTrue(lot.allSatisfy { $0.kind == .delete })
-        XCTAssertEqual(MiffWrites.leave(miffId: miffId, uid: "uid-2", membershipKey: nil).count, 3)
+        XCTAssertEqual(MiffWrites.leave(miffId: miffId, uid: "uid-2", membershipKey: nil).count, 4)
         // Un compte Premium met son index sous l'identifiant de la Miff.
         XCTAssertEqual(
             MiffWrites.leave(miffId: miffId, uid: "uid-2", membershipKey: miffId).last?.path,
@@ -142,6 +145,7 @@ final class MiffRemovalWritesTests: XCTestCase {
                 "joinCodes/\(oldCode) delete",
                 "miffs/\(miffId)/status/uid-1 delete",
                 "miffs/\(miffId)/photos/uid-1 delete",
+                "miffs/\(miffId)/positions/uid-1 delete",
                 "miffs/\(miffId)/members/uid-1 delete",
                 "users/uid-1/memberships/free delete"
             ]
@@ -166,7 +170,17 @@ final class MiffRemovalWritesTests: XCTestCase {
 
         XCTAssertFalse(noCode.contains { $0.path.hasPrefix("joinCodes/") })
         XCTAssertFalse(noIndex.contains { $0.path.hasPrefix("users/") })
-        XCTAssertEqual(neither.count, 5)
+        XCTAssertEqual(neither.count, 6)
+    }
+
+    func testTheFinalLotIsEightWritesOneMoreThanTheContractOfTheRulesWhichLeavesThePhotoOut() {
+        let lot = MiffWrites.finalDelete(
+            miffId: miffId, uid: "uid-1", code: oldCode, codeExists: true, membershipKey: "free"
+        )
+
+        // Le contrat des règles en compte 7 (sans la photo) ; la photo et la dernière position ne coûtent aucune lecture.
+        XCTAssertEqual(lot.count, 8)
+        XCTAssertEqual(lot.filter { $0.path.contains("/positions/") }.map { $0.kind }, [.delete])
     }
 
     func testTheLotsNeverShowTheirContentInADescription() {

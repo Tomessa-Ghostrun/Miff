@@ -31,8 +31,10 @@ import com.tomessa.miff.ui.theme.colorBgPlaceholder
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderDefault
 import com.tomessa.miff.ui.theme.colorTextDescription
+import com.tomessa.miff.ui.theme.colorTextError
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyLarge
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
 
@@ -40,8 +42,9 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
  * Settings > Mon compte (mockup "reglages -4", ticket ONB-3a/3b, criteria B1 and B2). The e-mail address is shown and cannot
  * be changed (no change of e-mail in this version). An e-mail account can ask for the reset e-mail ("Changer mon mot de
  * passe", decision Q5: no form); a Google account only sees how it signs in. "Se déconnecter" is a SECONDARY button (the mockup made it as prominent
- * as the main action) and asks for a confirmation with two buttons of the same weight. No "Supprimer mon compte" line: it
- * arrives with the account deletion ticket (AUTH-5), never with the text of the mockup.
+ * as the main action) and asks for a confirmation with two buttons of the same weight. "Supprimer mon compte" (AUTH-5, criterion SC1)
+ * is a discreet red TEXT link under "Se déconnecter", for everyone who is signed in: never a filled button, never as visible as the main
+ * action. It only opens the information screen; nothing is deleted or written from here.
  */
 @Composable
 fun AccountScreen(
@@ -51,6 +54,7 @@ fun AccountScreen(
     onSignOutRequested: () -> Unit,
     onSignOutConfirmed: () -> Unit,
     onSignOutCancelled: () -> Unit,
+    onDeleteRequested: () -> Unit,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_account_title), onBack = onBack) {
         state.email?.let { email -> ReadOnlyEmail(email) }
@@ -66,6 +70,18 @@ fun AccountScreen(
             enabled = !state.isSigningOut,
             modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.size(Spacing.m))
+        TextButton(
+            onClick = onDeleteRequested,
+            enabled = !state.isSigningOut,
+            modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = Spacing.minTouchTarget),
+        ) {
+            Text(
+                text = stringResource(R.string.settings_delete_entry),
+                style = textBodyLarge,
+                color = colorTextError,
+            )
+        }
     }
     if (state.confirmingSignOut) {
         AlertDialog(

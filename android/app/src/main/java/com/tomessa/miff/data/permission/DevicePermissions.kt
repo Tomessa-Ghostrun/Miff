@@ -52,6 +52,9 @@ interface NotificationAskStore {
     fun wasShown(uid: String): Boolean
 
     fun markShown(uid: String)
+
+    /** The account was deleted (AUTH-5): nothing is kept for it. */
+    fun forget(uid: String) {}
 }
 
 /** A flag per account in private preferences (no secret, no position). The preference file is not part of any backup (see backup_rules.xml). */
@@ -68,5 +71,9 @@ class SharedPreferencesNotificationAskStore(
 
     override fun markShown(uid: String) {
         prefs.edit().putBoolean(uid, true).apply()
+    }
+
+    override fun forget(uid: String) {
+        prefs.edit().remove(uid).apply()
     }
 }

@@ -21,6 +21,13 @@ struct EntitlementRead: Equatable {
     let expiresAtMillis: Int?
 }
 
+/// Mon consentement tel que ma fiche le dit : est-ce que je partage, et quelle est la version du texte que j'ai accepté (nil
+/// si la fiche n'en a pas). Rien d'autre n'est lu.
+struct SharingConsentRead: Equatable {
+    let enabled: Bool
+    let version: String?
+}
+
 /// Les opérations Firestore derrière `FirestoreMiffRepository`. Les écritures sont des TRANSACTIONS (comme celles du
 /// profil) : un lot simple fait sans réseau est mis en attente et part plus tard, tout seul ; une transaction n'existe
 /// qu'en ligne, donc « pas de confirmation » veut toujours dire « rien d'écrit » (ticket Miff §5.11, risque R4). Derrière un
@@ -39,6 +46,21 @@ protocol MiffStore {
     /// Ma fiche dit-elle que je partage ? Lu auprès du SERVEUR (pour vérifier un lot dont la réponse s'est perdue) ; nil
     /// s'il n'y a pas de fiche.
     func readSharing(miffId: String, uid: String) async throws -> Bool?
+
+    /// Mon consentement tel que ma fiche le dit (LOC-4a : la version du texte que j'ai accepté est-elle une ancienne ?), lu
+    /// auprès du SERVEUR ; nil s'il n'y a pas de fiche. Une lecture de règles par document (`isMember`, `miffAlive`), un document.
+    func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead?
+
+    /// UNE transaction (LOC-4a, renouvellement du consentement) : ma fiche est LUE dans chacune des Miffs de `miffIds` DANS la
+    /// transaction, et `build` fait le lot pour celles où je partage ENCORE (`sharing.enabled` vrai) ET où le texte accepté est ENCORE
+    /// un ancien (`MiffSharingConsent.isRenewalDue`) seulement : rien n'est écrit pour les autres (un partage arrêté entre-temps, ou
+    /// une Miff déjà renouvelée sur un autre téléphone, n'est jamais réécrit par un renouvellement).
+    /// Rend les identifiants écrits (vide : rien n'a été écrit).
+    func commitWhereSharing(
+        uid: String,
+        miffIds: [String],
+        build: @escaping ([String]) -> [DocWrite]
+    ) async throws -> [String]
 
     /// Une lecture que seule la personne peut faire et qui réussit toujours quand le serveur est joignable et App Check en
     /// ordre.
@@ -197,6 +219,10 @@ struct MyMiffs: Equatable, CustomStringConvertible {
     let premium: Bool
     /// Vrai quand la réponse vient du cache du téléphone parce que le serveur n'a pas pu être joint.
     let fromCache: Bool
+    /// Faux quand la formule de la personne n'est PAS connue (lecture de l'abonnement échouée, ou réponse venue du cache) : `premium`
+    /// vaut alors faux par défaut, ce qui ne veut pas dire « gratuit ». Les écrans des lieux n'affirment rien de la formule gratuite
+    /// dans ce cas.
+    var premiumKnown = true
 
     var description: String {
         "MyMiffs(redacted)"
@@ -226,14 +252,14 @@ protocol MiffRepository {
     /// téléphone (le même générateur que le premier), vérifié libre, et montré seulement une fois que le serveur a dit oui.
     func renewCode(miffId: String) async -> CodeChangeResult
 
-    /// Retirer un proche (critères R1 à R7) : le créateur seulement. UN lot de 6 écritures qui renouvelle TOUJOURS le code (les
+    /// Retirer un proche (critères R1 à R7) : le créateur seulement. UN lot de 7 écritures qui renouvelle TOUJOURS le code (les
     /// règles refusent un retrait qui ne le fait pas), même si la personne était déjà partie. Sans écran exprès : la fin d'un
     /// abonnement Premium et la suppression d'un compte (AUTH-5) l'appellent sans interface. Jamais mis en attente hors
     /// connexion : pas de réponse du serveur = rien d'écrit (le lot est une transaction).
     func removeMember(miffId: String, targetUid: String) async -> CodeChangeResult
 
-    /// « Quitter la Miff » (critère Q1) : un membre seulement (le créateur ne peut que supprimer la Miff). UN lot de 4
-    /// suppressions ; NE renouvelle PAS le code (décision du PM du 2026-10-31).
+    /// « Quitter la Miff » (critère Q1) : un membre seulement (le créateur ne peut que supprimer la Miff). UN lot de 5
+    /// suppressions (dernière position connue comprise) ; NE renouvelle PAS le code (décision du PM du 2026-10-31).
     func leave(uid: String, miffId: String) async -> MiffWriteResult
 
     func observe(miffId: String) -> AsyncStream<MiffObservation>

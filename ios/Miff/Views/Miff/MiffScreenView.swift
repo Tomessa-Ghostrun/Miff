@@ -34,15 +34,22 @@ struct MiffScreenView: View {
     @StateObject private var viewModel: MiffScreenViewModel
     @Environment(\.scenePhase) private var scenePhase
     private let onBack: () -> Void
+    private let places: PlaceListContext
 
-    init(miffId: String, dependencies: MiffScreenDependencies, onBack: @escaping () -> Void) {
+    init(
+        miffId: String,
+        dependencies: MiffScreenDependencies,
+        places: PlaceListContext = PlaceListContext(),
+        onBack: @escaping () -> Void
+    ) {
         _viewModel = StateObject(wrappedValue: MiffScreenViewModel(miffId: miffId, dependencies: dependencies))
+        self.places = places
         self.onBack = onBack
     }
 
     var body: some View {
         let key = ObserveKey(active: scenePhase != .background, restart: viewModel.state.restart)
-        MiffScreenContent(state: viewModel.state, actions: viewModel.actions(onBack: onBack))
+        MiffScreenContent(state: viewModel.state, actions: viewModel.actions(onBack: onBack), places: places)
             .task(id: key) {
                 if key.active {
                     await viewModel.observe()
@@ -53,6 +60,10 @@ struct MiffScreenView: View {
                 if departed {
                     onBack()
                 }
+            }
+            // Le message calme d'un lieu enregistré dure jusqu'à ce que la personne quitte cet écran (maquette 04L).
+            .onDisappear {
+                places.onLeave()
             }
     }
 }
@@ -86,6 +97,8 @@ extension MiffScreenViewModel {
 struct MiffScreenContent: View {
     let state: MiffScreenState
     let actions: MiffScreenActions
+    /// Ce que la section des lieux reçoit de l'extérieur (LOC-3) : Miff+ ou non, le message d'un enregistrement, les gestes.
+    var places = PlaceListContext()
 
     private var title: String {
         state.name.isEmpty ? L10n.string("miff_screen_title_loading") : state.name
@@ -106,7 +119,7 @@ struct MiffScreenContent: View {
                 }
                 .buttonStyle(.miffSecondaryFullWidth)
             case .ready:
-                MiffReadySections(state: state, actions: actions)
+                MiffReadySections(state: state, actions: actions, places: places)
             }
         }
         // Le code est à l'écran : pas de vignette dans le sélecteur d'applications.
@@ -145,6 +158,7 @@ struct MiffScreenContent: View {
 private struct MiffReadySections: View {
     let state: MiffScreenState
     let actions: MiffScreenActions
+    let places: PlaceListContext
 
     /// Le message d'une fenêtre est dit dans la fenêtre ; les autres (renommer) le sont ici.
     private var showsMessage: Bool {
@@ -180,7 +194,7 @@ private struct MiffReadySections: View {
                 action: actions.onSharingRequested
             )
         }
-        MiffPlacesSection(state: state)
+        MiffPlacesSection(state: state, places: places)
         MiffFootSection(state: state, actions: actions)
         Spacer().frame(height: Spacing.lg)
     }
@@ -357,8 +371,11 @@ private struct MiffMembersSection: View {
     }
 }
 
+/// « Lieux de confiance » : la liste des lieux de CETTE Miff, avec « Ajouter un lieu » pour son créateur (ticket LOC-3). Un lieu
+/// attaché à plusieurs Miffs apparaît dans chacune.
 private struct MiffPlacesSection: View {
     let state: MiffScreenState
+    let places: PlaceListContext
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -367,23 +384,15 @@ private struct MiffPlacesSection: View {
                 title: L10n.string("miff_section_places_title"),
                 description: L10n.string("miff_section_places_description")
             )
-            if state.places.isEmpty {
-                Text("miff_places_empty")
-                    .miffTextStyle(textBodyRegular14)
-                    .foregroundColor(colorTextDescription.color)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.sm)
-            } else {
-                ForEach(state.places, id: \.id) { place in
-                    Text(verbatim: place.name)
-                        .miffTextStyle(textBodyRegular14)
-                        .foregroundColor(colorTextDescription.color)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, Spacing.sm)
-                        .padding(.vertical, Spacing.xs)
-                }
-            }
+            PlaceRows(
+                ui: PlaceListUi(
+                    places: state.places,
+                    isCreator: state.isOwner,
+                    premium: places.premium,
+                    notice: places.notice
+                ),
+                actions: places.actions
+            )
         }
     }
 }

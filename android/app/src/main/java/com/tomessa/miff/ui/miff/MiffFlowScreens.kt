@@ -47,6 +47,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.settings.DeleteAccountLink
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -138,6 +139,7 @@ fun MiffChoiceScreen(
     onCreate: () -> Unit,
     onJoin: () -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit,
 ) {
     val pane = stringResource(R.string.miff_choice_title)
     Column(
@@ -180,6 +182,8 @@ fun MiffChoiceScreen(
         TextButton(onClick = onSignOut, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
             Text(stringResource(R.string.auth_signout_action), style = textBodyBold16, color = colorActionPrimary)
         }
+        // AUTH-5a: the deletion must be reachable here too (a person without a Miff never sees Settings).
+        DeleteAccountLink(onClick = onDeleteAccount)
     }
 }
 

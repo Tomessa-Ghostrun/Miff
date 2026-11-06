@@ -1,11 +1,29 @@
 import SwiftUI
 
-/// Les écrans du flux Miff dans une navigation. Seul l'identifiant de la Miff voyage dans une destination : jamais le code,
-/// jamais le nom.
+/// Les écrans du flux Miff dans une navigation. Seuls des identifiants voyagent dans une destination (la Miff, le lieu, un mot fixe
+/// pour la raison de l'offre) : jamais le code, jamais un nom, une adresse ni une coordonnée.
 enum MiffRoute: Hashable {
     case create
     case join
     case miff(String)
+    /// Le formulaire d'un lieu : nouveau (`placeId` nil), ou le lieu à modifier, avec la Miff d'où il a été ouvert.
+    case placeForm(placeId: String?, miffId: String?)
+    case placeDetail(miffId: String, placeId: String)
+    case placePaywall(PaywallReason)
+
+    /// Cet écran dépend de cette Miff : il part avec elle quand son accès est perdu.
+    func belongs(to miffId: String) -> Bool {
+        switch self {
+        case .miff(let id):
+            return id == miffId
+        case .placeDetail(let id, _):
+            return id == miffId
+        case .placeForm(_, let id):
+            return id == miffId
+        case .create, .join, .placePaywall:
+            return false
+        }
+    }
 }
 
 /// L'étape « créer ou rejoindre » de l'onboarding (une personne qui a un profil et pas de Miff, destination `miffChoice`) : le
@@ -54,8 +72,8 @@ struct MiffOnboardingHost: View {
                     onOpenMiff: { _ in openExisting() }
                 )
             )
-        case .miff:
-            // Pas d'écran de Miff avant la fin de l'onboarding : la personne n'en a pas encore.
+        case .miff, .placeForm, .placeDetail, .placePaywall:
+            // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         }
     }
@@ -97,6 +115,8 @@ struct MiffOnboardingHost: View {
 struct MiffHomeHost: View {
     private let environment: AppEnvironment
     @ObservedObject private var directory: MiffDirectory
+    /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
+    @ObservedObject private var placeNotices: PlaceNotices
     @State private var path: [MiffRoute] = []
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
     @State private var banner: DeletionBanner?
@@ -104,6 +124,7 @@ struct MiffHomeHost: View {
     init(environment: AppEnvironment) {
         self.environment = environment
         _directory = ObservedObject(wrappedValue: environment.miffDirectory)
+        _placeNotices = ObservedObject(wrappedValue: environment.placeNotices)
     }
 
     var body: some View {
@@ -195,9 +216,101 @@ struct MiffHomeHost: View {
             MiffScreenView(
                 miffId: miffId,
                 dependencies: environment.miffScreenDependencies(),
+                places: placeContext(for: miffId),
                 onBack: { pop() }
             )
+        default:
+            placeDestination(route)
         }
+    }
+
+    // MARK: - Les lieux (LOC-3)
+
+    @ViewBuilder
+    private func placeDestination(_ route: MiffRoute) -> some View {
+        switch route {
+        case .placeForm(let placeId, let miffId):
+            PlaceFormView(
+                placeId: placeId,
+                miffId: miffId,
+                dependencies: environment.placeFormDependencies(),
+                onBack: { pop() },
+                exits: PlaceFormExits(
+                    onEnd: { finishPlaceForm($0) },
+                    onPaywall: { reason, replacesForm in openPlacePaywall(reason, replacesForm: replacesForm) }
+                )
+            )
+        case .placeDetail(let miffId, let placeId):
+            PlaceDetailView(
+                miffId: miffId,
+                placeId: placeId,
+                dependencies: environment.placeDetailDependencies(),
+                navigation: PlaceDetailNavigation(
+                    onBack: { pop() },
+                    onEdit: { open(.placeForm(placeId: placeId, miffId: miffId)) },
+                    onGone: { leavePlaceDetail() }
+                )
+            )
+        case .placePaywall(let reason):
+            PlacePaywallView(reason: reason, tracker: environment.analyticsTracker, onClose: { pop() })
+        case .create, .join, .miff:
+            EmptyView()
+        }
+    }
+
+    /// Ce que la liste des lieux d'une Miff reçoit : Miff+ ou non (nil tant que ce n'est pas lu auprès du serveur), le message d'un
+    /// enregistrement, les gestes.
+    private func placeContext(for miffId: String) -> PlaceListContext {
+        // Miff+ n'est affirmé (ou nié) que s'il a été LU auprès du serveur : sinon nil, et la liste n'affirme rien de la formule
+        // gratuite (ni compteur, ni pastille).
+        var premium: Bool?
+        if case .ready(let ready) = directory.state, ready.premiumKnown {
+            premium = ready.premium
+        }
+        let notices = placeNotices
+        return PlaceListContext(
+            premium: premium,
+            notice: notices.notice,
+            actions: PlaceListActions(
+                onOpen: { place in open(.placeDetail(miffId: miffId, placeId: place.id)) },
+                // Toujours le formulaire : il relit l'abonnement et les lieux auprès du SERVEUR et ne propose l'offre que si la limite
+                // est vraiment atteinte (jamais une décision prise sur l'annuaire, qui peut ignorer un Miff+).
+                onAdd: { _ in open(.placeForm(placeId: nil, miffId: nil)) }
+            ),
+            onLeave: { notices.consume() }
+        )
+    }
+
+    /// Le formulaire est fini. Un lieu supprimé (ou qui n'existe plus) ramène à la liste : le détail d'un lieu qui n'existe plus ne
+    /// vaut pas le retour.
+    private func finishPlaceForm(_ end: PlaceFormEnd) {
+        guard case .placeForm? = path.last else {
+            return
+        }
+        if end == .placeGone {
+            placeNotices.gone()
+        }
+        path.removeLast()
+        if end != .saved, case .placeDetail? = path.last {
+            path.removeLast()
+        }
+    }
+
+    /// L'offre s'ouvre ; elle REMPLACE le formulaire quand celui-ci n'a rien à offrir (la limite trouvée à l'ouverture).
+    private func openPlacePaywall(_ reason: PaywallReason, replacesForm: Bool) {
+        if replacesForm, case .placeForm? = path.last {
+            path.removeLast()
+        }
+        open(.placePaywall(reason))
+    }
+
+    /// Le lieu a été supprimé ailleurs pendant que son détail était ouvert : « Ce lieu n'existe plus. », et retour à la liste.
+    private func leavePlaceDetail() {
+        guard case .placeDetail? = path.last else {
+            return
+        }
+        placeNotices.gone()
+        path.removeLast()
     }
 
     /// « Ouvrir la Miff » : l'écran de saisie du code est remplacé par l'écran de cette Miff.
@@ -211,9 +324,8 @@ struct MiffHomeHost: View {
     /// Seul l'écran de CETTE Miff est quitté : une autre Miff ouverte derrière (Premium) reste où elle est.
     private func acknowledge(_ notice: LostNotice) {
         directory.dismissNotice()
-        if path.last == .miff(notice.miffId) {
-            path.removeLast()
-        }
+        // L'écran de cette Miff, et les détails de ses lieux ouverts par-dessus, partent ; une autre Miff derrière reste.
+        path.removeAll { $0.belongs(to: notice.miffId) }
     }
 
     private func retry() {

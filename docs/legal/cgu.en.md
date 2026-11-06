@@ -12,7 +12,7 @@ Welcome to Miff. These terms explain how to use the app, what you can expect fro
 >
 > - Miff helps you reassure your loved ones in everyday life. A "all is well" status **is not a guarantee** that the person is okay. A late status does **not necessarily** mean something is wrong: a phone that is off, out of battery, without network, in power-saving mode, or with location permission turned off is enough to explain a delay.
 > - Detection of arrivals and departures depends on your phone and its system. It can be delayed, imprecise, or may not happen. Notifications, when they exist, can also arrive late.
-> - A location shown in Miff is the last **saved** location, not the live position: it may be several hours old. Do not use it to find someone in case of danger.
+> - A location shown in Miff is the last **saved** location, not the live position: it may be several hours old. Do not use it to find someone in case of danger. Likewise, the place of a photo is where it was taken, not the person's current position.
 > - **If someone is in danger, or if you have a serious doubt about their safety, do not wait for Miff: call the emergency services. In France and across the European Union, 112 works everywhere (and in France: 15 for medical emergencies, 17 for the police, 18 for the fire brigade).**
 >
 > Miff is here to ease everyday worries. It replaces neither conversation between loved ones nor the emergency services.
@@ -28,7 +28,7 @@ Miff is published by **Tomessa MFOUKA (individual)**, **76 rue Marx Dormoy, 7501
 Miff is an app to **know your loved ones are okay, without bothering them**.
 - You create or join a **"Miff"**: your circle of trust (family, friends, partner…). You join a Miff with a **secret code**.
 - The creator of the Miff defines **trusted places** (home, school, work…), with their address, visible to all the members.
-- If you have agreed, your phone detects when you arrive at or leave a trusted place, and your circle sees an automatic **status** and your **last known location**, without you having to do anything. You can also send a **manual update** (a short text, with a photo if you wish).
+- If you have agreed, your phone detects when you arrive at or leave a trusted place, and your circle sees an automatic **status** and your **last known location**, without you having to do anything. You can also **share news** by hand by publishing a photo, taken with the app's camera (no text); it is published with the place where it was taken.
 
 ## 3. Accepting these terms
 
@@ -64,10 +64,11 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 The core of Miff is sharing your status related to trusted places. Here are our commitments and yours.
 
 - **It is never automatic without your knowledge.** Sharing with a Miff only starts after your explicit consent, given Miff by Miff, separate from your click on "Join". Nobody can turn it on for you.
-- **You can stop it at any time**, without justification, in the app settings. Stopping deletes your status, your update photo and your last known location for that Miff. Your loved ones then simply see "sharing turned off", without any alert message.
+- **You can stop it at any time**, without justification, in the app settings. Stopping deletes your status, your photo (with its place) and your last known location for that Miff. Your loved ones then simply see "sharing turned off", without any alert message.
 - **What your loved ones see.** If you share, the members of your Miff see your status (for example "at home") and **your last known location, with the time**. **Miff only keeps that last location** (latitude, longitude, time of the measurement), **with no history of trips**: each new location replaces the previous one. This is not live tracking.
-- **Who sees it**: only the members of the same Miff whose sharing is on, and only if they also share theirs. The creator of the Miff has no extra rights.
-- **Erasure**: your location is erased when you stop sharing, leave the Miff, are removed from the Miff, or when the Miff or your account is deleted. After 24 hours, it is only shown hidden, with its date (it stays stored until it is replaced or erased). Details are in the Privacy Policy.
+- **Your photo and its place.** If you publish a photo, it is **always published with the place where it was taken**, measured by your phone at that moment (with the time of that measurement). This place stays attached to the photo for 24 hours, even if your last known location changes in the meantime, and it does not tell where you are now.
+- **Who sees it**: only the members of the same Miff whose sharing is on, and only if they also share theirs. This also applies to the place of your photo: a member who does not share their location cannot open your photo. The creator of the Miff has no extra rights.
+- **Erasure**: your location, your photo and its place are erased when you stop sharing, leave the Miff, are removed from the Miff, or when the Miff or your account is deleted. After 24 hours, your location is only shown hidden, with its date, and your photo can no longer be read (they stay stored until they are replaced or erased). Details are in the Privacy Policy.
 - **Reciprocity**: to see other people's status and location, you must share yours.
 - **Miff needs "Always" location** (in the background, even when the app is closed, with precise location) to work. Without it, the app asks for it again and cannot be used normally. You can withdraw it at any time in your phone settings: this has no effect on your account, but Miff stops working until it is restored. Notifications, on the other hand, are optional.
 - **Danger zones (Miff+)**: the creator of a Miff can set up a "danger zone". If you enter a danger zone, your status is shown in red to the members of your Miff. This is information tied to a place the creator chose, not a judgement about you. Today, Miff sends no notification about it.
@@ -77,20 +78,23 @@ The core of Miff is sharing your status related to trusted places. Here are our 
 
 You agree not to:
 - use Miff to harass, threaten, control, intimidate or harm anyone;
-- post content (text, photo) that is illegal, violent, hateful, sexually explicit, or that infringes others' rights;
+- post content (profile photo, "Share news" photos) that is illegal, violent, hateful, sexually explicit, or that infringes others' rights;
+- publish an intimate or nude photo of a person without their agreement, or content that puts a minor at risk;
 - impersonate someone else;
 - save a person's address as a trusted place without their agreement, or use it to control them;
 - try to access data that is not yours, try to guess secret codes, bypass the app's protections, or disrupt the service (for example by sending requests in bulk);
 - copy, decompile or misuse the app or its services, except as the law allows;
 - use Miff for commercial or advertising purposes.
 
-## 8. Your content: photos and texts
+## 8. Your content: photos
 
-- You remain the owner of your content (profile photo, updates). You only authorise us to host it and display it to the members of your Miffs, in order to run the service.
-- **Update photos are no longer visible after 24 hours** and are deleted afterwards (see the Privacy Policy).
+- You remain the owner of your content (profile photo, photos you publish). You only authorise us to host it and display it to the members of your Miffs, in order to run the service.
+- **How it works.** A "Share news" photo is taken live with the app's camera (never from your gallery), with no text, and published with the place where it was taken. It is only visible to the members of your Miffs. **It is no longer visible after 24 hours** and is deleted afterwards (see the Privacy Policy).
 - **Respect others**: do not post a photo showing a person without their agreement, and do not post a photo of a child over whom you do not have parental authority. You are responsible for the content you send.
 - A member of a Miff can record what they see (a screenshot, for example). We cannot prevent it: only send what you are comfortable showing your circle.
-- You can report problematic content or behaviour to **tomessa.mfouka@gmail.com**. We may remove content that does not comply with these terms.
+- **Reporting content or behaviour.** Write to us at **tomessa.mfouka@gmail.com**, stating the Miff and the first name of the member concerned. We check this address at least once a week. Miff is not an emergency service: if a photo shows someone in danger, call the emergency services (112).
+- **What we do, and do not do.** We do not analyse photos automatically: we only look at them if someone reports them. We may remove content that does not comply with these terms, and suspend or delete the account of its author (article 12).
+- **If someone makes you uncomfortable**, you can leave the Miff at any time, and the creator of a Miff can remove a member (article 5).
 
 ## 9. Free Miff and Miff+
 
@@ -116,7 +120,7 @@ We do our best to make Miff work well, but we do not guarantee an uninterrupted 
 ## 12. Suspension and deletion of an account
 
 - **You can delete your account at any time in the app.** This deletes your account and the associated data (see the Privacy Policy). Remember to cancel your Miff+ subscription with the store. If you are the **creator** of a Miff, deleting your account also deletes that Miff, with its places, statuses, last known locations and photos. The other members then lose access to it: the app simply tells them, without any alarm, that the Miff no longer exists, and the data about them in that Miff, which has become unreadable, is erased the next time they open their app. Their own account is not affected and they can create or join another Miff. If you wish, let your loved ones know before deleting your account.
-- **We may suspend or delete an account** that does not comply with these terms (in particular articles 6 and 7), or in case of abuse, risk to other people's safety, or a request from an authority. Except in an emergency or where the law requires otherwise, we explain why and you can reply at **tomessa.mfouka@gmail.com**.
+- **We may suspend or delete an account** that does not comply with these terms (in particular articles 6, 7 and 8), or in case of abuse, risk to other people's safety, or a request from an authority. Except in an emergency or where the law requires otherwise, we explain why and you can reply at **tomessa.mfouka@gmail.com**.
 
 ## 13. Personal data
 

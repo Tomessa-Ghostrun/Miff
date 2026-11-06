@@ -47,7 +47,7 @@ final class SessionWriteSitesTests: XCTestCase {
             XCTAssertEqual(sends, guards, "\(path) : \(sends) envois de lot, \(guards) gardes")
             applyCalls += sends
         }
-        XCTAssertEqual(applyCalls, 3, "commit, commitWithProfile et commitWithMiff : trois sites d'écriture réels")
+        XCTAssertEqual(applyCalls, 4, "quatre sites d'écriture réels")
     }
 
     func testOnlyTheKnownFilesWriteDocumentsDirectly() throws {

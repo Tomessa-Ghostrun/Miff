@@ -134,7 +134,7 @@ class MiffScreensTest {
     fun choice_offersTheTwoWays_aQuietSignOut_andNoBackArrow() {
         var created = 0
         var joined = 0
-        show { MiffChoiceScreen(onCreate = { created++ }, onJoin = { joined++ }, onSignOut = {}) }
+        show { MiffChoiceScreen(onCreate = { created++ }, onJoin = { joined++ }, onSignOut = {}, onDeleteAccount = {}) }
         shoot("miff-a-choice")
         composeRule.onNodeWithText(text(R.string.miff_choice_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_choice_create_title)).performClick()

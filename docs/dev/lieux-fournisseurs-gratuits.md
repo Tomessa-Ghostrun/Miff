@@ -38,6 +38,22 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 - Dans l'app : ce texte n'est **jamais journalisé**, jamais dans un événement Analytics, jamais dans un rapport de plantage, jamais dans une route de navigation (`PlacePrivacyTest` le vérifie sur le code source).
 - Tout passe en **HTTPS**, sans repli en clair, sans suivre de redirection.
 
+## iPhone (LOC-3) : MapKit, à la place de Photon et d'OpenFreeMap
+
+| Rôle | Fournisseur | Gratuit | Clé | Garantie de service | Ce que le fournisseur reçoit |
+|---|---|---|---|---|---|
+| Suggestions d'adresse | **MapKit, `MKLocalSearchCompleter`** (Apple, livré avec le système) | Oui, sans compte ni clé (inclus dans le compte développeur Apple) | Aucune | Aucune publiée ; **quota non publié**, Apple peut refuser (« throttled ») un usage trop fréquent | Le **texte tapé** (3 caractères au moins) et l'adresse IP |
+| Coordonnées de l'adresse choisie | **MapKit, `MKLocalSearch`** | Idem | Aucune | Idem | Le **choix** de la personne (une requête par choix) |
+| Carte | **MapKit, `MKMapView`** (tuiles de Plans) | Idem | Aucune | Aucune publiée | Les tuiles demandées (donc la **zone affichée**) et l'adresse IP |
+
+- **Conditions d'usage de MapKit : non lues dans cette session** (aucun accès web). « Gratuit, sans clé » est la documentation MapKit telle que le développeur la connaît ; **à confirmer par le `release-manager`** avant la publication. Aucune CGU n'est devinée.
+- **Aucune permission de localisation** : ni la complétion, ni la recherche, ni la carte (sans `showsUserLocation`) ne lisent la position de l'appareil ; aucune clé `NSLocation*` (ticket LOC-4 pour la détection).
+- **Mêmes garde-fous qu'Android** pour rester loin de tout « usage excessif » : 3 caractères au moins, pause de 300 ms après la dernière frappe, requête précédente annulée, cache de session, jamais de requête sur une adresse déjà choisie, délai global de 8 s.
+- **Signal de bascule** : « La recherche d'adresse n'est pas disponible » de façon **durable** pendant la recette (refus d'Apple ou panne). **L'adresse étant obligatoire, une panne empêche de créer un lieu** (risque R6). Repli évalué : Geoapify (clé extractible de l'app, **décision du PM**), voir plus haut ; non préparé côté iPhone.
+- **Attribution** : MapKit affiche sa propre mention (logo et « Légal ») dans la carte ; rien à ajouter. Pas de « © OpenStreetMap » sur iPhone.
+- **Cache de la carte** : les tuiles sont gardées par le système, hors de portée de l'app : **non effaçables à la déconnexion** (Android efface les siennes). Limite connue.
+- **Vie privée** (à reprendre dans la politique de confidentialité, par le `release-manager`) : le texte tapé pour une adresse part vers le service de suggestions d'**Apple** ; la zone affichée est connue d'Apple (tuiles) ; l'adresse choisie est écrite dans Firestore. Étiquettes de l'App Store : à vérifier si l'usage de MapKit doit y figurer.
+
 ## Budget de lectures de Firestore (plan gratuit)
 
 | Action | Lectures de documents (côté serveur) |
