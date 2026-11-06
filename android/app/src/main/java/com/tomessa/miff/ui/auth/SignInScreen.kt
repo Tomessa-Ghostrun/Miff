@@ -52,6 +52,11 @@ fun SignInScreen(
             Spacer(Modifier.size(Spacing.m))
         }
 
+        if (state.showDeletionPendingNote) {
+            MessageText(text = stringResource(R.string.settings_delete_signin_again), isError = false)
+            Spacer(Modifier.size(Spacing.m))
+        }
+
         AuthTextField(
             value = email,
             onValueChange = { email = AuthForm.limitEmailInput(it) },

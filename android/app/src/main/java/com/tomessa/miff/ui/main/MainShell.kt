@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -23,6 +24,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -31,6 +33,7 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.ui.components.miffBottomInsets
@@ -44,6 +47,9 @@ import com.tomessa.miff.ui.miff.JoinMiffRoute
 import com.tomessa.miff.ui.miff.MiffRoute
 import com.tomessa.miff.ui.miff.miffEntryRoutes
 import com.tomessa.miff.ui.miff.miffScreenRoute
+import com.tomessa.miff.ui.navigation.PasswordResetRoute
+import com.tomessa.miff.ui.navigation.googleSourceFor
+import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
@@ -54,7 +60,12 @@ import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountViewModel
+import com.tomessa.miff.ui.settings.DeleteAccountInfoScreen
+import com.tomessa.miff.ui.settings.DeleteAccountInfoViewModel
+import com.tomessa.miff.ui.settings.DeleteAccountReauthScreen
+import com.tomessa.miff.ui.settings.DeleteReauthViewModel
 import com.tomessa.miff.ui.settings.DetectionHelpScreen
+import com.tomessa.miff.ui.settings.ExternalLinks
 import com.tomessa.miff.ui.settings.LanguageScreen
 import com.tomessa.miff.ui.settings.LanguageViewModel
 import com.tomessa.miff.ui.settings.MyInfoScreen
@@ -77,6 +88,13 @@ data object MyInfoRoute
 
 @Serializable
 data object AccountRoute
+
+/** Deletion of the account (AUTH-5): A (information, with the dialog B) and C (re-authentication). */
+@Serializable
+data object DeleteAccountRoute
+
+@Serializable
+data object DeleteAccountVerifyRoute
 
 @Serializable
 data object LanguageRoute
@@ -288,8 +306,11 @@ private fun MainNavigation(
                 onSignOutRequested = viewModel::onSignOutRequested,
                 onSignOutConfirmed = viewModel::onSignOutConfirmed,
                 onSignOutCancelled = viewModel::onSignOutCancelled,
+                onDeleteRequested = { navController.open(DeleteAccountRoute) },
             )
         }
+        deleteAccountRoutes(container, navController, scopeKey)
+        passwordResetRoute(container, navController)
         composable<PrivacyRoute> {
             val viewModel: PrivacyViewModel =
                 viewModel(
@@ -345,6 +366,79 @@ private fun MainNavigation(
         )
         miffScreenRoute(container, navController)
         placeRoutes(container, navController)
+    }
+}
+
+/**
+ * A (information, with the confirmation dialog B) then C (re-authentication) of the deletion of the account (AUTH-5, criteria SC1 to SC14).
+ * Nothing is written on these screens; the controller only starts after a successful re-authentication, and then replaces the whole
+ * Settings navigation with the deletion screens (see [com.tomessa.miff.ui.navigation.AppRoot]).
+ */
+internal fun NavGraphBuilder.deleteAccountRoutes(
+    container: AppContainer,
+    navController: NavHostController,
+    scopeKey: String,
+) {
+    composable<DeleteAccountRoute> {
+        val context = LocalContext.current
+        val viewModel: DeleteAccountInfoViewModel =
+            viewModel(
+                key = "delete-account-info-$scopeKey",
+                factory =
+                    viewModelFactory {
+                        initializer {
+                            DeleteAccountInfoViewModel(
+                                procedure = container.accountDeletionProcedure,
+                                currentUid = { container.authGateway.currentUid },
+                                network = container.networkMonitor,
+                                appleLinked = SignInProvider.APPLE in container.authGateway.linkedProviders(),
+                            )
+                        }
+                    },
+            )
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        DeleteAccountInfoScreen(
+            state = state,
+            onBack = { navController.popBackStackIfSafe() },
+            onContinue = viewModel::onContinue,
+            onRetry = viewModel::load,
+            onContact = { ExternalLinks.contactSupport(context) },
+            onKeep = viewModel::onKeep,
+            onConfirm = { if (viewModel.onConfirm()) navController.open(DeleteAccountVerifyRoute) },
+        )
+    }
+    composable<DeleteAccountVerifyRoute> {
+        val context = LocalContext.current
+        val googleSource = remember(context) { googleSourceFor(context) }
+        val viewModel: DeleteReauthViewModel =
+            viewModel(
+                key = "delete-account-verify-$scopeKey",
+                factory =
+                    viewModelFactory {
+                        initializer {
+                            DeleteReauthViewModel(
+                                gateway = container.authGateway,
+                                network = container.networkMonitor,
+                                last = false,
+                                // The ONLY way the deletion starts: after Firebase accepted the proof of identity.
+                                onVerified = container.accountDeletion::start,
+                            )
+                        }
+                    },
+            )
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        DeleteAccountReauthScreen(
+            state = state,
+            onBack = { navController.popBackStackIfSafe() },
+            onSubmitPassword = viewModel::submitPassword,
+            onGoogle = { viewModel.submitGoogle(googleSource) },
+            onForgotPassword = {
+                // Leaves the deletion without losing anything (it has not started); the reset e-mail goes to the account's address.
+                navController.open(PasswordResetRoute(container.authGateway.currentEmail().orEmpty()))
+            },
+            onCancelOrLater = { navController.popBackStackIfSafe() },
+            onContact = { ExternalLinks.contactSupport(context) },
+        )
     }
 }
 
