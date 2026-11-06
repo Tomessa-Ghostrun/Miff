@@ -119,13 +119,17 @@ interface AccountDeletionProcedure {
  * The deletion of an account (ticket AUTH-5, section 5.5, steps 2 to 8), with or without Miffs (AUTH-5b), in one procedure.
  *
  * Order, every step IDEMPOTENT and decided from what the SERVER says, never from a counter kept on the phone:
- * 1. the Miffs, read on the server ([AccountMiffs.inventory]): the stale indexes are dropped, then the Miffs JOINED are left (lot "Quitter", no change of
+ * 1. the Miffs, read on the server ([AccountMiffs.inventory]); then, BEFORE the first lot, the session "one account, one device" (SESS-2,
+ *    `users/{uid}/session/active`) is deleted with the acknowledgement of the server (decision of the PM, 2026-11-06, which REVERSES the order of the
+ *    ticket section 5.13): the other phones of the account see it vanish and sign out at once, instead of watching the Miffs disappear one by one with a
+ *    "you lost access" message. Safe: the rules never look at the session for a deletion (status, photo, position, card, index, Miff), and this phone is
+ *    closed (nothing is written, no session opened). The stale indexes are dropped, then the Miffs JOINED are left (lot "Quitter", no change of
  *    code), then the Miffs CREATED are deleted one after the other (members one by one, places, last lot), strictly in sequence. The `memberships` are
  *    counted again: a Miff that appeared meanwhile (another phone of the account) starts another pass, [MAX_PASSES] at most, then the deletion is
  *    CANCELLED ([DeletionRun.MiffsRemain]) rather than leaving an account without its guard;
  * 2. devices (push tokens): deleted one by one;
- *    then the session "one account, one device" (SESS-2, `users/{uid}/session/active`): its deletion must be CONFIRMED by the server, else the
- *    deletion of the account pauses here (a session left behind a deleted account would be an orphan, and the other phones must see it vanish);
+ *    then the session AGAIN (idempotent, acknowledged): another phone may have signed in meanwhile and written a new one, which would be an orphan behind a
+ *    deleted account;
  * 3. final check: `memberships` read again, still empty, else back to [DeletionRun.MiffsRemain];
  * 4. profile `users/{uid}`: the LAST document, so that its presence tells, on the server, that work remains;
  * 5. the queued writes leave (they would be refused without an account), then the authentication account is deleted: LAST.
@@ -170,6 +174,8 @@ class AccountDeletion(
         // 1. The Miffs: joined first, then created, one after the other; again while something is left.
         onStep(DeletionStep.Checking)
         var pass = 0
+        // The session goes right after the first inventory (round 1 only: the round 2 has it done), before any lot.
+        var sessionDeletedEarly = number > 1
         while (true) {
             pass++
             val inventory =
@@ -177,6 +183,12 @@ class AccountDeletion(
                     is MiffsRead.Read -> read.inventory
                     is MiffsRead.Failed -> return afterRefusal(read.failure)
                 }
+            if (!sessionDeletedEarly) {
+                when (val done = guardedCall(timeoutMillis) { session.deleteSession(uid) }) {
+                    is Guarded.Value -> sessionDeletedEarly = true
+                    is Guarded.Failed -> return afterRefusal(done.failure)
+                }
+            }
             val worked = !inventory.isEmpty
             leaveEverything(uid, inventory, onStep)?.let { return it }
             when (val left = guardedCall(timeoutMillis) { store.membershipCount(uid) }) {
@@ -207,7 +219,7 @@ class AccountDeletion(
             }
         }
 
-        // 2 bis (SESS-2). The session of the account, BEFORE the profile; no acknowledgement = no further step (resumable, idempotent).
+        // 2 bis (SESS-2). The session of the account AGAIN, BEFORE the profile; no acknowledgement = no further step (resumable, idempotent).
         when (val done = guardedCall(timeoutMillis) { session.deleteSession(uid) }) {
             is Guarded.Value -> Unit
             is Guarded.Failed -> return afterRefusal(done.failure)

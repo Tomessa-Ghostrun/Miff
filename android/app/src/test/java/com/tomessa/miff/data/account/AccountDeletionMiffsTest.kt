@@ -119,8 +119,8 @@ class AccountDeletionMiffsTest {
             val order = timeline.entries
             val lastLot = order.lastIndexOf("lot")
             assertTrue(lastLot < order.indexOf("read:devices"))
-            assertTrue(order.indexOf("read:device.delete") < order.indexOf("session.delete"))
-            assertTrue(order.indexOf("session.delete") < order.indexOf("read:profile"))
+            assertTrue(order.indexOf("read:device.delete") < order.lastIndexOf("session.delete"))
+            assertTrue(order.lastIndexOf("session.delete") < order.indexOf("read:profile"))
             assertTrue(order.indexOf("read:profile") < order.indexOf("markPending"))
             assertEquals("delete", order.last())
         }
@@ -190,10 +190,10 @@ class AccountDeletionMiffsTest {
             world.failLot = { n -> if (n == cut) firestoreError(Code.UNAVAILABLE) else null }
             runTest {
                 assertEquals("lot $cut", DeletionRun.Offline, deletion().run(me))
-                // The profile, the account and the session were not touched: a Miff was still there.
+                // The profile and the account were not touched: a Miff was still there. The session was deleted at the start, before any lot.
                 assertTrue("lot $cut", world.profileExists)
                 assertEquals("lot $cut", 0, gateway.deleteCalls)
-                assertTrue("lot $cut", session.deleted.isEmpty())
+                assertEquals("lot $cut", listOf(me), session.deleted)
                 world.failLot = { null }
                 assertEquals("lot $cut", DeletionRun.Completed, deletion().run(me))
             }
@@ -233,7 +233,11 @@ class AccountDeletionMiffsTest {
             assertEquals(DeletionRun.Failed, deletion().run(me))
             assertTrue(world.profileExists)
             assertEquals(0, gateway.deleteCalls)
-            assertTrue(session.deleted.isEmpty())
+            assertEquals(
+                "the session goes at the start, the other phones are signed out",
+                listOf(me, me),
+                session.deleted,
+            )
             assertEquals(listOf("d1"), world.devices)
             assertTrue(
                 "the Miff is still there, with its creator",
@@ -260,7 +264,7 @@ class AccountDeletionMiffsTest {
             assertEquals(DeletionRun.MiffsRemain, deletion().run(me))
             assertTrue(world.profileExists)
             assertEquals(0, gateway.deleteCalls)
-            assertTrue(session.deleted.isEmpty())
+            assertEquals("deleted once at the start; the cancellation writes a new one", listOf(me), session.deleted)
             assertEquals(
                 "the Miffs that were handled are gone: what the person asked for",
                 2,
@@ -297,7 +301,7 @@ class AccountDeletionMiffsTest {
             assertNothingOfThePersonIsLeft()
             val order = timeline.entries
             assertTrue(order.lastIndexOf("lot") < order.indexOf("read:profile"))
-            assertEquals(2, order.count { it == "session.delete" })
+            assertEquals(3, order.count { it == "session.delete" })
         }
 
     @Test

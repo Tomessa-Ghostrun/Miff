@@ -48,6 +48,7 @@ class AccountDeletionTest {
             assertEquals(
                 listOf(
                     "miffs.inventory",
+                    "session.delete",
                     "memberships",
                     "devices.read",
                     "device.delete",
@@ -98,7 +99,10 @@ class AccountDeletionTest {
             val delete = order.indexOf("miffs.deleteOwned")
             assertTrue("stale, then joined, then created", dropStale < leave && leave < delete)
             assertTrue("the Miffs before the devices", delete < order.indexOf("devices.read"))
-            assertTrue("the Miffs before the session", delete < order.indexOf("session.delete"))
+            assertTrue(
+                "the session goes BEFORE the first lot (decision of 2026-11-06)",
+                order.indexOf("session.delete") < dropStale,
+            )
             assertTrue("the Miffs before the profile", delete < order.indexOf("profile.delete"))
             assertEquals("delete", order.last())
         }
@@ -158,11 +162,12 @@ class AccountDeletionTest {
             miffs.failures += MiffFailure.REFUSED
             store.devices += "d1"
             assertEquals(DeletionRun.Failed, deletion.run("uid-1"))
-            // The dead end of the ticket: a Miff created is still there, so no device, no session, no profile, no account.
+            // The dead end of the ticket: a Miff created is still there, so no device, no profile, no account. The session was deleted at the start
+            // (decision of 2026-11-06): the other phones are already signed out, and this one is closed.
             assertEquals(listOf("d1"), store.devices)
             assertTrue(store.profileExists)
             assertEquals(0, gateway.deleteCalls)
-            assertTrue(session.deleted.isEmpty())
+            assertEquals(listOf("uid-1"), session.deleted)
         }
 
     @Test
@@ -223,7 +228,8 @@ class AccountDeletionTest {
             assertEquals(3, miffs.leaves.size)
             assertTrue(store.profileExists)
             assertEquals(0, gateway.deleteCalls)
-            assertTrue(session.deleted.isEmpty())
+            // Deleted once, at the start (the cancellation writes a new one: SessionManager.cancelAccountDeletion).
+            assertEquals(listOf("uid-1"), session.deleted)
         }
 
     @Test
@@ -265,7 +271,14 @@ class AccountDeletionTest {
             assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
             val order = timeline.entries
             assertTrue(order.indexOf("miffs.leave") < order.indexOf("profile.delete"))
-            assertEquals("the session is deleted again, before the profile", 2, order.count { it == "session.delete" })
+            assertEquals(
+                "once at the start, once again before the profile of each round that gets there",
+                3,
+                order.count {
+                    it ==
+                        "session.delete"
+                },
+            )
             assertEquals(1, gateway.deleteCalls)
         }
 
@@ -308,15 +321,40 @@ class AccountDeletionTest {
     // --- The session "un compte, un seul appareil" (SESS-2) --------------------------------------------------------
 
     @Test
-    fun theSessionIsDeletedAfterTheDevices_andBeforeTheFinalCheckAndTheProfile() =
+    fun theSessionIsDeletedRightAfterTheInventory_beforeAnyLot_andAgainBeforeTheFinalCheckAndTheProfile() =
         runTest {
             store.devices += "d1"
+            miffs.inventory = miffsRead(joined = listOf(joined))
+            store.memberships = 1
+            store.onCall = { name -> if (name == "memberships" && miffs.leaves.isNotEmpty()) store.memberships = 0 }
             assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
             val order = timeline.entries
-            assertTrue(order.indexOf("device.delete") < order.indexOf("session.delete"))
-            assertTrue(order.indexOf("session.delete") < order.lastIndexOf("memberships"))
-            assertTrue(order.indexOf("session.delete") < order.indexOf("profile.delete"))
-            assertEquals(listOf("uid-1"), session.deleted)
+            assertTrue("right after the inventory", order.indexOf("miffs.inventory") < order.indexOf("session.delete"))
+            assertTrue("before the first lot", order.indexOf("session.delete") < order.indexOf("miffs.leave"))
+            assertTrue("again after the devices", order.indexOf("device.delete") < order.lastIndexOf("session.delete"))
+            assertTrue(order.lastIndexOf("session.delete") < order.lastIndexOf("memberships"))
+            assertTrue(order.lastIndexOf("session.delete") < order.indexOf("profile.delete"))
+            assertEquals(listOf("uid-1", "uid-1"), session.deleted)
+        }
+
+    @Test
+    fun theSessionIsDeletedOnlyOnceBeforeTheMiffs_notAtEachPass() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined))
+            store.memberships = 1
+            deletion.run("uid-1")
+            // Three passes over a Miff that keeps coming back: ONE deletion of the session at the start (and none at the end: the run is cancelled).
+            assertEquals(1, timeline.entries.count { it == "session.delete" })
+        }
+
+    @Test
+    fun withoutTheAcknowledgementOfTheSessionAtTheStart_noLotIsTried_theMiffsAreUntouched() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined), owned = listOf(owned))
+            session.failures += FakeAccountDataStore.offline()
+            assertEquals(DeletionRun.Offline, deletion.run("uid-1"))
+            assertTrue(miffs.leaves.isEmpty() && miffs.deleted.isEmpty())
+            assertEquals(0, gateway.deleteCalls)
         }
 
     @Test
@@ -331,7 +369,8 @@ class AccountDeletionTest {
             assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
             assertFalse(store.profileExists)
             assertEquals(1, gateway.deleteCalls)
-            assertEquals(2, timeline.entries.count { it == "session.delete" })
+            // The failed try, then the replay: once at the start and once before the profile.
+            assertEquals(3, timeline.entries.count { it == "session.delete" })
         }
 
     @Test

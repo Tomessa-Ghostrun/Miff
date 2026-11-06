@@ -50,7 +50,7 @@
 > **À savoir pour les étapes 18 à 20** : les membres de la Miff d'un créateur **la perdent sans avertissement du téléphone** (décision du PM : on reste sur Spark, le bouton « Prévenir mes proches » est facultatif, et ils voient le message QM8 à leur prochain lancement). Ce n'est pas un défaut.
 
 18. [ ] Compte 3 reste connecté sur le second téléphone, **dans** « Famille test ». Sur l'OPPO, compte 1 : Supprimer > Continuer > Supprimer > mot de passe > Confirmer. L'écran dit **« Miff 1 sur 1 »**. Avec 1 ou 2 autres proches, la phrase « Ça peut prendre quelques minutes… » **n'apparaît pas** (elle n'apparaît que s'il y a plus de trois personnes à retirer).
-19. [ ] « Ton compte a été supprimé » puis le carrousel. **Console** : plus de `miffs/{id}` de « Famille test », plus de ses **lieux**, plus de son **code** dans `joinCodes`, plus aucune fiche, statut, photo ni position dedans ; **`miffsDeleted/{id}` existe** (identifiant + date, aucune donnée personnelle) ; plus de compte 1 dans Authentication, ni de `users/{uid}`.
+19. [ ] « Ton compte a été supprimé » puis le carrousel. (La **session** du compte, `users/{uid}/session/active`, a disparu **dès le début** de la suppression, avant les Miffs.) **Console** : plus de `miffs/{id}` de « Famille test », plus de ses **lieux**, plus de son **code** dans `joinCodes`, plus aucune fiche, statut, photo ni position dedans ; **`miffsDeleted/{id}` existe** (identifiant + date, aucune donnée personnelle) ; plus de compte 1 dans Authentication, ni de `users/{uid}`.
 20. [ ] **Compte 3** (second téléphone, app déjà ouverte ou rouverte) : **un seul message** : « Tu n'as plus accès à la Miff « Famille test ». Ta position n'est plus partagée avec ce cercle. », sans reproche ; la Miff disparaît de sa liste ; **il peut créer ou rejoindre une autre Miff** ensuite. Aucune autre notification, aucun message d'erreur.
 21. [ ] **Réinscription** avec l'adresse du compte 1 : un tout nouveau compte, sans Miff, sans rien de l'ancien.
 
@@ -70,7 +70,8 @@ Créez un compte jetable 5 avec une Miff de **3 ou 4 proches** (le plus long à 
 
 ## Partie H : un second téléphone connecté au même compte (facultatif, 5 min)
 
-28. [ ] Le **même compte** connecté sur deux téléphones (le second a pris la place du premier : l'ancien est déjà déconnecté : « Ton compte est maintenant utilisé sur un autre téléphone »). Supprimez le compte sur le téléphone actif : **le téléphone déconnecté ne montre rien d'inquiétant**, aucun plantage. *Le cas inverse (un téléphone resté connecté pendant que l'autre supprime) est le point ouvert de la PR : le texte « utilisé sur un autre téléphone » n'est pas exact pour un compte supprimé ; notez ce que vous voyez, le PM tranche (la PR propose un autre texte).*
+28. [ ] Le **même compte** connecté sur deux téléphones (le second a pris la place du premier : l'ancien est déjà déconnecté). Supprimez le compte sur le téléphone actif : **le téléphone déconnecté ne montre rien d'inquiétant**, aucun plantage.
+28 bis. [ ] **Ordre de la session (décision du PM du 2026-11-06)** : pendant la suppression d'un compte qui a des Miffs, ouvrez la console et regardez `users/{uid}/session/active` : il disparaît **au tout début** de la suppression, **avant** que les Miffs ne disparaissent. Un second téléphone qui serait encore connecté avec ce compte (par exemple resté en mode avion) se déconnecte alors dès qu'il a du réseau (le texte de sa déconnexion est celui de la PR `android/session-compte-supprime`) ; un téléphone **connecté et en ligne** se déconnecte tout de suite, avant que les Miffs ne disparaissent.
 
 ## Partie I : une Miff qui apparaît pendant la suppression (très difficile à provoquer, facultatif)
 
