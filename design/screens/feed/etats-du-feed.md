@@ -38,6 +38,12 @@ Les bandeaux se placent **sous l'en-tête fixe**, au-dessus de la bulle, dans le
 
 **Accessibilité** : D est lue comme du texte ; A est une région « occupée » ; B et C : titre en premier. Taille de texte maximale : les boutons de C passent à deux lignes sans tronquer.
 
+## Tirer pour actualiser (ajouté le 2026-11-06, décision du PM)
+- **Geste** : tirer la liste vers le bas, **en haut de liste seulement** ; indicateur rond discret (fond blanc, trait bleu `action/primary`), posé **sous l'en-tête** (qui ne bouge pas). Il se termine dès que le serveur répond, ou après **8 s au plus** ; sans réponse, le bandeau honnête « Dernières informations de … » (maquette 10 A) : jamais de phrase d'erreur ou culpabilisante.
+- **Borné** : une relecture serveur toutes les **15 s** au plus (un tirage plus rapproché se termine aussitôt) ; hors connexion il se termine tout de suite, le bandeau hors connexion est déjà là.
+- **Accessibilité** : action TalkBack / VoiceOver « Actualiser » (« Refresh ») sur la liste, équivalente au geste ; annonce polie « Actualisation en cours » puis « Informations actualisées ». Marche aussi sur une liste trop courte pour défiler.
+- Pas de nouvelle maquette : l'indicateur est celui du système (Material 3 `PullToRefreshBox`, iOS : `refreshable`), aux couleurs de l'app.
+
 ## Cas du §8 non dessinés
 Accès perdu en cours d'affichage, plusieurs alertes disparaissant, lieu supprimé (libellé générique) : pas de nouveau dessin, ils réutilisent l'écran « accès perdu » du ticket Miff, le carrousel (03) et la carte (06).
 

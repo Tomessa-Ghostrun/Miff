@@ -19,7 +19,11 @@ class MiffDetails(
     override fun toString(): String = "MiffDetails(redacted)"
 }
 
-/** A line of the list of loved ones (copy of the profile kept in `members/{uid}`). No phone number: it is not shown here. */
+/**
+ * A line of the list of loved ones (copy of the profile kept in `members/{uid}`). [phone] (FEED-1) is the number of the member card, visible
+ * to the members of the Miff and to them alone: the Feed hands it to the phone application of the system ("Écrire à", "Appeler"), nothing
+ * else. Null when the member has none (an account older than ONB-B) or when what was read is not a number of the shape E.164.
+ */
 class MiffMember(
     val uid: String,
     val firstName: String,
@@ -27,6 +31,7 @@ class MiffMember(
     val avatarJpeg: ByteArray?,
     val role: MiffRole,
     val sharingEnabled: Boolean,
+    val phone: String? = null,
 ) {
     val displayName: String get() = "$firstName $lastName".trim()
 
@@ -34,6 +39,16 @@ class MiffMember(
     val callName: String get() = firstName.ifEmpty { lastName }
 
     override fun toString(): String = "MiffMember(redacted)"
+
+    companion object {
+        private val E164 = Regex("^\\+[1-9][0-9]{6,14}$")
+
+        /**
+         * A number read from the server, or null: only the shape E.164 goes on (a "+", then 7 to 15 digits). Anything else (letters, spaces,
+         * a scheme, a separator that a dialler or a messaging application could read as something else) never reaches an intent.
+         */
+        fun phoneFromServer(value: String?): String? = value?.takeIf { E164.matches(it) }
+    }
 }
 
 /** One document of `users/{uid}/memberships`: [key] is the id of the document, [miffId] the field that says which Miff. */

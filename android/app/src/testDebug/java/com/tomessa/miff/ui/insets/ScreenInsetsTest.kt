@@ -444,8 +444,13 @@ class ScreenInsetsTest {
         feedWithFallback()
         val reported = Phone(statusBar = 40.dp, navigationBottom = 0.dp)
         applyInsets(reported)
-        val expected = px(reported.statusBar) + px(Spacing.m)
-        assertTrue("logo top=${logoTop()} expected about $expected", kotlin.math.abs(logoTop() - expected) <= TOLERANCE)
+        // The logo sits inside the 56 dp row of the fixed header, right under the status bar: below the REPORTED bar, and no extra margin.
+        val bar = px(reported.statusBar)
+        assertTrue("logo top=${logoTop()} must be below the reported bar ($bar px)", logoTop() >= bar - TOLERANCE)
+        assertTrue(
+            "logo top=${logoTop()} must be less than 16 dp under the bar ($bar px): no margin added",
+            logoTop() <= bar + px(16.dp) + TOLERANCE,
+        )
     }
 
     // --- The BOTTOM of the fallback (3 buttons reported as 0) ----------------------------------------------------------------------

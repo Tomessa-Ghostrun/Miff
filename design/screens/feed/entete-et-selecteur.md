@@ -10,6 +10,12 @@ En-tête **(fixe avant D41)** (reste en haut quand le fil défile), fond `bg/ove
 2. Rangée de 56 pt : **avatar** (46 pt, à gauche, marge 16 pt), **logo** Miff centré (100 pt de large). **Plus de cloche** (décision FPR Q15, D4) : le côté droit reste vide.
 3. **Pastille de Miff** centrée, 38 pt de haut, 10 pt de marge sous elle.
 
+## Comportement au défilement (décision du PM, 2026-11-06)
+- **Descente** : l'en-tête suit le doigt vers le haut et disparaît ; **remontée** : il réapparaît **tout de suite**, sans attendre d'être en haut de liste. Mouvement fluide, sans saut ; le contenu garde une marge égale à la hauteur de l'en-tête (rien n'est masqué, pas de bande blanche en haut de liste).
+- **Toujours visible** : au chargement, en cas d'erreur, hors connexion, quand un service d'accessibilité (TalkBack, accès par commutateur) est actif, quand la liste est trop courte pour défiler, **tant que le sélecteur de Miff (Premium) est ouvert**. Rotation et changement d'onglet : il revient visible.
+- Toucher le logo ou la touche de l'onglet déjà actif remonte la liste **et** réaffiche l'en-tête. Zones tactiles du logo et de l'avatar : 48 dp, inchangées.
+- **Place réservée** à droite de la rangée (48 dp) pour le futur bouton de notifications ; rien n'est dessiné.
+
 ## Avatar à anneau
 | État de MON statut | Anneau (3 pt) | Lecteur d'écran |
 |---|---|---|

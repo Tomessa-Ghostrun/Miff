@@ -12,13 +12,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -38,8 +42,12 @@ import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
+import com.tomessa.miff.ui.feed.FeedActions
+import com.tomessa.miff.ui.feed.FeedHost
+import com.tomessa.miff.ui.feed.FeedMe
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedViewModel
+import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.CreateMiffRoute
@@ -204,9 +212,26 @@ private fun MainNavigation(
             val feedViewModel: FeedViewModel =
                 viewModel(
                     key = "feed-$scopeKey",
-                    factory = viewModelFactory { initializer { FeedViewModel(container.miffDirectory) } },
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                FeedViewModel(
+                                    directory = container.miffDirectory,
+                                    repository = container.miffRepository,
+                                    statuses = container.statusObserver,
+                                    positions = container.positionReader,
+                                    refresher = container.feedRefresher,
+                                    network = container.networkMonitor,
+                                    currentUid = { container.authGateway.currentUid },
+                                    waitingAgreement = container.awaitingAgreement.waiting,
+                                )
+                            }
+                        },
                 )
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
+            val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
+            val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
+            val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
@@ -221,6 +246,22 @@ private fun MainNavigation(
                 onJoinMiff = { navController.open(JoinMiffRoute) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
                 agreement = AgreementUi(waiting, container.awaitingAgreement::requestReview),
+                feed =
+                    FeedHost(
+                        state = feedState,
+                        locate = locateState,
+                        me =
+                            FeedMe(
+                                initials = profileState.initials.ifEmpty { "?" },
+                                avatarJpeg = profileState.profile?.avatarJpeg,
+                            ),
+                        onLocate = feedViewModel::onLocate,
+                        onLocateDismissed = feedViewModel::onLocateDismissed,
+                        onRetry = feedViewModel::retry,
+                        refreshing = refreshing,
+                        onRefresh = feedViewModel::onRefresh,
+                        observe = feedViewModel::observe,
+                    ),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -482,6 +523,7 @@ fun MainTabs(
     onJoinMiff: () -> Unit,
     onOpenMiff: (String) -> Unit,
     agreement: AgreementUi = AgreementUi(),
+    feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
@@ -508,6 +550,23 @@ fun MainTabs(
             Box(Modifier.fillMaxSize()) {
                 when (selected) {
                     MainTab.FEED -> {
+                        // The listeners of the Feed live only while this tab is the one in use AND the app is in the foreground.
+                        val lifecycleOwner = LocalLifecycleOwner.current
+                        val observeFeed by rememberUpdatedState(feed.observe)
+                        LaunchedEffect(lifecycleOwner) {
+                            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { observeFeed() }
+                        }
+                        val actions =
+                            rememberSystemFeedActions(
+                                FeedActions(
+                                    onOpenProfile = { selected = MainTab.PROFILE },
+                                    onLocate = feed.onLocate,
+                                    onLocateDismissed = feed.onLocateDismissed,
+                                    onResumeSharing = onOpenMiff,
+                                    onRetryFeed = feed.onRetry,
+                                    onRefresh = feed.onRefresh,
+                                ),
+                            )
                         FeedScreen(
                             state = miffs,
                             scrollToTopSignal = scrollToTop,
@@ -516,6 +575,11 @@ fun MainTabs(
                             onCreate = onCreateMiff,
                             onJoin = onJoinMiff,
                             agreement = agreement,
+                            feed = feed.state,
+                            locate = feed.locate,
+                            refreshing = feed.refreshing,
+                            me = feed.me,
+                            actions = actions,
                         )
                     }
 
