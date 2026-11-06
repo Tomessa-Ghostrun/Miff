@@ -57,6 +57,10 @@ final class FirestoreMiffRepository: MiffRepository {
         guard MiffName.isValid(name) else {
             return .failed(.unknown)
         }
+        // SESS-3 : pas de session d'appareil confirmée = rien n'est écrit (le statut initial du lot doit porter l'identifiant).
+        guard let deviceId = await confirmedDeviceId() else {
+            return .failed(.offline)
+        }
         let code: String
         switch await freeCode() {
         case .free(let drawn):
@@ -70,7 +74,14 @@ final class FirestoreMiffRepository: MiffRepository {
         let store = self.store
         let result = await write {
             try await store.commitWithProfile(uid: uid) { profile in
-                let entry = MiffEntry(uid: uid, miffId: miffId, membershipKey: key, profile: profile, access: access)
+                let entry = MiffEntry(
+                    uid: uid,
+                    miffId: miffId,
+                    membershipKey: key,
+                    profile: profile,
+                    access: access,
+                    deviceId: deviceId
+                )
                 return MiffWrites.create(entry: entry, code: code, name: name)
             }
         }
@@ -88,6 +99,7 @@ final class FirestoreMiffRepository: MiffRepository {
             if failure.mayHaveLanded, await reader.landed(miffId) {
                 return .created(creation)
             }
+            await recheckSessionIfRefused(failure)
             return .failed(failure)
         }
     }
@@ -181,6 +193,9 @@ final class FirestoreMiffRepository: MiffRepository {
     }
 
     func join(uid: String, preparation: JoinReady) async -> JoinResult {
+        guard let deviceId = await confirmedDeviceId() else {
+            return .failed(.offline)
+        }
         let access = location.current()
         let key = membershipKey(premium: preparation.premium, miffId: preparation.miffId)
         let store = self.store
@@ -191,7 +206,8 @@ final class FirestoreMiffRepository: MiffRepository {
                     miffId: preparation.miffId,
                     membershipKey: key,
                     profile: profile,
-                    access: access
+                    access: access,
+                    deviceId: deviceId
                 )
                 return MiffWrites.join(entry: entry, code: preparation.code)
             }
@@ -204,9 +220,11 @@ final class FirestoreMiffRepository: MiffRepository {
             if failure.mayHaveLanded, await reader.landed(preparation.miffId) {
                 return joined
             }
-            // Les règles ont dit « non » : le code a été renouvelé, ou la Miff supprimée, depuis qu'il a été lu. Même message.
+            // Les règles ont dit « non » : le code a été renouvelé, ou la Miff supprimée, depuis qu'il a été lu. Même message...
+            // sauf si c'est la session de cet appareil qui a été remplacée (SESS-3) : jamais « code introuvable » dans ce cas.
             if failure == .refused {
-                return .notFound
+                await rules.recheckSession()
+                return rules.deviceId() == nil ? .failed(.refused) : .notFound
             }
             return .failed(failure)
         }
@@ -238,7 +256,16 @@ final class FirestoreMiffRepository: MiffRepository {
         let store = self.store
         let writes: [DocWrite]
         if enabled {
-            writes = MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: location.current())
+            // SESS-3 : reprendre le partage réécrit un premier statut, qui doit porter l'identifiant de la session confirmée.
+            guard let deviceId = await confirmedDeviceId() else {
+                return .failed(.offline)
+            }
+            writes = MiffWrites.resumeSharing(
+                miffId: miffId,
+                uid: uid,
+                access: location.current(),
+                deviceId: deviceId
+            )
         } else {
             writes = MiffWrites.stopSharing(miffId: miffId, uid: uid)
         }
@@ -251,6 +278,9 @@ final class FirestoreMiffRepository: MiffRepository {
             if case .value(let current) = read, current == enabled {
                 return .done
             }
+        }
+        if enabled, case .failed(let failure) = result {
+            await recheckSessionIfRefused(failure)
         }
         return result
     }
@@ -322,5 +352,26 @@ final class FirestoreMiffRepository: MiffRepository {
 
     func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
         await guardedCall(timeoutSeconds: rules.timeoutSeconds, call)
+    }
+}
+
+// SESS-3 : un compte, un seul appareil.
+extension FirestoreMiffRepository {
+    /// SESS-3 : l'identifiant de la session de cet appareil, seulement s'il est CONFIRMÉ par le serveur. Sans confirmation la session
+    /// est relue une fois (retour du réseau manqué, lancement hors ligne) ; toujours rien = pas d'écriture.
+    func confirmedDeviceId() async -> String? {
+        if let identifier = rules.deviceId() {
+            return identifier
+        }
+        await rules.recheckSession()
+        return rules.deviceId()
+    }
+
+    /// Un refus n'est pas à lui seul la preuve que la session est remplacée (consentement, partage arrêté...) : la session est
+    /// relue auprès du serveur ; remplacée, la déconnexion forcée est lancée par le gestionnaire de session.
+    func recheckSessionIfRefused(_ failure: MiffFailure) async {
+        if failure == .refused {
+            await rules.recheckSession()
+        }
     }
 }

@@ -46,7 +46,8 @@ final class MiffRepositoryTests: XCTestCase {
             newMiffId: { testMiffId },
             newCode: { draws.value.isEmpty ? testCode : draws.value.removeFirst() },
             epochMillis: { clock.value },
-            timeoutSeconds: 1
+            timeoutSeconds: 1,
+            deviceId: { testDeviceId }
         )
         return FirestoreMiffRepository(
             store: custom ?? store,

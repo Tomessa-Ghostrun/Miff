@@ -51,7 +51,7 @@ extension SessionManager {
         case .failure(let failure):
             return failure
         case .success(let uid, _):
-            completeEmailSignUp(uid: uid)
+            await completeEmailSignUp(uid: uid)
             return nil
         }
     }
@@ -105,6 +105,14 @@ extension SessionManager {
             return .failed(.unknown)
         }
         ending = true
+        // SESS-3 : la session d'appareil du compte qui va disparaître est supprimée tant que nous sommes connectés (après, plus
+        // personne ne pourrait la supprimer). SANS accusé de suppression, le compte n'est PAS supprimé (la personne garde le
+        // panneau et peut réessayer). Si le compte est gardé finalement (voir plus bas), la session est réécrite.
+        guard await deleteDeviceSessionBeforeAccountRemoval(uid: gateway.currentUid) else {
+            ending = false
+            resumeDeviceWatch()
+            return .failed(.network)
+        }
         cache.markPurgePending()
         var failure = await gateway.deleteCurrentAccount()
         if failure == .recentLoginRequired {
@@ -115,6 +123,9 @@ extension SessionManager {
                     failure = await gateway.deleteCurrentAccount()
                 }
             case .cancelled:
+                // La session est réécrite AVANT de rendre la main : tant que `ending` est vrai, aucune vérification en file ne
+                // peut déclencher une déconnexion forcée.
+                await restoreDeviceSession()
                 ending = false
                 return .cancelled
             case .unavailable:
@@ -124,7 +135,8 @@ extension SessionManager {
             }
         }
         if let failure {
-            // On reste sur le panneau : jamais un compte utilisable sans (a).
+            // On reste sur le panneau : jamais un compte utilisable sans (a). La session est réécrite avant de rendre la main.
+            await restoreDeviceSession()
             ending = false
             return .failed(failure)
         }
@@ -183,14 +195,18 @@ extension SessionManager {
         return gateway.currentUid == uid && read.profileExists && read.hasPhone
     }
 
-    /// Déconnexion volontaire (ticket §7.6) : les écoutes s'arrêtent, les écritures en attente partent, le cache est
-    /// purgé, puis la déconnexion.
+    /// Déconnexion volontaire (ticket §7.6) : les écoutes s'arrêtent, les écritures en attente partent, SA session d'appareil est
+    /// supprimée (jamais celle d'un autre téléphone), le cache est purgé, puis la déconnexion. L'ordre est celui du contrat de
+    /// `backend/data-model.md` : la session part avant la purge (`terminate()`) et avant la déconnexion, après quoi plus aucune
+    /// requête authentifiée n'est possible.
     func signOut() async {
+        let uid = gateway.currentUid
         ending = true
         cache.markPurgePending()
         setState(.loading)
         await stopEverything()
         await cache.flushPendingWrites()
+        await releaseDeviceSession(uid: uid)
         _ = await cache.purge()
         finishSignedOut(destination: .signIn, notice: nil, markReturning: true)
     }
@@ -237,6 +253,10 @@ extension SessionManager {
     /// Aucune connexion ne démarre tant qu'une ancienne session est ouverte : un compte ne doit jamais se mélanger à un
     /// autre. Une déconnexion qui avait échoué est retentée ici ; faux si la session reste ouverte.
     private func clearLeftoverSession() -> Bool {
+        if gateway.currentUid != nil {
+            // Un candidat laissé par ce compte ne doit jamais être réutilisé par un autre.
+            device.clearLocal()
+        }
         for _ in 0..<2 where gateway.currentUid != nil {
             gateway.signOut()
         }
@@ -253,6 +273,10 @@ extension SessionManager {
             drafts?.clear()
             privacy.applyAccountConsent(false)
             pending.clear()
+            // SESS-3 : une déconnexion forcée faite alors que l'app était fermée laisse son message à montrer sur l'écran de connexion.
+            if flags.value(forKey: Self.keyReplacedNoticePending, default: false), !hasNotice {
+                setNotice(.sessionReplaced)
+            }
             setState(.ready(entryDestination()))
             return
         }
@@ -260,6 +284,11 @@ extension SessionManager {
         // Éteint jusqu'à la lecture du compte (aussi à « Réessayer »), mais le rapport du plantage précédent est gardé.
         privacy.pauseCollection()
         setState(.loading)
+        // SESS-3 : la session de CET appareil est vérifiée AVANT toute lecture du compte et toute écriture. Remplacée : la
+        // déconnexion forcée est déjà faite ; non confirmée après une connexion : « Réessayer » est déjà affiché.
+        guard await prepareDeviceSession(uid: uid) else {
+            return
+        }
         let load = await accounts.load(uid: uid)
         // La session a pu être perdue pendant la lecture : le gestionnaire de perte a déjà remis l'app sur la connexion.
         guard gateway.currentUid == uid else {
@@ -274,13 +303,24 @@ extension SessionManager {
     }
 
     /// Nouveau compte créé par e-mail et mot de passe : on sait qu'il n'y a pas de profil, aucune lecture n'est utile.
-    func completeEmailSignUp(uid: String) {
+    func completeEmailSignUp(uid: String) async {
         sessionActive = true
         flags.set(true, forKey: Self.keyReturningUser)
         // Le geste sur « Rejoindre » a accepté les conditions ET les statistiques (décision du 2026-10-28).
         pending.save(PendingConsent(uid: uid, termsVersion: ConsentVersions.terms, analyticsAccepted: true))
         privacy.applyAccountConsent(true)
         tracker.track(.signUpCompleted(method: .email))
+        // SESS-3 : la session de cet appareil est ouverte (et confirmée) avant d'aller plus loin. Sans accusé : « Réessayer »,
+        // qui retente l'écriture puis retrouve l'étape du profil grâce au consentement gardé ci-dessus.
+        guard await beginDeviceSession(uid: uid) else {
+            if gateway.currentUid == uid, !ending {
+                setState(.lookupFailed)
+            }
+            return
+        }
+        guard gateway.currentUid == uid else {
+            return
+        }
         setState(.ready(.profile))
     }
 
@@ -298,6 +338,13 @@ extension SessionManager {
             pending.save(PendingConsent(uid: uid, termsVersion: ConsentVersions.terms, analyticsAccepted: true))
         }
         setState(.loading)
+        // SESS-3 : la session de cet appareil est écrite et confirmée AVANT de lire le compte ; sans accusé, « Réessayer ».
+        guard await beginDeviceSession(uid: uid) else {
+            if gateway.currentUid == uid, !ending {
+                setState(.lookupFailed)
+            }
+            return
+        }
         let load = await accounts.load(uid: uid)
         guard gateway.currentUid == uid else {
             return
