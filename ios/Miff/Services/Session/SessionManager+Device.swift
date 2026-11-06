@@ -94,6 +94,10 @@ extension SessionManager {
         let networkWatch = Task { [weak self] in
             var isFirst = true
             for await isOnline in online {
+                // Une tâche annulée avant même d'avoir démarré peut encore recevoir des valeurs déjà en attente : elle n'agit pas.
+                if Task.isCancelled {
+                    return
+                }
                 // La première valeur est l'état du moment, pas un retour du réseau.
                 if isFirst {
                     isFirst = false
@@ -123,6 +127,9 @@ extension SessionManager {
         while !Task.isCancelled {
             let startedAt = Date()
             for await remote in stream {
+                if Task.isCancelled {
+                    return
+                }
                 _ = await reviewDeviceSession(uid: uid, incoming: remote)
             }
             if Task.isCancelled {
