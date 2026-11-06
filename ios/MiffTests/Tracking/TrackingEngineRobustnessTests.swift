@@ -172,12 +172,12 @@ final class LocationTrackingTests: XCTestCase {
     private struct Rig {
         let tracking: LocationTracking
         let manager: FakeLocationManager
-        let sink: RecordingSink
+        let sink: RecordingEventSink
     }
 
     private func make(wait: Double = 0.05) -> Rig {
         let manager = FakeLocationManager()
-        let sink = RecordingSink()
+        let sink = RecordingEventSink()
         let tracking = LocationTracking(manager: manager, clock: { TrackingFixtures.noon }, waitSeconds: wait)
         tracking.attach(sink)
         return Rig(tracking: tracking, manager: manager, sink: sink)

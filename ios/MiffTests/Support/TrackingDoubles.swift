@@ -369,7 +369,7 @@ final class FakeLocationManager: LocationManaging {
 
 /// Ce que le pont a transmis au moteur, dans l'ordre.
 @MainActor
-final class RecordingSink: TrackingEventSink {
+final class RecordingEventSink: TrackingEventSink {
     private(set) var transitions: [String] = []
     private(set) var states: [String] = []
     private(set) var moves: [Fix] = []
