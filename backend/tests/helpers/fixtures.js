@@ -143,12 +143,34 @@ export const placeInput = (uid, over = {}) => ({
   ...over,
 });
 
+// Photo telle qu'un client l'écrit depuis le resserrage R-PHOTO-LOC du 2026-11-06 (« une photo d'update doit être attachée à une position,
+// forcément ») : les SIX clés, toujours : lat, lng et measuredAt (une minute avant la photo) comprises. Elle n'est acceptée qu'avec un partage
+// actif ET un consentement de version 03 ou plus (voir setConsentV3 ci-dessous : le jeu de départ porte 'v1').
 export const photoDoc = (over = {}) => ({
+  jpeg: bytes(1000),
+  createdAt: serverTs(),
+  expiresAt: inMs(DAY),
+  lat: 48.85661,
+  lng: 2.35222,
+  measuredAt: inMs(-60_000),
+  ...over,
+});
+
+// ANCIEN document de photo, SANS localisation (la forme d'avant le resserrage). Les règles le REFUSENT à l'écriture ; il sert (1) à
+// injecter, règles désactivées, un éventuel ancien document pour vérifier que sa lecture reste permissive, (2) aux cas « photo sans
+// localisation refusée ».
+export const photoLegacyDoc = (over = {}) => ({
   jpeg: bytes(1000),
   createdAt: serverTs(),
   expiresAt: inMs(DAY),
   ...over,
 });
+
+/** Donne aux comptes le texte de consentement de version 03 (règles désactivées) : exigé pour TOUTE photo depuis le resserrage. */
+export const setConsentV3 = (h, ...uids) =>
+  h.admin(async (f) => {
+    for (const uid of uids) await f.doc(`miffs/${ID.M1}/members/${uid}`).update({ 'sharing.consentVersion': CONSENT_POSITION });
+  });
 
 export const userDoc = (over = {}) => ({
   firstName: 'Eve',

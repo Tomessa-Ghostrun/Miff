@@ -413,7 +413,9 @@ s.tc('DP15', 'aucune coordonnée ailleurs : statut, fiche de membre, profil, che
   await assertFails(bob.doc('positions/bob').set(positionDoc()));
   await assertFails(bob.doc('users/bob/positions/x').set(positionDoc()));
   await assertFails(bob.doc(`${M1}/places/pos`).set(positionDoc()));
-  await assertFails(bob.doc(`${M1}/photos/bob`).set(photoDoc({ lat: 48.85 })));
+  // La photo ne porte que ses trois clés de localisation (R-PHOTO-LOC) : ni objet de position, ni précision, ni adresse.
+  await assertFails(bob.doc(`${M1}/photos/bob`).set(photoDoc({ position: { lat: 48.85, lng: 2.35 } })));
+  await assertFails(bob.doc(`${M1}/photos/bob`).set(photoDoc({ accuracyM: 5 })));
   // Un document de position ne peut pas non plus être posé sous le nom d'un autre sous-chemin de la Miff.
   await assertFails(bob.doc(`${M1}/position/bob`).set(positionDoc()));
 });
