@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.account.AccountDeletionProcedure
 import com.tomessa.miff.data.account.AccountMiffsSummary
 import com.tomessa.miff.data.account.Inventory
-import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.data.auth.AuthGateway
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.data.auth.NetworkMonitor
@@ -47,8 +46,36 @@ data class DeleteInfoUiState(
     /** The account created at least one Miff: they are deleted with it (the information screen and the dialog say so). */
     val ownsMiffs: Boolean get() = miffs.owned.isNotEmpty()
 
-    /** "Prévenir mes proches" only exists when a Miff created has at least one OTHER person in it (SC7); the name goes in the message. */
-    val warnableMiff: OwnedMiff? get() = miffs.owned.firstOrNull { it.otherMembers > 0 && it.name.isNotBlank() }
+    /** The buttons "Prévenir mes proches" (SC7): only for a Miff created that has at least one OTHER person in it. */
+    val warnPlan: WarnPlan
+        get() {
+            val listed = miffs.owned.take(MAX_LISTED_OWNED)
+            val named = listed.filter { it.otherMembers > 0 && it.name.isNotBlank() }.map { it.name }
+            // A Miff that cannot be named in a message (blank name, or beyond the three listed) is covered by ONE message without a name.
+            val generic =
+                listed.any { it.otherMembers > 0 && it.name.isBlank() } ||
+                    miffs.owned.drop(MAX_LISTED_OWNED).any { it.otherMembers > 0 }
+            return WarnPlan(named, generic)
+        }
+}
+
+/** The Miffs the information screen names (the others are counted: "et {k} autres"). */
+const val MAX_LISTED_OWNED = 3
+
+/**
+ * Who the person can warn before deleting. [named]: one button per Miff listed that has other people (the name is in the message). [generic]: one more button,
+ * for the Miffs that cannot be named, with a message without a name. Names are personal data: never in a `toString`.
+ */
+class WarnPlan(
+    val named: List<String>,
+    val generic: Boolean,
+) {
+    /** The usual case: ONE Miff to warn about, no other button: the plain "Prévenir mes proches" (maquette 10). */
+    val single: Boolean get() = named.size == 1 && !generic
+
+    val isEmpty: Boolean get() = named.isEmpty() && !generic
+
+    override fun toString(): String = "WarnPlan(redacted)"
 }
 
 /**

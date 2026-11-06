@@ -407,7 +407,15 @@ internal fun NavGraphBuilder.deleteAccountRoutes(
             onKeep = viewModel::onKeep,
             onConfirm = { if (viewModel.onConfirm()) navController.open(DeleteAccountVerifyRoute) },
             // AUTH-5b, "Prévenir mes proches" (decision QM9): the share sheet only; nothing is sent by the app, the deletion does not move.
-            onWarn = { miffName -> MiffSharing.shareClosingNotice(context, miffName) },
+            onWarn = { miffName ->
+                if (miffName !=
+                    null
+                ) {
+                    MiffSharing.shareClosingNotice(context, miffName)
+                } else {
+                    MiffSharing.shareClosingNoticeGeneric(context)
+                }
+            },
         )
     }
     composable<DeleteAccountVerifyRoute> {

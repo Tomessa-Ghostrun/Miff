@@ -9453,6 +9453,57 @@
         }
       }
     },
+    "settings_delete_warn_button_named": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let the members of “%1$@” know"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévenir les proches de « %1$@ »"
+          }
+        }
+      }
+    },
+    "settings_delete_warn_button_other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let my other members know"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévenir mes autres proches"
+          }
+        }
+      }
+    },
+    "settings_delete_warn_message_generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I’m closing our Miff in Miff: it will no longer be accessible."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je ferme notre Miff dans Miff : elle ne sera plus accessible."
+          }
+        }
+      }
+    },
     "settings_delete_confirm_body_owner": {
       "extractionState": "manual",
       "localizations": {
@@ -9510,13 +9561,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$@."
+            "value": "A Miff appeared during the deletion, so your account was not deleted. You can start the deletion again from Settings > My account whenever you like. Any question? Write to us: %1$@."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$@."
+            "value": "Une Miff est apparue pendant la suppression : ton compte n’a donc pas été supprimé. Tu peux relancer la suppression depuis Réglages > Mon compte quand tu veux. Une question ? Écris-nous : %1$@."
           }
         }
       }

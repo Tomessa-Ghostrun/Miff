@@ -89,7 +89,7 @@ class DeleteAccountScreensTest {
         onKeep: () -> Unit = {},
         onConfirm: () -> Unit = {},
         onRetry: () -> Unit = {},
-        onWarn: (String) -> Unit = {},
+        onWarn: (String?) -> Unit = {},
     ) = show {
         DeleteAccountInfoScreen(
             state = state,
@@ -170,7 +170,7 @@ class DeleteAccountScreensTest {
 
     @Test
     fun info_aCreator_listsHerMiffWithTheNumberOfOthers_andOffersToWarnHerCircle() {
-        val warned = mutableListOf<String>()
+        val warned = mutableListOf<String?>()
         info(loaded(0, OwnedMiff("m1", "Famille Mfouka", 3)), onWarn = { warned += it })
         shoot("delete-info-creator")
         composeRule.onNodeWithText(text(R.string.settings_delete_owned_title_one)).assertIsDisplayed()
@@ -185,7 +185,7 @@ class DeleteAccountScreensTest {
             .performClick()
         assertEquals(
             "the share sheet gets the name of the Miff, nothing is sent by the app",
-            listOf("Famille Mfouka"),
+            listOf<String?>("Famille Mfouka"),
             warned,
         )
     }
@@ -212,8 +212,10 @@ class DeleteAccountScreensTest {
         info(loaded(0, *owned))
         shoot("delete-info-many-miffs")
         composeRule.onNodeWithText(text(R.string.settings_delete_owned_title)).assertExists()
-        (1..3).forEach { composeRule.onNodeWithText("Miff numéro $it", substring = true).assertExists() }
+        // Each of the three listed Miffs is named in its row and in its own "Prévenir" button; the fourth is named nowhere.
+        (1..3).forEach { composeRule.onAllNodesWithText("Miff numéro $it", substring = true)[0].assertExists() }
         composeRule.onAllNodesWithText("Miff numéro 4", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button_other)).assertExists()
         composeRule.onNodeWithText("and 2 more").assertExists()
         composeRule.onNodeWithText(text(R.string.settings_delete_owned_explain)).assertExists()
     }
@@ -237,10 +239,49 @@ class DeleteAccountScreensTest {
     }
 
     @Test
-    fun info_aCreator_getsTheSameCardAsAMember_likeTheMockups() {
+    fun info_aCreatorWhoJoinedNothing_getsTheShortSentence_andTheLineOfThePosition() {
         info(loaded(0, OwnedMiff("m1", "Famille", 2)))
-        composeRule.onNodeWithText(text(R.string.settings_delete_you)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_you)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_delete_you_nomiff)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_delete_position)).assertExists()
+    }
+
+    @Test
+    fun info_severalMiffsToWarnAbout_oneButtonForEach_eachNamingItsMiff() {
+        val warned = mutableListOf<String?>()
+        info(loaded(0, OwnedMiff("m1", "Famille", 2), OwnedMiff("m2", "Amis", 1)), onWarn = { warned += it })
+        shoot("delete-info-warn-each")
+        // No plain "Prévenir mes proches": which Miff would it be about?
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_warn_button)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                "Let the members of “Famille” know",
+            ).performScrollTo()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithText("Let the members of “Amis” know").performScrollTo().performClick()
+        assertEquals(listOf<String?>("Famille", "Amis"), warned)
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_warn_button_other)).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_aMiffBeyondTheThreeListed_getsOneButtonWithAMessageWithoutAName() {
+        val warned = mutableListOf<String?>()
+        val owned =
+            arrayOf(OwnedMiff("m1", "A", 1), OwnedMiff("m2", "B", 0), OwnedMiff("m3", "C", 0), OwnedMiff("m4", "D", 5))
+        info(loaded(0, *owned), onWarn = { warned += it })
+        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button_other)).performScrollTo().performClick()
+        assertEquals(listOf<String?>(null), warned)
+        composeRule.onNodeWithText("Let the members of “A” know").assertExists()
+        // The fourth Miff is not named anywhere in a message.
+        composeRule.onAllNodesWithText("Let the members of “D” know").assertCountEquals(0)
+    }
+
+    @Test
+    fun info_oneMiffToWarnAbout_keepsThePlainButton_asOnTheMockup() {
+        info(loaded(0, OwnedMiff("m1", "Famille", 2), OwnedMiff("m2", "Seule", 0)))
+        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button)).assertExists()
+        composeRule.onAllNodesWithText("Let the members of", substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -280,7 +321,7 @@ class DeleteAccountScreensTest {
                 )
             }
         }
-        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Let the members of “Famille” know").performScrollTo().assertIsDisplayed()
         composeRule
             .onNodeWithText(
                 text(R.string.settings_delete_continue),

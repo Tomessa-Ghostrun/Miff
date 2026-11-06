@@ -718,10 +718,13 @@
     <string name="settings_delete_owned_explain_alone">This Miff will be deleted, along with its places.</string>
     <string name="settings_delete_owned_explain_alone_many">These Miffs will be deleted, along with their places.</string>
     <string name="settings_delete_warn_button">Let my circle know</string>
+    <string name="settings_delete_warn_button_named">Let the members of “%1$s” know</string>
+    <string name="settings_delete_warn_button_other">Let my other members know</string>
+    <string name="settings_delete_warn_message_generic">I’m closing our Miff in Miff: it will no longer be accessible.</string>
     <string name="settings_delete_confirm_body_owner">Your account, your Miff data and your Miffs will be deleted. This can’t be undone.</string>
     <string name="settings_delete_progress_miff">Miff %1$d of %2$d</string>
     <string name="settings_delete_progress_long">This can take a few minutes if your Miff has many members.</string>
-    <string name="settings_delete_miffs_blocked">You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$s.</string>
+    <string name="settings_delete_miffs_blocked">A Miff appeared during the deletion, so your account was not deleted. You can start the deletion again from Settings > My account whenever you like. Any question? Write to us: %1$s.</string>
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">Waiting for your agreement</string>

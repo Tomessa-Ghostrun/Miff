@@ -696,10 +696,13 @@
     <string name="settings_delete_owned_explain_alone">Cette Miff sera supprimée, avec ses lieux.</string>
     <string name="settings_delete_owned_explain_alone_many">Ces Miffs seront supprimées, avec leurs lieux.</string>
     <string name="settings_delete_warn_button">Prévenir mes proches</string>
+    <string name="settings_delete_warn_button_named">Prévenir les proches de « %1$s »</string>
+    <string name="settings_delete_warn_button_other">Prévenir mes autres proches</string>
+    <string name="settings_delete_warn_message_generic">Je ferme notre Miff dans Miff : elle ne sera plus accessible.</string>
     <string name="settings_delete_confirm_body_owner">Ton compte, tes données Miff et tes Miffs seront supprimés. Ce n’est pas réversible.</string>
     <string name="settings_delete_progress_miff">Miff %1$d sur %2$d</string>
     <string name="settings_delete_progress_long">Ça peut prendre quelques minutes si ta Miff compte beaucoup de proches.</string>
-    <string name="settings_delete_miffs_blocked">Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$s.</string>
+    <string name="settings_delete_miffs_blocked">Une Miff est apparue pendant la suppression : ton compte n’a donc pas été supprimé. Tu peux relancer la suppression depuis Réglages > Mon compte quand tu veux. Une question ? Écris-nous : %1$s.</string>
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">En attente de ton accord</string>

@@ -271,8 +271,8 @@ fun DeleteAccountInfoScreen(
     onContact: () -> Unit,
     onKeep: () -> Unit,
     onConfirm: () -> Unit,
-    /** The share sheet with the name of the Miff in the message (decision QM9). */
-    onWarn: (miffName: String) -> Unit = {},
+    /** The share sheet: the name of the Miff in the message (decision QM9), or null for the message without a name (several Miffs). */
+    onWarn: (miffName: String?) -> Unit = {},
 ) {
     SettingsScaffold(
         title = stringResource(R.string.settings_delete_title),
@@ -330,8 +330,8 @@ fun DeleteAccountInfoScreen(
                 )
                 Spacer(Modifier.size(Spacing.m))
                 val miffs = state.miffs
-                // The long sentence as soon as there is a Miff, created or joined (mockups, design sheet); the short one with none at all.
-                val you = if (miffs.hasMiffs) R.string.settings_delete_you else R.string.settings_delete_you_nomiff
+                // "Tu quitteras les Miffs que tu as rejointes" only when there is one to leave: a creator with none joined gets the short sentence.
+                val you = if (miffs.joined > 0) R.string.settings_delete_you else R.string.settings_delete_you_nomiff
                 InfoCard(
                     rows =
                         buildList {
@@ -344,7 +344,7 @@ fun DeleteAccountInfoScreen(
                 )
                 if (state.ownsMiffs) {
                     Spacer(Modifier.size(Spacing.m))
-                    OwnedMiffsBlock(owned = miffs.owned, warnWith = state.warnableMiff?.name, onWarn = onWarn)
+                    OwnedMiffsBlock(owned = miffs.owned, plan = state.warnPlan, onWarn = onWarn)
                 }
                 Spacer(Modifier.size(Spacing.s))
                 ContactSentence(
@@ -442,8 +442,8 @@ fun DeleteAccountConfirmDialog(
 @Composable
 private fun OwnedMiffsBlock(
     owned: List<OwnedMiff>,
-    warnWith: String?,
-    onWarn: (String) -> Unit,
+    plan: WarnPlan,
+    onWarn: (String?) -> Unit,
 ) {
     val anyOthers = owned.any { it.otherMembers > 0 }
     Text(
@@ -486,8 +486,27 @@ private fun OwnedMiffsBlock(
             color = colorTextDescription,
             modifier = Modifier.padding(top = Spacing.xs),
         )
-        // Only when at least one Miff has another person in it: nothing to say to nobody (SC7).
-        if (warnWith != null) WarnButton(onClick = { onWarn(warnWith) })
+        // Only when at least one Miff has another person in it: nothing to say to nobody (SC7). ONE Miff: the plain button of the mockup; several: one
+        // button per Miff listed that has other people, and one more (message without a name) for the ones that cannot be named.
+        if (plan.single) {
+            WarnButton(
+                text = stringResource(R.string.settings_delete_warn_button),
+                onClick = { onWarn(plan.named.single()) },
+            )
+        } else {
+            plan.named.forEach { name ->
+                WarnButton(
+                    text = stringResource(R.string.settings_delete_warn_button_named, name),
+                    onClick = { onWarn(name) },
+                )
+            }
+            if (plan.generic) {
+                WarnButton(
+                    text = stringResource(R.string.settings_delete_warn_button_other),
+                    onClick = { onWarn(null) },
+                )
+            }
+        }
     }
 }
 
@@ -529,7 +548,10 @@ private fun OwnedRow(miff: OwnedMiff) {
 
 /** "Prévenir mes proches": a secondary button (never more visible than "Continuer") with the share icon; it is announced as a button. */
 @Composable
-private fun WarnButton(onClick: () -> Unit) {
+private fun WarnButton(
+    text: String,
+    onClick: () -> Unit,
+) {
     OutlinedButton(
         onClick = onClick,
         shape = ShapeMd,
@@ -548,12 +570,12 @@ private fun WarnButton(onClick: () -> Unit) {
             modifier = Modifier.size(Spacing.l),
         )
         Spacer(Modifier.width(Spacing.s))
-        Text(text = stringResource(R.string.settings_delete_warn_button), style = textBodyLarge)
+        Text(text = text, style = textBodyLarge)
     }
 }
 
 /** Three Miffs are named, the others are counted ("et 2 autres"). */
-private const val MAX_LISTED_MIFFS = 3
+private const val MAX_LISTED_MIFFS = MAX_LISTED_OWNED
 
 private val DialogMaxWidth = 320.dp
 
