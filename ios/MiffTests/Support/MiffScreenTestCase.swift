@@ -54,7 +54,7 @@ class MiffScreenTestCase: XCTestCase {
             MiffSnapshot(
                 miff: testMiffDetails(code: code, owner: owner),
                 members: people,
-                places: [MiffPlace(id: "p1", name: "Maison")],
+                places: [testPlace(id: "p1", name: "Maison")],
                 fromCache: false
             )
         )

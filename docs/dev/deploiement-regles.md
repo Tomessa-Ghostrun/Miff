@@ -29,6 +29,8 @@
 | 5 | Tu notes la version actuellement en ligne | Console Firebase > projet **Miff** (`miff-3d283`) > Firestore Database > onglet **Règles** : relève la date et l'heure de publication affichées, et fais une capture d'écran des règles | Capture enregistrée sur ton poste (hors du dépôt : elle sert de plan B) |
 | 6 | Tu sais quel commit tu déploies | `git log -1 --format=%H` dans `C:\dev\miff` | Tu notes l'identifiant (les 8 premiers caractères suffisent) |
 | 7 | Tu es connecté avec le bon compte Google | `cd backend` puis `npx firebase login:list` | Ton compte apparaît (sinon `npx firebase login`) |
+| 8 | **SESS-1 (un compte, un seul appareil) seulement** : tu sais lequel des deux temps tu déploies (`backend/data-model.md`, « Un compte, un seul appareil ») | **Temps 1** (`deviceIdRequired()` à `false`) : à faire **avant** de livrer les applications SESS. **Temps 2** (`true`) : **seulement** si le PM a confirmé la liste des versions installées (toutes SESS), dans **une PR à part** ; sans mise à jour forcée, une application actuelle ne peut plus écrire statut, position, rejoindre / créer avec partage ni activer le partage (`permission-denied`, qui ressemble à une panne) | Le temps est écrit dans ta demande de « oui » |
+| 9 | **SESS-1** : les applications SESS-2 / SESS-3 ont un test qui vérifie que `deviceId` est dans **chaque** écriture de statut et de position, mises à jour partielles comprises (le client Android LOC-2b fait des `update()` partiels) | Les règles ne l'imposent pas : une mise à jour partielle sans la clé passe si la valeur en base est celle de la session | Tests des applications cités dans la PR |
 
 > `npx firebase` utilise la version de la CLI figée dans `backend/package-lock.json` (aujourd'hui 15.34.0) : tout le monde déploie avec le même outil.
 
@@ -91,6 +93,8 @@ git switch main                                     # retour à la normale
 ```
 
 **Méthode C — plan B visuel.** La capture d'écran de l'étape « Avant » n° 5 permet de recopier l'ancien texte dans l'éditeur de la console, puis de publier. À éviter sauf urgence (risque d'erreur de copie).
+
+**SESS-1 (I-3)** : une fois qu'une application SESS a écrit une session, **seul le retour au fichier du TEMPS 1** est sûr : un retour aux règles d'avant SESS-1 refuse toute écriture de statut ou de position portant `deviceId`. La capture de l'étape « Avant » n° 5 ne sert de plan B qu'avant la livraison des applications SESS.
 
 Après un retour arrière : refaire les vérifications de la section 3, et prévenir Claude (agent `backend-data`) pour qu'il corrige la cause avant un nouveau déploiement.
 

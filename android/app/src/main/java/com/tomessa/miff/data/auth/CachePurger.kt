@@ -3,6 +3,8 @@ package com.tomessa.miff.data.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tomessa.miff.data.privacy.BooleanStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -60,9 +62,15 @@ class FirestoreCachePurger(
         flags.put(KEY_PURGE_PENDING, true)
     }
 
+    /**
+     * One at a time: the session start, a geofence receiver and the detection may all ask before their first access to Firestore (LOC-2b); the
+     * second one waits for the first and then finds nothing left to do.
+     */
     override suspend fun purgeIfPending() {
-        if (flags.get(KEY_PURGE_PENDING, false)) purge()
+        purgeLock.withLock { if (flags.get(KEY_PURGE_PENDING, false)) purge() }
     }
+
+    private val purgeLock = Mutex()
 
     companion object {
         const val KEY_PURGE_PENDING = "firestore_purge_pending"

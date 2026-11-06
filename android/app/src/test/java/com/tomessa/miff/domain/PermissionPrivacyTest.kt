@@ -7,9 +7,9 @@ import org.junit.Test
 import java.io.File
 
 /**
- * What the permissions of LOC-2a must never do, checked on the SOURCE so that a later change cannot break it unnoticed (criteria AUT7, VIE1,
- * VIE4, decisions (f), (i), (j) of the PM): the exact list of declared permissions, NO position read anywhere in this version, nothing
- * logged or sent as an event by the permission screens, the disclosure that Google Play requires, tutoiement.
+ * What the permissions of LOC-2a and the detection of LOC-2b must never do, checked on the SOURCE so that a later change cannot break it unnoticed
+ * (criteria AUT7, VIE1, VIE4, decisions (f), (i), (j) of the PM): the exact list of declared permissions, a position read ONLY in data/tracking (see
+ * TrackingPrivacyTest), nothing logged or sent as an event by the permission screens, the disclosure that Google Play requires, tutoiement.
  */
 class PermissionPrivacyTest {
     private val main = File("src/main/java")
@@ -42,13 +42,14 @@ class PermissionPrivacyTest {
                 "android.permission.ACCESS_COARSE_LOCATION",
                 "android.permission.ACCESS_BACKGROUND_LOCATION",
                 "android.permission.POST_NOTIFICATIONS",
+                // LOC-2b: the zones of the geofencing are erased when the phone restarts; they are armed again at the restart (criterion AND2).
+                "android.permission.RECEIVE_BOOT_COMPLETED",
             ),
             names,
         )
-        // No foreground service, no media location, no boot receiver: the geofencing of LOC-2b is a separate decision.
+        // No foreground service (the system delivers the zones and the moves to the receiver), no media location.
         assertFalse(manifest.contains("FOREGROUND_SERVICE"))
         assertFalse(manifest.contains("ACCESS_MEDIA_LOCATION"))
-        assertFalse(manifest.contains("RECEIVE_BOOT_COMPLETED"))
     }
 
     @Test
@@ -84,7 +85,7 @@ class PermissionPrivacyTest {
     }
 
     @Test
-    fun noPositionIsReadAnywhereInThisVersion_noLocationLibrary() {
+    fun aPositionIsReadOnlyInTheTrackingPackage_andTheOnlyLocationLibraryIsPlayServicesLocation() {
         val forbidden =
             listOf(
                 Regex("""android\.location\."""),
@@ -95,22 +96,28 @@ class PermissionPrivacyTest {
                 Regex("""\bLocationCallback\b|\bLocationRequest\b|\bLocationListener\b"""),
                 Regex("""LocationManagerCompat|LOCATION_SERVICE|ActivityRecognition"""),
             )
+        // Everything that asks the system for a position or a zone lives in data/tracking: nowhere else (criteria AUT7, VIE1).
         val offenders =
-            sources("com").flatMap { file ->
-                codeLines(file)
-                    .filter { line ->
-                        forbidden.any { it.containsMatchIn(line) }
-                    }.map { "${file.name}: ${it.trim()}" }
-            }
+            sources("com")
+                .filter { !it.path.replace('\\', '/').contains("/data/tracking/") }
+                .flatMap { file ->
+                    codeLines(file)
+                        .filter { line ->
+                            forbidden.any { it.containsMatchIn(line) }
+                        }.map { "${file.name}: ${it.trim()}" }
+                }
         assertEquals(
-            "no position may be read before LOC-2b (and never before the agreement)",
+            "a position is only read by the detection (data/tracking), after the agreement",
             emptyList<String>(),
             offenders,
         )
         val gradle = File("build.gradle.kts").readText() + File("../gradle/libs.versions.toml").readText()
+        // LOC-2b: the one location library is Google Play services location (geofencing); no other one.
+        assertTrue(Regex("""play-services-location""").containsMatchIn(gradle))
         assertFalse(
-            "no location library",
-            Regex("""play-services-location|play\.services\.location""").containsMatchIn(gradle),
+            Regex(
+                """(?i)mapbox-.*location|maps-utils|fused-location-provider-compat|com\.huawei""",
+            ).containsMatchIn(gradle),
         )
     }
 

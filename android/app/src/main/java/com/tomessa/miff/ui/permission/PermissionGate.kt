@@ -64,6 +64,7 @@ fun PermissionGate(
                             locationBlocking = BuildConfig.LOCATION_BLOCKING,
                             leaver = { uid, miffId -> container.miffRepository.leave(uid, miffId) },
                             onLeft = { miffId -> container.onMiffLeft(miffId) },
+                            awaiting = container.awaitingAgreement,
                         )
                     }
                 },

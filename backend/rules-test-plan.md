@@ -468,6 +468,48 @@ Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un text
 | RC8 | Sondes X1, X1b (I1) : depuis un texte qui couvre la position, renouveler vers `2027-01-v01`, `v02`, `2026-12-v00`, `2027-01-v1`, `v2` ; vers `2027-01-v04` ; depuis un texte sans position vers un autre sans position | KO ×5 ; OK (la position reste écrivable et lisible) ; OK |
 | RC9 | Sonde Y6 : plusieurs mises à jour de la même fiche dans un lot ; la seconde sort de la couverture « position » | OK pour l'aller-retour qui reste couvert ; KO pour la sortie, rien de changé |
 
+## 21. SESS-1 : un compte, un seul appareil (mécanisme validé par le PM le 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ
+
+Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (propriétaire seul, schéma fermé, chemin fixe) ; clé `deviceId` **facultative** dans le statut et la dernière position (**temps 1**), **obligatoire** au **temps 2** (une seule ligne basculée : `deviceIdRequired()`), égale à celle de la session. +1 lecture de règles par statut / position écrits avec la clé ; rien d'autre ne lit la session. Mesure de COHÉRENCE, pas de sécurité. Tests : `tests/rules/22-session-appareil.test.js` (temps 1, règles telles que livrées), `23-session-appareil-temps2.test.js` (temps 2 : même fichier de règles, ligne basculée par `temps2()` de `fixtures.js`), `24-session-voie1-sonde.test.js` (sonde de la voie 1, écartée). Mutations `SS*` dans `tests/tools/mutations-session.mjs`. Budgets figés dans `tests/unit/budgets.test.js`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| SE1 | `alice` écrit sa session (identifiant + heure du serveur), la relit, la remplace par un autre identifiant (la dernière connexion gagne), puis reprend la place | OK partout |
+| SE2 | Schéma fermé : plateforme, position ou toute clé en plus ; clé manquante ; identifiant vide, de 15 ou 65 caractères, avec `/`, espace, retour à la ligne, accent, `null`, nombre, booléen, objet ; heure du client ; mise à jour partielle qui ajoute une clé. Bornes de 16 et 64 caractères | KO partout ; OK pour les deux bornes |
+| SE3 | La session de `bob` : `alice` (créatrice de sa Miff), `carol`, `zoe`, `eve` et un visiteur la lisent, l'écrivent, la suppriment | KO partout ; la session de `bob` ne change pas |
+| SE4 | Déconnexion volontaire : `bob` supprime sa session (même absente) ; `alice` supprime celle de `bob` ; lecture d'une session absente | OK ; KO ; « introuvable » sans erreur de droits |
+| SE5 | Un seul chemin : autre identifiant sous `session/`, `sessions/active`, liste de la sous-collection, sous-document ; les jetons de notification (`devices`) inchangés ; la session s'écrit sans profil | KO ×5 ; OK ; OK |
+| SE6 | Temps 1 : statut et position SANS `deviceId` (applications actuelles), sans session puis avec une session existante | OK partout (le trou du temps 1) |
+| SE7 | Statut avec `deviceId` : sans session ; égal à la session ; différent ; casse différente ; `null`, vide, nombre, booléen, tableau, objet ; mise à jour partielle qui l'envoie | KO ; OK ; KO ; KO ; KO ; OK |
+| SE8 | Scénario complet : A écrit, B se connecte, A refusé (le statut de B n'est pas écrasé), B accepté, A reprend la place, B refusé | OK / KO / OK / OK / KO / OK |
+| SE9 | `bob` utilise l'identifiant de la session d'`alice` pour son statut et sa position (sans session, puis avec la sienne) ; il écrit le statut d'`alice` | KO ; KO ; OK avec le sien ; KO |
+| SE10 | Session supprimée : statut et position portant le `deviceId` ; statut sans la clé | KO ; KO ; OK (temps 1) |
+| SE11 | Position : sans session ; égal ; différent après remplacement (la position de l'appareil actif n'est pas écrasée) ; `null` ; clé en plus (`accuracyM`) | KO ; OK ; KO ; KO ; KO |
+| SE12 | Lots d'entrée (rejoindre et partager, créer et partager gratuit, créer et partager premium avec emplacement gratuit conservé) : statut initial avec un `deviceId` faux, puis le bon | KO (rien n'est écrit) puis OK |
+| SE13 | Activer le partage (fiche + statut + position, un lot) et mise à jour manuelle (photo + statut) : appareil remplacé, puis appareil actif | KO en entier (la photo n'est pas écrite) ; OK |
+| SE14 | **Limite connue** : un appareil remplacé quitte une Miff (lot des applications actuelles) ; la créatrice retire un membre | OK (une suppression n'a pas de charge utile) |
+| SE15 | **Limite connue** : un appareil remplacé écrit un lieu, le supprime, met à jour sa fiche, écrit une photo seule, renouvelle son consentement | OK partout (actions manuelles, budget des lots de lieux préservé) |
+| SE16 | **Limite connue** : un membre autorisé lit le statut de `bob` avec son `deviceId` ; un étranger ne lit rien | OK ; KO |
+| SE17 | Régression : les écritures SANS `deviceId` d'avant (rejoindre, créer, statut invalide, batterie 101, clé en plus avec ou sans `deviceId`) | comme avant : OK / KO selon le cas |
+| SE18 | R-LIEU-1 + SESS-1 ensemble : statut de plus de 24 h, départ en mise à jour partielle avec `lastUpdateAt` ancien conservé : mauvais `deviceId`, `deviceId` nul, nouvelle valeur ancienne avec le bon `deviceId`, bon `deviceId` ; puis un autre appareil prend la place | KO ; KO ; KO ; OK (heure conservée) ; ancien appareil KO, nouveau OK |
+| SE19 | **Limite connue (temps 1)** : un `update` qui retire la clé `deviceId` (`FieldValue.delete()`) après remplacement de l'appareil | OK (refusé au temps 2 : SF11) |
+| SE20 | Ancienne application sur un compte déjà passé par une application SESS puis déconnecté (session supprimée, clé en base) : mise à jour partielle sans la clé ; `set` complet sans la clé ; mise à jour partielle ensuite | KO ; OK ; OK |
+| SF1 | Garde-fou : la bascule du temps 2 change exactement UNE ligne de `firestore.rules` | OK |
+| SF2 | Temps 2 : statut sans `deviceId` (avec ou sans session), avec un faux, avec `null` ; avec le bon ; mise à jour avec le bon | KO ; KO ; KO ; OK ; OK |
+| SF3 | Temps 2 : position sans `deviceId`, avec un faux (appareil remplacé), avec le bon | KO ; KO ; OK |
+| SF4 | Temps 2 : lots d'entrée (rejoindre, créer, créer en premium) sans `deviceId`, puis avec | KO ; OK |
+| SF5 | Temps 2 : entrée sans partage (aucun statut), lieux, fiche, photo seule, renouvellement du consentement, quitter (lot actuel), retrait | OK partout |
+| SF6 | Temps 2 : départ avec la position, sans session ni `deviceId` | OK |
+| SF7 | Temps 2 : activer le partage (fiche + statut + position) sans `deviceId` sur le statut, sans sur la position, avec les deux | KO ; KO ; OK |
+| SF8 | Temps 2 : la session s'écrit avant tout statut, un nouvel appareil prend la place | OK ; l'ancien refusé ; le nouveau OK |
+| SF9 | **Limite connue** : mise à jour PARTIELLE sans `deviceId`, jugée sur le document résultant | OK si la valeur en base est celle de la session ; KO si elle est périmée ; OK de nouveau quand l'appareil actif a écrit |
+| SF10 | Temps 2 + R-LIEU-1 : statut ancien sans `deviceId` en base, départ partiel sans clé, avec un faux, avec le bon | KO ; KO ; OK |
+| SF11 | Temps 2 : `update` qui retire la clé ; recréation du statut après suppression sans la clé, avec une fausse, avec la bonne | KO ; KO ; KO ; OK |
+| SF12 | Temps 2 : lot mixte statut avec la clé + position sans la clé (puis avec une fausse) ; puis les deux avec la bonne | KO en entier, rien d'écrit ; KO ; OK |
+| SV1 | Sonde (voie 1, écartée) : `request.auth.token.auth_time` est un entier utilisable dans une règle (l'écriture n'accepte que l'`auth_time` du jeton) | OK |
+| SV2 | Sonde : deux jetons de `auth_time` différents ; seul celui de la session passe | OK / KO |
+| SV3 | Sonde, limite : deux connexions de même `auth_time` (même seconde) ne sont pas distinguées | OK pour les deux |
+
 ## 20. R-LIEU-1 : statut dont les horodatages ont plus de 24 h (acceptée par le PM le 2026-11-01 ; demandée par le client Android LOC-2b) — PRÉPARÉ, NON DÉPLOYÉ
 
 `presenceAt` et `lastUpdateAt` restent bornés (pas plus de 24 h dans le passé, pas plus de 5 min dans le futur) **sauf si la valeur envoyée est identique, à la microseconde (précision de stockage de Firestore), à celle déjà enregistrée dans le même statut** : elle peut alors être conservée quel que soit son âge. Chaque champ n'est comparé qu'à lui-même ; le statut doit déjà exister ; tout le reste de la validation (clés, valeurs, heure serveur, consentement actif) est inchangé. `escalationDueAt` n'est PAS concerné (limite connue). **0 lecture de règles de plus** (`resource` ne coûte rien). Tests dans `tests/rules/21-statut-ancien.test.js` ; mutations `R-LIEU-1-*` dans `tests/tools/mutations-statut.mjs`.
@@ -488,3 +530,32 @@ Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un text
 | RL7 | Le reste ne bouge pas : `escalationDueAt` ancien conservé (limite connue) ; `updatedAt` client ; clé en trop (`lat`) ; `presence`, `locationAccess`, `batteryPct`, `updateText` invalides ; clé manquante | KO partout ; `escalationDueAt` nul : OK |
 | RL8 | Consentement exigé : partage arrêté, puis fiche retirée, avec les valeurs conservées | KO ; KO |
 | RL9 | Lecture inchangée : un statut ancien reste lisible par `alice` (membre qui partage), pas par un étranger ni un visiteur | OK ; KO ; KO |
+
+## 22. R-PHOTO-LOC : localisation de la photo d'update (décision du PM du 2026-11-05, « OK reco » sur la proposition de `docs/tickets/feed.md` §6.3) — PRÉPARÉ, NON DÉPLOYÉ
+
+Le document `miffs/{id}/photos/{uid}` accepte trois clés **facultatives** `lat`, `lng` et `measuredAt` : la position figée au moment de la photo et l'heure de sa mesure (`measuredAt` **obligatoire** avec la paire, **interdite** sans ; bornes de `positions.measuredAt` : -24 h, +5 min ; décision du PM du 2026-11-06). Écriture : par l'intéressé seul ; une photo **localisée** exige en plus un consentement de version 03 ou plus (fonction dédiée `isPhotoLocationConsentVersion`, même seuil que la dernière position). Lecture : une photo localisée n'est lisible que par son auteur ou par un membre qui a **publié sa propre position** ; **pas** de contrôle « l'auteur partage encore » (décision du PM du 2026-11-06 : un reliquat est borné par l'expiration de 24 h). Expiration (24 h), suppression et lots de purge : **inchangés**. Fichiers : `tests/rules/25-photo-localisee.test.js` (PL1 à PL16, PL18 à PL20), `tests/rules/26-photo-localisee-temps2.test.js` (PL17).
+
+| # | Cas | Attendu |
+|---|---|---|
+| PL1 | **Applications actuelles** : photo sans `lat` ni `lng` (consentement v1) écrite, remplacée, mise à jour partiellement ; `lat`/`lng` nuls ; lecture par un membre sans position publiée (photo non localisée) | OK partout |
+| PL2 | Schéma fermé : `deviceId`, précision, adresse, `locationAt`, `updatedAt`, vitesse, objet `position` en plus (avec ou sans localisation) ; `jpeg` ou `expiresAt` manquant | KO partout |
+| PL3 | Photo localisée avec le consentement `v1`, `2026-10-v1`, `2026-10-v2`, `v02`, `2026-11-v3` (sans zéro), `v00`, `v01`, `v003`, mois 13, nul ; la même photo sans localisation avec ces versions ; puis `2026-11-v03`, `2026-12-v04`, `2027-01-v05`, `2026-11-v99` | KO ; OK ; OK |
+| PL4 | Photo localisée : partage arrêté ; activer avec le texte v1 dans le même lot ; activer avec le texte v3 dans le même lot ; révoquer dans le même lot ; photo non localisée avec partage arrêté (contrôle) | KO ; KO ; OK ; KO ; KO |
+| PL5 | Écrire la photo localisée d'un autre : membre, créatrice, étranger, visiteur ; mise à jour de la localisation de la photo d'un autre ; l'intéressé | KO ×5 ; KO ; OK |
+| PL6 | Une seule clé, ou une valeur nulle et l'autre non (avec une heure de mesure valide) ; bornes 90 / -90 / 180 / -180 / 0 ; juste au-delà ; NaN, infini, texte, booléen, tableau, objet ; mise à jour partielle qui ajoute une localisation avec son heure (valide, puis `lat` 91) ; taille, durée, `createdAt` client avec localisation | KO ; OK ; KO ; KO ; OK puis KO ; KO |
+| PL7 | Lecture d'une photo localisée : sans position publiée ; avec (coordonnées **et heure de mesure** lues telles qu'écrites) ; la position publiée de la seule cible ne suffit pas | KO ; OK ; KO |
+| PL8 | L'auteur relit sa photo localisée sans position publiée ; photo non localisée d'un autre sans position publiée (contrôle) | OK ; OK |
+| PL9 | Photo localisée : membre au partage arrêté (position injectée), étranger, membre d'une autre Miff, visiteur, liste de la sous-collection | KO partout (le cas nominal : OK) |
+| PL10 | La créatrice sans position publiée lit la photo localisée d'un membre ; puis avec sa position | KO ; OK (aucun droit de lecture de plus) |
+| PL11 | **Reliquat** (décision du PM du 2026-11-06, pas de contrôle de l'auteur) : photo localisée dont l'auteur ne partage plus, non expirée ; la même, expirée ; photo non localisée (comportement d'avant) ; lecteur au partage arrêté | OK (borné par l'expiration) ; KO ; OK ; KO |
+| PL12 | Photo localisée expirée (lecteur avec position, auteur) ; photo absente avec ou sans position publiée ; photo de 24 h 59 min | KO ; « introuvable » sans erreur de droits ; OK |
+| PL13 | Arrêt du partage et départ avec une photo localisée : lot sans la suppression de la photo, puis avec | KO ; OK (photo disparue) |
+| PL13b | Retrait par la créatrice (7 écritures) et suppression de la Miff avec la photo localisée : sans la photo, puis avec | KO ; OK (photo disparue) |
+| PL13c | Lots des applications actuelles (sans position, photo non localisée) : départ, retrait | OK |
+| PL14 | Suppression d'une photo localisée : membre (valide), étranger, visiteur ; auteur ; créatrice ; étranger (expirée) ; membre (expirée) | KO ; KO ; KO ; OK ; OK ; KO ; OK |
+| PL15 | SESS-1 : mise à jour manuelle (photo localisée + statut) avec un `deviceId` périmé puis le bon ; **limite connue** : photo localisée SEULE d'un appareil remplacé | KO en entier (photo non écrite) ; OK ; OK |
+| PL16 | Revue de schéma : clés de la photo = `jpeg, createdAt, expiresAt, lat, lng, measuredAt` exactement ; aucune clé de précision, adresse, `deviceId` ; le statut ne porte toujours aucune coordonnée | OK |
+| PL17 | Temps 2 de SESS-1 : photo localisée seule (avec son heure) sans `deviceId` ; avec `deviceId` ; mise à jour manuelle sans `deviceId` ou avec un périmé, puis avec le bon | OK ; KO ; KO ; KO ; OK |
+| PL18 | **Heure de la mesure** : `measuredAt` absente, nulle, ou d'un autre type avec `lat`/`lng` ; sans paire, ou avec une paire nulle ; nulle sans paire ; bornes (maintenant, -1 min, -2 h, -23 h, +4 min / -25 h, -3 jours, +10 min, +30 min, +1 jour) ; mises à jour partielles (retirer l'heure, effacer la paire en gardant l'heure, renouveler l'heure, retirer toute la localisation puis ajouter une heure sans paire, regagner une localisation avec son heure) ; l'heure d'une photo d'un autre | KO ; KO ; OK ; OK / KO ; KO ; OK ; KO ; OK |
+| PL19 | Suppression d'**une seule** clé de la localisation (`FieldValue.delete` sur `lat`, sur `lng`, sur `measuredAt`, sur deux d'entre elles) ; suppression des trois à la fois | KO ; OK (photo non localisée, relue sans coordonnées) |
+| PL20 | Un non-membre (position injectée dans la Miff), un ex-membre (position restée, fiche supprimée), un visiteur lisent la photo localisée ou non | KO partout |

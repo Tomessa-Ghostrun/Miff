@@ -196,9 +196,13 @@ fun NavGraphBuilder.miffScreenRoute(
         val directory by container.miffDirectory.state.collectAsStateWithLifecycle()
         val notice by container.placeNotices.notice.collectAsStateWithLifecycle()
         ConsumeNoticeOnLeave(container.placeNotices::consume)
+        // LOC-2b (design 23B): this Miff waits for the agreement of the person.
+        val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
         MiffScreenHost(
             viewModel = viewModel,
             onBack = { navController.popBackStackIfSafe() },
+            agreementWaiting = route.miffId in waiting,
+            onReviewAgreement = container.awaitingAgreement::requestReview,
             placesExtras =
                 PlacesExtras(
                     premium = (directory as? DirectoryState.Ready)?.premiumOrNull,
@@ -221,6 +225,8 @@ fun MiffScreenHost(
     viewModel: MiffScreenViewModel,
     onBack: () -> Unit,
     placesExtras: PlacesExtras = PlacesExtras(),
+    agreementWaiting: Boolean = false,
+    onReviewAgreement: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -249,5 +255,7 @@ fun MiffScreenHost(
         onInviteLater = viewModel::onInviteLater,
         onDeletionRetry = viewModel::onDeletionRetry,
         placesExtras = placesExtras,
+        agreementWaiting = agreementWaiting,
+        onReviewAgreement = onReviewAgreement,
     )
 }

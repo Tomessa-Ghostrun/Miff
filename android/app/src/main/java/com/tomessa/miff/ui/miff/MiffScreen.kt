@@ -68,6 +68,9 @@ fun MiffScreen(
     onDeletionRetry: () -> Unit = {},
     /** LOC-1: Miff+ or not (null while unknown), the name of the place just saved, and the two ways into the places. */
     placesExtras: PlacesExtras = PlacesExtras(),
+    /** LOC-2b, design 23B: this Miff waits for the agreement of the person ("Pas maintenant"), and the way back to the renewal screen. */
+    agreementWaiting: Boolean = false,
+    onReviewAgreement: () -> Unit = {},
 ) {
     RecentsPrivacy()
     val context = LocalContext.current
@@ -117,6 +120,8 @@ fun MiffScreen(
                     onDeleteRequested = onDeleteRequested,
                     onInviteLater = onInviteLater,
                     placesExtras = placesExtras,
+                    agreementWaiting = agreementWaiting,
+                    onReviewAgreement = onReviewAgreement,
                 )
             }
         }
@@ -177,6 +182,8 @@ private fun MiffContent(
     onDeleteRequested: () -> Unit,
     onInviteLater: () -> Unit,
     placesExtras: PlacesExtras,
+    agreementWaiting: Boolean,
+    onReviewAgreement: () -> Unit,
 ) {
     val context = LocalContext.current
     val copiedText = stringResource(R.string.miff_code_copied)
@@ -296,12 +303,27 @@ private fun MiffContent(
         }
     }
 
+    if (agreementWaiting) {
+        // Design 23B: the card is the way back to the agreement. The switch stays USABLE (review I6): the person can always stop sharing, and what
+        // Miff says is exact: it no longer updates the status, but the last one is still visible to the members until sharing is stopped.
+        AwaitingAgreementCard(
+            body =
+                stringResource(
+                    if (state.isOwner) R.string.miff_waiting_miff_body_owner else R.string.miff_waiting_miff_body,
+                ),
+            onReview = onReviewAgreement,
+        )
+    }
     state.sharing?.let { sharing ->
         MiffSwitchRow(
             title = stringResource(R.string.miff_sharing_title),
             description =
                 stringResource(
-                    if (sharing) R.string.miff_sharing_on_description else R.string.miff_sharing_off_description,
+                    when {
+                        sharing && agreementWaiting -> R.string.miff_sharing_waiting_description
+                        sharing -> R.string.miff_sharing_on_description
+                        else -> R.string.miff_sharing_off_description
+                    },
                 ),
             checked = sharing,
             enabled = state.canWrite,
