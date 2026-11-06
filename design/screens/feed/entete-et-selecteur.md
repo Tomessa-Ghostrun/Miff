@@ -3,7 +3,9 @@
 **Pour** : FEED-1 (Android) puis FEED-5 (iOS). **Date** : 2026-11-05. **Sources** : `docs/tickets/feed.md` §5.1, D4, D12, H1, H2 ; maquettes du PM `Welcoming screen` 0 à 3 ; code Android provisoire `ui/feed/FeedScreen.kt` (pastille déjà en place).
 
 ## Structure
-En-tête qui **se masque quand le fil défile vers le bas et revient dès qu'on remonte** (« enter always » ; remplace « fixe », décision du PM du 2026-11-06), fond `bg/overlay-header` flouté, ombre de 2 pt, de haut en bas :
+**Décision du PM du 2026-11-06 (D41 de `docs/tickets/feed.md`)** : l'en-tête **n'est plus fixe** : il **se masque quand on fait défiler vers le bas et réapparaît dès qu'on remonte** ; il **reste visible** pendant le chargement, en erreur, hors connexion, si la liste est courte, avec TalkBack / VoiceOver actif et quand le sélecteur est ouvert ; contenu : photo de profil, logo, nom de la Miff avec son sélecteur, futur bouton de notifications ; masquage instantané si « réduire les animations ». **Cette décision prime sur « fixe » ci-dessous** (PNG non régénérés).
+
+En-tête **(fixe avant D41)** (reste en haut quand le fil défile), fond `bg/overlay-header` flouté, ombre de 2 pt, de haut en bas :
 1. Barre d'état du système.
 2. Rangée de 56 pt : **avatar** (46 pt, à gauche, marge 16 pt), **logo** Miff centré (100 pt de large). **Plus de cloche** (décision FPR Q15, D4) : le côté droit reste vide.
 3. **Pastille de Miff** centrée, 38 pt de haut, 10 pt de marge sous elle.
@@ -26,7 +28,7 @@ En-tête qui **se masque quand le fil défile vers le bas et revient dès qu'on 
 
 - Contenu : photo de profil ou initiales (disque `#cfc7bd`). L'annonce reprend **l'étiquette de ma carte** (une seule source de texte).
 - Toucher : ouvre l'onglet **Profil**. Zone tactile 48 dp / 44 pt (le disque fait 46 pt, la zone s'étend autour).
-- Aucune animation, aucun clignotement, quel que soit l'état.
+- Aucun clignotement, quel que soit l'état (l'en-tête lui-même se masque au défilement, D41).
 - EN : « Open my profile. Your status: at home ».
 
 ## Logo
