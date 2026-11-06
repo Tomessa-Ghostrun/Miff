@@ -17,7 +17,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -29,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -119,11 +122,16 @@ fun BubbleView(
 ) {
     // What the screen reader says is fixed when the LEVEL (or the set of alerts) changes, not each minute when "il y a 2 min" changes.
     val announcement = remember(announceKey) { texts.announcement(bubble) }
+    // The slow movement of the blob (null = still: animations removed by the person, or the screen not started). One for all the pages.
+    val phases = rememberBubblePhases()
     Box(modifier = modifier.fillMaxWidth()) {
-        when (bubble) {
-            is Bubble.Alerts -> AlertCarousel(bubble.pages, texts, onMessage)
-            else -> CalmBubble(bubble, texts, onResumeSharing)
+        CompositionLocalProvider(LocalBubblePhases provides phases) {
+            when (bubble) {
+                is Bubble.Alerts -> AlertCarousel(bubble.pages, texts, onMessage)
+                else -> CalmBubble(bubble, texts, onResumeSharing)
+            }
         }
+        // Apart from the movement: nothing the screen reader says depends on it.
         Box(
             Modifier
                 .size(1.dp)
@@ -258,18 +266,31 @@ private fun AlertPageBubble(
     }
 }
 
+/** The movement of the bubble, given to every blob below [BubbleView] (null = still). */
+private val LocalBubblePhases = compositionLocalOf<BubblePhases?> { null }
+
 @Composable
 private fun BubbleBlob(
     level: StatusLevel,
     pictogram: Pictogram,
     content: @Composable () -> Unit,
 ) {
+    val phases = LocalBubblePhases.current
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 176.dp)
-                .clip(BubbleShape)
+                // Drawn, never laid out: a breath of scale and a drift of two dp, read in the draw phase only (no recomposition, no margin moves).
+                .graphicsLayer {
+                    if (phases != null) {
+                        val phase = phases.blob.value
+                        val breath = BubbleMotion.scale(phase)
+                        scaleX = breath
+                        scaleY = breath
+                        translationY = BubbleMotion.driftDp(phase) * density
+                    }
+                }.clip(BubbleShape)
                 .background(level.tint()),
     ) {
         Column(
@@ -284,7 +305,16 @@ private fun BubbleBlob(
                     .align(Alignment.BottomEnd)
                     .padding(end = 40.dp, bottom = 40.dp)
                     .size(40.dp)
-                    .clip(CircleShape)
+                    // The star breathes on its own, slightly different cycle: out of phase with the blob.
+                    .graphicsLayer {
+                        if (phases != null) {
+                            val phase = phases.star.value
+                            val breath = BubbleMotion.scale(phase)
+                            scaleX = breath
+                            scaleY = breath
+                            translationY = BubbleMotion.starDriftDp(phase) * density
+                        }
+                    }.clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center,
         ) {

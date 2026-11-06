@@ -32,10 +32,18 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 ## Partie A — En-tête (3 min)
 
-- [ ] L'en-tête reste **en haut** quand on fait défiler. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
+- [ ] L'en-tête **se masque quand on fait défiler vers le bas** (il glisse vers le haut avec le fil, sans saut) **et réapparaît dès qu'on remonte**, même au milieu de la liste, sans attendre d'être tout en haut ; aucune carte n'est cachée dessous ni ne laisse de bande blanche. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
 - [ ] Avec **une seule Miff** : le nom est dans une pastille **plate, sans flèche** (elle ne réagit pas au toucher). Avec **plusieurs Miffs** (compte Premium) : pastille avec flèche, liste avec **coche** sur la Miff affichée, « + Rejoindre / + Créer » (et seulement pour un Premium).
+
+## Partie A bis — Comportement de l'en-tête au défilement (4 min)
+
+- [ ] **Descendre puis remonter** : avec un Feed assez long (plusieurs proches), faites défiler vers le bas : photo de profil, logo et nom de la Miff disparaissent en douceur ; remontez même un tout petit peu : ils reviennent **tout de suite**. Au tout début de la liste ils sont toujours entiers (pas de bande vide au-dessus de la bulle).
+- [ ] **Toujours visible** : (1) pendant le chargement (réinstallez ou coupez le réseau avant d'ouvrir), (2) avec **TalkBack** activé (ou tout autre service d'accessibilité) : faites défiler, l'en-tête **ne se cache jamais** et le focus de TalkBack ne se perd pas, (3) avec **un seul proche** (liste trop courte pour défiler), (4) **hors connexion** (mode avion), (5) **sélecteur de Miff ouvert** (compte Premium) : tant que la liste est ouverte l'en-tête reste.
+- [ ] **Rotation et onglets** : tournez le téléphone, ou passez à l'onglet Profil et revenez : l'en-tête est **visible**.
+- [ ] **Autres éléments** : la bulle (animée) et le carrousel d'alertes (glissement manuel) ne saccadent pas pendant que l'en-tête bouge ; le logo et la photo se touchent facilement ; la barre d'onglets et les marges ne bougent pas.
+- [ ] Toucher le **logo**, ou la touche de l'onglet Feed quand on y est déjà, remonte le fil **et** réaffiche l'en-tête.
 
 ## Partie B — Cartes (5 min)
 
@@ -61,6 +69,14 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 - [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (vous, puis l'ordre d'arrivée).
 - [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
 - [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent dans la pastille, et la bulle garde son petit dessin décoratif (étoile, horloge, « ! », sablier) : points validés par le PM le 2026-11-06.
+
+## Partie C bis — Mouvement très léger de la bulle (3 min)
+
+- [ ] **Constater le mouvement** : ouvrez le Feed et regardez la bulle de couleur quelques secondes, sans y toucher : elle **respire très doucement** (à peine plus grande puis à peine plus petite, et elle se déplace de quelques millimètres vers le haut puis le bas), un cycle prend **plus de 6 secondes**. L'étoile (ou l'horloge, le « ! », le sablier) du coin suit un rythme un peu différent. **Rien ne clignote, ne rebondit ni ne s'accélère**, y compris sur une bulle rouge (essayez avec l'astuce de la console).
+- [ ] **Rien d'autre ne bouge** : les cartes, le texte de la bulle, la barre d'onglets et les marges restent immobiles ; le carrousel des alertes ne défile **jamais tout seul** (seulement quand vous glissez).
+- [ ] **Supprimer le mouvement** : Réglages du téléphone > Accessibilité > Améliorations de la visibilité (ou « Options pour les développeurs » > « Échelle de durée d'animation ») > **Supprimer les animations** (ou échelle à « Animation désactivée »). Revenez dans Miff (fermez-la puis rouvrez-la, ou changez d'onglet et revenez) : **la bulle est parfaitement immobile**. Remettez le réglage normal pour la suite.
+- [ ] **Pas de mouvement hors du Feed** : passez à l'onglet Profil, ou mettez l'app en arrière-plan, puis revenez : le mouvement reprend doucement, sans à-coup, et ne tourne pas pendant ce temps (batterie : le téléphone ne doit pas chauffer, la consommation de Miff en arrière-plan ne change pas).
+- [ ] **TalkBack** (facultatif) : aucune annonce liée au mouvement ; la bulle est annoncée seulement quand sa couleur change.
 
 ## Partie D — « Localiser » (5 min)
 

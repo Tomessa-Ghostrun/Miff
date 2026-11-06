@@ -22,12 +22,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -36,6 +44,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
@@ -155,18 +164,85 @@ fun FeedScreen(
     val reduceMotion = ReduceMotion.isRequested(LocalContext.current)
 
     suspend fun toTop() = if (reduceMotion) listState.scrollToItem(0) else listState.animateScrollToItem(0)
-    LaunchedEffect(scrollToTopSignal) {
-        if (scrollToTopSignal > 0) toTop()
-    }
     val paneName = stringResource(R.string.feed_pane_a11y)
     val content = (feed as? FeedUiState.Ready)?.content
-    Column(modifier = Modifier.fillMaxSize().miffTopInsets().semantics { paneTitle = paneName }) {
+    val density = LocalDensity.current
+
+    // The header hides while the person scrolls down and is back AT ONCE when they scroll up (decision of the PM, 2026-11-06).
+    val header = remember { CollapsingHeaderState() }
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0) {
+            header.show()
+            toTop()
+        }
+    }
+    var selectorOpen by remember { mutableStateOf(false) }
+    val accessibilityOn = rememberAccessibilityActive()
+    val isList = state is DirectoryState.Ready && state.miffs.isNotEmpty() && feed is FeedUiState.Ready
+    val offline =
+        content?.banners?.any { it is FeedBanner.Offline } == true ||
+            (state as? DirectoryState.Ready)?.fromCache == true
+    // Always visible: while it loads, on an error, offline, with an accessibility service on (it would take the focus with it), and while the
+    // selector of the Miffs is open. (A list too short to scroll never moves it: no scroll reaches it.)
+    rememberHeaderLock(header, locked = !isList || offline || accessibilityOn || selectorOpen)
+    val connection = remember(header, listState) { CollapsingHeaderConnection(header, listState) }
+    // The room of the header at the top of the content: measured, so that nothing is hidden under it and no band is left blank (font size, language).
+    val headerRoom = with(density) { header.heightPx.toDp() }
+
+    // Back to the top (logo, tap on the tab already in use): the header is shown again.
+    suspend fun toTopAndShow() {
+        header.show()
+        toTop()
+    }
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .miffTopInsets()
+                .clipToBounds()
+                .nestedScroll(connection)
+                .semantics { paneTitle = paneName },
+    ) {
+        when (state) {
+            DirectoryState.Loading -> {
+                Box(Modifier.padding(top = headerRoom)) { FeedSkeleton() }
+            }
+
+            DirectoryState.Unavailable -> {
+                Column(
+                    modifier = Modifier.padding(top = headerRoom).padding(Spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    MiffNotice(stringResource(R.string.feed_unavailable))
+                    MiffSecondaryButton(
+                        text = stringResource(R.string.auth_retry_action),
+                        onClick = onRetry,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            is DirectoryState.Ready -> {
+                if (state.miffs.isEmpty()) {
+                    Box(Modifier.padding(top = headerRoom)) { NoMiff(onCreate, onJoin) }
+                } else {
+                    FeedBody(state, feed, locate, agreement, texts, listState, actions, onRetry, topRoom = headerRoom)
+                }
+            }
+        }
         FeedHeader(
             me = me,
             myLevel = content?.myLevel ?: StatusLevel.NEUTRAL,
             myStatusDescription = content?.let { texts.label(it.myLabel) },
             onOpenProfile = actions.onOpenProfile,
-            onLogo = { scope.launch { toTop() } },
+            onLogo = { scope.launch { toTopAndShow() } },
+            // Moved by a translation read in the draw phase only: no recomposition, no layout, no margin that moves.
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .onSizeChanged { header.onMeasured(it.height) }
+                    .graphicsLayer { translationY = header.offsetPx },
             pill = {
                 val ready = state as? DirectoryState.Ready
                 when {
@@ -182,38 +258,11 @@ fun FeedScreen(
                     }
 
                     else -> {
-                        MiffPill(ready, onSelect, onCreate, onJoin)
+                        MiffPill(ready, onSelect, onCreate, onJoin, onOpenChanged = { selectorOpen = it })
                     }
                 }
             },
         )
-        when (state) {
-            DirectoryState.Loading -> {
-                FeedSkeleton()
-            }
-
-            DirectoryState.Unavailable -> {
-                Column(
-                    modifier = Modifier.padding(Spacing.m),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                ) {
-                    MiffNotice(stringResource(R.string.feed_unavailable))
-                    MiffSecondaryButton(
-                        text = stringResource(R.string.auth_retry_action),
-                        onClick = onRetry,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            is DirectoryState.Ready -> {
-                if (state.miffs.isEmpty()) {
-                    NoMiff(onCreate, onJoin)
-                } else {
-                    FeedBody(state, feed, locate, agreement, texts, listState, actions, onRetry)
-                }
-            }
-        }
     }
     val shown = locate as? LocateUiState.Shown
     if (shown != null) {
@@ -237,12 +286,20 @@ private fun FeedBody(
     listState: androidx.compose.foundation.lazy.LazyListState,
     actions: FeedActions,
     onRetry: () -> Unit,
+    /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
+    topRoom: Dp,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = Spacing.m, vertical = Spacing.m),
+        contentPadding =
+            PaddingValues(
+                start = Spacing.m,
+                end = Spacing.m,
+                top = topRoom + Spacing.m,
+                bottom = Spacing.m,
+            ),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         if (state.fromCache && content == null) {

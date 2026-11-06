@@ -36,7 +36,7 @@ En une phrase : le Feed est l'écran qu'on ouvre pour **voir d'un coup d'œil qu
 ## 2. Périmètre et frontières
 
 ### Dans le périmètre
-- **En-tête fixe** : avatar avec anneau de ton statut (mène au Profil), logo (remonte le fil), pastille / sélecteur de Miff.
+- **En-tête qui se masque en descendant, revient en remontant (« en-tête fixe » remplacé le 2026-11-06, décision du PM)** : avatar avec anneau de ton statut (mène au Profil), logo (remonte le fil), pastille / sélecteur de Miff.
 - **Bulle** de la Miff (couleur, phrase, repère de temps, carrousel d'alertes).
 - **Cartes des membres, toi compris** : avatar à anneau, prénom, étiquette d'état, repère de temps, batterie, photo d'update, boutons Localiser / Message / Appeler.
 - **Bouton « Ajouter un proche »** (partage du code, déjà livré par le ticket Miff).
@@ -112,7 +112,7 @@ Trois points ne sont couverts par aucun ticket : la **localisation de la photo**
 ## 5. Règles métier
 
 ### 5.1 En-tête
-- Fixe en haut : **avatar** à gauche (photo ou initiales) avec **anneau de la couleur de mon statut** (neutre si inconnu) → **ouvre l'onglet Profil** ; **logo** au centre → le fil **remonte** tout en haut (animation ; sans animation si « réduire les animations ») ; **pastille de Miff** dessous. **Pas de cloche.**
+- En haut, **il se masque quand on fait défiler vers le bas et réapparaît dès qu'on remonte**, sans attendre d'être en haut de liste (« en-tête fixe » remplacé le 2026-11-06, décision du PM ; il reste visible au chargement, en cas d'erreur, hors connexion, avec un service d'accessibilité actif, quand la liste est trop courte pour défiler et tant que le sélecteur de Miff est ouvert ; la place du futur bouton de notifications est réservée à droite, aucun bouton n'est ajouté) : **avatar** à gauche (photo ou initiales) avec **anneau de la couleur de mon statut** (neutre si inconnu) → **ouvre l'onglet Profil** ; **logo** au centre → le fil **remonte** tout en haut (animation ; sans animation si « réduire les animations ») ; **pastille de Miff** dessous. **Pas de cloche.**
 - « Mon statut » = le document `status/{moi}` de la **Miff affichée**, lu par le même écouteur que les autres (aucune lecture de plus). Sa couleur sert aussi au bouton central de la barre (ticket Update ; fonction partagée, un seul calcul).
 
 ### 5.2 Couleur de la Miff et choix de la bulle
@@ -318,7 +318,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 | # | Ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
 | **FEED-0** | **Décisions et maquettes** (PM, `design-system`) | Réponses à Q1 à Q3 ; maquettes corrigées et complétées (§16) dans « Miff - Claude » ; exports PNG dans `design/exports/feed/` | S à M | Validation de ce document |
-| **FEED-1** | **Android : cercle** | En-tête fixe (avatar, logo, pastille / sélecteur), cartes **sans statuts** (avatar, prénom, boutons **Message** et **Appeler**), ma carte, « Ajouter un proche », états aucune Miff / seul / chargement / hors connexion / accès perdu ; `MiffMember.phone` | M | ONB-3a, MIFF-1 (livrés) |
+| **FEED-1** | **Android : cercle** | En-tête qui se masque en descendant et revient en remontant (avatar, logo, pastille / sélecteur ; remplace « fixe », 2026-11-06), cartes **sans statuts** (avatar, prénom, boutons **Message** et **Appeler**), ma carte, « Ajouter un proche », états aucune Miff / seul / chargement / hors connexion / accès perdu ; `MiffMember.phone` | M | ONB-3a, MIFF-1 (livrés) |
 | **FEED-2** | **Android : statuts** | Écouteur de statuts, `StatusColor.level` (+ minuteur), couleur de la Miff, bulle et carrousel, étiquettes, lignes de temps, batterie, états neutres (partage arrêté, en attente d'accord, hors connexion), « Localisation limitée » | M à L | FEED-1, **LOC-2b fusionné** ; Q3 |
 | **FEED-3** | **Android : Localiser** | Lecture de `positions/{uid}` au toucher, feuille, ouverture des cartes du système | S à M | FEED-2, LOC-2b (écrit les positions) |
 | **FEED-4** | **Android : photo d'update** | Lecture paresseuse, copie locale, plein écran, (localisation de la photo si Q1 déployée) | M | FEED-2, **UPDATE-1**, R-PHOTO-LOC (pour la localisation seulement) ; Q1, Q2 |
@@ -332,7 +332,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 
 | Sujet | Android | iOS |
 |---|---|---|
-| En-tête fixe, minuteur | Barre en haut ; coroutine alignée sur la minute | `TimelineView(.everyMinute)` ; zone sûre |
+| En-tête qui se masque / revient, minuteur | Barre dessinée sur la liste, translation lue à l'affichage (nestedScroll) ; coroutine alignée sur la minute | `TimelineView(.everyMinute)` ; zone sûre |
 | Carrousel de bulles | Pager horizontal ; boutons précédent / suivant pour TalkBack | `TabView` à pages ; actions VoiceOver |
 | Message / Appeler | Intentions « écrire à » et « composer » (pas d'appel direct) | `sms:` / `tel:` (iOS demande confirmation avant l'appel) ; aucune clé de permission « contacts » |
 | Localiser | `geo:` + repli web ; aucun libellé transmis | Plans (`maps.apple.com`), coordonnées seules |
@@ -389,7 +389,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 ## 13. Critères d'acceptation (testables ; Android puis iOS sauf mention)
 
 **En-tête**
-- [ ] **H1** L'en-tête est fixe ; l'avatar (photo ou initiales) a un **anneau** de la couleur de mon statut (neutre si inconnu) et ouvre l'onglet Profil ; le logo fait remonter le fil tout en haut ; **aucune cloche** ; chaque élément a un nom pour le lecteur d'écran (l'avatar annonce aussi mon état).
+- [ ] **H1** L'en-tête **se masque en descendant et revient dès qu'on remonte** (remplace « fixe », 2026-11-06 ; toujours visible au chargement, en erreur, hors connexion, avec l'accessibilité, liste courte, sélecteur ouvert) ; l'avatar (photo ou initiales) a un **anneau** de la couleur de mon statut (neutre si inconnu) et ouvre l'onglet Profil ; le logo fait remonter le fil tout en haut ; **aucune cloche** ; chaque élément a un nom pour le lecteur d'écran (l'avatar annonce aussi mon état).
 - [ ] **H2** Une seule Miff : la pastille affiche son nom et **n'est pas cliquable** ; plusieurs Miffs (Premium) : liste ; « + Rejoindre / + Créer » **uniquement** pour un Premium ; la Miff affichée est une préférence locale purgée à la déconnexion.
 
 **Bulle**
