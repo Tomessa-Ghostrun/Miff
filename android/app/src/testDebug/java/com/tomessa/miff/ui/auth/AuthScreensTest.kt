@@ -324,7 +324,10 @@ class AuthScreensTest {
     fun signIn_afterTheSessionDisappeared_showsTheCarefulNote_inEnglish_andNotTheOtherOne() {
         signIn(SignInUiState(showSessionGoneNote = true))
         shoot("signin-session-gone")
-        composeRule.onNodeWithText("Your account is being deleted on another device.").assertExists()
+        composeRule
+            .onNodeWithText(
+                "Your account changed on another device (for example, a deletion in progress). This phone was signed out.",
+            ).assertExists()
         // It does not claim that the account is used elsewhere, and it says nothing about a Miff; the form stays usable.
         composeRule.onAllNodesWithText(text(R.string.auth_session_replaced_notice)).assertCountEquals(0)
         composeRule.onAllNodesWithText("Miff", substring = true, ignoreCase = true).assertCountEquals(0)
@@ -335,7 +338,10 @@ class AuthScreensTest {
     @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
     fun signIn_afterTheSessionDisappeared_showsTheCarefulNote_inFrench_withTutoiement() {
         signIn(SignInUiState(showSessionGoneNote = true))
-        composeRule.onNodeWithText("Ton compte est en cours de suppression sur un autre appareil.").assertExists()
+        composeRule
+            .onNodeWithText(
+                "Ton compte a changé sur un autre appareil (par exemple une suppression en cours). Ce téléphone a été déconnecté.",
+            ).assertExists()
         composeRule.onAllNodesWithText("utilisé sur un autre téléphone", substring = true).assertCountEquals(0)
     }
 

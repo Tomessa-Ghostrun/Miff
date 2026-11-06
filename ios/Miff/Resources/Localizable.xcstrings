@@ -687,13 +687,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your account is being deleted on another device."
+            "value": "Your account changed on another device (for example, a deletion in progress). This phone was signed out."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton compte est en cours de suppression sur un autre appareil."
+            "value": "Ton compte a changé sur un autre appareil (par exemple une suppression en cours). Ce téléphone a été déconnecté."
           }
         }
       }
