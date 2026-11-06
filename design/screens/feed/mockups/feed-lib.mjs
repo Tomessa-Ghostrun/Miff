@@ -27,8 +27,8 @@ const X = {
 export const icon = (n, cls = "") => (X[n] ? `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${X[n]}</svg>` : baseIcon(n, cls));
 
 // ---------- avatar à anneau ----------
-const GLYPH = { safe: "check", warning: "clock", danger: "alert", neutral: "" };
-export const avatar = (initials, lv = "neutral", extra = "") => `<div class="av ${lv} ${extra}">${initials}${GLYPH[lv] ? `<span class="g">${icon(GLYPH[lv])}</span>` : ""}</div>`;
+// Décision du PM (2026-11-06) : « la couleur est le seul signal » : anneau de couleur seule, aucun pictogramme.
+export const avatar = (initials, lv = "neutral", extra = "") => `<div class="av ${lv} ${extra}">${initials}</div>`;
 
 // ---------- en-tête fixe ----------
 export const pillSingle = (name) => `<div class="psel flat">${name}</div>`;
@@ -52,10 +52,10 @@ export const photo = (time = "15 h 40", { dark = false } = {}) => `<div class="p
 export const photoLocked = () => `<div class="photo locked">${icon("lock")}<span>Partage ta position pour voir cette photo.</span></div>`;
 export const batt = (t) => `<span class="bat">${icon("battery")}${t}</span>`;
 export function card({ name, ini, lv = "neutral", lab, soft = false, time = "", bat = "", ph = "", acts = ["loc", "msg", "call"], me = false, locLoading = false }) {
-  const [, ic, text] = lab;
+  const [, , text] = lab; // le pictogramme (2e élément) n'est plus affiché : étiquette d'état = texte seul (décision du PM, 2026-11-06)
   const a = acts.map((k) => (k === "loc" && locLoading ? `<div class="ab"><div class="spin2"></div></div>` : `<div class="ab">${icon(k === "loc" ? "pin" : k === "msg" ? "chat" : "call")}</div>`)).join("");
   return `<div class="mc ${lv}"><div class="top">${avatar(ini, lv)}<div class="info"><div class="nrow"><span class="nm">${name}</span>${me ? '<span class="you">Toi</span>' : ""}${bat ? batt(bat) : ""}</div>
-<div class="labs"><span class="lab ${lv}">${icon(ic)}${text}</span>${soft ? `<span class="lab soft">${icon("pinoff")}Localisation limitée</span>` : ""}</div>${time ? `<div class="tl">${time}</div>` : ""}</div></div>
+<div class="labs"><span class="lab ${lv}">${text}</span>${soft ? `<span class="lab soft">${icon("pinoff")}Localisation limitée</span>` : ""}</div>${time ? `<div class="tl">${time}</div>` : ""}</div></div>
 ${ph}${me ? `<div class="mine">${icon("eye")}Ce que tes proches voient de toi</div>` : acts.length ? `<div class="acts">${a}</div>` : `<div style="height:8px"></div>`}</div>`;
 }
 
