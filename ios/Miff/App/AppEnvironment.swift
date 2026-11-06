@@ -22,12 +22,13 @@ struct MiffServices {
         gateway: AuthGateway,
         cache: CachePurger,
         network: NetworkMonitor,
-        device: DeviceSession
+        device: DeviceSession,
+        onSharingChanged: @escaping () -> Void
     ) -> MiffServices {
         let store = FirestoreMiffStore()
         // SESS-3 : un statut n'est écrit qu'avec l'identifiant de la session CONFIRMÉE de cet appareil ; après un refus, la session
         // est relue auprès du serveur.
-        let rules = MiffRepositoryRules.live(
+        var rules = MiffRepositoryRules.live(
             deviceId: { device.currentDeviceId },
             recheckSession: {
                 if let uid = gateway.currentUid {
@@ -35,6 +36,8 @@ struct MiffServices {
                 }
             }
         )
+        // LOC-4b : un partage qui change (entrer, arrêter, reprendre, quitter, perdre l'accès) fait relire les Miffs au suivi des lieux.
+        rules.onSharingChanged = onSharingChanged
         let repository = FirestoreMiffRepository(
             store: store,
             observer: FirestoreMiffObserver(),
@@ -52,7 +55,10 @@ struct MiffServices {
         // supprime) ; une fois la Miff disparue, purge du cache et liste relue.
         let hooks = DeletionHooks(
             onStarted: { miffId in directory.expectDeparture(miffId: miffId) },
-            onDeleted: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
+            onDeleted: { miffId in
+                await directory.afterOwnDeparture(miffId: miffId)
+                onSharingChanged()
+            }
         )
         let deletions = MiffDeletionCoordinator(
             deletion: MiffDeletion(store: store, repository: repository),
@@ -67,7 +73,7 @@ struct MiffServices {
             directory: directory,
             limiter: JoinAttemptLimiter(nowMillis: AppClock.live.nowMillis),
             deletions: deletions,
-            renewals: FirestoreConsentRenewals(store: store)
+            renewals: FirestoreConsentRenewals(store: store, onRenewed: onSharingChanged)
         )
     }
 }
@@ -84,13 +90,14 @@ struct PlaceServices {
     /// Le message calme d'un lieu enregistré, en mémoire seulement.
     let notices: PlaceNotices
 
-    static func make() -> PlaceServices {
+    static func make(onChanged: @escaping () -> Void) -> PlaceServices {
         let repository = FirestorePlaceRepository(
             store: FirestorePlaceStore(base: FirestoreMiffStore()),
             newId: { FirestorePlaceRepository.newFirestoreId() }
         )
         return PlaceServices(
-            repository: repository,
+            // LOC-4b : un lieu créé, modifié ou supprimé fait relire les lieux au suivi (le téléphone du créateur n'attend pas l'heure).
+            repository: ChangeNotifyingPlaceRepository(repository, onChanged: onChanged),
             search: CachedAddressSearch(AppleAddressSearch()),
             notices: PlaceNotices()
         )
@@ -135,6 +142,11 @@ final class AppEnvironment {
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
     let notificationAsks: NotificationAskStore
+    /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
+    /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
+    let tracking: TrackingRuntime
+    /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
+    let detectionJournal: DetectionJournal
     /// Créé à la première demande : aucun gestionnaire de localisation n'existe tant qu'aucun écran n'en a besoin.
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
 
@@ -168,10 +180,29 @@ final class AppEnvironment {
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
-        let miff = MiffServices.make(gateway: gateway, cache: cache, network: networkMonitor, device: device)
+        let trackingServices = TrackingServices.make(
+            gateway: gateway,
+            cache: cache,
+            network: networkMonitor,
+            device: device
+        )
+        let tracking = trackingServices.runtime
+        // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
+        let sharingChanged: () -> Void = {
+            Task { @MainActor in
+                tracking.sharingChanged()
+            }
+        }
+        let miff = MiffServices.make(
+            gateway: gateway,
+            cache: cache,
+            network: networkMonitor,
+            device: device,
+            onSharingChanged: sharingChanged
+        )
         let directory = miff.directory
         let deletions = miff.deletions
-        let places = PlaceServices.make()
+        let places = PlaceServices.make(onChanged: sharingChanged)
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -188,11 +219,15 @@ final class AppEnvironment {
                     { await directory.stop() },
                     { await deletions.stop() },
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
-                    { await places.stop() }
+                    { await places.stop() },
+                    // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés. Borné : une déconnexion n'attend
+                    // jamais plus de quelques secondes un passage en cours (l'arrêt est déjà marqué, l'effacement suit à la fin du passage).
+                    { _ = try? await timedOperation(seconds: 5) { await tracking.stop() } }
                 ],
                 device: device,
                 network: networkMonitor,
-                drafts: drafts
+                drafts: drafts,
+                generationCounter: trackingServices.generation
             )
         )
         privacySettings = privacy
@@ -214,6 +249,8 @@ final class AppEnvironment {
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
         notificationAsks = UserDefaultsNotificationAskStore()
+        self.tracking = tracking
+        detectionJournal = trackingServices.journal
         userProfiles = FirestoreUserProfileRepository()
         profileDrafts = drafts
         avatarCodec = ImageAvatarCodec()

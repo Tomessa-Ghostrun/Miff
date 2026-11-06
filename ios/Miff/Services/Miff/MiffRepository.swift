@@ -93,10 +93,12 @@ final class FirestoreMiffRepository: MiffRepository {
         )
         switch result {
         case .done:
+            rules.onSharingChanged()
             return .created(creation)
         case .failed(let failure):
             // Un lot parti dont la réponse s'est perdue ne s'affiche pas comme un échec (un appui = une Miff, critère H3).
             if failure.mayHaveLanded, await reader.landed(miffId) {
+                rules.onSharingChanged()
                 return .created(creation)
             }
             await recheckSessionIfRefused(failure)
@@ -215,9 +217,11 @@ final class FirestoreMiffRepository: MiffRepository {
         let joined = JoinResult.joined(miffId: preparation.miffId, firstMiff: preparation.firstMiff)
         switch result {
         case .done:
+            rules.onSharingChanged()
             return joined
         case .failed(let failure):
             if failure.mayHaveLanded, await reader.landed(preparation.miffId) {
+                rules.onSharingChanged()
                 return joined
             }
             // Les règles ont dit « non » : le code a été renouvelé, ou la Miff supprimée, depuis qu'il a été lu. Même message...
@@ -270,12 +274,16 @@ final class FirestoreMiffRepository: MiffRepository {
             writes = MiffWrites.stopSharing(miffId: miffId, uid: uid)
         }
         let result = await write { try await store.commit(writes) }
+        if result == .done {
+            rules.onSharingChanged()
+        }
         // Un refus peut aussi vouloir dire « déjà dans l'état demandé » : la fenêtre demande le contraire de ce que disait la
         // fiche à son ouverture, et la fiche a pu changer depuis (un autre téléphone) ; les règles refusent alors une écriture
         // sans effet (faux -> faux, vrai -> vrai). La fiche du serveur est relue, et l'état voulu compte comme un succès.
         if case .failed(let failure) = result, failure.mayHaveLanded || failure == .refused {
             let read = await guarded { try await store.readSharing(miffId: miffId, uid: uid) }
             if case .value(let current) = read, current == enabled {
+                rules.onSharingChanged()
                 return .done
             }
         }
@@ -309,11 +317,15 @@ final class FirestoreMiffRepository: MiffRepository {
         let leaveWrites = MiffWrites.leave(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
         let leave = await write { try await store.commit(leaveWrites) }
         if leave == .done {
+            rules.onSharingChanged()
             return true
         }
         // Retiré : la fiche a déjà disparu, le lot est refusé. Il ne reste que l'index, que les règles laissent supprimer.
         let dropWrites = MiffWrites.dropIndex(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
         let indexOnly = await write { try await store.commit(dropWrites) }
+        if indexOnly == .done {
+            rules.onSharingChanged()
+        }
         return indexOnly == .done
     }
 

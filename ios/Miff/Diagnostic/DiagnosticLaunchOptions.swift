@@ -61,6 +61,7 @@ enum DiagnosticSection: String {
     case test2
     case appCheck
     case privacy
+    case detection
     case gallery
     case language
 }

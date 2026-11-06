@@ -96,8 +96,12 @@ extension FirestoreMiffRepository {
         }
         let writes = MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: key)
         let result = await write { try await store.commit(writes) }
+        if result == .done {
+            rules.onSharingChanged()
+        }
         if case .failed(let failure) = result, failure.mayHaveLanded {
             if await leftAfterLostAnswer(uid: uid, miffId: miffId) {
+                rules.onSharingChanged()
                 return .done
             }
         }
