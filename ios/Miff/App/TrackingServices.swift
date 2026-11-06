@@ -13,7 +13,7 @@ struct TrackingServices {
     /// Copie de `SessionManager.generation` pour le moteur (un arrêt reste arrêté jusqu'à ce que la session change).
     let generation: GenerationCounter
     /// Gardé ici pour que le gestionnaire de localisation vive aussi longtemps que l'app.
-    let location: CoreLocationTracking
+    let location: LocationTracking
 
     /// « Un partage ou un lieu a changé » : utilisable depuis n'importe quel fil, relit les Miffs et les lieux.
     var sharingChanged: () -> Void {
@@ -45,7 +45,7 @@ struct TrackingServices {
         let journal = DetectionJournals.make()
         let miffStore = FirestoreMiffStore()
         let permissions = SystemDevicePermissions()
-        let location = CoreLocationTracking()
+        let location = LocationTracking(manager: SystemLocationManager())
         let dependencies = TrackingDependencies(
             env: SystemTrackingEnvironment(
                 currentUid: { gateway.currentUid },

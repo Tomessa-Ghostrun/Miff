@@ -252,4 +252,33 @@ final class TrackingRuntimeTests: XCTestCase {
 
         XCTAssertNil(rig.local.state)
     }
+
+    func testEventsAreProcessedStrictlyInTheOrderTheyArrived() async {
+        await rig.engine.refresh(.opened)
+        let runtime = runtime()
+
+        runtime.zoneTransition(.enter, zoneKey: rig.homeKey)
+        runtime.zoneTransition(.exit, zoneKey: rig.homeKey)
+        await waitUntil { background.ended.count == 2 }
+
+        let values = rig.store.statusWrites().map { write -> String? in
+            if case .string(let text)? = write.data["presence"] {
+                return text
+            }
+            return nil
+        }
+        XCTAssertEqual(values, ["in_trusted", "out"])
+        XCTAssertEqual(background.ended.count, 2, "chaque travail rend son temps")
+    }
+
+    func testTheTwoOpeningsOfAColdStartAreOne() async {
+        let runtime = runtime()
+
+        runtime.appBecameActive()
+        runtime.appBecameActive()
+        await waitUntil { background.ended.count == 1 }
+
+        XCTAssertEqual(background.begun, 1)
+        XCTAssertEqual(rig.position.calls, 1)
+    }
 }

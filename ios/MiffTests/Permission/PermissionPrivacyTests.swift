@@ -3,7 +3,7 @@ import XCTest
 
 /// Ce que les autorisations de LOC-4a et le suivi de LOC-4b ne doivent JAMAIS faire, vérifié sur les SOURCES pour qu'un changement
 /// ultérieur ne puisse pas le casser sans que personne le voie (critères AUT7, VIE1, VIE4 ; décisions (g), (h) du PM) : toute lecture
-/// de position et toute surveillance de région confinées à UN fichier (`CoreLocationTracking`, appelé par le moteur seulement après
+/// de position et toute surveillance de région confinées à UN fichier (`SystemLocationManager`, appelé par le moteur seulement après
 /// l'accord), CoreLocation importé dans DEUX fichiers (l'état des autorisations, et ce pont), rien de journalisé ni envoyé comme
 /// événement par les écrans de permission, les textes de la version 3. Miroir de `PermissionPrivacyTest` d'Android.
 final class PermissionPrivacyTests: XCTestCase {
@@ -42,7 +42,7 @@ final class PermissionPrivacyTests: XCTestCase {
     }
 
     /// L'UNIQUE fichier qui demande une position au système et surveille des régions (LOC-4b).
-    private static let trackingBridge = "Services/Tracking/CoreLocationTracking.swift"
+    private static let trackingBridge = "Services/Tracking/SystemLocationManager.swift"
 
     // MARK: - La position n'est lue qu'à un seul endroit
 

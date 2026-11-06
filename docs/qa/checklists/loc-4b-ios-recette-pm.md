@@ -31,8 +31,11 @@ Dans l'app (build Internal) : **appui long de 1,5 s en haut à gauche de l'écra
 
 ## Partie A : à la maison, sans bouger (25 min)
 
+**Avant tout, relevez dans Firebase > Firestore > Utilisation le nombre de lectures du jour** (note-le : on le compare à la fin, partie C).
+
 - [ ] **Rien avant l'accord** : avec un compte dont l'accord date de l'ancien texte (ou après « Pas maintenant » au re-consentement), ouvrez et fermez l'app : **aucun** document `positions/…`, le statut ne change pas, le journal ne montre que `notEligible`.
 - [ ] **Après « J'accepte » + « Toujours »** : ouvrez l'app. Dans la console, `positions/{uid}` apparaît : `lat` et `lng` (5 décimales), `measuredAt` = maintenant, `deviceId` présent. Le statut reste `unknown` tant qu'il n'y a pas de lieu.
+- [ ] **Créer un lieu marche tout de suite** : à l'enregistrement du lieu, **sans attendre une heure** ni relancer l'app, le journal note l'armement de la zone (`armed`) ; de même pour un lieu déplacé, agrandi ou supprimé (tout est pris en compte à l'enregistrement).
 - [ ] **Arrivée « déjà dedans »** : compte A, créez un **lieu de confiance autour de chez vous** (rayon 100 m, catégorie Maison). Ouvrez puis fermez l'app : `status/{uid}` passe à `presence` = `in_trusted`, `placeId` = `p1`, `presenceAt` et `lastUpdateAt` = maintenant. **Aucune coordonnée** dans le statut. Journal : `armed`, `regionInside`, `transitionEnter`, `statusWritten`.
 - [ ] `updateText` et `hasPhoto` sont inchangés. `locationAccess` = `background`, `batteryPct` plausible.
 - [ ] **Lieu déplacé pendant que vous y êtes** : modifiez le lieu pour l'envoyer à une adresse lointaine, ouvrez l'app : le statut devient `unknown` (neutre, `placeId` vide), jamais `out`. Journal : `presenceUnknown`. Remettez la bonne adresse : `in_trusted` de nouveau.
@@ -50,13 +53,17 @@ Le lieu de 100 m est autour de chez vous. Fermez l'app **en la balayant** une pr
 - [ ] **Départ** : sortez et éloignez-vous à environ **400 m**. Notez l'heure de sortie du cercle et l'heure à laquelle la console change. `presence` = `out`, `placeId` = `p1`, `presenceAt` = l'heure **réelle** (à quelques minutes près), **pas** de changement de `lastUpdateAt`, `batteryPct` plausible, `locationAccess` = `background`. Journal : `transitionExit`, `statusWritten`.
 - [ ] **Arrivée** : revenez chez vous. `presence` = `in_trusted`, `presenceAt` et `lastUpdateAt` = l'heure de rentrée.
 - [ ] **App balayée** : refaites un départ et une arrivée **sans** avoir ouvert l'app depuis le balayage. **Notez si iOS relance l'app** (c'est l'inconnue principale : le système doit la relancer sans mode d'arrière-plan). Si rien n'est écrit, notez-le tel quel : ce n'est pas forcément un défaut du code, c'est une limite à décider (voir les questions). Si le journal montre `transitionExit` puis `statusWaiting` (ou rien d'écrit) alors que le réseau est là, notez-le aussi : c'est peut-être une écriture refusée en arrière-plan, téléphone verrouillé (App Check, protection des fichiers).
+- [ ] **Un départ n'écrit jamais `unknown` avant `out`** : à chaque départ de la partie B, regardez l'historique de la console / du journal : la séquence est `in_trusted` puis **directement `out`** ; jamais un `unknown` entre les deux (le « dehors » que le système rend après la sortie n'est pas pris pour une sortie manquée).
 - [ ] **Sortie manquée** : balayez l'app, éloignez-vous de 400 m **sans** que rien ne soit écrit, revenez et ouvrez l'app **dehors** : le statut devient `unknown`, **jamais** `out` (l'heure de la sortie est inconnue).
 - [ ] **Compte B** (si 2 téléphones, B reste chez lui) : son statut ne change pas quand A bouge.
 - [ ] **Rebonds en bordure de zone** (aucune temporisation, décision du PM) : restez longuement en bordure du cercle. Notez combien d'écritures `status` sont faites : les faux départs sont **acceptés et observés** ici.
 
 ## Partie C : déplacement significatif, en transport (10 min)
 
+- [ ] **Redémarrage du suivi après une relance** : fermez l'app en la balayant, rouvrez-la **une fois** puis refermez-la (elle redémarre le suivi des déplacements), puis marchez : le journal note `wakeSignificantMove` (le changement significatif reprend bien après une relance).
 - [ ] Faites un trajet de plusieurs centaines de mètres (marche ou bus) **sans ouvrir l'app**. `positions/{uid}` est mise à jour (`measuredAt`), **un seul document**. Journal : `wakeSignificantMove`. Notez l'écart entre votre position réelle et `lat` / `lng`, et l'heure de `measuredAt` : iOS ne signale un changement significatif qu'après environ 500 m ou un changement d'antenne.
+- [ ] **Relevez les lectures Firestore de la journée** (Firestore > Utilisation) et soustrayez le chiffre noté au début de la partie A : on estime une relance du système à 4 à 6 lectures + 2 à 3 lectures de règles par écriture ; le chiffre réel est reporté dans `docs/dev/surveillance-quotas.md`.
+- [ ] **Le journal se remplit plus lentement qu'avant** : c'est voulu (une ouverture ordinaire ne réenregistre plus les zones et ne redemande plus leur état : ni `armed` ni `requestState` en rafale). Si un lieu n'est pas détecté alors que vous y êtes depuis plusieurs minutes, notez-le.
 - [ ] **Comptez les écritures** de la journée dans Firestore > Utilisation (statuts et positions) : à comparer au quota gratuit de 20 000 écritures par jour pour tout le projet. Notez le nombre pour la décision sur le garde-fou.
 
 ## Partie D : redémarrage de l'iPhone (5 min)
@@ -100,6 +107,8 @@ Le lieu de 100 m est autour de chez vous. Fermez l'app **en la balayant** une pr
 - [ ] Aucune coordonnée dans le `status` (seulement dans `positions`).
 - [ ] Plus d'un document `positions/{uid}` par Miff et par personne ; aucun historique.
 - [ ] Aucun statut `out` écrit à l'armement quand vous étiez déjà dehors, ni pour une sortie manquée.
+- [ ] Aucun `unknown` écrit juste avant un `out` lors d'un départ normal.
+- [ ] Aucune arrivée écrite deux fois de suite pour la même zone.
 - [ ] Aucune boucle d'écritures (le disjoncteur arrête à 60 statuts / 150 positions par jour).
 - [ ] Aucune écriture après la déconnexion ou depuis un téléphone remplacé.
 
@@ -110,4 +119,5 @@ Le lieu de 100 m est autour de chez vous. Fermez l'app **en la balayant** une pr
 3. **Sortie manquée** → `unknown` (neutre) plutôt qu'`out` avec l'heure de la réouverture : à confirmer (même choix qu'Android au redémarrage).
 4. **Garde-fou et disjoncteurs** (15 min ou 250 m, plancher 2 min ; 60 / 150 par jour) : valeurs à confirmer après vos mesures de la partie C.
 5. **Encarts « En attente de ton accord »** (maquette 23) : non construits sur iPhone (ni Feed ni Réglages) ; à faire avec le Feed iOS ?
-6. **Batterie** écrite avec le statut : à classer dans les étiquettes d'App Store Connect (release-manager).
+6. **Batterie** écrite avec le statut (et identifiant de session) : à classer dans les étiquettes d'App Store Connect, proposition « Other Data Types » (release-manager).
+7. **Actualisation en arrière-plan désactivée** : aujourd'hui seulement notée dans le journal ; les proches ne le voient pas. Option recommandée : un mot calme dans le futur Feed / les Réglages iOS (« Les détections peuvent tarder sur ce téléphone »). Autre option : une valeur distincte de `locationAccess` (contrat à changer avec Android). Décision du PM.

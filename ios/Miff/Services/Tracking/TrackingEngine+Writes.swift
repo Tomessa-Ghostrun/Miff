@@ -61,10 +61,20 @@ extension TrackingEngine {
 
     /// Écrit le statut en attente d'UNE Miff. Vrai quand une écriture a été tentée (la Miff est « servie »).
     private func flushOne(_ miffId: String, state: inout LocalState, pass: PassContext) async -> Bool {
-        guard let pending = state.miffs[miffId]?.pending else {
+        guard var pending = state.miffs[miffId]?.pending else {
             return false
         }
         let now = env.nowMillis()
+        if EventTime.forWrite(eventMillis: pending.atMillis, nowMillis: now) == nil {
+            // Plus de 24 h : les règles le refuseraient. Les proches ne doivent pas garder un état périmé : à la place on écrit
+            // `unknown` à l'heure du moment (jamais une supposition).
+            journal.record(.statusGivenUp, placeId: pending.placeId)
+            pending = PendingStatus(fact: PresenceMachine.unknown(atMillis: now))
+            state.update(miffId) {
+                $0.derived = DerivedPresence(presence: .unknown, placeId: nil)
+                $0.pending = pending
+            }
+        }
         guard let fact = pending.fact, let at = EventTime.forWrite(eventMillis: pending.atMillis, nowMillis: now) else {
             giveUp(miffId, pending, state: &state)
             return false

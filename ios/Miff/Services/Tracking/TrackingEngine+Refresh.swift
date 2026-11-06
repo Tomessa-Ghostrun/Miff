@@ -20,6 +20,12 @@ private enum MiffSync {
     case unreachable(LocalMiff?)
 }
 
+/// Quand les lieux sont relus : l'heure de la relecture, et si elle est forcée (le partage ou un lieu vient de changer).
+private struct PlacesReading {
+    let now: Int
+    let force: Bool
+}
+
 private struct PlacesRead {
     let miff: LocalMiff
     let complete: Bool
@@ -62,7 +68,7 @@ extension TrackingEngine {
     private func standDown(_ uid: String, _ state: LocalState) async {
         journal.record(.notEligible)
         await deps.geofences.disarmAll()
-        await deps.movement.stop()
+        await stopMovement()
         deps.local.save(LocalState(uid: uid, checkedAtMillis: state.checkedAtMillis))
     }
 
@@ -82,10 +88,11 @@ extension TrackingEngine {
     /// Ce qui se fait quand tout est en règle : armer, lire la position, écrire ce qui attend.
     private func watch(_ start: LocalState, pass: PassContext, reason: Reason, supplied: Fix?, now: Int) async {
         var state = start
-        let full: [Reason] = [.opened, .rearm, .sharingChanged, .accessChanged]
+        // Tout réenregistrer (et redemander l'état de chaque zone) est réservé aux cas où le système a pu perdre ou changer ses
+        // régions : échec de la surveillance, autorisation changée. Aux autres occasions, seul ce qui manque est enregistré.
+        let full: [Reason] = [.rearm, .accessChanged]
         // 1. Les zones sont armées D'ABORD, sans attendre une position : un démarrage lent ne doit pas coûter l'armement (une fenêtre de
-        //    relance a quelques secondes). L'ENSEMBLE voulu est de nouveau enregistré à chaque ouverture, changement de partage ou
-        //    d'autorisation : ce que le système a perdu revient (l'opération est idempotente).
+        //    relance a quelques secondes). Le système fait foi de ce qu'il surveille : ce qui manque est ajouté, le reste retiré.
         state = await armZones(state, fix: state.fix, reregister: full.contains(reason))
         deps.local.save(state)
         // 2. La position (attente bornée), seulement si elle est récente.
@@ -95,6 +102,9 @@ extension TrackingEngine {
             journal.record(.positionRead, batteryPct: pass.batteryPct)
         }
         state = reconcilePlaces(state, now: now)
+        if reason == .opened {
+            await recheckStates(state, fix: fix)
+        }
         // Au-delà de 20 zones, le choix est refait avec la position fraîche.
         if let fix, allZones(state).count > ZoneSelection.maxWatched {
             state = await armZones(state, fix: fix, reregister: false)
@@ -104,6 +114,28 @@ extension TrackingEngine {
         state = await publishPosition(state, fix: fix, pass: pass, now: now)
         state = await syncAccess(state, pass: pass, now: now)
         deps.local.save(state)
+    }
+
+    /// À l'ouverture : demande au système de redire « dedans / dehors » pour les zones où l'on croit être alors que la position dit
+    /// le contraire (sortie manquée) et pour celles qui contiennent la position sans que l'on s'y croie (arrivée manquée). En
+    /// général aucune : on ne redemande pas les 20 zones à chaque ouverture.
+    private func recheckStates(_ state: LocalState, fix: Fix?) async {
+        var keys = Set<String>()
+        for zone in allZones(state) where state.armed.contains(zone.key) {
+            let believed = state.inside[zone.key] != nil
+            guard let fix else {
+                if believed {
+                    keys.insert(zone.key)
+                }
+                continue
+            }
+            if ZoneSelection.contains(zone, lat: fix.lat, lng: fix.lng) != believed {
+                keys.insert(zone.key)
+            }
+        }
+        if !keys.isEmpty {
+            await deps.geofences.requestStates(keys: keys.sorted())
+        }
     }
 
     // MARK: - La position
@@ -168,10 +200,15 @@ extension TrackingEngine {
         }
         var seen = Set<String>()
         let miffIds = refs.map { $0.miffId }.filter { seen.insert($0).inserted }
+        // Un partage ou un lieu qui change (le créateur vient d'enregistrer, de déplacer ou de supprimer un lieu) : les lieux sont
+        // relus tout de suite, pas dans l'heure. Aucune boucle : seul un geste de la personne (ou un échec du système) donne ce motif,
+        // jamais le moteur lui-même. Coût : un document par lieu et par Miff, plus 2 lectures de règles chacun.
+        let forcePlaces = reason == .sharingChanged || reason == .rearm
         var miffs: [String: LocalMiff] = [:]
         var complete = true
         for miffId in miffIds {
-            switch await syncOne(miffId, uid: uid, previous: start.miffs[miffId], now: now) {
+            let reading = PlacesReading(now: now, force: forcePlaces)
+            switch await syncOne(miffId, uid: uid, previous: start.miffs[miffId], read: reading) {
             case .watched(let miff, let isComplete):
                 miffs[miffId] = miff
                 complete = complete && isComplete
@@ -193,7 +230,12 @@ extension TrackingEngine {
         return SyncResult(state: next, verified: complete)
     }
 
-    private func syncOne(_ miffId: String, uid: String, previous: LocalMiff?, now: Int) async -> MiffSync {
+    private func syncOne(
+        _ miffId: String,
+        uid: String,
+        previous: LocalMiff?,
+        read reading: PlacesReading
+    ) async -> MiffSync {
         let store = deps.store
         let consent = await guardedCall(timeoutSeconds: deps.timeoutSeconds) {
             try await store.consent(miffId: miffId, uid: uid)
@@ -203,7 +245,7 @@ extension TrackingEngine {
             guard let card, card.enabled, MiffSharingConsent.coversPosition(card.version) else {
                 return .dropped
             }
-            let read = await readPlaces(miffId: miffId, previous: previous, now: now)
+            let read = await readPlaces(miffId: miffId, previous: previous, reading: reading)
             return .watched(read.miff, complete: read.complete)
         case .failed(_, let lostAccess):
             // Le serveur a refusé : la personne n'est plus membre (retirée, Miff supprimée) ; sinon c'est une coupure.
@@ -212,10 +254,12 @@ extension TrackingEngine {
     }
 
     /// Les lieux d'une Miff, relus quand la copie a plus d'une heure.
-    private func readPlaces(miffId: String, previous: LocalMiff?, now: Int) async -> PlacesRead {
+    private func readPlaces(miffId: String, previous: LocalMiff?, reading: PlacesReading) async -> PlacesRead {
+        let now = reading.now
         let base = previous ?? LocalMiff()
         let age = now - base.readAtMillis
-        let needed = previous == nil || base.readAtMillis == 0 || age > TrackingLimits.placesRereadMillis
+        let stale = previous == nil || base.readAtMillis == 0 || age > TrackingLimits.placesRereadMillis
+        let needed = reading.force || stale
         if !needed {
             return PlacesRead(miff: base, complete: true)
         }
@@ -318,14 +362,19 @@ extension TrackingEngine {
             desired = Array(zones.prefix(ZoneSelection.maxWatched))
         }
         let desiredKeys = Set(desired.map { $0.key })
-        if reregister || desiredKeys != state.armed {
-            if await deps.geofences.arm(desired: desired, reregister: reregister) {
-                next.armed = desiredKeys
+        // Appelé à chaque fois : le système fait foi de ce qu'il surveille (ce qui manque est ajouté, le reste retiré), sans rien
+        // redemander pour les zones déjà surveillées. Le journal ne note que les vrais changements.
+        if await deps.geofences.arm(desired: desired, reregister: reregister) {
+            if reregister || desiredKeys != state.armed {
                 journal.record(.armed)
             }
+            next.armed = desiredKeys
         }
-        if reregister || !next.updatesArmed {
-            next.updatesArmed = await deps.movement.start()
+        // Une fois par PROCESSUS au moins : un processus relancé par le système doit redemander les changements significatifs.
+        if reregister || !next.updatesArmed || !isMovementStarted() {
+            let started = await deps.movement.start()
+            next.updatesArmed = started
+            setMovementStarted(started)
         }
         return next
     }

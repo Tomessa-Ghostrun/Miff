@@ -155,7 +155,7 @@ final class TrackingPrivacyTests: XCTestCase {
 
         XCTAssertTrue(environment.contains("TrackingServices.make("))
         XCTAssertFalse(environment.contains("lazy var tracking"))
-        XCTAssertTrue(services.contains("CoreLocationTracking()"))
+        XCTAssertTrue(services.contains("SystemLocationManager()"))
         XCTAssertTrue(app.contains(".trackingLifecycle(environment.tracking)"))
     }
 

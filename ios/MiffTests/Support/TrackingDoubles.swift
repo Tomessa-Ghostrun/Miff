@@ -172,11 +172,16 @@ final class FakeGeofences: GeofenceArming {
     private(set) var armedSets: [[TrackedZone]] = []
     private(set) var reregisterFlags: [Bool] = []
     private(set) var disarmCalls = 0
+    private(set) var requestedStates: [[String]] = []
 
     func arm(desired: [TrackedZone], reregister: Bool) async -> Bool {
         armedSets.append(desired)
         reregisterFlags.append(reregister)
         return accepts
+    }
+
+    func requestStates(keys: [String]) async {
+        requestedStates.append(keys)
     }
 
     func disarmAll() async {
@@ -307,5 +312,87 @@ final class TrackingRig {
 
     func putPositionFar() {
         position.fix = TrackingFixtures.fixFar(at: env.now)
+    }
+}
+
+/// Le gestionnaire de localisation du système, en mémoire : ce que le suivi lui a demandé, et les événements que le test lui fait rendre.
+@MainActor
+final class FakeLocationManager: LocationManaging {
+    var onEvent: (@MainActor (LocationEvent) -> Void)?
+    var held: Set<String> = []
+    var maximumRegionRadius = 100_000.0
+    var systemFix: Fix?
+    var regionsAvailable = true
+    var significantChangesAvailable = true
+    private(set) var watched: [(key: String, radius: Double)] = []
+    private(set) var unwatched: [String] = []
+    private(set) var askedStates: [String] = []
+    private(set) var positionAsks = 0
+    private(set) var significantStarts = 0
+    private(set) var significantStops = 0
+
+    var heldRegionKeys: Set<String> {
+        held
+    }
+
+    func watch(_ zone: TrackedZone, radius: Double) {
+        held.insert(zone.key)
+        watched.append((key: zone.key, radius: radius))
+    }
+
+    func unwatch(key: String) {
+        held.remove(key)
+        unwatched.append(key)
+    }
+
+    func askRegionState(key: String) {
+        askedStates.append(key)
+    }
+
+    func askPosition() {
+        positionAsks += 1
+    }
+
+    func beginSignificantChanges() {
+        significantStarts += 1
+    }
+
+    func endSignificantChanges() {
+        significantStops += 1
+    }
+
+    /// Le système rend un événement.
+    func emit(_ event: LocationEvent) {
+        onEvent?(event)
+    }
+}
+
+/// Ce que le pont a transmis au moteur, dans l'ordre.
+@MainActor
+final class RecordingSink: TrackingEventSink {
+    private(set) var transitions: [String] = []
+    private(set) var states: [String] = []
+    private(set) var moves: [Fix] = []
+    private(set) var accessChanges = 0
+    private(set) var failures = 0
+
+    func zoneTransition(_ kind: TransitionKind, zoneKey: String) {
+        transitions.append("\(kind) \(ZoneKey.placeId(zoneKey))")
+    }
+
+    func zoneStateKnown(zoneKey: String, isInside: Bool) {
+        states.append("\(ZoneKey.placeId(zoneKey)) \(isInside)")
+    }
+
+    func significantMove(_ fix: Fix) {
+        moves.append(fix)
+    }
+
+    func accessChanged() {
+        accessChanges += 1
+    }
+
+    func monitoringFailed() {
+        failures += 1
     }
 }

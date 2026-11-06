@@ -52,6 +52,9 @@ enum TrackingLimits {
     /// de 5 minutes d'avance serait refusé à chaque fois et relirait le serveur à chaque réveil).
     static let recheckAfterRefusalMillis = 5 * 60 * 1000
 
+    /// Deux passages au premier plan à moins de ceci l'un de l'autre n'en font qu'un (démarrage à froid).
+    static let duplicateOpenMillis = 3 * 1000
+
     /// Au plus un réenregistrement complet des régions par échec de la surveillance toutes les cinq minutes (pas de boucle).
     static let rearmMinIntervalMillis = 5 * 60 * 1000
 

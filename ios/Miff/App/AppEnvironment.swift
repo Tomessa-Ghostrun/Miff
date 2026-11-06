@@ -148,7 +148,7 @@ final class AppEnvironment {
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
     /// Créé à la première demande. Lit seulement l'ÉTAT des autorisations (le gestionnaire qui lit la position est celui du suivi,
-    /// `CoreLocationTracking`, créé au démarrage).
+    /// `LocationTracking`, créé au démarrage).
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
 
     private let userProfiles: UserProfileRepository = FirestoreUserProfileRepository()

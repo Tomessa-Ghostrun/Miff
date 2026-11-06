@@ -19,7 +19,7 @@ Ajouté :
 - **Tests** : ~140 tests XCTest (moteur avec des doubles : rien sans « Toujours » / sans accord v3 / hors connexion, arrivée, départ, chevauchement, déjà dedans, sortie manquée, 20 zones sur 22, deux Miffs, disjoncteurs aux bornes, garde-fou de fréquence, session remplacée, arrêt collant, autorisation retirée, lieu déplacé ou supprimé, retour du réseau ; bornes de `StatusColor` à 59 min 59 s / 1 h / 2 h / 2 h 00 min 01 s ; écritures ; copie locale ; journal ; pont avec le système) et **tests statiques sur les sources** (position lue dans UN fichier, rappels de zone sans position, aucun journal ni événement ni réseau hors Firestore, journal absent de la publication).
 
 Changé :
-- `PermissionPrivacyTests` : toute lecture de position et toute surveillance de région sont confinées à `Services/Tracking/CoreLocationTracking.swift` (CoreLocation importé par deux fichiers : l'état des autorisations et ce pont) ; `SessionWriteSitesTests` : les écritures de `TrackingWrites` sont connues et estampillées ; `SessionDependencies` (+ `generationCounter`), `MiffRepositoryRules` (+ `onSharingChanged`), `PlaceServices.make` et `MiffServices.make` (+ rappels de changement).
+- `PermissionPrivacyTests` : toute lecture de position et toute surveillance de région sont confinées à `Services/Tracking/SystemLocationManager.swift` (CoreLocation importé par deux fichiers : l'état des autorisations et ce pont) ; `SessionWriteSitesTests` : les écritures de `TrackingWrites` sont connues et estampillées ; `SessionDependencies` (+ `generationCounter`), `MiffRepositoryRules` (+ `onSharingChanged`), `PlaceServices.make` et `MiffServices.make` (+ rappels de changement).
 - Texte `feed_empty_body` : retrait de « Ta position n'est pas utilisée pour l'instant. » (faux depuis cette version ; texte identique à Android). **Vérification finale du texte `settings_privacy_location_body`** (iOS = Android, test de parité) : il promet la détection « même quand l'app est fermée », la dernière position visible des membres qui partagent aussi, sans historique, effacée à l'arrêt : c'est ce que ce chantier livre. Une réserve est notée à la recette : l'app balayée (force-quit).
 - `ios/project.yml`, `PrivacyInfo.xcprivacy` : commentaires mis à jour (aucune clé modifiée).
 
@@ -28,6 +28,23 @@ Changé :
 **Choix économiques** : aucun service, aucune dépendance, aucune permission, aucune capacité ajoutés ; 0 €. Coût Spark : usage normal estimé 6 à 10 statuts + 20 à 60 positions par jour et par Miff, borné à 210 écritures par jour et par téléphone ; **signal de bascule** vers Blaze : écritures du jour > 12 000 de façon répétée, ou un testeur qui atteint un disjoncteur un jour normal (`docs/dev/surveillance-quotas.md`). Lectures : relecture des Miffs et des lieux au plus toutes les heures (1 + 2N lectures) plus à chaque changement de partage.
 
 **Limites connues** : rien n'est compilé en local (la CI fait foi) ; la relance de l'app terminée sans mode d'arrière-plan, l'app balayée, l'Actualisation en arrière-plan coupée, le mode économie d'énergie et le délai réel de détection ne se constatent que sur l'iPhone ; une app terminée n'est pas réveillée par le retour du réseau ; à la saturation, les 20 régions sont la limite d'iOS.
+
+#### LOC-4b - Corrections après la revue indépendante (sans mode d'arrière-plan, décision du PM)
+
+Changé :
+- **Les changements de partage et de lieu forcent la relecture des lieux** (`refresh(.sharingChanged)` et `.rearm`) : créer, déplacer, agrandir ou supprimer un lieu est pris en compte à l'enregistrement, sans attendre l'heure de relecture normale (tests : lieu changé + horloge avancée de 5 min + `refresh(.sharingChanged)`). Pas de boucle possible. **Coût** : 10 à 30 lectures par enregistrement du créateur.
+- **Un départ n'écrit plus `unknown` avant `out`** : le pont n'envoie un `didDetermineState` que pour les zones dont l'état a été demandé, le « dehors » qui suit une sortie traitée n'est plus pris pour une sortie manquée, les événements du système sont traités **strictement dans l'ordre**, une arrivée en double ne réécrit rien (tests, pont compris).
+- **Le changement de position significatif est démarré une fois par processus** (et de nouveau après une relance par le système), plus à chaque ouverture.
+- **Une ouverture ordinaire ne réenregistre plus toutes les zones** et ne redemande plus leur état : seulement les zones nouvelles ou différentes, et l'état demandé pour les zones nouvelles et là où la position contredit la copie locale. Les deux « premier plan » du démarrage à froid n'en font qu'un.
+- **Un statut de plus de 24 h n'est plus abandonné en silence** : il est remplacé par `unknown` à l'heure de l'envoi (test). Une position de changement significatif qui arrive alors que sa demande avait été abandonnée **va au moteur** au lieu d'être perdue (test).
+- **Pont avec le système testable** : `CoreLocationTracking` est remplacé par `LocationManaging` (protocole sans CoreLocation), `SystemLocationManager` (le seul fichier CoreLocation) et `LocationTracking` (la logique), avec `FakeLocationManager` / `RecordingSink` dans les tests : doublons, nouvelle autorisation, position abandonnée, `didDetermineState`.
+
+À décider ou à mesurer (rien n'est décidé ici) :
+- **Actualisation en arrière-plan désactivée** : option recommandée = un mot calme dans le futur Feed / les Réglages iOS ; autre option = une valeur distincte de `locationAccess` (décision du PM).
+- **Coût d'une relance par le système** : estimé à 4 à 6 lectures + 2 à 3 lectures de règles par écriture, à mesurer à la recette partie C puis à noter dans `docs/dev/surveillance-quotas.md`.
+- **Étiquettes d'App Store Connect** : batterie et identifiant de session, proposition « Other Data Types » à valider par le `release-manager`.
+
+**Choix économiques** : aucun service ni dépendance de plus ; la relecture forcée coûte 10 à 30 lectures par enregistrement du créateur (limite : quota de lectures Spark ; signal de bascule : lectures du jour répétées au-dessus de 40 000 avec peu de testeurs).
 
 ### SESS-3 - Un compte, un seul appareil (miroir d'Android SESS-2)
 

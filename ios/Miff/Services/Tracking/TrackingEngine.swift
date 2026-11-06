@@ -109,6 +109,10 @@ final class TrackingEngine {
     private let gate = AsyncGate()
     private let lock = NSLock()
     private var stoppedGeneration: Int?
+    /// Le signalement des changements de position significatifs a-t-il été demandé AU SYSTÈME dans CE processus ? Un processus relancé
+    /// par le système doit le redemander (le guide d'Apple veut que les services de localisation soient redémarrés après une
+    /// relance), même si la copie locale dit que c'était déjà fait.
+    private var movementStarted = false
 
     init(_ deps: TrackingDependencies) {
         self.deps = deps
@@ -185,6 +189,24 @@ final class TrackingEngine {
         lock.unlock()
     }
 
+    func isMovementStarted() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return movementStarted
+    }
+
+    func setMovementStarted(_ value: Bool) {
+        lock.lock()
+        movementStarted = value
+        lock.unlock()
+    }
+
+    /// Retire le signalement des changements significatifs (et se souvient qu'il faudra le redemander).
+    func stopMovement() async {
+        await deps.movement.stop()
+        setMovementStarted(false)
+    }
+
     func sessionEnded() -> Bool {
         lock.lock()
         defer { lock.unlock() }
@@ -213,7 +235,7 @@ final class TrackingEngine {
 
     func doStop() async {
         await deps.geofences.disarmAll()
-        await deps.movement.stop()
+        await stopMovement()
         deps.local.clear()
         journal.clear()
     }
@@ -235,7 +257,7 @@ final class TrackingEngine {
     /// sont gardés (peu coûteux, aucun secret).
     func disarm(_ state: LocalState) async -> LocalState {
         await deps.geofences.disarmAll()
-        await deps.movement.stop()
+        await stopMovement()
         journal.record(.disarmed)
         var next = state
         for miffId in state.miffs.keys {

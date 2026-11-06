@@ -25,6 +25,11 @@ extension TrackingEngine {
             return
         }
         let now = env.nowMillis()
+        if transition.kind == .enter, state.inside[transition.zoneKey] != nil {
+            // Une entrée vue deux fois (le système la signale aussi quand il répond à une demande d'état) : rien de nouveau, ni
+            // écriture, ni nouvelle lecture de la position.
+            return
+        }
         journal.record(
             transition.kind == .enter ? .transitionEnter : .transitionExit,
             placeId: ZoneKey.placeId(transition.zoneKey),
@@ -47,7 +52,7 @@ extension TrackingEngine {
             deps.local.save(await disarm(loaded))
         } else {
             await deps.geofences.disarmAll()
-            await deps.movement.stop()
+            await stopMovement()
         }
     }
 
@@ -64,6 +69,7 @@ extension TrackingEngine {
         }
         let written = EventTime.forWrite(eventMillis: transition.atMillis, nowMillis: now)
         let event = ZoneTransition(kind: transition.kind, zoneKey: transition.zoneKey, atMillis: written ?? now)
+        let stale = PendingStatus(fact: PresenceMachine.unknown(atMillis: now))
         for (miffId, miff) in state.miffs {
             let change = PresenceMachine.onTransition(
                 event,
@@ -75,9 +81,13 @@ extension TrackingEngine {
                 continue
             }
             if written == nil {
-                // Trop vieux pour que les règles l'acceptent : abandonné (pas de boucle), mais l'état local avance.
+                // Trop vieux pour que les règles l'acceptent : jamais écrit tel quel (pas de boucle) ; les proches ne gardent pas
+                // un état périmé : `unknown` à l'heure du moment, comme pour une sortie manquée.
                 journal.record(.statusGivenUp, placeId: change.derived.placeId)
-                next.update(miffId) { $0.derived = change.derived }
+                next.update(miffId) {
+                    $0.derived = DerivedPresence(presence: .unknown, placeId: nil)
+                    $0.pending = stale
+                }
             } else {
                 next.update(miffId) {
                     $0.derived = change.derived
@@ -111,6 +121,8 @@ extension TrackingEngine {
             return
         }
         journal.record(.regionOutside, placeId: placeId)
+        // Après une sortie traitée, la copie locale ne se croit plus dedans : un « dehors » qui suit n'écrit rien (jamais un `unknown`
+        // avant le `out`). Le pont ne transmet d'ailleurs que les états qu'on a demandés.
         if known {
             await settleMissedExit(uid: uid, state: state, zoneKey: zoneKey, now: now)
         }
@@ -164,7 +176,7 @@ extension TrackingEngine {
         let synced = await syncMiffs(uid, state, .networkBack, env.nowMillis())
         if synced.state.miffs.isEmpty && synced.verified {
             await deps.geofences.disarmAll()
-            await deps.movement.stop()
+            await stopMovement()
             deps.local.save(LocalState(uid: uid, checkedAtMillis: synced.state.checkedAtMillis))
             return
         }

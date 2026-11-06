@@ -17,6 +17,11 @@ final class TrackingRuntime: TrackingEventSink {
     /// Ce qui passe avant tout accès à Firestore d'un réveil : une purge du cache laissée par une déconnexion qui avait échoué.
     private let beforeWork: () async -> Void
     private var networkTask: Task<Void, Never>?
+    /// Le dernier travail lancé : chaque nouveau travail attend la fin du précédent, pour que les événements du système (une sortie,
+    /// puis un « dehors ») soient traités DANS L'ORDRE où ils sont arrivés.
+    private var lastWork: Task<Void, Never>?
+    /// Quand l'app est passée au premier plan pour la dernière fois (le démarrage à froid le signale deux fois).
+    private var lastActiveMillis: Int?
     /// Quand le dernier échec de la surveillance de régions a fait tout réenregistrer (millisecondes depuis 1970).
     private var lastRearmMillis: Int?
 
@@ -51,10 +56,13 @@ final class TrackingRuntime: TrackingEventSink {
     }
 
     /// Du temps de plus (le système l'accorde), le travail, puis le temps est rendu. Borné : jamais plus que la fenêtre de relance.
+    /// Strictement ORDONNÉ : le travail commence quand le précédent est fini (ou a épuisé son temps).
     private func run(_ work: @escaping () async -> Void) {
         let token = background.begin()
         let prepare = beforeWork
-        Task {
+        let previous = lastWork
+        lastWork = Task {
+            await previous?.value
             _ = try? await timedOperation(seconds: TrackingLimits.wakeBudgetSeconds) {
                 await prepare()
                 await work()
@@ -66,6 +74,12 @@ final class TrackingRuntime: TrackingEventSink {
     // MARK: - Ce que l'app signale
 
     func appBecameActive() {
+        // Le démarrage à froid signale deux fois le premier plan : la seconde demande, dans les secondes qui suivent, est ignorée.
+        let now = Int(Date().timeIntervalSince1970 * 1000)
+        if let last = lastActiveMillis, now - last < TrackingLimits.duplicateOpenMillis {
+            return
+        }
+        lastActiveMillis = now
         let engine = self.engine
         run { await engine.refresh(.opened) }
     }

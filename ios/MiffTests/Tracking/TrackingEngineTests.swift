@@ -75,7 +75,7 @@ final class TrackingEngineTests: XCTestCase {
         await rig.engine.refresh(.opened)
 
         XCTAssertEqual(rig.geofences.lastArmed.map { $0.key }, [rig.homeKey])
-        XCTAssertEqual(rig.geofences.reregisterFlags, [true])
+        XCTAssertEqual(rig.geofences.reregisterFlags, [false], "rien à réenregistrer à une simple ouverture")
         XCTAssertEqual(rig.movement.starts, 1)
         XCTAssertEqual(rig.position.calls, 1)
         XCTAssertTrue(rig.store.statusWrites().isEmpty, "rien n'a changé : aucun statut")

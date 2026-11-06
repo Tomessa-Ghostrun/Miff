@@ -54,15 +54,34 @@ final class TrackingEngineEdgeTests: XCTestCase {
         XCTAssertEqual(writes.first?.data["presenceAt"], .timestamp(millis: leaving))
     }
 
-    func testAnEventOlderThanTwentyFourHoursIsGivenUpWithoutLoop() async {
+    func testAnEventOlderThanTwentyFourHoursIsReplacedByUnknownAtTheTimeOfTheMoment() async throws {
         await rig.engine.refresh(.opened)
 
         await rig.engine.onTransition(.enter, zoneKey: rig.homeKey, atMillis: rig.env.now - 25 * hour)
 
-        XCTAssertTrue(rig.store.statusWrites().isEmpty)
+        let writes = rig.store.statusWrites()
+        XCTAssertEqual(writes.count, 1, "jamais l'état périmé, jamais de boucle")
+        let write = try XCTUnwrap(writes.first)
+        XCTAssertEqual(write.data["presence"], .string("unknown"))
+        XCTAssertEqual(write.data["placeId"], .null)
+        XCTAssertEqual(write.data["presenceAt"], .timestamp(millis: rig.env.now))
         XCTAssertTrue(rig.journal.kinds.contains(.statusGivenUp))
         XCTAssertNil(pending)
-        XCTAssertEqual(rig.local.state?.miffs[testMiffId]?.presence, "in_trusted", "l'état local avance quand même")
+    }
+
+    func testAStatusThatWaitedMoreThanTwentyFourHoursIsReplacedByUnknownNotKeptStale() async throws {
+        await rig.engine.refresh(.opened)
+        rig.env.online = false
+        await rig.engine.onTransition(.enter, zoneKey: rig.homeKey, atMillis: rig.env.now)
+        rig.env.online = true
+        rig.env.now += 25 * hour
+
+        await rig.engine.onNetworkBack()
+
+        let write = try XCTUnwrap(rig.store.statusWrites().first)
+        XCTAssertEqual(write.data["presence"], .string("unknown"))
+        XCTAssertEqual(write.data["presenceAt"], .timestamp(millis: rig.env.now))
+        XCTAssertEqual(rig.local.state?.miffs[testMiffId]?.presence, "unknown")
     }
 
     func testTheEventTimeIsCappedAtTheClockOfThePhone() async throws {

@@ -63,6 +63,10 @@ protocol GeofenceArming {
     /// aussi invité à dire si la personne est dedans (`TrackingEventSink.zoneStateKnown`).
     func arm(desired: [TrackedZone], reregister: Bool) async -> Bool
 
+    /// Demande au système de redire si la personne est dans ces zones (réponse : `TrackingEventSink.zoneStateKnown`). Seules les
+    /// clés données sont demandées.
+    func requestStates(keys: [String]) async
+
     /// Retire toutes les régions de Miff (déconnexion, plus de partage...).
     func disarmAll() async
 }
