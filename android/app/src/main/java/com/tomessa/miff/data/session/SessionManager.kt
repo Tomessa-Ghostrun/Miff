@@ -61,6 +61,12 @@ enum class SignedOutNotice {
     SESSION_REPLACED,
 
     /**
+     * The session document of the account disappeared (SESS-2 + AUTH-5b): the account is being deleted on another device (or was, from the console). Not "used
+     * on another phone" (nobody took the place, and a deletion can still be cancelled), and never a lost access to a Miff: a careful, calm note.
+     */
+    SESSION_GONE,
+
+    /**
      * The deletion of the account was finished without the end screen being seen (the app was killed and relaunched, ticket 5.6): the
      * welcome carousel says it once, calmly ("Ton compte a été supprimé.").
      */
@@ -186,7 +192,10 @@ class SessionManager(
     fun consumeNotice(): SignedOutNotice? {
         val notice = mutableNotice.value
         mutableNotice.value = null
-        if (notice == SignedOutNotice.SESSION_REPLACED) flags.put(KEY_REPLACED_NOTICE_PENDING, false)
+        if (notice == SignedOutNotice.SESSION_REPLACED || notice == SignedOutNotice.SESSION_GONE) {
+            flags.put(KEY_REPLACED_NOTICE_PENDING, false)
+            flags.put(KEY_GONE_NOTICE_PENDING, false)
+        }
         return notice
     }
 
@@ -469,11 +478,11 @@ class SessionManager(
      * deletes NOTHING on the server (the session now belongs to the other phone: no loop), and it is never told as a lost access to a Miff.
      * Does not wait for anything it is called from: it only schedules the work, so that the detection engine (which may be the caller) can release its lock.
      */
-    fun onDeviceReplaced() {
-        scope.launch { endBecauseReplaced() }
+    fun onDeviceReplaced(accountGone: Boolean = false) {
+        scope.launch { endBecauseReplaced(accountGone) }
     }
 
-    private suspend fun endBecauseReplaced() {
+    private suspend fun endBecauseReplaced(accountGone: Boolean) {
         withContext(NonCancellable) {
             if (ending || gateway.currentUid == null) return@withContext
             // During a deletion of the account the session is handled by the deletion itself: no forced sign-out and never the "another phone" note.
@@ -486,7 +495,9 @@ class SessionManager(
             // Signed in but replaced: whatever waits would be refused (and must not be written): no flush.
             cache.purge()
             flags.put(KEY_REPLACED_NOTICE_PENDING, true)
-            finishSignedOut(AppDestination.SIGN_IN, SignedOutNotice.SESSION_REPLACED, markReturning = true)
+            flags.put(KEY_GONE_NOTICE_PENDING, accountGone)
+            val notice = if (accountGone) SignedOutNotice.SESSION_GONE else SignedOutNotice.SESSION_REPLACED
+            finishSignedOut(AppDestination.SIGN_IN, notice, markReturning = true)
         }
     }
 
@@ -572,7 +583,16 @@ class SessionManager(
             pending.clear()
             // SESS-2: a geofence receiver may have signed this phone out (replaced) while the app was closed: the calm note waits for the sign-in screen.
             if (flags.get(KEY_REPLACED_NOTICE_PENDING, false) && mutableNotice.value == null) {
-                mutableNotice.value = SignedOutNotice.SESSION_REPLACED
+                mutableNotice.value =
+                    if (flags.get(
+                            KEY_GONE_NOTICE_PENDING,
+                            false,
+                        )
+                    ) {
+                        SignedOutNotice.SESSION_GONE
+                    } else {
+                        SignedOutNotice.SESSION_REPLACED
+                    }
             }
             mutableState.value = SessionState.Ready(entryDestination())
             return
@@ -629,6 +649,7 @@ class SessionManager(
             }
         }
         flags.put(KEY_REPLACED_NOTICE_PENDING, false)
+        flags.put(KEY_GONE_NOTICE_PENDING, false)
         device.watch(uid)
         return null
     }
@@ -880,5 +901,8 @@ class SessionManager(
 
         /** The calm "used on another phone" note has not been shown yet (written by the forced sign-out, read at the next start). */
         const val KEY_REPLACED_NOTICE_PENDING = "session_replaced_notice_pending"
+
+        /** Together with the one above: the note to show is the careful "being deleted on another device" one, not "used on another phone". */
+        const val KEY_GONE_NOTICE_PENDING = "session_gone_notice_pending"
     }
 }

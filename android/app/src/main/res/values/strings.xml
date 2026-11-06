@@ -164,6 +164,7 @@
     <string name="auth_panel_cancel">Cancel</string>
     <string name="auth_panel_refused_notice">No worries, your account was not created. You can create it whenever you like.</string>
     <string name="auth_session_replaced_notice">Your account is now being used on another phone. You\'ve been signed out of this one.</string>
+    <string name="auth_session_gone_notice">Your account is being deleted on another device.</string>
     <string name="auth_loading_a11y">Loading</string>
     <string name="auth_retry_action">Try again</string>
     <string name="auth_signout_action">Sign out</string>
