@@ -75,7 +75,11 @@ final class PermissionPrivacyTests: XCTestCase {
             [],
             "aucune coordonnée hors des fichiers des lieux"
         )
-        XCTAssertEqual(offenders(in: sources, matching: ["showsUserLocation", "MKUserLocation"]), [])
+        // La carte des lieux écrit `showsUserLocation = false` (PlacePrivacyTests l'exige) : seul le « vrai » est interdit.
+        XCTAssertEqual(
+            offenders(in: sources, matching: ["showsUserLocation = true", "MKUserLocation", "userTrackingMode"]),
+            []
+        )
     }
 
     func testCoreLocationIsImportedByOneFileOnlyToReadTheStateOfTheAuthorization() throws {

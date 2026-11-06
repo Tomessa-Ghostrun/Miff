@@ -38,6 +38,7 @@ import com.tomessa.miff.ui.components.miffKeyboardVisible
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.miff.AccessLostScreen
+import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.CreateMiffRoute
 import com.tomessa.miff.ui.miff.JoinMiffRoute
 import com.tomessa.miff.ui.miff.MiffRoute
@@ -53,6 +54,7 @@ import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountViewModel
+import com.tomessa.miff.ui.settings.DetectionHelpScreen
 import com.tomessa.miff.ui.settings.LanguageScreen
 import com.tomessa.miff.ui.settings.LanguageViewModel
 import com.tomessa.miff.ui.settings.MyInfoScreen
@@ -60,6 +62,7 @@ import com.tomessa.miff.ui.settings.MyInfoViewModel
 import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
+import com.tomessa.miff.ui.settings.rememberLocationPrivacy
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
@@ -80,6 +83,10 @@ data object LanguageRoute
 
 @Serializable
 data object PrivacyRoute
+
+/** LOC-2b: the help for the phones that stop the apps in the background (opened from Settings > Confidentialité). */
+@Serializable
+data object DetectionHelpRoute
 
 /**
  * The app once the onboarding is done (a Miff exists): the three tabs, and, over them, the Settings screens (which hide the
@@ -181,6 +188,7 @@ private fun MainNavigation(
                     factory = viewModelFactory { initializer { FeedViewModel(container.miffDirectory) } },
                 )
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
+            val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
                 profileState = profileState,
@@ -193,6 +201,7 @@ private fun MainNavigation(
                 onCreateMiff = { navController.open(CreateMiffRoute) },
                 onJoinMiff = { navController.open(JoinMiffRoute) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
+                agreement = AgreementUi(waiting, container.awaitingAgreement::requestReview),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -298,12 +307,19 @@ private fun MainNavigation(
                         },
                 )
             val state by viewModel.uiState.collectAsStateWithLifecycle()
+            val location = rememberLocationPrivacy(container)
             PrivacyScreen(
                 state = state,
                 onBack = { navController.popBackStackIfSafe() },
                 onAnalyticsToggled = viewModel::onAnalyticsToggled,
                 onRetryWithdrawal = viewModel::onRetryWithdrawal,
+                location = location,
+                onReviewAgreement = container.awaitingAgreement::requestReview,
+                onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
             )
+        }
+        composable<DetectionHelpRoute> {
+            DetectionHelpScreen(onBack = { navController.popBackStackIfSafe() })
         }
         composable<LanguageRoute> {
             val viewModel: LanguageViewModel =
@@ -363,6 +379,7 @@ fun MainTabs(
     onCreateMiff: () -> Unit,
     onJoinMiff: () -> Unit,
     onOpenMiff: (String) -> Unit,
+    agreement: AgreementUi = AgreementUi(),
     placesContent: @Composable () -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
@@ -381,6 +398,7 @@ fun MainTabs(
                             onSelect = onSelectMiff,
                             onCreate = onCreateMiff,
                             onJoin = onJoinMiff,
+                            agreement = agreement,
                         )
                     }
 

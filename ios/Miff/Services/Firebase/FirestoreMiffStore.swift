@@ -20,6 +20,10 @@ enum FirestoreFieldConversion {
             return flag
         case .bytes(let bytes):
             return bytes
+        case .integer(let number):
+            return number
+        case .double(let number):
+            return number
         case .serverTimestamp:
             return FieldValue.serverTimestamp()
         case .null:

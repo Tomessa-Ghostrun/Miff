@@ -14,6 +14,7 @@ export const H = {
   placesGet: { match: 'match /places/{placeId} {', method: 'get' },
   statusList: { match: 'match /status/{uid} {', method: 'list' },
   statusDelete: { match: 'match /status/{uid} {', method: 'delete' },
+  photosCreate: { match: 'match /photos/{uid} {', method: 'create' },
   photosDelete: { match: 'match /photos/{uid} {', method: 'delete' },
   placesCreate: { match: 'match /places/{placeId} {', method: 'create' },
   placesUpdate: { match: 'match /places/{placeId} {', method: 'update' },

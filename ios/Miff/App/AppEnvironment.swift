@@ -57,6 +57,37 @@ struct MiffServices {
     }
 }
 
+/// Les services des lieux de confiance (LOC-3), construits d'un seul tenant. Rien ici n'ouvre Firestore ni MapKit (MapKit n'est créé qu'au premier usage d'un champ d'adresse) : tout passe par
+/// des fonctions appelées par les écrans des lieux, affichés APRÈS le routage de la session. AUCUNE permission de localisation :
+/// la recherche d'adresse et la carte de MapKit n'en ont pas besoin.
+@MainActor
+struct PlaceServices {
+    /// Lire ce que la personne détient, écrire les lieux (un document par Miff), supprimer.
+    let repository: PlaceRepository
+    /// Les suggestions d'adresse et les coordonnées de l'adresse choisie : MapKit, avec un cache gardé pour la session seulement.
+    let search: AddressSearch
+    /// Le message calme d'un lieu enregistré, en mémoire seulement.
+    let notices: PlaceNotices
+
+    static func make() -> PlaceServices {
+        let repository = FirestorePlaceRepository(
+            store: FirestorePlaceStore(base: FirestoreMiffStore()),
+            newId: { FirestorePlaceRepository.newFirestoreId() }
+        )
+        return PlaceServices(
+            repository: repository,
+            search: CachedAddressSearch(AppleAddressSearch()),
+            notices: PlaceNotices()
+        )
+    }
+
+    /// Fin de session : le message, ce qui a été tapé dans la recherche d'adresse et ce qu'elle a reçu ne sont pas gardés.
+    func stop() async {
+        notices.stop()
+        search.reset()
+    }
+}
+
 /// Conteneur de dépendances écrit à la main (injection par initialiseur, pas de bibliothèque d'injection).
 /// Créé une fois par `MiffApp`.
 @MainActor
@@ -78,6 +109,10 @@ final class AppEnvironment {
     let onboardingFlags: OnboardingFlags
     let miffRepository: MiffRepository
     let miffDirectory: MiffDirectory
+    /// Les lieux de confiance (LOC-3) : dépôt, recherche d'adresse (MapKit), message d'enregistrement.
+    let placeRepository: PlaceRepository
+    let addressSearch: AddressSearch
+    let placeNotices: PlaceNotices
     /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
     let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
@@ -118,6 +153,7 @@ final class AppEnvironment {
         let miff = MiffServices.make(gateway: gateway, cache: cache, network: networkMonitor)
         let directory = miff.directory
         let deletions = miff.deletions
+        let places = PlaceServices.make()
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -129,7 +165,13 @@ final class AppEnvironment {
                 cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: [{ drafts.clear() }, { await directory.stop() }, { await deletions.stop() }],
+                teardown: [
+                    { drafts.clear() },
+                    { await directory.stop() },
+                    { await deletions.stop() },
+                    // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
+                    { await places.stop() }
+                ],
                 drafts: drafts
             )
         )
@@ -146,6 +188,9 @@ final class AppEnvironment {
         miffRepository = miff.repository
         miffDirectory = directory
         miffDeletions = deletions
+        placeRepository = places.repository
+        addressSearch = places.search
+        placeNotices = places.notices
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
         notificationAsks = UserDefaultsNotificationAskStore()
@@ -201,6 +246,30 @@ final class AppEnvironment {
                 onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
             ),
             settings: PermissionGateSettings(locationBlocking: LocationBlockingSwitch.current)
+        )
+    }
+
+    /// Les dépendances du formulaire d'un lieu (LOC-3).
+    func placeFormDependencies() -> PlaceFormDependencies {
+        let session = self.session
+        return PlaceFormDependencies(
+            repository: placeRepository,
+            search: addressSearch,
+            network: network,
+            currentUid: { session.currentUid },
+            notices: placeNotices
+        )
+    }
+
+    /// Les dépendances du détail d'un lieu (LOC-3) : la lecture en direct de la Miff, et la perte d'accès confiée à l'annuaire.
+    func placeDetailDependencies() -> PlaceDetailDependencies {
+        let session = self.session
+        let directory = miffDirectory
+        return PlaceDetailDependencies(
+            repository: miffRepository,
+            network: network,
+            currentUid: { session.currentUid },
+            onAccessLost: { miffId, name in await directory.onAccessLost(miffId: miffId, name: name) }
         )
     }
 

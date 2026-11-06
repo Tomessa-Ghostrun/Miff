@@ -22,6 +22,7 @@ libphonenumber = "9.0.42"
 exifinterface = "1.4.2"
 profileinstaller = "1.4.1"
 maplibre = "13.7.1"
+playServicesLocation = "21.4.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -59,6 +60,9 @@ androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstall
 # The OpenGL ES flavour on purpose: the default "android-sdk" artifact draws with Vulkan and CRASHES the app on a phone without a
 # Vulkan GPU (seen on an emulator, 2026-11-01: "No Vulkan compatible GPU found"). OpenGL ES runs everywhere from minSdk 26.
 maplibre-android = { module = "org.maplibre.gl:android-sdk-opengl", version.ref = "maplibre" }
+# Geofencing and the fused provider of positions (LOC-2b): Google Play services location, free, no key, maintained by Google (Android SDK terms).
+# The Play services of the phone do the work; Miff sends no position to any service but its own Firestore (criterion POS5).
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }

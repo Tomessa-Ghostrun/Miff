@@ -51,6 +51,10 @@ fun PrivacyScreen(
     onBack: () -> Unit,
     onAnalyticsToggled: (Boolean) -> Unit,
     onRetryWithdrawal: () -> Unit,
+    /** LOC-2b (design 23C): the state of the location and the Miffs that wait for the agreement. */
+    location: LocationPrivacyUi = LocationPrivacyUi(),
+    onReviewAgreement: () -> Unit = {},
+    onOpenDetectionHelp: () -> Unit = {},
 ) {
     val context = LocalContext.current
     SettingsScaffold(title = stringResource(R.string.settings_privacy_title), onBack = onBack) {
@@ -72,12 +76,12 @@ fun PrivacyScreen(
         }
 
         Section(R.string.settings_privacy_location_title)
-        Text(
-            text = stringResource(R.string.settings_privacy_location_body),
-            style = textBodyRegular14,
-            color = colorTextDescription,
+        LocationBlock(
+            location = location,
+            onReviewAgreement = onReviewAgreement,
+            onOpenPhoneSettings = { ExternalLinks.openPhoneSettings(context) },
+            onOpenDetectionHelp = onOpenDetectionHelp,
         )
-        OpenPhoneSettings { ExternalLinks.openPhoneSettings(context) }
 
         Section(R.string.settings_privacy_notifications_title)
         Text(

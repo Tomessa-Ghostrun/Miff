@@ -196,8 +196,8 @@ jobs:
             echo "::error::Aucun fichier dex dans le bundle release : verification impossible."
             exit 1
           fi
-          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck'; then
-            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE ou DebugAppCheck : l'ecran de diagnostic ou le fournisseur App Check de debug a fuite dans le build release."
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL'; then
+            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck ou DETECTIONJOURNAL : l'ecran de diagnostic, le fournisseur App Check de debug ou le journal de detection (LOC-2b) a fuite dans le build release."
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
@@ -209,8 +209,8 @@ jobs:
           # releaseLike is built from the release sources: same proof for its APK.
           like=app/build/outputs/apk/releaseLike/app-releaseLike.apk
           test -f "$like" || { echo "::error::APK releaseLike introuvable : $like"; exit 1; }
-          if unzip -p "$like" 'classes*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck'; then
-            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic ou le fournisseur App Check de debug."
+          if unzip -p "$like" 'classes*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL'; then
+            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug ou le journal de detection."
             exit 1
           fi
           echo "APK releaseLike : aucune trace du diagnostic ni du fournisseur App Check de debug."
@@ -237,7 +237,7 @@ jobs:
       # present (the app does not work without them) and nothing else of that family may appear. Never skipped (also for Dependabot).
       - name: Check the sensitive permissions of the merged manifests (location, notifications)
         run: |
-          allowed='android.permission.ACCESS_FINE_LOCATION android.permission.ACCESS_COARSE_LOCATION android.permission.ACCESS_BACKGROUND_LOCATION android.permission.POST_NOTIFICATIONS'
+          allowed='android.permission.ACCESS_FINE_LOCATION android.permission.ACCESS_COARSE_LOCATION android.permission.ACCESS_BACKGROUND_LOCATION android.permission.POST_NOTIFICATIONS android.permission.RECEIVE_BOOT_COMPLETED'
           check_manifest() {
             # xargs puts the sorted names on one line (no newline character to escape in this file).
             found=$(grep -a -o -E 'android[.]permission[.](ACCESS_[A-Z_]*LOCATION[A-Z_]*|FOREGROUND_SERVICE[A-Z_]*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_[A-Z_]+|ACTIVITY_RECOGNITION|RECEIVE_BOOT_COMPLETED)' | sort -u | xargs)
@@ -255,7 +255,7 @@ jobs:
           for m in $manifests; do
             check_manifest "$m" < "$m" || exit 1
           done
-          echo "Manifestes fusionnes (bundle release et variantes) : exactement la localisation (precise, approximative, arriere-plan) et les notifications."
+          echo "Manifestes fusionnes (bundle release et variantes) : exactement la localisation (precise, approximative, arriere-plan), les notifications et le redemarrage du telephone (LOC-2b)."
 
       # actions/upload-artifact v7.0.2
       - name: Upload debug APK (short retention)

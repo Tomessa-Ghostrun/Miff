@@ -12,3 +12,8 @@
     *** INSTANCE;
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+# LOC-2b: if the writer of the detection journal (debug only) ever reached a release build, its marker must survive minification so that the CI check can see it.
+-keepclassmembers class com.tomessa.miff.data.tracking.DetectionJournals {
+    public static final java.lang.String MARKER;
+}

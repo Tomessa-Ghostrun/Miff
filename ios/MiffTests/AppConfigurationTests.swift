@@ -138,7 +138,9 @@ final class AppConfigurationTests: XCTestCase {
         // Les données de COMPTE (inscription et profil) sont liées à l'identité, pour le fonctionnement de l'app seulement ;
         // les données d'USAGE (Analytics, rapports de plantage) ne le sont jamais.
         let accountTypes = [
-            "UserID", "EmailAddress", "Name", "PhotosorVideos", "PhoneNumber", "PreciseLocation"
+            "UserID", "EmailAddress", "Name", "PhotosorVideos", "PhoneNumber", "PreciseLocation",
+            // LOC-3 : l'adresse et le nom des lieux d'une Miff, écrits dans Firestore, visibles des membres.
+            "PhysicalAddress", "OtherUserContent"
         ].map { "NSPrivacyCollectedDataType\($0)" }
         for entry in collected {
             let type = entry["NSPrivacyCollectedDataType"] as? String ?? ""

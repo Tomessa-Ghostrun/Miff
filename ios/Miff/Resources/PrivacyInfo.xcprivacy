@@ -13,6 +13,12 @@
 	     que demander l'autorisation) : la déclaration anticipe LOC-4b, pour que le manifeste, les étiquettes d'App Store Connect
 	     (docs/release/app-store-confidentialite-et-revue.md §2) et la politique de confidentialité disent la même chose. Les
 	     deux textes d'usage NSLocation* sont dans InfoPlist.xcstrings.
+
+	     LOC-3 (lieux de confiance) : la carte et la recherche d'adresse de MapKit ne lisent PAS la position de la personne. Les LIEUX
+	     que le créateur d'une Miff définit sont écrits dans Firestore, liés à son compte et visibles des membres de la Miff : adresse
+	     postale d'un lieu (PhysicalAddress), nom du lieu (OtherUserContent) ; ses coordonnées sont celles de l'ADRESSE choisie, pas
+	     celles de l'appareil (classification « Precise Location » à confirmer, docs/release/app-store-confidentialite-et-revue.md).
+	     Le texte tapé pour chercher une adresse part au service de suggestions d'Apple (fournisseur du système) et n'est pas gardé.
 	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
 
 	     Données du COMPTE (AUTH-3, ONB-6), liées à l'identité de la personne, pour le fonctionnement de l'app seulement
@@ -95,6 +101,30 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

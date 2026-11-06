@@ -44,6 +44,8 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.miff.AgreementUi
+import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffLoading
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -77,6 +79,8 @@ fun FeedScreen(
     onSelect: (String) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
+    /** LOC-2b, design 23A: the Miffs that wait for the agreement of the person (nothing is shared or detected for them). */
+    agreement: AgreementUi = AgreementUi(),
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -122,6 +126,20 @@ fun FeedScreen(
                 } else {
                     MiffPill(state, onSelect, onCreate, onJoin)
                     if (state.fromCache) MiffNotice(stringResource(R.string.feed_offline_note))
+                    if (agreement.isWaiting(state.activeId)) {
+                        // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.
+                        AwaitingAgreementCard(
+                            body = stringResource(R.string.miff_waiting_feed_body, state.active?.name.orEmpty()),
+                            onReview = agreement.onReview,
+                        )
+                        Text(
+                            text = stringResource(R.string.miff_waiting_feed_note),
+                            style = textBodyRegular,
+                            color = colorTextDescription,
+                            textAlign = TextAlign.Center,
+                        )
+                        return@Column
+                    }
                     Text(
                         text = stringResource(R.string.feed_empty_title),
                         style = textDisplayHeadline,

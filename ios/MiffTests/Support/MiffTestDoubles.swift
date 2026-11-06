@@ -50,6 +50,8 @@ final class FakeMiffStore: MiffStore {
     /// Ce que répond `get miffs/{id}` par identifiant : un `MiffDetails`, ou une erreur (un refus des règles, un problème réseau).
     var miffs: [String: Any] = [:]
     var entitlement: EntitlementRead?
+    /// Une erreur à la lecture de l'abonnement (réseau coupé, refus).
+    var entitlementFailure: Error?
     var reachable = true
     var sharing: Bool?
     var profile: ProfileCopy? = testProfile
@@ -95,6 +97,9 @@ final class FakeMiffStore: MiffStore {
 
     func readEntitlement(uid: String) async throws -> EntitlementRead? {
         calls.append("entitlement")
+        if let entitlementFailure {
+            throw entitlementFailure
+        }
         return entitlement
     }
 
