@@ -46,7 +46,7 @@ import com.tomessa.miff.ui.theme.textDisplayTitle
 
 /*
  * The sheet "Dernière position connue de {Prénom}" (maquette 08, ticket 5.6). It shows the DATE of the measure first, says that this is not a
- * live position, and hands the COORDINATES ALONE to the maps of the system: no map is drawn here, the Feed keeps nothing of it once the sheet is closed. Five answers, all
+ * live position, and hands the COORDINATES ALONE to the maps of the system: no map is drawn here, the Feed keeps nothing of it once the sheet is closed. Six answers, all
  * calm (never the word "erreur", never "quota"): recent, old (the date only, no coordinate, no button), not found, refused (one message for
  * every refusal: nobody is told who stopped sharing), offline. The coordinates live in [result] only while the sheet is open.
  */
@@ -125,6 +125,11 @@ fun LocateSheet(
 
                 LocateResult.Offline -> {
                     Message(R.drawable.ic_loc_cloud_off, stringResource(R.string.feed_locate_offline))
+                    CloseButton(onDismiss)
+                }
+
+                LocateResult.Unavailable -> {
+                    Message(R.drawable.ic_feed_hourglass, stringResource(R.string.feed_locate_unavailable))
                     CloseButton(onDismiss)
                 }
             }

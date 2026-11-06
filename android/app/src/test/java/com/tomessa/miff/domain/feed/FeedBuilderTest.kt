@@ -177,14 +177,30 @@ class FeedBuilderTest {
     }
 
     @Test
-    fun aNeutralMember_cannotBeLocated_butCanStillBeCalled() {
+    fun aNeutralMember_canBeLocated_andCalled_theSheetAnswersCalmlyWhenThereIsNoPosition() {
         val content = build(trio, mapOf(me to status(), "t" to status(PresenceValue.UNKNOWN, placeId = null)))
         val thomas = card(content, "t")
         assertEquals(StatusLevel.NEUTRAL, thomas.level)
         assertEquals(StateLabel.NoNews, thomas.label)
-        assertFalse(thomas.canLocate)
+        // Ticket 5.6: another member whose sharing is on can be located even with no known status ("pas encore de position connue").
+        assertTrue(thomas.canLocate)
         assertNotNull(thomas.phone)
         assertEquals(TimeLine.None, thomas.time)
+    }
+
+    @Test
+    fun locate_isOfferedOnlyWhenTheStatusesAreReallyRead() {
+        listOf(StatusesView.Pending, StatusesView.Off, StatusesView.Unknown, StatusesView.Waiting).forEach { view ->
+            val content = FeedBuilder.build(input(trio, view), now, zone)
+            assertFalse("$view", card(content, "t").canLocate)
+        }
+        // Read, even if nobody has a status yet.
+        assertTrue(card(build(trio, emptyMap()), "t").canLocate)
+        // Never on my own card, never for a member who stopped sharing.
+        val members = listOf(member(me, "Camille"), member("t", "Thomas", sharing = false))
+        val content = build(members, mapOf(me to status()))
+        assertFalse(card(content, "t").canLocate)
+        assertFalse(card(content, me).canLocate)
     }
 
     @Test

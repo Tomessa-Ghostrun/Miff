@@ -49,21 +49,11 @@ class FirestorePositionReader(
             } else {
                 found(doc.getDouble("lat"), doc.getDouble("lng"), doc.getTimestamp("measuredAt")?.toDate()?.time)
             }
-        } catch (e: TimeoutCancellationException) {
-            PositionLookup.Offline
         } catch (e: CancellationException) {
-            throw e
-        } catch (e: FirebaseFirestoreException) {
-            if (e.code ==
-                FirebaseFirestoreException.Code.PERMISSION_DENIED
-            ) {
-                PositionLookup.Denied
-            } else {
-                PositionLookup.Offline
-            }
+            // A timeout is a CancellationException too: it is "time exceeded" (an unexpected failure), the caller's own cancellation is rethrown.
+            if (e is TimeoutCancellationException) PositionLookup.Failed else throw e
         } catch (e: Exception) {
-            // Whatever else happened, the person reads the calm "Pas de connexion pour le moment": never a technical word.
-            PositionLookup.Offline
+            lookupForError(e)
         }
 
     private companion object {
@@ -71,6 +61,19 @@ class FirestorePositionReader(
         const val TIMEOUT_MILLIS = 15_000L
     }
 }
+
+/**
+ * What a failed reading means, in the five calm answers plus the sixth: a refusal of the rules is [PositionLookup.Denied] (ONE message for every
+ * refusal); "unavailable" is how the SDK says that the client is offline ([PositionLookup.Offline], checked again against the network by
+ * [com.tomessa.miff.domain.feed.Locate.reconcile]); everything else (time exceeded, quota of the plan reached, sign-in expired, an error of the
+ * server or of the phone) is [PositionLookup.Failed]. The message of the exception is never read: it can quote a path or a value.
+ */
+internal fun lookupForError(error: Throwable): PositionLookup =
+    when ((error as? FirebaseFirestoreException)?.code) {
+        FirebaseFirestoreException.Code.PERMISSION_DENIED -> PositionLookup.Denied
+        FirebaseFirestoreException.Code.UNAVAILABLE -> PositionLookup.Offline
+        else -> PositionLookup.Failed
+    }
 
 /**
  * A document that is not a position of this app (a coordinate missing, not a number, out of range, or no time of measure) is "not found":

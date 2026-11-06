@@ -2609,13 +2609,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You're the only one in this Miff for now"
+            "value": "No one else in this Miff yet"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es seul(e) dans cette Miff pour l'instant"
+            "value": "Personne d'autre dans cette Miff pour l'instant"
           }
         }
       }
@@ -3551,6 +3551,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vous partagez tous les deux : %1$@ peut aussi voir ta dernière position."
+          }
+        }
+      }
+    },
+    "feed_locate_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't show the position right now. Try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d'afficher la position pour le moment. Réessaie dans un moment."
           }
         }
       }

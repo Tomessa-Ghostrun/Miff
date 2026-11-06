@@ -435,10 +435,11 @@ class FeedScreenTest {
     }
 
     @Test
-    fun cards_aNeutralMember_hasMessageAndCall_butNoLocate() {
+    fun cards_aNeutralMember_hasLocateMessageAndCall() {
         feed(ready(content(trio, mapOf(me to status()))))
         shoot("feed-neutral-cards")
-        composeRule.onAllNodesWithContentDescription("Localiser Thomas").assertCountEquals(0)
+        // Ticket 5.6: another member whose sharing is on, even with no known status ("pas encore de position connue" is a calm answer).
+        composeRule.onNodeWithContentDescription("Localiser Thomas").assertExists()
         composeRule.onNodeWithContentDescription("Écrire à Thomas").assertExists()
         composeRule.onAllNodesWithText(text(R.string.feed_label_no_news)).assertCountEquals(3)
     }
@@ -488,6 +489,7 @@ class FeedScreenTest {
         val members = listOf(member(me, "Camille"), member("t", "Thomas", sharing = false))
         feed(ready(content(members, mapOf(me to status()))))
         composeRule.onNodeWithText("Partage arrêté").assertExists()
+        composeRule.onAllNodesWithContentDescription("Localiser Thomas").assertCountEquals(0)
     }
 
     // --- states --------------------------------------------------------------------------------------------------------------
@@ -549,6 +551,8 @@ class FeedScreenTest {
         shoot("feed-publishing")
         composeRule.onNodeWithText(text(R.string.feed_banner_publishing)).assertIsDisplayed()
         composeRule.onAllNodesWithText("erreur", substring = true, ignoreCase = true).assertCountEquals(0)
+        // The statuses are not read yet (the rules wait for mine): no "Localiser" would be answered.
+        composeRule.onAllNodesWithContentDescription("Localiser Thomas").assertCountEquals(0)
     }
 
     @Test
@@ -727,6 +731,14 @@ class FeedScreenTest {
     @Test
     fun sheet_offline_isCalm() =
         calmSheet(LocateResult.Offline, "Pas de connexion pour le moment. Réessaie dès que le réseau est revenu.")
+
+    @Test
+    fun sheet_unexpectedFailure_isTheSixthCalmAnswer_distinctFromNoConnection() {
+        val expected = "Impossible d'afficher la position pour le moment. Réessaie dans un moment."
+        calmSheet(LocateResult.Unavailable, expected)
+        // Not the sentence of "no connection": that one is kept for a real absence of network.
+        assertTrue(!expected.contains("connexion"))
+    }
 
     @Test
     fun sheet_closeButton_dismisses() {

@@ -1,6 +1,8 @@
 package com.tomessa.miff.domain.feed
 
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.feed.found
+import com.tomessa.miff.data.feed.lookupForError
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.tracking.PresenceValue
 import org.junit.Assert.assertEquals
@@ -55,10 +57,39 @@ class FeedLocateAndParsingTest {
     }
 
     @Test
-    fun notFound_denied_offline_areTheOtherThreeAnswers() {
+    fun notFound_denied_offline_unexpected_areTheOtherFourAnswers() {
         assertEquals(LocateResult.NotFound, Locate.interpret(PositionLookup.NotFound, now, zone))
         assertEquals(LocateResult.Denied, Locate.interpret(PositionLookup.Denied, now, zone))
         assertEquals(LocateResult.Offline, Locate.interpret(PositionLookup.Offline, now, zone))
+        // The sixth answer, distinct from "no connection".
+        assertEquals(LocateResult.Unavailable, Locate.interpret(PositionLookup.Failed, now, zone))
+    }
+
+    @Test
+    fun noConnection_isOnlyARealAbsenceOfNetwork() {
+        // Unreachable while the phone HAS a network: unexpected. Unexpected while it has none: no connection.
+        assertEquals(PositionLookup.Failed, Locate.reconcile(PositionLookup.Offline, networkOnline = true))
+        assertEquals(PositionLookup.Offline, Locate.reconcile(PositionLookup.Failed, networkOnline = false))
+        assertEquals(PositionLookup.Offline, Locate.reconcile(PositionLookup.Offline, networkOnline = false))
+        assertEquals(PositionLookup.Failed, Locate.reconcile(PositionLookup.Failed, networkOnline = true))
+        assertEquals(PositionLookup.Denied, Locate.reconcile(PositionLookup.Denied, networkOnline = true))
+        assertEquals(PositionLookup.NotFound, Locate.reconcile(PositionLookup.NotFound, networkOnline = false))
+    }
+
+    @Test
+    fun whatTheSdkSays_isSortedIntoTheCalmAnswers() {
+        fun code(c: FirebaseFirestoreException.Code) = lookupForError(FirebaseFirestoreException("never read", c))
+        assertEquals(PositionLookup.Denied, code(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+        assertEquals(PositionLookup.Offline, code(FirebaseFirestoreException.Code.UNAVAILABLE))
+        // Quota of the plan reached, time exceeded, sign-in expired, anything else: the sixth answer.
+        listOf(
+            FirebaseFirestoreException.Code.RESOURCE_EXHAUSTED,
+            FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
+            FirebaseFirestoreException.Code.UNAUTHENTICATED,
+            FirebaseFirestoreException.Code.INTERNAL,
+            FirebaseFirestoreException.Code.ABORTED,
+        ).forEach { assertEquals("$it", PositionLookup.Failed, code(it)) }
+        assertEquals(PositionLookup.Failed, lookupForError(IllegalStateException("boom")))
     }
 
     // --- the address handed to the maps ---------------------------------------------------------------------------------
