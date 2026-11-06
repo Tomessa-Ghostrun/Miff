@@ -1,11 +1,14 @@
 package com.tomessa.miff.data.miff
 
 import com.google.firebase.firestore.FirebaseFirestoreException.Code
+import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.testsupport.CODE
+import com.tomessa.miff.testsupport.DEVICE_A
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
 import com.tomessa.miff.testsupport.FakeMiffObserver
@@ -33,12 +36,14 @@ class MiffRepositoryTest {
     private var now = 1_000_000L
     private val timeline = Timeline()
     private val cache = FakeCachePurger(timeline)
+    private val device = FakeActiveDevice()
 
     private fun repo() =
         FirestoreMiffRepository(
             store = store,
             observer = FakeMiffObserver(),
             location = location,
+            device = device,
             newMiffId = { MIFF_ID },
             newCode = { drawn.removeFirstOrNull() ?: CODE },
             nowMillis = { now },
@@ -112,7 +117,7 @@ class MiffRepositoryTest {
                         throw firestoreError(Code.UNAVAILABLE)
                 }
             val result =
-                FirestoreMiffRepository(offline, FakeMiffObserver(), location, {
+                FirestoreMiffRepository(offline, FakeMiffObserver(), location, FakeActiveDevice(), {
                     MIFF_ID
                 }, { CODE }).prepareJoin(uid, CODE)
             assertEquals(JoinPreparation.Failed(MiffFailure.OFFLINE), result)
@@ -343,6 +348,63 @@ class MiffRepositoryTest {
             assertEquals("foreground", status.data["locationAccess"])
         }
 
+    // --- "Un compte, un seul appareil" (SESS-2): the first status carries the identifier of the session -------------
+
+    private fun statusOf(lot: List<com.tomessa.miff.domain.miff.DocWrite>) = lot.single { it.path.contains("/status/") }
+
+    @Test
+    fun join_theFirstStatusCarriesTheIdentifierOfTheSession_verifiedJustBefore() =
+        runTest {
+            joinable()
+            val prepared = ready(repo().prepareJoin(uid, CODE))
+            repo().join(uid, prepared)
+            assertEquals(DEVICE_A, statusOf(store.commitsAsLots.single()).data["deviceId"])
+            assertEquals("the session is asked against the server before a manual entry", listOf(true), device.rechecks)
+        }
+
+    @Test
+    fun create_andResume_theFirstStatusCarriesTheIdentifierOfTheSession() =
+        runTest {
+            val preparation = repo().prepareCreate(uid) as CreatePreparation.Ready
+            repo().create(uid, "Chez nous", preparation)
+            assertEquals(DEVICE_A, statusOf(store.commitsAsLots.single()).data["deviceId"])
+            repo().setSharing(MIFF_ID, uid, enabled = true)
+            assertEquals(DEVICE_A, statusOf(store.commitsAsLots.last()).data["deviceId"])
+        }
+
+    @Test
+    fun stopSharing_writesNoStatus_soItAsksNothingOfTheSession() =
+        runTest {
+            repo().setSharing(MIFF_ID, uid, enabled = false)
+            assertTrue("a deletion carries no content: nothing to compare", device.rechecks.isEmpty())
+        }
+
+    @Test
+    fun aPhoneThatWasReplaced_cannotJoinCreateOrResume_andIsNeverToldItLostAMiff() =
+        runTest {
+            joinable()
+            val prepared = ready(repo().prepareJoin(uid, CODE))
+            val preparation = repo().prepareCreate(uid) as CreatePreparation.Ready
+            // The code of the Miff to join is taken: a new Miff draws a free one.
+            store.codes.clear()
+            device.answer = Clearance.Replaced
+            // The neutral "it did not work" (REFUSED), not "not found" and nothing about access: the forced sign-out is under way.
+            assertEquals(JoinResult.Failed(MiffFailure.REFUSED), repo().join(uid, prepared))
+            assertEquals(CreateResult.Failed(MiffFailure.REFUSED), repo().create(uid, "Chez nous", preparation))
+            assertEquals(MiffWriteResult.Failed(MiffFailure.REFUSED), repo().setSharing(MIFF_ID, uid, enabled = true))
+            assertTrue("nothing at all reached the server", store.commitsAsLots.isEmpty())
+        }
+
+    @Test
+    fun aSessionThatCannotBeVerified_isTheNoConnectionAnswer_andNothingIsWritten() =
+        runTest {
+            joinable()
+            val prepared = ready(repo().prepareJoin(uid, CODE))
+            device.answer = Clearance.Unverified
+            assertEquals(JoinResult.Failed(MiffFailure.OFFLINE), repo().join(uid, prepared))
+            assertTrue(store.commitsAsLots.isEmpty())
+        }
+
     // --- Create (ticket 5.3, criteria C4, C5, C7) -----------------------------------------------------------------
 
     @Test
@@ -478,6 +540,7 @@ class MiffRepositoryTest {
                     ghost,
                     FakeMiffObserver(),
                     location,
+                    FakeActiveDevice(),
                     { MIFF_ID },
                     { CODE },
                 ).myMiffs(uid) as MyMiffsLoad.Loaded

@@ -90,7 +90,7 @@ final class MiffConsentWritesTests: XCTestCase {
             MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: "free"),
             MiffWrites.dropIndex(miffId: miffId, uid: uid, membershipKey: "free"),
             MiffWrites.renewConsent(miffId: miffId, uid: uid),
-            MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .unknown),
+            MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .unknown, deviceId: testDeviceId),
             removal,
             finalLot
         ]

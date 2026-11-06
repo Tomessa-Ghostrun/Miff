@@ -498,7 +498,12 @@ final class SessionManagerTests: XCTestCase {
         await harness.manager.signOut()
 
         XCTAssertEqual(stopped, 1)
-        XCTAssertEqual(harness.timeline.entries.suffix(4), ["markPending", "flush", "purge", "signOut"])
+        // Contrat de backend/data-model.md : la session d'appareil part APRÈS le vidage des écritures et AVANT la purge (`terminate()`)
+        // et la déconnexion.
+        XCTAssertEqual(
+            harness.timeline.entries.suffix(5),
+            ["markPending", "flush", "sessionDelete", "purge", "signOut"]
+        )
         XCTAssertEqual(harness.manager.state, ready(.signIn))
         XCTAssertNil(harness.gateway.currentUid)
         XCTAssertFalse(harness.privacy.analyticsEnabled)

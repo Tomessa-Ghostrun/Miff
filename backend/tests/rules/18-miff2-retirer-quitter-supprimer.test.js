@@ -6,7 +6,7 @@
 // modifiée : ces cas figent le contrat dont le client dépend. Les lectures de règles de ces lots sont mesurées dans 09-rule-reads.
 import assert from 'node:assert/strict';
 import {
-  ID, CODE, commit, createShareOps, joinShareOps, leaveOps, removeMemberOps, set, update, del, photoDoc, placeSeed,
+  ID, CODE, commit, createShareOps, joinShareOps, leaveOps, removeMemberOps, set, update, del, photoLegacyDoc, placeSeed,
   suite, assertFails, assertSucceeds, serverTs, T0,
 } from '../helpers/fixtures.js';
 
@@ -22,7 +22,7 @@ async function stored(admin, path) {
   return data;
 }
 
-const seedPhoto = (admin, uid) => admin((f) => f.doc(`${M1}/photos/${uid}`).set(photoDoc({ createdAt: T0 })));
+const seedPhoto = (admin, uid) => admin((f) => f.doc(`${M1}/photos/${uid}`).set(photoLegacyDoc({ createdAt: T0 })));
 
 /** Renouvellement : la Miff pointe vers le nouveau code, le nouveau code existe, l'ancien disparaît (lot de 3 du client). */
 const renewOps = ({ oldCode = CODE.M1, newCode = CODE.REGEN, name = 'Famille' } = {}) => [

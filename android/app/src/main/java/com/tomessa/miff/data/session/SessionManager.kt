@@ -25,11 +25,14 @@ import com.tomessa.miff.domain.auth.resolveDestination
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 sealed interface SessionState {
     /** Something is being checked (account read, sign-out in progress). */
@@ -50,6 +53,12 @@ enum class SignedOutNotice {
 
     /** The session ended behind our back (account disabled or deleted from the console, token revoked). */
     ACCOUNT_UNAVAILABLE,
+
+    /**
+     * The account is now used on another phone (SESS-2): a calm note, never an error, never "you lost access to a Miff" (criteria D3, SES5). Kept on the
+     * phone until the sign-in screen has shown it, because a geofence receiver may have signed the phone out while the app was closed.
+     */
+    SESSION_REPLACED,
 
     /**
      * The deletion of the account was finished without the end screen being seen (the app was killed and relaunched, ticket 5.6): the
@@ -119,6 +128,11 @@ class SessionManager(
     private val teardown: List<SessionTeardown>,
     private val scope: CoroutineScope,
     /**
+     * "Un compte, un seul appareil" (SESS-2): the session of this phone. Written at every sign-in, verified at every launch, listened to while signed in,
+     * deleted (if it is ours) at a voluntary sign-out, never touched by a forced one.
+     */
+    private val device: DeviceSession,
+    /**
      * The local draft of the profile steps. Erased whenever it can no longer be of any use: nobody is signed in, or the
      * profile exists (belt and braces next to the teardown of sign-out and the erasure after the confirmed write).
      */
@@ -172,6 +186,7 @@ class SessionManager(
     fun consumeNotice(): SignedOutNotice? {
         val notice = mutableNotice.value
         mutableNotice.value = null
+        if (notice == SignedOutNotice.SESSION_REPLACED) flags.put(KEY_REPLACED_NOTICE_PENDING, false)
         return notice
     }
 
@@ -232,8 +247,11 @@ class SessionManager(
                 }
 
                 is AuthOutcome.Success -> {
-                    completeAuthentication(outcome.uid, AnalyticsEvent.Method.EMAIL, signUpConsent = null)
-                    null
+                    openDeviceSession(outcome.uid)
+                        ?: run {
+                            completeAuthentication(outcome.uid, AnalyticsEvent.Method.EMAIL, signUpConsent = null)
+                            null
+                        }
                 }
             }
         }
@@ -253,8 +271,12 @@ class SessionManager(
                 }
 
                 is AuthOutcome.Success -> {
-                    completeEmailSignUp(outcome.uid, consent)
-                    null
+                    // A NEW account stays signed in even if its session could not be written (see openDeviceSession).
+                    openDeviceSession(outcome.uid, newAccount = true)
+                        ?: run {
+                            completeEmailSignUp(outcome.uid, consent)
+                            null
+                        }
                 }
             }
         }
@@ -276,8 +298,11 @@ class SessionManager(
                 }
 
                 is AuthOutcome.Success -> {
-                    completeAuthentication(outcome.uid, AnalyticsEvent.Method.GOOGLE, signUpConsent)
-                    null
+                    openDeviceSession(outcome.uid)
+                        ?: run {
+                            completeAuthentication(outcome.uid, AnalyticsEvent.Method.GOOGLE, signUpConsent)
+                            null
+                        }
                 }
             }
         }
@@ -310,6 +335,9 @@ class SessionManager(
             withContext(NonCancellable) {
                 ending = true
                 cache.markPurgePending()
+                // SESS-2: the session of the account that is about to disappear is deleted while we are still signed in (nobody could delete it
+                // afterwards). If the account is kept after all (see below) the session is written again.
+                device.release(gateway.currentUid)
                 gateway.deleteCurrentAccount()
             }
         var failure = first
@@ -328,6 +356,7 @@ class SessionManager(
                 }
 
                 GoogleTokenResult.Cancelled -> {
+                    withContext(NonCancellable) { restoreDeviceSession() }
                     ending = false
                     return RefuseResult.Cancelled
                 }
@@ -345,6 +374,7 @@ class SessionManager(
         }
         if (failure != null) {
             // Stay on the panel: never a usable account without (a).
+            withContext(NonCancellable) { restoreDeviceSession() }
             ending = false
             return RefuseResult.Failed(failure)
         }
@@ -419,12 +449,44 @@ class SessionManager(
     suspend fun signOut() {
         withContext(NonCancellable) {
             ending = true
+            // The listener of the session stops BEFORE its document is deleted: our own deletion must not look like a replacement.
+            device.stopWatching()
             cache.markPurgePending()
             mutableState.value = SessionState.Loading
             stopEverything()
             cache.flushPendingWrites()
+            // SESS-2 (contract of the purge, step 2 bis): the session is deleted, in one transaction, ONLY if it carries our identifier, before the client of
+            // Firestore is terminated and before the sign-out. Offline: nothing is deleted (the next sign-in overwrites it). Never done by a forced sign-out.
+            device.release(gateway.currentUid)
             cache.purge()
             finishSignedOut(AppDestination.SIGN_IN, notice = null, markReturning = true)
+        }
+    }
+
+    /**
+     * The account is now used on another phone, or its session disappeared (SESS-2): a LOCAL sign-out only. Everything stops (zones, position, listeners),
+     * the cache is purged (contract of the purge), the identifier is forgotten, the person lands on the sign-in screen with a calm note. It writes NOTHING and
+     * deletes NOTHING on the server (the session now belongs to the other phone: no loop), and it is never told as a lost access to a Miff.
+     * Does not wait for anything it is called from: it only schedules the work, so that the detection engine (which may be the caller) can release its lock.
+     */
+    fun onDeviceReplaced() {
+        scope.launch { endBecauseReplaced() }
+    }
+
+    private suspend fun endBecauseReplaced() {
+        withContext(NonCancellable) {
+            if (ending || gateway.currentUid == null) return@withContext
+            // During a deletion of the account the session is handled by the deletion itself: no forced sign-out and never the "another phone" note.
+            if (currentDestination() == AppDestination.ACCOUNT_DELETION) return@withContext
+            ending = true
+            device.forget()
+            cache.markPurgePending()
+            mutableState.value = SessionState.Loading
+            stopEverything()
+            // Signed in but replaced: whatever waits would be refused (and must not be written): no flush.
+            cache.purge()
+            flags.put(KEY_REPLACED_NOTICE_PENDING, true)
+            finishSignedOut(AppDestination.SIGN_IN, SignedOutNotice.SESSION_REPLACED, markReturning = true)
         }
     }
 
@@ -446,6 +508,8 @@ class SessionManager(
     private suspend fun onSessionLost() {
         withContext(NonCancellable) {
             ending = true
+            // SESS-2: nothing to delete on the server (we are not authenticated any more); the listener stops and the identifier is forgotten.
+            device.forget()
             cache.markPurgePending()
             mutableState.value = SessionState.Loading
             stopEverything()
@@ -455,15 +519,25 @@ class SessionManager(
         }
     }
 
+    /**
+     * Stops everything that runs for the session, one after the other. Each stop is waited for at most [STOP_WAIT_MILLIS]: the detection engine, for
+     * instance, may be in the middle of a pass of several network calls, and the person must not stay on "Chargement" for the whole of it. A stop that is
+     * late carries on in the background (it only erases local data, and the engine refuses new passes from the moment it is asked, see
+     * [com.tomessa.miff.data.tracking.TrackingEngine.stop]).
+     */
     private suspend fun stopEverything() {
-        teardown.forEach {
-            try {
-                it.stop()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // A listener that does not stop must not keep the person signed in.
-            }
+        teardown.forEach { item ->
+            val stopping =
+                scope.launch {
+                    try {
+                        item.stop()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // A listener that does not stop must not keep the person signed in.
+                    }
+                }
+            withTimeoutOrNull(STOP_WAIT_MILLIS) { stopping.join() }
         }
     }
 
@@ -496,6 +570,10 @@ class SessionManager(
             drafts?.clear()
             privacy.applyAccountConsent(false)
             pending.clear()
+            // SESS-2: a geofence receiver may have signed this phone out (replaced) while the app was closed: the calm note waits for the sign-in screen.
+            if (flags.get(KEY_REPLACED_NOTICE_PENDING, false) && mutableNotice.value == null) {
+                mutableNotice.value = SignedOutNotice.SESSION_REPLACED
+            }
             mutableState.value = SessionState.Ready(entryDestination())
             return
         }
@@ -503,13 +581,64 @@ class SessionManager(
         // Off until the account has been read (also at "Réessayer"), but the previous crash report is kept for now.
         privacy.pauseCollection()
         mutableState.value = SessionState.Loading
-        val load = accounts.load(uid)
+        // SESS-2: the session is verified on the server AT THE SAME TIME as the account is read (no longer wait for the launch), and BEFORE anything is written
+        // (the engine asks again at its first write). Replaced: the forced sign-out is under way and the account read is dropped.
+        val (load, ensured) = readAccountAndCheckSession(uid)
         // The session may have been lost while we were reading: the loss handler already put the app back to sign-in.
-        if (gateway.currentUid != uid) return
+        if (gateway.currentUid != uid || ensured == Ensured.REPLACED) return
+        // From here the session is listened to (verified again when the network comes back, if the server could not be asked now).
+        device.watch(uid)
         when (load) {
             AccountLoad.Unavailable -> mutableState.value = SessionState.LookupFailed
             is AccountLoad.Loaded -> applyAccount(uid, load.snapshot, method = null, signUpGesture = false)
         }
+    }
+
+    /**
+     * Reads the account and, at the same time, verifies the session of this phone. Reached only AFTER [resolveAccountDeletion] (see [resolveCurrent]):
+     * an account whose deletion is under way never gets its session verified, nor written.
+     */
+    private suspend fun readAccountAndCheckSession(uid: String): Pair<AccountLoad, Ensured> =
+        coroutineScope {
+            val check = async { device.ensure(uid) }
+            accounts.load(uid) to check.await()
+        }
+
+    /**
+     * Sign-in, second step: the session of this phone is written (and confirmed by the server) and listened to. A phone with no session would write
+     * nothing and be signed out at its next launch, so when the server cannot confirm, the sign-in is undone and the person is told there is no
+     * connection. Null = done.
+     */
+    private suspend fun openDeviceSession(
+        uid: String,
+        newAccount: Boolean = false,
+    ): AuthFailure? {
+        if (deletionMarker?.read()?.uid == uid) {
+            // The same account signs in again while its deletion is pending: it is going away, NO session is written for it (the deletion resumes
+            // and deletes whatever session is there).
+            device.suspendForDeletion()
+            return null
+        }
+        if (!device.begin(uid)) {
+            // A NEW account (e-mail sign-up) is never undone: it exists, its terms were just accepted on this phone, and a second attempt to create it would
+            // only say "this address is already used". It stays signed in; the watcher writes the session (no identifier here + no session there =
+            // an installation from before the feature) as soon as the server answers, and nothing is written meanwhile (no verified session).
+            if (!newAccount) {
+                gateway.signOut()
+                return AuthFailure.NETWORK
+            }
+        }
+        flags.put(KEY_REPLACED_NOTICE_PENDING, false)
+        device.watch(uid)
+        return null
+    }
+
+    /** The account was kept after all (deletion refused or cancelled): the session that was released is written again. */
+    private suspend fun restoreDeviceSession() {
+        val uid = gateway.currentUid ?: return
+        // If the write fails, the watcher writes one itself as soon as the server answers (no identifier here + no session there).
+        device.begin(uid)
+        device.watch(uid)
     }
 
     /**
@@ -566,6 +695,8 @@ class SessionManager(
             ending = false
             sessionActive = true
             mutableDeletionBlocked.value = true
+            // The account is kept (SESS-2): this phone is the active one again; its session is verified (and written back if the step that deleted it ran).
+            device.reopen()
             resolveCurrent()
         }
     }
@@ -593,6 +724,8 @@ class SessionManager(
             ending = true
             sessionActive = true
             mutableState.value = SessionState.Ready(AppDestination.ACCOUNT_DELETION)
+            // SESS-2: our own deletion of the session (step 2 bis) must not look like a replacement, and nothing is verified or written meanwhile.
+            device.suspendForDeletion()
             stopEverything()
         }
     }
@@ -625,6 +758,8 @@ class SessionManager(
             privacy.eraseCollectedData()
             accountSnapshot = null
             generation++
+            // The identifier of the deleted account is forgotten (the session was deleted at step 2 bis).
+            device.release(null)
             gateway.signOut()
             deletionMarker?.clear()
         }
@@ -739,5 +874,11 @@ class SessionManager(
 
     companion object {
         const val KEY_RETURNING_USER = "returning_user"
+
+        /** The longest wait for one thing that must stop at the end of a session (the rest of its stop goes on in the background). */
+        const val STOP_WAIT_MILLIS = 5_000L
+
+        /** The calm "used on another phone" note has not been shown yet (written by the forced sign-out, read at the next start). */
+        const val KEY_REPLACED_NOTICE_PENDING = "session_replaced_notice_pending"
     }
 }

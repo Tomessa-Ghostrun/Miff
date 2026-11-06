@@ -127,6 +127,8 @@ data class SignInUiState(
     val googleMessage: AuthMessage? = null,
     /** After a refusal of the consent panel: a reassuring note (not an error). */
     val showAccountNotCreatedNote: Boolean = false,
+    /** After the account was taken over by another phone (SESS-2): a calm note (not an error), nothing about any Miff. */
+    val showSessionReplacedNote: Boolean = false,
     /** The session closed during a deletion of the account: sign in with the same account and it is finished (AUTH-5, calm note). */
     val showDeletionPendingNote: Boolean = false,
 )
@@ -149,6 +151,8 @@ class SignInViewModel(
             mutableState.update { it.copy(showDeletionPendingNote = true) }
         } else if (notice == SignedOutNotice.ACCOUNT_UNAVAILABLE) {
             mutableState.update { it.copy(message = AuthMessage.ACCOUNT_UNAVAILABLE) }
+        } else if (notice == SignedOutNotice.SESSION_REPLACED) {
+            mutableState.update { it.copy(showSessionReplacedNote = true) }
         }
     }
 
@@ -169,18 +173,30 @@ class SignInViewModel(
                     message = AuthMessage.TOO_MANY_ATTEMPTS,
                     googleMessage = null,
                     showAccountNotCreatedNote = false,
+                    showSessionReplacedNote = false,
                 )
             }
             return
         }
         if (!network.isOnline()) {
             mutableState.update {
-                it.copy(message = AuthMessage.NETWORK, googleMessage = null, showAccountNotCreatedNote = false)
+                it.copy(
+                    message = AuthMessage.NETWORK,
+                    googleMessage = null,
+                    showAccountNotCreatedNote = false,
+                    showSessionReplacedNote = false,
+                )
             }
             return
         }
         mutableState.update {
-            it.copy(isLoading = true, message = null, googleMessage = null, showAccountNotCreatedNote = false)
+            it.copy(
+                isLoading = true,
+                message = null,
+                googleMessage = null,
+                showAccountNotCreatedNote = false,
+                showSessionReplacedNote = false,
+            )
         }
         viewModelScope.launch {
             val started = nowMillis()
@@ -209,12 +225,23 @@ class SignInViewModel(
         if (mutableState.value.isLoading) return
         if (!network.isOnline()) {
             mutableState.update {
-                it.copy(message = null, googleMessage = AuthMessage.NETWORK, showAccountNotCreatedNote = false)
+                it.copy(
+                    message = null,
+                    googleMessage = AuthMessage.NETWORK,
+                    showAccountNotCreatedNote = false,
+                    showSessionReplacedNote = false,
+                )
             }
             return
         }
         mutableState.update {
-            it.copy(isLoading = true, message = null, googleMessage = null, showAccountNotCreatedNote = false)
+            it.copy(
+                isLoading = true,
+                message = null,
+                googleMessage = null,
+                showAccountNotCreatedNote = false,
+                showSessionReplacedNote = false,
+            )
         }
         viewModelScope.launch {
             // Closing the dialog gives no message at all (null).

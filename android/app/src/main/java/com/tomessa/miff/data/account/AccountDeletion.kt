@@ -63,6 +63,14 @@ sealed interface DeletionRun {
     data object Failed : DeletionRun
 }
 
+/**
+ * The session "un compte, un seul appareil" (SESS-2) of the account that is deleted. [deleteSession] deletes `users/{uid}/session/active` and
+ * THROWS when the server did not confirm: the deletion of the account then pauses (resumable), it never goes on without the acknowledgement.
+ */
+fun interface AccountSession {
+    suspend fun deleteSession(uid: String)
+}
+
 /** What the controller needs of the procedure (a double in tests). */
 interface AccountDeletionProcedure {
     suspend fun inventory(uid: String): Inventory
@@ -76,7 +84,8 @@ interface AccountDeletionProcedure {
  * Order, every step IDEMPOTENT and decided from what the SERVER says, never from a counter kept on the phone:
  * 1. inventory: `memberships` read from the server; any index = [DeletionRun.MiffsRemain], nothing is touched;
  * 2. devices (push tokens): deleted one by one;
- *    (the session "one account, one device" will be deleted here the day it exists: after the Miffs, before the profile);
+ *    then the session "one account, one device" (SESS-2, `users/{uid}/session/active`): its deletion must be CONFIRMED by the server, else the
+ *    deletion of the account pauses here (a session left behind a deleted account would be an orphan, and the other phones must see it vanish);
  * 3. final check: `memberships` read again, still empty, else back to [DeletionRun.MiffsRemain];
  * 4. profile `users/{uid}`: the LAST document, so that its presence tells, on the server, that work remains;
  * 5. the queued writes leave (they would be refused without an account), then the authentication account is deleted: LAST.
@@ -89,6 +98,7 @@ class AccountDeletion(
     private val store: AccountDataStore,
     private val gateway: AuthGateway,
     private val cache: CachePurger,
+    private val session: AccountSession,
     private val timeoutMillis: Long = FirestoreMiffRepository.TIMEOUT_MS,
 ) : AccountDeletionProcedure {
     override suspend fun inventory(uid: String): Inventory =
@@ -120,6 +130,12 @@ class AccountDeletion(
                 is Guarded.Value -> Unit
                 is Guarded.Failed -> return afterRefusal(done.failure)
             }
+        }
+
+        // 2 bis (SESS-2). The session of the account, BEFORE the profile; no acknowledgement = no further step (resumable, idempotent).
+        when (val done = guardedCall(timeoutMillis) { session.deleteSession(uid) }) {
+            is Guarded.Value -> Unit
+            is Guarded.Failed -> return afterRefusal(done.failure)
         }
 
         // 3. Final check, then 4. the profile.

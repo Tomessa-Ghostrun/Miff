@@ -7,6 +7,8 @@ import Foundation
 let testMiffId = "AbCdEfGhIjKlMnOpQrSt"
 let testOtherMiffId = "ZyXwVuTsRqPoNmLkJiHg"
 let testCode = "XTZRSP367988"
+/// L'identifiant de la session d'appareil de démonstration (SESS-3) : 16 à 64 caractères `A-Za-z0-9_-`.
+let testDeviceId = "test-device-id-0001"
 
 /// Une erreur Firestore telle que le SDK la donne (domaine et code).
 func firestoreError(_ code: Int) -> NSError {
@@ -208,7 +210,8 @@ final class FakeMiffStore: MiffStore {
     }
 
     private func record(_ writes: [DocWrite]) throws {
-        guard !writes.isEmpty else {
+        // Comme le vrai magasin : un lot vide, ou un statut / une position sans l'identifiant de session (SESS-3), n'est jamais envoyé.
+        guard SessionWriteGuard.isSendable(writes) else {
             throw InvalidWriteError()
         }
         let number = commitCount

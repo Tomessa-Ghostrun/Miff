@@ -52,6 +52,12 @@ fun SignInScreen(
             Spacer(Modifier.size(Spacing.m))
         }
 
+        if (state.showSessionReplacedNote) {
+            // The account is now used on another phone (SESS-2): calm information, neutral colour, nothing about any Miff.
+            MessageText(text = stringResource(R.string.auth_session_replaced_notice), isError = false)
+            Spacer(Modifier.size(Spacing.m))
+        }
+
         if (state.showDeletionPendingNote) {
             MessageText(text = stringResource(R.string.settings_delete_signin_again), isError = false)
             Spacer(Modifier.size(Spacing.m))

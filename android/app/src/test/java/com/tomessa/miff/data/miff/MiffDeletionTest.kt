@@ -5,6 +5,7 @@ import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
 import com.tomessa.miff.testsupport.FakeMiffObserver
@@ -53,6 +54,7 @@ class MiffDeletionTest {
             store = store,
             observer = FakeMiffObserver(),
             location = FakeLocationProbe(),
+            device = FakeActiveDevice(),
             newMiffId = { MIFF_ID },
             newCode = ::nextCode,
             timeoutMillis = 1_000,

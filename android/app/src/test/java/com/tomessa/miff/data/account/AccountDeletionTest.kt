@@ -3,6 +3,7 @@ package com.tomessa.miff.data.account
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.SessionCheck
 import com.tomessa.miff.testsupport.FakeAccountDataStore
+import com.tomessa.miff.testsupport.FakeAccountSession
 import com.tomessa.miff.testsupport.FakeAuthGateway
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.Timeline
@@ -22,7 +23,8 @@ class AccountDeletionTest {
     private val store = FakeAccountDataStore(timeline)
     private val gateway = FakeAuthGateway(timeline).also { it.setSignedIn("uid-1") }
     private val cache = FakeCachePurger(timeline)
-    private val deletion = AccountDeletion(store, gateway, cache, timeoutMillis = 1_000L)
+    private val session = FakeAccountSession(timeline)
+    private val deletion = AccountDeletion(store, gateway, cache, session, timeoutMillis = 1_000L)
 
     @Test
     fun theOrderIsInventory_devices_finalCheck_profile_thenTheQueueLeaves_andTheAccountGoesLast() =
@@ -35,6 +37,7 @@ class AccountDeletionTest {
                     "devices.read",
                     "device.delete",
                     "device.delete",
+                    "session.delete",
                     "memberships",
                     "profile.delete",
                     "markPending",
@@ -124,6 +127,54 @@ class AccountDeletionTest {
             assertEquals(DeletionRun.Offline, deletion.run("uid-1"))
         }
 
+    // --- The session "un compte, un seul appareil" (SESS-2) --------------------------------------------------------
+
+    @Test
+    fun theSessionIsDeletedAfterTheDevices_andBeforeTheFinalCheckAndTheProfile() =
+        runTest {
+            store.devices += "d1"
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            val order = timeline.entries
+            assertTrue(order.indexOf("device.delete") < order.indexOf("session.delete"))
+            assertTrue(order.indexOf("session.delete") < order.lastIndexOf("memberships"))
+            assertTrue(order.indexOf("session.delete") < order.indexOf("profile.delete"))
+            assertEquals(listOf("uid-1"), session.deleted)
+        }
+
+    @Test
+    fun withoutTheAcknowledgementOfTheSession_theDeletionDoesNotGoOn_andIsResumable() =
+        runTest {
+            session.failures += FakeAccountDataStore.offline()
+            assertEquals(DeletionRun.Offline, deletion.run("uid-1"))
+            assertTrue("the profile is still there: the deletion paused before it", store.profileExists)
+            assertEquals("the authentication account is untouched", 0, gateway.deleteCalls)
+            assertFalse("profile.delete" in timeline.entries)
+            // Resumed: the session is deleted again (idempotent), then everything goes through.
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            assertFalse(store.profileExists)
+            assertEquals(1, gateway.deleteCalls)
+            assertEquals(2, timeline.entries.count { it == "session.delete" })
+        }
+
+    @Test
+    fun aSessionDeletionRefusedByTheServer_isAFailure_theProfileStays() =
+        runTest {
+            session.failures += FakeAccountDataStore.refused()
+            assertEquals(DeletionRun.Failed, deletion.run("uid-1"))
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
+        }
+
+    @Test
+    fun aMiffThatShowsUpAfterTheSession_stillCancelsTheDeletion_nothingElseIsDeleted() =
+        runTest {
+            store.onCall = { name -> if (name == "device.delete" || name == "devices.read") store.memberships = 1 }
+            // The Miff shows up while the devices are read: the final check (after the session) sends it back.
+            assertEquals(DeletionRun.MiffsRemain, deletion.run("uid-1"))
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
+        }
+
     // --- Replay after an interruption, at EVERY step (criterion SC26) -----------------------------------------
 
     @Test
@@ -133,7 +184,7 @@ class AccountDeletionTest {
             val t = Timeline()
             val s = FakeAccountDataStore(t).also { it.devices += "d1" }
             val g = FakeAuthGateway(t).also { it.setSignedIn("uid-1") }
-            val d = AccountDeletion(s, g, FakeCachePurger(t), timeoutMillis = 1_000L)
+            val d = AccountDeletion(s, g, FakeCachePurger(t), FakeAccountSession(t), timeoutMillis = 1_000L)
             s.failures.addAll(List(killedAt - 1) { null } + FakeAccountDataStore.offline())
             runTest {
                 assertEquals("step $killedAt", DeletionRun.Offline, d.run("uid-1"))

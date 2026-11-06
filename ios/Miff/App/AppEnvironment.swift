@@ -18,14 +18,29 @@ struct MiffServices {
     /// Le renouvellement du consentement des membres qui partagent sous un texte plus ancien (LOC-4a, règle R-LIEU-3).
     let renewals: ConsentRenewals
 
-    static func make(gateway: AuthGateway, cache: CachePurger, network: NetworkMonitor) -> MiffServices {
+    static func make(
+        gateway: AuthGateway,
+        cache: CachePurger,
+        network: NetworkMonitor,
+        device: DeviceSession
+    ) -> MiffServices {
         let store = FirestoreMiffStore()
+        // SESS-3 : un statut n'est écrit qu'avec l'identifiant de la session CONFIRMÉE de cet appareil ; après un refus, la session
+        // est relue auprès du serveur.
+        let rules = MiffRepositoryRules.live(
+            deviceId: { device.currentDeviceId },
+            recheckSession: {
+                if let uid = gateway.currentUid {
+                    _ = await device.checkAfterRefusal(uid: uid)
+                }
+            }
+        )
         let repository = FirestoreMiffRepository(
             store: store,
             observer: FirestoreMiffObserver(),
             location: SystemLocationAccessProbe(),
             cache: cache,
-            rules: MiffRepositoryRules.live()
+            rules: rules
         )
         let directory = MiffDirectory(
             repository: repository,
@@ -150,7 +165,10 @@ final class AppEnvironment {
         // Un seul purgeur de cache pour toute l'app : la session, l'annuaire des Miffs et le dépôt purgent le MÊME cache.
         let cache = FirestoreCachePurger(flags: flagStore)
         let networkMonitor = NWNetworkMonitor()
-        let miff = MiffServices.make(gateway: gateway, cache: cache, network: networkMonitor)
+        // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
+        // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
+        let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
+        let miff = MiffServices.make(gateway: gateway, cache: cache, network: networkMonitor, device: device)
         let directory = miff.directory
         let deletions = miff.deletions
         let places = PlaceServices.make()
@@ -172,6 +190,8 @@ final class AppEnvironment {
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() }
                 ],
+                device: device,
+                network: networkMonitor,
                 drafts: drafts
             )
         )

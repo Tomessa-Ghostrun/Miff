@@ -8,7 +8,7 @@
 //     seule, renouvellement du consentement.
 import {
   ID, CODE, T0, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs,
-  FieldPath, FieldValue, Timestamp, DAY, statusDoc, statusInitial, photoDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
+  FieldPath, FieldValue, Timestamp, DAY, statusDoc, statusInitial, photoDoc, setConsentV3, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
   joinShareOps, createShareOps, leaveOps, removeMemberOps, placeInput,
   DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH,
 } from '../helpers/fixtures.js';
@@ -201,6 +201,7 @@ s.tc('SE13', "activer le partage (fiche + statut + position dans un lot) et mise
   await assertSucceeds(commit(h.db('carol'), activate(DEVICE_A)));
   // Mise à jour manuelle de bob (photo + statut) par un appareil remplacé : la photo n'est pas écrite non plus.
   await seedSession(h, 'bob', DEVICE_B);
+  await setConsentV3(h, 'bob'); // toute photo (localisée) exige le texte de version 03 : le seul défaut est l'appareil
   const manual = (deviceId) => [set(`${M1}/photos/bob`, photoDoc()), set(`${M1}/status/bob`, statusDoc({ hasPhoto: true, deviceId }))];
   await assertFails(commit(h.db('bob'), manual(DEVICE_A)));
   if (await read(h, `${M1}/photos/bob`)) throw new Error("la photo d'un appareil remplacé ne devait pas être écrite avec le statut");
@@ -222,6 +223,7 @@ s.tc('SE15', "limite connue : lieux, fiche (profil, consentement), photo seule, 
   await assertSucceeds(h.db('alice').doc(`${M1}/places/p2`).set(placeInput('alice')));
   await assertSucceeds(h.db('alice').doc(`${M1}/places/p2`).delete());
   await assertSucceeds(h.db('alice').doc(`${M1}/members/alice`).update({ firstName: 'Alicia' }));
+  await setConsentV3(h, 'alice'); // toute photo (localisée) exige le texte de version 03
   await assertSucceeds(h.db('alice').doc(`${M1}/photos/alice`).set(photoDoc()));
   // Renouvellement du consentement : toujours 0 lecture de règles, aucun contrôle de session.
   await h.admin((f) => f.doc(`${M1}/members/alice`).update({ 'sharing.consentVersion': '2026-10-v2' }));

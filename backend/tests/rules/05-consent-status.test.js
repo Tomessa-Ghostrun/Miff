@@ -1,7 +1,7 @@
 // Plan de test, section 5 : consentement et statut de position (S1 à S19)
 import {
   ID, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp,
-  statusDoc, photoDoc, bytes, inMs, sharingOnNow, readRules,
+  statusDoc, photoDoc, setConsentV3, bytes, inMs, sharingOnNow, readRules,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -103,14 +103,18 @@ s.tc('S15', 'statut avec une clé manquante : refusé', async ({ db }) => {
   }
 });
 
-s.tc('S16', 'photo : 150 000 octets / 24 h acceptée ; 150 001 octets ou +30 jours refusée', async ({ db }) => {
+s.tc('S16', 'photo : 150 000 octets / 24 h acceptée ; 150 001 octets ou +30 jours refusée', async (h) => {
+  const { db } = h;
+  await setConsentV3(h, 'bob'); // toute photo exige le texte de version 03 (localisation obligatoire)
   const ref = db('bob').doc(`${M1}/photos/bob`);
   await assertSucceeds(ref.set(photoDoc({ jpeg: bytes(150000), expiresAt: inMs(DAY) })));
   await assertFails(ref.set(photoDoc({ jpeg: bytes(150001), expiresAt: inMs(DAY) })));
   await assertFails(ref.set(photoDoc({ jpeg: bytes(1000), expiresAt: inMs(30 * DAY) })));
 });
 
-s.tc('S17', 'écrire la photo d\'un autre membre : refusé', async ({ db }) => {
+s.tc('S17', 'écrire la photo d\'un autre membre : refusé', async (h) => {
+  const { db } = h;
+  await setConsentV3(h, 'alice', 'bob'); // le seul défaut est l'auteur : localisation et consentement valides
   await assertFails(db('bob').doc(`${M1}/photos/alice`).set(photoDoc()));
 });
 
