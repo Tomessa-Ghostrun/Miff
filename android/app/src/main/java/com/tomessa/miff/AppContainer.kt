@@ -3,6 +3,13 @@ package com.tomessa.miff
 import android.content.Context
 import android.os.SystemClock
 import com.google.firebase.firestore.FirebaseFirestore
+import com.tomessa.miff.data.account.AccountDataStore
+import com.tomessa.miff.data.account.AccountDeletion
+import com.tomessa.miff.data.account.AccountDeletionController
+import com.tomessa.miff.data.account.AccountDeletionMarker
+import com.tomessa.miff.data.account.AccountDeletionProcedure
+import com.tomessa.miff.data.account.FirestoreAccountDataStore
+import com.tomessa.miff.data.account.SharedPreferencesAccountDeletionMarker
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
@@ -37,6 +44,7 @@ import com.tomessa.miff.data.miff.MiffDeletionCoordinator
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.miff.MiffStore
+import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
@@ -75,9 +83,11 @@ import com.tomessa.miff.data.profile.MyProfileRepository
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.FirestoreSessionDocuments
+import com.tomessa.miff.data.session.LocalDataEraser
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.data.session.SharedPreferencesDeviceIdStore
+import com.tomessa.miff.data.session.accountLocalDataErasers
 import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
@@ -87,6 +97,7 @@ import com.tomessa.miff.data.tracking.FirestoreTrackingStore
 import com.tomessa.miff.data.tracking.FusedMovementUpdates
 import com.tomessa.miff.data.tracking.FusedPhotoPositionSource
 import com.tomessa.miff.data.tracking.FusedPositionSource
+import com.tomessa.miff.data.tracking.LocalPublishedPositions
 import com.tomessa.miff.data.tracking.PlayGeofenceArming
 import com.tomessa.miff.data.tracking.SharedPreferencesTrackingLocalStore
 import com.tomessa.miff.data.tracking.TrackingEngine
@@ -99,6 +110,7 @@ import com.tomessa.miff.data.update.SharedPreferencesPublishLedger
 import com.tomessa.miff.data.update.UpdatePublisher
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
+import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.tracking.DetectionJournal
@@ -341,7 +353,11 @@ class AppContainer(
      */
     val photoCache: PhotoCache by lazy { PhotoCache() }
 
-    val photoReader: PhotoReader by lazy { FirestorePhotoReader(photoCache) }
+    val photoReader: PhotoReader by lazy {
+        FirestorePhotoReader(photoCache, ownPositionPublished = {
+            LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)).isPublished(it)
+        })
+    }
 
     val publishLedger: PublishLedger by lazy { SharedPreferencesPublishLedger(context) }
 
@@ -364,6 +380,9 @@ class AppContainer(
             currentUid = { authGateway.currentUid },
             miffIds = ::miffIds,
             battery = { trackingEnvironment.batteryPct() },
+            // The photo is only written where my own position is published (contract of the data model); none yet: the detection is asked to write it.
+            published = LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)),
+            onPositionMissing = { trackingLooksAgain(TrackingEngine.Reason.OPENED) },
         )
     }
 
@@ -396,10 +415,12 @@ class AppContainer(
      * first use: the main shell (shown only once the session is resolved) is the first to use it, so nothing here reaches Firestore
      * before [MiffApplication.startSession].
      */
+    private val pendingMiffDeletions: PendingDeletionStore by lazy { SharedPreferencesPendingDeletionStore(context) }
+
     val miffDeletions: MiffDeletionCoordinator by lazy {
         MiffDeletionCoordinator(
             deletion = MiffDeletion(store = miffStore, repository = miffRepository),
-            pending = SharedPreferencesPendingDeletionStore(context),
+            pending = pendingMiffDeletions,
             network = networkMonitor,
             currentUid = { authGateway.currentUid },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
@@ -456,6 +477,37 @@ class AppContainer(
     /** The tiles of the map are the picture of where the person goes: erased with the session (sign-out, account deletion). */
     val mapTileCache: MapTileCachePurger by lazy { MapTileCachePurger.forContext(context) }
 
+    /** The marker "the deletion of the account is under way" (AUTH-5): the id of the account, nothing else; it prevails over the routing. */
+    val accountDeletionMarker: AccountDeletionMarker by lazy { SharedPreferencesAccountDeletionMarker(context) }
+
+    private val accountDataStore: AccountDataStore by lazy { FirestoreAccountDataStore() }
+
+    /** The deletion of an account without Miff (AUTH-5a); the Miffs are AUTH-5b. */
+    val accountDeletionProcedure: AccountDeletionProcedure by lazy {
+        AccountDeletion(store = accountDataStore, gateway = authGateway, cache = cachePurger)
+    }
+
+    /**
+     * Runs the deletion for as long as the app lives (the screen may go away), pauses without network, resumes at launch from the marker.
+     * Built on first use; the session is the one that stops what runs before the first change and erases the local data at the end.
+     */
+    val accountDeletion: AccountDeletionController by lazy {
+        AccountDeletionController(
+            procedure = accountDeletionProcedure,
+            marker = accountDeletionMarker,
+            session = sessionManager,
+            network = networkMonitor,
+            currentUid = { authGateway.currentUid },
+            isAppleLinked = { SignInProvider.APPLE in authGateway.linkedProviders() },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        )
+    }
+
+    /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
+    private val localDataErasers: List<LocalDataEraser> by lazy {
+        accountLocalDataErasers(notificationAsks, pendingMiffDeletions)
+    }
+
     val sessionManager: SessionManager by lazy {
         StartupTrace.section("Miff.container.sessionManager") {
             SessionManager(
@@ -490,6 +542,8 @@ class AppContainer(
                 drafts = profileDrafts,
                 withdrawals = pendingWithdrawals,
                 onAccountResolved = consentWithdrawals::resume,
+                deletionMarker = accountDeletionMarker,
+                localData = localDataErasers,
             )
         }
     }

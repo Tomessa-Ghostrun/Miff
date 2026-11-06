@@ -56,11 +56,11 @@ extension MiffWrites {
         codeChange(miffId: miffId, name: name, oldCode: oldCode, newCode: newCode, oldCodeExists: oldCodeExists)
     }
 
-    /// Retirer un proche (critère R2) : 6 écritures en UN lot, dans cet ordre : la fiche, le statut et la photo de la
-    /// personne, puis les trois écritures du nouveau code. RIEN d'autre dans ce lot : avec ces six écritures les règles lisent
-    /// jusqu'à 18 documents sur les 20 que Firestore autorise (backend/rules-test-report.md, MIFF-2), et une septième écriture
-    /// pourrait franchir la ligne. L'index de la personne n'est pas touché (le créateur ne peut pas le supprimer : la personne
-    /// le nettoie à son prochain accès).
+    /// Retirer un proche (critère R2) : 7 écritures en UN lot, dans cet ordre : la fiche, le statut, la photo et la dernière
+    /// position connue de la personne, puis les trois écritures du nouveau code. RIEN d'autre dans ce lot : les règles lisent
+    /// jusqu'à 18 documents sur les 20 que Firestore autorise (backend/rules-test-report.md, MIFF-2 ; supprimer une position
+    /// ne coûte aucune lecture de règles de plus), et un document de plus à vérifier pourrait franchir la ligne. L'index de la
+    /// personne n'est pas touché (le créateur ne peut pas le supprimer : la personne le nettoie à son prochain accès).
     static func removeMember(
         miffId: String,
         targetUid: String,
@@ -82,7 +82,8 @@ extension MiffWrites {
         let person = [
             DocWrite(path: "miffs/\(miffId)/members/\(targetUid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/status/\(targetUid)", kind: .delete),
-            DocWrite(path: "miffs/\(miffId)/photos/\(targetUid)", kind: .delete)
+            DocWrite(path: "miffs/\(miffId)/photos/\(targetUid)", kind: .delete),
+            DocWrite(path: "miffs/\(miffId)/positions/\(targetUid)", kind: .delete)
         ]
         return person + change
     }
@@ -95,9 +96,11 @@ extension MiffWrites {
         return placeIds.map { DocWrite(path: "miffs/\(miffId)/places/\($0)", kind: .delete) }
     }
 
-    /// Le dernier lot de la suppression d'une Miff (critère S2), 7 écritures au plus en UN lot : la Miff, sa pierre tombale
-    /// `miffsDeleted/{id}` (l'identifiant ne pourra plus servir), le code EN VIGUEUR, puis le statut, la photo, la fiche et
-    /// l'index du créateur. Les règles le refusent sans la pierre tombale ou sans la suppression du code. `membershipKey` est
+    /// Le dernier lot de la suppression d'une Miff (critère S2), 8 écritures au plus en UN lot (le contrat des règles en
+    /// compte 7 : il laisse la photo de côté, que l'app supprime aussi ; ni l'une ni l'autre ne coûte de lecture de règles) :
+    /// la Miff, sa pierre tombale `miffsDeleted/{id}` (l'identifiant ne pourra plus servir), le code EN VIGUEUR, puis le
+    /// statut, la photo, la dernière position connue, la fiche et l'index du créateur. Les règles le refusent sans la pierre
+    /// tombale ou sans la suppression du code. `membershipKey` est
     /// nil quand l'index n'a pas été trouvé ; `codeExists` est faux quand le document du code a déjà disparu (il est alors
     /// laissé de côté : les règles refusent la suppression d'un code absent).
     static func finalDelete(
@@ -119,6 +122,7 @@ extension MiffWrites {
         }
         writes.append(DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .delete))
         writes.append(DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .delete))
+        writes.append(DocWrite(path: "miffs/\(miffId)/positions/\(uid)", kind: .delete))
         writes.append(DocWrite(path: "miffs/\(miffId)/members/\(uid)", kind: .delete))
         if let membershipKey {
             writes.append(DocWrite(path: "users/\(uid)/memberships/\(membershipKey)", kind: .delete))

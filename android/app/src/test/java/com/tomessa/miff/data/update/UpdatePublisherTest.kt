@@ -156,7 +156,13 @@ class UpdatePublisherTest {
             nowMillis = { now },
             zone = { zone },
             timeoutMillis = 1_000L,
+            published = { published(it) },
+            onPositionMissing = { positionMissingCalls++ },
         )
+
+    // Contract of backend/data-model.md: a photo is only written where my own position is published (by default it is, everywhere).
+    private var published: (String) -> Boolean = { true }
+    private var positionMissingCalls = 0
 
     private fun assertNothingLeft() {
         assertTrue("something was written: ${store.commits.size} commit(s)", store.commits.isEmpty())
@@ -467,6 +473,29 @@ class UpdatePublisherTest {
                 )
             assertEquals(PublishResult.Failed, noOne.publish(photo))
             assertTrue(store.commits.isEmpty())
+        }
+
+    // --- My own position must be published where the photo goes (contract of the data model, decision D27) ----------------------------------------
+
+    @Test
+    fun whereMyPositionIsNotPublished_noPhotoIsWritten_nothingIsMeasured_andTheDetectionIsAskedToWriteIt() =
+        runTest {
+            published = { false }
+            assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
+            assertNothingLeft()
+            assertEquals("nobody is located for a photo that cannot go anywhere", 0, position.calls)
+            assertEquals(1, positionMissingCalls)
+        }
+
+    @Test
+    fun withTwoMiffs_thePhotoOnlyGoesWhereMyPositionIsPublished_theOtherIsLeftForTheNextTry() =
+        runTest {
+            myMiffs = miffIds.take(2)
+            published = { it == miffIds[0] }
+            val result = publisher().publish(photo)
+            assertEquals(PublishResult.Partial(1, 2, listOf(miffIds[1])), result)
+            assertEquals(listOf("miffs/${miffIds[0]}/photos/$uid"), photoWrites().map { it.path })
+            assertEquals(0, positionMissingCalls)
         }
 
     // --- The clean-up of my expired photo (criterion U7) ----------------------------------------------------------------------------------

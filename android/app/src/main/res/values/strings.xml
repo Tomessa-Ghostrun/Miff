@@ -227,7 +227,7 @@
     <string name="android_onboarding_type_hint">What type of zone are you setting?</string>
     <string name="android_onboarding_zone_trust">Trusted zone</string>
     <string name="android_onboarding_zone_trust_hint">Safe place for your loved ones</string>
-    <string name="android_onboarding_zone_risk">Risk zone</string>
+    <string name="android_onboarding_zone_risk">Danger zone</string>
     <string name="android_onboarding_zone_risk_hint">Place to avoid</string>
     <!-- Profile and phone: the two steps of the profile creation (ONB-2) -->
     <string name="profile_title">Let your loved ones recognize you</string>
@@ -319,7 +319,6 @@
     <string name="miff_message_generic">That didn\'t work. Please try again in a moment.</string>
     <string name="miff_message_one_miff">For now, this account can be part of one Miff at a time.</string>
     <string name="miff_message_no_profile">Some details of your profile are still missing. We\'re taking you back to that step to complete them.</string>
-    <string name="miff_consent_places">The trusted places of this Miff are chosen by its creator and visible to all its members.</string>
     <string name="miff_dialog_working_a11y">Working</string>
 
     <!-- Choice: create or join -->
@@ -328,14 +327,6 @@
     <string name="miff_choice_create_body">You can then invite your loved ones to join you.</string>
     <string name="miff_choice_join_title">Join an existing Miff</string>
     <string name="miff_choice_join_body">Did a loved one give you a code? Enter it to join their Miff.</string>
-
-    <!-- Explicit consent before "Create and share" / "Join and share" (version "2026-10-v2", MiffSharingConsent) -->
-    <string name="miff_consent_create">By creating this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
-    <string name="miff_consent_join">By joining this Miff, you share your status with its members; you can stop at any time in the Miff\'s settings.</string>
-    <string name="miff_consent_members_see_title">What the members see of you</string>
-    <string name="miff_consent_members_see_body">Your first name, last name, photo and phone number.</string>
-    <string name="miff_consent_system_note_create">Your phone will ask separately for access to your location. You can say no.</string>
-    <string name="miff_consent_system_note_join">Your phone will ask separately for access to your location. You can say no and still join.</string>
 
     <!-- Create -->
     <string name="miff_create_title">New Miff</string>
@@ -401,10 +392,9 @@
     <string name="miff_sharing_state_on">On</string>
     <string name="miff_sharing_state_off">Off</string>
     <string name="miff_sharing_stop_title">Stop sharing your status with this Miff?</string>
-    <string name="miff_sharing_stop_body">Your status and update photo will be deleted for this circle. You can resume whenever you like.</string>
+    <string name="miff_sharing_stop_body">Your status, update photo and last known location will be deleted for this circle. You can resume whenever you like.</string>
     <string name="miff_sharing_stop_action">Stop sharing</string>
     <string name="miff_sharing_resume_title">Resume sharing?</string>
-    <string name="miff_sharing_resume_body">You share your status with the members of this Miff again; you can stop at any time.</string>
     <string name="miff_sharing_resume_action">Resume sharing</string>
 
     <!-- Lost access (one message, the same for a removal and for a deleted Miff) -->
@@ -746,6 +736,65 @@
     <string name="miff_renewal_later">Not now</string>
     <string name="miff_renewal_saving">Saving your agreement…</string>
     <string name="miff_renewal_error_extra">Your agreement is not saved: nothing is shared for now.</string>
+
+    <!-- AUTH-5a: account deletion -->
+    <string name="settings_delete_entry">Delete my account</string>
+    <string name="settings_delete_title">Delete my account</string>
+    <string name="settings_delete_intro">Here is what will happen if you delete your account.</string>
+    <string name="settings_delete_you_nomiff">Your profile, photo and phone number will be deleted.</string>
+    <string name="settings_delete_copy">Want a copy of your data? Write to us before deleting your account: %1$s.</string>
+    <string name="settings_delete_irreversible">This can’t be undone. You can always create a new account.</string>
+    <string name="settings_delete_continue">Continue</string>
+    <string name="settings_delete_cancel">Cancel</string>
+    <string name="settings_delete_loading">One moment, we’re checking your Miffs…</string>
+    <string name="settings_delete_offline_list">No connection right now. Your Miffs will show up as soon as you have a network.</string>
+    <string name="settings_delete_read_failed">We couldn’t read your Miffs right now. Please try again in a moment.</string>
+    <string name="settings_delete_miffs_soon">You’re part of at least one Miff. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back here. Any question? Write to us: %1$s.</string>
+    <string name="settings_delete_apple_android_info">Your account is also linked to Apple. From Android we can’t remove that authorization: at the end, we’ll explain how to do it in your Apple ID settings.</string>
+    <string name="settings_delete_confirm_title">Delete your account?</string>
+    <string name="settings_delete_confirm_body">Your account and your Miff data will be deleted. This can’t be undone.</string>
+    <string name="settings_delete_confirm_ok">Delete my account</string>
+    <string name="settings_delete_confirm_keep">Keep my account</string>
+    <string name="settings_delete_confirm_offline">No connection right now. Try again once the network is back.</string>
+    <string name="settings_delete_reauth_title">One last check</string>
+    <string name="settings_delete_reauth_body">To keep you safe, please confirm it’s you.</string>
+    <string name="settings_delete_reauth_account">Account: %1$s</string>
+    <string name="settings_delete_reauth_confirm">Confirm</string>
+    <string name="settings_delete_reauth_note">As soon as you confirm, the deletion begins.</string>
+    <string name="settings_delete_reauth_checking">Checking…</string>
+    <string name="settings_delete_reauth_google">Confirm with the Google account you use in Miff.</string>
+    <string name="settings_delete_reauth_last">One last check before we finish.</string>
+    <string name="settings_delete_reauth_last_sub">Your deletion is almost done.</string>
+    <string name="settings_delete_reauth_later">Later</string>
+    <string name="settings_delete_reauth_later_hint">If you choose “Later”, the deletion will resume the next time you open the app.</string>
+    <string name="settings_delete_reauth_password_wrong">That password doesn’t match. You can try again.</string>
+    <string name="settings_delete_reauth_wrong_account">That isn’t the account you’re signed in with. Choose the right account to continue.</string>
+    <string name="settings_delete_reauth_unavailable">We can’t check your identity from this phone. Write to us: %1$s.</string>
+    <string name="settings_delete_progress_title">We’re deleting your account…</string>
+    <string name="settings_delete_progress_hint">Keep the app open, it only takes a moment.</string>
+    <string name="settings_delete_progress_profile">We’re deleting your profile…</string>
+    <string name="settings_delete_paused_title">We’ll pick up as soon as we can</string>
+    <string name="settings_delete_paused">No connection right now. The deletion will resume as soon as you have a network.</string>
+    <string name="settings_delete_paused_leave">You can close the app: we’ll pick up the next time you open it.</string>
+    <string name="settings_delete_resume_title">We’re finishing the deletion of your account</string>
+    <string name="settings_delete_resume">Your account deletion isn’t finished. We’re finishing it now.</string>
+    <string name="settings_delete_failed_title">The deletion isn’t finished</string>
+    <string name="settings_delete_failed">We couldn’t finish the deletion. Please try again in a moment. If it keeps happening, write to us: %1$s.</string>
+    <string name="settings_delete_retry">Try again</string>
+    <string name="settings_delete_retrying">Trying again…</string>
+    <string name="settings_delete_done_title">Your account has been deleted</string>
+    <string name="settings_delete_done_body">Thank you for spending some time with Miff. You can come back whenever you like.</string>
+    <string name="settings_delete_done_continue">Continue</string>
+    <string name="settings_delete_done_apple_android">Your account was linked to Apple. You can remove the authorization in your Apple ID settings.</string>
+    <string name="settings_delete_apple_howto_title">To remove the authorization</string>
+    <string name="settings_delete_apple_howto_step1">Open your Apple ID settings (appleid.apple.com, or Settings on an iPhone).</string>
+    <string name="settings_delete_apple_howto_step2">Go to “Sign-In &amp; Security”, then “Sign in with Apple”.</string>
+    <string name="settings_delete_apple_howto_step3">Choose Miff, then stop using Apple ID with this app.</string>
+    <string name="auth_account_deleted_notice">Your account has been deleted.</string>
+    <string name="settings_delete_reauth_expired">Your session has expired. Sign out, sign back in, then try again.</string>
+    <string name="settings_delete_miffs_blocked">You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$s.</string>
+    <string name="settings_delete_signin_again">Your session closed before the deletion of your account was finished. Sign in again with the same account and we’ll finish it.</string>
+    <string name="settings_delete_signin_again_action">Sign in again</string>
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">Waiting for your agreement</string>

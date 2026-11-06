@@ -42,17 +42,17 @@ final class MiffRepositoryMemberActionsTests: XCTestCase {
 
     // MARK: - Retirer
 
-    func testRemovingIsOneLotOfSixReadInsideTheTransactionAndReturnsTheNewCode() async {
+    func testRemovingIsOneLotOfSevenReadInsideTheTransactionAndReturnsTheNewCode() async {
         let result = await repo().removeMember(miffId: testMiffId, targetUid: "uid-2")
 
         XCTAssertEqual(changed(result), newCode)
         XCTAssertEqual(store.commitsAsLots.count, 1)
         let lot = store.commitsAsLots[0]
-        XCTAssertEqual(lot.count, 6)
+        XCTAssertEqual(lot.count, 7)
         // Le code à remplacer est celui que la transaction a lu, pas un code tenu par l'écran.
         XCTAssertEqual(lot.last?.path, "joinCodes/\(testCode)")
         XCTAssertEqual(lot.last?.kind, .delete)
-        XCTAssertEqual(lot[4].path, "joinCodes/\(newCode)")
+        XCTAssertEqual(lot[5].path, "joinCodes/\(newCode)")
         XCTAssertEqual(store.calls.last, "commitWithMiff")
     }
 
@@ -112,12 +112,12 @@ final class MiffRepositoryMemberActionsTests: XCTestCase {
         XCTAssertTrue(store.commitsAsLots.isEmpty)
     }
 
-    func testWhenTheOldCodeDocumentIsMissingTheLotHasFiveWrites() async {
+    func testWhenTheOldCodeDocumentIsMissingTheLotHasSixWrites() async {
         store.codeDocumentExists = false
 
         _ = await repo().removeMember(miffId: testMiffId, targetUid: "uid-2")
 
-        XCTAssertEqual(store.commitsAsLots.first?.count, 5)
+        XCTAssertEqual(store.commitsAsLots.first?.count, 6)
     }
 
     func testAnIdentifierThatCouldLeaveItsPathWritesNothing() async {
@@ -151,7 +151,7 @@ final class MiffRepositoryMemberActionsTests: XCTestCase {
 
     // MARK: - Quitter
 
-    func testLeavingFindsTheIndexByItsFieldAndWritesTheLotOfFour() async {
+    func testLeavingFindsTheIndexByItsFieldAndWritesTheLotOfFive() async {
         store.miffs[testMiffId] = testMiffDetails(owner: "someone-else")
         // L'identifiant du document est « free » : la Miff se trouve par le CHAMP miffId (critère R11).
         store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
@@ -160,7 +160,7 @@ final class MiffRepositoryMemberActionsTests: XCTestCase {
 
         XCTAssertEqual(result, .done)
         let lot = store.commitsAsLots[0]
-        XCTAssertEqual(lot.count, 4)
+        XCTAssertEqual(lot.count, 5)
         XCTAssertEqual(lot.last?.path, "users/\(uid)/memberships/free")
         XCTAssertTrue(lot.allSatisfy { $0.kind == .delete })
     }

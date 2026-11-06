@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "fr",
   "strings": {
+    "auth_account_deleted_notice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account has been deleted."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte a été supprimé."
+          }
+        }
+      }
+    },
     "auth_back_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -439,23 +456,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas de souci, ton compte n'a pas été créé. Tu pourras le créer quand tu veux."
-          }
-        }
-      }
-    },
-    "auth_session_replaced_notice": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your account is now being used on another phone. You've been signed out of this one."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci."
           }
         }
       }
@@ -2433,1553 +2433,6 @@
         }
       }
     },
-    "feed_action_unavailable": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This action isn't available on this device."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cette action n'est pas disponible sur cet appareil."
-          }
-        }
-      }
-    },
-    "feed_add_loved_one": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a loved one"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajouter un proche"
-          }
-        }
-      }
-    },
-    "feed_ago_hours": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld h ago"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "il y a %1$lld h"
-          }
-        }
-      }
-    },
-    "feed_ago_minutes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld min ago"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "il y a %1$lld min"
-          }
-        }
-      }
-    },
-    "feed_banner_offline": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Latest information %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dernières informations %1$@"
-          }
-        }
-      }
-    },
-    "feed_banner_publishing": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sharing your status…"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partage de ton statut en cours…"
-          }
-        }
-      }
-    },
-    "feed_battery": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld %%"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld %%"
-          }
-        }
-      }
-    },
-    "feed_battery_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Battery at %1$lld %%"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Batterie à %1$lld %%"
-          }
-        }
-      }
-    },
-    "feed_battery_dated": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld %% · %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld %% · %2$@"
-          }
-        }
-      }
-    },
-    "feed_battery_dated_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Battery at %1$lld %% %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Batterie à %1$lld %% %2$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_all_good": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All good"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tout va bien"
-          }
-        }
-      }
-    },
-    "feed_bubble_alone": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You're the only one in this Miff for now"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu es seul(e) dans cette Miff pour l'instant"
-          }
-        }
-      }
-    },
-    "feed_bubble_answered": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld of %2$lld have shared news"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld sur %2$lld ont donné des nouvelles"
-          }
-        }
-      }
-    },
-    "feed_bubble_danger": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ is in a danger zone"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ est dans une zone de danger"
-          }
-        }
-      }
-    },
-    "feed_bubble_danger_named": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ is at %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ est à %2$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_danger_note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A zone set by your Miff"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une zone définie par ta Miff"
-          }
-        }
-      }
-    },
-    "feed_bubble_latest_hours": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Latest news %1$lld h ago"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dernière nouvelle il y a %1$lld h"
-          }
-        }
-      }
-    },
-    "feed_bubble_latest_minutes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Latest news %1$lld min ago"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dernière nouvelle il y a %1$lld min"
-          }
-        }
-      }
-    },
-    "feed_bubble_me_danger": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You're in a danger zone of your Miff"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu es dans une zone de danger de ta Miff"
-          }
-        }
-      }
-    },
-    "feed_bubble_me_danger_note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your loved ones can see it too"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tes proches le voient aussi"
-          }
-        }
-      }
-    },
-    "feed_bubble_me_orange": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You left %1$@ %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu as quitté %1$@ %2$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_me_red_stale": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your loved ones haven't heard from you since %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tes proches n'ont pas eu de tes nouvelles depuis %1$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_message_action": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send a message"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer un message"
-          }
-        }
-      }
-    },
-    "feed_bubble_next_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Next alert"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alerte suivante"
-          }
-        }
-      }
-    },
-    "feed_bubble_no_news_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "As soon as your loved ones share news, you'll see it here."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dès que tes proches donneront des nouvelles, tu les verras ici."
-          }
-        }
-      }
-    },
-    "feed_bubble_no_news_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No news yet"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore de nouvelles"
-          }
-        }
-      }
-    },
-    "feed_bubble_offline_alert": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Information %1$@: reconnect to update it."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Informations %1$@ : reconnecte-toi pour les mettre à jour."
-          }
-        }
-      }
-    },
-    "feed_bubble_orange": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ left %2$@ %3$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ a quitté %2$@ %3$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_page_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alert %1$lld of %2$lld"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alerte %1$lld sur %2$lld"
-          }
-        }
-      }
-    },
-    "feed_bubble_previous_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Previous alert"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alerte précédente"
-          }
-        }
-      }
-    },
-    "feed_bubble_red_stale": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No news from %1$@ since %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas de nouvelles de %1$@ depuis %2$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_resume_action": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resume sharing"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reprendre le partage"
-          }
-        }
-      }
-    },
-    "feed_bubble_sharing_stopped_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resume sharing to see your loved ones' news."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reprends le partage pour voir les nouvelles de tes proches."
-          }
-        }
-      }
-    },
-    "feed_bubble_sharing_stopped_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You stopped sharing."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu as arrêté de partager."
-          }
-        }
-      }
-    },
-    "feed_card_call_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Call %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appeler %1$@"
-          }
-        }
-      }
-    },
-    "feed_card_locate_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Locate %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Localiser %1$@"
-          }
-        }
-      }
-    },
-    "feed_card_locating_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Locating %1$@…"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Localisation de %1$@ en cours"
-          }
-        }
-      }
-    },
-    "feed_card_message_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Message %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Écrire à %1$@"
-          }
-        }
-      }
-    },
-    "feed_card_you": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toi"
-          }
-        }
-      }
-    },
-    "feed_card_you_sees": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What your loved ones see of you"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ce que tes proches voient de toi"
-          }
-        }
-      }
-    },
-    "feed_date_pattern": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "MMM d"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "d MMM"
-          }
-        }
-      }
-    },
-    "feed_header_avatar_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open my profile. Your status: %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ouvrir mon profil. Ton statut : %1$@"
-          }
-        }
-      }
-    },
-    "feed_header_avatar_plain_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open my profile"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ouvrir mon profil"
-          }
-        }
-      }
-    },
-    "feed_header_logo_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Scroll to top"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remonter en haut du fil"
-          }
-        }
-      }
-    },
-    "feed_label_at_home": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At home"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "À la maison"
-          }
-        }
-      }
-    },
-    "feed_label_at_place": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "À %1$@"
-          }
-        }
-      }
-    },
-    "feed_label_at_school": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At school"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "À l'école"
-          }
-        }
-      }
-    },
-    "feed_label_at_sport": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At the sports club"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Au sport"
-          }
-        }
-      }
-    },
-    "feed_label_at_work": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At work"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Au travail"
-          }
-        }
-      }
-    },
-    "feed_label_danger": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In a danger zone"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dans une zone de danger"
-          }
-        }
-      }
-    },
-    "feed_label_left": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Left %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A quitté %1$@"
-          }
-        }
-      }
-    },
-    "feed_label_limited_location": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Limited location"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Localisation limitée"
-          }
-        }
-      }
-    },
-    "feed_label_news_hidden": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "News hidden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nouvelles masquées"
-          }
-        }
-      }
-    },
-    "feed_label_no_news": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No news yet"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore de nouvelles"
-          }
-        }
-      }
-    },
-    "feed_label_sharing_stopped": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sharing stopped"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partage arrêté"
-          }
-        }
-      }
-    },
-    "feed_label_trusted_generic": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In a trusted place"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dans un lieu de confiance"
-          }
-        }
-      }
-    },
-    "feed_loading_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loading your feed"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chargement de ton fil"
-          }
-        }
-      }
-    },
-    "feed_loading_news": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loading news…"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chargement des nouvelles…"
-          }
-        }
-      }
-    },
-    "feed_locate_close": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Close"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fermer"
-          }
-        }
-      }
-    },
-    "feed_locate_denied": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "We can't show %1$@'s position right now. It appears when you both share."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On ne peut pas afficher la position de %1$@ pour le moment. Elle apparaît quand vous partagez tous les deux."
-          }
-        }
-      }
-    },
-    "feed_locate_not_found": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ has no known position yet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ n'a pas encore de position connue."
-          }
-        }
-      }
-    },
-    "feed_locate_offline": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No connection right now. Try again once you're back online."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas de connexion pour le moment. Réessaie dès que le réseau est revenu."
-          }
-        }
-      }
-    },
-    "feed_locate_old": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "It dates %1$@: it's no longer shown."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Elle date %1$@ : elle n'est plus affichée."
-          }
-        }
-      }
-    },
-    "feed_locate_open": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open in Maps"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ouvrir dans les cartes"
-          }
-        }
-      }
-    },
-    "feed_locate_recent": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Measured %1$@ (%2$@). This isn't a live position."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mesurée %1$@ (%2$@). Ce n'est pas une position en direct."
-          }
-        }
-      }
-    },
-    "feed_locate_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@'s last known position"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dernière position connue de %1$@"
-          }
-        }
-      }
-    },
-    "feed_locate_trust": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You both share: %1$@ can also see your last known position."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vous partagez tous les deux : %1$@ peut aussi voir ta dernière position."
-          }
-        }
-      }
-    },
-    "feed_miff_full": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This Miff is nicely full!"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cette Miff est bien remplie !"
-          }
-        }
-      }
-    },
-    "feed_moment_at_date": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "on %1$@ at %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "le %1$@ à %2$@"
-          }
-        }
-      }
-    },
-    "feed_moment_at_today": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "at %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "à %1$@"
-          }
-        }
-      }
-    },
-    "feed_moment_at_yesterday": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "yesterday at %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "hier à %1$@"
-          }
-        }
-      }
-    },
-    "feed_moment_from_date": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "from %1$@ at %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "du %1$@ à %2$@"
-          }
-        }
-      }
-    },
-    "feed_moment_from_today": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "from %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "de %1$@"
-          }
-        }
-      }
-    },
-    "feed_moment_from_yesterday": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "from yesterday at %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "d'hier à %1$@"
-          }
-        }
-      }
-    },
-    "feed_moment_since_date": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ at %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "le %1$@ à %2$@"
-          }
-        }
-      }
-    },
-    "feed_moment_since_today": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@"
-          }
-        }
-      }
-    },
-    "feed_moment_since_yesterday": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "yesterday at %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "hier à %1$@"
-          }
-        }
-      }
-    },
-    "feed_place_noun_generic": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "a trusted place"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "un lieu de confiance"
-          }
-        }
-      }
-    },
-    "feed_place_noun_home": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "home"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "la maison"
-          }
-        }
-      }
-    },
-    "feed_place_noun_school": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "school"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "l'école"
-          }
-        }
-      }
-    },
-    "feed_place_noun_sport": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "the sports club"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "le sport"
-          }
-        }
-      }
-    },
-    "feed_place_noun_work": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "work"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "le travail"
-          }
-        }
-      }
-    },
-    "feed_time_departed_hours": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Left %1$lld h ago"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Départ il y a %1$lld h"
-          }
-        }
-      }
-    },
-    "feed_time_departed_minutes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Left %1$lld min ago"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Départ il y a %1$lld min"
-          }
-        }
-      }
-    },
-    "feed_time_latest_news": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Latest news %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dernière nouvelle %1$@"
-          }
-        }
-      }
-    },
-    "feed_time_no_news_since": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No news since %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas de nouvelles depuis %1$@"
-          }
-        }
-      }
-    },
-    "feed_time_pattern_12": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "h:mm a"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HH 'h' mm"
-          }
-        }
-      }
-    },
-    "feed_time_pattern_24": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HH:mm"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HH 'h' mm"
-          }
-        }
-      }
-    },
-    "feed_time_since": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Since %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Depuis %1$@"
-          }
-        }
-      }
-    },
-    "feed_time_since_hours": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For %1$lld h"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Depuis %1$lld h"
-          }
-        }
-      }
-    },
-    "feed_time_since_minutes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For %1$lld min"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Depuis %1$lld min"
-          }
-        }
-      }
-    },
     "home_logo_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -4112,6 +2565,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "ce proche"
+          }
+        }
+      }
+    },
+    "ios_place_message_id_taken": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A place changed while you were filling in the form. Close it and open it again, then try once more."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un lieu a changé pendant que tu remplissais le formulaire. Ferme-le et rouvre-le, puis réessaie."
           }
         }
       }
@@ -4326,13 +2796,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Risk zone"
+            "value": "Danger zone"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zone à risque"
+            "value": "Zone de danger"
           }
         }
       }
@@ -4537,125 +3007,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Code copié"
-          }
-        }
-      }
-    },
-    "miff_consent_create": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "By creating this Miff, you share your status with its members; you can stop at any time in the Miff's settings."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
-          }
-        }
-      }
-    },
-    "miff_consent_join": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "By joining this Miff, you share your status with its members; you can stop at any time in the Miff's settings."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
-          }
-        }
-      }
-    },
-    "miff_consent_members_see_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your first name, last name, photo and phone number."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton prénom, ton nom, ta photo et ton numéro de téléphone."
-          }
-        }
-      }
-    },
-    "miff_consent_members_see_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What the members see of you"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ce que les membres voient de toi"
-          }
-        }
-      }
-    },
-    "miff_consent_places": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The trusted places of this Miff are chosen by its creator and visible to all its members."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres."
-          }
-        }
-      }
-    },
-    "miff_consent_system_note_create": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your phone will ask separately for access to your location. You can say no."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton téléphone te demandera séparément l'accès à ta position. Tu peux le refuser."
-          }
-        }
-      }
-    },
-    "miff_consent_system_note_join": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your phone will ask separately for access to your location. You can say no and still join."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton téléphone te demandera séparément l'accès à ta position. Tu peux le refuser : tu rejoins la Miff quand même."
           }
         }
       }
@@ -6288,23 +4639,6 @@
         }
       }
     },
-    "miff_sharing_resume_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You share your status with the members of this Miff again; you can stop at any time."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu partages à nouveau ton statut avec les membres de cette Miff ; tu peux arrêter à tout moment."
-          }
-        }
-      }
-    },
     "miff_sharing_resume_title": {
       "extractionState": "manual",
       "localizations": {
@@ -6379,13 +4713,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your status and update photo will be deleted for this circle. You can resume whenever you like."
+            "value": "Your status, update photo and last known location will be deleted for this circle. You can resume whenever you like."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton statut et ta photo d'update seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux."
+            "value": "Ton statut, ta photo d'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux."
           }
         }
       }
@@ -9939,6 +8273,958 @@
         }
       }
     },
+    "settings_delete_apple_android_info": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account is also linked to Apple. From Android we can’t remove that authorization: at the end, we’ll explain how to do it in your Apple ID settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte est aussi lié à Apple. Depuis Android, on ne peut pas retirer cette autorisation : à la fin, on t’explique comment le faire dans les réglages de ton identifiant Apple."
+          }
+        }
+      }
+    },
+    "settings_delete_apple_howto_step1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open your Apple ID settings (appleid.apple.com, or Settings on an iPhone)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre les réglages de ton identifiant Apple (appleid.apple.com ou Réglages sur un iPhone)."
+          }
+        }
+      }
+    },
+    "settings_delete_apple_howto_step2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to “Sign-In & Security”, then “Sign in with Apple”."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Va dans « Connexion et sécurité », puis « Se connecter avec Apple »."
+          }
+        }
+      }
+    },
+    "settings_delete_apple_howto_step3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Miff, then stop using Apple ID with this app."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis Miff, puis arrête d’utiliser l’identifiant Apple avec cette app."
+          }
+        }
+      }
+    },
+    "settings_delete_apple_howto_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To remove the authorization"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour retirer l’autorisation"
+          }
+        }
+      }
+    },
+    "settings_delete_cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
+          }
+        }
+      }
+    },
+    "settings_delete_confirm_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account and your Miff data will be deleted. This can’t be undone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte et tes données Miff seront supprimés. Ce n’est pas réversible."
+          }
+        }
+      }
+    },
+    "settings_delete_confirm_keep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep my account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garder mon compte"
+          }
+        }
+      }
+    },
+    "settings_delete_confirm_offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection right now. Try again once the network is back."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. Réessaie dès que le réseau est revenu."
+          }
+        }
+      }
+    },
+    "settings_delete_confirm_ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete my account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer mon compte"
+          }
+        }
+      }
+    },
+    "settings_delete_confirm_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete your account?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer ton compte ?"
+          }
+        }
+      }
+    },
+    "settings_delete_continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        }
+      }
+    },
+    "settings_delete_copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Want a copy of your data? Write to us before deleting your account: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu veux garder une copie de tes données ? Écris-nous avant de supprimer ton compte : %1$@."
+          }
+        }
+      }
+    },
+    "settings_delete_done_apple_android": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account was linked to Apple. You can remove the authorization in your Apple ID settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte était lié à Apple. Tu peux retirer l’autorisation dans les réglages de ton identifiant Apple."
+          }
+        }
+      }
+    },
+    "settings_delete_done_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thank you for spending some time with Miff. You can come back whenever you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci d’avoir fait un bout de chemin avec Miff. Tu pourras revenir quand tu veux."
+          }
+        }
+      }
+    },
+    "settings_delete_done_continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        }
+      }
+    },
+    "settings_delete_done_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account has been deleted"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte a été supprimé"
+          }
+        }
+      }
+    },
+    "settings_delete_entry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete my account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer mon compte"
+          }
+        }
+      }
+    },
+    "settings_delete_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn’t finish the deletion. Please try again in a moment. If it keeps happening, write to us: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n’a pas pu terminer la suppression. Réessaie dans un moment. Si ça continue, écris-nous : %1$@."
+          }
+        }
+      }
+    },
+    "settings_delete_failed_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The deletion isn’t finished"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La suppression n’est pas terminée"
+          }
+        }
+      }
+    },
+    "settings_delete_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Here is what will happen if you delete your account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voici ce qui va se passer si tu supprimes ton compte."
+          }
+        }
+      }
+    },
+    "settings_delete_irreversible": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This can’t be undone. You can always create a new account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n’est pas réversible. Tu pourras toujours créer un nouveau compte."
+          }
+        }
+      }
+    },
+    "settings_delete_loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One moment, we’re checking your Miffs…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un instant, on vérifie tes Miffs…"
+          }
+        }
+      }
+    },
+    "settings_delete_miffs_blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$@."
+          }
+        }
+      }
+    },
+    "settings_delete_miffs_soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’re part of at least one Miff. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back here. Any question? Write to us: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu fais partie d’au moins une Miff. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir ici. Une question ? Écris-nous : %1$@."
+          }
+        }
+      }
+    },
+    "settings_delete_offline_list": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection right now. Your Miffs will show up as soon as you have a network."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. Tes Miffs s’afficheront dès que tu auras du réseau."
+          }
+        }
+      }
+    },
+    "settings_delete_paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection right now. The deletion will resume as soon as you have a network."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. La suppression reprendra dès que tu auras du réseau."
+          }
+        }
+      }
+    },
+    "settings_delete_paused_leave": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can close the app: we’ll pick up the next time you open it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu peux fermer l’app : on reprendra au prochain lancement."
+          }
+        }
+      }
+    },
+    "settings_delete_paused_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We’ll pick up as soon as we can"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On reprend dès que possible"
+          }
+        }
+      }
+    },
+    "settings_delete_progress_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the app open, it only takes a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garde l’app ouverte, ça ne prend qu’un instant."
+          }
+        }
+      }
+    },
+    "settings_delete_progress_profile": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We’re deleting your profile…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On supprime ton profil…"
+          }
+        }
+      }
+    },
+    "settings_delete_progress_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We’re deleting your account…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On supprime ton compte…"
+          }
+        }
+      }
+    },
+    "settings_delete_read_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn’t read your Miffs right now. Please try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n’a pas pu lire tes Miffs pour le moment. Réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compte : %1$@"
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To keep you safe, please confirm it’s you."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour te protéger, confirme que c’est bien toi."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_checking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification…"
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmer"
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_expired": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your session has expired. Sign out, sign back in, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta session a expiré. Déconnecte-toi, reconnecte-toi, puis réessaie."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_google": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm with the Google account you use in Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirme avec le compte Google que tu utilises dans Miff."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_last": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One last check before we finish."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière vérification avant de terminer."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_last_sub": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your deletion is almost done."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta suppression est presque finie."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_later_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you choose “Later”, the deletion will resume the next time you open the app."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si tu choisis « Plus tard », la suppression reprendra à ton prochain lancement de l’app."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as you confirm, the deletion begins."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dès que tu confirmes, la suppression commence."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_password_wrong": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That password doesn’t match. You can try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce mot de passe ne correspond pas. Tu peux réessayer."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One last check"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une dernière vérification"
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We can’t check your identity from this phone. Write to us: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On ne peut pas vérifier ton identité depuis ce téléphone. Écris-nous : %1$@."
+          }
+        }
+      }
+    },
+    "settings_delete_reauth_wrong_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That isn’t the account you’re signed in with. Choose the right account to continue."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n’est pas le compte avec lequel tu es connecté(e). Choisis le bon compte pour continuer."
+          }
+        }
+      }
+    },
+    "settings_delete_resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account deletion isn’t finished. We’re finishing it now."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta suppression de compte n’est pas terminée. On la termine maintenant."
+          }
+        }
+      }
+    },
+    "settings_delete_resume_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We’re finishing the deletion of your account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On termine la suppression de ton compte"
+          }
+        }
+      }
+    },
+    "settings_delete_retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        }
+      }
+    },
+    "settings_delete_retrying": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying again…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On réessaie…"
+          }
+        }
+      }
+    },
+    "settings_delete_signin_again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your session closed before the deletion of your account was finished. Sign in again with the same account and we’ll finish it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta session s’est fermée avant la fin de la suppression de ton compte. Reconnecte-toi avec le même compte : on la termine."
+          }
+        }
+      }
+    },
+    "settings_delete_signin_again_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me reconnecter"
+          }
+        }
+      }
+    },
+    "settings_delete_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete my account"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer mon compte"
+          }
+        }
+      }
+    },
+    "settings_delete_you_nomiff": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your profile, photo and phone number will be deleted."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton profil, ta photo et ton numéro de téléphone seront supprimés."
+          }
+        }
+      }
+    },
     "settings_language_subtitle": {
       "extractionState": "manual",
       "localizations": {
@@ -10268,13 +9554,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For now, Miff does not use your phone's location. If that changes, we will explain it clearly before asking you for anything."
+            "value": "Miff uses your phone's location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time. No history of trips is kept. You can stop sharing at any time: your location is then erased."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour l'instant, Miff n'utilise pas la position de ton téléphone. Si cela change, on te l'expliquera clairement avant de te demander quoi que ce soit."
+            "value": "Miff utilise la localisation de ton téléphone, même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l'heure. Aucun historique de trajets n'est gardé. Tu peux arrêter de partager à tout moment : ta position est alors effacée."
           }
         }
       }
@@ -11686,6 +10972,1910 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les noms exacts des réglages changent selon le téléphone et la version d'Android."
+          }
+        }
+      }
+    },
+    "ios_permission_location_upgrade_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One more step!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus qu'une étape !"
+          }
+        }
+      }
+    },
+    "ios_permission_location_upgrade_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To let your Miff know even when the app is closed, Miff needs the \"Always\" option."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour te signaler à ta Miff même quand l'app est fermée, Miff a besoin de l'option « Toujours »."
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_open_miff": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the button below to open Miff's **Settings**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche le bouton ci-dessous pour ouvrir les **Réglages** de Miff"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_open_miff_short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Miff's **Settings**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre les **Réglages** de Miff"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_position": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap **Location**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche **Position**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_always": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose **Always**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis **Toujours**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_step_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on **Precise Location**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active **Position exacte**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_open_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir les Réglages"
+          }
+        }
+      }
+    },
+    "ios_permission_location_settings_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this choice at any time in your iPhone's Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pourras changer ce choix à tout moment dans les Réglages de ton iPhone."
+          }
+        }
+      }
+    },
+    "ios_permission_location_denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need your location"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a besoin de ta localisation"
+          }
+        }
+      }
+    },
+    "ios_permission_location_denied_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is turned off for Miff on your iPhone. Without it, your Miff can't know when you arrive at or leave your places."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La localisation est désactivée pour Miff sur ton iPhone. Sans elle, ta Miff ne peut pas savoir quand tu arrives ou pars de tes lieux."
+          }
+        }
+      }
+    },
+    "ios_permission_location_denied_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change your mind at any time in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu peux changer d'avis à tout moment dans les Réglages."
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location Services are turned off on your iPhone. For Miff to work, they need to be turned on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les services de localisation sont désactivés sur ton iPhone. Pour que Miff fonctionne, ils doivent être activés."
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_step_1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open your iPhone's **Settings**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre les **Réglages** de l'iPhone"
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_step_2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap **Privacy & Security**, then **Location Services**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche **Confidentialité et sécurité**, puis **Service de localisation**"
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_step_3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn it on, then choose **Always** for Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active-le, puis choisis **Toujours** pour Miff"
+          }
+        }
+      }
+    },
+    "ios_permission_location_services_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this choice at any time."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pourras changer ce choix à tout moment."
+          }
+        }
+      }
+    },
+    "ios_permission_location_restricted_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is limited on your iPhone by a setting you can't change here."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La localisation est limitée sur ton iPhone par un réglage que tu ne peux pas modifier ici."
+          }
+        }
+      }
+    },
+    "ios_permission_location_approximate_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We need your exact location"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a besoin de ta position exacte"
+          }
+        }
+      }
+    },
+    "ios_permission_location_approximate_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff needs your exact location, not an approximate area, to know when you arrive at or leave your places."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff a besoin de ta position exacte, et non d'une zone approximative, pour savoir quand tu arrives ou pars de tes lieux."
+          }
+        }
+      }
+    },
+    "auth_session_replaced_notice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account is now being used on another phone. You've been signed out of this one."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci."
+          }
+        }
+      }
+    },
+    "feed_action_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action isn't available on this device."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette action n'est pas disponible sur cet appareil."
+          }
+        }
+      }
+    },
+    "feed_add_loved_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a loved one"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un proche"
+          }
+        }
+      }
+    },
+    "feed_ago_hours": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld h ago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "il y a %1$lld h"
+          }
+        }
+      }
+    },
+    "feed_ago_minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld min ago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "il y a %1$lld min"
+          }
+        }
+      }
+    },
+    "feed_banner_offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest information %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernières informations %1$@"
+          }
+        }
+      }
+    },
+    "feed_banner_publishing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing your status…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partage de ton statut en cours…"
+          }
+        }
+      }
+    },
+    "feed_battery": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld %%"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld %%"
+          }
+        }
+      }
+    },
+    "feed_battery_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery at %1$lld %%"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batterie à %1$lld %%"
+          }
+        }
+      }
+    },
+    "feed_battery_dated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld %% · %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld %% · %2$@"
+          }
+        }
+      }
+    },
+    "feed_battery_dated_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery at %1$lld %% %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batterie à %1$lld %% %2$@"
+          }
+        }
+      }
+    },
+    "feed_bubble_all_good": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All good"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout va bien"
+          }
+        }
+      }
+    },
+    "feed_bubble_alone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're the only one in this Miff for now"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu es seul(e) dans cette Miff pour l'instant"
+          }
+        }
+      }
+    },
+    "feed_bubble_answered": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %2$lld have shared news"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sur %2$lld ont donné des nouvelles"
+          }
+        }
+      }
+    },
+    "feed_bubble_danger": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is in a danger zone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ est dans une zone de danger"
+          }
+        }
+      }
+    },
+    "feed_bubble_danger_named": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is at %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ est à %2$@"
+          }
+        }
+      }
+    },
+    "feed_bubble_danger_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A zone set by your Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une zone définie par ta Miff"
+          }
+        }
+      }
+    },
+    "feed_bubble_latest_hours": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest news %1$lld h ago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière nouvelle il y a %1$lld h"
+          }
+        }
+      }
+    },
+    "feed_bubble_latest_minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest news %1$lld min ago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière nouvelle il y a %1$lld min"
+          }
+        }
+      }
+    },
+    "feed_bubble_me_danger": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're in a danger zone of your Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu es dans une zone de danger de ta Miff"
+          }
+        }
+      }
+    },
+    "feed_bubble_me_danger_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your loved ones can see it too"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes proches le voient aussi"
+          }
+        }
+      }
+    },
+    "feed_bubble_me_orange": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You left %1$@ %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as quitté %1$@ %2$@"
+          }
+        }
+      }
+    },
+    "feed_bubble_me_red_stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your loved ones haven't heard from you since %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes proches n'ont pas eu de tes nouvelles depuis %1$@"
+          }
+        }
+      }
+    },
+    "feed_bubble_message_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send a message"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer un message"
+          }
+        }
+      }
+    },
+    "feed_bubble_next_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerte suivante"
+          }
+        }
+      }
+    },
+    "feed_bubble_no_news_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as your loved ones share news, you'll see it here."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dès que tes proches donneront des nouvelles, tu les verras ici."
+          }
+        }
+      }
+    },
+    "feed_bubble_no_news_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No news yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de nouvelles"
+          }
+        }
+      }
+    },
+    "feed_bubble_offline_alert": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information %1$@: reconnect to update it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informations %1$@ : reconnecte-toi pour les mettre à jour."
+          }
+        }
+      }
+    },
+    "feed_bubble_orange": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ left %2$@ %3$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a quitté %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "feed_bubble_page_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alert %1$lld of %2$lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerte %1$lld sur %2$lld"
+          }
+        }
+      }
+    },
+    "feed_bubble_previous_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerte précédente"
+          }
+        }
+      }
+    },
+    "feed_bubble_red_stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No news from %1$@ since %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de nouvelles de %1$@ depuis %2$@"
+          }
+        }
+      }
+    },
+    "feed_bubble_resume_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume sharing"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprendre le partage"
+          }
+        }
+      }
+    },
+    "feed_bubble_sharing_stopped_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume sharing to see your loved ones' news."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprends le partage pour voir les nouvelles de tes proches."
+          }
+        }
+      }
+    },
+    "feed_bubble_sharing_stopped_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You stopped sharing."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as arrêté de partager."
+          }
+        }
+      }
+    },
+    "feed_card_call_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Call %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appeler %1$@"
+          }
+        }
+      }
+    },
+    "feed_card_locate_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locate %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Localiser %1$@"
+          }
+        }
+      }
+    },
+    "feed_card_locating_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locating %1$@…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Localisation de %1$@ en cours"
+          }
+        }
+      }
+    },
+    "feed_card_message_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Écrire à %1$@"
+          }
+        }
+      }
+    },
+    "feed_card_you": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toi"
+          }
+        }
+      }
+    },
+    "feed_card_you_sees": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What your loved ones see of you"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que tes proches voient de toi"
+          }
+        }
+      }
+    },
+    "feed_date_pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MMM d"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "d MMM"
+          }
+        }
+      }
+    },
+    "feed_header_avatar_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open my profile. Your status: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir mon profil. Ton statut : %1$@"
+          }
+        }
+      }
+    },
+    "feed_header_avatar_plain_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open my profile"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir mon profil"
+          }
+        }
+      }
+    },
+    "feed_header_logo_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll to top"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remonter en haut du fil"
+          }
+        }
+      }
+    },
+    "feed_label_at_home": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At home"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À la maison"
+          }
+        }
+      }
+    },
+    "feed_label_at_place": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À %1$@"
+          }
+        }
+      }
+    },
+    "feed_label_at_school": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At school"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À l'école"
+          }
+        }
+      }
+    },
+    "feed_label_at_sport": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At the sports club"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au sport"
+          }
+        }
+      }
+    },
+    "feed_label_at_work": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At work"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au travail"
+          }
+        }
+      }
+    },
+    "feed_label_danger": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a danger zone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans une zone de danger"
+          }
+        }
+      }
+    },
+    "feed_label_left": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A quitté %1$@"
+          }
+        }
+      }
+    },
+    "feed_label_limited_location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limited location"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Localisation limitée"
+          }
+        }
+      }
+    },
+    "feed_label_news_hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "News hidden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelles masquées"
+          }
+        }
+      }
+    },
+    "feed_label_no_news": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No news yet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore de nouvelles"
+          }
+        }
+      }
+    },
+    "feed_label_sharing_stopped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing stopped"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partage arrêté"
+          }
+        }
+      }
+    },
+    "feed_label_trusted_generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In a trusted place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans un lieu de confiance"
+          }
+        }
+      }
+    },
+    "feed_loading_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading your feed"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement de ton fil"
+          }
+        }
+      }
+    },
+    "feed_loading_news": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading news…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement des nouvelles…"
+          }
+        }
+      }
+    },
+    "feed_locate_close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
+      }
+    },
+    "feed_locate_denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We can't show %1$@'s position right now. It appears when you both share."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On ne peut pas afficher la position de %1$@ pour le moment. Elle apparaît quand vous partagez tous les deux."
+          }
+        }
+      }
+    },
+    "feed_locate_not_found": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ has no known position yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ n'a pas encore de position connue."
+          }
+        }
+      }
+    },
+    "feed_locate_offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection right now. Try again once you're back online."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion pour le moment. Réessaie dès que le réseau est revenu."
+          }
+        }
+      }
+    },
+    "feed_locate_old": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It dates %1$@: it's no longer shown."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elle date %1$@ : elle n'est plus affichée."
+          }
+        }
+      }
+    },
+    "feed_locate_open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in Maps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir dans les cartes"
+          }
+        }
+      }
+    },
+    "feed_locate_recent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured %1$@ (%2$@). This isn't a live position."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mesurée %1$@ (%2$@). Ce n'est pas une position en direct."
+          }
+        }
+      }
+    },
+    "feed_locate_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@'s last known position"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière position connue de %1$@"
+          }
+        }
+      }
+    },
+    "feed_locate_trust": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You both share: %1$@ can also see your last known position."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous partagez tous les deux : %1$@ peut aussi voir ta dernière position."
+          }
+        }
+      }
+    },
+    "feed_miff_full": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Miff is nicely full!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette Miff est bien remplie !"
+          }
+        }
+      }
+    },
+    "feed_moment_at_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "on %1$@ at %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le %1$@ à %2$@"
+          }
+        }
+      }
+    },
+    "feed_moment_at_today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "à %1$@"
+          }
+        }
+      }
+    },
+    "feed_moment_at_yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday at %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hier à %1$@"
+          }
+        }
+      }
+    },
+    "feed_moment_from_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from %1$@ at %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "du %1$@ à %2$@"
+          }
+        }
+      }
+    },
+    "feed_moment_from_today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "de %1$@"
+          }
+        }
+      }
+    },
+    "feed_moment_from_yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from yesterday at %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "d'hier à %1$@"
+          }
+        }
+      }
+    },
+    "feed_moment_since_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ at %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le %1$@ à %2$@"
+          }
+        }
+      }
+    },
+    "feed_moment_since_today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        }
+      }
+    },
+    "feed_moment_since_yesterday": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday at %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hier à %1$@"
+          }
+        }
+      }
+    },
+    "feed_place_noun_generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a trusted place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "un lieu de confiance"
+          }
+        }
+      }
+    },
+    "feed_place_noun_home": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "home"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la maison"
+          }
+        }
+      }
+    },
+    "feed_place_noun_school": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "school"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "l'école"
+          }
+        }
+      }
+    },
+    "feed_place_noun_sport": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the sports club"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le sport"
+          }
+        }
+      }
+    },
+    "feed_place_noun_work": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "work"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le travail"
+          }
+        }
+      }
+    },
+    "feed_time_departed_hours": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left %1$lld h ago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Départ il y a %1$lld h"
+          }
+        }
+      }
+    },
+    "feed_time_departed_minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left %1$lld min ago"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Départ il y a %1$lld min"
+          }
+        }
+      }
+    },
+    "feed_time_latest_news": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest news %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière nouvelle %1$@"
+          }
+        }
+      }
+    },
+    "feed_time_no_news_since": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No news since %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de nouvelles depuis %1$@"
+          }
+        }
+      }
+    },
+    "feed_time_pattern_12": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h:mm a"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HH 'h' mm"
+          }
+        }
+      }
+    },
+    "feed_time_pattern_24": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HH:mm"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HH 'h' mm"
+          }
+        }
+      }
+    },
+    "feed_time_since": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Since %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuis %1$@"
+          }
+        }
+      }
+    },
+    "feed_time_since_hours": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For %1$lld h"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuis %1$lld h"
+          }
+        }
+      }
+    },
+    "feed_time_since_minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For %1$lld min"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuis %1$lld min"
           }
         }
       }

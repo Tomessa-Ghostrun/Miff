@@ -20,6 +20,10 @@ enum FirestoreFieldConversion {
             return flag
         case .bytes(let bytes):
             return bytes
+        case .integer(let number):
+            return number
+        case .double(let number):
+            return number
         case .serverTimestamp:
             return FieldValue.serverTimestamp()
         case .null:
@@ -131,6 +135,62 @@ final class FirestoreMiffStore: MiffStore {
         }
         let sharing = snapshot.data()?["sharing"] as? [String: Any]
         return sharing?["enabled"] as? Bool
+    }
+
+    func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead? {
+        guard MiffId.isValid(miffId) else {
+            throw InvalidWriteError()
+        }
+        let snapshot = try await firestore()
+            .collection("miffs").document(miffId).collection("members").document(uid)
+            .getDocument(source: .server)
+        guard snapshot.exists else {
+            return nil
+        }
+        let sharing = snapshot.data()?["sharing"] as? [String: Any]
+        return SharingConsentRead(
+            enabled: (sharing?["enabled"] as? Bool) == true,
+            version: sharing?["consentVersion"] as? String
+        )
+    }
+
+    func commitWhereSharing(
+        uid: String,
+        miffIds: [String],
+        build: @escaping ([String]) -> [DocWrite]
+    ) async throws -> [String] {
+        // Jamais un chemin construit avec une valeur qui n'a pas la forme d'un identifiant.
+        guard miffIds.allSatisfy(MiffId.isValid), !uid.isEmpty, !uid.contains("/") else {
+            throw InvalidWriteError()
+        }
+        let database = try firestore()
+        let result = try await database.runTransaction { transaction, errorPointer in
+            // Toutes les lectures D'ABORD (une transaction ne peut pas lire après avoir écrit), puis le lot, fait seulement
+            // pour les Miffs où la fiche dit encore « je partage ».
+            var active: [String] = []
+            for miffId in miffIds {
+                let reference = database.collection("miffs").document(miffId).collection("members").document(uid)
+                let snapshot: DocumentSnapshot
+                do {
+                    snapshot = try transaction.getDocument(reference)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                let sharing = snapshot.data()?["sharing"] as? [String: Any]
+                let version = sharing?["consentVersion"] as? String
+                // Seulement où je partage ENCORE et où le texte accepté est ENCORE un ancien : une Miff renouvelée entre-temps
+                // (autre téléphone) n'est pas réécrite (les règles refuseraient une version qui n'est pas plus récente).
+                if snapshot.exists, (sharing?["enabled"] as? Bool) == true, MiffSharingConsent.isRenewalDue(version) {
+                    active.append(miffId)
+                }
+            }
+            if !active.isEmpty {
+                FirestoreMiffStore.apply(build(active), to: transaction, in: database)
+            }
+            return active
+        }
+        return (result as? [String]) ?? []
     }
 
     func serverReachable(uid: String) async -> Bool {

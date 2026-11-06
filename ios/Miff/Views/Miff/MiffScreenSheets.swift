@@ -47,11 +47,9 @@ private struct MiffSharingSheet: View {
             actions: MiffConfirmActions(onConfirm: actions.onSharingConfirmed, onCancel: actions.onSharingDismissed)
         ) {
             if !stopping {
-                // Le même consentement, mot pour mot et avec la même version, qu'à l'entrée (critère K6).
-                SharingConsentCard(
-                    sentence: L10n.string("miff_sharing_resume_body"),
-                    systemNote: L10n.string("miff_consent_system_note_create")
-                )
+                // Le même consentement, mot pour mot et avec la même version (la 3), qu'à l'entrée (critère K6) ; seule la phrase
+                // d'ouverture dit « à nouveau ».
+                SharingConsentCard(sentence: L10n.string("miff_consent3_resume"))
             }
         }
     }

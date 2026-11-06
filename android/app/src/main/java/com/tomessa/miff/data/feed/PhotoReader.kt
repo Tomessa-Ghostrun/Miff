@@ -130,8 +130,18 @@ class PhotoCache(
     }
 }
 
+/**
+ * What a refusal of the rules means for the card (backend/data-model.md: "un refus de lecture est ambigu"). It is NEVER a reason to delete anything. If I have
+ * published my own position in this Miff, the refusal is NOT the reciprocity (the photo expired, or sharing stopped): nothing is shown. If I have not, it is the
+ * reciprocity: the calm sentence "Partage ta position pour voir cette photo.".
+ */
+internal fun refusalLookup(ownPositionPublished: Boolean): PhotoLookup =
+    if (ownPositionPublished) PhotoLookup.Missing else PhotoLookup.NeedsOwnPosition
+
 class FirestorePhotoReader(
     private val cache: PhotoCache,
+    /** Have I published my own position in this Miff? (known locally: it is the detection that writes it). */
+    private val ownPositionPublished: (miffId: String) -> Boolean = { false },
     private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : PhotoReader {
@@ -167,7 +177,7 @@ class FirestorePhotoReader(
             throw e
         } catch (e: FirebaseFirestoreException) {
             when (e.code) {
-                FirebaseFirestoreException.Code.PERMISSION_DENIED -> PhotoLookup.NeedsOwnPosition
+                FirebaseFirestoreException.Code.PERMISSION_DENIED -> refusalLookup(ownPositionPublished(miffId))
 
                 FirebaseFirestoreException.Code.UNAVAILABLE,
                 FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,

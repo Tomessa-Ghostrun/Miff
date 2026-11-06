@@ -135,7 +135,7 @@ struct NewPlaceIllustration: View {
         }
     }
 
-    /// Le type de zone : deux cartes, zone de confiance et zone à risque.
+    /// Le type de zone : deux cartes, zone de confiance et zone de danger.
     private var typeSection: some View {
         Group {
             FormSection(unit: unit, top: 245, icon: .eye, titleKey: "ios_onboarding_type_title")
@@ -218,7 +218,7 @@ struct ZoneCardSpec {
     let isTrust: Bool
 }
 
-/// Une carte « Zone de confiance » (fond vert pâle) ou « Zone à risque » (fond blanc, trait rouge).
+/// Une carte « Zone de confiance » (fond vert pâle) ou « Zone de danger » (fond blanc, trait rouge).
 private struct ZoneCard: View {
     let unit: CGFloat
     let spec: ZoneCardSpec

@@ -266,7 +266,8 @@ final class FirestoreMiffRepository: MiffRepository {
                 miffs: state.summaries,
                 lost: state.lost,
                 premium: state.premium,
-                fromCache: state.fromCache
+                fromCache: state.fromCache,
+                premiumKnown: state.premiumKnown
             )
             return .loaded(miffs)
         }
@@ -281,7 +282,7 @@ final class FirestoreMiffRepository: MiffRepository {
             return true
         }
         // Retiré : la fiche a déjà disparu, le lot est refusé. Il ne reste que l'index, que les règles laissent supprimer.
-        let dropWrites = MiffWrites.dropIndex(uid: uid, membershipKey: lost.ref.key)
+        let dropWrites = MiffWrites.dropIndex(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
         let indexOnly = await write { try await store.commit(dropWrites) }
         return indexOnly == .done
     }

@@ -130,7 +130,7 @@ class UpdatePrivacyRuleTest {
         }
         // A refusal is reduced to a calm sentence, never to "expired".
         val reader = code(named("PhotoReader.kt"))
-        assertTrue(reader.contains("PERMISSION_DENIED -> PhotoLookup.NeedsOwnPosition"))
+        assertTrue(reader.contains("PERMISSION_DENIED -> refusalLookup("))
     }
 
     @Test
@@ -224,5 +224,13 @@ class UpdatePrivacyRuleTest {
                 named("UpdateBubble.kt"),
             ).substringAfter("fun IncentiveBubble(").substringBefore("fun UpdateConfirmation(")
         assertFalse(Regex("""Button|clickable|onClick|IconButton|Icon\(""").containsMatchIn(bubble))
+    }
+
+    @Test
+    fun theRealPublisherIsGivenTheListOfPublishedPositions_theDefaultOfTheClassIsNeverUsedInTheApp() {
+        val container = File(main, "AppContainer.kt").readText()
+        val publisher = container.substringAfter("val updatePublisher").substringBefore("val photoCleaner")
+        assertTrue(publisher.contains("published = LocalPublishedPositions("))
+        assertTrue(publisher.contains("onPositionMissing ="))
     }
 }

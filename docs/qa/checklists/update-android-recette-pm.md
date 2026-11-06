@@ -9,6 +9,7 @@
 - **Le texte de consentement de la position doit être celui de la version 3 ou plus** (c'est le cas de vos comptes de test s'ils ont accepté le texte v3). Le texte sera amendé pour citer la photo localisée par ailleurs : cette livraison **ne touche à aucun texte légal**.
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main. Désinstallez l'ancienne version d'abord.
 - **Aucune notification** n'est envoyée : la bulle d'incitation n'existe que **dans l'application ouverte**.
+- **Votre position doit déjà être publiée dans la Miff** (le téléphone l'écrit à l'ouverture de l'application, une fois le consentement et la localisation « Toujours » donnés) : juste après une installation neuve, « Publier » peut dire « Position introuvable pour le moment, réessaie dans un instant. » le temps que ce soit fait ; réessayez après quelques secondes.
 - **Une photo est toujours publiée avec votre position** (décision du 2026-11-06) : il n'y a pas d'option « sans lieu » ni de « Je vais bien » sans photo.
 - **Le bouton central est une pastille de couleur** (vert, orange, rouge, gris quand rien n'est connu), **sans aucun dessin dedans**. La barre est celle d'aujourd'hui (le verre est le ticket TABBAR-GLASS).
 

@@ -167,7 +167,32 @@ struct MiffScreenPreview: View {
         state.isOwner = name != "miff-screen-member"
         state.myUid = state.isOwner ? "u1" : "u2"
         state.members = members
-        state.places = [MiffPlace(id: "p1", name: "Maison de Papa"), MiffPlace(id: "p2", name: "École")]
+        state.places = [
+            Place(
+                id: "p1",
+                miffId: Self.demoMiff,
+                name: "Maison de Papa",
+                type: .trusted,
+                category: .home,
+                address: "26 rue du Volnay, 21000 Dijon, France",
+                lat: 47.32207,
+                lng: 5.04148,
+                radiusM: 150,
+                createdBy: "u1"
+            ),
+            Place(
+                id: "p2",
+                miffId: Self.demoMiff,
+                name: "École",
+                type: .trusted,
+                category: .school,
+                address: "4 rue des Écoles, 21000 Dijon, France",
+                lat: 47.32011,
+                lng: 5.04602,
+                radiusM: 100,
+                createdBy: "u1"
+            )
+        ]
         state.sharing = name != "miff-screen-sharing-off"
         applyVariant(to: &state)
         return state

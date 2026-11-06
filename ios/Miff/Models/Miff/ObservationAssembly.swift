@@ -21,7 +21,7 @@ struct ObservedPiece<Value> {
 func assembleObservation(
     miff: ObservedPiece<MiffDetails>?,
     members: ObservedPiece<[MiffMember]>?,
-    places: ObservedPiece<[MiffPlace]>?
+    places: ObservedPiece<[Place]>?
 ) -> MiffObservation {
     if miff?.lost == true || members?.lost == true {
         return .accessLost

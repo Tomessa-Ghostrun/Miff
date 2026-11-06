@@ -5,6 +5,7 @@ import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.session.ActiveDevice
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.tracking.PhotoPositionSource
+import com.tomessa.miff.data.tracking.PublishedPositions
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.interpretMiffError
 import com.tomessa.miff.domain.update.PhotoLocation
@@ -89,6 +90,10 @@ class UpdatePublisher(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
     private val timeoutMillis: Long = TIMEOUT_MS,
+    /** Has my position been published in this Miff? (contract of data-model.md: no photo where it was not; the reading of the photos of the others depends on it.) */
+    private val published: PublishedPositions = PublishedPositions { true },
+    /** Called when no Miff of the lot has my position yet: the detection is asked to write it (the person retries in a moment). */
+    private val onPositionMissing: () -> Unit = {},
 ) {
     /**
      * Publishes [photo]. [only]: the Miffs a previous try did not reach (null = all). Never throws except for the cancellation of the caller.
@@ -121,9 +126,16 @@ class UpdatePublisher(
                 Clearance.Replaced -> return PublishResult.Refused
                 Clearance.Unverified -> return PublishResult.Offline
             }
+        // Contract of the data model: a photo is only written where my own position is published. None yet: the detection is asked to write it, nothing is
+        // measured, and the person is told to try again in a moment (the same calm sentence as a position that cannot be found).
+        val withPosition = targets.filter { published.isPublished(it) }
+        if (withPosition.isEmpty()) {
+            onPositionMissing()
+            return PublishResult.PositionNotFound
+        }
         // ONE measure of the position, here and not before: nobody is located for a photo that is never published.
         val place = PhotoPlace.from(position.measure(), nowMillis()) ?: return PublishResult.PositionNotFound
-        return writeLots(uid, photo, place, targets, deviceId)
+        return writeLots(uid, photo, place, withPosition, targets, deviceId)
     }
 
     private suspend fun writeLots(
@@ -131,6 +143,7 @@ class UpdatePublisher(
         photo: UpdatePhoto,
         place: PhotoPlace,
         targets: List<String>,
+        all: List<String>,
         deviceId: String,
     ): PublishResult {
         val written = mutableListOf<String>()
@@ -169,7 +182,7 @@ class UpdatePublisher(
             needsAgreement += outcome.needsAgreement
         }
         if (written.isNotEmpty()) afterSuccess(uid, photo, place, written)
-        val untried = targets.filter { it !in written && it !in notSharing && it !in needsAgreement }
+        val untried = all.filter { it !in written && it !in notSharing && it !in needsAgreement }
         return when {
             written.isEmpty() && failure != null -> {
                 failure

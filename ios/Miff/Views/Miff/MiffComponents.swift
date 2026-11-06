@@ -290,43 +290,6 @@ struct MiffSwitchRow: View {
     }
 }
 
-/// Le consentement explicite : la phrase du PM, ce que les membres voient de la personne, la phrase sur les lieux, et le
-/// rappel sur la permission du téléphone. Visible SANS action et au-dessus du bouton (critère K1) ; lu d'un seul tenant par le
-/// lecteur d'écran, avant le bouton.
-struct SharingConsentCard: View {
-    let sentence: String
-    let systemNote: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(verbatim: sentence)
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorTextPrimary.color)
-            Text("miff_consent_members_see_title")
-                .miffTextStyle(textBodyBold14)
-                .foregroundColor(colorTextPrimary.color)
-            Text("miff_consent_members_see_body")
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorTextPrimary.color)
-            Text("miff_consent_places")
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorTextPrimary.color)
-            Text(verbatim: systemNote)
-                .miffTextStyle(textBodyCaption)
-                .foregroundColor(colorTextDescription.color)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .fixedSize(horizontal: false, vertical: true)
-        .padding(Spacing.md)
-        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-        .overlay(
-            RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                .stroke(colorBorderAction.color, lineWidth: strokeAccent)
-        )
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// Le sélecteur d'applications d'iOS garde une vignette de l'écran quand l'app passe en arrière-plan : un écran qui montre
 /// le code d'une Miff ne doit jamais y laisser le code. Dès que l'app n'est plus au premier plan (barre de l'App Switcher,
 /// retour à l'écran d'accueil, appel entrant), l'écran est recouvert par le fond de l'app et le mot-symbole.

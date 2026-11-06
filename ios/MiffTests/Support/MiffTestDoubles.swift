@@ -50,6 +50,8 @@ final class FakeMiffStore: MiffStore {
     /// Ce que répond `get miffs/{id}` par identifiant : un `MiffDetails`, ou une erreur (un refus des règles, un problème réseau).
     var miffs: [String: Any] = [:]
     var entitlement: EntitlementRead?
+    /// Une erreur à la lecture de l'abonnement (réseau coupé, refus).
+    var entitlementFailure: Error?
     var reachable = true
     var sharing: Bool?
     var profile: ProfileCopy? = testProfile
@@ -95,6 +97,9 @@ final class FakeMiffStore: MiffStore {
 
     func readEntitlement(uid: String) async throws -> EntitlementRead? {
         calls.append("entitlement")
+        if let entitlementFailure {
+            throw entitlementFailure
+        }
         return entitlement
     }
 
@@ -151,6 +156,43 @@ final class FakeMiffStore: MiffStore {
             throw placesFailure
         }
         return placeIds
+    }
+
+    // MARK: - LOC-4a
+
+    /// Ce que dit ma fiche dans chaque Miff : un `SharingConsentRead`, ou une erreur (refus des règles, réseau) ; absent = pas
+    /// de fiche.
+    var consents: [String: Any] = [:]
+
+    func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead? {
+        calls.append("consent:\(miffId)")
+        guard let answer = consents[miffId] else {
+            return nil
+        }
+        if let failure = answer as? Error {
+            throw failure
+        }
+        return answer as? SharingConsentRead
+    }
+
+    /// Comme la transaction réelle : la fiche est lue au moment du lot, et seules les Miffs où elle dit « je partage » sont écrites.
+    func commitWhereSharing(
+        uid: String,
+        miffIds: [String],
+        build: @escaping ([String]) -> [DocWrite]
+    ) async throws -> [String] {
+        calls.append("commitWhereSharing")
+        let active = miffIds.filter { id in
+            guard let read = consents[id] as? SharingConsentRead else {
+                return false
+            }
+            return read.enabled && MiffSharingConsent.isRenewalDue(read.version)
+        }
+        guard !active.isEmpty else {
+            return []
+        }
+        try record(build(active))
+        return active
     }
 
     func commitWithMiff(miffId: String, build: @escaping (MiffTxView) -> [DocWrite]) async throws {
@@ -285,6 +327,18 @@ class MiffStoreByDelegation: MiffStore {
 
     func commitWithMiff(miffId: String, build: @escaping (MiffTxView) -> [DocWrite]) async throws {
         try await inner.commitWithMiff(miffId: miffId, build: build)
+    }
+
+    func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead? {
+        try await inner.readSharingConsent(miffId: miffId, uid: uid)
+    }
+
+    func commitWhereSharing(
+        uid: String,
+        miffIds: [String],
+        build: @escaping ([String]) -> [DocWrite]
+    ) async throws -> [String] {
+        try await inner.commitWhereSharing(uid: uid, miffIds: miffIds, build: build)
     }
 }
 

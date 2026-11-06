@@ -37,7 +37,7 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |
 | `home_` | Écran d'accueil | Android et iOS |
 | `diag_` | Écran de diagnostic interne (builds debug / TestFlight, jamais en release) | Android et iOS |
-| `ios_` | Texte propre à iOS (ex. textes de permission système) | **iOS seulement** |
+| `ios_` | Texte propre à iOS (ex. textes de permission système, étapes des Réglages d'iOS : `ios_permission_location_*`, LOC-4a) | **iOS seulement** |
 | `android_` | Texte propre à Android | **Android seulement** |
 
 Les clés `ios_` et `android_` sont ignorées par le contrôle de parité. Un préfixe de fonctionnalité nouveau (ex. `settings_`, `paywall_`, `feed_`, `onboarding_`) s'ajoute **dans ce tableau et dans `KNOWN_PREFIXES` du script** par la PR de la fonctionnalité ; en attendant, le script affiche seulement un avertissement.

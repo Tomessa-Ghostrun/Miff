@@ -60,8 +60,12 @@ struct AppRootView: View {
             MiffOnboardingHost(environment: environment)
                 .id(sessionKey(for: "choice"))
         case .feed:
-            MiffHomeHost(environment: environment)
-                .id(sessionKey(for: "feed"))
+            // LOC-4a : l'écran des notifications, le renouvellement du consentement et l'écran bloquant de la localisation
+            // passent AVANT le Feed ; un hôte neuf par compte et par session, comme le Feed lui-même.
+            PermissionGateHost(environment: environment) {
+                MiffHomeHost(environment: environment)
+            }
+            .id(sessionKey(for: "feed"))
         }
     }
 

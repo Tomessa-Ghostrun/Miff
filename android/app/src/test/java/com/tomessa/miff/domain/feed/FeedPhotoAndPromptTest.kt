@@ -232,4 +232,18 @@ class FeedPhotoAndPromptTest {
         assertEquals("PhotoLocation(redacted)", PhotoLocation(1.0, 2.0, 3L).toString())
         assertFalse(shared().toString().contains("48"))
     }
+
+    @Test
+    fun aRefusalIsTheReciprocityOnlyWhenIHaveNotPublishedMyPosition_otherwiseNothingIsShown() {
+        assertEquals(
+            com.tomessa.miff.data.feed.PhotoLookup.NeedsOwnPosition,
+            com.tomessa.miff.data.feed
+                .refusalLookup(ownPositionPublished = false),
+        )
+        assertEquals(
+            com.tomessa.miff.data.feed.PhotoLookup.Missing,
+            com.tomessa.miff.data.feed
+                .refusalLookup(ownPositionPublished = true),
+        )
+    }
 }
