@@ -191,6 +191,12 @@ dependencies {
     // that keeps working with the app closed and the battery-friendly reports of a move are only offered by this library.
     implementation(libs.play.services.location)
 
+    // Frosted glass of the tab bar (TABBAR-GLASS): Haze, blur module only, Apache 2.0, free, version pinned in libs.versions.toml. Justification (PR):
+    // blurring what is BEHIND a bar needs a recorded copy of the content and a render effect; Haze is the smallest maintained piece that does it
+    // (home-made version = plan B). No network, no permission, no key.
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
+
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)
