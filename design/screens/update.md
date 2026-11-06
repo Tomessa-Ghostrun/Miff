@@ -1,13 +1,13 @@
 # Écran Update : spécification d'implémentation (viseur, aperçu, bulle d'incitation, écrans manquants)
 
 **Rédigé le** 2026-11-06 par l'agent `design-system`. **Sources** : les 7 maquettes du PM (`design/exports/update/Welcoming screen*.png`, 320 x 640, sans Figma), `docs/tickets/update.md` (branche `docs/challenge-update`, commit 298d45e : décisions D16 à D20, §7 textes, cas limites), `docs/tickets/feed.md` et `design/screens/feed/` (branche `docs/challenge-feed`), `design/design-system.md`, `design/exports/pop-ins/`, code Android existant (`MainTabBar.kt`, `MainShell.kt`, `MainTab.kt`, lus sans modification).
-**Maquettes de cette fiche** : `design/exports/update/claude/01` à `08` (PNG @2x rendus depuis `design/screens/update/mockups/*.html`, même méthode que les flux Feed et Lieux). Ce **ne sont pas des exports Figma** : photos, pictogrammes et avatars sont des emplacements ou des approximations (voir « Assets manquants »).
+**Maquettes de cette fiche** : `design/exports/update/claude/01` à `09` (PNG @2x rendus depuis `design/screens/update/mockups/*.html`, même méthode que les flux Feed et Lieux). Ce **ne sont pas des exports Figma** : photos, pictogrammes et avatars sont des emplacements ou des approximations (voir « Assets manquants »).
 **Tab bar « liquid glass »** : `design/tab-bar-liquid-glass.md` (rendu, couleurs, contrastes, accessibilité, code à changer).
 
 **Convention** : **[Décidé]** = décision du PM ou du ticket validé ; **[Maquette]** = lu sur une maquette du PM ; **[Proposé]** = mon ajout de design, à valider ; **[À CONFIRMER]** = valeur non sûre ou point à faire confirmer par le PM. Les valeurs lues sur des captures de 320 px sont converties à 390 pt de large (facteur 1,22) : **[À CONFIRMER]** à l'export Figma.
 
 ## Décision du PM du 2026-11-06 (message d'incitation)
-Le message d'incitation est **la bulle colorée des maquettes** : un rectangle arrondi orange ou rouge, **sans titre ni bouton**, posé **juste au-dessus de la tab bar**, avec une **petite queue qui pointe vers le bouton central**, **non fermable**. Textes, **mot pour mot** : « Tu es passé en orange, indique à la Miff que tout va bien en publiant une update » et « Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update ». Cette décision **remplace D17** du ticket (bandeau en haut du Feed, titre « Un petit signe à tes proches ? », bouton « Donner des nouvelles »). Le **cas « zone de danger »** reprend le texte rouge des maquettes (**confirmé par le PM le 2026-11-06**). Autres réponses du PM du 2026-11-06 : la bulle apparaît sur **tous les onglets sauf l'onglet Update** (donc aussi sur Profil) ; la **croix de l'aperçu** a le même effet que « Recommencer » ; l'**état neutre** du bouton central (statut inconnu ou partage arrêté) est **gris**, comme les autres boutons de la barre. Le reste du ticket (D16 photo obligatoire, D18 disparition, D19 Miff affichée, cas limites) est inchangé. **`docs/tickets/update.md` n'est pas modifié ici** : ses passages sur D17 (§3 D17, §5.5, §7 « Messages d'incitation », critères A1 et A3, §16 point 6) sont à aligner par `product-specs`.
+Le message d'incitation est **la bulle colorée des maquettes** : un rectangle arrondi orange ou rouge, **sans titre ni bouton**, posé **juste au-dessus de la tab bar**, avec une **petite queue qui pointe vers le bouton central**, **non fermable**. Textes, **mot pour mot** : « Tu es passé en orange, indique à la Miff que tout va bien en publiant une update » et « Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update ». Cette décision **remplace D17** du ticket (bandeau en haut du Feed, titre « Un petit signe à tes proches ? », bouton « Donner des nouvelles »). Le **cas « zone de danger »** reprend le texte rouge des maquettes (**confirmé par le PM le 2026-11-06**). Autres réponses du PM du 2026-11-06 : la bulle apparaît sur **tous les onglets sauf l'onglet Update** (donc aussi sur Profil) ; la **croix de l'aperçu** a le même effet que « Recommencer » ; l'**état neutre** du bouton central (statut inconnu ou partage arrêté) est **gris**, comme les autres boutons de la barre. Le reste du ticket (D16 photo obligatoire, D18 disparition, D19 Miff affichée, cas limites) est inchangé. **Décisions complémentaires du PM (2026-11-06, réponses à mes questions)** : le viseur est **plein écran** ; l'aperçu est **un peu plus petit** que le plein écran (photo avec marges, boutons dessous) ; une photo touchée dans le Feed s'ouvre **en plein écran** (§6.1 pour le traitement technique, proposé) ; la **tab bar reste visible sur le viseur, sans croix** ; le **bouton central est une pastille de couleur seule** (vert, orange, rouge, gris au neutre), **sans aucun pictogramme** ; les **deux variantes de verre** (claire sur Feed et Profil, sombre à icônes blanches sur le viseur) et les icônes inactives plus foncées sont validées ; **Haze** est validé ; sont aussi validés : les couleurs des bulles `#face90` / `#fa9490`, la marge de 24 pt (iOS) et l'arrondi de 20 de la barre, le texte anglais de la bulle. **`docs/tickets/update.md` n'est pas modifié ici** : ses passages sur D17 (§3 D17, §5.5, §7 « Messages d'incitation », critères A1 et A3, §16 point 6) sont à aligner par `product-specs`.
 
 ---
 
@@ -32,10 +32,9 @@ Tous existent dans `design/design-system.md` sauf mention **[nouveau]**. Les val
 | Boutons, anneau du bouton central, icônes actives (barre claire) | `action/primary` | `#043cd1` |
 | Pastille de l'onglet actif (barre claire) | `action/primary-tint-20` | bleu à 20 % |
 | Point de statut | `status/safe`, `status/warning`, `status/danger` | `#d1d828`, `#ffb650`, `#ff5650` |
-| Glyphe du point de statut | `text/form` | `#222222` |
 | Texte sur les bulles | `text/primary` | `#000000` |
-| Fond bulle orange | `status/warning-bubble` **[nouveau, À CONFIRMER]** | `#face90` (pipette sur la maquette ; ≈ `status/warning` à 63 % sur blanc) |
-| Fond bulle rouge | `status/danger-bubble` **[nouveau, À CONFIRMER]** | `#fa9490` (≈ `status/danger` à 63 % sur blanc) |
+| Fond bulle orange | `status/warning-bubble` **[nouveau]** | `#face90` (validé par le PM ; ≈ `status/warning` à 63 % sur blanc) |
+| Fond bulle rouge | `status/danger-bubble` **[nouveau]** | `#fa9490` (validé par le PM ; ≈ `status/danger` à 63 % sur blanc) |
 | Police des bulles | `body/italic` | Hanken Grotesk Italic 16 / 22 |
 | Fond du bouton « Publier » | `action/primary` ; texte `text/on-action` | `#043cd1` ; `#ffffff` |
 | Fond du bouton « Recommencer » | `bg/canvas` + contour `border/action` | `#f9f9f7` ; 1,5 pt |
@@ -48,10 +47,10 @@ Tous existent dans `design/design-system.md` sauf mention **[nouveau]**. Les val
 Détails de rendu, de matériaux et de code : `design/tab-bar-liquid-glass.md`. Ce qui concerne l'écran Update :
 
 - **3 entrées**, de gauche à droite (inversées en droite-à-gauche) : Feed (maison avec cœur), **bouton central « Donner des nouvelles »**, Profil (silhouette). Le bouton central est **actif dans tous les builds** [Décidé, D14 levée par le ticket] ; il n'est plus « désactivé / masqué ».
-- **Bouton central** [Proposé, écart justifié §11] : plaque blanche opaque 44 pt, anneau `action/primary` 3 pt, **point de la couleur de MON statut** de 24 pt **toujours en couleur pleine**, **glyphe** de 14 pt. La couleur suit la Miff affichée dans le Feed [Décidé, D19].
-  - **Orange** `#ffb650` + glyphe horloge ; **rouge** `#ff5650` + glyphe « ! » [Maquette].
-  - **Vert** `#d1d828` + glyphe coche **[À CONFIRMER : pas de réponse du PM ; les maquettes ne montrent que des points orange et rouge sur le viseur, et un point vert délavé sur le Feed]**. Ma proposition : même traitement que l'orange et le rouge (point plein), pour que le bouton raconte le statut sans effort.
-  - **Neutre (statut inconnu ou partage arrêté)** [Décidé, PM 2026-11-06] : **GRIS, comme les autres boutons de la barre** : anneau et point en `tabbar/icon-inactive` (`#595959` sur la plaque blanche, contraste 7,0:1), **sans glyphe**. Détail de dessin [Proposé] : disque plein gris dans l'anneau gris, avec l'air blanc habituel.
+- **Bouton central** [Décidé, PM 2026-11-06 : « la couleur est le seul signal »] : plaque blanche opaque 44 pt, anneau `action/primary` 3 pt, **pastille de la couleur de MON statut** de 24 pt, **en couleur pleine et sans aucun pictogramme** (ni coche, ni horloge, ni « ! »), avec 3 pt d'air blanc entre la pastille et l'anneau. La couleur suit la Miff affichée dans le Feed [Décidé, D19].
+  - **Vert** `#d1d828`, **orange** `#ffb650`, **rouge** `#ff5650` [Décidé ; maquettes : orange et rouge sur le viseur].
+  - **Neutre (statut inconnu ou partage arrêté)** [Décidé, PM 2026-11-06] : **GRIS, comme les autres boutons de la barre** : anneau et pastille en `tabbar/icon-inactive` (`#595959` sur la plaque blanche, contraste 7,0:1). Détail de dessin [Proposé] : disque plein gris dans l'anneau gris, avec l'air blanc habituel.
+  - **Nom parlé conservé** (pour le lecteur d'écran, pas visuel) : voir ci-dessous.
 - **Nom parlé** [Décidé, ticket §5.4] : « Donner des nouvelles, tout va bien » / « …, tu es en orange » / « …, tu es en rouge » / « Donner des nouvelles » (neutre, gris). EN : « Share news, all good » / « …, you're in orange » / « …, you're in red » / « Share news ».
 - **Onglet actif** : pastille 64 x 48 pt derrière l'icône. Le bouton central est actif tant que le viseur ou l'aperçu est affiché [Maquette].
 - Une touche sur l'onglet **actif** ne fait rien sur le viseur et sur l'aperçu [Proposé] (sur le Feed, elle ramène en haut du Feed comme aujourd'hui). Une touche sur Feed ou Profil **quitte** l'écran Update et **oublie** la photo en mémoire, sans boîte de confirmation (une photo se reprend en deux secondes ; une confirmation ajouterait de la charge) [Proposé].
@@ -70,7 +69,7 @@ Mon niveau (Miff affichée) est **orange** ou **rouge**. **Décision du PM (2026
 | Forme | rectangle arrondi **20 pt** ; **aucune ombre** (maquette plate) |
 | Queue | triangle **22 x 11 pt**, centré **horizontalement sur le bouton central** (donc sur l'axe de l'écran : les trois entrées sont symétriques), de la couleur de la bulle ; **la pointe s'arrête 4 pt au-dessus de la barre** (la maquette la fait toucher la barre ; on évite le contact avec le verre) |
 | Texte | `body/italic` 16 / 22, noir, aligné au début, marges internes 16 pt (haut/bas) et 18 pt (côtés) ; jusqu'à 3 lignes sans problème à la taille de texte standard |
-| Couleurs | orange `#face90`, rouge `#fa9490` **[À CONFIRMER]** |
+| Couleurs | orange `#face90`, rouge `#fa9490` (validées par le PM) |
 | Contraste du texte noir | **orange 14,3:1, rouge 9,7:1** (calcul WCAG, AA exigé 4,5:1) ; la couleur n'est pas seule : le texte dit « orange » / « rouge » |
 | Apparition | fondu de 150 ms ; **aucun fondu** si « réduire les animations » ; pas de rebond, pas de pulsation |
 | Matière | **opaque**, jamais du verre : la bulle est hors du conteneur de verre de la barre (pas de verre sur du verre) |
@@ -89,7 +88,7 @@ Mon niveau (Miff affichée) est **orange** ou **rouge**. **Décision du PM (2026
 ### 4.4 Lecteur d'écran
 - Texte lu tel quel, **rôle texte statique**, **pas de région live** : aucune annonce automatique à l'apparition (un lecteur d'écran qui parle tout seul serait l'équivalent sonore de l'alerte écartée en D17) [Proposé]. Le texte reste atteignable.
 - **Ordre de lecture** : la bulle se trouve juste **avant la tab bar** (ordre visuel), de sorte que **l'élément suivant** est l'onglet central, dont le nom parlé dit l'état (« Donner des nouvelles, tu es en orange »).
-- Traduction EN **[Proposé, à relire]** : « You've turned orange: let your Miff know all is well by posting an update » / « You've turned red: … ».
+- Traduction EN (validée par le PM) : « You've turned orange: let your Miff know all is well by posting an update » / « You've turned red: … ».
 
 ## 5. Viseur (planche 03, A et B)
 
@@ -105,19 +104,50 @@ Mon niveau (Miff affichée) est **orange** ou **rouge**. **Décision du PM (2026
 | Astuce | « Touche deux fois l'écran pour changer de caméra. » dans une pastille sombre en haut, **3 premières ouvertures** seulement [Décidé, V3] |
 | Sortie | **par la tab bar** (onglet Feed ou Profil) : **pas de croix sur le viseur** [Maquette]. Retour système = onglet précédent |
 | Point du bouton central | couleur de mon statut (vert, orange, rouge) ; **le viseur existe aussi en vert** (la maquette ne montre que rouge et orange) |
-| Barre sur le viseur | variante **« sur photo »** (verre sombre, icônes blanches), **sans flou sur Android** (CameraX : un flou sur l'aperçu vidéo exige le mode compatible, plus lourd) ; voir `tab-bar-liquid-glass.md` |
+| Barre sur le viseur | variante **« sur photo »** (validée par le PM) (verre sombre, icônes blanches), **sans flou sur Android** (CameraX : un flou sur l'aperçu vidéo exige le mode compatible, plus lourd) ; voir `tab-bar-liquid-glass.md` |
 
 ## 6. Aperçu (planche 03, C à E)
 
 | Élément | Spécification |
 |---|---|
-| Image | la photo prise, **telle qu'elle sera publiée** (pas en miroir, D3 et ticket §5.3) |
-| Croix | en haut à gauche [Maquette], cible 48 pt, **fond sombre translucide** (la croix blanche seule se perd sur une photo claire : 1,6:1)  ; **même effet que « Recommencer »** [Décidé, PM 2026-11-06] : retour au viseur, la photo prise est supprimée, **rien n'est publié, aucune confirmation** |
+| Photo | la photo prise, **telle qu'elle sera publiée** (pas en miroir, D3 et ticket §5.3), **entière, jamais recadrée, à son ratio** [Décidé, PM 2026-11-06 : un peu plus petite que le plein écran]. Ajustée (aspect-fit) dans la zone entre la barre d'état et la ligne de visibilité : environ **70 % de la largeur** de l'écran sur un 19,5:9, coins de 20 pt, **fond neutre sombre** `#1d1f20` autour [Proposé]. Boutons dessous. Voir §6.1 |
+| Croix | dans l'angle haut gauche de la photo [Maquette : en haut à gauche], cible 48 pt, **fond sombre translucide** (la croix blanche seule se perd sur une photo claire : 1,6:1)  ; **même effet que « Recommencer »** [Décidé, PM 2026-11-06] : retour au viseur, la photo prise est supprimée, **rien n'est publié, aucune confirmation** |
 | Recommencer | bouton 56 x 48 pt, fond `bg/canvas`, contour bleu, icône flèche circulaire bleue [Maquette : icône seule]. Retour au viseur, photo oubliée |
 | Publier | bouton bleu **48 pt de haut**, libellé « Publier » + avion en papier, à droite [Maquette] ; inactif (bleu à 30 %) en cas d'échec bloquant |
 | Ligne de visibilité | **[Proposé, absente de la maquette, issue du ticket §7]** : « Tes proches verront cette photo pendant 24 h. » ; avec 2 Miffs ou plus : « Ta photo sera visible des membres de tes {n} Miffs pendant 24 h. » (qui voit quoi) ; avec localisation de la photo (UPDATE-1b) : phrase du ticket §7 |
 | Photo qui date | plus de 5 min : encart « Cette photo date un peu : reprends-en une. », Publier inactif [Décidé, V6] |
 | Barre | visible, bouton central actif ; mêmes règles que le viseur |
+
+### 6.1 Format de la photo : proposition technique (planche 09)
+
+**Décisions du PM (2026-11-06)** : le viseur est en plein écran ; l'aperçu est un peu plus petit que le plein écran (photo avec marges, boutons dessous) ; depuis le Feed, toucher la photo d'un membre l'ouvre à nouveau en plein écran (maquette `design/exports/feed/claude/09-photo-plein-ecran.png`, branche `docs/challenge-feed`). Le traitement technique ci-dessous est **ma proposition** (une option recommandée et ses limites).
+
+**Option recommandée : « ratio de l'écran, borné »**
+
+| Sujet | Proposition |
+|---|---|
+| Zone enregistrée | exactement la **zone visible du viseur** (toute la fenêtre, y compris sous la barre d'état et sous la tab bar) : recadrage « cover » de l'image du capteur (4:3 en général). **Ce que tu vois est ce qui part.** |
+| Ratio enregistré | celui de l'écran de la personne, **borné entre 9:21 (0,43) et 9:16 (0,56)**. iPhone 11 Pro (19,5:9, 0,46) et OPPO Find X5 Lite (20:9, 0,45) sont dans les bornes. Hors bornes (tablette, écran partagé, pliant) : le viseur se limite à la zone bornée, centrée, avec des bandes sombres de chaque côté (cas rare, il n'est alors plus tout à fait « plein écran ») |
+| Résolution | côté long **≤ 1 024 px** (valeur du ticket, V7, conservée) : 473 x 1 024 (iPhone 11 Pro), 461 x 1 024 (OPPO), 576 x 1 024 (9:16), 439 x 1 024 (9:21), soit 0,45 à 0,59 million de pixels contre 0,79 pour du 3:4 : moins de pixels, donc plus de marge sous 150 Ko |
+| Poids | **≤ 150 000 octets** (plafond des règles Firestore, inchangé), cible ≤ 100 Ko. Échelle de compression : qualité JPEG de 80 vers 55, puis côté long 1 024, 896, 768 jusqu'à tenir (comme `AvatarCompression.fit`) ; si rien ne tient : message et aucune écriture. **Estimation** : 60 à 110 Ko pour une photo type, **à mesurer sur dix photos** (critères V3 et QU1 du ticket) |
+| Règles Firestore | **aucun changement** : le ratio se lit dans l'en-tête du JPEG (dimensions) ; aucun champ ajouté (`validPhoto` : `jpeg`, `createdAt`, `expiresAt`) |
+| Viseur | plein écran (planche 09, A) |
+| Aperçu | la **photo entière**, à son ratio, ajustée dans la zone libre, marges et coins arrondis ; boutons dessous (planche 09, B) |
+| Carte du Feed | **fenêtre fixe** (celle des cartes du Feed, 108 pt de haut) : recadrage centré, un peu au-dessus du milieu ; **on n'y voit qu'une bande de la photo** (planche 09, C). Toucher = plein écran |
+| Plein écran du Feed | aligné sur `09-photo-plein-ecran` : fond noir, **photo entière** centrée (aspect-fit), **jamais recadrée**, pincement pour zoomer, heure en bas, fermer en haut à gauche (planche 09, D). Si le ratio de l'écran diffère de celui de la photo : bandes noires (haut et bas, ou sur les côtés) |
+| Recadrage (technique) | calcul « cover » à partir des tailles (image du capteur redressée, rectangle du viseur), puis ré-encodage depuis les pixels : **le même calcul sur iOS et Android, testable en unitaire sans appareil**. CameraX propose un mécanisme de zone commune entre aperçu et prise (`ViewPort` avec `UseCaseGroup`) et AVFoundation une conversion de rectangle depuis l'aperçu : **[À VÉRIFIER dans leur documentation]** ; recommandation : le calcul maison, identique partout |
+| Miroir | aperçu du viseur frontal en miroir ; photo enregistrée et aperçu non miroir (inchangé, ticket §5.3) |
+
+**Limites connues**
+1. En plein écran sur l'iPhone 11 Pro (1 125 px de large), une photo de 473 px est agrandie d'environ 2,4 fois : elle paraît **douce**. C'est le prix du plafond de 150 Ko. Levier si la mesure laisse de la marge : côté long de 1 280 px, à décider après mesure, **sans changer les règles**.
+2. Le champ de vision de la caméra frontale est réduit : un capteur 4:3 recadré en 19,5:9 perd environ 40 % de la largeur. C'est visible dans le viseur (pas de surprise), mais un selfie à bout de bras cadre plus serré.
+3. Les photos des proches n'ont pas toutes le même ratio (selon leur téléphone) : sans effet sur le Feed (fenêtre fixe de carte, plein écran ajusté).
+4. La bande visible dans la carte est étroite pour une photo en portrait ; si on veut y voir davantage, la fenêtre peut être agrandie dans le ticket Feed (FEED-4) : hors périmètre de cette fiche.
+5. Si l'app autorisait un jour le mode paysage, le viseur resterait en portrait.
+
+**Alternatives écartées** : ratio fixe 3:4 (celui du ticket) : le viseur plein écran montrerait environ 40 % de hauteur de plus que ce qui est enregistré, ou il faudrait un viseur en 3:4, contraire à la décision du PM ; ratio fixe 9:16 : poids prévisible et simple, mais sur un 19,5:9 le viseur montrerait environ 18 % de hauteur de plus que la photo enregistrée (ce que tu vois n'est plus ce qui part).
+
+**Ce que ça remplace dans le ticket** : V7 (« Portrait 3:4 ») et le critère V3 de `docs/tickets/update.md`, à aligner par `product-specs` (ce fichier n'est pas modifié ici).
 
 ## 7. Écrans manquants (à dessiner ou spécifier)
 
@@ -175,8 +205,8 @@ Le point du bouton central et la bulle suivent la **Miff affichée**. Changer de
 | Recommencer / Publier | « Recommencer » / « Publier » ; annonce « Photo prise. Tu peux la publier ou recommencer. » à l'ouverture de l'aperçu | 56 x 48 pt / 48 pt de haut |
 | Pop-ins | titre en en-tête ; boutons ≥ 46 pt iOS ; **48 dp Android** (zone tactile étendue au besoin) | 44 pt iOS, 48 dp Android |
 
-- **Contrastes** (calculés, WCAG 2.1) : texte noir sur bulle orange 14,3:1, rouge 9,7:1 ; blanc sur bleu `action/primary` 8,16:1 (Publier) ; icône bleue sur `bg/canvas` 7,74:1 (Recommencer) ; glyphe `#222` sur les points 10,3:1 (vert), 9,1:1 (orange), 5,1:1 (rouge) ; croix blanche sur fond sombre translucide 45 % : 3,35:1 au pire (photo blanche), 21:1 sur noir. Contrastes de la tab bar : `tab-bar-liquid-glass.md` §6.
-- **Jamais la couleur seule** : bulle (le texte dit « orange » ou « rouge »), point (glyphe : coche, horloge, « ! »), bouton central (nom parlé), onglet actif (pastille et nom).
+- **Contrastes** (calculés, WCAG 2.1) : texte noir sur bulle orange 14,3:1, rouge 9,7:1 ; blanc sur bleu `action/primary` 8,16:1 (Publier) ; icône bleue sur `bg/canvas` 7,74:1 (Recommencer) ; croix blanche sur fond sombre translucide 45 % : 3,35:1 au pire (photo blanche), 21:1 sur noir. **Pastille du bouton central seule, contre la plaque blanche** : vert 1,55:1, orange 1,74:1, rouge 3,13:1, gris neutre 7,00:1 ; **contre l'anneau bleu** : 5,27 / 4,69 / 2,60:1 ; anneau bleu contre la plaque : 8,16:1 ; anneau gris (neutre) contre la plaque : 7,00:1. Contrastes de la tab bar : `tab-bar-liquid-glass.md` §6.
+- **Bouton central : la couleur est le seul signal visuel** [Décidé, PM 2026-11-06] : aucun pictogramme. Pour le lecteur d'écran, le **nom parlé** dit l'état (« Donner des nouvelles, tu es en orange »). Visuellement, le sens est aussi porté par la bulle quand elle existe (le texte dit « orange » ou « rouge ») et par l'anneau de l'avatar et les cartes du Feed. **Limites connues, assumées** : le vert `#d1d828` et l'orange `#ffb650` ne se distinguent presque pas par la luminosité (1,12:1) : une personne daltonienne peut les confondre ; les pastilles vert et orange sont sous 3:1 contre la plaque blanche (WCAG 1.4.11 non atteint pour la pastille seule). Le contour du bouton, lui, est porté par l'anneau bleu (8,16:1). Atténuation facultative **sans pictogramme**, laissée à l'implémentation : un liseré fin `#222222` autour de la pastille (porte ses bords à 5,1:1 au moins). Onglet actif : pastille et nom parlé (pas la couleur seule).
 - **Réduire les animations** : fondu de la bulle, rebond du déclencheur, indicateur de partage et transition vers l'aperçu supprimés ou figés.
 - **Texte maximal et droite-à-gauche** : barre, bulle et pop-ins sans chevauchement (barre en début/fin, icônes non miroir).
 - **Zone atteignable au pouce** : bulle, déclencheur, Recommencer, Publier et barre sont dans le tiers bas de l'écran ; seules la bascule de caméra et la croix sont en haut (alternatives : double toucher, onglet Feed).
@@ -197,7 +227,7 @@ Le point du bouton central et la bulle suivent la **Miff affichée**. Changer de
 
 | # | Écart | Justification |
 |---|---|---|
-| E1 | Point du bouton central **toujours en couleur pleine** + glyphe + plaque blanche ; la maquette le montre délavé (≈ 30 %) quand l'onglet est inactif ; **neutre en gris** (décision du PM) | Le statut est l'information principale du bouton : délavé, le point tombe à 1,1:1 contre la barre ; la couleur ne doit pas être seule (glyphe) |
+| E1 | Point du bouton central **toujours en couleur pleine** (la maquette le montre délavé, ≈ 30 %, quand l'onglet est inactif) sur une plaque blanche opaque ; **neutre en gris** ; **aucun pictogramme** (décisions du PM) | Délavé, le point tombe à 1,1:1 contre la barre ; la plaque et l'anneau bleu isolent le bouton du verre ; contrastes de la pastille seule en §8 |
 | E2 | Icônes inactives de la barre en `#595959` au lieu du gris `#7d7c7c` | `#7d7c7c` donne 2,6:1 au pire fond sur la barre claire (seuil 3:1) ; `#595959` donne 4,4:1 |
 | E3 | Barre en verre translucide à teinte calculée, **deux variantes** (claire sur le Feed, sombre sur photo) | Demande du PM (liquid glass) ; sur le viseur, la maquette donnait 2,1:1 pour les icônes inactives |
 | E4 | Déclencheur **double anneau** blanc et bleu, 80 pt | Le bleu seul : 1,2:1 sur un fond sombre ; ticket : ≥ 72 pt |
@@ -205,25 +235,33 @@ Le point du bouton central et la bulle suivent la **Miff affichée**. Changer de
 | E6 | **Bouton de bascule visible**, ligne d'aide, astuce du double toucher | Ticket (V3, AC2) : le double toucher est invisible et inaccessible au lecteur d'écran |
 | E7 | **Ligne de visibilité** sur l'aperçu | Ticket §7 ; qui voit quoi, surtout avec plusieurs Miffs |
 | E8 | **Bulle** : texte et couleurs de la maquette, visible sur **tous les onglets sauf Update** (décision du PM) ; ajouts : non interactive, absorbe les touchers, marge basse du Feed, défilante en grand texte, masquée avec le clavier, queue à 4 pt de la barre, non annoncée | Décision du PM ; les ajouts évitent de masquer le Feed et de déclencher des boutons cachés |
-| E9 | **Tab bar visible sur le viseur et l'aperçu** comme les maquettes | Le ticket proposait un plein écran sans barre (V1, C7, [Proposé] jamais validé) : les maquettes du PM font foi ; la sortie du viseur passe donc par la barre. Conséquence : l'écran Update est un contenu d'onglet (voir `tab-bar-liquid-glass.md` §11) |
-| E10 | Viseur **plein écran** (maquette) contre photo publiée **3:4** (ticket V7) | Désaccord de format : Question Q1 |
+| E9 | **Tab bar visible sur le viseur et l'aperçu** comme les maquettes (validé par le PM) | Le ticket proposait un plein écran sans barre (V1, C7, [Proposé] jamais validé) : les maquettes du PM font foi ; la sortie du viseur passe donc par la barre. Conséquence : l'écran Update est un contenu d'onglet (voir `tab-bar-liquid-glass.md` §11) |
+| E10 | Viseur **plein écran**, aperçu **un peu plus petit**, plein écran dans le Feed (décisions du PM) contre photo 3:4 du ticket (V7) | Traitement technique proposé en §6.1 (ratio de l'écran, borné) ; V7 et V3 à aligner dans le ticket |
 | E11 | « Arrivé il y a 12 min » → « Depuis 12 min » ; cloche absente de l'en-tête ; « Tout va bien » au lieu de « Tout le monde est en sécurité » | Décisions de textes du Feed (`design/screens/feed/`), hors périmètre de cette fiche : **à confirmer** par le ticket Feed |
 | E12 | Photo, avatar et pictogrammes = emplacements ; la photo du PM sert d'exemple de fond | Pas d'asset graphique généré |
+| E13 | Anneau d'avatar **sans glyphe** dans les planches (comme les maquettes du PM) | Décision du PM « la couleur est le seul signal » appliquée au bouton ; la proposition du Feed (glyphe sur l'anneau, `design/screens/feed/`) est **à reconsidérer dans le ticket Feed** : signalé, non tranché ici |
 
 ## 12. Assets manquants (à exporter depuis Figma par le PM)
 - **Pictogramme caméra** (contour jaune-vert, style du pictogramme de localisation des pop-ins) pour la permission ; variantes « barrée » pour les états C, D, E, F.
-- **Icônes de la tab bar** (maison avec cœur, silhouette) en vectoriel, recolorables (le design system note qu'elles ne le sont pas aujourd'hui) ; icônes avion en papier, flèche circulaire, bascule de caméra, croix, coche, horloge, « ! ».
+- **Icônes de la tab bar** (maison avec cœur, silhouette) en vectoriel, recolorables (le design system note qu'elles ne le sont pas aujourd'hui)  ; icônes avion en papier, flèche circulaire, bascule de caméra, croix.
 - **Photos d'exemple** (carte avec photo d'update) et avatars.
 - **Export des maquettes à 390 pt de large** (les 7 captures font 320 x 640 : les cotes ci-dessus sont converties).
 
 ## 13. Questions pour le PM
 
-| # | Question | Ma recommandation |
+**Aucune question ouverte.** Décisions du PM du 2026-11-06, toutes intégrées :
+
+| Sujet | Décision | Où |
 |---|---|---|
-| **Q1** | **Format de la photo** : le viseur de tes maquettes occupe tout l'écran (≈ 9:19), alors que le ticket (V7) fixe une photo publiée **3:4** et l'aperçu doit montrer l'image « telle qu'elle sera publiée ». | Publier au format de l'écran recadré en 9:16 (la photo ressemble à ce qu'on voit ; poids ≤ 150 Ko inchangé) ; sinon dessiner le viseur en 3:4. À trancher avant le développement. |
-| **Q2** | **Tab bar visible sur le viseur** (maquettes) : la sortie se fait par l'onglet Feed ou Profil, **sans croix** sur le viseur (la croix n'existe que sur l'aperçu). Confirmé ? | Oui, fidèle aux maquettes. |
-| **Q3** | **Point vert du bouton central** : point plein `#d1d828` avec une coche (comme l'orange avec une horloge et le rouge avec un « ! ») ? Les maquettes ne montrent que l'orange et le rouge sur le viseur. | Oui, point plein avec coche **[À CONFIRMER]**. |
-| **Q4** | **Barre en verre** : deux variantes automatiques (claire sur le Feed et le Profil, **sombre avec icônes blanches sur photo**) et icônes inactives plus foncées (`#595959`). Tes maquettes montrent une barre grise claire sur la photo. | Oui : c'est ce qui tient les contrastes sans rendre la barre laiteuse. Détail : `tab-bar-liquid-glass.md` §5 et §6. |
+| Bulle d'incitation | bulle des maquettes, texte mot pour mot (FR et EN), couleurs `#face90` / `#fa9490`, tous les onglets sauf Update, zone de danger = même texte rouge | §4 |
+| Format de la photo | viseur plein écran ; aperçu un peu plus petit ; plein écran dans le Feed ; traitement technique **proposé** (ratio de l'écran, borné) | §5, §6, §6.1, planche 09 |
+| Croix de l'aperçu | même effet que « Recommencer », sans confirmation | §6 |
+| Tab bar sur le viseur | visible, sans croix | §5 |
+| Bouton central | pastille de couleur seule (vert, orange, rouge), grise au neutre, **aucun pictogramme** ; nom parlé conservé | §3, §8 |
+| Verre | deux variantes (claire, sombre à icônes blanches sur le viseur) ; icônes inactives plus foncées ; marge 24 pt (iOS), arrondi 20 | `tab-bar-liquid-glass.md` §5 |
+| Android | Haze, module de flou seul, version épinglée ; plan B version maison | `tab-bar-liquid-glass.md` §4.3 |
+
+**À confirmer à l'export Figma (pas des questions de produit)** : cotes en pt converties depuis des captures de 320 px (facteur 1,22) ; couleurs des bulles relevées à la pipette ; marge de la barre sur Android (24 dp proposés pour le même dessin, 16 dp aujourd'hui dans le code) ; heure et texte « Depuis 12 min » de la carte (texte du Feed).
 
 ## 14. Régénérer les maquettes
 `node design/screens/update/mockups/build.mjs` écrit les HTML ; avec `--png`, rend aussi les PNG @2x dans `design/exports/update/claude/` (Chrome ou Edge installé, aucune dépendance npm). `lieux.css` et `lib.mjs` sont des **copies** des maquettes Lieux, `feed.css` et `feed-lib.mjs` des maquettes Feed (branches `docs/challenge-lieux-geofencing`, `docs/challenge-feed`) : à dédupliquer après leur fusion. Les HTML lisent les polices de `ios/Miff/Resources/Fonts/`, le logo de `design/assets/logo/` et la photo d'exemple `design/exports/update/Welcoming screen-1.png` par chemin relatif : ne pas les déplacer.

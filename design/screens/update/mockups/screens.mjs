@@ -1,5 +1,5 @@
 // Huit planches : Feed et message d'incitation (01, 02), viseur et aperçu (03), permission caméra (04), publication (05), cartes et Miffs (06), tab bar iOS (07) et Android (08).
-import { page, board, wide, tabbar, cell, feedFrame, profileFrame, feedBottom, viewfinder, preview, popin, bubble, card, photo, pillPremium, pillSingle, frag, ic, statusBar, msgBubble, btn } from "./update-lib.mjs";
+import { zoomFrame, fullscreenPhoto, cardWithRealPhoto, ratioBox, page, board, wide, tabbar, cell, feedFrame, profileFrame, feedBottom, viewfinder, preview, popin, bubble, card, photo, pillPremium, pillSingle, frag, ic, statusBar, msgBubble, btn } from "./update-lib.mjs";
 
 export const screens = [];
 const LV = { safe: "Vert", warning: "Orange", danger: "Rouge" };
@@ -9,10 +9,10 @@ const photoMe = photo("16 h 05");
 screens.push({
   file: "01-feed-vert-orange-rouge", title: "Feed : couleur de mon statut",
   html: () => page("Feed : couleur de mon statut", wide(board([
-    ["A. Vert : aucun message", "Anneau de l'avatar et point du bouton central verts, glyphe « coche ». Pas de bulle d'incitation (maquette « Welcoming screen-6 »).", feedFrame({ lv: "safe" })],
-    ["B. Orange : bulle orange", "Maquette « Welcoming screen » : anneau orange, bulle orange au-dessus de la tab bar, queue vers le bouton central (point orange, glyphe « horloge »). Texte du PM, mot pour mot.", feedFrame({ lv: "warning", msg: "warning" })],
-    ["C. Rouge : bulle rouge", "Maquette « Welcoming screen-5 » : même bulle en rouge (point rouge, glyphe « ! »). La bulle ne se ferme pas ; elle disparaît quand je ne suis plus orange ni rouge.", feedFrame({ lv: "danger", msg: "danger" })],
-    ["D. Neutre : statut inconnu ou partage arrêté", "Décision du PM : le bouton central est GRIS, comme les autres boutons de la barre (anneau et point gris, pas de glyphe). Anneau de l'avatar neutre, aucune bulle.", feedFrame({ lv: "neutral" })],
+    ["A. Vert : aucun message", "Anneau de l'avatar et point du bouton central verts (pastille de couleur seule, comme les maquettes). Pas de bulle d'incitation (maquette « Welcoming screen-6 »).", feedFrame({ lv: "safe" })],
+    ["B. Orange : bulle orange", "Maquette « Welcoming screen » : anneau orange, bulle orange au-dessus de la tab bar, queue vers le bouton central (point orange). Texte du PM, mot pour mot.", feedFrame({ lv: "warning", msg: "warning" })],
+    ["C. Rouge : bulle rouge", "Maquette « Welcoming screen-5 » : même bulle en rouge (point rouge). La bulle ne se ferme pas ; elle disparaît quand je ne suis plus orange ni rouge.", feedFrame({ lv: "danger", msg: "danger" })],
+    ["D. Neutre : statut inconnu ou partage arrêté", "Décision du PM : le bouton central est GRIS, comme les autres boutons de la barre (anneau et point gris). Anneau de l'avatar neutre, aucune bulle.", feedFrame({ lv: "neutral" })],
   ]), 4)),
 });
 
@@ -38,7 +38,7 @@ screens.push({
   html: () => page("Viseur et aperçu", wide(board([
     ["A. Viseur (maquettes « -1 » rouge et « -2 » orange)", "Plein écran, caméra frontale, déclencheur en bas au centre, tab bar visible (bouton central actif). Écarts : double anneau blanc et bleu (le bleu seul disparaît sur un fond sombre), bouton de bascule visible en haut à droite, ligne d'aide.", viewfinder({ lv: "danger" })],
     ["B. Viseur, 3 premières ouvertures", "Astuce du double toucher en haut ; point orange. Le bouton visible reste l'alternative accessible.", viewfinder({ lv: "warning", tip: true })],
-    ["C. Aperçu (maquettes « -3 » rouge et « -4 » orange)", "Croix en haut à gauche (même effet que Recommencer : retour au viseur, photo supprimée, rien de publié ; fond sombre translucide, la croix blanche seule se perd sur une photo claire), Recommencer, Publier (48 pt de haut, 44 pt minimum). Ligne de visibilité ajoutée.", preview({ lv: "danger" })],
+    ["C. Aperçu (maquettes « -3 » rouge et « -4 » orange)", "Décision du PM : la photo est un peu plus petite que le plein écran (marges, coins arrondis, ratio de la photo conservé), les boutons dessous. Croix (même effet que Recommencer, fond sombre translucide), Recommencer, Publier (48 pt de haut). Ligne de visibilité ajoutée.", preview({ lv: "danger" })],
     ["D. Aperçu : photo qui date", "Photo en attente depuis plus de 5 minutes : Publier est inactif, message calme. Recommencer reste disponible.", preview({ lv: "warning", note: "Cette photo date un peu : reprends-en une.", pubOff: true })],
     ["E. Aperçu, Premium (2 Miffs)", "La ligne de visibilité dit tout de suite où va la photo : toutes mes Miffs (qui voit quoi).", preview({ lv: "safe", line: "Ta photo sera visible des membres de tes 2 Miffs pendant 24 h." })],
   ]), 3)),
@@ -119,4 +119,18 @@ screens.push({
     sec("Économiseur de batterie, animations supprimées, contraste renforcé (API 34+) : opaque", "Même rendu que la barre actuelle (blanc opaque) ; #222 sur photo."),
     wide(board(trio({ mat: "opaque", plat: "and", items: [["safe", "feed", ""], ["warning", "dark", ""], ["danger", "bright", ""]] })), 3),
   ].join("")),
+});
+
+// ---------- 09 : format de la photo (proposition technique) ----------
+screens.push({
+  file: "09-format-photo", title: "Format de la photo : du viseur au plein écran",
+  html: () => page("Format de la photo : du viseur au plein écran", wide(board([
+    ["A. Viseur : plein écran", "Décision du PM. La zone visible du viseur (toute la fenêtre) EST la zone enregistrée : ce que tu vois est ce qui part.", zoomFrame(viewfinder({ lv: "warning", help: false, flip: false }))],
+    ["B. Aperçu : un peu plus petit", "La photo entière, sans recadrage, à son ratio, avec marges et coins arrondis ; boutons dessous.", zoomFrame(preview({ lv: "warning" }))],
+    ["C. Carte du Feed : fenêtre fixe", "Recadrage au centre (un peu au-dessus du milieu) : on n'y voit qu'une bande de la photo. Toucher = plein écran.", zoomFrame(cardWithRealPhoto(), 0.9)],
+    ["D. Feed, plein écran", "Aligné sur 09-photo-plein-ecran du Feed : fond noir, photo entière centrée, jamais recadrée, heure en bas.", zoomFrame(fullscreenPhoto({ ratio: "0.462" }))],
+  ]), 4) + wide(board([
+    ["E. Ratio enregistré : celui de l'écran, borné", "Ratio de l'écran de la personne, borné entre 9:21 et 9:16. Le côté long vaut 1 024 px au plus, le poids reste sous 150 000 octets. Le ratio est lu dans l'en-tête du JPEG : aucun champ ajouté, les règles Firestore ne changent pas.",
+      '<div class="rrow">' + ratioBox(9 / 21, "9:21", "borne basse : écrans très allongés (439 x 1 024)", true) + ratioBox(0.45, "20:9", "OPPO Find X5 Lite (461 x 1 024)") + ratioBox(9 / 19.5, "19,5:9", "iPhone 11 Pro (473 x 1 024)") + ratioBox(9 / 16, "9:16", "borne haute : écrans courts, tablettes, écran partagé (576 x 1 024)", true) + "</div>"],
+  ]), 2)),
 });

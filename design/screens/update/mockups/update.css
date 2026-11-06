@@ -124,3 +124,24 @@
 .pf-row i{width:38px;height:38px;border-radius:var(--r-md);background:var(--action-t20)}
 .pf-row b{display:block;font-weight:400;font-size:16px;line-height:22px}.pf-row span{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
 .pf-add{margin:6px;border:1px dashed var(--action);border-radius:var(--r-md);min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--action)}
+
+/* l'anneau d'avatar suit les maquettes du PM : couleur seule, sans glyphe (décision du 2026-11-06) */
+.av .g{display:none}
+/* aperçu : photo un peu plus petite que le plein écran, marges, boutons dessous */
+.pvphoto{position:absolute;left:59px;top:52px;width:272px;height:590px;border-radius:20px;overflow:hidden;background:#526569;z-index:2}
+.pvphoto .ph3{position:absolute;left:0;top:-25px;width:295px;height:590px;margin-left:-11px;background:url("../../../exports/update/Welcoming screen-1.png") 0 0/295px 590px no-repeat}
+.pvphoto .band3{position:absolute;left:0;right:0;top:320px;bottom:0;background:linear-gradient(180deg,rgba(82,101,105,0) 0,#526569 60px)}
+.rb.tl2{position:absolute;z-index:6;left:8px;top:8px;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center}
+.rb.tl2 .ico{width:24px;height:24px;stroke-width:2}
+.pvphoto .pvnote{left:8px;right:8px;bottom:8px}
+.pvline{left:59px;right:59px;bottom:158px;text-shadow:none}
+/* plein écran du Feed (aligné sur design/exports/feed/claude/09-photo-plein-ecran) */
+.fsw{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);max-height:100%;max-width:100%;margin:auto;overflow:hidden;width:100%}
+.ph3.real{position:absolute;inset:0;background:url("../../../exports/update/Welcoming screen-1.png") 50% 20%/cover no-repeat}
+.photo.realwin{position:relative;margin-top:10px;height:108px;border-radius:var(--r-sm);overflow:hidden}
+.photo.realwin .ph3.real{background-position:50% 22%}
+.rbx{display:flex;flex-direction:column;align-items:center;gap:8px}
+.rr{display:flex;align-items:center;justify-content:center;border:2px solid var(--action);background:var(--action-t10);border-radius:6px;font-weight:700;font-size:13px;color:var(--action)}
+.rr.clamp{border-style:dashed}
+.rl{font-size:12px;line-height:16px;color:#444;text-align:center;max-width:150px}
+.rrow{display:flex;gap:28px;align-items:flex-end;padding:20px;background:#fff;border-radius:8px}

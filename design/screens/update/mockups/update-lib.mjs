@@ -25,8 +25,7 @@ const X = {
 export const ic = (n, cls = "") => (X[n] ? `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${X[n]}</svg>` : feedIcon(n, cls));
 
 // ---------- tab bar ----------
-const GLYPH = { safe: "check", warning: "clock", danger: "bang", neutral: "" };
-export const centre = (lv) => `<div class="tc"><div class="rg ${lv === "neutral" ? "neutral" : ""}"><div class="dot ${lv}">${GLYPH[lv] ? ic(GLYPH[lv]) : ""}</div></div></div>`;
+export const centre = (lv) => `<div class="tc"><div class="rg ${lv === "neutral" ? "neutral" : ""}"><div class="dot ${lv}"></div></div></div>`;
 // surf : light | photo ; mat : blur | flat | opaque | ios26 ; plat : and | ios ; pos : abs | static
 export const tabbar = ({ lv = "neutral", active = "feed", surf = "light", mat = "blur", plat = "and", pos = "abs" } = {}) =>
   `<div class="tb ${pos === "abs" ? "" : "static"} ${surf} m-${mat} p-${plat}"><div class="it ${active === "feed" ? "on" : ""}">${ic("homefill")}</div><div class="it ${active === "update" ? "on" : ""}">${centre(lv)}</div><div class="it ${active === "profile" ? "on" : ""}">${ic("user")}</div></div>`;
@@ -68,9 +67,9 @@ export function viewfinder({ lv = "danger", tip = false, help = true, flip = tru
 ${tip ? `<div class="vtip">Touche deux fois l'écran pour changer de caméra.</div>` : ""}${flip ? `<div class="rb tr">${ic("flip")}</div>` : ""}${help ? `<div class="vhelp">Un selfie, la vue, ton repas : comme tu veux.</div>` : ""}<div class="shut"></div>${tabbar({ lv, active: tbActive, surf: "photo", mat, plat })}</div>`;
 }
 export function preview({ lv = "danger", line = "Tes proches verront cette photo pendant 24 h.", note = "", pubOff = false, sharing = false, mat = "blur", plat = "ios" } = {}) {
-  return `<div class="frame vfs" style="background:#526569"><div class="vf"><div class="ph three"></div><div class="band"></div><div class="top-scrim"></div><div class="bot-scrim"></div></div>${statusBar()}
-<div class="rb tl">${ic("close")}</div>${note ? `<div class="pvnote">${ic("clock")}<div>${note}</div></div>` : ""}<div class="pvline">${line}</div>
-<div class="pvrow"><div class="pvb retake ${pubOff || sharing ? "off" : ""}">${ic("refresh")}</div><div class="pvb pub ${pubOff || sharing ? "off" : ""}">Publier ${ic("send")}</div></div>${tabbar({ lv, active: "update", surf: "photo", mat, plat })}${sharing ? `<div class="sharing"><div class="pl"><span class="spin"></span>Partage en cours…</div></div>` : ""}</div>`;
+  const off = pubOff || sharing ? "off" : "";
+  return `<div class="frame vfs" style="background:#1d1f20">${statusBar()}<div class="pvphoto"><div class="ph3"></div><div class="band3"></div><div class="rb tl2">${ic("close")}</div>${note ? `<div class="pvnote">${ic("clock")}<div>${note}</div></div>` : ""}</div><div class="pvline">${line}</div>
+<div class="pvrow"><div class="pvb retake ${off}">${ic("refresh")}</div><div class="pvb pub ${off}">Publier ${ic("send")}</div></div>${tabbar({ lv, active: "update", surf: "photo", mat, plat })}${sharing ? `<div class="sharing"><div class="pl"><span class="spin"></span>Partage en cours…</div></div>` : ""}</div>`;
 }
 
 // ---------- pop-in de permission ----------
@@ -83,3 +82,13 @@ export function profileFrame({ lv = "safe", msg = null, h = 844, mat = "blur", p
   const list = `<div class="pf-sec"><b>Lieux de la Miff</b><span>Ajouter</span></div><div class="pf-list"><div class="pf-row"><i></i><div><b>🏠 Maison de Papa</b><span>26 rue du Volnay, 21000 Dijon</span></div></div><div class="pf-row"><i></i><div><b>⚽ Foot de Thomas</b><span>Stade des Poussots, 13 Avenue du Tarn</span></div></div><div class="pf-add">+ Ajouter un lieu</div></div>`;
   return `<div class="frame" style="height:${h}px;background:var(--canvas)"><div class="pf-top">${statusBar()}<div class="pf-id"><div class="pf-av">E</div><div><b>Emmanuelle Martin</b><span>C'est toi</span></div><div class="pf-gear">${ic("gear")}</div></div></div><div class="pf-body"><div class="pf-card"><div class="pf-ico">${ic("group")}</div><div><b>Famille Martin</b><span>4 membres</span></div></div>${list}</div>${msg ? msgBubble(msg) : ""}${tabbar({ lv, active: "profile", mat, plat })}</div>`;
 }
+
+// ---------- format de la photo : planche 09 ----------
+const zoomed = (html, z = 0.6) => `<div style="zoom:${z}">${html}</div>`;
+export const zoomFrame = zoomed;
+export function fullscreenPhoto({ ratio = "9 / 19.5", w = 390, h = 844, info = "Photo de Thomas · 15 h 40", bands = true } = {}) {
+  return `<div class="frame" style="width:${w}px;height:${h}px;background:#000"><div class="fs-top">${statusBar()}</div><div class="fs-close">${ic("close")}</div><div class="fsw" style="aspect-ratio:${ratio}"><div class="vf"><div class="ph one"></div><div class="band"></div></div></div><div class="fs-info"><b>${info}</b></div></div>`;
+}
+export const cardWithRealPhoto = () => `<div class="frame fragment" style="width:390px;padding:12px 16px">${card({ name: "Thomas", ini: "T", lv: "safe", lab: ["safe", "home", "À la maison"], time: "Depuis 12 min", bat: "85 %", ph: '<div class="photo realwin"><div class="ph3 real"></div><div class="cap2">Photo de 15 h 40</div></div>' })}</div>`;
+// rectangles de ratios (hauteur fixe 220 pt), pour comparer les formats stockés
+export const ratioBox = (r, label, sub, clamp = false) => `<div class="rbx"><div class="rr ${clamp ? "clamp" : ""}" style="height:220px;width:${(220 * r).toFixed(0)}px"><span>${label}</span></div><div class="rl">${sub}</div></div>`;

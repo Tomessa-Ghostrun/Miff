@@ -14,8 +14,8 @@
 | Android 12 et plus (API 31) | **flou d'arrière-plan** + voile de teinte ; bibliothèque la plus sobre : **Haze, module de flou seul** (§4) |
 | Android 8 à 11 (API 26 à 30), appareils modestes, viseur caméra | **sans flou** : fond semi-opaque plus dense |
 | Accessibilité | « Réduire la transparence », contraste renforcé, économiseur de batterie, animations supprimées : **repli opaque** (§9) |
-| Deux variantes de teinte | **claire** (Feed, Profil) et **sur photo** (viseur, aperçu), automatiques (§5) |
-| Bouton central | **jamais du verre** : plaque blanche opaque, anneau bleu, point de statut en couleur pleine + glyphe ; **gris** (comme les autres boutons) quand le statut est inconnu ou le partage arrêté (§7) |
+| Deux variantes de teinte | **claire** (Feed, Profil) et **sur photo** (viseur, aperçu), automatiques (§5) ; **validées par le PM le 2026-11-06** |
+| Bouton central | **jamais du verre** : plaque blanche opaque, anneau bleu, **pastille de couleur seule** (aucun pictogramme, décision du PM) ; **grise** (comme les autres boutons) quand le statut est inconnu ou le partage arrêté (§7) |
 | Bulle d'incitation | opaque, **au-dessus** de la barre, sur tous les onglets sauf Update (`update.md` §4) : jamais de verre sur du verre |
 | Coût | **0 €** : API système sur iOS, bibliothèque Apache 2.0 sur Android |
 
@@ -29,7 +29,7 @@ Le fichier `design/design-system.md` pointe ici pour la Tabbar (la ligne « Tabb
 | Entrées | trois zones de **64 x 48 pt** (minimum 48), espacées régulièrement ; ordre début / centre / fin (inversé en droite-à-gauche, icônes non miroir) |
 | Onglet actif | pastille 64 x 48, `radius/md` 10, icône active ; nom parlé « sélectionné » |
 | Icônes | maison avec cœur et silhouette, 26 pt, trait 1,8 (asset du PM à exporter en vectoriel recolorable) |
-| Bouton central | plaque blanche 44 pt + anneau `action/primary` 3 pt + point de statut 24 pt + glyphe 14 pt (§7) |
+| Bouton central | plaque blanche 44 pt + anneau `action/primary` 3 pt + pastille de statut 24 pt, sans pictogramme (§7) |
 | Contenu sous la barre | le contenu **passe sous** la barre (c'est ce qui rend le verre visible) ; chaque onglet (Feed, Profil) garde une marge basse égale à la hauteur de la barre + marge (+ celle de la bulle d'incitation quand elle existe : visible sur tous les onglets sauf Update, `update.md` §4) |
 | Clavier | la barre disparaît quand le clavier est ouvert (comportement actuel) |
 
@@ -50,7 +50,7 @@ Noms vérifiés dans la documentation Apple (JSON de la documentation, lu le 202
 - L'app n'a **pas de mode sombre** (design system §6) : les matériaux suivent le réglage du téléphone ; la variante « sur photo » impose un schéma sombre local sur la barre (`.environment(\.colorScheme, .dark)` sur la seule barre **[À VÉRIFIER]**) et la variante claire un schéma clair.
 
 ### 3.3 Barre personnalisée ou `TabView` système ? (décision technique, pour `ios-dev`)
-**Recommandation** : barre **personnalisée** (`safeAreaInset(edge: .bottom)`). Raisons : le bouton central n'est **pas** un onglet de contenu (il ouvre le viseur) et porte une couleur de statut avec glyphe ; la forme flottante à 3 entrées est celle des maquettes sur **toutes** les versions ; un `TabView` système n'offrirait le verre flottant que sous iOS 26 et une barre plate standard avant. Coûts : reproduire à la main les traits d'accessibilité d'un onglet (sélectionné, nom parlé) ; **[À VÉRIFIER]** si `TabView` avec un onglet central dont l'icône garde ses couleurs est faisable sans hack (non essayé : pas de Mac).
+**Recommandation** : barre **personnalisée** (`safeAreaInset(edge: .bottom)`). Raisons : le bouton central n'est **pas** un onglet de contenu (il ouvre le viseur) et porte une couleur de statut ; la forme flottante à 3 entrées est celle des maquettes sur **toutes** les versions ; un `TabView` système n'offrirait le verre flottant que sous iOS 26 et une barre plate standard avant. Coûts : reproduire à la main les traits d'accessibilité d'un onglet (sélectionné, nom parlé) ; **[À VÉRIFIER]** si `TabView` avec un onglet central dont l'icône garde ses couleurs est faisable sans hack (non essayé : pas de Mac).
 
 ### 3.4 Tests impossibles en local
 Aucune compilation iOS locale (poste Windows) : le rendu **natif** ne se vérifie que par TestFlight sur l'**iPhone 11 Pro (iOS 26.5.2)**. Le protocole de test est en §8.
@@ -73,7 +73,7 @@ Il **n'existe pas de Liquid Glass natif** sur Android. Le rendu « verre » est 
 
 Autres pistes vues et **écartées** : portages multiplateformes encore en alpha (0.0.1-alpha), bibliothèque basée sur les vues et non Compose.
 
-### 4.3 Recommandation (la plus sobre)
+### 4.3 Recommandation (la plus sobre ; validée par le PM le 2026-11-06)
 **Option A, Haze limité à son module de flou, version 2.0.1 épinglée** (publiée depuis plus de deux semaines, règle du ticket pour CameraX ; la 2.1.0 a quatre jours), **sans** le module Glass. Pourquoi : c'est la plus petite surface qui évite d'écrire et maintenir les cas limites du flou d'arrière-plan ; l'option C ajoute des shaders et trois niveaux de repli pour un effet (réfraction) que la maquette du PM ne demande pas ; l'option B reste le **plan B** si Haze devait être écartée (changement de licence, abandon, incompatibilité de BOM). Aucun coût.
 **Limites à écrire dans le ticket** : (1) API qui évolue vite : épingler et ne pas monter de version sans relecture du journal des changements ; (2) dépendance tierce = **revue de sécurité** (pas de réseau, pas de permission ; vérification des sommes de contrôle Gradle) et **mention de licence** Apache 2.0 à intégrer à l'écran des licences (avec `release-manager`) ; (3) pas de flou sous API 31 : décidé par nous, pas par la bibliothèque ; (4) pas de flou sur le viseur (§10) ; (5) vérifier la compatibilité de version de Compose avant d'ajouter.
 **Signal pour changer d'option** : régression de performance sur l'OPPO ou arrêt de la maintenance de Haze → option B.
@@ -103,7 +103,7 @@ Deux variantes, choisies **automatiquement par l'écran** (pas un réglage de l'
 
 ## 6. Contrastes WCAG **[Calculés]**
 
-Critères : icônes et glyphes (éléments graphiques) **≥ 3:1** (WCAG 1.4.11) ; texte **≥ 4,5:1**. **Pire fond** = le fond derrière le verre est **noir pur** ou **blanc pur** (toute photo est entre les deux : le contraste varie de façon monotone) ; on **ignore le flou et la saturation** (cas pessimiste).
+Critères : icônes et éléments graphiques **≥ 3:1** (WCAG 1.4.11) ; texte **≥ 4,5:1**. **Pire fond** = le fond derrière le verre est **noir pur** ou **blanc pur** (toute photo est entre les deux : le contraste varie de façon monotone) ; on **ignore le flou et la saturation** (cas pessimiste).
 
 **Barre claire** (voile blanc, icône sombre ou bleue) :
 | Voile | Fond | Icône active (bleu) sur le voile | Icône active sur la pastille | Icône inactive `#595959` | Ancien gris `#7d7c7c` |
@@ -132,11 +132,10 @@ Critères : icônes et glyphes (éléments graphiques) **≥ 3:1** (WCAG 1.4.11)
 Le verre est translucide, la couleur de statut doit rester lisible : le bouton central est donc **opaque et séparé du verre** :
 1. **Plaque blanche opaque** 44 pt (ombre légère) : isole le bouton de n'importe quel fond (ne dépend jamais de la transparence).
 2. **Anneau `action/primary` 3 pt** : 8,16:1 sur la plaque ; 5,08:1 contre le verre clair du pire fond ; c'est le contour perceptible du bouton.
-3. **Point de statut** 24 pt, **couleur pleine** (jamais délavée, contrairement à la maquette quand l'onglet est inactif), **3 pt d'air blanc** autour (entre le point et l'anneau).
-4. **Glyphe `#222222`** 14 pt : coche (vert, **[À CONFIRMER]**), horloge (orange), « ! » (rouge), rien (neutre). Contrastes glyphe sur point : **10,3 / 9,1 / 5,1:1**. Le glyphe porte le sens, la couleur le renforce (jamais la couleur seule).
-5. **Honnêteté sur la teinte** : les points vert et orange n'atteignent pas 3:1 contre la plaque blanche (**1,55:1** et **1,74:1** ; le rouge 3,13:1). C'est une exception de teinte déjà connue du design system (anneaux d'avatar) : l'information passe par le glyphe, l'anneau et le nom parlé.
-6. **État neutre (statut inconnu ou partage arrêté)** [Décidé, PM 2026-11-06] : le bouton est **gris, comme les autres boutons de la barre** : anneau et point `#595959` (`tabbar/icon-inactive` claire) sur la plaque blanche, sans glyphe ; contraste 7,0:1 contre la plaque. Sur la barre « sur photo », la plaque blanche garde ce gris foncé (les icônes inactives, blanches à 78 %, restent sur le verre sombre).
-7. **Pastille d'onglet actif** : quand le bouton central est actif (viseur ouvert), la pastille de 64 x 48 l'entoure (bleue 20 % sur barre claire ; blanche 24 % sur barre sombre) sans changer la plaque.
+3. **Pastille de statut** 24 pt, **couleur pleine** (jamais délavée, contrairement à la maquette quand l'onglet est inactif), **3 pt d'air blanc** autour (entre la pastille et l'anneau). **Aucun pictogramme** : « la couleur est le seul signal » [Décidé, PM 2026-11-06]. Le sens passe, pour le lecteur d'écran, par le nom parlé.
+4. **Contrastes de la pastille seule [Calculés]** : contre la plaque blanche, vert 1,55:1, orange 1,74:1, rouge 3,13:1, gris neutre 7,00:1 ; contre l'anneau bleu, 5,27 / 4,69 / 2,60:1 ; vert contre orange 1,12:1. **Limites assumées par la décision** : le vert et l'orange sont sous 3:1 contre la plaque (WCAG 1.4.11 non atteint pour la pastille seule) et se confondent pour une personne daltonienne ; le contour du bouton reste lisible grâce à l'anneau bleu (8,16:1). Atténuation facultative sans pictogramme : un liseré fin `#222222` autour de la pastille (bords à 5,1:1 au moins).
+5. **État neutre (statut inconnu ou partage arrêté)** [Décidé, PM 2026-11-06] : le bouton est **gris, comme les autres boutons de la barre** : anneau et pastille `#595959` (`tabbar/icon-inactive` claire) sur la plaque blanche ; contraste 7,0:1 contre la plaque. Sur la barre « sur photo », la plaque blanche garde ce gris foncé (les icônes inactives, blanches à 78 %, restent sur le verre sombre).
+6. **Pastille d'onglet actif** : quand le bouton central est actif (viseur ouvert), la pastille de 64 x 48 l'entoure (bleue 20 % sur barre claire ; blanche 24 % sur barre sombre) sans changer la plaque.
 
 ## 8. Lisibilité sur fonds variés et protocole de recette
 
@@ -169,7 +168,7 @@ Autres points : l'état « sélectionné » est annoncé (pas par la couleur seu
 ### Android (`android/app/src/main/java/com/tomessa/miff/`)
 | Fichier | Changement |
 |---|---|
-| `ui/main/MainTabBar.kt` | Remplacer `.background(colorBgSurface)` et l'ombre par un modificateur de verre (flou Haze + voile + liseré) choisi selon un **niveau de capacité** (flou, sans flou, opaque) ; ajouter un paramètre de variante (claire ou sur photo) ; nouveau composable du **bouton central** (plaque, anneau, point, glyphe) à la place du `Box` jaune-vert (`UpdateRingSize` 28 dp, `DISABLED_ALPHA`) ; couleurs d'icônes depuis les tokens `tabbar/*` ; hauteur de ligne 52 dp → entrées de 48 dp dans une barre de 64 dp ; marge latérale 16 dp → 24 dp **[À CONFIRMER]** ; noms parlés par niveau de statut (clés `tabbar_update_*_a11y` à faire évoluer) |
+| `ui/main/MainTabBar.kt` | Remplacer `.background(colorBgSurface)` et l'ombre par un modificateur de verre (flou Haze + voile + liseré) choisi selon un **niveau de capacité** (flou, sans flou, opaque) ; ajouter un paramètre de variante (claire ou sur photo) ; nouveau composable du **bouton central** (plaque, anneau, pastille de couleur, sans pictogramme) à la place du `Box` jaune-vert (`UpdateRingSize` 28 dp, `DISABLED_ALPHA`) ; couleurs d'icônes depuis les tokens `tabbar/*` ; hauteur de ligne 52 dp → entrées de 48 dp dans une barre de 64 dp ; marge latérale 16 dp → 24 dp (24 pt validés pour iOS ; **24 dp proposés** pour Android, même dessin) ; noms parlés par niveau de statut (clés `tabbar_update_*_a11y` à faire évoluer) |
 | `ui/main/MainShell.kt` (`MainTabs`) | Le `Scaffold` réserve aujourd'hui la place de la barre (`padding(bottom = padding.calculateBottomPadding())`) : **le contenu ne passe donc pas sous la barre**. Passer à une disposition en `Box` : contenu plein écran (marqué comme **source** du flou), barre superposée en bas ; fournir la **hauteur de la barre** aux écrans (valeur de composition) pour leur marge basse ; garder la disparition au clavier ; ajouter la **destination Update** comme contenu d'onglet (barre visible, `update.md` E9) |
 | `ui/feed/FeedPlaceholderScreen.kt`, `ui/profile/ProfileTabScreen.kt` (et le futur Feed) | Marge basse de contenu = hauteur de la barre + marge (+ bulle d'incitation, mesurée, identique sur les deux onglets) |
 | Bulle d'incitation (futur ticket UPDATE-2) | Hébergée par `MainTabs` **avec** la barre (visible sur tous les onglets sauf Update, masquée avec le clavier), pas par chaque écran |
@@ -187,11 +186,10 @@ Autres points : l'état « sélectionné » est annoncé (pas par la couleur seu
 | `project.yml`, CI | Rien à ajouter (iOS 16 minimum conservé). **Aucun** `UIDesignRequiresCompatibility` |
 
 **Critères d'acceptation proposés** : (1) les trois états de couleur sur fond clair, photo sombre et photo claire sont conformes aux planches 07 et 08 ; (2) contrastes du §6 vérifiés par test unitaire (Android et iOS) ; (3) repli opaque avec « Réduire la transparence » (iOS) et l'économiseur de batterie (Android) ; (4) pas de flou sur le viseur Android ; (5) 15 mesures de recette du §8 consignées ; (6) le contenu défile sous la barre ; (7) aucune permission ni réseau ajoutés ; (8) la barre garde sa taille quand la bulle d'incitation s'affiche.
-**Taille indicative** : S à M par plateforme. **Dépend de** : décision sur Q4 de `update.md` (variantes) ; indépendant du reste du ticket Update, mais à **livrer avant ou avec** UPDATE-1 (le bouton central actif et le viseur sont posés sur cette barre).
+**Taille indicative** : S à M par plateforme. **Dépend de** : rien d'ouvert (variantes validées le 2026-11-06) ; indépendant du reste du ticket Update, mais à **livrer avant ou avec** UPDATE-1 (le bouton central actif et le viseur sont posés sur cette barre).
 
 ## 12. Questions pour le PM
-Une seule question propre à ce document (les autres sont dans `design/screens/update.md` §13, dont Q4 sur les variantes de couleur) :
-- **Marges et arrondi de la barre** : tes maquettes donnent environ 18 px de marge sur 320 px (≈ 22 pt) et un arrondi d'environ 17 pt ; le code Android actuel a 16 dp de marge et un arrondi de 20. Je propose 24 pt de marge et 20 d'arrondi (valeurs rondes, arrondi déjà dans le design system). **[À CONFIRMER à l'export Figma]**.
+**Aucune question ouverte.** Validés par le PM le 2026-11-06 : les deux variantes de verre, les icônes inactives plus foncées, Haze (module de flou seul, version épinglée, plan B version maison), la marge de **24 pt** (iOS) et l'arrondi de **20**, la pastille de couleur seule. **À confirmer à l'export Figma** (pas une question de produit) : marge de la barre sur Android (24 dp proposés ; 16 dp dans le code actuel) et cotes converties depuis des captures de 320 px.
 
 ## 13. Sources
 Documentation Apple (lue le 2026-11-05) : [glassEffect(_:in:)](https://developer.apple.com/documentation/swiftui/view/glasseffect(_:in:)), [Glass](https://developer.apple.com/documentation/swiftui/glass), [GlassEffectContainer](https://developer.apple.com/documentation/swiftui/glasseffectcontainer), [Applying Liquid Glass to custom views](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views), [Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass), [Materials (HIG)](https://developer.apple.com/design/human-interface-guidelines/materials), [Material](https://developer.apple.com/documentation/swiftui/material), [accessibilityReduceTransparency](https://developer.apple.com/documentation/swiftui/environmentvalues/accessibilityreducetransparency), [colorSchemeContrast](https://developer.apple.com/documentation/swiftui/environmentvalues/colorschemecontrast), [tabBarMinimizeBehavior(_:)](https://developer.apple.com/documentation/swiftui/view/tabbarminimizebehavior(_:)). Les pages web d'Apple ne sont pas lisibles directement par l'outil : le contenu vient de la documentation au format JSON de ces mêmes pages ; **iOS 27 n'a pas été vérifié point par point**.
