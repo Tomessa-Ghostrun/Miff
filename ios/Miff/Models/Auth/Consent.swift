@@ -34,6 +34,10 @@ enum FieldValueSpec: Equatable {
     case string(String)
     case bool(Bool)
     case bytes(Data)
+    /// Un entier (le rayon d'un lieu : les règles exigent un entier, pas un décimal).
+    case integer(Int)
+    /// Un décimal (latitude et longitude d'un lieu).
+    case double(Double)
     /// Heure du serveur (jamais celle du téléphone).
     case serverTimestamp
     case null

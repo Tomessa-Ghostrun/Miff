@@ -53,21 +53,26 @@ enum MiffName {
     /// Ce que le champ garde de `typed` : nettoyé, 40 unités au plus, coupé entre deux caractères entiers. `limitReached`
     /// vaut vrai quand quelque chose a été coupé ou que le champ est plein (« Limite de 40 caractères atteinte. »).
     static func limit(_ typed: String) -> NameInput {
-        let cleaned = clean(typed)
-        let total = cleaned.utf16.count
-        if total <= maxLength {
-            return NameInput(text: cleaned, limitReached: total == maxLength)
-        }
-        return NameInput(text: cut(cleaned), limitReached: true)
+        limit(typed, maximum: maxLength)
     }
 
-    /// Le plus long début de `text` fait de caractères entiers qui tient dans `maxLength` unités.
-    private static func cut(_ text: String) -> String {
+    /// Pareil pour un autre maximum (le nom d'un lieu : 50 ; l'adresse d'un lieu : 200 ; voir `PlaceName`).
+    static func limit(_ typed: String, maximum: Int) -> NameInput {
+        let cleaned = clean(typed)
+        let total = cleaned.utf16.count
+        if total <= maximum {
+            return NameInput(text: cleaned, limitReached: total == maximum)
+        }
+        return NameInput(text: cut(cleaned, maximum: maximum), limitReached: true)
+    }
+
+    /// Le plus long début de `text` fait de caractères entiers qui tient dans `maximum` unités.
+    private static func cut(_ text: String, maximum: Int) -> String {
         var units = 0
         var result = ""
         for character in text {
             let size = String(character).utf16.count
-            if units + size > maxLength {
+            if units + size > maximum {
                 break
             }
             units += size
@@ -75,17 +80,17 @@ enum MiffName {
         }
         if result.isEmpty {
             // Un seul « caractère » plus long que la limite : repli sur le dernier point de code entier.
-            return cutScalars(text)
+            return cutScalars(text, maximum: maximum)
         }
         return result
     }
 
-    private static func cutScalars(_ text: String) -> String {
+    private static func cutScalars(_ text: String, maximum: Int) -> String {
         var units = 0
         var output = String.UnicodeScalarView()
         for scalar in text.unicodeScalars {
             let size = scalar.value > 0xFFFF ? 2 : 1
-            if units + size > maxLength {
+            if units + size > maximum {
                 break
             }
             units += size
