@@ -460,23 +460,6 @@
         }
       }
     },
-    "auth_session_replaced_notice": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your account is now being used on another phone. You've been signed out of this one."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci."
-          }
-        }
-      }
-    },
     "auth_panel_title": {
       "extractionState": "manual",
       "localizations": {
