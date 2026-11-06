@@ -49,9 +49,8 @@ rules_version = '2';
 //     passer) ; temps 2 = clé obligatoire. MESURE DE COHÉRENCE, PAS DE SÉCURITÉ : un client modifié peut mentir, et une écriture
 //     sans charge utile (suppression) ou sur un autre document (lieu, fiche, photo seule) n'est pas contrôlée (data-model.md).
 // 11. Localisation de la photo d'update (R-PHOTO-LOC, décision du PM du 2026-11-05) — DEUX VERSIONS :
-//     (a) version FACULTATIVE (fichier de `main` au commit 35c8ba1, PR #82) : DÉPLOYÉE le 2026-11-06 (commande exécutée par le PM ;
-//         « Deploy complete! » à confirmer par le PM) ;
-//     (b) version OBLIGATOIRE (ce fichier) — PRÉPARÉE, NON DÉPLOYÉE (décision du PM du 2026-11-06 : « une photo d'update doit être attachée à
+//     (a) version FACULTATIVE (fichier de `main` au commit 35c8ba1, PR #82) : DÉPLOYÉE le 2026-11-06 (commande exécutée par le PM, « Deploy complete! » confirmé) ;
+//     (b) version OBLIGATOIRE (ce fichier) — DÉPLOYÉE le 2026-11-06 (décision du PM du 2026-11-06 : « une photo d'update doit être attachée à
 //         une position, forcément »). Retour arrière = redéployer le fichier de `main` d'avant cette PR (la localisation redevient facultative ;
 //         les photos déjà posées restent localisées).
 //     Le document photo porte TOUJOURS `lat`, `lng` (deux coordonnées valides, jamais nulles) et `measuredAt` (heure de la mesure, jamais nulle) :
