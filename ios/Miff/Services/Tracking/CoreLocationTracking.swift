@@ -20,11 +20,11 @@ private enum LocationEvent {
     case region(TransitionKind, String)
     case regionState(String, Bool)
     case monitoringFailed
-    case authorization(AuthorizationFingerprint)
+    case authorization(AuthorizationState)
 }
 
 /// L'autorisation telle que le système la décrit : sert à ne signaler que les VRAIS changements (le système rappelle aussi au démarrage).
-private struct AuthorizationFingerprint: Equatable {
+private struct AuthorizationState: Equatable {
     let status: CLAuthorizationStatus
     let fullAccuracy: Bool
 }
@@ -74,11 +74,11 @@ private final class LocationBridge: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        let fingerprint = AuthorizationFingerprint(
+        let latest = AuthorizationState(
             status: manager.authorizationStatus,
             fullAccuracy: manager.accuracyAuthorization == .fullAccuracy
         )
-        handler?(.authorization(fingerprint))
+        handler?(.authorization(latest))
     }
 }
 
@@ -91,7 +91,7 @@ final class CoreLocationTracking: PositionSource, GeofenceArming, MovementUpdate
     private let bridge = LocationBridge()
     private var sink: TrackingEventSink?
     private var pendingFix: CheckedContinuation<Fix?, Never>?
-    private var knownAuthorization: AuthorizationFingerprint?
+    private var knownAuthorization: AuthorizationState?
 
     init() {
         manager = CLLocationManager()
@@ -127,9 +127,9 @@ final class CoreLocationTracking: PositionSource, GeofenceArming, MovementUpdate
             }
         case .monitoringFailed:
             sink?.monitoringFailed()
-        case .authorization(let fingerprint):
-            let changed = knownAuthorization != nil && knownAuthorization != fingerprint
-            knownAuthorization = fingerprint
+        case .authorization(let latest):
+            let changed = knownAuthorization != nil && knownAuthorization != latest
+            knownAuthorization = latest
             if changed {
                 sink?.accessChanged()
             }

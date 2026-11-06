@@ -7,6 +7,24 @@ import Foundation
 /// toujours confirmé par le serveur ; un nouveau code valide et différent ; un lot dont la réponse s'est perdue est vérifié
 /// auprès du serveur avant d'être appelé un échec. Miroir de `FirestoreMiffRepository` d'Android (MIFF-2).
 extension FirestoreMiffRepository {
+    func cleanUpLost(uid: String, lost: LostMiff) async -> Bool {
+        let store = self.store
+        // Le nettoyage demande le serveur : sans lui rien n'est touché (le prochain démarrage le fera).
+        let leaveWrites = MiffWrites.leave(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
+        let leave = await write { try await store.commit(leaveWrites) }
+        if leave == .done {
+            rules.onSharingChanged()
+            return true
+        }
+        // Retiré : la fiche a déjà disparu, le lot est refusé. Il ne reste que l'index, que les règles laissent supprimer.
+        let dropWrites = MiffWrites.dropIndex(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
+        let indexOnly = await write { try await store.commit(dropWrites) }
+        if indexOnly == .done {
+            rules.onSharingChanged()
+        }
+        return indexOnly == .done
+    }
+
     func renewCode(miffId: String) async -> CodeChangeResult {
         guard MiffId.isValid(miffId) else {
             return .failed(.unknown)

@@ -221,6 +221,11 @@ final class FakeActiveDevice: ActiveDevice {
 
     func checkAfterRefusal(uid: String) async -> SessionCheck {
         refusalChecks += 1
+        if afterRefusalResult == .replaced {
+            // Comme la vraie session : un appareil remplacé est révoqué, les passages suivants n'écrivent plus rien.
+            revoked = true
+            clearanceResult = .replaced
+        }
         return afterRefusalResult
     }
 }

@@ -15,6 +15,26 @@ struct TrackingServices {
     /// Gardé ici pour que le gestionnaire de localisation vive aussi longtemps que l'app.
     let location: CoreLocationTracking
 
+    /// « Un partage ou un lieu a changé » : utilisable depuis n'importe quel fil, relit les Miffs et les lieux.
+    var sharingChanged: () -> Void {
+        let runtime = self.runtime
+        return {
+            Task { @MainActor in
+                runtime.sharingChanged()
+            }
+        }
+    }
+
+    /// L'arrêt du suivi pour la fin de session : zones retirées, position, lieux et statuts en attente effacés. Borné : une
+    /// déconnexion n'attend jamais plus de quelques secondes un passage en cours (l'arrêt est déjà marqué, l'effacement suit à la
+    /// fin du passage).
+    var teardown: SessionTeardown {
+        let runtime = self.runtime
+        return {
+            _ = try? await timedOperation(seconds: 5) { await runtime.stop() }
+        }
+    }
+
     static func make(
         gateway: AuthGateway,
         cache: CachePurger,

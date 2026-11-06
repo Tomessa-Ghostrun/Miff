@@ -75,7 +75,7 @@ final class PermissionPrivacyTests: XCTestCase {
 
         let expected = [
             "requestLocation()", "startMonitoringSignificantLocationChanges",
-            "startMonitoring(for:", "requestState(for:)"
+            "startMonitoring(for:", "requestState(for:"
         ]
         for fragment in expected {
             XCTAssertTrue(code.contains(fragment), "attendu : \(fragment)")

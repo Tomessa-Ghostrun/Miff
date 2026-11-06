@@ -105,7 +105,7 @@ final class TrackingPrivacyTests: XCTestCase {
 
     func testTheEngineAndTheRuntimeNeverTouchTheSystemLocation() throws {
         for file in ["Services/Tracking/TrackingEngine", "Services/Tracking/TrackingRuntime"] {
-            let text = try [".swift", "+Refresh.swift", "+Events.swift", "+Writes.swift"]
+            let text = [".swift", "+Refresh.swift", "+Events.swift", "+Writes.swift"]
                 .compactMap { try? read("Miff/\(file)\($0)") }
                 .joined(separator: "\n")
             XCTAssertFalse(text.isEmpty, file)

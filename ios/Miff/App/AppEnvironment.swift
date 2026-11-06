@@ -121,13 +121,13 @@ final class AppEnvironment {
     let network: NetworkMonitor
     /// « Mot de passe oublié » (AUTH-4) : l'e-mail part de Firebase ; le nouveau mot de passe se choisit sur la page web
     /// d'AUTH-W.
-    let passwordResetGateway: PasswordResetGateway
+    let passwordResetGateway: PasswordResetGateway = FirebasePasswordResetGateway()
     /// Pause entre deux envois de l'e-mail de réinitialisation, gardée ici pour que quitter l'écran puis revenir ne donne
     /// pas un renvoi gratuit.
-    let passwordResetCooldown: ResendCooldown
-    let phoneTools: PhoneNumberTools
+    let passwordResetCooldown = ResendCooldown(nowMillis: AppClock.live.nowMillis)
+    let phoneTools: PhoneNumberTools = PhoneNumberKitTools()
     /// Fenêtres système « Continuer avec Google » et « Continuer avec Apple ».
-    let socialSource: SocialCredentialSource
+    let socialSource: SocialCredentialSource = SystemSocialCredentialSource()
     let onboardingFlags: OnboardingFlags
     let miffRepository: MiffRepository
     let miffDirectory: MiffDirectory
@@ -141,20 +141,21 @@ final class AppEnvironment {
     /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
-    let notificationAsks: NotificationAskStore
+    let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
     /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
     /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
     let tracking: TrackingRuntime
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
-    /// Créé à la première demande : aucun gestionnaire de localisation n'existe tant qu'aucun écran n'en a besoin.
+    /// Créé à la première demande. Lit seulement l'ÉTAT des autorisations (le gestionnaire qui lit la position est celui du suivi,
+    /// `CoreLocationTracking`, créé au démarrage).
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
 
-    private let userProfiles: UserProfileRepository
+    private let userProfiles: UserProfileRepository = FirestoreUserProfileRepository()
     /// Ce que la personne a saisi dans les étapes du profil : sur l'appareil seulement, effacé une fois le serveur ayant
     /// confirmé (ticket §6.2) et à chaque fin de session.
     private let profileDrafts: ProfileDraftStore
-    private let avatarCodec: AvatarCodec
+    private let avatarCodec: AvatarCodec = ImageAvatarCodec()
     /// L'acceptation des conditions gardée sur l'appareil entre l'inscription et la création du profil.
     private let pendingConsent: PendingConsentStore
 
@@ -166,9 +167,7 @@ final class AppEnvironment {
     private init() {
         let flagStore = UserDefaultsBooleanStore()
         let privacy = PrivacySettings(
-            store: flagStore,
-            analytics: FirebaseAnalyticsSwitch(),
-            crashReports: FirebaseCrashlyticsSwitch()
+            store: flagStore, analytics: FirebaseAnalyticsSwitch(), crashReports: FirebaseCrashlyticsSwitch()
         )
         let tracker = AnalyticsTracker(sink: FirebaseAnalyticsSink(), isEnabled: { privacy.analyticsEnabled })
         let drafts = ProfileDraftFileStore()
@@ -181,28 +180,14 @@ final class AppEnvironment {
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
         let trackingServices = TrackingServices.make(
-            gateway: gateway,
-            cache: cache,
-            network: networkMonitor,
-            device: device
+            gateway: gateway, cache: cache, network: networkMonitor, device: device
         )
-        let tracking = trackingServices.runtime
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
-        let sharingChanged: () -> Void = {
-            Task { @MainActor in
-                tracking.sharingChanged()
-            }
-        }
         let miff = MiffServices.make(
-            gateway: gateway,
-            cache: cache,
-            network: networkMonitor,
-            device: device,
-            onSharingChanged: sharingChanged
+            gateway: gateway, cache: cache, network: networkMonitor, device: device,
+            onSharingChanged: trackingServices.sharingChanged
         )
-        let directory = miff.directory
-        let deletions = miff.deletions
-        let places = PlaceServices.make(onChanged: sharingChanged)
+        let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -216,13 +201,12 @@ final class AppEnvironment {
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
                 teardown: [
                     { drafts.clear() },
-                    { await directory.stop() },
-                    { await deletions.stop() },
+                    { await miff.directory.stop() },
+                    { await miff.deletions.stop() },
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() },
-                    // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés. Borné : une déconnexion n'attend
-                    // jamais plus de quelques secondes un passage en cours (l'arrêt est déjà marqué, l'effacement suit à la fin du passage).
-                    { _ = try? await timedOperation(seconds: 5) { await tracking.stop() } }
+                    // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
+                    trackingServices.teardown
                 ],
                 device: device,
                 network: networkMonitor,
@@ -235,25 +219,18 @@ final class AppEnvironment {
         session = manager
         sessionState = SessionObservable(manager: manager)
         network = networkMonitor
-        passwordResetGateway = FirebasePasswordResetGateway()
-        passwordResetCooldown = ResendCooldown(nowMillis: AppClock.live.nowMillis)
-        phoneTools = PhoneNumberKitTools()
-        socialSource = SystemSocialCredentialSource()
         onboardingFlags = OnboardingFlags(store: flagStore)
         miffRepository = miff.repository
-        miffDirectory = directory
-        miffDeletions = deletions
+        miffDirectory = miff.directory
+        miffDeletions = miff.deletions
         placeRepository = places.repository
         addressSearch = places.search
         placeNotices = places.notices
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
-        notificationAsks = UserDefaultsNotificationAskStore()
-        self.tracking = tracking
+        tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
-        userProfiles = FirestoreUserProfileRepository()
         profileDrafts = drafts
-        avatarCodec = ImageAvatarCodec()
         pendingConsent = pending
     }
 

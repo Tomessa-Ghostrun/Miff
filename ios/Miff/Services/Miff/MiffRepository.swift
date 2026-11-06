@@ -311,24 +311,6 @@ final class FirestoreMiffRepository: MiffRepository {
         }
     }
 
-    func cleanUpLost(uid: String, lost: LostMiff) async -> Bool {
-        let store = self.store
-        // Le nettoyage demande le serveur : sans lui rien n'est touché (le prochain démarrage le fera).
-        let leaveWrites = MiffWrites.leave(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
-        let leave = await write { try await store.commit(leaveWrites) }
-        if leave == .done {
-            rules.onSharingChanged()
-            return true
-        }
-        // Retiré : la fiche a déjà disparu, le lot est refusé. Il ne reste que l'index, que les règles laissent supprimer.
-        let dropWrites = MiffWrites.dropIndex(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
-        let indexOnly = await write { try await store.commit(dropWrites) }
-        if indexOnly == .done {
-            rules.onSharingChanged()
-        }
-        return indexOnly == .done
-    }
-
     /// Index obsolètes trouvés en créant ou en rejoignant (la personne a été retirée d'une Miff, ou elle a été supprimée) :
     /// nettoyés sans message (la personne est occupée à autre chose), mais JAMAIS en laissant cette Miff lisible hors ligne :
     /// même purge du cache local que pour une perte d'accès (data-model.md §8, « Purge du cache local »).
