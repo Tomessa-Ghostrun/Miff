@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -35,14 +36,17 @@ import com.tomessa.miff.ui.theme.StrokeAvatarRing
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint20
 import com.tomessa.miff.ui.theme.colorBgSurface
-import com.tomessa.miff.ui.theme.colorBrandPrimary
-import com.tomessa.miff.ui.theme.colorStatusSafeTint
+import com.tomessa.miff.ui.theme.colorStatusDanger
+import com.tomessa.miff.ui.theme.colorStatusSafe
+import com.tomessa.miff.ui.theme.colorStatusWarning
 import com.tomessa.miff.ui.theme.colorTextSecondary
+import com.tomessa.miff.ui.theme.colorUpdateNeutral
 import com.tomessa.miff.ui.theme.miffShadow
 
 private val BarShape = RoundedCornerShape(20.dp)
 private val ItemHeight = 52.dp
-private val UpdateRingSize = 28.dp
+private val PlateSize = 44.dp
+private val DotSize = 30.dp
 
 /**
  * The floating tab bar of the mockups (Onboarding ticket 6.7): a white rounded card with the Feed (house with a heart), the
@@ -59,6 +63,8 @@ fun MainTabBar(
     selected: MainTab,
     onSelect: (MainTab) -> Unit,
     modifier: Modifier = Modifier,
+    /** The colour of MY status in the Miff shown by the Feed: the dot of the central button (D19, D25). */
+    updateLevel: StatusLevel = StatusLevel.NEUTRAL,
 ) {
     Box(
         modifier =
@@ -83,6 +89,7 @@ fun MainTabBar(
                     tab = tab,
                     selected = tab == selected,
                     enabled = config.isEnabled(tab),
+                    updateLevel = updateLevel,
                     onClick = { onSelect(tab) },
                     modifier = Modifier.weight(1f),
                 )
@@ -96,15 +103,30 @@ private fun TabItem(
     tab: MainTab,
     selected: Boolean,
     enabled: Boolean,
+    updateLevel: StatusLevel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val name =
         stringResource(
             when (tab) {
-                MainTab.FEED -> R.string.tabbar_feed_a11y
-                MainTab.PROFILE -> R.string.tabbar_profile_a11y
-                MainTab.UPDATE -> if (enabled) R.string.tabbar_update_a11y else R.string.tabbar_update_soon_a11y
+                MainTab.FEED -> {
+                    R.string.tabbar_feed_a11y
+                }
+
+                MainTab.PROFILE -> {
+                    R.string.tabbar_profile_a11y
+                }
+
+                // The colour is the ONLY visual signal of the central button (D25): the spoken name says the state for the screen reader.
+                MainTab.UPDATE -> {
+                    when (updateLevel) {
+                        StatusLevel.GREEN -> R.string.tabbar_update_green_a11y
+                        StatusLevel.ORANGE -> R.string.tabbar_update_orange_a11y
+                        StatusLevel.RED -> R.string.tabbar_update_red_a11y
+                        StatusLevel.NEUTRAL -> R.string.tabbar_update_a11y
+                    }
+                }
             },
         )
     val tint = if (selected) colorActionPrimary else colorTextSecondary
@@ -132,21 +154,35 @@ private fun TabItem(
             }
 
             MainTab.UPDATE -> {
-                // The round button of the mockups: a yellow-green ring around a pale centre. Dimmed while it does nothing.
-                Box(
-                    modifier =
-                        Modifier
-                            .size(UpdateRingSize)
-                            .background(colorStatusSafeTint, CircleShape)
-                            .border(
-                                StrokeAvatarRing,
-                                colorBrandPrimary.copy(alpha = if (enabled) 1f else DISABLED_ALPHA),
-                                CircleShape,
-                            ),
-                )
+                StatusDot(updateLevel)
             }
         }
     }
 }
 
-private const val DISABLED_ALPHA = 0.5f
+/**
+ * The central button (decision D25 of the PM, 2026-11-06: "la couleur est le seul signal"): an opaque white plate, the blue ring of the mockups, and a
+ * plain DOT of the colour of my status inside: green, orange, red, or grey when nothing is known (sharing stopped, no status yet). NO pictogram: no tick, clock
+ * or exclamation mark. The plate keeps the dot readable on any background.
+ */
+@Composable
+private fun StatusDot(level: StatusLevel) {
+    val neutral = level == StatusLevel.NEUTRAL
+    val dot =
+        when (level) {
+            StatusLevel.GREEN -> colorStatusSafe
+            StatusLevel.ORANGE -> colorStatusWarning
+            StatusLevel.RED -> colorStatusDanger
+            StatusLevel.NEUTRAL -> colorUpdateNeutral
+        }
+    Box(
+        modifier =
+            Modifier
+                .size(PlateSize)
+                .background(colorBgSurface, CircleShape)
+                .border(StrokeAvatarRing, if (neutral) colorUpdateNeutral else colorActionPrimary, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.size(DotSize).background(dot, CircleShape))
+    }
+}

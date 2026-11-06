@@ -17,13 +17,17 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.feed.FirestorePhotoReader
 import com.tomessa.miff.data.feed.FirestorePositionReader
 import com.tomessa.miff.data.feed.FirestoreStatusObserver
+import com.tomessa.miff.data.feed.PhotoCache
+import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.feed.PositionReader
 import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
 import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewals
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.FirestoreConsentRenewals
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
@@ -72,6 +76,7 @@ import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.FirestoreSessionDocuments
 import com.tomessa.miff.data.session.SessionManager
+import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.data.session.SharedPreferencesDeviceIdStore
 import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
@@ -80,10 +85,18 @@ import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
 import com.tomessa.miff.data.tracking.DetectionJournals
 import com.tomessa.miff.data.tracking.FirestoreTrackingStore
 import com.tomessa.miff.data.tracking.FusedMovementUpdates
+import com.tomessa.miff.data.tracking.FusedPhotoPositionSource
 import com.tomessa.miff.data.tracking.FusedPositionSource
 import com.tomessa.miff.data.tracking.PlayGeofenceArming
 import com.tomessa.miff.data.tracking.SharedPreferencesTrackingLocalStore
 import com.tomessa.miff.data.tracking.TrackingEngine
+import com.tomessa.miff.data.tracking.TrackingEnvironment
+import com.tomessa.miff.data.update.FirestorePhotoStore
+import com.tomessa.miff.data.update.PhotoCleaner
+import com.tomessa.miff.data.update.PhotoStore
+import com.tomessa.miff.data.update.PublishLedger
+import com.tomessa.miff.data.update.SharedPreferencesPublishLedger
+import com.tomessa.miff.data.update.UpdatePublisher
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
@@ -260,15 +273,19 @@ class AppContainer(
      */
     val detectionJournal: DetectionJournal by lazy { DetectionJournals.create(context) }
 
+    /** What the detection and the Update ask of the phone (battery, network, clock). One instance for both. */
+    private val trackingEnvironment: TrackingEnvironment by lazy {
+        AndroidTrackingEnvironment(
+            context = context,
+            permissions = devicePermissions,
+            currentUid = { authGateway.currentUid },
+            online = { networkMonitor.isOnline() },
+        )
+    }
+
     val trackingEngine: TrackingEngine by lazy {
         TrackingEngine(
-            env =
-                AndroidTrackingEnvironment(
-                    context = context,
-                    permissions = devicePermissions,
-                    currentUid = { authGateway.currentUid },
-                    online = { networkMonitor.isOnline() },
-                ),
+            env = trackingEnvironment,
             store = FirestoreTrackingStore(miffStore),
             local = SharedPreferencesTrackingLocalStore(context),
             position = FusedPositionSource(context),
@@ -316,6 +333,52 @@ class AppContainer(
     val statusObserver: StatusObserver by lazy { FirestoreStatusObserver() }
 
     val positionReader: PositionReader by lazy { FirestorePositionReader() }
+
+    /**
+     * FEED-4 and UPDATE-1: the photos read (in memory, 16 at most, emptied at sign-out), and the update of the person. The photo and the status of an update are
+     * written by [updatePublisher] only, in one transaction per lot of 5 Miffs, with the identifier of the session of this phone and ONE measure of the position
+     * (decision of the PM, 2026-11-06: no photo without a position). Nothing of it is logged or sent as an event.
+     */
+    val photoCache: PhotoCache by lazy { PhotoCache() }
+
+    val photoReader: PhotoReader by lazy { FirestorePhotoReader(photoCache) }
+
+    val publishLedger: PublishLedger by lazy { SharedPreferencesPublishLedger(context) }
+
+    private val photoStore: PhotoStore by lazy { FirestorePhotoStore() }
+
+    /** The ids of the Miffs of the person, as the directory knows them (read by the Feed): the transaction then keeps the ones where the sharing is on. */
+    private fun miffIds(): List<String> =
+        ((miffDirectory.state.value as? DirectoryState.Ready)?.miffs.orEmpty()).map {
+            it.id
+        }
+
+    val updatePublisher: UpdatePublisher by lazy {
+        UpdatePublisher(
+            store = photoStore,
+            device = deviceSession,
+            position = FusedPhotoPositionSource(context),
+            network = networkMonitor,
+            ledger = publishLedger,
+            photos = photoCache,
+            currentUid = { authGateway.currentUid },
+            miffIds = ::miffIds,
+            battery = { trackingEnvironment.batteryPct() },
+        )
+    }
+
+    val photoCleaner: PhotoCleaner by lazy {
+        PhotoCleaner(
+            store = photoStore,
+            device = deviceSession,
+            network = networkMonitor,
+            ledger = publishLedger,
+            photos = photoCache,
+            currentUid = { authGateway.currentUid },
+            miffIds = ::miffIds,
+            battery = { trackingEnvironment.batteryPct() },
+        )
+    }
 
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
@@ -416,6 +479,8 @@ class AppContainer(
                         miffDirectory,
                         trackingEngine,
                         awaitingAgreement,
+                        photoCache,
+                        SessionTeardown { publishLedger.clear() },
                         placeNotices,
                         addressSearch,
                         mapTileCache,

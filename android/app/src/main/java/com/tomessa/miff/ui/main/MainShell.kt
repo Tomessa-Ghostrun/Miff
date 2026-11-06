@@ -2,23 +2,32 @@ package com.tomessa.miff.ui.main
 
 import android.os.SystemClock
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -35,15 +44,22 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.profile.AvatarCodec
+import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.update.PromptLevel
+import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
 import com.tomessa.miff.ui.feed.FeedActions
 import com.tomessa.miff.ui.feed.FeedHost
 import com.tomessa.miff.ui.feed.FeedMe
 import com.tomessa.miff.ui.feed.FeedScreen
+import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
+import com.tomessa.miff.ui.feed.LocalPhotoReader
 import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
@@ -71,6 +87,14 @@ import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
+import com.tomessa.miff.ui.theme.Spacing
+import com.tomessa.miff.ui.update.IncentiveBubble
+import com.tomessa.miff.ui.update.UpdateActions
+import com.tomessa.miff.ui.update.UpdateConfirmation
+import com.tomessa.miff.ui.update.UpdateEvent
+import com.tomessa.miff.ui.update.UpdateTab
+import com.tomessa.miff.ui.update.UpdateViewModel
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
@@ -208,6 +232,20 @@ private fun MainNavigation(
                             }
                         },
                 )
+            val updateViewModel: UpdateViewModel =
+                viewModel(
+                    key = "update-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                UpdateViewModel(
+                                    container.updatePublisher,
+                                    container.photoCleaner,
+                                    container.publishLedger,
+                                )
+                            }
+                        },
+                )
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
@@ -238,6 +276,13 @@ private fun MainNavigation(
                         onLocateDismissed = feedViewModel::onLocateDismissed,
                         onRetry = feedViewModel::retry,
                         observe = feedViewModel::observe,
+                        photos = container.photoReader,
+                    ),
+                update =
+                    UpdateHost(
+                        viewModel = updateViewModel,
+                        avatarCodec = container.avatarCodec,
+                        onReviewAgreement = container.awaitingAgreement::requestReview,
                     ),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
@@ -388,6 +433,13 @@ private fun MainNavigation(
 /** launchSingleTop: two quick taps open one screen, not two. */
 private fun NavController.open(route: Any) = navigate(route) { launchSingleTop = true }
 
+/** What the Update tab needs from the outside (UPDATE-1, UPDATE-2): its view model, the reader of the photo of the phone's camera application, the way to the agreement. */
+class UpdateHost(
+    val viewModel: UpdateViewModel,
+    val avatarCodec: AvatarCodec,
+    val onReviewAgreement: () -> Unit = {},
+)
+
 /**
  * The tabs and their bar. The tab in use is kept through a rotation; leaving a tab keeps its own state (scroll position, and
  * everything it remembers) for when the person comes back; tapping the tab already in use brings it back to the top. The bar
@@ -419,74 +471,177 @@ fun MainTabs(
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
+    update: UpdateHost? = null,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
+    // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
+    var previous by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
     val holder = rememberSaveableStateHolder()
     val keyboardOpen = miffKeyboardVisible()
-    Column(modifier = Modifier.fillMaxSize()) {
-        holder.SaveableStateProvider(selected) {
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (selected) {
-                    MainTab.FEED -> {
-                        // The listeners of the Feed live only while this tab is the one in use AND the app is in the foreground.
-                        val lifecycleOwner = LocalLifecycleOwner.current
-                        val observeFeed by rememberUpdatedState(feed.observe)
-                        LaunchedEffect(lifecycleOwner) {
-                            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { observeFeed() }
-                        }
-                        val actions =
-                            rememberSystemFeedActions(
-                                FeedActions(
-                                    onOpenProfile = { selected = MainTab.PROFILE },
-                                    onLocate = feed.onLocate,
-                                    onLocateDismissed = feed.onLocateDismissed,
-                                    onResumeSharing = onOpenMiff,
-                                    onRetryFeed = feed.onRetry,
-                                ),
-                            )
-                        FeedScreen(
-                            state = miffs,
-                            scrollToTopSignal = scrollToTop,
-                            onRetry = onRetryMiffs,
-                            onSelect = onSelectMiff,
-                            onCreate = onCreateMiff,
-                            onJoin = onJoinMiff,
-                            agreement = agreement,
-                            feed = feed.state,
-                            locate = feed.locate,
-                            me = feed.me,
-                            actions = actions,
-                        )
-                    }
+    val density = LocalDensity.current
+    val feedContent = (feed.state as? FeedUiState.Ready)?.content
+    // D19: the dot of the central button, the ring of my photo and the bubble follow the Miff shown by the Feed (one listener, no reading more).
+    val myLevel = feedContent?.myLevel ?: StatusLevel.NEUTRAL
+    val prompt = feedContent?.myPrompt ?: PromptLevel.NONE
+    val ready = miffs as? DirectoryState.Ready
+    // Sharing stopped: the Update shows no viewfinder (and asks no permission). Known for sure with ONE Miff; with several (Premium) the publication says it.
+    val sharingStopped = feedContent?.myLabel == StateLabel.SharingStopped && (ready?.miffs?.size ?: 0) == 1
 
-                    MainTab.PROFILE -> {
-                        ProfileTabScreen(
-                            state = profileState,
-                            scrollToTopSignal = scrollToTop,
-                            onOpenMyInfo = onOpenMyInfo,
-                            onOpenSettings = onOpenSettings,
-                            onRetry = onRetryProfile,
-                            miffs = miffs,
-                            onOpenMiff = onOpenMiff,
-                            placesContent = placesContent,
-                        )
-                    }
-
-                    // No destination until the UPDATE ticket exists: the button is disabled and cannot be selected.
-                    MainTab.UPDATE -> {}
-                }
+    fun select(tab: MainTab) {
+        if (tab != selected) previous = selected
+        selected = tab
+    }
+    BackHandler(enabled = selected == MainTab.UPDATE) {
+        selected =
+            if (previous == MainTab.UPDATE) MainTab.FEED else previous
+    }
+    // The photo of the update that expired (24 h) is removed from the database by its author, at the launch and at each return to the foreground.
+    val updateModel = update?.viewModel
+    val directoryReady = ready != null
+    LaunchedEffect(updateModel, directoryReady) { if (directoryReady) updateModel?.cleanUpExpiredPhoto() }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { if (directoryReady) updateModel?.cleanUpExpiredPhoto() }
+    var confirmation by remember { mutableStateOf<String?>(null) }
+    val publishedText = stringResource(R.string.update_published)
+    LaunchedEffect(updateModel) {
+        updateModel?.events?.collect { event ->
+            if (event is UpdateEvent.Published) {
+                // Back to the Feed, where my card now shows the photo; a calm message without sound or vibration, gone after 3 s.
+                selected = MainTab.FEED
+                confirmation = publishedText
             }
         }
-        if (!keyboardOpen) {
-            MainTabBar(
-                config = tabBar,
-                selected = selected,
-                onSelect = { tab ->
-                    if (tab == selected) scrollToTop++ else selected = tab
-                },
-                modifier = Modifier.miffBottomInsets(),
+    }
+    LaunchedEffect(confirmation) {
+        if (confirmation != null) {
+            delay(CONFIRMATION_MILLIS)
+            confirmation = null
+        }
+    }
+    var barHeightPx by remember { mutableIntStateOf(0) }
+    var bubbleHeightPx by remember { mutableIntStateOf(0) }
+    val bubbleShown = prompt != PromptLevel.NONE && selected != MainTab.UPDATE && !keyboardOpen
+    val overlayPadding = if (bubbleShown) with(density) { bubbleHeightPx.toDp() } + Spacing.s else 0.dp
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            holder.SaveableStateProvider(selected) {
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    CompositionLocalProvider(
+                        LocalBottomOverlayPadding provides overlayPadding,
+                        LocalPhotoReader provides feed.photos,
+                    ) {
+                        when (selected) {
+                            MainTab.FEED -> {
+                                // The listeners of the Feed live only while this tab is the one in use AND the app is in the foreground.
+                                val lifecycleOwner = LocalLifecycleOwner.current
+                                val observeFeed by rememberUpdatedState(feed.observe)
+                                LaunchedEffect(lifecycleOwner) {
+                                    lifecycleOwner.lifecycle.repeatOnLifecycle(
+                                        Lifecycle.State.STARTED,
+                                    ) { observeFeed() }
+                                }
+                                val actions =
+                                    rememberSystemFeedActions(
+                                        FeedActions(
+                                            onOpenProfile = { select(MainTab.PROFILE) },
+                                            onLocate = feed.onLocate,
+                                            onLocateDismissed = feed.onLocateDismissed,
+                                            onResumeSharing = onOpenMiff,
+                                            onRetryFeed = feed.onRetry,
+                                        ),
+                                    )
+                                FeedScreen(
+                                    state = miffs,
+                                    scrollToTopSignal = scrollToTop,
+                                    onRetry = onRetryMiffs,
+                                    onSelect = onSelectMiff,
+                                    onCreate = onCreateMiff,
+                                    onJoin = onJoinMiff,
+                                    agreement = agreement,
+                                    feed = feed.state,
+                                    locate = feed.locate,
+                                    me = feed.me,
+                                    actions = actions,
+                                )
+                            }
+
+                            MainTab.PROFILE -> {
+                                ProfileTabScreen(
+                                    state = profileState,
+                                    scrollToTopSignal = scrollToTop,
+                                    onOpenMyInfo = onOpenMyInfo,
+                                    onOpenSettings = onOpenSettings,
+                                    onRetry = onRetryProfile,
+                                    miffs = miffs,
+                                    onOpenMiff = onOpenMiff,
+                                    placesContent = placesContent,
+                                )
+                            }
+
+                            MainTab.UPDATE -> {
+                                if (update != null) {
+                                    UpdateTab(
+                                        viewModel = update.viewModel,
+                                        avatarCodec = update.avatarCodec,
+                                        sharingStopped = sharingStopped,
+                                        miffCount = ready?.miffs?.size ?: 1,
+                                        actions =
+                                            UpdateActions(
+                                                onClose = { selected = MainTab.FEED },
+                                                onResumeSharing = {
+                                                    selected = MainTab.FEED
+                                                    ready?.activeId?.let(onOpenMiff)
+                                                },
+                                                onReviewAgreement = {
+                                                    selected = MainTab.FEED
+                                                    update.onReviewAgreement()
+                                                },
+                                            ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!keyboardOpen) {
+                MainTabBar(
+                    config = tabBar,
+                    selected = selected,
+                    onSelect = { tab ->
+                        if (tab == selected) scrollToTop++ else select(tab)
+                    },
+                    updateLevel = myLevel,
+                    // Measured WITH the safe area under it: the bubble sits just above the card of the bar.
+                    modifier = Modifier.onSizeChanged { barHeightPx = it.height }.miffBottomInsets(),
+                )
+            }
+        }
+        if (bubbleShown) {
+            IncentiveBubble(
+                level = prompt,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            start = Spacing.m,
+                            end = Spacing.m,
+                            // Never negative: before the bar is measured its height is 0.
+                            bottom = (with(density) { barHeightPx.toDp() } - Spacing.s).coerceAtLeast(0.dp),
+                        ).onSizeChanged { bubbleHeightPx = it.height },
+            )
+        }
+        confirmation?.let { text ->
+            UpdateConfirmation(
+                text = text,
+                modifier =
+                    Modifier.align(Alignment.BottomCenter).padding(
+                        bottom =
+                            with(density) { barHeightPx.toDp() } + Spacing.m,
+                    ),
             )
         }
     }
 }
+
+private const val CONFIRMATION_MILLIS = 3_000L

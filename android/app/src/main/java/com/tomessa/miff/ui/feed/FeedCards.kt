@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.feed.Battery
 import com.tomessa.miff.domain.feed.MemberCard
-import com.tomessa.miff.domain.feed.PhotoSlot
 import com.tomessa.miff.domain.feed.PlaceKind
 import com.tomessa.miff.domain.feed.PlaceRef
 import com.tomessa.miff.domain.feed.StateLabel
@@ -71,6 +70,10 @@ fun MemberCardView(
     onMessage: (phone: String) -> Unit,
     onCall: (phone: String) -> Unit,
     modifier: Modifier = Modifier,
+    /** FEED-4: the Miff the card is in, the moment (for "hier" and the time of the photo) and what a touch on the photo does. */
+    miffId: String = "",
+    nowMillis: Long = 0L,
+    onOpenPhoto: (OpenedPhoto) -> Unit = {},
 ) {
     Row(
         modifier =
@@ -126,8 +129,8 @@ fun MemberCardView(
                         .timeLine(
                             card.time,
                         )?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
-                    // FEED-4 will draw the photo of the last update here; "no photo" draws nothing (no hole, no message).
-                    PhotoSlotView(card.photo)
+                    // FEED-4: the photo of the last update (a window of 108 dp, the whole photo in full screen); "no photo" draws nothing (no hole, no message).
+                    MemberPhotoSlot(card, miffId, texts, nowMillis, onOpenPhoto)
                     if (card.isMe) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
@@ -156,13 +159,6 @@ fun MemberCardView(
             }
             CardActions(card, locating, onLocate, onMessage, onCall)
         }
-    }
-}
-
-@Composable
-private fun PhotoSlotView(slot: PhotoSlot) {
-    when (slot) {
-        PhotoSlot.None -> {}
     }
 }
 

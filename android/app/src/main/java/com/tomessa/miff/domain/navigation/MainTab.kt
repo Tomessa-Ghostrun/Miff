@@ -8,15 +8,14 @@ package com.tomessa.miff.domain.navigation
 enum class MainTab {
     FEED,
 
-    /** "Donner des nouvelles": the manual update of the UPDATE ticket, which does not exist yet. */
+    /** "Donner des nouvelles": the Update screen (ticket UPDATE): viewfinder, preview, publication. */
     UPDATE,
     PROFILE,
 }
 
 /**
- * What the bar shows. The central button has no destination until the UPDATE ticket exists (decision Q1): it is then
- * VISIBLE BUT DISABLED in the builds the team tests itself (debug), and ABSENT from the builds meant for outside testers
- * (release; the bar then has two tabs). A button that does nothing must never reach someone who does not know why.
+ * What the bar shows. Since UPDATE-1 the central button HAS a destination (the Update screen), so it is active in every build, the ones meant for
+ * outside testers included (decision D14 of the Update ticket is lifted by the ticket itself): the bar always has three tabs.
  */
 data class TabBarConfig(
     val showUpdateButton: Boolean,
@@ -29,11 +28,13 @@ data class TabBarConfig(
             add(MainTab.PROFILE)
         }
 
-    /** Tabs that can be opened. The central button stays a placeholder until its ticket exists. */
-    fun isEnabled(tab: MainTab): Boolean = tab != MainTab.UPDATE
+    /** Every tab drawn can be opened. */
+    @Suppress("FunctionOnlyReturningConstant")
+    fun isEnabled(tab: MainTab): Boolean = true
 
     companion object {
-        /** [isInternalBuild]: the debug build (`BuildConfig.DEBUG`). */
-        fun forBuild(isInternalBuild: Boolean) = TabBarConfig(showUpdateButton = isInternalBuild)
+        /** [isInternalBuild] is kept for the callers: the central button no longer depends on the build. */
+        @Suppress("UNUSED_PARAMETER")
+        fun forBuild(isInternalBuild: Boolean) = TabBarConfig(showUpdateButton = true)
     }
 }

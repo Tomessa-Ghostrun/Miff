@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
@@ -86,8 +87,14 @@ fun ProfileTabScreen(
                 .background(GradientProfileHeader)
                 .miffTopInsets()
                 .verticalScroll(scroll)
-                .padding(horizontal = Spacing.l, vertical = Spacing.m)
-                .semantics { paneTitle = paneName },
+                // The bubble of encouragement (UPDATE-2) is drawn over the bottom of this tab: the content keeps a margin as tall as it.
+                .padding(
+                    start = Spacing.l,
+                    end = Spacing.l,
+                    top = Spacing.m,
+                    bottom =
+                        Spacing.m + LocalBottomOverlayPadding.current,
+                ).semantics { paneTitle = paneName },
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
         Row(
