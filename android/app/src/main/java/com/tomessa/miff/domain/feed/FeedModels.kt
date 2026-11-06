@@ -191,9 +191,9 @@ sealed interface Bubble {
     /** Orange or red: one page per member concerned, reds first (never an automatic scroll). */
     data class Alerts(
         val pages: List<AlertPage>,
+        /** The colour of the Miff (the ONE source: [com.tomessa.miff.domain.feed.FeedBuilder.miffLevel]): red if a page is red, else orange. */
+        override val level: StatusLevel,
     ) : Bubble {
-        override val level: StatusLevel get() = pages.first().level
-
         override fun toString(): String = "Alerts(redacted)"
     }
 }

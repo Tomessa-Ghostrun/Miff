@@ -442,6 +442,63 @@ class FeedBuilderTest {
         assertEquals(StatusLevel.ORANGE, content.myLevel)
     }
 
+    @Test
+    fun aRecentUpdateAfterAnOldDeparture_isGreen_theReferenceBeingTheMostRecent() {
+        // Decision N2: the reference of the colour is max(departure, last update). Left 3 h ago but gave news 10 min ago: green.
+        val departed =
+            card(
+                build(
+                    trio,
+                    mapOf("t" to status(PresenceValue.OUT, "p1", presenceAgo = 3 * hour, lastUpdateAgo = 10 * minute)),
+                ),
+                "t",
+            )
+        assertEquals(StatusLevel.GREEN, departed.level)
+        assertEquals(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME)), departed.label)
+        assertEquals(TimeLine.DepartedAgo(Age.Hours(3)), departed.time)
+    }
+
+    @Test
+    fun theColourOfTheBubble_andTheColourOfTheMiff_areTheSameSource() {
+        val content =
+            build(
+                trio,
+                mapOf(
+                    me to status(),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                ),
+            )
+        assertEquals(content.miffLevel, content.bubble.level)
+        assertEquals(StatusLevel.RED, content.bubble.level)
+        val orangeOnly = build(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute)))
+        assertEquals(StatusLevel.ORANGE, orangeOnly.bubble.level)
+        assertEquals(orangeOnly.miffLevel, orangeOnly.bubble.level)
+    }
+
+    @Test
+    fun dataThatOnlyTheCacheVouchesFor_isToldWithItsDate_evenOnline() {
+        val cached =
+            FeedBuilder.build(
+                input(
+                    trio,
+                    StatusesView.Loaded(
+                        mapOf(
+                            me to status(updatedAgo = 20 * minute),
+                            "t" to status(updatedAgo = 30 * minute),
+                        ),
+                        fromCache = true,
+                    ),
+                ),
+                now,
+                zone,
+            )
+        val banner = cached.banners.filterIsInstance<FeedBanner.Offline>().single()
+        assertEquals(Moment(now - 20 * minute, Day.TODAY), banner.latest)
+        val confirmed = build(trio, mapOf(me to status(), "t" to status()))
+        assertTrue(confirmed.banners.isEmpty())
+    }
+
     // --- Sharing and hidden states (V6, V7, V8) --------------------------------------------------------------------
 
     @Test

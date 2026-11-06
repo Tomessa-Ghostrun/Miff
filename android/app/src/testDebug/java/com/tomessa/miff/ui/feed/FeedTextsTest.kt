@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.feed
 
 import android.app.Application
 import android.content.Context
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.domain.feed.Age
 import com.tomessa.miff.domain.feed.AlertKind
@@ -23,6 +24,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.TimeZone
 
 /** The times are written with non-breaking spaces ('16 h 02', '4:40 PM'): the expected sentences are given with plain ones. */
 fun String.t(): String =
@@ -58,6 +60,20 @@ class FeedTextsFrenchTest {
         assertEquals("de 16 h 40".t(), texts.from(Moment(AT_16_40, Day.TODAY)))
         assertEquals("d'hier à 16 h 40".t(), texts.from(Moment(AT_16_40, Day.YESTERDAY)))
         assertEquals("du 3 nov. à 16 h 02".t(), texts.from(Moment(AT_16_02, Day.OTHER)))
+    }
+
+    @Test
+    fun theZoneOfThePhone_isReadAtEachUse_notFrozenAtTheConstruction() {
+        val live = FeedTexts(ApplicationProvider.getApplicationContext<Context>())
+        val saved = TimeZone.getDefault()
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+            assertEquals("16 h 40".t(), live.since(Moment(AT_16_40, Day.TODAY)))
+            TimeZone.setDefault(TimeZone.getTimeZone("Asia/Tokyo"))
+            assertEquals("01 h 40".t(), live.since(Moment(AT_16_40, Day.TODAY)))
+        } finally {
+            TimeZone.setDefault(saved)
+        }
     }
 
     @Test
@@ -145,23 +161,6 @@ class FeedTextsFrenchTest {
         assertEquals("Depuis 16 h 02".t(), texts.alertDetail(page(danger, level = StatusLevel.RED)))
         assertEquals(null, texts.alertDetail(page(left)))
     }
-
-    @Test
-    fun theCardIsReadAsOneSentence() {
-        val card =
-            com.tomessa.miff.domain.feed.MemberCard(
-                member = member(),
-                isMe = false,
-                level = StatusLevel.GREEN,
-                label = StateLabel.At(PlaceRef.Category(PlaceKind.HOME)),
-                time = TimeLine.Since(Age.Minutes(12)),
-                battery = Battery(85, null),
-                limitedLocation = false,
-                phone = "+33612345678",
-                canLocate = true,
-            )
-        assertEquals("Thomas, À la maison, Depuis 12 min, Batterie à 85 %", texts.cardDescription(card))
-    }
 }
 
 /** The same in English: 12-hour clock in English ("4:40 PM".t()), "left home", "No news from Thomas since 4:02 PM".t(). */
@@ -177,6 +176,22 @@ class FeedTextsEnglishTest {
         assertEquals("on Nov 3 at 4:02 PM".t(), texts.at(Moment(AT_16_02, Day.OTHER)))
         assertEquals("4:40 PM".t(), texts.since(Moment(AT_16_40, Day.TODAY)))
         assertEquals("from 4:40 PM".t(), texts.from(Moment(AT_16_40, Day.TODAY)))
+    }
+
+    @Test
+    fun theChoiceOf12Or24Hours_isReadAtEachUse() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val live = FeedTexts(context, ZoneOffset.UTC)
+        Settings.System.putString(context.contentResolver, Settings.System.TIME_12_24, "12")
+        assertEquals("4:40 PM".t(), live.since(Moment(AT_16_40, Day.TODAY)))
+        Settings.System.putString(context.contentResolver, Settings.System.TIME_12_24, "24")
+        assertEquals("16:40", live.since(Moment(AT_16_40, Day.TODAY)))
+    }
+
+    @Test
+    fun theSportPlaceReadsWellInASentence() {
+        assertEquals("At the sports club", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("Left the sports club", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.SPORT))))
     }
 
     @Test

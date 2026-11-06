@@ -6,7 +6,8 @@ import java.util.Locale
 /*
  * PRIVACY, for this file: a position is among the most sensitive data of the app. Every class that carries one has a toString() that shows
  * nothing (criterion L4: no coordinate in a log, a crash report, an analytics event, a share message or the saved state of a screen). The
- * coordinates exist only between the reading of `positions/{uid}` and the closing of the sheet "Localiser": they are never stored.
+ * coordinates exist, in the memory of the screen, only between the reading of `positions/{uid}` and the closing of the sheet "Localiser": the Feed never stores them
+ * (the copy that the Firestore SDK keeps in its own local cache is a known limit, see data/feed/PositionReader.kt).
  */
 
 /** What the single reading of `positions/{uid}` (from the SERVER, never the cache, no listener) gave. Anything else is one of the calm answers. */

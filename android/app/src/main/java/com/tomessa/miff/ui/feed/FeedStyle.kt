@@ -94,7 +94,11 @@ internal fun FeedAvatar(
     modifier: Modifier = Modifier,
     size: Dp = 46.dp,
 ) {
-    val bitmap = remember(jpeg) { jpeg?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() } }
+    // Keyed by the CONTENT of the photo (size and hash), not by the array: each snapshot of the members brings a new array of the same photo.
+    val bitmap =
+        remember(jpeg?.size, jpeg?.contentHashCode()) {
+            jpeg?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+        }
     Box(modifier = modifier.size(size).clearAndSetSemantics {}) {
         Box(
             modifier =

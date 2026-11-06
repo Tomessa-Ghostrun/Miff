@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
@@ -227,6 +228,17 @@ class FeedScreenTest {
             .assertHeightIsAtLeast(48.dp)
     }
 
+    @Test
+    fun header_theLogo_isAClickableTargetOfAtLeast48dp_andScrollsToTheTop() {
+        feed(ready(nominal))
+        composeRule
+            .onNodeWithContentDescription(text(R.string.home_logo_a11y))
+            .assertWidthIsAtLeast(48.dp)
+            .assertHeightIsAtLeast(48.dp)
+            .assertHasClickAction()
+            .performClick()
+    }
+
     // --- bubble ---------------------------------------------------------------------------------------------------------------
 
     @Test
@@ -363,7 +375,7 @@ class FeedScreenTest {
         composeRule.onNodeWithText("À Chez Léa").assertExists()
         // Mine, Thomas's and Amandine's.
         composeRule
-            .onAllNodesWithContentDescription(text(R.string.feed_battery_a11y, 85), useUnmergedTree = true)
+            .onAllNodesWithText(text(R.string.feed_battery_a11y, 85), useUnmergedTree = true)
             .assertCountEquals(3)
         composeRule.onNodeWithText("Toi").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_card_you_sees)).assertIsDisplayed()
@@ -449,10 +461,26 @@ class FeedScreenTest {
     fun cards_aBatteryOfMoreThanAnHour_isDated() {
         feed(ready(content(trio, mapOf(me to status(), "t" to status(updatedAgo = 90 * minute, battery = 12)))))
         composeRule
-            .onNodeWithContentDescription(
-                text(R.string.feed_battery_dated_a11y, 12, "à 15 h 30".t()),
-                useUnmergedTree = true,
-            ).assertExists()
+            .onNodeWithText(text(R.string.feed_battery_dated_a11y, 12, "à 15 h 30".t()), useUnmergedTree = true)
+            .assertExists()
+    }
+
+    @Test
+    fun cards_theScreenReaderReadsTheStateThenTheTimeThenTheBattery() {
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(updatedAgo = 90 * minute, battery = 12)))))
+        // The merged block of Thomas's card: the person, the state, the time, then the battery (ticket T2), whatever the drawing order.
+        val merged =
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Thomas"),
+                ).fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
+                .first { it.contains("Thomas") && it.size > 1 }
+        val label = merged.indexOf("À la maison")
+        val time = merged.indexOf("Depuis 12 min")
+        val battery = merged.indexOfFirst { it.startsWith("Batterie") }
+        assertTrue("order of $merged", label in 1 until time && time < battery)
     }
 
     @Test
@@ -469,7 +497,10 @@ class FeedScreenTest {
         feed(FeedUiState.Loading)
         shoot("feed-skeleton")
         composeRule.onAllNodesWithContentDescription(text(R.string.feed_loading_a11y)).assertCountEquals(1)
+        // The wait is told in a calm word; nothing is said about the news before it is known.
+        composeRule.onNodeWithText(text(R.string.feed_loading_news)).assertIsDisplayed()
         composeRule.onAllNodesWithText("Tout va bien").assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.feed_label_no_news)).assertCountEquals(0)
     }
 
     @Test

@@ -420,6 +420,14 @@ private fun SkeletonBlocks() {
         modifier = Modifier.fillMaxWidth().semantics { contentDescription = loading },
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        // A calm word under the shapes: the wait is told, and nothing is said about the news before it is known.
+        Text(
+            text = stringResource(R.string.feed_loading_news),
+            style = textBodyRegular14,
+            color = colorTextDescription,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Box(
             Modifier
                 .fillMaxWidth()

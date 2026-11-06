@@ -10,9 +10,12 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
 /*
- * PRIVACY and COST, for this file: ONE `get` of `positions/{uid}` per tap on "Localiser", from the SERVER (never the cache: an old copy must not
- * pass for the current one, and nothing of it may stay on the phone), no listener, never a list. The coordinates go back to the caller and
- * nowhere else: not logged, not in an exception, not in an analytics event.
+ * PRIVACY and COST, for this file: ONE `get` of `positions/{uid}` per tap on "Localiser", with Source.SERVER: the answer is never READ from the
+ * cache (an old copy must not pass for the current one), no listener, never a list. KNOWN LIMIT, accepted and already written on the backend
+ * side (backend/data-model.md, point 27): the Firestore SDK keeps in its local cache the documents it reads, this position included, even
+ * for a read with Source.SERVER. That copy stays on the phone until the purge of the cache at sign-out or at the loss of access to a Miff
+ * (CachePurger). What the Feed itself guarantees: nothing is displayed, logged or kept in the memory of the screen after the sheet closes;
+ * the coordinates go back to the caller and nowhere else (not in an exception, not in an analytics event).
  */
 
 /** The single reading behind the button "Localiser". */

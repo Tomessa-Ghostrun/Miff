@@ -401,6 +401,7 @@
     <string name="feed_header_avatar_a11y">Ouvrir mon profil. Ton statut : %1$s</string>
     <string name="feed_header_avatar_plain_a11y">Ouvrir mon profil</string>
     <string name="feed_header_logo_a11y">Remonter en haut du fil</string>
+    <string name="feed_loading_news">Chargement des nouvelles…</string>
     <string name="feed_loading_a11y">Chargement de ton fil</string>
     <string name="feed_card_you">Toi</string>
     <string name="feed_card_you_sees">Ce que tes proches voient de toi</string>

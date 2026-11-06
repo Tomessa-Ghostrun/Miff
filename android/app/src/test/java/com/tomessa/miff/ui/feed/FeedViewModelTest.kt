@@ -248,7 +248,11 @@ class FeedViewModelTest {
             repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
             runCurrent()
             assertEquals(FeedUiState.Loading, vm.uiState.value)
-            advanceTimeBy(7_000)
+            // Long on purpose: the skeleton ("Chargement des nouvelles…") first, the sentence "Pas encore de nouvelles" only much later.
+            advanceTimeBy(14_000)
+            runCurrent()
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
+            advanceTimeBy(2_000)
             runCurrent()
             val content = vm.content()
             assertEquals(StatusLevel.NEUTRAL, content.miffLevel)
@@ -371,12 +375,100 @@ class FeedViewModelTest {
             repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
             feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
             runCurrent()
+            // Online, a copy of the cache is not the present: the skeleton, until the server confirms (or a few seconds pass).
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
             network.online = false
             runCurrent()
             assertTrue(vm.content().banners.any { it is FeedBanner.Offline })
             network.online = true
             runCurrent()
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
             assertTrue(vm.content().banners.isEmpty())
+            job.cancel()
+        }
+
+    @Test
+    fun aCachedAlert_isNotShownWhileOnline_untilTheServerConfirmsIt() =
+        runTest(dispatcher) {
+            ready()
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            // The copy kept by the phone says "orange" (somebody who has since come home): no false alert is drawn from it.
+            val cached = mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 80 * minute))
+            feed.trySend(StatusFeed.Data(cached, fromCache = true))
+            runCurrent()
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
+            // The server confirms: Thomas is back home, never an alert.
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            val content = vm.content()
+            assertTrue(content.bubble is Bubble.AllGood)
+            assertTrue(content.banners.isEmpty())
+            job.cancel()
+        }
+
+    @Test
+    fun aCachedAnswerNeverConfirmed_isShownAfterAMoment_withItsDate_neverAsThePresent() =
+        runTest(dispatcher) {
+            ready()
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
+            runCurrent()
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
+            advanceTimeBy(5_500)
+            runCurrent()
+            // Shown, but told as "Dernières informations de …": never a green without a date.
+            val banner =
+                vm
+                    .content()
+                    .banners
+                    .filterIsInstance<FeedBanner.Offline>()
+                    .single()
+            assertNotNull(banner.latest)
+            job.cancel()
+        }
+
+    @Test
+    fun offlineAtOnce_aCachedAnswerIsShownWithItsDate_withoutWaiting() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
+            runCurrent()
+            assertTrue(vm.content().banners.any { it is FeedBanner.Offline })
+            job.cancel()
+        }
+
+    @Test
+    fun cachedAnswersThenARefusal_repeated_areNotALoopOfAttempts() =
+        runTest(dispatcher) {
+            ready()
+            // Each attachment gives a copy of the cache then ends on a refusal: the attempts are NOT given back by a copy.
+            repeat(12) {
+                val channel = statuses.enqueue()
+                channel.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
+                channel.trySend(StatusFeed.Ended)
+            }
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            advanceTimeBy(60 * minute)
+            runCurrent()
+            assertEquals(5, statuses.started.size)
             job.cancel()
         }
 

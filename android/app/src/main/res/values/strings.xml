@@ -425,6 +425,7 @@
     <string name="feed_header_avatar_a11y">Open my profile. Your status: %1$s</string>
     <string name="feed_header_avatar_plain_a11y">Open my profile</string>
     <string name="feed_header_logo_a11y">Scroll to top</string>
+    <string name="feed_loading_news">Loading news…</string>
     <string name="feed_loading_a11y">Loading your feed</string>
     <string name="feed_card_you">You</string>
     <string name="feed_card_you_sees">What your loved ones see of you</string>
@@ -448,7 +449,7 @@
     <string name="feed_label_at_home">At home</string>
     <string name="feed_label_at_work">At work</string>
     <string name="feed_label_at_school">At school</string>
-    <string name="feed_label_at_sport">At sport</string>
+    <string name="feed_label_at_sport">At the sports club</string>
     <string name="feed_label_at_place">At %1$s</string>
     <string name="feed_label_left">Left %1$s</string>
     <string name="feed_label_trusted_generic">In a trusted place</string>
@@ -460,7 +461,7 @@
     <string name="feed_place_noun_home">home</string>
     <string name="feed_place_noun_work">work</string>
     <string name="feed_place_noun_school">school</string>
-    <string name="feed_place_noun_sport">sport</string>
+    <string name="feed_place_noun_sport">the sports club</string>
     <string name="feed_place_noun_generic">a trusted place</string>
     <string name="feed_time_since_minutes">For %1$d min</string>
     <string name="feed_time_since_hours">For %1$d h</string>

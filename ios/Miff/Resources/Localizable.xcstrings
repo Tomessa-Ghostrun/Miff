@@ -3221,7 +3221,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "At sport"
+            "value": "At the sports club"
           }
         },
         "fr": {
@@ -3381,6 +3381,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chargement de ton fil"
+          }
+        }
+      }
+    },
+    "feed_loading_news": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading news…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement des nouvelles…"
           }
         }
       }
@@ -3765,7 +3782,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "sport"
+            "value": "the sports club"
           }
         },
         "fr": {

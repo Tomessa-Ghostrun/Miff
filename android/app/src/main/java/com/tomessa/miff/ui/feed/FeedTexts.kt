@@ -13,7 +13,6 @@ import com.tomessa.miff.domain.feed.AlertPage
 import com.tomessa.miff.domain.feed.Battery
 import com.tomessa.miff.domain.feed.Bubble
 import com.tomessa.miff.domain.feed.Day
-import com.tomessa.miff.domain.feed.MemberCard
 import com.tomessa.miff.domain.feed.Moment
 import com.tomessa.miff.domain.feed.PlaceKind
 import com.tomessa.miff.domain.feed.PlaceRef
@@ -34,10 +33,14 @@ private const val NBSP = '\u00A0'
  */
 class FeedTexts(
     private val context: Context,
-    private val zone: ZoneId = ZoneId.systemDefault(),
+    /** For the tests only: null = the zone of the phone, read at EACH use (a change of zone or of language is followed at once). */
+    private val zoneOverride: ZoneId? = null,
 ) {
-    private val locale: Locale = context.resources.configuration.locales[0]
-    private val is24Hour: Boolean = DateFormat.is24HourFormat(context)
+    private val zone: ZoneId get() = zoneOverride ?: ZoneId.systemDefault()
+    private val locale: Locale get() = context.resources.configuration.locales[0]
+
+    // Read at each use, not once at the construction: the phone's 12 h / 24 h choice can change while the screen is on.
+    private val is24Hour: Boolean get() = DateFormat.is24HourFormat(context)
 
     private fun s(
         id: Int,
@@ -215,16 +218,6 @@ class FeedTexts(
     fun batteryA11y(battery: Battery): String =
         battery.since?.let { s(R.string.feed_battery_dated_a11y, battery.pct, at(it)) }
             ?: s(R.string.feed_battery_a11y, battery.pct)
-
-    /** What a card says to the screen reader, as ONE sentence: "Thomas, à la maison, depuis 12 min, batterie à 85 %". */
-    fun cardDescription(card: MemberCard): String =
-        listOfNotNull(
-            card.member.callName,
-            label(card.label),
-            timeLine(card.time),
-            card.battery?.let(::batteryA11y),
-            if (card.limitedLocation) s(R.string.feed_label_limited_location) else null,
-        ).joinToString(", ")
 
     // ---- the bubble ----------------------------------------------------------------------------------------------
 

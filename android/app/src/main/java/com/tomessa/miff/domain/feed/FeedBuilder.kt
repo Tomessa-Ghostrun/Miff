@@ -32,6 +32,11 @@ sealed interface StatusesView {
 
     class Loaded(
         val byUid: Map<String, MemberStatus>,
+        /**
+         * True while what is shown comes from the cache of the phone and the SERVER has not confirmed it yet. Such data is shown as "informations
+         * de 16 h 02" (the offline mention), never as the present: no green without a date, and the view model holds the alerts back a moment.
+         */
+        val fromCache: Boolean = false,
     ) : StatusesView {
         override fun toString(): String = "Loaded(redacted)"
     }
@@ -50,6 +55,9 @@ class FeedInput(
     val waitingAgreement: Boolean,
     val offline: Boolean,
 ) {
+    /** No network, OR data that only the cache vouches for: both are told as "informations de 16 h 02", never as the present. */
+    val effectivelyOffline: Boolean get() = offline || (statuses as? StatusesView.Loaded)?.fromCache == true
+
     override fun toString(): String = "FeedInput(redacted)"
 }
 
@@ -82,14 +90,18 @@ object FeedBuilder {
         val latestUpdate = statuses.values.mapNotNull { it.updatedAtMillis }.maxOrNull()
         val banners =
             buildList {
-                if (input.offline) add(FeedBanner.Offline(latestUpdate?.let { Moment.of(it, nowMillis, zone) }))
+                if (input.effectivelyOffline) {
+                    add(
+                        FeedBanner.Offline(latestUpdate?.let { Moment.of(it, nowMillis, zone) }),
+                    )
+                }
                 if (input.statuses == StatusesView.Pending && mySharing &&
                     !input.waitingAgreement
                 ) {
                     add(FeedBanner.Publishing)
                 }
             }
-        val bubble = bubble(input, cards, hidden, mySharing, latestUpdate, nowMillis, zone)
+        val bubble = bubble(input, cards, hidden, mySharing, latestUpdate, miffLevel, nowMillis, zone)
         return FeedContent(
             miffId = input.miffId,
             miffName = input.miffName,
@@ -270,6 +282,7 @@ object FeedBuilder {
         hidden: Boolean,
         mySharing: Boolean,
         latestUpdate: Long?,
+        miffLevel: StatusLevel,
         now: Long,
         zone: ZoneId,
     ): Bubble {
@@ -277,7 +290,7 @@ object FeedBuilder {
         if (!mySharing) return Bubble.SharingStopped
         val statuses = (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty()
         val pages = alertPages(input, cards, statuses, latestUpdate, now, zone)
-        if (pages.isNotEmpty()) return Bubble.Alerts(pages)
+        if (pages.isNotEmpty()) return Bubble.Alerts(pages, miffLevel)
         val others = cards.filter { !it.isMe }
         if (others.isEmpty()) return Bubble.Alone
         val knownOthers = others.filter { it.level != StatusLevel.NEUTRAL }
@@ -307,7 +320,7 @@ object FeedBuilder {
         zone: ZoneId,
     ): List<AlertPage> {
         val places = input.places.associateBy { it.id }
-        val offlineSince = if (input.offline) latestUpdate?.let { Moment.of(it, now, zone) } else null
+        val offlineSince = if (input.effectivelyOffline) latestUpdate?.let { Moment.of(it, now, zone) } else null
         return cards
             .filter { it.level == StatusLevel.RED || it.level == StatusLevel.ORANGE }
             .mapNotNull { card ->

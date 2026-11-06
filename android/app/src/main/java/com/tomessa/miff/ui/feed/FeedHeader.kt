@@ -18,6 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -110,7 +111,9 @@ internal fun FeedHeader(
                 modifier =
                     Modifier
                         .width(Spacing.logoWidth / 2)
-                        .clickable(onClickLabel = scrollLabel, role = Role.Button, onClick = onLogo),
+                        .clickable(onClickLabel = scrollLabel, role = Role.Button, onClick = onLogo)
+                        // The logo is 38 dp high: its zone of touch is at least 48 dp (the layout grows to it, the picture stays centred).
+                        .minimumInteractiveComponentSize(),
             )
         }
         pill()

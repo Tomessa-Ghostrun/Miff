@@ -39,8 +39,13 @@ import java.time.ZoneId
 
 /*
  * SECURITY, PRIVACY and COST, for this file:
- * - the names, the places, the statuses and above all the POSITIONS stay in memory in the states below, never in a log, an analytics event
- *   (the Feed sends none) or a crash report; every class that carries one hides it in its toString();
+ * - the names, the places, the statuses and above all the POSITIONS are in memory only while the screen needs them (the sheet "Localiser" is
+ *   emptied as soon as the Feed leaves the screen), never in a log, an analytics event (the Feed sends none) or a crash report; every class that
+ *   carries one hides it in its toString();
+ * - KNOWN LIMIT, accepted and already written on the backend side (backend/data-model.md, point 27): the Firestore SDK keeps in its local cache
+ *   the documents it reads, a position included, even for a read with Source.SERVER (which only means "never READ from the cache"). That copy
+ *   stays on the phone until the purge of the cache at sign-out or at the loss of access to a Miff (CachePurger). The Feed shows, keeps and logs
+ *   nothing of it;
  * - the Feed never writes (0 write, 0 deletion): it listens to the Miff (members, places, as the Miff screen does) and to the statuses, and
  *   reads one position per tap on "Localiser";
  * - the listeners exist ONLY while the Feed is on screen (the screen calls [observe] inside repeatOnLifecycle(STARTED), and only while the tab
@@ -117,8 +122,17 @@ class FeedViewModel(
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
     /** Pauses before a new attempt when the rules refuse the list of statuses (mine is not published yet): few, spaced, then it waits for the screen to come back. */
     private val statusRetryDelaysMillis: List<Long> = DEFAULT_RETRY_DELAYS_MILLIS,
-    /** After this time without any answer of the statuses the cards stop waiting (neutral, never a colour nobody knows). */
+    /**
+     * After this time without any answer of the statuses the cards stop waiting (neutral, never a colour nobody knows). Long on purpose: the
+     * skeleton says "Chargement des nouvelles…" first, and only then the sentence "Pas encore de nouvelles", which a person who worries can
+     * take for a bad sign.
+     */
     private val firstStatusAnswerMillis: Long = FIRST_STATUS_ANSWER_MILLIS,
+    /**
+     * Online, what the cache says is not shown as the present: the Feed waits this long for the server to confirm it (a copy of the last time may
+     * say "orange" for somebody who has just come home: a false alert). After it, the copy is shown WITH its date ("Dernières informations de…").
+     */
+    private val cacheGraceMillis: Long = CACHE_GRACE_MILLIS,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -128,8 +142,11 @@ class FeedViewModel(
     private val now = MutableStateFlow(nowMillis())
     private val restarts = MutableStateFlow(0)
 
+    /** The wait for the server's confirmation of a cached answer is over (see [cacheGraceMillis]). */
+    private val cacheGraceOver = MutableStateFlow(false)
+
     val uiState: StateFlow<FeedUiState> =
-        combine(directory.state, piece, statusView, offline, now, waitingAgreement) { values ->
+        combine(directory.state, piece, statusView, offline, now, waitingAgreement, cacheGraceOver) { values ->
             @Suppress("UNCHECKED_CAST")
             compute(
                 values[0] as DirectoryState,
@@ -138,6 +155,7 @@ class FeedViewModel(
                 values[3] as Boolean,
                 values[4] as Long,
                 values[5] as Set<String>,
+                values[6] as Boolean,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState.Loading)
 
@@ -173,6 +191,7 @@ class FeedViewModel(
         offline: Boolean,
         now: Long,
         waiting: Set<String>,
+        cacheGraceOver: Boolean,
     ): FeedUiState {
         val ready = dir as? DirectoryState.Ready ?: return FeedUiState.Loading
         val activeId = ready.activeId ?: return FeedUiState.Loading
@@ -181,6 +200,9 @@ class FeedViewModel(
             is MiffPiece.Data -> {
                 // The skeleton stays until the statuses answered: a colour nobody knows is never drawn.
                 if (statuses == StatusesView.Waiting) return FeedUiState.Loading
+                // Online, a copy that the server has not confirmed yet is not the present: no alert (and no green) is drawn from it for a moment.
+                val unconfirmed = (statuses as? StatusesView.Loaded)?.fromCache == true
+                if (unconfirmed && !offline && !cacheGraceOver) return FeedUiState.Loading
                 val snapshot = piece.snapshot
                 FeedUiState.Ready(
                     FeedBuilder.build(
@@ -214,7 +236,7 @@ class FeedViewModel(
     /**
      * Reads what the Feed shows while the caller stays (the screen calls it from `repeatOnLifecycle(STARTED)` and only while the Feed is the tab
      * in use): the Miff shown (members, places), its statuses, the network and the minute. Everything is cancelled when the app goes to the
-     * background or the tab changes; the sheet "Localiser" is closed then (no position is kept).
+     * background or the tab changes; the sheet "Localiser" is closed then (the screen keeps no position).
      */
     suspend fun observe() {
         try {
@@ -320,19 +342,35 @@ class FeedViewModel(
 
     private suspend fun readStatuses(miffId: String) {
         coroutineScope {
+            cacheGraceOver.value = false
             val waitingTimeout =
                 launch {
                     delay(firstStatusAnswerMillis)
                     if (statusView.value == StatusesView.Waiting) statusView.value = StatusesView.Unknown
                 }
+            var cacheGrace: Job? = null
             var attempt = 0
             while (true) {
                 statuses.observe(miffId).collect { feed ->
                     when (feed) {
                         is StatusFeed.Data -> {
-                            attempt = 0
                             waitingTimeout.cancel()
-                            statusView.value = StatusesView.Loaded(feed.byUid)
+                            if (feed.fromCache) {
+                                // A copy of the cache is NOT an answer of the server: it does not give the attempts back (a listener that
+                                // keeps ending right after its cached answer must not be attached again every 10 s, for ever).
+                                if (cacheGrace == null) {
+                                    cacheGrace =
+                                        launch {
+                                            delay(cacheGraceMillis)
+                                            cacheGraceOver.value = true
+                                        }
+                                }
+                            } else {
+                                attempt = 0
+                                cacheGrace?.cancel()
+                                cacheGrace = null
+                            }
+                            statusView.value = StatusesView.Loaded(feed.byUid, feed.fromCache)
                         }
 
                         StatusFeed.Ended -> {}
@@ -373,7 +411,7 @@ class FeedViewModel(
             }
     }
 
-    /** The sheet was closed (button, back, swipe, outside): nothing of the position is kept. */
+    /** The sheet was closed (button, back, swipe, outside): the screen keeps nothing of the position. */
     fun onLocateDismissed() {
         locateJob?.cancel()
         mutableLocate.value = LocateUiState.Idle
@@ -382,6 +420,7 @@ class FeedViewModel(
     private companion object {
         const val MINUTE_MILLIS = 60_000L
         val DEFAULT_RETRY_DELAYS_MILLIS = listOf(10_000L, 30_000L, 90_000L, 300_000L)
-        const val FIRST_STATUS_ANSWER_MILLIS = 6_000L
+        const val FIRST_STATUS_ANSWER_MILLIS = 15_000L
+        const val CACHE_GRACE_MILLIS = 5_000L
     }
 }

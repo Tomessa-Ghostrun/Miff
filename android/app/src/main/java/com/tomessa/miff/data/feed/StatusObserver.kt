@@ -2,6 +2,7 @@ package com.tomessa.miff.data.feed
 
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.MetadataChanges
 import com.tomessa.miff.domain.feed.MemberStatus
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +16,10 @@ import kotlinx.coroutines.flow.callbackFlow
 
 /** What the listener of the statuses of a Miff said. */
 sealed interface StatusFeed {
-    /** All the statuses of the Miff (the server's, or the cache's while there is no network). Keys are the uids of the members. */
+    /**
+     * All the statuses of the Miff. [fromCache] is true while only the cache of the phone vouches for them (no answer of the server yet, or no
+     * network): the Feed then says "informations de 16 h 02", never "tout va bien" as if it were now. Keys are the uids of the members.
+     */
     class Data(
         val byUid: Map<String, MemberStatus>,
         val fromCache: Boolean,
@@ -45,7 +49,9 @@ class FirestoreStatusObserver(
                     .collection("miffs")
                     .document(miffId)
                     .collection("status")
-                    .addSnapshotListener { snapshot, error ->
+                    // INCLUDE: the change "the server has now confirmed" (same documents, fromCache goes false) is told too. It costs no read; it is
+                    // what lets the Feed know that what it shows is the present and not a copy kept by the phone.
+                    .addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, error ->
                         when {
                             // A refusal is a normal state (reciprocity), not an error; any other termination is told the same way.
                             error != null -> {
@@ -66,7 +72,18 @@ class FirestoreStatusObserver(
             awaitClose { registration.remove() }
         }
 
-    private fun statusOf(doc: DocumentSnapshot): Pair<String, MemberStatus>? {
+    /**
+     * One document that cannot be read (a field of another type, written by a modified client) is simply ignored: it must never bring the
+     * callback of the listener, and so the app, down.
+     */
+    private fun statusOf(doc: DocumentSnapshot): Pair<String, MemberStatus>? =
+        try {
+            readStatus(doc)
+        } catch (e: RuntimeException) {
+            null
+        }
+
+    private fun readStatus(doc: DocumentSnapshot): Pair<String, MemberStatus>? {
         if (!doc.exists()) return null
         return doc.id to
             MemberStatus.fromServer(

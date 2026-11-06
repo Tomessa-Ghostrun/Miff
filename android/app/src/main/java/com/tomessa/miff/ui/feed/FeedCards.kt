@@ -26,6 +26,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.feed.Battery
@@ -89,59 +91,67 @@ fun MemberCardView(
                     ).padding(start = Spacing.m - Spacing.xs, top = 12.dp, end = 12.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Column(
-                modifier = Modifier.semantics(mergeDescendants = true) {},
-                verticalArrangement = Arrangement.spacedBy(Spacing.s),
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.s + Spacing.xs),
-                    verticalAlignment = Alignment.CenterVertically,
+            // ONE block for the screen reader, read in the order of the ticket (T2): the person, the state, the time, then the battery.
+            Box(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
-                    FeedAvatar(
-                        jpeg = card.member.avatarJpeg,
-                        initials = Initials.of(card.member.firstName, card.member.lastName),
-                        level = card.level,
-                    )
                     Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.s + Spacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = card.member.callName,
-                            style = textDisplayLabel,
-                            color = colorTextPrimary,
-                            modifier = Modifier.weight(1f, fill = false),
+                        FeedAvatar(
+                            jpeg = card.member.avatarJpeg,
+                            initials = Initials.of(card.member.firstName, card.member.lastName),
+                            level = card.level,
                         )
-                        if (card.isMe) YouPill()
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = card.member.callName,
+                                style = textDisplayLabel,
+                                color = colorTextPrimary,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (card.isMe) YouPill()
+                        }
+                        card.battery?.let { BatteryChip(it, texts) }
                     }
-                    card.battery?.let { BatteryChip(it, texts) }
+                    StateChip(card, texts)
+                    if (card.limitedLocation) LimitedLocationBadge()
+                    texts
+                        .timeLine(
+                            card.time,
+                        )?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
+                    // FEED-4 will draw the photo of the last update here; "no photo" draws nothing (no hole, no message).
+                    PhotoSlotView(card.photo)
+                    if (card.isMe) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_visibility),
+                                contentDescription = null,
+                                tint = colorTextDescription,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(
+                                text = stringResource(R.string.feed_card_you_sees),
+                                style = textBodyCaption,
+                                color = colorTextDescription,
+                            )
+                        }
+                    }
                 }
-                StateChip(card, texts)
-                if (card.limitedLocation) LimitedLocationBadge()
-                texts
-                    .timeLine(
-                        card.time,
-                    )?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
-                // FEED-4 will draw the photo of the last update here; "no photo" draws nothing (no hole, no message).
-                PhotoSlotView(card.photo)
-                if (card.isMe) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_visibility),
-                            contentDescription = null,
-                            tint = colorTextDescription,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.feed_card_you_sees),
-                            style = textBodyCaption,
-                            color = colorTextDescription,
-                        )
-                    }
+                // The battery is READ last (state, time, then battery: ticket T2) although it is DRAWN top right: the chip is hidden from the
+                // screen reader and this empty node, last of the block, carries its sentence ("Batterie à 85 % à 16 h 02").
+                card.battery?.let { battery ->
+                    val spoken = texts.batteryA11y(battery)
+                    Box(Modifier.size(0.dp).semantics { text = AnnotatedString(spoken) })
                 }
             }
             CardActions(card, locating, onLocate, onMessage, onCall)
@@ -175,14 +185,13 @@ private fun BatteryChip(
     battery: Battery,
     texts: FeedTexts,
 ) {
-    val description = texts.batteryA11y(battery)
     Row(
         modifier =
             Modifier
                 .clip(ShapeSm)
                 .background(colorBorderDefault)
                 .padding(horizontal = Spacing.s, vertical = Spacing.xs / 2)
-                .clearAndSetSemantics { contentDescription = description },
+                .clearAndSetSemantics {},
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {

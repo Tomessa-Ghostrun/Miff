@@ -222,7 +222,13 @@ private fun AlertCarousel(
             },
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxWidth(), userScrollEnabled = several) { index ->
+        // Keyed by the member: when an orange becomes red the ORDER changes, and each page must keep its own state.
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier.fillMaxWidth(),
+            userScrollEnabled = several,
+            key = { index -> pages.getOrNull(index)?.member?.uid ?: index },
+        ) { index ->
             val page = pages[index]
             AlertPageBubble(page, texts, onMessage)
         }
