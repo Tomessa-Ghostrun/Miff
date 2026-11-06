@@ -67,7 +67,7 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 Prérequis : B partage et a une position (console : `positions/{uid B}` existe) ; vous partagez aussi (c'est la réciprocité).
 - [ ] Touchez le bouton position de B : un **indicateur** tourne un instant, puis une **feuille** s'ouvre : « Dernière position connue de B », « Mesurée à … (il y a … min). Ce n'est pas une position en direct. », la ligne « Vous partagez tous les deux… », le bouton « Ouvrir dans les cartes ». **Aucune coordonnée n'est écrite à l'écran.**
 - [ ] « Ouvrir dans les cartes » ouvre Google Maps (ou l'appli de cartes) sur un **point**, **sans nom de personne ni de lieu**. Revenez.
-- [ ] Fermez la feuille (bouton, glissement vers le bas, retour système) : rien ne reste. Rouvrez-la : une **nouvelle** lecture est faite (l'heure « Mesurée à » est celle de la console).
+- [ ] Fermez la feuille (bouton, glissement vers le bas, retour système) : plus rien n'est affiché. (L'application Firebase garde une copie de la position dans la mémoire locale du téléphone jusqu'à la déconnexion : limite connue et assumée, elle n'apparaît nulle part dans Miff.) Rouvrez-la : une **nouvelle** lecture est faite (l'heure « Mesurée à » est celle de la console).
 - [ ] **Position de plus de 24 h** : dans la console, mettez `measuredAt` de B **il y a 30 h** : la feuille dit « Elle date d'hier à … : elle n'est plus affichée. », **sans** bouton de carte.
 - [ ] **Pas de position** : supprimez `positions/{uid B}` : « B n'a pas encore de position connue. »
 - [ ] **Refus** : arrêtez **votre** partage (Miff > Partager mon statut), revenez au Feed : le bouton position a disparu. (Le message de refus « On ne peut pas afficher la position de B… » ne s'affiche que si le refus arrive pendant la lecture : cas couvert par un test.)
@@ -79,7 +79,9 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 - [ ] Mode avion avec une alerte orange : la bulle ajoute « Informations de … : reconnecte-toi pour les mettre à jour. »
 - [ ] **Vous arrêtez de partager** (Miff > Partager mon statut > arrêter) : au retour au Feed, la bulle grise dit « Tu as arrêté de partager. Reprends le partage pour voir les nouvelles de tes proches. » avec le bouton « Reprendre le partage » (il ouvre l'écran de la Miff, où se trouve la question). Les cartes des proches : « Nouvelles masquées », les boutons message et téléphone restent, **plus de bouton position**. Votre carte : « Partage arrêté ». Reprenez le partage : tout revient.
 - [ ] **En attente de ton accord** (si vous avez un compte avec l'ancien texte de consentement, partie E de la recette LOC-2a) : l'encart de LOC-2b est en haut, la bulle est grise (« Pas encore de nouvelles » + la phrase d'explication).
-- [ ] **Premier chargement** (désinstallez/réinstallez, ouvrez le Feed) : des formes grises un instant, **aucun** « Tout va bien » ni couleur avant la lecture.
+- [ ] **Premier chargement** (désinstallez/réinstallez, ouvrez le Feed) : des formes grises avec « Chargement des nouvelles… », **aucun** « Tout va bien » ni couleur avant la lecture. Sur un réseau très lent, la phrase « Pas encore de nouvelles » n'apparaît qu'après une quinzaine de secondes.
+- [ ] **Pas de fausse alerte au réveil** : mettez B en orange (astuce console), ouvrez le Feed, **puis** remettez B au vert dans la console et rouvrez l'app (fermée puis ouverte) : l'orange ne doit **pas** s'afficher un instant avant le vert (le Feed attend la confirmation du serveur).
+- [ ] **Réseau coupé après un orange** : mode avion avec une alerte affichée : l'alerte reste, avec « Informations de … : reconnecte-toi pour les mettre à jour. »
 - [ ] **Miff sans proche** (compte seul dans sa Miff) : bulle grise « Tu es seul(e) dans cette Miff pour l'instant », votre carte, « Ajouter un proche ».
 
 ## Partie F — « Partage de ton statut en cours… » (2 min)
@@ -90,7 +92,7 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 
 - [ ] **Langue** : Réglages > Langue > English : tous les textes du Feed passent en anglais (« All good », « Thomas left home at 4:40 PM », heures « 4:40 PM »), puis revenez en français.
 - [ ] **Grande police** : réglages du téléphone > Affichage > Taille de la police au maximum : les cartes restent lisibles (rien de coupé), les trois boutons restent atteignables.
-- [ ] **TalkBack** (facultatif) : une carte se lit comme un tout (« Thomas, à la maison, depuis 12 min, batterie à 85 % ») ; votre photo en haut annonce « Ouvrir mon profil. Ton statut : … » ; avec plusieurs alertes, « Alerte précédente / suivante » sont proposées dans les actions.
+- [ ] **TalkBack** (facultatif) : une carte se lit comme un tout, dans l'ordre personne, état, temps, puis batterie (« Thomas, à la maison, depuis 12 min, batterie à 85 % ») ; votre photo en haut annonce « Ouvrir mon profil. Ton statut : … » ; avec plusieurs alertes, « Alerte précédente / suivante » sont proposées dans les actions.
 - [ ] **Applications récentes** : ouvrez la vue des applications récentes (Android 13) : l'aperçu du Feed **n'affiche pas** de noms ni de photos.
 
 ## Partie H — Coût de lecture (facultatif, 5 min, à faire une fois)
