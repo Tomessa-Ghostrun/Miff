@@ -2,6 +2,11 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## Non publié
+
+### Modifié
+- Wording (décision du PM, 2026-11-06) : l'onboarding dit « Zone de danger » / « Danger zone » (au lieu de « Zone à risque » / « Risk zone », issus de la maquette). Clés inchangées ; sous-texte « Lieu à éviter » conservé (cohérent avec le reste de l'app, voir risque R7 des lieux). Mêmes textes côté iOS.
+
 ## [0.12.0] - 2026-11-05 : AUTH-5a, supprimer mon compte (compte sans Miff)
 
 Première étape de la suppression de compte (ticket `docs/tickets/suppression-compte.md`, §3, §5.4 à §5.6, §5.10, §5.13, §6, §8, §9, §12 ; décisions du PM des 2026-10-31 et 2026-11-05 ; maquettes `design/screens/suppression-compte/` et `design/exports/suppression-compte/claude/`). **AUTH-5b traitera les Miffs** (rejointes puis créées) : ici, un compte qui a des Miffs est **détecté** et l'app dit calmement que ce sera bientôt possible, **sans rien supprimer**. **Aucune règle Firestore modifiée, aucun déploiement** (les règles déployées le 2026-11-04 permettent déjà toute la séquence : `allow delete: if isSelf(uid)` sur le profil, les index et les appareils). Hors périmètre : suppression des Miffs, révocation Apple (iOS), pages web et procédure manuelle (AUTH-5-W), export de données.

@@ -205,7 +205,7 @@
     <string name="android_onboarding_type_hint">Quel type de zone définissez-vous ?</string>
     <string name="android_onboarding_zone_trust">Zone de confiance</string>
     <string name="android_onboarding_zone_trust_hint">Lieu sûr pour vos proches</string>
-    <string name="android_onboarding_zone_risk">Zone à risque</string>
+    <string name="android_onboarding_zone_risk">Zone de danger</string>
     <string name="android_onboarding_zone_risk_hint">Lieu à éviter</string>
     <!-- Profil et téléphone : les deux étapes de création du profil (ONB-2) -->
     <string name="profile_title">Permets à tes proches de t\'identifier</string>

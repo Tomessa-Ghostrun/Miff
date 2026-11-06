@@ -2796,13 +2796,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Risk zone"
+            "value": "Danger zone"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zone à risque"
+            "value": "Zone de danger"
           }
         }
       }

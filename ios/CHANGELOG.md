@@ -2,6 +2,10 @@
 
 ## Non publié
 
+### Wording « Zone de danger » dans l'onboarding
+
+Modifié : `ios_onboarding_zone_risk` dit « Zone de danger » / « Danger zone » (au lieu de « Zone à risque » / « Risk zone »), décision du PM du 2026-11-06 ; clés inchangées.
+
 ### LOC-3 - Lieux de confiance : formulaire, adresses, carte, liste, détail, modification, suppression (miroir d'Android LOC-1)
 
 Ticket `docs/tickets/lieux-de-confiance.md` (v3 et décisions du PM du 2026-11-01), fiches `design/screens/lieux/`, maquettes `design/exports/lieux/` et `design/exports/lieux/claude/`, référence de comportement : PR Android #56 (fusionnée) et `docs/qa/checklists/loc-1-android-recette-pm.md`. Détail, écarts avec Android et avec les maquettes, limites : `README.md`, section « Lieux de confiance ». **Hors périmètre** : permissions de localisation et de notifications, détection, statut, position (LOC-4), appareil unique, règles Firestore.
