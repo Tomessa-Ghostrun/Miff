@@ -24,12 +24,9 @@
 .dd .it.add{color:var(--action)}
 .dd hr{border:0;border-top:1px solid rgba(0,0,0,.25);margin:0 12px}
 
-/* ---------- avatar à anneau (photo de profil ou initiales ; glyphe = l'état n'est jamais porté par la couleur seule) ---------- */
+/* ---------- avatar à anneau (photo de profil ou initiales) : couleur seule, sans pictogramme (décision du PM, 2026-11-06) ---------- */
 .av{position:relative;width:46px;height:46px;border-radius:50%;border:3px solid var(--ring-neutral);background:#cfc7bd;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#4a443c;flex:none}
 .av.safe{border-color:var(--safe)} .av.warning{border-color:var(--warning)} .av.danger{border-color:var(--danger)}
-.av .g{position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;background:var(--ring-neutral);color:#444}
-.av .g .ico{width:11px;height:11px;stroke-width:3}
-.av.safe .g{background:var(--safe);color:var(--safe-text)} .av.warning .g{background:var(--warning);color:var(--warning-text)} .av.danger .g{background:var(--danger);color:#fff}
 
 /* ---------- contenu défilant ---------- */
 .fscroll{position:absolute;left:0;right:0;top:151px;bottom:0;overflow:hidden}

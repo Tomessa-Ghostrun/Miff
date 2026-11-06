@@ -4,8 +4,8 @@
 
 ## Anatomie d'une carte
 Carte `bg/surface`, rayon `radius/sm` (5), ombre `shadow/subtle`, contour `border/default`. **Liseré** de 5 pt à gauche (couleur du niveau). Marges 12 pt (20 pt à gauche). De haut en bas :
-1. Avatar 46 pt à anneau + glyphe ; **prénom** (Baloo Thambi 2, 17 / 24) ; pastille « Toi » sur ma carte ; **batterie** à droite (pastille grise 22 pt : icône + « 85 % »).
-2. **Étiquette d'état** : pictogramme + texte, sur teinte 30 % avec **texte foncé** (`status/*-text`, AA). Le badge « Localisation limitée » (bleu pâle, bord bleu, pictogramme « position barrée ») passe à la ligne si la place manque.
+1. Avatar 46 pt à anneau **de couleur seule, sans pictogramme** (décision du PM, 2026-11-06) ; **prénom** (Baloo Thambi 2, 17 / 24) ; pastille « Toi » sur ma carte ; **batterie** à droite (pastille grise 22 pt : icône + « 85 % »).
+2. **Étiquette d'état** : **texte seul, sans pictogramme** [décidé par le PM le 2026-11-06], sur teinte 30 % avec **texte foncé** (`status/*-text`, AA). Le badge « Localisation limitée » (bleu pâle, bord bleu, pictogramme « position barrée ») n'est pas une étiquette d'état : il garde son pictogramme et passe à la ligne si la place manque.
 3. **Ligne de temps** 13 pt `text/description`.
 4. **Photo d'update** (108 pt de haut, largeur pleine) avec légende « Photo de 15 h 40 » ; toucher = plein écran (`localiser-et-photo.md`).
 5. **Boutons** à droite : Localiser, Message, Appeler (24 pt, zones 44 pt, bleu `action/primary`).
@@ -50,7 +50,7 @@ Autres règles :
 
 ## Accessibilité
 - Chaque carte se lit **comme un tout** : « Thomas, à la maison depuis 12 min, batterie 85 % ». Les boutons sont des actions séparées après la carte ; ordre de lecture carte par carte.
-- Couleur jamais seule : liseré + anneau + glyphe + texte + pictogramme de l'étiquette.
+- **Sur une carte, le texte de l'étiquette dit l'état** (« À la maison », « A quitté le travail », « Dans une zone de danger ») : la couleur du liseré, de l'anneau et de l'étiquette ne porte jamais l'état seule. **Contrastes calculés** : texte foncé sur teinte 30 % : vert 7,28:1, orange 6,76:1, rouge 5,73:1, neutre 9,22:1 (AA atteint). **Anneau et liseré seuls** (sans le texte) : mêmes limites que l'en-tête (vert 1,55:1, orange 1,74:1, rouge 3,13:1 contre le blanc ; vert et orange 1,12:1 entre eux, confondables par une personne daltonienne) : voir « Contraste de l'anneau seul » dans `entete-et-selecteur.md`, liseré fin facultatif `#222222` de 1 pt autour de l'anneau.
 - Zones tactiles 48 dp / 44 pt ; texte au maximum de la taille système : l'étiquette passe à la ligne, les boutons restent sur une rangée (les pictogrammes ne grandissent pas au-delà de 28 pt).
 - La couleur recalculée chaque minute n'est **annoncée** que si le niveau change.
 
@@ -58,7 +58,7 @@ Autres règles :
 En-tête fixe → [bandeau d'état éventuel] → bulle (+ pastilles) → cartes → **« Ajouter un proche »** (bouton bleu, ouvre le partage du code, déjà livré) ; à 15 membres : note « Cette Miff est bien remplie ! » (`etats-du-feed.md`). Une seule colonne, défilement vertical, barre d'onglets flottante par-dessus (schématique ici). Marges latérales 16 pt, espace de 14 pt entre blocs.
 
 ## Écarts avec les maquettes du PM
-Textes sans fautes et sans accord de genre (« Arrivé il ya 12 min », « Parti(e) » supprimés) ; étiquette à texte foncé ; étiquette rouge d'ancienneté « A quitté… » au lieu de « Plus de nouvelles » ; ma carte ajoutée ; glyphe d'anneau ; batterie datée ; photo avec son heure (la même photo sur tous les états n'était qu'un exemple).
+Textes sans fautes et sans accord de genre (« Arrivé il ya 12 min », « Parti(e) » supprimés) ; étiquette à texte foncé ; étiquette rouge d'ancienneté « A quitté… » au lieu de « Plus de nouvelles » ; ma carte ajoutée ; anneau de couleur seule et étiquette en texte seul, sans pictogramme (décision du PM) ; batterie datée ; photo avec son heure (la même photo sur tous les états n'était qu'un exemple).
 
 ## Plateformes
 - **Android** : `LazyColumn`, photo chargée à l'apparition de la carte ; boutons = `IconButton` 48 dp ; message / appel = intentions « écrire à » et « composer ».
