@@ -129,6 +129,8 @@ data class SignInUiState(
     val showAccountNotCreatedNote: Boolean = false,
     /** After the account was taken over by another phone (SESS-2): a calm note (not an error), nothing about any Miff. */
     val showSessionReplacedNote: Boolean = false,
+    /** The session closed during a deletion of the account: sign in with the same account and it is finished (AUTH-5, calm note). */
+    val showDeletionPendingNote: Boolean = false,
 )
 
 /** Sign-in screen (ticket section 3 B). */
@@ -145,6 +147,8 @@ class SignInViewModel(
         val notice = session.consumeNotice()
         if (notice == SignedOutNotice.ACCOUNT_NOT_CREATED) {
             mutableState.update { it.copy(showAccountNotCreatedNote = true) }
+        } else if (notice == SignedOutNotice.DELETION_PENDING) {
+            mutableState.update { it.copy(showDeletionPendingNote = true) }
         } else if (notice == SignedOutNotice.ACCOUNT_UNAVAILABLE) {
             mutableState.update { it.copy(message = AuthMessage.ACCOUNT_UNAVAILABLE) }
         } else if (notice == SignedOutNotice.SESSION_REPLACED) {

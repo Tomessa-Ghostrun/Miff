@@ -111,6 +111,10 @@ final class FirestoreUserProfileRepository: UserProfileRepository {
             return flag
         case .bytes(let data):
             return data
+        case .integer(let number):
+            return number
+        case .double(let number):
+            return number
         case .serverTimestamp:
             return FieldValue.serverTimestamp()
         case .null:

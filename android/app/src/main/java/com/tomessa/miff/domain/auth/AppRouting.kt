@@ -25,6 +25,13 @@ enum class AppDestination {
 
     /** A Miff exists: the feed. */
     FEED,
+
+    /**
+     * The deletion of the account is under way (AUTH-5): progress, pause, "Dernière vérification", end screen. It has PRIORITY over
+     * every other destination while the local marker exists (ticket 5.6): a profile already deleted must never send the person to
+     * "create your profile". It is not a destination that "requires a session": the session ends in the middle of it, on purpose.
+     */
+    ACCOUNT_DELETION,
 }
 
 /** What two cheap reads tell about the account. */

@@ -69,7 +69,17 @@
 - [ ] Remettez le réseau : au bout de quelques secondes, `session/active` apparaît pour ce compte, sans rien faire.
 - [ ] À l'inverse, **connexion à un compte existant** en mode avion : le message « pas de connexion » s'affiche et vous restez sur l'écran de connexion (rien n'est à défaire).
 
-## Partie G — Ancienne installation (facultatif, 2 min)
+## Partie G — Suppression de compte avec un seul appareil (AUTH-5a, 5 min)
+
+Pour un compte **sans Miff**, sur l'appareil connecté.
+
+- [ ] Avant : console Firestore, `users/{uid}/session/active` existe. Faites **Réglages > Supprimer mon compte** jusqu'au bout. Dans la console, `session/active` a **disparu** (avec `users/{uid}`), et **aucun nouveau** `session/active` n'est réapparu après la fin.
+- [ ] **Hors connexion pendant la suppression** : mode avion juste après la dernière vérification. La suppression se met **en pause** (message calme), rien n'est supprimé de plus (le profil est encore là). Au retour du réseau elle **reprend et se termine** ; la session est supprimée **avant** le profil.
+- [ ] **App fermée en pleine suppression** (si vous y arrivez) : à la relance, l'écran de suppression reprend ; la console ne montre **aucune** session recréée pour ce compte.
+- [ ] Pendant et après la suppression, **aucun** message « Ton compte est maintenant utilisé sur un autre téléphone ».
+- [ ] Si la suppression est **annulée** (une Miff est apparue en route) : vous restez connecté, le message calme habituel s'affiche, et `session/active` est de nouveau présent.
+
+## Partie H — Ancienne installation (facultatif, 2 min)
 
 - [ ] Si vous avez encore un téléphone avec **l'app d'avant** (même compte connecté, sans session dans la console), mettez-la à jour **sans la désinstaller** : à l'ouverture, elle reste connectée et la console montre un nouveau `session/active` (elle en a écrit une). Rien à faire d'autre.
 

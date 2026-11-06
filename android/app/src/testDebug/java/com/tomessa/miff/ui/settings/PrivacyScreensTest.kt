@@ -186,7 +186,7 @@ class PrivacyScreensTest {
     private fun account(
         state: AccountUiState,
         onChangePassword: () -> Unit = {},
-    ) = show { AccountScreen(state, {}, onChangePassword, {}, {}, {}) }
+    ) = show { AccountScreen(state, {}, onChangePassword, {}, {}, {}, {}) }
 
     @Test
     fun account_anEmailAccount_hasOneButtonToChangeThePassword_andNoForm() {
@@ -203,9 +203,8 @@ class PrivacyScreensTest {
             ).assertHeightIsAtLeast(48.dp)
             .performClick()
         assertEquals(1, asked)
-        // The mockup had three password fields and "Supprimer mon compte": neither exists here.
+        // The mockup had three password fields: no field exists here. ("Delete my account" is the discreet link of AUTH-5.)
         composeRule.onAllNodes(hasSetTextAction()).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Delete", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("irrecoverable", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 

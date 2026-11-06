@@ -1,5 +1,7 @@
 package com.tomessa.miff.data.session
 
+import com.tomessa.miff.data.account.AccountDeletionMarker
+import com.tomessa.miff.data.account.AccountDeletionSession
 import com.tomessa.miff.data.auth.AccountLoad
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AuthGateway
@@ -57,6 +59,18 @@ enum class SignedOutNotice {
      * phone until the sign-in screen has shown it, because a geofence receiver may have signed the phone out while the app was closed.
      */
     SESSION_REPLACED,
+
+    /**
+     * The deletion of the account was finished without the end screen being seen (the app was killed and relaunched, ticket 5.6): the
+     * welcome carousel says it once, calmly ("Ton compte a été supprimé.").
+     */
+    ACCOUNT_DELETED,
+
+    /**
+     * The session was closed behind our back while a deletion of the account was under way (token expired or revoked, forced sign-out): the
+     * account may still exist, so NOTHING says "deleted". The marker stays; signing in again with the same account resumes the deletion.
+     */
+    DELETION_PENDING,
 }
 
 sealed interface RefuseResult {
@@ -76,6 +90,14 @@ sealed interface RefuseResult {
  */
 fun interface SessionTeardown {
     suspend fun stop()
+}
+
+/**
+ * What the deletion of the account erases from the phone, besides what [SessionTeardown] already stops and forgets: the preferences
+ * kept for THIS account (flags per account, markers of deletion of a Miff...). [uid] is the account that was deleted.
+ */
+fun interface LocalDataEraser {
+    suspend fun erase(uid: String)
 }
 
 /**
@@ -122,7 +144,14 @@ class SessionManager(
     private val withdrawals: PendingWithdrawals? = null,
     /** Called with the id of the account once it has been read (the pending withdrawal, if any, is then recorded). */
     private val onAccountResolved: (String) -> Unit = {},
-) {
+    /**
+     * The marker of a deletion of the account under way (AUTH-5). When it exists it has PRIORITY over the routing at launch.
+     * Null where deletion does not exist (older tests).
+     */
+    private val deletionMarker: AccountDeletionMarker? = null,
+    /** Preferences kept for one account, erased when that account is deleted (AUTH-5, ticket 5.10). */
+    private val localData: List<LocalDataEraser> = emptyList(),
+) : AccountDeletionSession {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
 
@@ -159,6 +188,28 @@ class SessionManager(
         mutableNotice.value = null
         if (notice == SignedOutNotice.SESSION_REPLACED) flags.put(KEY_REPLACED_NOTICE_PENDING, false)
         return notice
+    }
+
+    /**
+     * True once when a deletion of the account finished behind the screen (the app was relaunched, ticket 5.6): the banner "Ton compte a
+     * été supprimé." is shown above the welcome carousel. Only that notice is taken; the others stay for the sign-in screen.
+     */
+    fun consumeAccountDeletedNotice(): Boolean {
+        if (mutableNotice.value != SignedOutNotice.ACCOUNT_DELETED) return false
+        mutableNotice.value = null
+        return true
+    }
+
+    private var carouselAfterDeletion = false
+
+    /**
+     * True once after the deletion of an account: the welcome carousel is shown again even if it was seen before (decision of the PM,
+     * 2026-10-31: "Ton compte a été supprimé", then the carousel, then sign-up / sign-in).
+     */
+    fun consumeCarouselAfterDeletion(): Boolean {
+        val shown = carouselAfterDeletion
+        carouselAfterDeletion = false
+        return shown
     }
 
     fun start() {
@@ -425,6 +476,8 @@ class SessionManager(
     private suspend fun endBecauseReplaced() {
         withContext(NonCancellable) {
             if (ending || gateway.currentUid == null) return@withContext
+            // During a deletion of the account the session is handled by the deletion itself: no forced sign-out and never the "another phone" note.
+            if (currentDestination() == AppDestination.ACCOUNT_DELETION) return@withContext
             ending = true
             device.forget()
             cache.markPurgePending()
@@ -508,9 +561,8 @@ class SessionManager(
     /** Cold start and "Réessayer": the same rule, whatever happened before. */
     private suspend fun resolveCurrent() {
         val uid = gateway.currentUid
-        // INTEGRATION POINT (AUTH-5a, after PR #75 is merged): `if (resolveAccountDeletion(uid)) return` goes HERE, before anything below, so that a
-        // deletion of the account under way never gets a session verified or written for an account that is disappearing (and, through
-        // [readAccountAndCheckSession] with checkSession = false, never a "used on another phone" note during a deletion).
+        // A deletion of the account under way has PRIORITY over the routing (ticket 5.6, criteria SC27 to SC29).
+        if (resolveAccountDeletion(uid)) return
         if (uid == null) {
             sessionActive = false
             // No session = no consent to send anything: a report left by a crash before the person said yes goes away.
@@ -543,16 +595,13 @@ class SessionManager(
     }
 
     /**
-     * Reads the account and, at the same time, verifies the session of this phone (null when [checkSession] is false). One place for both, so that the
-     * launch of an account in the middle of its deletion (AUTH-5a) can skip the session without touching the rest of the routing.
+     * Reads the account and, at the same time, verifies the session of this phone. Reached only AFTER [resolveAccountDeletion] (see [resolveCurrent]):
+     * an account whose deletion is under way never gets its session verified, nor written.
      */
-    private suspend fun readAccountAndCheckSession(
-        uid: String,
-        checkSession: Boolean = true,
-    ): Pair<AccountLoad, Ensured?> =
+    private suspend fun readAccountAndCheckSession(uid: String): Pair<AccountLoad, Ensured> =
         coroutineScope {
-            val check = if (checkSession) async { device.ensure(uid) } else null
-            accounts.load(uid) to check?.await()
+            val check = async { device.ensure(uid) }
+            accounts.load(uid) to check.await()
         }
 
     /**
@@ -564,6 +613,12 @@ class SessionManager(
         uid: String,
         newAccount: Boolean = false,
     ): AuthFailure? {
+        if (deletionMarker?.read()?.uid == uid) {
+            // The same account signs in again while its deletion is pending: it is going away, NO session is written for it (the deletion resumes
+            // and deletes whatever session is there).
+            device.suspendForDeletion()
+            return null
+        }
         if (!device.begin(uid)) {
             // A NEW account (e-mail sign-up) is never undone: it exists, its terms were just accepted on this phone, and a second attempt to create it would
             // only say "this address is already used". It stays signed in; the watcher writes the session (no identifier here + no session there =
@@ -584,6 +639,138 @@ class SessionManager(
         // If the write fails, the watcher writes one itself as soon as the server answers (no identifier here + no session there).
         device.begin(uid)
         device.watch(uid)
+    }
+
+    /**
+     * Launch with a marker of deletion (AUTH-5). True when it decided where the app opens.
+     * - same account as the session: the deletion is taken up again (the screens resume it, with no new re-authentication);
+     * - no session any more (the account is gone: deleted by the previous run before it was killed, or from the console): that is a
+     *   SUCCESS, not a failure: the local data is erased and the carousel says it once;
+     * - the session of ANOTHER account: the marker is not theirs, it is ignored and erased.
+     */
+    private suspend fun resolveAccountDeletion(uid: String?): Boolean {
+        val marker = deletionMarker ?: return false
+        val mark = marker.read() ?: return false
+        if (uid != null && uid != mark.uid) {
+            marker.clear()
+            return false
+        }
+        if (uid == null) {
+            if (mark.accountDeleted) {
+                // Firebase confirmed the deletion before the app was killed: that is a success, not a failure.
+                finishDeletionBehindTheScreen(mark.uid)
+            } else {
+                // No session and no proof of deletion (forced sign-out, token revoked...): neutral and honest, the marker stays.
+                endSessionKeepingDeletionMarker()
+            }
+            return true
+        }
+        sessionActive = true
+        beginAccountDeletion()
+        return true
+    }
+
+    /** The deletion is over but its end screen was never seen: erase what is left, then the carousel with its banner. */
+    private suspend fun finishDeletionBehindTheScreen(uid: String) {
+        eraseAfterAccountDeletion(uid)
+        mutableNotice.value = SignedOutNotice.ACCOUNT_DELETED
+        leaveAfterAccountDeletion()
+    }
+
+    // --- Deletion of the account (AUTH-5) ------------------------------------------------------------------
+
+    private val mutableDeletionBlocked = MutableStateFlow(false)
+
+    /** True after a deletion cancelled because a Miff showed up: one calm message, shown over the app until it is acknowledged. */
+    val deletionBlockedNotice: StateFlow<Boolean> = mutableDeletionBlocked.asStateFlow()
+
+    fun dismissDeletionBlockedNotice() {
+        mutableDeletionBlocked.value = false
+    }
+
+    override suspend fun cancelAccountDeletion() {
+        withContext(NonCancellable) {
+            // What stopped for the deletion starts again: a new generation (tracking and the screens keyed on it), then the usual routing.
+            generation++
+            ending = false
+            sessionActive = true
+            mutableDeletionBlocked.value = true
+            // The account is kept (SESS-2): this phone is the active one again; its session is verified (and written back if the step that deleted it ran).
+            device.reopen()
+            resolveCurrent()
+        }
+    }
+
+    override suspend fun endSessionKeepingDeletionMarker() {
+        withContext(NonCancellable) {
+            ending = true
+            cache.markPurgePending()
+            stopEverything()
+            cache.purge()
+            // Not "account unavailable": the sign-in screen says the deletion will be finished once the person is back.
+            finishSignedOut(AppDestination.SIGN_IN, SignedOutNotice.DELETION_PENDING, markReturning = true)
+        }
+    }
+
+    /**
+     * Step 0 of the deletion (criterion SC15): from now on the app shows the deletion screens, and every listener, the monitoring of the
+     * places and every write of status or position is stopped, BEFORE the first document goes. Without it the listeners would receive
+     * refusals as the documents disappear and announce "access lost", and a late event could write a status or a position again.
+     * Idempotent: also called when a deletion is taken up again.
+     */
+    override suspend fun beginAccountDeletion() {
+        withContext(NonCancellable) {
+            // Our own end of session: the loss watcher must not react to it.
+            ending = true
+            sessionActive = true
+            mutableState.value = SessionState.Ready(AppDestination.ACCOUNT_DELETION)
+            // SESS-2: our own deletion of the session (step 2 bis) must not look like a replacement, and nothing is verified or written meanwhile.
+            device.suspendForDeletion()
+            stopEverything()
+        }
+    }
+
+    /**
+     * Step 9 (tickets 5.5 and 5.10): the local Firestore cache is purged (the flag is recorded first, so that an app killed here purges at
+     * the next launch), the preferences of the account, the draft of the profile, the pending consent and withdrawals are erased, the
+     * collection of statistics and crash reports is cut (unsent reports deleted, installation identifier of Analytics reset), the local
+     * session is closed. The marker goes LAST: until then, a kill leads to the same cleaning at the next launch. The language and the fact
+     * of having seen the carousel are kept (nothing personal).
+     */
+    override suspend fun eraseAfterAccountDeletion(uid: String) {
+        withContext(NonCancellable) {
+            ending = true
+            cache.markPurgePending()
+            stopEverything()
+            cache.purge()
+            localData.forEach {
+                try {
+                    it.erase(uid)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // One preference that does not go must not keep the others: all of them are tried.
+                }
+            }
+            drafts?.clear()
+            pending.clear()
+            withdrawals?.clear(uid)
+            privacy.eraseCollectedData()
+            accountSnapshot = null
+            generation++
+            // The identifier of the deleted account is forgotten (the session was deleted at step 2 bis).
+            device.release(null)
+            gateway.signOut()
+            deletionMarker?.clear()
+        }
+    }
+
+    /** "Continuer" on the end screen (and the relaunch case): back to the welcome carousel, then sign-up / sign-in. */
+    fun leaveAfterAccountDeletion() {
+        sessionActive = false
+        carouselAfterDeletion = true
+        mutableState.value = SessionState.Ready(AppDestination.SIGN_UP)
+        ending = false
     }
 
     /** New account created with e-mail + password: we know there is no profile, so no read is needed. */
@@ -607,6 +794,12 @@ class SessionManager(
         signUpConsent: ConsentChoice?,
     ) {
         sessionActive = true
+        // The same account signs in again while its deletion is pending (session closed behind our back): the deletion resumes, it is not
+        // routed as a normal account (its profile may be gone already).
+        if (deletionMarker?.read()?.uid == uid) {
+            beginAccountDeletion()
+            return
+        }
         // Nothing is collected until the account's own choice has been read (paused, nothing deleted yet).
         privacy.pauseCollection()
         if (signUpConsent != null) {
@@ -675,8 +868,9 @@ class SessionManager(
             returningUser = flags.get(KEY_RETURNING_USER, false),
         )
 
+    // The deletion of the account ends its own session in the middle of the screens: the loss watcher must never take that for a loss.
     private fun AppDestination.requiresSession(): Boolean =
-        this != AppDestination.SIGN_UP && this != AppDestination.SIGN_IN
+        this != AppDestination.SIGN_UP && this != AppDestination.SIGN_IN && this != AppDestination.ACCOUNT_DELETION
 
     companion object {
         const val KEY_RETURNING_USER = "returning_user"
