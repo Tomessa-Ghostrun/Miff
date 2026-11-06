@@ -325,9 +325,9 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 6. **Consentement et retrait** : le renouvellement du consentement à la localisation reste fait AVANT la coquille par l'écran existant (LOC-4a) ; le retrait de la localisation reste « Arrêter de partager » dans l'écran de la Miff. L'interrupteur « statistiques » n'est pas livré (voir le journal des changements).
 7. **Mes informations** : lecture seule dans cette PR (critères A5 à A8 du ticket à venir).
 8. **Pas de retour en haut** en touchant l'onglet déjà actif.
+9. **Profil** : le Profil de la maquette montre aussi les lieux de la Miff et un carrousel avec nombre de membres : non livrés (les lieux sont dans l'écran de la Miff, ticket Lieux iOS ; le Profil complet est PRO-2).
 10. **Feed embarqué** : « Se déconnecter » (et la carte « Mes Miffs ») n'apparaissent plus dans l'onglet Feed (ils sont dans Réglages et Profil) ; le lien de déconnexion ne reste que dans les états sans barre (« Pas encore de Miff », état illisible hors connexion).
 11. **Barre masquée tant que les Miffs ne sont pas lues** (pas de clignotement) ; si la dernière Miff disparaît (quittée, supprimée, accès perdu), la coquille retombe sur le Feed et vide la pile des Réglages (règles dans `MainShellRules`, testées).
-9. **Profil** : le Profil de la maquette montre aussi les lieux de la Miff et un carrousel avec nombre de membres : non livrés (les lieux sont dans l'écran de la Miff, ticket Lieux iOS ; le Profil complet est PRO-2).
 
 Rien n'est compilé en local : la CI fait foi ; le rendu natif du verre se juge sur l'iPhone 11 Pro (TestFlight).
 
