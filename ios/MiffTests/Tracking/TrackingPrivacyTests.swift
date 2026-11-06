@@ -161,9 +161,11 @@ final class TrackingPrivacyTests: XCTestCase {
 
     func testTheSessionStopsTheTrackingAndTheEngineFollowsTheGenerationOfTheSession() throws {
         let environment = try codeLines("Miff/App/AppEnvironment.swift").joined(separator: "\n")
+        let services = try codeLines("Miff/App/TrackingServices.swift").joined(separator: "\n")
         let manager = try codeLines("Miff/Services/Session/SessionManager.swift").joined(separator: "\n")
 
-        XCTAssertTrue(environment.contains("tracking.stop()"))
+        XCTAssertTrue(environment.contains("trackingServices.teardown"))
+        XCTAssertTrue(services.contains("runtime.stop()"))
         XCTAssertTrue(environment.contains("generationCounter: trackingServices.generation"))
         XCTAssertTrue(manager.contains("generationCounter?.set(generation)"))
     }
