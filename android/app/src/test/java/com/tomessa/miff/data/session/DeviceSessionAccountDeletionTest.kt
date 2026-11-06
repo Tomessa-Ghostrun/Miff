@@ -227,6 +227,59 @@ class DeviceSessionAccountDeletionTest {
             assertEquals(AppDestination.CONSENT_PANEL, h.manager.destination())
         }
 
+    // --- AUTH-5b: the "closed" state is on the disk ------------------------------------------------------------------------------
+
+    @Test
+    fun theBeginningOfTheDeletion_putsTheClosedMarkerOnTheDisk_beforeTheFirstDocumentGoes() =
+        run { h ->
+            h.signedIn()
+            assertFalse(h.deviceIds.closed)
+            h.manager.beginAccountDeletion()
+            assertTrue("a geofence receiver that wakes a cold process starts closed", h.deviceIds.closed)
+        }
+
+    @Test
+    fun aLaunchWithADeletionPending_closesTheSessionOnTheDisk_too() =
+        run { h ->
+            marker.stored = AccountDeletionMark(uid, appleLinked = false)
+            h.gateway.setSignedIn(uid)
+            h.manager.start()
+            assertTrue(h.deviceIds.closed)
+        }
+
+    @Test
+    fun aClosedMarkerLeftByACancelledDeletion_isClearedAtTheNextLook_thePhoneWritesAgain() =
+        run { h ->
+            h.signedIn()
+            h.device.suspendForDeletion()
+            assertTrue(h.deviceIds.closed)
+            // The deletion was cancelled and the process died before the session was reopened: nothing is pending for this account.
+            marker.stored = null
+            h.manager.retry()
+            assertFalse(h.deviceIds.closed)
+            assertTrue(h.device.clearance(recheck = true) is Clearance.Cleared)
+        }
+
+    @Test
+    fun aDeletionCancelled_clearsTheClosedMarkerOnTheDisk() =
+        run { h ->
+            h.signedIn()
+            h.manager.beginAccountDeletion()
+            marker.stored = null
+            h.manager.cancelAccountDeletion()
+            assertFalse(h.deviceIds.closed)
+        }
+
+    @Test
+    fun theClosedMarker_isNotClearedWhileTheDeletionOfThisAccountIsPending() =
+        run { h ->
+            h.signedIn()
+            marker.stored = AccountDeletionMark(uid, appleLinked = false)
+            h.manager.beginAccountDeletion()
+            h.manager.retry()
+            assertTrue("a look at the account must not reopen a session that is going away", h.deviceIds.closed)
+        }
+
     // --- The end of the deletion --------------------------------------------------------------------------------------------------
 
     @Test

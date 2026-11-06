@@ -1,6 +1,8 @@
 package com.tomessa.miff.ui.settings
 
+import com.tomessa.miff.data.account.AccountMiffsSummary
 import com.tomessa.miff.data.account.Inventory
+import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.GoogleTokenResult
@@ -58,21 +60,87 @@ class DeleteAccountViewModelsTest {
             assertEquals(DeleteInventory.LOADING, vm.uiState.value.inventory)
             assertFalse("greyed while the list loads", vm.uiState.value.canContinue)
             advanceUntilIdle()
-            assertEquals(DeleteInventory.NO_MIFFS, vm.uiState.value.inventory)
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
             assertTrue(vm.uiState.value.canContinue)
+            assertFalse(vm.uiState.value.miffs.hasMiffs)
+            assertFalse(vm.uiState.value.ownsMiffs)
+            assertNull(vm.uiState.value.warnableMiff)
+        }
+
+    // --- AUTH-5b: the Miffs, read on the server, on the information screen ---------------------------------------------
+
+    private fun loaded(
+        joined: Int = 0,
+        vararg owned: OwnedMiff,
+    ) = Inventory.Loaded(AccountMiffsSummary(joined, owned.toList()))
+
+    @Test
+    fun withMiffs_continueIsAvailable_theMiffsCreatedAreListed_andTheDialogCanOpen_nothingIsTouched() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(1, OwnedMiff("m1", "Famille", 3), OwnedMiff("m2", "Amis", 0))
+            val vm = info()
+            advanceUntilIdle()
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
+            assertTrue(vm.uiState.value.canContinue)
+            assertEquals(1, vm.uiState.value.miffs.joined)
+            assertEquals(
+                listOf("Famille", "Amis"),
+                vm.uiState.value.miffs.owned
+                    .map { it.name },
+            )
+            assertTrue(vm.uiState.value.ownsMiffs)
+            vm.onContinue()
+            assertTrue(vm.uiState.value.confirming)
+            assertEquals("nothing written by the information screen", 0, procedure.runs)
         }
 
     @Test
-    fun aMiff_isDetected_theCalmStateShows_andContinueStaysGreyed_nothingIsTouched() =
+    fun warnMyCircle_existsOnlyWhenAMiffCreatedHasAnotherPerson_andNamesThatMiff() =
         runTest(dispatcher) {
-            procedure.inventory = Inventory.HasMiffs
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Seule", 0), OwnedMiff("m2", "Famille", 2))
             val vm = info()
             advanceUntilIdle()
-            assertEquals(DeleteInventory.HAS_MIFFS, vm.uiState.value.inventory)
-            assertFalse(vm.uiState.value.canContinue)
-            vm.onContinue()
-            assertFalse("no dialog on an account with Miffs", vm.uiState.value.confirming)
-            assertEquals(0, procedure.runs)
+            assertEquals(
+                "Famille",
+                vm.uiState.value.warnableMiff
+                    ?.name,
+            )
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Seule", 0))
+            vm.load()
+            advanceUntilIdle()
+            assertNull("nobody to warn: no button", vm.uiState.value.warnableMiff)
+        }
+
+    @Test
+    fun warnMyCircle_neverExistsForAMemberWhoOnlyJoined() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(2)
+            val vm = info()
+            advanceUntilIdle()
+            assertNull(vm.uiState.value.warnableMiff)
+            assertFalse(vm.uiState.value.ownsMiffs)
+        }
+
+    @Test
+    fun aMiffWithABlankName_isNeverOfferedToTheShareSheet() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(0, OwnedMiff("m1", "  ", 2))
+            val vm = info()
+            advanceUntilIdle()
+            assertNull(vm.uiState.value.warnableMiff)
+        }
+
+    @Test
+    fun theStateNeverPutsAMiffNameInItsText() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Famille Secrète", 2))
+            val vm = info()
+            advanceUntilIdle()
+            assertFalse(
+                vm.uiState.value
+                    .toString()
+                    .contains("Secrète"),
+            )
         }
 
     @Test
@@ -85,7 +153,7 @@ class DeleteAccountViewModelsTest {
             assertFalse(vm.uiState.value.canContinue)
             network.online = true
             advanceUntilIdle()
-            assertEquals(DeleteInventory.NO_MIFFS, vm.uiState.value.inventory)
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
         }
 
     @Test
@@ -96,10 +164,10 @@ class DeleteAccountViewModelsTest {
             advanceUntilIdle()
             assertEquals(DeleteInventory.READ_FAILED, vm.uiState.value.inventory)
             assertFalse(vm.uiState.value.canContinue)
-            procedure.inventory = Inventory.NoMiffs
+            procedure.inventory = Inventory.Loaded(AccountMiffsSummary.NONE)
             vm.load()
             advanceUntilIdle()
-            assertEquals(DeleteInventory.NO_MIFFS, vm.uiState.value.inventory)
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
         }
 
     @Test

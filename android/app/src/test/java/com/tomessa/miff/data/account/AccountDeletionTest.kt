@@ -2,7 +2,10 @@ package com.tomessa.miff.data.account
 
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.SessionCheck
+import com.tomessa.miff.domain.miff.MembershipRef
+import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.testsupport.FakeAccountDataStore
+import com.tomessa.miff.testsupport.FakeAccountMiffs
 import com.tomessa.miff.testsupport.FakeAccountSession
 import com.tomessa.miff.testsupport.FakeAuthGateway
 import com.tomessa.miff.testsupport.FakeCachePurger
@@ -14,9 +17,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The procedure of the deletion of an account WITHOUT Miff (ticket AUTH-5, sections 5.5, 5.6 and 6): order, idempotence, replay after an
- * interruption at EVERY step, a session that is gone = success, nothing deleted while a Miff is there (criteria SC9, SC22, SC23, SC25,
- * SC26, SC28, SA5).
+ * The procedure of the deletion of an account (ticket AUTH-5, sections 5.5, 5.6 and 6): order, idempotence, replay after an interruption at EVERY
+ * step, a session that is gone = success, nothing deleted while a Miff is there (criteria SC9, SC19, SC22, SC23, SC25, SC26, SC28, SA5). The Miffs are
+ * scripted here ([FakeAccountMiffs]): the orchestration only. The lots themselves, against a double of the server, are in [AccountDeletionMiffsTest].
  */
 class AccountDeletionTest {
     private val timeline = Timeline()
@@ -24,7 +27,18 @@ class AccountDeletionTest {
     private val gateway = FakeAuthGateway(timeline).also { it.setSignedIn("uid-1") }
     private val cache = FakeCachePurger(timeline)
     private val session = FakeAccountSession(timeline)
-    private val deletion = AccountDeletion(store, gateway, cache, session, timeoutMillis = 1_000L)
+    private val miffs = FakeAccountMiffs(timeline)
+    private val deletion = AccountDeletion(store, gateway, cache, session, miffs, timeoutMillis = 1_000L)
+
+    private val joined = MembershipRef("free", "AbCdEfGhIjKlMnOpQrSt")
+    private val owned = OwnedMiff("ZyXwVuTsRqPoNmLkJiHg", "Famille", otherMembers = 2)
+    private val stale = MembershipRef("old", "Zz0Zz0Zz0Zz0Zz0Zz0Zz")
+
+    private fun miffsRead(
+        joined: List<MembershipRef> = emptyList(),
+        owned: List<OwnedMiff> = emptyList(),
+        stale: List<MembershipRef> = emptyList(),
+    ) = MiffsRead.Read(MiffsInventory(joined, owned, stale))
 
     @Test
     fun theOrderIsInventory_devices_finalCheck_profile_thenTheQueueLeaves_andTheAccountGoesLast() =
@@ -33,6 +47,7 @@ class AccountDeletionTest {
             assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
             assertEquals(
                 listOf(
+                    "miffs.inventory",
                     "memberships",
                     "devices.read",
                     "device.delete",
@@ -68,37 +83,200 @@ class AccountDeletionTest {
             assertTrue(order.indexOf("flush") < order.indexOf("delete"))
         }
 
-    // --- A Miff is there: nothing is touched (this version cannot delete a Miff) ---------------------------
+    // --- Miffs: joined first, then created; never a profile or an account with a Miff behind it ----------------------------
 
     @Test
-    fun aMiffIsThere_nothingIsDeleted_andTheAccountIsNeverDeleted() =
+    fun theStaleIndexes_thenTheMiffsJoined_thenTheMiffsCreated_inThatOrder_beforeTheDevicesAndTheProfile() =
         runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined), owned = listOf(owned), stale = listOf(stale))
+            store.memberships = 3
+            store.onCall = { name -> if (name == "memberships" && miffs.deleted.isNotEmpty()) store.memberships = 0 }
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            val order = timeline.entries
+            val dropStale = order.indexOf("miffs.dropStale")
+            val leave = order.indexOf("miffs.leave")
+            val delete = order.indexOf("miffs.deleteOwned")
+            assertTrue("stale, then joined, then created", dropStale < leave && leave < delete)
+            assertTrue("the Miffs before the devices", delete < order.indexOf("devices.read"))
+            assertTrue("the Miffs before the session", delete < order.indexOf("session.delete"))
+            assertTrue("the Miffs before the profile", delete < order.indexOf("profile.delete"))
+            assertEquals("delete", order.last())
+        }
+
+    @Test
+    fun theMiffsCreated_areDeletedOneAfterTheOther_inTheOrderOfTheInventory() =
+        runTest {
+            val second = OwnedMiff("A1B2C3D4E5F6G7H8J9K2", "Amis", otherMembers = 0)
+            miffs.inventory = miffsRead(owned = listOf(owned, second))
+            store.memberships = 2
+            store.onCall = { name -> if (name == "memberships" && miffs.deleted.size == 2) store.memberships = 0 }
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            assertEquals(listOf(owned.miffId, second.miffId), miffs.deleted)
+        }
+
+    @Test
+    fun theProgress_isMiffIndexOnTotal_joinedFirst_thenTheProfile() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined), owned = listOf(owned))
+            store.memberships = 2
+            store.onCall = { name -> if (name == "memberships" && miffs.deleted.isNotEmpty()) store.memberships = 0 }
+            val steps = mutableListOf<DeletionStep>()
+            deletion.run("uid-1") { steps += it }
+            assertEquals(
+                listOf(
+                    DeletionStep.Checking,
+                    DeletionStep.Miff(1, 2, longWait = false),
+                    DeletionStep.Miff(2, 2, longWait = false),
+                    DeletionStep.Profile,
+                ),
+                steps,
+            )
+        }
+
+    @Test
+    fun moreThanThreePeopleToTakeOut_saysTheWaitIsLonger_threeOrFewerDoNot() =
+        runTest {
+            miffs.inventory = miffsRead(owned = listOf(OwnedMiff("ZyXwVuTsRqPoNmLkJiHg", "Famille", otherMembers = 4)))
+            store.memberships = 1
+            store.onCall = { name -> if (name == "memberships" && miffs.deleted.isNotEmpty()) store.memberships = 0 }
+            val steps = mutableListOf<DeletionStep>()
+            deletion.run("uid-1") { steps += it }
+            assertTrue(steps.contains(DeletionStep.Miff(1, 1, longWait = true)))
+            miffs.deleted.clear()
+            gateway.setSignedIn("uid-1")
+            store.memberships = 1
+            miffs.inventory = miffsRead(owned = listOf(OwnedMiff("ZyXwVuTsRqPoNmLkJiHg", "Famille", otherMembers = 3)))
+            val few = mutableListOf<DeletionStep>()
+            deletion.run("uid-1") { few += it }
+            assertTrue(few.contains(DeletionStep.Miff(1, 1, longWait = false)))
+        }
+
+    @Test
+    fun aStepOfAMiffThatIsRefused_isAFailureToTryAgain_andNeverTheAccountIsTouched() =
+        runTest {
+            miffs.inventory = miffsRead(owned = listOf(owned))
+            miffs.failures += MiffFailure.REFUSED
+            store.devices += "d1"
+            assertEquals(DeletionRun.Failed, deletion.run("uid-1"))
+            // The dead end of the ticket: a Miff created is still there, so no device, no session, no profile, no account.
+            assertEquals(listOf("d1"), store.devices)
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
+            assertTrue(session.deleted.isEmpty())
+        }
+
+    @Test
+    fun noNetworkInTheMiddleOfTheMiffs_isAPause_nothingAfterIt_andTheReplayGoesOn() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined), owned = listOf(owned))
+            miffs.failures += MiffFailure.OFFLINE
+            assertEquals(DeletionRun.Offline, deletion.run("uid-1"))
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
+            assertFalse("devices.read" in timeline.entries)
+            store.memberships = 2
+            store.onCall = { name -> if (name == "memberships" && miffs.deleted.isNotEmpty()) store.memberships = 0 }
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            assertEquals("the Miff joined was tried again, and only then the one created", 2, miffs.leaves.size)
+        }
+
+    @Test
+    fun aMiffRefusedBecauseTheAccountWasDeletedElsewhere_isASuccess() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined))
+            miffs.failures += MiffFailure.REFUSED
+            gateway.sessionCheck = SessionCheck.GONE
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+        }
+
+    @Test
+    fun anInventoryThatCannotBeRead_isNeverTakenForAnEmptyAccount() =
+        runTest {
+            miffs.inventory = MiffsRead.Failed(MiffFailure.OFFLINE)
+            assertEquals(DeletionRun.Offline, deletion.run("uid-1"))
+            miffs.inventory = MiffsRead.Failed(MiffFailure.REFUSED)
+            assertEquals(DeletionRun.Failed, deletion.run("uid-1"))
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
+            assertFalse("profile.delete" in timeline.entries)
+        }
+
+    @Test
+    fun anIndexThatCannotBeNamed_isAFailureWithTheCalmStop_neverACancellation_theProfileStays() =
+        runTest {
+            // The server counts a document that is not an index (nothing the inventory can name): nothing is deleted, three passes, then a failure.
             store.memberships = 1
             store.devices += "d1"
-            assertEquals(DeletionRun.MiffsRemain, deletion.run("uid-1"))
-            assertEquals(listOf("memberships"), timeline.entries)
+            assertEquals(DeletionRun.Failed, deletion.run("uid-1"))
+            assertEquals(3, timeline.entries.count { it == "miffs.inventory" })
+            assertEquals(listOf("d1"), store.devices)
             assertTrue(store.profileExists)
             assertEquals(0, gateway.deleteCalls)
         }
 
     @Test
-    fun aMiffThatAppearsBeforeTheProfile_isSeenByTheFinalCheck_theProfileStays() =
+    fun aMiffThatKeepsComingBack_isACancellationAfterThreePasses_nothingOfTheProfileIsDeleted() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined))
+            store.memberships = 1
+            assertEquals(DeletionRun.MiffsRemain, deletion.run("uid-1"))
+            assertEquals(3, miffs.leaves.size)
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
+            assertTrue(session.deleted.isEmpty())
+        }
+
+    @Test
+    fun aMiffThatShowsUpMeanwhile_getsAnotherPass_andTheRunEndsDeleted() =
         runTest {
             var counted = 0
             store.onCall = { name ->
-                if (name == "memberships" && ++counted == 2) store.memberships = 1
+                if (name == "memberships") {
+                    counted++
+                    if (counted == 1) {
+                        // A Miff is joined from another phone while this one was finishing the first pass: the next pass takes it.
+                        store.memberships = 1
+                        miffs.inventory = miffsRead(joined = listOf(joined))
+                    } else if (counted == 2) {
+                        store.memberships = 0
+                    }
+                }
             }
-            assertEquals(DeletionRun.MiffsRemain, deletion.run("uid-1"))
-            assertTrue(store.profileExists)
-            assertEquals(0, gateway.deleteCalls)
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            assertEquals(listOf(joined.miffId), miffs.leaves)
         }
 
     @Test
-    fun aMalformedIndexCountsToo_nothingMayBeLeftBehindAProfile() =
+    fun aMiffThatShowsUpAfterTheSession_sendsTheRunBackToTheMiffs_theProfileWaitsForIt() =
         runTest {
-            // The store counts every document of `memberships`, whatever its shape: one is enough to stop.
-            store.memberships = 1
+            var counted = 0
+            store.onCall = { name ->
+                if (name == "memberships") {
+                    counted++
+                    // 1: the end of the first pass (empty); 2: the final check, after the session (a Miff arrived); 3: the end of the new pass.
+                    if (counted == 2) {
+                        store.memberships = 1
+                        miffs.inventory = miffsRead(joined = listOf(joined))
+                    } else if (counted == 3) {
+                        store.memberships = 0
+                    }
+                }
+            }
+            assertEquals(DeletionRun.Completed, deletion.run("uid-1"))
+            val order = timeline.entries
+            assertTrue(order.indexOf("miffs.leave") < order.indexOf("profile.delete"))
+            assertEquals("the session is deleted again, before the profile", 2, order.count { it == "session.delete" })
+            assertEquals(1, gateway.deleteCalls)
+        }
+
+    @Test
+    fun aMiffThatKeepsShowingUpAfterTheSession_endsAsACancellation_theProfileStays() =
+        runTest {
+            miffs.inventory = miffsRead(joined = listOf(joined))
+            store.onCall = { name -> if (name == "memberships" && miffs.leaves.isNotEmpty()) store.memberships = 1 }
             assertEquals(DeletionRun.MiffsRemain, deletion.run("uid-1"))
+            assertTrue(store.profileExists)
+            assertEquals(0, gateway.deleteCalls)
         }
 
     // --- No network ----------------------------------------------------------------------------------------
@@ -165,16 +343,6 @@ class AccountDeletionTest {
             assertEquals(0, gateway.deleteCalls)
         }
 
-    @Test
-    fun aMiffThatShowsUpAfterTheSession_stillCancelsTheDeletion_nothingElseIsDeleted() =
-        runTest {
-            store.onCall = { name -> if (name == "device.delete" || name == "devices.read") store.memberships = 1 }
-            // The Miff shows up while the devices are read: the final check (after the session) sends it back.
-            assertEquals(DeletionRun.MiffsRemain, deletion.run("uid-1"))
-            assertTrue(store.profileExists)
-            assertEquals(0, gateway.deleteCalls)
-        }
-
     // --- Replay after an interruption, at EVERY step (criterion SC26) -----------------------------------------
 
     @Test
@@ -184,7 +352,15 @@ class AccountDeletionTest {
             val t = Timeline()
             val s = FakeAccountDataStore(t).also { it.devices += "d1" }
             val g = FakeAuthGateway(t).also { it.setSignedIn("uid-1") }
-            val d = AccountDeletion(s, g, FakeCachePurger(t), FakeAccountSession(t), timeoutMillis = 1_000L)
+            val d =
+                AccountDeletion(
+                    s,
+                    g,
+                    FakeCachePurger(t),
+                    FakeAccountSession(t),
+                    FakeAccountMiffs(t),
+                    timeoutMillis = 1_000L,
+                )
             s.failures.addAll(List(killedAt - 1) { null } + FakeAccountDataStore.offline())
             runTest {
                 assertEquals("step $killedAt", DeletionRun.Offline, d.run("uid-1"))
@@ -317,19 +493,30 @@ class AccountDeletionTest {
     @Test
     fun theInventory_readsTheServer_andNeverGivesAnIncompleteAnswer() =
         runTest {
-            assertEquals(Inventory.NoMiffs, deletion.inventory("uid-1"))
-            store.memberships = 2
-            assertEquals(Inventory.HasMiffs, deletion.inventory("uid-1"))
-            store.failures += FakeAccountDataStore.offline()
+            val none = deletion.inventory("uid-1") as Inventory.Loaded
+            assertFalse(none.miffs.hasMiffs)
+            miffs.inventory = miffsRead(joined = listOf(joined), owned = listOf(owned), stale = listOf(stale))
+            val some = deletion.inventory("uid-1") as Inventory.Loaded
+            assertEquals(1, some.miffs.joined)
+            assertEquals(listOf(owned.miffId), some.miffs.owned.map { it.miffId })
+            assertTrue(some.miffs.hasMiffs)
+            miffs.inventory = MiffsRead.Failed(MiffFailure.OFFLINE)
             assertEquals(Inventory.Offline, deletion.inventory("uid-1"))
-            store.failures += FakeAccountDataStore.refused()
+            miffs.inventory = MiffsRead.Failed(MiffFailure.REFUSED)
             assertEquals(Inventory.Failed, deletion.inventory("uid-1"))
+        }
+
+    @Test
+    fun aStaleIndexAlone_isNotAMiffForThePerson_theScreenSaysNothingOfIt() =
+        runTest {
+            miffs.inventory = miffsRead(stale = listOf(stale))
+            assertFalse((deletion.inventory("uid-1") as Inventory.Loaded).miffs.hasMiffs)
         }
 
     @Test
     fun theInventoryNeverWritesAnything() =
         runTest {
             deletion.inventory("uid-1")
-            assertEquals(listOf("memberships"), timeline.entries)
+            assertEquals(listOf("miffs.inventory"), timeline.entries)
         }
 }

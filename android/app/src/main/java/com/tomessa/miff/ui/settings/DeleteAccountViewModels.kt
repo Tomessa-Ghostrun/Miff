@@ -3,7 +3,9 @@ package com.tomessa.miff.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.account.AccountDeletionProcedure
+import com.tomessa.miff.data.account.AccountMiffsSummary
 import com.tomessa.miff.data.account.Inventory
+import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.data.auth.AuthGateway
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.data.auth.NetworkMonitor
@@ -26,10 +28,12 @@ import kotlinx.coroutines.launch
  */
 
 /** What the server said about the Miffs of the account (the information screen reads it from the SERVER, never the cache: SC2). */
-enum class DeleteInventory { LOADING, NO_MIFFS, HAS_MIFFS, OFFLINE, READ_FAILED }
+enum class DeleteInventory { LOADING, LOADED, OFFLINE, READ_FAILED }
 
 data class DeleteInfoUiState(
     val inventory: DeleteInventory = DeleteInventory.LOADING,
+    /** The Miffs joined and created, as the SERVER said them (complete: only meaningful once [inventory] is LOADED). */
+    val miffs: AccountMiffsSummary = AccountMiffsSummary.NONE,
     /** The account is also linked to Apple: Android cannot remove that authorization (limit accepted by the PM). */
     val appleLinked: Boolean = false,
     /** The confirmation dialog is open. */
@@ -37,12 +41,19 @@ data class DeleteInfoUiState(
     /** The network went away between the information screen and the dialog: a calm notice, the button stays active. */
     val confirmOffline: Boolean = false,
 ) {
-    /** Only an account without Miff can go on in this version (AUTH-5a); a Miff means AUTH-5b. */
-    val canContinue: Boolean get() = inventory == DeleteInventory.NO_MIFFS
+    /** Only on a complete list (SC2): loading, offline and a failed read all keep "Continuer" grey. */
+    val canContinue: Boolean get() = inventory == DeleteInventory.LOADED
+
+    /** The account created at least one Miff: they are deleted with it (the information screen and the dialog say so). */
+    val ownsMiffs: Boolean get() = miffs.owned.isNotEmpty()
+
+    /** "Prévenir mes proches" only exists when a Miff created has at least one OTHER person in it (SC7); the name goes in the message. */
+    val warnableMiff: OwnedMiff? get() = miffs.owned.firstOrNull { it.otherMembers > 0 && it.name.isNotBlank() }
 }
 
 /**
- * Screen A, then the dialog B (ticket AUTH-5, section 3). Reads the Miffs of the account on the server; nothing is written.
+ * Screen A, then the dialog B (ticket AUTH-5, section 3). Reads the Miffs of the account on the server (joined, and created with the number of other people
+ * in each: AUTH-5b); nothing is written.
  * "Annuler", the back arrow and the system back all leave with nothing changed (SC4): this view model has nothing to undo.
  */
 class DeleteAccountInfoViewModel(
@@ -72,19 +83,28 @@ class DeleteAccountInfoViewModel(
         loading = true
         mutableState.update { it.copy(inventory = DeleteInventory.LOADING) }
         viewModelScope.launch {
+            var loaded: AccountMiffsSummary? = null
             val result =
                 if (!network.isOnline()) {
                     DeleteInventory.OFFLINE
                 } else {
-                    when (procedure.inventory(uid)) {
-                        Inventory.NoMiffs -> DeleteInventory.NO_MIFFS
-                        Inventory.HasMiffs -> DeleteInventory.HAS_MIFFS
-                        Inventory.Offline -> DeleteInventory.OFFLINE
-                        Inventory.Failed -> DeleteInventory.READ_FAILED
+                    when (val read = procedure.inventory(uid)) {
+                        is Inventory.Loaded -> {
+                            loaded = read.miffs
+                            DeleteInventory.LOADED
+                        }
+
+                        Inventory.Offline -> {
+                            DeleteInventory.OFFLINE
+                        }
+
+                        Inventory.Failed -> {
+                            DeleteInventory.READ_FAILED
+                        }
                     }
                 }
             loading = false
-            mutableState.update { it.copy(inventory = result) }
+            mutableState.update { it.copy(inventory = result, miffs = loaded ?: AccountMiffsSummary.NONE) }
         }
     }
 

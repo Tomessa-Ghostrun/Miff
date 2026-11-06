@@ -51,6 +51,19 @@ class MemoryDeviceIdStore(
     override fun clearReplaced() {
         replaced = false
     }
+
+    /** The marker "deletion of the account under way", as it is on the disk (survives a new DeviceSession built on the same store). */
+    var closed = false
+
+    override fun isClosed(): Boolean = closed
+
+    override fun markClosed() {
+        closed = true
+    }
+
+    override fun clearClosed() {
+        closed = false
+    }
 }
 
 /**

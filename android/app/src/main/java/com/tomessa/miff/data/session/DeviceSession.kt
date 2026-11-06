@@ -51,6 +51,19 @@ interface DeviceIdStore {
     fun markReplaced()
 
     fun clearReplaced()
+
+    /**
+     * The marker "the deletion of the account is under way: this phone writes nothing and opens no session" (AUTH-5b), kept on the disk like the
+     * "replaced" one. It is set BEFORE the first document of the deletion goes, so that a geofence receiver that wakes a cold process in the middle of the
+     * deletion (no memory of the deletion, the identifier of the session maybe already forgotten and its document already deleted: "no identifier + no
+     * session" would look like an installation from before the feature and WRITE a new session) stays closed. Cleared by the next sign-in ([DeviceSession.begin])
+     * or when the deletion is cancelled ([DeviceSession.reopen]).
+     */
+    fun isClosed(): Boolean
+
+    fun markClosed()
+
+    fun clearClosed()
 }
 
 /** `users/{uid}/session/active`, as the app uses it. Every call reaches the SERVER (a transaction) or fails: nothing is queued. */
@@ -145,7 +158,7 @@ class DeviceSession(
      * anything. [ensure] says unreachable, [clearance] says unverified, never "write a new session".
      */
     @Volatile
-    private var closed = false
+    private var closed = ids.isClosed()
 
     private var watchJob: Job? = null
 
@@ -162,6 +175,7 @@ class DeviceSession(
             if (!DeviceIds.isValid(id) || currentUid() != uid) return@withLock false
             // A new sign-in supersedes "replaced" (also when the write below fails: the person chose to sign in here).
             ids.clearReplaced()
+            ids.clearClosed()
             revoked = false
             closed = false
             verifiedAtMillis = NEVER
@@ -377,6 +391,8 @@ class DeviceSession(
      * closes the session. Nothing is deleted here.
      */
     fun suspendForDeletion() {
+        // On the disk FIRST (AUTH-5b): a process woken by the system in the middle of the deletion (a geofence receiver) starts closed too.
+        ids.markClosed()
         stopWatching()
         verifiedAtMillis = NEVER
         closed = true
@@ -387,6 +403,7 @@ class DeviceSession(
      * the next [ensure]: still ours = fine; deleted by the step that ran (no identifier + no session) = a new one is written; held by another phone = replaced.
      */
     fun reopen() {
+        ids.clearClosed()
         closed = false
         verifiedAtMillis = NEVER
     }

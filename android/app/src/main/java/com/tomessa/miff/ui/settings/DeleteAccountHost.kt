@@ -52,6 +52,7 @@ import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.account.AccountDeletionControls
 import com.tomessa.miff.data.account.AccountDeletionState
+import com.tomessa.miff.data.account.DeletionStep
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.ui.auth.LoadingIndicator
 import com.tomessa.miff.ui.components.MiffButton
@@ -116,34 +117,39 @@ fun AccountDeletionContent(
         AccountDeletionState.Idle -> {
             Progress(
                 title = R.string.settings_delete_progress_title,
-                line = R.string.settings_delete_progress_profile,
+                line = null,
                 hint = R.string.settings_delete_progress_hint,
             )
         }
 
         is AccountDeletionState.Running -> {
+            val line = stepLine(state.step)
+            val longWait = (state.step as? DeletionStep.Miff)?.longWait == true
             when {
                 state.retrying -> {
                     Progress(
                         title = R.string.settings_delete_resume_title,
-                        line = R.string.settings_delete_retrying,
+                        line = line ?: stringResource(R.string.settings_delete_retrying),
                         hint = null,
+                        longWait = longWait,
                     )
                 }
 
                 state.resumed -> {
                     Progress(
                         title = R.string.settings_delete_resume_title,
-                        line = null,
+                        line = line,
                         hint = R.string.settings_delete_resume,
+                        longWait = longWait,
                     )
                 }
 
                 else -> {
                     Progress(
                         title = R.string.settings_delete_progress_title,
-                        line = R.string.settings_delete_progress_profile,
+                        line = line,
                         hint = R.string.settings_delete_progress_hint,
+                        longWait = longWait,
                     )
                 }
             }
@@ -227,12 +233,28 @@ private fun CenteredGradient(content: @Composable () -> Unit) {
     }
 }
 
-/** D. Progress: logo, an indeterminate indicator (never a percentage), the title, ONE line of step, the patience sentence. */
+/**
+ * The ONE line of step (mockups D1, D2): "Miff 1 sur 2" while the Miffs go (joined first, then created), "On supprime ton profil…" once they are done,
+ * nothing while the account is being read. Never a percentage, never the detail of the lots.
+ */
+@Composable
+private fun stepLine(step: DeletionStep): String? =
+    when (step) {
+        DeletionStep.Checking -> null
+        DeletionStep.Profile -> stringResource(R.string.settings_delete_progress_profile)
+        is DeletionStep.Miff -> stringResource(R.string.settings_delete_progress_miff, step.index, step.total)
+    }
+
+/**
+ * D. Progress: logo, an indeterminate indicator (never a percentage), the title, ONE line of step, the patience sentence; [longWait] adds the calm
+ * sentence of mockup D3 (more than three people to take out of the Miffs created).
+ */
 @Composable
 private fun Progress(
     title: Int,
-    line: Int?,
+    line: String?,
     hint: Int?,
+    longWait: Boolean = false,
 ) {
     CenteredGradient {
         // One polite region: every change of line is announced by the screen reader; the indicator itself is decorative.
@@ -251,7 +273,7 @@ private fun Progress(
             )
             if (line != null) {
                 Text(
-                    text = stringResource(line),
+                    text = line,
                     style = textBodyBold16,
                     color = colorActionPrimary,
                     textAlign = TextAlign.Center,
@@ -260,6 +282,14 @@ private fun Progress(
             if (hint != null) {
                 Text(
                     text = stringResource(hint),
+                    style = textBodyRegular,
+                    color = colorTextDescription,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (longWait) {
+                Text(
+                    text = stringResource(R.string.settings_delete_progress_long),
                     style = textBodyRegular,
                     color = colorTextDescription,
                     textAlign = TextAlign.Center,
@@ -485,8 +515,8 @@ fun AccountDeletedBanner(onDismiss: () -> Unit) {
 private const val BANNER_MILLIS = 6_000L
 
 /**
- * The deletion was CANCELLED because a Miff showed up after the information screen (AUTH-5a cannot delete Miffs): nothing was deleted, the
- * app is back on its normal screen, and this says so once, calmly, with the way forward. "Compris" closes it.
+ * The deletion was CANCELLED because a Miff kept showing up while it ran (another phone of the account created or joined one, AUTH-5b): the profile and
+ * the account were not deleted, the app is back on its normal screen, and this says so once, calmly, with the way forward. "Compris" closes it.
  */
 @Composable
 fun DeletionBlockedNotice(session: SessionManager) {

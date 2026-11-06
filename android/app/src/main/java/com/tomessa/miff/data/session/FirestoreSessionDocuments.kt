@@ -140,8 +140,19 @@ class SharedPreferencesDeviceIdStore(
         prefs.edit().remove(KEY_REPLACED).commit()
     }
 
+    override fun isClosed(): Boolean = prefs.getBoolean(KEY_CLOSED, false)
+
+    override fun markClosed() {
+        prefs.edit().putBoolean(KEY_CLOSED, true).commit()
+    }
+
+    override fun clearClosed() {
+        prefs.edit().remove(KEY_CLOSED).commit()
+    }
+
     private companion object {
         const val KEY = "device_id"
         const val KEY_REPLACED = "replaced"
+        const val KEY_CLOSED = "closed_for_deletion"
     }
 }

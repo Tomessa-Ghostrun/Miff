@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Where the deletion of the account stands, as the screens say it (always calm: never a count of what is left). */
@@ -20,6 +21,8 @@ sealed interface AccountDeletionState {
     data class Running(
         val resumed: Boolean,
         val retrying: Boolean = false,
+        /** Where the procedure stands ("Miff 1 sur 2"...): one line on the progress screen, never a percentage. */
+        val step: DeletionStep = DeletionStep.Checking,
     ) : AccountDeletionState
 
     /** Paused for lack of network: it carries on by itself when the network is back. */
@@ -81,7 +84,7 @@ interface AccountDeletionSession {
     suspend fun eraseAfterAccountDeletion(uid: String)
 
     /**
-     * A Miff showed up after the information screen (AUTH-5a cannot delete it): the deletion is CANCELLED. The marker is already erased; the
+     * Miffs kept showing up while the deletion ran (another phone of the account, AUTH-5b): the deletion is CANCELLED. The marker is already erased; the
      * app goes back on track (the account is read again and the routing decided as usual, what was stopped starts again) and says calmly,
      * once, that the account was not deleted.
      */
@@ -172,7 +175,12 @@ class AccountDeletionController(
         var pause = retryPauseMillis
         while (true) {
             mutableState.value = AccountDeletionState.Running(resumed, retrying && failures == 0)
-            when (procedure.run(uid)) {
+            val outcome =
+                procedure.run(uid) { step ->
+                    // Only while this run is the one under way (a state set by a pause or a stop is never overwritten).
+                    mutableState.update { if (it is AccountDeletionState.Running) it.copy(step = step) else it }
+                }
+            when (outcome) {
                 DeletionRun.Completed -> {
                     finish(uid, apple)
                     return
