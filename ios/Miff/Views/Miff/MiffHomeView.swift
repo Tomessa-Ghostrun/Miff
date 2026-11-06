@@ -24,6 +24,9 @@ struct MiffHomeActions {
 struct MiffHomeContent: View {
     let state: DirectoryState
     let actions: MiffHomeActions
+    /// Dans la coquille à onglets (ONB-7) : la carte « Mes Miffs » est dans l'onglet Profil et « Se déconnecter » dans Réglages > Mon
+    /// compte ; l'accueil ne garde que le lien de déconnexion de l'état « Pas encore de Miff » (sans barre, donc sans Profil).
+    var embedded = false
 
     var body: some View {
         MiffFrame(title: nil, onBack: nil, usesCanvas: true) {
@@ -32,15 +35,27 @@ struct MiffHomeContent: View {
                     .frame(width: Spacing.logoWidth / 2)
                     .padding(.top, Spacing.sm)
                 stateContent
-                Button(action: actions.onSignOut) {
-                    Text("auth_signout_action")
-                        .miffTextStyle(textBodyBold16)
-                        .foregroundColor(colorActionPrimary.color)
-                        .frame(minHeight: Spacing.minTouchTarget)
+                if showsSignOut {
+                    Button(action: actions.onSignOut) {
+                        Text("auth_signout_action")
+                            .miffTextStyle(textBodyBold16)
+                            .foregroundColor(colorActionPrimary.color)
+                            .frame(minHeight: Spacing.minTouchTarget)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
         }
+    }
+
+    private var showsSignOut: Bool {
+        guard embedded else {
+            return true
+        }
+        if case .ready(let ready) = state {
+            return ready.miffs.isEmpty
+        }
+        return false
     }
 
     @ViewBuilder
@@ -58,7 +73,7 @@ struct MiffHomeContent: View {
             if ready.miffs.isEmpty {
                 noMiff
             } else {
-                MiffHomeReady(ready: ready, actions: actions)
+                MiffHomeReady(ready: ready, actions: actions, embedded: embedded)
             }
         }
     }
@@ -87,6 +102,7 @@ struct MiffHomeContent: View {
 private struct MiffHomeReady: View {
     let ready: DirectoryReady
     let actions: MiffHomeActions
+    let embedded: Bool
 
     var body: some View {
         if let active = ready.active {
@@ -104,7 +120,9 @@ private struct MiffHomeReady: View {
                 .miffTextStyle(textBodyRegular)
                 .foregroundColor(colorTextDescription.color)
                 .multilineTextAlignment(.center)
-            MyMiffCard(name: active.name, action: { actions.onOpenMiff(active.id) })
+            if !embedded {
+                MyMiffCard(name: active.name, action: { actions.onOpenMiff(active.id) })
+            }
         }
     }
 

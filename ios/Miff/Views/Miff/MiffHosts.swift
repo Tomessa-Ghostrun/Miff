@@ -130,7 +130,12 @@ struct MiffHomeHost: View {
     var body: some View {
         ZStack {
             NavigationStack(path: $path) {
-                MiffHomeContent(state: directory.state, actions: homeActions)
+                MainShellView(
+                    environment: environment,
+                    miffs: directory.state,
+                    onOpenMiff: { open(.miff($0)) },
+                    feed: { MiffHomeContent(state: directory.state, actions: homeActions, embedded: true) }
+                )
                     .toolbar(.hidden, for: .navigationBar)
                     .navigationDestination(for: MiffRoute.self) { route in
                         destination(route)
