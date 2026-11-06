@@ -48,14 +48,22 @@ rules_version = '2';
 //     déploiement (deviceIdRequired) : temps 1 = clé facultative (les applications actuelles, qui ne l'écrivent pas, continuent à
 //     passer) ; temps 2 = clé obligatoire. MESURE DE COHÉRENCE, PAS DE SÉCURITÉ : un client modifié peut mentir, et une écriture
 //     sans charge utile (suppression) ou sur un autre document (lieu, fiche, photo seule) n'est pas contrôlée (data-model.md).
-// 11. Localisation de la photo d'update (R-PHOTO-LOC, décision du PM du 2026-11-05) — PRÉPARÉ, NON DÉPLOYÉ : le document photo accepte deux
-//     clés FACULTATIVES `lat` et `lng` (absentes, nulles, ou deux coordonnées valides) : la position figée au moment de la photo, avec son heure de mesure `measuredAt` (obligatoire avec elles, interdite sans).
-//     Écriture : par l'intéressé seul, comme la photo ; une photo LOCALISÉE exige en plus le même texte de consentement que la dernière
-//     position (version 3 ou plus, après le lot) ; une photo SANS localisation (les applications actuelles) est jugée exactement comme
-//     avant. Lecture : une photo localisée n'est lisible que par son auteur ou par un membre qui a PUBLIÉ sa propre position (réciprocité
-//     formelle, comme positions/{uid}) ; pas de contrôle « l'auteur partage encore » (PM, 2026-11-06 : la purge à l'arrêt du partage et l'expiration de 24 h bornent un reliquat) ; une photo non localisée : conditions inchangées. La localisation
-//     est EFFACÉE AVEC la photo (même document, mêmes lots de suppression, mêmes 24 h) : aucun lot ne change. Le document photo ne porte
+// 11. Localisation de la photo d'update (R-PHOTO-LOC, décision du PM du 2026-11-05) — DEUX VERSIONS :
+//     (a) version FACULTATIVE (fichier de `main` au commit 35c8ba1, PR #82) : DÉPLOYÉE le 2026-11-06 (commande exécutée par le PM, « Deploy complete! » confirmé) ;
+//     (b) version OBLIGATOIRE (ce fichier) — DÉPLOYÉE le 2026-11-06 (décision du PM du 2026-11-06 : « une photo d'update doit être attachée à
+//         une position, forcément »). Retour arrière = redéployer le fichier de `main` d'avant cette PR (la localisation redevient facultative ;
+//         les photos déjà posées restent localisées).
+//     Le document photo porte TOUJOURS `lat`, `lng` (deux coordonnées valides, jamais nulles) et `measuredAt` (heure de la mesure, jamais nulle) :
+//     la position figée au moment de la photo. Une photo sans localisation est REFUSÉE, de même qu'une mise à jour qui supprimerait une des trois clés.
+//     Écriture : par l'intéressé seul, comme la photo ; TOUTE photo exige le même texte de consentement que la dernière position (version 3
+//     ou plus, après le lot : on peut activer le partage et poser la photo dans le même lot). Lecture (inchangée) : une photo localisée n'est
+//     lisible que par son auteur ou par un membre qui a PUBLIÉ sa propre position (réciprocité formelle, comme positions/{uid}) ; pas de
+//     contrôle « l'auteur partage encore » (PM, 2026-11-06 : la purge à l'arrêt du partage et l'expiration de 24 h bornent un reliquat) ; un
+//     éventuel ancien document SANS localisation reste lisible comme avant (aucune application publiée n'en écrit : data-model.md). La
+//     localisation est EFFACÉE AVEC la photo (même document, mêmes lots de suppression, mêmes 24 h) : aucun lot ne change. Le document photo ne porte
 //     toujours PAS de deviceId (SESS-1 : une photo seule n'est pas contrôlée, elle voyage avec un statut dans la mise à jour manuelle).
+//     Risques juridiques CONNUS et assumés par le PM (décision du 2026-10-23, aucune relecture juridique, aucune conformité affirmée) : RGPD
+//     (localisation = donnée sensible), mineurs, copie datée d'une position précise lisible jusqu'à 24 h (data-model.md §11).
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -654,32 +662,31 @@ service cloud.firestore {
     }
 
     // Localisation de la photo (R-PHOTO-LOC) : le document a-t-il une localisation ? (clés absentes ou nulles = non). `d` est un document
-    // de photo (resource.data en lecture, request.resource.data en écriture). Aucune lecture de règles.
+    // de photo EXISTANT (resource.data) : utilisé UNIQUEMENT à la lecture. Depuis la décision du 2026-11-06 toute photo écrite est localisée,
+    // mais un éventuel ancien document sans localisation (écrit avant le resserrage ; aucune application publiée n'en écrit, voir
+    // data-model.md) reste lisible comme avant : on ne durcit pas la lecture, on ne l'affaiblit pas non plus. Aucune lecture de règles.
     function photoHasLocation(d) {
       return d.get('lat', null) != null || d.get('lng', null) != null;
     }
 
-    // Localisation de la photo à l'écriture (R-PHOTO-LOC) :
-    //  - lat et lng vont ensemble (présentes toutes les deux ou absentes toutes les deux) ;
-    //  - SANS localisation (clés absentes ou nulles, cas des applications actuelles) : measuredAt est absente ou nulle (interdite sinon) ;
-    //  - AVEC localisation : deux coordonnées valides (mêmes plages que validPosition), le consentement APRÈS le lot de version 03 ou plus
-    //    (jamais de coordonnée enregistrée sans lui) ET measuredAt OBLIGATOIRE : l'heure de la mesure faite par l'appareil, même nom et même
-    //    sémantique que positions/{uid}.measuredAt, bornée comme elle (pas plus de 24 h dans le passé, pas plus de 5 min après l'heure de la
-    //    photo, qui est l'heure serveur : createdAt == request.time). Sert à afficher « position de il y a X min » ; ne révèle rien de plus
-    //    que la dernière position. 24 h plutôt que quelques minutes : une borne serrée refuserait TOUTE la photo (image comprise) pour une
-    //    mesure un peu ancienne ; la fraîcheur est un contrat du client (data-model.md), l'affichage dit toujours l'âge de la mesure.
+    // Localisation de la photo à l'écriture (R-PHOTO-LOC, version OBLIGATOIRE, décision du PM du 2026-11-06 : « une photo d'update doit être
+    // attachée à une position, forcément ») : TOUTE photo porte lat, lng et measuredAt (validPhoto en exige la présence), jamais nulles :
+    //  - deux coordonnées valides, nombres dans les mêmes plages que validPosition (un null, un texte, NaN ou l'infini échouent) ;
+    //  - le consentement APRÈS le lot de version 03 ou plus (jamais de photo, donc jamais de coordonnée enregistrée, sans lui) ;
+    //  - measuredAt : l'heure de la mesure faite par l'appareil, même nom et même sémantique que positions/{uid}.measuredAt, bornée comme
+    //    elle (pas plus de 24 h dans le passé, pas plus de 5 min après l'heure de la photo, qui est l'heure serveur : createdAt ==
+    //    request.time). Sert à afficher « position de il y a X min » ; ne révèle rien de plus que la dernière position. 24 h plutôt que
+    //    quelques minutes : une borne serrée refuserait TOUTE la photo (image comprise) pour une mesure un peu ancienne ; la fraîcheur est un
+    //    contrat du client (data-model.md), l'affichage dit toujours l'âge de la mesure.
+    // Mises à jour partielles : request.resource.data est le document FUSIONNÉ, donc supprimer une clé (FieldValue.delete) le laisse
+    // sans cette clé et validPhoto le refuse. Le « ensemble » de lat et lng est inclus (aucune des trois ne peut manquer ni être nulle).
     // s = sharing après le lot. La précision (5 décimales) est un contrat du client. Aucune lecture de règles (s est déjà lu par validPhoto).
     function validPhotoLocation(d, s) {
-      return ('lat' in d) == ('lng' in d)
-        && (
-          (!photoHasLocation(d) && d.get('measuredAt', null) == null)
-          || (photoHasLocation(d)
-              && isCoordinate(d.lat, 90) && isCoordinate(d.lng, 180)
-              && isPhotoLocationConsentVersion(s.consentVersion)
-              && d.measuredAt is timestamp
-              && d.measuredAt >= request.time - duration.value(1, 'd')
-              && d.measuredAt <= request.time + duration.value(5, 'm'))
-        );
+      return isCoordinate(d.lat, 90) && isCoordinate(d.lng, 180)
+        && isPhotoLocationConsentVersion(s.consentVersion)
+        && d.measuredAt is timestamp
+        && d.measuredAt >= request.time - duration.value(1, 'd')
+        && d.measuredAt <= request.time + duration.value(5, 'm');
     }
 
     // Lecture de la localisation d'une photo (R-PHOTO-LOC) : `d` = resource.data. Sans localisation : toujours (aucune lecture de
@@ -696,12 +703,12 @@ service cloud.firestore {
     }
 
     // Photo de la dernière update (au plus une par membre et par Miff).
-    // Clés : jpeg, createdAt, expiresAt (obligatoires) ; lat, lng, measuredAt (facultatives, R-PHOTO-LOC : measuredAt si et seulement si localisée). PAS de deviceId (SESS-1).
+    // Clés : jpeg, createdAt, expiresAt, lat, lng, measuredAt, TOUTES obligatoires (R-PHOTO-LOC : une photo est toujours localisée). PAS de deviceId (SESS-1).
     function validPhoto(miffId, uid) {
       let d = request.resource.data;
       let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
       return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
-        && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt'])
+        && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
         && d.jpeg is bytes && d.jpeg.size() > 0 && d.jpeg.size() <= 150000
         && d.createdAt == request.time
         && d.expiresAt is timestamp
@@ -913,8 +920,10 @@ service cloud.firestore {
       // Lecture : partage activé (PAS de condition de statut publié pour les photos : décision PM du
       // 2026-10-22), Miff existante, et photo non expirée (expiresAt est appliqué par les règles : aucun
       // nettoyage n'est nécessaire pour qu'elle disparaisse). Photo absente : introuvable, pas une erreur.
-      // Photo LOCALISÉE (lat / lng, R-PHOTO-LOC) : en plus, l'auteur lui-même ou un membre qui a publié sa propre position (évalué après
-      // l'expiration : une photo expirée ne coûte aucune lecture de règles de plus). Photo non localisée : aucune lecture de plus.
+      // Photo LOCALISÉE (lat / lng, R-PHOTO-LOC ; depuis le resserrage du 2026-11-06 TOUTE photo écrite l'est) : en plus, l'auteur lui-même ou un
+      // membre qui a publié sa propre position (évalué après l'expiration : une photo expirée ne coûte aucune lecture de règles de plus).
+      // Ancien document sans localisation (aucune application publiée n'en écrit) : aucune lecture de plus, lisible comme avant.
+      // Coût : 3 lectures de règles pour lire la photo d'un autre membre (4 lectures facturées avec le document), 2 pour la sienne.
       // Suppression : l'auteur, le créateur, ou n'importe quel membre une fois la photo expirée.
       match /photos/{uid} {
         allow get: if miffAlive(miffId) && mySharingOn(miffId)

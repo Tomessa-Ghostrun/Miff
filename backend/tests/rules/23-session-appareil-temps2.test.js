@@ -4,7 +4,7 @@
 // pas encore la session) et ce qu'il continue d'accepter (tout ce qui n'est ni un statut ni une position).
 import {
   ID, CODE, T0, Timestamp, DAY, FieldValue, suite, assertFails, assertSucceeds, commit, update, set, serverTs,
-  statusDoc, statusInitial, photoDoc, positionDoc, sharingOnNow, CONSENT_POSITION,
+  statusDoc, statusInitial, photoDoc, setConsentV3, positionDoc, sharingOnNow, CONSENT_POSITION,
   joinShareOps, createShareOps, createMiffOps, joinOps, leaveOps, leaveWithPositionOps, removeMemberOps, placeInput,
   DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH, temps2, readRules, sharingOff,
 } from '../helpers/fixtures.js';
@@ -79,6 +79,7 @@ s.tc('SF5', "temps 2 : ce qui n'est ni un statut ni une position reste comme au 
   // Lieux, fiche, photo seule, renouvellement du consentement.
   await assertSucceeds(h.db('alice').doc(`${M1}/places/p2`).set(placeInput('alice')));
   await assertSucceeds(h.db('alice').doc(`${M1}/members/alice`).update({ firstName: 'Alicia' }));
+  await setConsentV3(h, 'bob'); // toute photo (localisée) exige le texte de version 03
   await assertSucceeds(h.db('bob').doc(`${M1}/photos/bob`).set(photoDoc()));
   await h.admin((f) => f.doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': '2026-10-v2' }));
   await assertSucceeds(

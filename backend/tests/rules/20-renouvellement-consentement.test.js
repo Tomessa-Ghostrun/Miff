@@ -6,7 +6,7 @@
 // couverture « position » (version 3 ou plus) en renouvelant.
 import {
   ID, T0, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp,
-  statusDoc, photoDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
+  statusDoc, photoLegacyDoc, positionDoc, positionSeed, sharingOnNow, CONSENT_POSITION,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -30,7 +30,7 @@ const read = async (h, path) => {
 s.tc('RC1', 'bob (partage actif, texte 2026-10-v2) renouvelle avec le texte 2026-11-v03 : accepté, statut, photo et position conservés', async (h) => {
   await setVersion(h, 'bob', V2);
   await h.admin(async (f) => {
-    await f.doc(`${M1}/photos/bob`).set(photoDoc({ createdAt: T0 }));
+    await f.doc(`${M1}/photos/bob`).set(photoLegacyDoc({ createdAt: T0 }));
     await f.doc(`${M1}/positions/bob`).set(positionSeed());
   });
   await assertSucceeds(renew(h, 'bob'));
