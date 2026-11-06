@@ -3,6 +3,8 @@ package com.tomessa.miff.data.update
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.data.feed.PhotoCache
+import com.tomessa.miff.data.feed.PhotoLookup
+import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.session.ActiveDevice
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.tracking.PhotoPosition
@@ -310,6 +312,8 @@ class PhotoCleaner(
     private val battery: () -> Int?,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val timeoutMillis: Long = UpdatePublisher.TIMEOUT_MS,
+    /** Reads MY OWN photo when the date is lost (decision D35 of the PM, 2026-11-06): one `get`, 2 reads of rules. */
+    private val reader: PhotoReader? = null,
 ) {
     /** True when a photo was removed. Never throws except for the cancellation of the caller. */
     suspend fun cleanUp(mine: MyPhotoFacts? = null): Boolean {
@@ -323,8 +327,13 @@ class PhotoCleaner(
             val update = mine?.lastUpdateAtMillis
             if (mine == null || !mine.hasPhoto || update == null) return false
             if (now - minOf(update, now) <= UNREADABLE_AFTER_MILLIS) {
-                ledger.notePhotoSent(uid, update)
-                return false
+                // D35: ONE `get` of my own photo decides on its `expiresAt` (2 reads of rules); never a deletion on a `permission-denied` (nothing is read then).
+                val own = readOwnPhoto(uid, update)
+                if (own == null || !own.isExpired(now)) {
+                    // Readable: the date of the photo itself is the note; not readable (refused, absent, offline): the date of the last update stands in.
+                    ledger.notePhotoSent(uid, own?.createdAtMillis ?: update)
+                    return false
+                }
             }
         }
         val ids = miffIds().distinct()
@@ -348,6 +357,21 @@ class PhotoCleaner(
         ids.forEach { photos.remove(it, uid) }
         ledger.clearPhotoSent()
         return true
+    }
+
+    private suspend fun readOwnPhoto(
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ): SharedPhoto? {
+        val miffId = miffIds().firstOrNull() ?: return null
+        val lookup =
+            try {
+                withTimeout(timeoutMillis) { reader?.read(miffId, uid, lastUpdateAtMillis) }
+            } catch (e: CancellationException) {
+                if (e !is TimeoutCancellationException) throw e
+                null
+            }
+        return (lookup as? PhotoLookup.Found)?.photo
     }
 
     companion object {

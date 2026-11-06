@@ -397,6 +397,7 @@ class AppContainer(
             currentUid = { authGateway.currentUid },
             miffIds = ::miffIds,
             battery = { trackingEnvironment.batteryPct() },
+            reader = photoReader,
         )
     }
 

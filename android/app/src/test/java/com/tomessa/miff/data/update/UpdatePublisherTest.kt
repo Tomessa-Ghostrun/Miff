@@ -3,6 +3,8 @@ package com.tomessa.miff.data.update
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.feed.PhotoCache
+import com.tomessa.miff.data.feed.PhotoLookup
+import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.tracking.PhotoPosition
 import com.tomessa.miff.data.tracking.PhotoPositionSource
@@ -12,6 +14,7 @@ import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.TrackingLimits
 import com.tomessa.miff.domain.update.PublishGuard
+import com.tomessa.miff.domain.update.SharedPhoto
 import com.tomessa.miff.domain.update.UpdatePhoto
 import com.tomessa.miff.domain.update.UpdateWrites
 import com.tomessa.miff.testsupport.DEVICE_A
@@ -669,5 +672,68 @@ class UpdatePublisherTest {
             store.failCall = 0
             assertFalse(cleaner().cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(30))))
             assertTrue("a refused lot wrote nothing", store.commits.isEmpty())
+        }
+
+    // --- Decision D35: with no date, ONE get of my own photo decides ---------------------------------------------------------------------------
+
+    private class FakeOwnPhoto(
+        var answer: PhotoLookup,
+    ) : PhotoReader {
+        var reads = 0
+
+        override suspend fun read(
+            miffId: String,
+            uid: String,
+            lastUpdateAtMillis: Long,
+        ): PhotoLookup {
+            reads++
+            return answer
+        }
+    }
+
+    private fun cleanerWith(reader: PhotoReader) =
+        PhotoCleaner(store, device, network, ledger, cache, {
+            uid
+        }, { myMiffs }, { 61 }, { now }, 1_000L, reader)
+
+    private fun ownPhoto(
+        createdAt: Long,
+        expiresAt: Long,
+    ) = PhotoLookup.Found(SharedPhoto(ByteArray(10) { 1 }, createdAt, expiresAt, null))
+
+    @Test
+    fun withNoDate_aReadablePhotoGivesItsOwnDate_oneRead_nothingDeletedYet() =
+        runTest {
+            val reader = FakeOwnPhoto(ownPhoto(createdAt = sinceHours(5), expiresAt = sinceHours(5) + 23L * 3_600_000L))
+            assertFalse(cleanerWith(reader).cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(2))))
+            assertEquals(1, reader.reads)
+            assertEquals("the date of the photo itself, not of the last update", sinceHours(5), ledger.photoAt)
+            assertTrue(store.commits.isEmpty())
+        }
+
+    @Test
+    fun withNoDate_aRefusedRead_neverDeletes_theDateOfTheLastUpdateStandsIn() =
+        runTest {
+            val reader = FakeOwnPhoto(PhotoLookup.NeedsOwnPosition)
+            assertFalse(cleanerWith(reader).cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(3))))
+            assertTrue("a refusal is never a reason to delete", store.commits.isEmpty())
+            assertEquals(sinceHours(3), ledger.photoAt)
+        }
+
+    @Test
+    fun withNoDate_aPhotoThatTheGetShowsExpired_isDeleted() =
+        runTest {
+            val reader = FakeOwnPhoto(ownPhoto(createdAt = sinceHours(24), expiresAt = sinceHours(1)))
+            assertTrue(cleanerWith(reader).cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(24))))
+            assertEquals(1, store.commits.size)
+        }
+
+    @Test
+    fun withADate_nothingIsReadAtAll() =
+        runTest {
+            ledger.photoAt = sinceHours(2)
+            val reader = FakeOwnPhoto(PhotoLookup.Missing)
+            assertFalse(cleanerWith(reader).cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(2))))
+            assertEquals(0, reader.reads)
         }
 }

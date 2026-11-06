@@ -99,7 +99,7 @@ Compte **B** : il doit avoir **publié sa propre position** (ouvrir l'applicatio
 ## G. Nettoyage de la photo expirée (facultatif, avec l'assistant)
 
 - [ ] **Après une déconnexion puis reconnexion du même compte** : publiez, déconnectez-vous (Réglages > Mon compte), **avancez l'heure de 25 h**, reconnectez-vous avec le même compte : la photo est supprimée (la date a survécu à la déconnexion). Avec **un autre compte** sur le téléphone : rien n'est supprimé.
-- [ ] **Après une réinstallation** : publiez, **désinstallez et réinstallez** l'application, reconnectez-vous, **avancez l'heure de 25 h** : le Feed affiche la carte, la photo est supprimée au lancement (la date de la dernière mise à jour remplace la date perdue). Avant 25 h : rien n'est supprimé.
+- [ ] **Après une réinstallation** : publiez, **désinstallez et réinstallez** l'application, reconnectez-vous, **avancez l'heure de 25 h** : le Feed affiche la carte, la photo est supprimée au lancement (la date de la dernière mise à jour remplace la date perdue). Avant 25 h : rien n'est supprimé (l'application relit **une fois** votre propre photo pour noter sa date, 2 lectures de règles).
 
 - [ ] Publiez une photo, **avancez l'heure du téléphone de 25 h** (ou attendez), relancez l'application avec le réseau : la photo de A est **supprimée** dans la console et le statut dit `hasPhoto` = `false`, **sans** lecture du serveur par l'application.
 
