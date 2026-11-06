@@ -14,6 +14,8 @@
 The licence and the copyright notice above are to be shown in the "licences" screen of the app when it exists (there is none today;
 the same is already true of MapLibre, BSD-2-Clause, see `android/README.md`): task for the `release-manager` with the other notices.
 
+Transitive redirect artifacts: Haze also brings `org.jetbrains.compose.{ui,animation-core,runtime}:*-android:1.12.1` and `org.jetbrains.androidx.lifecycle:*:2.11.0`, which are tiny redirect AARs (about 6 KB in all) that Gradle resolves to the matching `androidx` artifacts: no duplicate classes (checked by the CI build).
+
 ## Checksums of the artifacts resolved by Gradle (SHA-256, computed on 2026-11-06 from Maven Central over HTTPS)
 
 | Artifact | Size | SHA-256 |

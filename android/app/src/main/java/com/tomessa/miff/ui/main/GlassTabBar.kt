@@ -87,9 +87,11 @@ fun GlassTabHost(
     bar: @Composable (TabBarGlass) -> Unit,
     modifier: Modifier = Modifier,
     conditions: GlassConditions = rememberGlassConditions(),
+    /** The switch of the fallback ([GlassPolicy.BLUR_ALLOWED]); a parameter so that the tests can force it either way. */
+    blurAllowed: Boolean = GlassPolicy.BLUR_ALLOWED,
     content: @Composable () -> Unit,
 ) {
-    val level = GlassPolicy.level(conditions, variant)
+    val level = GlassPolicy.level(conditions, variant, blurAllowed)
     val hazeState = rememberHazeState()
     val blurring = barVisible && level == GlassLevel.BLUR
     var barHeightPx by remember { mutableIntStateOf(0) }

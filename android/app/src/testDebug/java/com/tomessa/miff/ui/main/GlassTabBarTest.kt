@@ -233,6 +233,8 @@ class GlassTabBarTest {
                         variant = GlassVariant.LIGHT,
                         barVisible = true,
                         conditions = modern,
+                        // Forced on: this test is about the blur itself, whatever the shipped switch says.
+                        blurAllowed = true,
                         bar = { glass ->
                             assertEquals(GlassLevel.BLUR, glass.level)
                             assertTrue("a blurred bar must be given the source", glass.hazeState != null)

@@ -451,13 +451,20 @@ private fun NavController.open(route: Any) = navigate(route) { launchSingleTop =
  * everything it remembers) for when the person comes back; tapping the tab already in use brings it back to the top. The bar
  * disappears while the keyboard is open.
  *
+ * GLASS BAR (ticket TABBAR-GLASS, GlassTabBar.kt): [GlassTabHost] draws the tabs FULL SCREEN and the bar over them, at the bottom, so
+ * that the content passes UNDER the frosted glass. The bar therefore no longer reserves its place: every tab that scrolls must keep a
+ * bottom margin of the height of the bar, `.padding(bottom = LocalTabBarInset.current)` inside its scrolling column (the host measures
+ * the bar and gives that height; it is 0 while the bar is hidden). Without it the last element of the tab stays hidden behind the
+ * bar. TabBarContentMarginTest scrolls the Profile to its end and checks it; TabBarInsetRuleTest checks that the line is present.
+ *
  * Safe areas (see ui/components/ScreenInsets.kt): the BAR keeps itself above the navigation bar (3 buttons or gestures); each
  * TAB keeps itself below the status bar with miffTopInsets() on its own root, so that it can draw its background (the gradient
  * of the Profile) under the status bar. This function must not consume insets it does not pad: it did once (Scaffold +
  * consumeWindowInsets), the status bar was "consumed" before the tabs could use it, and the Feed logo was drawn over the clock.
  *
- * KEYBOARD, if a text field is added to a tab one day: the tab content has NO bottom margin (the bar owns it), and while the
- * keyboard is open the bar is removed, so nothing would keep the field above the keyboard. The tab will then have to handle
+ * KEYBOARD, if a text field is added to a tab one day: the tab content has no margin for the keyboard (its bottom margin is only
+ * the height of the bar, 0 while the bar is hidden), and while the keyboard is open the bar is removed, so nothing would keep the
+ * field above the keyboard. The tab will then have to handle
  * the keyboard itself (through ScreenInsets.kt, e.g. a new modifier there that covers the ime), with a test in
  * ScreenInsetsTest that sends a keyboard to that tab. No tab has a text field today.
  */

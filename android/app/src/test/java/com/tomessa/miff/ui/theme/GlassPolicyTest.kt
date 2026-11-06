@@ -69,8 +69,10 @@ class GlassPolicyTest {
     }
 
     @Test
-    fun theShippedSwitchIsOn_theBlurIsTheDefault() {
-        assertEquals(true, GlassPolicy.BLUR_ALLOWED)
+    fun theShippedSwitch_decidesTheDefault_whicheverWayItIsSet() {
+        // The switch is the emergency plan B (BLUR_ALLOWED = false if the OPPO drops frames): the build must stay green either way.
+        val expected = if (GlassPolicy.BLUR_ALLOWED) GlassLevel.BLUR else GlassLevel.NO_BLUR
+        assertEquals(expected, GlassPolicy.level(modern, GlassVariant.LIGHT))
         assertEquals(31, GlassPolicy.MIN_BLUR_SDK)
     }
 }
