@@ -336,7 +336,7 @@ class SessionHarness(
             network = sessionNetwork,
             currentUid = { gateway.currentUid },
             scope = scope,
-            onReplaced = { manager.onDeviceReplaced() },
+            onReplaced = { gone -> manager.onDeviceReplaced(gone) },
             // Predictable and valid identifiers: "device-N-..." (16 characters at least).
             newId = { "device-${++deviceCounter}-0123456789abcdef" },
             nowMillis = { 1_000_000L },

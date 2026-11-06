@@ -129,6 +129,8 @@ data class SignInUiState(
     val showAccountNotCreatedNote: Boolean = false,
     /** After the account was taken over by another phone (SESS-2): a calm note (not an error), nothing about any Miff. */
     val showSessionReplacedNote: Boolean = false,
+    /** The session document of the account disappeared (SESS-2): "being deleted on another device", careful and calm, nothing about any Miff. */
+    val showSessionGoneNote: Boolean = false,
     /** The session closed during a deletion of the account: sign in with the same account and it is finished (AUTH-5, calm note). */
     val showDeletionPendingNote: Boolean = false,
 )
@@ -153,6 +155,8 @@ class SignInViewModel(
             mutableState.update { it.copy(message = AuthMessage.ACCOUNT_UNAVAILABLE) }
         } else if (notice == SignedOutNotice.SESSION_REPLACED) {
             mutableState.update { it.copy(showSessionReplacedNote = true) }
+        } else if (notice == SignedOutNotice.SESSION_GONE) {
+            mutableState.update { it.copy(showSessionGoneNote = true) }
         }
     }
 
@@ -174,6 +178,7 @@ class SignInViewModel(
                     googleMessage = null,
                     showAccountNotCreatedNote = false,
                     showSessionReplacedNote = false,
+                    showSessionGoneNote = false,
                 )
             }
             return
@@ -185,6 +190,7 @@ class SignInViewModel(
                     googleMessage = null,
                     showAccountNotCreatedNote = false,
                     showSessionReplacedNote = false,
+                    showSessionGoneNote = false,
                 )
             }
             return
@@ -196,6 +202,7 @@ class SignInViewModel(
                 googleMessage = null,
                 showAccountNotCreatedNote = false,
                 showSessionReplacedNote = false,
+                showSessionGoneNote = false,
             )
         }
         viewModelScope.launch {
@@ -230,6 +237,7 @@ class SignInViewModel(
                     googleMessage = AuthMessage.NETWORK,
                     showAccountNotCreatedNote = false,
                     showSessionReplacedNote = false,
+                    showSessionGoneNote = false,
                 )
             }
             return
@@ -241,6 +249,7 @@ class SignInViewModel(
                 googleMessage = null,
                 showAccountNotCreatedNote = false,
                 showSessionReplacedNote = false,
+                showSessionGoneNote = false,
             )
         }
         viewModelScope.launch {

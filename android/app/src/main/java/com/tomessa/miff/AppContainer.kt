@@ -216,7 +216,7 @@ class AppContainer(
             network = networkMonitor,
             currentUid = { authGateway.currentUid },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-            onReplaced = { sessionManager.onDeviceReplaced() },
+            onReplaced = { accountGone -> sessionManager.onDeviceReplaced(accountGone) },
         )
     }
 

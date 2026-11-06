@@ -50,6 +50,16 @@ class MemoryDeviceIdStore(
 
     override fun clearReplaced() {
         replaced = false
+        gone = false
+    }
+
+    /** Why it was replaced, as it is on the disk: the session document disappeared (the account is being deleted elsewhere). */
+    var gone = false
+
+    override fun isGone(): Boolean = gone
+
+    override fun markGone() {
+        gone = true
     }
 }
 
