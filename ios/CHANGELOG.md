@@ -2,6 +2,10 @@
 
 ## Non publié
 
+### Wording « Zone de danger » dans l'onboarding
+
+Modifié : `ios_onboarding_zone_risk` dit « Zone de danger » / « Danger zone » (au lieu de « Zone à risque » / « Risk zone »), décision du PM du 2026-11-06 ; clés inchangées.
+
 ### MIFF-4 - Retirer un proche, quitter, supprimer la Miff, créer un nouveau code, « Prévenir mes proches » (miroir d'Android MIFF-2)
 
 Tickets `docs/tickets/miff.md` (§5.6, §13 MIFF-4, critères N, R, Q, S, D), décisions du PM `miff-questions-pm.md` (QM1, QM8, QM9) et du 2026-10-31 (**QM16 : une sortie volontaire ne renouvelle PAS le code ; seul le retrait par le créateur le renouvelle**), fiches `design/screens/miff-dialogues.md` et `miff-ecran-miff.md`, maquettes `design/exports/miff/` (-1 : corbeilles rouges, -3 : dialogue de suppression), checklist Android `docs/qa/checklists/miff-2-android-recette-pm.md`. Détail, écarts avec Android et avec les maquettes, limites : `README.md`, section « Retirer, quitter, supprimer, renouveler le code ».

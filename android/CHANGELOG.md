@@ -2,6 +2,11 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## Non publié
+
+### Modifié
+- Wording (décision du PM, 2026-11-06) : l'onboarding dit « Zone de danger » / « Danger zone » (au lieu de « Zone à risque » / « Risk zone », issus de la maquette). Clés inchangées ; sous-texte « Lieu à éviter » conservé (cohérent avec le reste de l'app, voir risque R7 des lieux). Mêmes textes côté iOS.
+
 ## [0.11.0] - 2026-11-04 : LOC-2b, détection des arrivées et des départs, statut et dernière position
 
 Seconde moitié de LOC-2 (ticket `docs/tickets/lieux-de-confiance.md` : POS1 à POS8, DET1 à DET4, STA1 à STA4, STA6 à STA9, VIE1 à VIE4, HOR1, AND1, AND2 ; décisions du PM du 2026-11-01 et du 2026-11-04 ; maquette 23). Empilée sur LOC-2a (PR #64, elle-même sur LOC-1, PR #56). Recette : `docs/qa/checklists/loc-2b-android-recette-pm.md`. Détail technique : `README.md`, section « Détection des arrivées et des départs ».

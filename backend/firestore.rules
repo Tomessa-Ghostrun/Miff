@@ -516,7 +516,7 @@ service cloud.firestore {
 
     // Limite freemium "2 lieux" (R-LIEU-5, décision du PM du 2026-11-01) : en gratuit, SEULS les identifiants 'p1' et 'p2' et
     // le type 'trusted' sont acceptés (recréer un identifiant existant est une mise à jour, soumise à validPlaceUpdate).
-    // Premium : identifiants libres et zones à risque. Un lieu rattaché à plusieurs Miffs = UN document par Miff avec le MÊME
+    // Premium : identifiants libres et zones de danger. Un lieu rattaché à plusieurs Miffs = UN document par Miff avec le MÊME
     // identifiant (généré une fois par le client) : chaque document est évalué séparément, aucune règle ne compare les copies.
     function validPlaceCreate(placeId) {
       let d = request.resource.data;
@@ -558,7 +558,7 @@ service cloud.firestore {
     }
 
     // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :
-    // uniquement l'état (dans un lieu / hors lieu / zone à risque) + horodatages.
+    // uniquement l'état (dans un lieu / hors lieu / zone de danger) + horodatages.
     // Toutes les clés sont toujours présentes (null si non applicable).
     function validStatus(miffId, uid) {
       let d = request.resource.data;
@@ -926,7 +926,7 @@ service cloud.firestore {
           || (isMember(miffId) && resource.data.expiresAt <= request.time);
       }
 
-      // ---- Lieux (zone de confiance / zone à risque), définis par le créateur
+      // ---- Lieux (zone de confiance / zone de danger), définis par le créateur
       match /places/{placeId} {
         allow get, list: if isMember(miffId) && miffAlive(miffId);
         allow create: if isOwner(miffId) && validPlaceCreate(placeId);
