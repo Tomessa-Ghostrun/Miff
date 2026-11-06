@@ -16,7 +16,7 @@
 1. Console Firebase → **Firestore Database** → onglet **Données**.
 2. Si la collection **`entitlements`** n'existe pas : **Démarrer une collection**, nom `entitlements`. Sinon, ouvrez-la puis **Ajouter un document**.
 3. **ID du document** : collez l'UID copié (jamais « ID automatique »).
-4. Ajoutez exactement ces quatre champs :
+4. Ajoutez exactement ces quatre champs. **Attention à la casse : Firestore distingue majuscules et minuscules.** `expiresAt` et `updatedAt` s'écrivent avec un « t » minuscule ; `expiresAT` ou `updatedAT` ne sont pas reconnus et le compte reste gratuit (cas rencontré le 2026-11-07). Pour corriger un nom de champ, il faut le supprimer et le recréer (la console ne permet pas de le renommer).
 
 | Champ | Type | Valeur |
 |---|---|---|
@@ -28,6 +28,8 @@
 5. **Enregistrer**.
 
 ## 3. Voir l'effet dans l'app
+
+L'app n'affiche aucun badge « Miff+ » pour l'instant : l'effet se constate en créant, par exemple, un 3e lieu (en gratuit, l'écran « Débloque l'ensemble des fonctionnalités de Miff » s'affiche à la place). Dans un APK de test, l'écran de diagnostic (premier écran) indique aussi « Offre : Classic » ou « Offre : Premium jusqu'au … » dans le bloc « Test 2 ».
 
 Fermez complètement l'app puis rouvrez-la (la lecture du statut se fait à l'ouverture et avant chaque création de lieu ou de Miff). Le compte est alors Miff+ : lieux illimités, zones de danger, plusieurs Miffs.
 
