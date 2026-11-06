@@ -249,6 +249,15 @@ Ce que la personne voit une fois l'onboarding terminé et qu'une Miff existe (de
 - **Aucune donnée personnelle dans les journaux, événements d'analyse ni rapports de plantage** : le code n'écrit aucun journal (`NoSensitiveLoggingTest`) ; `MyProfile.toString()` ne montre rien ; aucun événement n'est émis par ces écrans.
 - **Écarts conscients design / plateforme (ONB-3a)** : voir la description de la PR (tableau) ; les principaux : tutoiement, libellé « Téléphone », compteurs réels, aucun « 3 caractères minimum », mention de visibilité du numéro, « Enregistrer » grisé sans changement, deux langues, pas de « Notifications » ni d'encart Premium, « Déconnexion » en bouton secondaire, pas de carte de Miff ni de lieux, confirmation de déconnexion et d'abandon ajoutées (non dessinées).
 
+## Barre d'onglets en verre dépoli (ticket TABBAR-GLASS)
+
+Spec : `design/tab-bar-liquid-glass.md`. Tout est dans `ui/main/GlassTabBar.kt` (surface de verre, hôte, bouton central), `ui/theme/GlassTokens.kt` (jetons `tabbar/*`) et `ui/theme/GlassCapability.kt` (quel niveau de verre ce téléphone peut afficher en ce moment).
+- **Trois niveaux** : flou (Android 12 et plus), sans flou à voile dense (avant Android 12, appareil à peu de mémoire, viseur caméra), opaque (économiseur de batterie, animations supprimées, contraste renforcé sur Android 14 et plus). Pas de réglage dans l'app : elle suit le système. **« Réduire la transparence » n'a aucune API publique sur Android.**
+- **Interrupteur** : `GlassPolicy.BLUR_ALLOWED` ; à `false`, plus aucun flou (ni enregistrement du contenu).
+- **Le contenu passe sous la barre** : `MainTabs` utilise `GlassTabHost` ; tout onglet qui défile doit garder `.padding(bottom = LocalTabBarInset.current)` dans sa colonne défilante (`TabBarInsetRuleTest` le vérifie pour le Feed et le Profil).
+- **Haze** n'est utilisée que dans `GlassTabBar.kt` (plan B : remplacer ce fichier). Version épinglée, module de flou seul, notice : `third_party/licenses/haze-NOTICE.md`.
+- **Bouton central** : `CentralStatusButton(level)` ; le niveau viendra de `StatusColor.level` (UPDATE-2) par le paramètre `updateStatus` de `MainTabBar` ; gris tant que rien ne le fournit.
+
 ## Créer, rejoindre, écran de la Miff (ticket MIFF-1)
 
 Ticket `docs/tickets/miff.md` (§13, critères C, J, K, G, D, H), décisions du PM `miff-questions-pm.md` (QM1 à QM15) et `feed-profil-reglages.md` §13 (Q2), maquettes `design/exports/miff/` et `onboarding-original/`. **Retirer, quitter, supprimer, renouveler le code et « Prévenir mes proches » ne sont pas dans cette PR (MIFF-2)** : aucun bouton ne leur est dessiné (un bouton qui ne fait rien n'arrive jamais chez un testeur). Les lots correspondants (`MiffWrites.leave`, `dropIndex`) existent déjà car l'accès perdu s'en sert.
@@ -539,6 +548,7 @@ app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth
 app/src/release   App Check Play Integrity, aucune destination interne
 app/src/test      tests unitaires JUnit (48 tests ; app/src/testDebug : ViewModel du diagnostic et test de défilement de l'écran d'accueil, via Robolectric)
 third_party/fonts licences et provenance des polices
+third_party/licenses notices des bibliothèques (Haze)
 ```
 
 ## Limites connues
@@ -626,6 +636,7 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | kotlinx-serialization-json | 1.12.0 | Apache 2.0 |
 | kotlinx-coroutines-play-services | 1.11.0 | Apache 2.0 |
 | Google Play services location (géofencing, fournisseur fusionné ; LOC-2b) | 21.4.0 | Android SDK License (Google) |
+| Haze (`haze`, `haze-blur`, flou de la barre d'onglets ; TABBAR-GLASS) | 2.0.1 (épinglée) | Apache 2.0 (sans réseau, permission ni clé ; `third_party/licenses/haze-NOTICE.md`) |
 | Firebase Firestore | 27.1.0 | Apache 2.0 |
 | Firebase Authentication | 25.0.0 | Android SDK License (Google) |
 | AndroidX Credentials (+ play-services-auth) | 1.6.0 | Apache 2.0 |
