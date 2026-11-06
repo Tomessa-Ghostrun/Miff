@@ -192,7 +192,9 @@ object FeedBuilder {
             limitedLocation =
                 status?.locationAccess in LIMITED_ACCESS,
             phone = member.phone.takeIf { !isMe },
-            canLocate = !isMe && mySharing && !hidden && member.sharingEnabled && level != StatusLevel.NEUTRAL,
+            // Ticket 5.6: another member whose sharing is on, while mine is on and the statuses are REALLY read (the rules ask for my own status
+            // to be published): even with no known status. "No position yet" is one of the calm answers of the sheet.
+            canLocate = !isMe && mySharing && !hidden && member.sharingEnabled && input.statuses is StatusesView.Loaded,
             photo = photoSlot(status, member.sharingEnabled && !(hidden && !isMe), now),
         )
     }

@@ -57,7 +57,7 @@ import com.tomessa.miff.ui.theme.textDisplayLabel
 /*
  * The card of a member (maquettes 06 and the PM's "Welcoming screen"): a strip of the colour of the level on the left, the avatar with its
  * ring, the first name, the battery, the label of the state, the line of time, and the three gestures. MY card is the first one and has no
- * gesture. The colour is never alone (strip + ring + glyph + words + the pictogram of the label). One reading for the screen reader: the
+ * gesture. The colour is the only signal of the level (strip, ring, label: no glyph, decision of the PM, 2026-11-06); the words of the state stay and are read. One reading for the screen reader: the
  * information is one block, the gestures are buttons of their own after it.
  */
 
@@ -201,63 +201,23 @@ private fun BatteryChip(
     }
 }
 
-/** The label of the state, on the tint of the level, with its pictogram: text + icon + colour, never the colour alone. */
+/** The label of the state: its words on the tint of the level. The colour is the only signal, no pictogram (decision of the PM, 2026-11-06). */
 @Composable
 private fun StateChip(
     card: MemberCard,
     texts: FeedTexts,
 ) {
-    Row(
+    Text(
+        text = texts.label(card.label),
+        style = textBodyRegular14,
+        color = card.level.onTint(),
         modifier =
             Modifier
                 .clip(ShapeSm)
                 .background(card.level.tint())
                 .padding(horizontal = Spacing.s, vertical = Spacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(labelIcon(card.label)),
-            contentDescription = null,
-            tint = card.level.onTint(),
-            modifier = Modifier.size(16.dp),
-        )
-        Text(text = texts.label(card.label), style = textBodyRegular14, color = card.level.onTint())
-    }
+    )
 }
-
-private fun labelIcon(label: StateLabel): Int =
-    when (label) {
-        is StateLabel.At -> {
-            when ((label.place as? PlaceRef.Category)?.kind) {
-                PlaceKind.HOME -> R.drawable.ic_loc_home
-                PlaceKind.WORK -> R.drawable.ic_loc_work
-                PlaceKind.SCHOOL -> R.drawable.ic_loc_school
-                PlaceKind.SPORT -> R.drawable.ic_loc_sport
-                null -> R.drawable.ic_loc_pin
-            }
-        }
-
-        is StateLabel.Left -> {
-            R.drawable.ic_feed_leave
-        }
-
-        StateLabel.Danger -> {
-            R.drawable.ic_loc_warning
-        }
-
-        StateLabel.NoNews -> {
-            R.drawable.ic_feed_clock
-        }
-
-        StateLabel.SharingStopped, StateLabel.WaitingAgreement -> {
-            R.drawable.ic_pause
-        }
-
-        StateLabel.NewsHidden -> {
-            R.drawable.ic_visibility_off
-        }
-    }
 
 @Composable
 private fun LimitedLocationBadge() {

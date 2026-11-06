@@ -473,7 +473,7 @@
     <string name="feed_bubble_answered">%1$d of %2$d have shared news</string>
     <string name="feed_bubble_no_news_title">No news yet</string>
     <string name="feed_bubble_no_news_body">As soon as your loved ones share news, you\'ll see it here.</string>
-    <string name="feed_bubble_alone">You\'re the only one in this Miff for now</string>
+    <string name="feed_bubble_alone">No one else in this Miff yet</string>
     <string name="feed_bubble_orange">%1$s left %2$s %3$s</string>
     <string name="feed_bubble_red_stale">No news from %1$s since %2$s</string>
     <string name="feed_bubble_danger_named">%1$s is at %2$s</string>
@@ -504,6 +504,7 @@
     <string name="feed_locate_not_found">%1$s has no known position yet.</string>
     <string name="feed_locate_denied">We can\'t show %1$s\'s position right now. It appears when you both share.</string>
     <string name="feed_locate_offline">No connection right now. Try again once you\'re back online.</string>
+    <string name="feed_locate_unavailable">Can\'t show the position right now. Try again in a moment.</string>
 
     <!-- Profile tab: Miff cards -->
     <string name="profile_tab_miffs_title">My Miffs</string>

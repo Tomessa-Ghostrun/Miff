@@ -32,7 +32,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 ## Partie A — En-tête (3 min)
 
-- [ ] L'en-tête reste **en haut** quand on fait défiler. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) **et une petite coche** ; au centre le logo ; **aucune cloche**, le côté droit est vide.
+- [ ] L'en-tête reste **en haut** quand on fait défiler. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
 - [ ] Avec **une seule Miff** : le nom est dans une pastille **plate, sans flèche** (elle ne réagit pas au toucher). Avec **plusieurs Miffs** (compte Premium) : pastille avec flèche, liste avec **coche** sur la Miff affichée, « + Rejoindre / + Créer » (et seulement pour un Premium).
@@ -40,10 +40,10 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 ## Partie B — Cartes (5 min)
 
 - [ ] **Votre carte est la première**, avec « Toi », votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
-- [ ] La carte de B vient ensuite : prénom, **pastille d'état** (ex. « À la maison » avec l'icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] La carte de B vient ensuite : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
 - [ ] **Message** ouvre l'application SMS avec le numéro de B **préparé** (rien n'est envoyé) ; **Téléphone** ouvre le **composeur** avec le numéro (aucun appel lancé). Revenez avec « retour ».
 - [ ] Si un membre n'a pas de numéro (ancien compte) : seul le bouton position est visible.
-- [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise, pas de bouton position.
+- [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise ; il a quand même un bouton position (voir la partie D : « n'a pas encore de position connue »).
 - [ ] Un membre qui a **arrêté de partager** : « Partage arrêté », jamais rouge.
 - [ ] Batterie : après 1 h sans mise à jour du statut elle s'affiche **datée** (« 12 % · 16 h 02 ») ; après 24 h elle disparaît. **Aucune alerte de batterie faible.**
 - [ ] « Ajouter un proche » ouvre la feuille de partage (nom, code, lien). (À 15 membres le bouton devient « Cette Miff est bien remplie ! » : couvert par un test, pas à refaire à la main.)
@@ -60,7 +60,7 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 - [ ] **Plusieurs alertes** (B rouge et un troisième membre orange, ou deux comptes) : des **pastilles** apparaissent sous la bulle (la page courante est **allongée**), le **rouge d'abord**, on change de page en **glissant**, **rien ne défile tout seul**. Avec une seule alerte : pas de pastilles.
 - [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (vous, puis l'ordre d'arrivée).
 - [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
-- [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair) et **il y a toujours une icône** (coche, horloge, « ! ») en plus de la couleur.
+- [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent dans la pastille, et la bulle garde son petit dessin décoratif (étoile, horloge, « ! », sablier) : points validés par le PM le 2026-11-06.
 
 ## Partie D — « Localiser » (5 min)
 
@@ -69,9 +69,10 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 - [ ] « Ouvrir dans les cartes » ouvre Google Maps (ou l'appli de cartes) sur un **point**, **sans nom de personne ni de lieu**. Revenez.
 - [ ] Fermez la feuille (bouton, glissement vers le bas, retour système) : plus rien n'est affiché. (L'application Firebase garde une copie de la position dans la mémoire locale du téléphone jusqu'à la déconnexion : limite connue et assumée, elle n'apparaît nulle part dans Miff.) Rouvrez-la : une **nouvelle** lecture est faite (l'heure « Mesurée à » est celle de la console).
 - [ ] **Position de plus de 24 h** : dans la console, mettez `measuredAt` de B **il y a 30 h** : la feuille dit « Elle date d'hier à … : elle n'est plus affichée. », **sans** bouton de carte.
-- [ ] **Pas de position** : supprimez `positions/{uid B}` : « B n'a pas encore de position connue. »
+- [ ] **Pas de position** : supprimez `positions/{uid B}` : « B n'a pas encore de position connue. » Faites la même chose avec un proche **qui vient d'entrer et n'a pas de statut** (carte grise « Pas encore de nouvelles ») : le bouton position existe et la réponse est la même, calme.
+- [ ] **Imprévu** (facultatif, difficile à provoquer à la main) : si la lecture échoue pour une autre raison qu'un refus ou un réseau coupé (délai dépassé, quota atteint, connexion expirée), la feuille dit « Impossible d'afficher la position pour le moment. Réessaie dans un moment. » (jamais « Pas de connexion… » tant que le téléphone a du réseau). Cas couvert par des tests.
 - [ ] **Refus** : arrêtez **votre** partage (Miff > Partager mon statut), revenez au Feed : le bouton position a disparu. (Le message de refus « On ne peut pas afficher la position de B… » ne s'affiche que si le refus arrive pendant la lecture : cas couvert par un test.)
-- [ ] **Hors connexion** : mode avion, touchez le bouton : « Pas de connexion pour le moment. Réessaie dès que le réseau est revenu. » Aucun mot « erreur » ni « quota » dans aucun de ces cas.
+- [ ] **Hors connexion** : mode avion, touchez le bouton : « Pas de connexion pour le moment. Réessaie dès que le réseau est revenu. » (réservé à une vraie absence de réseau). Aucun mot « erreur » ni « quota » dans aucun de ces cas.
 
 ## Partie E — Hors connexion et états du Feed (6 min)
 
@@ -82,7 +83,7 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 - [ ] **Premier chargement** (désinstallez/réinstallez, ouvrez le Feed) : des formes grises avec « Chargement des nouvelles… », **aucun** « Tout va bien » ni couleur avant la lecture. Sur un réseau très lent, la phrase « Pas encore de nouvelles » n'apparaît qu'après une quinzaine de secondes.
 - [ ] **Pas de fausse alerte au réveil** : mettez B en orange (astuce console), ouvrez le Feed, **puis** remettez B au vert dans la console et rouvrez l'app (fermée puis ouverte) : l'orange ne doit **pas** s'afficher un instant avant le vert (le Feed attend la confirmation du serveur).
 - [ ] **Réseau coupé après un orange** : mode avion avec une alerte affichée : l'alerte reste, avec « Informations de … : reconnecte-toi pour les mettre à jour. »
-- [ ] **Miff sans proche** (compte seul dans sa Miff) : bulle grise « Tu es seul(e) dans cette Miff pour l'instant », votre carte, « Ajouter un proche ».
+- [ ] **Miff sans proche** (compte seul dans sa Miff) : bulle grise « Personne d'autre dans cette Miff pour l'instant », votre carte, « Ajouter un proche ».
 
 ## Partie F — « Partage de ton statut en cours… » (2 min)
 
@@ -101,4 +102,4 @@ Le Feed est le premier gros consommateur de lectures du plan gratuit (50 000 par
 
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
-La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 5 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.
+La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.

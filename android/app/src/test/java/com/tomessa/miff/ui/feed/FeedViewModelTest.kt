@@ -81,6 +81,7 @@ private class FakeStatusObserver : StatusObserver {
 private class FakePositionReader : PositionReader {
     var answer: PositionLookup = PositionLookup.NotFound
     var gate: CompletableDeferred<Unit>? = null
+    var failure: Exception? = null
     val reads = mutableListOf<Pair<String, String>>()
 
     override suspend fun read(
@@ -89,6 +90,7 @@ private class FakePositionReader : PositionReader {
     ): PositionLookup {
         reads += miffId to uid
         gate?.await()
+        failure?.let { throw it }
         return answer
     }
 }
@@ -562,7 +564,7 @@ class FeedViewModelTest {
         }
 
     @Test
-    fun locate_theFiveAnswers() =
+    fun locate_theSixAnswers() =
         runTest(dispatcher) {
             withMember { vm ->
                 val cases =
@@ -571,7 +573,7 @@ class FeedViewModelTest {
                         PositionLookup.Found(1.0, 2.0, base - 30 * hour) to LocateResult.Old::class,
                         PositionLookup.NotFound to LocateResult.NotFound::class,
                         PositionLookup.Denied to LocateResult.Denied::class,
-                        PositionLookup.Offline to LocateResult.Offline::class,
+                        PositionLookup.Failed to LocateResult.Unavailable::class,
                     )
                 cases.forEach { (lookup, expected) ->
                     positions.answer = lookup
@@ -597,16 +599,51 @@ class FeedViewModelTest {
         }
 
     @Test
-    fun locate_isRefusedForMyselfAndForAMemberWhoCannotBeLocated() =
+    fun locate_isRefusedForMyselfAndForSomebodyWhoIsNotInTheMiff() =
         runTest(dispatcher) {
             withMember { vm ->
                 vm.onLocate("me")
-                // "a" has no status yet (neutral): nothing to locate.
-                vm.onLocate("a")
                 vm.onLocate("nobody")
                 runCurrent()
                 assertEquals(LocateUiState.Idle, vm.locate.value)
                 assertTrue(positions.reads.isEmpty())
+            }
+        }
+
+    @Test
+    fun locate_aMemberWithNoStatusYet_canBeLocated_andTheAnswerIsCalm() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                // "a" has no status document yet (neutral), but shares: ticket 5.6, the button exists and "not found" is a calm answer.
+                positions.answer = PositionLookup.NotFound
+                vm.onLocate("a")
+                runCurrent()
+                assertEquals(LocateResult.NotFound, (vm.locate.value as LocateUiState.Shown).result)
+                assertEquals(listOf(MIFF_ID to "a"), positions.reads)
+            }
+        }
+
+    @Test
+    fun locate_anUnexpectedFailure_isTheSixthAnswer_neverNoConnection() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                // Quota reached, time exceeded, sign-in expired...: the reader says Failed, or the call itself throws.
+                positions.answer = PositionLookup.Failed
+                vm.onLocate("t")
+                runCurrent()
+                assertEquals(LocateResult.Unavailable, (vm.locate.value as LocateUiState.Shown).result)
+                vm.onLocateDismissed()
+                positions.failure = IllegalStateException("boom")
+                vm.onLocate("t")
+                runCurrent()
+                assertEquals(LocateResult.Unavailable, (vm.locate.value as LocateUiState.Shown).result)
+                vm.onLocateDismissed()
+                // "Unreachable" while the phone HAS a network is not "no connection" either.
+                positions.failure = null
+                positions.answer = PositionLookup.Offline
+                vm.onLocate("t")
+                runCurrent()
+                assertEquals(LocateResult.Unavailable, (vm.locate.value as LocateUiState.Shown).result)
             }
         }
 

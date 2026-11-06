@@ -395,18 +395,21 @@ class FeedViewModel(
         mutableLocate.value = LocateUiState.Loading(uid)
         locateJob =
             viewModelScope.launch {
-                val lookup =
-                    if (network.isOnline()) {
+                val online = network.isOnline()
+                val raw =
+                    if (online) {
                         try {
                             positions.read(content.miffId, uid)
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
-                            PositionLookup.Offline
+                            PositionLookup.Failed
                         }
                     } else {
                         PositionLookup.Offline
                     }
+                // "Pas de connexion" only for a real absence of network; anything unexpected is the sixth answer.
+                val lookup = Locate.reconcile(raw, online)
                 mutableLocate.value = LocateUiState.Shown(uid, firstName, Locate.interpret(lookup, nowMillis(), zone()))
             }
     }

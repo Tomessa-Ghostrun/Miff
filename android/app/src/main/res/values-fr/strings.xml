@@ -449,7 +449,7 @@
     <string name="feed_bubble_answered">%1$d sur %2$d ont donné des nouvelles</string>
     <string name="feed_bubble_no_news_title">Pas encore de nouvelles</string>
     <string name="feed_bubble_no_news_body">Dès que tes proches donneront des nouvelles, tu les verras ici.</string>
-    <string name="feed_bubble_alone">Tu es seul(e) dans cette Miff pour l\'instant</string>
+    <string name="feed_bubble_alone">Personne d\'autre dans cette Miff pour l\'instant</string>
     <string name="feed_bubble_orange">%1$s a quitté %2$s %3$s</string>
     <string name="feed_bubble_red_stale">Pas de nouvelles de %1$s depuis %2$s</string>
     <string name="feed_bubble_danger_named">%1$s est à %2$s</string>
@@ -480,6 +480,7 @@
     <string name="feed_locate_not_found">%1$s n\'a pas encore de position connue.</string>
     <string name="feed_locate_denied">On ne peut pas afficher la position de %1$s pour le moment. Elle apparaît quand vous partagez tous les deux.</string>
     <string name="feed_locate_offline">Pas de connexion pour le moment. Réessaie dès que le réseau est revenu.</string>
+    <string name="feed_locate_unavailable">Impossible d\'afficher la position pour le moment. Réessaie dans un moment.</string>
 
     <!-- Onglet Profil : cartes de Miff -->
     <string name="profile_tab_miffs_title">Mes Miffs</string>

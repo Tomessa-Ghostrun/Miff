@@ -26,8 +26,14 @@ sealed interface PositionLookup {
     /** The rules refused (reciprocity, sharing stopped, removal): ONE neutral message for all of them, nobody is told who stopped. */
     data object Denied : PositionLookup
 
-    /** The server could not be reached (or anything else that is not a refusal): "Pas de connexion pour le moment". */
+    /** There is no network: "Pas de connexion pour le moment". Only a real absence of network. */
     data object Offline : PositionLookup
+
+    /**
+     * Something unexpected that is neither a refusal nor a missing network (quota of the plan reached, time exceeded, sign-in expired, server
+     * trouble): "Impossible d'afficher la position pour le moment. Réessaie dans un moment." Never a technical word, never "quota".
+     */
+    data object Failed : PositionLookup
 }
 
 /** The coordinates of a recent position, kept only while the sheet is open. */
@@ -38,7 +44,7 @@ class PositionFix(
     override fun toString(): String = "PositionFix(redacted)"
 }
 
-/** What the sheet "Dernière position connue de {Prénom}" says (five states, ticket 5.6 and criteria L1 to L3). */
+/** What the sheet "Dernière position connue de {Prénom}" says (six calm answers: ticket 5.6, criteria L1 to L3, and the unexpected failure decided by the PM on 2026-11-06). */
 sealed interface LocateResult {
     /** Measured less than 24 h ago: the time of the measure, "ce n'est pas une position en direct", and the way to the maps of the system. */
     class Recent(
@@ -59,6 +65,9 @@ sealed interface LocateResult {
     data object Denied : LocateResult
 
     data object Offline : LocateResult
+
+    /** The sixth calm answer: something unexpected happened; try again in a moment (distinct from "Pas de connexion"). */
+    data object Unavailable : LocateResult
 }
 
 object Locate {
@@ -67,6 +76,20 @@ object Locate {
 
     /** Decimals kept for the map of the system: 5 (about one metre), the precision the position was written with. */
     private const val DECIMALS = 5
+
+    /**
+     * "Pas de connexion" is ONLY for a real absence of network: an "unreachable" answer while the phone HAS a network is something unexpected
+     * ([PositionLookup.Failed]), and an unexpected failure while the phone has NO network is the absence of network.
+     */
+    fun reconcile(
+        lookup: PositionLookup,
+        networkOnline: Boolean,
+    ): PositionLookup =
+        when {
+            lookup == PositionLookup.Offline && networkOnline -> PositionLookup.Failed
+            lookup == PositionLookup.Failed && !networkOnline -> PositionLookup.Offline
+            else -> lookup
+        }
 
     fun interpret(
         lookup: PositionLookup,
@@ -84,6 +107,10 @@ object Locate {
 
             PositionLookup.Offline -> {
                 LocateResult.Offline
+            }
+
+            PositionLookup.Failed -> {
+                LocateResult.Unavailable
             }
 
             is PositionLookup.Found -> {
