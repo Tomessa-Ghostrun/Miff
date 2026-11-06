@@ -102,6 +102,9 @@ struct SignInUiState: Equatable {
     var message: AuthMessage?
     /// Après un refus du panneau de consentement : une note rassurante (pas une erreur).
     var showAccountNotCreatedNote = false
+    /// Après une déconnexion forcée parce que le compte est utilisé sur un autre téléphone (SESS-3) : une information calme,
+    /// pas une erreur.
+    var showSessionReplacedNote = false
 }
 
 /// Écran de connexion (ticket §3 B).
@@ -128,6 +131,8 @@ final class SignInViewModel: ObservableObject {
             state.showAccountNotCreatedNote = true
         case .accountUnavailable:
             state.message = .accountUnavailable
+        case .sessionReplaced:
+            state.showSessionReplacedNote = true
         case nil:
             break
         }
@@ -146,15 +151,21 @@ final class SignInViewModel: ObservableObject {
         }
         if let blocked = blockingMessage() {
             state.message = blocked
-            state.showAccountNotCreatedNote = false
+            clearNotes()
             return
         }
         state.isLoading = true
         state.message = nil
-        state.showAccountNotCreatedNote = false
+        clearNotes()
         Task {
             await self.performEmailSignIn(email: cleanEmail, password: password)
         }
+    }
+
+    /// Les notes calmes (panneau refusé, compte utilisé sur un autre téléphone) disparaissent dès qu'on essaie de se connecter.
+    private func clearNotes() {
+        state.showAccountNotCreatedNote = false
+        state.showSessionReplacedNote = false
     }
 
     /// Ce qui empêche d'essayer maintenant : la pause après trop d'échecs, ou l'absence de réseau.
@@ -199,12 +210,12 @@ final class SignInViewModel: ObservableObject {
         }
         guard network.isOnline() else {
             state.message = .network
-            state.showAccountNotCreatedNote = false
+            clearNotes()
             return
         }
         state.isLoading = true
         state.message = nil
-        state.showAccountNotCreatedNote = false
+        clearNotes()
         Task {
             let result = await request()
             var message = result.message

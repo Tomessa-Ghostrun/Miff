@@ -357,6 +357,10 @@ final class SessionHarness {
     let cache: FakeCachePurger
     let accounts = FakeAccountRepository()
     let drafts = MemoryDraftStore()
+    let remote: FakeDeviceSessionRemote
+    let deviceStore = MemoryDeviceIdStore()
+    let device: DeviceSession
+    let network = FakeNetwork()
     let manager: SessionManager
 
     /// Ce qui était collecté au moment où le compte a été lu : ce doit être rien (critère X9).
@@ -370,6 +374,19 @@ final class SessionHarness {
         self.gateway = gateway
         tracker = AnalyticsTracker(sink: sink, isEnabled: { privacy.analyticsEnabled })
         cache = FakeCachePurger(timeline: timeline)
+        let remote = FakeDeviceSessionRemote(timeline: timeline)
+        let store = deviceStore
+        let counter = TestBox(0)
+        let device = DeviceSession(
+            remote: remote,
+            store: store,
+            makeIdentifier: {
+                counter.value += 1
+                return String(format: "test-device-id-%04d", counter.value)
+            }
+        )
+        self.remote = remote
+        self.device = device
         manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -380,6 +397,8 @@ final class SessionHarness {
                 tracker: tracker,
                 cache: cache,
                 teardown: teardown,
+                device: device,
+                network: network,
                 drafts: drafts
             )
         )
