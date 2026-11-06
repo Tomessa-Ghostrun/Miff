@@ -1,6 +1,8 @@
 package com.tomessa.miff.data.miff
 
 import com.tomessa.miff.data.auth.CachePurger
+import com.tomessa.miff.data.session.ActiveDevice
+import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.LocationAccess
@@ -226,6 +228,12 @@ class FirestoreMiffRepository(
     private val store: MiffStore,
     private val observer: MiffObserver,
     private val location: LocationAccessProbe,
+    /**
+     * "Un compte, un seul appareil" (SESS-2): the first status of a lot that starts to share (create, join, resume) carries the identifier of the session of this
+     * phone, which is verified against the server just before (a person acting by hand on a phone that was replaced is told the neutral "it did not work",
+     * never that access to a Miff was lost, criterion D3 / SES5).
+     */
+    private val device: ActiveDevice,
     private val newMiffId: () -> String,
     private val newCode: () -> String = { JoinCode.generate() },
     private val nowMillis: () -> Long = System::currentTimeMillis,
@@ -271,6 +279,12 @@ class FirestoreMiffRepository(
             }
         val miffId = newMiffId()
         val access = location.current()
+        val deviceId =
+            when (val clearance = device.clearance(recheck = true)) {
+                is Clearance.Cleared -> clearance.deviceId
+                Clearance.Replaced -> return CreateResult.Failed(MiffFailure.REFUSED)
+                Clearance.Unverified -> return CreateResult.Failed(MiffFailure.OFFLINE)
+            }
         val result =
             write {
                 store.commitWithProfile(uid) { profile ->
@@ -282,6 +296,7 @@ class FirestoreMiffRepository(
                         profile = profile,
                         membershipKey = keyFor(preparation.premium, miffId),
                         access = access,
+                        deviceId = deviceId,
                     )
                 }
             }
@@ -375,6 +390,12 @@ class FirestoreMiffRepository(
         preparation: JoinPreparation.Ready,
     ): JoinResult {
         val access = location.current()
+        val deviceId =
+            when (val clearance = device.clearance(recheck = true)) {
+                is Clearance.Cleared -> clearance.deviceId
+                Clearance.Replaced -> return JoinResult.Failed(MiffFailure.REFUSED)
+                Clearance.Unverified -> return JoinResult.Failed(MiffFailure.OFFLINE)
+            }
         val result =
             write {
                 store.commitWithProfile(uid) { profile ->
@@ -385,6 +406,7 @@ class FirestoreMiffRepository(
                         profile = profile,
                         membershipKey = keyFor(preparation.premium, preparation.miffId),
                         access = access,
+                        deviceId = deviceId,
                     )
                 }
             }
@@ -438,7 +460,14 @@ class FirestoreMiffRepository(
     ): MiffWriteResult {
         val writes: List<DocWrite> =
             if (enabled) {
-                MiffWrites.resumeSharing(miffId, uid, location.current())
+                // Resuming writes a status: the session of this phone is verified first. Stopping writes nothing of the kind (deletions carry no content).
+                val deviceId =
+                    when (val clearance = device.clearance(recheck = true)) {
+                        is Clearance.Cleared -> clearance.deviceId
+                        Clearance.Replaced -> return MiffWriteResult.Failed(MiffFailure.REFUSED)
+                        Clearance.Unverified -> return MiffWriteResult.Failed(MiffFailure.OFFLINE)
+                    }
+                MiffWrites.resumeSharing(miffId, uid, location.current(), deviceId)
             } else {
                 MiffWrites.stopSharing(miffId, uid)
             }

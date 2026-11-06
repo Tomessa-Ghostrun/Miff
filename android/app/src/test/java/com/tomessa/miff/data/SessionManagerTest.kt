@@ -452,8 +452,8 @@ class SessionManagerTest {
 
             assertEquals(RefuseResult.Done, result)
             assertEquals(
-                "delete first, then stop listeners, purge, close the session",
-                listOf("markPending", "delete", "teardown", "purge", "signOut"),
+                "release the session, delete the account, then stop listeners, purge, close the session",
+                listOf("markPending", "session-delete", "delete", "teardown", "purge", "signOut"),
                 h.timeline.entries,
             )
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
@@ -600,7 +600,10 @@ class SessionManagerTest {
 
             h.manager.signOut()
 
-            assertEquals(listOf("markPending", "teardown", "flush", "purge", "signOut"), h.timeline.entries)
+            assertEquals(
+                listOf("markPending", "teardown", "flush", "session-delete", "purge", "signOut"),
+                h.timeline.entries,
+            )
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
             assertNull(h.gateway.currentUid)
             assertFalse(h.privacy.analyticsEnabled.value)

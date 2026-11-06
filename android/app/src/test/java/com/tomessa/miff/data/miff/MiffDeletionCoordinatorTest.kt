@@ -34,6 +34,8 @@ class MiffDeletionCoordinatorTest {
     private val deleted = mutableListOf<String>()
     private var uid: String? = "uid-owner"
 
+    private var replaced = false
+
     private fun TestScope.coordinator() =
         MiffDeletionCoordinator(
             deletion =
@@ -48,6 +50,7 @@ class MiffDeletionCoordinatorTest {
             onStarted = { started += it },
             onDeleted = { deleted += it },
             retryPauseMillis = 1_000,
+            replaced = { replaced },
         )
 
     @Test
@@ -63,6 +66,24 @@ class MiffDeletionCoordinatorTest {
             assertTrue(pending.ids("uid-owner").isEmpty())
             assertEquals(listOf(MIFF_ID), deleted)
             assertEquals(listOf("uid-owner" to MIFF_ID), runs)
+        }
+
+    @Test
+    fun aPhoneThatWasReplaced_doesNotDeleteAnything_quietly_andKeepsTheMarker() =
+        runTest {
+            // SESS-2: the rules do not look at deletions, so the procedure itself asks the session before each try.
+            replaced = true
+            val c = coordinator()
+            c.start(MIFF_ID)
+            advanceUntilIdle()
+            assertTrue("no deletion was run", runs.isEmpty())
+            assertNull("no state is left on the screen", c.states.value[MIFF_ID])
+            assertEquals(
+                "the marker stays: taken up from the phone that holds the session",
+                setOf(MIFF_ID),
+                pending.ids("uid-owner"),
+            )
+            assertTrue(deleted.isEmpty())
         }
 
     @Test

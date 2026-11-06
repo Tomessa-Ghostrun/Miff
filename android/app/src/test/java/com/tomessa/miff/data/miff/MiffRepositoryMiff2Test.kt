@@ -6,6 +6,7 @@ import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.testsupport.CODE
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
 import com.tomessa.miff.testsupport.FakeMiffObserver
@@ -35,6 +36,7 @@ class MiffRepositoryMiff2Test {
             store = store,
             observer = FakeMiffObserver(),
             location = FakeLocationProbe(),
+            device = FakeActiveDevice(),
             newMiffId = { MIFF_ID },
             newCode = { drawn.removeFirstOrNull() ?: newCode },
             timeoutMillis = 1_000,

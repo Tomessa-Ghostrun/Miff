@@ -134,3 +134,19 @@ class FakeDeletionSession(
         timeline += "endSessionKeepingMarker"
     }
 }
+
+/** The session "un compte, un seul appareil" of the account that is deleted (SESS-2): the deletion is recorded in the same timeline as the other steps. */
+class FakeAccountSession(
+    private val timeline: Timeline = Timeline(),
+) : com.tomessa.miff.data.account.AccountSession {
+    val deleted = mutableListOf<String>()
+
+    /** Makes the next call fail (no acknowledgement of the server). */
+    val failures = ArrayDeque<Exception?>()
+
+    override suspend fun deleteSession(uid: String) {
+        timeline += "session.delete"
+        failures.removeFirstOrNull()?.let { throw it }
+        deleted += uid
+    }
+}

@@ -9,6 +9,7 @@ import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.privacy.BooleanStore
 import com.tomessa.miff.data.privacy.CollectionSwitch
 import com.tomessa.miff.data.privacy.PrivacySettings
+import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
@@ -323,8 +324,28 @@ class SessionHarness(
         }
     var teardownCalls = 0
 
-    val manager =
+    // SESS-2: the real session logic, on a fake server, a fake private file and a fake network.
+    val sessionNetwork = FakeNetwork()
+    val sessions = FakeSessionDocuments(timeline)
+    val deviceIds = MemoryDeviceIdStore()
+    var deviceCounter = 0
+    val device =
+        DeviceSession(
+            ids = deviceIds,
+            documents = sessions,
+            network = sessionNetwork,
+            currentUid = { gateway.currentUid },
+            scope = scope,
+            onReplaced = { manager.onDeviceReplaced() },
+            // Predictable and valid identifiers: "device-N-..." (16 characters at least).
+            newId = { "device-${++deviceCounter}-0123456789abcdef" },
+            nowMillis = { 1_000_000L },
+            retryPausesMillis = emptyList(),
+        )
+
+    val manager: SessionManager =
         SessionManager(
+            device = device,
             gateway = gateway,
             accounts = accounts,
             pending = pending,

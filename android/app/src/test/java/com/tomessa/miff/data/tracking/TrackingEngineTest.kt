@@ -11,6 +11,7 @@ import com.tomessa.miff.domain.tracking.PlaceFact
 import com.tomessa.miff.domain.tracking.TrackingLimits
 import com.tomessa.miff.domain.tracking.TransitionKind
 import com.tomessa.miff.domain.tracking.WriteBreaker
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeGeofences
 import com.tomessa.miff.testsupport.FakeLocal
 import com.tomessa.miff.testsupport.FakeMovement
@@ -47,9 +48,10 @@ class TrackingEngineTest {
     private val geofences = FakeGeofences()
     private val movement = FakeMovement()
     private val wake = FakeNetworkWake()
+    private val device = FakeActiveDevice()
     private val journal = RecordingJournal()
     private val engine =
-        TrackingEngine(env, store, local, position, geofences, movement, wake, journal, timeoutMillis = 5_000)
+        TrackingEngine(env, store, local, position, geofences, movement, wake, device, journal, timeoutMillis = 5_000)
 
     // The person is at (48.8566, 2.3522); `home` is under their feet, 100 m wide.
     private val lat = 48.8566
@@ -388,19 +390,45 @@ class TrackingEngineTest {
             assertTrue(store.readCalls > readsBefore)
         }
 
+    // R-LIEU-1 is deployed: the old workaround (a refusal answered by writing the time of the event into `lastUpdateAt`) is gone.
+
     @Test
-    fun aRefusedLastUpdate_isRetriedOnceWithTheLastUpdateMovedToTheEventTime() =
+    fun aDepartureAfter30Hours_isAPartialUpdate_withoutLastUpdateAt_soTheStoredOneIsKept() =
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
             engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             store.commits.clear()
-            // The status says "last update 30 hours ago": the rules refuse it; the second try moves it to the time of the departure.
+            env.now += 30 * hour
+            val left = env.now - minute
+            engine.onTransition(TransitionKind.EXIT, home.key, left)
+            val write = statusWrites().single()
+            assertEquals(Timestamp(Date(left)), write.data["presenceAt"])
+            assertFalse(
+                "the stored lastUpdateAt is not sent: the rules keep it whatever its age",
+                "lastUpdateAt" in write.data,
+            )
+        }
+
+    @Test
+    fun aRefusedStatus_isNeverRetriedWithTheLastUpdateMovedToTheEventTime() =
+        runTest {
+            share(miffA)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
+            store.commits.clear()
+            // Only the FIRST attempt is refused: if the engine tried again (the old workaround) the second one would be accepted and recorded.
             store.failuresByPath["miffs/miffA/status/uid1"] = ArrayDeque(listOf(refused()))
             env.now += 30 * hour
             engine.onTransition(TransitionKind.EXIT, home.key, env.now - minute)
-            val write = statusWrites().single()
-            assertEquals(Timestamp(Date(env.now - minute)), write.data["lastUpdateAt"])
+            assertTrue("one attempt, no second try", statusWrites().isEmpty())
+            assertTrue(JournalKind.STATUS_REFUSED in journal.kinds)
+            assertNull(
+                local.state!!
+                    .miffs
+                    .getValue(miffA)
+                    .pending,
+            )
         }
 
     // --- Offline (HOR1) and delay (STA3) ----------------------------------------------------------------------------------------------------
@@ -707,7 +735,7 @@ class TrackingEngineTest {
                     }
 
                     "/positions/" in write.path -> {
-                        assertEquals(setOf("lat", "lng", "measuredAt"), write.data.keys)
+                        assertEquals(setOf("lat", "lng", "measuredAt", "deviceId"), write.data.keys)
                     }
 
                     else -> {

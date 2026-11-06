@@ -3,6 +3,7 @@ package com.tomessa.miff.domain.miff
 import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FieldValue
 import com.tomessa.miff.domain.auth.ProfileDocument
+import com.tomessa.miff.domain.session.DeviceIds
 
 /*
  * SECURITY, for this file: the writes below are the contract with backend/firestore.rules. Every key of a document is always
@@ -74,8 +75,13 @@ object MiffWrites {
      * permission of the phone as it is, no coordinate. Without it the person could not read the others (backend/data-model.md
      * section 8, reciprocity ATK3).
      */
-    fun initialStatus(access: LocationAccess): Map<String, Any?> =
-        mapOf(
+    fun initialStatus(
+        access: LocationAccess,
+        deviceId: String,
+    ): Map<String, Any?> {
+        // "Un compte, un seul appareil" (SESS-2): the first status carries the identifier of the session like every other write of a status.
+        require(DeviceIds.isValid(deviceId)) { "device id shape" }
+        return mapOf(
             "presence" to "unknown",
             "placeId" to null,
             "presenceAt" to FieldValue.serverTimestamp(),
@@ -86,7 +92,9 @@ object MiffWrites {
             "locationAccess" to access.value,
             "escalationDueAt" to null,
             "updatedAt" to FieldValue.serverTimestamp(),
+            "deviceId" to deviceId,
         )
+    }
 
     private fun card(
         role: MiffRole,
@@ -120,6 +128,7 @@ object MiffWrites {
         profile: ProfileCopy,
         membershipKey: String,
         access: LocationAccess,
+        deviceId: String,
     ): List<DocWrite> {
         require(JoinCode.isValid(code)) { "join code shape" }
         val stored = MiffName.stored(name)
@@ -142,7 +151,7 @@ object MiffWrites {
             ),
             DocWrite("miffs/$miffId/members/$uid", WriteKind.SET, card(MiffRole.OWNER, profile, joinCode = null)),
             DocWrite("users/$uid/memberships/$membershipKey", WriteKind.SET, index(miffId)),
-            DocWrite("miffs/$miffId/status/$uid", WriteKind.SET, initialStatus(access)),
+            DocWrite("miffs/$miffId/status/$uid", WriteKind.SET, initialStatus(access, deviceId)),
         )
     }
 
@@ -154,12 +163,13 @@ object MiffWrites {
         profile: ProfileCopy,
         membershipKey: String,
         access: LocationAccess,
+        deviceId: String,
     ): List<DocWrite> {
         require(JoinCode.isValid(code)) { "join code shape" }
         return listOf(
             DocWrite("miffs/$miffId/members/$uid", WriteKind.SET, card(MiffRole.MEMBER, profile, joinCode = code)),
             DocWrite("users/$uid/memberships/$membershipKey", WriteKind.SET, index(miffId)),
-            DocWrite("miffs/$miffId/status/$uid", WriteKind.SET, initialStatus(access)),
+            DocWrite("miffs/$miffId/status/$uid", WriteKind.SET, initialStatus(access, deviceId)),
         )
     }
 
@@ -207,6 +217,7 @@ object MiffWrites {
         miffId: String,
         uid: String,
         access: LocationAccess,
+        deviceId: String,
     ): List<DocWrite> =
         listOf(
             DocWrite(
@@ -219,7 +230,7 @@ object MiffWrites {
                     "sharing.revokedAt" to null,
                 ),
             ),
-            DocWrite("miffs/$miffId/status/$uid", WriteKind.SET, initialStatus(access)),
+            DocWrite("miffs/$miffId/status/$uid", WriteKind.SET, initialStatus(access, deviceId)),
         )
 
     /**
@@ -338,6 +349,15 @@ object MiffWrites {
             DocWrite("miffs/$miffId/photos/$targetUid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/positions/$targetUid", WriteKind.DELETE),
         ) + codeChange(miffId, name, oldCode, newCode, oldCodeExists)
+
+    /**
+     * SESS-1 contract (backend/data-model.md, "Un compte, un seul appareil", cost table): the rules may read 20 documents per lot. With the identifier of the
+     * session an "activate sharing + status + position" lot costs 5 reads PER MIFF, a lot of positions 3 per Miff. This app writes ONE Miff per lot for both
+     * ([resumeSharing], a status, a position: each its own transaction), far below these limits; they are kept here so that nobody groups more without
+     * changing the contract.
+     */
+    const val MAX_MIFFS_PER_ACTIVATION_LOT = 3
+    const val MAX_MIFFS_PER_POSITION_LOT = 6
 
     /** Places per lot when a Miff is deleted: each deletion costs the rules 2 reads of its own, so 5 stay far from the 20. */
     const val PLACES_PER_LOT = 5
