@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Person, outline. Provisional drawing ported from the mockups of design/screens/suppression-compte (the design owner exports the final ones from Figma). 1.8 stroke, round ends, 24 grid. Colour given by the tint of the Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#222222"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M8.5,8 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 M4.5,20 c0,-3.6 3.4,-5.5 7.5,-5.5 s7.5,1.9 7.5,5.5" />
+</vector>

@@ -17,6 +17,7 @@ import com.tomessa.miff.ui.theme.StrokeAccent
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint30
 import com.tomessa.miff.ui.theme.colorBgSurface
+import com.tomessa.miff.ui.theme.colorTextError
 import com.tomessa.miff.ui.theme.colorTextOnAction
 import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.textBodyLarge
@@ -84,3 +85,40 @@ fun MiffSecondaryButton(
         Text(text = text, style = textBodyLarge)
     }
 }
+
+/**
+ * Destructive button (deletion of the account, decision of the PM): red text and thin red border on a WHITE background, never a
+ * red fill (contrast, and the tone stays calm). The meaning is carried by the words, not by the colour alone. Same height, radius
+ * and wrapping as [MiffButton]. Always the same weight as the safe choice next to it.
+ */
+@Composable
+fun MiffDestructiveButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = ShapeMd,
+        colors =
+            ButtonDefaults.outlinedButtonColors(
+                containerColor = colorBgSurface,
+                contentColor = colorTextError,
+                disabledContainerColor = colorBgSurface,
+                disabledContentColor = colorTextError.copy(alpha = DISABLED_ALPHA),
+            ),
+        border =
+            BorderStroke(
+                StrokeAccent,
+                if (enabled) colorTextError else colorTextError.copy(alpha = DISABLED_ALPHA),
+            ),
+        contentPadding = PaddingValues(horizontal = Spacing.m, vertical = Spacing.s),
+        modifier = modifier.padding(vertical = Spacing.xs).heightIn(min = Spacing.minTouchTarget),
+    ) {
+        Text(text = text, style = textBodyLarge)
+    }
+}
+
+private const val DISABLED_ALPHA = 0.4f

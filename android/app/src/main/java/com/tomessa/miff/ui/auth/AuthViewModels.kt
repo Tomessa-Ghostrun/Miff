@@ -127,6 +127,8 @@ data class SignInUiState(
     val googleMessage: AuthMessage? = null,
     /** After a refusal of the consent panel: a reassuring note (not an error). */
     val showAccountNotCreatedNote: Boolean = false,
+    /** The session closed during a deletion of the account: sign in with the same account and it is finished (AUTH-5, calm note). */
+    val showDeletionPendingNote: Boolean = false,
 )
 
 /** Sign-in screen (ticket section 3 B). */
@@ -143,6 +145,8 @@ class SignInViewModel(
         val notice = session.consumeNotice()
         if (notice == SignedOutNotice.ACCOUNT_NOT_CREATED) {
             mutableState.update { it.copy(showAccountNotCreatedNote = true) }
+        } else if (notice == SignedOutNotice.DELETION_PENDING) {
+            mutableState.update { it.copy(showDeletionPendingNote = true) }
         } else if (notice == SignedOutNotice.ACCOUNT_UNAVAILABLE) {
             mutableState.update { it.copy(message = AuthMessage.ACCOUNT_UNAVAILABLE) }
         }

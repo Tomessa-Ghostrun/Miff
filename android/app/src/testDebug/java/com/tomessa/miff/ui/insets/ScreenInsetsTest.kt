@@ -39,9 +39,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.data.account.AccountDeletionControls
+import com.tomessa.miff.data.account.AccountDeletionState
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.onboarding.DraftStep
 import com.tomessa.miff.data.profile.BitmapPhoto
+import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSummary
@@ -52,6 +55,7 @@ import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.settings.AppLanguage
 import com.tomessa.miff.testsupport.testPlace
+import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelUiState
 import com.tomessa.miff.ui.auth.PasswordResetScreen
@@ -98,8 +102,14 @@ import com.tomessa.miff.ui.profile.ProfileStepScreen
 import com.tomessa.miff.ui.profile.ProfileTabStatus
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileUiState
+import com.tomessa.miff.ui.settings.AccountDeletionContent
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountUiState
+import com.tomessa.miff.ui.settings.DeleteAccountInfoScreen
+import com.tomessa.miff.ui.settings.DeleteAccountReauthScreen
+import com.tomessa.miff.ui.settings.DeleteInfoUiState
+import com.tomessa.miff.ui.settings.DeleteInventory
+import com.tomessa.miff.ui.settings.DeleteReauthUiState
 import com.tomessa.miff.ui.settings.LanguageScreen
 import com.tomessa.miff.ui.settings.MyInfoLoad
 import com.tomessa.miff.ui.settings.MyInfoScreen
@@ -673,7 +683,91 @@ class ScreenInsetsTest {
     @Test
     fun account_isInsideTheSafeArea() =
         assertScreenIsSafe("account", withBackArrow = true) {
-            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {})
+            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {}, {})
+        }
+
+    @Test
+    fun deleteAccountInfo_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-info", withBackArrow = true) {
+            DeleteAccountInfoScreen(
+                state = DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, appleLinked = true),
+                onBack = {},
+                onContinue = {},
+                onRetry = {},
+                onContact = {},
+                onKeep = {},
+                onConfirm = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountReauth_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-reauth", withBackArrow = true) {
+            DeleteAccountReauthScreen(
+                state =
+                    DeleteReauthUiState(
+                        "emmanuelle@example.org",
+                        setOf(SignInProvider.PASSWORD, SignInProvider.GOOGLE),
+                        last = false,
+                    ),
+                onBack = {},
+                onSubmitPassword = {},
+                onGoogle = {},
+                onForgotPassword = {},
+                onCancelOrLater = {},
+                onContact = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountProgress_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-progress") {
+            AccountDeletionContent(
+                state = AccountDeletionState.Running(resumed = false),
+                controls = NoControls,
+                reauthHost = {},
+                onLeave = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountDone_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-done") {
+            AccountDeletionContent(
+                state = AccountDeletionState.Done(appleLinked = true),
+                controls = NoControls,
+                reauthHost = {},
+                onLeave = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountNeedsSignIn_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-needs-sign-in") {
+            AccountDeletionContent(
+                state = AccountDeletionState.NeedsSignIn,
+                controls = NoControls,
+                reauthHost = {},
+                onLeave = {},
+            )
+        }
+
+    @Test
+    fun accountLookupFailed_isInsideTheSafeArea() =
+        assertScreenIsSafe("lookup-failed") { AccountLookupFailedScreen({}, {}, {}) }
+
+    @Test
+    fun deleteAccount_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape {
+            DeleteAccountInfoScreen(
+                state = DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS),
+                onBack = {},
+                onContinue = {},
+                onRetry = {},
+                onContact = {},
+                onKeep = {},
+                onConfirm = {},
+            )
         }
 
     @Test
@@ -832,7 +926,7 @@ class ScreenInsetsTest {
     }
 
     @Test
-    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}) }
+    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}, {}) }
 
     @Test
     fun createMiff_nameStep_isInsideTheSafeArea() =
@@ -909,7 +1003,7 @@ class ScreenInsetsTest {
 
     @Test
     fun miffChoice_inLandscapeWithACutout_staysInsideIt() =
-        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}) }
+        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}, {}) }
 
     @Test
     fun createMiff_inLandscapeWithACutout_staysInsideIt() =
@@ -1117,5 +1211,22 @@ class ScreenInsetsTest {
     private companion object {
         /** Rounding of dp to pixels and of text boxes. */
         const val TOLERANCE = 2f
+    }
+
+    /** Controls that do nothing: the screens of the deletion are only LOOKED AT here. */
+    private object NoControls : AccountDeletionControls {
+        override val state = kotlinx.coroutines.flow.MutableStateFlow<AccountDeletionState>(AccountDeletionState.Idle)
+
+        override fun start() = Unit
+
+        override fun resume() = Unit
+
+        override fun retry() = Unit
+
+        override fun reauthenticated() = Unit
+
+        override fun acknowledge() = Unit
+
+        override fun signInAgain() = Unit
     }
 }
