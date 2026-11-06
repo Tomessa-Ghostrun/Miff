@@ -27,9 +27,11 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,9 +48,11 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -84,6 +88,7 @@ import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -184,7 +189,8 @@ fun FeedScreen(
     val density = LocalDensity.current
 
     // The header hides while the person scrolls down and is back AT ONCE when they scroll up (decision of the PM, 2026-11-06).
-    val header = remember { CollapsingHeaderState() }
+    // The last measured height is kept (rotation, font size): the first image already has the right room, no jump while it is measured again.
+    val header = rememberSaveable(saver = CollapsingHeaderState.Saver) { CollapsingHeaderState() }
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) {
             header.show()
@@ -220,7 +226,11 @@ fun FeedScreen(
                 .miffTopInsets()
                 .clipToBounds()
                 .nestedScroll(connection)
-                .semantics { paneTitle = paneName },
+                .semantics {
+                    paneTitle = paneName
+                    // The header is drawn after the list (it floats above it): a screen reader reads it FIRST all the same (see FeedHeader below).
+                    isTraversalGroup = true
+                },
     ) {
         when (state) {
             DirectoryState.Loading -> {
@@ -271,7 +281,11 @@ fun FeedScreen(
                 Modifier
                     .align(Alignment.TopCenter)
                     .onSizeChanged { header.onMeasured(it.height) }
-                    .graphicsLayer { translationY = header.offsetPx },
+                    .graphicsLayer { translationY = header.offsetPx }
+                    .semantics {
+                        isTraversalGroup = true
+                        traversalIndex = HEADER_TRAVERSAL_INDEX
+                    },
             pill = {
                 val ready = state as? DirectoryState.Ready
                 when {
@@ -453,12 +467,22 @@ private fun RefreshAnnouncement(
     refreshing: Boolean,
     stale: Boolean,
 ) {
-    var happened by remember { mutableStateOf(false) }
-    LaunchedEffect(refreshing) { if (refreshing) happened = true }
+    // 0 = nothing to say, 1 = a reading is under way, 2 = it has just ended. "Informations actualisées" is said ONCE, when a reading ends, never
+    // again later (for example when the network comes back).
+    var phase by remember { mutableIntStateOf(0) }
+    LaunchedEffect(refreshing) {
+        if (refreshing) {
+            phase = 1
+        } else if (phase == 1) {
+            phase = 2
+            delay(REFRESH_DONE_ANNOUNCEMENT_MILLIS)
+            phase = 0
+        }
+    }
     val text =
         when {
             refreshing -> stringResource(R.string.feed_refresh_started_a11y)
-            happened && !stale -> stringResource(R.string.feed_refresh_done_a11y)
+            phase == 2 && !stale -> stringResource(R.string.feed_refresh_done_a11y)
             else -> ""
         }
     Box(
@@ -645,3 +669,9 @@ private fun NoMiff(
         )
     }
 }
+
+/** A screen reader reads the header (avatar, logo, Miff) before the list although it is drawn after it: the lowest index of the screen. */
+internal const val HEADER_TRAVERSAL_INDEX = -1f
+
+/** The sentence "Informations actualisées" stays this long in its node, then the node is empty again. */
+private const val REFRESH_DONE_ANNOUNCEMENT_MILLIS = 3_000L

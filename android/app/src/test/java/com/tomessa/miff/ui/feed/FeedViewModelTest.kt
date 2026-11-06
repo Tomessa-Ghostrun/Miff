@@ -886,4 +886,104 @@ class FeedViewModelTest {
                 assertTrue(vm.content().bubble is Bubble.AllGood)
             }
         }
+
+    @Test
+    fun refresh_changingMiffDuringTheReading_neverPutsTheStatusesOfAOnTheCardsOfB() =
+        runTest(dispatcher) {
+            val otherId = "ZyXwVuTsRqPoNmLkJiHg"
+            repo.myMiffsResult =
+                MyMiffsLoad.Loaded(
+                    listOf(MiffSummary(MIFF_ID, "Chez nous"), MiffSummary(otherId, "Les copains")),
+                    emptyList(),
+                    premium = true,
+                    fromCache = false,
+                )
+            directory.refresh()
+            val feedA = statuses.enqueue()
+            val feedB = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feedA.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            assertTrue(vm.content().bubble is Bubble.AllGood)
+            // The server is being read for A ...
+            refresher.gate = CompletableDeferred()
+            refresher.answer = ServerRead.Fresh(mapOf("me" to status(), "t" to status()))
+            vm.onRefresh()
+            runCurrent()
+            assertTrue(vm.refreshing.value)
+            // ... and the person chooses B, whose statuses have not answered yet.
+            vm.onSelect(otherId)
+            runCurrent()
+            repo.observer.flowOf(otherId).tryEmit(
+                MiffObservation.Data(
+                    MiffSnapshot(
+                        miffDetails(id = otherId, name = "Les copains", owner = "me"),
+                        listOf(member("me", "Camille"), member("t", "Thomas")),
+                        listOf(testPlace("p1", "Chez nous")),
+                        fromCache = false,
+                    ),
+                ),
+            )
+            runCurrent()
+            refresher.gate?.complete(Unit)
+            runCurrent()
+            assertFalse(vm.refreshing.value)
+            // The answer about A is dropped: B still waits for ITS statuses (the skeleton), nothing of A is on its cards.
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
+            // B's own statuses arrive: only they are drawn (Thomas has said nothing here).
+            feedB.trySend(StatusFeed.Data(mapOf("me" to status()), fromCache = false))
+            runCurrent()
+            val content = vm.content()
+            assertEquals(otherId, content.miffId)
+            assertEquals(StatusLevel.NEUTRAL, content.cards.first { it.member.uid == "t" }.level)
+            assertTrue(content.banners.none { it is FeedBanner.Offline })
+            job.cancel()
+        }
+
+    @Test
+    fun refresh_changingMiffDuringTheReading_theUnreachableMentionOfAIsNotCarriedToB() =
+        runTest(dispatcher) {
+            val otherId = "ZyXwVuTsRqPoNmLkJiHg"
+            repo.myMiffsResult =
+                MyMiffsLoad.Loaded(
+                    listOf(MiffSummary(MIFF_ID, "Chez nous"), MiffSummary(otherId, "Les copains")),
+                    emptyList(),
+                    premium = true,
+                    fromCache = false,
+                )
+            directory.refresh()
+            val feedA = statuses.enqueue()
+            val feedB = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feedA.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            refresher.gate = CompletableDeferred()
+            refresher.answer = ServerRead.Unreachable
+            vm.onRefresh()
+            runCurrent()
+            vm.onSelect(otherId)
+            runCurrent()
+            repo.observer.flowOf(otherId).tryEmit(
+                MiffObservation.Data(
+                    MiffSnapshot(
+                        miffDetails(id = otherId, name = "Les copains", owner = "me"),
+                        listOf(member("me", "Camille"), member("t", "Thomas")),
+                        listOf(testPlace("p1", "Chez nous")),
+                        fromCache = false,
+                    ),
+                ),
+            )
+            feedB.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            refresher.gate?.complete(Unit)
+            runCurrent()
+            assertTrue(vm.content().banners.none { it is FeedBanner.Offline })
+            job.cancel()
+        }
 }

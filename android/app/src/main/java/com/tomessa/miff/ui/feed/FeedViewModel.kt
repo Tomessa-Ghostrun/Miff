@@ -308,6 +308,9 @@ class FeedViewModel(
         piece.value = MiffPiece.Loading(miffId)
         // What was said about another Miff is never drawn on this one.
         statusView.value = StatusesView.Waiting
+        // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
+        cacheGraceOver.value = false
+        staleAfterRefresh.value = false
         coroutineScope {
             launch {
                 repository.observe(miffId).collect { observation -> handle(miffId, observation) }
@@ -452,7 +455,7 @@ class FeedViewModel(
                     } catch (e: Exception) {
                         ServerRead.Unreachable
                     }
-                applyRefresh(answer, readStatuses)
+                applyRefresh(miffId, answer, readStatuses)
             } finally {
                 mutableRefreshing.value = false
             }
@@ -460,9 +463,12 @@ class FeedViewModel(
     }
 
     private fun applyRefresh(
+        miffId: String,
         answer: ServerRead,
         askedForStatuses: Boolean,
     ) {
+        // The person may have chosen another Miff (Premium) while the server was read: what was said about A is never put on B.
+        if ((piece.value as? MiffPiece.Data)?.miffId != miffId) return
         when (answer) {
             ServerRead.Unreachable -> {
                 staleAfterRefresh.value = true

@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasScrollAction
@@ -334,13 +335,59 @@ class FeedHeaderScrollTest {
     @Test
     fun theStartOfARefresh_isAnnouncedPolitely_andItsEnd_whenTheFeedIsUpToDate() {
         var refreshing by mutableStateOf(false)
+        composeRule.mainClock.autoAdvance = false
         composeRule.setContent { Screen(FeedUiState.Ready(content(3)), refreshing = refreshing) }
+        composeRule.mainClock.advanceTimeBy(100)
         composeRule.onAllNodesWithContentDescription("Actualisation en cours").assertCountEquals(0)
         composeRule.runOnIdle { refreshing = true }
-        composeRule.waitForIdle()
+        composeRule.mainClock.advanceTimeBy(100)
         composeRule.onNodeWithContentDescription("Actualisation en cours").assertExists()
         composeRule.runOnIdle { refreshing = false }
-        composeRule.waitForIdle()
+        composeRule.mainClock.advanceTimeBy(100)
         composeRule.onNodeWithContentDescription("Informations actualisées").assertExists()
+        // Said once: a few seconds later the node is empty again, so that nothing is announced a second time later on.
+        composeRule.mainClock.advanceTimeBy(4_000)
+        composeRule.onAllNodesWithContentDescription("Informations actualisées").assertCountEquals(0)
+    }
+
+    @Test
+    fun theEndOfARefresh_isNotAnnounced_whenNoRefreshHappened() {
+        composeRule.mainClock.autoAdvance = false
+        composeRule.setContent { Screen(FeedUiState.Ready(content(3)), refreshing = false) }
+        composeRule.mainClock.advanceTimeBy(5_000)
+        composeRule.onAllNodesWithContentDescription("Informations actualisées").assertCountEquals(0)
+    }
+
+    @Test
+    fun forTalkBack_theHeaderIsReadFirst_beforeTheList() {
+        composeRule.setContent { Screen(FeedUiState.Ready(content(15))) }
+        composeRule.waitForIdle()
+        val indexes =
+            composeRule
+                .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.TraversalIndex), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.TraversalIndex] }
+        assertTrue(
+            "the header carries the lowest traversal index: $indexes",
+            indexes.any { it == HEADER_TRAVERSAL_INDEX },
+        )
+        assertTrue("the header is read before the list", HEADER_TRAVERSAL_INDEX < 0f)
+    }
+
+    @Test
+    fun theLastMeasuredHeightOfTheHeader_survivesARotation_withoutAJumpOfOneImage() {
+        val saved = CollapsingHeaderState.Saver
+        val restored =
+            with(saved) {
+                val original = CollapsingHeaderState()
+                original.onMeasured(200)
+                val value =
+                    androidx.compose.runtime.saveable
+                        .SaverScope { true }
+                        .save(original)
+                restore(requireNotNull(value))
+            }
+        assertEquals(200, requireNotNull(restored).heightPx)
+        assertEquals(0f, restored.offsetPx, 0f)
     }
 }

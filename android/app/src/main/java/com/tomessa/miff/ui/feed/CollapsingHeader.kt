@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -31,13 +32,15 @@ import androidx.compose.ui.platform.LocalContext
 /**
  * The position of the header: 0 = fully shown, -[heightPx] = fully hidden. Plain state with no Android dependency: the rules below are tested on the JVM.
  */
-class CollapsingHeaderState {
+class CollapsingHeaderState(
+    initialHeightPx: Int = 0,
+) {
     /** The translation of the header in pixels (0 or negative). Read in the draw phase. */
     var offsetPx by mutableFloatStateOf(0f)
         private set
 
     /** Height of the header with its margins, measured. 0 until it is measured: nothing hides before. */
-    var heightPx by mutableIntStateOf(0)
+    var heightPx by mutableIntStateOf(initialHeightPx)
         private set
 
     /**
@@ -74,6 +77,12 @@ class CollapsingHeaderState {
     suspend fun animateToShown() {
         if (offsetPx == 0f) return
         animate(initialValue = offsetPx, targetValue = 0f) { value, _ -> offsetPx = value }
+    }
+
+    companion object {
+        /** Only the last measured height survives a rotation or a change of font size (the header itself is shown again): no jump of one image. */
+        val Saver: Saver<CollapsingHeaderState, Int> =
+            Saver(save = { it.heightPx }, restore = { CollapsingHeaderState(it) })
     }
 }
 
