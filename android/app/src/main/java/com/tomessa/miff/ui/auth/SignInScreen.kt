@@ -57,6 +57,7 @@ fun SignInScreen(
             MessageText(text = stringResource(R.string.auth_session_replaced_notice), isError = false)
             Spacer(Modifier.size(Spacing.m))
         }
+
         if (state.showDeletionPendingNote) {
             MessageText(text = stringResource(R.string.settings_delete_signin_again), isError = false)
             Spacer(Modifier.size(Spacing.m))

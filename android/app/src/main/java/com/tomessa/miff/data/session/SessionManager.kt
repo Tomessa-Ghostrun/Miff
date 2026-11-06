@@ -476,6 +476,8 @@ class SessionManager(
     private suspend fun endBecauseReplaced() {
         withContext(NonCancellable) {
             if (ending || gateway.currentUid == null) return@withContext
+            // During a deletion of the account the session is handled by the deletion itself: no forced sign-out and never the "another phone" note.
+            if (currentDestination() == AppDestination.ACCOUNT_DELETION) return@withContext
             ending = true
             device.forget()
             cache.markPurgePending()
@@ -593,16 +595,13 @@ class SessionManager(
     }
 
     /**
-     * Reads the account and, at the same time, verifies the session of this phone (null when [checkSession] is false). One place for both, so that the
-     * launch of an account in the middle of its deletion (AUTH-5a) can skip the session without touching the rest of the routing.
+     * Reads the account and, at the same time, verifies the session of this phone. Reached only AFTER [resolveAccountDeletion] (see [resolveCurrent]):
+     * an account whose deletion is under way never gets its session verified, nor written.
      */
-    private suspend fun readAccountAndCheckSession(
-        uid: String,
-        checkSession: Boolean = true,
-    ): Pair<AccountLoad, Ensured?> =
+    private suspend fun readAccountAndCheckSession(uid: String): Pair<AccountLoad, Ensured> =
         coroutineScope {
-            val check = if (checkSession) async { device.ensure(uid) } else null
-            accounts.load(uid) to check?.await()
+            val check = async { device.ensure(uid) }
+            accounts.load(uid) to check.await()
         }
 
     /**
@@ -614,6 +613,12 @@ class SessionManager(
         uid: String,
         newAccount: Boolean = false,
     ): AuthFailure? {
+        if (deletionMarker?.read()?.uid == uid) {
+            // The same account signs in again while its deletion is pending: it is going away, NO session is written for it (the deletion resumes
+            // and deletes whatever session is there).
+            device.suspendForDeletion()
+            return null
+        }
         if (!device.begin(uid)) {
             // A NEW account (e-mail sign-up) is never undone: it exists, its terms were just accepted on this phone, and a second attempt to create it would
             // only say "this address is already used". It stays signed in; the watcher writes the session (no identifier here + no session there =
@@ -690,6 +695,8 @@ class SessionManager(
             ending = false
             sessionActive = true
             mutableDeletionBlocked.value = true
+            // The account is kept (SESS-2): this phone is the active one again; its session is verified (and written back if the step that deleted it ran).
+            device.reopen()
             resolveCurrent()
         }
     }
@@ -717,6 +724,8 @@ class SessionManager(
             ending = true
             sessionActive = true
             mutableState.value = SessionState.Ready(AppDestination.ACCOUNT_DELETION)
+            // SESS-2: our own deletion of the session (step 2 bis) must not look like a replacement, and nothing is verified or written meanwhile.
+            device.suspendForDeletion()
             stopEverything()
         }
     }
@@ -749,6 +758,8 @@ class SessionManager(
             privacy.eraseCollectedData()
             accountSnapshot = null
             generation++
+            // The identifier of the deleted account is forgotten (the session was deleted at step 2 bis).
+            device.release(null)
             gateway.signOut()
             deletionMarker?.clear()
         }

@@ -46,6 +46,12 @@ class FirestoreSessionDocuments(
             }.await()
     }
 
+    override suspend fun delete(uid: String) {
+        val db = firestore()
+        val ref = reference(db, uid)
+        db.runTransaction { transaction -> transaction.delete(ref) }.await()
+    }
+
     override suspend fun read(uid: String): RemoteSession {
         val snapshot = reference(firestore(), uid).get(Source.SERVER).await()
         return if (snapshot.exists()) {

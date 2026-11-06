@@ -61,6 +61,9 @@ interface SessionDocuments {
         deviceId: String,
     )
 
+    /** Deletes the session whoever holds it (deletion of the account only). Throws when the server did not confirm. */
+    suspend fun delete(uid: String)
+
     /** What the SERVER says (never the cache). Throws when it cannot be reached. */
     suspend fun read(uid: String): RemoteSession
 
@@ -351,6 +354,41 @@ class DeviceSession(
             // Given back: nothing is verified, written or rewritten for this account until the next sign-in.
             closed = true
         }
+    }
+
+    /**
+     * Deletion of the account (AUTH-5, step 2 bis): this phone stops listening and stops writing, and the session document is deleted whoever holds it
+     * (the account is going away; the other phones see it vanish and sign out). The deletion must be CONFIRMED: [timeoutMillis] and any failure are
+     * THROWN, so that the deletion of the account pauses and carries on later; the identifier is forgotten only after the acknowledgement. The state stays
+     * "closed" (nothing verified, nothing written, never a new session) until [reopen] or the next sign-in.
+     */
+    suspend fun releaseForAccountDeletion(uid: String) {
+        suspendForDeletion()
+        lock.withLock {
+            withTimeout(timeoutMillis) { documents.delete(uid) }
+            ids.clear()
+            ids.clearReplaced()
+            revoked = false
+        }
+    }
+
+    /**
+     * A deletion of the account starts (or is taken up again): stops listening (our own deletion of the session must not look like a replacement) and
+     * closes the session. Nothing is deleted here.
+     */
+    fun suspendForDeletion() {
+        stopWatching()
+        verifiedAtMillis = NEVER
+        closed = true
+    }
+
+    /**
+     * The deletion of the account was cancelled (a Miff showed up): the account is kept, this phone is the active one again. The session is verified at
+     * the next [ensure]: still ours = fine; deleted by the step that ran (no identifier + no session) = a new one is written; held by another phone = replaced.
+     */
+    fun reopen() {
+        closed = false
+        verifiedAtMillis = NEVER
     }
 
     /**

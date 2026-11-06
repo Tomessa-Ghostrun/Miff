@@ -8,6 +8,7 @@ import com.tomessa.miff.data.account.AccountDeletion
 import com.tomessa.miff.data.account.AccountDeletionController
 import com.tomessa.miff.data.account.AccountDeletionMarker
 import com.tomessa.miff.data.account.AccountDeletionProcedure
+import com.tomessa.miff.data.account.AccountSession
 import com.tomessa.miff.data.account.FirestoreAccountDataStore
 import com.tomessa.miff.data.account.SharedPreferencesAccountDeletionMarker
 import com.tomessa.miff.data.auth.AccountRepository
@@ -484,7 +485,13 @@ class AppContainer(
 
     /** The deletion of an account without Miff (AUTH-5a); the Miffs are AUTH-5b. */
     val accountDeletionProcedure: AccountDeletionProcedure by lazy {
-        AccountDeletion(store = accountDataStore, gateway = authGateway, cache = cachePurger)
+        AccountDeletion(
+            store = accountDataStore,
+            gateway = authGateway,
+            cache = cachePurger,
+            // SESS-2: the session of the account goes before its profile, with the acknowledgement of the server.
+            session = AccountSession { uid -> deviceSession.releaseForAccountDeletion(uid) },
+        )
     }
 
     /**

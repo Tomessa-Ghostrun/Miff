@@ -116,6 +116,15 @@ class FakeSessionDocuments(
         return current(uid)
     }
 
+    /** Deletion of the account: whoever holds the session (idempotent). */
+    override suspend fun delete(uid: String) {
+        check()
+        sessions.remove(uid)
+        changes += "delete-any:$uid"
+        timeline += "session-delete-any"
+        live.tryEmit(uid to current(uid))
+    }
+
     override suspend fun deleteIfMine(
         uid: String,
         deviceId: String,

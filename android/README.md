@@ -372,7 +372,7 @@ Ticket `docs/tickets/session-appareil-unique.md`, contrat `backend/data-model.md
 
 ## L'Update : photo du moment avec sa position, pastille, bulle, photo dans le Feed (tickets UPDATE-1, UPDATE-2, FEED-4)
 
-Ticket `docs/tickets/update.md` (décisions D16 à D26), fiche `design/screens/update.md`, recette `docs/qa/checklists/update-android-recette-pm.md`. Détail dans `CHANGELOG.md` (0.13.0).
+Ticket `docs/tickets/update.md` (décisions D16 à D26), fiche `design/screens/update.md`, recette `docs/qa/checklists/update-android-recette-pm.md`. Détail dans `CHANGELOG.md` (0.14.0).
 
 - **Où** : `domain/update/` (format de la photo, position, écritures, garde-fou, bulle : pur et testé), `data/update/` (encodeur, transaction, publication, nettoyage), `data/feed/PhotoReader.kt` (lecture et copie en mémoire des photos des proches), `data/tracking/PhotoPositionSource.kt` (la **seule** lecture d'une position hors détection, parce que `PermissionPrivacyTest` impose que toute position soit lue dans `data/tracking`), `ui/update/` (écran, viseur CameraX, bulle), `ui/feed/FeedPhoto.kt` (fenêtre sur la carte et plein écran).
 - **Règle d'or** : la photo est **toujours** publiée avec sa position (`lat`, `lng`, `measuredAt` ensemble, décision du PM du 2026-11-06) et **jamais** sans photo (D16). Le statut est écrit par `TrackingWrites.photoStatus` (avec `deviceId`, SESS-2) dans la **même transaction** que la photo, par lots de 5 Miffs ; rien n'est écrit hors connexion ni en file.
