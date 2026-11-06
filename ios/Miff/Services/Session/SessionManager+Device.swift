@@ -41,10 +41,7 @@ extension SessionManager {
     /// Lancement et « Réessayer » avec un compte connecté : vrai = l'app peut lire le compte. Faux = la suite est déjà réglée (écran
     /// « Réessayer » ou déconnexion forcée).
     func prepareDeviceSession(uid: String) async -> Bool {
-        // Une connexion commencée puis interrompue (processus tué, réseau coupé) laisse un candidat sur disque : elle est reprise.
-        if device.hasPendingBegin {
-            pendingDeviceBegin = true
-        }
+        // « Réessayer » après une connexion sans accusé dans CE processus : reprise explicite de la place.
         if pendingDeviceBegin {
             return await resumeDeviceBegin(uid: uid)
         }
@@ -60,6 +57,14 @@ extension SessionManager {
         // Injoignable : on avance (hors ligne personne n'est déconnecté), mais aucune écriture ne part sans confirmation.
         if deviceWatchers.isEmpty {
             startDeviceWatch(uid: uid)
+        }
+        // Une connexion interrompue (processus tué, réseau coupé) a laissé un candidat sur disque. La reprise AUTOMATIQUE a lu le
+        // serveur d'abord (`DeviceSession.check`) : confirmée, ou remplacée (traitée plus haut). Sinon le serveur n'a pas répondu :
+        // « Réessayer » (reprise explicite) ou le retour du réseau (reprise automatique) terminera.
+        if device.hasPendingBegin {
+            pendingDeviceBegin = true
+            setState(.lookupFailed)
+            return false
         }
         return true
     }
@@ -116,11 +121,16 @@ extension SessionManager {
         var stream = firstStream
         var restarts = 0
         while !Task.isCancelled {
+            let startedAt = Date()
             for await remote in stream {
                 _ = await reviewDeviceSession(uid: uid, incoming: remote)
             }
             if Task.isCancelled {
                 return
+            }
+            // Une écoute qui a tenu une période saine remet le compteur à zéro : une panne rare, des heures plus tard, est relancée.
+            if Date().timeIntervalSince(startedAt) >= deviceWatchHealthySeconds {
+                restarts = 0
             }
             device.markUnverified()
             guard restarts < deviceWatchRestartPauses.count else {
@@ -195,7 +205,19 @@ extension SessionManager {
         guard let uid = gateway.currentUid else {
             return
         }
-        _ = await beginDeviceSession(uid: uid)
+        // Appelée avec `ending` encore vrai (voir `refuseConsentPanel`) : `device.begin` directement, sans le garde de
+        // `beginDeviceSession`. `begin` lève le marqueur « révoqué » posé à la suppression de la session.
+        pendingDeviceBegin = true
+        let confirmed = await device.begin(uid: uid)
+        guard gateway.currentUid == uid else {
+            return
+        }
+        if deviceWatchers.isEmpty {
+            startDeviceWatch(uid: uid)
+        }
+        if confirmed {
+            pendingDeviceBegin = false
+        }
     }
 
     // MARK: - Fin
@@ -222,7 +244,10 @@ extension SessionManager {
         }
         let deleted = await device.deleteSession(uid: uid, online: network.isOnline())
         if deleted {
-            device.clearLocal()
+            // Fermé tout de suite (marqueur « révoqué ») : la réauthentification demandée avant la suppression du compte peut
+            // durer des minutes, et aucune vérification ni aucun réveil ne doit réécrire une session d'ici là. Si le compte est
+            // gardé finalement, `restoreDeviceSession` rouvre (`begin` lève le marqueur).
+            device.forget()
         }
         return deleted
     }

@@ -50,7 +50,7 @@ final class DeviceSessionRobustnessTests: XCTestCase {
 
         XCTAssertFalse(started)
         XCTAssertEqual(verdict, .confirmed, "jamais « remplacé » : la connexion inachevée est reprise")
-        XCTAssertEqual(remote.writtenIds, ["test-device-id-0001", "test-device-id-0001"], "le même identifiant")
+        XCTAssertEqual(remote.writtenIds, ["test-device-id-0001"], "l'écriture avait abouti : rien à réécrire")
         XCTAssertEqual(store.read(), .confirmed("test-device-id-0001"))
         XCTAssertEqual(relaunched.currentDeviceId, "test-device-id-0001")
     }

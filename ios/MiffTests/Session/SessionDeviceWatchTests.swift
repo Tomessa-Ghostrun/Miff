@@ -110,7 +110,7 @@ final class SessionDeviceWatchTests: XCTestCase {
 
         XCTAssertEqual(harness.manager.state, ready(.feed))
         XCTAssertNil(harness.manager.consumeNotice())
-        XCTAssertEqual(harness.remote.writtenIds, ["test-device-id-0001"], "le même identifiant")
+        XCTAssertTrue(harness.remote.writtenIds.isEmpty, "écriture déjà passée : confirmation locale seule")
         XCTAssertFalse(harness.deviceStore.isCandidate)
         XCTAssertEqual(harness.device.currentDeviceId, "test-device-id-0001")
     }

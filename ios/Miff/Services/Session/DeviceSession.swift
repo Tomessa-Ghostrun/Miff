@@ -8,7 +8,10 @@ import Foundation
 ///   sur le serveur (un processus tué entre l'écriture et l'enregistrement ne laisse pas une session que l'appareil ne reconnaît
 ///   pas), puis CONFIRMÉ après l'accusé. Un candidat n'est jamais jugé comme une session active : il est réutilisé par l'essai
 ///   suivant (une écriture tardive d'un essai précédent, validée par le serveur après coup, écrit alors le MÊME identifiant et ne
-///   peut pas écraser une session plus récente) ;
+///   peut pas écraser une session plus récente). La reprise AUTOMATIQUE d'un candidat (lancement, retour du réseau : `check`)
+///   LIT D'ABORD le serveur : session = candidat ou absente, on confirme ou on écrit ; session d'un AUTRE identifiant (la personne
+///   s'est connectée ailleurs depuis), l'appareil est remplacé et le candidat abandonné. Seul un appel explicite à `begin`
+///   (connexion, « Réessayer ») reprend la place ;
 /// - `currentDeviceId` ne donne un identifiant que si le serveur a CONFIRMÉ que la session est celle de cet appareil : c'est la
 ///   seule source d'identifiant pour une écriture de statut ou de position (LOC-4b), donc « pas de confirmation = pas d'écriture » ;
 /// - une session différente, ou disparue alors que l'appareil avait un identifiant, est un REMPLACEMENT ; une session qui existe
@@ -157,9 +160,8 @@ final class DeviceSession {
         switch store.read() {
         case .unreadable:
             return .unverified
-        case .candidate:
-            let confirmedNow = await beginUnlocked(uid: uid)
-            return confirmedNow ? .confirmed : .unverified
+        case .candidate(let candidate):
+            return await resumeCandidateUnlocked(candidate, uid: uid)
         case .absent, .confirmed:
             break
         }
@@ -167,6 +169,30 @@ final class DeviceSession {
             return .unverified
         }
         return await judgeUnlocked(read, uid: uid)
+    }
+
+    /// Reprise AUTOMATIQUE d'une connexion non confirmée : le serveur est lu d'abord, pour ne jamais chasser un autre appareil qui
+    /// s'est connecté entre-temps (la dernière connexion réelle gagne).
+    private func resumeCandidateUnlocked(_ candidate: String, uid: String) async -> SessionCheck {
+        guard let read = await remote.read(uid: uid) else {
+            return .unverified
+        }
+        switch read {
+        case .active(let identifier):
+            guard identifier == candidate else {
+                setRevoked(true)
+                return .replaced
+            }
+            // L'écriture avait bien abouti : il ne manque que la confirmation locale.
+            guard store.confirm() else {
+                return .unverified
+            }
+            setConfirmed(candidate)
+            return .confirmed
+        case .absent:
+            let written = await beginUnlocked(uid: uid)
+            return written ? .confirmed : .unverified
+        }
     }
 
     /// Juge ce que dit le serveur (lecture explicite ou instantané de l'écoute). Tableau de décision, couvert par des tests :
@@ -271,7 +297,8 @@ final class DeviceSession {
         }
     }
 
-    /// Oublie l'identifiant local (sans marqueur « révoqué » : l'appareil reste libre de se reconnecter).
+    /// Oublie l'identifiant local SANS marqueur « révoqué » : seulement pour une connexion qui n'a jamais été la nôtre (un candidat
+    /// laissé par un autre compte). Après une suppression de session, utiliser `forget`.
     func clearLocal() {
         setConfirmed(nil)
         store.clear()
@@ -281,9 +308,13 @@ final class DeviceSession {
     /// attente et AVANT la purge du cache (`terminate()`) et la déconnexion : après, plus aucune requête authentifiée n'est
     /// possible. Hors ligne : rien n'est supprimé (la prochaine connexion écrasera la session). `online` faux : on n'attend même
     /// pas un délai (une transaction a besoin du serveur).
+    ///
+    /// L'appareil est ensuite FERMÉ (marqueur « révoqué », mémoire et disque) tout de suite, pas seulement à la fin de la
+    /// déconnexion : pendant la purge du cache, une vérification déjà en file ne peut pas réécrire une session ni autoriser un
+    /// statut. La connexion suivante (`begin`) lève le marqueur.
     func release(uid: String, online: Bool = true) async {
         _ = await deleteSession(uid: uid, online: online)
-        clearLocal()
+        forget()
     }
 
     /// Déconnexion FORCÉE ou session perdue : pose le marqueur « révoqué » (AVANT tout le reste), oublie l'identifiant local, ne

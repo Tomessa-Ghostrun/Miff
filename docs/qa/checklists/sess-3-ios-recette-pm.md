@@ -83,6 +83,7 @@ C'est le cas d'une personne qui avait l'app **avant** cette fonction : connecté
 Avec un **nouveau** compte Google ou Apple (écran de connexion, « Continuer avec Google »), sur le panneau de consentement :
 
 - [ ] **Mode avion** activé, touchez **Annuler** : un message calme explique que ça n'a pas fonctionné ; **le compte n'est pas supprimé** (vous restez sur le panneau). Désactivez le mode avion, touchez de nouveau **Annuler** : « Pas de souci, ton compte n'a pas été créé… » sur l'écran de connexion.
+- [ ] Variante : si, malgré tout, le compte est gardé (par exemple en fermant la fenêtre Google/Apple de reconnexion), le panneau reste ouvert ; continuez normalement jusqu'à une Miff, puis connectez le même compte sur l'OPPO : l'**iPhone est bien déconnecté** (sa session a été réécrite).
 
 ## Partie G — Ton, langue, lecture (2 min)
 

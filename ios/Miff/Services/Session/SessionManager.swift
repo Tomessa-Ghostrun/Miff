@@ -131,6 +131,8 @@ final class SessionManager {
     /// Quand l'écoute du document se termine sans qu'on l'ait demandé (erreur du serveur), elle est relancée après ces pauses, en
     /// nanosecondes, UNE fois par pause (bornée : au-delà, seul le retour du réseau vérifie encore la session). Réglable par les tests.
     var deviceWatchRestartPauses: [UInt64] = [15_000_000_000, 30_000_000_000, 60_000_000_000]
+    /// Une écoute qui a tenu au moins ce temps (secondes) remet le compteur de relances à zéro.
+    var deviceWatchHealthySeconds: TimeInterval = 300
 
     private var started = false
     private var notice: SignedOutNotice?

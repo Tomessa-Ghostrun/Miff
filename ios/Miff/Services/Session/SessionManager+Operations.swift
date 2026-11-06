@@ -123,8 +123,10 @@ extension SessionManager {
                     failure = await gateway.deleteCurrentAccount()
                 }
             case .cancelled:
-                ending = false
+                // La session est réécrite AVANT de rendre la main : tant que `ending` est vrai, aucune vérification en file ne
+                // peut déclencher une déconnexion forcée.
                 await restoreDeviceSession()
+                ending = false
                 return .cancelled
             case .unavailable:
                 failure = .unknown
@@ -133,9 +135,9 @@ extension SessionManager {
             }
         }
         if let failure {
-            // On reste sur le panneau : jamais un compte utilisable sans (a).
-            ending = false
+            // On reste sur le panneau : jamais un compte utilisable sans (a). La session est réécrite avant de rendre la main.
             await restoreDeviceSession()
+            ending = false
             return .failed(failure)
         }
         setState(.loading)
@@ -251,6 +253,10 @@ extension SessionManager {
     /// Aucune connexion ne démarre tant qu'une ancienne session est ouverte : un compte ne doit jamais se mélanger à un
     /// autre. Une déconnexion qui avait échoué est retentée ici ; faux si la session reste ouverte.
     private func clearLeftoverSession() -> Bool {
+        if gateway.currentUid != nil {
+            // Un candidat laissé par ce compte ne doit jamais être réutilisé par un autre.
+            device.clearLocal()
+        }
         for _ in 0..<2 where gateway.currentUid != nil {
             gateway.signOut()
         }
