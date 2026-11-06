@@ -319,7 +319,13 @@ final class TrackingRig {
 @MainActor
 final class FakeLocationManager: LocationManaging {
     var onEvent: (@MainActor (LocationEvent) -> Void)?
+    /// Ce que la liste du système montre (`monitoredRegions`).
     var held: Set<String> = []
+    /// Le cas défavorable d'iOS : juste après `startMonitoring`, la liste du système ne montre pas encore la région (`settle()` la
+    /// montre).
+    var listLagsBehindWatch = false
+    private var created = RegionRegistry<String>()
+    private(set) var droppedAsks: [String] = []
     var maximumRegionRadius = 100_000.0
     var systemFix: Fix?
     var regionsAvailable = true
@@ -332,21 +338,37 @@ final class FakeLocationManager: LocationManaging {
     private(set) var significantStops = 0
 
     var heldRegionKeys: Set<String> {
-        held
+        created.prune(visible: held, now: Date(), maxAge: TrackingLimits.createdRegionSeconds)
+        return held.union(created.keys)
     }
 
     func watch(_ zone: TrackedZone, radius: Double) {
-        held.insert(zone.key)
+        created.remember(zone.key, key: zone.key, at: Date())
+        if !listLagsBehindWatch {
+            held.insert(zone.key)
+        }
         watched.append((key: zone.key, radius: radius))
     }
 
     func unwatch(key: String) {
+        created.forget(key: key)
         held.remove(key)
         unwatched.append(key)
     }
 
+    /// Comme le vrai gestionnaire : la région qu'on vient de créer, sinon celle que la liste du système montre ; sinon la demande est
+    /// ignorée en silence (c'est ce qu'il ne faut JAMAIS voir pour une zone qu'on vient d'armer).
     func askRegionState(key: String) {
-        askedStates.append(key)
+        if created.region(for: key) != nil || held.contains(key) {
+            askedStates.append(key)
+        } else {
+            droppedAsks.append(key)
+        }
+    }
+
+    /// La liste du système montre maintenant les régions créées.
+    func settle() {
+        held.formUnion(created.keys)
     }
 
     func askPosition() {

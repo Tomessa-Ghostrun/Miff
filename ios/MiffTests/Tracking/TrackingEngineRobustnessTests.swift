@@ -118,6 +118,18 @@ final class TrackingEngineRobustnessTests: XCTestCase {
         XCTAssertEqual(relaunched.movement.starts, 1, "une fois par processus, pas à chaque passage")
     }
 
+    func testAProcessRelaunchedByAMereExitAsksForTheSignificantChangesRightAway() async {
+        await opened(rig)
+        let relaunched = TrackingRig()
+        relaunched.local.state = rig.local.state
+
+        await relaunched.engine.onTransition(.exit, zoneKey: relaunched.homeKey, atMillis: relaunched.env.now)
+        XCTAssertEqual(relaunched.movement.starts, 1, "dès la première relance, sans attendre une passe de rafraîchissement")
+        await relaunched.engine.onTransition(.enter, zoneKey: relaunched.homeKey, atMillis: relaunched.env.now)
+
+        XCTAssertEqual(relaunched.movement.starts, 1, "une seule fois par processus")
+    }
+
     func testStoppingTheMovementMakesTheNextArmingAskAgain() async {
         await opened(rig)
         rig.env.snapshot = PermissionSnapshot(location: .whenInUse, notifications: .authorized)
@@ -321,6 +333,54 @@ final class LocationTrackingTests: XCTestCase {
         XCTAssertEqual(rig.manager.unwatched, [work.key])
         XCTAssertEqual(rig.manager.watched.map { $0.key }, [home.key])
         XCTAssertEqual(rig.manager.askedStates, [home.key])
+    }
+
+    func testTheStateOfARegionJustCreatedIsAskedEvenIfTheSystemListDoesNotShowItYet() async {
+        let rig = make()
+        rig.manager.listLagsBehindWatch = true
+
+        let accepted = await rig.tracking.arm(desired: [zone(home)], reregister: false)
+
+        XCTAssertTrue(accepted)
+        XCTAssertTrue(rig.manager.held.isEmpty, "le cas défavorable : la liste du système ne la montre pas encore")
+        XCTAssertEqual(rig.manager.askedStates, [home.key], "la demande n'est jamais ignorée en silence")
+        XCTAssertTrue(rig.manager.droppedAsks.isEmpty)
+        rig.manager.emit(.regionState(home.key, true))
+        XCTAssertEqual(rig.sink.states, ["p1 true"], "dedans à l'armement = une arrivée")
+    }
+
+    func testARegionNotYetInTheSystemListIsNotWatchedTwiceAndIsRemovedWhenNoLongerWanted() async {
+        let rig = make()
+        rig.manager.listLagsBehindWatch = true
+        _ = await rig.tracking.arm(desired: [zone(home)], reregister: false)
+
+        _ = await rig.tracking.arm(desired: [zone(home)], reregister: false)
+        XCTAssertEqual(rig.manager.watched.count, 1, "elle compte comme surveillée tout de suite")
+
+        _ = await rig.tracking.arm(desired: [zone(work)], reregister: false)
+        XCTAssertEqual(rig.manager.unwatched, [home.key], "et le système n'en garde pas une que la liste ne veut plus")
+    }
+
+    func testDisarmingAlsoRemovesARegionTheSystemListDoesNotShowYet() async {
+        let rig = make()
+        rig.manager.listLagsBehindWatch = true
+        _ = await rig.tracking.arm(desired: [zone(home)], reregister: false)
+
+        await rig.tracking.disarmAll()
+
+        XCTAssertEqual(rig.manager.unwatched, [home.key])
+    }
+
+    func testAskingTheStateAgainRightAfterArmingFindsTheNewRegionToo() async {
+        let rig = make()
+        rig.manager.listLagsBehindWatch = true
+        _ = await rig.tracking.arm(desired: [zone(home)], reregister: false)
+
+        await rig.tracking.requestStates(keys: [home.key])
+
+        XCTAssertEqual(rig.manager.askedStates, [home.key, home.key])
+        rig.manager.settle()
+        XCTAssertEqual(rig.manager.held, [home.key])
     }
 
     func testArmingAgainTouchesNothingUnlessReregisteringEverything() async {

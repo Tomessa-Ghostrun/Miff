@@ -73,6 +73,9 @@ final class SystemLocationManager: LocationManaging {
     var onEvent: (@MainActor (LocationEvent) -> Void)?
     private let manager: CLLocationManager
     private let bridge = LocationBridge()
+    /// Les régions qu'on vient de créer : `monitoredRegions` peut ne pas les contenir juste après `startMonitoring` (voir
+    /// `RegionRegistry`).
+    private var created = RegionRegistry<CLRegion>()
 
     init() {
         manager = CLLocationManager()
@@ -88,7 +91,10 @@ final class SystemLocationManager: LocationManaging {
     }
 
     var heldRegionKeys: Set<String> {
-        Set(manager.monitoredRegions.map { $0.identifier })
+        let visible = Set(manager.monitoredRegions.map { $0.identifier })
+        created.prune(visible: visible, now: Date(), maxAge: TrackingLimits.createdRegionSeconds)
+        // Une région créée à l'instant compte comme surveillée (et sera retirée si la liste ne la veut plus).
+        return visible.union(created.keys)
     }
 
     var maximumRegionRadius: Double {
@@ -116,17 +122,24 @@ final class SystemLocationManager: LocationManaging {
         let region = CLCircularRegion(center: center, radius: radius, identifier: zone.key)
         region.notifyOnEntry = true
         region.notifyOnExit = true
+        created.remember(region, key: zone.key, at: Date())
         manager.startMonitoring(for: region)
     }
 
     func unwatch(key: String) {
+        if let region = created.region(for: key) {
+            manager.stopMonitoring(for: region)
+        }
+        created.forget(key: key)
         for region in manager.monitoredRegions where region.identifier == key {
             manager.stopMonitoring(for: region)
         }
     }
 
     func askRegionState(key: String) {
-        if let region = manager.monitoredRegions.first(where: { $0.identifier == key }) {
+        // La région qu'on vient de créer d'abord (la liste du système peut ne pas l'avoir encore), sinon celle que le système garde.
+        let region = created.region(for: key) ?? manager.monitoredRegions.first(where: { $0.identifier == key })
+        if let region {
             manager.requestState(for: region)
         }
     }

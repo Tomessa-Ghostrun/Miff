@@ -37,6 +37,8 @@ Changé :
 - **Le changement de position significatif est démarré une fois par processus** (et de nouveau après une relance par le système), plus à chaque ouverture.
 - **Une ouverture ordinaire ne réenregistre plus toutes les zones** et ne redemande plus leur état : seulement les zones nouvelles ou différentes, et l'état demandé pour les zones nouvelles et là où la position contredit la copie locale. Les deux « premier plan » du démarrage à froid n'en font qu'un.
 - **Un statut de plus de 24 h n'est plus abandonné en silence** : il est remplacé par `unknown` à l'heure de l'envoi (test). Une position de changement significatif qui arrive alors que sa demande avait été abandonnée **va au moteur** au lieu d'être perdue (test).
+- **Région tout juste créée** : `SystemLocationManager` garde les régions qu'il vient de créer (`RegionRegistry`, 60 s au plus) pour la demande d'état, au lieu de les chercher dans `monitoredRegions` qui peut ne pas les contenir encore (le cas « déjà dedans » à l'armement ne se perd plus en silence) ; le faux gestionnaire reproduit ce cas défavorable (tests).
+- **Relance par une simple sortie de zone** : les changements de position significatifs sont redemandés dès cette première relance (test).
 - **Pont avec le système testable** : `CoreLocationTracking` est remplacé par `LocationManaging` (protocole sans CoreLocation), `SystemLocationManager` (le seul fichier CoreLocation) et `LocationTracking` (la logique), avec `FakeLocationManager` / `RecordingSink` dans les tests : doublons, nouvelle autorisation, position abandonnée, `didDetermineState`.
 
 À décider ou à mesurer (rien n'est décidé ici) :

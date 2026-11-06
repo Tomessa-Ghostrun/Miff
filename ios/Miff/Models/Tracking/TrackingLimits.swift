@@ -37,6 +37,9 @@ enum TrackingLimits {
     /// position écrirait une fausse arrivée ou une fausse position. On en demande une autre, ou on ne fait rien.
     static let fixMaxAgeMillis = 10 * 60 * 1000
 
+    /// Une région qu'on vient de créer est gardée en mémoire ce temps au plus, le temps que le système la montre dans sa liste.
+    static let createdRegionSeconds = 60.0
+
     /// Le repli sur la dernière position connue du système n'est accepté que si elle a moins de ceci.
     static let systemFixMaxAgeMillis = 2 * 60 * 1000
 

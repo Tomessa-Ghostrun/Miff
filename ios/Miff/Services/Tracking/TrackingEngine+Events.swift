@@ -24,6 +24,9 @@ extension TrackingEngine {
             // Une région que le système garde et que la liste des lieux ne connaît plus : la prochaine mise en conformité la retire.
             return
         }
+        // Un processus relancé par une simple SORTIE de zone ne fait aucune passe de rafraîchissement : les changements de position
+        // significatifs sont redemandés dès cette première relance (et pas seulement à la passe suivante).
+        state = await resumeMovementIfNeeded(state)
         let now = env.nowMillis()
         if transition.kind == .enter, state.inside[transition.zoneKey] != nil {
             // Une entrée vue deux fois (le système la signale aussi quand il répond à une demande d'état) : rien de nouveau, ni
@@ -44,6 +47,17 @@ extension TrackingEngine {
         if transition.kind == .enter {
             await doRefresh(.zoneEntered, supplied: nil)
         }
+    }
+
+    private func resumeMovementIfNeeded(_ state: LocalState) async -> LocalState {
+        guard !isMovementStarted() else {
+            return state
+        }
+        var next = state
+        let started = await deps.movement.start()
+        next.updatesArmed = started
+        setMovementStarted(started)
+        return next
     }
 
     private func standDownOnEvent(_ loaded: LocalState?) async {
