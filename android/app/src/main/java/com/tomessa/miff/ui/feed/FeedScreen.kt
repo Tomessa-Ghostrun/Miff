@@ -56,6 +56,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffNotice
@@ -188,6 +189,9 @@ fun FeedScreen(
     val connection = remember(header, listState) { CollapsingHeaderConnection(header, listState) }
     // The room of the header at the top of the content: measured, so that nothing is hidden under it and no band is left blank (font size, language).
     val headerRoom = with(density) { header.heightPx.toDp() }
+    // TABBAR-GLASS: the glass bar floats over the tab (it is measured, its height is given by LocalTabBarInset): every state keeps that room at the bottom,
+    // so that the last element can always scroll above it.
+    val tabBarRoom = LocalTabBarInset.current
 
     // Back to the top (logo, tap on the tab already in use): the header is shown again.
     suspend fun toTopAndShow() {
@@ -206,12 +210,12 @@ fun FeedScreen(
     ) {
         when (state) {
             DirectoryState.Loading -> {
-                Box(Modifier.padding(top = headerRoom)) { FeedSkeleton() }
+                Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { FeedSkeleton() }
             }
 
             DirectoryState.Unavailable -> {
                 Column(
-                    modifier = Modifier.padding(top = headerRoom).padding(Spacing.m),
+                    modifier = Modifier.padding(top = headerRoom, bottom = tabBarRoom).padding(Spacing.m),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
                     MiffNotice(stringResource(R.string.feed_unavailable))
@@ -225,7 +229,7 @@ fun FeedScreen(
 
             is DirectoryState.Ready -> {
                 if (state.miffs.isEmpty()) {
-                    Box(Modifier.padding(top = headerRoom)) { NoMiff(onCreate, onJoin) }
+                    Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { NoMiff(onCreate, onJoin) }
                 } else {
                     FeedBody(state, feed, locate, agreement, texts, listState, actions, onRetry, topRoom = headerRoom)
                 }
@@ -298,7 +302,8 @@ private fun FeedBody(
                 start = Spacing.m,
                 end = Spacing.m,
                 top = topRoom + Spacing.m,
-                bottom = Spacing.m,
+                // TABBAR-GLASS: the last element scrolls above the glass bar, never under it.
+                bottom = Spacing.m + LocalTabBarInset.current,
             ),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {

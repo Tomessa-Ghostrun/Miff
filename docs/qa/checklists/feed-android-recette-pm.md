@@ -43,6 +43,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] **Toujours visible** : (1) pendant le chargement (réinstallez ou coupez le réseau avant d'ouvrir), (2) avec **TalkBack** activé (ou tout autre service d'accessibilité) : faites défiler, l'en-tête **ne se cache jamais** et le focus de TalkBack ne se perd pas, (3) avec **un seul proche** (liste trop courte pour défiler), (4) **hors connexion** (mode avion), (5) **sélecteur de Miff ouvert** (compte Premium) : tant que la liste est ouverte l'en-tête reste.
 - [ ] **Rotation et onglets** : tournez le téléphone, ou passez à l'onglet Profil et revenez : l'en-tête est **visible**.
 - [ ] **Autres éléments** : la bulle (animée) et le carrousel d'alertes (glissement manuel) ne saccadent pas pendant que l'en-tête bouge ; le logo et la photo se touchent facilement ; la barre d'onglets et les marges ne bougent pas.
+- [ ] **Bas de liste et barre en verre** : faites défiler le Feed **jusqu'au bout** : le bouton « Ajouter un proche » finit **au-dessus** de la barre d'onglets, jamais caché dessous ; remontez : l'en-tête revient et aucun trou n'apparaît en haut ni en bas.
 - [ ] Toucher le **logo**, ou la touche de l'onglet Feed quand on y est déjà, remonte le fil **et** réaffiche l'en-tête.
 
 ## Partie B — Cartes (5 min)
