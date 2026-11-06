@@ -114,7 +114,7 @@ final class PlacePrivacyTests: XCTestCase {
         }
     }
 
-    func testNoPermissionOfLocationIsAskedNorDeclared() throws {
+    func testThePlacesAskNoPermissionOfLocation() throws {
         let found = try offenders([
             "CLLocationManager",
             "requestWhenInUseAuthorization",
@@ -127,11 +127,17 @@ final class PlacePrivacyTests: XCTestCase {
         ])
         XCTAssertEqual(found, [], "les lieux ne demandent aucune position (ticket LOC-4 pour la détection)")
 
+        // LOC-4a a ajouté, pour l'autorisation seule, exactement ces deux textes d'usage (ce ne sont pas les lieux qui les
+        // utilisent : les sources des lieux ci-dessus ne lisent ni ne demandent rien) ; toute autre clé NSLocation* serait inattendue.
         let project = try read("project.yml")
-        let declared = project.components(separatedBy: "\n").filter {
-            $0.contains("NSLocation") && !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#")
-        }
-        XCTAssertEqual(declared, [], "aucune clé NSLocation* n'est déclarée")
+        let declared = project.components(separatedBy: "\n")
+            .filter { $0.contains("NSLocation") && !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
+            .map { $0.trimmingCharacters(in: .whitespaces).components(separatedBy: ":").first ?? "" }
+        XCTAssertEqual(
+            declared,
+            ["NSLocationWhenInUseUsageDescription", "NSLocationAlwaysAndWhenInUseUsageDescription"],
+            "seules les deux clés d'usage de LOC-4a sont déclarées"
+        )
     }
 
     func testTheMapShowsNoPositionOfAPersonAndHasNoGesture() throws {

@@ -206,7 +206,7 @@
     <string name="android_onboarding_type_hint">Quel type de zone définissez-vous ?</string>
     <string name="android_onboarding_zone_trust">Zone de confiance</string>
     <string name="android_onboarding_zone_trust_hint">Lieu sûr pour vos proches</string>
-    <string name="android_onboarding_zone_risk">Zone à risque</string>
+    <string name="android_onboarding_zone_risk">Zone de danger</string>
     <string name="android_onboarding_zone_risk_hint">Lieu à éviter</string>
     <!-- Profil et téléphone : les deux étapes de création du profil (ONB-2) -->
     <string name="profile_title">Permets à tes proches de t\'identifier</string>
@@ -295,7 +295,6 @@
     <string name="miff_message_generic">Ça n\'a pas fonctionné. Réessaie dans un instant.</string>
     <string name="miff_message_one_miff">Pour l\'instant, ce compte peut faire partie d\'une seule Miff à la fois.</string>
     <string name="miff_message_no_profile">Il manque encore des informations sur ton profil. On te ramène à cette étape pour les compléter.</string>
-    <string name="miff_consent_places">Les lieux de confiance de cette Miff sont choisis par son créateur et visibles de tous ses membres.</string>
     <string name="miff_dialog_working_a11y">En cours</string>
 
     <!-- Choix : créer ou rejoindre -->
@@ -304,14 +303,6 @@
     <string name="miff_choice_create_body">Tu pourras ensuite inviter tes proches à te rejoindre.</string>
     <string name="miff_choice_join_title">Rejoindre une Miff existante</string>
     <string name="miff_choice_join_body">Un proche t\'a donné un code ? Saisis-le pour entrer dans sa Miff.</string>
-
-    <!-- Consentement explicite avant « Créer et partager » / « Rejoindre et partager » (version « 2026-10-v2 », MiffSharingConsent) -->
-    <string name="miff_consent_create">En créant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
-    <string name="miff_consent_join">En rejoignant cette Miff, tu partages ton statut avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
-    <string name="miff_consent_members_see_title">Ce que les membres voient de toi</string>
-    <string name="miff_consent_members_see_body">Ton prénom, ton nom, ta photo et ton numéro de téléphone.</string>
-    <string name="miff_consent_system_note_create">Ton téléphone te demandera séparément l\'accès à ta position. Tu peux le refuser.</string>
-    <string name="miff_consent_system_note_join">Ton téléphone te demandera séparément l\'accès à ta position. Tu peux le refuser : tu rejoins la Miff quand même.</string>
 
     <!-- Créer -->
     <string name="miff_create_title">Nouvelle Miff</string>
@@ -377,10 +368,9 @@
     <string name="miff_sharing_state_on">Activé</string>
     <string name="miff_sharing_state_off">Désactivé</string>
     <string name="miff_sharing_stop_title">Arrêter de partager ton statut avec cette Miff ?</string>
-    <string name="miff_sharing_stop_body">Ton statut et ta photo d\'update seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
+    <string name="miff_sharing_stop_body">Ton statut, ta photo d\'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
     <string name="miff_sharing_stop_action">Arrêter le partage</string>
     <string name="miff_sharing_resume_title">Reprendre le partage ?</string>
-    <string name="miff_sharing_resume_body">Tu partages à nouveau ton statut avec les membres de cette Miff ; tu peux arrêter à tout moment.</string>
     <string name="miff_sharing_resume_action">Reprendre le partage</string>
 
     <!-- Accès perdu (message unique, le même pour un retrait et pour une Miff supprimée) -->

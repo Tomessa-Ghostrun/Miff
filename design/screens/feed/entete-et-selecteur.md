@@ -9,12 +9,14 @@ En-tête **fixe** (reste en haut quand le fil défile), fond `bg/overlay-header`
 3. **Pastille de Miff** centrée, 38 pt de haut, 10 pt de marge sous elle.
 
 ## Avatar à anneau
-| État de MON statut | Anneau (3 pt) | Glyphe (pastille 19 pt, bas droite) | Lecteur d'écran |
-|---|---|---|---|
-| Vert | `status/safe` | coche | « Ouvrir mon profil. Ton statut : à la maison » |
-| Orange | `status/warning` | horloge | « … Ton statut : a quitté la maison » |
-| Rouge | `status/danger` | « ! » dans un cercle | « … Ton statut : dans une zone de danger » |
-| Neutre (inconnu, partage arrêté, en attente d'accord) | gris `#c9c4bd` | aucun | « … Ton statut : pas encore de nouvelles » |
+| État de MON statut | Anneau (3 pt) | Lecteur d'écran |
+|---|---|---|
+| Vert | `status/safe` | « Ouvrir mon profil. Ton statut : à la maison » |
+| Orange | `status/warning` | « … Ton statut : a quitté la maison » |
+| Rouge | `status/danger` | « … Ton statut : dans une zone de danger » |
+| Neutre (inconnu, partage arrêté, en attente d'accord) | gris `#c9c4bd` | « … Ton statut : pas encore de nouvelles » |
+
+**Couleur seule, aucun pictogramme sur l'anneau** [décidé par le PM le 2026-11-06 : « la couleur est le seul signal »]. Cela remplace la proposition du 2026-11-05 (coche, horloge, « ! » dans une pastille de 19 pt). L'état est dit par le **nom parlé** (colonne de droite) ; sur la carte du membre, l'état est dit aussi par le **texte** de l'étiquette (voir `cartes-membres.md`).
 
 - Contenu : photo de profil ou initiales (disque `#cfc7bd`). L'annonce reprend **l'étiquette de ma carte** (une seule source de texte).
 - Toucher : ouvre l'onglet **Profil**. Zone tactile 48 dp / 44 pt (le disque fait 46 pt, la zone s'étend autour).
@@ -45,7 +47,11 @@ Panneau `#eee` de 250 pt, rayon `radius/md`, ombre. Lignes de **44 pt**, italiqu
 | Entrées | + Rejoindre une Miff · + Créer une Miff [existants] | + Join a Miff · + Create a Miff |
 
 ## Écarts avec la maquette du PM
-Cloche retirée ; flèche absente quand la pastille n'est pas cliquable ; glyphe sur l'anneau ; coche sur la Miff affichée dans la liste.
+Cloche retirée ; flèche absente quand la pastille n'est pas cliquable ; **anneau de couleur seule, sans pictogramme** (décision du PM, comme les maquettes) ; coche sur la Miff affichée dans la liste.
+
+## Contraste de l'anneau seul (calculé, WCAG 2.1)
+Anneau de 3 pt, sans pictogramme : critère 1.4.11 (éléments graphiques, 3:1) **non atteint pour le vert et l'orange**. Contre le fond d'en-tête (`bg/canvas` `#f9f9f7`) : vert **1,47:1**, orange **1,65:1**, rouge **2,97:1**, neutre **1,64:1** (contre le blanc : 1,55 / 1,74 / 3,13 / 1,73). Contre le disque de la photo ou des initiales `#cfc7bd` : 1,08 / 1,04 / 1,87 / 1,04.
+**Limites connues, assumées par la décision** : (1) vert `#d1d828` et orange `#ffb650` ne se distinguent presque pas par la luminosité (**1,12:1**), orange et rouge 1,80:1, vert et rouge 2,02:1 : une personne daltonienne peut confondre ces états sur l'anneau seul ; (2) l'anneau gris neutre se distingue à peine du blanc (1,73:1). **Mitigations déjà en place** : le nom parlé, la bulle de la Miff (texte), la carte avec son étiquette en texte. **Atténuation facultative, sans pictogramme**, laissée à l'implémentation : un liseré fin `#222222` de 1 pt autour de l'anneau (10,28:1 contre le vert, 5,08:1 contre le rouge, 9,18:1 contre le neutre) rend le contour perceptible sans ajouter de signe.
 
 ## Plateformes
 - **Android** : barre du haut ancrée sous la barre d'état (insets), liste = menu déroulant Material ancré à la pastille.

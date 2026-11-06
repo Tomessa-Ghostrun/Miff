@@ -16,7 +16,7 @@ screens.push({
       c({ name: "Amandine", ini: "A", lv: "safe", lab: ["safe", "school", "À l'école"], time: "Depuis 6 h", bat: "22 %", acts: ["loc"] })],
     ["D. Vert juste après un départ", "Moins d'1 h après le départ : encore vert, étiquette « A quitté… ». Ligne relative (« Départ il y a 12 min ») tant que c'est vert, heure absolue à partir de l'orange.",
       c({ name: "Léa", ini: "L", lv: "safe", lab: ["safe", "leave", "A quitté le travail"], time: "Départ il y a 12 min", bat: "77 %" })],
-    ["E. Orange", "De 1 h à 2 h après le départ. Icône « sortie » + texte + liseré + anneau (glyphe horloge) : jamais la couleur seule.",
+    ["E. Orange", "De 1 h à 2 h après le départ. Étiquette à TEXTE seul (« A quitté le travail », sans pictogramme) sur teinte 30 %, liseré et anneau orange : la couleur n'est jamais seule sur une carte, le texte dit l'état.",
       c({ name: "Léa", ini: "L", lv: "warning", lab: ["warning", "leave", "A quitté le travail"], time: "Dernière nouvelle à 16 h 02", bat: "77 %" })],
     ["F. Rouge d'ancienneté + batterie datée", "Au-delà de 2 h. Le lieu reste dit (« A quitté la maison »), la ligne dit l'heure (« Pas de nouvelles depuis 16 h 02 »). L'étiquette « Plus de nouvelles » de la maquette est abandonnée. Batterie de plus d'1 h : « 12 % · 16 h 02 » (valeur DATÉE, jamais « en direct »). Aucune alerte de batterie faible.",
       c({ name: "Thomas", ini: "T", lv: "danger", lab: ["danger", "leave", "A quitté la maison"], time: "Pas de nouvelles depuis 16 h 02", bat: "12 % · 16 h 02", ph: photo("14 h 10") })],

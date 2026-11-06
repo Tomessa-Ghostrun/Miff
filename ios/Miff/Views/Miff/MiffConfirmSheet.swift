@@ -67,11 +67,20 @@ struct MiffConfirmSheet<Extra: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 extra
-                if let failure = content.failure {
-                    MiffNotice(text: actionMessageText(failure))
-                }
                 if let share = content.share {
                     MiffShareButton(share: share, isEnabled: !content.isBusy)
+                }
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.top, Spacing.lg)
+            .padding(.bottom, Spacing.sm)
+        }
+        // Les boutons (et la phrase d'erreur) restent ÉPINGLÉS en bas : quand `extra` est long (le consentement de la version 3
+        // de « Reprendre le partage »), le texte défile et le choix reste toujours à portée.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: Spacing.sm) {
+                if let failure = content.failure {
+                    MiffNotice(text: actionMessageText(failure))
                 }
                 confirmButton
                 if content.isBusy {
@@ -91,7 +100,10 @@ struct MiffConfirmSheet<Extra: View>: View {
                 }
             }
             .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.lg)
+            .padding(.top, Spacing.sm)
+            .padding(.bottom, Spacing.md)
+            .frame(maxWidth: .infinity)
+            .background(colorBgSurface.color.ignoresSafeArea(edges: .bottom))
         }
         .background(colorBgSurface.color.ignoresSafeArea())
         .interactiveDismissDisabled(content.isBusy)
