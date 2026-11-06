@@ -136,9 +136,9 @@ final class PermissionPrivacyTests: XCTestCase {
         let permissions = "Services/Permission/SystemDevicePermissions.swift"
 
         let importing = sources.filter { $0.lines.contains { $0.contains("import CoreLocation") } }.map { $0.path }
-        XCTAssertEqual(importing, [Self.trackingBridge, permissions])
+        XCTAssertEqual(importing, [permissions, Self.trackingBridge])
         let usingManager = sources.filter { $0.lines.contains { $0.contains("CLLocationManager") } }.map { $0.path }
-        XCTAssertEqual(usingManager, [Self.trackingBridge, permissions])
+        XCTAssertEqual(usingManager, [permissions, Self.trackingBridge])
 
         // Ce que le fichier des autorisations appelle sur le gestionnaire : l'état, la fenêtre d'autorisation, rien d'autre.
         let used = try XCTUnwrap(sources.first { $0.path == permissions })

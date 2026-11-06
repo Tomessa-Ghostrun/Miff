@@ -35,8 +35,9 @@ struct DetectionJournalCard: View {
                 if lines.isEmpty {
                     DiagLine("ios_diag_detection_empty", .description)
                 } else {
-                    ForEach(Array(lines.suffix(Self.shown).reversed().enumerated()), id: \.offset) { _, line in
-                        DiagLine(verbatim: Self.text(of: line))
+                    let latest = Array(lines.suffix(Self.shown).reversed())
+                    ForEach(latest.indices, id: \.self) { index in
+                        DiagLine(verbatim: Self.text(of: latest[index]))
                     }
                 }
             }
