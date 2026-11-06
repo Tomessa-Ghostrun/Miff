@@ -2,6 +2,18 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.14.1] - 2026-11-07 : FEED, trois ajustements demandés par le PM après la recette
+
+Branche `android/feed-ajustements`. Décisions D42, D43 et D44 de `docs/tickets/feed.md`. Aucun changement du modèle de données ni des règles Firestore.
+
+### Modifié
+- **D42, plus de « Toi » sur la carte** : la pastille « Toi » à côté de mon prénom est retirée. Pour le lecteur d'écran, rien à ajouter : ma carte garde sa ligne visible « Ce que tes proches voient de toi », lue dans le même bloc que mon prénom. L'étiquette « Toi » de l'écran de la Miff (liste des membres) ne change pas.
+- **D43, ma carte en dernier** : les autres membres d'abord, dans l'ordre déjà défini (le créateur, puis l'ordre d'arrivée), puis moi. Règle dans la logique pure `FeedBuilder.orderMembers`, testée.
+- **D44, batterie sans heure de mesure** : la pastille affiche « 85 % » seul (plus de « 85 % · 16 h 02 », ni dans la phrase du lecteur d'écran : « Batterie à 85 % »). La batterie reste masquée après 24 h ou si absente ; aucune alerte. `updatedAt` n'est plus lu que pour ce masquage.
+
+### Supprimé
+- Clés de traduction devenues inutiles, retirées en parité Android (français et anglais) et iOS (`Localizable.xcstrings`, aucune vue iOS du Feed ne les utilise encore) : `feed_card_you`, `feed_battery_dated`, `feed_battery_dated_a11y`. Code mort retiré : la pastille `YouPill`, le champ `Battery.since`.
+
 ## [0.12.0] - 2026-11-05 : FEED-1 à FEED-3, le Feed (cercle, statuts, Localiser)
 
 Les trois premiers sous-tickets Android du ticket `docs/tickets/feed.md` (branche `android/feed-1-3`, PR brouillon ; la photo d'update, FEED-4, n'est pas dans cette livraison). Décisions du PM : couleur de la Miff, wording « zone de danger », « Tout va bien », heures absolues, dernière position stockée côté serveur, aucune notification, tutoiement. Maquettes : `design/exports/feed/` (PM) et `design/exports/feed/claude/` (fiches `design/screens/feed/`, 20 décisions de design appliquées par défaut). Écarts listés dans la PR.

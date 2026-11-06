@@ -80,6 +80,9 @@ En une phrase : le Feed est l'écran qu'on ouvre pour **voir d'un coup d'œil qu
 | **D39** | **Aperçu de la photo d'un membre dans sa carte = un CARRÉ aussi large que la carte, centré sur le milieu de la photo** (recadrage centré, **sans déformer**) ; **la photo reste complète en plein écran au toucher**. Remplace la « fenêtre fixe de 108 pt » de `design/screens/feed/cartes-membres.md`. | **PM, 2026-11-06** (essai de l'APK de l'Update) |
 | **D40** | **La bulle d'état de la Miff en haut du Feed a un TRÈS LÉGER mouvement continu** : **respiration d'échelle ≤ 1,5 %** et **dérive ≤ 3 dp**, **cycle de 5 à 8 s**, **jamais de clignotement ni de rebond** ; **immobile** avec « Animations supprimées » ; **arrêtée hors écran** (et en arrière-plan). Remplace « aucune animation » pour la bulle de la Miff (les autres éléments restent sans animation d'alarme, D15). | **PM, 2026-11-06** |
 | **D41** | **L'EN-TÊTE du Feed** (photo de profil, logo, nom de la Miff avec son sélecteur, futur bouton de notifications) **se masque quand on fait défiler vers le bas et réapparaît dès qu'on remonte** ; **reste visible** pendant le **chargement**, en **erreur**, **hors connexion**, si la **liste est courte**, avec **TalkBack**, et quand le **sélecteur est ouvert**. **Remplace « en-tête fixe »** (FEED-1, H1). | **PM, 2026-11-06** |
+| **D42** | **Dans les cartes du Feed, plus de mention « Toi » à côté du prénom** de l'utilisateur connecté. Rien n'est ajouté à l'écran ; pour le lecteur d'écran, la ligne visible « Ce que tes proches voient de toi », lue dans le même bloc que le prénom, indique que c'est ma carte. (L'étiquette « Toi » de l'écran de la Miff ne change pas.) | **PM, 2026-11-07** (recette du Feed) |
+| **D43** | **L'utilisateur connecté est en DERNIÈRE position** de la liste des cartes ; les autres membres le précèdent dans l'ordre déjà défini (le créateur, puis l'ordre d'arrivée `joinedAt`). Toujours jamais réordonné selon l'urgence. **Remplace « moi d'abord »** (§5.4, C1, C7). | **PM, 2026-11-07** |
+| **D44** | **À côté du niveau de batterie, plus de mention de « quand » il a été mesuré** (plus de « 85 % · 16 h 02 », ni dans la pastille, ni dans la phrase du lecteur d'écran : « Batterie à 85 % »). Pourcentage et icône inchangés ; la batterie reste **masquée après 24 h ou si absente** ; aucune alerte. Modèle de données et règles Firestore inchangés (`updatedAt` continue d'être écrit et sert à masquer après 24 h). **Remplace la partie « datée » de D2, §5.8 et C4.** | **PM, 2026-11-07** |
 | D16 | **Aucun événement Analytics** sur le Feed, les statuts ou la localisation ; aucune coordonnée, adresse, nom de lieu ni nom de personne dans un journal, un rapport de plantage ou un message de partage. | `analytics-events.md` ; LOC VIE |
 
 ---
@@ -149,7 +152,7 @@ Contenu, du haut vers le bas :
 4. **Photo d'update** si elle existe et n'est pas expirée, **avec son heure** (« Photo de 15 h 40 ») ; **aperçu en carré aussi large que la carte, centré sur le milieu de la photo, sans déformer (D39)** ; toucher = plein écran, **photo complète** (§5.7).
 5. **Boutons** Localiser, Message, Appeler (§5.6 ; **absents de ma carte**).
 - **Liseré coloré** à gauche de la carte (Notion) = couleur du niveau ; jamais la seule information.
-- **Ordre** [Proposé] : **moi d'abord**, puis les autres dans l'ordre d'arrivée dans la Miff (`joinedAt`) ; **jamais réordonné selon l'urgence** (une liste qui bouge déplace les boutons sous le doigt et stresse).
+- **Ordre** [Proposé, **remplacé par D43 : moi en DERNIER**] : ~~moi d'abord~~, puis les autres dans l'ordre d'arrivée dans la Miff (`joinedAt`) ; **jamais réordonné selon l'urgence** (une liste qui bouge déplace les boutons sous le doigt et stresse).
 - **Libellés d'étiquette** (le lieu se lit dans la liste locale des lieux, par `placeId` de **cette Miff**) :
 | Niveau / présence | Étiquette | Remarque |
 |---|---|---|
@@ -192,7 +195,7 @@ Contenu, du haut vers le bas :
 - Le Feed **ne supprime jamais** une photo expirée (il ne peut pas distinguer expirée d'absente) : le nettoyage reste celui de l'auteur et du contrat `data-model.md` §2.8.
 
 ### 5.8 Batterie [D2]
-« 85 % » dans une pastille ; **plus d'1 h** depuis l'écriture (`updatedAt`) : « 85 % · 16 h 02 » (valeur de la dernière mise à jour, jamais « en direct ») ; **plus de 24 h ou absente** : masquée. Lecteur d'écran : « Batterie à 85 % à 16 h 02 ». **Aucune alerte, aucun état « batterie faible »** en v1.
+« 85 % » dans une pastille, **sans heure de mesure (D44, remplace l'ancienne version « datée » « 85 % · 16 h 02 »)** ; **plus de 24 h** depuis l'écriture (`updatedAt`) ou absente : masquée. Lecteur d'écran : « Batterie à 85 % ». **Aucune alerte, aucun état « batterie faible »** en v1.
 
 ### 5.9 Valeurs par défaut retenues (applicables sauf objection du PM)
 | # | Sujet | Valeur retenue |
@@ -411,13 +414,13 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 - [ ] **B6** Une alerte (orange ou rouge) sur un **autre** membre propose « Envoyer un message » (SMS) ; jamais sur ma propre page.
 
 **Cartes**
-- [ ] **C1** Chaque membre, moi compris (**en premier**), a une carte : avatar à anneau, prénom, étiquette (texte + icône), ligne de temps, batterie ; **ma carte n'a ni Localiser, ni Message, ni Appeler** et reflète mon document de statut.
+- [ ] **C1** Chaque membre, moi compris (**en dernier, D43**), a une carte : avatar à anneau, prénom, étiquette (texte + icône), ligne de temps, batterie ; **ma carte n'a ni Localiser, ni Message, ni Appeler** et reflète mon document de statut.
 - [ ] **C2** Étiquettes et lignes de temps conformes aux tableaux §5.4 et §5.5, dont : vert avant 1 h après un départ ; orange à 1 h 00 ; rouge au-delà de 2 h 00 (**tests aux limites 0 h 59, 1 h 00, 2 h 00, 2 h 01**, constantes lues dans `StatusThresholds`) ; lieu supprimé = libellé générique ; **aucune couleur seule** ; contraste AA.
 - [ ] **C3** Le niveau est **recalculé chaque minute** sans lecture serveur (test avec une horloge simulée) et annoncé au lecteur d'écran **seulement quand il change**.
-- [ ] **C4** Batterie : pastille ; « · 16 h 02 » après 1 h ; **masquée** après 24 h ou si absente ; aucune alerte de batterie faible.
+- [ ] **C4** Batterie : pastille « 85 % » **sans heure de mesure (D44)** ; **masquée** après 24 h ou si absente ; aucune alerte de batterie faible.
 - [ ] **C5** Partage arrêté = « Partage arrêté », neutre, **ignoré** du calcul ; « Localisation limitée » = badge doux sans effet sur la bulle.
 - [ ] **C6** « Ajouter un proche » ouvre le partage du code (déjà livré) ; à 15 membres : « Cette Miff est bien remplie ! ».
-- [ ] **C7** L'ordre est stable (moi, puis `joinedAt`) et ne change **jamais** selon l'urgence.
+- [ ] **C7** L'ordre est stable (les autres dans l'ordre du créateur puis `joinedAt`, **moi en dernier, D43**) et ne change **jamais** selon l'urgence.
 
 **Message / Appeler**
 - [ ] **M1** « Message » et « Appeler » ouvrent l'application du système avec le numéro de la fiche membre **préparé** (aucun appel ni SMS envoyé par Miff) ; absents sans numéro et sur ma carte ; **aucune permission** « appel », « SMS » ou « contacts » dans le manifeste (iOS : aucune clé « contacts ») ; zone tactile ≥ 48 dp / 44 pt ; nom lisible (« Appeler Thomas »).

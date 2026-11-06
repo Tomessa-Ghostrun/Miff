@@ -63,7 +63,6 @@ class FeedInput(
 
 object FeedBuilder {
     private val LIMITED_ACCESS = setOf(MemberLocationAccess.DENIED, MemberLocationAccess.FOREGROUND)
-    private const val BATTERY_DATED_AFTER_MILLIS = HOUR_MILLIS
     private const val BATTERY_HIDDEN_AFTER_MILLIS = DAY_MILLIS
 
     fun build(
@@ -75,8 +74,7 @@ object FeedBuilder {
         // Nothing of the others is read (and nothing is shown) while I do not share or my agreement is waited for.
         val hidden = !mySharing || input.waitingAgreement
         val statuses = (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty()
-        // Stable: me first, the others in the order of the list (never reordered by urgency).
-        val ordered = input.members.sortedBy { it.uid != input.myUid }
+        val ordered = orderMembers(input.members, input.myUid)
         val places = input.places.associateBy { it.id }
 
         val cards =
@@ -116,6 +114,15 @@ object FeedBuilder {
             announceKey = announceKey(bubble),
         )
     }
+
+    /**
+     * The order of the cards (decision of the PM, 2026-11-07): the OTHER members first, in the order of the list they come in (the creator, then the
+     * order of arrival: never reordered by urgency), and ME LAST. The sort is stable, so the others keep exactly the order they were given.
+     */
+    fun orderMembers(
+        members: List<MiffMember>,
+        myUid: String,
+    ): List<MiffMember> = members.sortedBy { it.uid == myUid }
 
     /**
      * The colour of the Miff (decision of the PM): red if at least one member is red; green if every member whose status is known is green;
@@ -186,7 +193,7 @@ object FeedBuilder {
             level = level,
             label = label,
             time = timeLine(level, status, now, zone),
-            battery = status?.let { battery(it, now, zone) },
+            battery = status?.let { battery(it, now) },
             limitedLocation =
                 status?.locationAccess in LIMITED_ACCESS,
             phone = member.phone.takeIf { !isMe },
@@ -264,17 +271,12 @@ object FeedBuilder {
     private fun battery(
         status: MemberStatus,
         now: Long,
-        zone: ZoneId,
     ): Battery? {
         val pct = status.batteryPct ?: return null
-        // A time the server has not filled in yet (a write still pending) is "now".
-        val written = status.updatedAtMillis ?: return Battery(pct, since = null)
-        val age = now - written
-        return when {
-            age > BATTERY_HIDDEN_AFTER_MILLIS -> null
-            age > BATTERY_DATED_AFTER_MILLIS -> Battery(pct, Moment.of(written, now, zone))
-            else -> Battery(pct, since = null)
-        }
+        // A time the server has not filled in yet (a write still pending) is "now". Past a day the value is hidden; the card never says WHEN
+        // the level was measured (decision of the PM, 2026-11-07): the pill is the percentage alone.
+        val written = status.updatedAtMillis ?: return Battery(pct)
+        return if (now - written > BATTERY_HIDDEN_AFTER_MILLIS) null else Battery(pct)
     }
 
     @Suppress("LongParameterList")

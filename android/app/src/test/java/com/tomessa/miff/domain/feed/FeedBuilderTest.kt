@@ -141,7 +141,7 @@ class FeedBuilderTest {
     // --- Cards (C1, C7) --------------------------------------------------------------------------------------------
 
     @Test
-    fun cards_areMineFirst_thenInTheOrderOfTheList_neverByUrgency() {
+    fun cards_areMineLast_theOthersKeepTheOrderOfTheList_neverByUrgency() {
         val members = listOf(member("t", "Thomas"), member(me, "Camille"), member("a", "Amandine"))
         val content =
             build(
@@ -152,8 +152,30 @@ class FeedBuilderTest {
                     me to status(PresenceValue.IN_TRUSTED),
                 ),
             )
-        assertEquals(listOf(me, "t", "a"), content.cards.map { it.member.uid })
+        // Decision of the PM (2026-11-07): me last; Thomas stays before Amandine although she is red (never reordered by urgency).
+        assertEquals(listOf("t", "a", me), content.cards.map { it.member.uid })
         assertEquals(StatusLevel.RED, card(content, "a").level)
+        assertTrue(content.cards.last().isMe)
+    }
+
+    @Test
+    fun cards_meLast_whateverMyPlaceInTheList() {
+        val others = listOf(member("o", "Olivia"), member("t", "Thomas"), member("a", "Amandine"))
+        // First, in the middle, last: the others always come before me, in exactly the order they were given.
+        listOf(0, 1, 2, 3).forEach { index ->
+            val members = others.toMutableList().apply { add(index, member(me, "Camille")) }
+            assertEquals(listOf("o", "t", "a", me), FeedBuilder.orderMembers(members, me).map { it.uid })
+            val content = build(members, emptyMap())
+            assertEquals(listOf("o", "t", "a", me), content.cards.map { it.member.uid })
+            assertEquals(listOf(false, false, false, true), content.cards.map { it.isMe })
+        }
+    }
+
+    @Test
+    fun cards_meAlone_isTheOnlyCard_andNobodyIsMissing() {
+        val alone = listOf(member(me, "Camille"))
+        assertEquals(listOf(me), build(alone, emptyMap()).cards.map { it.member.uid })
+        assertEquals(emptyList<String>(), FeedBuilder.orderMembers(emptyList(), me).map { it.uid })
     }
 
     @Test
@@ -281,11 +303,14 @@ class FeedBuilderTest {
     // --- Battery (C4) ----------------------------------------------------------------------------------------------
 
     @Test
-    fun battery_isPlainWhenRecent_datedAfterAnHour_hiddenAfterADay_orWhenAbsent() {
+    fun battery_isThePercentageAlone_neverDated_hiddenAfterADay_orWhenAbsent() {
+        // Decision of the PM (2026-11-07): the card never says WHEN the level was measured, whatever the age of the value.
         val recent = card(build(trio, mapOf("t" to status(updatedAgo = 59 * minute))), "t")
-        assertEquals(Battery(85, null), recent.battery)
-        val dated = card(build(trio, mapOf("t" to status(updatedAgo = 90 * minute))), "t")
-        assertEquals(Battery(85, Moment(now - 90 * minute, Day.TODAY)), dated.battery)
+        assertEquals(Battery(85), recent.battery)
+        val anHourAndAHalf = card(build(trio, mapOf("t" to status(updatedAgo = 90 * minute))), "t")
+        assertEquals(Battery(85), anHourAndAHalf.battery)
+        val almostADay = card(build(trio, mapOf("t" to status(updatedAgo = 23 * hour))), "t")
+        assertEquals(Battery(85), almostADay.battery)
         val old = card(build(trio, mapOf("t" to status(updatedAgo = 25 * hour))), "t")
         assertNull(old.battery)
         val absent = card(build(trio, mapOf("t" to status(battery = null))), "t")

@@ -88,11 +88,9 @@ sealed interface TimeLine {
     ) : TimeLine
 }
 
-/** The battery chip: "85 %", and from one hour after its writing "85 % · 16 h 02" (a value DATED, never "live"). Hidden after 24 h or when absent. */
+/** The battery chip: "85 %" alone, never the time it was measured (decision of the PM, 2026-11-07). Hidden after 24 h or when absent. */
 data class Battery(
     val pct: Int,
-    /** Null while the value is less than an hour old; else the time it was written. */
-    val since: Moment?,
 )
 
 /**
@@ -103,7 +101,7 @@ sealed interface PhotoSlot {
     data object None : PhotoSlot
 }
 
-/** One card: a member, me included. The first of the list is MINE (no Localiser, no Message, no Appeler on it). */
+/** One card: a member, me included. MY card is the LAST of the list (no Localiser, no Message, no Appeler on it). */
 data class MemberCard(
     val member: MiffMember,
     val isMe: Boolean,

@@ -211,13 +211,9 @@ class FeedTexts(
             }
         }
 
-    fun battery(battery: Battery): String =
-        battery.since?.let { s(R.string.feed_battery_dated, battery.pct, since(it)) }
-            ?: s(R.string.feed_battery, battery.pct)
+    fun battery(battery: Battery): String = s(R.string.feed_battery, battery.pct)
 
-    fun batteryA11y(battery: Battery): String =
-        battery.since?.let { s(R.string.feed_battery_dated_a11y, battery.pct, at(it)) }
-            ?: s(R.string.feed_battery_a11y, battery.pct)
+    fun batteryA11y(battery: Battery): String = s(R.string.feed_battery_a11y, battery.pct)
 
     // ---- the bubble ----------------------------------------------------------------------------------------------
 

@@ -398,7 +398,6 @@
     <string name="feed_refresh_started_a11y">Actualisation en cours</string>
     <string name="feed_refresh_done_a11y">Informations actualisées</string>
     <string name="feed_loading_a11y">Chargement de ton fil</string>
-    <string name="feed_card_you">Toi</string>
     <string name="feed_card_you_sees">Ce que tes proches voient de toi</string>
     <string name="feed_card_message_a11y">Écrire à %1$s</string>
     <string name="feed_card_call_a11y">Appeler %1$s</string>
@@ -444,9 +443,7 @@
     <string name="feed_ago_minutes">il y a %1$d min</string>
     <string name="feed_ago_hours">il y a %1$d h</string>
     <string name="feed_battery">%1$d %%</string>
-    <string name="feed_battery_dated">%1$d %% · %2$s</string>
     <string name="feed_battery_a11y">Batterie à %1$d %%</string>
-    <string name="feed_battery_dated_a11y">Batterie à %1$d %% %2$s</string>
     <string name="feed_bubble_all_good">Tout va bien</string>
     <string name="feed_bubble_latest_minutes">Dernière nouvelle il y a %1$d min</string>
     <string name="feed_bubble_latest_hours">Dernière nouvelle il y a %1$d h</string>

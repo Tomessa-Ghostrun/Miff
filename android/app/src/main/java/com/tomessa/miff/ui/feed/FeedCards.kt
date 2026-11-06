@@ -38,7 +38,6 @@ import com.tomessa.miff.domain.feed.PlaceRef
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.profile.Initials
 import com.tomessa.miff.ui.theme.ShadowSubtle
-import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeSm
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
@@ -57,7 +56,7 @@ import com.tomessa.miff.ui.theme.textDisplayLabel
 
 /*
  * The card of a member (maquettes 06 and the PM's "Welcoming screen"): a strip of the colour of the level on the left, the avatar with its
- * ring, the first name, the battery, the label of the state, the line of time, and the three gestures. MY card is the first one and has no
+ * ring, the first name, the battery, the label of the state, the line of time, and the three gestures. MY card is the last one and has no
  * gesture. The colour is the only signal of the level (strip, ring, label: no glyph, decision of the PM, 2026-11-06); the words of the state stay and are read. One reading for the screen reader: the
  * information is one block, the gestures are buttons of their own after it.
  */
@@ -105,19 +104,14 @@ fun MemberCardView(
                             initials = Initials.of(card.member.firstName, card.member.lastName),
                             level = card.level,
                         )
-                        Row(
+                        // No "Toi" next to my name (decision of the PM, 2026-11-07): my card is the last one and carries the line "Ce que tes
+                        // proches voient de toi", which the screen reader reads in the same block.
+                        Text(
+                            text = card.member.callName,
+                            style = textDisplayLabel,
+                            color = colorTextPrimary,
                             modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = card.member.callName,
-                                style = textDisplayLabel,
-                                color = colorTextPrimary,
-                                modifier = Modifier.weight(1f, fill = false),
-                            )
-                            if (card.isMe) YouPill()
-                        }
+                        )
                         card.battery?.let { BatteryChip(it, texts) }
                     }
                     StateChip(card, texts)
@@ -164,20 +158,6 @@ private fun PhotoSlotView(slot: PhotoSlot) {
     when (slot) {
         PhotoSlot.None -> {}
     }
-}
-
-@Composable
-private fun YouPill() {
-    Text(
-        text = stringResource(R.string.feed_card_you),
-        style = textCaptionBold12,
-        color = colorTextPrimary,
-        modifier =
-            Modifier
-                .clip(ShapeFull)
-                .background(colorBorderDefault)
-                .padding(horizontal = Spacing.s, vertical = Spacing.xs / 2),
-    )
 }
 
 @Composable
