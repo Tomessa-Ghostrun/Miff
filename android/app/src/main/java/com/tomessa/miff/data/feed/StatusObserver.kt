@@ -71,31 +71,31 @@ class FirestoreStatusObserver(
                     }
             awaitClose { registration.remove() }
         }
+}
 
-    /**
-     * One document that cannot be read (a field of another type, written by a modified client) is simply ignored: it must never bring the
-     * callback of the listener, and so the app, down.
-     */
-    private fun statusOf(doc: DocumentSnapshot): Pair<String, MemberStatus>? =
-        try {
-            readStatus(doc)
-        } catch (e: RuntimeException) {
-            null
-        }
-
-    private fun readStatus(doc: DocumentSnapshot): Pair<String, MemberStatus>? {
-        if (!doc.exists()) return null
-        return doc.id to
-            MemberStatus.fromServer(
-                presence = doc.getString("presence"),
-                placeId = doc.getString("placeId"),
-                presenceAtMillis = doc.getTimestamp("presenceAt")?.toDate()?.time,
-                lastUpdateAtMillis = doc.getTimestamp("lastUpdateAt")?.toDate()?.time,
-                hasPhoto = doc.getBoolean("hasPhoto"),
-                batteryPct = doc.getLong("batteryPct"),
-                locationAccess = doc.getString("locationAccess"),
-                // A write still waiting for the server has no server time yet: the estimate is "now" (see getTimestamp's default).
-                updatedAtMillis = doc.getTimestamp("updatedAt")?.toDate()?.time,
-            )
+/**
+ * One document that cannot be read (a field of another type, written by a modified client) is simply ignored: it must never bring the
+ * callback of a listener, and so the app, down. Shared by the listener and by the forced reading of "Actualiser".
+ */
+internal fun statusOf(doc: DocumentSnapshot): Pair<String, MemberStatus>? =
+    try {
+        readStatus(doc)
+    } catch (e: RuntimeException) {
+        null
     }
+
+private fun readStatus(doc: DocumentSnapshot): Pair<String, MemberStatus>? {
+    if (!doc.exists()) return null
+    return doc.id to
+        MemberStatus.fromServer(
+            presence = doc.getString("presence"),
+            placeId = doc.getString("placeId"),
+            presenceAtMillis = doc.getTimestamp("presenceAt")?.toDate()?.time,
+            lastUpdateAtMillis = doc.getTimestamp("lastUpdateAt")?.toDate()?.time,
+            hasPhoto = doc.getBoolean("hasPhoto"),
+            batteryPct = doc.getLong("batteryPct"),
+            locationAccess = doc.getString("locationAccess"),
+            // A write still waiting for the server has no server time yet: the estimate is "now" (see getTimestamp's default).
+            updatedAtMillis = doc.getTimestamp("updatedAt")?.toDate()?.time,
+        )
 }

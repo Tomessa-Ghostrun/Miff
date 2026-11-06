@@ -9,10 +9,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -98,7 +103,11 @@ class FeedHeaderScrollTest {
     }
 
     @Composable
-    private fun Screen(feed: FeedUiState) {
+    private fun Screen(
+        feed: FeedUiState,
+        refreshing: Boolean = false,
+        onRefresh: () -> Unit = {},
+    ) {
         MiffTheme {
             Box(Modifier.fillMaxSize()) {
                 FeedScreen(
@@ -109,6 +118,8 @@ class FeedHeaderScrollTest {
                     onCreate = {},
                     onJoin = {},
                     feed = feed,
+                    refreshing = refreshing,
+                    actions = FeedActions(onRefresh = onRefresh),
                     me = FeedMe("CM"),
                 )
             }
@@ -280,5 +291,56 @@ class FeedHeaderScrollTest {
         composeRule.onNodeWithText("Famille Mfouka").performClick()
         composeRule.waitForIdle()
         assertTrue("events $events", events.last())
+    }
+
+    // --- Actualiser: pull to refresh (2026-11-06) -------------------------------------------------------------------
+
+    @Test
+    fun pullingDownAtTheTop_asksForARefresh_andTheHeaderDoesNotMove() {
+        var refreshes = 0
+        composeRule.setContent { Screen(FeedUiState.Ready(content(15)), onRefresh = { refreshes++ }) }
+        val before = logoTop()
+        scrollUp(fraction = 0.9f)
+        composeRule.waitForIdle()
+        assertTrue("the pull asked for a refresh", refreshes >= 1)
+        // The gesture is at the top of the list only: the header neither disappears nor blinks.
+        assertEquals(before, logoTop(), 0.5f)
+    }
+
+    @Test
+    fun theGestureStillWorks_whenTheListIsTooShortToScroll() {
+        var refreshes = 0
+        composeRule.setContent { Screen(FeedUiState.Ready(content(1)), onRefresh = { refreshes++ }) }
+        scrollUp(fraction = 0.9f)
+        composeRule.waitForIdle()
+        assertTrue("a short list can still be pulled", refreshes >= 1)
+    }
+
+    @Test
+    fun forTalkBack_theListOffersTheActionActualiser_equivalentToTheGesture() {
+        var refreshes = 0
+        composeRule.setContent { Screen(FeedUiState.Ready(content(15)), onRefresh = { refreshes++ }) }
+        val node =
+            composeRule
+                .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.CustomActions))
+                .fetchSemanticsNodes()
+                .first { n -> n.config[SemanticsActions.CustomActions].any { it.label == "Actualiser" } }
+        composeRule.runOnIdle {
+            node.config[SemanticsActions.CustomActions].first { it.label == "Actualiser" }.action()
+        }
+        assertEquals(1, refreshes)
+    }
+
+    @Test
+    fun theStartOfARefresh_isAnnouncedPolitely_andItsEnd_whenTheFeedIsUpToDate() {
+        var refreshing by mutableStateOf(false)
+        composeRule.setContent { Screen(FeedUiState.Ready(content(3)), refreshing = refreshing) }
+        composeRule.onAllNodesWithContentDescription("Actualisation en cours").assertCountEquals(0)
+        composeRule.runOnIdle { refreshing = true }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Actualisation en cours").assertExists()
+        composeRule.runOnIdle { refreshing = false }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Informations actualisées").assertExists()
     }
 }

@@ -1,6 +1,8 @@
 package com.tomessa.miff.ui.feed
 
+import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.LostMiff
@@ -95,6 +97,21 @@ private class FakePositionReader : PositionReader {
     }
 }
 
+private class FakeRefresher : FeedRefresher {
+    var answer: ServerRead = ServerRead.Fresh(emptyMap())
+    var gate: CompletableDeferred<Unit>? = null
+    val calls = mutableListOf<Pair<String, Boolean>>()
+
+    override suspend fun refresh(
+        miffId: String,
+        readStatuses: Boolean,
+    ): ServerRead {
+        calls += miffId to readStatuses
+        gate?.await()
+        return answer
+    }
+}
+
 /** The view model of the Feed: what it listens to, when, what it computes, and the sheet "Localiser" (no screen, no Firestore). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedViewModelTest {
@@ -103,6 +120,7 @@ class FeedViewModelTest {
     private val directory = MiffDirectory(repo, { "me" }, MemoryActiveMiffStore(), FakeCachePurger(Timeline()))
     private val statuses = FakeStatusObserver()
     private val positions = FakePositionReader()
+    private val refresher = FakeRefresher()
     private val network = FakeNetwork()
     private val waiting = MutableStateFlow<Set<String>>(emptySet())
     private val base = Instant.parse("2026-11-05T17:00:00Z").toEpochMilli()
@@ -125,6 +143,7 @@ class FeedViewModelTest {
             repository = repo,
             statuses = statuses,
             positions = positions,
+            refresher = refresher,
             network = network,
             currentUid = { "me" },
             waitingAgreement = waiting,
@@ -671,6 +690,200 @@ class FeedViewModelTest {
                 val text = vm.locate.value.toString()
                 assertFalse(text, text.contains("48.8") || text.contains("2.35") || text.contains("Thomas"))
                 assertNotNull(vm.locate.value)
+            }
+        }
+
+    // --- Actualiser (pull to refresh, decision of the PM, 2026-11-06) ----------------------------------------------------
+
+    @Test
+    fun refresh_readsTheServerOnce_andRecomputesTheColoursFromWhatItSaid() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                refresher.answer =
+                    ServerRead.Fresh(
+                        mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute)),
+                    )
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(listOf(MIFF_ID to true), refresher.calls)
+                assertTrue(vm.content().bubble is Bubble.Alerts)
+                assertFalse(vm.refreshing.value)
+            }
+        }
+
+    @Test
+    fun refresh_theIndicatorIsOnWhileItReads_andASecondPullIsIgnored() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                refresher.gate = CompletableDeferred()
+                vm.onRefresh()
+                runCurrent()
+                assertTrue(vm.refreshing.value)
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(1, refresher.calls.size)
+                refresher.gate?.complete(Unit)
+                runCurrent()
+                assertFalse(vm.refreshing.value)
+            }
+        }
+
+    @Test
+    fun refresh_atMostOneServerReadingEvery15Seconds_aCloserPullEndsAtOnce() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(1, refresher.calls.size)
+                advanceTimeBy(14_000)
+                vm.onRefresh()
+                runCurrent()
+                // Too soon: no new reading, and the indicator never even started.
+                assertEquals(1, refresher.calls.size)
+                assertFalse(vm.refreshing.value)
+                advanceTimeBy(1_500)
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(2, refresher.calls.size)
+            }
+        }
+
+    @Test
+    fun refresh_offline_endsAtOnce_withoutReadingAnything() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                network.online = false
+                runCurrent()
+                vm.onRefresh()
+                runCurrent()
+                assertTrue(refresher.calls.isEmpty())
+                assertFalse(vm.refreshing.value)
+                // The dated banner of "offline" is there already.
+                assertTrue(vm.content().banners.any { it is FeedBanner.Offline })
+            }
+        }
+
+    @Test
+    fun refresh_withoutAnAnswer_endsAfter8Seconds_withTheHonestBanner_neverAnAlarm() =
+        runTest(dispatcher) {
+            ready()
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            refresher.gate = CompletableDeferred() // the server never answers
+            vm.onRefresh()
+            runCurrent()
+            assertTrue(vm.refreshing.value)
+            advanceTimeBy(7_900)
+            runCurrent()
+            assertTrue(vm.refreshing.value)
+            advanceTimeBy(200)
+            runCurrent()
+            assertFalse(vm.refreshing.value)
+            // What is shown is told as "Dernières informations de …".
+            assertTrue(vm.content().banners.any { it is FeedBanner.Offline })
+            // The server speaks later (the listener): nothing is stale any more.
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            assertTrue(vm.content().banners.none { it is FeedBanner.Offline })
+            job.cancel()
+        }
+
+    @Test
+    fun refresh_leavesTheCacheMode_whenTheServerAnswers() =
+        runTest(dispatcher) {
+            ready()
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
+            runCurrent()
+            // Online, a copy of the cache is held back (the skeleton).
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
+            refresher.answer = ServerRead.Fresh(mapOf("me" to status(), "t" to status()))
+            vm.onRefresh()
+            runCurrent()
+            // The server spoke: shown at once, as the present, without the banner of the cache.
+            assertTrue(vm.content().banners.isEmpty())
+            assertTrue(vm.content().bubble is Bubble.AllGood)
+            job.cancel()
+        }
+
+    @Test
+    fun refresh_attachesTheListenerAgain_whenItEnded_andTheAttemptsStartAgainFromZero() =
+        runTest(dispatcher) {
+            ready()
+            // The five attachments of a series (the first and four attempts), all refused; the sixth is the one of the refresh.
+            repeat(5) { statuses.enqueue().trySend(StatusFeed.Ended) }
+            val sixth = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            advanceTimeBy(60 * minute)
+            runCurrent()
+            assertEquals(5, statuses.started.size)
+            refresher.answer = ServerRead.Fresh(mapOf("me" to status(), "t" to status()))
+            vm.onRefresh()
+            runCurrent()
+            // Attached again (and the content is the server's, not a skeleton, not "Partage de ton statut en cours…").
+            assertEquals(6, statuses.started.size)
+            assertTrue(vm.content().banners.none { it is FeedBanner.Publishing })
+            // It ends again (a refusal): the whole series of attempts is back, 10 s later, not "never again".
+            sixth.trySend(StatusFeed.Ended)
+            runCurrent()
+            advanceTimeBy(11_000)
+            runCurrent()
+            assertEquals(7, statuses.started.size)
+            job.cancel()
+        }
+
+    @Test
+    fun refresh_whenTheRulesStillRefuse_isThePublishingBanner_notAnError() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                refresher.answer = ServerRead.Fresh(null)
+                vm.onRefresh()
+                runCurrent()
+                assertTrue(vm.content().banners.contains(FeedBanner.Publishing))
+            }
+        }
+
+    @Test
+    fun refresh_whenIDoNotShare_doesNotAskForTheStatuses() =
+        runTest(dispatcher) {
+            ready()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer
+                .flowOf(
+                    MIFF_ID,
+                ).tryEmit(snapshot(member("me", "Camille", sharing = false), member("t", "Thomas")))
+            runCurrent()
+            vm.onRefresh()
+            runCurrent()
+            assertEquals(listOf(MIFF_ID to false), refresher.calls)
+            assertTrue(statuses.started.isEmpty())
+            job.cancel()
+        }
+
+    @Test
+    fun refresh_anUnreachableServer_isCalm_theStateIsKept() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                refresher.answer = ServerRead.Unreachable
+                vm.onRefresh()
+                runCurrent()
+                assertFalse(vm.refreshing.value)
+                assertTrue(vm.content().banners.any { it is FeedBanner.Offline })
+                assertTrue(vm.content().bubble is Bubble.AllGood)
             }
         }
 }

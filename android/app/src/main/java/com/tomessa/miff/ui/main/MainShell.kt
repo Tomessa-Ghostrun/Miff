@@ -220,6 +220,7 @@ private fun MainNavigation(
                                     repository = container.miffRepository,
                                     statuses = container.statusObserver,
                                     positions = container.positionReader,
+                                    refresher = container.feedRefresher,
                                     network = container.networkMonitor,
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
@@ -230,6 +231,7 @@ private fun MainNavigation(
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
+            val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
@@ -256,6 +258,8 @@ private fun MainNavigation(
                         onLocate = feedViewModel::onLocate,
                         onLocateDismissed = feedViewModel::onLocateDismissed,
                         onRetry = feedViewModel::retry,
+                        refreshing = refreshing,
+                        onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
                     ),
                 placesContent = {
@@ -560,6 +564,7 @@ fun MainTabs(
                                     onLocateDismissed = feed.onLocateDismissed,
                                     onResumeSharing = onOpenMiff,
                                     onRetryFeed = feed.onRetry,
+                                    onRefresh = feed.onRefresh,
                                 ),
                             )
                         FeedScreen(
@@ -572,6 +577,7 @@ fun MainTabs(
                             agreement = agreement,
                             feed = feed.state,
                             locate = feed.locate,
+                            refreshing = feed.refreshing,
                             me = feed.me,
                             actions = actions,
                         )

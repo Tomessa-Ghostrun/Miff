@@ -46,6 +46,18 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] **Bas de liste et barre en verre** : faites défiler le Feed **jusqu'au bout** : le bouton « Ajouter un proche » finit **au-dessus** de la barre d'onglets, jamais caché dessous ; remontez : l'en-tête revient et aucun trou n'apparaît en haut ni en bas.
 - [ ] Toucher le **logo**, ou la touche de l'onglet Feed quand on y est déjà, remonte le fil **et** réaffiche l'en-tête.
 
+## Partie A ter — Tirer pour actualiser (4 min)
+
+- [ ] **Le geste** : en haut de la liste, tirez vers le bas : un petit indicateur rond (bleu, discret) apparaît **sous l'en-tête** et tourne un instant ; les cartes se mettent à jour (changez un statut dans la console juste avant pour le voir). **L'en-tête ne bouge pas et ne clignote pas** pendant le geste. Au milieu de la liste, tirer ne fait rien d'autre que remonter : le geste n'agit qu'en haut.
+- [ ] **Sortir de la copie du cache** : coupez puis rétablissez le réseau, ou ouvrez l'app juste après une coupure : si « Dernières informations de … » est affiché alors que le réseau est revenu, tirez vers le bas : le bandeau disparaît dès que le serveur répond.
+- [ ] **Limite des 15 secondes** : tirez deux fois de suite à quelques secondes d'intervalle : la **seconde** fois l'indicateur s'arrête aussitôt sans rien recharger (vous pouvez le vérifier dans la console, partie H : la seconde actualisation n'ajoute aucune lecture). Après 15 secondes, tirer relit à nouveau.
+- [ ] **Sans réseau** : mode avion, tirez : l'indicateur s'arrête **tout de suite**, le bandeau « Dernières informations de … » reste, aucun message d'erreur.
+- [ ] **Serveur qui ne répond pas** (réseau très mauvais) : l'indicateur s'arrête au bout de **8 secondes au plus** avec le bandeau « Dernières informations de … » ; jamais de phrase alarmante ou culpabilisante.
+- [ ] **TalkBack** : sur la liste, l'action « Actualiser » est proposée (menu des actions) ; l'activer fait la même chose que le geste ; TalkBack annonce poliment « Actualisation en cours » puis « Informations actualisées » (pas « à jour » si le bandeau « Dernières informations de… » est affiché).
+- [ ] **Liste courte** : avec un seul proche (liste qui ne défile pas), tirer vers le bas actualise quand même.
+- [ ] **Autres éléments** : la bulle (animée), le carrousel d'alertes (glissement manuel), la barre d'onglets en verre et les marges restent normaux pendant et après l'actualisation.
+- [ ] **Coût (facultatif)** : une actualisation = **environ 20 lectures** (4 membres, 3 lieux), à noter dans la console avec la partie H.
+
 ## Partie B — Cartes (5 min)
 
 - [ ] **Votre carte est la première**, avec « Toi », votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.

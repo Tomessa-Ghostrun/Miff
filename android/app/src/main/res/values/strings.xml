@@ -417,6 +417,9 @@
     <string name="feed_header_avatar_plain_a11y">Open my profile</string>
     <string name="feed_header_logo_a11y">Scroll to top</string>
     <string name="feed_loading_news">Loading news…</string>
+    <string name="feed_refresh_a11y">Refresh</string>
+    <string name="feed_refresh_started_a11y">Refreshing</string>
+    <string name="feed_refresh_done_a11y">Up to date</string>
     <string name="feed_loading_a11y">Loading your feed</string>
     <string name="feed_card_you">You</string>
     <string name="feed_card_you_sees">What your loved ones see of you</string>

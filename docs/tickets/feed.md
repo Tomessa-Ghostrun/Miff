@@ -39,6 +39,7 @@ En une phrase : le Feed est l'écran qu'on ouvre pour **voir d'un coup d'œil qu
 - **En-tête qui se masque en descendant, revient en remontant (« en-tête fixe » remplacé le 2026-11-06, décision du PM)** : avatar avec anneau de ton statut (mène au Profil), logo (remonte le fil), pastille / sélecteur de Miff.
 - **Bulle** de la Miff (couleur, phrase, repère de temps, carrousel d'alertes).
 - **Cartes des membres, toi compris** : avatar à anneau, prénom, étiquette d'état, repère de temps, batterie, photo d'update, boutons Localiser / Message / Appeler.
+- **Tirer pour actualiser (« pull to refresh », ajouté le 2026-11-06, décision du PM)** : tirer la liste vers le bas en haut de liste force une relecture serveur des statuts et de ce qui alimente les cartes, recalcule les couleurs, remet à zéro les relances des statuts et sort du mode « copie du cache » ; borné à **une relecture serveur toutes les 15 s**, indicateur de 8 s au plus, aucune écriture, hors connexion il se termine tout de suite ; action TalkBack « Actualiser ». Coût : 9 + 2 × membres + lieux lectures par actualisation.
 - **Bouton « Ajouter un proche »** (partage du code, déjà livré par le ticket Miff).
 - **États** : aucune Miff, seul dans la Miff, aucun statut, partage arrêté, en attente d'accord, hors connexion, chargement, accès perdu.
 - **Calcul de la couleur à la lecture**, rafraîchi chaque minute sans lecture serveur.

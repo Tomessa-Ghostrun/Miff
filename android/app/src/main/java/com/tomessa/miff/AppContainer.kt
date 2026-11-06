@@ -25,6 +25,8 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.feed.FeedRefresher
+import com.tomessa.miff.data.feed.FirestoreFeedRefresher
 import com.tomessa.miff.data.feed.FirestorePositionReader
 import com.tomessa.miff.data.feed.FirestoreStatusObserver
 import com.tomessa.miff.data.feed.PositionReader
@@ -328,6 +330,9 @@ class AppContainer(
     val statusObserver: StatusObserver by lazy { FirestoreStatusObserver() }
 
     val positionReader: PositionReader by lazy { FirestorePositionReader() }
+
+    /** "Actualiser" (pull to refresh): one forced reading from the server, at most every 15 s, reads only. */
+    val feedRefresher: FeedRefresher by lazy { FirestoreFeedRefresher() }
 
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {

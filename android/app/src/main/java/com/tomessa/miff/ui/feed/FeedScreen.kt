@@ -18,8 +18,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,8 +42,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -96,6 +102,8 @@ class FeedActions(
     /** "Reprendre le partage": the Miff screen holds the dialog and the consent (nothing is written from the Feed). */
     val onResumeSharing: (miffId: String) -> Unit = {},
     val onRetryFeed: () -> Unit = {},
+    /** Pull to refresh and the TalkBack action "Actualiser": ONE fresh reading from the server (bounded: see FeedViewModel.onRefresh). */
+    val onRefresh: () -> Unit = {},
 )
 
 /**
@@ -109,6 +117,9 @@ class FeedHost(
     val onLocate: (uid: String) -> Unit = {},
     val onLocateDismissed: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    /** True while a forced reading of "Actualiser" is under way. */
+    val refreshing: Boolean = false,
+    val onRefresh: () -> Unit = {},
     val observe: suspend () -> Unit = {},
 )
 
@@ -131,6 +142,7 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
             onOpenMap = { FeedIntents.openMap(context, it) },
             onResumeSharing = base.onResumeSharing,
             onRetryFeed = base.onRetryFeed,
+            onRefresh = base.onRefresh,
         )
     }
 }
@@ -155,6 +167,8 @@ fun FeedScreen(
     agreement: AgreementUi = AgreementUi(),
     feed: FeedUiState = FeedUiState.Loading,
     locate: LocateUiState = LocateUiState.Idle,
+    /** The indicator of the pull to refresh: a forced reading of the server is under way. */
+    refreshing: Boolean = false,
     me: FeedMe = FeedMe(),
     actions: FeedActions = FeedActions(),
 ) {
@@ -231,7 +245,18 @@ fun FeedScreen(
                 if (state.miffs.isEmpty()) {
                     Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { NoMiff(onCreate, onJoin) }
                 } else {
-                    FeedBody(state, feed, locate, agreement, texts, listState, actions, onRetry, topRoom = headerRoom)
+                    FeedBody(
+                        state,
+                        feed,
+                        locate,
+                        agreement,
+                        texts,
+                        listState,
+                        actions,
+                        onRetry,
+                        topRoom = headerRoom,
+                        refreshing = refreshing,
+                    )
                 }
             }
         }
@@ -267,6 +292,8 @@ fun FeedScreen(
                 }
             },
         )
+        // Polite announcement of "Actualiser" (a node of one dp INSIDE the safe area, drawn nowhere).
+        RefreshAnnouncement(refreshing, offline)
     }
     val shown = locate as? LocateUiState.Shown
     if (shown != null) {
@@ -280,6 +307,7 @@ fun FeedScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FeedBody(
     state: DirectoryState.Ready,
@@ -292,56 +320,86 @@ private fun FeedBody(
     onRetry: () -> Unit,
     /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
     topRoom: Dp,
+    refreshing: Boolean,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding =
-            PaddingValues(
-                start = Spacing.m,
-                end = Spacing.m,
-                top = topRoom + Spacing.m,
-                // TABBAR-GLASS: the last element scrolls above the glass bar, never under it.
-                bottom = Spacing.m + LocalTabBarInset.current,
-            ),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+    val pullState = rememberPullToRefreshState()
+    val refreshLabel = stringResource(R.string.feed_refresh_a11y)
+    // Pull to refresh: the gesture at the top of the list, and, for TalkBack, the same thing as an action of the list ("Actualiser").
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = actions.onRefresh,
+        state = pullState,
+        modifier =
+            Modifier.fillMaxSize().semantics {
+                customActions =
+                    listOf(
+                        CustomAccessibilityAction(refreshLabel) {
+                            actions.onRefresh()
+                            true
+                        },
+                    )
+            },
+        // Discreet, in the colours of the app, and under the header (which stays where it is: the gesture is at the top of the list only).
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullState,
+                isRefreshing = refreshing,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = topRoom),
+                containerColor = colorBgSurface,
+                color = colorActionPrimary,
+            )
+        },
     ) {
-        if (state.fromCache && content == null) {
-            item { MiffNotice(stringResource(R.string.feed_offline_note)) }
-        }
-        if (agreement.isWaiting(state.activeId)) {
-            // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.
-            item {
-                AwaitingAgreementCard(
-                    body = stringResource(R.string.miff_waiting_feed_body, state.active?.name.orEmpty()),
-                    onReview = agreement.onReview,
-                )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding =
+                PaddingValues(
+                    start = Spacing.m,
+                    end = Spacing.m,
+                    top = topRoom + Spacing.m,
+                    // TABBAR-GLASS: the last element scrolls above the glass bar, never under it.
+                    bottom = Spacing.m + LocalTabBarInset.current,
+                ),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (state.fromCache && content == null) {
+                item { MiffNotice(stringResource(R.string.feed_offline_note)) }
             }
-        }
-        when (feed) {
-            FeedUiState.Loading -> {
-                if (!agreement.isWaiting(state.activeId)) item { SkeletonBlocks() }
-            }
-
-            FeedUiState.Unavailable -> {
+            if (agreement.isWaiting(state.activeId)) {
+                // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        MiffNotice(stringResource(R.string.feed_unavailable))
-                        MiffSecondaryButton(
-                            text = stringResource(R.string.auth_retry_action),
-                            onClick = {
-                                actions.onRetryFeed()
-                                onRetry()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    AwaitingAgreementCard(
+                        body = stringResource(R.string.miff_waiting_feed_body, state.active?.name.orEmpty()),
+                        onReview = agreement.onReview,
+                    )
                 }
             }
+            when (feed) {
+                FeedUiState.Loading -> {
+                    if (!agreement.isWaiting(state.activeId)) item { SkeletonBlocks() }
+                }
 
-            is FeedUiState.Ready -> {
-                readyItems(feed.content, locate, texts, actions)
+                FeedUiState.Unavailable -> {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                            MiffNotice(stringResource(R.string.feed_unavailable))
+                            MiffSecondaryButton(
+                                text = stringResource(R.string.auth_retry_action),
+                                onClick = {
+                                    actions.onRetryFeed()
+                                    onRetry()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
+
+                is FeedUiState.Ready -> {
+                    readyItems(feed.content, locate, texts, actions)
+                }
             }
         }
     }
@@ -384,6 +442,31 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             )
         }
     }
+}
+
+/**
+ * Polite announcement of "Actualiser" for the screen reader: "Actualisation en cours" at the start and "Informations actualisées" at the end (nothing is
+ * claimed up to date when the Feed is telling "Dernières informations de…"). A node apart, one dp: the sentence is not drawn.
+ */
+@Composable
+private fun RefreshAnnouncement(
+    refreshing: Boolean,
+    stale: Boolean,
+) {
+    var happened by remember { mutableStateOf(false) }
+    LaunchedEffect(refreshing) { if (refreshing) happened = true }
+    val text =
+        when {
+            refreshing -> stringResource(R.string.feed_refresh_started_a11y)
+            happened && !stale -> stringResource(R.string.feed_refresh_done_a11y)
+            else -> ""
+        }
+    Box(
+        Modifier.size(1.dp).semantics {
+            liveRegion = LiveRegionMode.Polite
+            contentDescription = text
+        },
+    )
 }
 
 /** A mention above the bubble: calm, grey for "no connection" (no error tint), pale blue for "Partage de ton statut en cours…". */
