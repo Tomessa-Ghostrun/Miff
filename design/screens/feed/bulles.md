@@ -3,7 +3,7 @@
 **Pour** : FEED-2 (Android) puis FEED-6 (iOS). **Date** : 2026-11-05. **Sources** : `docs/tickets/feed.md` §5.2, §5.3, §7 (« Bulle »), D6 à D8, B1 à B6 ; maquettes du PM 0, 5, 6, 7, 8.
 
 ## Principe
-Une **bulle** = la couleur de la Miff entière, en forme de tache (celle des maquettes du PM), sous l'en-tête. **Une seule à la fois.** Elle **informe, elle n'alarme pas** : heures absolues, aucune animation, aucun son, aucun point d'exclamation, jamais « en sécurité ». Un pictogramme d'état est toujours présent (la couleur n'est jamais seule).
+Une **bulle** = la couleur de la Miff entière, en forme de tache (celle des maquettes du PM), sous l'en-tête. **Une seule à la fois.** Elle **informe, elle n'alarme pas** : heures absolues, **aucune animation d'alarme** (**exception décidée par le PM le 2026-11-06, D40 de `docs/tickets/feed.md` : la bulle de la Miff a un TRÈS LÉGER mouvement continu** : respiration d'échelle ≤ 1,5 % et dérive ≤ 3 dp, cycle de 5 à 8 s, jamais de clignotement ni de rebond, immobile avec « Animations supprimées », arrêtée hors écran), aucun son, aucun point d'exclamation, jamais « en sécurité ». Un pictogramme d'état est toujours présent (la couleur n'est jamais seule).
 
 ## Anatomie
 Tache `status/{niveau}-tint` (30 %), minimum 176 pt de haut (206 pt avec un bouton), marges intérieures 34 / 40 / 56 / 36 pt. Titre `display/headline` (Baloo Thambi 2, 24 / 32), noir ; ligne 2 `body/regular-14` noir ; ligne 3 `body/caption` 13 pt `text/description`. Pictogramme dans un disque clair en bas à droite (étoile jaune-vert pour « Tout va bien », horloge orange, « ! » rouge, sablier gris). Bouton « Envoyer un message » : contour bleu, fond blanc, 44 pt de haut, aligné à gauche.
@@ -49,7 +49,7 @@ Tache `status/{niveau}-tint` (30 %), minimum 176 pt de haut (206 pt avec un bout
 - La bulle est une **région** annoncée **seulement quand le niveau change** (jamais à chaque minute). Annonce = le titre + la ligne de temps.
 - Carrousel : chaque page atteignable sans balayage (boutons « Alerte précédente / suivante » exposés au lecteur d'écran), « Alerte 1 sur 2 » annoncé au changement de page.
 - Contraste : texte noir sur teinte 30 % (> 15:1) ; pictogramme en teinte foncée (`status/warning-text`, `status/danger-text`).
-- « Réduire les animations » : aucun effet (il n'y en a pas) ; le défilement vers une page est instantané.
+- « Réduire les animations » : **le mouvement continu de la bulle s'arrête (bulle immobile, D40)** ; le défilement vers une page est instantané.
 - Taille de texte maximale : la tache grandit en hauteur ; le titre passe à la ligne, jamais tronqué.
 - Droite-à-gauche : le pictogramme passe à gauche, la tache est symétrique.
 
