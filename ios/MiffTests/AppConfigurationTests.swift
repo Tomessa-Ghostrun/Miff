@@ -1,4 +1,5 @@
 import XCTest
+@testable import Miff
 
 /// Vérifie, dans l'app réellement construite, les réglages sensibles exigés par le ticket
 /// « Initialisation technique » (critères I1, I4, I5, I8). Les tests de l'app tournent dans
@@ -44,10 +45,35 @@ final class AppConfigurationTests: XCTestCase {
 
     // MARK: - Confidentialité (critères I4 et I5)
 
-    func testNoLocationPermissionIsDeclared() {
+    func testExactlyTheTwoLocationUsageTextsAreDeclaredAndNothingElseOfTheKind() {
+        // LOC-4a (critère IOS1) : « pendant l'utilisation » et « toujours », rien d'autre. Pas l'ancienne clé « Always » seule,
+        // pas de clé de précision temporaire.
         let locationKeys = info.keys.filter { $0.hasPrefix("NSLocation") }
 
-        XCTAssertTrue(locationKeys.isEmpty, "Clés de localisation inattendues : \(locationKeys)")
+        XCTAssertEqual(
+            Set(locationKeys),
+            ["NSLocationWhenInUseUsageDescription", "NSLocationAlwaysAndWhenInUseUsageDescription"],
+            "Clés de localisation inattendues : \(locationKeys)"
+        )
+        for key in locationKeys {
+            let text = info[key] as? String ?? ""
+            XCTAssertFalse(text.isEmpty, "\(key) : texte d'usage vide")
+            // Le texte dit la dernière position connue (dans la langue du téléphone de test).
+            XCTAssertTrue(
+                text.contains("last known location") || text.contains("dernière position connue"),
+                "\(key) : la dernière position connue doit être dite"
+            )
+        }
+    }
+
+    func testNoBackgroundModeIsDeclared() {
+        // Le mode « location » est pour les mises à jour continues de position : Miff n'en fait pas (guideline 2.5.4).
+        XCTAssertNil(info["UIBackgroundModes"])
+    }
+
+    func testTheLocationBlockingSwitchOfThisBuildIsOnByDefault() {
+        XCTAssertEqual(info["MiffLocationBlocking"] as? String, "YES")
+        XCTAssertTrue(LocationBlockingSwitch.isBlocking(info: info))
     }
 
     func testNoATSExceptionIsDeclared() {
@@ -98,17 +124,21 @@ final class AppConfigurationTests: XCTestCase {
         let userDefaults = apis.first { $0["NSPrivacyAccessedAPIType"] as? String == category }
         XCTAssertEqual(userDefaults?["NSPrivacyAccessedAPITypeReasons"] as? [String], ["CA92.1"])
 
-        // Aucune position déclarée comme collectée.
+        // LOC-4a : la position précise (dernière position connue) est déclarée, liée, pour le fonctionnement de l'app, sans suivi.
         let collected = try XCTUnwrap(manifest["NSPrivacyCollectedDataTypes"] as? [[String: Any]])
         let types = collected.compactMap { $0["NSPrivacyCollectedDataType"] as? String }
         XCTAssertFalse(types.isEmpty)
-        XCTAssertTrue(types.allSatisfy { !$0.contains("Location") }, "\(types)")
+        XCTAssertEqual(
+            types.filter { $0.contains("Location") },
+            ["NSPrivacyCollectedDataTypePreciseLocation"],
+            "\(types)"
+        )
         // Rien n'est utilisé pour du suivi.
         XCTAssertTrue(collected.allSatisfy { $0["NSPrivacyCollectedDataTypeTracking"] as? Bool == false })
         // Les données de COMPTE (inscription et profil) sont liées à l'identité, pour le fonctionnement de l'app seulement ;
         // les données d'USAGE (Analytics, rapports de plantage) ne le sont jamais.
         let accountTypes = [
-            "UserID", "EmailAddress", "Name", "PhotosorVideos", "PhoneNumber",
+            "UserID", "EmailAddress", "Name", "PhotosorVideos", "PhoneNumber", "PreciseLocation",
             // LOC-3 : l'adresse et le nom des lieux d'une Miff, écrits dans Firestore, visibles des membres.
             "PhysicalAddress", "OtherUserContent"
         ].map { "NSPrivacyCollectedDataType\($0)" }
