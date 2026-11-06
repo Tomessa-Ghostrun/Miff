@@ -197,6 +197,10 @@ struct MyMiffs: Equatable, CustomStringConvertible {
     let premium: Bool
     /// Vrai quand la réponse vient du cache du téléphone parce que le serveur n'a pas pu être joint.
     let fromCache: Bool
+    /// Faux quand la formule de la personne n'est PAS connue (lecture de l'abonnement échouée, ou réponse venue du cache) : `premium`
+    /// vaut alors faux par défaut, ce qui ne veut pas dire « gratuit ». Les écrans des lieux n'affirment rien de la formule gratuite
+    /// dans ce cas.
+    var premiumKnown = true
 
     var description: String {
         "MyMiffs(redacted)"

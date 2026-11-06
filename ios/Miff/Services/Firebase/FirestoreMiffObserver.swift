@@ -12,7 +12,7 @@ private final class ObservationBoard {
     private let publish: (MiffObservation) -> Void
     private var miff: ObservedPiece<MiffDetails>?
     private var members: ObservedPiece<[MiffMember]>?
-    private var places: ObservedPiece<[MiffPlace]>?
+    private var places: ObservedPiece<[Place]>?
 
     init(publish: @escaping (MiffObservation) -> Void) {
         self.publish = publish
@@ -26,7 +26,7 @@ private final class ObservationBoard {
         update { self.members = piece }
     }
 
-    func setPlaces(_ piece: ObservedPiece<[MiffPlace]>) {
+    func setPlaces(_ piece: ObservedPiece<[Place]>) {
         update { self.places = piece }
     }
 
@@ -59,7 +59,7 @@ final class FirestoreMiffObserver: MiffObserver {
                     board.setMembers(FirestoreMiffObserver.membersPiece(snapshot: snapshot, error: error))
                 }
             let placesListener = miffReference.collection("places").addSnapshotListener { snapshot, error in
-                board.setPlaces(FirestoreMiffObserver.placesPiece(snapshot: snapshot, error: error))
+                board.setPlaces(FirestoreMiffObserver.placesPiece(miffId: miffId, snapshot: snapshot, error: error))
             }
             continuation.onTermination = { _ in
                 miffListener.remove()
@@ -100,16 +100,15 @@ final class FirestoreMiffObserver: MiffObserver {
         return ObservedPiece(value: members(of: snapshot), fromCache: snapshot.metadata.isFromCache)
     }
 
-    /// Les lieux sont secondaires : une liste qu'on ne peut pas lire est une liste vide.
-    static func placesPiece(snapshot: QuerySnapshot?, error: Error?) -> ObservedPiece<[MiffPlace]> {
+    /// Les lieux sont secondaires : une liste qu'on ne peut pas lire est une liste vide. Chaque lieu est nettoyé comme tout texte lu
+    /// sur le réseau ; un document qui ne peut pas être un lieu de cette app (identifiant, type, coordonnées ou rayon invalides)
+    /// n'est simplement pas montré.
+    static func placesPiece(miffId: String, snapshot: QuerySnapshot?, error: Error?) -> ObservedPiece<[Place]> {
         guard error == nil, let snapshot else {
             return ObservedPiece(value: [])
         }
-        let places = snapshot.documents.compactMap { document -> MiffPlace? in
-            guard let name = document.data()["name"] as? String else {
-                return nil
-            }
-            return MiffPlace.fromServer(id: document.documentID, rawName: name)
+        let places = snapshot.documents.compactMap { document in
+            Place.fromServer(id: document.documentID, miffId: miffId, fields: document.data())
         }
         return ObservedPiece(value: places.sorted { $0.name.lowercased() < $1.name.lowercased() })
     }

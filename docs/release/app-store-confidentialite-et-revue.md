@@ -26,7 +26,8 @@ Tracking : **Non** (`NSPrivacyTracking = false`, aucun domaine de suivi, ni AdSu
 | Contact Info > **Email Address** | Oui | Oui | Non | App Functionality | |
 | Contact Info > **Phone Number** | Oui | Oui | Non | App Functionality | Obligatoire à la création du profil, visible des membres de la Miff |
 | User Content > **Photos or Videos** | Oui (facultatives) | Oui | Non | App Functionality | Photo de profil ; photo de mise à jour (24 h) |
-| User Content > **Other User Content** | Oui (facultatif) | Oui | Non | App Functionality | Le petit texte de mise à jour (140 caractères) |
+| User Content > **Other User Content** | Oui | Oui | Non | App Functionality | Le petit texte de mise à jour (140 caractères, facultatif) **et, depuis LOC-3, le nom des lieux de confiance** (« Maison du père de Nathan »), visibles des membres de la Miff |
+| Contact Info > **Physical Address** | **Oui, depuis LOC-3** (adresse postale de chaque lieu de confiance, écrite dans Firestore, avec ses coordonnées) | Oui (rattachée au compte du créateur de la Miff) | Non | App Functionality | **Écart signalé** : ce tableau (et l'§3) ne mentionnait pas les lieux ; ajouté par la PR iOS LOC-3 (`PrivacyInfo.xcprivacy`). L'adresse peut être celle d'une **tierce personne** (« Maison du père de Nathan ») : risque R4 du ticket Lieux. Les **coordonnées du lieu** sont celles de l'adresse choisie, pas celles de l'appareil : **classification « Precise Location » à confirmer** (si Apple la juge nécessaire, la ligne « Precise Location » ci-dessus couvre déjà le cas, liée au compte, App Functionality) |
 | Identifiers > **User ID** | Oui | Oui | Non | App Functionality | Identifiant de compte Firebase |
 | Identifiers > **Device ID** | **À confirmer** (identifiant d'installation Firebase, identifiant aléatoire de session) | À confirmer | Non | App Functionality, Analytics | À trancher avec la documentation Firebase du jour ; **aucun IDFA** |
 | Usage Data > **Product Interaction** | Oui, si Analytics activé (activé au clic « Rejoindre ») | **À confirmer** (non lié si l'app n'appelle pas `setUserId` ; à vérifier par `ios-dev`) | Non | Analytics | Facultatif pour la personne (interrupteur dans les Réglages) |
@@ -34,11 +35,24 @@ Tracking : **Non** (`NSPrivacyTracking = false`, aucun domaine de suivi, ni AdSu
 | Purchases > Purchase History | **À confirmer** (état d'abonnement ; aucun paiement connu de nous) | Oui | Non | App Functionality | À revoir avec le ticket Premium |
 | Contacts, Health, Financial Info, Browsing/Search History, Sensitive Info | **Non** | | | | **Search History (à confirmer)** : le texte tapé pour chercher une adresse est envoyé à un service de cartes ; il n'est pas gardé par Miff. Le PM ou `ios-dev` tranche selon la réponse d'Apple (`MKLocalSearchCompleter`) |
 
+### Ce que reçoit Apple quand on crée un lieu sur iPhone (MapKit, LOC-3)
+
+| Moment | Ce qui part vers Apple | Ce qui n'y part pas |
+|---|---|---|
+| Frappe dans le champ d'adresse (3 caractères au moins, 300 ms après la dernière frappe) | Le **texte tapé** (`MKLocalSearchCompleter`) et l'**adresse IP** de l'iPhone | Le nom du lieu, l'identité de la personne, sa position |
+| Choix d'une suggestion | La **suggestion choisie** (`MKLocalSearch`, une requête par choix) pour obtenir ses coordonnées | Idem |
+| Affichage de la carte (formulaire, détail) | Les **tuiles de la zone affichée** (donc la zone du lieu) et l'adresse IP | La position de la personne (la carte n'a pas de « ma position », aucune permission) |
+| « Voir sur la carte » | Rien de l'app : la personne ouvre Plans elle-même sur les coordonnées du lieu (sans nom) ; **Plans peut les garder dans son historique** (geste volontaire) | |
+
+- **Search History** : le texte tapé n'est pas gardé par Miff ; s'il doit être déclaré (« Browsing/Search History ») est **à trancher** selon la réponse d'Apple (déjà signalé ci-dessus). Aucune clé de localisation, aucune permission.
+- **Conditions d'usage et quota de MapKit : non lus** (aucun accès web lors du développement) ; à confirmer avant la publication (`docs/dev/lieux-fournisseurs-gratuits.md`).
+- La **politique de confidentialité** doit dire la même chose (texte tapé et zone affichée connus d'Apple).
+
 Les SDK Firebase embarquent leur propre manifeste de confidentialité ; l'app doit aussi déclarer les siens (§3).
 
 ## 3. Manifeste de confidentialité de l'app (`PrivacyInfo.xcprivacy`) : à mettre à jour par `ios-dev` avec la fonction
 
-Aujourd'hui le fichier dit « l'app ne collecte AUCUNE position à ce stade » (`ios/Miff/Resources/PrivacyInfo.xcprivacy`) et la CI vérifie l'**absence** de `NSLocation*` (`ios/ci/check-binaries.sh`, `AppConfigurationTests`, `ios/project.yml`). Avec LOC-4, ces garde-fous doivent être **réécrits dans la même PR** (ticket Lieux §9.4). Entrées à ajouter dans `NSPrivacyCollectedDataTypes` : `NSPrivacyCollectedDataTypePreciseLocation` (Linked : vrai, Tracking : faux, Purposes : `NSPrivacyCollectedDataTypePurposeAppFunctionality`), puis les photos, le contenu utilisateur et, si confirmé, l'identifiant d'appareil. Le manifeste, les étiquettes d'App Store Connect et la politique de confidentialité doivent dire **la même chose**.
+Aujourd'hui le fichier dit « l'app ne collecte AUCUNE position à ce stade » (`ios/Miff/Resources/PrivacyInfo.xcprivacy`) et la CI vérifie l'**absence** de `NSLocation*` (`ios/ci/check-binaries.sh`, `AppConfigurationTests`, `ios/project.yml`). Avec LOC-4, ces garde-fous doivent être **réécrits dans la même PR** (ticket Lieux §9.4). **Déjà ajoutées par LOC-3 (iOS)** : `NSPrivacyCollectedDataTypePhysicalAddress` et `NSPrivacyCollectedDataTypeOtherUserContent` (adresse et nom des lieux ; Linked : vrai, Tracking : faux, App Functionality). Entrées à ajouter dans `NSPrivacyCollectedDataTypes` : `NSPrivacyCollectedDataTypePreciseLocation` (Linked : vrai, Tracking : faux, Purposes : `NSPrivacyCollectedDataTypePurposeAppFunctionality`), puis les photos, le contenu utilisateur et, si confirmé, l'identifiant d'appareil. Le manifeste, les étiquettes d'App Store Connect et la politique de confidentialité doivent dire **la même chose**.
 
 ## 4. Textes d'usage de la localisation (Info.plist, `InfoPlist.xcstrings` du dépôt)
 
