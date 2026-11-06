@@ -36,7 +36,7 @@ struct MiffScreenState: CustomStringConvertible {
     var joinCode = ""
     var isOwner = false
     var members: [MiffMember] = []
-    var places: [MiffPlace] = []
+    var places: [Place] = []
     var myUid = ""
     /// Est-ce que je partage mon statut avec cette Miff (ma propre fiche) ? nil tant que ma fiche n'est pas lue.
     var sharing: Bool?

@@ -10,6 +10,8 @@ struct HeldState {
     let lost: [LostMiff]
     let premium: Bool
     let fromCache: Bool
+    /// L'abonnement a été lu auprès du serveur (un « pas de document » est un vrai « gratuit »). Faux : lecture échouée ou cache.
+    var premiumKnown = true
 }
 
 enum StateRead {
@@ -44,7 +46,7 @@ final class MiffStateReader {
     /// `allowCache` : hors ligne, le cache du téléphone peut dire quoi MONTRER, mais rien n'est créé, rejoint ni nettoyé à
     /// partir de lui.
     func read(uid: String, allowCache: Bool) async -> StateRead {
-        let premium = await isPremium(uid: uid)
+        let subscription = await subscriptionState(uid: uid)
         let refs: [MembershipRef]
         let fromCache: Bool
         switch await readRefs(uid: uid, allowCache: allowCache) {
@@ -70,7 +72,15 @@ final class MiffStateReader {
                 return .failed(failure)
             }
         }
-        let held = HeldState(valid: valid, summaries: summaries, lost: lost, premium: premium, fromCache: fromCache)
+        let held = HeldState(
+            valid: valid,
+            summaries: summaries,
+            lost: lost,
+            premium: subscription.premium,
+            fromCache: fromCache,
+            // Hors ligne (réponse du cache), la formule n'est pas connue non plus : jamais « gratuit » par défaut.
+            premiumKnown: subscription.known && !fromCache
+        )
         return .value(held)
     }
 
@@ -146,16 +156,18 @@ final class MiffStateReader {
     }
 
     /// Premium = un abonnement actif qui n'a pas expiré (les règles décident pour de vrai : ceci choisit seulement la clé de
-    /// l'index). Si la lecture échoue, le compte est traité comme non Premium (limite connue F1, documentée dans le README).
-    private func isPremium(uid: String) async -> Bool {
+    /// l'index). Si la lecture échoue, le compte est traité comme non Premium (limite connue F1, documentée dans le README) MAIS
+    /// la formule est dite « inconnue » (`known` faux) : les écrans des lieux n'en tirent aucune affirmation.
+    private func subscriptionState(uid: String) async -> (premium: Bool, known: Bool) {
         let store = self.store
         let read = await guarded { try await store.readEntitlement(uid: uid) }
-        guard case .value(let maybeEntitlement) = read,
-              let entitlement = maybeEntitlement,
-              let expires = entitlement.expiresAtMillis else {
-            return false
+        guard case .value(let maybeEntitlement) = read else {
+            return (false, false)
         }
-        return entitlement.active && expires > rules.epochMillis()
+        guard let entitlement = maybeEntitlement, let expires = entitlement.expiresAtMillis else {
+            return (false, true)
+        }
+        return (entitlement.active && expires > rules.epochMillis(), true)
     }
 
     private func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {

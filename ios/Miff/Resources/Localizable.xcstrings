@@ -2552,6 +2552,23 @@
         }
       }
     },
+    "ios_place_message_id_taken": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A place changed while you were filling in the form. Close it and open it again, then try once more."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un lieu a changé pendant que tu remplissais le formulaire. Ferme-le et rouvre-le, puis réessaie."
+          }
+        }
+      }
+    },
     "ios_miff_ready_hint": {
       "extractionState": "manual",
       "localizations": {
