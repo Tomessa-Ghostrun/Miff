@@ -44,6 +44,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffLoading
@@ -94,6 +95,8 @@ fun FeedScreen(
                 .fillMaxSize()
                 .miffTopInsets()
                 .verticalScroll(scroll)
+                // TABBAR-GLASS: the glass bar floats over the tab; this margin lets the last element scroll above it.
+                .padding(bottom = LocalTabBarInset.current)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },
         horizontalAlignment = Alignment.CenterHorizontally,

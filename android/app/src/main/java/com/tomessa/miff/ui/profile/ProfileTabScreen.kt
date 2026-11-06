@@ -38,6 +38,7 @@ import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.theme.GradientProfileHeader
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -86,6 +87,8 @@ fun ProfileTabScreen(
                 .background(GradientProfileHeader)
                 .miffTopInsets()
                 .verticalScroll(scroll)
+                // TABBAR-GLASS: the glass bar floats over the tab; this margin lets the last element scroll above it.
+                .padding(bottom = LocalTabBarInset.current)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },
         verticalArrangement = Arrangement.spacedBy(Spacing.l),

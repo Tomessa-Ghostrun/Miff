@@ -63,6 +63,7 @@ import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
+import com.tomessa.miff.ui.theme.GlassVariant
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
@@ -386,9 +387,24 @@ fun MainTabs(
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
     val holder = rememberSaveableStateHolder()
     val keyboardOpen = miffKeyboardVisible()
-    Column(modifier = Modifier.fillMaxSize()) {
+    // TABBAR-GLASS: the tabs fill the screen and pass UNDER the glass bar (GlassTabBar.kt); each tab keeps a bottom margin (LocalTabBarInset).
+    GlassTabHost(
+        variant = if (selected == MainTab.UPDATE) GlassVariant.ON_PHOTO else GlassVariant.LIGHT,
+        barVisible = !keyboardOpen,
+        bar = { glass ->
+            MainTabBar(
+                config = tabBar,
+                selected = selected,
+                onSelect = { tab ->
+                    if (tab == selected) scrollToTop++ else selected = tab
+                },
+                modifier = Modifier.miffBottomInsets(),
+                glass = glass,
+            )
+        },
+    ) {
         holder.SaveableStateProvider(selected) {
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            Box(Modifier.fillMaxSize()) {
                 when (selected) {
                     MainTab.FEED -> {
                         FeedScreen(
@@ -419,16 +435,6 @@ fun MainTabs(
                     MainTab.UPDATE -> {}
                 }
             }
-        }
-        if (!keyboardOpen) {
-            MainTabBar(
-                config = tabBar,
-                selected = selected,
-                onSelect = { tab ->
-                    if (tab == selected) scrollToTop++ else selected = tab
-                },
-                modifier = Modifier.miffBottomInsets(),
-            )
         }
     }
 }
