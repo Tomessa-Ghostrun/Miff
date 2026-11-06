@@ -92,8 +92,10 @@ final class SharedTextsParityTests: XCTestCase {
         // L'ancien texte promettait une explication « avant de te demander quoi que ce soit » : faux depuis LOC-4a.
         XCTAssertFalse(french.contains("avant de te demander"), french)
         XCTAssertFalse(english.contains("before asking you"), english)
-        XCTAssertTrue(french.contains("l'autorisation"), french)
-        XCTAssertTrue(english.contains("permission"), english)
+        // Le texte est celui d'Android (LOC-2b, fusionné dans main), que la parité ci-dessus impose : il dit l'usage de la
+        // localisation (dernière position, effacée à l'arrêt) sans parler de l'autorisation.
+        XCTAssertTrue(french.contains("dernière position connue"), french)
+        XCTAssertTrue(english.contains("last known location"), english)
     }
 
     func testStoppingTheSharingSaysThatTheLastKnownLocationIsDeletedToo() throws {

@@ -8585,13 +8585,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For now, Miff does not use your phone's location. Miff asks for the permission in advance, to be ready when arrivals and departures are noticed: nothing is read or saved for now."
+            "value": "Miff uses your phone's location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time. No history of trips is kept. You can stop sharing at any time: your location is then erased."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour l'instant, Miff n'utilise pas la position de ton téléphone. Miff te demande l'autorisation à l'avance, pour être prête quand les arrivées et les départs seront repérés : rien n'est lu ni enregistré pour l'instant."
+            "value": "Miff utilise la localisation de ton téléphone, même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l'heure. Aucun historique de trajets n'est gardé. Tu peux arrêter de partager à tout moment : ta position est alors effacée."
           }
         }
       }
