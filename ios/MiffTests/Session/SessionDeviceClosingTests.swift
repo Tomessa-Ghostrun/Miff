@@ -163,6 +163,8 @@ final class SessionManagerClosingTests: XCTestCase {
         let harness = SessionHarness()
         await openPanel(harness)
         let writes = harness.remote.writtenIds.count
+        // Comme dans `refuseConsentPanel` : une fin de session est en cours pendant toute la procédure.
+        harness.manager.ending = true
 
         let deleted = await harness.manager.deleteDeviceSessionBeforeAccountRemoval(uid: "uid-1")
         let checked = await harness.device.check(uid: "uid-1")
@@ -176,6 +178,7 @@ final class SessionManagerClosingTests: XCTestCase {
 
         // Le compte est gardé finalement : la session est réécrite et l'appareil rouvert.
         await harness.manager.restoreDeviceSession()
+        harness.manager.ending = false
 
         XCTAssertFalse(harness.device.isRevoked)
         XCTAssertNotNil(harness.device.currentDeviceId)
