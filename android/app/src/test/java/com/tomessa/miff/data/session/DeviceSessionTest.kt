@@ -213,8 +213,63 @@ class DeviceSessionTest {
             // The account was deleted from another phone: the session document is gone.
             h.sessions.remove(uid)
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
-            assertEquals(SignedOutNotice.SESSION_REPLACED, h.manager.consumeNotice())
+            // Not "used on another phone": nobody took the place, and a deletion can still be cancelled.
+            assertEquals(SignedOutNotice.SESSION_GONE, h.manager.consumeNotice())
             assertEquals("no loop: nothing is written back", changesBefore, h.sessions.changes)
+        }
+
+    @Test
+    fun theSessionGone_atLaunch_signsOut_withTheCarefulNote_andWritesNothing() =
+        run { h ->
+            // This phone has an identifier, the document is gone (the account is being deleted elsewhere).
+            h.deviceIds.id = DEVICE_A
+            h.gateway.setSignedIn(uid)
+            h.signedInWithAFeed()
+            h.manager.start()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            assertEquals(SignedOutNotice.SESSION_GONE, h.manager.consumeNotice())
+            assertTrue("nothing written, nothing deleted", h.sessions.changes.isEmpty())
+            assertTrue("the reason is on the disk like the marker", h.deviceIds.gone && h.deviceIds.replaced)
+        }
+
+    @Test
+    fun anotherPhoneTakingTheSession_staysTheOldNote_neverTheDeletionOne() =
+        run { h ->
+            h.signedInOnThisPhone()
+            h.sessions.takeOver(uid, DEVICE_B)
+            assertEquals(SignedOutNotice.SESSION_REPLACED, h.manager.consumeNotice())
+            assertFalse(h.deviceIds.gone)
+            assertFalse(h.flags.get(SessionManager.KEY_GONE_NOTICE_PENDING, false))
+        }
+
+    @Test
+    fun theGoneNote_survivesAColdStart_andIsShownOnce_theTwoFlagsAreCleared() =
+        run { h ->
+            h.signedInOnThisPhone()
+            h.sessions.remove(uid)
+            assertTrue(h.flags.get(SessionManager.KEY_REPLACED_NOTICE_PENDING, false))
+            assertTrue(h.flags.get(SessionManager.KEY_GONE_NOTICE_PENDING, false))
+            val next = SessionHarness(backgroundScope)
+            next.flags.put(SessionManager.KEY_REPLACED_NOTICE_PENDING, true)
+            next.flags.put(SessionManager.KEY_GONE_NOTICE_PENDING, true)
+            next.manager.start()
+            assertEquals(SignedOutNotice.SESSION_GONE, next.manager.consumeNotice())
+            assertNull(next.manager.consumeNotice())
+            assertFalse(next.flags.get(SessionManager.KEY_REPLACED_NOTICE_PENDING, false))
+            assertFalse(next.flags.get(SessionManager.KEY_GONE_NOTICE_PENDING, false))
+        }
+
+    @Test
+    fun theNextSignIn_clearsBothFlags_andTheMarkerOfTheReason() =
+        run { h ->
+            h.signedInOnThisPhone()
+            h.sessions.remove(uid)
+            h.manager.consumeNotice()
+            h.flags.put(SessionManager.KEY_GONE_NOTICE_PENDING, true)
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            assertNull(h.manager.signInWithEmail("a@b.fr", "password-1"))
+            assertFalse(h.flags.get(SessionManager.KEY_GONE_NOTICE_PENDING, false))
+            assertFalse(h.deviceIds.gone)
         }
 
     @Test

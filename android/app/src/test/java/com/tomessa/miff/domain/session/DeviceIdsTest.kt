@@ -78,9 +78,18 @@ class DeviceIdsTest {
     }
 
     @Test
-    fun judge_aLocalIdentifierButNoSessionAnyMore_isReplaced() {
-        // The session vanished (account deleted from another phone): signed out, and nothing is written back (no loop).
-        assertEquals(SessionVerdict.REPLACED, SessionJudge.judge(mine, RemoteSession.Missing))
+    fun judge_aLocalIdentifierButNoSessionAnyMore_isSessionGone_notReplaced() {
+        // The session vanished (account being deleted from another phone): signed out, nothing written back (no loop), but nobody TOOK the place.
+        assertEquals(SessionVerdict.SESSION_GONE, SessionJudge.judge(mine, RemoteSession.Missing))
+    }
+
+    @Test
+    fun judge_onlyAMissingSessionWithAnIdentifier_isGone_everythingElseKeepsItsVerdict() {
+        assertEquals(SessionVerdict.REPLACED, SessionJudge.judge(mine, RemoteSession.Present(theirs)))
+        assertEquals(SessionVerdict.REPLACED, SessionJudge.judge(null, RemoteSession.Present(theirs)))
+        assertEquals(SessionVerdict.REPLACED, SessionJudge.judge(null, RemoteSession.Present(mine)))
+        assertEquals(SessionVerdict.WRITE_NEW, SessionJudge.judge(null, RemoteSession.Missing))
+        assertEquals(SessionVerdict.MINE, SessionJudge.judge(mine, RemoteSession.Present(mine)))
     }
 
     private class SecureRandomWithSeed(

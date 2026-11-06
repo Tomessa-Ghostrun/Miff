@@ -50,6 +50,7 @@ interface DeviceIdStore {
 
     fun markReplaced()
 
+    /** Clears the marker "replaced" AND the one below: both belong to the same forced sign-out. */
     fun clearReplaced()
 
     /**
@@ -64,6 +65,15 @@ interface DeviceIdStore {
     fun markClosed()
 
     fun clearClosed()
+
+    /**
+     * Why this phone was replaced (survives a kill of the process, like the marker above): true when the SESSION DOCUMENT disappeared (the account is being
+     * deleted elsewhere) rather than another phone taking the place. Only decides the calm note of the sign-in screen; set with [markReplaced], cleared with
+     * [clearReplaced].
+     */
+    fun isGone(): Boolean
+
+    fun markGone()
 }
 
 /** `users/{uid}/session/active`, as the app uses it. Every call reaches the SERVER (a transaction) or fails: nothing is queued. */
@@ -130,7 +140,7 @@ class DeviceSession(
     private val currentUid: () -> String?,
     private val scope: CoroutineScope,
     /** The session is no longer ours: asks for the forced sign-out. MUST NOT wait for it (it stops the very engine that may be calling us). */
-    private val onReplaced: () -> Unit,
+    private val onReplaced: (accountGone: Boolean) -> Unit,
     private val newId: () -> String = { DeviceIds.generate() },
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val timeoutMillis: Long = TIMEOUT_MS,
@@ -208,13 +218,14 @@ class DeviceSession(
         lock.withLock {
             if (revoked) {
                 // Still signed in although replaced (a forced sign-out interrupted by the death of the process): it is taken up again, nothing is written.
-                if (currentUid() == uid) onReplaced()
+                if (currentUid() == uid) onReplaced(ids.isGone())
                 return@withLock Ensured.REPLACED
             }
             if (closed || currentUid() != uid) return@withLock Ensured.UNREACHABLE
             val local = ids.read()
             val remote = attempt { documents.read(uid) }.getOrElse { return@withLock Ensured.UNREACHABLE }
-            when (SessionJudge.judge(local, remote)) {
+            val verdict = SessionJudge.judge(local, remote)
+            when (verdict) {
                 SessionVerdict.MINE -> {
                     verifiedAtMillis = nowMillis()
                     Ensured.VERIFIED
@@ -231,8 +242,8 @@ class DeviceSession(
                     }
                 }
 
-                SessionVerdict.REPLACED -> {
-                    revoke()
+                SessionVerdict.REPLACED, SessionVerdict.SESSION_GONE -> {
+                    revoke(accountGone = verdict == SessionVerdict.SESSION_GONE)
                     Ensured.REPLACED
                 }
             }
@@ -240,7 +251,7 @@ class DeviceSession(
 
     override suspend fun clearance(recheck: Boolean): Clearance {
         if (revoked) {
-            if (currentUid() != null) onReplaced()
+            if (currentUid() != null) onReplaced(ids.isGone())
             return Clearance.Replaced
         }
         if (closed) return Clearance.Unverified
@@ -255,7 +266,7 @@ class DeviceSession(
 
     override suspend fun afterRefusal(): Boolean {
         if (revoked) {
-            if (currentUid() != null) onReplaced()
+            if (currentUid() != null) onReplaced(ids.isGone())
             return true
         }
         if (closed) return false
@@ -276,13 +287,14 @@ class DeviceSession(
         return at != NEVER && nowMillis() - at < REFUSAL_RECHECK_MILLIS
     }
 
-    private fun revoke() {
+    private fun revoke(accountGone: Boolean) {
         // The marker goes to the disk FIRST: whatever happens next (the process is killed, the purge is cut), this phone stays replaced.
         ids.markReplaced()
+        if (accountGone) ids.markGone()
         revoked = true
         verifiedAtMillis = NEVER
         ids.clear()
-        onReplaced()
+        onReplaced(accountGone)
     }
 
     // --- Listening --------------------------------------------------------------------------------------------------------------
@@ -333,11 +345,22 @@ class DeviceSession(
     private suspend fun judgeLive(remote: RemoteSession) {
         lock.withLock {
             if (revoked) return@withLock
-            // A "no session" with an identifier of ours = deleted from elsewhere (deletion of the account) = replaced, like another identifier.
-            when (SessionJudge.judge(ids.read(), remote)) {
-                SessionVerdict.MINE -> verifiedAtMillis = nowMillis()
-                SessionVerdict.WRITE_NEW -> Unit
-                SessionVerdict.REPLACED -> revoke()
+            // A "no session" with an identifier of ours = deleted from elsewhere (deletion of the account): signed out like a replacement, but with its own note.
+            when (val verdict = SessionJudge.judge(ids.read(), remote)) {
+                SessionVerdict.MINE -> {
+                    verifiedAtMillis = nowMillis()
+                }
+
+                SessionVerdict.WRITE_NEW -> {
+                    Unit
+                }
+
+                SessionVerdict.REPLACED, SessionVerdict.SESSION_GONE -> {
+                    revoke(
+                        accountGone =
+                            verdict == SessionVerdict.SESSION_GONE,
+                    )
+                }
             }
         }
     }

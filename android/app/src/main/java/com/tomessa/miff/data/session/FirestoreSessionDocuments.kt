@@ -137,7 +137,17 @@ class SharedPreferencesDeviceIdStore(
     }
 
     override fun clearReplaced() {
-        prefs.edit().remove(KEY_REPLACED).commit()
+        prefs
+            .edit()
+            .remove(KEY_REPLACED)
+            .remove(KEY_GONE)
+            .commit()
+    }
+
+    override fun isGone(): Boolean = prefs.getBoolean(KEY_GONE, false)
+
+    override fun markGone() {
+        prefs.edit().putBoolean(KEY_GONE, true).commit()
     }
 
     override fun isClosed(): Boolean = prefs.getBoolean(KEY_CLOSED, false)
@@ -154,5 +164,6 @@ class SharedPreferencesDeviceIdStore(
         const val KEY = "device_id"
         const val KEY_REPLACED = "replaced"
         const val KEY_CLOSED = "closed_for_deletion"
+        const val KEY_GONE = "replaced_session_gone"
     }
 }

@@ -58,6 +58,12 @@ fun SignInScreen(
             Spacer(Modifier.size(Spacing.m))
         }
 
+        if (state.showSessionGoneNote) {
+            // The session disappeared (the account is being deleted on another device): calm, careful information, neutral colour, nothing about any Miff.
+            MessageText(text = stringResource(R.string.auth_session_gone_notice), isError = false)
+            Spacer(Modifier.size(Spacing.m))
+        }
+
         if (state.showDeletionPendingNote) {
             MessageText(text = stringResource(R.string.settings_delete_signin_again), isError = false)
             Spacer(Modifier.size(Spacing.m))

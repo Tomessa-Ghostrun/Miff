@@ -81,6 +81,11 @@ Créez un compte jetable 5 avec une Miff de **3 ou 4 proches** (le plus long à 
 
 29 bis. [ ] Si l'écran « **La suppression n'est pas terminée** » apparaît (refus durable d'une étape), il propose **Réessayer**, le contact et **Me déconnecter**. « Me déconnecter » mène à l'écran de connexion avec un message calme ; **se reconnecter avec le même compte reprend la suppression** (rien n'est abandonné, rien n'est supprimé de plus par la déconnexion). Il n'y a **pas** de bouton « Annuler » : la suppression ne s'abandonne pas à moitié.
 
+## Partie I ter : réserves connues de la revue (à lire, facultatif à reproduire)
+
+- **Réserve A : se connecter avec un AUTRE compte après « Me déconnecter »** (comportement imposé par le ticket, SC29 : « marqueur d'un autre compte : ignoré et effacé »). Si la suppression d'un premier compte est **à moitié faite** (par exemple après « Me déconnecter » sur l'écran « La suppression n'est pas terminée ») et que vous vous connectez ensuite avec **un autre compte** sur le même téléphone, la suppression du premier compte est **abandonnée sans message** : le marqueur est effacé. **Les Miffs déjà fermées restent fermées** (ce qui a été supprimé ne revient pas), le compte et le profil du premier restent. Il suffit de **se reconnecter au premier compte** et de relancer « Supprimer mon compte » : tout est relu sur le serveur et la suppression reprend où elle en était, sans perte.
+- **Réserve B : un créateur de gros cercle qui échoue trois fois au milieu d'une seule Miff** : les trois essais ne repartent de zéro que quand **moins de Miffs** restent à traiter ; une seule Miff très grosse qui échoue trois fois de suite pendant ses retraits s'arrête donc sur « La suppression n'est pas terminée ». **« Réessayer » reprend sans perte** (les membres déjà retirés le restent, rien n'est refait deux fois) ; « Me déconnecter » et la reconnexion au même compte aussi.
+
 ## Partie J : plus grande taille de police, lecteur d'écran (4 min)
 
 30. [ ] **Plus grande taille de police** : sur l'écran d'information d'un créateur, « Prévenir mes proches », « Continuer » et « Annuler » restent atteignables (ils passent dans le défilement) ; la boîte de confirmation défile si besoin.

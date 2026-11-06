@@ -36,6 +36,7 @@ class DeviceSessionRobustnessTest {
         nextId: String = "device-new-0123456789abcdef",
     ) {
         var replacedCalls = 0
+        val goneAsked = mutableListOf<Boolean>()
         val device =
             DeviceSession(
                 ids = ids,
@@ -43,7 +44,10 @@ class DeviceSessionRobustnessTest {
                 network = network,
                 currentUid = { signedInAs },
                 scope = scope,
-                onReplaced = { replacedCalls++ },
+                onReplaced = { gone ->
+                    replacedCalls++
+                    goneAsked += gone
+                },
                 newId = { nextId },
                 nowMillis = { 1_000_000L },
                 retryPausesMillis = retryPauses,
@@ -115,6 +119,30 @@ class DeviceSessionRobustnessTest {
                 )
             assertEquals(Ensured.REPLACED, device.ensure(uid))
             assertEquals("the marker was on the disk when the sign-out was asked for", true, markerWhenAsked)
+        }
+
+    @Test
+    fun aProcessKilledAfterASessionGone_wakesUpStillReplaced_andRemembersWhy() =
+        run {
+            val first = Rig(backgroundScope, ids = MemoryDeviceIdStore(DEVICE_A))
+            // The session document is gone while this phone has an identifier: the account is being deleted elsewhere.
+            assertEquals(Ensured.REPLACED, first.device.ensure(uid))
+            assertEquals(listOf(true), first.goneAsked)
+            assertTrue(first.ids.gone)
+            // The process dies before the forced sign-out finished: the next one asks again, with the SAME reason (never "used on another phone").
+            val second = Rig(backgroundScope, ids = first.ids, docs = first.docs)
+            assertEquals(Ensured.REPLACED, second.device.ensure(uid))
+            assertEquals(listOf(true), second.goneAsked)
+        }
+
+    @Test
+    fun aReplacementByAnotherPhone_isNeverMarkedGone() =
+        run {
+            val rig = Rig(backgroundScope, ids = MemoryDeviceIdStore(DEVICE_A))
+            rig.docs.sessions[uid] = DEVICE_B
+            assertEquals(Ensured.REPLACED, rig.device.ensure(uid))
+            assertEquals(listOf(false), rig.goneAsked)
+            assertFalse(rig.ids.gone)
         }
 
     @Test

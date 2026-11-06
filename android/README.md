@@ -249,6 +249,15 @@ Ce que la personne voit une fois l'onboarding terminé et qu'une Miff existe (de
 - **Aucune donnée personnelle dans les journaux, événements d'analyse ni rapports de plantage** : le code n'écrit aucun journal (`NoSensitiveLoggingTest`) ; `MyProfile.toString()` ne montre rien ; aucun événement n'est émis par ces écrans.
 - **Écarts conscients design / plateforme (ONB-3a)** : voir la description de la PR (tableau) ; les principaux : tutoiement, libellé « Téléphone », compteurs réels, aucun « 3 caractères minimum », mention de visibilité du numéro, « Enregistrer » grisé sans changement, deux langues, pas de « Notifications » ni d'encart Premium, « Déconnexion » en bouton secondaire, pas de carte de Miff ni de lieux, confirmation de déconnexion et d'abandon ajoutées (non dessinées).
 
+## Barre d'onglets en verre dépoli (ticket TABBAR-GLASS)
+
+Spec : `design/tab-bar-liquid-glass.md`. Tout est dans `ui/main/GlassTabBar.kt` (surface de verre, hôte, bouton central), `ui/theme/GlassTokens.kt` (jetons `tabbar/*`) et `ui/theme/GlassCapability.kt` (quel niveau de verre ce téléphone peut afficher en ce moment).
+- **Trois niveaux** : flou (Android 12 et plus), sans flou à voile dense (avant Android 12, appareil à peu de mémoire, viseur caméra), opaque (économiseur de batterie, animations supprimées, contraste renforcé sur Android 14 et plus). Pas de réglage dans l'app : elle suit le système. **« Réduire la transparence » n'a aucune API publique sur Android.**
+- **Interrupteur** : `GlassPolicy.BLUR_ALLOWED` ; à `false`, plus aucun flou (ni enregistrement du contenu).
+- **Le contenu passe sous la barre** : `MainTabs` utilise `GlassTabHost` ; tout onglet qui défile doit garder `.padding(bottom = LocalTabBarInset.current)` dans sa colonne défilante (`TabBarInsetRuleTest` le vérifie pour le Feed et le Profil).
+- **Haze** n'est utilisée que dans `GlassTabBar.kt` (plan B : remplacer ce fichier). Version épinglée, module de flou seul, notice : `third_party/licenses/haze-NOTICE.md`.
+- **Bouton central** : `CentralStatusButton(level)` ; le niveau viendra de `StatusColor.level` (UPDATE-2) par le paramètre `updateStatus` de `MainTabBar` ; gris tant que rien ne le fournit.
+
 ## Créer, rejoindre, écran de la Miff (ticket MIFF-1)
 
 Ticket `docs/tickets/miff.md` (§13, critères C, J, K, G, D, H), décisions du PM `miff-questions-pm.md` (QM1 à QM15) et `feed-profil-reglages.md` §13 (Q2), maquettes `design/exports/miff/` et `onboarding-original/`. **Retirer, quitter, supprimer, renouveler le code et « Prévenir mes proches » ne sont pas dans cette PR (MIFF-2)** : aucun bouton ne leur est dessiné (un bouton qui ne fait rien n'arrive jamais chez un testeur). Les lots correspondants (`MiffWrites.leave`, `dropIndex`) existent déjà car l'accès perdu s'en sert.
@@ -362,7 +371,7 @@ Ticket `docs/tickets/session-appareil-unique.md`, contrat `backend/data-model.md
 - **Où** : `data/session/DeviceSession.kt` (toute la logique, testée avec un faux serveur), `FirestoreSessionDocuments.kt` (le document `users/{uid}/session/active` et le fichier privé de l'identifiant), `domain/session/DeviceIds.kt` (tirage de l'identifiant, règle de décision `SessionJudge`), `SessionManager` (connexion, lancement, déconnexions), `TrackingEngine` / `FirestoreMiffRepository` (rien n'est écrit sans la permission de la session).
 - **Identifiant** : aléatoire (`SecureRandom`), tiré à **chaque** connexion, sans lien avec le téléphone, dans `SharedPreferences` privées (`miff_device`) **exclues des sauvegardes** ; jamais journalisé, jamais dans Analytics ni Crashlytics. Il est lisible des membres des Miffs (recopié dans le statut et la position : limite connue du contrat, à déclarer à la confidentialité).
 - **Connexion** : session écrite **dans une transaction** (jamais en file hors connexion) et confirmée par le serveur avant la suite ; si elle ne peut pas l'être, la connexion est défaite avec le message « pas de connexion ».
-- **Écoute** : seuls les instantanés **du serveur** comptent. Vérifiée au lancement (en parallèle du compte), au retour du réseau, puis écoutée. Remplacée ou disparue : `SessionManager.onDeviceReplaced()` (déconnexion **locale** : arrêt de toute surveillance, purge, note calme ; jamais d'écriture ni de suppression de la session). Hors connexion : pas de déconnexion avant le retour du réseau (limite validée par le PM) ; les écritures sont **retenues** (jamais envoyées sans vérification), et les règles refuseraient les autres.
+- **Écoute** : seuls les instantanés **du serveur** comptent. Vérifiée au lancement (en parallèle du compte), au retour du réseau, puis écoutée. Remplacée (autre identifiant : « utilisé sur un autre téléphone ») ou disparue (identifiant ici mais plus de document : `SessionVerdict.SESSION_GONE`, note neutre « Ton compte a changé sur un autre appareil (par exemple une suppression en cours) », la raison est gardée sur le disque) : `SessionManager.onDeviceReplaced(accountGone)` (déconnexion **locale** : arrêt de toute surveillance, purge, note calme ; jamais d'écriture ni de suppression de la session). Hors connexion : pas de déconnexion avant le retour du réseau (limite validée par le PM) ; les écritures sont **retenues** (jamais envoyées sans vérification), et les règles refuseraient les autres.
 - **Écritures** : `deviceId` est un paramètre **obligatoire** de `TrackingWrites` et de `MiffWrites` (mises à jour partielles comprises) ; `DeviceIdInEveryWriteTest` le vérifie sur toutes les écritures connues et sur les sources. Le moteur demande `ActiveDevice.clearance()` au premier écrit d'un passage ; un refus du serveur fait relire la session (jamais une preuve à lui seul).
 - **Déconnexion volontaire** : la session est supprimée dans une transaction seulement si elle porte notre identifiant, avant la purge et la déconnexion ; hors connexion rien n'est supprimé.
 - **Suppression de compte (AUTH-5a et AUTH-5b)** : branchée (`releaseForAccountDeletion`, `suspendForDeletion`, `reopen`). L'état « fermé » qu'elle pose est **sur le disque** (AUTH-5b) : voir « Supprimer mon compte, avec des Miffs ».
@@ -556,6 +565,7 @@ app/src/debug     écran de diagnostic, galerie de tokens, accès Firestore/Auth
 app/src/release   App Check Play Integrity, aucune destination interne
 app/src/test      tests unitaires JUnit (48 tests ; app/src/testDebug : ViewModel du diagnostic et test de défilement de l'écran d'accueil, via Robolectric)
 third_party/fonts licences et provenance des polices
+third_party/licenses notices des bibliothèques (Haze)
 ```
 
 ## Limites connues
@@ -643,6 +653,7 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | kotlinx-serialization-json | 1.12.0 | Apache 2.0 |
 | kotlinx-coroutines-play-services | 1.11.0 | Apache 2.0 |
 | Google Play services location (géofencing, fournisseur fusionné ; LOC-2b) | 21.4.0 | Android SDK License (Google) |
+| Haze (`haze`, `haze-blur`, flou de la barre d'onglets ; TABBAR-GLASS) | 2.0.1 (épinglée) | Apache 2.0 (sans réseau, permission ni clé ; `third_party/licenses/haze-NOTICE.md`) |
 | Firebase Firestore | 27.1.0 | Apache 2.0 |
 | Firebase Authentication | 25.0.0 | Android SDK License (Google) |
 | AndroidX Credentials (+ play-services-auth) | 1.6.0 | Apache 2.0 |
