@@ -154,6 +154,31 @@ class DeviceSessionRobustnessTest {
             assertFalse(other.ids.replaced)
         }
 
+    // --- A pass already under way after a voluntary sign-out finds nothing to rewrite (review of 74a74ac) -----------------------------
+
+    @Test
+    fun afterTheSessionIsGivenBack_nothingIsVerifiedOrWrittenAnyMore_neverANewSession_untilTheNextSignIn() =
+        run {
+            val rig = Rig(backgroundScope)
+            assertTrue(rig.device.begin(uid))
+            rig.device.release(uid)
+            val changes = rig.docs.changes.toList()
+            assertNull(rig.docs.sessions[uid])
+            assertNull(rig.ids.id)
+
+            // The pass of the engine that was under way asks now: no identifier + no session would normally mean "write one".
+            assertEquals(Ensured.UNREACHABLE, rig.device.ensure(uid))
+            assertEquals(Clearance.Unverified, rig.device.clearance(recheck = true))
+            assertEquals(Clearance.Unverified, rig.device.clearance(recheck = false))
+            assertFalse(rig.device.afterRefusal())
+            assertEquals("no session was written back", changes, rig.docs.changes)
+            assertNull(rig.ids.id)
+
+            // The next sign-in reopens it.
+            assertTrue(rig.device.begin(uid))
+            assertTrue(rig.device.clearance(recheck = false) is Clearance.Cleared)
+        }
+
     // --- A dead listener starts over (5) ------------------------------------------------------------------------------------
 
     @Test

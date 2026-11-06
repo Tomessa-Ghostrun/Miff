@@ -140,16 +140,60 @@ class DeviceIdInEveryWriteTest {
         assertTrue("these files write a status or a position by themselves: $offenders", offenders.isEmpty())
     }
 
+    // A DIRECT write on the status or position collections, whatever the file: `collection("status")` (or "positions") followed, in the same chain of
+    // calls, by `.set(`, `.update(` or `.add(`. A READ of these collections (get, listener, query) is legitimate (the Feed reads them) and is not matched:
+    // the chain is a sequence of `.name(...)` calls, nothing else, so a read followed by an unrelated statement does not reach a later `set(`.
+    private val directWriteByCollection =
+        Regex(
+            """collection\(\s*"(status|positions)"\s*\)""" +
+                """(?:\s*\.(?!set\(|update\(|add\()\w+\((?:[^()]|\([^()]*\))*\))*""" +
+                """\s*\.(set|update|add)\s*\(""",
+        )
+
+    // The same by a path string: `document("miffs/x/status/y").set(`.
+    private val directWriteByPath =
+        Regex("""document\(\s*"[^"]*/(status|positions)/[^"]*"\s*\)\s*\.(set|update)\s*\(""")
+
+    private fun isDirectWrite(source: String) =
+        directWriteByCollection.containsMatchIn(source) || directWriteByPath.containsMatchIn(source)
+
     @Test
-    fun noSourceFileGoesToTheStatusOrPositionCollectionByItself() {
-        // Another way to write one: `collection("status").document(..).set(..)`. There is no reader of these collections in the app today; one that appears
-        // must be reviewed (and this test adjusted) rather than slip a write past the contract.
-        val byCollection = Regex("""collection\(\s*"(status|positions)"\s*\)""")
-        val byPathString = Regex("""document\(\s*"[^"]*/(status|positions)/""")
-        val offenders =
-            kotlinSources()
-                .filter { byCollection.containsMatchIn(it.readText()) || byPathString.containsMatchIn(it.readText()) }
-                .map { it.name }
-        assertTrue("these files reach status / positions without the builders: $offenders", offenders.isEmpty())
+    fun noSourceFileWritesTheStatusOrPositionCollectionsDirectly() {
+        val offenders = kotlinSources().filter { isDirectWrite(it.readText()) }.map { it.name }
+        assertTrue("these files write status / positions without the builders: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun theDirectWriteDetector_catchesTheWrites_inAnyShapeOfChain() {
+        val writes =
+            listOf(
+                """firestore().collection("status").document(uid).set(map)""",
+                """db.collection("miffs").document(id).collection("positions").document(uid).set(position)""",
+                """ref
+    .collection("status")
+    .document(uid)
+    .update(mapOf("a" to 1))""",
+                """miff.collection("status").add(data)""",
+                """db.document("miffs/a/status/b").set(data)""",
+                """db.document("miffs/a/positions/b").update(data)""",
+            )
+        writes.forEach { assertTrue("not caught: $it", isDirectWrite(it)) }
+    }
+
+    @Test
+    fun theDirectWriteDetector_letsTheReadsThrough_theFeedReadsStatusesAndPositions() {
+        val reads =
+            listOf(
+                """firestore().collection("status").document(uid).get(Source.SERVER).await()""",
+                """db.collection("miffs").document(id).collection("positions").document(uid).get().await()""",
+                """ref.collection("status")
+    .addSnapshotListener(MetadataChanges.INCLUDE) { snapshot, error -> }""",
+                """miff.collection("status").get().await().documents.map { it.id }""",
+                // A read, then a write to ANOTHER document in a later statement, is not a write of the collection.
+                """val ref = db.collection("status").document(uid)
+transaction.set(other, data)""",
+                """db.document("miffs/a/status/b").get().await()""",
+            )
+        reads.forEach { assertFalse("a read was taken for a write: $it", isDirectWrite(it)) }
     }
 }

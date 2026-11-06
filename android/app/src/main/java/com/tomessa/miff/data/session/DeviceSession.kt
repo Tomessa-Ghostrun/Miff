@@ -136,6 +136,14 @@ class DeviceSession(
     @Volatile
     private var revoked = ids.isReplaced()
 
+    /**
+     * Set by a voluntary sign-out ([release]), cleared only by the next sign-in ([begin]): the session was given back, so a pass of the detection that was
+     * already under way must not find "no identifier + no session" and write a NEW one (an orphan session for an account that is signing out), nor write
+     * anything. [ensure] says unreachable, [clearance] says unverified, never "write a new session".
+     */
+    @Volatile
+    private var closed = false
+
     private var watchJob: Job? = null
 
     // --- Sign-in --------------------------------------------------------------------------------------------------------------
@@ -152,6 +160,7 @@ class DeviceSession(
             // A new sign-in supersedes "replaced" (also when the write below fails: the person chose to sign in here).
             ids.clearReplaced()
             revoked = false
+            closed = false
             verifiedAtMillis = NEVER
             // The identifier is on the DISK before the server hears of it: a session written with an identifier that nobody kept would sign this phone out.
             if (!ids.save(id)) {
@@ -185,7 +194,7 @@ class DeviceSession(
                 if (currentUid() == uid) onReplaced()
                 return@withLock Ensured.REPLACED
             }
-            if (currentUid() != uid) return@withLock Ensured.UNREACHABLE
+            if (closed || currentUid() != uid) return@withLock Ensured.UNREACHABLE
             val local = ids.read()
             val remote = attempt { documents.read(uid) }.getOrElse { return@withLock Ensured.UNREACHABLE }
             when (SessionJudge.judge(local, remote)) {
@@ -217,6 +226,7 @@ class DeviceSession(
             if (currentUid() != null) onReplaced()
             return Clearance.Replaced
         }
+        if (closed) return Clearance.Unverified
         val uid = currentUid() ?: return Clearance.Unverified
         if (!recheck && isFresh()) ids.read()?.let { return Clearance.Cleared(it) }
         return when (ensure(uid)) {
@@ -231,6 +241,7 @@ class DeviceSession(
             if (currentUid() != null) onReplaced()
             return true
         }
+        if (closed) return false
         val uid = currentUid() ?: return false
         val at = verifiedAtMillis
         // The session was verified a moment ago (typically just before this write): the refusal has another cause, and no read is spent on it.
@@ -337,6 +348,8 @@ class DeviceSession(
             ids.clearReplaced()
             verifiedAtMillis = NEVER
             revoked = false
+            // Given back: nothing is verified, written or rewritten for this account until the next sign-in.
+            closed = true
         }
     }
 

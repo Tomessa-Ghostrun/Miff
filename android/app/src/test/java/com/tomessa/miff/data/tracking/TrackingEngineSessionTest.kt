@@ -22,6 +22,8 @@ import com.tomessa.miff.testsupport.FakeTrackingEnv
 import com.tomessa.miff.testsupport.FakeTrackingStore
 import com.tomessa.miff.testsupport.RecordingJournal
 import com.tomessa.miff.testsupport.whileInUseOnly
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -199,6 +201,55 @@ class TrackingEngineSessionTest {
         runTest {
             store.memberships = emptyList()
             engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(device.rechecks.isEmpty())
+        }
+
+    // --- A pass under way when the session ends writes nothing more -------------------------------------------------------------------------
+
+    @Test
+    fun aPassUnderWayWhenTheStopIsAsked_writesNothingAfterIt_andDoesNotEvenAskTheSession() =
+        runTest {
+            share(miffA)
+            val slow = kotlinx.coroutines.CompletableDeferred<Unit>()
+            store.onPlaces = { slow.await() }
+            val pass = launch { engine.refresh(TrackingEngine.Reason.OPENED) }
+            runCurrent() // the pass is under way, held at the read of the places
+            val stopping = launch { engine.stop() }
+            runCurrent() // the stop is asked for (it waits for the pass to end)
+            slow.complete(Unit)
+            pass.join()
+            stopping.join()
+            assertTrue("no position, no status", store.commits.isEmpty())
+            assertTrue("the session was not even asked: the pass knew its session had ended", device.rechecks.isEmpty())
+        }
+
+    @Test
+    fun aPassThatStartedBeforeASignOut_writesNothing_evenOnceTheNextSessionHasBegun() =
+        runTest {
+            share(miffA)
+            var generation = 1
+            val engineWithGenerations =
+                TrackingEngine(
+                    env,
+                    store,
+                    local,
+                    position,
+                    geofences,
+                    movement,
+                    wake,
+                    device,
+                    journal,
+                    timeoutMillis = 5_000,
+                    generation = { generation },
+                )
+            val slow = kotlinx.coroutines.CompletableDeferred<Unit>()
+            store.onPlaces = { slow.await() }
+            val pass = launch { engineWithGenerations.refresh(TrackingEngine.Reason.OPENED) }
+            runCurrent()
+            generation++ // the session ended and another one began while the pass was held
+            slow.complete(Unit)
+            pass.join()
+            assertTrue(store.commits.isEmpty())
             assertTrue(device.rechecks.isEmpty())
         }
 

@@ -326,6 +326,73 @@ class DeviceSessionTest {
         }
 
     @Test
+    fun aVoluntarySignOut_duringASlowPassOfTheEngine_leavesNoSessionBehind_andNothingIsWrittenAfterTheStop() =
+        runTest(UnconfinedTestDispatcher()) {
+            lateinit var engine: com.tomessa.miff.data.tracking.TrackingEngine
+            val h = SessionHarness(backgroundScope, extraTeardown = listOf(SessionTeardown { engine.stop() }))
+            h.signedInWithAFeed()
+            h.manager.start()
+            h.manager.signInWithEmail("a@b.fr", "password-1")
+            val env = FakeTrackingEnv().also { it.uid = uid }
+            val store = FakeTrackingStore()
+            engine =
+                com.tomessa.miff.data.tracking.TrackingEngine(
+                    env,
+                    store,
+                    FakeLocal(),
+                    FakePosition(env),
+                    FakeGeofences(),
+                    FakeMovement(),
+                    FakeNetworkWake(),
+                    h.device,
+                    timeoutMillis = 5_000,
+                    generation = { h.manager.generation },
+                )
+            store.memberships =
+                listOf(
+                    com.tomessa.miff.domain.miff
+                        .MembershipRef("k", "miffA"),
+                )
+            store.consents["miffA"] =
+                com.tomessa.miff.data.miff
+                    .SharingConsentRead(true, "2026-11-v03")
+            store.places["miffA"] =
+                listOf(
+                    com.tomessa.miff.domain.tracking.PlaceFact(
+                        "home",
+                        48.8566,
+                        2.3522,
+                        100,
+                        com.tomessa.miff.domain.place.PlaceType.TRUSTED,
+                    ),
+                )
+            // The pass is held in the middle (a slow network) while the person signs out.
+            val slow = kotlinx.coroutines.CompletableDeferred<Unit>()
+            store.onPlaces = { slow.await() }
+            val pass =
+                backgroundScope.launch {
+                    engine.refresh(
+                        com.tomessa.miff.data.tracking.TrackingEngine.Reason.OPENED,
+                    )
+                }
+
+            h.manager.signOut()
+            assertEquals(AppDestination.SIGN_IN, h.manager.destination())
+            assertNull("the session was given back", h.sessions.sessions[uid])
+            val changes = h.sessions.changes.toList()
+
+            // The slow pass now goes on: it must neither write a NEW session ("no identifier + no session") nor send a status or a position.
+            slow.complete(Unit)
+            pass.join()
+            assertNull("no orphan session for an account that signed out", h.sessions.sessions[uid])
+            assertEquals("nothing was written to the sessions after the sign-out", changes, h.sessions.changes)
+            assertEquals(1, changes.count { it.startsWith("write:") })
+            assertEquals(1, changes.count { it.startsWith("delete:") })
+            assertTrue("no status and no position after the stop", store.commits.isEmpty())
+            assertNull(h.deviceIds.id)
+        }
+
+    @Test
     fun aForcedSignOut_waitsFiveSecondsAtMost_forAStopThatNeverEnds_andTheOthersStillRun() =
         runTest(UnconfinedTestDispatcher()) {
             val (h, after) = harnessWithAStopThatNeverEnds(backgroundScope)

@@ -86,8 +86,15 @@ class TrackingEngine(
         private var asked = false
         private var deviceId: String? = null
 
-        /** The identifier to write, or null: nothing may be written now (replaced, or the server could not be asked). */
+        /** The session this pass belongs to: a pass that started before a sign-out must not write after it, even once the next session has begun. */
+        private val born = generation()
+
+        /** True once the session of this pass has ended (stop asked for, or a new session started): nothing may be written. */
+        fun ended(): Boolean = stoppedGeneration == born || generation() != born
+
+        /** The identifier to write, or null: nothing may be written now (ended, replaced, or the server could not be asked). */
         suspend fun deviceId(): String? {
+            if (ended()) return null
             if (!asked) {
                 asked = true
                 deviceId = (device.clearance(recheck) as? Clearance.Cleared)?.deviceId
@@ -700,6 +707,7 @@ class TrackingEngine(
                 journal.record(JournalKind.STATUS_WAITING, pending.placeId)
                 continue
             }
+            if (gate.ended()) break
             served = miffId
             val access = accessNow()
             // R-LIEU-1 (deployed): the update leaves `presenceAt` / `lastUpdateAt` alone unless the event changes them (the stored `lastUpdateAt` is accepted whatever its
@@ -776,6 +784,7 @@ class TrackingEngine(
             if (!WriteBreaker.canWriteStatus(state.breaker?.toState(), day) || !env.isOnline()) continue
             // SESS-2: without the identifier of the session nothing is written, and the change stays to be told (the access is not marked as done).
             val deviceId = gate.deviceId() ?: continue
+            if (gate.ended()) break
             val outcome =
                 guardedCall(timeoutMillis) {
                     store.commit(listOf(TrackingWrites.accessUpdate(miffId, uid, env.batteryPct(), access, deviceId)))
@@ -830,6 +839,7 @@ class TrackingEngine(
             if (!env.isOnline()) continue
             // SESS-2: a position never leaves a phone that does not hold the session (it would tell the loved ones where the OLD phone is).
             val deviceId = gate.deviceId() ?: continue
+            if (gate.ended()) break
             served = miffId
             val outcome =
                 guardedCall(timeoutMillis) {
