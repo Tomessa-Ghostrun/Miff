@@ -436,9 +436,9 @@ class SettingsScreensTest {
     // --- Account (criteria B1, B2) --------------------------------------------------------------------------------------------------
 
     @Test
-    fun account_showsTheEmailAsReadOnly_aSecondarySignOut_andNoDeleteLine() {
+    fun account_showsTheEmailAsReadOnly_aSecondarySignOut_andADiscreetDeleteLink() {
         show {
-            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {})
+            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {}, {})
         }
         shoot("account")
         composeRule
@@ -451,7 +451,11 @@ class SettingsScreensTest {
                 text(R.string.settings_account_sign_out_action),
             ).assertHasClickAction()
             .assertHeightIsAtLeast(48.dp)
-        composeRule.onAllNodesWithText("Delete", substring = true, ignoreCase = true).assertCountEquals(0)
+        // AUTH-5: "Supprimer mon compte" is a discreet TEXT link under "Se déconnecter" (SC1), reachable by a finger, never alarming.
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_entry))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
         composeRule.onAllNodesWithText("irrecoverable", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("password", substring = true, ignoreCase = true).assertCountEquals(0)
     }
@@ -476,6 +480,7 @@ class SettingsScreensTest {
                     cancelled++
                     state = state.copy(confirmingSignOut = false)
                 },
+                onDeleteRequested = {},
             )
         }
         composeRule.onNodeWithText(text(R.string.settings_account_sign_out_action)).performClick()
