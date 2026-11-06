@@ -53,6 +53,6 @@ final class RegionRegistryTests: XCTestCase {
         XCTAssertEqual(registry.keys, ["k1"], "à la limite exacte, encore gardée")
         registry.prune(visible: [], now: start.addingTimeInterval(61), maxAge: 60)
 
-        XCTAssertTrue(registry.keys.isEmpty, "jamais de prétention de surveiller une région que le système a abandonnée")
+        XCTAssertTrue(registry.keys.isEmpty, "jamais une région que le système a abandonnée")
     }
 }

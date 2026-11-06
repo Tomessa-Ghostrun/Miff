@@ -124,7 +124,7 @@ final class TrackingEngineRobustnessTests: XCTestCase {
         relaunched.local.state = rig.local.state
 
         await relaunched.engine.onTransition(.exit, zoneKey: relaunched.homeKey, atMillis: relaunched.env.now)
-        XCTAssertEqual(relaunched.movement.starts, 1, "dès la première relance, sans attendre une passe de rafraîchissement")
+        XCTAssertEqual(relaunched.movement.starts, 1, "dès la première relance, sans passe de rafraîchissement")
         await relaunched.engine.onTransition(.enter, zoneKey: relaunched.homeKey, atMillis: relaunched.env.now)
 
         XCTAssertEqual(relaunched.movement.starts, 1, "une seule fois par processus")
