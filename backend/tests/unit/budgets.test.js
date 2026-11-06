@@ -52,9 +52,10 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     fromActiveDevice: [1, 1],
     validStatus: [1, 2],
     validPosition: [1, 2],
-    // R-PHOTO-LOC : 0 appel direct, 1 avec positionPublished (seulement pour une photo LOCALISÉE, court-circuit sinon). Pas de targetSharingOn (PM, 2026-11-06).
+    // R-PHOTO-LOC : 0 appel direct, 1 avec positionPublished (pour une photo LOCALISÉE, court-circuit pour un ancien document sans localisation). Pas de targetSharingOn (PM, 2026-11-06).
+    // Depuis le resserrage du 2026-11-06 TOUTE photo écrite est localisée : en pratique 1 appel, toujours.
     photoLocationReadable: [0, 1],
-    validPhoto: [1, 1], // inchangé : la localisation réutilise le getAfter du consentement déjà lu (aucune lecture de plus à l'écriture)
+    validPhoto: [1, 1], // inchangé : la localisation (obligatoire) réutilise le getAfter du consentement déjà lu (aucune lecture de plus à l'écriture)
   });
 });
 
@@ -63,7 +64,7 @@ test('BUDGET - coût figé de chaque règle « allow » (borne haute sans court-
   assert.deepEqual(cost('match /places/{placeId} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 3, update: 3, delete: 2 });
   assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 2, update: 2, delete: 1 }); // SESS-1 : +1 (session), seulement quand la clé deviceId est présente
   assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 4, delete: 8 });
-  // R-PHOTO-LOC : lecture 2 -> 3 en borne haute (Miff + mon partage + MA position) ; 2 seulement pour une photo non localisée (court-circuit).
+  // R-PHOTO-LOC : lecture 2 -> 3 en borne haute (Miff + mon partage + MA position) ; 2 seulement pour un ANCIEN document non localisé (court-circuit), ce que plus aucune écriture ne produit.
   assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 3, create: 1, delete: 2 });
   // Dernière position (R-LIEU-POS) : écriture = Miff existante + fiche du membre ; lecture = Miff, mon partage, mon statut, ma position, partage de la cible.
   assert.deepEqual(cost('match /positions/{uid} {', ['get', 'create', 'update', 'delete']), { get: 5, create: 3, update: 3, delete: 1 }); // SESS-1 : écriture 2 -> 3 (+1 session)
@@ -254,13 +255,14 @@ test('BUDGET - SESS-1 (M-4) : activer le partage + statut + position = 5 par Mif
   assert.ok(5 * parMiff > LIMIT);
 });
 
-// --- R-PHOTO-LOC : localisation de la photo d'update (décisions du PM des 2026-11-05 et 2026-11-06) --------------------------------------
-test("BUDGET - R-PHOTO-LOC : lecture d'une photo = 2 (non localisée, court-circuit), 3 (localisée d'un autre), 2 (la sienne) ; l'heure de mesure et le consentement ne lisent rien", () => {
+// --- R-PHOTO-LOC : localisation de la photo d'update, OBLIGATOIRE (décisions du PM des 2026-11-05 et 2026-11-06) --------------------------------
+test("BUDGET - R-PHOTO-LOC : TOUTE photo lue coûte 3 lectures de règles (4 facturées) ; 2 (la sienne) ; l'heure de mesure et le consentement ne lisent rien", () => {
   const alive = model.costOfFn('miffAlive');
   const sharing = model.costOfFn('mySharingOn');
   const position = model.costOfFn('positionPublished');
-  assert.equal(alive + sharing, 2); // photo non localisée : les deux conditions seules, photoLocationReadable s'arrête au premier terme
-  assert.equal(alive + sharing + position, 3); // photo localisée d'un autre membre
+  assert.equal(alive + sharing, 2); // un ANCIEN document sans localisation (aucune écriture n'en produit plus) : photoLocationReadable s'arrête au premier terme
+  assert.equal(alive + sharing + position, 3); // toute photo écrite depuis le resserrage, lue par un autre membre : 3 lectures de règles + 1 document = 4 facturées
+  assert.equal(alive + sharing + position + 1, 4);
   assert.equal(A('match /photos/{uid} {', 'get'), 3); // borne haute calculée sur le texte
   assert.equal(model.costOfFn('photoLocationReadable'), position); // plus aucun contrôle de l'auteur (PM, 2026-11-06)
   // Écriture : le getAfter du consentement est lu UNE fois ; la localisation, son heure (measuredAt) et la version du texte ne lisent rien.
@@ -273,13 +275,23 @@ test("BUDGET - R-PHOTO-LOC : lecture d'une photo = 2 (non localisée, court-circ
   assert.ok(10 - (alive + sharing + position) >= 7); // 3 sur 10 : marge 7
 });
 
-test('BUDGET - R-PHOTO-LOC : activation + statut + position + photo localisée = 6 par Miff, 3 Miffs au plus (18 sur 20) ; 4 Miffs = 24 dépasse', () => {
+test("BUDGET - R-PHOTO-LOC : ouvrir le Feed avec une photo par autre membre (Miff de 4) coûte 4 x 3 = 12 facturées au lieu de 9 ; 6 autres membres : 24 au lieu de 18", () => {
+  const perPhotoBilled = 1 + A('match /photos/{uid} {', 'get'); // le document + 3 lectures de règles
+  assert.equal(perPhotoBilled, 4);
+  const perLegacyBilled = 1 + (model.costOfFn('miffAlive') + model.costOfFn('mySharingOn')); // ancien document : 3
+  assert.equal(perLegacyBilled, 3);
+  assert.equal(3 * perPhotoBilled, 12); // 3 autres membres, une photo chacun, par ouverture à froid
+  assert.equal(3 * perLegacyBilled, 9); // avant le resserrage (et avant la localisation de la photo)
+  assert.equal(3 * (perPhotoBilled - perLegacyBilled), 3); // +3 lectures facturées par ouverture, rien d'autre ne change
+});
+
+test('BUDGET - R-PHOTO-LOC : activation + statut + position + photo = 6 par Miff, 3 Miffs au plus (18 sur 20) ; 4 Miffs = 24 dépasse', () => {
   const perMiff = A('match /status/{uid} {', 'create') + A('match /positions/{uid} {', 'create') + A('match /photos/{uid} {', 'create'); // la fiche (renouvellement ou activation) ne lit rien dans ce lot (0), comme le lot d'activation du §12
   assert.equal(perMiff, 6);
   assert.equal(3 * perMiff, 18);
   assert.ok(LIMIT - 3 * perMiff >= 2);
   assert.ok(4 * perMiff > LIMIT);
-  // Mise à jour manuelle (photo localisée + statut avec deviceId) : 3 par Miff, 6 Miffs au plus : inchangé par la localisation.
+  // Mise à jour manuelle (photo localisée + statut avec deviceId) : 3 par Miff, 6 Miffs au plus : inchangé par la localisation obligatoire.
   const manual = A('match /photos/{uid} {', 'create') + A('match /status/{uid} {', 'create');
   assert.equal(manual, 3);
   assert.equal(6 * manual, 18);
@@ -290,4 +302,19 @@ test('BUDGET - R-PHOTO-LOC : le consentement de la photo utilise sa fonction DÉ
   const body = stripComments(text.slice(text.indexOf('function validPhotoLocation('), text.indexOf('function photoLocationReadable(')));
   assert.ok(body.includes('isPhotoLocationConsentVersion('));
   assert.ok(!body.includes('isPositionConsentVersion('));
+});
+
+test("BUDGET - R-PHOTO-LOC : la localisation est OBLIGATOIRE à l'écriture (six clés exigées, aucune branche « sans localisation » dans la validation) ; la branche permissive n'existe qu'à la lecture", () => {
+  const text = readFileSync(RULES_FILE, 'utf8');
+  const write = stripComments(text.slice(text.indexOf('function validPhotoLocation('), text.indexOf('function photoLocationReadable(')));
+  const validPhoto = stripComments(text.slice(text.indexOf('function validPhoto('), text.indexOf('match /users/{uid}')));
+  assert.match(validPhoto.replace(/\s+/g, ' '), /hasAll\(\['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'\]\)/);
+  // Plus aucune alternative « photo sans localisation » à l'écriture : ni photoHasLocation, ni get('measuredAt', null), ni « || ».
+  assert.ok(!write.includes('photoHasLocation'), "validPhotoLocation ne doit plus connaître l'absence de localisation");
+  assert.ok(!write.includes('.get('), "aucune lecture tolérante (get avec valeur par défaut) à l'écriture");
+  assert.ok(!write.includes('||'), "aucune alternative à l'écriture");
+  assert.ok(!validPhoto.includes('photoHasLocation'));
+  // La tolérance est LIMITÉE à la lecture d'un ancien document.
+  const read = stripComments(text.slice(text.indexOf('function photoLocationReadable('), text.indexOf('function validPhoto(')));
+  assert.ok(read.includes('!photoHasLocation(d)'));
 });
