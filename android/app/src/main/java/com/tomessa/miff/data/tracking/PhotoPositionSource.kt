@@ -1,6 +1,11 @@
 package com.tomessa.miff.data.tracking
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -16,24 +21,55 @@ import kotlinx.coroutines.tasks.await
  * logs it, sends it as an event or keeps it.
  */
 
+/** What the phone said when a position was asked for a photo: a position, or WHY there is none (the calm sentence is not the same). */
+sealed interface PhotoPosition {
+    class Found(
+        val fix: Fix,
+    ) : PhotoPosition {
+        override fun toString(): String = "Found(redacted)"
+    }
+
+    /** The permission of the location was taken back, or the location of the phone is switched off: only the person can change that (the settings). */
+    data object LocationOff : PhotoPosition
+
+    /** The phone could not say now (no signal, slow): "réessaie dans un instant". */
+    data object NotFound : PhotoPosition
+}
+
 /** Where the person is when a photo is published: ONE measure, never a loop. */
 fun interface PhotoPositionSource {
     /**
      * The last measure of the phone if it is less than 10 minutes old ([TrackingLimits.FIX_MAX_AGE_MILLIS]), else ONE fresh measure (high accuracy, at
-     * most [FusedPhotoPositionSource.WAIT_MILLIS] of waiting). Null when the phone cannot say (no permission, location switched off, no signal): the
-     * photo is then not published and the screen says so calmly. Reads the position: only called once the person pressed "Publier".
+     * most [FusedPhotoPositionSource.WAIT_MILLIS] of waiting). [PhotoPosition.LocationOff] when the permission was taken back or the location of the phone is
+     * off (risk R15: not the same message as a slow signal), [PhotoPosition.NotFound] when the phone cannot say now. Reads the position: only called once the
+     * person pressed "Publier".
      */
-    suspend fun measure(): Fix?
+    suspend fun measure(): PhotoPosition
 }
 
 class FusedPhotoPositionSource(
     context: Context,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : PhotoPositionSource {
-    private val client by lazy { LocationServices.getFusedLocationProviderClient(context.applicationContext) }
+    private val appContext = context.applicationContext
+    private val client by lazy { LocationServices.getFusedLocationProviderClient(appContext) }
+
+    /** At least the approximate location is granted (either is enough to tell "not taken back"). */
+    private fun permitted(): Boolean =
+        ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+
+    /** The switch of the location of the phone (the quick setting), never a position. */
+    private fun switchedOn(): Boolean {
+        val manager = appContext.getSystemService(LocationManager::class.java) ?: return false
+        return LocationManagerCompat.isLocationEnabled(manager)
+    }
 
     @Suppress("MissingPermission")
-    override suspend fun measure(): Fix? {
+    override suspend fun measure(): PhotoPosition {
+        if (!permitted() || !switchedOn()) return PhotoPosition.LocationOff
         val token = CancellationTokenSource()
         return try {
             val request =
@@ -48,14 +84,16 @@ class FusedPhotoPositionSource(
             location
                 // Whatever the source, an old position is never used: the person has moved since.
                 ?.takeIf { nowMillis() - it.time <= TrackingLimits.FIX_MAX_AGE_MILLIS }
-                ?.let { Fix(it.latitude, it.longitude, it.time) }
+                ?.let { PhotoPosition.Found(Fix(it.latitude, it.longitude, it.time)) }
+                ?: PhotoPosition.NotFound
         } catch (e: CancellationException) {
             token.cancel()
             throw e
         } catch (e: SecurityException) {
-            null
+            // The permission went while we were asking.
+            PhotoPosition.LocationOff
         } catch (e: Exception) {
-            null
+            PhotoPosition.NotFound
         }
     }
 

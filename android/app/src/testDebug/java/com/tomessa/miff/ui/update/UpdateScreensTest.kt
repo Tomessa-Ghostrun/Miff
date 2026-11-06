@@ -25,11 +25,13 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onParent
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
@@ -39,6 +41,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.profile.AndroidAvatarCodec
+import com.tomessa.miff.data.tracking.PhotoPosition
 import com.tomessa.miff.data.tracking.PhotoPositionSource
 import com.tomessa.miff.data.update.PhotoCleaner
 import com.tomessa.miff.data.update.PhotoCommit
@@ -63,6 +66,7 @@ import com.tomessa.miff.domain.update.PromptLevel
 import com.tomessa.miff.domain.update.UpdatePhoto
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeNetwork
+import com.tomessa.miff.testsupport.MemoryPublishLedger
 import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.feed.FeedHost
 import com.tomessa.miff.ui.feed.FeedUiState
@@ -134,44 +138,10 @@ class UpdateScreensTest {
         }
     }
 
-    private class Ledger : PublishLedger {
-        var explained = false
-        var openings = 0
-
-        override fun countedDay(): String? = null
-
-        override fun countToday() = 0
-
-        override fun lastPublishMillis(): Long? = null
-
-        override fun recordPublication(
-            nowMillis: Long,
-            dayKey: String,
-            count: Int,
-        ) {}
-
-        override fun photoPublishedMillis(): Long? = null
-
-        override fun clearPhotoPublished() {}
-
-        override fun cameraExplained() = explained
-
-        override fun markCameraExplained() {
-            explained = true
-        }
-
-        override fun viewfinderOpenings() = openings
-
-        override fun countViewfinderOpening() {
-            openings++
-        }
-
-        override fun clear() {}
-    }
-
     private val store = Store()
-    private val ledger = Ledger()
+    private val ledger = MemoryPublishLedger()
     private var fix: Fix? = Fix(48.0, 2.0, System.currentTimeMillis())
+    private var locationOff = false
     private var clock = System.currentTimeMillis()
     private val miffId = "AbCdEfGhIjKlMnOpQrSt"
 
@@ -181,7 +151,10 @@ class UpdateScreensTest {
             UpdatePublisher(
                 store,
                 FakeActiveDevice(),
-                PhotoPositionSource { fix },
+                PhotoPositionSource {
+                    fix?.let { PhotoPosition.Found(it) }
+                        ?: if (locationOff) PhotoPosition.LocationOff else PhotoPosition.NotFound
+                },
                 FakeNetwork(true),
                 ledger,
                 photos,
@@ -527,5 +500,71 @@ class UpdateScreensTest {
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_red_a11y)).assertExists()
         shoot("update-bulle-rouge-grande-police")
         assertEquals(PromptLevel.RED, (feedWith(ago = 3 * 60 * minute)).content.myPrompt)
+    }
+
+    // --- The notices of the review: location off (C3), no answer in time (C2) ------------------------------------------------------------------
+
+    @Test
+    fun aLocationThatIsOff_isNotTheSentenceOfASlowSignal_andLeadsToTheSettings() {
+        fix = null
+        locationOff = true
+        val vm = previewOf()
+        show { Tab(vm) }
+        composeRule.onNodeWithContentDescription("Publier").performClick()
+        composeRule.waitUntil(5_000) { (vm.stage.value as? UpdateStage.Preview)?.notice != null }
+        composeRule.onNodeWithText(text(R.string.update_notice_location_off)).assertExists()
+        composeRule.onNodeWithText("Ouvrir les réglages").assertIsEnabled()
+        composeRule.onAllNodesWithText("Position introuvable", substring = true).assertCountEquals(0)
+        assertEquals(0, store.commits)
+        shoot("update-localisation-eteinte")
+        // Calm: no blame, no alarm.
+        composeRule.onAllNodesWithText("erreur", substring = true, ignoreCase = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun aServerThatDoesNotAnswerInTime_saysItCouldNotConfirm_notThatThePhotoDidNotLeave() {
+        store.failWith =
+            com.google.firebase.firestore.FirebaseFirestoreException(
+                "slow",
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
+            )
+        val vm = previewOf()
+        show { Tab(vm) }
+        composeRule.onNodeWithContentDescription("Publier").performClick()
+        composeRule.waitUntil(5_000) { (vm.stage.value as? UpdateStage.Preview)?.notice != null }
+        composeRule.onNodeWithText(text(R.string.update_notice_unconfirmed)).assertExists()
+        composeRule.onAllNodesWithText("n'est pas partie", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText("Voir mon Feed").performClick()
+        assertEquals(1, closed)
+        shoot("update-non-confirmee")
+    }
+
+    // --- The bubble is announced (C4) and capped (C5) ------------------------------------------------------------------------------------------
+
+    @Test
+    fun theBubble_isAPoliteLiveRegion_announcedOnceAtItsAppearance() {
+        show { Tabs(feedWith(ago = 90 * minute)) }
+        val node = composeRule.onNodeWithText(text(R.string.update_bubble_orange)).fetchSemanticsNode()
+        assertEquals(
+            androidx.compose.ui.semantics.LiveRegionMode.Polite,
+            node.config[androidx.compose.ui.semantics.SemanticsProperties.LiveRegion],
+        )
+    }
+
+    @Test
+    fun theBubbleNeverTakesMoreThan40PercentOfTheScreen_atTheLargestFont_itsTextScrollsInside() {
+        show {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
+                Tabs(feedWith(ago = 3 * 60 * minute))
+            }
+        }
+        val body = composeRule.onNodeWithText(text(R.string.update_bubble_red)).onParent().getUnclippedBoundsInRoot()
+        assertTrue(
+            "the body of the bubble is at most 40 % of 800 dp: ${(body.bottom - body.top)}",
+            (body.bottom - body.top) <= 320.5.dp,
+        )
+        // The central button is still there and reachable.
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_red_a11y)).assertExists()
+        shoot("update-bulle-plafonnee")
     }
 }

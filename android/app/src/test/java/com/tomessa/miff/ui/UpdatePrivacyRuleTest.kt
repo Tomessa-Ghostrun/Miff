@@ -193,10 +193,15 @@ class UpdatePrivacyRuleTest {
     }
 
     @Test
-    fun noAnnouncementOfTheBubbleByTheScreenReader_noSoundNoVibration() {
+    fun theBubbleIsAnnouncedPolitely_noSoundNoVibration_noBlockingWriteOfTheLedger() {
         val bubble = code(named("UpdateBubble.kt"))
         val incentive = bubble.substringAfter("fun IncentiveBubble(").substringBefore("fun UpdateConfirmation(")
-        assertFalse("the bubble is static text, not a live region", incentive.contains("liveRegion"))
+        assertTrue(
+            "the bubble is a polite live region (the ticket decides)",
+            incentive.contains("LiveRegionMode.Polite"),
+        )
+        // The ledger is written with apply(): commit() would block the main thread (review C8).
+        assertFalse(code(named("PublishLedger.kt")).contains(".commit()"))
         listOf(
             "Vibrator",
             "VibrationEffect",

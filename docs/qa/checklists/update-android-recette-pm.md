@@ -37,7 +37,7 @@ Première ouverture : réglages du téléphone > Applications > Miff > Autorisat
 - [ ] **Réessayer**, **refusez** encore : « La caméra est désactivée » avec **« Ouvrir les réglages »** et « Fermer ». **Il n'y a pas** de bouton « appareil photo du téléphone » (voir l'écart n° 4 de la PR : Android l'interdit quand l'application déclare la caméra sans l'avoir obtenue).
 - [ ] **Ouvrir les réglages** ouvre la page de Miff ; autorisez l'appareil photo ; revenez : **le viseur s'ouvre tout seul**.
 - [ ] Les **autres** onglets (Feed, Profil) n'ont **jamais** demandé la caméra. Au démarrage de l'application : aucune demande.
-- [ ] **Photo de profil** (Profil > votre photo > « Prendre une photo »), caméra **non autorisée** : la boîte du système apparaît (nouveau : Android l'exige désormais pour l'appareil photo du téléphone) ; en cas de refus, un message calme et le choix dans la galerie reste possible.
+- [ ] **Photo de profil par l'appareil photo du téléphone** (Profil > votre photo > « Prendre une photo », et Réglages > Mes informations), caméra **non autorisée** : la boîte du système apparaît **avant** l'appareil photo (nouveau : Android l'exige dès que l'application déclare la caméra) ; **autorisez** : l'appareil photo du téléphone s'ouvre, la photo prise est recadrée comme avant ; **refusez** : un message calme et le choix dans la galerie reste possible. Caméra déjà autorisée : l'appareil photo s'ouvre directement, sans boîte.
 
 ## B. Viseur et prise de vue (compte A, 8 min)
 
@@ -46,6 +46,7 @@ Première ouverture : réglages du téléphone > Applications > Miff > Autorisat
 - [ ] **Bouton de bascule** en haut à droite : caméra arrière, puis selfie. **Deux touchers rapides** sur l'image : même effet. Deux touchers sur le **rond de prise de vue** : **une seule** photo.
 - [ ] **Pas de flash, de zoom, de filtre, de minuterie.**
 - [ ] Touchez le **rond** : l'**aperçu** apparaît, la photo est **un peu plus petite** que l'écran (marges, coins arrondis, fond sombre), **la croix** en haut à gauche, puis, dessous, « Tes proches verront cette photo pendant 24 h. », la ligne avec l'épingle « **Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l'as prise.** », le bouton rond **Recommencer** et le bouton bleu **Publier**.
+- [ ] **Miroir du viseur avant (à signaler)** : en selfie, le **viseur est en miroir** (comme un miroir) mais la **photo enregistrée et l'aperçu ne le sont pas** : un écriteau pris en selfie se lit à l'endroit sur la photo. Dites-nous si cela surprend ; sur l'OPPO, vérifiez que la photo arrière et la photo avant ne sont ni retournées ni couchées (ColorOS).
 - [ ] La photo de l'aperçu **n'est pas en miroir** (écrivez quelque chose sur une feuille : le texte se lit à l'endroit).
 - [ ] **La croix** et **Recommencer** font **exactement la même chose** : retour au viseur, la photo est oubliée, **rien n'est publié, aucune question**.
 - [ ] Ouvrez l'aperçu, laissez le téléphone **5 minutes**, rallumez : « Cette photo date un peu : reprends-en une. », **Publier** est grisé, **Recommencer** marche.
@@ -58,10 +59,13 @@ Première ouverture : réglages du téléphone > Applications > Miff > Autorisat
 - [ ] Console Firebase : `miffs/{id}/photos/{uid A}` existe avec `jpeg` (octets), `createdAt`, `expiresAt` (environ **23 h** plus tard), **`lat`, `lng` et `measuredAt`** (ensemble). **Pas** de `deviceId` dans la photo. Le **statut** a `hasPhoto` = `true`, `lastUpdateAt` = maintenant, `updateText` = `null`, un `deviceId`. `presence`, `placeId`, `presenceAt` **inchangés**. `positions/{uid A}` **non modifié** par l'Update.
 - [ ] **Poids** : la taille du champ `jpeg` dans la console est **inférieure à 150 000 octets** (en général 60 à 110 Ko).
 - [ ] Publiez une **seconde** photo (attendez 30 secondes) : il n'y a **toujours qu'un seul** document photo, avec la **seconde** image.
-- [ ] **Position introuvable** : coupez la **localisation du téléphone** (volet rapide) puis **Publier** : « **Position introuvable pour le moment, réessaie dans un instant.** », **la photo reste à l'écran**, bouton « Réessayer ». Rien n'est publié (console). Rallumez la localisation, **Réessayer** : la photo part.
-- [ ] **Hors connexion** : passez en **mode avion**, **Publier** : « Pas de connexion pour le moment. Ta photo n'est pas partie : réessaie dès que le réseau est revenu. », la photo reste. **Attendez 2 minutes puis réactivez le réseau : rien ne part tout seul** (console : aucune photo nouvelle). Touchez Publier : elle part.
+- [ ] **Localisation éteinte** : coupez la **localisation du téléphone** (volet rapide) puis **Publier** : « **Ta position n'est pas accessible : la localisation du téléphone est éteinte, ou Miff n'a plus le droit de l'utiliser…** » avec **« Ouvrir les réglages »**, **la photo reste à l'écran**. Rien n'est publié (console). Même message si vous retirez l'autorisation de position dans les réglages. Rallumez, **Publier** : la photo part.
+- [ ] **Signal lent** (difficile à provoquer : à l'intérieur d'un bâtiment, localisation allumée) : « **Position introuvable pour le moment, réessaie dans un instant.** » avec « Réessayer ». Ce n'est **pas** le même message que ci-dessus.
+- [ ] **Hors connexion** : passez en **mode avion**, **Publier** : « Pas de connexion pour le moment. Ta photo n'est pas partie : réessaie dès que le réseau est revenu. », la photo reste. **Attendez 2 minutes puis réactivez le réseau : rien ne part tout seul** (console : aucune photo nouvelle). Touchez Publier : elle part. *(Critère U3 nuancé : aucune écriture n'est mise en file ; seul un envoi **déjà parti** peut aboutir après un délai.)*
+- [ ] **Réseau très lent** (facultatif) : si le serveur ne répond pas en 20 secondes, l'écran dit « **On n'a pas pu confirmer. Regarde dans ton Feed…** » (et **non** « Ta photo n'est pas partie ») avec « Voir mon Feed » ; regardez le Feed et la console : la photo y est peut-être.
 - [ ] **Deux « Publier » à moins de 30 secondes** : « Tu viens de partager une photo. Réessaie dans un instant. ».
 - [ ] **Partage arrêté** (Profil > votre Miff > arrêter le partage) : le bouton rond du milieu est **gris** ; l'Update affiche « Tu as arrêté de partager. Reprends le partage pour donner de tes nouvelles. » avec « Reprendre le partage », **sans viseur ni demande de caméra**.
+- [ ] **Cas mixte (deux Miffs, Premium)** : arrêtez le partage dans **l'une des deux** seulement : l'Update reste ouvert (pas d'écran « partage arrêté », on ne le sait qu'avec une seule Miff) ; **Publier** met la photo dans l'autre Miff seulement (console) avec le message de succès habituel (la Miff où le partage est arrêté est simplement ignorée) ; l'arrêt dans **les deux** donne « Tu as arrêté de partager… » avec « Reprendre le partage ».
 - [ ] **Texte de consentement ancien** (compte qui n'a pas accepté la v3) : « Publier » dit « Pour partager une photo avec ta position, ton accord au nouveau texte est nécessaire. » avec « Revoir et accepter » ; rien n'est publié.
 
 ## D. Le bouton du milieu et la bulle d'incitation (compte A, 8 min)
@@ -94,11 +98,15 @@ Compte **B** : il doit avoir **publié sa propre position** (ouvrir l'applicatio
 
 ## G. Nettoyage de la photo expirée (facultatif, avec l'assistant)
 
+- [ ] **Après une déconnexion puis reconnexion du même compte** : publiez, déconnectez-vous (Réglages > Mon compte), **avancez l'heure de 25 h**, reconnectez-vous avec le même compte : la photo est supprimée (la date a survécu à la déconnexion). Avec **un autre compte** sur le téléphone : rien n'est supprimé.
+- [ ] **Après une réinstallation** : publiez, **désinstallez et réinstallez** l'application, reconnectez-vous, **avancez l'heure de 25 h** : le Feed affiche la carte, la photo est supprimée au lancement (la date de la dernière mise à jour remplace la date perdue). Avant 25 h : rien n'est supprimé.
+
 - [ ] Publiez une photo, **avancez l'heure du téléphone de 25 h** (ou attendez), relancez l'application avec le réseau : la photo de A est **supprimée** dans la console et le statut dit `hasPhoto` = `false`, **sans** lecture du serveur par l'application.
 
 ## H. Accessibilité (TalkBack, grande police, 8 min)
 
-- [ ] **TalkBack** : le bouton du milieu est annoncé « Donner des nouvelles, tu es en orange » (ou « tout va bien », « en rouge », « Donner des nouvelles » quand rien n'est connu). Le **rond de prise de vue** : « Prendre la photo ». **Bascule** : « Changer de caméra » ; sur l'image, l'**action** « Changer de caméra » existe dans le menu d'actions. L'aperçu annonce « Photo prise. Tu peux la publier ou recommencer. » **La croix** : « Fermer ». **Recommencer**, **Publier** ont leur nom. La **bulle** est lue comme un texte (elle **n'est pas annoncée toute seule**), le **bouton qui suit** est la pastille.
+- [ ] **TalkBack** : le bouton du milieu est annoncé « Donner des nouvelles, tu es en orange » (ou « tout va bien », « en rouge », « Donner des nouvelles » quand rien n'est connu). Le **rond de prise de vue** : « Prendre la photo ». **Bascule** : « Changer de caméra » ; sur l'image, l'**action** « Changer de caméra » existe dans le menu d'actions. L'aperçu annonce « Photo prise. Tu peux la publier ou recommencer. » **La croix** : « Fermer ». **Recommencer**, **Publier** ont leur nom. La **bulle est annoncée** une fois quand elle apparaît (et de nouveau quand elle passe de l'orange au rouge), sans son ni vibration ; le **bouton qui suit** est la pastille.
+- [ ] **Bulle plafonnée** : à la plus grande police, la bulle ne dépasse pas **40 % de la hauteur de l'écran** ; son texte défile **dans** la bulle ; la pastille reste visible.
 - [ ] **Grande police** (réglages > Affichage > taille de la police, au maximum) : les boutons « Recommencer » et « Publier » restent **visibles sans défiler** et à 48 px au moins, la bulle ne cache pas la pastille.
 - [ ] **Réduire les animations** activé : pas d'animation de la bulle.
 

@@ -6,6 +6,7 @@ import com.tomessa.miff.data.update.PhotoCleaner
 import com.tomessa.miff.data.update.PublishLedger
 import com.tomessa.miff.data.update.PublishResult
 import com.tomessa.miff.data.update.UpdatePublisher
+import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.update.CameraAccess
 import com.tomessa.miff.domain.update.CameraAccessScreen
 import com.tomessa.miff.domain.update.UpdatePhoto
@@ -78,6 +79,12 @@ sealed interface PreviewNotice {
     data object Refused : PreviewNotice
 
     data object Failed : PreviewNotice
+
+    /** The permission of the location was taken back, or the location of the phone is off: "Ouvrir les réglages". */
+    data object LocationOff : PreviewNotice
+
+    /** No answer in time: it may have left ("On n'a pas pu confirmer. Regarde dans ton Feed."). */
+    data object Unconfirmed : PreviewNotice
 
     data object NeedsAgreement : PreviewNotice
 
@@ -272,15 +279,17 @@ class UpdateViewModel(
             PublishResult.TooSoon -> PreviewNotice.TooSoon
             PublishResult.Stale -> PreviewNotice.Stale
             PublishResult.Refused -> PreviewNotice.Refused
+            PublishResult.LocationOff -> PreviewNotice.LocationOff
+            PublishResult.Unconfirmed -> PreviewNotice.Unconfirmed
             PublishResult.NeedsAgreement -> PreviewNotice.NeedsAgreement
             PublishResult.SharingStopped -> PreviewNotice.SharingStopped
             else -> PreviewNotice.Failed
         }
 
     /** At the launch and at the return to the foreground: removes MY photo from the database once it has expired (no reading of the server). */
-    fun cleanUpExpiredPhoto() {
+    fun cleanUpExpiredPhoto(mine: MyPhotoFacts? = null) {
         if (cleanJob?.isActive == true) return
-        cleanJob = viewModelScope.launch { cleaner.cleanUp() }
+        cleanJob = viewModelScope.launch { cleaner.cleanUp(mine) }
     }
 
     override fun onCleared() {

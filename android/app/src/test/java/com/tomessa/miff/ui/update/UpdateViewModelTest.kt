@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.update
 
 import com.tomessa.miff.data.feed.PhotoCache
+import com.tomessa.miff.data.tracking.PhotoPosition
 import com.tomessa.miff.data.tracking.PhotoPositionSource
 import com.tomessa.miff.data.update.PhotoCleaner
 import com.tomessa.miff.data.update.PhotoCommit
@@ -12,6 +13,7 @@ import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.update.UpdatePhoto
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeNetwork
+import com.tomessa.miff.testsupport.MemoryPublishLedger
 import com.tomessa.miff.testsupport.T0
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -72,54 +74,8 @@ class UpdateViewModelTest {
         }
     }
 
-    private class Ledger : PublishLedger {
-        var explained = false
-        var openings = 0
-        var photoAt: Long? = null
-        var last: Long? = null
-        var day: String? = null
-        var count = 0
-
-        override fun countedDay() = day
-
-        override fun countToday() = count
-
-        override fun lastPublishMillis() = last
-
-        override fun recordPublication(
-            nowMillis: Long,
-            dayKey: String,
-            count: Int,
-        ) {
-            last = nowMillis
-            day = dayKey
-            this.count = count
-            photoAt = nowMillis
-        }
-
-        override fun photoPublishedMillis() = photoAt
-
-        override fun clearPhotoPublished() {
-            photoAt = null
-        }
-
-        override fun cameraExplained() = explained
-
-        override fun markCameraExplained() {
-            explained = true
-        }
-
-        override fun viewfinderOpenings() = openings
-
-        override fun countViewfinderOpening() {
-            openings++
-        }
-
-        override fun clear() {}
-    }
-
     private val store = CountingStore()
-    private val ledger = Ledger()
+    private val ledger = MemoryPublishLedger()
     private val network = FakeNetwork(true)
     private var now = T0
     private val fix = Fix(48.0, 2.0, T0)
@@ -127,7 +83,7 @@ class UpdateViewModelTest {
     private val photo = UpdatePhoto(ByteArray(50_000), 461, 1024, takenAtMillis = T0)
 
     private fun viewModel(): UpdateViewModel {
-        val position = PhotoPositionSource { fix }
+        val position = PhotoPositionSource { PhotoPosition.Found(fix) }
         val photos = PhotoCache()
         val publisher =
             UpdatePublisher(store, device, position, network, ledger, photos, {

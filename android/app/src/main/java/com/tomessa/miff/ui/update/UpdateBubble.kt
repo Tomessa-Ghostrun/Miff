@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.update.PromptLevel
@@ -39,10 +43,9 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
  * it swallows the touches (what is under it is never triggered by accident). No sound, no vibration, no blinking, no blocking window. The text is the one of the
  * mockups, word for word.
  *
- * Screen reader (written in the PR, a difference from the ticket): the text is plain static text, NOT a live region. The ticket (5.5, A1) asks for one
- * announcement when it appears; the design file (4.4) asks for none, because a screen reader that speaks by itself about "passing to red" is the sound
- * equivalent of the alert the PM dropped (D17). The design file is followed: the text stays reachable, and the next element is the central button, whose
- * spoken name says the state. One line to change if the PM prefers the announcement.
+ * Screen reader (the ticket decides, 5.5 and A1, confirmed by the PM): the text is a POLITE live region: announced once when the bubble appears and again when it
+ * goes from orange to red, never in a loop; the next element is the central button, whose spoken name says the state. Height: at most 40 % of the screen, the text
+ * scrolls inside the bubble beyond that (design 4.3, case E8).
  */
 
 /** The tail, and the air between its tip and the bar: the tip stops 4 dp above the bar, never touches it (design 4.2). */
@@ -55,6 +58,8 @@ private val BubbleShape = RoundedCornerShape(20.dp)
 fun IncentiveBubble(
     level: PromptLevel,
     modifier: Modifier = Modifier,
+    /** The most the body of the bubble may take (40 % of the screen, design 4.3): above it, the text scrolls INSIDE the bubble and never hides the Feed. */
+    maxBodyHeight: Dp = Dp.Unspecified,
 ) {
     if (level == PromptLevel.NONE) return
     val (color, text) =
@@ -71,11 +76,19 @@ fun IncentiveBubble(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .heightIn(max = maxBodyHeight)
                     .clip(BubbleShape)
                     .background(color)
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = Spacing.m),
         ) {
-            Text(text = text, style = textBodyItalic, color = colorTextPrimary)
+            // Announced politely to a screen reader, once when it appears and again when it goes from orange to red (the text changes): no sound, no vibration.
+            Text(
+                text = text,
+                style = textBodyItalic,
+                color = colorTextPrimary,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
         // The tail points at the axis of the screen, where the central button is (the three entries of the bar are symmetric, in both directions of writing).
         Canvas(Modifier.size(TailWidth, TailHeight)) {

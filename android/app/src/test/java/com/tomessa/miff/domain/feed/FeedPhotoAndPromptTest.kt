@@ -246,4 +246,27 @@ class FeedPhotoAndPromptTest {
                 .refusalLookup(ownPositionPublished = true),
         )
     }
+
+    @Test
+    fun myStatusTellsTheCleanUpAboutMyPhoto_only_whenIShare() {
+        val mine = status(hasPhoto = true, lastUpdateAgo = 5 * minute)
+        assertEquals(MyPhotoFacts(true, now - 5 * minute), build(mapOf(me to mine)).myPhoto)
+        assertNull(build(emptyMap()).myPhoto)
+        assertNull(build(mapOf(me to mine), members = listOf(member(me, sharing = false), member("t"))).myPhoto)
+        assertNull(build(mapOf(me to mine), waiting = true).myPhoto)
+    }
+
+    @Test
+    fun aPhotoThatTheServerSaidIsNotThere_isNotAskedAgainForTheSameStatus_butIsForANewOne() {
+        val cache = PhotoCache()
+        assertFalse(cache.isMissing("m1", "t", 10L))
+        cache.putMissing("m1", "t", 10L)
+        assertTrue(cache.isMissing("m1", "t", 10L))
+        assertFalse("a new update: the server is asked again", cache.isMissing("m1", "t", 11L))
+        // A photo read afterwards replaces the memory of "nothing"; the sign-out empties everything.
+        cache.putRead("m1", "t", shared()!!, 11L)
+        cache.putMissing("m1", "u", 5L)
+        cache.clear()
+        assertFalse(cache.isMissing("m1", "u", 5L))
+    }
 }

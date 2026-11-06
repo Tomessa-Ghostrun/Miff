@@ -65,6 +65,12 @@ class PhotoCache(
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?): Boolean = size > maxEntries
         }
 
+    private val missing =
+        object : LinkedHashMap<String, Long>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?): Boolean =
+                size > maxEntries * MISSING_FACTOR
+        }
+
     @Synchronized
     fun get(
         miffId: String,
@@ -82,6 +88,23 @@ class PhotoCache(
         return entry.photo.takeIf { current }
     }
 
+    /** The server said there is nothing to show for this status (absent, expired, not valid): not asked again for the same `lastUpdateAt` (review C8). */
+    @Synchronized
+    fun putMissing(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ) {
+        missing[key(miffId, uid)] = lastUpdateAtMillis
+    }
+
+    @Synchronized
+    fun isMissing(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ): Boolean = missing[key(miffId, uid)] == lastUpdateAtMillis
+
     @Synchronized
     fun putRead(
         miffId: String,
@@ -89,6 +112,7 @@ class PhotoCache(
         photo: SharedPhoto,
         lastUpdateAtMillis: Long,
     ) {
+        missing.remove(key(miffId, uid))
         entries[key(miffId, uid)] = Entry(photo, lastUpdateAtMillis)
     }
 
@@ -99,6 +123,7 @@ class PhotoCache(
         uid: String,
         photo: SharedPhoto,
     ) {
+        missing.remove(key(miffId, uid))
         entries[key(miffId, uid)] = Entry(photo, null)
     }
 
@@ -108,11 +133,13 @@ class PhotoCache(
         uid: String,
     ) {
         entries.remove(key(miffId, uid))
+        missing.remove(key(miffId, uid))
     }
 
     @Synchronized
     fun clear() {
         entries.clear()
+        missing.clear()
     }
 
     /** End of the session: nothing of the photos stays in memory for the next person. */
@@ -125,6 +152,7 @@ class PhotoCache(
 
     private companion object {
         const val MAX_ENTRIES = 16
+        const val MISSING_FACTOR = 4
         const val INITIAL_CAPACITY = 16
         const val LOAD_FACTOR = 0.75f
     }
@@ -151,6 +179,8 @@ class FirestorePhotoReader(
         lastUpdateAtMillis: Long,
     ): PhotoLookup {
         cache.get(miffId, uid, lastUpdateAtMillis, nowMillis())?.let { return PhotoLookup.Found(it) }
+        // Nothing to show for this very status (an expired photo, for instance): the server is not asked again at each opening (review C8).
+        if (cache.isMissing(miffId, uid, lastUpdateAtMillis)) return PhotoLookup.Missing
         return try {
             val snapshot =
                 firestore()
@@ -160,7 +190,10 @@ class FirestorePhotoReader(
                     .document(uid)
                     .get()
                     .await()
-            if (!snapshot.exists()) return PhotoLookup.Missing
+            if (!snapshot.exists()) {
+                cache.putMissing(miffId, uid, lastUpdateAtMillis)
+                return PhotoLookup.Missing
+            }
             val photo =
                 SharedPhoto.fromServer(
                     jpeg = snapshot.getBlob("jpeg")?.toBytes(),
@@ -170,7 +203,10 @@ class FirestorePhotoReader(
                     lng = snapshot.get("lng") as? Number,
                     measuredAtMillis = (snapshot.get("measuredAt") as? Timestamp)?.toDate()?.time,
                     nowMillis = nowMillis(),
-                ) ?: return PhotoLookup.Missing
+                ) ?: run {
+                    cache.putMissing(miffId, uid, lastUpdateAtMillis)
+                    return PhotoLookup.Missing
+                }
             cache.putRead(miffId, uid, photo, lastUpdateAtMillis)
             PhotoLookup.Found(photo)
         } catch (e: CancellationException) {

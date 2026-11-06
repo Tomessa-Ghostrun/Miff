@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -592,8 +593,12 @@ fun MainTabs(
     // The photo of the update that expired (24 h) is removed from the database by its author, at the launch and at each return to the foreground.
     val updateModel = update?.viewModel
     val directoryReady = ready != null
-    LaunchedEffect(updateModel, directoryReady) { if (directoryReady) updateModel?.cleanUpExpiredPhoto() }
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { if (directoryReady) updateModel?.cleanUpExpiredPhoto() }
+    LaunchedEffect(updateModel, directoryReady, feedContent?.myPhoto) {
+        if (directoryReady) updateModel?.cleanUpExpiredPhoto(feedContent?.myPhoto)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        if (directoryReady) updateModel?.cleanUpExpiredPhoto(feedContent?.myPhoto)
+    }
     var confirmation by remember { mutableStateOf<String?>(null) }
     val publishedText = stringResource(R.string.update_published)
     LaunchedEffect(updateModel) {
@@ -713,6 +718,7 @@ fun MainTabs(
         if (bubbleShown) {
             IncentiveBubble(
                 level = prompt,
+                maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
@@ -738,3 +744,6 @@ fun MainTabs(
 }
 
 private const val CONFIRMATION_MILLIS = 3_000L
+
+/** The bubble takes 40 % of the screen at the most (design 4.3). */
+private const val BUBBLE_MAX_SCREEN_SHARE = 0.4f

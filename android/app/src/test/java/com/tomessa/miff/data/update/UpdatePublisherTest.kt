@@ -4,7 +4,9 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.session.Clearance
+import com.tomessa.miff.data.tracking.PhotoPosition
 import com.tomessa.miff.data.tracking.PhotoPositionSource
+import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.tracking.Fix
@@ -15,6 +17,7 @@ import com.tomessa.miff.domain.update.UpdateWrites
 import com.tomessa.miff.testsupport.DEVICE_A
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeNetwork
+import com.tomessa.miff.testsupport.MemoryPublishLedger
 import com.tomessa.miff.testsupport.T0
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -46,6 +49,7 @@ class UpdatePublisherTest {
         /** The call (0-based) that fails, and with what. */
         var failCall: Int? = null
         var failure: Exception = FirebaseFirestoreException("down", FirebaseFirestoreException.Code.UNAVAILABLE)
+        var beforeCommit: () -> Unit = {}
         var delayMillis = 0L
         private var calls = 0
 
@@ -56,6 +60,7 @@ class UpdatePublisherTest {
             build: (List<String>) -> List<DocWrite>,
         ): PhotoCommit {
             val call = calls++
+            beforeCommit()
             if (delayMillis > 0) delay(delayMillis)
             if (call == failCall) throw failure
             val sharingStopped = miffIds.filter { it in notSharing }
@@ -72,60 +77,13 @@ class UpdatePublisherTest {
     ) : PhotoPositionSource {
         var calls = 0
 
-        override suspend fun measure(): Fix? {
+        /** The permission was taken back, or the location of the phone is off. */
+        var off = false
+
+        override suspend fun measure(): PhotoPosition {
             calls++
-            return fix
-        }
-    }
-
-    private class MemoryLedger : PublishLedger {
-        var day: String? = null
-        var count = 0
-        var last: Long? = null
-        var photoAt: Long? = null
-        var explained = false
-        var openings = 0
-
-        override fun countedDay() = day
-
-        override fun countToday() = count
-
-        override fun lastPublishMillis() = last
-
-        override fun recordPublication(
-            nowMillis: Long,
-            dayKey: String,
-            count: Int,
-        ) {
-            day = dayKey
-            this.count = count
-            last = nowMillis
-            photoAt = nowMillis
-        }
-
-        override fun photoPublishedMillis() = photoAt
-
-        override fun clearPhotoPublished() {
-            photoAt = null
-        }
-
-        override fun cameraExplained() = explained
-
-        override fun markCameraExplained() {
-            explained = true
-        }
-
-        override fun viewfinderOpenings() = openings
-
-        override fun countViewfinderOpening() {
-            openings++
-        }
-
-        override fun clear() {
-            day = null
-            count = 0
-            last = null
-            photoAt = null
+            if (off) return PhotoPosition.LocationOff
+            return fix?.let { PhotoPosition.Found(it) } ?: PhotoPosition.NotFound
         }
     }
 
@@ -136,7 +94,7 @@ class UpdatePublisherTest {
     private val device = FakeActiveDevice()
     private val position = FakePosition()
     private val network = FakeNetwork(true)
-    private val ledger = MemoryLedger()
+    private val ledger = MemoryPublishLedger()
     private val cache = PhotoCache()
     private var now = T0
     private var myMiffs = listOf(miffIds[0])
@@ -309,12 +267,80 @@ class UpdatePublisherTest {
         }
 
     @Test
-    fun aServerThatDoesNotAnswer_isOffline_nothingIsCountedAsPublished() =
+    fun aServerThatDoesNotAnswer_isUnconfirmed_notNotSent_theCountIsNotMade_butTheDateOfTheSendingIsKept() =
         runTest {
             store.delayMillis = 60_000L
-            assertEquals(PublishResult.Offline, publisher().publish(photo))
+            // The photo MAY have left (a transaction that was sent can finish after the screen gave up): the sentence says "on n'a pas pu confirmer".
+            assertEquals(PublishResult.Unconfirmed, publisher().publish(photo))
             assertNull(ledger.last)
             assertNull(cache.get(miffIds[0], uid, null, now))
+            assertEquals("the date of the sending is kept for the clean-up", now, ledger.photoAt)
+        }
+
+    @Test
+    fun theDateOfThePhotoIsNotedBeforeTheSending_notAfterTheSuccess() =
+        runTest {
+            var noteAtCommit: Long? = null
+            store.beforeCommit = { noteAtCommit = ledger.photoAt }
+            publisher().publish(photo)
+            assertEquals("the note was already there when the lot was sent", now, noteAtCommit)
+        }
+
+    @Test
+    fun aSendingKnownNotToHaveLeft_putsThePreviousNoteBack() =
+        runTest {
+            ledger.photoUid = uid
+            ledger.photoAt = T0 - 3_600_000L
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            store.failCall = 0
+            assertEquals(PublishResult.Refused, publisher().publish(photo))
+            assertEquals(T0 - 3_600_000L, ledger.photoAt)
+            // And without any previous note: no note.
+            val other = MemoryPublishLedger()
+            val again =
+                UpdatePublisher(
+                    store,
+                    device,
+                    position,
+                    network,
+                    other,
+                    cache,
+                    { uid },
+                    { myMiffs },
+                    { 77 },
+                    { now },
+                    { zone },
+                )
+            store.failCall = 1
+            assertEquals(PublishResult.Refused, again.publish(photo))
+            assertNull(other.photoAt)
+        }
+
+    @Test
+    fun aDeadlineOfTheServer_isUnconfirmedToo() =
+        runTest {
+            store.failure = FirebaseFirestoreException("slow", FirebaseFirestoreException.Code.DEADLINE_EXCEEDED)
+            store.failCall = 0
+            assertEquals(PublishResult.Unconfirmed, publisher().publish(photo))
+            assertEquals(now, ledger.photoAt)
+        }
+
+    // --- The location off is not a slow signal (review C3, risk R15) ----------------------------------------------------------------------
+
+    @Test
+    fun aLocationThatIsOffOrNotAllowed_saysSo_notTheSentenceOfASlowSignal_nothingIsWritten() =
+        runTest {
+            position.off = true
+            assertEquals(PublishResult.LocationOff, publisher().publish(photo))
+            assertNothingLeft()
+            assertEquals(1, position.calls)
+        }
+
+    @Test
+    fun aSlowSignal_isNotTheLocationOff() =
+        runTest {
+            position.fix = null
+            assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
         }
 
     @Test
@@ -557,5 +583,91 @@ class UpdatePublisherTest {
             // And then it works, with no loop in between.
             store.failCall = null
             assertTrue(cleaner().cleanUp())
+        }
+
+    // --- The clean-up after a sign-out, a reinstall, a sending that left after the screen gave up (review C1, C2) --------------------------------
+
+    private fun sinceHours(hours: Long) = T0 - hours * 3_600_000L
+
+    @Test
+    fun aSignOutDoesNotForgetThePhoto_theSameAccountSigningInAgainCleansItUp() =
+        runTest {
+            publisher().publish(photo)
+            val sentAt = ledger.photoAt
+            // Sign-out: the teardown clears the ledger.
+            ledger.clear()
+            assertEquals("the note of the photo survives the sign-out", sentAt, ledger.photoAt)
+            // 25 hours later, the same account signs in again: the photo is removed.
+            now += 25L * 3_600_000L
+            assertTrue(cleaner().cleanUp())
+            assertEquals(2, store.commits.size)
+            assertNull(ledger.photoAt)
+        }
+
+    @Test
+    fun theNoteOfAnotherAccountIsIgnored_aPhotoOfSomeoneElseIsNeverCleanedUpByThisPhone() =
+        runTest {
+            ledger.photoUid = "someone-else"
+            ledger.photoAt = sinceHours(30)
+            assertFalse(cleaner().cleanUp())
+            assertTrue(store.commits.isEmpty())
+        }
+
+    @Test
+    fun aSendingThatLeftAfterTheScreenGaveUp_isCleanedUp24HoursLater() =
+        runTest {
+            store.delayMillis = 60_000L
+            assertEquals(PublishResult.Unconfirmed, publisher().publish(photo))
+            store.delayMillis = 0L
+            now += 24L * 3_600_000L + 1
+            assertTrue(cleaner().cleanUp())
+            // The deletion of a photo that may not exist is harmless: nothing is read, nothing refused.
+            assertEquals(
+                listOf(WriteKind.DELETE, WriteKind.UPDATE),
+                store.commits
+                    .last()
+                    .writes
+                    .map { it.kind },
+            )
+        }
+
+    @Test
+    fun afterAReinstall_withNoNote_aStatusThatSaysHasPhotoAndIsOlderThan25Hours_isCleanedUp_withoutReadingTheServer() =
+        runTest {
+            assertNull(ledger.photoAt)
+            val removed = cleaner().cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(26)))
+            assertTrue(removed)
+            val writes = store.commits.single().writes
+            assertEquals(listOf(WriteKind.DELETE, WriteKind.UPDATE), writes.map { it.kind })
+            assertEquals(false, writes[1].data["hasPhoto"])
+        }
+
+    @Test
+    fun afterAReinstall_aRecentStatus_isAdoptedAsTheNote_nothingIsDeletedYet() =
+        runTest {
+            assertFalse(cleaner().cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(10))))
+            assertTrue(store.commits.isEmpty())
+            assertEquals("the date of the last update stands in for the note", sinceHours(10), ledger.photoAt)
+            // Fourteen hours later the note says 24 h and a bit: the photo is removed.
+            now += 15L * 3_600_000L
+            assertTrue(cleaner().cleanUp())
+        }
+
+    @Test
+    fun withNoNoteAndNoPhotoInTheStatus_orNoDate_nothingIsDone() =
+        runTest {
+            assertFalse(cleaner().cleanUp(MyPhotoFacts(hasPhoto = false, lastUpdateAtMillis = sinceHours(40))))
+            assertFalse(cleaner().cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = null)))
+            assertFalse(cleaner().cleanUp(null))
+            assertTrue(store.commits.isEmpty())
+        }
+
+    @Test
+    fun theCleanUpNeverDeletesOnARefusal_theNoteStays() =
+        runTest {
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            store.failCall = 0
+            assertFalse(cleaner().cleanUp(MyPhotoFacts(hasPhoto = true, lastUpdateAtMillis = sinceHours(30))))
+            assertTrue("a refused lot wrote nothing", store.commits.isEmpty())
         }
 }

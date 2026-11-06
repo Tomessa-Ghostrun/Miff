@@ -116,6 +116,11 @@ object FeedBuilder {
             cards = cards,
             announceKey = announceKey(bubble),
             myPrompt = UpdatePrompt.level(statuses[input.myUid], mySharing && !input.waitingAgreement, nowMillis),
+            myPhoto =
+                statuses[input.myUid]
+                    ?.takeIf {
+                        mySharing && !input.waitingAgreement
+                    }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
         )
     }
 

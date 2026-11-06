@@ -114,6 +114,15 @@ sealed interface PhotoSlot {
     }
 }
 
+/**
+ * What MY status says about MY photo, for the clean-up of an expired photo (ticket 6.4, criterion U7): after a reinstall or a new phone the note of the date
+ * is gone, so the date of the last update stands in for it.
+ */
+data class MyPhotoFacts(
+    val hasPhoto: Boolean,
+    val lastUpdateAtMillis: Long?,
+)
+
 /** One card: a member, me included. The first of the list is MINE (no Localiser, no Message, no Appeler on it). */
 data class MemberCard(
     val member: MiffMember,
@@ -240,6 +249,8 @@ data class FeedContent(
     val announceKey: String,
     /** UPDATE-2: what the bubble of encouragement above the tab bar says for MY status in this Miff (D18, D19, D21). */
     val myPrompt: PromptLevel = PromptLevel.NONE,
+    /** UPDATE-1: the facts about MY photo (null while my status is not read). */
+    val myPhoto: MyPhotoFacts? = null,
 ) {
     override fun toString(): String = "FeedContent(redacted)"
 }

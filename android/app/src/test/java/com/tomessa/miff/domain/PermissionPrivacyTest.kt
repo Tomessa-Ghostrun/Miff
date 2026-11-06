@@ -67,7 +67,11 @@ class PermissionPrivacyTest {
             "RECORD_AUDIO",
         ).forEach { assertFalse("$it must never be declared", manifest.contains(it)) }
         // The camera and the front camera are NOT required: a phone without them can install Miff (criterion P4).
-        listOf("android.hardware.camera", "android.hardware.camera.front").forEach { feature ->
+        listOf(
+            "android.hardware.camera",
+            "android.hardware.camera.front",
+            "android.hardware.camera.autofocus",
+        ).forEach { feature ->
             val declaration =
                 Regex("""<uses-feature\s+android:name="${Regex.escape(feature)}"\s+android:required="false"\s*/>""")
             assertTrue("$feature must be declared as not required", declaration.containsMatchIn(manifest))

@@ -285,6 +285,7 @@ fun UpdateTab(
 
             is UpdateStage.Preview -> {
                 PreviewStage(
+                    onOpenSettings = openSettings,
                     stage = current,
                     miffCount = miffCount,
                     onRetake = viewModel::onRetake,
@@ -552,6 +553,7 @@ private fun RoundOverlayButton(
 
 @Composable
 private fun PreviewStage(
+    onOpenSettings: () -> Unit,
     stage: UpdateStage.Preview,
     miffCount: Int,
     onRetake: () -> Unit,
@@ -591,6 +593,7 @@ private fun PreviewStage(
                 )
                 stage.notice?.let { notice ->
                     NoticeCard(
+                        onOpenSettings = onOpenSettings,
                         notice = notice,
                         canRetry = !stage.publishing,
                         onRetry = onPublish,
@@ -732,6 +735,7 @@ private fun PublishingVeil() {
 /** A calm card over the photo: what did not happen, in plain words, never "error"; the photo is still there; a way forward when there is one. */
 @Composable
 private fun NoticeCard(
+    onOpenSettings: () -> Unit,
     notice: PreviewNotice,
     canRetry: Boolean,
     onRetry: () -> Unit,
@@ -742,6 +746,8 @@ private fun NoticeCard(
         when (notice) {
             PreviewNotice.Offline -> stringResource(R.string.update_notice_offline)
             PreviewNotice.PositionNotFound -> stringResource(R.string.update_notice_position)
+            PreviewNotice.LocationOff -> stringResource(R.string.update_notice_location_off)
+            PreviewNotice.Unconfirmed -> stringResource(R.string.update_notice_unconfirmed)
             PreviewNotice.TooMany -> stringResource(R.string.update_notice_too_many)
             PreviewNotice.TooSoon -> stringResource(R.string.update_notice_too_soon)
             PreviewNotice.Stale -> stringResource(R.string.update_preview_stale)
@@ -753,7 +759,7 @@ private fun NoticeCard(
     val icon =
         when (notice) {
             PreviewNotice.Offline -> R.drawable.ic_loc_cloud_off
-            PreviewNotice.PositionNotFound -> R.drawable.ic_update_pin
+            PreviewNotice.PositionNotFound, PreviewNotice.LocationOff -> R.drawable.ic_update_pin
             else -> R.drawable.ic_feed_clock
         }
     Column(
@@ -785,6 +791,16 @@ private fun NoticeCard(
                 PreviewNotice.SharingStopped -> {
                     stringResource(R.string.update_action_resume_sharing) to
                         actions.onResumeSharing
+                }
+
+                // The permission of the location was taken back, or the location of the phone is off: only the settings can change that.
+                PreviewNotice.LocationOff -> {
+                    stringResource(R.string.update_action_open_settings) to onOpenSettings
+                }
+
+                // It may have left: the Feed shows my card with the photo if it did ("Publier" stays available: a second sending replaces the first).
+                PreviewNotice.Unconfirmed -> {
+                    stringResource(R.string.update_action_open_feed) to actions.onClose
                 }
 
                 PreviewNotice.Stale, PreviewNotice.TooMany -> {

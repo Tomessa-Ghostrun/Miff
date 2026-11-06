@@ -1,11 +1,14 @@
 package com.tomessa.miff.data.update
 
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.session.ActiveDevice
 import com.tomessa.miff.data.session.Clearance
+import com.tomessa.miff.data.tracking.PhotoPosition
 import com.tomessa.miff.data.tracking.PhotoPositionSource
 import com.tomessa.miff.data.tracking.PublishedPositions
+import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.interpretMiffError
 import com.tomessa.miff.domain.update.PhotoLocation
@@ -50,8 +53,17 @@ sealed interface PublishResult {
         val remaining: List<String>,
     ) : PublishResult
 
-    /** No recent position: not published, the photo stays, "Réessayer" measures again. */
+    /** No recent position (a slow signal): not published, the photo stays, "Réessayer" measures again. */
     data object PositionNotFound : PublishResult
+
+    /** The permission of the location was taken back, or the location of the phone is off (risk R15): not published, "Ouvrir les réglages" is the way. */
+    data object LocationOff : PublishResult
+
+    /**
+     * The server did not answer in time: the photo MAY have left (a transaction that was sent can finish after the screen gave up). The sentence says so honestly
+     * ("On n'a pas pu confirmer. Regarde dans ton Feed.") and the date of the sending is kept for the clean-up (review C2, criterion U3 nuanced).
+     */
+    data object Unconfirmed : PublishResult
 
     /** No network (or the server did not answer in time): nothing left. */
     data object Offline : PublishResult
@@ -134,8 +146,33 @@ class UpdatePublisher(
             return PublishResult.PositionNotFound
         }
         // ONE measure of the position, here and not before: nobody is located for a photo that is never published.
-        val place = PhotoPlace.from(position.measure(), nowMillis()) ?: return PublishResult.PositionNotFound
-        return writeLots(uid, photo, place, withPosition, targets, deviceId)
+        val place =
+            when (val measured = position.measure()) {
+                PhotoPosition.LocationOff -> {
+                    return PublishResult.LocationOff
+                }
+
+                PhotoPosition.NotFound -> {
+                    return PublishResult.PositionNotFound
+                }
+
+                is PhotoPosition.Found -> {
+                    PhotoPlace.from(measured.fix, nowMillis())
+                        ?: return PublishResult.PositionNotFound
+                }
+            }
+        // The date of the sending is written BEFORE it starts (review C2): a transaction that leaves after the screen gave up is still cleaned up 24 h later.
+        val previousNote = ledger.photoSentMillis(uid)
+        ledger.notePhotoSent(uid, nowMillis())
+        val result = writeLots(uid, photo, place, withPosition, targets, deviceId)
+        // The sending is KNOWN not to have left (a refusal, no connection, nothing shared): the previous note comes back. Unconfirmed keeps the new one.
+        val leftNothing =
+            result == PublishResult.Offline || result == PublishResult.Refused || result == PublishResult.Failed ||
+                result == PublishResult.SharingStopped || result == PublishResult.NeedsAgreement
+        if (leftNothing) {
+            if (previousNote != null) ledger.notePhotoSent(uid, previousNote) else ledger.clearPhotoSent()
+        }
+        return result
     }
 
     private suspend fun writeLots(
@@ -163,16 +200,32 @@ class UpdatePublisher(
                         }
                     }
                 } catch (e: TimeoutCancellationException) {
-                    failure = PublishResult.Offline
+                    // No answer: it may or may not have left.
+                    failure = PublishResult.Unconfirmed
                     null
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     failure =
                         when (interpretMiffError(e)) {
-                            MiffFailure.OFFLINE -> PublishResult.Offline
-                            MiffFailure.REFUSED -> PublishResult.Refused
-                            else -> PublishResult.Failed
+                            MiffFailure.OFFLINE -> {
+                                if (isDeadline(
+                                        e,
+                                    )
+                                ) {
+                                    PublishResult.Unconfirmed
+                                } else {
+                                    PublishResult.Offline
+                                }
+                            }
+
+                            MiffFailure.REFUSED -> {
+                                PublishResult.Refused
+                            }
+
+                            else -> {
+                                PublishResult.Failed
+                            }
                         }
                     null
                 }
@@ -206,6 +259,9 @@ class UpdatePublisher(
         }
     }
 
+    private fun isDeadline(e: Exception): Boolean =
+        (e as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.DEADLINE_EXCEEDED
+
     private fun afterSuccess(
         uid: String,
         photo: UpdatePhoto,
@@ -238,8 +294,10 @@ class UpdatePublisher(
  * each Miff where I share. At the launch and at the return to the foreground. NO reading of the server (the date is the phone's own note); nothing is done
  * offline, or when this phone is no longer the one of the account (the next time). The only writes: `photos/{moi}` (delete) and the status builder.
  *
- * LIMIT (written in the PR): after a reinstall the phone has no note of the date; the photo then stays, unreadable after 25 h, until the person publishes again
- * or stops sharing (the lots of stop, leave and delete already remove it).
+ * The note of the date is tied to the account and survives a sign-out (review C1). WITHOUT a note (a reinstall, a new phone) the date of the last update of my own
+ * status stands in for it (the repli of the ticket): `hasPhoto` and a last update of more than 25 h = the photo is expired, it is deleted (a read of an expired photo
+ * is refused by the rules even for its author, so the date of the update is what tells; NEVER a deletion on a `permission-denied`); `hasPhoto` and a last update
+ * of less than 25 h: the date is adopted as the note, so the clean-up comes later.
  */
 class PhotoCleaner(
     private val store: PhotoStore,
@@ -254,10 +312,21 @@ class PhotoCleaner(
     private val timeoutMillis: Long = UpdatePublisher.TIMEOUT_MS,
 ) {
     /** True when a photo was removed. Never throws except for the cancellation of the caller. */
-    suspend fun cleanUp(): Boolean {
+    suspend fun cleanUp(mine: MyPhotoFacts? = null): Boolean {
         val uid = currentUid() ?: return false
-        val publishedAt = ledger.photoPublishedMillis() ?: return false
-        if (nowMillis() - publishedAt <= EXPIRED_AFTER_MILLIS) return false
+        val now = nowMillis()
+        val sentAt = ledger.photoSentMillis(uid)
+        if (sentAt != null) {
+            if (now - sentAt <= EXPIRED_AFTER_MILLIS) return false
+        } else {
+            // No note (reinstall, new phone): my own status tells, no reading of the photo.
+            val update = mine?.lastUpdateAtMillis
+            if (mine == null || !mine.hasPhoto || update == null) return false
+            if (now - minOf(update, now) <= UNREADABLE_AFTER_MILLIS) {
+                ledger.notePhotoSent(uid, update)
+                return false
+            }
+        }
         val ids = miffIds().distinct()
         if (ids.isEmpty() || !network.isOnline()) return false
         val deviceId = (device.clearance(recheck = false) as? Clearance.Cleared)?.deviceId ?: return false
@@ -277,12 +346,15 @@ class PhotoCleaner(
             }
         }
         ids.forEach { photos.remove(it, uid) }
-        ledger.clearPhotoPublished()
+        ledger.clearPhotoSent()
         return true
     }
 
     companion object {
         /** The photo is readable 23 h; the clean-up starts at 24 h as the data model says ("illisible après 24 h"). */
         const val EXPIRED_AFTER_MILLIS = 24L * 60L * 60L * 1000L
+
+        /** Without a note: the rules refuse the reading of a photo from 25 h on (24 h + 1 h of margin), so a status that old cannot have a readable photo. */
+        const val UNREADABLE_AFTER_MILLIS = 25L * 60L * 60L * 1000L
     }
 }
