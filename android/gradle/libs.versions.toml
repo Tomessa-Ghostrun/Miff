@@ -23,6 +23,7 @@ exifinterface = "1.4.2"
 profileinstaller = "1.4.1"
 maplibre = "13.7.1"
 playServicesLocation = "21.4.0"
+camerax = "1.6.2"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -63,6 +64,14 @@ maplibre-android = { module = "org.maplibre.gl:android-sdk-opengl", version.ref 
 # Geofencing and the fused provider of positions (LOC-2b): Google Play services location, free, no key, maintained by Google (Android SDK terms).
 # The Play services of the phone do the work; Miff sends no position to any service but its own Firestore (criterion POS5).
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+# Viewfinder of the Update screen (UPDATE-1): CameraX (AndroidX, Apache 2.0, free, no key, no telemetry). Pinned to 1.6.2 (published 2026-08-26, more than two
+# weeks old; minSdk 23, we are at 26). Four modules only: core (ImageCapture), camera2 (the implementation), lifecycle (binds to the screen), view (PreviewView).
+# The photo is captured IN MEMORY (OnImageCapturedCallback): no file, no gallery, no storage permission. CameraX declares no permission of its own: the only
+# new one is CAMERA, in the manifest, checked on the merged manifests by the CI.
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }

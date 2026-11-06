@@ -190,6 +190,11 @@ dependencies {
     // Geofencing and the fused provider of positions (LOC-2b): Google Play services, free, no key. Justification (PR): the geofencing
     // that keeps working with the app closed and the battery-friendly reports of a move are only offered by this library.
     implementation(libs.play.services.location)
+    // UPDATE-1: the viewfinder of the Update screen (see libs.versions.toml).
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
