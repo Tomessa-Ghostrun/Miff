@@ -754,7 +754,6 @@
     <string name="settings_delete_loading">One moment, we’re checking your Miffs…</string>
     <string name="settings_delete_offline_list">No connection right now. Your Miffs will show up as soon as you have a network.</string>
     <string name="settings_delete_read_failed">We couldn’t read your Miffs right now. Please try again in a moment.</string>
-    <string name="settings_delete_miffs_soon">You’re part of at least one Miff. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back here. Any question? Write to us: %1$s.</string>
     <string name="settings_delete_apple_android_info">Your account is also linked to Apple. From Android we can’t remove that authorization: at the end, we’ll explain how to do it in your Apple ID settings.</string>
     <string name="settings_delete_confirm_title">Delete your account?</string>
     <string name="settings_delete_confirm_body">Your account and your Miff data will be deleted. This can’t be undone.</string>
@@ -786,6 +785,7 @@
     <string name="settings_delete_failed_title">The deletion isn’t finished</string>
     <string name="settings_delete_failed">We couldn’t finish the deletion. Please try again in a moment. If it keeps happening, write to us: %1$s.</string>
     <string name="settings_delete_retry">Try again</string>
+    <string name="settings_delete_stuck_signout">Sign out</string>
     <string name="settings_delete_retrying">Trying again…</string>
     <string name="settings_delete_done_title">Your account has been deleted</string>
     <string name="settings_delete_done_body">Thank you for spending some time with Miff. You can come back whenever you like.</string>
@@ -797,9 +797,30 @@
     <string name="settings_delete_apple_howto_step3">Choose Miff, then stop using Apple ID with this app.</string>
     <string name="auth_account_deleted_notice">Your account has been deleted.</string>
     <string name="settings_delete_reauth_expired">Your session has expired. Sign out, sign back in, then try again.</string>
-    <string name="settings_delete_miffs_blocked">You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$s.</string>
     <string name="settings_delete_signin_again">Your session closed before the deletion of your account was finished. Sign in again with the same account and we’ll finish it.</string>
     <string name="settings_delete_signin_again_action">Sign in again</string>
+    <string name="settings_delete_you">Your profile, photo and phone number will be deleted. You will leave the Miffs you joined: your status and update photo will no longer be visible there.</string>
+    <string name="settings_delete_position">Your last known position is erased from Miff.</string>
+    <string name="settings_delete_owned_title">Your Miffs</string>
+    <string name="settings_delete_owned_title_one">Your Miff</string>
+    <plurals name="settings_delete_owned_row">
+        <item quantity="one">“%1$s”: %2$d other member</item>
+        <item quantity="other">“%1$s”: %2$d other members</item>
+    </plurals>
+    <string name="settings_delete_owned_row_alone">“%1$s”</string>
+    <string name="settings_delete_owned_more">and %1$d more</string>
+    <string name="settings_delete_owned_explain">These Miffs will be deleted, along with their places. Their members will no longer have access. If you prefer, you can let them know first.</string>
+    <string name="settings_delete_owned_explain_one">This Miff will be deleted, along with its places. Its members will no longer have access. If you prefer, you can let them know first.</string>
+    <string name="settings_delete_owned_explain_alone">This Miff will be deleted, along with its places.</string>
+    <string name="settings_delete_owned_explain_alone_many">These Miffs will be deleted, along with their places.</string>
+    <string name="settings_delete_warn_button">Let my circle know</string>
+    <string name="settings_delete_warn_button_named">Let the members of “%1$s” know</string>
+    <string name="settings_delete_warn_button_other">Let my other members know</string>
+    <string name="settings_delete_warn_message_generic">I’m closing our Miff in Miff: it will no longer be accessible.</string>
+    <string name="settings_delete_confirm_body_owner">Your account, your Miff data and your Miffs will be deleted. This can’t be undone.</string>
+    <string name="settings_delete_progress_miff">Miff %1$d of %2$d</string>
+    <string name="settings_delete_progress_long">This can take a few minutes if your Miff has many members.</string>
+    <string name="settings_delete_miffs_blocked">A Miff appeared during the deletion, so your account was not deleted. You can start the deletion again from Settings > My account whenever you like. Any question? Write to us: %1$s.</string>
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">Waiting for your agreement</string>

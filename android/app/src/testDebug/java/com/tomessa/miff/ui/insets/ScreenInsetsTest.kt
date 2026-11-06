@@ -695,7 +695,7 @@ class ScreenInsetsTest {
     fun deleteAccountInfo_isInsideTheSafeArea() =
         assertScreenIsSafe("delete-info", withBackArrow = true) {
             DeleteAccountInfoScreen(
-                state = DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, appleLinked = true),
+                state = DeleteInfoUiState(inventory = DeleteInventory.LOADED, appleLinked = true),
                 onBack = {},
                 onContinue = {},
                 onRetry = {},
@@ -765,7 +765,7 @@ class ScreenInsetsTest {
     fun deleteAccount_inLandscapeWithACutout_staysInsideIt() =
         assertScreenIsSafeInLandscape {
             DeleteAccountInfoScreen(
-                state = DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS),
+                state = DeleteInfoUiState(inventory = DeleteInventory.LOADED),
                 onBack = {},
                 onContinue = {},
                 onRetry = {},

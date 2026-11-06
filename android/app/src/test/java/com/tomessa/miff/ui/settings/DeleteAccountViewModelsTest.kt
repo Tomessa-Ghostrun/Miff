@@ -1,6 +1,8 @@
 package com.tomessa.miff.ui.settings
 
+import com.tomessa.miff.data.account.AccountMiffsSummary
 import com.tomessa.miff.data.account.Inventory
+import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.GoogleTokenResult
@@ -58,21 +60,150 @@ class DeleteAccountViewModelsTest {
             assertEquals(DeleteInventory.LOADING, vm.uiState.value.inventory)
             assertFalse("greyed while the list loads", vm.uiState.value.canContinue)
             advanceUntilIdle()
-            assertEquals(DeleteInventory.NO_MIFFS, vm.uiState.value.inventory)
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
             assertTrue(vm.uiState.value.canContinue)
+            assertFalse(vm.uiState.value.miffs.hasMiffs)
+            assertFalse(vm.uiState.value.ownsMiffs)
+            assertTrue(vm.uiState.value.warnPlan.isEmpty)
+        }
+
+    // --- AUTH-5b: the Miffs, read on the server, on the information screen ---------------------------------------------
+
+    private fun loaded(
+        joined: Int = 0,
+        vararg owned: OwnedMiff,
+    ) = Inventory.Loaded(AccountMiffsSummary(joined, owned.toList()))
+
+    @Test
+    fun withMiffs_continueIsAvailable_theMiffsCreatedAreListed_andTheDialogCanOpen_nothingIsTouched() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(1, OwnedMiff("m1", "Famille", 3), OwnedMiff("m2", "Amis", 0))
+            val vm = info()
+            advanceUntilIdle()
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
+            assertTrue(vm.uiState.value.canContinue)
+            assertEquals(1, vm.uiState.value.miffs.joined)
+            assertEquals(
+                listOf("Famille", "Amis"),
+                vm.uiState.value.miffs.owned
+                    .map { it.name },
+            )
+            assertTrue(vm.uiState.value.ownsMiffs)
+            vm.onContinue()
+            assertTrue(vm.uiState.value.confirming)
+            assertEquals("nothing written by the information screen", 0, procedure.runs)
         }
 
     @Test
-    fun aMiff_isDetected_theCalmStateShows_andContinueStaysGreyed_nothingIsTouched() =
+    fun warnMyCircle_oneMiffWithOthers_isTheSinglePlainButton_namingThatMiff() =
         runTest(dispatcher) {
-            procedure.inventory = Inventory.HasMiffs
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Seule", 0), OwnedMiff("m2", "Famille", 2))
             val vm = info()
             advanceUntilIdle()
-            assertEquals(DeleteInventory.HAS_MIFFS, vm.uiState.value.inventory)
-            assertFalse(vm.uiState.value.canContinue)
-            vm.onContinue()
-            assertFalse("no dialog on an account with Miffs", vm.uiState.value.confirming)
-            assertEquals(0, procedure.runs)
+            val plan = vm.uiState.value.warnPlan
+            assertEquals(listOf("Famille"), plan.named)
+            assertTrue(plan.single)
+            assertFalse(plan.generic)
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Seule", 0))
+            vm.load()
+            advanceUntilIdle()
+            assertTrue("nobody to warn: no button", vm.uiState.value.warnPlan.isEmpty)
+        }
+
+    @Test
+    fun warnMyCircle_severalMiffsWithOthers_oneButtonEach_notTheSinglePlainOne() =
+        runTest(dispatcher) {
+            procedure.inventory =
+                loaded(0, OwnedMiff("m1", "Famille", 2), OwnedMiff("m2", "Amis", 1), OwnedMiff("m3", "Seule", 0))
+            val vm = info()
+            advanceUntilIdle()
+            val plan = vm.uiState.value.warnPlan
+            assertEquals(listOf("Famille", "Amis"), plan.named)
+            assertFalse(plan.single)
+            assertFalse(plan.generic)
+        }
+
+    @Test
+    fun warnMyCircle_aMiffBeyondTheThreeListed_isCoveredByOneMessageWithoutAName() =
+        runTest(dispatcher) {
+            procedure.inventory =
+                loaded(
+                    0,
+                    OwnedMiff("m1", "A", 1),
+                    OwnedMiff("m2", "B", 0),
+                    OwnedMiff("m3", "C", 0),
+                    OwnedMiff("m4", "D", 3),
+                )
+            val vm = info()
+            advanceUntilIdle()
+            val plan = vm.uiState.value.warnPlan
+            assertEquals(listOf("A"), plan.named)
+            assertTrue("the fourth Miff is not listed: one generic button", plan.generic)
+            assertFalse("so the plain single button is not enough", plan.single)
+        }
+
+    @Test
+    fun warnMyCircle_beyondTheThree_withNobodyToWarn_hasNoGenericButton() =
+        runTest(dispatcher) {
+            procedure.inventory =
+                loaded(
+                    0,
+                    OwnedMiff("m1", "A", 1),
+                    OwnedMiff("m2", "B", 0),
+                    OwnedMiff("m3", "C", 0),
+                    OwnedMiff("m4", "D", 0),
+                )
+            val vm = info()
+            advanceUntilIdle()
+            assertFalse(vm.uiState.value.warnPlan.generic)
+            assertTrue(vm.uiState.value.warnPlan.single)
+        }
+
+    @Test
+    fun warnMyCircle_neverExistsForAMemberWhoOnlyJoined() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(2)
+            val vm = info()
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.warnPlan.isEmpty)
+            assertFalse(vm.uiState.value.ownsMiffs)
+        }
+
+    @Test
+    fun aMiffWithABlankName_isNeverNamedInTheShareSheet_itGetsTheMessageWithoutAName() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(0, OwnedMiff("m1", "  ", 2))
+            val vm = info()
+            advanceUntilIdle()
+            val plan = vm.uiState.value.warnPlan
+            assertTrue(plan.named.isEmpty())
+            assertTrue(plan.generic)
+        }
+
+    @Test
+    fun theWarnPlanNeverPutsAMiffNameInItsText() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Famille Secrète", 2))
+            val vm = info()
+            advanceUntilIdle()
+            assertFalse(
+                vm.uiState.value.warnPlan
+                    .toString()
+                    .contains("Secrète"),
+            )
+        }
+
+    @Test
+    fun theStateNeverPutsAMiffNameInItsText() =
+        runTest(dispatcher) {
+            procedure.inventory = loaded(0, OwnedMiff("m1", "Famille Secrète", 2))
+            val vm = info()
+            advanceUntilIdle()
+            assertFalse(
+                vm.uiState.value
+                    .toString()
+                    .contains("Secrète"),
+            )
         }
 
     @Test
@@ -85,7 +216,7 @@ class DeleteAccountViewModelsTest {
             assertFalse(vm.uiState.value.canContinue)
             network.online = true
             advanceUntilIdle()
-            assertEquals(DeleteInventory.NO_MIFFS, vm.uiState.value.inventory)
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
         }
 
     @Test
@@ -96,10 +227,10 @@ class DeleteAccountViewModelsTest {
             advanceUntilIdle()
             assertEquals(DeleteInventory.READ_FAILED, vm.uiState.value.inventory)
             assertFalse(vm.uiState.value.canContinue)
-            procedure.inventory = Inventory.NoMiffs
+            procedure.inventory = Inventory.Loaded(AccountMiffsSummary.NONE)
             vm.load()
             advanceUntilIdle()
-            assertEquals(DeleteInventory.NO_MIFFS, vm.uiState.value.inventory)
+            assertEquals(DeleteInventory.LOADED, vm.uiState.value.inventory)
         }
 
     @Test

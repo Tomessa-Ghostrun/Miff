@@ -35,6 +35,9 @@ import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.account.AccountDeletionControls
 import com.tomessa.miff.data.account.AccountDeletionState
+import com.tomessa.miff.data.account.AccountMiffsSummary
+import com.tomessa.miff.data.account.DeletionStep
+import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.AuthMessage
@@ -86,6 +89,7 @@ class DeleteAccountScreensTest {
         onKeep: () -> Unit = {},
         onConfirm: () -> Unit = {},
         onRetry: () -> Unit = {},
+        onWarn: (String?) -> Unit = {},
     ) = show {
         DeleteAccountInfoScreen(
             state = state,
@@ -95,13 +99,19 @@ class DeleteAccountScreensTest {
             onContact = {},
             onKeep = onKeep,
             onConfirm = onConfirm,
+            onWarn = onWarn,
         )
     }
+
+    private fun loaded(
+        joined: Int = 0,
+        vararg owned: OwnedMiff,
+    ) = DeleteInfoUiState(inventory = DeleteInventory.LOADED, miffs = AccountMiffsSummary(joined, owned.toList()))
 
     @Test
     fun info_noMiff_saysWhatDisappears_gives_theContact_andTheCalmReversibilitySentence() {
         var continued = 0
-        info(DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS), onContinue = { continued++ })
+        info(DeleteInfoUiState(inventory = DeleteInventory.LOADED), onContinue = { continued++ })
         shoot("delete-info-no-miff")
         composeRule.onNodeWithText(text(R.string.settings_delete_intro)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.settings_delete_you_nomiff)).assertIsDisplayed()
@@ -126,7 +136,7 @@ class DeleteAccountScreensTest {
     @Test
     fun info_cancel_leavesWithNothingChanged() {
         var left = 0
-        info(DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS), onBack = { left++ })
+        info(DeleteInfoUiState(inventory = DeleteInventory.LOADED), onBack = { left++ })
         composeRule.onNodeWithText(text(R.string.settings_delete_cancel)).performClick()
         assertEquals(1, left)
     }
@@ -156,26 +166,179 @@ class DeleteAccountScreensTest {
         assertEquals(1, retried)
     }
 
+    // --- AUTH-5b: the Miffs of the account on the information screen -------------------------------------------------------
+
     @Test
-    fun info_aMiff_isDetected_theCalmComingSoonStateShows_andNothingCanBeDeleted() {
-        info(DeleteInfoUiState(inventory = DeleteInventory.HAS_MIFFS))
-        shoot("delete-info-has-miffs")
-        composeRule.onNodeWithText("coming soon", substring = true).assertExists()
-        composeRule.onNodeWithText(BuildConfig.SUPPORT_EMAIL, substring = true).assertExists()
-        composeRule.onNodeWithText(text(R.string.settings_delete_continue)).assertIsNotEnabled()
-        // The list of what disappears is not shown for an account that cannot go on.
-        composeRule.onAllNodesWithText(text(R.string.settings_delete_you_nomiff)).assertCountEquals(0)
+    fun info_aCreator_listsHerMiffWithTheNumberOfOthers_andOffersToWarnHerCircle() {
+        val warned = mutableListOf<String?>()
+        info(loaded(0, OwnedMiff("m1", "Famille Mfouka", 3)), onWarn = { warned += it })
+        shoot("delete-info-creator")
+        composeRule.onNodeWithText(text(R.string.settings_delete_owned_title_one)).assertIsDisplayed()
+        composeRule.onNodeWithText("Famille Mfouka", substring = true).assertExists()
+        composeRule.onNodeWithText("3 other members", substring = true).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_owned_explain_one)).assertExists()
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_warn_button))
+            .performScrollTo()
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(
+            "the share sheet gets the name of the Miff, nothing is sent by the app",
+            listOf<String?>("Famille Mfouka"),
+            warned,
+        )
+    }
+
+    @Test
+    fun info_aCreatorAlone_noNumberIsSaid_andNobodyIsOfferedToBeWarned() {
+        info(loaded(0, OwnedMiff("m1", "Chez nous", 0)))
+        composeRule.onNodeWithText("Chez nous", substring = true).assertExists()
+        // "0 other member" would be a sentence nobody wants to read.
+        composeRule.onAllNodesWithText("other member", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_delete_owned_explain_alone)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_warn_button)).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_oneOtherPerson_isSaidInTheSingular() {
+        info(loaded(0, OwnedMiff("m1", "Duo", 1)))
+        composeRule.onNodeWithText("1 other member", substring = true).assertExists()
+    }
+
+    @Test
+    fun info_moreThanThreeMiffs_threeNamesThenTheOthersCounted() {
+        val owned = (1..5).map { OwnedMiff("m$it", "Miff numéro $it", it) }.toTypedArray()
+        info(loaded(0, *owned))
+        shoot("delete-info-many-miffs")
+        composeRule.onNodeWithText(text(R.string.settings_delete_owned_title)).assertExists()
+        // Each of the three listed Miffs is named in its row and in its own "Prévenir" button; the fourth is named nowhere.
+        (1..3).forEach { composeRule.onAllNodesWithText("Miff numéro $it", substring = true)[0].assertExists() }
+        composeRule.onAllNodesWithText("Miff numéro 4", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button_other)).assertExists()
+        composeRule.onNodeWithText("and 2 more").assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_owned_explain)).assertExists()
+    }
+
+    @Test
+    fun info_aMemberWhoOnlyJoined_saysSheLeavesThem_theLastPositionIsErased_noBlockOfMiffsCreated() {
+        info(loaded(2))
+        shoot("delete-info-member")
+        composeRule.onNodeWithText(text(R.string.settings_delete_you)).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_position)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_owned_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_warn_button)).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_noMiff_hasNoLineAboutMiffsNorAboutThePosition() {
+        info(loaded())
+        composeRule.onNodeWithText(text(R.string.settings_delete_you_nomiff)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_position)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_owned_title)).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_aCreatorWhoJoinedNothing_getsTheShortSentence_andTheLineOfThePosition() {
+        info(loaded(0, OwnedMiff("m1", "Famille", 2)))
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_you)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_delete_you_nomiff)).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_position)).assertExists()
+    }
+
+    @Test
+    fun info_severalMiffsToWarnAbout_oneButtonForEach_eachNamingItsMiff() {
+        val warned = mutableListOf<String?>()
+        info(loaded(0, OwnedMiff("m1", "Famille", 2), OwnedMiff("m2", "Amis", 1)), onWarn = { warned += it })
+        shoot("delete-info-warn-each")
+        // No plain "Prévenir mes proches": which Miff would it be about?
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_warn_button)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                "Let the members of “Famille” know",
+            ).performScrollTo()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithText("Let the members of “Amis” know").performScrollTo().performClick()
+        assertEquals(listOf<String?>("Famille", "Amis"), warned)
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_warn_button_other)).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_aMiffBeyondTheThreeListed_getsOneButtonWithAMessageWithoutAName() {
+        val warned = mutableListOf<String?>()
+        val owned =
+            arrayOf(OwnedMiff("m1", "A", 1), OwnedMiff("m2", "B", 0), OwnedMiff("m3", "C", 0), OwnedMiff("m4", "D", 5))
+        info(loaded(0, *owned), onWarn = { warned += it })
+        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button_other)).performScrollTo().performClick()
+        assertEquals(listOf<String?>(null), warned)
+        composeRule.onNodeWithText("Let the members of “A” know").assertExists()
+        // The fourth Miff is not named anywhere in a message.
+        composeRule.onAllNodesWithText("Let the members of “D” know").assertCountEquals(0)
+    }
+
+    @Test
+    fun info_oneMiffToWarnAbout_keepsThePlainButton_asOnTheMockup() {
+        info(loaded(0, OwnedMiff("m1", "Famille", 2), OwnedMiff("m2", "Seule", 0)))
+        composeRule.onNodeWithText(text(R.string.settings_delete_warn_button)).assertExists()
+        composeRule.onAllNodesWithText("Let the members of", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_withMiffs_continueIsAvailable_noWordThatFrightens() {
+        info(loaded(1, OwnedMiff("m1", "Famille", 2)))
+        composeRule.onNodeWithText(text(R.string.settings_delete_continue)).assertIsEnabled()
+        listOf("irrecoverable", "instantly", "irrevocable", "lose all", "danger", "coming soon").forEach {
+            composeRule.onAllNodesWithText(it, substring = true, ignoreCase = true).assertCountEquals(0)
+        }
+    }
+
+    @Test
+    fun dialog_aCreator_saysTheMiffsAreDeletedToo() {
+        info(
+            DeleteInfoUiState(
+                inventory = DeleteInventory.LOADED,
+                miffs = AccountMiffsSummary(0, listOf(OwnedMiff("m1", "Famille", 2))),
+                confirming = true,
+            ),
+        )
+        composeRule.onNodeWithText(text(R.string.settings_delete_confirm_body_owner)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_confirm_body)).assertCountEquals(0)
+    }
+
+    @Test
+    fun info_creator_largestFont_continueAndWarnStayReachable() {
+        show {
+            CompositionLocalProvider(LocalDensity provides Density(density = 3f, fontScale = 2f)) {
+                DeleteAccountInfoScreen(
+                    state = loaded(1, OwnedMiff("m1", "Famille", 2), OwnedMiff("m2", "Amis", 1)),
+                    onBack = {},
+                    onContinue = {},
+                    onRetry = {},
+                    onContact = {},
+                    onKeep = {},
+                    onConfirm = {},
+                )
+            }
+        }
+        composeRule.onNodeWithText("Let the members of “Famille” know").performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithText(
+                text(R.string.settings_delete_continue),
+            ).performScrollTo()
+            .assertIsDisplayed()
+            .assertIsEnabled()
     }
 
     @Test
     fun info_aCompteLinkedToApple_getsTheEncartBeforeThePointOfNoReturn() {
-        info(DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, appleLinked = true))
+        info(DeleteInfoUiState(inventory = DeleteInventory.LOADED, appleLinked = true))
         composeRule.onNodeWithText(text(R.string.settings_delete_apple_android_info)).assertExists()
     }
 
     @Test
     fun info_withoutApple_noAppleEncart() {
-        info(DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, appleLinked = false))
+        info(DeleteInfoUiState(inventory = DeleteInventory.LOADED, appleLinked = false))
         composeRule.onAllNodesWithText(text(R.string.settings_delete_apple_android_info)).assertCountEquals(0)
     }
 
@@ -184,7 +347,7 @@ class DeleteAccountScreensTest {
         show {
             CompositionLocalProvider(LocalDensity provides Density(density = 3f, fontScale = 2f)) {
                 DeleteAccountInfoScreen(
-                    state = DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, appleLinked = true),
+                    state = DeleteInfoUiState(inventory = DeleteInventory.LOADED, appleLinked = true),
                     onBack = {},
                     onContinue = {},
                     onRetry = {},
@@ -209,7 +372,7 @@ class DeleteAccountScreensTest {
         var kept = 0
         var confirmed = 0
         info(
-            DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, confirming = true),
+            DeleteInfoUiState(inventory = DeleteInventory.LOADED, confirming = true),
             onKeep = { kept++ },
             onConfirm = { confirmed++ },
         )
@@ -231,7 +394,7 @@ class DeleteAccountScreensTest {
 
     @Test
     fun dialog_offline_aCalmNotice_andTheButtonStaysActive() {
-        info(DeleteInfoUiState(inventory = DeleteInventory.NO_MIFFS, confirming = true, confirmOffline = true))
+        info(DeleteInfoUiState(inventory = DeleteInventory.LOADED, confirming = true, confirmOffline = true))
         composeRule.onNodeWithText(text(R.string.settings_delete_confirm_offline)).assertExists()
         composeRule.onNode(hasText(text(R.string.settings_delete_confirm_ok)) and hasClickAction()).assertIsEnabled()
     }
@@ -404,7 +567,7 @@ class DeleteAccountScreensTest {
 
     @Test
     fun progress_oneLineOfStep_noBackNoCancel_noPercentage() {
-        host(AccountDeletionState.Running(resumed = false))
+        host(AccountDeletionState.Running(resumed = false, step = DeletionStep.Profile))
         shoot("delete-progress")
         composeRule.onNodeWithText(text(R.string.settings_delete_progress_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_delete_progress_profile)).assertExists()
@@ -412,6 +575,41 @@ class DeleteAccountScreensTest {
         composeRule.onAllNodesWithContentDescription(text(R.string.auth_back_a11y)).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.settings_delete_cancel)).assertCountEquals(0)
         composeRule.onAllNodesWithText("%", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun progress_withMiffs_saysWhichMiffOnHowMany_neverAPercentageNorTheDetailOfTheLots() {
+        host(AccountDeletionState.Running(resumed = false, step = DeletionStep.Miff(1, 2, longWait = false)))
+        shoot("delete-progress-miff")
+        composeRule.onNodeWithText("Miff 1 of 2").assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_progress_profile)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_progress_long)).assertCountEquals(0)
+        composeRule.onAllNodesWithText("%", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("member", substring = true, ignoreCase = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun progress_manyPeopleToTakeOut_addsTheCalmSentenceOfTheLongWait() {
+        host(AccountDeletionState.Running(resumed = false, step = DeletionStep.Miff(2, 2, longWait = true)))
+        shoot("delete-progress-long")
+        composeRule.onNodeWithText("Miff 2 of 2").assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_progress_long)).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_delete_progress_hint)).assertExists()
+    }
+
+    @Test
+    fun progress_whileTheAccountIsRead_hasNoLineYet() {
+        host(AccountDeletionState.Running(resumed = false, step = DeletionStep.Checking))
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_progress_profile)).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Miff 1", substring = true).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.settings_delete_progress_title)).assertExists()
+    }
+
+    @Test
+    fun progress_resumedAfterALaunch_withMiffs_keepsTheLine() {
+        host(AccountDeletionState.Running(resumed = true, step = DeletionStep.Miff(1, 1, longWait = false)))
+        composeRule.onNodeWithText(text(R.string.settings_delete_resume_title)).assertExists()
+        composeRule.onNodeWithText("Miff 1 of 1").assertExists()
     }
 
     @Test
@@ -444,6 +642,23 @@ class DeleteAccountScreensTest {
         composeRule.onNodeWithText(BuildConfig.SUPPORT_EMAIL, substring = true).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_delete_retry)).assertHeightIsAtLeast(48.dp).performClick()
         assertEquals(1, controls.retries)
+    }
+
+    @Test
+    fun stuck_offersAWayOut_signOut_theDeletionIsTakenUpAgainAtTheNextSignIn_neverAnAbandon() {
+        val controls = Controls(AccountDeletionState.Stuck)
+        host(AccountDeletionState.Stuck, controls)
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_stuck_signout))
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, controls.signInAgains)
+        assertEquals("the retry button is still there", 0, controls.retries)
+        composeRule.onNodeWithText(text(R.string.settings_delete_retry)).assertExists()
+        // Never a button that abandons the deletion half done.
+        listOf("cancel", "abandon", "keep my account").forEach {
+            composeRule.onAllNodesWithText(it, substring = true, ignoreCase = true).assertCountEquals(0)
+        }
     }
 
     @Test

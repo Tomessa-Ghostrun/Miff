@@ -63,6 +63,11 @@ class TrackingEngine(
     private val timeoutMillis: Long = 15_000L,
     /** Goes up at every end of a session (`SessionManager.generation`): what [stop] stopped stays stopped until it changes. */
     private val generation: () -> Int = { 0 },
+    /**
+     * The deletion of the account is under way (its marker is on the DISK, written before the first document goes): nothing is armed, read, kept or
+     * written, even by a receiver of the system that wakes a COLD process (the memory of [stop] is gone there). Another account's marker does not count.
+     */
+    private val suspended: () -> Boolean = { false },
 ) : SessionTeardown {
     /** Why the engine is asked to look again (ticket 6.5: opening, going to the background, a move of more than 250 m, an entry in a zone). */
     enum class Reason { OPENED, BACKGROUNDED, MOVED, ZONE_ENTERED, REARM, SHARING_CHANGED, NETWORK_BACK }
@@ -73,7 +78,7 @@ class TrackingEngine(
     @Volatile
     private var stoppedGeneration = NEVER
 
-    private fun sessionEnded(): Boolean = stoppedGeneration == generation()
+    private fun sessionEnded(): Boolean = stoppedGeneration == generation() || suspended()
 
     /**
      * The permission to write during ONE pass (a refresh, an event, the return of the network): the session is verified at the FIRST write only (a pass that
@@ -90,7 +95,7 @@ class TrackingEngine(
         private val born = generation()
 
         /** True once the session of this pass has ended (stop asked for, or a new session started): nothing may be written. */
-        fun ended(): Boolean = stoppedGeneration == born || generation() != born
+        fun ended(): Boolean = stoppedGeneration == born || generation() != born || suspended()
 
         /** The identifier to write, or null: nothing may be written now (ended, replaced, or the server could not be asked). */
         suspend fun deviceId(): String? {

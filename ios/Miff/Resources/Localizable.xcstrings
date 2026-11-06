@@ -10313,40 +10313,6 @@
         }
       }
     },
-    "settings_delete_miffs_blocked": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$@."
-          }
-        }
-      }
-    },
-    "settings_delete_miffs_soon": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You’re part of at least one Miff. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back here. Any question? Write to us: %1$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu fais partie d’au moins une Miff. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir ici. Une question ? Écris-nous : %1$@."
-          }
-        }
-      }
-    },
     "settings_delete_offline_list": {
       "extractionState": "manual",
       "localizations": {
@@ -10789,6 +10755,23 @@
         }
       }
     },
+    "settings_delete_stuck_signout": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me déconnecter"
+          }
+        }
+      }
+    },
     "settings_delete_retrying": {
       "extractionState": "manual",
       "localizations": {
@@ -10870,6 +10853,353 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ton profil, ta photo et ton numéro de téléphone seront supprimés."
+          }
+        }
+      }
+    },
+    "settings_delete_you": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your profile, photo and phone number will be deleted. You will leave the Miffs you joined: your status and update photo will no longer be visible there."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo de mise à jour n’y seront plus visibles."
+          }
+        }
+      }
+    },
+    "settings_delete_position": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last known position is erased from Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta dernière position connue est effacée de Miff."
+          }
+        }
+      }
+    },
+    "settings_delete_owned_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Miffs"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes Miffs"
+          }
+        }
+      }
+    },
+    "settings_delete_owned_title_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta Miff"
+          }
+        }
+      }
+    },
+    "settings_delete_owned_row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "“%1$@”: %2$lld other member"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "“%1$@”: %2$lld other members"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "« %1$@ » : %2$lld autre proche"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "« %1$@ » : %2$lld autres proches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "settings_delete_owned_row_alone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %1$@ »"
+          }
+        }
+      }
+    },
+    "settings_delete_owned_more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "and %1$lld more"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "et %1$lld autres"
+          }
+        }
+      }
+    },
+    "settings_delete_owned_explain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These Miffs will be deleted, along with their places. Their members will no longer have access. If you prefer, you can let them know first."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ces Miffs seront supprimées, avec leurs lieux. Leurs membres n’y auront plus accès. Si tu préfères, tu peux d’abord les prévenir."
+          }
+        }
+      }
+    },
+    "settings_delete_owned_explain_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Miff will be deleted, along with its places. Its members will no longer have access. If you prefer, you can let them know first."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette Miff sera supprimée, avec ses lieux. Ses membres n’y auront plus accès. Si tu préfères, tu peux d’abord les prévenir."
+          }
+        }
+      }
+    },
+    "settings_delete_owned_explain_alone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Miff will be deleted, along with its places."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette Miff sera supprimée, avec ses lieux."
+          }
+        }
+      }
+    },
+    "settings_delete_owned_explain_alone_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These Miffs will be deleted, along with their places."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ces Miffs seront supprimées, avec leurs lieux."
+          }
+        }
+      }
+    },
+    "settings_delete_warn_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let my circle know"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévenir mes proches"
+          }
+        }
+      }
+    },
+    "settings_delete_warn_button_named": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let the members of “%1$@” know"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévenir les proches de « %1$@ »"
+          }
+        }
+      }
+    },
+    "settings_delete_warn_button_other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let my other members know"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prévenir mes autres proches"
+          }
+        }
+      }
+    },
+    "settings_delete_warn_message_generic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I’m closing our Miff in Miff: it will no longer be accessible."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je ferme notre Miff dans Miff : elle ne sera plus accessible."
+          }
+        }
+      }
+    },
+    "settings_delete_confirm_body_owner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account, your Miff data and your Miffs will be deleted. This can’t be undone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton compte, tes données Miff et tes Miffs seront supprimés. Ce n’est pas réversible."
+          }
+        }
+      }
+    },
+    "settings_delete_progress_miff": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff %1$lld of %2$lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff %1$lld sur %2$lld"
+          }
+        }
+      }
+    },
+    "settings_delete_progress_long": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This can take a few minutes if your Miff has many members."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ça peut prendre quelques minutes si ta Miff compte beaucoup de proches."
+          }
+        }
+      }
+    },
+    "settings_delete_miffs_blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Miff appeared during the deletion, so your account was not deleted. You can start the deletion again from Settings > My account whenever you like. Any question? Write to us: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une Miff est apparue pendant la suppression : ton compte n’a donc pas été supprimé. Tu peux relancer la suppression depuis Réglages > Mon compte quand tu veux. Une question ? Écris-nous : %1$@."
           }
         }
       }

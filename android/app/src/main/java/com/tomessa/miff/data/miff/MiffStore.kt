@@ -9,9 +9,11 @@ import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffDetails
+import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.miff.ProfileCopy
 import com.tomessa.miff.domain.miff.WriteKind
+import com.tomessa.miff.domain.miff.interpretMiffError
 import kotlinx.coroutines.tasks.await
 
 /*
@@ -278,6 +280,8 @@ class FirestoreMiffStore(
                 .await()
             true
         } catch (e: FirebaseFirestoreException) {
+            // No network is not "refused": it is told apart (the callers read it as a failed probe), only a refusal answers false.
+            if (interpretMiffError(e) == MiffFailure.OFFLINE) throw e
             false
         }
 
