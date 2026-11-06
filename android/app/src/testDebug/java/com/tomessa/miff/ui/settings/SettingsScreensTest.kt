@@ -209,7 +209,7 @@ class SettingsScreensTest {
     // --- Provisional Feed ---------------------------------------------------------------------------------------------------------
 
     @Test
-    fun feed_saysHonestlyThatItIsNotBuiltYet_noBell_noInventedPerson_noPromiseOfSafety() {
+    fun feed_whileItLoads_showsTheSkeleton_noBell_noInventedPerson_noPromiseOfSafety() {
         show {
             FeedScreen(
                 state =
@@ -226,14 +226,13 @@ class SettingsScreensTest {
                 onJoin = {},
             )
         }
-        shoot("feed-placeholder")
-        composeRule.onNodeWithText(text(R.string.feed_empty_title)).assertExists()
-        composeRule.onNodeWithText(text(R.string.feed_empty_body)).assertExists()
+        shoot("feed-loading")
+        composeRule.onNodeWithContentDescription(text(R.string.feed_loading_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertExists()
         // The words of the mockup that would promise something the app cannot know (decision Q12, no bell: Q15).
         composeRule.onAllNodesWithText("safe", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("sécurité", substring = true, ignoreCase = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Famille", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Tout va bien", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule
             .onAllNodesWithContentDescription(
                 "notification",
