@@ -180,7 +180,10 @@ final class MiffRepositoryTests: XCTestCase {
             return XCTFail("l'entrée devrait continuer")
         }
         XCTAssertEqual(store.commitsAsLots.count, 1, "seul le lot qui est passé est enregistré")
-        XCTAssertEqual(store.commitsAsLots.first?.map { $0.path }, ["users/\(uid)/memberships/free"])
+        XCTAssertEqual(
+            store.commitsAsLots.first?.map { $0.path },
+            ["miffs/\(testOtherMiffId)/positions/\(uid)", "users/\(uid)/memberships/free"]
+        )
         XCTAssertEqual(commitCount(), 2)
     }
 
@@ -531,10 +534,10 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(store.commitsAsLots.count, 1)
     }
 
-    func testSetSharingStopIsTheLotOfThreeResumeTheLotOfTwo() async {
+    func testSetSharingStopIsTheLotOfFourResumeTheLotOfTwo() async {
         let stop = await repo().setSharing(miffId: testMiffId, uid: uid, enabled: false)
         XCTAssertEqual(stop, .done)
-        XCTAssertEqual(store.commitsAsLots.last?.count, 3)
+        XCTAssertEqual(store.commitsAsLots.last?.count, 4)
 
         let resume = await repo().setSharing(miffId: testMiffId, uid: uid, enabled: true)
 
@@ -555,14 +558,15 @@ final class MiffRepositoryTests: XCTestCase {
         let lost = LostMiff(ref: MembershipRef(key: "free", miffId: testMiffId), name: "Chez nous")
         let first = await repo().cleanUpLost(uid: uid, lost: lost)
         XCTAssertTrue(first)
-        XCTAssertEqual(store.commitsAsLots.first?.count, 4)
+        XCTAssertEqual(store.commitsAsLots.first?.count, 5)
         store.clearLots()
         store.commitFailures = [firestoreError(FirestoreErrorNumber.permissionDenied), nil]
 
         let second = await repo().cleanUpLost(uid: uid, lost: lost)
 
         XCTAssertTrue(second)
-        XCTAssertEqual(store.commitsAsLots.first?.count, 1)
+        // Le repli : la dernière position connue (si un retrait plus ancien en a laissé une) et l'index.
+        XCTAssertEqual(store.commitsAsLots.first?.count, 2)
     }
 
     func testAStaleIndexCleanedWhileCreatingOrJoiningNeverLeavesThatMiffReadableOffline() async {

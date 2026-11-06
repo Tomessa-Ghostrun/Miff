@@ -7,7 +7,13 @@
 	     une donnée (compte, localisation...) et par le release-manager avant la soumission : la fiche
 	     « confidentialité » d'App Store Connect doit lui correspondre.
 
-	     Position : l'app ne collecte AUCUNE position à ce stade (aucune clé NSLocation*, aucun accès à la position de l'appareil).
+	     Position (LOC-4a, décision du PM du 2026-11-01 : la dernière position connue est stockée côté serveur et lisible des
+	     membres de la Miff qui partagent aussi) : « position précise » (PreciseLocation), LIÉE à l'identité de la personne, pour le
+	     FONCTIONNEMENT de l'app seulement, jamais pour le suivi ni la publicité. LOC-4a ne lit encore AUCUNE position (il ne fait
+	     que demander l'autorisation) : la déclaration anticipe LOC-4b, pour que le manifeste, les étiquettes d'App Store Connect
+	     (docs/release/app-store-confidentialite-et-revue.md §2) et la politique de confidentialité disent la même chose. Les
+	     deux textes d'usage NSLocation* sont dans InfoPlist.xcstrings.
+
 	     LOC-3 (lieux de confiance) : la carte et la recherche d'adresse de MapKit ne lisent PAS la position de la personne. Les LIEUX
 	     que le créateur d'une Miff définit sont écrits dans Firestore, liés à son compte et visibles des membres de la Miff : adresse
 	     postale d'un lieu (PhysicalAddress), nom du lieu (OtherUserContent) ; ses coordonnées sont celles de l'ADRESSE choisie, pas
@@ -32,6 +38,18 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePreciseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeUserID</string>

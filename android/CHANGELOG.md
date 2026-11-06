@@ -149,6 +149,7 @@ Retour de recette : « la connexion Google a échoué plusieurs fois de suite av
 - Aucun code technique, aucun reproche. Rien n'est journalisé : ni compte, ni adresse, ni jeton, ni message du système (une erreur est réduite à sa nature avant d'arriver à l'écran).
 
 ### Modifié
+- `miff_sharing_stop_body` cite la dernière position ("Ton statut, ta photo d'update et ta dernière position seront supprimés…", FR et EN), aligné sur iOS (PR #74).
 - `CredentialManagerGoogleSource` prend maintenant un `GoogleCredentialClient` (la partie qui parle au système, `CredentialManagerClient`) : chaque issue est jouable en test. Toute exception autre que l'annulation de la coroutine devient un échec (avant, une exception inattendue pouvait faire planter l'app).
 - `AuthFailure` : `GOOGLE_NO_ACCOUNT`, `GOOGLE_SERVICES_UNAVAILABLE`, `GOOGLE_INTERRUPTED`. `AuthMessage` : les mêmes trois. États d'écran : `googleMessage` (séparé du `message` du formulaire e-mail).
 - Textes `auth_error_google_no_account`, `auth_error_google_services`, `auth_error_google_interrupted` FR/EN et catalogue iOS (parité des clés vérifiée ; le code iOS n'est pas touché).
@@ -189,7 +190,7 @@ Première moitié de LOC-2 (ticket `docs/tickets/lieux-de-confiance.md` §6.5, �
 - **11 (prérequis inter-plateformes)** : iOS n'a **pas encore** la suppression de `positions/{uid}` dans ses lots (data-model, « ordre de livraison », I1) ; tant que iOS/LOC-2b ne l'embarquent pas, un créateur iOS ne pourrait plus retirer un membre Android ni supprimer sa Miff dès que ce membre a une position.
 
 ### Modifié
-- `MiffSharingConsent.VERSION` : `2026-10-v2` devient `2026-11-v03` (largeur fixe). Les clés `miff_consent_*` et `miff_sharing_resume_body` ne sont plus utilisées par Android (conservées dans les catalogues tant qu'iOS n'a pas adopté la v3).
+- `MiffSharingConsent.VERSION` : `2026-10-v2` devient `2026-11-v03` (largeur fixe). Les clés `miff_consent_*` et `miff_sharing_resume_body` ne sont plus utilisées par Android ; **retirées des deux catalogues par la PR iOS LOC-4a** (iOS a adopté la v3).
 - `MiffFrame` : paramètre `footer` (bouton épinglé). `MiffWrites.dropIndex` prend la Miff. `PlacePrivacyTest` ne contrôle plus que `ACCESS_WIFI_STATE`.
 - Réglages > Confidentialité : le texte de la localisation ne dit plus « on te demandera avant » (une autorisation est maintenant demandée) mais reste vrai (rien n'est lu ni enregistré) ; le bloc complet de la maquette 23 n'est **pas** construit.
 
