@@ -3,6 +3,7 @@ package com.tomessa.miff.domain.miff
 import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.tomessa.miff.testsupport.DEVICE_A
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -31,7 +32,17 @@ class MiffWritesTest {
 
     @Test
     fun create_isFiveWrites_inOneLot_withTheRightPaths() {
-        val writes = MiffWrites.create(uid, miffId, code, "  Chez nous ", profile, "free", LocationAccess.UNKNOWN)
+        val writes =
+            MiffWrites.create(
+                uid,
+                miffId,
+                code,
+                "  Chez nous ",
+                profile,
+                "free",
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
         assertEquals(
             setOf(
                 "miffs/$miffId",
@@ -48,7 +59,17 @@ class MiffWritesTest {
 
     @Test
     fun create_miffAndCode_haveExactlyTheKeysOfTheRules_andTheTrimmedName() {
-        val writes = MiffWrites.create(uid, miffId, code, "  Chez nous ", profile, "free", LocationAccess.UNKNOWN)
+        val writes =
+            MiffWrites.create(
+                uid,
+                miffId,
+                code,
+                "  Chez nous ",
+                profile,
+                "free",
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
         val miff = writes.at("miffs/$miffId").data
         assertEquals(setOf("ownerUid", "name", "joinCode", "createdAt"), miff.keys)
         assertEquals("Chez nous", miff["name"])
@@ -65,7 +86,7 @@ class MiffWritesTest {
     fun create_ownerCard_hasAllKeys_noJoinCode_andTheExplicitConsentOfTheEntry() {
         val card =
             MiffWrites
-                .create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN)
+                .create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A)
                 .at("miffs/$miffId/members/$uid")
                 .data
         assertEquals(setOf("role", "firstName", "lastName", "avatar", "phone", "joinedAt", "sharing"), card.keys)
@@ -86,7 +107,7 @@ class MiffWritesTest {
         val noPhoto = ProfileCopy("Léa", "Martin", "+33612345678", null)
         val card =
             MiffWrites
-                .create(uid, miffId, code, "Chez nous", noPhoto, "free", LocationAccess.UNKNOWN)
+                .create(uid, miffId, code, "Chez nous", noPhoto, "free", LocationAccess.UNKNOWN, DEVICE_A)
                 .at("miffs/$miffId/members/$uid")
                 .data
         assertFalse(card.containsKey("avatar"))
@@ -94,10 +115,20 @@ class MiffWritesTest {
 
     @Test
     fun create_indexKey_isFreeForAFreeAccount_andTheMiffIdForAPremiumOne() {
-        val free = MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN)
+        val free = MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A)
         assertEquals(setOf("miffId", "joinedAt"), free.at("users/$uid/memberships/free").data.keys)
         assertEquals(miffId, free.at("users/$uid/memberships/free").data["miffId"])
-        val premium = MiffWrites.create(uid, miffId, code, "Chez nous", profile, miffId, LocationAccess.UNKNOWN)
+        val premium =
+            MiffWrites.create(
+                uid,
+                miffId,
+                code,
+                "Chez nous",
+                profile,
+                miffId,
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
         assertNotNull(premium.at("users/$uid/memberships/$miffId"))
     }
 
@@ -105,7 +136,7 @@ class MiffWritesTest {
     fun create_initialStatus_isUnknown_withTheRealPermission_andNoCoordinate() {
         val status =
             MiffWrites
-                .create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.FOREGROUND)
+                .create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.FOREGROUND, DEVICE_A)
                 .at("miffs/$miffId/status/$uid")
                 .data
         assertEquals(
@@ -120,6 +151,7 @@ class MiffWritesTest {
                 "locationAccess",
                 "escalationDueAt",
                 "updatedAt",
+                "deviceId",
             ),
             status.keys,
         )
@@ -138,11 +170,11 @@ class MiffWritesTest {
         val forbidden =
             setOf("lat", "lng", "lon", "latitude", "longitude", "address", "coords", "coordinates", "position")
         val all =
-            MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN) +
-                MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN) +
+            MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
+                MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.rename(miffId, code, "Nouveau") +
                 MiffWrites.stopSharing(miffId, uid) +
-                MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN) +
+                MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.leave(miffId, uid, "free")
         all.forEach { write ->
             write.data.keys.forEach { key -> assertFalse("$key", key.lowercase() in forbidden) }
@@ -151,7 +183,7 @@ class MiffWritesTest {
 
     @Test
     fun create_refusesABadNameOrCode_beforeAnythingIsWritten() {
-        runCatching { MiffWrites.create(uid, miffId, code, "a", profile, "free", LocationAccess.UNKNOWN) }
+        runCatching { MiffWrites.create(uid, miffId, code, "a", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) }
             .also { assertTrue(it.exceptionOrNull() is IllegalArgumentException) }
         runCatching {
             MiffWrites.create(
@@ -162,6 +194,7 @@ class MiffWritesTest {
                 profile,
                 "free",
                 LocationAccess.UNKNOWN,
+                DEVICE_A,
             )
         }.also { assertTrue(it.exceptionOrNull() is IllegalArgumentException) }
     }
@@ -170,7 +203,7 @@ class MiffWritesTest {
 
     @Test
     fun join_isThreeWrites_cardWithTheCode_index_andInitialStatus() {
-        val writes = MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.DENIED)
+        val writes = MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.DENIED, DEVICE_A)
         assertEquals(
             setOf("miffs/$miffId/members/$uid", "users/$uid/memberships/free", "miffs/$miffId/status/$uid"),
             writes.map { it.path }.toSet(),
@@ -222,7 +255,7 @@ class MiffWritesTest {
 
     @Test
     fun resumeSharing_writesANewConsent_andTheInitialStatus() {
-        val writes = MiffWrites.resumeSharing(miffId, uid, LocationAccess.BACKGROUND)
+        val writes = MiffWrites.resumeSharing(miffId, uid, LocationAccess.BACKGROUND, DEVICE_A)
         assertEquals(2, writes.size)
         val card = writes.at("miffs/$miffId/members/$uid")
         assertEquals(WriteKind.UPDATE, card.kind)

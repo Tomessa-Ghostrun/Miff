@@ -11,6 +11,7 @@ import com.tomessa.miff.domain.tracking.PlaceFact
 import com.tomessa.miff.domain.tracking.TrackingLimits
 import com.tomessa.miff.domain.tracking.TransitionKind
 import com.tomessa.miff.domain.tracking.WriteBreaker
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeGeofences
 import com.tomessa.miff.testsupport.FakeLocal
 import com.tomessa.miff.testsupport.FakeMovement
@@ -43,6 +44,7 @@ class TrackingEngineReviewTest {
     private val geofences = FakeGeofences()
     private val movement = FakeMovement()
     private val wake = FakeNetworkWake()
+    private val device = FakeActiveDevice()
     private val journal = RecordingJournal()
     private var session = 1
     private val engine =
@@ -54,6 +56,7 @@ class TrackingEngineReviewTest {
             geofences,
             movement,
             wake,
+            device,
             journal,
             timeoutMillis = 5_000,
             generation = { session },

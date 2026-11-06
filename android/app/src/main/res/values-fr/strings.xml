@@ -142,6 +142,7 @@
     <string name="auth_panel_continue">Continuer</string>
     <string name="auth_panel_cancel">Annuler</string>
     <string name="auth_panel_refused_notice">Pas de souci, ton compte n\'a pas été créé. Tu pourras le créer quand tu veux.</string>
+    <string name="auth_session_replaced_notice">Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci.</string>
     <string name="auth_loading_a11y">Chargement en cours</string>
     <string name="auth_retry_action">Réessayer</string>
     <string name="auth_signout_action">Se déconnecter</string>

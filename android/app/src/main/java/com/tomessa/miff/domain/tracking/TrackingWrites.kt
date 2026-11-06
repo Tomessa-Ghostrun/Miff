@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FieldValue
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.WriteKind
+import com.tomessa.miff.domain.session.DeviceIds
 import java.util.Date
 
 /*
@@ -13,6 +14,11 @@ import java.util.Date
  * - The LAST POSITION is the only place where a coordinate leaves the phone: `positions/{moi}` of ONE Miff, written alone (never in a lot of places,
  *   never with another document), 5 decimals, the time of the MEASURE, no history (the document is replaced).
  * - The times are the ones of the REAL event, capped at the clock of the phone (the rules accept 24 h in the past and 5 minutes ahead).
+ * - "Un compte, un seul appareil" (SESS-2): EVERY write of a status or of a position carries `deviceId`, the identifier of the session of this phone, the
+ *   partial updates included (the rules judge the document that results: a partial update without the key only passes if the base already holds the
+ *   session's value, and the next step of the deployment makes the key mandatory). The parameter is required and checked: a write cannot be built without it.
+ * - R-LIEU-1 (deployed): an update never sends `presenceAt` / `lastUpdateAt` when it does not change them (the merged document keeps the stored value, which the
+ *   rules accept whatever its age). `lastUpdateAt` is never set to the time of an event just to get past the rules.
  */
 object TrackingWrites {
     /**
@@ -28,8 +34,9 @@ object TrackingWrites {
         presenceAtMillis: Long,
         batteryPct: Int?,
         access: LocationAccess,
-        alsoLastUpdate: Boolean = fact.setLastUpdate,
+        deviceId: String,
     ): DocWrite {
+        requireDeviceId(deviceId)
         val data =
             mutableMapOf<String, Any?>(
                 "presence" to fact.presence.wire,
@@ -39,8 +46,9 @@ object TrackingWrites {
                 "locationAccess" to access.value,
                 "escalationDueAt" to null,
                 "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
             )
-        if (alsoLastUpdate) data["lastUpdateAt"] = Timestamp(Date(presenceAtMillis))
+        if (fact.setLastUpdate) data["lastUpdateAt"] = Timestamp(Date(presenceAtMillis))
         return DocWrite("miffs/$miffId/status/$uid", WriteKind.UPDATE, data)
     }
 
@@ -50,16 +58,20 @@ object TrackingWrites {
         uid: String,
         batteryPct: Int?,
         access: LocationAccess,
-    ): DocWrite =
-        DocWrite(
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        return DocWrite(
             "miffs/$miffId/status/$uid",
             WriteKind.UPDATE,
             mapOf(
                 "batteryPct" to batteryPct?.takeIf { it in 0..100 },
                 "locationAccess" to access.value,
                 "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
             ),
         )
+    }
 
     /** The last known position in ONE Miff (data-model.md section 2.12): latitude, longitude with 5 decimals, time of the measure. Nothing else. */
     fun position(
@@ -68,14 +80,23 @@ object TrackingWrites {
         lat: Double,
         lng: Double,
         measuredAtMillis: Long,
-    ): DocWrite =
-        DocWrite(
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        return DocWrite(
             "miffs/$miffId/positions/$uid",
             WriteKind.SET,
             mapOf(
                 "lat" to Geo.round5(lat),
                 "lng" to Geo.round5(lng),
                 "measuredAt" to Timestamp(Date(measuredAtMillis)),
+                "deviceId" to deviceId,
             ),
         )
+    }
+
+    /** A write without a well-formed identifier of session never leaves (the message does not quote the identifier). */
+    private fun requireDeviceId(deviceId: String) {
+        require(DeviceIds.isValid(deviceId)) { "device id shape" }
+    }
 }

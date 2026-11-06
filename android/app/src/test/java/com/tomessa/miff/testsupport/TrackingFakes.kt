@@ -200,7 +200,11 @@ class FakeTrackingStore : TrackingStore {
         return consents[miffId]
     }
 
+    /** Runs when the places are read (to hold a pass of the engine in the middle: a slow network). */
+    var onPlaces: suspend () -> Unit = {}
+
     override suspend fun places(miffId: String): List<PlaceFact> {
+        onPlaces()
         readCalls++
         return places[miffId].orEmpty()
     }
