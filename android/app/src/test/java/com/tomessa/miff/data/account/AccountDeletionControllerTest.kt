@@ -374,6 +374,74 @@ class AccountDeletionControllerTest {
         }
 
     @Test
+    fun aRunThatMadeProgress_countsTheTriesFromZero_aLongDeletionIsNeverGivenUpOn() =
+        runTest {
+            // Each run fails after leaving one Miff more: 4 left, 3, 2, 1 (the last run ends). Five failures in all, never three of the same kind.
+            procedure.stepsByRun =
+                listOf(
+                    listOf(DeletionStep.Miff(1, 4, false)),
+                    listOf(DeletionStep.Miff(1, 3, false)),
+                    listOf(DeletionStep.Miff(1, 2, false)),
+                    listOf(DeletionStep.Miff(1, 1, false)),
+                    emptyList(),
+                )
+            procedure.results +=
+                listOf(
+                    DeletionRun.Failed,
+                    DeletionRun.Failed,
+                    DeletionRun.Failed,
+                    DeletionRun.Failed,
+                    DeletionRun.Completed,
+                )
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(5, procedure.runs)
+            assertEquals(AccountDeletionState.Done(false), controller.state.value)
+        }
+
+    @Test
+    fun aRunThatMadeNoProgress_stillStopsAfterThreeTries_theSameNumberOfMiffsLeftEachTime() =
+        runTest {
+            procedure.steps = listOf(DeletionStep.Miff(1, 2, false))
+            procedure.results += DeletionRun.Failed
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(3, procedure.runs)
+            assertEquals(AccountDeletionState.Stuck, controller.state.value)
+        }
+
+    @Test
+    fun aFailureAtTheProfile_neverCountsAsProgress_itStopsAfterThreeTries() =
+        runTest {
+            // Reaching the profile means the Miffs are done: a refusal there repeated for ever must not loop for ever.
+            procedure.steps = listOf(DeletionStep.Checking, DeletionStep.Profile)
+            procedure.results += DeletionRun.Failed
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(3, procedure.runs)
+            assertEquals(AccountDeletionState.Stuck, controller.state.value)
+        }
+
+    @Test
+    fun fromTheCalmStop_signingOutKeepsTheMarker_theDeletionResumesAtTheNextSignIn() =
+        runTest {
+            procedure.results += DeletionRun.Failed
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Stuck, controller.state.value)
+            controller.signInAgain()
+            advanceUntilIdle()
+            assertEquals(1, session.keptMarkerSignOuts)
+            assertNotNull("the marker stays: nothing is abandoned half done", marker.stored)
+            assertEquals(0, session.cancels)
+            assertEquals(emptyList<String>(), session.erased)
+        }
+
+    @Test
     fun afterTheCalmStop_retryTakesItUpAgain_andItCanEnd() =
         runTest {
             procedure.results +=

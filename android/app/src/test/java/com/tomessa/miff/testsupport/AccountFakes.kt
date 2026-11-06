@@ -100,6 +100,9 @@ class FakeProcedure(
     /** The steps the procedure announces during each run, in order (to drive the progress screen). */
     var steps: List<DeletionStep> = emptyList()
 
+    /** The steps of the Nth run (from 0) when they differ from one run to the next (a deletion that makes progress); else [steps]. */
+    var stepsByRun: List<List<DeletionStep>> = emptyList()
+
     /** Runs when a run starts (to look at what the controller did BEFORE it). */
     var onRun: () -> Unit = {}
 
@@ -110,7 +113,7 @@ class FakeProcedure(
         onStep: (DeletionStep) -> Unit,
     ): DeletionRun {
         runs++
-        steps.forEach(onStep)
+        (stepsByRun.getOrNull(runs - 1) ?: steps).forEach(onStep)
         onRun()
         return if (results.size > 1) results.removeFirst() else results.firstOrNull() ?: DeletionRun.Completed
     }

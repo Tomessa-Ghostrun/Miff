@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -495,10 +496,10 @@ private fun OwnedMiffsBlock(
 private fun OwnedRow(miff: OwnedMiff) {
     val name = miff.name.ifBlank { stringResource(R.string.miff_screen_title_loading) }
     val full =
-        when (miff.otherMembers) {
-            0 -> stringResource(R.string.settings_delete_owned_row_alone, name)
-            1 -> stringResource(R.string.settings_delete_owned_row_one, name)
-            else -> stringResource(R.string.settings_delete_owned_row, name, miff.otherMembers)
+        if (miff.otherMembers == 0) {
+            stringResource(R.string.settings_delete_owned_row_alone, name)
+        } else {
+            pluralStringResource(R.plurals.settings_delete_owned_row, miff.otherMembers, name, miff.otherMembers)
         }
     val styled =
         buildAnnotatedString {

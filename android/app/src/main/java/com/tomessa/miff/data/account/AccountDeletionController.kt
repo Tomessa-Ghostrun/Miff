@@ -172,14 +172,26 @@ class AccountDeletionController(
         val apple = marker.read()?.appleLinked ?: false
         var failures = 0
         var offlineWhileOnline = 0
+        var fewestMiffsLeft = Int.MAX_VALUE
         var pause = retryPauseMillis
         while (true) {
             mutableState.value = AccountDeletionState.Running(resumed, retrying && failures == 0)
+            // How many Miffs this run found left to deal with (the first "Miff i sur n" it announced): see "progressed" below.
+            var runTotal: Int? = null
             val outcome =
                 procedure.run(uid) { step ->
+                    if (step is DeletionStep.Miff && runTotal == null) runTotal = step.total
                     // Only while this run is the one under way (a state set by a pause or a stop is never overwritten).
                     mutableState.update { if (it is AccountDeletionState.Running) it.copy(step = step) else it }
                 }
+            // A run that found FEWER Miffs left than every earlier run did made progress (a Miff was left or deleted): the tries are counted again from zero,
+            // so a long deletion that is slowed down now and then is never given up on. It is strictly decreasing: a step that fails for good still stops after three.
+            val progressed = runTotal?.let { it < fewestMiffsLeft } == true
+            if (progressed) {
+                fewestMiffsLeft = runTotal ?: fewestMiffsLeft
+                failures = 0
+                offlineWhileOnline = 0
+            }
             when (outcome) {
                 DeletionRun.Completed -> {
                     finish(uid, apple)

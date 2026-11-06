@@ -23,7 +23,7 @@
 
 ## Partie A : l'écran d'information avec des Miffs (7 min)
 
-6. [ ] **Compte 1** (créateur, 2 autres proches) : Profil > Réglages > Mon compte > **Supprimer mon compte**. Après un court chargement (« Un instant, on vérifie tes Miffs… ») : l'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. » **et** « Ta dernière position connue est effacée : plus personne ne peut la voir. », puis le titre **« Ta Miff »** avec une ligne « **Famille test** : 2 autres proches », la phrase « Cette Miff sera supprimée, avec ses lieux. Ses membres n’y auront plus accès. Si tu préfères, tu peux d’abord les prévenir. », un bouton **« Prévenir mes proches »**, la ligne du contact et l'encadré « **Ce n'est pas réversible.** ». **Continuer** est actif.
+6. [ ] **Compte 1** (créateur, 2 autres proches) : Profil > Réglages > Mon compte > **Supprimer mon compte**. Après un court chargement (« Un instant, on vérifie tes Miffs… ») : l'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. » **et** « Ta dernière position connue est effacée de Miff. », puis le titre **« Ta Miff »** avec une ligne « **Famille test** : 2 autres proches », la phrase « Cette Miff sera supprimée, avec ses lieux. Ses membres n’y auront plus accès. Si tu préfères, tu peux d’abord les prévenir. », un bouton **« Prévenir mes proches »**, la ligne du contact et l'encadré « **Ce n'est pas réversible.** ». **Continuer** est actif.
 7. [ ] **Compte 2** (simple membre) : le même écran **sans** bloc « Ta Miff » ni bouton « Prévenir mes proches », avec la phrase « Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo de mise à jour n’y seront plus visibles. » et la ligne de la position.
 8. [ ] **Compte 4** (créateur seul) : même carte « pour toi » (la phrase « Tu quitteras les Miffs que tu as rejointes » figure aussi pour un créateur, comme sur les maquettes ; à ajuster si vous la trouvez inexacte), puis « **Chez Léa** » **sans** nombre (jamais « 0 autre proche »), « Cette Miff sera supprimée, avec ses lieux. », **pas** de bouton « Prévenir mes proches ».
 9. [ ] **Annuler**, la flèche retour et le retour du système : retour à Mon compte, **rien n'a changé** (vous restez connecté, la Miff est intacte).
@@ -46,6 +46,8 @@
 17. [ ] **Compte 1** (téléphone ou émulateur) : « Famille test » montre maintenant **1 autre proche** ; le compte 2 a disparu de la liste, **sans message d'accusation**.
 
 ## Partie E : le créateur supprime son compte (compte 1, 8 min)
+
+> **À savoir pour les étapes 18 à 20** : les membres de la Miff d'un créateur **la perdent sans avertissement du téléphone** (décision du PM : on reste sur Spark, le bouton « Prévenir mes proches » est facultatif, et ils voient le message QM8 à leur prochain lancement). Ce n'est pas un défaut.
 
 18. [ ] Compte 3 reste connecté sur le second téléphone, **dans** « Famille test ». Sur l'OPPO, compte 1 : Supprimer > Continuer > Supprimer > mot de passe > Confirmer. L'écran dit **« Miff 1 sur 1 »**. Avec 1 ou 2 autres proches, la phrase « Ça peut prendre quelques minutes… » **n'apparaît pas** (elle n'apparaît que s'il y a plus de trois personnes à retirer).
 19. [ ] « Ton compte a été supprimé » puis le carrousel. **Console** : plus de `miffs/{id}` de « Famille test », plus de ses **lieux**, plus de son **code** dans `joinCodes`, plus aucune fiche, statut, photo ni position dedans ; **`miffsDeleted/{id}` existe** (identifiant + date, aucune donnée personnelle) ; plus de compte 1 dans Authentication, ni de `users/{uid}`.
@@ -74,6 +76,10 @@ Créez un compte jetable 5 avec une Miff de **3 ou 4 proches** (le plus long à 
 
 29. [ ] Sur un second téléphone connecté au même compte, **créez ou rejoignez** une Miff **pendant** que le premier supprime (réseau lent). L'app termine **sans bloquer** : la nouvelle Miff est traitée à son tour. Si des Miffs continuent d'arriver (jusqu'à 3 passes), l'app **s'arrête** : « Une Miff est apparue pendant la suppression : ton compte n’a donc pas été supprimé. Tu peux relancer la suppression depuis Réglages > Mon compte quand tu veux. » avec « Compris », et **rien du profil n'est supprimé** (l'app est utilisable).
 
+## Partie I bis : l'impasse, « Me déconnecter » (très difficile à provoquer, facultatif)
+
+29 bis. [ ] Si l'écran « **La suppression n'est pas terminée** » apparaît (refus durable d'une étape), il propose **Réessayer**, le contact et **Me déconnecter**. « Me déconnecter » mène à l'écran de connexion avec un message calme ; **se reconnecter avec le même compte reprend la suppression** (rien n'est abandonné, rien n'est supprimé de plus par la déconnexion). Il n'y a **pas** de bouton « Annuler » : la suppression ne s'abandonne pas à moitié.
+
 ## Partie J : plus grande taille de police, lecteur d'écran (4 min)
 
 30. [ ] **Plus grande taille de police** : sur l'écran d'information d'un créateur, « Prévenir mes proches », « Continuer » et « Annuler » restent atteignables (ils passent dans le défilement) ; la boîte de confirmation défile si besoin.
@@ -91,6 +97,8 @@ Créez un compte jetable 5 avec une Miff de **3 ou 4 proches** (le plus long à 
 - Un nombre exact de proches restant ou de lots dans l'écran de progression.
 
 ## À noter à la fin
+
+- [ ] **Risque connu (revue)** : un membre peut ralentir la suppression du créateur en retransmettant le nouveau code à un complice à chaque retrait ; la suppression finit quand même (nouveaux essais) et la personne n'est jamais bloquée (« Me déconnecter »). À garder en tête pour le contact et le runbook. Cas exotique non corrigé : le repli « index seul » ne purge que la position (statut et photo d'une fiche déjà partie restent, illisibles des autres).
 
 - [ ] Les textes à ajuster (FR et EN), dont le **nouveau texte d'annulation** (« Une Miff est apparue pendant la suppression… ») qui **remplace** « La suppression du compte avec tes Miffs arrive bientôt » (devenu faux).
 - [ ] « Prévenir mes proches » avec **plusieurs Miffs créées** : l'app nomme la **première** Miff qui a d'autres proches. Cela vous convient-il, ou préférez-vous un bouton par Miff ?

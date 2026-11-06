@@ -604,6 +604,23 @@ class DeleteAccountScreensTest {
     }
 
     @Test
+    fun stuck_offersAWayOut_signOut_theDeletionIsTakenUpAgainAtTheNextSignIn_neverAnAbandon() {
+        val controls = Controls(AccountDeletionState.Stuck)
+        host(AccountDeletionState.Stuck, controls)
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_stuck_signout))
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, controls.signInAgains)
+        assertEquals("the retry button is still there", 0, controls.retries)
+        composeRule.onNodeWithText(text(R.string.settings_delete_retry)).assertExists()
+        // Never a button that abandons the deletion half done.
+        listOf("cancel", "abandon", "keep my account").forEach {
+            composeRule.onAllNodesWithText(it, substring = true, ignoreCase = true).assertCountEquals(0)
+        }
+    }
+
+    @Test
     fun aSessionToRenew_saysSoHonestly_neverDeleted_andOffersToSignInAgain() {
         val controls = Controls(AccountDeletionState.NeedsSignIn)
         host(AccountDeletionState.NeedsSignIn, controls)

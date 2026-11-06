@@ -145,9 +145,11 @@ class StoreAccountMiffs(
                     // A refusal means "removed" only when the server is otherwise reachable (a refusal of App Check would refuse everything).
                     if (read.lostAccess) {
                         if (reachable == null) {
-                            reachable =
-                                (guardedCall(timeoutMillis) { store.serverReachable(uid) } as? Guarded.Value)?.value ==
-                                true
+                            // The question itself did not get through (no network): a pause, not a refusal (and no failure more to count).
+                            when (val probe = guardedCall(timeoutMillis) { store.serverReachable(uid) }) {
+                                is Guarded.Value -> reachable = probe.value
+                                is Guarded.Failed -> return MiffsRead.Failed(probe.failure)
+                            }
                         }
                         if (reachable == true) stale += ref else return MiffsRead.Failed(read.failure)
                     } else {

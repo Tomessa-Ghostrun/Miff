@@ -121,6 +121,16 @@ class AccountMiffsTest {
         }
 
     @Test
+    fun aRefusalWhoseProbeGetsNoAnswer_isAPause_notARefusal() =
+        runTest {
+            // The Miff is refused, and the question "is the server reachable?" itself dies for lack of network: OFFLINE, not REFUSED.
+            world.addStaleIndex(ROOM_1)
+            world.failCall = { if (it == "reachable") firestoreError(Code.UNAVAILABLE) else null }
+            assertEquals(MiffsRead.Failed(MiffFailure.OFFLINE), miffs.inventory(me))
+            assertTrue(world.lots.isEmpty())
+        }
+
+    @Test
     fun noNetwork_isAFailureOfTheRead_neverAnEmptyList() =
         runTest {
             world.addRoom(ROOM_1, owner = me)

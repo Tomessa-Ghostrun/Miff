@@ -9123,6 +9123,23 @@
         }
       }
     },
+    "settings_delete_stuck_signout": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me déconnecter"
+          }
+        }
+      }
+    },
     "settings_delete_retrying": {
       "extractionState": "manual",
       "localizations": {
@@ -9231,13 +9248,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your last known location is erased: no one can see it any more."
+            "value": "Your last known position is erased from Miff."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta dernière position connue est effacée : plus personne ne peut la voir."
+            "value": "Ta dernière position connue est effacée de Miff."
           }
         }
       }
@@ -9280,32 +9297,39 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "“%1$@”: %2$lld other members"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "“%1$@”: %2$lld other member"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "“%1$@”: %2$lld other members"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "« %1$@ » : %2$lld autres proches"
-          }
-        }
-      }
-    },
-    "settings_delete_owned_row_one": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "“%1$@”: 1 other member"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "« %1$@ » : 1 autre proche"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "« %1$@ » : %2$lld autre proche"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "« %1$@ » : %2$lld autres proches"
+                }
+              }
+            }
           }
         }
       }
@@ -9486,13 +9510,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A Miff appeared during the deletion, so your account was not deleted. You can start the deletion again from Settings > My account whenever you like. Any question? Write to us: %1$@."
+            "value": "You’re part of at least one Miff, so your account was not deleted. Deleting your account along with your Miffs is coming soon. In the meantime, you can leave or delete your Miffs from their page, then come back to Settings > My account. Any question? Write to us: %1$@."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une Miff est apparue pendant la suppression : ton compte n’a donc pas été supprimé. Tu peux relancer la suppression depuis Réglages > Mon compte quand tu veux. Une question ? Écris-nous : %1$@."
+            "value": "Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$@."
           }
         }
       }

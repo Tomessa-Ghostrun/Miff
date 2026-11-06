@@ -176,6 +176,9 @@ fun AccountDeletionContent(
                 extra = R.string.settings_delete_paused_leave,
                 bodyHasContact = true,
                 retry = R.string.settings_delete_retry to controls::retry,
+                // The way out of the dead end (AUTH-5b review): the session is closed but the marker STAYS (it primes over the routing), so signing in again with
+                // the same account takes the deletion up again. Never a way to abandon it half done.
+                secondary = R.string.settings_delete_stuck_signout to controls::signInAgain,
             )
         }
 
@@ -308,6 +311,7 @@ private fun Notice(
     extra: Int?,
     bodyHasContact: Boolean = false,
     retry: Pair<Int, () -> Unit>? = null,
+    secondary: Pair<Int, () -> Unit>? = null,
 ) {
     CenteredGradient {
         Column(
@@ -344,6 +348,14 @@ private fun Notice(
                 onClick = retry.second,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+        if (secondary != null) {
+            TextButton(
+                onClick = secondary.second,
+                modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
+            ) {
+                Text(text = stringResource(secondary.first), style = textBodyBold16, color = colorActionPrimary)
+            }
         }
     }
 }
