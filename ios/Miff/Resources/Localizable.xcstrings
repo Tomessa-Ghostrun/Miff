@@ -11628,13 +11628,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "4. Avoid closing Miff by swiping it away in the app switcher: iOS may then wait until you reopen it before resuming."
+            "value": "4. If a detection is late, opening Miff once lets you check that everything is in order."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "4. Évite de fermer Miff en la balayant dans le sélecteur d'apps : iOS peut alors attendre que tu la rouvres avant de reprendre."
+            "value": "4. Si une détection tarde, rouvrir Miff une fois permet de vérifier que tout est en ordre."
           }
         }
       }

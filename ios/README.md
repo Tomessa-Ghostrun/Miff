@@ -321,10 +321,12 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 2. **Icônes** : maison + petit coeur dessinés avec deux symboles du système au trait (SF Symbols `house` et `heart`) et `person`, faute de l'export vectoriel du PM ; à remplacer.
 3. **Bouton central** : sélectionnable (il ouvre un emplacement « bientôt » dans les builds Debug et Internal) alors qu'Android le grise ; absent de Release comme sur Android.
 4. **Langue** : la ligne ouvre les réglages de l'iPhone (décision Q4) ; pas d'écran de choix comme sur Android.
-5. **Aide à la détection** : texte propre à iOS (localisation « Toujours » et position exacte, actualisation en arrière-plan, économie d'énergie, ne pas balayer l'app) au lieu de l'aide Oppo/Xiaomi d'Android. **À vérifier sur l'iPhone** : l'affirmation « iOS peut attendre que tu rouvres l'app après l'avoir balayée » (comportement documenté par Apple pour la surveillance de zones, non constaté ici).
+5. **Aide à la détection** : texte propre à iOS (localisation « Toujours » et position exacte, actualisation en arrière-plan, économie d'énergie, rouvrir Miff une fois si une détection tarde) au lieu de l'aide Oppo/Xiaomi d'Android. **À vérifier sur l'iPhone** : si balayer l'app dans le sélecteur retarde réellement la reprise des détections (le texte ne l'affirme plus).
 6. **Consentement et retrait** : le renouvellement du consentement à la localisation reste fait AVANT la coquille par l'écran existant (LOC-4a) ; le retrait de la localisation reste « Arrêter de partager » dans l'écran de la Miff. L'interrupteur « statistiques » n'est pas livré (voir le journal des changements).
 7. **Mes informations** : lecture seule dans cette PR (critères A5 à A8 du ticket à venir).
 8. **Pas de retour en haut** en touchant l'onglet déjà actif.
+10. **Feed embarqué** : « Se déconnecter » (et la carte « Mes Miffs ») n'apparaissent plus dans l'onglet Feed (ils sont dans Réglages et Profil) ; le lien de déconnexion ne reste que dans les états sans barre (« Pas encore de Miff », état illisible hors connexion).
+11. **Barre masquée tant que les Miffs ne sont pas lues** (pas de clignotement) ; si la dernière Miff disparaît (quittée, supprimée, accès perdu), la coquille retombe sur le Feed et vide la pile des Réglages (règles dans `MainShellRules`, testées).
 9. **Profil** : le Profil de la maquette montre aussi les lieux de la Miff et un carrousel avec nombre de membres : non livrés (les lieux sont dans l'écran de la Miff, ticket Lieux iOS ; le Profil complet est PRO-2).
 
 Rien n'est compilé en local : la CI fait foi ; le rendu natif du verre se juge sur l'iPhone 11 Pro (TestFlight).

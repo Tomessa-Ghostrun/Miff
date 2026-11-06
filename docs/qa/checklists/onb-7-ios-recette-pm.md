@@ -65,13 +65,16 @@
 | 29 | Dans Confidentialité, aller dans les réglages de l'iPhone, changer la localisation, **revenir** : l'état affiché se met à jour | [ ] |
 | 30 | Tous les textes se lisent sans accord de genre bizarre, tutoiement, ton calme, aucune alarme | [ ] |
 
-## 7. Rien n'est cassé
+## 7. Rien n'est cassé et les cas limites
 
 | # | Vérifier | OK |
 |---|---|---|
 | 31 | Créer / rejoindre une Miff, ouvrir sa page, ajouter un lieu : comme avant | [ ] |
 | 32 | Se connecter sur un second appareil : le premier est déconnecté avec le message habituel (un compte, un seul appareil) | [ ] |
-| 33 | Un compte **sans Miff** n'a **pas** de barre (écran de choix plein écran) | [ ] |
+| 33 | Un compte **sans Miff** n'a **pas** de barre et **pas accès aux Réglages ni au Profil** (décision Q13) : écran de choix plein écran | [ ] |
+| 34 | **Cas de l'impasse** : avec une seule Miff, aller sur l'onglet Profil, ouvrir la Miff, la **quitter** (ou la supprimer). Attendu : retour sur **« Pas encore de Miff »** avec Créer / Rejoindre (jamais un Profil sans barre) ; même chose si l'accès à la Miff est perdu | [ ] |
+| 35 | Au lancement, la barre n'apparaît pas puis disparaît (pas de clignotement) ; en mode avion sans cache, l'écran propose « Réessayer » et « Se déconnecter » | [ ] |
+| 36 | **À vérifier sur l'iPhone** (aide à la détection) : si fermer Miff en la balayant dans le sélecteur d'apps retarde réellement la reprise des détections (le texte de l'aide ne l'affirme pas) | [ ] |
 
 ## Ce qui n'est pas dans cette PR (connu, listé dans le journal des changements)
 

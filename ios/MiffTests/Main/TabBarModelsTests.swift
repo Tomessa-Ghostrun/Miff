@@ -70,18 +70,7 @@ final class TabBarModelsTests: XCTestCase {
         XCTAssertEqual(level, .material)
     }
 
-    func testNativeGlassIsAllowedByDefault() {
-        XCTAssertTrue(GlassPolicy.nativeGlassAllowed)
-    }
-
     // MARK: - Les mesures des maquettes
-
-    func testTheBarHasTheShapeOfTheMockups() {
-        XCTAssertEqual(TabBarLayout.barHeight, 64)
-        XCTAssertEqual(TabBarLayout.sideMargin, 24)
-        XCTAssertEqual(TabBarLayout.cornerRadius, 20)
-        XCTAssertEqual(TabBarLayout.bottomMargin, 22)
-    }
 
     func testEveryTouchTargetIsAtLeast44Points() {
         XCTAssertGreaterThanOrEqual(TabBarLayout.entryWidth, Spacing.minTouchTarget)

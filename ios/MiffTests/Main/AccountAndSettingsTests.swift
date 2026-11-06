@@ -82,8 +82,22 @@ final class AccountViewModelTests: XCTestCase {
         await waitUntil { setup.signOuts.hits > 0 }
 
         XCTAssertEqual(setup.signOuts.hits, 1)
-        XCTAssertTrue(setup.viewModel.state.isSigningOut)
         XCTAssertFalse(setup.viewModel.state.confirmingSignOut)
+    }
+
+    func testASignOutThatFailsDurablyLeavesTheButtonUsableToTryAgain() async {
+        // La session reste ouverte (Trousseau illisible) : le bouton ne reste pas bloqué sur « déconnexion en cours ».
+        let setup = make()
+        setup.viewModel.confirmSignOut()
+        await waitUntil { setup.signOuts.hits > 0 }
+        await waitUntil { !setup.viewModel.state.isSigningOut }
+
+        XCTAssertFalse(setup.viewModel.state.isSigningOut)
+        setup.viewModel.requestSignOut()
+        XCTAssertTrue(setup.viewModel.state.confirmingSignOut)
+        setup.viewModel.confirmSignOut()
+        await waitUntil { setup.signOuts.hits > 1 }
+        XCTAssertEqual(setup.signOuts.hits, 2)
     }
 
     func testNothingCanBeAskedWhileSigningOut() async {

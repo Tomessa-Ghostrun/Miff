@@ -19,6 +19,12 @@ Ajouté :
   - **Confidentialité** : texte de localisation (`settings_privacy_location_body`), état de la localisation et des notifications **lu** (jamais demandé) avec « Ouvrir les réglages du téléphone », notifications « bientôt », « Si les détections tardent » (aide propre à iOS), Conditions, Politique, « Nous contacter ». Version et build en bas de la liste des Réglages.
 - Tests : `TabBarModelsTests` (onglets selon le build, noms parlés, matrice de verre dont « Réduire la transparence » et « Augmenter le contraste », mesures, cibles de 44 pt, couleurs du bouton central, contrastes du §6 recalculés depuis les jetons), `ProfileTabTests` (profil lu et validé, view model : chargement, échec calme, relecture, réponse d'une autre personne ignorée), `AccountAndSettingsTests` (déconnexion confirmée une seule fois, mot de passe, pause, hors connexion, langue, liens, autorisations).
 
+Corrigé après la revue indépendante de la PR #102 :
+- **Impasse supprimée** : quand la dernière Miff disparaît (quittée ou supprimée depuis le Profil, accès perdu), la coquille montre le Feed (« Pas encore de Miff », Créer / Rejoindre) et vide la pile des Réglages (`MainShellRules.effectiveTab`, `barVisible`, tests). La barre reste masquée tant que les Miffs ne sont pas lues (plus de clignotement). Un compte sans Miff n'a pas accès aux Réglages (décision Q13).
+- « Se déconnecter » : si la déconnexion échoue durablement (Trousseau illisible) le bouton redevient utilisable ; test ajouté.
+- Aide à la détection : le texte n'affirme plus que balayer l'app retarde les détections.
+- Écart : « Se déconnecter » masqué dans le Feed embarqué hors états sans barre.
+
 Modifié :
 - `MiffHomeContent` a un paramètre `embedded` : dans la coquille elle ne dessine plus la carte « Mes Miffs » (déplacée dans le Profil) ni « Se déconnecter » (déplacé dans Mon compte), sauf pour l'état « Pas encore de Miff » (sans barre donc sans Profil). `MiffHomeHost` pose `MainShellView` à la racine de sa navigation. `AppEnvironment` : deux lignes (`profileReader`, `accountInfo`). Les autres fichiers sont nouveaux (limite les conflits avec LOC-4b).
 - 18 clés `ios_*` ajoutées au catalogue (FR et EN, tutoiement) ; parité Android vérifiée (618 clés communes).

@@ -58,36 +58,44 @@ struct MainShellView<Feed: View>: View {
         )
     }
 
-    /// Un compte sans Miff n'a pas de barre : rien à y faire.
     private var hasNoMiff: Bool {
-        if case .ready(let ready) = miffs {
-            return ready.miffs.isEmpty
-        }
-        return false
+        MainShellRules.hasNoMiff(miffs)
+    }
+
+    /// L'onglet réellement montré : le Feed dès que la dernière Miff a disparu.
+    private var shownTab: MainTab {
+        MainShellRules.effectiveTab(selected: selected, hasNoMiff: hasNoMiff)
     }
 
     private var barVisible: Bool {
-        !keyboardVisible && settingsPath.isEmpty && !hasNoMiff
+        MainShellRules.barVisible(keyboardVisible: keyboardVisible, pathIsEmpty: settingsPath.isEmpty, directory: miffs)
     }
 
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                TabLayer(isActive: selected == .feed) {
+                TabLayer(isActive: shownTab == .feed) {
                     feed
                 }
-                TabLayer(isActive: selected == .profile) {
+                TabLayer(isActive: shownTab == .profile) {
                     profileStack
                 }
-                if selected == .update {
+                if shownTab == .update {
                     UpdateSoonView()
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if barVisible {
-                    MainTabBar(config: .current, selected: selected, central: .neutral, onSelect: { selected = $0 })
+                    MainTabBar(config: .current, selected: shownTab, central: .neutral, onSelect: { selected = $0 })
                         .padding(.bottom, TabBarLayout.bottomPadding(safeAreaBottom: proxy.safeAreaInsets.bottom))
                 }
+            }
+        }
+        // La dernière Miff a disparu : on repart du Feed, avec une pile de Réglages vide (rien ne reste ouvert sans barre pour en sortir).
+        .onChange(of: hasNoMiff) { noMiff in
+            if noMiff {
+                selected = .feed
+                settingsPath = []
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in

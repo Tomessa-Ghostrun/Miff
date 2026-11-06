@@ -106,8 +106,11 @@ final class AccountViewModel: ObservableObject {
         }
         state.confirmingSignOut = false
         state.isSigningOut = true
-        Task { [signOutAction] in
+        Task { [weak self, signOutAction] in
             await signOutAction()
+            // Une déconnexion qui réussit remplace tout l'écran ; une qui échoue durablement (Trousseau illisible) laisse la personne
+            // ici : le bouton redevient utilisable pour réessayer.
+            self?.state.isSigningOut = false
         }
     }
 

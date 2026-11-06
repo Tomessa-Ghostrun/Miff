@@ -25,7 +25,7 @@ struct MiffHomeContent: View {
     let state: DirectoryState
     let actions: MiffHomeActions
     /// Dans la coquille à onglets (ONB-7) : la carte « Mes Miffs » est dans l'onglet Profil et « Se déconnecter » dans Réglages > Mon
-    /// compte ; l'accueil ne garde que le lien de déconnexion de l'état « Pas encore de Miff » (sans barre, donc sans Profil).
+    /// compte ; l'accueil ne garde que le lien de déconnexion des états sans barre (« Pas encore de Miff », état illisible).
     var embedded = false
 
     var body: some View {
@@ -52,10 +52,8 @@ struct MiffHomeContent: View {
         guard embedded else {
             return true
         }
-        if case .ready(let ready) = state {
-            return ready.miffs.isEmpty
-        }
-        return false
+        // Sans barre (donc sans Profil) : état « Pas encore de Miff » ou état illisible hors connexion.
+        return !MainShellRules.hasMiffs(state) && state != .loading
     }
 
     @ViewBuilder
