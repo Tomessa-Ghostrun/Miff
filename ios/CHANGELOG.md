@@ -2,6 +2,10 @@
 
 ## Non publié
 
+### CI - `ios-testflight` : `archive_mode` vaut `signed` par défaut
+
+Les 4 échecs du 2026-11-06 (« exportArchive Invalid Signature ... Miff.app/Frameworks/*.framework is not properly signed ») avaient tous été lancés avec `archive_mode = unsigned`, l'ancien défaut dont le support était « non confirmé » ; tous les succès (miff-4, loc-3, loc-4a) étaient en `signed`. Le défaut devient `signed`. Aucun code applicatif, aucune dépendance, aucun secret modifié. Coût : inchangé (le mode `signed` peut créer un certificat de développement « Created via API », voir `docs/dev/ios-spike.md` section 10).
+
 ### SESS-3 - Un compte, un seul appareil (miroir d'Android SESS-2)
 
 Ticket `docs/tickets/session-appareil-unique.md` (mécanisme validé par le PM le 2026-11-01), contrat client de `backend/data-model.md` (section « Un compte, un seul appareil »), règles SESS-1 **temps 1 déployées** (`deviceId` facultatif dans le statut et la position ; session `users/{uid}/session/active` écrivable par son propriétaire). **Aucune règle modifiée.** Détail, écarts avec Android et limites : `README.md`, section « Un compte, un seul appareil ». Recette : `docs/qa/checklists/sess-3-ios-recette-pm.md`.
