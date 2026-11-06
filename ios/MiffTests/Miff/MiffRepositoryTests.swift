@@ -442,6 +442,44 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(load?.lost.isEmpty, true)
     }
 
+    // MARK: - La formule est-elle connue ? (LOC-3, revue I1)
+
+    func testMyMiffsTheSubscriptionIsKnownWhenTheServerAnswered() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous")
+
+        let noDocument = loaded(await repo().myMiffs(uid: uid))
+
+        XCTAssertEqual(noDocument?.premiumKnown, true, "pas de document d'abonnement = un vrai « gratuit »")
+        XCTAssertEqual(noDocument?.premium, false)
+        store.entitlement = EntitlementRead(active: true, expiresAtMillis: now.value + 10_000)
+        let active = loaded(await repo().myMiffs(uid: uid))
+        XCTAssertEqual(active?.premiumKnown, true)
+        XCTAssertEqual(active?.premium, true)
+    }
+
+    func testMyMiffsAFailedSubscriptionReadIsUnknownNeverFree() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous")
+        store.entitlementFailure = firestoreError(FirestoreErrorNumber.unavailable)
+
+        let load = loaded(await repo().myMiffs(uid: uid))
+
+        XCTAssertEqual(load?.premiumKnown, false)
+        XCTAssertEqual(load?.fromCache, false)
+    }
+
+    func testMyMiffsAnAnswerFromTheCacheDoesNotKnowTheSubscription() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.membershipsFailure = firestoreError(FirestoreErrorNumber.unavailable)
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous")
+
+        let load = loaded(await repo().myMiffs(uid: uid))
+
+        XCTAssertEqual(load?.fromCache, true)
+        XCTAssertEqual(load?.premiumKnown, false)
+    }
+
     func testMyMiffsNothingAtAllToShowIsUnavailableNotAnEmptyListThatLooksLikeNoMiff() async {
         store.membershipsFailure = firestoreError(FirestoreErrorNumber.unavailable)
         store.cachedMembershipsFailure = firestoreError(FirestoreErrorNumber.unavailable)

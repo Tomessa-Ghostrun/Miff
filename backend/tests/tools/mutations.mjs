@@ -8,6 +8,7 @@
 
 import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
 import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
+import { PHOTO_MUTATIONS } from './mutations-photo.mjs';
 import { POSITION_MUTATIONS } from './mutations-position.mjs';
 import { SESSION_MUTATIONS } from './mutations-session.mjs';
 import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
@@ -404,7 +405,7 @@ export const MUTATIONS = [
   {
     id: 'H5a-photo-expiree-lisible',
     why: 'une photo dont expiresAt est passé reste lisible',
-    edits: [edit('\n          && (resource == null || resource.data.expiresAt > request.time);', ';')],
+    edits: [edit('\n          && (resource == null || resource.data.expiresAt > request.time)', '')],
     tests: ['H5a'],
   },
   {
@@ -458,7 +459,7 @@ export const MUTATIONS = [
   {
     id: 'X4-photo-sans-partage',
     why: 'une photo peut être posée sans que le partage soit activé',
-    edits: [edit(`&& getAfter(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;`, '&& true;', 2, 2)],
+    edits: [edit('&& s.enabled == true\n        && validPhotoLocation(d, s);', '&& validPhotoLocation(d, s);')],
     tests: ['X4'],
   },
   {
@@ -702,6 +703,8 @@ export const MUTATIONS = [
   ...POSITION_MUTATIONS,
   // --- SESS-1 (un compte, un seul appareil) : voir mutations-session.mjs ---
   ...SESSION_MUTATIONS,
+  // --- R-PHOTO-LOC (localisation de la photo d'update) : voir mutations-photo.mjs ---
+  ...PHOTO_MUTATIONS,
   // --- R-LIEU-1 (statut de plus de 24 h) et bornes d'horodatage du statut : voir mutations-statut.mjs ---
   ...STATUS_TIME_MUTATIONS,
 ];
