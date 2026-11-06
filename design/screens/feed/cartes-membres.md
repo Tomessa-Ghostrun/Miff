@@ -7,7 +7,7 @@ Carte `bg/surface`, rayon `radius/sm` (5), ombre `shadow/subtle`, contour `borde
 1. Avatar 46 pt à anneau **de couleur seule, sans pictogramme** (décision du PM, 2026-11-06) ; **prénom** (Baloo Thambi 2, 17 / 24) ; pastille « Toi » sur ma carte ; **batterie** à droite (pastille grise 22 pt : icône + « 85 % »).
 2. **Étiquette d'état** : **texte seul, sans pictogramme** [décidé par le PM le 2026-11-06], sur teinte 30 % avec **texte foncé** (`status/*-text`, AA). Le badge « Localisation limitée » (bleu pâle, bord bleu, pictogramme « position barrée ») n'est pas une étiquette d'état : il garde son pictogramme et passe à la ligne si la place manque.
 3. **Ligne de temps** 13 pt `text/description`.
-4. **Photo d'update** (108 pt de haut, largeur pleine) avec légende « Photo de 15 h 40 » ; toucher = plein écran (`localiser-et-photo.md`).
+4. **Photo d'update** : **carré aussi large que la carte, centré sur le milieu de la photo, sans déformer** (**décision du PM du 2026-11-06, D39**, remplace « 108 pt de haut, largeur pleine » ; PNG non régénérés) ; la photo reste **complète** en plein écran ; avec légende « Photo de 15 h 40 » ; toucher = plein écran (`localiser-et-photo.md`).
 5. **Boutons** à droite : Localiser, Message, Appeler (24 pt, zones 44 pt, bleu `action/primary`).
 
 **Ordre des cartes : moi d'abord, puis par ordre d'arrivée dans la Miff, stable ; jamais réordonné selon l'urgence.**
