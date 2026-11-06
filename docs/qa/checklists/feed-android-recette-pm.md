@@ -32,7 +32,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 ## Partie A — En-tête (3 min)
 
-- [ ] L'en-tête reste **en haut** quand on fait défiler. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) **et une petite coche** ; au centre le logo ; **aucune cloche**, le côté droit est vide.
+- [ ] L'en-tête reste **en haut** quand on fait défiler. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
 - [ ] Avec **une seule Miff** : le nom est dans une pastille **plate, sans flèche** (elle ne réagit pas au toucher). Avec **plusieurs Miffs** (compte Premium) : pastille avec flèche, liste avec **coche** sur la Miff affichée, « + Rejoindre / + Créer » (et seulement pour un Premium).
@@ -40,7 +40,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 ## Partie B — Cartes (5 min)
 
 - [ ] **Votre carte est la première**, avec « Toi », votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
-- [ ] La carte de B vient ensuite : prénom, **pastille d'état** (ex. « À la maison » avec l'icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] La carte de B vient ensuite : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
 - [ ] **Message** ouvre l'application SMS avec le numéro de B **préparé** (rien n'est envoyé) ; **Téléphone** ouvre le **composeur** avec le numéro (aucun appel lancé). Revenez avec « retour ».
 - [ ] Si un membre n'a pas de numéro (ancien compte) : seul le bouton position est visible.
 - [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise ; il a quand même un bouton position (voir la partie D : « n'a pas encore de position connue »).
@@ -60,7 +60,7 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 - [ ] **Plusieurs alertes** (B rouge et un troisième membre orange, ou deux comptes) : des **pastilles** apparaissent sous la bulle (la page courante est **allongée**), le **rouge d'abord**, on change de page en **glissant**, **rien ne défile tout seul**. Avec une seule alerte : pas de pastilles.
 - [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (vous, puis l'ordre d'arrivée).
 - [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
-- [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair) et **il y a toujours une icône** (coche, horloge, « ! ») en plus de la couleur.
+- [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent (décision du PM du 2026-11-06).
 
 ## Partie D — « Localiser » (5 min)
 

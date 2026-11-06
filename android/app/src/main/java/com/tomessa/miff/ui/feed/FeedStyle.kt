@@ -41,8 +41,9 @@ import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.textBodyBold14
 
 /*
- * What a LEVEL looks like. The colour is never alone: every level has a glyph (tick, clock, "!") and a text, and the dark text shades
- * (colorStatus*Text) are the ones that reach the AA contrast on the 30 % tints. A person whose status is not known is a neutral GREY:
+ * What a LEVEL looks like. On the ring of an avatar, on the strip and on the label of a card the COLOUR is the only signal: no tick, clock or "!"
+ * (decision of the PM, 2026-11-06; the words of the state stay, and the screen reader reads them). The dark text shades (colorStatus*Text) are
+ * the ones that reach the AA contrast on the 30 % tints. A person whose status is not known is a neutral GREY:
  * never green when nobody knows.
  */
 
@@ -73,17 +74,8 @@ internal fun StatusLevel.onTint(): Color =
         StatusLevel.NEUTRAL -> colorTextForm
     }
 
-/** The glyph on the ring of an avatar: none for a person whose status is not known. */
-internal fun StatusLevel.glyph(): Int? =
-    when (this) {
-        StatusLevel.GREEN -> R.drawable.ic_loc_check
-        StatusLevel.ORANGE -> R.drawable.ic_feed_clock
-        StatusLevel.RED -> R.drawable.ic_feed_alert
-        StatusLevel.NEUTRAL -> null
-    }
-
 /**
- * The round photo (or the initials) of a person with the ring of their level and, bottom end, its glyph. Decorative for the screen reader
+ * The round photo (or the initials) of a person with the ring of their level: the COLOUR ALONE, no glyph on it (decision of the PM, 2026-11-06). Decorative for the screen reader
  * (the parent says who it is and in what state). [jpeg] is the stored photo of the profile (20 000 bytes at most), decoded once.
  */
 @Composable
@@ -118,25 +110,6 @@ internal fun FeedAvatar(
                 )
             } else {
                 Text(text = initials, style = textBodyBold14, color = colorTextForm)
-            }
-        }
-        level.glyph()?.let { glyph ->
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 2.dp, y = 2.dp)
-                        .size(19.dp)
-                        .clip(CircleShape)
-                        .background(level.ring()),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(glyph),
-                    contentDescription = null,
-                    tint = level.onTint(),
-                    modifier = Modifier.size(13.dp),
-                )
             }
         }
     }
