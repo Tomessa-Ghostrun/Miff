@@ -125,7 +125,7 @@ final class SessionWriteGuardTests: XCTestCase {
             MiffWrites.stopSharing(miffId: miffId, uid: uid),
             MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: "free"),
             MiffWrites.rename(miffId: miffId, code: testCode, name: "Nouveau nom"),
-            MiffWrites.dropIndex(uid: uid, membershipKey: "free")
+            MiffWrites.dropIndex(miffId: miffId, uid: uid, membershipKey: "free")
         ]
 
         for lot in lots {
