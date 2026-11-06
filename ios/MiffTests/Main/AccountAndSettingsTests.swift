@@ -16,10 +16,10 @@ final class AccountViewModelTests: XCTestCase {
     }
 
     private final class Counter {
-        private(set) var count = 0
+        private(set) var hits = 0
 
         func hit() {
-            count += 1
+            hits += 1
         }
     }
 
@@ -59,7 +59,7 @@ final class AccountViewModelTests: XCTestCase {
         setup.viewModel.requestSignOut()
 
         XCTAssertTrue(setup.viewModel.state.confirmingSignOut)
-        XCTAssertEqual(setup.signOuts.count, 0)
+        XCTAssertEqual(setup.signOuts.hits, 0)
     }
 
     func testCancellingLeavesEverythingAsItWas() {
@@ -70,7 +70,7 @@ final class AccountViewModelTests: XCTestCase {
 
         XCTAssertFalse(setup.viewModel.state.confirmingSignOut)
         XCTAssertFalse(setup.viewModel.state.isSigningOut)
-        XCTAssertEqual(setup.signOuts.count, 0)
+        XCTAssertEqual(setup.signOuts.hits, 0)
     }
 
     func testConfirmingSignsOutOnce() async {
@@ -79,9 +79,9 @@ final class AccountViewModelTests: XCTestCase {
 
         setup.viewModel.confirmSignOut()
         setup.viewModel.confirmSignOut()
-        await waitUntil { setup.signOuts.count > 0 }
+        await waitUntil { setup.signOuts.hits > 0 }
 
-        XCTAssertEqual(setup.signOuts.count, 1)
+        XCTAssertEqual(setup.signOuts.hits, 1)
         XCTAssertTrue(setup.viewModel.state.isSigningOut)
         XCTAssertFalse(setup.viewModel.state.confirmingSignOut)
     }
