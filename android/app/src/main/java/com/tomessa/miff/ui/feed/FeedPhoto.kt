@@ -244,6 +244,7 @@ internal fun PhotoFullScreen(
             offset = if (scale == 1f) Offset.Zero else offset + pan
         }
     val unavailable = stringResource(R.string.feed_action_unavailable)
+    val closeName = stringResource(R.string.update_photo_close_a11y)
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -274,7 +275,7 @@ internal fun PhotoFullScreen(
                         .size(Spacing.minTouchTarget)
                         .clip(CircleShape)
                         .clickable(role = Role.Button, onClick = onDismiss)
-                        .semantics { contentDescription = context.getString(R.string.update_photo_close_a11y) },
+                        .semantics { contentDescription = closeName },
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
