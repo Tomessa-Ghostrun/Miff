@@ -55,7 +55,8 @@ enum CentralButtonState: Equatable, CaseIterable {
     var accessibilityKey: String {
         switch self {
         case .neutral:
-            return "tabbar_update_a11y"
+            // Clé propre à iOS : « Share news » comme les trois autres noms (la clé partagée `tabbar_update_a11y` dit « Share an update »).
+            return "ios_tabbar_update_neutral_a11y"
         case .safe:
             return "tabbar_update_green_a11y"
         case .warning:

@@ -123,7 +123,7 @@ enum PhotoMirror {
 }
 
 /// Une photo prête à publier : les octets du JPEG (sans métadonnée), sa taille et le moment où elle a été prise. Elle vit dans la mémoire de
-/// l'écran, JAMAIS sur le disque, et ne montre rien d'elle dans `description`. Passé `staleMillis`, elle est oubliée (ticket V6).
+/// l'écran, JAMAIS dans un fichier de l'app, et ne montre rien d'elle dans `description`. Passé `staleMillis`, elle est oubliée (ticket V6).
 struct UpdatePhoto: Equatable, CustomStringConvertible {
     let jpeg: Data
     let width: Int

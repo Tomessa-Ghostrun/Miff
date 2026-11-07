@@ -70,6 +70,8 @@ struct UpdatePreviewView: View {
                 // La croix fait ce que fait « Recommencer » (D22) : retour au viseur, photo oubliée, rien publié, rien demandé.
                 RoundOverlayButton(systemName: "xmark", labelKey: "update_close_a11y", onTap: onRetake)
                     .padding(Spacing.xs)
+                    // Sous le voile d'envoi, la croix n'est ni touchable ni atteignable par VoiceOver (pas d'annulation une fois partie).
+                    .accessibilityHidden(state.publishing)
                 if let notice = state.notice {
                     VStack {
                         Spacer(minLength: 0)

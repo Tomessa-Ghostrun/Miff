@@ -1,6 +1,6 @@
 import Foundation
 
-// CONFIDENTIALITÉ ET SÉCURITÉ, pour ce fichier : la photo prise vit ICI, en mémoire, et nulle part ailleurs (jamais sur le disque, dans un
+// CONFIDENTIALITÉ ET SÉCURITÉ, pour ce fichier : la photo prise vit ICI, en mémoire, et nulle part ailleurs (jamais dans un fichier ni dans la photothèque de l'app, ni dans un
 // journal, un événement, l'état restauré par le système, le presse-papiers). Elle est oubliée dès que la personne quitte l'Update,
 // recommence, publie, ou attend plus de 5 minutes. RIEN n'est écrit avant « Publier » (critère V2), et « Publier » n'existe que sur
 // l'aperçu d'une photo prise (D16, critère U9) : aucun chemin de cette classe ne publie sans photo. Miroir d'`UpdateViewModel.kt` d'Android.
@@ -32,6 +32,8 @@ final class UpdateViewModel: ObservableObject {
     private var publishTask: Task<Void, Never>?
     private var cleanTask: Task<Void, Never>?
     private var openingTask: Task<Void, Never>?
+    /// L'écran est ouvert (entre `onOpened` et `onClosed`) : une publication qui se termine écran fermé ne laisse aucune photo en mémoire.
+    private var screenOpen = false
 
     init(_ dependencies: UpdateViewModelDependencies) {
         publisher = dependencies.publisher
@@ -47,6 +49,7 @@ final class UpdateViewModel: ObservableObject {
     /// L'Update vient à l'écran (l'onglet), ou l'app revient au premier plan. Une photo qui attend encore (l'écran n'était que masqué par
     /// l'app passée en arrière-plan) est gardée 5 minutes puis oubliée.
     func onOpened() {
+        screenOpen = true
         if case .preview(let current) = stage {
             if current.photo.isStale(nowMillis: nowMillis()) && current.notice != .stale {
                 stage = .preview(PreviewState(photo: current.photo, notice: .stale))
@@ -178,6 +181,7 @@ final class UpdateViewModel: ObservableObject {
 
     /// La personne a quitté l'Update (un autre onglet, retour) : la photo est oubliée, quoi qu'il arrive. Une publication déjà partie continue.
     func onClosed() {
+        screenOpen = false
         openingTask?.cancel()
         if publishTask != nil {
             return
@@ -188,6 +192,13 @@ final class UpdateViewModel: ObservableObject {
     /// « Publier ». Seulement sur l'aperçu d'une photo.
     func onPublish() {
         guard case .preview(let current) = stage, !current.publishing, publishTask == nil else {
+            return
+        }
+        // Le nettoyage de ma photo expirée est en cours (quelques secondes au plus) : une seule opération d'écriture à la fois.
+        if cleanTask != nil {
+            var busy = current
+            busy.notice = .failed
+            stage = .preview(busy)
             return
         }
         var publishing = current
@@ -203,18 +214,19 @@ final class UpdateViewModel: ObservableObject {
 
     private func finishPublication(_ result: PublishResult) {
         publishTask = nil
-        guard case .preview(var current) = stage else {
-            // L'écran a été quitté pendant l'envoi : rien ne reste en mémoire, la confirmation (si elle a lieu) est dite quand même.
-            if case .published(let count) = result {
-                onPublished?(count)
-            }
+        if case .published(let count) = result {
+            // Publiée : plus rien en mémoire, et la confirmation est dite même si l'écran a été quitté pendant l'envoi.
+            stage = .idle
+            onPublished?(count)
+            return
+        }
+        guard screenOpen, case .preview(var current) = stage else {
+            // L'écran a été quitté pendant l'envoi : la photo est oubliée, rien ne reste en mémoire.
+            stage = .idle
             return
         }
         current.publishing = false
         switch result {
-        case .published(let count):
-            stage = .idle
-            onPublished?(count)
         case .partial(let shared, let total, let remaining):
             current.notice = .partial(sharedIn: shared, total: total)
             current.remaining = remaining
@@ -230,7 +242,8 @@ final class UpdateViewModel: ObservableObject {
     /// Au lancement et au retour au premier plan : retire MA photo de la base une fois expirée (aucune lecture du serveur tant que la date
     /// locale existe).
     func cleanUpExpiredPhoto(_ mine: MyPhotoFacts?) {
-        if cleanTask != nil {
+        // Une seule opération d'écriture à la fois : pas de nettoyage pendant une publication (il reviendra au prochain passage).
+        if cleanTask != nil || publishTask != nil {
             return
         }
         let cleaner = self.cleaner

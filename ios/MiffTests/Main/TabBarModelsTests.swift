@@ -27,8 +27,8 @@ final class TabBarModelsTests: XCTestCase {
     }
 
     func testTheCentralButtonNameSaysTheStateNeverTheColourAlone() {
-        XCTAssertEqual(TabBarNames.key(for: .update), "tabbar_update_a11y")
-        XCTAssertEqual(TabBarNames.key(for: .update, central: .neutral), "tabbar_update_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update), "ios_tabbar_update_neutral_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update, central: .neutral), "ios_tabbar_update_neutral_a11y")
         XCTAssertEqual(TabBarNames.key(for: .update, central: .safe), "tabbar_update_green_a11y")
         XCTAssertEqual(TabBarNames.key(for: .update, central: .warning), "tabbar_update_orange_a11y")
         XCTAssertEqual(TabBarNames.key(for: .update, central: .danger), "tabbar_update_red_a11y")

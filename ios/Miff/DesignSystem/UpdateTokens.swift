@@ -19,6 +19,15 @@ let colorUpdateToast = ColorToken(hex: 0x222222, alpha: 0.92)
 /// Blanc des textes et des pictogrammes posés sur le viseur et sur l'aperçu.
 let colorUpdateOnPhoto = ColorToken(hex: 0xFFFFFF)
 
+/// « Réduire la transparence » : le disque sombre derrière un pictogramme sur la photo et la pastille du message calme deviennent opaques.
+func updateScrimToken(reduceTransparency: Bool) -> ColorToken {
+    reduceTransparency ? colorUpdateScrim.withAlpha(1) : colorUpdateScrim
+}
+
+func updateToastToken(reduceTransparency: Bool) -> ColorToken {
+    reduceTransparency ? colorUpdateToast.withAlpha(1) : colorUpdateToast
+}
+
 /// Les mesures de l'écran Update (en points).
 enum UpdateLayout {
     /// L'obturateur : 80 pt (le minimum du ticket est 72), posé 48 pt au-dessus de la barre.

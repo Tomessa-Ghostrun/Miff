@@ -13,6 +13,7 @@ struct UpdateTabView: View {
     let actions: UpdateActions
 
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         stage
@@ -36,7 +37,7 @@ struct UpdateTabView: View {
     private var stage: some View {
         switch model.stage {
         case .idle:
-            colorBgCanvas.color.ignoresSafeArea()
+            opening
         case .explain:
             UpdatePopIn(
                 systemImage: "camera",
@@ -96,6 +97,21 @@ struct UpdateTabView: View {
                 actions: actions
             )
         }
+    }
+
+    /// Les premiers instants (lecture de ma fiche, 3 s au plus) : un fond calme et un indicateur discret, jamais un écran vide. Avec
+    /// « Réduire les animations », le fond seul.
+    private var opening: some View {
+        ZStack {
+            colorBgCanvas.color.ignoresSafeArea()
+            if !reduceMotion {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(colorActionPrimary.color)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("update_pane_a11y"))
     }
 
     /// Aperçu des applications récentes : ni le viseur ni la photo ne doivent y apparaître. Le voile est posé dès que l'app n'est plus active

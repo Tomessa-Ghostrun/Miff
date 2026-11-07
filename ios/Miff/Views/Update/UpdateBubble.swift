@@ -75,6 +75,7 @@ struct IncentiveBubble: View {
 /// Le message calme après une publication : une pastille sombre, sans son ni vibration, annoncée poliment au lecteur d'écran. Elle part
 /// d'elle-même (la coquille la retire après 3 secondes).
 struct UpdateConfirmation: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let text: String
 
     var body: some View {
@@ -83,7 +84,10 @@ struct UpdateConfirmation: View {
             .foregroundColor(colorUpdateOnPhoto.color)
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.sm + Spacing.xs)
-            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(colorUpdateToast.color))
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(updateToastToken(reduceTransparency: reduceTransparency).color)
+            )
             .accessibilityElement(children: .combine)
     }
 }

@@ -340,4 +340,51 @@ final class UpdateViewModelTests: XCTestCase {
 
         XCTAssertEqual(rig.store.lots.count, 1)
     }
+
+    func testAPublicationThatEndsAfterTheScreenWasLeftLeavesNoPhotoInMemory() async {
+        rig.store.failures = [NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)]
+        let model = makeModel()
+        await withPhoto(model)
+
+        model.onPublish()
+        model.onClosed()
+        await waitUntil { self.preview(model) == nil }
+
+        XCTAssertEqual(model.stage, .idle, "l'écran est fermé : la photo est oubliée, même si l'envoi a échoué")
+        XCTAssertTrue(published.isEmpty)
+    }
+
+    func testAPublicationThatSucceedsAfterTheScreenWasLeftIsStillAnnounced() async {
+        let model = makeModel()
+        await withPhoto(model)
+
+        model.onPublish()
+        model.onClosed()
+        await waitUntil { !self.published.isEmpty }
+
+        XCTAssertEqual(published, [1])
+        XCTAssertEqual(model.stage, .idle)
+    }
+
+    func testPublishingIsRefusedCalmlyWhileTheCleanUpRunsAndTheCleanUpWaitsWhilePublishing() async {
+        rig.ledger.notePhotoSent(uid: updateUid, millis: rig.now - 30 * 60 * 60 * 1000)
+        let model = makeModel()
+        await withPhoto(model)
+
+        // Le nettoyage est en cours : « Publier » ne part pas.
+        model.cleanUpExpiredPhoto(MyPhotoFacts(hasPhoto: true, lastUpdateAtMillis: nil))
+        model.onPublish()
+        XCTAssertEqual(preview(model)?.notice, .failed)
+        await waitUntil { !self.rig.store.lots.isEmpty }
+        XCTAssertFalse(rig.store.writes.contains { $0.path.contains("/photos/") && $0.kind == .set })
+
+        // Une publication est en cours : le nettoyage attend (aucun lot de plus).
+        await waitUntil { self.rig.ledger.photoSentMillis(uid: updateUid) == nil }
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        rig.now += 60_000
+        model.onPublish()
+        model.cleanUpExpiredPhoto(MyPhotoFacts(hasPhoto: true, lastUpdateAtMillis: nil))
+        await waitUntil { !self.published.isEmpty }
+        XCTAssertEqual(rig.store.lots.count, 2, "le nettoyage d'avant et la publication, rien d'autre")
+    }
 }

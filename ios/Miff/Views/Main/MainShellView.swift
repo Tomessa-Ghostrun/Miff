@@ -261,7 +261,10 @@ struct MainShellView<Feed: View>: View {
 
     /// Une photo est publiée : retour au Feed, où ma carte montrera la photo ; un message calme sans son ni vibration, retiré après 3 secondes.
     private func publishedArrived() {
-        selected = .feed
+        // Retour au Feed seulement si la personne est encore sur l'Update ; sinon elle reste où elle est, avec le message calme.
+        if shownTab == .update {
+            selected = .feed
+        }
         let text = L10n.string("update_published")
         confirmation = text
         UpdateAnnouncer.post(text)

@@ -14,20 +14,21 @@ final class UpdatePrivacyTests: XCTestCase {
     }
 
     /// Les fichiers de l'Update (jamais ceux des tests), avec leur chemin relatif à `Miff/`.
-    private let updateFiles = [
-        "Models/Update/CameraAccess.swift", "Models/Update/JpegMetadata.swift", "Models/Update/PhotoPlace.swift",
-        "Models/Update/PublishGuard.swift", "Models/Update/UpdateModels.swift", "Models/Update/UpdatePhotoFormat.swift",
-        "Models/Update/UpdatePrompt.swift", "Models/Update/UpdateWrites.swift",
-        "Services/Update/CameraController.swift", "Services/Update/CameraPermission.swift",
-        "Services/Update/PhotoCleaner.swift", "Services/Update/PhotoEncoder.swift",
-        "Services/Update/PhotoPositionSource.swift", "Services/Update/PhotoStore.swift",
-        "Services/Update/PublishLedger.swift", "Services/Update/UpdatePublisher.swift",
-        "Services/Firebase/FirestorePhotoStore.swift", "Services/Firebase/FirestoreMyStatusObserver.swift",
-        "ViewModels/UpdateViewModel.swift", "ViewModels/MyStatusStore.swift", "App/UpdateServices.swift",
-        "Views/Update/UpdateComponents.swift", "Views/Update/UpdateBubble.swift",
-        "Views/Update/UpdatePreviewView.swift",
-        "Views/Update/UpdateTabView.swift", "Views/Update/ViewfinderView.swift"
-    ]
+    /// Les dossiers de l'Update sont ÉNUMÉRÉS (un nouveau fichier est contrôlé sans qu'il faille penser à l'ajouter à une liste) ; s'y
+    /// ajoutent les quelques fichiers de l'Update qui vivent ailleurs.
+    private var updateFiles: [String] {
+        var files = [
+            "Services/Firebase/FirestorePhotoStore.swift", "Services/Firebase/FirestoreMyStatusObserver.swift",
+            "ViewModels/UpdateViewModel.swift", "ViewModels/MyStatusStore.swift", "App/UpdateServices.swift"
+        ]
+        let app = iosRoot.appendingPathComponent("Miff")
+        for folder in ["Models/Update", "Services/Update", "Views/Update"] {
+            let url = app.appendingPathComponent(folder)
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
+            files += names.filter { $0.hasSuffix(".swift") }.sorted().map { "\(folder)/\($0)" }
+        }
+        return files
+    }
 
     private func code(_ relative: String) throws -> [String] {
         let url = iosRoot.appendingPathComponent("Miff").appendingPathComponent(relative)
@@ -35,9 +36,29 @@ final class UpdatePrivacyTests: XCTestCase {
             XCTFail("Fichier introuvable : \(relative)")
             return []
         }
-        return try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\n").filter {
-            !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//")
+        let text = try String(contentsOf: url, encoding: .utf8)
+        return Self.codeLines(text)
+    }
+
+    /// Les lignes de code : ni commentaires de ligne (`//`, `///`), ni blocs `/* ... */`.
+    static func codeLines(_ text: String) -> [String] {
+        var inBlock = false
+        var kept: [String] = []
+        for line in text.components(separatedBy: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if inBlock {
+                inBlock = !trimmed.contains("*/")
+                continue
+            }
+            if trimmed.hasPrefix("/*") {
+                inBlock = !trimmed.contains("*/")
+                continue
+            }
+            if !trimmed.hasPrefix("//") {
+                kept.append(line)
+            }
         }
+        return kept
     }
 
     private func offenders(in files: [String], matching fragments: [String]) throws -> [String] {
@@ -50,7 +71,20 @@ final class UpdatePrivacyTests: XCTestCase {
         return found
     }
 
+    func testBlockCommentsAreNotCodeAndAreIgnored() {
+        let text = "let a = 1\n/* print(secret)\n NSLog */\n// print(x)\nlet b = 2\n/* une ligne */\nlet c = 3"
+
+        XCTAssertEqual(Self.codeLines(text), ["let a = 1", "let b = 2", "let c = 3"])
+    }
+
+    func testNoFileOfTheUpdateKeepsAPhotoInASettingACacheOrASceneState() throws {
+        let forbidden = ["UserDefaults", "SceneStorage", "AppStorage", "NSCache", "URLCache", "NSUbiquitous"]
+
+        XCTAssertEqual(try offenders(in: updateFiles, matching: forbidden), [])
+    }
+
     func testTheSourcesAreFound() throws {
+        XCTAssertGreaterThanOrEqual(updateFiles.count, 25, "les dossiers de l'Update sont énumérés")
         for file in updateFiles {
             XCTAssertFalse(try code(file).isEmpty, file)
         }
@@ -77,7 +111,7 @@ final class UpdatePrivacyTests: XCTestCase {
     }
 
     func testOnlyTheLedgerWritesAFileAndItHoldsNoPhoto() throws {
-        let fragments = [".write(to", "FileHandle", "OutputStream", "writeToFile"]
+        let fragments = [".write(", "FileHandle", "OutputStream", "writeToFile"]
         let writers = try offenders(in: updateFiles, matching: fragments)
 
         XCTAssertTrue(writers.allSatisfy { $0.hasPrefix("Services/Update/PublishLedger.swift") }, "\(writers)")

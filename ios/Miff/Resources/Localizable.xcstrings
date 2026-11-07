@@ -14586,6 +14586,23 @@
           }
         }
       }
+    },
+    "ios_tabbar_update_neutral_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share news"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donner des nouvelles"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

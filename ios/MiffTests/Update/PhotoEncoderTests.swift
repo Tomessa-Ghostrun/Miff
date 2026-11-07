@@ -73,6 +73,14 @@ final class PhotoEncoderTests: XCTestCase {
         return try XCTUnwrap(CGImageDestinationCreateWithData(output as CFMutableData, type, 1, nil))
     }
 
+    /// Les octets d'un JPEG avant les données de l'image : les segments d'en-tête.
+    private func headerBytes(_ data: Data) throws -> Data {
+        let bytes = [UInt8](data)
+        let segments = try XCTUnwrap(JpegMetadata.headerSegments(bytes))
+        let end = segments.last?.range.upperBound ?? 2
+        return Data(bytes[0..<end])
+    }
+
     private func decoded(_ photo: UpdatePhoto) throws -> CGImage {
         try XCTUnwrap(PhotoEncoder.decodeUpright(photo.jpeg))
     }
@@ -104,8 +112,10 @@ final class PhotoEncoderTests: XCTestCase {
             )
 
             XCTAssertFalse(JpegMetadata.containsMetadata(photo.jpeg), "\(width) x \(height)")
+            // Les octets de l'IMAGE (compressés) peuvent contenir ces lettres par hasard : on cherche dans l'EN-TÊTE seulement.
+            let header = try headerBytes(photo.jpeg)
             for marker in ["Exif", "GPS", "xap", "http://ns.adobe.com", "TIFF"] {
-                XCTAssertNil(photo.jpeg.range(of: Data(marker.utf8)), "\(marker) dans \(width) x \(height)")
+                XCTAssertNil(header.range(of: Data(marker.utf8)), "\(marker) dans \(width) x \(height)")
             }
         }
     }
@@ -166,9 +176,10 @@ final class PhotoEncoderTests: XCTestCase {
         XCTAssertLessThan(right.red, 80)
     }
 
-    func testTheViewfinderOnlyMirrorsTheFrontLens() {
-        XCTAssertTrue(PhotoMirror.shouldMirror(frontCamera: CameraLens.front == .front))
-        XCTAssertFalse(PhotoMirror.shouldMirror(frontCamera: CameraLens.back == .front))
+    func testTheLensDecidesTheMirrorOnlyTheFrontOneIsMirrored() {
+        // C'est cette propriété que le viseur lit au moment de la prise de vue.
+        XCTAssertTrue(CameraLens.front.shouldMirrorPhoto)
+        XCTAssertFalse(CameraLens.back.shouldMirrorPhoto)
     }
 
     // MARK: - Ce que tu vois est ce qui part : le recadrage « cover »

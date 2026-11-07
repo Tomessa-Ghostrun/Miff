@@ -57,6 +57,7 @@ private struct SwitchCameraAction: ViewModifier {
 /// Un bouton rond posé sur une photo : 48 pt de zone, un disque sombre translucide de 40 pt (un pictogramme blanc seul disparaît sur une
 /// photo claire), le pictogramme en blanc.
 struct RoundOverlayButton: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let systemName: String
     let labelKey: String
     let onTap: () -> Void
@@ -67,7 +68,7 @@ struct RoundOverlayButton: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(colorUpdateScrim.color)
+                    .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
                     .frame(width: UpdateLayout.roundButtonDisc, height: UpdateLayout.roundButtonDisc)
                 Image(systemName: systemName)
                     .font(.system(size: UpdateLayout.roundButtonIcon, weight: .regular))

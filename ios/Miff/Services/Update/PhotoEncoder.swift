@@ -6,8 +6,9 @@ import UniformTypeIdentifiers
 // CONFIDENTIALITÉ, pour ce fichier (risque R6, critère V3) : le JPEG qui quitte le téléphone est écrit DEPUIS LES PIXELS : il ne porte aucun
 // bloc EXIF, donc ni position, ni date, ni modèle de téléphone, ni miniature ; `JpegMetadata.stripped` retire en plus tout segment de
 // métadonnées qui s'y serait glissé. L'orientation du capteur est appliquée aux pixels (à la lecture) puis oubliée. La photo de la caméra
-// est lue EN MÉMOIRE (`AVCapturePhoto.fileDataRepresentation`) : AUCUN fichier de la photo n'est jamais laissé sur le disque, rien n'est
-// écrit dans la photothèque. Rien ici ne journalise quoi que ce soit.
+// est lue EN MÉMOIRE (`AVCapturePhoto.fileDataRepresentation`) : AUCUN fichier de la photo n'est créé par l'app et rien n'est écrit dans la
+// photothèque. Limite : une fois publiée, la photo passe par le SDK Firestore, dont le cache local peut en garder une copie (chiffrée par la
+// protection des données d'iOS, purgée à la déconnexion et à la suppression du compte). Rien ici ne journalise quoi que ce soit.
 
 /// La fabrication de la photo : lecture (orientation appliquée), recadrage « cover », réduction, reflet de la caméra frontale (D37),
 /// JPEG sous 150 000 octets. Les cas sont testés sur des images fabriquées (`PhotoEncoderTests`).

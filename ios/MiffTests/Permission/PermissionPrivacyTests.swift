@@ -304,6 +304,9 @@ final class PermissionPrivacyTests: XCTestCase {
             XCTAssertTrue(french.contains("dernière position connue") && french.contains("avec l'heure"), key)
             XCTAssertTrue(english.contains("last known location") && english.contains("with the time"), key)
             XCTAssertTrue(french.contains("partagent aussi") && english.contains("also share"), key)
+            // UPDATE-3 : le lieu de la photo est un usage de la position (docs/release/update-photo-declarations.md §3.2).
+            XCTAssertTrue(french.contains("Quand tu publies une photo"), key)
+            XCTAssertTrue(english.contains("When you publish a photo"), key)
             // L'ancien texte du ticket (« jamais ta position précise ») est faux depuis la décision du 2026-11-01.
             XCTAssertFalse(french.contains("jamais ta position précise"), key)
             XCTAssertFalse(english.contains("never your precise location"), key)

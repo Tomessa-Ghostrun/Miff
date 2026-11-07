@@ -69,7 +69,10 @@ final class FirestorePhotoStore: PhotoStore, OwnPhotoReader {
             return .unreadable
         }
         let reference = database.collection("miffs").document(miffId).collection("photos").document(uid)
-        guard let snapshot = try? await reference.getDocument(), snapshot.exists, let data = snapshot.data(),
+        // Auprès du SERVEUR seulement (jamais une copie périmée du cache ; hors ligne : illisible, rien n'est conclu). Le SDK peut garder le
+        // résultat dans son cache (voir la limite dans `ios/README.md`) : seules les dates sont lues ici, jamais les octets de la photo.
+        guard let snapshot = try? await reference.getDocument(source: .server), snapshot.exists,
+              let data = snapshot.data(),
               let created = data["createdAt"] as? Timestamp, let expires = data["expiresAt"] as? Timestamp else {
             return .unreadable
         }

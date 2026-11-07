@@ -1,7 +1,7 @@
 import Foundation
 
 // Les états de l'écran Update et ce que « Publier » peut répondre, réduits à ce que l'écran sait dire (jamais un message technique).
-// CONFIDENTIALITÉ : la photo prise vit dans l'état `preview`, en MÉMOIRE, et nulle part ailleurs (jamais sur le disque, dans un journal,
+// CONFIDENTIALITÉ : la photo prise vit dans l'état `preview`, en MÉMOIRE, et nulle part ailleurs (jamais dans un fichier ni dans la photothèque de l'app, dans un journal,
 // un événement, l'état restauré par le système ni le presse-papiers). Son `description` ne montre rien.
 
 /// Ce qu'une publication a donné.

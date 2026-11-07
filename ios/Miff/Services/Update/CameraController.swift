@@ -5,8 +5,8 @@ import Foundation
 // - la caméra est liée à l'écran : elle démarre quand le viseur apparaît et est RELÂCHÉE quand il disparaît (autre onglet, retour) ET quand
 //   l'app passe en arrière-plan ou que l'écran se verrouille (l'écran appelle `stop()`). Miff n'ouvre jamais la caméra de lui-même et rien
 //   ne peut la déclencher à distance (critère P1) ;
-// - la photo est prise EN MÉMOIRE (`AVCapturePhoto.fileDataRepresentation`) : aucun fichier n'est créé, rien ne va dans la photothèque,
-//   aucune autorisation de stockage ni de photothèque ;
+// - la photo est prise EN MÉMOIRE (`AVCapturePhoto.fileDataRepresentation`) : jamais dans un fichier ni dans la photothèque de l'app ; le cache du SDK Firestore peut en garder une copie, chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte ; aucun fichier n'est créé par ce
+//   fichier, rien ne va dans la photothèque, aucune autorisation de stockage ni de photothèque ;
 // - ni flash, ni zoom, ni filtre, ni minuterie : non demandés (V4). Rien ici ne journalise quoi que ce soit.
 // - le REFLET (D37) : la capture et l'aperçu sont réglés EXPLICITEMENT (le système ne décide pas) : la capture n'est jamais retournée par la
 //   caméra, c'est `PhotoEncoder` qui retourne l'image de la caméra frontale (testé) ; l'aperçu de la caméra frontale est retourné (comme
@@ -15,6 +15,11 @@ import Foundation
 enum CameraLens: Equatable {
     case front
     case back
+
+    /// D37 : la photo de la frontale est publiée en reflet, celle de l'arrière jamais.
+    var shouldMirrorPhoto: Bool {
+        PhotoMirror.shouldMirror(frontCamera: self == .front)
+    }
 }
 
 /// Ce que l'écran a besoin du viseur : quelle caméra, s'il y en a deux, « prendre la photo ».
@@ -34,20 +39,43 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
     private var busy = false
     private var pending: ((CGImage?, CameraLens) -> Void)?
     private var pendingLens: CameraLens = .front
-    private var observer: NSObjectProtocol?
+    private var observers: [NSObjectProtocol] = []
+    /// Le viseur est voulu (entre `start()` et `stop()`) : seul un viseur voulu est relancé après une interruption.
+    private var active = false
 
     override init() {
         super.init()
-        observer = NotificationCenter.default.addObserver(
-            forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: .main
-        ) { [weak self] _ in
-            self?.onUnavailable?()
-        }
+        let center = NotificationCenter.default
+        let runtimeError = AVCaptureSession.runtimeErrorNotification
+        // Un appel, une autre application : le système suspend la session puis la reprend ; on s'assure qu'elle tourne.
+        let interruptionEnded = AVCaptureSession.interruptionEndedNotification
+        observers = [
+            center.addObserver(forName: runtimeError, object: session, queue: .main) { [weak self] note in
+                self?.handleRuntimeError(note)
+            },
+            center.addObserver(forName: interruptionEnded, object: session, queue: .main) { [weak self] _ in
+                self?.restartIfWanted()
+            }
+        ]
     }
 
     deinit {
-        if let observer {
-            NotificationCenter.default.removeObserver(observer)
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+    }
+
+    private func handleRuntimeError(_ note: Notification) {
+        // Le serveur multimédia du téléphone a redémarré : la session est reconstruite, ce n'est pas « caméra indisponible ».
+        let error = note.userInfo?[AVCaptureSessionErrorKey] as? AVError
+        if error?.code == .mediaServicesWereReset {
+            restartIfWanted()
+        } else {
+            onUnavailable?()
+        }
+    }
+
+    private func restartIfWanted() {
+        if active {
+            start()
         }
     }
 
@@ -62,6 +90,7 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
     /// Démarre la caméra : la FRONTALE d'abord (selfie par défaut, à chaque ouverture) ; sans frontale, l'arrière ; sans aucune, l'écran
     /// dit « caméra indisponible ».
     func start() {
+        active = true
         let wanted = lens
         queue.async { [weak self] in
             self?.configureAndRun(wanted)
@@ -70,10 +99,12 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
 
     /// Relâche la caméra (quitter l'écran, arrière-plan, verrouillage).
     func stop() {
-        queue.async { [weak self] in
-            guard let self else {
-                return
-            }
+        active = false
+        // Une prise de vue en cours est oubliée avec le viseur (sa réponse tardive ne sera livrée à personne).
+        busy = false
+        pending = nil
+        // Capture FORTE : la caméra doit être relâchée même si le contrôleur disparaît aussitôt après.
+        queue.async {
             if self.session.isRunning {
                 self.session.stopRunning()
             }

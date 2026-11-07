@@ -56,6 +56,7 @@ struct ViewfinderView: View {
     // Un nouveau contrôleur à chaque ouverture : la caméra de départ est toujours la frontale (selfie par défaut).
     @StateObject private var camera = CameraController()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         GeometryReader { proxy in
@@ -129,7 +130,8 @@ struct ViewfinderView: View {
                         .padding(.horizontal, Spacing.md)
                         .padding(.vertical, Spacing.sm)
                         .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(colorUpdateScrim.color)
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.top, Spacing.sm)
@@ -197,7 +199,7 @@ struct ViewfinderView: View {
                 onFailure()
                 return
             }
-            let mirror = PhotoMirror.shouldMirror(frontCamera: lens == .front)
+            let mirror = lens.shouldMirrorPhoto
             let taken = Int(Date().timeIntervalSince1970 * 1000)
             DispatchQueue.global(qos: .userInitiated).async {
                 let photo = PhotoEncoder.encode(image, aspect: aspect, mirror: mirror, nowMillis: taken)
