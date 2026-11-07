@@ -8,9 +8,11 @@ import com.tomessa.miff.data.account.AccountDeletion
 import com.tomessa.miff.data.account.AccountDeletionController
 import com.tomessa.miff.data.account.AccountDeletionMarker
 import com.tomessa.miff.data.account.AccountDeletionProcedure
+import com.tomessa.miff.data.account.AccountMiffs
 import com.tomessa.miff.data.account.AccountSession
 import com.tomessa.miff.data.account.FirestoreAccountDataStore
 import com.tomessa.miff.data.account.SharedPreferencesAccountDeletionMarker
+import com.tomessa.miff.data.account.StoreAccountMiffs
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
@@ -25,6 +27,8 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.feed.FeedRefresher
+import com.tomessa.miff.data.feed.FirestoreFeedRefresher
 import com.tomessa.miff.data.feed.FirestorePhotoReader
 import com.tomessa.miff.data.feed.FirestorePositionReader
 import com.tomessa.miff.data.feed.FirestoreStatusObserver
@@ -234,7 +238,7 @@ class AppContainer(
             network = networkMonitor,
             currentUid = { authGateway.currentUid },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-            onReplaced = { sessionManager.onDeviceReplaced() },
+            onReplaced = { accountGone -> sessionManager.onDeviceReplaced(accountGone) },
         )
     }
 
@@ -309,6 +313,9 @@ class AppContainer(
             journal = detectionJournal,
             // What the end of a session stopped stays stopped until the session changes (a lambda: the session manager lists this engine in its teardown).
             generation = { sessionManager.generation },
+            // AUTH-5b: while the deletion of THIS account is under way (its marker is on the disk) nothing is armed, read or written, even by a receiver of the
+            // system that wakes a cold process (the memory of the engine's stop is gone there).
+            suspended = { accountDeletionMarker.read()?.uid?.let { it == authGateway.currentUid } == true },
         )
     }
 
@@ -401,6 +408,9 @@ class AppContainer(
         )
     }
 
+    /** "Actualiser" (pull to refresh): one forced reading from the server, at most every 15 s, reads only. */
+    val feedRefresher: FeedRefresher by lazy { FirestoreFeedRefresher() }
+
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
@@ -484,12 +494,25 @@ class AppContainer(
 
     private val accountDataStore: AccountDataStore by lazy { FirestoreAccountDataStore() }
 
-    /** The deletion of an account without Miff (AUTH-5a); the Miffs are AUTH-5b. */
+    /**
+     * The Miffs of the account for its deletion (AUTH-5b): the inventory read on the server, the lots "Quitter" for the Miffs joined, and the existing
+     * deletion of a Miff (MIFF-2) for the Miffs created. Its own instance of the procedure: it does not go through the coordinator of the Miff screen (its
+     * hooks purge the cache and refresh the list at each Miff, which is not wanted in the middle of the deletion of the account).
+     */
+    private val accountMiffs: AccountMiffs by lazy {
+        StoreAccountMiffs(
+            store = miffStore,
+            deleter = MiffDeletion(store = miffStore, repository = miffRepository),
+        )
+    }
+
+    /** The deletion of an account, with or without Miffs (AUTH-5a and AUTH-5b). */
     val accountDeletionProcedure: AccountDeletionProcedure by lazy {
         AccountDeletion(
             store = accountDataStore,
             gateway = authGateway,
             cache = cachePurger,
+            miffs = accountMiffs,
             // SESS-2: the session of the account goes before its profile, with the acknowledgement of the server.
             session = AccountSession { uid -> deviceSession.releaseForAccountDeletion(uid) },
         )

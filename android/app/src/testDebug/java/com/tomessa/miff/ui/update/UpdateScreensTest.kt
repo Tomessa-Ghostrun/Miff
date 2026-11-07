@@ -374,7 +374,7 @@ class UpdateScreensTest {
             MiffTheme {
                 Box(
                     Modifier.fillMaxSize(),
-                ) { MainTabBar(TabBarConfig.forBuild(false), MainTab.FEED, {}, updateLevel = level) }
+                ) { MainTabBar(TabBarConfig.forBuild(false), MainTab.FEED, {}, updateStatus = level) }
             }
         }
         names.forEach { (wanted, name) ->

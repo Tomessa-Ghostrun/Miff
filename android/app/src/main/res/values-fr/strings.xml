@@ -143,6 +143,7 @@
     <string name="auth_panel_cancel">Annuler</string>
     <string name="auth_panel_refused_notice">Pas de souci, ton compte n\'a pas été créé. Tu pourras le créer quand tu veux.</string>
     <string name="auth_session_replaced_notice">Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci.</string>
+    <string name="auth_session_gone_notice">Ton compte a changé sur un autre appareil (par exemple une suppression en cours). Ce téléphone a été déconnecté.</string>
     <string name="auth_loading_a11y">Chargement en cours</string>
     <string name="auth_retry_action">Réessayer</string>
     <string name="auth_signout_action">Se déconnecter</string>
@@ -393,6 +394,9 @@
     <string name="feed_header_avatar_plain_a11y">Ouvrir mon profil</string>
     <string name="feed_header_logo_a11y">Remonter en haut du fil</string>
     <string name="feed_loading_news">Chargement des nouvelles…</string>
+    <string name="feed_refresh_a11y">Actualiser</string>
+    <string name="feed_refresh_started_a11y">Actualisation en cours</string>
+    <string name="feed_refresh_done_a11y">Informations actualisées</string>
     <string name="feed_loading_a11y">Chargement de ton fil</string>
     <string name="feed_card_you">Toi</string>
     <string name="feed_card_you_sees">Ce que tes proches voient de toi</string>
@@ -728,7 +732,6 @@
     <string name="settings_delete_loading">Un instant, on vérifie tes Miffs…</string>
     <string name="settings_delete_offline_list">Pas de connexion pour le moment. Tes Miffs s’afficheront dès que tu auras du réseau.</string>
     <string name="settings_delete_read_failed">On n’a pas pu lire tes Miffs pour le moment. Réessaie dans un instant.</string>
-    <string name="settings_delete_miffs_soon">Tu fais partie d’au moins une Miff. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir ici. Une question ? Écris-nous : %1$s.</string>
     <string name="settings_delete_apple_android_info">Ton compte est aussi lié à Apple. Depuis Android, on ne peut pas retirer cette autorisation : à la fin, on t’explique comment le faire dans les réglages de ton identifiant Apple.</string>
     <string name="settings_delete_confirm_title">Supprimer ton compte ?</string>
     <string name="settings_delete_confirm_body">Ton compte et tes données Miff seront supprimés. Ce n’est pas réversible.</string>
@@ -760,6 +763,7 @@
     <string name="settings_delete_failed_title">La suppression n’est pas terminée</string>
     <string name="settings_delete_failed">On n’a pas pu terminer la suppression. Réessaie dans un moment. Si ça continue, écris-nous : %1$s.</string>
     <string name="settings_delete_retry">Réessayer</string>
+    <string name="settings_delete_stuck_signout">Me déconnecter</string>
     <string name="settings_delete_retrying">On réessaie…</string>
     <string name="settings_delete_done_title">Ton compte a été supprimé</string>
     <string name="settings_delete_done_body">Merci d’avoir fait un bout de chemin avec Miff. Tu pourras revenir quand tu veux.</string>
@@ -771,9 +775,30 @@
     <string name="settings_delete_apple_howto_step3">Choisis Miff, puis arrête d’utiliser l’identifiant Apple avec cette app.</string>
     <string name="auth_account_deleted_notice">Ton compte a été supprimé.</string>
     <string name="settings_delete_reauth_expired">Ta session a expiré. Déconnecte-toi, reconnecte-toi, puis réessaie.</string>
-    <string name="settings_delete_miffs_blocked">Tu fais partie d’au moins une Miff : ton compte n’a donc pas été supprimé. La suppression du compte avec tes Miffs arrive bientôt. En attendant, tu peux quitter ou supprimer tes Miffs depuis leur page, puis revenir dans Réglages > Mon compte. Une question ? Écris-nous : %1$s.</string>
     <string name="settings_delete_signin_again">Ta session s’est fermée avant la fin de la suppression de ton compte. Reconnecte-toi avec le même compte : on la termine.</string>
     <string name="settings_delete_signin_again_action">Me reconnecter</string>
+    <string name="settings_delete_you">Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo de mise à jour n’y seront plus visibles.</string>
+    <string name="settings_delete_position">Ta dernière position connue est effacée de Miff.</string>
+    <string name="settings_delete_owned_title">Tes Miffs</string>
+    <string name="settings_delete_owned_title_one">Ta Miff</string>
+    <plurals name="settings_delete_owned_row">
+        <item quantity="one">« %1$s » : %2$d autre proche</item>
+        <item quantity="other">« %1$s » : %2$d autres proches</item>
+    </plurals>
+    <string name="settings_delete_owned_row_alone">« %1$s »</string>
+    <string name="settings_delete_owned_more">et %1$d autres</string>
+    <string name="settings_delete_owned_explain">Ces Miffs seront supprimées, avec leurs lieux. Leurs membres n’y auront plus accès. Si tu préfères, tu peux d’abord les prévenir.</string>
+    <string name="settings_delete_owned_explain_one">Cette Miff sera supprimée, avec ses lieux. Ses membres n’y auront plus accès. Si tu préfères, tu peux d’abord les prévenir.</string>
+    <string name="settings_delete_owned_explain_alone">Cette Miff sera supprimée, avec ses lieux.</string>
+    <string name="settings_delete_owned_explain_alone_many">Ces Miffs seront supprimées, avec leurs lieux.</string>
+    <string name="settings_delete_warn_button">Prévenir mes proches</string>
+    <string name="settings_delete_warn_button_named">Prévenir les proches de « %1$s »</string>
+    <string name="settings_delete_warn_button_other">Prévenir mes autres proches</string>
+    <string name="settings_delete_warn_message_generic">Je ferme notre Miff dans Miff : elle ne sera plus accessible.</string>
+    <string name="settings_delete_confirm_body_owner">Ton compte, tes données Miff et tes Miffs seront supprimés. Ce n’est pas réversible.</string>
+    <string name="settings_delete_progress_miff">Miff %1$d sur %2$d</string>
+    <string name="settings_delete_progress_long">Ça peut prendre quelques minutes si ta Miff compte beaucoup de proches.</string>
+    <string name="settings_delete_miffs_blocked">Une Miff est apparue pendant la suppression : ton compte n’a donc pas été supprimé. Tu peux relancer la suppression depuis Réglages > Mon compte quand tu veux. Une question ? Écris-nous : %1$s.</string>
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">En attente de ton accord</string>

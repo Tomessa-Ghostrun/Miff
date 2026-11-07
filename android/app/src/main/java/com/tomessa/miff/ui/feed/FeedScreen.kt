@@ -18,27 +18,43 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.feed.PhotoReader
@@ -52,6 +68,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffNotice
@@ -73,6 +90,7 @@ import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -91,6 +109,8 @@ class FeedActions(
     /** "Reprendre le partage": the Miff screen holds the dialog and the consent (nothing is written from the Feed). */
     val onResumeSharing: (miffId: String) -> Unit = {},
     val onRetryFeed: () -> Unit = {},
+    /** Pull to refresh and the TalkBack action "Actualiser": ONE fresh reading from the server (bounded: see FeedViewModel.onRefresh). */
+    val onRefresh: () -> Unit = {},
 )
 
 /**
@@ -104,6 +124,9 @@ class FeedHost(
     val onLocate: (uid: String) -> Unit = {},
     val onLocateDismissed: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    /** True while a forced reading of "Actualiser" is under way. */
+    val refreshing: Boolean = false,
+    val onRefresh: () -> Unit = {},
     val observe: suspend () -> Unit = {},
     /** FEED-4: where the photos are read (null: no photo is drawn). */
     val photos: PhotoReader? = null,
@@ -128,6 +151,7 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
             onOpenMap = { FeedIntents.openMap(context, it) },
             onResumeSharing = base.onResumeSharing,
             onRetryFeed = base.onRetryFeed,
+            onRefresh = base.onRefresh,
         )
     }
 }
@@ -152,6 +176,8 @@ fun FeedScreen(
     agreement: AgreementUi = AgreementUi(),
     feed: FeedUiState = FeedUiState.Loading,
     locate: LocateUiState = LocateUiState.Idle,
+    /** The indicator of the pull to refresh: a forced reading of the server is under way. */
+    refreshing: Boolean = false,
     me: FeedMe = FeedMe(),
     actions: FeedActions = FeedActions(),
 ) {
@@ -162,20 +188,111 @@ fun FeedScreen(
     val reduceMotion = ReduceMotion.isRequested(LocalContext.current)
 
     suspend fun toTop() = if (reduceMotion) listState.scrollToItem(0) else listState.animateScrollToItem(0)
-    LaunchedEffect(scrollToTopSignal) {
-        if (scrollToTopSignal > 0) toTop()
-    }
     // FEED-4: the photo opened in full screen (nothing of it is kept once it is closed or the screen is left).
     var opened by remember { mutableStateOf<OpenedPhoto?>(null) }
     val paneName = stringResource(R.string.feed_pane_a11y)
     val content = (feed as? FeedUiState.Ready)?.content
-    Column(modifier = Modifier.fillMaxSize().miffTopInsets().semantics { paneTitle = paneName }) {
+    val density = LocalDensity.current
+
+    // The header hides while the person scrolls down and is back AT ONCE when they scroll up (decision of the PM, 2026-11-06).
+    // The last measured height is kept (rotation, font size): the first image already has the right room, no jump while it is measured again.
+    val header = rememberSaveable(saver = CollapsingHeaderState.Saver) { CollapsingHeaderState() }
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0) {
+            header.show()
+            toTop()
+        }
+    }
+    var selectorOpen by remember { mutableStateOf(false) }
+    val accessibilityOn = rememberAccessibilityActive()
+    val isList = state is DirectoryState.Ready && state.miffs.isNotEmpty() && feed is FeedUiState.Ready
+    val offline =
+        content?.banners?.any { it is FeedBanner.Offline } == true ||
+            (state as? DirectoryState.Ready)?.fromCache == true
+    // Always visible: while it loads, on an error, offline, with an accessibility service on (it would take the focus with it), and while the
+    // selector of the Miffs is open. (A list too short to scroll never moves it: no scroll reaches it.)
+    rememberHeaderLock(header, locked = !isList || offline || accessibilityOn || selectorOpen)
+    val connection = remember(header, listState) { CollapsingHeaderConnection(header, listState) }
+    // The room of the header at the top of the content: measured, so that nothing is hidden under it and no band is left blank (font size, language).
+    val headerRoom = with(density) { header.heightPx.toDp() }
+    // TABBAR-GLASS: the glass bar floats over the tab (it is measured, its height is given by LocalTabBarInset): every state keeps that room at the bottom,
+    // so that the last element can always scroll above it.
+    val tabBarRoom = LocalTabBarInset.current
+
+    // Back to the top (logo, tap on the tab already in use): the header is shown again.
+    suspend fun toTopAndShow() {
+        header.show()
+        toTop()
+    }
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .miffTopInsets()
+                .clipToBounds()
+                .nestedScroll(connection)
+                .semantics {
+                    paneTitle = paneName
+                    // The header is drawn after the list (it floats above it): a screen reader reads it FIRST all the same (see FeedHeader below).
+                    isTraversalGroup = true
+                },
+    ) {
+        when (state) {
+            DirectoryState.Loading -> {
+                Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { FeedSkeleton() }
+            }
+
+            DirectoryState.Unavailable -> {
+                Column(
+                    modifier = Modifier.padding(top = headerRoom, bottom = tabBarRoom).padding(Spacing.m),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
+                ) {
+                    MiffNotice(stringResource(R.string.feed_unavailable))
+                    MiffSecondaryButton(
+                        text = stringResource(R.string.auth_retry_action),
+                        onClick = onRetry,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            is DirectoryState.Ready -> {
+                if (state.miffs.isEmpty()) {
+                    Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { NoMiff(onCreate, onJoin) }
+                } else {
+                    FeedBody(
+                        state,
+                        feed,
+                        locate,
+                        agreement,
+                        texts,
+                        listState,
+                        actions,
+                        onRetry,
+                        onOpenPhoto = { opened = it },
+                        topRoom = headerRoom,
+                        refreshing = refreshing,
+                    )
+                }
+            }
+        }
         FeedHeader(
             me = me,
             myLevel = content?.myLevel ?: StatusLevel.NEUTRAL,
             myStatusDescription = content?.let { texts.label(it.myLabel) },
             onOpenProfile = actions.onOpenProfile,
-            onLogo = { scope.launch { toTop() } },
+            onLogo = { scope.launch { toTopAndShow() } },
+            // Moved by a translation read in the draw phase only: no recomposition, no layout, no margin that moves.
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .onSizeChanged { header.onMeasured(it.height) }
+                    .graphicsLayer { translationY = header.offsetPx }
+                    .semantics {
+                        isTraversalGroup = true
+                        traversalIndex = HEADER_TRAVERSAL_INDEX
+                    },
             pill = {
                 val ready = state as? DirectoryState.Ready
                 when {
@@ -191,38 +308,13 @@ fun FeedScreen(
                     }
 
                     else -> {
-                        MiffPill(ready, onSelect, onCreate, onJoin)
+                        MiffPill(ready, onSelect, onCreate, onJoin, onOpenChanged = { selectorOpen = it })
                     }
                 }
             },
         )
-        when (state) {
-            DirectoryState.Loading -> {
-                FeedSkeleton()
-            }
-
-            DirectoryState.Unavailable -> {
-                Column(
-                    modifier = Modifier.padding(Spacing.m),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.s),
-                ) {
-                    MiffNotice(stringResource(R.string.feed_unavailable))
-                    MiffSecondaryButton(
-                        text = stringResource(R.string.auth_retry_action),
-                        onClick = onRetry,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            is DirectoryState.Ready -> {
-                if (state.miffs.isEmpty()) {
-                    NoMiff(onCreate, onJoin)
-                } else {
-                    FeedBody(state, feed, locate, agreement, texts, listState, actions, onRetry) { opened = it }
-                }
-            }
-        }
+        // Polite announcement of "Actualiser" (a node of one dp INSIDE the safe area, drawn nowhere).
+        RefreshAnnouncement(refreshing, offline)
     }
     opened?.let { photo ->
         PhotoFullScreen(
@@ -245,6 +337,7 @@ fun FeedScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FeedBody(
     state: DirectoryState.Ready,
@@ -256,57 +349,88 @@ private fun FeedBody(
     actions: FeedActions,
     onRetry: () -> Unit,
     onOpenPhoto: (OpenedPhoto) -> Unit,
+    /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
+    topRoom: Dp,
+    refreshing: Boolean,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
-    // The bubble of encouragement is drawn OVER the bottom of the tab (UPDATE-2): the list keeps a margin as tall as it, so that no card hides under it.
-    val overlay = LocalBottomOverlayPadding.current
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding =
-            PaddingValues(
-                start = Spacing.m,
-                end = Spacing.m,
-                top = Spacing.m,
-                bottom = Spacing.m + overlay,
-            ),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+    val pullState = rememberPullToRefreshState()
+    val refreshLabel = stringResource(R.string.feed_refresh_a11y)
+    // Pull to refresh: the gesture at the top of the list, and, for TalkBack, the same thing as an action of the list ("Actualiser").
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = actions.onRefresh,
+        state = pullState,
+        modifier =
+            Modifier.fillMaxSize().semantics {
+                customActions =
+                    listOf(
+                        CustomAccessibilityAction(refreshLabel) {
+                            actions.onRefresh()
+                            true
+                        },
+                    )
+            },
+        // Discreet, in the colours of the app, and under the header (which stays where it is: the gesture is at the top of the list only).
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullState,
+                isRefreshing = refreshing,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = topRoom),
+                containerColor = colorBgSurface,
+                color = colorActionPrimary,
+            )
+        },
     ) {
-        if (state.fromCache && content == null) {
-            item { MiffNotice(stringResource(R.string.feed_offline_note)) }
-        }
-        if (agreement.isWaiting(state.activeId)) {
-            // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.
-            item {
-                AwaitingAgreementCard(
-                    body = stringResource(R.string.miff_waiting_feed_body, state.active?.name.orEmpty()),
-                    onReview = agreement.onReview,
-                )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding =
+                PaddingValues(
+                    start = Spacing.m,
+                    end = Spacing.m,
+                    top = topRoom + Spacing.m,
+                    // TABBAR-GLASS: the last element scrolls above the glass bar, never under it; and above the bubble of encouragement when it is shown (UPDATE-2).
+                    bottom = Spacing.m + LocalTabBarInset.current + LocalBottomOverlayPadding.current,
+                ),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (state.fromCache && content == null) {
+                item { MiffNotice(stringResource(R.string.feed_offline_note)) }
             }
-        }
-        when (feed) {
-            FeedUiState.Loading -> {
-                if (!agreement.isWaiting(state.activeId)) item { SkeletonBlocks() }
-            }
-
-            FeedUiState.Unavailable -> {
+            if (agreement.isWaiting(state.activeId)) {
+                // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                        MiffNotice(stringResource(R.string.feed_unavailable))
-                        MiffSecondaryButton(
-                            text = stringResource(R.string.auth_retry_action),
-                            onClick = {
-                                actions.onRetryFeed()
-                                onRetry()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    AwaitingAgreementCard(
+                        body = stringResource(R.string.miff_waiting_feed_body, state.active?.name.orEmpty()),
+                        onReview = agreement.onReview,
+                    )
                 }
             }
+            when (feed) {
+                FeedUiState.Loading -> {
+                    if (!agreement.isWaiting(state.activeId)) item { SkeletonBlocks() }
+                }
 
-            is FeedUiState.Ready -> {
-                readyItems(feed.content, locate, texts, actions, onOpenPhoto)
+                FeedUiState.Unavailable -> {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                            MiffNotice(stringResource(R.string.feed_unavailable))
+                            MiffSecondaryButton(
+                                text = stringResource(R.string.auth_retry_action),
+                                onClick = {
+                                    actions.onRetryFeed()
+                                    onRetry()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
+
+                is FeedUiState.Ready -> {
+                    readyItems(feed.content, locate, texts, actions, onOpenPhoto)
+                }
             }
         }
     }
@@ -353,6 +477,41 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             )
         }
     }
+}
+
+/**
+ * Polite announcement of "Actualiser" for the screen reader: "Actualisation en cours" at the start and "Informations actualisées" at the end (nothing is
+ * claimed up to date when the Feed is telling "Dernières informations de…"). A node apart, one dp: the sentence is not drawn.
+ */
+@Composable
+private fun RefreshAnnouncement(
+    refreshing: Boolean,
+    stale: Boolean,
+) {
+    // 0 = nothing to say, 1 = a reading is under way, 2 = it has just ended. "Informations actualisées" is said ONCE, when a reading ends, never
+    // again later (for example when the network comes back).
+    var phase by remember { mutableIntStateOf(0) }
+    LaunchedEffect(refreshing) {
+        if (refreshing) {
+            phase = 1
+        } else if (phase == 1) {
+            phase = 2
+            delay(REFRESH_DONE_ANNOUNCEMENT_MILLIS)
+            phase = 0
+        }
+    }
+    val text =
+        when {
+            refreshing -> stringResource(R.string.feed_refresh_started_a11y)
+            phase == 2 && !stale -> stringResource(R.string.feed_refresh_done_a11y)
+            else -> ""
+        }
+    Box(
+        Modifier.size(1.dp).semantics {
+            liveRegion = LiveRegionMode.Polite
+            contentDescription = text
+        },
+    )
 }
 
 /** A mention above the bubble: calm, grey for "no connection" (no error tint), pale blue for "Partage de ton statut en cours…". */
@@ -531,3 +690,9 @@ private fun NoMiff(
         )
     }
 }
+
+/** A screen reader reads the header (avatar, logo, Miff) before the list although it is drawn after it: the lowest index of the screen. */
+internal const val HEADER_TRAVERSAL_INDEX = -1f
+
+/** The sentence "Informations actualisées" stays this long in its node, then the node is empty again. */
+private const val REFRESH_DONE_ANNOUNCEMENT_MILLIS = 3_000L

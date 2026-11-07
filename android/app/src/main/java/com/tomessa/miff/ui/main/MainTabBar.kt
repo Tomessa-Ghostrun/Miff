@@ -1,17 +1,15 @@
 package com.tomessa.miff.ui.main
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -29,29 +27,25 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.tracking.StatusLevel
-import com.tomessa.miff.ui.theme.ShadowDefault
+import com.tomessa.miff.ui.theme.GlassPalette
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
-import com.tomessa.miff.ui.theme.StrokeAvatarRing
-import com.tomessa.miff.ui.theme.colorActionPrimary
-import com.tomessa.miff.ui.theme.colorActionPrimaryTint20
-import com.tomessa.miff.ui.theme.colorBgSurface
-import com.tomessa.miff.ui.theme.colorStatusDanger
-import com.tomessa.miff.ui.theme.colorStatusSafe
-import com.tomessa.miff.ui.theme.colorStatusWarning
-import com.tomessa.miff.ui.theme.colorTextSecondary
-import com.tomessa.miff.ui.theme.colorUpdateNeutral
-import com.tomessa.miff.ui.theme.miffShadow
+import com.tomessa.miff.ui.theme.glassPalette
 
 private val BarShape = RoundedCornerShape(20.dp)
-private val ItemHeight = 52.dp
-private val PlateSize = 44.dp
-private val DotSize = 30.dp
+private val ItemHeight = 48.dp
+private val ItemWidth = 64.dp
+private val IconSize = 26.dp
+
+// 24 dp each side (24 pt validated for iOS, 24 dp PROPOSED for Android: same drawing) and 22 dp under the bar, plus the navigation bar.
+private val BarSideMargin = Spacing.l
+private val BarBottomMargin = 22.dp
 
 /**
- * The floating tab bar of the mockups (Onboarding ticket 6.7): a white rounded card with the Feed (house with a heart), the
- * round central button and the Profile (silhouette). The tab in use has a pale blue pad behind a blue icon; the others are
- * grey. There are no visible labels (mockups): every tab has a spoken name, and the state ("selected", "disabled") is
+ * The floating tab bar of the mockups (Onboarding ticket 6.7, glass version of ticket TABBAR-GLASS): a rounded bar of frosted glass
+ * (see GlassTabBar.kt) with the Feed (house with a heart), the central button (a plate with the colour of the status, no
+ * pictogram) and the Profile (silhouette). The tab in use has a pad behind its icon; the others are in the
+ * inactive colour. There are no visible labels (mockups): every tab has a spoken name, and the state ("selected", "disabled") is
  * given to the screen reader, never by colour alone for it.
  *
  * The bar is laid out with start and end: in a right-to-left language the order is reversed by itself, and the icons
@@ -63,25 +57,25 @@ fun MainTabBar(
     selected: MainTab,
     onSelect: (MainTab) -> Unit,
     modifier: Modifier = Modifier,
-    /** The colour of MY status in the Miff shown by the Feed: the dot of the central button (D19, D25). */
-    updateLevel: StatusLevel = StatusLevel.NEUTRAL,
+    /** The glass (variant, level, blur source) decided by [GlassTabHost]; without it, a light bar with no blur. */
+    glass: TabBarGlass = TabBarGlass.Default,
+    /** Colour of the central button: the status of the person (wired by the UPDATE tickets; neutral grey until then). */
+    updateStatus: StatusLevel = StatusLevel.NEUTRAL,
 ) {
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                .padding(start = BarSideMargin, end = BarSideMargin, bottom = BarBottomMargin),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .miffShadow(ShadowDefault, BarShape)
-                    .clip(BarShape)
-                    .background(colorBgSurface)
-                    .padding(Spacing.xs)
+                    .height(GlassBarHeight)
+                    .glassSurface(BarShape, glass)
                     .selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+            horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             config.tabs.forEach { tab ->
@@ -89,9 +83,9 @@ fun MainTabBar(
                     tab = tab,
                     selected = tab == selected,
                     enabled = config.isEnabled(tab),
-                    updateLevel = updateLevel,
                     onClick = { onSelect(tab) },
-                    modifier = Modifier.weight(1f),
+                    palette = glassPalette(glass.variant),
+                    updateStatus = updateStatus,
                 )
             }
         }
@@ -103,8 +97,9 @@ private fun TabItem(
     tab: MainTab,
     selected: Boolean,
     enabled: Boolean,
-    updateLevel: StatusLevel,
     onClick: () -> Unit,
+    palette: GlassPalette,
+    updateStatus: StatusLevel,
     modifier: Modifier = Modifier,
 ) {
     val name =
@@ -120,7 +115,7 @@ private fun TabItem(
 
                 // The colour is the ONLY visual signal of the central button (D25): the spoken name says the state for the screen reader.
                 MainTab.UPDATE -> {
-                    when (updateLevel) {
+                    when (updateStatus) {
                         StatusLevel.GREEN -> R.string.tabbar_update_green_a11y
                         StatusLevel.ORANGE -> R.string.tabbar_update_orange_a11y
                         StatusLevel.RED -> R.string.tabbar_update_red_a11y
@@ -129,13 +124,13 @@ private fun TabItem(
                 }
             },
         )
-    val tint = if (selected) colorActionPrimary else colorTextSecondary
+    val tint = if (selected) palette.iconActive else palette.iconInactive
     Box(
         modifier =
             modifier
-                .heightIn(min = ItemHeight)
+                .size(width = ItemWidth, height = ItemHeight)
                 .clip(ShapeMd)
-                .background(if (selected) colorActionPrimaryTint20 else Color.Transparent)
+                .background(if (selected) palette.pillActive else Color.Transparent)
                 .selectable(
                     selected = selected,
                     enabled = enabled,
@@ -146,43 +141,27 @@ private fun TabItem(
     ) {
         when (tab) {
             MainTab.FEED -> {
-                Icon(painter = painterResource(R.drawable.ic_tab_feed), contentDescription = null, tint = tint)
+                Icon(
+                    painter = painterResource(R.drawable.ic_tab_feed),
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(IconSize),
+                )
             }
 
             MainTab.PROFILE -> {
-                Icon(painter = painterResource(R.drawable.ic_person), contentDescription = null, tint = tint)
+                Icon(
+                    painter = painterResource(R.drawable.ic_person),
+                    contentDescription = null,
+                    tint = tint,
+                    modifier = Modifier.size(IconSize),
+                )
             }
 
+            // The plate, ring and dot of the mockups (GlassTabBar.kt): a dot of colour, no pictogram, grey at the neutral state.
             MainTab.UPDATE -> {
-                StatusDot(updateLevel)
+                CentralStatusButton(level = updateStatus)
             }
         }
-    }
-}
-
-/**
- * The central button (decision D25 of the PM, 2026-11-06: "la couleur est le seul signal"): an opaque white plate, the blue ring of the mockups, and a
- * plain DOT of the colour of my status inside: green, orange, red, or grey when nothing is known (sharing stopped, no status yet). NO pictogram: no tick, clock
- * or exclamation mark. The plate keeps the dot readable on any background.
- */
-@Composable
-private fun StatusDot(level: StatusLevel) {
-    val neutral = level == StatusLevel.NEUTRAL
-    val dot =
-        when (level) {
-            StatusLevel.GREEN -> colorStatusSafe
-            StatusLevel.ORANGE -> colorStatusWarning
-            StatusLevel.RED -> colorStatusDanger
-            StatusLevel.NEUTRAL -> colorUpdateNeutral
-        }
-    Box(
-        modifier =
-            Modifier
-                .size(PlateSize)
-                .background(colorBgSurface, CircleShape)
-                .border(StrokeAvatarRing, if (neutral) colorUpdateNeutral else colorActionPrimary, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(Modifier.size(DotSize).background(dot, CircleShape))
     }
 }

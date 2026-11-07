@@ -3,7 +3,9 @@ package com.tomessa.miff.ui.feed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.auth.NetworkMonitor
+import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.DirectoryState
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.ZoneId
 
 /*
@@ -114,6 +117,8 @@ class FeedViewModel(
     private val repository: MiffRepository,
     private val statuses: StatusObserver,
     private val positions: PositionReader,
+    /** The forced reading behind "Actualiser" (pull to refresh): reads from the server, never writes. */
+    private val refresher: FeedRefresher,
     private val network: NetworkMonitor,
     private val currentUid: () -> String?,
     /** The Miffs that wait for the agreement of the person (LOC-2b, design 23): nothing is shared for them, the statuses are not read. */
@@ -133,6 +138,10 @@ class FeedViewModel(
      * say "orange" for somebody who has just come home: a false alert). After it, the copy is shown WITH its date ("Dernières informations de…").
      */
     private val cacheGraceMillis: Long = CACHE_GRACE_MILLIS,
+    /** "Actualiser" reads the server at most once per this time (15 s): a pull that comes sooner ends at once, with no new reading. */
+    private val minRefreshIntervalMillis: Long = MIN_REFRESH_INTERVAL_MILLIS,
+    /** The indicator of "Actualiser" ends after this time at the latest (8 s), with the honest mention "Dernières informations de…". */
+    private val refreshTimeoutMillis: Long = REFRESH_TIMEOUT_MILLIS,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -145,14 +154,38 @@ class FeedViewModel(
     /** The wait for the server's confirmation of a cached answer is over (see [cacheGraceMillis]). */
     private val cacheGraceOver = MutableStateFlow(false)
 
+    private val mutableRefreshing = MutableStateFlow(false)
+
+    /** True while a forced reading of "Actualiser" is under way: the indicator of the pull to refresh. */
+    val refreshing: StateFlow<Boolean> = mutableRefreshing.asStateFlow()
+
+    /** When the last forced reading started: a pull that comes sooner than [minRefreshIntervalMillis] reads nothing. */
+    private var lastRefreshAtMillis: Long? = null
+
+    /** The last "Actualiser" got no answer: what is shown is told as "Dernières informations de…" (the honest banner) until the server speaks. */
+    private val staleAfterRefresh = MutableStateFlow(false)
+
+    /** Goes up to attach the listener of the statuses again (a refresh that finds it ended): the attempts start again from zero. */
+    private val statusRestarts = MutableStateFlow(0)
+
     val uiState: StateFlow<FeedUiState> =
-        combine(directory.state, piece, statusView, offline, now, waitingAgreement, cacheGraceOver) { values ->
+        combine(
+            directory.state,
+            piece,
+            statusView,
+            offline,
+            now,
+            waitingAgreement,
+            cacheGraceOver,
+            staleAfterRefresh,
+        ) { values ->
             @Suppress("UNCHECKED_CAST")
             compute(
                 values[0] as DirectoryState,
                 values[1] as MiffPiece?,
                 values[2] as StatusesView,
-                values[3] as Boolean,
+                // No network, OR an "Actualiser" that the server did not answer: what is shown is dated, never presented as the present.
+                (values[3] as Boolean) || (values[7] as Boolean),
                 values[4] as Long,
                 values[5] as Set<String>,
                 values[6] as Boolean,
@@ -275,6 +308,9 @@ class FeedViewModel(
         piece.value = MiffPiece.Loading(miffId)
         // What was said about another Miff is never drawn on this one.
         statusView.value = StatusesView.Waiting
+        // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
+        cacheGraceOver.value = false
+        staleAfterRefresh.value = false
         coroutineScope {
             launch {
                 repository.observe(miffId).collect { observation -> handle(miffId, observation) }
@@ -328,13 +364,16 @@ class FeedViewModel(
                     ?.sharingEnabled ?: true
             },
             waitingAgreement.map { miffId in it },
-        ) { sharing, waiting -> sharing && !waiting }
+            statusRestarts,
+        ) { sharing, waiting, restart -> (sharing && !waiting) to restart }
             .distinctUntilChanged()
-            .collectLatest { shouldRead ->
+            .collectLatest { (shouldRead, _) ->
                 if (!shouldRead) {
                     statusView.value = StatusesView.Off
                 } else {
-                    statusView.value = StatusesView.Waiting
+                    // What is already shown stays (a refresh that attaches the listener again must not bring the skeleton back, nor hide
+                    // "Partage de ton statut en cours…"): only a screen that showed nothing of the statuses waits.
+                    if (statusView.value is StatusesView.Off) statusView.value = StatusesView.Waiting
                     readStatuses(miffId)
                 }
             }
@@ -342,7 +381,7 @@ class FeedViewModel(
 
     private suspend fun readStatuses(miffId: String) {
         coroutineScope {
-            cacheGraceOver.value = false
+            if (statusView.value !is StatusesView.Loaded) cacheGraceOver.value = false
             val waitingTimeout =
                 launch {
                     delay(firstStatusAnswerMillis)
@@ -369,6 +408,8 @@ class FeedViewModel(
                                 attempt = 0
                                 cacheGrace?.cancel()
                                 cacheGrace = null
+                                // The server has spoken: nothing is stale any more.
+                                staleAfterRefresh.value = false
                             }
                             statusView.value = StatusesView.Loaded(feed.byUid, feed.fromCache)
                         }
@@ -382,6 +423,74 @@ class FeedViewModel(
                 val pause = statusRetryDelaysMillis.getOrNull(attempt) ?: break
                 attempt++
                 delay(pause)
+            }
+        }
+    }
+
+    /**
+     * Pull to refresh ("Actualiser", decision of the PM, 2026-11-06): ONE fresh reading FROM THE SERVER of what feeds the cards, the colours recomputed, the
+     * attempts of the statuses started again from zero, and the mode "copie du cache" left if the server answers. Bounded for the plan Spark: at most one
+     * forced reading every [minRefreshIntervalMillis] (a pull that comes sooner ends at once, reading nothing), never a loop, no write; offline it ends at
+     * once (the banner "Dernières informations de…" is already there); the indicator ends at the latest after [refreshTimeoutMillis], and if the server
+     * did not answer the Feed says so with its honest banner, never with an alarming sentence.
+     */
+    fun onRefresh() {
+        if (mutableRefreshing.value) return
+        val miffId = (piece.value as? MiffPiece.Data)?.miffId ?: return
+        val now = nowMillis()
+        val last = lastRefreshAtMillis
+        if (last != null && now - last < minRefreshIntervalMillis) return
+        if (!network.isOnline()) return
+        lastRefreshAtMillis = now
+        mutableRefreshing.value = true
+        val readStatuses = statusView.value !is StatusesView.Off
+        viewModelScope.launch {
+            try {
+                val answer =
+                    try {
+                        withTimeoutOrNull(refreshTimeoutMillis) { refresher.refresh(miffId, readStatuses) }
+                            ?: ServerRead.Unreachable
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        ServerRead.Unreachable
+                    }
+                applyRefresh(miffId, answer, readStatuses)
+            } finally {
+                mutableRefreshing.value = false
+            }
+        }
+    }
+
+    private fun applyRefresh(
+        miffId: String,
+        answer: ServerRead,
+        askedForStatuses: Boolean,
+    ) {
+        // The person may have chosen another Miff (Premium) while the server was read: what was said about A is never put on B.
+        if ((piece.value as? MiffPiece.Data)?.miffId != miffId) return
+        when (answer) {
+            ServerRead.Unreachable -> {
+                staleAfterRefresh.value = true
+            }
+
+            is ServerRead.Fresh -> {
+                staleAfterRefresh.value = false
+                if (!askedForStatuses) return
+                val fresh = answer.statuses
+                val listening = statusView.value is StatusesView.Loaded
+                if (fresh != null) {
+                    // What the server just said, confirmed: the mode "copie du cache" is left, the colours are recomputed from it.
+                    statusView.value = StatusesView.Loaded(fresh, fromCache = false)
+                    if (!listening) {
+                        cacheGraceOver.value = true
+                        statusRestarts.value = statusRestarts.value + 1
+                    }
+                } else {
+                    // The rules still wait for my own status: "Partage de ton statut en cours…", and the attempts start again from zero.
+                    statusView.value = StatusesView.Pending
+                    statusRestarts.value = statusRestarts.value + 1
+                }
             }
         }
     }
@@ -425,5 +534,7 @@ class FeedViewModel(
         val DEFAULT_RETRY_DELAYS_MILLIS = listOf(10_000L, 30_000L, 90_000L, 300_000L)
         const val FIRST_STATUS_ANSWER_MILLIS = 15_000L
         const val CACHE_GRACE_MILLIS = 5_000L
+        const val MIN_REFRESH_INTERVAL_MILLIS = 15_000L
+        const val REFRESH_TIMEOUT_MILLIS = 8_000L
     }
 }

@@ -51,8 +51,15 @@ enum class SessionVerdict {
     /** The account has no session and this phone has no identifier (installed before this feature): it writes its own. */
     WRITE_NEW,
 
-    /** Another phone holds the session, or it disappeared: this phone must sign out (locally, without touching the session). */
+    /** Another phone holds the session (or there is one and this phone has no identifier): this phone must sign out (locally, without touching the session). */
     REPLACED,
+
+    /**
+     * This phone HAS an identifier but the session DOCUMENT is gone: it was deleted, which only happens when the account is deleted (the deletion of the account
+     * deletes it first, AUTH-5b), or from the console. This phone signs out the same way, but must NOT be told that the account "is used on another phone":
+     * nobody took the place, and a deletion can still be cancelled. The note says, carefully, that the account is being deleted elsewhere.
+     */
+    SESSION_GONE,
 }
 
 object SessionJudge {
@@ -60,7 +67,8 @@ object SessionJudge {
      * The rule of the launch, of the return of the network and of a refused write, for a phone that IS signed in:
      * - the same identifier as the local one: [SessionVerdict.MINE];
      * - no session at all and no local identifier (an installation from before the feature): [SessionVerdict.WRITE_NEW];
-     * - anything else (another identifier; no local identifier but a session; a local identifier but no session any more): [SessionVerdict.REPLACED].
+     * - another identifier, or no local identifier but a session: [SessionVerdict.REPLACED] (another phone took the place);
+     * - a local identifier but no session any more: [SessionVerdict.SESSION_GONE] (the document was deleted: the account is being deleted).
      * The sign-in itself never goes through here: it writes its own session, whatever was there (the last connection wins).
      */
     fun judge(
@@ -69,7 +77,7 @@ object SessionJudge {
     ): SessionVerdict =
         when (remote) {
             RemoteSession.Missing -> {
-                if (local == null) SessionVerdict.WRITE_NEW else SessionVerdict.REPLACED
+                if (local == null) SessionVerdict.WRITE_NEW else SessionVerdict.SESSION_GONE
             }
 
             is RemoteSession.Present -> {

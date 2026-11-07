@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +75,7 @@ internal fun FeedHeader(
     myStatusDescription: String?,
     onOpenProfile: () -> Unit,
     onLogo: () -> Unit,
+    modifier: Modifier = Modifier,
     pill: @Composable () -> Unit,
 ) {
     val profileLabel =
@@ -82,7 +86,7 @@ internal fun FeedHeader(
         }
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .miffShadow(ShadowSubtle, RectangleShape)
                 .background(colorBgCanvas)
@@ -91,7 +95,8 @@ internal fun FeedHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), contentAlignment = Alignment.Center) {
-            // The zone of touch is 48 dp (the disc is 46) and the rest of the row stays empty on the right (no bell).
+            // The zone of touch is 48 dp (the disc is 46). The right end of the row is RESERVED (48 dp) for the future button of the notifications:
+            // nothing is drawn there today (no bell), and the logo stays centred.
             Box(
                 modifier =
                     Modifier
@@ -104,6 +109,7 @@ internal fun FeedHeader(
             ) {
                 FeedAvatar(jpeg = me.avatarJpeg, initials = me.initials, level = myLevel)
             }
+            Spacer(Modifier.align(Alignment.CenterEnd).size(Spacing.minTouchTarget))
             val scrollLabel = stringResource(R.string.feed_header_logo_a11y)
             Image(
                 painter = painterResource(R.drawable.miff_wordmark_color),
@@ -127,11 +133,16 @@ internal fun MiffPill(
     onSelect: (String) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
+    /** Told each time the list of Miffs opens or closes: while it is open the header cannot hide. */
+    onOpenChanged: (Boolean) -> Unit = {},
 ) {
     val name = state.active?.name ?: return
     // An UNKNOWN plan (subscription not read, or answer from the cache) keeps the selector usable: never "free" on a doubt.
     val selectable = state.premiumOrNull != false
     var open by remember { mutableStateOf(false) }
+    LaunchedEffect(open) { onOpenChanged(open) }
+    // A header that leaves the composition while the list is open must not keep the lock.
+    DisposableEffect(Unit) { onDispose { onOpenChanged(false) } }
     Box {
         Pill(
             text = name,

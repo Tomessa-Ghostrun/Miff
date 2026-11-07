@@ -69,6 +69,7 @@ import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.CreateMiffRoute
 import com.tomessa.miff.ui.miff.JoinMiffRoute
 import com.tomessa.miff.ui.miff.MiffRoute
+import com.tomessa.miff.ui.miff.MiffSharing
 import com.tomessa.miff.ui.miff.miffEntryRoutes
 import com.tomessa.miff.ui.miff.miffScreenRoute
 import com.tomessa.miff.ui.navigation.PasswordResetRoute
@@ -98,6 +99,7 @@ import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
+import com.tomessa.miff.ui.theme.GlassVariant
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.update.IncentiveBubble
 import com.tomessa.miff.ui.update.UpdateActions
@@ -243,6 +245,7 @@ private fun MainNavigation(
                                     repository = container.miffRepository,
                                     statuses = container.statusObserver,
                                     positions = container.positionReader,
+                                    refresher = container.feedRefresher,
                                     network = container.networkMonitor,
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
@@ -267,6 +270,7 @@ private fun MainNavigation(
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
+            val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
@@ -293,6 +297,8 @@ private fun MainNavigation(
                         onLocate = feedViewModel::onLocate,
                         onLocateDismissed = feedViewModel::onLocateDismissed,
                         onRetry = feedViewModel::retry,
+                        refreshing = refreshing,
+                        onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
                         photos = container.photoReader,
                     ),
@@ -487,6 +493,16 @@ internal fun NavGraphBuilder.deleteAccountRoutes(
             onContact = { ExternalLinks.contactSupport(context) },
             onKeep = viewModel::onKeep,
             onConfirm = { if (viewModel.onConfirm()) navController.open(DeleteAccountVerifyRoute) },
+            // AUTH-5b, "Prévenir mes proches" (decision QM9): the share sheet only; nothing is sent by the app, the deletion does not move.
+            onWarn = { miffName ->
+                if (miffName !=
+                    null
+                ) {
+                    MiffSharing.shareClosingNotice(context, miffName)
+                } else {
+                    MiffSharing.shareClosingNoticeGeneric(context)
+                }
+            },
         )
     }
     composable<DeleteAccountVerifyRoute> {
@@ -539,13 +555,20 @@ class UpdateHost(
  * everything it remembers) for when the person comes back; tapping the tab already in use brings it back to the top. The bar
  * disappears while the keyboard is open.
  *
+ * GLASS BAR (ticket TABBAR-GLASS, GlassTabBar.kt): [GlassTabHost] draws the tabs FULL SCREEN and the bar over them, at the bottom, so
+ * that the content passes UNDER the frosted glass. The bar therefore no longer reserves its place: every tab that scrolls must keep a
+ * bottom margin of the height of the bar, `.padding(bottom = LocalTabBarInset.current)` inside its scrolling column (the host measures
+ * the bar and gives that height; it is 0 while the bar is hidden). Without it the last element of the tab stays hidden behind the
+ * bar. TabBarContentMarginTest scrolls the Profile to its end and checks it; TabBarInsetRuleTest checks that the line is present.
+ *
  * Safe areas (see ui/components/ScreenInsets.kt): the BAR keeps itself above the navigation bar (3 buttons or gestures); each
  * TAB keeps itself below the status bar with miffTopInsets() on its own root, so that it can draw its background (the gradient
  * of the Profile) under the status bar. This function must not consume insets it does not pad: it did once (Scaffold +
  * consumeWindowInsets), the status bar was "consumed" before the tabs could use it, and the Feed logo was drawn over the clock.
  *
- * KEYBOARD, if a text field is added to a tab one day: the tab content has NO bottom margin (the bar owns it), and while the
- * keyboard is open the bar is removed, so nothing would keep the field above the keyboard. The tab will then have to handle
+ * KEYBOARD, if a text field is added to a tab one day: the tab content has no margin for the keyboard (its bottom margin is only
+ * the height of the bar, 0 while the bar is hidden), and while the keyboard is open the bar is removed, so nothing would keep the
+ * field above the keyboard. The tab will then have to handle
  * the keyboard itself (through ScreenInsets.kt, e.g. a new modifier there that covers the ime), with a test in
  * ScreenInsetsTest that sends a keyboard to that tab. No tab has a text field today.
  */
@@ -616,14 +639,31 @@ fun MainTabs(
             confirmation = null
         }
     }
-    var barHeightPx by remember { mutableIntStateOf(0) }
     var bubbleHeightPx by remember { mutableIntStateOf(0) }
     val bubbleShown = prompt != PromptLevel.NONE && selected != MainTab.UPDATE && !keyboardOpen
     val overlayPadding = if (bubbleShown) with(density) { bubbleHeightPx.toDp() } + Spacing.s else 0.dp
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    // TABBAR-GLASS: the tabs fill the screen and pass UNDER the glass bar (GlassTabBar.kt); each tab keeps a bottom margin (LocalTabBarInset).
+    GlassTabHost(
+        variant = if (selected == MainTab.UPDATE) GlassVariant.ON_PHOTO else GlassVariant.LIGHT,
+        barVisible = !keyboardOpen,
+        bar = { glass ->
+            MainTabBar(
+                config = tabBar,
+                selected = selected,
+                onSelect = { tab ->
+                    if (tab == selected) scrollToTop++ else select(tab)
+                },
+                modifier = Modifier.miffBottomInsets(),
+                glass = glass,
+                updateStatus = myLevel,
+            )
+        },
+    ) {
+        // Measured by the host WITH the safe area under the bar: the bubble sits just above the card of the bar (its own 4 dp of air included).
+        val barInset = LocalTabBarInset.current
+        Box(modifier = Modifier.fillMaxSize()) {
             holder.SaveableStateProvider(selected) {
-                Box(Modifier.weight(1f).fillMaxWidth()) {
+                Box(Modifier.fillMaxSize()) {
                     CompositionLocalProvider(
                         LocalBottomOverlayPadding provides overlayPadding,
                         LocalPhotoReader provides feed.photos,
@@ -646,6 +686,7 @@ fun MainTabs(
                                             onLocateDismissed = feed.onLocateDismissed,
                                             onResumeSharing = onOpenMiff,
                                             onRetryFeed = feed.onRetry,
+                                            onRefresh = feed.onRefresh,
                                         ),
                                     )
                                 FeedScreen(
@@ -658,6 +699,7 @@ fun MainTabs(
                                     agreement = agreement,
                                     feed = feed.state,
                                     locate = feed.locate,
+                                    refreshing = feed.refreshing,
                                     me = feed.me,
                                     actions = actions,
                                 )
@@ -702,43 +744,23 @@ fun MainTabs(
                     }
                 }
             }
-            if (!keyboardOpen) {
-                MainTabBar(
-                    config = tabBar,
-                    selected = selected,
-                    onSelect = { tab ->
-                        if (tab == selected) scrollToTop++ else select(tab)
-                    },
-                    updateLevel = myLevel,
-                    // Measured WITH the safe area under it: the bubble sits just above the card of the bar.
-                    modifier = Modifier.onSizeChanged { barHeightPx = it.height }.miffBottomInsets(),
+            if (bubbleShown) {
+                IncentiveBubble(
+                    level = prompt,
+                    maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(start = Spacing.m, end = Spacing.m, bottom = barInset)
+                            .onSizeChanged { bubbleHeightPx = it.height },
                 )
             }
-        }
-        if (bubbleShown) {
-            IncentiveBubble(
-                level = prompt,
-                maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(
-                            start = Spacing.m,
-                            end = Spacing.m,
-                            // Never negative: before the bar is measured its height is 0.
-                            bottom = (with(density) { barHeightPx.toDp() } - Spacing.s).coerceAtLeast(0.dp),
-                        ).onSizeChanged { bubbleHeightPx = it.height },
-            )
-        }
-        confirmation?.let { text ->
-            UpdateConfirmation(
-                text = text,
-                modifier =
-                    Modifier.align(Alignment.BottomCenter).padding(
-                        bottom =
-                            with(density) { barHeightPx.toDp() } + Spacing.m,
-                    ),
-            )
+            confirmation?.let { text ->
+                UpdateConfirmation(
+                    text = text,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = barInset + Spacing.m),
+                )
+            }
         }
     }
 }

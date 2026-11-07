@@ -1,6 +1,6 @@
 # Ticket : FEED, l'écran principal (cartes des membres, bulle de couleur de la Miff, Localiser, batterie, photo d'update)
 
-**Statut** : challenge **à valider par le PM** avant tout développement (aucun développement lancé, aucun statut Notion modifié). Tickets Notion concernés : « Feed » (statut Notion : « Spec en attente de review IA »), « Statut utilisateur (Vert, orange, rouge) », « Update », « Profil », « Paramètre », « Tabbar » (page vide), « Premium » (« A cadrer »), « Notifs » (« A cadrer », page vide).
+**Statut** : challenge **à valider par le PM** avant tout développement (aucun développement lancé, aucun statut Notion modifié). **Décisions du PM du 2026-11-06 après essai de l'APK de l'Update, enregistrées ici : D39 (aperçu carré de la photo dans la carte), D40 (très léger mouvement continu de la bulle de la Miff), D41 (en-tête qui se masque au défilement vers le bas, remplace « en-tête fixe »)** (D37 et D38, côté Update, sont dans `docs/tickets/update.md`). Tickets Notion concernés : « Feed » (statut Notion : « Spec en attente de review IA »), « Statut utilisateur (Vert, orange, rouge) », « Update », « Profil », « Paramètre », « Tabbar » (page vide), « Premium » (« A cadrer »), « Notifs » (« A cadrer », page vide).
 **Rédigé le** : 2026-11-05 (agent `product-specs`, étape « challenge » du process par ticket).
 **Remplace** le découpage FEED de `docs/tickets/feed-profil-reglages.md` §7 (FEED-1 à FEED-4) par celui du §9 ci-dessous ; **reprend** ses décisions (§13 : Q1 à Q15) et celles de `docs/tickets/lieux-de-confiance.md` (§6.6 à §6.9, §7, §16, « Décisions du PM » du 2026-11-01). **Ne remplace aucun autre document.**
 **Règle de hiérarchie** : décisions du PM > Notion > ce ticket > reste du dépôt. Une réponse déjà présente dans un ticket Notion ou une décision du PM est une **décision**, pas une question (§3 les liste avec leur source).
@@ -36,9 +36,10 @@ En une phrase : le Feed est l'écran qu'on ouvre pour **voir d'un coup d'œil qu
 ## 2. Périmètre et frontières
 
 ### Dans le périmètre
-- **En-tête fixe** : avatar avec anneau de ton statut (mène au Profil), logo (remonte le fil), pastille / sélecteur de Miff.
+- **En-tête qui se masque au défilement (D41, remplace « en-tête fixe »)** : avatar avec anneau de ton statut (mène au Profil), logo (remonte le fil), pastille / sélecteur de Miff, futur bouton de notifications.
 - **Bulle** de la Miff (couleur, phrase, repère de temps, carrousel d'alertes).
 - **Cartes des membres, toi compris** : avatar à anneau, prénom, étiquette d'état, repère de temps, batterie, photo d'update, boutons Localiser / Message / Appeler.
+- **Tirer pour actualiser (« pull to refresh », ajouté le 2026-11-06, décision du PM)** : tirer la liste vers le bas en haut de liste force une relecture serveur des statuts et de ce qui alimente les cartes, recalcule les couleurs, remet à zéro les relances des statuts et sort du mode « copie du cache » ; borné à **une relecture serveur toutes les 15 s**, indicateur de 8 s au plus, aucune écriture, hors connexion il se termine tout de suite ; action TalkBack « Actualiser ». Coût : 9 + 2 × membres + lieux lectures par actualisation.
 - **Bouton « Ajouter un proche »** (partage du code, déjà livré par le ticket Miff).
 - **États** : aucune Miff, seul dans la Miff, aucun statut, partage arrêté, en attente d'accord, hors connexion, chargement, accès perdu.
 - **Calcul de la couleur à la lecture**, rafraîchi chaque minute sans lecture serveur.
@@ -76,6 +77,9 @@ En une phrase : le Feed est l'écran qu'on ouvre pour **voir d'un coup d'œil qu
 | D13 | **« Ajouter un proche »** en bas du Feed : feuille de partage native (nom, code, lien) ; **15 membres maximum** (plafond doux) : le bouton devient « Cette Miff est bien remplie ! ». | Notion Feed ; Miff QM5, QM14 |
 | D14 | Aucune Miff = **jamais atteint** (écran de choix plein écran) ; filet de sécurité : « Pas encore de Miff » avec deux boutons, **aucune phrase de sécurité**. | FPR Q2, C1 ; Miff QM12 ; code Android existant |
 | D15 | Tutoiement, **français et anglais** (anglais de repli), clés `feed_` en parité, état porté par texte + icône **jamais par la couleur seule**, contraste AA (texte des étiquettes dans une teinte foncée dédiée, pas `#ff5650`). | CLAUDE.md ; FPR C11, A11 ; `design-system.md` |
+| **D39** | **Aperçu de la photo d'un membre dans sa carte = un CARRÉ aussi large que la carte, centré sur le milieu de la photo** (recadrage centré, **sans déformer**) ; **la photo reste complète en plein écran au toucher**. Remplace la « fenêtre fixe de 108 pt » de `design/screens/feed/cartes-membres.md`. | **PM, 2026-11-06** (essai de l'APK de l'Update) |
+| **D40** | **La bulle d'état de la Miff en haut du Feed a un TRÈS LÉGER mouvement continu** : **respiration d'échelle ≤ 1,5 %** et **dérive ≤ 3 dp**, **cycle de 5 à 8 s**, **jamais de clignotement ni de rebond** ; **immobile** avec « Animations supprimées » ; **arrêtée hors écran** (et en arrière-plan). Remplace « aucune animation » pour la bulle de la Miff (les autres éléments restent sans animation d'alarme, D15). | **PM, 2026-11-06** |
+| **D41** | **L'EN-TÊTE du Feed** (photo de profil, logo, nom de la Miff avec son sélecteur, futur bouton de notifications) **se masque quand on fait défiler vers le bas et réapparaît dès qu'on remonte** ; **reste visible** pendant le **chargement**, en **erreur**, **hors connexion**, si la **liste est courte**, avec **TalkBack**, et quand le **sélecteur est ouvert**. **Remplace « en-tête fixe »** (FEED-1, H1). | **PM, 2026-11-06** |
 | D16 | **Aucun événement Analytics** sur le Feed, les statuts ou la localisation ; aucune coordonnée, adresse, nom de lieu ni nom de personne dans un journal, un rapport de plantage ou un message de partage. | `analytics-events.md` ; LOC VIE |
 
 ---
@@ -112,7 +116,7 @@ Trois points ne sont couverts par aucun ticket : la **localisation de la photo**
 ## 5. Règles métier
 
 ### 5.1 En-tête
-- Fixe en haut : **avatar** à gauche (photo ou initiales) avec **anneau de la couleur de mon statut** (neutre si inconnu) → **ouvre l'onglet Profil** ; **logo** au centre → le fil **remonte** tout en haut (animation ; sans animation si « réduire les animations ») ; **pastille de Miff** dessous. **Pas de cloche.**
+- **D41 (2026-11-06)** : l'en-tête **se masque quand on fait défiler vers le bas et réapparaît dès qu'on remonte** ; il **reste visible** pendant le chargement, en erreur, hors connexion, si la liste est courte (rien à défiler), avec TalkBack (lecteur d'écran actif) et quand le sélecteur de Miff est ouvert ; au masquage, le sélecteur ouvert ne se ferme pas par accident. Contenu : **avatar** à gauche (photo ou initiales) avec **anneau de la couleur de mon statut** (neutre si inconnu) → **ouvre l'onglet Profil** ; **logo** au centre → le fil **remonte** tout en haut (animation ; sans animation si « réduire les animations ») ; **pastille de Miff** dessous. **Pas de cloche.**
 - « Mon statut » = le document `status/{moi}` de la **Miff affichée**, lu par le même écouteur que les autres (aucune lecture de plus). Sa couleur sert aussi au bouton central de la barre (ticket Update ; fonction partagée, un seul calcul).
 
 ### 5.2 Couleur de la Miff et choix de la bulle
@@ -130,6 +134,7 @@ Calcul sur l'ensemble des membres **y compris moi** [Notion : « tous les membre
 - **Aucune phrase de sécurité sans statut connu** [Décidé, QM12].
 - Le repère « Dernière nouvelle » = le plus récent des repères `max(presenceAt, lastUpdateAt)` des **autres** membres au statut connu (jamais le mien : ma propre update ne doit pas rassurer sur les autres).
 - La bulle **ne dit jamais « en sécurité »** ; elle informe.
+- **Mouvement de la bulle (D40, 2026-11-06)** : la bulle de la Miff a un **très léger mouvement continu** : respiration d'échelle **≤ 1,5 %**, dérive **≤ 3 dp**, cycle de **5 à 8 s**, **jamais de clignotement ni de rebond** ; **immobile** si le système demande de supprimer les animations ; **arrêtée** quand la bulle n'est pas à l'écran (défilement, autre onglet, arrière-plan) ; le mouvement **ne dépend pas du niveau** (même amplitude en vert, orange, rouge : aucun effet d'alarme) ; **aucun effet sur le lecteur d'écran** (rien n'est annoncé).
 
 ### 5.3 Calcul d'un niveau (une seule fonction, partagée iOS / Android)
 Celle de LOC-2b, **inchangée** : partage arrêté → neutre ; statut absent → neutre ; `in_trusted` → vert ; `in_risk` → rouge ; `unknown` → neutre ; `out` → repère `max(presenceAt, lastUpdateAt)` : moins de 1 h vert, de 1 h à 2 h **inclus** orange, au-delà rouge ; repère dans le futur = vert. Les deux constantes (1 h, 2 h) sont **lues dans `StatusThresholds`** : le Feed ne réécrit jamais 1 h ou 2 h (STA9).
@@ -141,7 +146,7 @@ Contenu, du haut vers le bas :
 1. **Avatar** (photo de profil de la fiche membre, ou initiales) avec **anneau** de la couleur du niveau ; **prénom** ; **batterie** (pastille en haut à droite).
 2. **Étiquette d'état** (texte + icône + couleur ; D9).
 3. **Ligne de temps** (§5.5).
-4. **Photo d'update** si elle existe et n'est pas expirée, **avec son heure** (« Photo de 15 h 40 ») ; toucher = plein écran (§5.7).
+4. **Photo d'update** si elle existe et n'est pas expirée, **avec son heure** (« Photo de 15 h 40 ») ; **aperçu en carré aussi large que la carte, centré sur le milieu de la photo, sans déformer (D39)** ; toucher = plein écran, **photo complète** (§5.7).
 5. **Boutons** Localiser, Message, Appeler (§5.6 ; **absents de ma carte**).
 - **Liseré coloré** à gauche de la carte (Notion) = couleur du niveau ; jamais la seule information.
 - **Ordre** [Proposé] : **moi d'abord**, puis les autres dans l'ordre d'arrivée dans la Miff (`joinedAt`) ; **jamais réordonné selon l'urgence** (une liste qui bouge déplace les boutons sous le doigt et stresse).
@@ -182,7 +187,8 @@ Contenu, du haut vers le bas :
 ### 5.7 Photo d'update
 - Le Feed ne lit la photo que si `status.hasPhoto = true` **et** que `lastUpdateAt` a **moins de 25 h** (une photo est créée au plus tard à `lastUpdateAt` et vit au plus 25 h : au-delà, elle est forcément expirée, **ne pas lire** : chaque lecture refusée coûte quand même des lectures de règles). Lecture **à l'apparition de la carte** à l'écran (liste paresseuse), pas pour toutes les cartes à l'ouverture.
 - **Copie locale** : une photo déjà lue n'est **pas retéléchargée** tant que `lastUpdateAt` n'a pas dépassé le `createdAt` de la copie (+ 5 min de marge d'horloge) ; lecture depuis le cache d'abord. **Une photo dont `expiresAt` est passé n'est jamais affichée**, même en cache. Refus ou introuvable = **aucune photo, aucun message d'erreur**.
-- **Plein écran** [Notion, D10] : photo, « Photo de {Prénom} · {heure} » (heure de publication), bouton de fermeture ; **localisation** : voir Q1 (« Voir où c'était » → carte du système sur la position figée de la photo, **sans nom**). Sans localisation disponible : rien n'est affiché à sa place.
+- **Aperçu dans la carte (D39)** : **carré aussi large que la carte**, **centré sur le milieu de la photo**, recadrage **sans déformation** (la photo stockée est entière, le recadrage n'est qu'un affichage) ; le toucher ouvre la photo **complète**.
+- **Plein écran** [Notion, D10] : photo **complète (aucun recadrage)**, « Photo de {Prénom} · {heure} » (heure de publication), bouton de fermeture ; **localisation** : voir Q1 (« Voir où c'était » → carte du système sur la position figée de la photo, **sans nom**). Sans localisation disponible : rien n'est affiché à sa place.
 - Le Feed **ne supprime jamais** une photo expirée (il ne peut pas distinguer expirée d'absente) : le nettoyage reste celui de l'auteur et du contrat `data-model.md` §2.8.
 
 ### 5.8 Batterie [D2]
@@ -310,6 +316,8 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 18. **15 membres** : jusqu'à ~90 lectures à froid (§11) ; photos paresseuses ; « Cette Miff est bien remplie ! ».
 19. **Premier lancement hors connexion** : « Pas de connexion… » sans « tout va bien ».
 20. **Changement de langue en cours** : tous les textes et formats d'heure suivent immédiatement.
+21. **En-tête qui se masque (D41)** : liste courte (rien à défiler), chargement, erreur, hors connexion, TalkBack actif, sélecteur ouvert : l'en-tête **reste visible** ; un défilement rapide vers le bas puis un léger retour réaffiche l'en-tête dès la remontée ; le masquage n'enlève **aucune** information (le nom de la Miff et l'anneau de mon statut reviennent à la remontée).
+22. **Mouvement de la bulle (D40)** : « Animations supprimées » = bulle immobile ; bulle hors écran ou application en arrière-plan = mouvement arrêté (aucune consommation) ; même amplitude en vert, orange et rouge.
 
 ---
 
@@ -318,10 +326,10 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 | # | Ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
 | **FEED-0** | **Décisions et maquettes** (PM, `design-system`) | Réponses à Q1 à Q3 ; maquettes corrigées et complétées (§16) dans « Miff - Claude » ; exports PNG dans `design/exports/feed/` | S à M | Validation de ce document |
-| **FEED-1** | **Android : cercle** | En-tête fixe (avatar, logo, pastille / sélecteur), cartes **sans statuts** (avatar, prénom, boutons **Message** et **Appeler**), ma carte, « Ajouter un proche », états aucune Miff / seul / chargement / hors connexion / accès perdu ; `MiffMember.phone` | M | ONB-3a, MIFF-1 (livrés) |
+| **FEED-1** | **Android : cercle** | **En-tête qui se masque au défilement vers le bas et réapparaît en remontant (D41, remplace « fixe »)** (avatar, logo, pastille / sélecteur), cartes **sans statuts** (avatar, prénom, boutons **Message** et **Appeler**), ma carte, « Ajouter un proche », états aucune Miff / seul / chargement / hors connexion / accès perdu ; `MiffMember.phone` | M | ONB-3a, MIFF-1 (livrés) |
 | **FEED-2** | **Android : statuts** | Écouteur de statuts, `StatusColor.level` (+ minuteur), couleur de la Miff, bulle et carrousel, étiquettes, lignes de temps, batterie, états neutres (partage arrêté, en attente d'accord, hors connexion), « Localisation limitée » | M à L | FEED-1, **LOC-2b fusionné** ; Q3 |
 | **FEED-3** | **Android : Localiser** | Lecture de `positions/{uid}` au toucher, feuille, ouverture des cartes du système | S à M | FEED-2, LOC-2b (écrit les positions) |
-| **FEED-4** | **Android : photo d'update** | Lecture paresseuse, copie locale, plein écran, (localisation de la photo si Q1 déployée) | M | FEED-2, **UPDATE-1**, R-PHOTO-LOC (pour la localisation seulement) ; Q1, Q2 |
+| **FEED-4** | **Android : photo d'update** | Lecture paresseuse, copie locale, **aperçu carré centré dans la carte (D39)**, plein écran (photo complète), (localisation de la photo si Q1 déployée) | M | FEED-2, **UPDATE-1**, R-PHOTO-LOC (pour la localisation seulement) ; Q1, Q2 |
 | **FEED-5 à FEED-8** | **iOS** : mêmes livrables que FEED-1 à FEED-4 | Spécificités §10 | Même taille | Équivalents Android, INIT-4 |
 - **Ordre conseillé** [Proposé, Q2] : FEED-1 → FEED-2 → FEED-3 maintenant ; FEED-4 avec l'Update. Chaque PR **liste ses écarts avec les maquettes** et **mesure ses lectures** (§11).
 - Aucune sous-tâche n'écrit de règle Firestore. `backend-data` prépare R-PHOTO-LOC (sur « oui » pour la préparation et le déploiement).
@@ -332,7 +340,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 
 | Sujet | Android | iOS |
 |---|---|---|
-| En-tête fixe, minuteur | Barre en haut ; coroutine alignée sur la minute | `TimelineView(.everyMinute)` ; zone sûre |
+| En-tête qui se masque au défilement (D41), minuteur | Barre en haut qui se masque en descendant et réapparaît en remontant ; coroutine alignée sur la minute | `TimelineView(.everyMinute)` ; zone sûre |
 | Carrousel de bulles | Pager horizontal ; boutons précédent / suivant pour TalkBack | `TabView` à pages ; actions VoiceOver |
 | Message / Appeler | Intentions « écrire à » et « composer » (pas d'appel direct) | `sms:` / `tel:` (iOS demande confirmation avant l'appel) ; aucune clé de permission « contacts » |
 | Localiser | `geo:` + repli web ; aucun libellé transmis | Plans (`maps.apple.com`), coordonnées seules |
@@ -389,7 +397,8 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 ## 13. Critères d'acceptation (testables ; Android puis iOS sauf mention)
 
 **En-tête**
-- [ ] **H1** L'en-tête est fixe ; l'avatar (photo ou initiales) a un **anneau** de la couleur de mon statut (neutre si inconnu) et ouvre l'onglet Profil ; le logo fait remonter le fil tout en haut ; **aucune cloche** ; chaque élément a un nom pour le lecteur d'écran (l'avatar annonce aussi mon état).
+- [ ] **H1** L'en-tête **se masque quand on fait défiler vers le bas et réapparaît dès qu'on remonte (D41, remplace « fixe » ; voir H3)** ; l'avatar (photo ou initiales) a un **anneau** de la couleur de mon statut (neutre si inconnu) et ouvre l'onglet Profil ; le logo fait remonter le fil tout en haut ; **aucune cloche** ; chaque élément a un nom pour le lecteur d'écran (l'avatar annonce aussi mon état).
+- [ ] **H3** (D41) L'en-tête (photo de profil, logo, nom de la Miff avec son sélecteur, futur bouton de notifications) **se masque au défilement vers le bas et réapparaît dès qu'on remonte** ; il **reste visible** pendant le **chargement**, en **erreur**, **hors connexion**, quand la **liste est courte** (pas de défilement possible), avec **TalkBack / VoiceOver actif**, et **tant que le sélecteur est ouvert** ; le logo (remonter le fil) et le masquage ne se contredisent pas (le toucher du logo ramène en haut et réaffiche l'en-tête) ; animation supprimée si « réduire les animations » (masquage instantané) ; test de chacun de ces états.
 - [ ] **H2** Une seule Miff : la pastille affiche son nom et **n'est pas cliquable** ; plusieurs Miffs (Premium) : liste ; « + Rejoindre / + Créer » **uniquement** pour un Premium ; la Miff affichée est une préférence locale purgée à la déconnexion.
 
 **Bulle**
@@ -398,6 +407,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 - [ ] **B3** Plusieurs alertes = carrousel (rouges puis oranges, repère le plus ancien d'abord) ; les pastilles n'existent **que** s'il y a plusieurs pages ; **aucun défilement automatique** ; chaque page est atteignable sans balayage ; une alerte qui disparaît retire sa page.
 - [ ] **B4** Les phrases sont celles du §7 : « {Prénom} a quitté {lieu} à 16 h 40 », « Pas de nouvelles de {Prénom} depuis 16 h 02 », « {Prénom} est dans une zone de danger » ; **« zone à risque » n'existe nulle part** (code, clés, a11y).
 - [ ] **B5** Le repère « Dernière nouvelle » est le plus récent des repères des **autres** membres (jamais le mien) ; **un seul repère de temps** par bulle.
+- [ ] **B7** (D40) La bulle de la Miff a un **mouvement continu très léger** : **échelle ≤ 1,5 %**, **dérive ≤ 3 dp**, **cycle de 5 à 8 s**, **aucun clignotement ni rebond** ; **immobile** avec « Animations supprimées » ; **arrêté hors écran** (défilement, autre onglet, arrière-plan) ; **même amplitude** quel que soit le niveau ; rien n'est annoncé au lecteur d'écran.
 - [ ] **B6** Une alerte (orange ou rouge) sur un **autre** membre propose « Envoyer un message » (SMS) ; jamais sur ma propre page.
 
 **Cartes**
@@ -422,6 +432,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 - [ ] **P1** La photo n'est lue que si `hasPhoto` est vrai et `lastUpdateAt` a moins de 25 h ; **à l'apparition de la carte** ; **pas de retéléchargement** d'une photo inchangée (copie locale par `createdAt` / `lastUpdateAt`) ; une photo expirée n'est **jamais** affichée, même en cache ; refus ou introuvable = **aucune photo, aucun message**.
 - [ ] **P2** Plein écran : photo, « Photo de {Prénom} · {heure} », fermeture ; zoom ; **avec** localisation si Q1 est déployée (carte du système, sans nom), **sans** rien d'inventé sinon.
 - [ ] **P3** Le Feed **n'écrit et ne supprime aucune photo**.
+- [ ] **P4** (D39) Dans la carte d'un membre (la mienne comprise), l'aperçu de la photo est un **carré aussi large que la carte, centré sur le milieu de la photo, sans déformation** (test avec des photos de ratios différents : l'image n'est jamais étirée) ; **au toucher, la photo s'ouvre complète en plein écran** (aucun recadrage).
 
 **États et hors connexion**
 - [ ] **E1** Aucune Miff : « Pas encore de Miff » + deux boutons, **aucune phrase de sécurité** ; chargement : squelette (sans animation si « réduire les animations »).

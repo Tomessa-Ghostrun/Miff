@@ -24,6 +24,7 @@ profileinstaller = "1.4.1"
 maplibre = "13.7.1"
 playServicesLocation = "21.4.0"
 camerax = "1.6.2"
+haze = "2.0.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -72,6 +73,12 @@ androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+# Frosted glass of the tab bar (TABBAR-GLASS): Haze (chrisbanes/haze), Apache 2.0, free, no network, no permission, no key. PINNED to 2.0.1 (published
+# 2026-09-29, more than two weeks old; 2.1.0 is from 2026-11-02): do not raise without reading its changelog (the API moves fast). BLUR MODULE ONLY
+# (haze = hazeSource, haze-blur = the blur); NOT the Glass module (refraction, GPU cost) nor the Materials module. Plan B if it is ever dropped: a home-made
+# blur from API 31 (design/tab-bar-liquid-glass.md section 4.3). Licence notice: android/third_party/licenses/haze-NOTICE.md.
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }

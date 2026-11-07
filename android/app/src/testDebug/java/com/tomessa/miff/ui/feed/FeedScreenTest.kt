@@ -618,14 +618,7 @@ class FeedScreenTest {
         composeRule.onAllNodesWithText("Tout va bien").assertCountEquals(0)
     }
 
-    @Test
-    fun theHeaderStaysAtTheTop_whileTheFeedScrolls() {
-        val many = listOf(member(me, "Camille")) + (1..8).map { member("u$it", "Proche$it") }
-        feed(ready(content(many, mapOf(me to status()) + many.drop(1).associate { it.uid to status() })))
-        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(text(R.string.feed_add_loved_one)))
-        composeRule.onNodeWithText(text(R.string.feed_add_loved_one)).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertIsDisplayed()
-    }
+    // The header hides while scrolling down and comes back when scrolling up (decision of the PM, 2026-11-06): see FeedHeaderScrollTest.
 
     @Test
     fun largestFont_keepsTheCardReadable_andTheGesturesReachable() {

@@ -88,6 +88,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -317,6 +318,8 @@ private fun PopInStage(
                 .background(
                     colorBgCanvas,
                 ).miffTopInsets()
+                // TABBAR-GLASS: the bar floats over the tab; the card is centred in the room above it.
+                .padding(bottom = LocalTabBarInset.current)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m),
         contentAlignment = Alignment.Center,
     ) {
@@ -461,7 +464,14 @@ private fun ViewfinderStage(
                 )
             }
             Column(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ShutterAboveBar).fillMaxWidth(),
+                // TABBAR-GLASS: the viewfinder is full screen, UNDER the glass bar; the shutter sits 48 dp above the bar.
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            bottom =
+                                LocalTabBarInset.current + ShutterAboveBar,
+                        ).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
@@ -582,7 +592,13 @@ private fun PreviewStage(
     val takenAnnouncement = stringResource(R.string.update_preview_taken_a11y)
     val canPublish = !stage.publishing && stage.notice != PreviewNotice.Stale && stage.notice != PreviewNotice.TooMany
     Column(
-        modifier = Modifier.fillMaxSize().background(colorUpdateStage).miffTopInsets(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    colorUpdateStage,
+                ).miffTopInsets()
+                .padding(bottom = LocalTabBarInset.current),
     ) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s)) {
             val density = LocalDensity.current

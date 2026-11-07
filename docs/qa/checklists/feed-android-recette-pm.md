@@ -32,10 +32,35 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 ## Partie A — En-tête (3 min)
 
-- [ ] L'en-tête reste **en haut** quand on fait défiler. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
+- [ ] L'en-tête **se masque quand on fait défiler vers le bas** (il glisse vers le haut avec le fil, sans saut) **et réapparaît dès qu'on remonte**, même au milieu de la liste, sans attendre d'être tout en haut ; aucune carte n'est cachée dessous ni ne laisse de bande blanche. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
 - [ ] Avec **une seule Miff** : le nom est dans une pastille **plate, sans flèche** (elle ne réagit pas au toucher). Avec **plusieurs Miffs** (compte Premium) : pastille avec flèche, liste avec **coche** sur la Miff affichée, « + Rejoindre / + Créer » (et seulement pour un Premium).
+
+## Partie A bis — Comportement de l'en-tête au défilement (4 min)
+
+- [ ] **Descendre puis remonter** : avec un Feed assez long (plusieurs proches), faites défiler vers le bas : photo de profil, logo et nom de la Miff disparaissent en douceur ; remontez même un tout petit peu : ils reviennent **tout de suite**. Au tout début de la liste ils sont toujours entiers (pas de bande vide au-dessus de la bulle).
+- [ ] **Toujours visible** : (1) pendant le chargement (réinstallez ou coupez le réseau avant d'ouvrir), (2) avec **TalkBack** activé (ou tout autre service d'accessibilité) : faites défiler, l'en-tête **ne se cache jamais** et le focus de TalkBack ne se perd pas, (3) avec **un seul proche** (liste trop courte pour défiler), (4) **hors connexion** (mode avion), (5) **sélecteur de Miff ouvert** (compte Premium) : tant que la liste est ouverte l'en-tête reste.
+- [ ] **Rotation et onglets** : tournez le téléphone, ou passez à l'onglet Profil et revenez : l'en-tête est **visible**, sans saut ni bande vide d'une image.
+- [ ] **Petit défilement près du haut** : faites un tout petit défilement depuis le haut de la liste puis relâchez : aucune bande vide ne se forme entre l'en-tête à moitié caché et la bulle.
+- [ ] **Grande police** : avec la taille de police au maximum, l'en-tête et la bulle ne se chevauchent pas, y compris juste après une rotation.
+- [ ] **Autres éléments** : la bulle (animée) et le carrousel d'alertes (glissement manuel) ne saccadent pas pendant que l'en-tête bouge ; le logo et la photo se touchent facilement ; la barre d'onglets et les marges ne bougent pas.
+- [ ] **Bas de liste et barre en verre** : faites défiler le Feed **jusqu'au bout** : le bouton « Ajouter un proche » finit **au-dessus** de la barre d'onglets, jamais caché dessous ; remontez : l'en-tête revient et aucun trou n'apparaît en haut ni en bas.
+- [ ] Toucher le **logo**, ou la touche de l'onglet Feed quand on y est déjà, remonte le fil **et** réaffiche l'en-tête.
+
+## Partie A ter — Tirer pour actualiser (4 min)
+
+- [ ] **Le geste** : en haut de la liste, tirez vers le bas : un petit indicateur rond (bleu, discret) apparaît **sous l'en-tête** et tourne un instant ; les cartes se mettent à jour (changez un statut dans la console juste avant pour le voir). **L'en-tête ne bouge pas et ne clignote pas** pendant le geste. Au milieu de la liste, tirer ne fait rien d'autre que remonter : le geste n'agit qu'en haut.
+- [ ] **Sortir de la copie du cache** : coupez puis rétablissez le réseau, ou ouvrez l'app juste après une coupure : si « Dernières informations de … » est affiché alors que le réseau est revenu, tirez vers le bas : le bandeau disparaît dès que le serveur répond.
+- [ ] **Limite des 15 secondes** : tirez deux fois de suite à quelques secondes d'intervalle : la **seconde** fois l'indicateur s'arrête aussitôt sans rien recharger (vous pouvez le vérifier dans la console, partie H : la seconde actualisation n'ajoute aucune lecture). Après 15 secondes, tirer relit à nouveau.
+- [ ] **Sans réseau** : mode avion, tirez : l'indicateur s'arrête **tout de suite**, le bandeau « Dernières informations de … » reste, aucun message d'erreur.
+- [ ] **Serveur qui ne répond pas** (réseau très mauvais) : l'indicateur s'arrête au bout de **8 secondes au plus** avec le bandeau « Dernières informations de … » ; jamais de phrase alarmante ou culpabilisante.
+- [ ] **TalkBack** : sur la liste, l'action « Actualiser » est proposée (menu des actions) ; l'activer fait la même chose que le geste ; TalkBack annonce poliment « Actualisation en cours » puis « Informations actualisées » (pas « à jour » si le bandeau « Dernières informations de… » est affiché).
+- [ ] **Liste courte** : avec un seul proche (liste qui ne défile pas), tirer vers le bas actualise quand même.
+- [ ] **Autres éléments** : la bulle (animée), le carrousel d'alertes (glissement manuel), la barre d'onglets en verre et les marges restent normaux pendant et après l'actualisation.
+- [ ] **Coût (facultatif)** : une actualisation = **environ 20 lectures** (4 membres, 3 lieux), à noter dans la console avec la partie H. Usage abusif connu et assumé : tirer sans arrêt coûte au plus ~4 actualisations par minute, soit ~80 lectures par minute à 4 membres (~176 à 15 membres, ~300 ko d'avatars par actualisation à 15 membres) ; à reporter dans `docs/dev/surveillance-quotas.md` (recalibrage par `backend-data`).
+- [ ] **Changer de Miff pendant une actualisation** (compte Premium, deux Miffs) : tirez pour actualiser puis, tout de suite, choisissez l'autre Miff dans la pastille : les cartes de la seconde Miff ne montrent **jamais** les statuts de la première (pas de « a quitté un lieu de confiance » inattendu), le squelette reste le temps que ses propres statuts arrivent.
+- [ ] **Après une actualisation sans réponse** : le bandeau « Dernières informations de … » reste tant que le serveur n'a pas reparlé (limite connue : un changement de statut ou une nouvelle actualisation réussie le lève).
 
 ## Partie B — Cartes (5 min)
 
@@ -61,6 +86,15 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 - [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (vous, puis l'ordre d'arrivée).
 - [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
 - [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent dans la pastille, et la bulle garde son petit dessin décoratif (étoile, horloge, « ! », sablier) : points validés par le PM le 2026-11-06.
+
+## Partie C bis — Mouvement très léger de la bulle (3 min)
+
+- [ ] **Constater le mouvement** : ouvrez le Feed et regardez la bulle de couleur quelques secondes, sans y toucher : elle **respire très doucement** (à peine plus grande puis à peine plus petite, et elle se déplace de quelques millimètres vers le haut puis le bas), un cycle prend **plus de 6 secondes**. L'étoile (ou l'horloge, le « ! », le sablier) du coin suit un rythme un peu différent. **Rien ne clignote, ne rebondit ni ne s'accélère**, y compris sur une bulle rouge (essayez avec l'astuce de la console).
+- [ ] **Rien d'autre ne bouge** : les cartes, le texte de la bulle, la barre d'onglets et les marges restent immobiles ; le carrousel des alertes ne défile **jamais tout seul** (seulement quand vous glissez).
+- [ ] **Supprimer le mouvement** : Réglages du téléphone > Accessibilité > Améliorations de la visibilité (ou « Options pour les développeurs » > « Échelle de durée d'animation ») > **Supprimer les animations** (ou échelle à « Animation désactivée »). Revenez dans Miff (fermez-la puis rouvrez-la, ou changez d'onglet et revenez) : **la bulle est parfaitement immobile**. Remettez le réglage normal pour la suite.
+- [ ] **Pas de mouvement hors du Feed** : passez à l'onglet Profil, ou mettez l'app en arrière-plan, puis revenez : le mouvement reprend doucement, sans à-coup, et ne tourne pas pendant ce temps (batterie : le téléphone ne doit pas chauffer, la consommation de Miff en arrière-plan ne change pas).
+- [ ] **Batterie avec la bulle animée** : laissez le Feed ouvert 10 minutes écran allumé, puis comparez dans Réglages > Batterie > Utilisation de la batterie : Miff ne doit pas apparaître parmi les gros consommateurs ; écran éteint, la consommation de Miff ne change pas.
+- [ ] **TalkBack** (facultatif) : aucune annonce liée au mouvement ; la bulle est annoncée seulement quand sa couleur change.
 
 ## Partie D — « Localiser » (5 min)
 
@@ -93,6 +127,7 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 
 - [ ] **Langue** : Réglages > Langue > English : tous les textes du Feed passent en anglais (« All good », « Thomas left home at 4:40 PM », heures « 4:40 PM »), puis revenez en français.
 - [ ] **Grande police** : réglages du téléphone > Affichage > Taille de la police au maximum : les cartes restent lisibles (rien de coupé), les trois boutons restent atteignables.
+- [ ] **Ordre de focus TalkBack** (facultatif) : en glissant vers la droite depuis le début de l'écran, TalkBack lit d'abord l'en-tête (photo de profil, logo, Miff), puis la bulle, puis les cartes ; l'action « Actualiser » est proposée dans le menu des actions de la liste (et fait la même chose que le geste).
 - [ ] **TalkBack** (facultatif) : une carte se lit comme un tout, dans l'ordre personne, état, temps, puis batterie (« Thomas, à la maison, depuis 12 min, batterie à 85 % ») ; votre photo en haut annonce « Ouvrir mon profil. Ton statut : … » ; avec plusieurs alertes, « Alerte précédente / suivante » sont proposées dans les actions.
 - [ ] **Applications récentes** : ouvrez la vue des applications récentes (Android 13) : l'aperçu du Feed **n'affiche pas** de noms ni de photos.
 

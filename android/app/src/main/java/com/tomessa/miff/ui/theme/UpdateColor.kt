@@ -16,6 +16,3 @@ val colorUpdateStage = Color(0xFF1D1F20)
 val colorUpdateScrim = Color(0xFF000000).copy(alpha = 0.45f)
 val colorUpdateVeil = Color(0xFF000000).copy(alpha = 0.30f)
 val colorUpdateToast = Color(0xFF222222).copy(alpha = 0.92f)
-
-/** The neutral grey of the central button: the one of the other buttons of the bar on a white plate (contrast 7:1 on it). */
-val colorUpdateNeutral = Color(0xFF595959)
