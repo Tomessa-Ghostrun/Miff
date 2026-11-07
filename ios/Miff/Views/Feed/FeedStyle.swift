@@ -50,6 +50,23 @@ extension StatusLevel {
     }
 }
 
+/// La mémoire des photos déjà décodées (en mémoire seulement, vidée par le système en cas de besoin, jamais sur le disque).
+enum FeedAvatarCache {
+    private static let cache = NSCache<NSData, UIImage>()
+
+    static func image(for jpeg: Data) -> UIImage? {
+        let key = jpeg as NSData
+        if let known = cache.object(forKey: key) {
+            return known
+        }
+        guard let decoded = UIImage(data: jpeg) else {
+            return nil
+        }
+        cache.setObject(decoded, forKey: key)
+        return decoded
+    }
+}
+
 /// La photo ronde (ou les initiales) d'une personne avec l'anneau de son niveau : la COULEUR SEULE, aucun pictogramme dessus. Muette
 /// pour le lecteur d'écran (le parent dit qui c'est et dans quel état). La photo vient d'un autre téléphone : elle n'est décodée que
 /// si elle respecte la taille que les règles imposent.
@@ -59,11 +76,13 @@ struct FeedAvatar: View {
     let level: StatusLevel
     var size: CGFloat = Spacing.memberAvatar
 
+    /// Décodée UNE fois par photo (le résultat est gardé en mémoire, clé = les octets) : un défilement ou une minute qui passe ne
+    /// redécode rien.
     private var image: UIImage? {
         guard let jpeg, !jpeg.isEmpty, jpeg.count <= ProfileDocument.maxAvatarBytes else {
             return nil
         }
-        return UIImage(data: jpeg)
+        return FeedAvatarCache.image(for: jpeg)
     }
 
     var body: some View {

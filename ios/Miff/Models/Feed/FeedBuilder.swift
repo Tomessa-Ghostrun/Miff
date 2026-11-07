@@ -153,7 +153,10 @@ enum FeedBuilder {
 
     private static func card(_ member: MiffMember, _ context: Context) -> FeedMemberCard {
         let isMe = member.uid == context.input.myUid
-        let status = context.hidden && !isMe ? nil : context.statuses[member.uid]
+        // Défense en profondeur : quelqu'un qui a arrêté de partager n'a ni batterie ni « Localisation limitée » ni lieu montrés, même si un
+        // ancien statut traîne dans le cache ; et rien des autres n'est montré tant que je ne partage pas.
+        let hiddenStatus = (context.hidden && !isMe) || !member.sharingEnabled
+        let status = hiddenStatus ? nil : context.statuses[member.uid]
         let facts = status.map {
             MemberStatusFacts(
                 sharingEnabled: member.sharingEnabled,

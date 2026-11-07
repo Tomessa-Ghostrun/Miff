@@ -256,6 +256,19 @@ final class FeedCardsTests: XCTestCase {
         XCTAssertEqual(content.bubble, .awaitingAgreement)
     }
 
+    func testSomeoneWhoStoppedSharingShowsNeitherBatteryNorLimitedLocationNorPlaceEvenWithAnOldStatusInTheCache() {
+        let members = [feedMember("a", sharing: false), feedMember("me")]
+        let old = feedStatus(.inTrusted, departedAgo: feedMinutes(5), battery: 40, access: .denied)
+
+        let card = buildFeed(feedInput(members: members, statuses: ["a": old])).card("a")
+
+        XCTAssertNil(card?.battery)
+        XCTAssertEqual(card?.limitedLocation, false)
+        XCTAssertEqual(card?.label, .sharingStopped)
+        XCTAssertEqual(card?.time, .nothing)
+        XCTAssertEqual(card?.level, .neutral)
+    }
+
     func testTheFullNoteAppearsAtFifteenMembers() {
         let many = (0..<14).map { feedMember("m\($0)") } + [feedMember("me")]
 

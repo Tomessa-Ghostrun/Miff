@@ -216,13 +216,11 @@ private struct AlertCarousel: View {
             }
             .id(current.member.uid)
             if pages.count > 1 {
-                PagerDots(count: pages.count, current: index, level: current.level)
+                PagerDots(count: pages.count, current: index, level: current.level, select: select)
             }
         }
         .contentShape(Rectangle())
         .simultaneousGesture(swipe)
-        .accessibilityElement(children: .contain)
-        .modifier(PagerAccessibility(count: pages.count, index: index, select: select))
     }
 
     private var swipe: some Gesture {
@@ -246,24 +244,6 @@ private struct AlertCarousel: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 selectedUid = uid
             }
-        }
-    }
-}
-
-/// « Alerte 1 sur 2 » et les actions « Alerte précédente / suivante » : chaque page est atteignable sans balayage.
-private struct PagerAccessibility: ViewModifier {
-    let count: Int
-    let index: Int
-    let select: (Int) -> Void
-
-    func body(content: Content) -> some View {
-        if count > 1 {
-            content
-                .accessibilityValue(Text(verbatim: L10n.format("feed_bubble_page_a11y", index + 1, count)))
-                .accessibilityAction(named: Text("feed_bubble_previous_a11y")) { select(index - 1) }
-                .accessibilityAction(named: Text("feed_bubble_next_a11y")) { select(index + 1) }
-        } else {
-            content
         }
     }
 }
@@ -361,22 +341,39 @@ private struct BubbleButton: View {
     }
 }
 
-/// Seulement avec plusieurs pages. La page courante est une pastille PLUS LONGUE (une forme, pas seulement une couleur).
+/// Seulement avec plusieurs pages. La page courante est une pastille PLUS LONGUE (une forme, pas seulement une couleur). C'est aussi
+/// l'élément que VoiceOver atteint pour changer de page SANS balayage : il annonce « Page 1 sur 2 », se règle d'un glissement vers le
+/// haut ou le bas du doigt (action ajustable) et propose « Alerte précédente » / « Alerte suivante » dans les actions.
 private struct PagerDots: View {
     let count: Int
     let current: Int
     let level: StatusLevel
+    let select: (Int) -> Void
 
     var body: some View {
         HStack(spacing: Spacing.sm) {
-            ForEach(0..<count, id: \.self) { position in
+            ForEach(0..<count, id: .self) { position in
                 let selected = position == current
                 Capsule()
                     .fill(selected ? level.onTint : colorStatusNeutral.color)
                     .frame(width: selected ? 22 : 8, height: 8)
             }
         }
-        .frame(maxWidth: .infinity)
-        .accessibilityHidden(true)
+        .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: L10n.format("feed_bubble_page_a11y", current + 1, count)))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment:
+                select(current + 1)
+            case .decrement:
+                select(current - 1)
+            @unknown default:
+                break
+            }
+        }
+        .accessibilityAction(named: Text("feed_bubble_previous_a11y")) { select(current - 1) }
+        .accessibilityAction(named: Text("feed_bubble_next_a11y")) { select(current + 1) }
     }
 }

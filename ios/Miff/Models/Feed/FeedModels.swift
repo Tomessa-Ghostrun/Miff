@@ -59,8 +59,8 @@ enum TimeLine: Equatable {
     case inDangerSince(Moment)
 }
 
-/// La pastille de batterie : « 85 % » seul, jamais l'heure de la mesure (décision du PM, 2026-11-07, D44). Masquée au-delà de 24 h
-/// ou quand elle est absente.
+/// La pastille de batterie : « 85 % » seul, jamais l'heure de la mesure (décision du PM, 2026-11-07, D44). Masquée au-delà de 6 h
+/// (`FeedBuilder.batteryMaxAgeMillis`) ou quand elle est absente.
 struct Battery: Equatable {
     let pct: Int
 }

@@ -109,7 +109,8 @@ struct FeedScreen: View {
         .onChange(of: headerLocked) { locked in headerModel.lock(locked) }
         .onChange(of: isList) { _ in headerModel.resetBaseline() }
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
-        .sheet(isPresented: locateIsShown) { locateSheet }
+        // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
+        .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("feed_pane_a11y"))
     }
