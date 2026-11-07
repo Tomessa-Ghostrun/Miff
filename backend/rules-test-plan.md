@@ -562,3 +562,24 @@ Le document `miffs/{id}/photos/{uid}` porte **toujours** `lat`, `lng` et `measur
 | PL21 | **Une ou deux clés de localisation sur trois**, absentes puis nulles, dans toutes les combinaisons ; les trois clés valides | KO ×14 ; OK |
 | PL22 | **Trois clés valides + partage + consentement dans le même lot** (carol, partage arrêté) ; le même lot sans localisation, sans heure, ou avec le texte v1 ; mise à jour manuelle suivante (photo + statut) | OK ; KO ; KO ; KO ; OK |
 | PL23 | **Lecture par réciprocité** d'une photo écrite par les règles : lecteur sans position publiée, auteur, lecteur avec sa position, membre au partage arrêté, étranger | KO ; OK ; OK ; KO ; KO |
+
+## 23. Rafraîchissement de la batterie par une mise à jour PARTIELLE du statut (PR iOS #106 `ios/batterie-rafraichie`, PR Android #110 `android/batterie-rafraichie`) — AUCUNE modification des règles
+
+Les applications rafraîchissent `batteryPct` avec un `update()` qui n'envoie que `{ batteryPct, updatedAt (heure du serveur), deviceId }`. Les règles jugent le document **résultant** (base fusionnée avec la requête) : `presenceAt` et `lastUpdateAt` y sont « conservés » (R-LIEU-1, section 20), `deviceId` est comparé à la session (SESS-1, section 21), `updatedAt` doit être l'heure du serveur. **`firestore.rules` n'est pas modifié** : ces tests prouvent que `validStatus` suffit. Aucune création possible (un `update()` sur un statut absent, ou un `set` avec fusion, est refusé). Le plafond (40 par jour et par appareil) et les seuils (15 min / 5 points / 3 h) sont un contrat des clients, pas des règles. Limite connue et inoffensive : un `escalationDueAt` ancien et non nul en base bloque le rafraîchissement (tous les clients l'écrivent `null`). Tests : `tests/rules/27-batterie-partielle.test.js` (temps 1, règles telles que livrées), `tests/rules/28-batterie-partielle-temps2.test.js` (temps 2).
+
+| ID | Cas | Attendu |
+|---|---|---|
+| BP1 | `presenceAt` et `lastUpdateAt` vieux de plus de 24 h, `deviceId` déjà en base et égal à la session : rafraîchissement ; relu : `presenceAt`, `lastUpdateAt`, `locationAccess`, `presence`, `updateText`, jeu de clés inchangés, `updatedAt` avancé ; un second rafraîchissement d'affilée | OK ; OK |
+| BP2 | Temps 1 : `deviceId` absent de la base (la requête l'apporte) ; présent en base mais périmé (session passée à B) avec l'ancien, puis le nouveau | OK ; KO ; OK |
+| BP2b | Temps 1 : rafraîchissement SANS `deviceId` (applications d'avant SESS-1) | OK |
+| BP3 | `deviceId` ≠ session : session absente, appareil remplacé, identifiant inventé, nul, nombre, 15 caractères, session d'un autre compte ; contrôle avec le bon | KO partout ; OK |
+| BP4 | Statut absent : `update()` partiel ; `set` avec `merge` des trois clés | KO ; KO ; aucun statut créé |
+| BP5 | Partage désactivé (`members/{uid}.sharing.enabled = false`), puis fiche retirée (contrôle : OK avant) | OK ; KO ; KO |
+| BP6 | `batteryPct` = 101, -1, 1000, texte, vide, décimal, booléen, objet, tableau ; bornes 0, 100 et `null` | KO partout (base inchangée) ; OK ×3 |
+| BP7 | `updatedAt` fourni par le client (passé, futur, 1970, valeur de la base), omis, `FieldValue.delete()`, texte ; contrôle avec l'heure du serveur | KO partout ; OK |
+| BP8 | **Cas documentaire** : `escalationDueAt` ancien non nul (limite connue, inoffensive), ou à +2 jours ; `null` ; dans la fenêtre (-2 h, +4 min) | KO ; KO ; OK ; OK ; OK |
+| BP9 | Autre que le propriétaire : `alice` (créatrice), `carol` (partage arrêté), `zoe` (autre Miff), `eve`, visiteur ; le statut de `bob` ne change pas ; contrôle propriétaire | KO ×5 ; OK |
+| BP10 | Pas de contournement : `lat`, `lng`, clé inconnue, `locationAccess` ou `presence` hors schéma, nouvelle ancienne `presenceAt` dans le même update partiel | KO partout |
+| BP11 | Temps 2 : avec le bon `deviceId` sur un statut de plus de 24 h (base avec ou sans `deviceId`) ; horodatages et `locationAccess` inchangés | OK ; OK |
+| BP12 | Temps 2 : SANS `deviceId` quand la base n'en porte pas ou porte un identifiant périmé ; faux ou nul ; puis le bon | KO ×6 ; OK |
+| BP13 | Temps 2, **limite connue (SF9)** : sans `deviceId` dans la requête, le document résultant garde celui de la base ; il passe s'il est égal à la session (contrat : les clients l'envoient toujours) | OK |
