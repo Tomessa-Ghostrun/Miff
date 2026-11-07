@@ -4,6 +4,15 @@ Préparé le 2026-11-07 par `release-manager`, à partir du rapport de l'agent `
 
 **Rien n'est soumis, aucun compte n'est créé ni payé, rien n'est déployé.** **Rien n'est « prêt à soumettre »** : la checklist de sortie `docs/qa/release-checklist.md` n'existe pas encore. Les textes légaux sont rédigés par l'équipe d'agents et publiés sous la seule responsabilité du PM, **sans relecture juridique** (décision du 2026-10-23) : les risques ci-dessous sont écrits comme des risques que tu assumes ou que tu peux choisir d'assumer, jamais comme des points « à valider par un juriste ». Je n'ai modifié aucun texte légal ; je signale ce qui devrait changer.
 
+## Décisions du PM du 2026-11-07 (enregistrées dans ce document)
+
+Trois points sont **DÉCIDÉS par le PM le 2026-11-07** (repérés « DÉCIDÉ par le PM le 2026-11-07 » dans le tableau et dans leurs sections) :
+- **Point 2 (âge)** : « prenons le minimum, donc 3 ans », à lire comme une **classification de contenu** au minimum possible, **pas** comme un ciblage des enfants (voir §2).
+- **Point 11 (maquette d'avis)** : l'écran est **construit tel que maquetté**, **risque assumé**, avec un **point de contrôle de release** à la porte « prêt à soumettre » (voir §11).
+- **Point 16 (« Économisez 30 % »)** : remplacé par **« presque 30 % d'économie »** (EN : « almost 30% off ») (voir §16).
+
+Les recommandations d'origine de ces trois points sont conservées dans leur section, marquées « recommandation d'origine » quand elles sont remplacées. **Aucun code, aucun texte légal n'est modifié par ces décisions**, qui sont écrites ici, dans les specs et dans les tickets concernés.
+
 ## Comment lire ce document
 
 Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommandation**, **le risque** et **ce que toi seul peux faire ou décider**. « Assumé » renvoie à une décision déjà prise par toi ; « à connaître » est un risque que tu n'as pas encore assumé explicitement.
@@ -11,7 +20,7 @@ Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommanda
 | N° | Sujet | Bloque | Urgence |
 |---|---|---|---|
 | 1 | Position stockée côté serveur et textes légaux | La mise en ligne du site | Faible : déjà appliqué, restent 2 écarts et 1 vérification |
-| 2 | Classification d'âge et public cible | Les deux soumissions | Avant la soumission |
+| 2 | Classification d'âge et public cible **(classification de contenu : DÉCIDÉ par le PM le 2026-11-07 ; public cible : recommandation 13+ maintenue, non décidé)** | Les deux soumissions | Avant la soumission (public cible) |
 | 3 | Catégorie | Les deux soumissions | Avant la soumission |
 | 4 | Contenu généré par les utilisateurs (Apple 1.2, Google UGC) | Les deux soumissions | Décider du plan de repli maintenant |
 | 5 | Identité publique de l'éditeur (nom, adresse, e-mail) | La bêta externe et la mise en ligne | **Avant la bêta externe** |
@@ -20,12 +29,12 @@ Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommanda
 | 8 | Liste « être prévenu du lancement » | Rien | Faible |
 | 9 | Vérification du nom « Miff » | Le lancement public | Avant le lancement public |
 | 10 | Texte de partage du code d'invitation | La croissance | Avant la bêta externe |
-| 11 | Maquette d'avis « J'adore / Peux faire mieux » | Rien (non construit) | Avant de la construire |
+| 11 | Maquette d'avis « J'adore / Peux faire mieux » **(DÉCIDÉ par le PM le 2026-11-07 : construite telle quelle, risque assumé)** | La soumission de la version qui la contient | **Point de contrôle à la porte « prêt à soumettre »** |
 | 12 | Page d'accueil (notifications, Premium, photo) | La mise en ligne du site | Avant le déploiement |
 | 13 | Mention des limites gratuites | Les fiches | Avant la soumission |
 | 14 | Événements d'analyse d'activation | Les mesures du lancement | Avant la bêta externe |
 | 15 | Vidéos | Les deux soumissions | À la soumission |
-| 16 | Essai gratuit, tarifs, « Économisez 30 % » | L'activation de Miff+ | Avant l'activation de Miff+ |
+| 16 | Essai gratuit, tarifs, **« presque 30 % d'économie » (DÉCIDÉ par le PM le 2026-11-07, remplace « Économisez 30 % »)** | L'activation de Miff+ | Avant l'activation de Miff+ |
 | 17 | Localisation « Toujours » obligatoire : ce que dit la fiche, plan B Apple | Les deux soumissions | Avant la soumission |
 | 18 | Ordre de soumission : l'iOS n'a pas encore Feed, Update ni Réglages | Le lancement simultané | **Maintenant** |
 | 19 | Comptes de démonstration, captures, licences des photos | Les deux soumissions | À la soumission |
@@ -52,19 +61,28 @@ Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommanda
 
 ## 2. Classification d'âge et public cible
 
+> **DÉCIDÉ par le PM le 2026-11-07 : « prenons le minimum, donc 3 ans ».** **Interprétation retenue (à lire ainsi, noir sur blanc)** : c'est la **classification de CONTENU au minimum possible** : **PEGI 3 / IARC « tous publics » côté Google Play** et **4+ (le niveau le plus bas qui existe) côté Apple**, **tels que les produisent les questionnaires** (Apple : on ne rehausse pas, « Override to Higher Age Rating » n'est pas utilisé ; Google : questionnaire IARC). Le PM répond aux questionnaires **lui-même**, honnêtement, et les refait si l'app change.
+>
+> **Cela n'est PAS une décision sur le PUBLIC CIBLE.** Ce sont deux déclarations **distinctes** chez Google :
+> - la **classification du contenu** (questionnaire IARC) dit **ce que contient l'app** (violence, langage, etc.) ; elle sera « tous publics » ;
+> - le **public cible** (tranches d'âge cochées dans « Target audience and app content ») dit **à qui l'app s'adresse**. **Si une tranche d'enfants est cochée** (5 ans et moins, 6-8, 9-12), **la politique Familles de Google s'applique**, et **une app qui demande la localisation en arrière-plan ne peut pas cibler les enfants** (source : relecture du `release-manager` des pages Google « Target audience and app content » et « Families », lues le 2026-11-07, voir « Constat » ci-dessous). Miff demande la localisation « Toujours » (obligatoire) : **cibler les enfants lui est donc interdit**.
+> - **Le PM n'a PAS décidé de cibler les enfants.** **La recommandation reste : public cible 13+** (tranches 13-15, 16-17 et 18+, ou l'une d'elles) **tant que le PM ne confirme pas explicitement le contraire.** Ne pas cocher 5 et moins, 6-8, 9-12, ni « Kids » / la catégorie Enfants. (**Recommandation d'origine « Apple rehaussé à 13+ » : remplacée** par « Apple 4+ tel que calculé », conformément à la décision de classification de contenu au minimum ; **le public cible 13+ côté Google reste recommandé.**)
+> - **Écart à connaître** : une classification « tous publics / 4+ » avec un public cible 13+ est **cohérente** (le contenu est anodin, l'audience visée est plus âgée), mais Google peut refuser une app dont la fiche **plaît aux enfants** alors que la tranche déclarée les exclut : **la fiche et les captures ne doivent donc pas viser les enfants** (couleurs, ton, personnages).
+> - **Les CGU disent déjà « pas d'âge minimum »** (art. 3) et la politique de confidentialité aussi (art. 10) : **inchangé**. Le **risque « mineurs » / RGPD art. 8 reste un RISQUE ASSUMÉ par le PM** (J2, J31, J36, Apple 5.1.4(b)), **jamais présenté comme « à valider par un juriste »** (décision du 2026-10-23) ; aucune phrase « classée X+ » n'est ajoutée aux textes légaux.
+
 **Constat.**
 - **Apple** (page « Age ratings values and definitions » et « Set an app age rating », lues le 2026-11-07) : niveaux 4+, 9+, 13+, 16+, 18+ ; questionnaire sur les contrôles dans l'app, les capacités (accès web libre, contenu généré par l'utilisateur, réseau social, messagerie, publicité) et les thèmes. **Le rehaussement existe** : « To increase the rating of your app to a rating that exceeds the rating assigned by Apple, choose Override to Higher Age Rating and select the appropriate rating from the menu. » (la mention affichée devient celle choisie ; les descriptions de contenu restent celles du questionnaire). Le brouillon marketing disait « non confirmé » : c'est confirmé. Le niveau calculé par Apple pour Miff reste **non vérifié** (probablement 4+, à constater dans la console).
 - **Google** (page « Target audience and app content » et « Families », lues le 2026-11-07) : tranches proposées : 5 ans et moins, 6-8, 9-12, 13-15, 16-17, 18 et plus. Si une tranche d'enfants est cochée, la politique **Familles** s'applique ; les apps qui visent **uniquement** les enfants « may not request location permission » ; les apps mixtes ont d'autres obligations (écran d'âge neutre pour les publicités). La page dit aussi que, selon la loi locale, des utilisateurs jusqu'à 21 ans peuvent être considérés comme des enfants, et que Google peut refuser une app dont la fiche plaît aux enfants alors que la tranche déclarée les exclut.
 - **Dans tes textes** : CGU art. 3 et politique art. 10 : « Miff n'impose pas d'âge minimum et ne demande pas ton âge » ; accord d'un parent conseillé ; avant 15 ans, la loi française demande cet accord pour certains services ; **Miff ne peut pas le vérifier** (risque J2, assumé).
 
-**Recommandation.** **13+ partout** : Apple en rehaussant à 13+ ; Google en cochant 13-15, 16-17 et 18+ (jamais 5 et moins, 6-8 ni 9-12). Mêmes réponses aux deux questionnaires. Ne pas cocher « Kids » ni la catégorie Enfants.
+**Recommandation (d'origine ; la partie classification de contenu est remplacée par la décision du 2026-11-07 ci-dessus).** ~~**13+ partout** : Apple en rehaussant à 13+~~ **(remplacé : Apple 4+ tel que calculé)** ; **Google en cochant 13-15, 16-17 et 18+ comme public cible (toujours recommandé, non décidé)** (jamais 5 et moins, 6-8 ni 9-12). Ne pas cocher « Kids » ni la catégorie Enfants.
 
 **Risque.**
 - Une classification 13+ n'est pas un âge minimum légal, mais elle **se lit** comme « pas pour les moins de 13 ans » alors que les CGU disent « pas d'âge minimum ». Soit tu assumes cette nuance (le risque J2 l'est déjà), soit les CGU et la politique reçoivent plus tard une phrase du type « classée 13+ dans les stores » (modification des textes légaux : **je ne l'ai pas faite**, décision à toi).
 - Perte d'une partie du premier tri pour les familles d'enfants de 10 à 12 ans, cas d'usage probable. C'est le prix de ne pas se présenter comme un produit pour jeunes enfants qui partage leur position.
 - Apple 5.1.4(b) (texte relu) : une app qui peut partager « name, address, email, location, photos… » d'un mineur doit avoir une politique de confidentialité (elle existe) et respecter les lois sur la vie privée des enfants. Cette conformité reste ton risque assumé.
 
-**À faire par le PM.** Choisir 13+ (recommandé), 4+ / Google 13+ avec écart, ou autre ; décider si les CGU reçoivent la phrase. Répondre ensuite aux questionnaires **toi-même**, en lisant les questions du jour, et **refaire le questionnaire si l'app change**.
+**À faire par le PM.** ~~Choisir 13+ (recommandé), 4+ / Google 13+ avec écart, ou autre~~ **Classification de contenu : décidé (minimum : PEGI 3 / IARC tous publics, Apple 4+). Reste à faire : confirmer le public cible Google (recommandation 13+), explicitement, ou décider autre chose en connaissance de la politique Familles et de la localisation en arrière-plan** ; décider si les CGU reçoivent la phrase. Répondre ensuite aux questionnaires **toi-même**, en lisant les questions du jour, et **refaire le questionnaire si l'app change**.
 
 ---
 
@@ -181,17 +199,22 @@ Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommanda
 
 ## 11. Maquette d'avis « J'adore ! / Peux faire mieux... »
 
+> **DÉCIDÉ par le PM le 2026-11-07 : l'écran est construit TEL QUE MAQUETTÉ** (`design/exports/pop-ins/03-avis-store.png`), **le PM assume le risque**. La recommandation d'origine ci-dessous (« ne pas construire tel que maquetté ») **n'est pas suivie**. Détail dans `docs/tickets/pop-ins-avis.md`.
+> - **Risque assumé** : **Apple 5.6.1** (invites d'avis personnalisées non autorisées) et **5.6.3** (manipulation des avis) ; **Google** : pas de filtrage des avis, pas de question d'opinion avant l'API d'avis. Conséquences possibles : **rejet de l'app, avertissement, retrait d'une version, résiliation du compte développeur**, **qui est PARTAGÉ avec Ghostrun** (point 20) : le risque touche donc aussi Ghostrun.
+> - **Plan de repli** : **retirer l'écran par une mise à jour** de l'app ; **alternative conforme** : l'API officielle **`SKStoreReviewController`** (Apple) / **Play In-App Review** (Google), **sans question préalable d'opinion**, après un moment réussi.
+> - **POINT DE CONTRÔLE DE RELEASE (pas un refus)** : **cet écran n'est PAS placé dans une version soumise aux stores sans que le PM le reconfirme à la porte « prêt à soumettre »** (`docs/qa/release-checklist.md`, à créer : y inscrire cette ligne). Tant que la reconfirmation n'est pas donnée, l'écran peut être construit et testé en interne, mais **absent des builds de diffusion** (comme le bouton central avant l'Update).
+
 **Constat (relu le 2026-11-07).** `design/exports/pop-ins/03-avis-store.png` : le choix « J'adore ! » ou « Peux faire mieux... » qui n'ouvrirait la boîte d'avis du store que pour les satisfaits est un **filtrage des avis**.
 - **Apple 5.6.1** : « Use the provided API to prompt users to review your app… and we will disallow custom review prompts. » **5.6.3** : « Manipulating any element of the App Store customer experience such as charts, search, reviews, or referrals to your app erodes customer trust and is not permitted. »
 - **Google** (documentation de l'API d'avis dans l'app) : « Your app shouldn't ask the user any questions before or while presenting the rating button or card, including questions about their opinion (such as "Do you like the app?") » ; pas de bouton qui déclenche l'API.
 - **Non lu** : le texte de la politique Google « User Ratings, Reviews, and Installs » (la page ouverte était une autre politique).
 - L'écran **n'existe pas** dans le code (recherche faite dans `android/` et `ios/`).
 
-**Recommandation.** Ne pas construire l'écran tel que maquetté. Si tu veux des avis : l'API du système (une demande, sans question avant, après un moment réussi, par exemple après plusieurs jours d'usage d'une Miff complète). Si tu veux recueillir les mécontentements en privé, un lien « Nous écrire » dans les Réglages existe déjà (Android) : séparé de la demande d'avis, jamais en amont.
+**Recommandation (d'origine, non suivie : voir la décision du 2026-11-07 ci-dessus ; elle devient le plan de repli).** Ne pas construire l'écran tel que maquetté. Si tu veux des avis : l'API du système (une demande, sans question avant, après un moment réussi, par exemple après plusieurs jours d'usage d'une Miff complète). Si tu veux recueillir les mécontentements en privé, un lien « Nous écrire » dans les Réglages existe déjà (Android) : séparé de la demande d'avis, jamais en amont.
 
 **Risque.** Retrait d'une version ou rejet ; avis jugés manipulés.
 
-**À faire par le PM.** Confirmer que l'écran n'est pas construit tel quel ; demander à `design-system` de redessiner la demande d'avis sans la question.
+**À faire par le PM.** ~~Confirmer que l'écran n'est pas construit tel quel ; demander à `design-system` de redessiner la demande d'avis sans la question.~~ **Décidé : construit tel quel, risque assumé.** **Reste** : **reconfirmer à la porte « prêt à soumettre »** avant toute version soumise qui contient l'écran (point de contrôle de release).
 
 ---
 
@@ -250,19 +273,25 @@ Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommanda
 
 ---
 
-## 16. Essai gratuit, tarifs, « Économisez 30 % » avant l'activation de Miff+
+## 16. Essai gratuit, tarifs, « presque 30 % d'économie » avant l'activation de Miff+
+
+> **DÉCIDÉ par le PM le 2026-11-07 : à la place de « Économisez 30 % », le texte devient « presque 30 % d'économie »** (EN : « **almost 30% off** »). **Le vrai chiffre est 28,6 %** : 4,99 € × 12 = **59,88 €** contre 6,99 € × 12 = **83,88 €** (économie de 24,00 €, soit 28,6 % de 83,88 €). « Presque 30 % » est **exact** (28,6 % est presque 30 %).
+> - **Règle « false price » d'Apple 2.3.1(a)** : la chaîne exacte reste soumise à cette règle (« promoting a false price » est un motif de retrait de l'app et de résiliation du compte développeur, **partagé avec Ghostrun**). **À recalculer et à re-décider si les tarifs changent** (4,99 € par mois en annuel, 6,99 € par mois en mensuel) : le texte n'est valable que tant que l'économie réelle reste « presque 30 % ». Les prix, eux, viennent **des stores** (jamais en dur).
+> - **Où c'est cité aujourd'hui (mis à jour dans ce lot, sans toucher au code)** : `docs/specs/paywall-premium.md`, `docs/tickets/feed-profil-reglages.md` (reglages-1, A5, constat 5), `design/exports/reglages/README.md` (maquette reglages-1, PNG non modifié), `marketing/*` (listes de contrôle : aucune mention en v1).
+> - **Clés de texte et fichiers de code à changer quand le paywall sera développé** : **aucune clé ne contient « 30 % » aujourd'hui** (recherche dans `android/` et `ios/` le 2026-11-07 : aucune chaîne « Économisez » ni « 30 % » de réduction). **À créer** avec le futur écran d'abonnement (préfixe `paywall_` ou `settings_subscription_`, à ajouter à `docs/contracts/i18n-keys.md` et au contrôle de parité) : une clé du **badge d'économie** (nom proposé `paywall_annual_savings`, FR « presque 30 % d'économie », EN « almost 30% off »), **avec parité FR / EN et sans pourcentage calculé en dur ailleurs**. **Fichiers de code concernés à ce moment-là** : Android `android/app/src/main/res/values/strings.xml` et `values-fr/strings.xml` (près des clés `place_paywall_*`), `ui/place/PlacePaywallScreen.kt` et l'écran d'abonnement des Réglages (encart déplié « Annuel », reglages-1) ; iOS `ios/Miff/Resources/Localizable.xcstrings`, `Views/Place/PlacePaywallView.swift` et l'écran d'abonnement des Réglages. **Rien n'est modifié maintenant.**
+> - La recommandation d'origine ci-dessous (« remplacer par le pourcentage exact, 29 % arrondi, ou un montant en euros ») est **remplacée** par cette décision ; le montant en euros reste une option si le PM veut un chiffre exact plus tard.
 
 **Constat.** Décidé le 2026-10-31 : essai de 7 jours sur l'annuel seulement ; annuel 4,99 EUR par mois (59,88 EUR) reconduit au même tarif ; mensuel 6,99 EUR. **Aucun achat n'est branché** (le premium est accordé à la main). L'app Android **et** iOS affichent déjà, quand on atteint la limite de 2 lieux, un écran présentant Miff+ avec « **Miff+ arrive bientôt** / Cette option n'est pas encore ouverte » (`place_paywall_soon`).
-**« Économisez 30 % »** : tu l'as conservé (écart assumé, calcul réel 28,6 %). **Apple 2.3.1(a), texte relu le 2026-11-07** : « marketing your app in a misleading way, such as by promoting content or services that it does not actually offer … or promoting a false price, whether within or outside of the App Store, is grounds for removal of your app from the App Store or a block from installing via alternative distribution and termination of your developer account. » C'est plus lourd que le risque « mention publicitaire inexacte » écrit jusqu'ici, parce que le compte développeur est partagé avec Ghostrun (point 20).
+**« Économisez 30 % »** (formulation d'origine, **remplacée le 2026-11-07 par « presque 30 % d'économie »**) : tu l'avais conservé (écart assumé, calcul réel 28,6 %). **Apple 2.3.1(a), texte relu le 2026-11-07** : « marketing your app in a misleading way, such as by promoting content or services that it does not actually offer … or promoting a false price, whether within or outside of the App Store, is grounds for removal of your app from the App Store or a block from installing via alternative distribution and termination of your developer account. » C'est plus lourd que le risque « mention publicitaire inexacte » écrit jusqu'ici, parce que le compte développeur est partagé avec Ghostrun (point 20).
 
 **Recommandation.**
 - **Fiches : aucune mention** de Miff+, d'essai, de prix ni de pourcentage, tant que Miff+ n'est pas vendu (c'est ce que font les brouillons). **Aucun achat intégré à déclarer.**
 - **Écran « Miff+ arrive bientôt »** : à toi de décider si on le garde en v1. Il est honnête, mais c'est un écran d'attente que Apple (2.1(a) : « placeholder text, empty websites, and other temporary content should be scrubbed before submission ») ou Google peuvent juger incomplet. Une alternative plus sûre : à la limite des 2 lieux, un message simple « Tu as atteint 2 lieux, la limite de la formule gratuite », sans écran Miff+. **Ma recommandation** : garder l'écran seulement si tu veux mesurer l'intérêt (événement `paywall_shown` existant), en sachant le risque de revue.
-- **Quand Miff+ s'activera** : créer les produits dans les stores, lire les prix **depuis les stores** (jamais en dur), écrire les informations d'abonnement exigées (Apple 3.1.2(c) : décrire ce que l'utilisateur obtient pour le prix), adhérer à un médiateur de la consommation (J13, coût non vérifié), **remplacer « Économisez 30 % » par le pourcentage exact (29 % arrondi, ou un montant en euros)**, mettre à jour les déclarations d'achats intégrés, la classification, les fiches (retirer la ligne sur les limites gratuites) et les captures.
+- **Quand Miff+ s'activera** : créer les produits dans les stores, lire les prix **depuis les stores** (jamais en dur), écrire les informations d'abonnement exigées (Apple 3.1.2(c) : décrire ce que l'utilisateur obtient pour le prix), adhérer à un médiateur de la consommation (J13, coût non vérifié), **utiliser « presque 30 % d'économie » (décidé le 2026-11-07), à recalculer si les tarifs changent**, mettre à jour les déclarations d'achats intégrés, la classification, les fiches (retirer la ligne sur les limites gratuites) et les captures.
 
-**Risque.** « 30 % » : voir ci-dessus (écart assumé par toi mais d'une conséquence plus grave que prévu pour le compte). Écran « bientôt » : rejet pour contenu incomplet, probabilité faible à moyenne (non mesurée).
+**Risque.** « 30 % » : voir ci-dessus (écart assumé par toi mais d'une conséquence plus grave que prévu pour le compte) ; **réduit par « presque 30 % d'économie » (exact à 28,6 %)**, sous réserve de recalcul si les tarifs changent. Écran « bientôt » : rejet pour contenu incomplet, probabilité faible à moyenne (non mesurée).
 
-**À faire par le PM.** Décider pour l'écran « bientôt » ; décider si tu maintiens « 30 % » ou si tu le corriges dès maintenant. Il est dans la maquette du paywall mais **absent des chaînes Android et iOS livrées** (recherche faite le 2026-11-07) : tu as donc le temps de le corriger avant que le vrai paywall ne soit construit.
+**À faire par le PM.** Décider pour l'écran « bientôt » ; ~~décider si tu maintiens « 30 % » ou si tu le corriges dès maintenant~~ **décidé : « presque 30 % d'économie »**. Il est dans la maquette du paywall mais **absent des chaînes Android et iOS livrées** (recherche faite le 2026-11-07) : tu as donc le temps de le corriger avant que le vrai paywall ne soit construit.
 
 ---
 
