@@ -35,6 +35,7 @@ extension SessionManager {
         pendingDeviceBegin = false
         // Une nouvelle connexion : l'ancien message « autre téléphone », s'il n'avait pas encore été montré, n'a plus lieu d'être.
         flags.set(false, forKey: Self.keyReplacedNoticePending)
+        flags.set(false, forKey: Self.keyGoneNoticePending)
         return true
     }
 

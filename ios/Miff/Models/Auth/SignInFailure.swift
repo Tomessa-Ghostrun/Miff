@@ -25,7 +25,13 @@ enum AuthErrorNumber {
     static let userNotFound = 17011
     static let accountExistsWithDifferentCredential = 17012
     static let requiresRecentLogin = 17014
+    /// Le jeton de la session ne vaut plus (révoqué, mot de passe changé ailleurs) : le compte existe peut-être encore.
+    static let invalidUserToken = 17017
     static let networkError = 17020
+    /// Le jeton de la session a expiré : même sens que ci-dessus, JAMAIS la preuve que le compte a disparu.
+    static let userTokenExpired = 17021
+    /// Le justificatif donné (Google, Apple) est celui d'un AUTRE compte que celui de la session.
+    static let userMismatch = 17024
     static let credentialAlreadyInUse = 17025
 }
 

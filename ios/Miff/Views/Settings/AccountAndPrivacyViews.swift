@@ -36,12 +36,10 @@ struct AccountView: View {
             }
             .buttonStyle(.miffSecondaryFullWidth)
             .disabled(model.state.isSigningOut)
-            SettingsRow(
-                systemImage: "trash",
-                title: L10n.string("settings_delete_entry"),
-                subtitle: L10n.string("ios_account_delete_subtitle"),
-                action: onDelete
-            )
+            // Discret : un lien de texte SOUS « Se déconnecter », jamais un bouton plein (ticket AUTH-5, §3.2). Il n'ouvre que l'écran
+            // d'information : rien n'est écrit d'ici.
+            DeleteAccountLink(action: onDelete)
+                .disabled(model.state.isSigningOut)
         }
         .alert(
             Text("settings_account_sign_out_title"),
