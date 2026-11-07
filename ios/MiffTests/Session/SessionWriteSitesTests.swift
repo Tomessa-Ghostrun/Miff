@@ -79,9 +79,10 @@ final class SessionWriteSitesTests: XCTestCase {
             }
         }
         // Créer, rejoindre et reprendre le partage : trois statuts initiaux, tous estampillés par `initialStatus`. LOC-4b : la mise à
-        // jour automatique du statut, la mise à jour de l'accès et la dernière position (`TrackingWrites`), toutes estampillées par
+        // jour automatique du statut, la mise à jour de l'accès, le rafraîchissement de la batterie (ouverture / sortie de l'app) et la
+        // dernière position (`TrackingWrites`), toutes estampillées par
         // `SessionWriteGuard.stamped`. Toute autre écriture de statut ou de position doit s'ajouter ICI après relecture.
-        XCTAssertEqual(found, ["Models/Miff/MiffWrites.swift": 3, "Models/Tracking/TrackingWrites.swift": 3])
+        XCTAssertEqual(found, ["Models/Miff/MiffWrites.swift": 3, "Models/Tracking/TrackingWrites.swift": 4])
     }
 
     func testOnlyTheKnownFilesBuildStatusAndPositionFields() throws {
