@@ -1,5 +1,5 @@
-// Scénarios longs par nature (un cas par méthode) : la limite de longueur de type ne s'applique pas ici.
-// swiftlint:disable type_body_length line_length
+// Les assertions citent des cas entiers : leurs lignes dépassent la limite.
+// swiftlint:disable line_length
 import XCTest
 @testable import Miff
 
@@ -342,3 +342,4 @@ final class FeedViewModelTests: XCTestCase {
         XCTAssertEqual(model.locate, .idle, "l'écran ne garde aucune position une fois parti")
     }
 }
+// swiftlint:enable line_length

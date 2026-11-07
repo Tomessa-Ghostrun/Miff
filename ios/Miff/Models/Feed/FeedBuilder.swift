@@ -64,7 +64,7 @@ enum FeedBuilder {
     private static let limitedAccess: Set<MemberLocationAccess> = [.denied, .foreground]
 
     /// Ce que les fonctions du calcul se passent (une fonction à plus de 5 paramètres est refusée par SwiftLint).
-    private struct Context {
+    struct Context {
         let input: FeedInput
         let now: Int
         let zone: TimeZone
@@ -151,7 +151,7 @@ enum FeedBuilder {
 
     // MARK: - Les cartes
 
-    private static func card(_ member: MiffMember, _ context: Context) -> MemberCard {
+    private static func card(_ member: MiffMember, _ context: Context) -> FeedMemberCard {
         let isMe = member.uid == context.input.myUid
         let status = context.hidden && !isMe ? nil : context.statuses[member.uid]
         let facts = status.map {
@@ -163,7 +163,7 @@ enum FeedBuilder {
             )
         }
         let level = StatusColor.level(facts, nowMillis: context.now)
-        return MemberCard(
+        return FeedMemberCard(
             member: member,
             isMe: isMe,
             level: level,
@@ -209,7 +209,7 @@ enum FeedBuilder {
     }
 
     /// Un lieu des catégories Maison, Travail, École, Sport se dit par sa catégorie ; les autres par leur nom ; introuvable : générique.
-    private static func placeRef(_ placeId: String?, _ places: [String: Place], trusted: Bool) -> PlaceRef {
+    static func placeRef(_ placeId: String?, _ places: [String: Place], trusted: Bool) -> PlaceRef {
         guard let placeId, let place = places[placeId] else {
             return .unknown
         }
@@ -283,130 +283,5 @@ enum FeedBuilder {
             return Battery(pct: pct)
         }
         return now - written > batteryMaxAgeMillis ? nil : Battery(pct: pct)
-    }
-
-    // MARK: - La bulle
-
-    private static func bubble(
-        _ context: Context,
-        cards: [MemberCard],
-        latestUpdate: Int?,
-        miffLevel: StatusLevel
-    ) -> Bubble {
-        if context.input.waitingAgreement {
-            return .awaitingAgreement
-        }
-        if !context.mySharing {
-            return .sharingStopped
-        }
-        let pages = alertPages(context, cards: cards, latestUpdate: latestUpdate)
-        if !pages.isEmpty {
-            return .alerts(pages: pages, level: miffLevel)
-        }
-        let others = cards.filter { !$0.isMe }
-        if others.isEmpty {
-            return .alone
-        }
-        let knownOthers = others.filter { $0.level != .neutral }
-        if context.hidden || knownOthers.isEmpty {
-            return .noNews
-        }
-        // Pas d'alerte : tout membre connu est vert. La « dernière nouvelle » est la plus récente des AUTRES (ma propre update ne rassure jamais).
-        let latest = knownOthers
-            .compactMap { context.statuses[$0.member.uid]?.referenceMillis }
-            .max()
-            .map { context.age($0) }
-        let known = cards.filter { $0.level != .neutral }.count
-        let someSilent = known < cards.count
-        return .allGood(
-            latestNews: latest,
-            answered: someSilent ? known : nil,
-            total: someSilent ? cards.count : nil
-        )
-    }
-
-    private struct SortableAlert {
-        let page: AlertPage
-        let reference: Int
-        let index: Int
-    }
-
-    /// Les rouges d'abord, puis les oranges ; à niveau égal, le repère le plus ancien d'abord (la personne silencieuse depuis le plus
-    /// longtemps) ; à égalité, l'ordre des cartes.
-    private static func alertPages(_ context: Context, cards: [MemberCard], latestUpdate: Int?) -> [AlertPage] {
-        let offlineSince = context.input.effectivelyOffline ? latestUpdate.map { context.moment($0) } : nil
-        var alerts: [SortableAlert] = []
-        for (index, card) in cards.enumerated() where card.level == .red || card.level == .orange {
-            guard let status = context.statuses[card.member.uid], let reference = status.referenceMillis else {
-                continue
-            }
-            let page = AlertPage(
-                member: card.member,
-                isMe: card.isMe,
-                level: card.level,
-                kind: alertKind(card: card, status: status, reference: reference, context),
-                canMessage: !card.isMe && card.phone != nil,
-                offlineSince: offlineSince
-            )
-            let sortReference = status.presence == .inRisk ? (status.presenceAtMillis ?? reference) : reference
-            alerts.append(SortableAlert(page: page, reference: sortReference, index: index))
-        }
-        let sorted = alerts.sorted { left, right in
-            let leftRank = left.page.level == .red ? 0 : 1
-            let rightRank = right.page.level == .red ? 0 : 1
-            if leftRank != rightRank {
-                return leftRank < rightRank
-            }
-            if left.reference != right.reference {
-                return left.reference < right.reference
-            }
-            return left.index < right.index
-        }
-        return sorted.map { $0.page }
-    }
-
-    private static func alertKind(
-        card: MemberCard,
-        status: MemberStatus,
-        reference: Int,
-        _ context: Context
-    ) -> AlertKind {
-        let since = context.moment(status.presenceAtMillis ?? reference)
-        if status.presence == .inRisk {
-            return .danger(place: placeRef(status.placeId, context.places, trusted: false), since: since)
-        }
-        if card.level == .red {
-            return .noNewsSince(context.moment(reference))
-        }
-        return .left(place: placeRef(status.placeId, context.places, trusted: true), at: since)
-    }
-
-    /// Ce que le lecteur d'écran annonce quand la bulle change (jamais à chaque minute) ne change que si cette clé change.
-    private static func announceKey(_ bubble: Bubble) -> String {
-        switch bubble {
-        case .alerts(let pages, _):
-            return "alerts:" + pages.map { "\($0.member.uid)/\($0.level)/\(kindName($0.kind))" }.joined(separator: ",")
-        case .allGood:
-            return "allGood"
-        case .noNews:
-            return "noNews"
-        case .alone:
-            return "alone"
-        case .sharingStopped:
-            return "sharingStopped"
-        case .awaitingAgreement:
-            return "awaitingAgreement"
-        }
-    }
-
-    private static func kindName(_ kind: AlertKind) -> String {
-        switch kind {
-        case .left:
-            return "left"
-        case .noNewsSince:
-            return "noNewsSince"
-        case .danger:
-            return "danger"
-        }
     }
 }

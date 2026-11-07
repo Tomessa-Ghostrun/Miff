@@ -302,7 +302,7 @@ struct FeedTexts {
 
     /// « Thomas, à la maison, depuis 12 min, batterie 85 % » : la carte se lit comme un tout (critère T2). Ma carte ajoute sa ligne
     /// « Ce que tes proches voient de toi » (décision D42 : rien n'est affiché à côté du prénom, ma carte se reconnaît à cette ligne).
-    func cardSpoken(_ card: MemberCard) -> String {
+    func cardSpoken(_ card: FeedMemberCard) -> String {
         var parts = [card.member.callName, label(card.label)]
         if let line = timeLine(card.time) {
             parts.append(line)

@@ -60,10 +60,7 @@ final class FeedMappingTests: XCTestCase {
 
     func testTheBatteryBoundsAreZeroAndAHundred() {
         func battery(_ value: Double) -> Int? {
-            MemberStatus.fromServer(
-                presence: nil, placeId: nil, presenceAtMillis: nil, lastUpdateAtMillis: nil,
-                hasPhoto: nil, batteryPct: value, locationAccess: nil, updatedAtMillis: nil
-            ).batteryPct
+            MemberStatus.fromServer(RawStatus(batteryPct: value)).batteryPct
         }
 
         XCTAssertEqual(battery(0), 0)
@@ -128,3 +125,4 @@ final class FeedMappingTests: XCTestCase {
         }
     }
 }
+// swiftlint:enable line_length

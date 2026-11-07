@@ -14,7 +14,7 @@ struct MemberCardActions {
 }
 
 struct MemberCardView: View {
-    let card: MemberCard
+    let card: FeedMemberCard
     let texts: FeedTexts
     let locating: Bool
     let actions: MemberCardActions
@@ -149,7 +149,7 @@ private struct LimitedLocationBadge: View {
 /// d'écran. Aucun sur MA carte. « Écrire à » et « Appeler » n'existent qu'avec un numéro ; « Localiser » que si la carte dit qu'elle
 /// peut être localisée.
 private struct CardActionRow: View {
-    let card: MemberCard
+    let card: FeedMemberCard
     let locating: Bool
     let actions: MemberCardActions
 

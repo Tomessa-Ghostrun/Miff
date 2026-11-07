@@ -263,3 +263,4 @@ final class FeedCardsTests: XCTestCase {
         XCTAssertFalse(buildFeed(feedInput(members: Array(many.dropFirst()))).isFull)
     }
 }
+// swiftlint:enable line_length

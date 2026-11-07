@@ -16,6 +16,19 @@ enum MemberLocationAccess: String, Equatable {
     }
 }
 
+/// Les champs d'un statut tels que le serveur les décrit, AVANT toute vérification (une fonction à plus de 5 paramètres est refusée par
+/// SwiftLint : ils voyagent ensemble).
+struct RawStatus {
+    var presence: String?
+    var placeId: String?
+    var presenceAtMillis: Int?
+    var lastUpdateAtMillis: Int?
+    var hasPhoto: Bool?
+    var batteryPct: Double?
+    var locationAccess: String?
+    var updatedAtMillis: Int?
+}
+
 /// Le document `miffs/{id}/status/{uid}` d'un membre, tel que le Feed le lit (backend/data-model.md §2.7). Heures en
 /// millisecondes depuis 1970 ; nil quand elles manquent. La couleur n'est JAMAIS stockée : `StatusColor` la calcule.
 struct MemberStatus: Equatable, CustomStringConvertible {
@@ -40,27 +53,18 @@ struct MemberStatus: Equatable, CustomStringConvertible {
     /// Un statut tel que le serveur le décrit, nettoyé avant d'être utilisé (quelqu'un d'autre l'a écrit) : une présence inconnue
     /// est nil (neutre, jamais une supposition), un identifiant de lieu qui n'a pas la forme des nôtres est écarté, une batterie
     /// hors de 0 à 100 est écartée, un accès inconnu est nil.
-    static func fromServer(
-        presence: String?,
-        placeId: String?,
-        presenceAtMillis: Int?,
-        lastUpdateAtMillis: Int?,
-        hasPhoto: Bool?,
-        batteryPct: Double?,
-        locationAccess: String?,
-        updatedAtMillis: Int?
-    ) -> MemberStatus {
+    static func fromServer(_ raw: RawStatus) -> MemberStatus {
         MemberStatus(
-            presence: PresenceValue.fromWire(presence),
-            placeId: placeId.flatMap { Place.isPlaceId($0) ? $0 : nil },
-            presenceAtMillis: presenceAtMillis,
-            lastUpdateAtMillis: lastUpdateAtMillis,
-            hasPhoto: hasPhoto == true,
-            batteryPct: batteryPct.flatMap { value in
+            presence: PresenceValue.fromWire(raw.presence),
+            placeId: raw.placeId.flatMap { Place.isPlaceId($0) ? $0 : nil },
+            presenceAtMillis: raw.presenceAtMillis,
+            lastUpdateAtMillis: raw.lastUpdateAtMillis,
+            hasPhoto: raw.hasPhoto == true,
+            batteryPct: raw.batteryPct.flatMap { value in
                 value.isFinite && value >= 0 && value <= 100 ? Int(value) : nil
             },
-            locationAccess: MemberLocationAccess.fromWire(locationAccess),
-            updatedAtMillis: updatedAtMillis
+            locationAccess: MemberLocationAccess.fromWire(raw.locationAccess),
+            updatedAtMillis: raw.updatedAtMillis
         )
     }
 }

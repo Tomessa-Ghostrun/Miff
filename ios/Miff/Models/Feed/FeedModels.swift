@@ -66,7 +66,7 @@ struct Battery: Equatable {
 }
 
 /// Une carte : un membre, moi compris. MA carte est la DERNIÈRE de la liste (décision D43) et n'a ni Localiser, ni Message, ni Appeler.
-struct MemberCard: Equatable, CustomStringConvertible {
+struct FeedMemberCard: Equatable, CustomStringConvertible {
     let member: MiffMember
     let isMe: Bool
     let level: StatusLevel
@@ -81,7 +81,7 @@ struct MemberCard: Equatable, CustomStringConvertible {
     let canLocate: Bool
 
     var description: String {
-        "MemberCard(redacted)"
+        "FeedMemberCard(redacted)"
     }
 }
 
@@ -168,7 +168,7 @@ struct FeedContent: Equatable, CustomStringConvertible {
     let miffLevel: StatusLevel
     let bubble: Bubble
     let banners: [FeedBanner]
-    let cards: [MemberCard]
+    let cards: [FeedMemberCard]
     /// Ne change que quand un NIVEAU ou l'ensemble des alertes change : le lecteur d'écran annonce la bulle alors, jamais à chaque minute.
     let announceKey: String
 

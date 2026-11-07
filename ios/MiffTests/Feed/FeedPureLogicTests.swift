@@ -246,3 +246,4 @@ final class FeedPureLogicTests: XCTestCase {
         XCTAssertEqual(BubbleMotion.phase(at: 1, period: 0), 0)
     }
 }
+// swiftlint:enable line_length

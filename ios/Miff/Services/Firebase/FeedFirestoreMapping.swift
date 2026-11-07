@@ -24,15 +24,17 @@ enum FeedFirestoreMapping {
     /// Les champs d'un document `status/{uid}`. Les clés sont toujours présentes dans les règles ; ce qui manque est nil.
     static func status(fields: [String: Any]) -> MemberStatus {
         MemberStatus.fromServer(
-            presence: fields["presence"] as? String,
-            placeId: fields["placeId"] as? String,
-            presenceAtMillis: millis(fields["presenceAt"]),
-            lastUpdateAtMillis: millis(fields["lastUpdateAt"]),
-            hasPhoto: fields["hasPhoto"] as? Bool,
-            batteryPct: (fields["batteryPct"] as? NSNumber)?.doubleValue,
-            locationAccess: fields["locationAccess"] as? String,
-            // Une écriture encore en attente du serveur n'a pas son heure : on lit l'estimation (« maintenant »).
-            updatedAtMillis: millis(fields["updatedAt"])
+            RawStatus(
+                presence: fields["presence"] as? String,
+                placeId: fields["placeId"] as? String,
+                presenceAtMillis: millis(fields["presenceAt"]),
+                lastUpdateAtMillis: millis(fields["lastUpdateAt"]),
+                hasPhoto: fields["hasPhoto"] as? Bool,
+                batteryPct: (fields["batteryPct"] as? NSNumber)?.doubleValue,
+                locationAccess: fields["locationAccess"] as? String,
+                // Une écriture encore en attente du serveur n'a pas son heure : `data(with: .estimate)` donne « maintenant ».
+                updatedAtMillis: millis(fields["updatedAt"])
+            )
         )
     }
 

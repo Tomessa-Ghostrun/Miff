@@ -17,6 +17,8 @@ struct MiffServices {
     let deletions: MiffDeletionCoordinator
     /// Le renouvellement du consentement des membres qui partagent sous un texte plus ancien (LOC-4a, règle R-LIEU-3).
     let renewals: ConsentRenewals
+    /// FEED-5 : les Miffs qui attendent l'accord de la personne (« Pas maintenant » au renouvellement), dites par le Feed.
+    let awaiting = AwaitingAgreement()
 
     static func make(
         gateway: AuthGateway,
@@ -75,6 +77,15 @@ struct MiffServices {
             deletions: deletions,
             renewals: FirestoreConsentRenewals(store: store, onRenewed: onSharingChanged)
         )
+    }
+}
+
+extension MiffServices {
+    /// Fin de session : l'annuaire oublie les Miffs, la suppression en cours est arrêtée, plus personne n'attend d'accord.
+    func stop() async {
+        await directory.stop()
+        await deletions.stop()
+        await awaiting.stop()
     }
 }
 
@@ -184,7 +195,6 @@ final class AppEnvironment {
         // Un seul purgeur de cache pour toute l'app : la session, l'annuaire des Miffs et le dépôt purgent le MÊME cache.
         let cache = FirestoreCachePurger(flags: flagStore)
         let networkMonitor = NWNetworkMonitor()
-        let awaiting = AwaitingAgreement()
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
@@ -210,12 +220,10 @@ final class AppEnvironment {
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
                 teardown: [
                     { drafts.clear() },
-                    { await miff.directory.stop() },
-                    { await miff.deletions.stop() },
+                    // L'annuaire des Miffs, la suppression d'une Miff sans écran, et les Miffs qui attendent un accord.
+                    { await miff.stop() },
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() },
-                    // Plus personne n'attend un accord une fois la session finie.
-                    { await awaiting.stop() },
                     // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
                     trackingServices.teardown
                 ],
@@ -239,7 +247,7 @@ final class AppEnvironment {
         placeNotices = places.notices
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
-        awaitingAgreement = awaiting
+        awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
         profileDrafts = drafts

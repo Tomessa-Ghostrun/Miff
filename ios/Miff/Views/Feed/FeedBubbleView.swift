@@ -8,7 +8,7 @@ import UIKit
 
 /// Une tache douce et organique (une courbe fermée lisse par dix points), comme la tache des maquettes du PM. Symétrique en
 /// droite-à-gauche.
-struct BubbleShape: Shape {
+struct FeedBubbleShape: Shape {
     private static let points: [CGPoint] = [
         CGPoint(x: 0.50, y: 0.02), CGPoint(x: 0.80, y: 0.07), CGPoint(x: 0.98, y: 0.30), CGPoint(x: 0.97, y: 0.62),
         CGPoint(x: 0.80, y: 0.94), CGPoint(x: 0.50, y: 0.99), CGPoint(x: 0.20, y: 0.93), CGPoint(x: 0.03, y: 0.64),
@@ -156,7 +156,7 @@ private struct BubbleBlob<Content: View>: View {
             .padding(.top, 40)
             .padding(.bottom, 46)
             .background(
-                BubbleShape()
+                FeedBubbleShape()
                     .fill(level.tint)
                     .scaleEffect(
                         x: motion ? BubbleMotion.scaleX(blob) : 1,

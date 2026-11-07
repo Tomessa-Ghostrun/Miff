@@ -100,7 +100,7 @@ func buildFeed(
 }
 
 extension FeedContent {
-    func card(_ uid: String) -> MemberCard? {
+    func card(_ uid: String) -> FeedMemberCard? {
         cards.first { $0.member.uid == uid }
     }
 }

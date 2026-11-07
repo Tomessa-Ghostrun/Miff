@@ -206,8 +206,8 @@ final class FeedTextsTests: XCTestCase {
         )
     }
 
-    private func card(first: String, isMe: Bool, battery: Int) -> MemberCard {
-        MemberCard(
+    private func card(first: String, isMe: Bool, battery: Int) -> FeedMemberCard {
+        FeedMemberCard(
             member: feedMember(isMe ? "me" : "t", first: first),
             isMe: isMe,
             level: .green,
@@ -220,3 +220,4 @@ final class FeedTextsTests: XCTestCase {
         )
     }
 }
+// swiftlint:enable line_length

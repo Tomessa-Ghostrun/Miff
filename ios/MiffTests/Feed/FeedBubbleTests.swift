@@ -202,3 +202,4 @@ final class FeedBubbleTests: XCTestCase {
         XCTAssertEqual(none.myLabel, .noNews)
     }
 }
+// swiftlint:enable line_length
