@@ -125,7 +125,7 @@ class SettingsScreensTest {
     }
 
     @Test
-    fun tabBar_internalBuild_hasThreeTabsWithSpokenNames_theCentralOneIsDisabled() {
+    fun tabBar_hasThreeTabsWithSpokenNames_theCentralOneIsOpen_inEveryBuild() {
         val picked = mutableListOf<MainTab>()
         show { StatefulBar(internal) { picked += it } }
         shoot("tabbar-internal")
@@ -135,31 +135,29 @@ class SettingsScreensTest {
                 text(R.string.tabbar_profile_a11y),
             ).assertIsNotSelected()
             .assertIsEnabled()
-        composeRule
-            .onNodeWithContentDescription(text(R.string.tabbar_update_soon_a11y))
-            .assertIsNotEnabled()
-            .performClick()
-        assertTrue("the disabled central button selects nothing", picked.isEmpty())
+        // Since the Update exists the central button leads somewhere: enabled, and it selects the Update.
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertIsEnabled().performClick()
+        assertEquals(listOf(MainTab.UPDATE), picked)
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertIsSelected()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).performClick()
-        assertEquals(listOf(MainTab.PROFILE), picked)
+        assertEquals(listOf(MainTab.UPDATE, MainTab.PROFILE), picked)
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertIsSelected()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertIsNotSelected()
     }
 
     @Test
-    fun tabBar_buildForOutsideTesters_hasNoCentralButtonAtAll() {
+    fun tabBar_buildForOutsideTesters_hasTheCentralButtonToo_theUpdateIsOpenEverywhere() {
         show { StatefulBar(external) }
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertExists()
-        composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_update_soon_a11y)).assertCountEquals(0)
-        composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_update_a11y)).assertCountEquals(0)
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertExists().assertIsEnabled()
         shoot("tabbar-external")
     }
 
     @Test
     fun tabBar_everyTabIsAtLeast48dpTall_andWide() {
         show { StatefulBar(internal) }
-        listOf(R.string.tabbar_feed_a11y, R.string.tabbar_update_soon_a11y, R.string.tabbar_profile_a11y).forEach {
+        listOf(R.string.tabbar_feed_a11y, R.string.tabbar_update_a11y, R.string.tabbar_profile_a11y).forEach {
             composeRule
                 .onNodeWithContentDescription(text(it))
                 .assertHeightIsAtLeast(48.dp)
@@ -196,7 +194,7 @@ class SettingsScreensTest {
         val middle =
             composeRule
                 .onNodeWithContentDescription(
-                    text(R.string.tabbar_update_soon_a11y),
+                    text(R.string.tabbar_update_a11y),
                 ).getUnclippedBoundsInRoot()
         val profile =
             composeRule
