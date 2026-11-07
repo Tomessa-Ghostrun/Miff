@@ -2,6 +2,8 @@
 
 Le PM n'a pas les maquettes manquantes listées au §16 de `docs/tickets/feed.md` et a autorisé à les créer **sans Figma**. Le fichier Figma original « Miff - App » n'a jamais été écrit ; « Miff - Claude » non plus. Ce sont des **maquettes HTML + PNG @2x** (390 pt de large), comme les 24 maquettes des Lieux (`design/screens/lieux/mockups/`), dont elles reprennent les composants et les tokens. Les 9 maquettes du PM (`design/exports/feed/Welcoming screen*.png`) restent la référence de style : bulle en forme de tache, carte à liseré, pastille de Miff, barre d'onglets flottante.
 
+**Alignement du 2026-11-07 sur les décisions du PM validées en recette** (D39 à D44 de `docs/tickets/feed.md`) : aperçu de photo carré centré (D39) ; bulle de la Miff à mouvement lent (D40, `bulles.md`) ; en-tête qui se masque au défilement vers le bas et réapparaît en remontant, plus « fixe » (D41, `entete-et-selecteur.md`) ; plus de pastille « Toi » (D42), ma carte en dernière position (D43), batterie sans heure et masquée au-delà de 6 h (D44) (`cartes-membres.md`) ; tirer pour actualiser, au plus une relecture serveur toutes les 15 s (`etats-du-feed.md`). **Les PNG de `design/exports/feed/claude/` ne sont pas régénérés** : ils montrent encore l'ancien état (en-tête fixe, pastille « Toi », ma carte en premier, batterie datée, fenêtre de photo de 108 pt) ; **le texte des fiches prime sur les PNG**. Les écarts avec le code livré sont listés en fin de fiche (« Écarts connus »).
+
 **Ce ne sont pas des exports Figma.** Les avatars, les photos d'update et les pictogrammes (position, message, appel, batterie, état) sont des **emplacements ou des approximations** à remplacer par les exports Figma du PM (voir « Assets manquants »).
 
 ## Index
@@ -10,7 +12,7 @@ Le PM n'a pas les maquettes manquantes listées au §16 de `docs/tickets/feed.md
 |---|---|
 | `entete-et-selecteur.md` | 01 en-tête sans cloche, anneau de l'avatar (vert, orange, rouge, neutre) · pastille d'une seule Miff · sélecteur Miff+ fermé et ouvert |
 | `bulles.md` | 02 vert et neutre · 03 orange, rouge d'ancienneté, zone de danger, carrousel · 04 les mêmes à la 2e personne (moi) · 05 Feed complet avec alertes |
-| `cartes-membres.md` | 06 onze états de carte (moi, vert, sans photo, orange, rouge x2, neutres x2, « Localisation limitée », batterie datée, Localiser en cours) · 07 Feed « tout va bien » (corrige les maquettes 0 et 4) |
+| `cartes-membres.md` | 06 onze états de carte (moi, vert, sans photo, orange, rouge x2, neutres x2, « Localisation limitée », batterie datée **(supprimée par D44)**, Localiser en cours) · 07 Feed « tout va bien » (corrige les maquettes 0 et 4) |
 | `localiser-et-photo.md` | 08 feuille « Localiser » (récente, ancienne, introuvable, refus, hors connexion, sans application de cartes) · 09 photo en plein écran (avec et sans localisation) et photo localisée masquée |
 | `etats-du-feed.md` | 10 hors connexion (vert et orange), « Tu as arrêté de partager », « Partage de ton statut en cours… », « En attente de ton accord » · 11 squelette, seul(e), aucune Miff, « Cette Miff est bien remplie ! » |
 
@@ -43,7 +45,7 @@ Rien de ce qui suit n'est dans un ticket ou une réponse du PM : ce sont des cho
 7. **« Tu es seul(e) dans cette Miff pour l'instant »** est le texte décidé (D7) mais contient un accord de genre. Alternative sans accord : « Personne d'autre dans cette Miff pour l'instant » / "No one else in this Miff yet". À trancher.
 
 **Confiance et localisation (qui voit quoi)**
-8. **Ligne sous ma carte : « Ce que tes proches voient de toi »** (œil + texte 12 pt), pour rendre visible que ma carte est celle que mes proches voient. Ajoute 16 pt de hauteur à ma carte ; supprimable sans autre effet.
+8. **Ligne sous ma carte : « Ce que tes proches voient de toi »** (œil + texte 12 pt), pour rendre visible que ma carte est celle que mes proches voient. Ajoute 16 pt de hauteur à ma carte. **Depuis D42 (2026-11-07, plus de pastille « Toi »), cette ligne est le seul marqueur visible de ma carte et la source de l'indication « c'est la mienne » pour le lecteur d'écran : elle n'est plus supprimable sans remplacement.**
 9. **Ligne de réciprocité dans la feuille « Localiser »** : « Vous partagez tous les deux : {Prénom} peut aussi voir ta dernière position. » Redit la règle de réciprocité déjà décidée (lecture réciproque, D1).
 10. **« Position figée au moment de la photo. »** sous le titre du plein écran, pour que « Voir où c'était » ne soit pas pris pour du direct.
 11. **Pas de carte intégrée** dans la feuille « Localiser » (décision du ticket) : texte + bouton « Ouvrir dans les cartes ». Les coordonnées seules partent vers l'application de cartes.
