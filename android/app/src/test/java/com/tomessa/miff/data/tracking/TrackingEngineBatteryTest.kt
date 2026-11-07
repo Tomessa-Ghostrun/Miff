@@ -546,6 +546,95 @@ class TrackingEngineBatteryTest {
             assertTrue(store.commits.isEmpty())
         }
 
+    // --- The whole pass is bounded ---------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun aSecondWriteThatExpires_keepsTheFirstOneRecorded_andThePassStaysUnderEightSeconds() =
+        runTest {
+            share(miffA, miffB)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            store.commits.clear()
+            val start = testScheduler.currentTime
+            // The write to B never answers: it is given up after its own limit, with the clock of the phone moving as the time passes.
+            store.onCommit = { path ->
+                if ("miffB" in path) {
+                    env.now += TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS
+                    kotlinx.coroutines.delay(60_000)
+                }
+            }
+            engine.refreshBattery()
+            val elapsed = testScheduler.currentTime - start
+            assertTrue("the pass lasted $elapsed ms", elapsed <= TrackingLimits.BATTERY_PASS_MAX_MILLIS)
+            assertEquals(listOf("miffs/miffA/status/uid1"), batteryWrites().map { it.path })
+            val saved = local.state!!
+            assertEquals(
+                env.now - TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS,
+                saved.miffs.getValue(miffA).batteryAtMillis,
+            )
+            assertEquals(80, saved.miffs.getValue(miffA).batteryPct)
+            assertNull("B was not written: nothing recorded", saved.miffs.getValue(miffB).batteryAtMillis)
+            assertEquals("one write counted, not two", 1, saved.breaker!!.batteryWrites)
+            assertEquals(env.now - TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS, saved.batteryTriedAtMillis)
+        }
+
+    @Test
+    fun aPassWithManyMiffsThatAllHang_stopsAtEightSeconds_andLeavesTheEngineFree() =
+        runTest {
+            val miffs = (1..6).map { "miff$it" }.toTypedArray()
+            share(*miffs)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            store.commits.clear()
+            var tried = 0
+            store.onCommit = {
+                tried++
+                env.now += TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS
+                kotlinx.coroutines.delay(60_000)
+            }
+            val start = testScheduler.currentTime
+            engine.refreshBattery()
+            assertTrue(testScheduler.currentTime - start <= TrackingLimits.BATTERY_PASS_MAX_MILLIS)
+            assertEquals("two writes of 4 s fill the 8 s, the others are left for the next opening", 2, tried)
+            assertTrue(store.commits.isEmpty())
+            // The engine is free again at once: the usual recalculation can start.
+            store.onCommit = {}
+            engine.refresh(TrackingEngine.Reason.BACKGROUNDED)
+        }
+
+    @Test
+    fun aVerificationOfTheSessionThatNeverAnswers_isCutAtTheEndOfTheBudget() =
+        runTest {
+            share(miffA)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            store.commits.clear()
+            val hanging =
+                object : com.tomessa.miff.data.session.ActiveDevice {
+                    override suspend fun clearance(recheck: Boolean): Clearance {
+                        kotlinx.coroutines.awaitCancellation()
+                    }
+
+                    override suspend fun afterRefusal() = false
+                }
+            val other =
+                TrackingEngine(
+                    env,
+                    store,
+                    local,
+                    position,
+                    geofences,
+                    movement,
+                    wake,
+                    hanging,
+                    journal,
+                    timeoutMillis = 5_000,
+                )
+            val start = testScheduler.currentTime
+            other.refreshBattery()
+            assertEquals(TrackingLimits.BATTERY_PASS_MAX_MILLIS, testScheduler.currentTime - start)
+            assertTrue(store.commits.isEmpty())
+            // The engine does not stay held: another pass starts at once.
+            other.refresh(TrackingEngine.Reason.BACKGROUNDED)
+        }
+
     // --- Best effort ---------------------------------------------------------------------------------------------------------------------------
 
     @Test

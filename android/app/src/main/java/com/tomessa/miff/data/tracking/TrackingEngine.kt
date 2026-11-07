@@ -898,8 +898,8 @@ class TrackingEngine(
      * What it never does: create a status (the write is an UPDATE of three keys, see [TrackingWrites.batteryUpdate]; a missing status is a refusal of the
      * rules), write for a Miff that is not in the local list (sharing under the consent of version 3, as read from the server by the last look), write without
      * the identifier of the session (replaced phone, session not verified), write while the account is being deleted or after a sign-out, write while a status
-     * of the Miff waits (that one carries a fresh level itself), read a position, or read the server (not a single read: the local list is the one the last
-     * look produced; a Miff whose sharing stopped meanwhile answers with a refusal and is looked at again soon, as for any other automatic write).
+     * of the Miff waits (that one carries a fresh level itself), read a position, or read the data of the server (no read of a document: the local list is the one the last
+     * look produced; at most ONE read of the session, when its last verification is older than 10 minutes; a Miff whose sharing stopped meanwhile answers with a refusal and is looked at again soon, as for any other automatic write).
      * Limits: one attempt every 15 minutes, a level that moved by 5 points or more (or a last write older than 3 hours), the dedicated daily breaker; the pass also stops when the breaker of the statuses is used up (same rule as iOS).
      */
     suspend fun refreshBattery() {
@@ -935,9 +935,13 @@ class TrackingEngine(
         var state = start.copyWith(batteryTriedAtMillis = startedAt)
         local.save(state)
         val gate = WriteGate(recheck = false)
+
+        // The WHOLE pass (the verification of the session included) never goes past BATTERY_PASS_MAX_MILLIS: every wait below is bounded by what is left of it,
+        // so that leaving the app is never held back by the battery for more than that before the usual recalculation (zones, position) starts.
+        fun remainingMillis(): Long = TrackingLimits.BATTERY_PASS_MAX_MILLIS - maxOf(0L, env.nowMillis() - startedAt)
         for (miffId in due) {
             val now = env.nowMillis()
-            if (gate.ended() || now - startedAt > TrackingLimits.BATTERY_PASS_MAX_MILLIS) break
+            if (gate.ended() || remainingMillis() <= 0L) break
             val day = WriteBreaker.dayKey(now)
             // Aligned with iOS: the refresh also stops when the breaker of the statuses is used up (a phone at that limit is already writing too much).
             if (!WriteBreaker.canWriteStatus(state.breaker?.toState(), day)) {
@@ -949,10 +953,11 @@ class TrackingEngine(
                 break
             }
             // SESS-2: no identifier of session = nothing is written (replaced, not verified, signed out).
-            val deviceId = gate.deviceId() ?: break
-            if (gate.ended()) break
+            val deviceId = withTimeoutOrNull(remainingMillis()) { gate.deviceId() } ?: break
+            val writeBudget = minOf(timeoutMillis, TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS, remainingMillis())
+            if (gate.ended() || writeBudget <= 0L) break
             val outcome =
-                guardedCall(minOf(timeoutMillis, TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS)) {
+                guardedCall(writeBudget) {
                     store.commit(listOf(TrackingWrites.batteryUpdate(miffId, uid, battery, deviceId)))
                 }
             if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
