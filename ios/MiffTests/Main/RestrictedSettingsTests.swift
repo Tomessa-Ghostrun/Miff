@@ -74,7 +74,11 @@ final class RestrictedSettingsTests: XCTestCase {
             }
         }
 
-        XCTAssertEqual(users.sorted(), ["Views/Miff/MiffChoiceView.swift", "Views/Miff/MiffHomeView.swift"])
+        // Le Feed (FEED-5) remplace l'accueil provisoire dans la coquille : son état « Pas encore de Miff » porte la même roue crantée.
+        XCTAssertEqual(
+            users.sorted(),
+            ["Views/Feed/FeedScreen.swift", "Views/Miff/MiffChoiceView.swift", "Views/Miff/MiffHomeView.swift"]
+        )
     }
 
     /// Les Réglages restreints se montrent dans la pile EXISTANTE de l'hôte (jamais une pile imbriquée), sans profil lu : aucune lecture de
