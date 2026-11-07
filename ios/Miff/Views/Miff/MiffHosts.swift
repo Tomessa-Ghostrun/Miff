@@ -167,7 +167,7 @@ struct MiffHomeHost: View {
                     profile: profile,
                     onOpenMiff: { open(.miff($0)) },
                     onOpenSettings: { open(.settings($0)) },
-                    feed: { MiffHomeContent(state: directory.state, actions: homeActions, embedded: true) }
+                    feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
                     .navigationDestination(for: MiffRoute.self) { route in
@@ -227,15 +227,18 @@ struct MiffHomeHost: View {
         }
     }
 
-    private var homeActions: MiffHomeActions {
-        MiffHomeActions(
-            onRetry: { retry() },
-            onSelect: { directory.select(miffId: $0) },
-            onCreate: { open(.create) },
-            onJoin: { open(.join) },
-            onOpenMiff: { open(.miff($0)) },
-            onSignOut: { signOut() },
-            onOpenSettings: { open(.settings(.settings)) }
+    /// L'onglet Feed (FEED-5 à FEED-7) : il remplace l'accueil provisoire dans la coquille.
+    private func feedTab(_ context: FeedShellContext) -> some View {
+        FeedTab(
+            environment: environment,
+            context: context,
+            actions: FeedTabActions(
+                onCreate: { open(.create) },
+                onJoin: { open(.join) },
+                onOpenMiff: { open(.miff($0)) },
+                onSignOut: { signOut() },
+                onOpenSettings: { open(.settings(.settings)) }
+            )
         )
     }
 
@@ -381,12 +384,6 @@ struct MiffHomeHost: View {
         directory.dismissNotice()
         // L'écran de cette Miff, et les détails de ses lieux ouverts par-dessus, partent ; une autre Miff derrière reste.
         path.removeAll { $0.belongs(to: notice.miffId) }
-    }
-
-    private func retry() {
-        Task {
-            await directory.refresh()
-        }
     }
 
     private func open(_ route: MiffRoute) {
