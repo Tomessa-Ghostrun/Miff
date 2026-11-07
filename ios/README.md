@@ -374,6 +374,15 @@ Rien n'est compilé en local (poste Windows) : la CI fait foi. **À constater su
 2. **Coût d'une relance par le système** : estimé à **4 à 6 lectures** (Miffs, lieux) plus **2 à 3 lectures de règles par écriture**. À **mesurer** à la recette partie C (relever les lectures Firestore du jour avant et après) puis à noter dans `docs/dev/surveillance-quotas.md`.
 3. **Étiquettes d'App Store Connect** : la batterie et l'identifiant de session de l'appareil (`deviceId`, utilisé par les écritures) relèvent probablement de « Other Data Types » ; classement à **valider par le release-manager** (`docs/release/ios-loc-4b-comportement-reel.md`).
 
+## Batterie rafraîchie à l'ouverture et à la sortie (décision du PM, 2026-11-07)
+
+À l'ouverture et à la sortie de l'app, le moteur de suivi réécrit le niveau de batterie dans chaque Miff où la personne partage (le Feed masque la batterie au-delà de 6 h). Code : `Services/Tracking/TrackingEngine+Battery.swift` (écriture), `Models/Tracking/BatteryRefresh.swift` (règle pure), constantes dans `TrackingLimits`.
+
+- **Mêmes conditions que le moteur** : connecté, appareil actif (SESS-3), « Toujours » + position exacte, consentement v3, partage actif. Rien sinon.
+- **Une seule écriture par Miff** : `update` de `batteryPct` + `updatedAt` (+ `deviceId`). Tout le reste du statut est conservé tel que la base l'a ; un statut absent n'est jamais créé ; **règles Firestore inchangées** ; aucune position lue ni écrite.
+- **Limites** : 15 min entre deux rafraîchissements d'une Miff ; pas d'écriture sous 5 points d'écart avec la dernière valeur écrite, sauf si elle a plus de 3 h ; 40 par jour et par téléphone (compteur dédié, en plus des 60 statuts). Les arrivées et départs écrivent toujours la batterie fraîche et comptent comme dernière écriture.
+- **Journal** (builds de test) : `batteryRefreshed` / `batteryRefreshSkipped`. **Coût** : `docs/dev/surveillance-quotas.md`, section « 5 bis ». **Recette** : `docs/qa/checklists/batterie-ios-recette-pm.md`.
+
 ## Confidentialité : Analytics et Crashlytics
 
 - `Info.plist` : `FIREBASE_ANALYTICS_COLLECTION_ENABLED = NO` (la clé irréversible `..._DEACTIVATED` n'est **pas** utilisée), `FirebaseCrashlyticsCollectionEnabled = NO`, `FirebaseDataCollectionDefaultEnabled = NO` (collecte par défaut éteinte pour tous les SDK Firebase ; chaque SDK est réactivé explicitement après accord), `GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED = NO`, signaux publicitaires et attribution désactivés, `FirebaseAutomaticScreenReportingEnabled = NO` (aucun nom d'écran dans Analytics).

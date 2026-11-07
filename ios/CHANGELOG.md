@@ -2,6 +2,29 @@
 
 ## Non publié
 
+### Batterie rafraîchie à l'ouverture et à la sortie de l'app (décision du PM, 2026-11-07 ; miroir d'Android)
+
+La batterie était déjà écrite avec chaque statut d'arrivée ou de départ. Le Feed la masque au-delà de 6 h après `updatedAt` : sans autre écriture, quelqu'un qui reste chez lui n'a plus de batterie visible. Décision du PM : « actualise le niveau de batterie des utilisateurs lorsqu'ils ouvrent l'app ou la quittent ».
+
+Ajouté :
+- **Rafraîchissement** (`Services/Tracking/TrackingEngine+Battery.swift`, règle pure `Models/Tracking/BatteryRefresh.swift`) : aux passages `opened` (premier plan) et `backgrounded` (arrière-plan, avec `beginBackgroundTask` et le plafond de 25 s déjà utilisés par `TrackingRuntime`), le moteur réécrit la batterie dans chaque Miff où la personne partage, **un lot par Miff**, **après** tout le reste du passage (arrivée, départ, position, accès). Mêmes conditions que le moteur : connecté, appareil actif (SESS-3), « Toujours » + position exacte, consentement v3, partage actif. Meilleur effort : un échec ne bloque rien et ne fait jamais planter.
+- **L'écriture** (`TrackingWrites.batteryUpdate`) est un **update de `batteryPct` et `updatedAt` seuls** (plus `deviceId`) : le statut garde, tels que la base les a, présence, lieu, `presenceAt`, `lastUpdateAt`, `updateText`, `hasPhoto`, `locationAccess`, `escalationDueAt`. **Aucune modification des règles Firestore** : `validStatus` accepte ce document (heures « conservées » R-LIEU-1, `updatedAt` = heure du serveur, clé de session ; 2 lectures de règles). Un update sur un statut absent échoue : **jamais de création**.
+- **Limites** (constantes nommées dans `TrackingLimits`) : 15 min minimum entre deux rafraîchissements (ou tentatives) d'une même Miff ; rien si le niveau n'a pas bougé d'au moins 5 points depuis la dernière valeur écrite, **sauf** si cette écriture a plus de 3 h ; niveau inconnu ou hors 0-100 : rien (une batterie connue n'est jamais effacée par `null`). Une arrivée ou un départ (qui écrivent la batterie fraîche) comptent comme dernière écriture ; un statut en attente passe d'abord.
+- **Disjoncteur dédié : 40 rafraîchissements par jour et par téléphone** (`BreakerState.batteryWrites`, facultatif : une copie locale d'avant ce chantier se charge). Choisi plutôt que de puiser dans les 60 statuts pour qu'un rafraîchissement ne prive **jamais** une arrivée ou un départ de son budget ; le rafraîchissement s'arrête aussi quand le disjoncteur de statuts est épuisé. Pire cas : 60 + 40 écritures de statut par téléphone et par jour.
+- **Journal de détection** (builds Debug et Internal) : `batteryRefreshed` (avec le niveau) et `batteryRefreshSkipped`, sans autre donnée.
+- **Copie locale sauvée après chaque écriture réussie** (historique, compteur, curseur) : une sortie d'app interrompue après la Miff A garde déjà ce qui concerne A. Tests supplémentaires : refus (permission-denied) avec relecture programmée et sans nouvelle tentative, interruption après la Miff A, et trois scénarios existants (file hors ligne, arrivée refusée, fin de session) rejoués avec une batterie de 80.
+- Batterie : le suivi du niveau est allumé dès le démarrage (`TrackingServices.make`), pour que la première lecture ne soit pas vide.
+- **Tests** : `BatteryPolicyTests` (règle pure, constantes, disjoncteur, copie ancienne, forme de l'écriture), `BatteryRefreshTests` (ouverture, sortie, autres occasions sans effet, un lot par Miff, 15 min, 5 points, 3 h pile / plus de 3 h, arrivée comptée, hors ligne, refus non rejoué), `BatteryRefreshSafetyTests` (jamais de création, consentement v1/v2/absent, partage arrêté, sans « Toujours », non connecté / compte supprimé / moteur arrêté, session remplacée / non vérifiée / révoquée / refus qui révèle un remplacement, statut en attente d'abord, disjoncteurs).
+
+Changé :
+- `FakeTrackingEnvironment` : batterie inconnue par défaut (les scénarios existants qui ne parlent pas de batterie ne voient aucun rafraîchissement) ; `FakeTrackingStore.commitAttempts`. `TrackingEngineTests` fixe la batterie à 80 pour le test d'arrivée.
+- `TrackingEngine+Writes` : `commit` n'est plus privé ; les écritures de statut et d'accès notent la batterie écrite (pour la règle des 15 min et des 5 points).
+- `LocalMiff` : niveau et heure de la dernière batterie écrite, heure de la dernière tentative ; `LocalState.batteryCursor` (rotation entre Miffs). Effacés avec la détection.
+
+**Choix économiques** : aucune dépendance, aucun service, aucune permission ; 0 €. Coût en écritures Spark : au plus 40 par téléphone et par jour, usage normal estimé 6 à 12 par Miff (voir `docs/dev/surveillance-quotas.md`, section « iOS »). **Signal de bascule** vers Blaze : plus de 12 000 écritures par jour dans la console, ou lectures du jour > 40 000 de façon répétée.
+
+**Limites connues** : rien n'est compilé en local (la CI fait foi) ; une sortie d'app sans réseau n'écrit rien (la prochaine ouverture le fera) ; la copie locale des Miffs est relue au plus toutes les heures (une écriture sans partage actif est de toute façon refusée par les règles) ; un statut jamais créé (partage jamais activé) n'est pas créé par ce chantier. `backend/data-model.md` dit encore « pas d'écriture périodique dédiée » pour `batteryPct` : à actualiser par `backend-data` (aucune règle ne change).
+
 ### CI - `ios-testflight` : `archive_mode` vaut `signed` par défaut
 
 Les 4 échecs du 2026-11-06 (« exportArchive Invalid Signature ... Miff.app/Frameworks/*.framework is not properly signed ») avaient tous été lancés avec `archive_mode = unsigned`, l'ancien défaut dont le support était « non confirmé » ; tous les succès (miff-4, loc-3, loc-4a) étaient en `signed`. Le défaut devient `signed`. Aucun code applicatif, aucune dépendance, aucun secret modifié. Coût : inchangé (le mode `signed` peut créer un certificat de développement « Created via API », voir `docs/dev/ios-spike.md` section 10).
