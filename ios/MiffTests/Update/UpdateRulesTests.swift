@@ -328,11 +328,11 @@ final class UpdateRulesTests: XCTestCase {
             .tooMany, .tooSoon, .stale, .refused, .failed
         ]
         for result in results {
-            let notice = UpdateViewModel.notice(for: result)
+            let notice = PreviewNotice(result: result)
             XCTAssertNotEqual(L10n.string(notice.textKey), notice.textKey, "\(result)")
         }
-        XCTAssertEqual(UpdateViewModel.notice(for: .refused), .refused)
+        XCTAssertEqual(PreviewNotice(result: .refused), .refused)
         let partial = PublishResult.partial(sharedIn: 1, total: 3, remaining: ["a", "b"])
-        XCTAssertEqual(UpdateViewModel.notice(for: partial), .partial(sharedIn: 1, total: 3))
+        XCTAssertEqual(PreviewNotice(result: partial), .partial(sharedIn: 1, total: 3))
     }
 }

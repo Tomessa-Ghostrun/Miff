@@ -84,6 +84,38 @@ enum PreviewNotice: Equatable {
     }
 }
 
+extension PreviewNotice {
+    /// La phrase calme d'une réponse qui n'a pas publié (une publication réussie, sans phrase, est traitée par l'appelant).
+    init(result: PublishResult) {
+        switch result {
+        case .offline:
+            self = .offline
+        case .positionNotFound:
+            self = .positionNotFound
+        case .tooMany:
+            self = .tooMany
+        case .tooSoon:
+            self = .tooSoon
+        case .stale:
+            self = .stale
+        case .refused:
+            self = .refused
+        case .locationOff:
+            self = .locationOff
+        case .unconfirmed:
+            self = .unconfirmed
+        case .needsAgreement:
+            self = .needsAgreement
+        case .sharingStopped:
+            self = .sharingStopped
+        case .partial(let shared, let total, _):
+            self = .partial(sharedIn: shared, total: total)
+        case .published, .failed:
+            self = .failed
+        }
+    }
+}
+
 /// L'aperçu d'une photo prise : « Recommencer » et « Publier ».
 struct PreviewState: Equatable, CustomStringConvertible {
     let photo: UpdatePhoto

@@ -220,38 +220,8 @@ final class UpdateViewModel: ObservableObject {
             current.remaining = remaining
             stage = .preview(current)
         default:
-            current.notice = Self.notice(for: result)
+            current.notice = PreviewNotice(result: result)
             stage = .preview(current)
-        }
-    }
-
-    /// La phrase calme d'une réponse qui n'a pas publié.
-    static func notice(for result: PublishResult) -> PreviewNotice {
-        switch result {
-        case .offline:
-            return .offline
-        case .positionNotFound:
-            return .positionNotFound
-        case .tooMany:
-            return .tooMany
-        case .tooSoon:
-            return .tooSoon
-        case .stale:
-            return .stale
-        case .refused:
-            return .refused
-        case .locationOff:
-            return .locationOff
-        case .unconfirmed:
-            return .unconfirmed
-        case .needsAgreement:
-            return .needsAgreement
-        case .sharingStopped:
-            return .sharingStopped
-        case .partial(let shared, let total, _):
-            return .partial(sharedIn: shared, total: total)
-        case .published, .failed:
-            return .failed
         }
     }
 
