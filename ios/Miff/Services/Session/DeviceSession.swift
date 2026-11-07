@@ -36,6 +36,8 @@ final class DeviceSession {
     private let lock = NSLock()
     private var confirmed: String?
     private var revoked = false
+    /// La révocation vient d'un document de session DISPARU (compte supprimé ailleurs), pas d'un autre téléphone.
+    private var gone = false
     private var replacedHandler: (() -> Void)?
 
     init(
@@ -73,6 +75,12 @@ final class DeviceSession {
         locked { revoked } || store.isRevoked()
     }
 
+    /// Pourquoi l'appareil est révoqué : le document de session a DISPARU (le compte est supprimé depuis un autre appareil, ou depuis la
+    /// console) plutôt qu'un autre téléphone qui prend la place. Ne décide que de la note de l'écran de connexion. Persistant.
+    var replacedBecauseGone: Bool {
+        locked { gone } || store.isGone()
+    }
+
     /// Appelé quand une vérification faite hors du gestionnaire de session (après un refus d'écriture) découvre un remplacement :
     /// le gestionnaire s'en sert pour lancer la déconnexion forcée.
     func setReplacedHandler(_ handler: @escaping () -> Void) {
@@ -103,8 +111,21 @@ final class DeviceSession {
         guard store.setRevoked(false) else {
             return false
         }
-        locked { revoked = false }
+        // Une nouvelle connexion repart de zéro : plus de raison à garder.
+        _ = store.setGone(false)
+        locked {
+            revoked = false
+            gone = false
+        }
         return true
+    }
+
+    /// Révocation parce que le document de session a disparu : la raison est sur le disque AVANT le marqueur (un processus tué entre
+    /// les deux ne garde jamais un marqueur sans sa raison).
+    private func revokeBecauseGone() {
+        locked { gone = true }
+        _ = store.setGone(true)
+        setRevoked(true)
     }
 
     // MARK: - Connexion
@@ -210,22 +231,32 @@ final class DeviceSession {
         if isRevoked {
             return .replaced
         }
-        switch (store.read(), read) {
-        case (.unreadable, _), (.candidate, _):
+        let local: String?
+        switch store.read() {
+        case .unreadable, .candidate:
             return .unverified
-        case (.confirmed(let local), .active(let identifier)):
-            if local == identifier {
+        case .confirmed(let identifier):
+            local = identifier
+        case .absent:
+            local = nil
+        }
+        switch SessionJudge.judge(local: local, remote: read) {
+        case .mine:
+            if let local {
                 setConfirmed(local)
-                return .confirmed
             }
-            setRevoked(true)
-            return .replaced
-        case (.confirmed, .absent), (.absent, .active):
-            setRevoked(true)
-            return .replaced
-        case (.absent, .absent):
+            return .confirmed
+        case .writeNew:
             let written = await beginUnlocked(uid: uid)
             return written ? .confirmed : .unverified
+        case .replaced:
+            setRevoked(true)
+            return .replaced
+        case .sessionGone:
+            // Même déconnexion locale qu'un remplacement, mais la raison est gardée : la note de l'écran de connexion ne dit pas
+            // « autre téléphone » quand personne n'a pris la place.
+            revokeBecauseGone()
+            return .replaced
         }
     }
 
@@ -295,6 +326,32 @@ final class DeviceSession {
             }
             return await remote.deleteIfMine(uid: uid, deviceId: identifier)
         }
+    }
+
+    /// SUPPRESSION DU COMPTE (AUTH-5c), tout début : l'appareil est FERMÉ, marqueur sur le disque AVANT toute écriture de la procédure.
+    /// Aucune vérification ne réécrit plus de session, aucun statut ni position ne part (`currentDeviceId` vide), même si le processus
+    /// meurt et qu'un réveil par une zone le relance au milieu de la suppression (sans cela, « aucun identifiant et plus de session »
+    /// ressemblerait à une ancienne installation et écrirait une NOUVELLE session). Rouvert par une nouvelle connexion ou par
+    /// `restoreDeviceSession` (suppression annulée) : `begin` lève le marqueur. Le marqueur est celui de la déconnexion forcée (la
+    /// raison « disparue » n'est pas posée : personne n'a pris la place).
+    func closeForAccountDeletion() {
+        setRevoked(true)
+    }
+
+    /// Suppression du compte, étape « session » : la session est supprimée QUI QUE SOIT celui qui la tient, et l'identifiant local est
+    /// oublié SEULEMENT après l'accusé du serveur. Faux (rien n'est supposé supprimé) si le serveur n'a pas confirmé : la suppression
+    /// du compte s'arrête et reste reprenable. L'appareil reste fermé dans tous les cas.
+    func deleteForAccountDeletion(uid: String) async -> Bool {
+        await gate.run { await self.deleteForAccountDeletionUnlocked(uid: uid) }
+    }
+
+    private func deleteForAccountDeletionUnlocked(uid: String) async -> Bool {
+        setRevoked(true)
+        guard await remote.delete(uid: uid) else {
+            return false
+        }
+        store.clear()
+        return true
     }
 
     /// Oublie l'identifiant local SANS marqueur « révoqué » : seulement pour une connexion qui n'a jamais été la nôtre (un candidat

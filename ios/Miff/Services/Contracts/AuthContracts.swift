@@ -23,6 +23,23 @@ protocol AuthGateway {
     /// Supprime le compte courant. nil = fait (aussi quand il n'y a plus de compte).
     func deleteCurrentAccount() async -> AuthFailure?
 
+    // MARK: - Suppression du compte (AUTH-5c)
+
+    /// Les méthodes de connexion liées au compte courant (vide si personne n'est connecté).
+    func linkedProviders() -> Set<SignInProvider>
+
+    /// Prouve à nouveau qui est la personne avec le mot de passe du compte. nil = fait. Le mot de passe va à Firebase et nulle part
+    /// ailleurs : ni gardé, ni journalisé, ni dans un message.
+    func reauthenticateWithPassword(_ password: String) async -> AuthFailure?
+
+    /// Même preuve avec Google ou Apple, pour la suppression du compte : les erreurs sont lues comme des erreurs de la session déjà
+    /// ouverte (mauvais compte Google ou Apple, session expirée...). `reauthenticate(with:)` reste celui du refus du panneau.
+    func reauthenticateForDeletion(with credential: SocialCredential) async -> AuthFailure?
+
+    /// Demande à Firebase si la session du compte existe encore (un `reload`). Quand une étape est refusée, « le compte n'existe plus »
+    /// veut dire que la suppression est déjà faite (critère SC28).
+    func checkSession() async -> AccountSessionCheck
+
     /// Comment le compte courant se connecte ; nil si personne n'est connecté.
     func signInMethod() -> AnalyticsEvent.Method?
 

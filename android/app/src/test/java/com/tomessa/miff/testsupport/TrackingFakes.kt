@@ -209,7 +209,11 @@ class FakeTrackingStore : TrackingStore {
         return places[miffId].orEmpty()
     }
 
+    /** Runs at the start of every write, with its path (to hold a write, or to let the clock pass in the middle of a pass). */
+    var onCommit: suspend (String) -> Unit = {}
+
     override suspend fun commit(writes: List<DocWrite>) {
+        onCommit(writes.first().path)
         val path = writes.first().path
         alwaysFailing[path]?.let { throw it }
         val next = failuresByPath[path]?.removeFirstOrNull()
