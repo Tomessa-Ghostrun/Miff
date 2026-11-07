@@ -455,7 +455,10 @@ private fun ReauthLast(
                             gateway = container.authGateway,
                             network = container.networkMonitor,
                             last = true,
-                            onVerified = controls::reauthenticated,
+                            onVerified = {
+                                controls.reauthenticated()
+                                true
+                            },
                         )
                     }
                 },

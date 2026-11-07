@@ -279,12 +279,16 @@ class DeleteAccountViewModelsTest {
 
     private class Spy {
         var verified = 0
+        var startsOk = true
     }
 
     private fun reauth(
         spy: Spy,
         last: Boolean = false,
-    ) = DeleteReauthViewModel(gateway, network, last) { spy.verified++ }
+    ) = DeleteReauthViewModel(gateway, network, last) {
+        spy.verified++
+        spy.startsOk
+    }
 
     @Test
     fun theMethodsOffered_areTheOnesReallyLinked_neverAnAppleButtonOnAndroid() {
@@ -320,6 +324,23 @@ class DeleteAccountViewModelsTest {
             advanceUntilIdle()
             assertEquals(1, spy.verified)
             assertEquals(1, gateway.passwordReauthCalls)
+        }
+
+    @Test
+    fun ifTheDeletionCouldNotStart_theMarkerNotWritten_theScreenStaysFree_withACalmSentence_andCanBeTriedAgain() =
+        runTest(dispatcher) {
+            val spy = Spy().apply { startsOk = false }
+            val vm = reauth(spy)
+            vm.submitPassword("Mimosa2026!")
+            advanceUntilIdle()
+            assertEquals(1, spy.verified)
+            assertFalse("not stuck on busy: nothing started", vm.uiState.value.busy)
+            assertEquals(AuthMessage.UNKNOWN, vm.uiState.value.message)
+            spy.startsOk = true
+            vm.submitPassword("Mimosa2026!")
+            advanceUntilIdle()
+            assertEquals(2, spy.verified)
+            assertTrue("busy while the deletion starts", vm.uiState.value.busy)
         }
 
     @Test

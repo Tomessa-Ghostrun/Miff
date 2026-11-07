@@ -20,9 +20,8 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
-import com.tomessa.miff.ui.main.DeleteAccountRoute
-import com.tomessa.miff.ui.main.deleteAccountRoutes
-import com.tomessa.miff.ui.navigation.passwordResetRoute
+import com.tomessa.miff.ui.main.openSettings
+import com.tomessa.miff.ui.main.restrictedSettingsRoutes
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.place.ConsumeNoticeOnLeave
 import com.tomessa.miff.ui.place.PlaceDetailRoute
@@ -148,12 +147,12 @@ fun MiffOnboardingHost(container: AppContainer) {
                 onCreate = { navController.openMiffRoute(CreateMiffRoute) },
                 onJoin = { navController.openMiffRoute(JoinMiffRoute) },
                 onSignOut = { scope.launch { session.signOut() } },
-                onDeleteAccount = { navController.openMiffRoute(DeleteAccountRoute) },
+                onOpenSettings = { navController.openSettings() },
             )
         }
-        // AUTH-5a: "Supprimer mon compte" from here too (information, then verification); nothing starts before the verification succeeds.
-        deleteAccountRoutes(container, navController, "${session.currentUid}-${session.generation}")
-        passwordResetRoute(container, navController)
+        // Decision of the PM, 2026-11-07 (revises Q13): a person with no Miff reaches Mon compte and Confidentialité (deletion of the account
+        // included, and only from there) through the gear of the choice screen. Still no tab bar.
+        restrictedSettingsRoutes(container, navController, "${session.currentUid}-${session.generation}")
         miffEntryRoutes(
             container = container,
             navController = navController,

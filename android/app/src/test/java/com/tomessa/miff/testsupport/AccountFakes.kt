@@ -25,9 +25,14 @@ class MemoryDeletionMarker(
 
     override fun read(): AccountDeletionMark? = stored
 
-    override fun write(mark: AccountDeletionMark) {
+    /** False = the disk refuses: nothing is written and the result says so. */
+    var writeSucceeds = true
+
+    override fun write(mark: AccountDeletionMark): Boolean {
         timeline?.plusAssign("marker.write")
+        if (!writeSucceeds) return false
         stored = mark
+        return true
     }
 
     override fun clear() {

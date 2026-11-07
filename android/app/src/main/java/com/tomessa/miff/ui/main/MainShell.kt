@@ -368,69 +368,7 @@ private fun MainNavigation(
                 onSave = viewModel::onSave,
             )
         }
-        composable<AccountRoute> {
-            val viewModel: AccountViewModel =
-                viewModel(
-                    key = "account-$scopeKey",
-                    factory =
-                        viewModelFactory {
-                            initializer {
-                                AccountViewModel(
-                                    email = container.authGateway.currentEmail(),
-                                    signIn = container.authGateway.accountSignIn(),
-                                    signOut = session::signOut,
-                                    passwordReset = container.passwordResetGateway,
-                                    network = container.networkMonitor,
-                                    cooldown = container.passwordResetCooldown,
-                                    nowMillis = SystemClock::elapsedRealtime,
-                                )
-                            }
-                        },
-                )
-            val state by viewModel.uiState.collectAsStateWithLifecycle()
-            AccountScreen(
-                state = state,
-                onBack = { navController.popBackStackIfSafe() },
-                onChangePassword = viewModel::onChangePasswordRequested,
-                onSignOutRequested = viewModel::onSignOutRequested,
-                onSignOutConfirmed = viewModel::onSignOutConfirmed,
-                onSignOutCancelled = viewModel::onSignOutCancelled,
-                onDeleteRequested = { navController.open(DeleteAccountRoute) },
-            )
-        }
-        deleteAccountRoutes(container, navController, scopeKey)
-        passwordResetRoute(container, navController)
-        composable<PrivacyRoute> {
-            val viewModel: PrivacyViewModel =
-                viewModel(
-                    key = "privacy-$scopeKey",
-                    factory =
-                        viewModelFactory {
-                            initializer {
-                                PrivacyViewModel(
-                                    privacy = container.privacySettings,
-                                    withdrawals = container.consentWithdrawals,
-                                    session = session,
-                                    network = container.networkMonitor,
-                                )
-                            }
-                        },
-                )
-            val state by viewModel.uiState.collectAsStateWithLifecycle()
-            val location = rememberLocationPrivacy(container)
-            PrivacyScreen(
-                state = state,
-                onBack = { navController.popBackStackIfSafe() },
-                onAnalyticsToggled = viewModel::onAnalyticsToggled,
-                onRetryWithdrawal = viewModel::onRetryWithdrawal,
-                location = location,
-                onReviewAgreement = container.awaitingAgreement::requestReview,
-                onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
-            )
-        }
-        composable<DetectionHelpRoute> {
-            DetectionHelpScreen(onBack = { navController.popBackStackIfSafe() })
-        }
+        sharedSettingsRoutes(container, navController, scopeKey)
         composable<LanguageRoute> {
             val viewModel: LanguageViewModel =
                 viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
@@ -769,3 +707,104 @@ private const val CONFIRMATION_MILLIS = 3_000L
 
 /** The bubble takes 40 % of the screen at the most (design 4.3). */
 private const val BUBBLE_MAX_SCREEN_SHARE = 0.4f
+
+/**
+ * The settings screens that do not depend on the tabs, shared by the full Settings (MainShell) and the RESTRICTED Settings of a person with no
+ * Miff yet ([restrictedSettingsRoutes]): Mon compte (and from it the deletion of the account, AUTH-5, and the reset e-mail), Confidentialité
+ * (and its help for the phones that stop the apps). One implementation, two hosts: nothing is duplicated.
+ */
+internal fun NavGraphBuilder.sharedSettingsRoutes(
+    container: AppContainer,
+    navController: NavHostController,
+    scopeKey: String,
+) {
+    val session = container.sessionManager
+    composable<AccountRoute> {
+        val viewModel: AccountViewModel =
+            viewModel(
+                key = "account-$scopeKey",
+                factory =
+                    viewModelFactory {
+                        initializer {
+                            AccountViewModel(
+                                email = container.authGateway.currentEmail(),
+                                signIn = container.authGateway.accountSignIn(),
+                                signOut = session::signOut,
+                                passwordReset = container.passwordResetGateway,
+                                network = container.networkMonitor,
+                                cooldown = container.passwordResetCooldown,
+                                nowMillis = SystemClock::elapsedRealtime,
+                            )
+                        }
+                    },
+            )
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        AccountScreen(
+            state = state,
+            onBack = { navController.popBackStackIfSafe() },
+            onChangePassword = viewModel::onChangePasswordRequested,
+            onSignOutRequested = viewModel::onSignOutRequested,
+            onSignOutConfirmed = viewModel::onSignOutConfirmed,
+            onSignOutCancelled = viewModel::onSignOutCancelled,
+            onDeleteRequested = { navController.open(DeleteAccountRoute) },
+        )
+    }
+    deleteAccountRoutes(container, navController, scopeKey)
+    passwordResetRoute(container, navController)
+    composable<PrivacyRoute> {
+        val viewModel: PrivacyViewModel =
+            viewModel(
+                key = "privacy-$scopeKey",
+                factory =
+                    viewModelFactory {
+                        initializer {
+                            PrivacyViewModel(
+                                privacy = container.privacySettings,
+                                withdrawals = container.consentWithdrawals,
+                                session = session,
+                                network = container.networkMonitor,
+                            )
+                        }
+                    },
+            )
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val location = rememberLocationPrivacy(container)
+        PrivacyScreen(
+            state = state,
+            onBack = { navController.popBackStackIfSafe() },
+            onAnalyticsToggled = viewModel::onAnalyticsToggled,
+            onRetryWithdrawal = viewModel::onRetryWithdrawal,
+            location = location,
+            onReviewAgreement = container.awaitingAgreement::requestReview,
+            onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
+        )
+    }
+    composable<DetectionHelpRoute> {
+        DetectionHelpScreen(onBack = { navController.popBackStackIfSafe() })
+    }
+}
+
+/**
+ * The RESTRICTED Settings of a person with no Miff yet (decision of the PM, 2026-11-07, which revises Q13: still no tab bar without a Miff,
+ * but the account must be reachable). The list holds "Mon compte" and "Confidentialité" only (no "Mes informations", no "Langue"); every
+ * screen behind it is the existing one ([sharedSettingsRoutes]). The way back is the simple one: the screen it was opened from.
+ */
+internal fun NavGraphBuilder.restrictedSettingsRoutes(
+    container: AppContainer,
+    navController: NavHostController,
+    scopeKey: String,
+) {
+    composable<SettingsRoute> {
+        SettingsScreen(
+            onBack = { navController.popBackStackIfSafe() },
+            onOpenMyInfo = null,
+            onOpenAccount = { navController.open(AccountRoute) },
+            onOpenLanguage = null,
+            onOpenPrivacy = { navController.open(PrivacyRoute) },
+        )
+    }
+    sharedSettingsRoutes(container, navController, scopeKey)
+}
+
+/** The same launch-once navigation as the other hosts, for the entry of the restricted Settings. */
+internal fun NavController.openSettings() = open(SettingsRoute)

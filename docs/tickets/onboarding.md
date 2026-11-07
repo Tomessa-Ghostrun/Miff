@@ -238,6 +238,7 @@ Toute la mécanique du splash (durée, réduction des animations, transition, co
 - **Accessibilité** : pagination annoncée (« Page 1 sur 3 ») ; image décorative ou texte alternatif court ; navigation possible sans balayage (bouton ou geste d'accessibilité) ; lisible en police agrandie ; en droite-à-gauche, l'ordre des slides et des points s'inverse.
 
 ### 6.2 Routage selon l'état du compte
+> **Révisé le 2026-11-07 (PM)** : ce qui suit reste vrai (écran de choix plein écran, sans barre d'onglets, quand il n'y a pas de Miff), avec UNE exception : la roue crantée en haut à droite de l'écran de choix ouvre des **Réglages restreints** (« Mon compte » et « Confidentialité » seulement), pour que la suppression de compte reste accessible sans Miff. Voir `onboarding-decisions-pm.md` (Q13 révisée) et `suppression-compte.md`.
 
 Reprise de §5 de l'Authentification, **complétée**. À chaque ouverture de l'app, après le splash, et après chaque étape :
 

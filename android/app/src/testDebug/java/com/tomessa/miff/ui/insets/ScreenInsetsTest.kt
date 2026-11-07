@@ -759,7 +759,7 @@ class ScreenInsetsTest {
 
     @Test
     fun accountLookupFailed_isInsideTheSafeArea() =
-        assertScreenIsSafe("lookup-failed") { AccountLookupFailedScreen({}, {}, {}) }
+        assertScreenIsSafe("lookup-failed") { AccountLookupFailedScreen({}, {}) }
 
     @Test
     fun deleteAccount_inLandscapeWithACutout_staysInsideIt() =
@@ -1222,7 +1222,7 @@ class ScreenInsetsTest {
     private object NoControls : AccountDeletionControls {
         override val state = kotlinx.coroutines.flow.MutableStateFlow<AccountDeletionState>(AccountDeletionState.Idle)
 
-        override fun start() = Unit
+        override fun start() = true
 
         override fun resume() = Unit
 
