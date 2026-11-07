@@ -17,6 +17,7 @@ La checklist QA de sortie `docs/qa/release-checklist.md` **n'existe pas encore**
 | `app-store-confidentialite-et-revue.md` | Étiquettes de confidentialité Apple (App Privacy, Precise Location...), manifeste de confidentialité, textes d'usage iOS (FR/EN), note de revue Apple pour la guideline 5.1.2(i), plan B |
 | `changements-testeurs-externes.md` | Ce qui change pour les testeurs externes (court) |
 | `update-photo-declarations.md` | **Update (photo « Donner des nouvelles »)** : permission caméra (Android, iOS FR/EN), photo et lieu de la photo (toujours attaché), écarts Data safety et App Privacy, contenu généré par les utilisateurs (Apple 1.2, Google UGC), mineurs, passages légaux adaptés, pages web à mettre à jour, captures, risques de rejet et **plan de repli** (2026-11-06, décisions P1 à P8) |
+| `decisions-stores-avant-soumission.md` | **20 décisions et actions du PM avant toute soumission** (2026-11-07) : classification d'âge, catégorie, contenu généré par les utilisateurs, identité publique de l'éditeur, règle des 12 testeurs de Google, déploiement du site, nom « Miff », partage du code, avis, analytics, vidéos, Miff+, ordre iOS / Android. Recoupe les brouillons de `marketing/` avec ce dossier ; règles des stores relues le même jour |
 | `../legal/consentement-localisation-v3.md` | Texte de consentement version 3 et règle `AAAA-MM-vNN` |
 | `../legal/*.md`, `../../web/` | Politique de confidentialité, CGU, page web (FR et EN), mis à jour dans la même PR |
 

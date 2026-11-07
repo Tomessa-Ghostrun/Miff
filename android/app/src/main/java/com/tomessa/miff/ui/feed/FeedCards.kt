@@ -32,13 +32,11 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.feed.Battery
 import com.tomessa.miff.domain.feed.MemberCard
-import com.tomessa.miff.domain.feed.PhotoSlot
 import com.tomessa.miff.domain.feed.PlaceKind
 import com.tomessa.miff.domain.feed.PlaceRef
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.profile.Initials
 import com.tomessa.miff.ui.theme.ShadowSubtle
-import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeSm
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
@@ -57,7 +55,7 @@ import com.tomessa.miff.ui.theme.textDisplayLabel
 
 /*
  * The card of a member (maquettes 06 and the PM's "Welcoming screen"): a strip of the colour of the level on the left, the avatar with its
- * ring, the first name, the battery, the label of the state, the line of time, and the three gestures. MY card is the first one and has no
+ * ring, the first name, the battery, the label of the state, the line of time, and the three gestures. MY card is the last one and has no
  * gesture. The colour is the only signal of the level (strip, ring, label: no glyph, decision of the PM, 2026-11-06); the words of the state stay and are read. One reading for the screen reader: the
  * information is one block, the gestures are buttons of their own after it.
  */
@@ -71,6 +69,10 @@ fun MemberCardView(
     onMessage: (phone: String) -> Unit,
     onCall: (phone: String) -> Unit,
     modifier: Modifier = Modifier,
+    /** FEED-4: the Miff the card is in, the moment (for "hier" and the time of the photo) and what a touch on the photo does. */
+    miffId: String = "",
+    nowMillis: Long = 0L,
+    onOpenPhoto: (OpenedPhoto) -> Unit = {},
 ) {
     Row(
         modifier =
@@ -105,19 +107,14 @@ fun MemberCardView(
                             initials = Initials.of(card.member.firstName, card.member.lastName),
                             level = card.level,
                         )
-                        Row(
+                        // No "Toi" next to my name (decision of the PM, 2026-11-07): my card is the last one and carries the line "Ce que tes
+                        // proches voient de toi", which the screen reader reads in the same block.
+                        Text(
+                            text = card.member.callName,
+                            style = textDisplayLabel,
+                            color = colorTextPrimary,
                             modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = card.member.callName,
-                                style = textDisplayLabel,
-                                color = colorTextPrimary,
-                                modifier = Modifier.weight(1f, fill = false),
-                            )
-                            if (card.isMe) YouPill()
-                        }
+                        )
                         card.battery?.let { BatteryChip(it, texts) }
                     }
                     StateChip(card, texts)
@@ -126,8 +123,8 @@ fun MemberCardView(
                         .timeLine(
                             card.time,
                         )?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
-                    // FEED-4 will draw the photo of the last update here; "no photo" draws nothing (no hole, no message).
-                    PhotoSlotView(card.photo)
+                    // FEED-4: the photo of the last update (a centred square, the whole photo in full screen); "no photo" draws nothing (no hole, no message).
+                    MemberPhotoSlot(card, miffId, texts, nowMillis, onOpenPhoto)
                     if (card.isMe) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
@@ -157,27 +154,6 @@ fun MemberCardView(
             CardActions(card, locating, onLocate, onMessage, onCall)
         }
     }
-}
-
-@Composable
-private fun PhotoSlotView(slot: PhotoSlot) {
-    when (slot) {
-        PhotoSlot.None -> {}
-    }
-}
-
-@Composable
-private fun YouPill() {
-    Text(
-        text = stringResource(R.string.feed_card_you),
-        style = textCaptionBold12,
-        color = colorTextPrimary,
-        modifier =
-            Modifier
-                .clip(ShapeFull)
-                .background(colorBorderDefault)
-                .padding(horizontal = Spacing.s, vertical = Spacing.xs / 2),
-    )
 }
 
 @Composable

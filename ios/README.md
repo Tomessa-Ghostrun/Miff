@@ -296,6 +296,43 @@ Ticket `docs/tickets/lieux-de-confiance.md` (§6.5, §7, §8, §10, §11, §15 ;
 
 Rien n'est compilé en local (poste Windows) : la CI fait foi. **À constater sur l'iPhone 11 Pro** : l'enchaînement exact des fenêtres du système de `requestAlwaysAuthorization()` (« pendant l'utilisation » puis, plus tard, l'invite de passage à « Toujours » que le système peut montrer de lui-même ; l'écran 09 couvre le cas où elle ne vient pas), le comportement de « Autoriser une fois », le rendu des écrans et des feuilles aux boutons épinglés, VoiceOver, la plus grande taille de texte, et que l'écran bloquant revient bien après un retrait dans les Réglages.
 
+## Coquille de l'app : barre d'onglets, Profil, Réglages (ONB-7)
+
+Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShellView` (`Views/Main/`) à la racine de sa navigation : trois onglets (Feed, bouton central, Profil) et la barre en verre. Cela **remplace** ce que disaient les passages plus haut sur « l'accueil provisoire » et « pas d'onglet Profil sur iOS » (écarts 10 de la section « Écarts avec les maquettes et avec Android » et 9 de MIFF-3 : la carte « Mes Miffs » est maintenant dans l'onglet Profil, « Se déconnecter » dans Réglages > Mon compte).
+
+| Chemin | Rôle |
+|---|---|
+| `Models/Main/MainTab.swift` | Onglets, configuration selon le build (bouton central absent en Release), couleurs du bouton central, noms parlés, mesures, politique de verre (`GlassPolicy`) |
+| `Models/Main/ProfileSummary.swift`, `SettingsModels.swift` | Profil lu et validé, pays déduit de l'indicatif, routes des Réglages, nom de la langue, liens |
+| `DesignSystem/TabBarTokens.swift` | Jetons `tabbar/*` (deux variantes), ombre, dégradé du Profil |
+| `Views/Main/` | `MainTabBar` (verre, entrées, bouton central), `MainShellView` (coquille), `ProfileTabView`, `UpdateSoonView` |
+| `Views/Settings/` | Liste des Réglages, Mes informations, Mon compte, Confidentialité, aide à la détection, entrée de suppression |
+| `ViewModels/ProfileTabViewModel.swift`, `AccountViewModel.swift` | En-tête du Profil (une lecture par session) ; déconnexion et mot de passe |
+| `Services/Firebase/FirestoreProfileReader.swift`, `FirebaseAccountInfo.swift` | Lecture de `users/{uid}` et de l'e-mail du compte (jamais gardés ailleurs qu'en mémoire) |
+
+### Points d'accroche pour la suite
+- **Feed iOS (FEED-5 à 8)** : remplace le contenu passé en paramètre `feed` de `MainShellView` (aujourd'hui `MiffHomeContent`). La **bulle d'incitation** (tous les onglets sauf Update) se posera dans la même `safeAreaInset` que la barre.
+- **Update iOS (UPDATE-3)** : remplace `UpdateSoonView` et alimente `central` (`CentralButtonState`) ; ajouter alors les noms parlés par niveau (« …, tu es en orange »). La variante `.onPhoto` de la barre est prête pour le viseur.
+- **Suppression de compte (AUTH-5c/d)** : remplace `DeleteAccountSoonView` (route `.deleteAccount`, atteinte par Mon compte).
+- **Mes informations modifiable** : remplace `MyInfoView` (lecture seule) ; l'écriture est un lot `users/{uid}` + fiche de chaque Miff (voir `MyProfileRepository.kt` d'Android).
+
+### Écarts avec Android et avec les maquettes (ONB-7)
+1. **Barre** : verre natif d'iOS 26 (`glassEffect`) au lieu du flou Haze d'Android ; repli matériau + voile avant iOS 26 ; « Réduire la transparence » et « Augmenter le contraste » donnent le fond opaque (Android n'a pas d'API pour le premier). Posée à 22 pt du bas de l'**écran** (elle déborde sur la zone de l'indicateur d'accueil), pas 22 pt au-dessus de la zone sûre.
+2. **Icônes** : maison + petit coeur dessinés avec deux symboles du système au trait (SF Symbols `house` et `heart`) et `person`, faute de l'export vectoriel du PM ; à remplacer.
+3. **Bouton central** : sélectionnable (il ouvre un emplacement « bientôt » dans les builds Debug et Internal) alors qu'Android le grise ; absent de Release comme sur Android.
+4. **Langue** : la ligne ouvre les réglages de l'iPhone (décision Q4) ; pas d'écran de choix comme sur Android.
+5. **Aide à la détection** : texte propre à iOS (localisation « Toujours » et position exacte, actualisation en arrière-plan, économie d'énergie, rouvrir Miff une fois si une détection tarde) au lieu de l'aide Oppo/Xiaomi d'Android. **À vérifier sur l'iPhone** : si balayer l'app dans le sélecteur retarde réellement la reprise des détections (le texte ne l'affirme plus).
+6. **Consentement et retrait** : le renouvellement du consentement à la localisation reste fait AVANT la coquille par l'écran existant (LOC-4a) ; le retrait de la localisation reste « Arrêter de partager » dans l'écran de la Miff. L'interrupteur « statistiques » n'est pas livré (voir le journal des changements).
+7. **Mes informations** : lecture seule dans cette PR (critères A5 à A8 du ticket à venir).
+8. **Pas de retour en haut** en touchant l'onglet déjà actif.
+9. **Profil** : le Profil de la maquette montre aussi les lieux de la Miff et un carrousel avec nombre de membres : non livrés (les lieux sont dans l'écran de la Miff, ticket Lieux iOS ; le Profil complet est PRO-2).
+10. **Feed embarqué** : « Se déconnecter » (et la carte « Mes Miffs ») n'apparaissent plus dans l'onglet Feed (ils sont dans Réglages et Profil) ; le lien de déconnexion ne reste que dans les états sans barre (« Pas encore de Miff », état illisible hors connexion).
+11. **Barre masquée tant que les Miffs ne sont pas lues** (pas de clignotement) ; si la dernière Miff disparaît (quittée, supprimée, accès perdu), la coquille retombe sur le Feed et vide la pile des Réglages (règles dans `MainShellRules`, testées).
+
+**Navigation** : une seule `NavigationStack` pour toute l'app (celle de `MiffHomeHost`). La coquille n'en crée aucune ; les écrans des Réglages sont des routes `MiffRoute.settings(SettingsRoute)` rendues par `SettingsDestinationView`. Une pile imbriquée dans l'onglet Profil faisait planter l'app au toucher d'une carte « Mes Miffs » (build TestFlight 16) ; un test refuse toute `NavigationStack` dans `Views/Main` et `Views/Settings`.
+
+Rien n'est compilé en local : la CI fait foi ; le rendu natif du verre se juge sur l'iPhone 11 Pro (TestFlight).
+
 ## Suivi des lieux : arrivées, départs, dernière position (LOC-4b, miroir d'Android LOC-2b)
 
 Ticket `docs/tickets/lieux-de-confiance.md` (v3 : §6.4 à §6.9, §7, §8, §9 à §11, §13 ; critères POS1 à POS8, DET1 à DET4, STA1 à STA9, VIE1 à VIE4, HOR1, IOS1 à IOS4), décisions du PM du 2026-11-01 et du 2026-11-06, règles **déployées le 2026-11-06** (position, session temps 1, R-LIEU-1 ; **aucune règle modifiée**), implémentation Android de référence (`data/tracking/`, `domain/tracking/`). Recette du PM, sur l'iPhone : `docs/qa/checklists/loc-4b-ios-recette-pm.md` (TestFlight, à pied). Ce que fait réellement l'app, pour la fiche et la revue d'Apple : `docs/release/ios-loc-4b-comportement-reel.md`.

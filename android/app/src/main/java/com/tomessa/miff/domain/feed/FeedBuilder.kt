@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.tracking.MemberStatusFacts
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.update.UpdatePrompt
 import java.time.ZoneId
 
 /*
@@ -62,9 +63,14 @@ class FeedInput(
 }
 
 object FeedBuilder {
+    /**
+     * BATTERY_MAX_AGE (decision of the PM, 2026-11-07, D44): past 6 h the battery is no longer shown ("where we have no information"). The age is
+     * counted from `updatedAt` of the status (the SERVER time of the last write, which always carries a fresh battery), NEVER from `lastUpdateAt`
+     * (the last photo): a write that only refreshes the battery moves `updatedAt` and nothing else.
+     */
+    const val BATTERY_MAX_AGE_MILLIS = 6 * HOUR_MILLIS
+
     private val LIMITED_ACCESS = setOf(MemberLocationAccess.DENIED, MemberLocationAccess.FOREGROUND)
-    private const val BATTERY_DATED_AFTER_MILLIS = HOUR_MILLIS
-    private const val BATTERY_HIDDEN_AFTER_MILLIS = DAY_MILLIS
 
     fun build(
         input: FeedInput,
@@ -75,8 +81,7 @@ object FeedBuilder {
         // Nothing of the others is read (and nothing is shown) while I do not share or my agreement is waited for.
         val hidden = !mySharing || input.waitingAgreement
         val statuses = (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty()
-        // Stable: me first, the others in the order of the list (never reordered by urgency).
-        val ordered = input.members.sortedBy { it.uid != input.myUid }
+        val ordered = orderMembers(input.members, input.myUid)
         val places = input.places.associateBy { it.id }
 
         val cards =
@@ -114,8 +119,23 @@ object FeedBuilder {
             banners = banners,
             cards = cards,
             announceKey = announceKey(bubble),
+            myPrompt = UpdatePrompt.level(statuses[input.myUid], mySharing && !input.waitingAgreement, nowMillis),
+            myPhoto =
+                statuses[input.myUid]
+                    ?.takeIf {
+                        mySharing && !input.waitingAgreement
+                    }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
         )
     }
+
+    /**
+     * The order of the cards (decision of the PM, 2026-11-07): the OTHER members first, in the order of the list they come in (the creator, then the
+     * order of arrival: never reordered by urgency), and ME LAST. The sort is stable, so the others keep exactly the order they were given.
+     */
+    fun orderMembers(
+        members: List<MiffMember>,
+        myUid: String,
+    ): List<MiffMember> = members.sortedBy { it.uid == myUid }
 
     /**
      * The colour of the Miff (decision of the PM): red if at least one member is red; green if every member whose status is known is green;
@@ -186,14 +206,33 @@ object FeedBuilder {
             level = level,
             label = label,
             time = timeLine(level, status, now, zone),
-            battery = status?.let { battery(it, now, zone) },
+            battery = status?.let { battery(it, now) },
             limitedLocation =
                 status?.locationAccess in LIMITED_ACCESS,
             phone = member.phone.takeIf { !isMe },
             // Ticket 5.6: another member whose sharing is on, while mine is on and the statuses are REALLY read (the rules ask for my own status
             // to be published): even with no known status. "No position yet" is one of the calm answers of the sheet.
             canLocate = !isMe && mySharing && !hidden && member.sharingEnabled && input.statuses is StatusesView.Loaded,
+            photo = photoSlot(status, member.sharingEnabled && !(hidden && !isMe), now),
         )
+    }
+
+    /** FEED-4: the photo is read only when the status says so, and the last update is recent enough for it to be readable (the sharing is on). */
+    private fun photoSlot(
+        status: MemberStatus?,
+        visible: Boolean,
+        now: Long,
+    ): PhotoSlot {
+        val update = status?.lastUpdateAtMillis
+        if (!visible || status == null || !status.hasPhoto || update == null) return PhotoSlot.None
+        // A last update in the future (a wrong clock) counts as now; one older than the life of a photo cannot have a readable photo.
+        return if (now - minOf(update, now) <
+            PhotoSlot.READ_WINDOW_MILLIS
+        ) {
+            PhotoSlot.Candidate(update)
+        } else {
+            PhotoSlot.None
+        }
     }
 
     private fun placeRef(
@@ -264,17 +303,12 @@ object FeedBuilder {
     private fun battery(
         status: MemberStatus,
         now: Long,
-        zone: ZoneId,
     ): Battery? {
         val pct = status.batteryPct ?: return null
-        // A time the server has not filled in yet (a write still pending) is "now".
-        val written = status.updatedAtMillis ?: return Battery(pct, since = null)
-        val age = now - written
-        return when {
-            age > BATTERY_HIDDEN_AFTER_MILLIS -> null
-            age > BATTERY_DATED_AFTER_MILLIS -> Battery(pct, Moment.of(written, now, zone))
-            else -> Battery(pct, since = null)
-        }
+        // A time the server has not filled in yet (a write still pending) is "now". Past BATTERY_MAX_AGE_MILLIS the value is hidden; the card
+        // never says WHEN the level was measured (decision of the PM, 2026-11-07): the pill is the percentage alone.
+        val written = status.updatedAtMillis ?: return Battery(pct)
+        return if (now - written > BATTERY_MAX_AGE_MILLIS) null else Battery(pct)
     }
 
     @Suppress("LongParameterList")

@@ -1,6 +1,7 @@
 # Tab bar « liquid glass » (iOS et Android)
 
 **Rédigé le** 2026-11-06 par l'agent `design-system`. **Demande du PM** : la tab bar doit être conçue en « liquid glass » (effet translucide avec jeux de couleurs) sur iOS **et** Android. **Aucun code n'est écrit ici** : ce document prépare un futur mini-ticket de développement « Tab bar liquid glass » (§11).
+**État au 2026-11-07 (vérifié dans le code)** : la barre est **livrée sur Android** (`main`, ticket TABBAR-GLASS, PR #91 ; Haze 2.0.1) et **écrite sur iOS dans la PR brouillon #102** (branche `ios/onb-7-coquille`, non fusionnée). Les sections 1 à 10 restent la spécification ; **le §14 compare cette spécification à ce qui est réellement dans les deux apps** (valeurs citées avec leur fichier) et liste les écarts. Le §11 (« ce qu'il faudrait changer ») est **historique**.
 **Maquettes** : `design/exports/update/claude/07-tab-bar-ios.png` et `08-tab-bar-android.png` (3 états du bouton central x fond clair / photo sombre / photo claire, plus repli et transparence réduite) ; l'écran Update : `design/screens/update.md`. Les maquettes de la barre sont des **approximations HTML** : le vrai rendu d'iOS 26 est celui du système.
 **Convention** : **[Vérifié]** = lu dans la documentation officielle le 2026-11-05 (liens en §13) ; **[Calculé]** = calcul WCAG 2.1 refait par script (`wcag`), reproductible ; **[Proposé]** = ma proposition ; **[À VÉRIFIER]** = non confirmé, à tester sur appareil.
 
@@ -163,7 +164,7 @@ Autres points : l'état « sélectionné » est annoncé (pas par la couleur seu
 - **Appareils modestes** : sous API 31 et sur appareils à peu de mémoire, pas de flou (rien à calculer, rendu identique à une barre pleine).
 - **Mesure à faire dans la PR** : images perdues (Android Studio, `dumpsys gfxinfo`) pendant 10 s de défilement du Feed avec et sans flou sur l'OPPO ; température et batterie sur 5 min de viseur ; rien n'est supposé ici.
 
-## 11. Ce qu'il faudrait changer dans le code (mini-ticket « Tab bar liquid glass », Android puis iOS ; rien n'est codé)
+## 11. Ce qu'il fallait changer dans le code (mini-ticket « Tab bar liquid glass », Android puis iOS) : historique, voir le §14 pour l'état réel
 
 ### Android (`android/app/src/main/java/com/tomessa/miff/`)
 | Fichier | Changement |
@@ -189,9 +190,42 @@ Autres points : l'état « sélectionné » est annoncé (pas par la couleur seu
 **Taille indicative** : S à M par plateforme. **Dépend de** : rien d'ouvert (variantes validées le 2026-11-06) ; indépendant du reste du ticket Update, mais à **livrer avant ou avec** UPDATE-1 (le bouton central actif et le viseur sont posés sur cette barre).
 
 ## 12. Questions pour le PM
-**Aucune question ouverte.** Validés par le PM le 2026-11-06 : les deux variantes de verre, les icônes inactives plus foncées, Haze (module de flou seul, version épinglée, plan B version maison), la marge de **24 pt** (iOS) et l'arrondi de **20**, la pastille de couleur seule. **À confirmer à l'export Figma** (pas une question de produit) : marge de la barre sur Android (24 dp proposés ; 16 dp dans le code actuel) et cotes converties depuis des captures de 320 px.
+**Aucune question ouverte.** Validés par le PM le 2026-11-06 : les deux variantes de verre, les icônes inactives plus foncées, Haze (module de flou seul, version épinglée, plan B version maison), la marge de **24 pt** (iOS) et l'arrondi de **20**, la pastille de couleur seule. **À confirmer à l'export Figma** (pas une question de produit) : cotes converties depuis des captures de 320 px. *(La marge de la barre sur Android, « 24 dp proposés, 16 dp dans le code », est résolue : le code livré a 24 dp, voir §14.)*
 
 ## 13. Sources
 Documentation Apple (lue le 2026-11-05) : [glassEffect(_:in:)](https://developer.apple.com/documentation/swiftui/view/glasseffect(_:in:)), [Glass](https://developer.apple.com/documentation/swiftui/glass), [GlassEffectContainer](https://developer.apple.com/documentation/swiftui/glasseffectcontainer), [Applying Liquid Glass to custom views](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views), [Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass), [Materials (HIG)](https://developer.apple.com/design/human-interface-guidelines/materials), [Material](https://developer.apple.com/documentation/swiftui/material), [accessibilityReduceTransparency](https://developer.apple.com/documentation/swiftui/environmentvalues/accessibilityreducetransparency), [colorSchemeContrast](https://developer.apple.com/documentation/swiftui/environmentvalues/colorschemecontrast), [tabBarMinimizeBehavior(_:)](https://developer.apple.com/documentation/swiftui/view/tabbarminimizebehavior(_:)). Les pages web d'Apple ne sont pas lisibles directement par l'outil : le contenu vient de la documentation au format JSON de ces mêmes pages ; **iOS 27 n'a pas été vérifié point par point**.
 Android : [RenderEffect](https://developer.android.com/reference/android/graphics/RenderEffect) (API 31), [Modifiers graphiques de Compose](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers) (`rememberGraphicsLayer`, Compose 1.7 et plus), [UiModeManager](https://developer.android.com/reference/android/app/UiModeManager) (`getContrast`, API 34), [AccessibilityManager](https://developer.android.com/reference/android/view/accessibility/AccessibilityManager) (contraste de texte, API 36).
 Bibliothèques : [Haze](https://github.com/chrisbanes/haze) et son [journal des changements](https://raw.githubusercontent.com/chrisbanes/haze/main/CHANGELOG.md) ; [Backdrop / AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) et ses [versions](https://github.com/Kyant0/AndroidLiquidGlass/releases). Les coordonnées Maven et les noms exacts d'artefacts sont **à relire** sur la page de la version avant l'ajout.
+
+## 14. Cohérence avec les barres livrées (vérifiée le 2026-11-07)
+
+Fichiers lus : Android `android/app/src/main/java/com/tomessa/miff/ui/main/GlassTabBar.kt`, `MainTabBar.kt`, `MainShell.kt`, `ui/theme/GlassTokens.kt`, `GlassCapability.kt`, `android/gradle/libs.versions.toml` ; iOS (PR brouillon #102, branche `ios/onb-7-coquille`) `ios/Miff/Views/Main/MainTabBar.swift`, `ios/Miff/DesignSystem/TabBarTokens.swift`, `ios/Miff/Models/Main/MainTab.swift`. **Aucune valeur n'est inventée : « conforme » veut dire identique à la spécification ci-dessus.**
+
+### Ce qui est conforme (Android et iOS)
+| Sujet | Spécification | Android (`main`) | iOS (PR #102) |
+|---|---|---|---|
+| Barre | 64 pt de haut, arrondi 20, marges latérales 24, entrées 64 x 48 | `GlassBarHeight` 64 dp, `BarShape` 20 dp, `BarSideMargin` 24 dp (`Spacing.l`), `ItemWidth`/`ItemHeight` 64 x 48 dp | `TabBarLayout` : 64, 20, 24, 64 x 48 |
+| Posée à 22 pt du bas | oui | `BarBottomMargin` 22 dp + barre de navigation (`miffBottomInsets`) | `bottomMargin` 22 |
+| Bouton central | plaque blanche 44, anneau 3, pastille 24, sans pictogramme | `PlateSize` 44, `RingSize` 36 (anneau de 3), `DotSize` 24 | `plateSize` 44, `ringSize` 36, `ringWidth` 3, `dotSize` 24 |
+| Neutre = gris `#595959` | oui | `centralButtonColors(NEUTRAL)` = `GlassPaletteLight.iconInactive` | `tabBarIconInactiveLight` `0x595959` |
+| Clair : voile blanc 80 %, liseré blanc 55 %, opaque `#ffffff`, icône inactive `#595959`, pastille `action/primary-tint-20` | oui | `GlassPaletteLight` | `TabBarVariant.light` |
+| Sur photo : voile noir 60 %, liseré blanc 18 %, opaque `#222222`, icônes blanches / blanc 78 %, pastille blanc 24 % | oui | `GlassPaletteOnPhoto` | `TabBarVariant.onPhoto` (prête, aucun écran ne l'utilise encore) |
+| Rayon de flou 20 | oui | `GlassBlurRadius` 20 dp (Haze **2.0.1** épinglée, modules `haze` et `haze-blur`, pas le module Glass) | sans objet (matériau système) |
+| Plaque du bouton central toujours opaque | oui | `GlassCentralPlate` `#ffffff` | `colorBgSurface` |
+| Repli opaque | transparence réduite / contraste renforcé / économiseur / animations supprimées | `GlassPolicy.level` : économiseur de batterie, animations supprimées, contraste renforcé (API 34+) -> `OPAQUE` ; API < 31, appareil à peu de mémoire, viseur -> `NO_BLUR` (voile `tintNoBlur` 92 % / 72 %) ; interrupteur de repli `BLUR_ALLOWED` | `GlassPolicy.level` : « Réduire la transparence » ou « Augmenter le contraste » -> `opaque` ; sinon verre natif si disponible, sinon matériau ; interrupteur de repli `nativeGlassAllowed` |
+| Verre | iOS 26 : `glassEffect(.regular)` ; iOS 16 à 25 : `.regularMaterial` + voile + liseré ; Android 12+ : flou + voile + liseré | Haze `hazeBlur` + voile + liseré 1 dp ; contenu enregistré pour le flou **seulement** au niveau `BLUR` | `#if compiler(>=6.2)` + `#available(iOS 26.0, *)` : `glassEffect(.regular, in: rectangle arrondi 20)` ; sinon `.regularMaterial` + voile + liseré 1 pt, schéma clair ou sombre local à la barre |
+| Barre personnalisée, pas de `TabView` | oui | `MainTabBar` + `GlassTabHost` (le contenu passe **sous** la barre, `LocalTabBarInset` donne la marge basse) | `safeAreaInset(edge: .bottom)` dans `MainShellView` |
+| Nom parlé, état « sélectionné » annoncé | oui | `Role.Tab`, `selected`, nom par niveau (`tabbar_update_green/orange/red_a11y`) | trait `isSelected` ; nom `tabbar_feed_a11y` / `tabbar_profile_a11y` |
+| Ombre | Android `shadow/default` ; iOS 0 / 6 / 20 noir 18 % | `ShadowDefault` (0 / 4 / 4, noir 25 %) | `tabBarShadowColor` noir 18 %, rayon 10, décalage vertical 6 |
+
+### Écarts connus (spécification contre implémentation)
+| # | Écart | Où | Statut |
+|---|---|---|---|
+| 1 | **Taille des icônes** : 26 dans la spécification (§2) et sur Android (`IconSize` 26 dp) ; **24 pt sur iOS** (`TabBarLayout.iconSize`) | iOS | À aligner (24 ou 26) par `ios-dev` ; non tranché ici |
+| 2 | **Icônes de la maison et du profil** : les dessins du PM (maison avec cœur, silhouette) sont attendus en vectoriel ; Android utilise `ic_tab_feed` et `ic_person`, **iOS les approche avec deux symboles du système** (`house` + `heart`, `person`) | iOS, Android | Asset à exporter par le PM (voir `update.md` §12) |
+| 3 | **Position verticale** : « 22 pt du bas (+ inset de sécurité) » dans la spécification ; Android = 22 dp **au-dessus** de la barre de navigation ; **iOS = 22 pt depuis le bas de l'écran** (la barre empiète sur la zone de l'indicateur d'accueil sur un iPhone à zone sûre, `bottomPadding(safeAreaBottom:)`) | iOS | Écart voulu et documenté dans le code iOS ; la différence visuelle entre les plateformes est de l'ordre de la hauteur de la zone sûre |
+| 4 | **Nom parlé du bouton central sur iOS** : `tabbar_update_soon_a11y` (« bientôt ») tant que l'Update iOS n'existe pas ; Android a les quatre noms (vert, orange, rouge, neutre) | iOS | Normal jusqu'à UPDATE-3 |
+| 5 | **Variante « sur photo »** : sur Android elle est utilisée par le viseur (`glassVariantFor`), jamais en flou ; sur iOS elle existe mais le viseur n'existe pas | iOS | Normal jusqu'à UPDATE-3 |
+| 6 | **Ombre iOS** : la spécification dit « 0 / 6 / 20 » ; le code dit rayon 10 (SwiftUI) | iOS | Équivalence à juger sur l'iPhone 11 Pro (recette TestFlight) |
+| 7 | **Mesures de recette du §8** (15 captures et contrastes, images perdues sur l'OPPO) : consignées dans les PR d'origine, pas reprises ici | PR #91, PR #102 | Voir les PR |
+| 8 | **iOS 26 natif non vérifiable en local** (pas de Mac) : rendu à contrôler sur l'iPhone 11 Pro (iOS 26.5.2) via TestFlight | iOS | Recette PM |

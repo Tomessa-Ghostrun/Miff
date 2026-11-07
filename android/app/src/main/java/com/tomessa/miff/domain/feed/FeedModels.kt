@@ -2,6 +2,7 @@ package com.tomessa.miff.domain.feed
 
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.update.PromptLevel
 
 /*
  * PRIVACY, for this file: first names, names of places, the code of the Miff, where somebody is and how their phone is: every class that
@@ -88,22 +89,39 @@ sealed interface TimeLine {
     ) : TimeLine
 }
 
-/** The battery chip: "85 %", and from one hour after its writing "85 % · 16 h 02" (a value DATED, never "live"). Hidden after 24 h or when absent. */
+/** The battery chip: "85 %" alone, never the time it was measured (decision of the PM, 2026-11-07). Hidden after 24 h or when absent. */
 data class Battery(
     val pct: Int,
-    /** Null while the value is less than an hour old; else the time it was written. */
-    val since: Moment?,
 )
 
 /**
- * The place of the photo of the last update on a card (FEED-4, not delivered here): the slot exists in the layout and the state "no photo" draws
- * NOTHING (no hole, no message), the same as an expired or refused photo will.
+ * The place of the photo of the last update on a card (FEED-4). [None]: nothing is drawn (no hole, no message), the same as for an expired, refused or
+ * unreadable photo. [Candidate]: the status says there is a photo and it is recent enough to be readable; the card reads it when it comes on screen.
  */
 sealed interface PhotoSlot {
     data object None : PhotoSlot
+
+    /** [lastUpdateAtMillis] is the last update of the status the photo goes with: a copy made for the same value is not downloaded again. */
+    data class Candidate(
+        val lastUpdateAtMillis: Long,
+    ) : PhotoSlot
+
+    companion object {
+        /** A photo lives 23 h (the client writes `expiresAt` at publication + 23 h): a status older than this cannot have a readable photo, so none is read. */
+        const val READ_WINDOW_MILLIS = 23L * HOUR_MILLIS
+    }
 }
 
-/** One card: a member, me included. The first of the list is MINE (no Localiser, no Message, no Appeler on it). */
+/**
+ * What MY status says about MY photo, for the clean-up of an expired photo (ticket 6.4, criterion U7): after a reinstall or a new phone the note of the date
+ * is gone, so the date of the last update stands in for it.
+ */
+data class MyPhotoFacts(
+    val hasPhoto: Boolean,
+    val lastUpdateAtMillis: Long?,
+)
+
+/** One card: a member, me included. MY card is the LAST of the list (no Localiser, no Message, no Appeler on it). */
 data class MemberCard(
     val member: MiffMember,
     val isMe: Boolean,
@@ -227,6 +245,10 @@ data class FeedContent(
     val cards: List<MemberCard>,
     /** Changes only when a LEVEL or the set of alerts changes: the screen reader announces the bubble then, never at each minute. */
     val announceKey: String,
+    /** UPDATE-2: what the bubble of encouragement above the tab bar says for MY status in this Miff (D18, D19, D21). */
+    val myPrompt: PromptLevel = PromptLevel.NONE,
+    /** UPDATE-1: the facts about MY photo (null while my status is not read). */
+    val myPhoto: MyPhotoFacts? = null,
 ) {
     override fun toString(): String = "FeedContent(redacted)"
 }
