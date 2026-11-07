@@ -8,8 +8,21 @@ enum AuthAttempt: Equatable {
     case signUpEmail
     /// Google ou Apple (jeton échangé avec Firebase), aussi utilisé pour se ré-authentifier.
     case social
-    /// Suppression du compte tout juste créé (refus du panneau de consentement).
+    /// Suppression d'un compte : celui tout juste créé (refus du panneau de consentement) ou le compte de la personne (AUTH-5c).
     case deleteAccount
+    /// Prouver à nouveau qui on est avec le mot de passe, avant la suppression du compte (AUTH-5c). La personne est DÉJÀ connectée : un
+    /// mauvais mot de passe est un simple « ce mot de passe ne correspond pas », pas une énumération de comptes.
+    case reauthEmail
+    /// Prouver à nouveau qui on est avec Google ou Apple (AUTH-5c).
+    case reauthSocial
+    /// Demander à Firebase si la session existe encore (AUTH-5c, reprise d'une suppression).
+    case checkSession
+
+    /// Les tentatives faites sur la session déjà ouverte : « utilisateur introuvable » y veut dire « le compte n'existe plus »
+    /// (et non « mauvaise adresse »).
+    var isAboutTheSession: Bool {
+        self == .deleteAccount || self == .reauthEmail || self == .reauthSocial || self == .checkSession
+    }
 }
 
 /// Pourquoi une étape d'authentification n'a pas abouti, en termes que l'interface peut formuler avec bienveillance.
@@ -27,6 +40,14 @@ enum AuthFailure: Equatable {
     /// Firebase veut une connexion récente avant de supprimer le compte.
     case recentLoginRequired
     case unknown
+    /// Ré-authentification avec un compte Google ou Apple qui n'est pas celui de la session (AUTH-5c, critère SC11).
+    case wrongAccount
+    /// Firebase dit que le compte N'EXISTE PLUS (`userNotFound`, le SEUL code qui le prouve) : supprimé depuis la console ou un autre
+    /// téléphone. Pour la suppression du compte, c'est « déjà fait » (critère SC28). Un jeton expiré ou révoqué n'est PAS cela.
+    case accountGone
+    /// La session ne peut plus servir (jeton expiré ou révoqué, mot de passe changé ailleurs) alors que le compte existe peut-être
+    /// encore. JAMAIS un succès : rien ne dit « supprimé », la personne se reconnecte.
+    case sessionExpired
 }
 
 /// Transforme n'importe quelle erreur des appels d'authentification en `AuthFailure`. N'expose jamais de code ni
@@ -45,13 +66,18 @@ func interpretAuthError(_ error: Error, attempt: AuthAttempt) -> AuthFailure {
             return attempt == .signUpEmail ? .emailAlreadyInUse : .linkedToOtherMethod
         case AuthErrorNumber.accountExistsWithDifferentCredential, AuthErrorNumber.credentialAlreadyInUse:
             return .linkedToOtherMethod
+        case AuthErrorNumber.userMismatch:
+            return .wrongAccount
         default:
             break
+        }
+        if attempt.isAboutTheSession, let failure = sessionFailure(code: nsError.code) {
+            return failure
         }
     }
     switch interpretSignInError(error) {
     case .invalidCredentials:
-        return attempt == .signInEmail ? .invalidCredentials : .unknown
+        return (attempt == .signInEmail || attempt == .reauthEmail) ? .invalidCredentials : .unknown
     case .network:
         return .network
     case .tooManyAttempts:
@@ -60,6 +86,19 @@ func interpretAuthError(_ error: Error, attempt: AuthAttempt) -> AuthFailure {
         return .accountDisabled
     case .unknown:
         return .unknown
+    }
+}
+
+/// Sur la session ouverte : « utilisateur introuvable » est LE code qui prouve que le compte n'existe plus ; un jeton expiré ou
+/// révoqué dit seulement « reconnecte-toi ».
+private func sessionFailure(code: Int) -> AuthFailure? {
+    switch code {
+    case AuthErrorNumber.userNotFound:
+        return .accountGone
+    case AuthErrorNumber.userTokenExpired, AuthErrorNumber.invalidUserToken:
+        return .sessionExpired
+    default:
+        return nil
     }
 }
 
@@ -79,8 +118,9 @@ struct PersonNameParts: Equatable {
 /// Contient des jetons : jamais journalisé, jamais stocké, jamais affiché (la description est volontairement vide).
 enum SocialCredential: Equatable {
     case google(idToken: String, accessToken: String)
-    /// `authorizationCode` : code à usage unique donné par Apple en plus du jeton. Gardé seulement en mémoire, pour la
-    /// révocation du jeton Apple à la suppression d'un compte (AUTH-5, à venir) ; jamais stocké ni journalisé.
+    /// `authorizationCode` : code à usage unique donné par Apple en plus du jeton. Il ne sert qu'à la
+    /// révocation du jeton Apple à la suppression d'un compte (AUTH-5c, `DeleteReauthViewModel`) : il passe d'ici au retrait de
+    /// l'autorisation et nulle part ailleurs (ni gardé par la passerelle, ni stocké, ni journalisé).
     case apple(idToken: String, rawNonce: String, name: PersonNameParts?, authorizationCode: String? = nil)
 }
 

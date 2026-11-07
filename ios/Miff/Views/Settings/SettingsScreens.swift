@@ -14,41 +14,60 @@ struct SettingsActions {
 struct SettingsListView: View {
     let actions: SettingsActions
     let build: BuildInfo
+    /// Un compte SANS Miff (décision du PM du 2026-11-07) : seulement Mon compte et Confidentialité.
+    var restricted = false
 
     var body: some View {
         MiffFrame(title: L10n.string("settings_title"), onBack: actions.onBack, usesCanvas: true) {
             VStack(spacing: 0) {
-                SettingsRow(
-                    systemImage: "pencil",
-                    title: L10n.string("settings_my_info_title"),
-                    subtitle: L10n.string("settings_my_info_subtitle"),
-                    action: actions.onOpenMyInfo
-                )
-                SettingsRow(
-                    systemImage: "person",
-                    title: L10n.string("settings_account_title"),
-                    subtitle: L10n.string("settings_account_subtitle"),
-                    action: actions.onOpenAccount
-                )
-                SettingsRow(
-                    systemImage: "globe",
-                    title: L10n.string("settings_language_title"),
-                    subtitle: L10n.format("ios_settings_language_current", AppLanguageName.current),
-                    hint: L10n.string("ios_settings_language_hint_a11y"),
-                    action: { ExternalOpener.openSystemSettings() }
-                )
-                SettingsRow(
-                    systemImage: "lock",
-                    title: L10n.string("settings_privacy_title"),
-                    subtitle: L10n.string("settings_privacy_subtitle"),
-                    action: actions.onOpenPrivacy
-                )
+                ForEach(SettingsAccess.rows(restricted: restricted), id: \.self) { row in
+                    rowView(row)
+                }
             }
             Text(verbatim: L10n.format("ios_settings_version", build.version, build.build))
                 .miffTextStyle(textBodyCaption)
                 .foregroundColor(colorTextDescription.color)
                 .frame(maxWidth: .infinity)
                 .padding(.top, Spacing.md)
+        }
+    }
+}
+
+extension SettingsListRow: Hashable {}
+
+extension SettingsListView {
+    @ViewBuilder
+    fileprivate func rowView(_ row: SettingsListRow) -> some View {
+        switch row {
+        case .myInfo:
+            SettingsRow(
+                systemImage: "pencil",
+                title: L10n.string("settings_my_info_title"),
+                subtitle: L10n.string("settings_my_info_subtitle"),
+                action: actions.onOpenMyInfo
+            )
+        case .account:
+            SettingsRow(
+                systemImage: "person",
+                title: L10n.string("settings_account_title"),
+                subtitle: L10n.string("settings_account_subtitle"),
+                action: actions.onOpenAccount
+            )
+        case .language:
+            SettingsRow(
+                systemImage: "globe",
+                title: L10n.string("settings_language_title"),
+                subtitle: L10n.format("ios_settings_language_current", AppLanguageName.current),
+                hint: L10n.string("ios_settings_language_hint_a11y"),
+                action: { ExternalOpener.openSystemSettings() }
+            )
+        case .privacy:
+            SettingsRow(
+                systemImage: "lock",
+                title: L10n.string("settings_privacy_title"),
+                subtitle: L10n.string("settings_privacy_subtitle"),
+                action: actions.onOpenPrivacy
+            )
         }
     }
 }
@@ -97,25 +116,6 @@ struct MyInfoView: View {
             SettingsBody(text: L10n.string("profile_phone_visibility"))
         }
         MiffNotice(text: L10n.string("ios_myinfo_edit_soon"))
-    }
-}
-
-/// Réglages > Mon compte > Supprimer mon compte : en attendant AUTH-5c et AUTH-5d, un écran honnête (rien n'est supprimé ici) qui dit
-/// que la suppression dans l'app arrive bientôt sur iPhone et qui propose d'écrire à l'équipe, qui s'en occupe.
-struct DeleteAccountSoonView: View {
-    let onBack: () -> Void
-
-    var body: some View {
-        MiffFrame(title: L10n.string("settings_delete_title"), onBack: onBack, usesCanvas: true) {
-            SettingsBody(text: L10n.format("ios_delete_soon_body", AppLinks.supportEmail))
-            Button {
-                ExternalOpener.open(ContactLinks.supportMailURL())
-            } label: {
-                Text("ios_delete_soon_contact_action")
-            }
-            .buttonStyle(.miffSecondaryFullWidth)
-            .accessibilityHint(Text(verbatim: L10n.string("settings_privacy_open_mail_a11y")))
-        }
     }
 }
 

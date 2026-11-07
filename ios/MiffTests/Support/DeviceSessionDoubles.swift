@@ -96,6 +96,22 @@ final class FakeDeviceSessionRemote: DeviceSessionRemote {
         continuation?.yield(.active(deviceId: identifier))
     }
 
+    /// La suppression « quel que soit le détenteur » de la suppression d'un compte (AUTH-5c).
+    private(set) var unconditionalDeletes = 0
+
+    func delete(uid: String) async -> Bool {
+        unconditionalDeletes += 1
+        guard reachable else {
+            return false
+        }
+        if serverId != nil {
+            serverId = nil
+            deletedCount += 1
+            timeline.add("sessionDelete")
+        }
+        return true
+    }
+
     /// Le document disparaît (compte supprimé depuis un autre appareil, par exemple).
     func sessionDisappears() {
         serverId = nil
@@ -165,6 +181,22 @@ final class MemoryDeviceIdStore: DeviceIdStore {
             return false
         }
         revoked = value
+        if !value {
+            // Comme le fichier réel : la raison part avec le marqueur.
+            gone = false
+        }
+        return true
+    }
+
+    /// La raison de la révocation : le document de session a disparu (le compte est supprimé ailleurs).
+    var gone = false
+
+    func isGone() -> Bool {
+        gone
+    }
+
+    func setGone(_ value: Bool) -> Bool {
+        gone = value
         return true
     }
 }

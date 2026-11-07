@@ -18,6 +18,14 @@ struct FirebaseAnalyticsSwitch: CollectionSwitch {
     func pause() {
         setEnabled(false)
     }
+
+    /// Suppression du compte : l'identifiant d'installation d'Analytics est réinitialisé (la collecte est déjà coupée, rien n'est envoyé).
+    func forgetInstallation() {
+        guard FirebaseBootstrap.isConfigured else {
+            return
+        }
+        Analytics.resetAnalyticsData()
+    }
 }
 
 struct FirebaseCrashlyticsSwitch: CollectionSwitch {

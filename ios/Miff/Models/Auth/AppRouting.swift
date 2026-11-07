@@ -16,10 +16,14 @@ enum AppDestination: Equatable, Hashable {
     case miffChoice
     /// Une Miff existe : le fil.
     case feed
+    /// La suppression du compte est en cours (AUTH-5c) : progression, pause, « Dernière vérification », écran de fin. Elle a PRIORITÉ
+    /// sur toute autre destination tant que le marqueur local existe (ticket §5.6) : un profil déjà supprimé n'envoie jamais la personne
+    /// vers « crée ton profil ». Ce n'est pas une destination qui « suppose une session » : la session se termine au milieu, exprès.
+    case accountDeletion
 
     /// Vrai si la destination suppose une session ouverte.
     var requiresSession: Bool {
-        self != .signUp && self != .signIn
+        self != .signUp && self != .signIn && self != .accountDeletion
     }
 }
 
