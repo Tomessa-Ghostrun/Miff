@@ -157,7 +157,7 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
 }
 
 /**
- * The Feed tab (tickets FEED-1 to FEED-3): the fixed header, then the bubble of the Miff, the cards of the members (me first), and
+ * The Feed tab (tickets FEED-1 to FEED-3): the fixed header, then the bubble of the Miff, the cards of the members (me last), and
  * "Ajouter un proche". [feed] is what the view model computed; [locate] the sheet "Localiser". The photo of the last update is FEED-4.
  * [scrollToTopSignal] goes up each time the person taps the tab they are already on.
  *

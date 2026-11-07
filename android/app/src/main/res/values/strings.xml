@@ -421,7 +421,6 @@
     <string name="feed_refresh_started_a11y">Refreshing</string>
     <string name="feed_refresh_done_a11y">Up to date</string>
     <string name="feed_loading_a11y">Loading your feed</string>
-    <string name="feed_card_you">You</string>
     <string name="feed_card_you_sees">What your loved ones see of you</string>
     <string name="feed_card_message_a11y">Message %1$s</string>
     <string name="feed_card_call_a11y">Call %1$s</string>
@@ -467,9 +466,7 @@
     <string name="feed_ago_minutes">%1$d min ago</string>
     <string name="feed_ago_hours">%1$d h ago</string>
     <string name="feed_battery">%1$d %%</string>
-    <string name="feed_battery_dated">%1$d %% · %2$s</string>
     <string name="feed_battery_a11y">Battery at %1$d %%</string>
-    <string name="feed_battery_dated_a11y">Battery at %1$d %% %2$s</string>
     <string name="feed_bubble_all_good">All good</string>
     <string name="feed_bubble_latest_minutes">Latest news %1$d min ago</string>
     <string name="feed_bubble_latest_hours">Latest news %1$d h ago</string>

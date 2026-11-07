@@ -233,5 +233,5 @@ Ces déclarations sont du ressort de `release-manager` et doivent reprendre **ex
 - [ ] URL de politique et de suppression de compte en ligne.
 - [ ] Public cible et IARC décidés.
 - [ ] Type et date de création du compte Google Play lus dans la console ; test fermé de 14 jours (12 testeurs) planifié si la règle s'applique.
-- [ ] Aucune mention de Miff+, d'essai, de prix, de « Économisez 30 % », de notifications.
+- [ ] Aucune mention de Miff+, d'essai, de prix, de « Économisez 30 % » ni de « presque 30 % d'économie » (décidé le 2026-11-07), de notifications.
 - [ ] Nom « Miff » : vérification d'antériorité (risque J18) ; une app « MIFF » existe dans l'App Store (festival du film de Moscou), aucune vérification faite côté Google Play (`decisions-stores-avant-soumission.md`, n° 9).

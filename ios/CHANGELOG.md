@@ -23,6 +23,10 @@ Modifié :
 
 Écarts (détail dans `ios/README.md`, section « Suppression de compte (AUTH-5c) ») : alerte du système à la place de la fenêtre de confirmation ; ré-authentification Apple seule pour un compte lié à Apple ; « Plus tard » mène à un écran de pause (iOS ne ferme pas l'app) ; lien « Supprimer mon compte » ajouté sur deux écrans hors Réglages ; bloc d'abonnement non construit (décision du 2026-10-31).
 
+### CI - `ios-testflight` : `archive_mode` vaut `signed` par défaut
+
+Les 4 échecs du 2026-11-06 (« exportArchive Invalid Signature ... Miff.app/Frameworks/*.framework is not properly signed ») avaient tous été lancés avec `archive_mode = unsigned`, l'ancien défaut dont le support était « non confirmé » ; tous les succès (miff-4, loc-3, loc-4a) étaient en `signed`. Le défaut devient `signed`. Aucun code applicatif, aucune dépendance, aucun secret modifié. Coût : inchangé (le mode `signed` peut créer un certificat de développement « Created via API », voir `docs/dev/ios-spike.md` section 10).
+
 ### ONB-7 - Coquille de l'app : barre d'onglets en verre, Profil, Réglages (miroir d'Android ONB-3a/3b et TABBAR-GLASS)
 
 Tickets `docs/tickets/feed-profil-reglages.md` (ONB-7a/7b, décisions Q1 à Q7 du 2026-10-30), `docs/tickets/onboarding.md` (§6.7 à §6.10), spec `design/tab-bar-liquid-glass.md`, fiche `design/screens/update.md`, planche `design/exports/update/claude/07-tab-bar-ios.png`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro : `docs/qa/checklists/onb-7-ios-recette-pm.md`. Le Feed iOS (FEED-5 à 8), l'Update (UPDATE-3) et la suppression de compte (AUTH-5c/d) se brancheront sur cette coquille (points d'accroche dans `MainShellView`).

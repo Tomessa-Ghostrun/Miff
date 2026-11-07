@@ -214,7 +214,8 @@ class FeedViewModelTest {
             feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
             runCurrent()
             val content = vm.content()
-            assertEquals(listOf("me", "t", "a"), content.cards.map { it.member.uid })
+            // Me LAST (decision of the PM, 2026-11-07).
+            assertEquals(listOf("t", "a", "me"), content.cards.map { it.member.uid })
             assertTrue(content.bubble is Bubble.AllGood)
             job.cancel()
         }

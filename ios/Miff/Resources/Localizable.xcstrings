@@ -2603,40 +2603,6 @@
         }
       }
     },
-    "feed_battery_dated": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld %% · %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld %% · %2$@"
-          }
-        }
-      }
-    },
-    "feed_battery_dated_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Battery at %1$lld %% %2$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Batterie à %1$lld %% %2$@"
-          }
-        }
-      }
-    },
     "feed_bubble_all_good": {
       "extractionState": "manual",
       "localizations": {
@@ -3109,23 +3075,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Écrire à %1$@"
-          }
-        }
-      }
-    },
-    "feed_card_you": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toi"
           }
         }
       }

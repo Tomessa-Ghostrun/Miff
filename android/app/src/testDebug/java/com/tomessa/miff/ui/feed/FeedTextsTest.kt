@@ -114,10 +114,11 @@ class FeedTextsFrenchTest {
 
     @Test
     fun battery() {
-        assertEquals("85 %", texts.battery(Battery(85, null)))
-        assertEquals("12 % · 16 h 40".t(), texts.battery(Battery(12, Moment(AT_16_40, Day.TODAY))))
-        assertEquals("Batterie à 85 %", texts.batteryA11y(Battery(85, null)))
-        assertEquals("Batterie à 12 % à 16 h 40".t(), texts.batteryA11y(Battery(12, Moment(AT_16_40, Day.TODAY))))
+        // The percentage alone: no time of measure, on the chip nor in the sentence of the screen reader (decision of the PM, 2026-11-07).
+        assertEquals("85 %", texts.battery(Battery(85)))
+        assertEquals("12 %", texts.battery(Battery(12)))
+        assertEquals("Batterie à 85 %", texts.batteryA11y(Battery(85)))
+        assertEquals("Batterie à 12 %", texts.batteryA11y(Battery(12)))
     }
 
     @Test
@@ -219,6 +220,7 @@ class FeedTextsEnglishTest {
         assertEquals("Latest news at 4:40 PM".t(), texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))))
         assertEquals("No news since 4:02 PM".t(), texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_02, Day.TODAY))))
         assertEquals("Latest news 2 min ago", texts.latestNews(Age.Minutes(2)))
-        assertEquals("85 % · 4:40 PM".t(), texts.battery(Battery(85, Moment(AT_16_40, Day.TODAY))))
+        assertEquals("85 %", texts.battery(Battery(85)))
+        assertEquals("Battery at 85 %", texts.batteryA11y(Battery(85)))
     }
 }
