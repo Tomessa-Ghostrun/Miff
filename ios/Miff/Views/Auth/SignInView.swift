@@ -37,6 +37,11 @@ struct SignInContent: View {
                 MessageText(text: L10n.string("auth_panel_refused_notice"), isError: false)
                     .padding(.bottom, Spacing.md)
             }
+            if state.showSessionReplacedNote {
+                // Une information calme, pas une erreur : couleur neutre. Le lecteur d'écran la lit à l'arrivée (MessageText).
+                MessageText(text: L10n.string("auth_session_replaced_notice"), isError: false)
+                    .padding(.bottom, Spacing.md)
+            }
             fields
             FieldLink(key: "auth_signin_forgot_password") {
                 actions.forgotPassword(AuthForm.normalizeEmail(email))

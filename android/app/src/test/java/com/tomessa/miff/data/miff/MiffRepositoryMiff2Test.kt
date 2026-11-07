@@ -6,6 +6,7 @@ import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.testsupport.CODE
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
 import com.tomessa.miff.testsupport.FakeMiffObserver
@@ -35,6 +36,7 @@ class MiffRepositoryMiff2Test {
             store = store,
             observer = FakeMiffObserver(),
             location = FakeLocationProbe(),
+            device = FakeActiveDevice(),
             newMiffId = { MIFF_ID },
             newCode = { drawn.removeFirstOrNull() ?: newCode },
             timeoutMillis = 1_000,
@@ -42,17 +44,17 @@ class MiffRepositoryMiff2Test {
         )
 
     @Test
-    fun removeMember_isOneLotOfSix_readFromTheMiffInsideTheTransaction_andReturnsTheNewCode() =
+    fun removeMember_isOneLotOfSeven_readFromTheMiffInsideTheTransaction_andReturnsTheNewCode() =
         runTest {
             val result = repo().removeMember(MIFF_ID, "uid-2") as CodeChangeResult.Changed
             assertEquals(newCode, result.newCode)
             assertEquals(1, store.commitsAsLots.size)
             val lot = store.commitsAsLots.single()
-            assertEquals(6, lot.size)
+            assertEquals(7, lot.size)
             // The code to replace is the one the transaction read, not one held by the screen.
             assertEquals("joinCodes/$CODE", lot.last().path)
             assertEquals(WriteKind.DELETE, lot.last().kind)
-            assertEquals("joinCodes/$newCode", lot[4].path)
+            assertEquals("joinCodes/$newCode", lot[5].path)
             assertEquals("commitWithMiff", store.calls.last())
         }
 
@@ -106,11 +108,11 @@ class MiffRepositoryMiff2Test {
         }
 
     @Test
-    fun removeMember_whenTheOldCodeDocumentIsMissing_theLotHasFiveWrites() =
+    fun removeMember_whenTheOldCodeDocumentIsMissing_theLotHasSixWrites() =
         runTest {
             store.codeDocumentExists = false
             repo().removeMember(MIFF_ID, "uid-2")
-            assertEquals(5, store.commitsAsLots.single().size)
+            assertEquals(6, store.commitsAsLots.single().size)
         }
 
     @Test
@@ -133,14 +135,14 @@ class MiffRepositoryMiff2Test {
         }
 
     @Test
-    fun leave_findsTheIndexByItsField_andWritesTheLotOfFour() =
+    fun leave_findsTheIndexByItsField_andWritesTheLotOfFive() =
         runTest {
             store.miffs[MIFF_ID] = miffDetails(owner = "someone-else")
             // The id of the document is "free": the Miff is found by the FIELD miffId (criterion R11).
             store.memberships = listOf(MembershipRef("free", MIFF_ID))
             assertEquals(MiffWriteResult.Done, repo().leave(uid, MIFF_ID))
             val lot = store.commitsAsLots.single()
-            assertEquals(4, lot.size)
+            assertEquals(5, lot.size)
             assertEquals("users/$uid/memberships/free", lot.last().path)
             assertTrue(lot.all { it.kind == WriteKind.DELETE })
         }

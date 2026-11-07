@@ -323,7 +323,7 @@ La liste actuelle ne mute que **42 protections** (3 mutants équivalents documen
 - départ : index non libérable tant qu'on est membre (M14), le créateur ne part qu'avec sa Miff (M18), libération de l'index après retrait (M19) ;
 - consentement : date serveur à l'activation (S1/S2), version obligatoire (S3/J15), révocation qui conserve la preuve (S6), statut impossible sans partage actif (S7) ;
 - statut / photo : écriture réservée à soi (S9, S17), clés inconnues et coordonnées (S11), bornes de `presence`/`batteryPct`/`updateText` (S12), `presenceAt` (S13), `updatedAt` serveur (S14), taille de photo (S16), purge par le créateur seulement (S18) ;
-- lieux : toutes les bornes de `radiusM`/`lat`/`lng`/nom (P9), type et `createdBy` immuables (P8, P11), `createdAt` serveur (P12), limite gratuite à `p1` et au type `trusted` (P2, P4, P6) ;
+- lieux : toutes les bornes de `radiusM`/`lat`/`lng`/nom (P9), type et `createdBy` immuables (P8, P11), `createdAt` serveur (P12), limite gratuite à `p1` et au type `trusted` (P2, P4, P6) *(depuis le 2026-11-01 : `p1` et `p2`, 2 lieux gratuits, R-LIEU-5)* ;
 - slots : clé `free` unique et clé = `miffId` réservée au premium (C9, C11, J11), expiration du premium `expiresAt > maintenant` (A10), écriture de `entitlements` interdite (A1, A2) ;
 - rejoindre : code qui doit pointer vers CETTE Miff (J5, J7), rôle `member` (J8), index obligatoire (J9), `createdAt` du code serveur, `miffName` identique (C13) ;
 - lectures : `list` interdit sur `joinCodes`, `miffs`, `users` (R4, J17), refus par défaut (R11, A8), lecture du profil réservée à soi (R6) ;

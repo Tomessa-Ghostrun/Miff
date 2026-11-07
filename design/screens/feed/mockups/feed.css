@@ -1,0 +1,145 @@
+/* Maquettes « Feed » : s'ajoute à ../../lieux/mockups/lieux.css (mêmes tokens). Inclus tel quel dans chaque HTML par build.mjs. */
+:root{
+  /* teintes foncées dédiées au TEXTE des étiquettes (contraste AA sur la teinte 30 % : 7,3 / 6,8 / 5,7) : PROPOSÉES, voir README */
+  --safe-text:#4d5200; --warning-text:#7a4300; --danger-text:#a30500;
+  --ring-neutral:#c9c4bd; --neutral-tint:rgba(0,0,0,.06);
+}
+.frame.fz{background:var(--canvas)}
+.frame.fz.dark{background:#000}
+
+/* ---------- en-tête fixe : avatar + logo + pastille de Miff (pas de cloche) ---------- */
+.fh{position:absolute;left:0;right:0;top:0;z-index:12;background:var(--overlay-header);backdrop-filter:blur(10px);box-shadow:0 2px 4px rgba(0,0,0,.12);padding-bottom:10px}
+.fh.st{position:relative}
+.fh .bar2{height:56px;position:relative;display:flex;align-items:center;justify-content:center}
+.fh .bar2 .av{position:absolute;left:16px;top:5px}
+.fh .logo svg{width:100px;height:auto}
+.pillrow{display:flex;justify-content:center;position:relative;height:38px}
+.psel{height:38px;min-width:184px;max-width:300px;padding:0 16px;border-radius:var(--r-md);background:#eee;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;gap:10px;font-style:italic;font-size:16px;color:var(--text-form)}
+.psel .caret{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid var(--action)}
+.psel.flat{background:rgba(0,0,0,.05);box-shadow:none;color:var(--text-form)}
+.dd{position:absolute;top:0;left:50%;transform:translateX(-50%);width:250px;background:#eee;border-radius:var(--r-md);box-shadow:var(--shadow);z-index:40;padding:2px 0}
+.dd .it{min-height:44px;padding:0 16px;display:flex;align-items:center;gap:10px;font-style:italic;font-size:16px;color:var(--text-form)}
+.dd .it.on{font-weight:700}
+.dd .it .ico{width:18px;height:18px;color:var(--action)}
+.dd .it.add{color:var(--action)}
+.dd hr{border:0;border-top:1px solid rgba(0,0,0,.25);margin:0 12px}
+
+/* ---------- avatar à anneau (photo de profil ou initiales) : couleur seule, sans pictogramme (décision du PM, 2026-11-06) ---------- */
+.av{position:relative;width:46px;height:46px;border-radius:50%;border:3px solid var(--ring-neutral);background:#cfc7bd;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#4a443c;flex:none}
+.av.safe{border-color:var(--safe)} .av.warning{border-color:var(--warning)} .av.danger{border-color:var(--danger)}
+
+/* ---------- contenu défilant ---------- */
+.fscroll{position:absolute;left:0;right:0;top:151px;bottom:0;overflow:hidden}
+.fscroll-in{position:absolute;left:0;right:0;top:0;padding:10px 16px 100px;display:flex;flex-direction:column;gap:14px}
+.fscroll-in.end{top:auto;bottom:0}
+.ftab{position:absolute;left:24px;right:24px;bottom:22px;height:56px;border-radius:var(--r-md);background:rgba(255,255,255,.96);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-around;z-index:14}
+.ftab .ti{width:56px;height:44px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;color:var(--text-secondary)}
+.ftab .ti.on{background:var(--action-t20);color:var(--action)}
+.ftab .ti .ico{width:26px;height:26px}
+.ftab .ring{width:30px;height:30px;border-radius:50%;border:4px solid var(--ring-neutral);background:#e9e9e6}
+.ftab .ring.safe{border-color:var(--safe)} .ftab .ring.warning{border-color:var(--warning)} .ftab .ring.danger{border-color:var(--danger)}
+
+/* ---------- bulle de la Miff ---------- */
+.bub{position:relative;min-height:176px;border-radius:50% 46% 52% 48% / 60% 55% 45% 40%;padding:40px 56px 36px 34px;display:flex;flex-direction:column;justify-content:center;gap:6px;background:var(--tint)}
+.bub.safe{--tint:var(--safe-tint)} .bub.warning{--tint:var(--warning-tint)} .bub.danger{--tint:var(--danger-tint)} .bub.neutral{--tint:var(--neutral-tint)}
+.bub h2{font-family:"Baloo Thambi 2";font-weight:700;font-size:24px;line-height:32px;color:var(--text)}
+.bub .l2{font-size:14px;line-height:20px;color:var(--text)}
+.bub .l3{font-size:13px;line-height:18px;color:var(--text-desc)}
+.bub .gl{position:absolute;right:30px;bottom:34px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.75)}
+.bub .gl .ico{width:22px;height:22px}
+.bub.safe .gl{color:#8d9300;background:none} .bub.safe .gl .ico{width:40px;height:40px;fill:currentColor;stroke:none}
+.bub.warning .gl{color:var(--warning-text)} .bub.danger .gl{color:var(--danger-text)} .bub.neutral .gl{color:var(--text-desc)}
+.bub .msgbtn{align-self:flex-start;margin-top:8px;height:44px;padding:0 16px 0 12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--action);color:var(--action);display:flex;align-items:center;gap:8px;font-size:15px;line-height:20px;font-weight:700;box-shadow:var(--shadow-subtle)}
+.bub .msgbtn .ico{width:20px;height:20px}
+.bub.tallb{min-height:206px}
+.dots2{display:flex;justify-content:center;gap:6px;margin-top:-2px;padding-top:12px}
+.dots2 i{width:8px;height:8px;border-radius:4px;background:#cfcdc6}
+.dots2 i.on{width:22px;background:var(--lvc,#222)}
+.dots2.warning i.on{--lvc:var(--warning-text)} .dots2.danger i.on{--lvc:var(--danger-text)} .dots2.safe i.on{--lvc:var(--safe-text)}
+
+/* ---------- carte d'un membre ---------- */
+.mc{position:relative;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-sm);box-shadow:var(--shadow-subtle);padding:12px 12px 8px 20px;overflow:hidden}
+.mc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--lv,var(--ring-neutral))}
+.mc.safe{--lv:var(--safe)} .mc.warning{--lv:var(--warning)} .mc.danger{--lv:var(--danger)} .mc.neutral{--lv:var(--ring-neutral)}
+.mc .top{display:flex;gap:12px;align-items:flex-start}
+.mc .info{flex:1;min-width:0}
+.mc .nrow{display:flex;align-items:center;gap:8px;min-height:24px}
+.mc .nm{font-family:"Baloo Thambi 2";font-weight:700;font-size:17px;line-height:24px;color:var(--text)}
+.mc .you{height:20px;padding:0 8px;border-radius:var(--r-full);background:var(--border-default);font-size:12px;line-height:20px;font-weight:700}
+.bat{margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:var(--r-sm);background:#efefef;font-size:12px;line-height:16px;color:#3f3f3f;white-space:nowrap}
+.bat .ico{width:14px;height:14px}
+.labs{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.lab{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 10px 2px 8px;border-radius:var(--r-sm);font-size:14px;line-height:20px}
+.lab .ico{width:15px;height:15px;stroke-width:2}
+.lab.safe{background:var(--safe-tint);color:var(--safe-text)} .lab.warning{background:var(--warning-tint);color:var(--warning-text)} .lab.danger{background:var(--danger-tint);color:var(--danger-text)}
+.lab.neutral{background:var(--neutral-tint);color:#3f3f3f}
+.lab.soft{background:var(--action-t5);color:#2b3a78;border:1px solid var(--action-t20);padding:1px 9px 1px 7px;font-size:13px;line-height:18px}
+.tl{font-size:13px;line-height:18px;color:var(--text-desc);margin-top:4px}
+.mc .photo{position:relative;margin-top:10px;height:108px;border-radius:var(--r-sm);overflow:hidden}
+.ph-art{position:absolute;inset:0;background:repeating-linear-gradient(135deg,#d9d4cb 0 12px,#e6e2da 12px 24px);display:flex;align-items:center;justify-content:center;color:#6f6a60;font-size:12px;gap:6px}
+.ph-art .ico{width:20px;height:20px}
+.ph-art.dk{background:repeating-linear-gradient(135deg,#2b2b2b 0 14px,#333 14px 28px);color:#a0a0a0}
+.photo .cap2{position:absolute;left:8px;bottom:8px;height:22px;padding:0 8px;border-radius:var(--r-sm);background:rgba(255,255,255,.92);font-size:12px;line-height:22px;color:#222}
+.photo.locked{background:var(--action-t5);border:1px dashed var(--action-t30);display:flex;align-items:center;justify-content:center;gap:10px;padding:0 16px;font-size:13px;line-height:18px;color:var(--text-form);text-align:left}
+.photo.locked .ico{width:22px;height:22px;color:var(--action)}
+.acts{display:flex;justify-content:flex-end;gap:2px;margin-top:4px;margin-right:-6px;min-height:44px}
+.ab{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--action)}
+.ab .ico{width:24px;height:24px}
+.ab .spin2{width:22px;height:22px;border-radius:50%;border:3px solid var(--action-t30);border-top-color:var(--action)}
+.mc .mine{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;line-height:16px;color:var(--text-desc);padding-bottom:4px}
+.mc .mine .ico{width:14px;height:14px}
+
+/* ---------- boutons et notes du Feed ---------- */
+.addwrap{display:flex;justify-content:center;margin-top:6px}
+.addbtn{height:46px;padding:0 28px;border-radius:var(--r-md);background:var(--action);color:#fff;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;font-size:16px}
+.addbtn .ico{width:18px;height:18px;stroke-width:2.4}
+.fullnote{align-self:center;min-height:46px;padding:0 22px;border-radius:var(--r-md);background:var(--safe-tint);color:var(--safe-text);display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700}
+.fullnote .ico{width:20px;height:20px}
+.fb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border-subtle);font-size:14px;line-height:20px;color:var(--text-form)}
+.fb .ico{width:20px;height:20px;color:var(--text-secondary);margin-top:0}
+.fb.info{border-color:var(--action);background:var(--action-t5)} .fb.info .ico{color:var(--action)}
+.fb .spin3{width:18px;height:18px;margin-top:1px;border-radius:50%;border:3px solid var(--action-t30);border-top-color:var(--action);flex:none}
+.fb .btn{margin-top:10px;height:44px}
+.sbanner2{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--action);box-shadow:var(--shadow-subtle)}
+.sbanner2 .pill{margin-top:0}
+.sbanner2 b{display:block;font-size:16px;line-height:22px}
+.sbanner2 p{font-size:14px;line-height:20px;color:var(--text-desc);margin-top:2px}
+.sbanner2 .btn{margin-top:12px;height:44px}
+.plain{background:#fff;border-radius:var(--r-sm);box-shadow:var(--shadow-subtle);padding:14px 16px;font-size:14px;line-height:20px;color:var(--text-desc)}
+.cta-stack{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.center-txt{text-align:center;font-size:14px;line-height:20px;color:var(--text-desc);padding:8px 8px}
+
+/* ---------- squelette (état figé ; sans animation si « réduire les animations ») ---------- */
+.sk2{background:rgba(217,217,217,.65);border-radius:6px}
+.sk-bub{height:176px;border-radius:50% 46% 52% 48% / 60% 55% 45% 40%;background:rgba(217,217,217,.45)}
+.sk-card{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-sm);box-shadow:var(--shadow-subtle);padding:14px 14px 14px 20px;position:relative;overflow:hidden}
+.sk-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:rgba(217,217,217,.8)}
+.sk-row{display:flex;gap:12px;align-items:center}
+.sk-circle{width:46px;height:46px;border-radius:50%;background:rgba(217,217,217,.8);flex:none}
+
+/* ---------- feuille « Localiser » ---------- */
+.shbox{position:relative;width:390px;height:440px;overflow:hidden;background:var(--canvas)}
+.shbox .dim{position:absolute;left:16px;right:16px;top:22px}
+.veil2{position:absolute;inset:0;background:rgba(0,0,0,.30);z-index:20}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-radius:16px 16px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.18);padding:10px 20px 26px;display:flex;flex-direction:column;gap:12px}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:#d0d0d0;margin:0 auto 4px}
+.sheet h3{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+.sheet .sub{font-size:14px;line-height:20px;color:var(--text-form)}
+.sheet .trust{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:16px;color:var(--text-desc);padding:10px 12px;border-radius:var(--r-md);background:var(--action-t5)}
+.sheet .trust .ico{width:16px;height:16px;color:var(--action);margin-top:0}
+.sheet .big{width:48px;height:48px;border-radius:50%;background:var(--action-t10);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none}
+.sheet .big .ico{width:26px;height:26px}
+.sheet .head{display:flex;gap:12px;align-items:center}
+.sheet .btn{height:46px}
+
+/* ---------- photo en plein écran ---------- */
+.fs-top{position:absolute;left:0;right:0;top:0;z-index:5}
+.fs-top .status{color:#fff} .fs-top .status svg{fill:#fff} .fs-top .status svg rect[fill=none]{stroke:#fff}
+.fs-close{position:absolute;left:12px;top:56px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;display:flex;align-items:center;justify-content:center;z-index:6}
+.fs-photo{position:absolute;left:0;right:0;top:150px;height:440px}
+.fs-info{position:absolute;left:0;right:0;bottom:0;padding:40px 20px 34px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.78) 40%);color:#fff;display:flex;flex-direction:column;gap:12px;z-index:5}
+.fs-info b{font-size:17px;line-height:22px}
+.fs-info .sm2{font-size:12px;line-height:16px;color:rgba(255,255,255,.8)}
+.fs-btn{height:46px;border-radius:var(--r-md);border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;gap:8px;color:#fff;font-size:16px}
+.fs-btn .ico{width:20px;height:20px}
+.fs-msg{position:absolute;left:24px;right:24px;top:300px;z-index:5;text-align:center;color:#fff;font-size:14px;line-height:20px}

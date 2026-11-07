@@ -2,9 +2,9 @@ package com.tomessa.miff.data.miff
 
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.testsupport.miffDetails
+import com.tomessa.miff.testsupport.testPlace
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -18,7 +18,7 @@ class MiffObserverTest {
 
     private fun members(fromCache: Boolean = false) = ObservedPiece(listOf(member), fromCache)
 
-    private fun places() = ObservedPiece(listOf(MiffPlace("p1", "Maison")))
+    private fun places() = ObservedPiece(listOf(testPlace("p1", "Maison")))
 
     @Test
     fun nothingKnownYet_isLoading() {
@@ -64,7 +64,7 @@ class MiffObserverTest {
 
     @Test
     fun unreadablePlaces_areJustAnEmptyList() {
-        val noPlaces = ObservedPiece<List<MiffPlace>>(emptyList())
+        val noPlaces = ObservedPiece<List<com.tomessa.miff.domain.place.Place>>(emptyList())
         val data = assembleObservation(miff(), members(), noPlaces) as MiffObservation.Data
         assertTrue(data.snapshot.places.isEmpty())
     }

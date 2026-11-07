@@ -9,6 +9,7 @@ import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.privacy.BooleanStore
 import com.tomessa.miff.data.privacy.CollectionSwitch
 import com.tomessa.miff.data.privacy.PrivacySettings
+import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
@@ -54,6 +55,9 @@ class MemoryPendingConsentStore : PendingConsentStore {
 }
 
 class RecordingSwitch : CollectionSwitch {
+    /** Number of [forgetInstallation] calls (deletion of the account: the SDK forgets what it keeps about the installation). */
+    var forgetCalls = 0
+
     /** Every [setEnabled] call (`false` = no consent, which deletes the reports not yet sent). */
     val calls = mutableListOf<Boolean>()
 
@@ -74,6 +78,11 @@ class RecordingSwitch : CollectionSwitch {
     override fun pause() {
         pauseCalls++
         log += "pause"
+    }
+
+    override fun forgetInstallation() {
+        forgetCalls++
+        log += "forget"
     }
 }
 
@@ -126,6 +135,15 @@ class FakeAuthGateway(
     var googleResult: AuthOutcome = AuthOutcome.Success("uid-1", isNewUser = true)
     var deleteResults = ArrayDeque<AuthFailure?>()
     var reauthResult: AuthFailure? = null
+    var passwordReauthResult: AuthFailure? = null
+    var passwordReauthCalls = 0
+    var providers: Set<com.tomessa.miff.domain.auth.SignInProvider> =
+        setOf(com.tomessa.miff.domain.auth.SignInProvider.PASSWORD)
+    var sessionCheck: com.tomessa.miff.domain.auth.SessionCheck = com.tomessa.miff.domain.auth.SessionCheck.VALID
+    var sessionChecks = 0
+
+    /** Runs at the start of every deleteCurrentAccount (to simulate what happens just before it). */
+    var onDelete: () -> Unit = {}
     var signInCalls = 0
     var createCalls = 0
     var googleCalls = 0
@@ -170,8 +188,27 @@ class FakeAuthGateway(
         return reauthResult
     }
 
+    override suspend fun reauthenticateWithGoogleForDeletion(idToken: String): AuthFailure? {
+        timeline += "reauth"
+        return reauthResult
+    }
+
+    override suspend fun reauthenticateWithPassword(password: String): AuthFailure? {
+        passwordReauthCalls++
+        timeline += "reauth"
+        return passwordReauthResult
+    }
+
+    override fun linkedProviders(): Set<com.tomessa.miff.domain.auth.SignInProvider> = providers
+
+    override suspend fun checkSession(): com.tomessa.miff.domain.auth.SessionCheck {
+        sessionChecks++
+        return sessionCheck
+    }
+
     override suspend fun deleteCurrentAccount(): AuthFailure? {
         deleteCalls++
+        onDelete()
         timeline += "delete"
         val result = if (deleteResults.isEmpty()) null else deleteResults.removeFirst()
         if (result == null) uidState.value = null
@@ -260,8 +297,11 @@ class SessionHarness(
     drafts: com.tomessa.miff.data.onboarding.ProfileDraftStore? = null,
     withdrawals: com.tomessa.miff.data.privacy.PendingWithdrawals? = null,
     onAccountResolved: (String) -> Unit = {},
+    deletionMarker: com.tomessa.miff.data.account.AccountDeletionMarker? = null,
+    localData: List<com.tomessa.miff.data.session.LocalDataEraser> = emptyList(),
+    timeline: Timeline = Timeline(),
 ) {
-    val timeline = Timeline()
+    val timeline = timeline
     val gateway = FakeAuthGateway(timeline)
     val flags = MemoryBooleanStore()
     val pending = MemoryPendingConsentStore()
@@ -284,8 +324,28 @@ class SessionHarness(
         }
     var teardownCalls = 0
 
-    val manager =
+    // SESS-2: the real session logic, on a fake server, a fake private file and a fake network.
+    val sessionNetwork = FakeNetwork()
+    val sessions = FakeSessionDocuments(timeline)
+    val deviceIds = MemoryDeviceIdStore()
+    var deviceCounter = 0
+    val device =
+        DeviceSession(
+            ids = deviceIds,
+            documents = sessions,
+            network = sessionNetwork,
+            currentUid = { gateway.currentUid },
+            scope = scope,
+            onReplaced = { gone -> manager.onDeviceReplaced(gone) },
+            // Predictable and valid identifiers: "device-N-..." (16 characters at least).
+            newId = { "device-${++deviceCounter}-0123456789abcdef" },
+            nowMillis = { 1_000_000L },
+            retryPausesMillis = emptyList(),
+        )
+
+    val manager: SessionManager =
         SessionManager(
+            device = device,
             gateway = gateway,
             accounts = accounts,
             pending = pending,
@@ -304,5 +364,7 @@ class SessionHarness(
             drafts = drafts,
             withdrawals = withdrawals,
             onAccountResolved = onAccountResolved,
+            deletionMarker = deletionMarker,
+            localData = localData,
         )
 }

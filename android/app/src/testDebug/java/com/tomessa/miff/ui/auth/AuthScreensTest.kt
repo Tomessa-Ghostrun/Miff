@@ -296,6 +296,67 @@ class AuthScreensTest {
         assertEquals(1, refused)
     }
 
+    // --- Account taken over by another phone (SESS-2) ------------------------------------------------------------
+
+    @Test
+    fun signIn_afterAReplacement_showsTheCalmNote_inEnglish() {
+        signIn(SignInUiState(showSessionReplacedNote = true))
+        shoot("signin-session-replaced")
+        composeRule
+            .onNodeWithText("Your account is now being used on another phone. You've been signed out of this one.")
+            .assertExists()
+        // A calm information, not an error: nothing about a Miff, and the form stays usable.
+        composeRule.onNodeWithText(text(R.string.auth_signin_action)).assertExists()
+        composeRule.onNodeWithText(text(R.string.auth_email_label)).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
+    fun signIn_afterAReplacement_showsTheCalmNote_inFrench_withTutoiement() {
+        signIn(SignInUiState(showSessionReplacedNote = true))
+        composeRule
+            .onNodeWithText(
+                "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci.",
+            ).assertExists()
+    }
+
+    @Test
+    fun signIn_afterTheSessionDisappeared_showsTheCarefulNote_inEnglish_andNotTheOtherOne() {
+        signIn(SignInUiState(showSessionGoneNote = true))
+        shoot("signin-session-gone")
+        composeRule
+            .onNodeWithText(
+                "Your account changed on another device (for example, a deletion in progress). This phone was signed out.",
+            ).assertExists()
+        // It does not claim that the account is used elsewhere, and it says nothing about a Miff; the form stays usable.
+        composeRule.onAllNodesWithText(text(R.string.auth_session_replaced_notice)).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Miff", substring = true, ignoreCase = true).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.auth_signin_action)).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
+    fun signIn_afterTheSessionDisappeared_showsTheCarefulNote_inFrench_withTutoiement() {
+        signIn(SignInUiState(showSessionGoneNote = true))
+        composeRule
+            .onNodeWithText(
+                "Ton compte a changé sur un autre appareil (par exemple une suppression en cours). Ce téléphone a été déconnecté.",
+            ).assertExists()
+        composeRule.onAllNodesWithText("utilisé sur un autre téléphone", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun signIn_withoutTheGoneNote_showsNoSuchNote() {
+        signIn()
+        composeRule.onAllNodesWithText(text(R.string.auth_session_gone_notice)).assertCountEquals(0)
+    }
+
+    @Test
+    fun signIn_withoutReplacement_showsNoSuchNote() {
+        signIn()
+        composeRule.onAllNodesWithText(text(R.string.auth_session_replaced_notice)).assertCountEquals(0)
+    }
+
     @Test
     @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
     fun frenchScreens_showTheTutoiementTexts() {

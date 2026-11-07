@@ -12,13 +12,13 @@ final class FirestoreMiffRepository: MiffRepository {
     static let maxCodeDraws = 3
     static let freeKey = "free"
 
-    private let store: MiffStore
+    let store: MiffStore
     private let observer: MiffObserver
     private let location: LocationAccessProbe
     /// Vide le cache du téléphone après un nettoyage dont personne n'est averti (voir `cleanUpSilently`).
     private let cache: CachePurger?
-    private let rules: MiffRepositoryRules
-    private let reader: MiffStateReader
+    let rules: MiffRepositoryRules
+    let reader: MiffStateReader
 
     init(
         store: MiffStore,
@@ -57,6 +57,10 @@ final class FirestoreMiffRepository: MiffRepository {
         guard MiffName.isValid(name) else {
             return .failed(.unknown)
         }
+        // SESS-3 : pas de session d'appareil confirmée = rien n'est écrit (le statut initial du lot doit porter l'identifiant).
+        guard let deviceId = await confirmedDeviceId() else {
+            return .failed(.offline)
+        }
         let code: String
         switch await freeCode() {
         case .free(let drawn):
@@ -70,7 +74,14 @@ final class FirestoreMiffRepository: MiffRepository {
         let store = self.store
         let result = await write {
             try await store.commitWithProfile(uid: uid) { profile in
-                let entry = MiffEntry(uid: uid, miffId: miffId, membershipKey: key, profile: profile, access: access)
+                let entry = MiffEntry(
+                    uid: uid,
+                    miffId: miffId,
+                    membershipKey: key,
+                    profile: profile,
+                    access: access,
+                    deviceId: deviceId
+                )
                 return MiffWrites.create(entry: entry, code: code, name: name)
             }
         }
@@ -82,24 +93,27 @@ final class FirestoreMiffRepository: MiffRepository {
         )
         switch result {
         case .done:
+            rules.onSharingChanged()
             return .created(creation)
         case .failed(let failure):
             // Un lot parti dont la réponse s'est perdue ne s'affiche pas comme un échec (un appui = une Miff, critère H3).
             if failure.mayHaveLanded, await reader.landed(miffId) {
+                rules.onSharingChanged()
                 return .created(creation)
             }
+            await recheckSessionIfRefused(failure)
             return .failed(failure)
         }
     }
 
-    private enum CodeDraw {
+    enum CodeDraw {
         case free(String)
         case failed(MiffFailure)
     }
 
     /// Un code que personne n'utilise : une lecture par essai, trois essais (critère C7). Une collision est de l'ordre de
     /// 10^-13 : jamais visible.
-    private func freeCode() async -> CodeDraw {
+    func freeCode() async -> CodeDraw {
         let store = self.store
         for _ in 0..<Self.maxCodeDraws {
             let code = rules.newCode()
@@ -181,6 +195,9 @@ final class FirestoreMiffRepository: MiffRepository {
     }
 
     func join(uid: String, preparation: JoinReady) async -> JoinResult {
+        guard let deviceId = await confirmedDeviceId() else {
+            return .failed(.offline)
+        }
         let access = location.current()
         let key = membershipKey(premium: preparation.premium, miffId: preparation.miffId)
         let store = self.store
@@ -191,7 +208,8 @@ final class FirestoreMiffRepository: MiffRepository {
                     miffId: preparation.miffId,
                     membershipKey: key,
                     profile: profile,
-                    access: access
+                    access: access,
+                    deviceId: deviceId
                 )
                 return MiffWrites.join(entry: entry, code: preparation.code)
             }
@@ -199,14 +217,18 @@ final class FirestoreMiffRepository: MiffRepository {
         let joined = JoinResult.joined(miffId: preparation.miffId, firstMiff: preparation.firstMiff)
         switch result {
         case .done:
+            rules.onSharingChanged()
             return joined
         case .failed(let failure):
             if failure.mayHaveLanded, await reader.landed(preparation.miffId) {
+                rules.onSharingChanged()
                 return joined
             }
-            // Les règles ont dit « non » : le code a été renouvelé, ou la Miff supprimée, depuis qu'il a été lu. Même message.
+            // Les règles ont dit « non » : le code a été renouvelé, ou la Miff supprimée, depuis qu'il a été lu. Même message...
+            // sauf si c'est la session de cet appareil qui a été remplacée (SESS-3) : jamais « code introuvable » dans ce cas.
             if failure == .refused {
-                return .notFound
+                await rules.recheckSession()
+                return rules.deviceId() == nil ? .failed(.refused) : .notFound
             }
             return .failed(failure)
         }
@@ -238,19 +260,35 @@ final class FirestoreMiffRepository: MiffRepository {
         let store = self.store
         let writes: [DocWrite]
         if enabled {
-            writes = MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: location.current())
+            // SESS-3 : reprendre le partage réécrit un premier statut, qui doit porter l'identifiant de la session confirmée.
+            guard let deviceId = await confirmedDeviceId() else {
+                return .failed(.offline)
+            }
+            writes = MiffWrites.resumeSharing(
+                miffId: miffId,
+                uid: uid,
+                access: location.current(),
+                deviceId: deviceId
+            )
         } else {
             writes = MiffWrites.stopSharing(miffId: miffId, uid: uid)
         }
         let result = await write { try await store.commit(writes) }
+        if result == .done {
+            rules.onSharingChanged()
+        }
         // Un refus peut aussi vouloir dire « déjà dans l'état demandé » : la fenêtre demande le contraire de ce que disait la
         // fiche à son ouverture, et la fiche a pu changer depuis (un autre téléphone) ; les règles refusent alors une écriture
         // sans effet (faux -> faux, vrai -> vrai). La fiche du serveur est relue, et l'état voulu compte comme un succès.
         if case .failed(let failure) = result, failure.mayHaveLanded || failure == .refused {
             let read = await guarded { try await store.readSharing(miffId: miffId, uid: uid) }
             if case .value(let current) = read, current == enabled {
+                rules.onSharingChanged()
                 return .done
             }
+        }
+        if enabled, case .failed(let failure) = result {
+            await recheckSessionIfRefused(failure)
         }
         return result
     }
@@ -266,24 +304,11 @@ final class FirestoreMiffRepository: MiffRepository {
                 miffs: state.summaries,
                 lost: state.lost,
                 premium: state.premium,
-                fromCache: state.fromCache
+                fromCache: state.fromCache,
+                premiumKnown: state.premiumKnown
             )
             return .loaded(miffs)
         }
-    }
-
-    func cleanUpLost(uid: String, lost: LostMiff) async -> Bool {
-        let store = self.store
-        // Le nettoyage demande le serveur : sans lui rien n'est touché (le prochain démarrage le fera).
-        let leaveWrites = MiffWrites.leave(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
-        let leave = await write { try await store.commit(leaveWrites) }
-        if leave == .done {
-            return true
-        }
-        // Retiré : la fiche a déjà disparu, le lot est refusé. Il ne reste que l'index, que les règles laissent supprimer.
-        let dropWrites = MiffWrites.dropIndex(uid: uid, membershipKey: lost.ref.key)
-        let indexOnly = await write { try await store.commit(dropWrites) }
-        return indexOnly == .done
     }
 
     /// Index obsolètes trouvés en créant ou en rejoignant (la personne a été retirée d'une Miff, ou elle a été supprimée) :
@@ -310,7 +335,7 @@ final class FirestoreMiffRepository: MiffRepository {
         premium ? miffId : Self.freeKey
     }
 
-    private func write(_ action: @escaping () async throws -> Void) async -> MiffWriteResult {
+    func write(_ action: @escaping () async throws -> Void) async -> MiffWriteResult {
         switch await guarded(action) {
         case .value:
             return .done
@@ -319,7 +344,28 @@ final class FirestoreMiffRepository: MiffRepository {
         }
     }
 
-    private func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
+    func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
         await guardedCall(timeoutSeconds: rules.timeoutSeconds, call)
+    }
+}
+
+// SESS-3 : un compte, un seul appareil.
+extension FirestoreMiffRepository {
+    /// SESS-3 : l'identifiant de la session de cet appareil, seulement s'il est CONFIRMÉ par le serveur. Sans confirmation la session
+    /// est relue une fois (retour du réseau manqué, lancement hors ligne) ; toujours rien = pas d'écriture.
+    func confirmedDeviceId() async -> String? {
+        if let identifier = rules.deviceId() {
+            return identifier
+        }
+        await rules.recheckSession()
+        return rules.deviceId()
+    }
+
+    /// Un refus n'est pas à lui seul la preuve que la session est remplacée (consentement, partage arrêté...) : la session est
+    /// relue auprès du serveur ; remplacée, la déconnexion forcée est lancée par le gestionnaire de session.
+    func recheckSessionIfRefused(_ failure: MiffFailure) async {
+        if failure == .refused {
+            await rules.recheckSession()
+        }
     }
 }

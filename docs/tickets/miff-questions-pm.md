@@ -16,7 +16,7 @@ Les deux décisions qui **diffèrent de la recommandation** sont QM2 et QM11 ; e
 | QM8 | Message d'accès perdu | Message unique | **Message unique : « Tu n'as plus accès à la Miff « X ».** | §5.7, §5.10, D |
 | QM9 | « Prévenir mes proches » avant la suppression ? | Oui, facultatif | **Oui.** Sans serveur ni notifications, le bouton **propose** un message prérempli dans la feuille de partage native ; le créateur choisit les destinataires et l'envoie lui-même ; l'app ne sait pas qui l'a reçu et n'envoie rien toute seule. Faisable sur Android et iOS. | §5.6, S6 |
 | QM10 | Le Feed est-il un ticket distinct ? | Oui | **Oui.** Page Notion « FEED — Feed (cercle de confiance) » créée en « A cadrer ». | §7 |
-| QM11 | Garde-t-on « Localiser », « Message » et « Appeler » dans le Feed ? | Non, pas dans la v1 du Feed | **Non : on les garde dans la v1 du Feed (écart avec la recommandation).** Message / Appeler deviennent faisables car le téléphone est obligatoire à l'onboarding. **« Localiser » contredit le modèle (aucune coordonnée stockée) : le futur ticket Feed devra définir précisément ce qu'il fait sans coordonnées. Question ouverte, non inventée.** | §7 F1, F2, §4 #19, §14 R16 |
+| QM11 | Garde-t-on « Localiser », « Message » et « Appeler » dans le Feed ? | Non, pas dans la v1 du Feed | **Non : on les garde dans la v1 du Feed (écart avec la recommandation).** Message / Appeler deviennent faisables car le téléphone est obligatoire à l'onboarding. **~~« Localiser » contredit le modèle (aucune coordonnée stockée)~~ : levé le 2026-11-01, la dernière position connue est stockée côté serveur (décision du PM) ; le futur ticket Feed/Lieux définit ce qu'il fait.** | §7 F1, F2, §4 #19, §14 R16 |
 | QM12 | État sans Miff et bulle verte du Feed | État vide qui invite ; bulle verte seulement si tous les statuts connus le permettent | **OK comme recommandé.** | §7 F3, F4 |
 | QM13 | Où ouvre-t-on l'écran de gestion d'une Miff ? | Pastille de Miff du Feed + « Mes Miffs » dans Réglages | **OK.** | §2, G1 |
 | QM14 | Lien de téléchargement dans le message de partage | Page statique gratuite du site d'AUTH-W | **OK.** | §5.3, §11 |
@@ -31,7 +31,7 @@ Les deux décisions qui **diffèrent de la recommandation** sont QM2 et QM11 ; e
 ## Points restant ouverts (hors de ce ticket)
 
 - **Ticket Premium** : doit définir le comportement visible d'un compte gratuit qui tente une deuxième Miff (aucun comportement n'est inventé dans ce ticket).
-- **Ticket Feed** : doit définir ce que fait « Localiser » sans coordonnées stockées et le libellé exact de la bulle.
+- **Ticket Feed** : doit définir ce que fait « Localiser » (dernière position connue, stockée côté serveur depuis le 2026-11-01) et le libellé exact de la bulle.
 
 ## Décision du PM (2026-10-31) — départ volontaire et code
 

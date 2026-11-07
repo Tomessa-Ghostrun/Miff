@@ -4,12 +4,10 @@ rules_version = '2';
 // Miff — règles de sécurité Firestore (projet miff-3d283, europe-west9)
 //
 // STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
-// `npm test` dans backend/). Les règles de `main` au 2026-10-23 (commit 1017391) ont été
-// déployées sur miff-3d283 depuis le poste du PM ; celles d'AUTH-B (consentements, profil exigé) et
-// d'ONB-B (téléphone obligatoire, copie identique dans la fiche de membre) ne sont PAS déployées : ce fichier
-// (PR « ONB-B / MIFF-0 ») est donc PLUS STRICT que ce qui tourne en production, et les apps qui écrivent un profil ou
-// une fiche sans `phone` y seraient refusées. Tout déploiement suit la procédure du ticket
-// docs/tickets/durcissement-regles-firestore.md (§8.2) et l'accord explicite du PM.
+// `npm test` dans backend/). Déployées sur miff-3d283 depuis le poste du PM : le 2026-10-30 (règles de `main` du
+// 2026-10-27, AUTH-B et ONB-B comprises), puis le 2026-11-04 (commit 42031c0 : lieux R-LIEU-5, -2, -6 ; dernière position
+// connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3). Tout déploiement suit la procédure
+// docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
 //  1. Tout est refusé par défaut. Aucune règle ouverte, même temporaire.
@@ -21,7 +19,7 @@ rules_version = '2';
 //     partagent eux-mêmes ET ont publié leur propre statut (réciprocité), tant que
 //     la Miff existe. Révoquer = supprimer ces données.
 //  5. Limites freemium appliquées par des "slots" à identifiant fixe (voir
-//     data-model.md §6) : 1 Miff et 1 lieu en gratuit, sans Cloud Function.
+//     data-model.md §6) : 1 Miff et 2 lieux (p1, p2) en gratuit, sans Cloud Function.
 //  6. Téléphone (ONB-B) : donnée de contact obligatoire, sans vérification ni unicité. Il n'est visible de quelqu'un d'autre
 //     que par la copie dans la fiche de membre (lisible des seuls membres de la Miff, sans condition de partage : décision
 //     N1 du PM) ; la copie est contrainte à être celle du profil users/{uid} après le lot. Une fuite du code d'une Miff est
@@ -31,6 +29,41 @@ rules_version = '2';
 //  8. Les règles NE PEUVENT PAS faire de limitation de débit : le brute force
 //     des codes et les abus de volume sont atténués par App Check (à activer
 //     dans la console) + entropie du code (12 caractères, ~59 bits).
+//  9. Dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01) — DÉPLOYÉ le 2026-11-04 : un document
+//     miffs/{id}/positions/{uid} par membre et par Miff (lat, lng, measuredAt, rien d'autre, aucun historique), SÉPARÉ du
+//     statut (le statut ne contient toujours aucune coordonnée). Écriture : par l'intéressé seul, Miff existante, partage actif ET
+//     texte de consentement de version 3 ou plus (jamais de position sans ce nouveau consentement). Lecture d'un autre membre :
+//     mêmes conditions que les statuts (Miff existante, partage actif, statut publié) PLUS avoir publié sa propre position
+//     (réciprocité FORMELLE : elle prouve qu'un document existe, pas que la position ou son heure sont vraies — non vérifiables) et
+//     que la cible partage encore ; get seulement, jamais de liste. Le créateur n'a AUCUN droit de lecture de plus ; il peut seulement
+//     SUPPRIMER la position d'un membre, à tout moment (comme le statut et la photo : suppression seulement, aucune lecture). Effacée
+//     dans le MÊME lot que le statut et la photo (arrêt du partage, départ, retrait) : les règles le EXIGENT.
+//     L'écriture de position lit DEUX documents (Miff, fiche du membre) et ne doit jamais partager un lot avec des lieux.
+//     La version du texte de consentement est DÉCLARÉE par le client : aucune règle ne prouve quel texte a été affiché.
+// 10. Un compte, un seul appareil (SESS-1, mécanisme validé par le PM le 2026-11-01) — DÉPLOYÉ le 2026-11-05 : un document de session
+//     users/{uid}/session/active { deviceId, startedAt } écrit à chaque connexion (la dernière connexion gagne), supprimé à la
+//     déconnexion volontaire, lisible et écrivable par son propriétaire seul. Le statut et la dernière position portent la clé
+//     facultative `deviceId` ; si elle est présente elle DOIT être celle de la session (une lecture de règles de plus, seulement
+//     quand la clé est présente), donc un appareil remplacé ne peut plus écrire de statut ni de position. DEUX TEMPS de
+//     déploiement (deviceIdRequired) : temps 1 = clé facultative (les applications actuelles, qui ne l'écrivent pas, continuent à
+//     passer) ; temps 2 = clé obligatoire. MESURE DE COHÉRENCE, PAS DE SÉCURITÉ : un client modifié peut mentir, et une écriture
+//     sans charge utile (suppression) ou sur un autre document (lieu, fiche, photo seule) n'est pas contrôlée (data-model.md).
+// 11. Localisation de la photo d'update (R-PHOTO-LOC, décision du PM du 2026-11-05) — DEUX VERSIONS :
+//     (a) version FACULTATIVE (fichier de `main` au commit 35c8ba1, PR #82) : DÉPLOYÉE le 2026-11-06 (commande exécutée par le PM, « Deploy complete! » confirmé) ;
+//     (b) version OBLIGATOIRE (ce fichier) — DÉPLOYÉE le 2026-11-06 (décision du PM du 2026-11-06 : « une photo d'update doit être attachée à
+//         une position, forcément »). Retour arrière = redéployer le fichier de `main` d'avant cette PR (la localisation redevient facultative ;
+//         les photos déjà posées restent localisées).
+//     Le document photo porte TOUJOURS `lat`, `lng` (deux coordonnées valides, jamais nulles) et `measuredAt` (heure de la mesure, jamais nulle) :
+//     la position figée au moment de la photo. Une photo sans localisation est REFUSÉE, de même qu'une mise à jour qui supprimerait une des trois clés.
+//     Écriture : par l'intéressé seul, comme la photo ; TOUTE photo exige le même texte de consentement que la dernière position (version 3
+//     ou plus, après le lot : on peut activer le partage et poser la photo dans le même lot). Lecture (inchangée) : une photo localisée n'est
+//     lisible que par son auteur ou par un membre qui a PUBLIÉ sa propre position (réciprocité formelle, comme positions/{uid}) ; pas de
+//     contrôle « l'auteur partage encore » (PM, 2026-11-06 : la purge à l'arrêt du partage et l'expiration de 24 h bornent un reliquat) ; un
+//     éventuel ancien document SANS localisation reste lisible comme avant (aucune application publiée n'en écrit : data-model.md). La
+//     localisation est EFFACÉE AVEC la photo (même document, mêmes lots de suppression, mêmes 24 h) : aucun lot ne change. Le document photo ne porte
+//     toujours PAS de deviceId (SESS-1 : une photo seule n'est pas contrôlée, elle voyage avec un statut dans la mise à jour manuelle).
+//     Risques juridiques CONNUS et assumés par le PM (décision du 2026-10-23, aucune relecture juridique, aucune conformité affirmée) : RGPD
+//     (localisation = donnée sensible), mineurs, copie datée d'une position précise lisible jusqu'à 24 h (data-model.md §11).
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -99,6 +132,15 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/miffs/$(miffId)).data.ownerUid == request.auth.uid;
     }
 
+    // Créateur de la Miff en UNE seule lecture de règles (isOwner en coûte 2 : exists + get). Même résultat quand la Miff
+    // n'existe pas : get() échoue et la requête est refusée. À n'utiliser que dans une conjonction ou une disjonction
+    // POSITIVE, jamais derrière « ! ». Sert aux purges du créateur (statut, photo, position) pour que le lot de retrait d'un
+    // membre reste à 18 lectures de règles sur 20 une fois la position ajoutée (data-model.md §12).
+    function isOwnerOneRead(miffId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/miffs/$(miffId)).data.ownerUid == request.auth.uid;
+    }
+
     // Membre qui a lui-même activé le partage de position dans cette Miff.
     // (get() échoue si non-membre => refus.) Sert à la réciprocité.
     function mySharingOn(miffId) {
@@ -113,11 +155,28 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/miffs/$(miffId));
     }
 
-    // Réciprocité réelle (ATK3) : avoir PUBLIÉ son propre statut dans cette Miff (le document
+    // Réciprocité formelle (ATK3) : avoir PUBLIÉ son propre statut dans cette Miff (le document
     // status/{moi} existe), pas seulement avoir activé le partage.
     function statusPublished(miffId) {
       return isSignedIn()
         && exists(/databases/$(database)/documents/miffs/$(miffId)/status/$(request.auth.uid));
+    }
+
+    // Réciprocité formelle de la position (R-LIEU-POS, même logique que ATK3) : avoir PUBLIÉ sa propre dernière position dans
+    // cette Miff (le document positions/{moi} existe). Un membre qui n'en partage aucune ne lit pas celle des autres. Comme
+    // ce document ne peut exister qu'avec un partage actif et une version de consentement déclarée de 3 ou plus (validPosition), et
+    // disparaît à l'arrêt du partage, elle implique que le lecteur a déclaré le même texte. FORMELLE : un client modifié peut publier une
+    // fausse position pour lire celles des autres ; rien ne permet de vérifier une position ou son heure de mesure.
+    function positionPublished(miffId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/miffs/$(miffId)/positions/$(request.auth.uid));
+    }
+
+    // La personne dont on lit la position partage encore (fiche présente, partage actif). Ceinture et bretelles (sonde Y4 de la revue de
+    // sécurité) : les lots de purge empêchent déjà qu'une position survive à l'arrêt du partage, au départ ou au retrait ; si un reliquat
+    // existait malgré tout (autre chemin, bug, import), il ne serait pas lisible. Une lecture de plus, sur un `get` (5 sur 10).
+    function targetSharingOn(miffId, uid) {
+      return get(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
     }
 
     // Retrait d'un membre (ATK4) : le code secret de la Miff CHANGE dans le même lot (l'ancien code
@@ -127,15 +186,6 @@ service cloud.firestore {
     function codeRenewed(miffId) {
       return getAfter(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode
         != get(/databases/$(database)/documents/miffs/$(miffId)).data.joinCode;
-    }
-
-    // Premium = document entitlements/{uid} écrit UNIQUEMENT par le serveur / la
-    // console, actif et non expiré (expiration vérifiée côté règles : pas besoin
-    // de Cloud Function pour "éteindre" un abonnement arrivé à échéance).
-    function isPremium(uid) {
-      return exists(/databases/$(database)/documents/entitlements/$(uid))
-        && get(/databases/$(database)/documents/entitlements/$(uid)).data.active == true
-        && get(/databases/$(database)/documents/entitlements/$(uid)).data.expiresAt > request.time;
     }
 
     // -------------------------------------------------------------------------
@@ -224,6 +274,27 @@ service cloud.firestore {
         );
     }
 
+    // CONTRAT DE NOMMAGE des versions du texte de consentement (R-LIEU-POS / R-LIEU-3) : `AAAA-MM-vNN`, LARGEUR FIXE (deux chiffres
+    // pour NN, zéro de tête : 2026-11-v03, 2026-12-v04...), comme isConsentVersion d'analyticsConsent. La largeur fixe rend l'ordre
+    // alphabétique identique à l'ordre chronologique, ce que le renouvellement (version strictement supérieure) suppose. Les textes
+    // déjà écrits sans largeur fixe (2026-10-v1, 2026-10-v2) restent valides comme ANCIENNES versions et ne couvrent pas la position.
+    // Le texte qui couvre la DERNIÈRE POSITION CONNUE est la version 3 : NN doit valoir 03 ou plus (03 à 99), quel que soit le mois
+    // (décision du PM du 2026-11-01 : nouveau consentement avant toute écriture de position). Le numéro 3 vient de la demande du PM,
+    // pas d'un texte déjà publié : le changer est une ligne, un test et une mutation.
+    // LIMITE : la version est DÉCLARÉE par le client. Aucune règle ne prouve quel texte a été réellement affiché ; la protection est
+    // le comportement des applications (revue de code et QA), pas les règles.
+    function isPositionConsentVersion(v) {
+      return v is string && v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v(0[3-9]|[1-9][0-9])$');
+    }
+
+    // Texte de consentement qui couvre la LOCALISATION DE LA PHOTO d'update (R-PHOTO-LOC) : fonction DÉDIÉE, distincte de celle de la
+    // dernière position, pour que le seuil de la photo puisse évoluer seul (décision UPDATE-1b : texte v3 amendé avant publication ; sinon
+    // seuil relevé à 04 avec la v4 : une ligne, un test, une mutation). Aujourd'hui : même forme AAAA-MM-vNN de largeur fixe et même seuil
+    // (NN de 03 à 99). Aucune lecture de règles. LIMITE : version DÉCLARÉE par le client, aucune règle ne prouve quel texte a été affiché.
+    function isPhotoLocationConsentVersion(v) {
+      return v is string && v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v(0[3-9]|[1-9][0-9])$');
+    }
+
     // Consentement à la création du document membre.
     // Les 4 clés sont TOUJOURS présentes (null si non applicable).
     function validSharingCreate(s) {
@@ -239,7 +310,8 @@ service cloud.firestore {
 
     // Changement de consentement (o = ancien, n = nouveau).
     //  - activer   : consentedAt = maintenant, version du texte acceptée, revokedAt vidé
-    //  - révoquer  : revokedAt = maintenant ET statut + photo supprimés dans le même batch
+    //  - révoquer  : revokedAt = maintenant ET statut + photo + dernière position supprimés dans le même batch
+    //  - renouveler (partage actif -> actif) : nouveau texte, version strictement supérieure, rien à supprimer (R-LIEU-3)
     function validSharingChange(miffId, uid, o, n) {
       return n is map
         && n.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])
@@ -255,7 +327,22 @@ service cloud.firestore {
             && n.consentedAt == o.consentedAt
             && n.consentVersion == o.consentVersion
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
-            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid)))
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid)))
+          ||
+          // Renouveler un consentement ACTIF (R-LIEU-3, accepté puis confirmé par le PM le 2026-11-01) : le partage reste actif,
+          // un nouveau texte est accepté. Heure serveur, revokedAt vide, version de LARGEUR FIXE (isConsentVersion : AAAA-MM-vNN,
+          // sinon l'ordre alphabétique ne serait pas l'ordre chronologique : v10 -> v2, texte libre...) et STRICTEMENT supérieure
+          // à l'ancienne. On ne peut JAMAIS sortir de la couverture « position » en renouvelant : si l'ancienne version couvre la
+          // position, la nouvelle aussi (sinon la position resterait publiée sous un consentement qui ne la couvre plus). Aucune
+          // suppression de statut, de photo ni de position, et AUCUNE lecture de règles. Limite : la version est déclarée par le
+          // client (voir isPositionConsentVersion).
+          (o.enabled == true && n.enabled == true
+            && n.consentedAt == request.time
+            && isConsentVersion(n.consentVersion)
+            && n.consentVersion > o.consentVersion
+            && (!isPositionConsentVersion(o.consentVersion) || isPositionConsentVersion(n.consentVersion))
+            && n.revokedAt == null)
         );
     }
 
@@ -331,12 +418,13 @@ service cloud.firestore {
         );
     }
 
-    // Quitter / être retiré : le statut et la photo doivent disparaître dans le
+    // Quitter / être retiré : le statut, la photo et la dernière position doivent disparaître dans le
     // même batch (sinon une trace de position resterait visible d'un ex-membre).
     function memberDeleteOk(miffId, uid) {
       return isSignedIn()
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
+        && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid))
         && (
           (isSelf(uid) && resource.data.role == 'member')
           // Le créateur ne peut partir qu'en supprimant la Miff dans le même batch.
@@ -402,11 +490,19 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/miffs/$(d.miffId)).data.name == d.miffName;
     }
 
+    // Catégorie du lieu (R-LIEU-2, décision du PM du 2026-11-01) : OBLIGATOIRE, liste fermée. Valeurs techniques (anglais,
+    // stables) ; les libellés FR/EN sont côté client : home = Maison, work = Travail, school = École, sport = Sport,
+    // relative = Chez un proche, leisure = Loisir, other = Autre.
+    function isPlaceCategory(v) {
+      return v in ['home', 'work', 'school', 'sport', 'relative', 'leisure', 'other'];
+    }
+
     function validPlaceShape(d) {
-      return d.keys().hasOnly(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
-        && d.keys().hasAll(['name', 'type', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt'])
         && isStr(d.name, 1, 60)
         && d.type in ['trusted', 'risk']
+        && isPlaceCategory(d.category)
         && isNullOrStr(d.address, 200)
         && d.lat is number && d.lat >= -90 && d.lat <= 90
         && d.lng is number && d.lng >= -180 && d.lng <= 180
@@ -414,9 +510,22 @@ service cloud.firestore {
         && (d.priority == null || (d.priority is int && d.priority >= 0 && d.priority <= 999));
     }
 
-    // Limite freemium "1 lieu" : en gratuit, SEUL l'identifiant 'p1' et le type
-    // 'trusted' sont acceptés (un second create sur 'p1' est un update => refusé
-    // pour les champs verrouillés). Premium : identifiants libres + zones à risque.
+    // Premium = document entitlements/{uid} écrit UNIQUEMENT par le serveur / la console, actif et non expiré (expiration
+    // vérifiée côté règles : pas besoin de Cloud Function pour "éteindre" un abonnement arrivé à échéance), en UNE seule
+    // lecture de règles (budget des lots multi-Miffs : data-model.md §12). Sans document entitlements/{uid}, get() échoue et la
+    // requête est refusée, ce qui est bien le résultat voulu (pas de premium). À n'utiliser que dans une conjonction ou une
+    // disjonction POSITIVE, jamais derrière « ! ». SESS-1 : cette fonction remplace l'ancienne isPremium (exists + 2 get = 3
+    // appels) dans la règle de création d'un index premium, ce qui ramène la création de Miff premium de 19 à 17 appels et
+    // laisse la place à la lecture de la session (18 sur 20, marge de 2). Même résultat : un compte sans document ou expiré est refusé.
+    function isPremiumOneRead(uid) {
+      let e = get(/databases/$(database)/documents/entitlements/$(uid)).data;
+      return e.active == true && e.expiresAt > request.time;
+    }
+
+    // Limite freemium "2 lieux" (R-LIEU-5, décision du PM du 2026-11-01) : en gratuit, SEULS les identifiants 'p1' et 'p2' et
+    // le type 'trusted' sont acceptés (recréer un identifiant existant est une mise à jour, soumise à validPlaceUpdate).
+    // Premium : identifiants libres et zones de danger. Un lieu rattaché à plusieurs Miffs = UN document par Miff avec le MÊME
+    // identifiant (généré une fois par le client) : chaque document est évalué séparément, aucune règle ne compare les copies.
     function validPlaceCreate(placeId) {
       let d = request.resource.data;
       return placeId.matches('^[A-Za-z0-9]{1,20}$')
@@ -425,37 +534,52 @@ service cloud.firestore {
         && d.createdAt == request.time
         && d.updatedAt == request.time
         && (
-          (placeId == 'p1' && d.type == 'trusted')
-          || isPremium(request.auth.uid)
+          (placeId in ['p1', 'p2'] && d.type == 'trusted')
+          || isPremiumOneRead(request.auth.uid)
         );
     }
 
-    // type, createdBy, createdAt immuables (une zone de confiance ne devient pas
-    // une zone à risque, et inversement, sans repasser par la création).
+    // Modifiables : nom, type (R-LIEU-6), catégorie, adresse, coordonnées, rayon, priorité. createdBy et createdAt restent
+    // immuables. Le type change dans les deux sens, mais passer à 'risk' (zone de danger) exige le premium, comme à la
+    // création : sinon un compte gratuit contournerait la réserve premium en créant « confiance » puis en modifiant.
+    // Repasser à 'trusted' est toujours permis. Un lieu ne change jamais de Miff (le chemin du document est son identité).
     function validPlaceUpdate() {
       let d = request.resource.data;
-      return affected().hasOnly(['name', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])
+      return affected().hasOnly(['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt'])
         && validPlaceShape(d)
-        && d.updatedAt == request.time;
+        && d.updatedAt == request.time
+        && (!affected().hasAny(['type']) || d.type == 'trusted' || isPremiumOneRead(request.auth.uid));
+    }
+
+    // Horodatage du statut (presenceAt, lastUpdateAt), fourni par l'appareil. Accepté dans l'un de ces deux cas (R-LIEU-1) :
+    //  - récent : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur (comme avant) ;
+    //  - conservé : IDENTIQUE (à la microseconde, précision de stockage de Firestore) à la valeur que le même champ du même statut a
+    //    déjà en base, quel que soit son âge. Un téléphone resté
+    //    plus de 24 h dans la même situation peut ainsi réécrire son statut sans mentir sur l'heure qu'il ne change pas.
+    // La valeur conservée n'est jamais choisie par le client : elle doit être égale à celle de la base (aucune nouvelle ancienne
+    // heure, aucun recul, aucune avance hors fenêtre, jamais la valeur d'un autre champ ni d'un autre document). À la création
+    // (resource nul) seul le cas « récent » existe. resource n'est pas une lecture de règles (aucun coût ajouté, budget inchangé).
+    function statusInstant(v, key) {
+      return v is timestamp
+        && ((v >= request.time - duration.value(1, 'd') && v <= request.time + duration.value(5, 'm'))
+            || (resource != null && resource.data.get(key, null) == v));
     }
 
     // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :
-    // uniquement l'état (dans un lieu / hors lieu / zone à risque) + horodatages.
+    // uniquement l'état (dans un lieu / hors lieu / zone de danger) + horodatages.
     // Toutes les clés sont toujours présentes (null si non applicable).
     function validStatus(miffId, uid) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
+      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId'])
         && d.keys().hasAll(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
         && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']
+        // Un compte, un seul appareil (SESS-1) : clé facultative `deviceId` (temps 1), égale à celle de la session si présente.
+        && fromActiveDevice(d, uid)
         && (d.placeId == null || isStr(d.placeId, 1, 40))
-        // Horodatages d'événement fournis par l'appareil (utile hors-ligne),
-        // bornés : pas plus de 24 h dans le passé, pas plus de 5 min dans le futur.
-        && d.presenceAt is timestamp
-        && d.presenceAt >= request.time - duration.value(1, 'd')
-        && d.presenceAt <= request.time + duration.value(5, 'm')
-        && d.lastUpdateAt is timestamp
-        && d.lastUpdateAt >= request.time - duration.value(1, 'd')
-        && d.lastUpdateAt <= request.time + duration.value(5, 'm')
+        // Horodatages d'événement fournis par l'appareil (utile hors-ligne) : bornés (-24 h / +5 min) OU conservés à
+        // l'identique de la valeur déjà en base (R-LIEU-1), voir statusInstant.
+        && statusInstant(d.presenceAt, 'presenceAt')
+        && statusInstant(d.lastUpdateAt, 'lastUpdateAt')
         && isNullOrStr(d.updateText, 140)
         && d.hasPhoto is bool
         && (d.batteryPct == null || (d.batteryPct is int && d.batteryPct >= 0 && d.batteryPct <= 100))
@@ -470,11 +594,121 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
     }
 
+    // Coordonnée valide : un nombre dans [-max, max] (NaN et l'infini échouent aux comparaisons).
+    function isCoordinate(v, max) {
+      return v is number && v >= -max && v <= max;
+    }
+
+    // -------------------------------------------------------------------------
+    // Un compte, un seul appareil (SESS-1). Document de session users/{uid}/session/active { deviceId, startedAt }.
+    // -------------------------------------------------------------------------
+    // TEMPS DU DÉPLOIEMENT (data-model.md, « Un compte, un seul appareil ») :
+    //  false = TEMPS 1 : la clé deviceId est FACULTATIVE dans le statut et la dernière position. Absente : écriture acceptée comme avant
+    //          (applications actuelles, qui ne connaissent pas la session). Présente : elle doit être celle de la session.
+    //  true  = TEMPS 2 : la clé est OBLIGATOIRE (et la session doit exister). À ne passer à true qu'après la livraison des applications
+    //          qui écrivent la session ET la clé : sinon un téléphone à jour de l'ancienne version ne peut plus écrire son statut.
+    // Un seul endroit à changer entre les deux temps ; les tests (22 et 23-session-appareil) rejouent les deux.
+    function deviceIdRequired() {
+      return false;
+    }
+
+    // Identifiant d'appareil : aléatoire, généré par l'application à chaque connexion, sans lien avec l'appareil physique (ni
+    // numéro de série, ni identifiant publicitaire). 16 à 64 caractères d'un alphabet sans séparateur de chemin.
+    function isDeviceId(v) {
+      return v is string && v.matches('^[A-Za-z0-9_-]{16,64}$');
+    }
+
+    // Session valide : exactement deux clés, un identifiant bien formé, l'heure du début fournie par le serveur.
+    function validSession() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['deviceId', 'startedAt'])
+        && d.keys().hasAll(['deviceId', 'startedAt'])
+        && isDeviceId(d.deviceId)
+        && d.startedAt == request.time;
+    }
+
+    // L'écriture (statut, position) vient-elle de l'appareil actif ? Sans clé deviceId : acceptée au temps 1, refusée au temps 2
+    // (aucune lecture). Avec la clé : elle doit égaler celle de la session du même compte (UNE lecture de règles ; si la session
+    // n'existe pas, get() échoue et l'écriture est refusée). Mesure de COHÉRENCE : un client modifié peut recopier l'identifiant
+    // lu dans sa propre session, donc ce n'est pas une barrière de sécurité.
+    function fromActiveDevice(d, uid) {
+      return ('deviceId' in d && d.deviceId == get(/databases/$(database)/documents/users/$(uid)/session/active).data.deviceId)
+        || (!('deviceId' in d) && !deviceIdRequired());
+    }
+
+    // Dernière position connue du membre dans UNE Miff (R-LIEU-POS). SEULEMENT latitude, longitude et heure de la mesure
+    // (aucune précision, aucune vitesse, aucune altitude, aucun historique : le document est écrasé). Données sensibles.
+    //  - lat / lng : nombres dans les plages valides (NaN et l'infini sont refusés par les comparaisons) ;
+    //  - measuredAt : heure de la mesure fournie par l'appareil, bornée comme les horodatages du statut (pas plus de 24 h dans
+    //    le passé, pas plus de 5 min dans le futur) ;
+    //  - consentement : partage actif ET texte de version 3 ou plus APRÈS le lot (getAfter : on peut activer le partage et
+    //    écrire la position dans le même lot, mais pas révoquer et écrire). UNE lecture de règles ici (+1 pour l'existence de la Miff dans la règle : 2 au total).
+    // La précision des coordonnées (5 décimales, ~1 m) est un contrat du client : une règle ne peut pas la contrôler
+    // proprement sur des nombres à virgule flottante.
+    function validPosition(miffId, uid) {
+      let d = request.resource.data;
+      let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
+      return d.keys().hasOnly(['lat', 'lng', 'measuredAt', 'deviceId'])
+        && d.keys().hasAll(['lat', 'lng', 'measuredAt'])
+        && isCoordinate(d.lat, 90)
+        && isCoordinate(d.lng, 180)
+        && d.measuredAt is timestamp
+        && d.measuredAt >= request.time - duration.value(1, 'd')
+        && d.measuredAt <= request.time + duration.value(5, 'm')
+        // Un compte, un seul appareil (SESS-1) : même contrôle que le statut (une lecture de règles de plus quand la clé est présente).
+        && fromActiveDevice(d, uid)
+        && s.enabled == true
+        && isPositionConsentVersion(s.consentVersion);
+    }
+
+    // Localisation de la photo (R-PHOTO-LOC) : le document a-t-il une localisation ? (clés absentes ou nulles = non). `d` est un document
+    // de photo EXISTANT (resource.data) : utilisé UNIQUEMENT à la lecture. Depuis la décision du 2026-11-06 toute photo écrite est localisée,
+    // mais un éventuel ancien document sans localisation (écrit avant le resserrage ; aucune application publiée n'en écrit, voir
+    // data-model.md) reste lisible comme avant : on ne durcit pas la lecture, on ne l'affaiblit pas non plus. Aucune lecture de règles.
+    function photoHasLocation(d) {
+      return d.get('lat', null) != null || d.get('lng', null) != null;
+    }
+
+    // Localisation de la photo à l'écriture (R-PHOTO-LOC, version OBLIGATOIRE, décision du PM du 2026-11-06 : « une photo d'update doit être
+    // attachée à une position, forcément ») : TOUTE photo porte lat, lng et measuredAt (validPhoto en exige la présence), jamais nulles :
+    //  - deux coordonnées valides, nombres dans les mêmes plages que validPosition (un null, un texte, NaN ou l'infini échouent) ;
+    //  - le consentement APRÈS le lot de version 03 ou plus (jamais de photo, donc jamais de coordonnée enregistrée, sans lui) ;
+    //  - measuredAt : l'heure de la mesure faite par l'appareil, même nom et même sémantique que positions/{uid}.measuredAt, bornée comme
+    //    elle (pas plus de 24 h dans le passé, pas plus de 5 min après l'heure de la photo, qui est l'heure serveur : createdAt ==
+    //    request.time). Sert à afficher « position de il y a X min » ; ne révèle rien de plus que la dernière position. 24 h plutôt que
+    //    quelques minutes : une borne serrée refuserait TOUTE la photo (image comprise) pour une mesure un peu ancienne ; la fraîcheur est un
+    //    contrat du client (data-model.md), l'affichage dit toujours l'âge de la mesure.
+    // Mises à jour partielles : request.resource.data est le document FUSIONNÉ, donc supprimer une clé (FieldValue.delete) le laisse
+    // sans cette clé et validPhoto le refuse. Le « ensemble » de lat et lng est inclus (aucune des trois ne peut manquer ni être nulle).
+    // s = sharing après le lot. La précision (5 décimales) est un contrat du client. Aucune lecture de règles (s est déjà lu par validPhoto).
+    function validPhotoLocation(d, s) {
+      return isCoordinate(d.lat, 90) && isCoordinate(d.lng, 180)
+        && isPhotoLocationConsentVersion(s.consentVersion)
+        && d.measuredAt is timestamp
+        && d.measuredAt >= request.time - duration.value(1, 'd')
+        && d.measuredAt <= request.time + duration.value(5, 'm');
+    }
+
+    // Lecture de la localisation d'une photo (R-PHOTO-LOC) : `d` = resource.data. Sans localisation : toujours (aucune lecture de
+    // règles : « || » s'arrête). Avec : l'auteur lui-même (transparence, comme positions/{moi}), ou un membre qui a publié sa propre
+    // position. 1 lecture de règles de plus, seulement pour une photo localisée. Réciprocité FORMELLE : elle prouve qu'un document
+    // positions/{moi} existe, pas qu'il est vrai. PAS de contrôle « l'auteur partage encore » (décision du PM du 2026-11-06, contrairement à
+    // positions/{uid}) : un reliquat éventuel (photo restée après l'arrêt du partage) reste lisible au plus jusqu'à expiresAt (24 h + 1 h),
+    // et la sécurité repose sur les lots de purge, que les règles EXIGENT déjà (arrêt du partage, départ, retrait, suppression) : tout futur
+    // lot qui arrête un partage DOIT purger la photo.
+    function photoLocationReadable(miffId, uid, d) {
+      return !photoHasLocation(d)
+        || isSelf(uid)
+        || positionPublished(miffId);
+    }
+
     // Photo de la dernière update (au plus une par membre et par Miff).
+    // Clés : jpeg, createdAt, expiresAt, lat, lng, measuredAt, TOUTES obligatoires (R-PHOTO-LOC : une photo est toujours localisée). PAS de deviceId (SESS-1).
     function validPhoto(miffId, uid) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt'])
-        && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt'])
+      let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
+      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+        && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
         && d.jpeg is bytes && d.jpeg.size() > 0 && d.jpeg.size() <= 150000
         && d.createdAt == request.time
         && d.expiresAt is timestamp
@@ -482,7 +716,8 @@ service cloud.firestore {
         // 24 h + 1 h de marge (expiresAt vient de l'horloge du téléphone). Même durée pour tous les
         // comptes, premium ou non : aucune règle de photo ne dépend de l'abonnement.
         && d.expiresAt <= request.time + duration.value(25, 'h')
-        && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+        && s.enabled == true
+        && validPhotoLocation(d, s);
     }
 
     // =========================================================================
@@ -522,6 +757,19 @@ service cloud.firestore {
       // Suppression de compte : le client supprime ses données puis son compte Auth.
       allow delete: if isSelf(uid);
 
+      // ---- Session « un compte, un seul appareil » (SESS-1) -------------------
+      // Un seul document, de chemin fixe `active` (aucun autre identifiant, aucune liste). Lisible et écrivable par son propriétaire
+      // SEUL : ni le créateur d'une Miff, ni un co-membre ne le lit. Écrit à chaque connexion (la dernière gagne, `set` complet),
+      // supprimé à la déconnexion volontaire et à la suppression du compte. Les règles ne savent pas QUI supprime : un client ne doit
+      // supprimer la session que si elle porte SON identifiant (transaction), sinon il effacerait celle du nouvel appareil.
+      // (Écrit « request.auth.uid == uid » plutôt que isSelf(uid) : les tests par mutation repèrent les règles par leur texte et leur rang.
+      // Aucune règle « list » : une requête sur la sous-collection est refusée par défaut, comme tout ce qui n'est pas écrit.)
+      match /session/active {
+        allow get: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid && validSession();
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
       // ---- Index des appartenances (liste "mes Miffs" + slot freemium) -------
       // Clé 'free' = slot gratuit (1 seul possible) ; clé = miffId = premium.
       match /memberships/{key} {
@@ -534,7 +782,7 @@ service cloud.firestore {
           && request.resource.data.joinedAt == request.time
           && (
             key == 'free'
-            || (key == request.resource.data.miffId && isPremium(uid))
+            || (key == request.resource.data.miffId && isPremiumOneRead(uid))
           )
           // Le document membre correspondant est créé dans le même batch.
           && existsAfter(/databases/$(database)/documents/miffs/$(request.resource.data.miffId)/members/$(uid));
@@ -649,24 +897,45 @@ service cloud.firestore {
         allow get, list: if miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId);
         allow create, update: if isSelf(uid) && validStatus(miffId, uid);
         // Le propriétaire de la Miff peut purger (retrait d'un membre).
-        allow delete: if isSelf(uid) || isOwner(miffId);
+        allow delete: if isSelf(uid) || isOwnerOneRead(miffId);
+      }
+
+      // ---- Dernière position connue (très sensible, R-LIEU-POS) --------------
+      // Lecture : get seulement (un membre à la fois, bouton « Localiser » ; jamais de liste). Soi-même : toujours (transparence,
+      // « voir ce que je partage »). Un autre membre : Miff existante, partage actif, statut publié (comme les statuts) ET sa
+      // propre position publiée (réciprocité formelle). Le créateur n'a aucun droit de lecture de plus. L'affichage masqué après
+      // 24 h est une décision d'AFFICHAGE du client (la date reste affichée) : les règles ne l'appliquent pas, voir data-model.md.
+      // Écriture : par soi seul, Miff existante (une position ne s'écrit pas sous une Miff supprimée : sonde X2) et validPosition.
+      // Suppression : soi, ou le créateur, À TOUT MOMENT (pas seulement dans le lot de retrait) : comme pour le statut et la photo,
+      // c'est un droit de suppression et non de lecture, assumé (sonde X4 / Y5, test DP17). Un ex-membre efface lui-même sa position.
+      match /positions/{uid} {
+        allow get: if isSelf(uid)
+          || (miffAlive(miffId) && mySharingOn(miffId) && statusPublished(miffId) && positionPublished(miffId) && targetSharingOn(miffId, uid));
+        allow list: if false;
+        allow create, update: if isSelf(uid) && miffAlive(miffId) && validPosition(miffId, uid);
+        allow delete: if isSelf(uid) || isOwnerOneRead(miffId);
       }
 
       // ---- Photo de la dernière update (sensible) ---------------------------
       // Lecture : partage activé (PAS de condition de statut publié pour les photos : décision PM du
       // 2026-10-22), Miff existante, et photo non expirée (expiresAt est appliqué par les règles : aucun
       // nettoyage n'est nécessaire pour qu'elle disparaisse). Photo absente : introuvable, pas une erreur.
+      // Photo LOCALISÉE (lat / lng, R-PHOTO-LOC ; depuis le resserrage du 2026-11-06 TOUTE photo écrite l'est) : en plus, l'auteur lui-même ou un
+      // membre qui a publié sa propre position (évalué après l'expiration : une photo expirée ne coûte aucune lecture de règles de plus).
+      // Ancien document sans localisation (aucune application publiée n'en écrit) : aucune lecture de plus, lisible comme avant.
+      // Coût : 3 lectures de règles pour lire la photo d'un autre membre (4 lectures facturées avec le document), 2 pour la sienne.
       // Suppression : l'auteur, le créateur, ou n'importe quel membre une fois la photo expirée.
       match /photos/{uid} {
         allow get: if miffAlive(miffId) && mySharingOn(miffId)
-          && (resource == null || resource.data.expiresAt > request.time);
+          && (resource == null || resource.data.expiresAt > request.time)
+          && (resource == null || photoLocationReadable(miffId, uid, resource.data));
         allow list: if false;
         allow create, update: if isSelf(uid) && validPhoto(miffId, uid);
-        allow delete: if isSelf(uid) || isOwner(miffId)
+        allow delete: if isSelf(uid) || isOwnerOneRead(miffId)
           || (isMember(miffId) && resource.data.expiresAt <= request.time);
       }
 
-      // ---- Lieux (zone de confiance / zone à risque), définis par le créateur
+      // ---- Lieux (zone de confiance / zone de danger), définis par le créateur
       match /places/{placeId} {
         allow get, list: if isMember(miffId) && miffAlive(miffId);
         allow create: if isOwner(miffId) && validPlaceCreate(placeId);

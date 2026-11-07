@@ -7,8 +7,9 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
-  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update, del, statusDoc, placeInput, photoDoc,
-  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, placeSeed,
+  ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, leaveWithPositionOps, removeMemberWithPositionOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
+  serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, positionDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
+  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -35,10 +36,32 @@ const seedDaveMiff = (env) =>
     await b.commit();
   });
 
+// Photos injectées pour les lots de PURGE (la règle de suppression ne regarde pas la localisation) et pour la lecture d'un ANCIEN document sans
+// localisation (aucune application publiée n'en écrit plus : lecture permissive conservée, 2 lectures de règles).
 const seedBobPhoto = (env) =>
-  env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/bob`).set(photoDoc({ createdAt: T0 })));
+  env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/bob`).set(photoDoc({ createdAt: T0, measuredAt: T0 })));
 const seedAlicePhoto = (env) =>
-  env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0 })));
+  env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoLegacyDoc({ createdAt: T0 })));
+
+// R-LIEU-POS : consentement v3 et dernière position enregistrés pour bob / alice (les deux ont déjà un statut dans le jeu de départ).
+const seedV3Position = (uid) => (env) =>
+  env.withSecurityRulesDisabled(async (ctx) => {
+    const f = ctx.firestore();
+    await f.doc(`${M1}/members/${uid}`).update({ 'sharing.consentVersion': CONSENT_POSITION });
+    await f.doc(`${M1}/positions/${uid}`).set(positionSeed());
+  });
+const seedBobV3Position = seedV3Position('bob');
+const seedAliceV3Position = seedV3Position('alice');
+const seedAliceBobV3Positions = async (env) => {
+  await seedAliceV3Position(env);
+  await seedBobV3Position(env);
+};
+
+// SESS-1 : session de l'appareil actif, pour mesurer les écritures de statut et de position qui portent la clé deviceId (une lecture de règles de plus).
+const seedSessions = (...uids) => (env) =>
+  env.withSecurityRulesDisabled(async (ctx) => {
+    for (const uid of uids) await ctx.firestore().doc(SESSION_PATH(uid)).set(sessionSeed(DEVICE_A));
+  });
 
 // `lot: true` : plusieurs écritures dans un lot. `hosts` = UNE règle hôte par écriture du lot (mesure par écriture puis lot entier).
 // Sinon : une seule opération (get, liste, écriture simple), `hosts` = la règle mesurée.
@@ -80,27 +103,32 @@ const scenarios = [
   },
   {
     id: 'READS-leave',
-    title: 'quitter une Miff (batch de 4)',
-    name: 'Quitter une Miff (batch de 4)',
+    title: 'quitter une Miff (batch de 5, avec la dernière position)',
+    name: 'Quitter une Miff (batch de 5)',
     lot: true,
-    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.membershipsDelete],
-    run: (env) => commit(db(env, 'bob'), all(leaveOps('bob'))),
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.positionsDelete, H.membershipsDelete],
+    prepare: seedBobV3Position,
+    run: (env) => commit(db(env, 'bob'), all(leaveWithPositionOps('bob'))),
   },
   {
     id: 'READS-remove-member',
-    title: 'retirer un membre avec renouvellement du code (batch de 6, avec photo)',
-    name: 'Retirer un membre + nouveau code (batch de 6)',
+    title: 'retirer un membre avec renouvellement du code (batch de 7, avec photo et dernière position)',
+    name: 'Retirer un membre + nouveau code (batch de 7)',
     lot: true,
-    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
-    prepare: seedBobPhoto,
-    run: (env) => commit(db(env, 'alice'), all(removeMemberOps({ target: 'bob' }))),
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.positionsDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
+    prepare: async (env) => {
+      await seedBobPhoto(env);
+      await seedBobV3Position(env);
+    },
+    run: (env) => commit(db(env, 'alice'), all(removeMemberWithPositionOps({ target: 'bob' }))),
   },
   {
     id: 'READS-delete-miff',
-    title: 'la créatrice supprime la Miff (batch de 6, avec pierre tombale)',
-    name: 'Supprimer la Miff (batch de 6, avec pierre tombale)',
+    title: 'la créatrice supprime la Miff (batch de 7, avec pierre tombale et sa dernière position)',
+    name: 'Supprimer la Miff (batch de 7, avec pierre tombale)',
     lot: true,
-    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.membersDelete, H.statusDelete, H.membershipsDelete],
+    hosts: [H.miffsDelete, H.miffsDeletedCreate, H.joinCodesDelete, H.membersDelete, H.statusDelete, H.positionsDelete, H.membershipsDelete],
+    prepare: seedAliceV3Position,
     run: (env) =>
       commit(db(env, 'alice'), [
         del(M1),
@@ -108,6 +136,7 @@ const scenarios = [
         del(`joinCodes/${CODE.M1}`),
         del(`${M1}/members/alice`),
         del(`${M1}/status/alice`),
+        del(`${M1}/positions/alice`),
         del('users/alice/memberships/free'),
       ]),
   },
@@ -175,17 +204,19 @@ const scenarios = [
   },
   {
     id: 'READS-consent-off',
-    title: 'désactiver le partage (batch de 3)',
-    name: 'Désactiver le partage (batch de 3)',
+    title: 'désactiver le partage (batch de 4, avec la dernière position)',
+    name: 'Désactiver le partage (batch de 4)',
     lot: true,
-    hosts: [H.membersUpdate, H.statusDelete, H.photosDelete],
+    hosts: [H.membersUpdate, H.statusDelete, H.photosDelete, H.positionsDelete],
+    prepare: seedBobV3Position,
     run: (env) =>
       commit(db(env, 'bob'), [
         update(`${M1}/members/bob`, {
-          sharing: { enabled: false, consentedAt: T0, consentVersion: 'v1', revokedAt: serverTs() },
+          sharing: { enabled: false, consentedAt: T0, consentVersion: CONSENT_POSITION, revokedAt: serverTs() },
         }),
         del(`${M1}/status/bob`),
         del(`${M1}/photos/bob`),
+        del(`${M1}/positions/bob`),
       ]),
   },
   {
@@ -215,6 +246,38 @@ const scenarios = [
     run: (env) => db(env, 'dave').collection(`miffs/${ID.M3}/places`).doc().set(placeInput('dave')),
   },
   {
+    // Lieux, évolutions du 2026-11-01 (R-LIEU-5, -6) : coût PAR DOCUMENT ; un lot de N Miffs coûte au plus N fois le coût sans cache
+    // (comptage manuel dans data-model.md §12 : création premium 3, gratuite p1/p2 2, passage à risk 3, suppression 2 -> 5 Miffs = 15, 10, 15, 10 sur 20).
+    // Les lectures factices (zz_pad) ont des chemins fixes que l'émulateur met en cache d'une écriture à l'autre du lot : un lot de N
+    // écritures identiques ne se mesure donc pas par injection ; on mesure une écriture et on multiplie par le pire cas manuel.
+    id: 'READS-place-create-free',
+    title: "création d'un lieu gratuit sous p2 (écriture simple)",
+    name: "Création d'un lieu gratuit p2 (écriture simple)",
+    limit: 10,
+    hosts: [H.placesCreate],
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p2`).set(placeInput('alice')),
+  },
+  {
+    id: 'READS-place-update-risk',
+    title: "passage d'un lieu à la zone de danger, premium (écriture simple)",
+    name: "Lieu : passage à risk, premium (écriture simple)",
+    limit: 10,
+    hosts: [H.placesUpdate],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`miffs/${ID.M3}/places/abc`).set(placeSeed({ createdBy: 'dave' })));
+    },
+    run: (env) => db(env, 'dave').doc(`miffs/${ID.M3}/places/abc`).update({ type: 'risk', updatedAt: serverTs() }),
+  },
+  {
+    id: 'READS-place-delete',
+    title: "suppression d'un lieu (écriture simple)",
+    name: "Suppression d'un lieu (écriture simple)",
+    limit: 10,
+    hosts: [H.placesDelete],
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p1`).delete(),
+  },
+  {
     // Cause de la mesure « non concluante » du premier jet (R15) : l'émulateur accepte 20 lectures de règles pour une LISTE
     // (documentation : 10). Avec la limite de 10 de l'outil, 11 lectures factices ne suffisaient pas à faire échouer la requête.
     // On cherche donc jusqu'à 20 (limite constatée par la calibration) et on compare à la limite documentée (10).
@@ -236,8 +299,8 @@ const scenarios = [
   },
   {
     id: 'READS-read-photo',
-    title: "lecture de la photo d'un autre membre (get)",
-    name: "Lecture d'une photo (get)",
+    title: "lecture d'un ANCIEN document de photo sans localisation d'un autre membre (get : Miff + mon partage seulement)",
+    name: "Lecture d'une photo sans localisation (get)",
     limit: 10,
     hosts: [H.photosGet],
     prepare: seedAlicePhoto,
@@ -349,6 +412,184 @@ const scenarios = [
     limit: 10,
     hosts: [H.usersUpdate],
     run: (env) => db(env, 'bob').doc('users/bob').update({ phone: PHONE_B }),
+  },
+  {
+    // R-LIEU-POS : la dernière position est une écriture ISOLÉE (jamais dans un lot de lieux). Une lecture de règles : getAfter de la
+    // fiche du membre (partage actif + texte de version 3 ou plus). Un lot de N Miffs coûte N (comptage manuel, data-model.md §12).
+    id: 'READS-position-write',
+    title: 'écrire sa dernière position (écriture simple, R-LIEU-POS)',
+    name: 'Écriture de la dernière position (écriture simple)',
+    limit: 10,
+    hosts: [H.positionsCreate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': CONSENT_POSITION })),
+    run: (env) => db(env, 'bob').doc(`${M1}/positions/bob`).set(positionDoc()),
+  },
+  {
+    id: 'READS-position-get',
+    title: "lecture de la dernière position d'un autre membre (get, R-LIEU-POS)",
+    name: "Lecture de la dernière position d'un membre (get)",
+    limit: 10,
+    hosts: [H.positionsGet],
+    prepare: seedAliceBobV3Positions,
+    run: (env) => db(env, 'bob').doc(`${M1}/positions/alice`).get(),
+  },
+  {
+    id: 'READS-position-delete-owner',
+    title: "la créatrice supprime la position d'un membre (écriture simple, R-LIEU-POS)",
+    name: "Suppression de la position d'un membre par la créatrice (écriture simple)",
+    limit: 10,
+    hosts: [H.positionsDelete],
+    prepare: seedBobV3Position,
+    run: (env) => db(env, 'alice').doc(`${M1}/positions/bob`).delete(),
+  },
+  {
+    id: 'READS-position-activate',
+    title: 'activer le partage (texte v3) + statut + dernière position (batch de 3, R-LIEU-POS)',
+    name: 'Activer le partage + statut + position (batch de 3)',
+    lot: true,
+    hosts: [H.membersUpdate, H.statusCreate, H.positionsCreate],
+    run: (env) =>
+      commit(db(env, 'carol'), [
+        update(`${M1}/members/carol`, { sharing: sharingOnNowV3() }),
+        set(`${M1}/status/carol`, statusDoc()),
+        set(`${M1}/positions/carol`, positionDoc()),
+      ]),
+  },
+  {
+    // R-LIEU-3 : renouveler un consentement actif = une écriture de fiche, aucune lecture de règles.
+    id: 'READS-consent-renew',
+    title: 'renouveler un consentement de partage actif (écriture simple, R-LIEU-3)',
+    name: 'Renouvellement du consentement de partage (écriture simple)',
+    limit: 10,
+    hosts: [H.membersUpdate],
+    prepare: (env) => env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': '2026-10-v2' })),
+    run: (env) =>
+      db(env, 'bob').doc(`${M1}/members/bob`).update({ sharing: { enabled: true, consentedAt: serverTs(), consentVersion: CONSENT_POSITION, revokedAt: null } }),
+  },
+  // --- SESS-1 : un compte, un seul appareil. Chaque statut / position écrit avec deviceId lit la session (+1) ; mesures avec la clé. ---
+  {
+    id: 'READS-sess-status',
+    title: 'SESS-1 : écrire son statut avec le deviceId de la session (écriture simple)',
+    name: 'Statut avec deviceId (écriture simple)',
+    limit: 10,
+    hosts: [H.statusUpdate],
+    prepare: seedSessions('bob'),
+    run: (env) => db(env, 'bob').doc(`${M1}/status/bob`).set(statusDoc({ deviceId: DEVICE_A })),
+  },
+  {
+    id: 'READS-sess-position',
+    title: 'SESS-1 : écrire sa dernière position avec le deviceId de la session (écriture simple)',
+    name: 'Position avec deviceId (écriture simple)',
+    limit: 10,
+    hosts: [H.positionsCreate],
+    prepare: async (env) => {
+      await seedSessions('bob')(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': CONSENT_POSITION }));
+    },
+    run: (env) => db(env, 'bob').doc(`${M1}/positions/bob`).set(positionDoc({ deviceId: DEVICE_A })),
+  },
+  {
+    id: 'READS-sess-join-share',
+    title: 'SESS-1 : rejoindre et partager avec le deviceId (batch de 3)',
+    name: 'Rejoindre et partager avec deviceId (batch de 3)',
+    lot: true,
+    hosts: [H.membersCreate, H.membershipsCreate, H.statusCreate],
+    prepare: seedSessions('eve'),
+    run: (env) => commit(db(env, 'eve'), all(joinShareOps({ uid: 'eve', status: statusInitial({ deviceId: DEVICE_A }) }))),
+  },
+  {
+    id: 'READS-sess-create-share',
+    title: 'SESS-1 : créer et partager (gratuit) avec le deviceId (batch de 5)',
+    name: 'Créer et partager gratuit avec deviceId (batch de 5)',
+    lot: true,
+    hosts: [H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate, H.statusCreate],
+    prepare: seedSessions('eve'),
+    run: (env) => commit(db(env, 'eve'), all(createShareOps({ uid: 'eve', status: statusInitial({ deviceId: DEVICE_A }) }))),
+  },
+  {
+    // Pire cas du lot (data-model.md §12) : un compte premium qui garde son emplacement gratuit et crée une 2e Miff. 18 appels sans cache.
+    id: 'READS-sess-create-share-premium',
+    title: 'SESS-1 : créer et partager en premium avec le deviceId (batch de 5, pire cas 18 sur 20)',
+    name: 'Créer et partager premium avec deviceId (batch de 5)',
+    lot: true,
+    hosts: [H.miffsCreate, H.joinCodesCreate, H.membersCreate, H.membershipsCreate, H.statusCreate],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await seedSessions('dave')(env);
+    },
+    run: (env) => commit(db(env, 'dave'), all(createShareOps({ uid: 'dave', key: ID.NEW, status: statusInitial({ deviceId: DEVICE_A }) }))),
+  },
+  {
+    id: 'READS-sess-activate',
+    title: 'SESS-1 : activer le partage (texte v3) + statut + position avec le deviceId (batch de 3)',
+    name: 'Activer le partage + statut + position avec deviceId (batch de 3)',
+    lot: true,
+    hosts: [H.membersUpdate, H.statusCreate, H.positionsCreate],
+    prepare: seedSessions('carol'),
+    run: (env) =>
+      commit(db(env, 'carol'), [
+        update(`${M1}/members/carol`, { sharing: sharingOnNowV3() }),
+        set(`${M1}/status/carol`, statusDoc({ deviceId: DEVICE_A })),
+        set(`${M1}/positions/carol`, positionDoc({ deviceId: DEVICE_A })),
+      ]),
+  },
+  {
+    id: 'READS-sess-manual-update',
+    title: 'SESS-1 : mise à jour manuelle (photo localisée + statut) avec le deviceId (batch de 2)',
+    name: 'Mise à jour manuelle avec deviceId (batch de 2)',
+    lot: true,
+    hosts: [H.photosCreate, H.statusUpdate],
+    prepare: async (env) => {
+      // Toute photo exige le texte de consentement de version 03 (localisation obligatoire) ; la position publiée n'est pas exigée à l'écriture.
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/members/bob`).update({ 'sharing.consentVersion': CONSENT_POSITION }));
+      await seedSessions('bob')(env);
+    },
+    run: (env) => commit(db(env, 'bob'), [set(`${M1}/photos/bob`, photoDoc()), set(`${M1}/status/bob`, statusDoc({ hasPhoto: true, deviceId: DEVICE_A }))]),
+  },
+  // R-PHOTO-LOC (localisation OBLIGATOIRE, décision du PM du 2026-11-06) : toute photo écrite est localisée. La lecture de la photo d'un autre coûte donc
+  // 3 lectures de règles (4 facturées avec le document) au lieu de 2 ; l'écriture reste à 1 lecture.
+  {
+    id: 'READS-photo-loc-read',
+    title: "R-PHOTO-LOC : lecture de la photo (toujours localisée) d'un autre membre (get : Miff + mon partage + MA position)",
+    name: "Lecture d'une photo localisée (get)",
+    limit: 10,
+    hosts: [H.photosGet],
+    prepare: async (env) => {
+      await seedAliceBobV3Positions(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0, lat: 48.85661, lng: 2.35222, measuredAt: T0 })));
+    },
+    run: (env) => db(env, 'bob').doc(`${M1}/photos/alice`).get(),
+  },
+  {
+    id: 'READS-photo-loc-manual-update',
+    title: 'R-PHOTO-LOC : mise à jour manuelle avec photo LOCALISÉE + statut avec le deviceId (batch de 2)',
+    name: 'Mise à jour manuelle avec photo localisée (batch de 2)',
+    lot: true,
+    hosts: [H.photosCreate, H.statusUpdate],
+    prepare: async (env) => {
+      await seedBobV3Position(env);
+      await seedSessions('bob')(env);
+    },
+    run: (env) =>
+      commit(db(env, 'bob'), [
+        set(`${M1}/photos/bob`, photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000) })),
+        set(`${M1}/status/bob`, statusDoc({ hasPhoto: true, deviceId: DEVICE_A })),
+      ]),
+  },
+  {
+    id: 'READS-photo-loc-activate-all',
+    title: 'R-PHOTO-LOC : pire cas (non recommandé) activer le partage + statut + position + photo localisée dans un lot de 4, avec le deviceId',
+    name: 'Activation + statut + position + photo localisée (batch de 4)',
+    lot: true,
+    hosts: [H.membersUpdate, H.statusCreate, H.positionsCreate, H.photosCreate],
+    prepare: seedSessions('carol'),
+    run: (env) =>
+      commit(db(env, 'carol'), [
+        update(`${M1}/members/carol`, { sharing: sharingOnNowV3() }),
+        set(`${M1}/status/carol`, statusDoc({ deviceId: DEVICE_A })),
+        set(`${M1}/positions/carol`, positionDoc({ deviceId: DEVICE_A })),
+        set(`${M1}/photos/carol`, photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000) })),
+      ]),
   },
   {
     id: 'READS-code-lookup',

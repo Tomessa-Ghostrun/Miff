@@ -15,6 +15,9 @@ enum SignedOutNotice: Equatable {
     case accountNotCreated
     /// La session s'est terminée dans notre dos (compte désactivé ou supprimé depuis la console, jeton révoqué).
     case accountUnavailable
+    /// Le compte est maintenant utilisé sur un autre téléphone (SESS-3) : déconnexion locale forcée, message calme. Jamais
+    /// présenté comme un accès perdu à une Miff.
+    case sessionReplaced
 }
 
 enum RefuseResult: Equatable {
@@ -45,9 +48,15 @@ struct SessionDependencies {
     let tracker: AnalyticsTracker
     let cache: CachePurger
     let teardown: [SessionTeardown]
+    /// Un compte, un seul appareil (SESS-3) : la session de cet appareil.
+    let device: DeviceSession
+    /// Le réseau : au retour du réseau, la session est vérifiée AVANT toute écriture.
+    let network: NetworkMonitor
     /// Le brouillon local des étapes du profil. Effacé dès qu'il ne peut plus servir : personne n'est connecté, ou le
     /// profil existe (ceinture et bretelles à côté de l'arrêt à la déconnexion et de l'effacement après l'écriture).
     let drafts: ProfileDraftStore?
+    /// Copie de `generation` lisible depuis n'importe quel fil (le moteur de suivi des lieux, LOC-4b). Facultative : les tests n'en ont pas besoin.
+    var generationCounter: GenerationCounter?
 }
 
 /// L'unique responsable de « qui est connecté et où s'ouvre l'app » (tickets Authentification §5, §7.6, §7.8 et §8).
@@ -69,6 +78,10 @@ final class SessionManager {
     static let keyReturningUser = "returning_user"
     /// Posé au tout premier lancement d'une INSTALLATION (les réglages de l'app disparaissent avec elle, pas le Trousseau).
     static let keyInstallMarker = "install_marker_v1"
+    /// Le message calme « autre téléphone » n'a pas encore été montré (SESS-3) : écrit par la déconnexion forcée, lu au démarrage
+    /// suivant. Une déconnexion forcée peut avoir lieu alors que l'app est fermée (réveil par une zone, LOC-4b) : le message attend
+    /// l'écran de connexion. Même clé que sur Android.
+    static let keyReplacedNoticePending = "session_replaced_notice_pending"
 
     let gateway: AuthGateway
     let accounts: AccountRepository
@@ -78,7 +91,10 @@ final class SessionManager {
     let tracker: AnalyticsTracker
     let cache: CachePurger
     let teardown: [SessionTeardown]
+    let device: DeviceSession
+    let network: NetworkMonitor
     let drafts: ProfileDraftStore?
+    private let generationCounter: GenerationCounter?
 
     /// Appelé à chaque changement d'état (un seul observateur : l'interface).
     var onStateChange: ((SessionState) -> Void)?
@@ -94,7 +110,11 @@ final class SessionManager {
     /// Monte à chaque fin de session (déconnexion, panneau refusé, session perdue). Un écran qui garde des données
     /// personnelles en mémoire (les étapes du profil) s'en sert comme clé : une nouvelle personne ne retrouve jamais ce
     /// que la précédente avait saisi.
-    private(set) var generation = 0
+    private(set) var generation = 0 {
+        didSet {
+            generationCounter?.set(generation)
+        }
+    }
 
     /// Ce que la dernière lecture du compte a dit (nil avant la première lecture et après une déconnexion).
     private(set) var accountSnapshot: AccountSnapshot?
@@ -105,6 +125,21 @@ final class SessionManager {
 
     /// Vrai dès qu'une session est connue, jusqu'à sa fin : une perte pendant une transition compte quand même.
     var sessionActive = false
+
+    /// Vrai tant que l'écriture de la session de cet appareil n'a pas été confirmée par le serveur après une connexion : « Réessayer »
+    /// la retente au lieu de relire une session qui n'existe pas encore (voir `SessionManager+Device`).
+    var pendingDeviceBegin = false
+
+    /// Les deux écoutes de la session de l'appareil (le document de session, le retour du réseau), et la sérialisation de ses
+    /// vérifications.
+    var deviceWatchers: [Task<Void, Never>] = []
+    var deviceReviewBusy = false
+    var deviceReviewDirty = false
+    /// Quand l'écoute du document se termine sans qu'on l'ait demandé (erreur du serveur), elle est relancée après ces pauses, en
+    /// nanosecondes, UNE fois par pause (bornée : au-delà, seul le retour du réseau vérifie encore la session). Réglable par les tests.
+    var deviceWatchRestartPauses: [UInt64] = [15_000_000_000, 30_000_000_000, 60_000_000_000]
+    /// Une écoute qui a tenu au moins ce temps (secondes) remet le compteur de relances à zéro.
+    var deviceWatchHealthySeconds: TimeInterval = 300
 
     private var started = false
     private var notice: SignedOutNotice?
@@ -119,7 +154,16 @@ final class SessionManager {
         tracker = dependencies.tracker
         cache = dependencies.cache
         teardown = dependencies.teardown
+        device = dependencies.device
+        network = dependencies.network
         drafts = dependencies.drafts
+        generationCounter = dependencies.generationCounter
+        // Un remplacement découvert après un refus d'écriture lance la même déconnexion forcée que l'écoute de la session.
+        device.setReplacedHandler { [weak self] in
+            Task { @MainActor in
+                await self?.endBecauseReplaced()
+            }
+        }
     }
 
     /// Le compte connecté (nil = personne). Lu par les étapes de l'Onboarding, qui écrivent le profil.
@@ -132,10 +176,18 @@ final class SessionManager {
         gateway.displayName()
     }
 
+    /// Un message attend-il d'être montré sur l'écran de connexion ?
+    var hasNotice: Bool {
+        notice != nil
+    }
+
     /// Lit (et oublie) le message unique de l'écran de connexion.
     func consumeNotice() -> SignedOutNotice? {
         let current = notice
         notice = nil
+        if current == .sessionReplaced {
+            flags.set(false, forKey: Self.keyReplacedNoticePending)
+        }
         return current
     }
 
@@ -166,8 +218,11 @@ final class SessionManager {
                 await signOut()
             }
         }
+        // Le flux est ouvert ici, tout de suite (instant d'ouverture déterministe, inoffensif et utile). Ce qui évite la fausse
+        // perte de session est la relecture de `gateway.currentUid` dans `handleUidChange`.
+        let changes = gateway.uidChanges()
         watcher = Task { [weak self] in
-            await self?.watchSessionLoss()
+            await self?.watchSessionLoss(changes)
         }
         await resolveCurrent()
     }
@@ -197,10 +252,22 @@ final class SessionManager {
         state = newState
     }
 
-    private func watchSessionLoss() async {
-        for await uid in gateway.uidChanges() where uid == nil && !ending && isSignedInState() {
-            await onSessionLost()
+    private func watchSessionLoss(_ changes: AsyncStream<String?>) async {
+        for await uid in changes {
+            await handleUidChange(uid)
         }
+    }
+
+    /// Réaction à une annonce « le compte connecté a changé ». Les annonces passent par un flux : elles sont lues un peu
+    /// APRÈS l'événement, et la première (l'état au moment où l'écoute s'ouvre, souvent « personne n'est connecté ») peut
+    /// n'être lue qu'au milieu d'une connexion. Une session n'est donc déclarée perdue que si, au moment où l'annonce est
+    /// lue, plus personne n'est vraiment connecté : une annonce périmée ne doit jamais déconnecter quelqu'un, ni lancer une
+    /// seconde fin de session en parallèle d'une autre (course réelle relevée en CI sur le panneau de consentement).
+    func handleUidChange(_ uid: String?) async {
+        guard uid == nil, !ending, isSignedInState(), gateway.currentUid == nil else {
+            return
+        }
+        await onSessionLost()
     }
 
     private func isSignedInState() -> Bool {
@@ -215,13 +282,37 @@ final class SessionManager {
     }
 
     private func onSessionLost() async {
+        await endLocally(notice: .accountUnavailable)
+    }
+
+    /// Fin de session SANS rien demander au serveur (déjà déconnecté, ou session remplacée par un autre appareil) : plus aucun
+    /// suivi ni écriture, cache purgé, écran de connexion avec `notice`. Les écritures en attente seraient refusées, donc pas de
+    /// vidage. Ne touche JAMAIS à la session de l'appareil sur le serveur (pas de boucle entre deux téléphones).
+    func endLocally(notice newNotice: SignedOutNotice) async {
         ending = true
+        stopDeviceWatch()
+        device.forget()
+        if newNotice == .sessionReplaced {
+            flags.set(true, forKey: Self.keyReplacedNoticePending)
+        }
         cache.markPurgePending()
         state = .loading
         await stopEverything()
-        // Déjà déconnecté : les écritures en attente seraient refusées, donc pas de vidage.
         _ = await cache.purge()
-        finishSignedOut(destination: .signIn, notice: .accountUnavailable, markReturning: true)
+        finishSignedOut(destination: .signIn, notice: newNotice, markReturning: true)
+    }
+
+    /// Un autre appareil a pris la place de celui-ci (SESS-3). Une seule fin de session à la fois : sans effet si une autre est déjà
+    /// en cours (déconnexion volontaire, session perdue) ou si personne n'est connecté.
+    ///
+    /// La fin de session tourne dans sa propre tâche : `stopDeviceWatch` annule les tâches de surveillance (dont celle qui appelle),
+    /// et l'arrêt de tout (suivi des lieux, LOC-4b) ne doit jamais être coupé net par cette annulation. L'appelant attend la fin.
+    func endBecauseReplaced() async {
+        guard !ending, sessionActive else {
+            return
+        }
+        ending = true
+        await Task { await self.endLocally(notice: .sessionReplaced) }.value
     }
 
     func stopEverything() async {
@@ -232,6 +323,9 @@ final class SessionManager {
 
     func finishSignedOut(destination: AppDestination, notice newNotice: SignedOutNotice?, markReturning: Bool) {
         sessionActive = false
+        pendingDeviceBegin = false
+        stopDeviceWatch()
+        device.forget()
         accountSnapshot = nil
         generation += 1
         gateway.signOut()

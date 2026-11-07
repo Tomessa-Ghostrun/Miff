@@ -58,8 +58,13 @@ sealed interface DirectoryState {
         val premium: Boolean,
         /** What is shown comes from the cache of the phone (no answer of the server): a calm mention, no alarm. */
         val fromCache: Boolean,
+        /** False when [premium] is a guess (subscription not read, or answer from the cache): see [premiumOrNull]. */
+        val premiumKnown: Boolean = true,
     ) : DirectoryState {
         val active: MiffSummary? get() = miffs.firstOrNull { it.id == activeId }
+
+        /** The plan for screens that CLAIM something about it ("formule gratuite"): null while it is not known. */
+        val premiumOrNull: Boolean? get() = if (premiumKnown) premium else null
 
         override fun toString(): String = "Ready(redacted)"
     }
@@ -115,7 +120,7 @@ class MiffDirectory(
                 }
 
                 is MyMiffsLoad.Loaded -> {
-                    publish(load.miffs, load.premium, load.fromCache)
+                    publish(load.miffs, load.premium, load.fromCache, load.premiumKnown)
                     if (load.lost.isNotEmpty()) handleLost(uid, startedIn, load.lost)
                 }
             }
@@ -141,7 +146,7 @@ class MiffDirectory(
             if (epoch != startedIn || currentUid() != uid) return@withLock false
             if (load !is MyMiffsLoad.Loaded) return@withLock false
             val lost = load.lost.filter { it.ref.miffId == miffId }
-            publish(load.miffs, load.premium, load.fromCache)
+            publish(load.miffs, load.premium, load.fromCache, load.premiumKnown)
             if (lost.isEmpty()) return@withLock false
             announce(LostNotice(miffId, name ?: lost.first().name ?: known))
             cleanUpAndPurge(uid, startedIn, lost)
@@ -180,13 +185,15 @@ class MiffDirectory(
         miffs: List<MiffSummary>,
         premium: Boolean,
         fromCache: Boolean,
+        premiumKnown: Boolean,
     ) {
         val wanted = activeStore.get()
         val active = miffs.firstOrNull { it.id == wanted }?.id ?: miffs.firstOrNull()?.id
-        mutableState.value = DirectoryState.Ready(miffs, active, premium, fromCache)
+        mutableState.value = DirectoryState.Ready(miffs, active, premium, fromCache, premiumKnown)
     }
 
-    private fun DirectoryState.Ready.withActive(id: String) = DirectoryState.Ready(miffs, id, premium, fromCache)
+    private fun DirectoryState.Ready.withActive(id: String) =
+        DirectoryState.Ready(miffs, id, premium, fromCache, premiumKnown)
 
     private suspend fun handleLost(
         uid: String,

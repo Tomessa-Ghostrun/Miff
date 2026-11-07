@@ -31,6 +31,12 @@ struct MissingProfileError: Error, Equatable {
     static let domain = "com.tomessa.miff.missing-profile"
 }
 
+/// La Miff n'existe pas (elle a été supprimée) : un lot qui devait la lire d'abord ne peut pas être construit (MIFF-4).
+struct MiffGoneError: Error, Equatable {
+    /// Domaine de l'erreur posée dans la transaction (voir `FirestoreMiffStore`), pour la reconnaître à la sortie.
+    static let domain = "com.tomessa.miff.miff-gone"
+}
+
 /// Une écriture refusée AVANT d'être envoyée (nom ou code invalide) : rien n'a été écrit.
 struct InvalidWriteError: Error, Equatable {
     static let domain = "com.tomessa.miff.invalid-write"

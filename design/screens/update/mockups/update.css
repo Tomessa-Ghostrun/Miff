@@ -1,0 +1,147 @@
+/* Maquettes « Update » et tab bar « verre » : s'ajoute à lieux.css puis feed.css (mêmes tokens). Inclus tel quel dans chaque HTML par build.mjs. */
+:root{
+  /* tokens PROPOSÉS pour la tab bar (voir design/tab-bar-liquid-glass.md) */
+  --tb-ic-on-light:#043cd1; --tb-ic-off-light:#595959; --tb-pill-light:rgba(4,60,209,.20);
+  --tb-ic-on-photo:#ffffff; --tb-ic-off-photo:rgba(255,255,255,.78); --tb-pill-photo:rgba(255,255,255,.24);
+  --bubble-warning:#face90; --bubble-danger:#fa9490; /* mesurées à la pipette sur les maquettes du PM : [À CONFIRMER] */
+  --ink:#222222;
+}
+
+/* ---------- tab bar : trois entrées, bouton central à la couleur de MON statut ---------- */
+.tb{position:absolute;left:24px;right:24px;bottom:22px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:space-around;z-index:14}
+.tb.static{position:relative;left:auto;right:auto;bottom:auto;width:342px;margin:0 auto}
+.tb .it{position:relative;width:64px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--ic-off)}
+.tb .it.on{color:var(--ic-on);background:var(--pill)}
+.tb .it .ico{width:26px;height:26px}
+.tb.light{--ic-on:var(--tb-ic-on-light);--ic-off:var(--tb-ic-off-light);--pill:var(--tb-pill-light)}
+.tb.photo{--ic-on:var(--tb-ic-on-photo);--ic-off:var(--tb-ic-off-photo);--pill:var(--tb-pill-photo)}
+/* matériaux : valeurs de la section 4 de tab-bar-liquid-glass.md */
+.tb.m-blur.light{background:rgba(255,255,255,.80);backdrop-filter:blur(20px) saturate(1.4);border:1px solid rgba(255,255,255,.55);box-shadow:var(--shadow)}
+.tb.m-blur.photo{background:rgba(0,0,0,.60);backdrop-filter:blur(20px) saturate(1.2);border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow)}
+.tb.m-flat.light{background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.55);box-shadow:var(--shadow)}
+.tb.m-flat.photo{background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow)}
+.tb.m-opaque.light{background:#fff;box-shadow:var(--shadow)}
+.tb.m-opaque.photo{background:#222;box-shadow:var(--shadow)}
+/* rendu natif iOS 26 (Liquid Glass) : approximation de maquette, le vrai rendu est celui du système (adaptatif) */
+.tb.m-ios26.light{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.32));backdrop-filter:blur(16px) saturate(1.8) brightness(1.04);border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -1px 2px rgba(255,255,255,.4),0 10px 28px rgba(0,0,0,.16)}
+.tb.m-ios26.photo{background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.08));backdrop-filter:blur(16px) saturate(1.7) brightness(.9);border:1px solid rgba(255,255,255,.45);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.55),inset 0 -1px 2px rgba(255,255,255,.2),0 10px 28px rgba(0,0,0,.30)}
+.tb.p-ios.m-blur{box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.tb.p-ios.m-opaque,.tb.p-ios.m-flat{box-shadow:0 6px 20px rgba(0,0,0,.18)}
+
+/* bouton central : plaque blanche opaque (jamais du verre) + anneau bleu + point de statut + glyphe */
+.tc{width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.30);display:flex;align-items:center;justify-content:center}
+.tc .rg{width:36px;height:36px;border-radius:50%;border:3px solid var(--action);display:flex;align-items:center;justify-content:center}
+.tc .dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.tc .dot .ico{width:14px;height:14px;stroke-width:2.6}
+.tc .dot.safe{background:var(--safe)} .tc .dot.warning{background:var(--warning)} .tc .dot.danger{background:var(--danger)} .tc .dot.neutral{background:#d9d9d9}
+
+/* ---------- fonds d'essai ---------- */
+.bd{position:relative;width:390px;height:130px;overflow:hidden;display:flex;align-items:center}
+.bd.feed{background:var(--canvas)}
+.bd.feed::before{content:"";position:absolute;left:16px;right:16px;top:8px;height:120px;background:#fff;border:1px solid var(--border-default);border-radius:5px;box-shadow:var(--shadow-subtle)}
+.bd.feed .ph2{position:absolute;left:30px;width:180px;top:22px;height:92px;background:repeating-linear-gradient(135deg,#2b2b2b 0 12px,#3a3a3a 12px 24px)}
+.bd.feed .tx2{position:absolute;left:226px;right:30px;top:30px;height:8px;border-radius:4px;background:#bbb;box-shadow:0 18px 0 #ccc,0 36px 0 #bbb,0 54px 0 #ccc}
+.bd.dark{background:linear-gradient(135deg,#243438,#506a6e 45%,#2e4043 70%,#5d7377)}
+.bd.dark::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,rgba(255,255,255,.05) 0 3px,rgba(0,0,0,.06) 3px 9px)}
+.bd.bright{background:repeating-linear-gradient(90deg,#e4d9c2 0 52px,#cbbd9f 52px 60px,#efe7d6 60px 120px)}
+.bd.bright::after{content:"";position:absolute;left:0;right:0;top:44%;height:10px;background:#f7f3ea}
+
+/* ---------- Feed : couleur de mon statut, message d'incitation ---------- */
+.fscroll.pad2 .fscroll-in{padding-bottom:210px}
+.msgb{position:absolute;left:16px;right:16px;bottom:100px;border-radius:20px;padding:16px 18px;font-style:italic;font-size:16px;line-height:22px;color:#000;z-index:13;--bg:var(--bubble-warning);background:var(--bg)}
+.msgb.danger{--bg:var(--bubble-danger)}
+.msgb::after{content:"";position:absolute;left:50%;bottom:-10px;margin-left:-11px;border-left:11px solid transparent;border-right:11px solid transparent;border-top:11px solid var(--bg)}
+.msgb.static{position:relative;left:auto;right:auto;bottom:auto;margin:0 16px 14px}
+.cote{position:absolute;z-index:40;font-size:11px;line-height:14px;font-weight:700;color:#d60700;background:rgba(255,255,255,.9);padding:0 3px;white-space:nowrap}
+.cote.l{border-left:2px solid #d60700;height:100%}
+.hz{position:absolute;z-index:39;height:0;border-top:1.5px solid #d60700}
+.vt{position:absolute;z-index:39;width:0;border-left:1.5px solid #d60700}
+
+/* ---------- viseur et aperçu ---------- */
+.vf{position:absolute;inset:0;background:#526569;z-index:0}
+.vf .ph{position:absolute;left:0;top:-37px;width:390px;height:780px;background-repeat:no-repeat;background-size:390px 780px}
+.vf .ph.one{background-image:url("../../../exports/update/Welcoming screen-1.png")}
+.vf .ph.three{background-image:url("../../../exports/update/Welcoming screen-1.png")}
+.vf .band{position:absolute;left:0;right:0;top:440px;bottom:0;background:linear-gradient(180deg,rgba(82,101,105,0) 0,#526569 70px)}
+.vf .top-scrim{position:absolute;left:0;right:0;top:0;height:110px;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,0))}
+.vf .bot-scrim{position:absolute;left:0;right:0;bottom:0;height:330px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.55) 55%)}
+.vfs .status{color:#fff;position:relative;z-index:5} .vfs .status svg{fill:#fff} .vfs .status svg rect[fill=none]{stroke:#fff}
+.rb{position:absolute;z-index:6;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center}
+.rb .ico{width:24px;height:24px;stroke-width:2}
+.rb.tl{left:12px;top:54px} .rb.tr{right:12px;top:54px}
+.shut{position:absolute;left:50%;margin-left:-40px;bottom:134px;width:80px;height:80px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25),0 2px 8px rgba(0,0,0,.35);z-index:6}
+.shut::after{content:"";position:absolute;inset:7px;border-radius:50%;border:3px solid var(--action)}
+.vhelp{position:absolute;left:24px;right:24px;bottom:232px;text-align:center;color:#fff;font-size:14px;line-height:20px;z-index:6;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.vtip{position:absolute;left:50%;top:62px;transform:translateX(-50%);z-index:6;max-width:250px;text-align:center;padding:8px 14px;border-radius:var(--r-md);background:rgba(34,34,34,.85);color:#fff;font-size:13px;line-height:18px}
+.pvrow{position:absolute;left:16px;right:16px;bottom:100px;z-index:6;display:flex;gap:10px;justify-content:flex-end}
+.pvb{height:48px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;line-height:22px}
+.pvb.retake{width:56px;background:#f9f9f7;border:1.5px solid var(--action);color:var(--action);box-shadow:var(--shadow-subtle)}
+.pvb.retake .ico{width:24px;height:24px;stroke-width:2.2}
+.pvb.pub{min-width:128px;padding:0 20px;background:var(--action);color:#fff;box-shadow:var(--shadow)}
+.pvb.pub .ico{width:20px;height:20px;stroke-width:2}
+.pvb.pub.off{background:var(--action-t30);box-shadow:none}
+.pvb.retake.off{opacity:.5}
+.pvline{position:absolute;left:20px;right:20px;bottom:160px;z-index:6;color:#fff;font-size:13px;line-height:18px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.pvline .ico{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+.pvnote{position:absolute;left:16px;right:16px;bottom:216px;z-index:6;padding:10px 14px;border-radius:var(--r-md);background:#fff;color:var(--ink);font-size:14px;line-height:20px;display:flex;gap:10px;align-items:flex-start}
+.pvnote .ico{width:20px;height:20px;color:var(--text-secondary)}
+.sharing{position:absolute;inset:0;z-index:9;background:rgba(0,0,0,.30);display:flex;align-items:center;justify-content:center}
+.sharing .pl{background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow);padding:16px 20px;display:flex;gap:12px;align-items:center;font-size:16px}
+.sharing .spin{width:22px;height:22px;border-radius:50%;border:3px solid var(--action-t30);border-top-color:var(--action)}
+
+/* ---------- pop-ins de permission ---------- */
+.popin .art{width:92px;height:92px;color:var(--brand-primary)}
+.popin .art svg{width:92px;height:92px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.popin .body.left{text-align:center}
+.popin .btn.sec{background:#fff;color:var(--action);border:1px solid var(--action);box-shadow:var(--shadow-subtle)}
+.popin .linkb{height:44px;display:flex;align-items:center;justify-content:center;color:var(--action);font-weight:700;font-size:14px}
+.popin.calm h3{color:var(--action)}
+.popin .ico.big{width:40px;height:40px;color:var(--text-secondary)}
+
+/* ---------- divers ---------- */
+.tcol{display:flex;flex-direction:column;gap:6px}
+.fb2{margin:0 16px 12px}
+.mname{font-style:normal;font-weight:700}
+.dens{display:flex;flex-direction:column;gap:2px;font-size:11px;line-height:14px;color:#555}
+
+.tc .rg.neutral{border-color:#595959}
+.tc .dot.neutral{background:#595959}
+/* ---------- onglet Profil (approximation de la maquette du PM) ---------- */
+.pf-top{background:linear-gradient(180deg,#d9de3d,#e8eb9a 70%,rgba(249,249,247,0));padding-bottom:20px}
+.pf-id{display:flex;align-items:center;gap:12px;padding:8px 16px 0}
+.pf-av{width:72px;height:72px;border-radius:50%;border:3px solid #fff;background:#cfc7bd;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;color:#4a443c}
+.pf-id b{display:block;font-family:"Baloo Thambi 2";font-weight:700;font-size:22px;line-height:28px}
+.pf-id span{display:block;font-size:14px;line-height:20px;color:var(--text-desc)}
+.pf-gear{margin-left:auto;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;color:var(--action)}
+.pf-body{padding:4px 16px}
+.pf-card{display:flex;gap:12px;align-items:center;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow);padding:14px}
+.pf-card b{display:block;font-size:16px;line-height:22px}.pf-card span{display:block;font-size:13px;line-height:18px;color:var(--action)}
+.pf-ico{width:40px;height:40px;border-radius:var(--r-md);background:var(--action-t20);color:var(--action);display:flex;align-items:center;justify-content:center}
+.pf-sec{display:flex;justify-content:space-between;margin:22px 4px 8px;font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px}
+.pf-sec span{font-family:"Hanken Grotesk";font-weight:400;font-size:16px;color:var(--action)}
+.pf-list{background:rgba(4,60,209,.06);border-radius:var(--r-sm);padding:6px}
+.pf-row{display:flex;gap:12px;align-items:center;padding:8px}
+.pf-row i{width:38px;height:38px;border-radius:var(--r-md);background:var(--action-t20)}
+.pf-row b{display:block;font-weight:400;font-size:16px;line-height:22px}.pf-row span{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
+.pf-add{margin:6px;border:1px dashed var(--action);border-radius:var(--r-md);min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--action)}
+
+/* l'anneau d'avatar suit les maquettes du PM : couleur seule, sans glyphe (décision du 2026-11-06) */
+.av .g{display:none}
+/* aperçu : photo un peu plus petite que le plein écran, marges, boutons dessous */
+.pvphoto{position:absolute;left:59px;top:52px;width:272px;height:590px;border-radius:20px;overflow:hidden;background:#526569;z-index:2}
+.pvphoto .ph3{position:absolute;left:0;top:-25px;width:295px;height:590px;margin-left:-11px;background:url("../../../exports/update/Welcoming screen-1.png") 0 0/295px 590px no-repeat}
+.pvphoto .band3{position:absolute;left:0;right:0;top:320px;bottom:0;background:linear-gradient(180deg,rgba(82,101,105,0) 0,#526569 60px)}
+.rb.tl2{position:absolute;z-index:6;left:8px;top:8px;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;justify-content:center}
+.rb.tl2 .ico{width:24px;height:24px;stroke-width:2}
+.pvphoto .pvnote{left:8px;right:8px;bottom:8px}
+.pvline{left:59px;right:59px;bottom:158px;text-shadow:none}
+/* plein écran du Feed (aligné sur design/exports/feed/claude/09-photo-plein-ecran) */
+.fsw{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);max-height:100%;max-width:100%;margin:auto;overflow:hidden;width:100%}
+.ph3.real{position:absolute;inset:0;background:url("../../../exports/update/Welcoming screen-1.png") 50% 20%/cover no-repeat}
+.photo.realwin{position:relative;margin-top:10px;height:108px;border-radius:var(--r-sm);overflow:hidden}
+.photo.realwin .ph3.real{background-position:50% 22%}
+.rbx{display:flex;flex-direction:column;align-items:center;gap:8px}
+.rr{display:flex;align-items:center;justify-content:center;border:2px solid var(--action);background:var(--action-t10);border-radius:6px;font-weight:700;font-size:13px;color:var(--action)}
+.rr.clamp{border-style:dashed}
+.rl{font-size:12px;line-height:16px;color:#444;text-align:center;max-width:150px}
+.rrow{display:flex;gap:28px;align-items:flex-end;padding:20px;background:#fff;border-radius:8px}

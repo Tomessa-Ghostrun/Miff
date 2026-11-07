@@ -31,9 +31,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.miff.MiffMember
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSummary
+import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
@@ -105,7 +105,7 @@ class MiffScreensTest {
         joinCode = code,
         isOwner = owner,
         members = members,
-        places = listOf(MiffPlace("p1", "Maison")),
+        places = listOf(testPlace("p1", "Maison")),
         myUid = "me",
         sharing = sharing,
         nameInput = "Famille Martin",
@@ -134,7 +134,7 @@ class MiffScreensTest {
     fun choice_offersTheTwoWays_aQuietSignOut_andNoBackArrow() {
         var created = 0
         var joined = 0
-        show { MiffChoiceScreen(onCreate = { created++ }, onJoin = { joined++ }, onSignOut = {}) }
+        show { MiffChoiceScreen(onCreate = { created++ }, onJoin = { joined++ }, onSignOut = {}, onDeleteAccount = {}) }
         shoot("miff-a-choice")
         composeRule.onNodeWithText(text(R.string.miff_choice_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_choice_create_title)).performClick()
@@ -153,9 +153,9 @@ class MiffScreensTest {
             CreateMiffScreen(CreateUiState(), onBack = {}, onNameChanged = {}, onSubmit = {}, onContinue = {})
         }
         shoot("miff-b1-create-empty")
-        composeRule.onNodeWithText(text(R.string.miff_consent_create)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_create)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_create_action)).assertIsNotEnabled()
-        val consent = composeRule.onNodeWithText(text(R.string.miff_consent_create)).getUnclippedBoundsInRoot()
+        val consent = composeRule.onNodeWithText(text(R.string.miff_consent3_create)).getUnclippedBoundsInRoot()
         val button = composeRule.onNodeWithText(text(R.string.miff_create_action)).getUnclippedBoundsInRoot()
         assertTrue("the text comes BEFORE the button (explicit consent)", consent.bottom <= button.top)
         // No code and no list of loved ones on this screen (decision QM15: the code does not exist yet).
@@ -306,11 +306,11 @@ class MiffScreensTest {
         }
         shoot("miff-e-join-confirm")
         composeRule.onNodeWithText(text(R.string.miff_join_confirm_title, "Famille Martin")).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_consent_join)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_consent_system_note_join)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_consent_members_see_body)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_consent_places)).assertIsDisplayed()
-        val consent = composeRule.onNodeWithText(text(R.string.miff_consent_join)).getUnclippedBoundsInRoot()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_join)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_system_note)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_members_body)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_places_body)).performScrollTo().assertIsDisplayed()
+        val consent = composeRule.onNodeWithText(text(R.string.miff_consent3_join)).getUnclippedBoundsInRoot()
         val button = composeRule.onNodeWithText(text(R.string.miff_join_action)).getUnclippedBoundsInRoot()
         assertTrue(consent.bottom <= button.top)
         composeRule.onNodeWithText(text(R.string.miff_join_action)).assertIsDisplayed()
@@ -335,10 +335,9 @@ class MiffScreensTest {
         composeRule
             .onNodeWithText(
                 text(R.string.miff_join_action),
-            ).performScrollTo()
-            .assertIsDisplayed()
+            ).assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)
-        composeRule.onNodeWithText(text(R.string.miff_consent_join)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_join)).performScrollTo().assertIsDisplayed()
         shoot("miff-e-join-confirm-font200")
     }
 
@@ -446,11 +445,11 @@ class MiffScreensTest {
         showMiff(ready(sharing = false).copy(sharingDialog = SharingDialog.RESUME))
         shoot("miff-m2-resume-dialog")
         composeRule.onNodeWithText(text(R.string.miff_sharing_resume_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_sharing_resume_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_resume)).assertIsDisplayed()
         // The same consent card as at the entry: what the members see, the places sentence, the note about the phone permission.
-        composeRule.onNodeWithText(text(R.string.miff_consent_members_see_body)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_consent_places)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.miff_consent_system_note_create)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_members_body)).assertExists()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_places_body)).assertExists()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_system_note)).assertExists()
     }
 
     // --- L. Access lost -------------------------------------------------------------------------------------------
@@ -536,6 +535,22 @@ class MiffScreensTest {
         composeRule.onNodeWithText(text(R.string.feed_selector_join)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_selector_create)).assertIsDisplayed()
         shoot("feed-premium-selector")
+    }
+
+    @Test
+    fun feed_unknownPlan_keepsTheSelectorUsable_withJoinAndCreate() {
+        showFeed(
+            DirectoryState.Ready(
+                listOf(MiffSummary(miffId, "Famille Martin")),
+                miffId,
+                premium = false,
+                fromCache = false,
+                premiumKnown = false,
+            ),
+        )
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_join)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_create)).assertIsDisplayed()
     }
 
     @Test

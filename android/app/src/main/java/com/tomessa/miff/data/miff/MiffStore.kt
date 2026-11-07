@@ -9,9 +9,11 @@ import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffDetails
+import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.miff.ProfileCopy
 import com.tomessa.miff.domain.miff.WriteKind
+import com.tomessa.miff.domain.miff.interpretMiffError
 import kotlinx.coroutines.tasks.await
 
 /*
@@ -45,10 +47,21 @@ sealed interface MiffRead {
     data object Missing : MiffRead
 }
 
+/** What MY card says about the consent: whether I share, and the version of the text I accepted (null if the card has none). */
+data class SharingConsentRead(
+    val enabled: Boolean,
+    val version: String?,
+)
+
 /** `entitlements/{uid}`: only what the client needs to choose the key of the index. */
 data class EntitlementRead(
     val active: Boolean,
     val expiresAtMillis: Long?,
+    /**
+     * True when the answer comes from the phone's cache (no answer of the server): a copy that may be old, and a missing document
+     * in the cache proves nothing. The plan is then UNKNOWN, still usable as the key of the index offline (limit F1).
+     */
+    val fromCache: Boolean = false,
 )
 
 /**
@@ -79,6 +92,26 @@ interface MiffStore {
         miffId: String,
         uid: String,
     ): Boolean?
+
+    /**
+     * My consent as my card says it (LOC-2a: is the version of the text I accepted an old one?), read from the SERVER; null if there is
+     * no card. One read of rules (`isMember`, `miffAlive`) and one document.
+     */
+    suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ): SharingConsentRead?
+
+    /**
+     * ONE transaction (LOC-2a, renewal of the consent): my card is READ in each of [miffIds] inside the transaction, and [build] makes the lot
+     * for the ones where I STILL share (`sharing.enabled` is true) only; nothing is written for the others (a sharing stopped meanwhile, on
+     * another phone, is never turned back on by a renewal). Returns the ids that were written (empty: nothing was written).
+     */
+    suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<DocWrite>,
+    ): List<String>
 
     /** A read that only the person can do and that always works when the server is reachable and App Check is fine. */
     suspend fun serverReachable(uid: String): Boolean
@@ -167,6 +200,50 @@ class FirestoreMiffStore(
         return if (snapshot.exists()) snapshot.getBoolean("sharing.enabled") else null
     }
 
+    override suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ): SharingConsentRead? {
+        val snapshot =
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("members")
+                .document(uid)
+                .get(Source.SERVER)
+                .await()
+        if (!snapshot.exists()) return null
+        return SharingConsentRead(
+            enabled = snapshot.getBoolean("sharing.enabled") == true,
+            version = snapshot.getString("sharing.consentVersion"),
+        )
+    }
+
+    override suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<DocWrite>,
+    ): List<String> {
+        val db = firestore()
+        return db
+            .runTransaction { transaction ->
+                val active =
+                    miffIds.filter { miffId ->
+                        val card =
+                            transaction.get(
+                                db
+                                    .collection("miffs")
+                                    .document(miffId)
+                                    .collection("members")
+                                    .document(uid),
+                            )
+                        card.exists() && card.getBoolean("sharing.enabled") == true
+                    }
+                if (active.isNotEmpty()) applyWrites(db, transaction, build(active))
+                active
+            }.await()
+    }
+
     override suspend fun readEntitlement(uid: String): EntitlementRead? {
         val snapshot =
             firestore()
@@ -174,10 +251,23 @@ class FirestoreMiffStore(
                 .document(uid)
                 .get()
                 .await()
-        if (!snapshot.exists()) return null
+        val fromCache = snapshot.metadata.isFromCache
+        // A missing document is "free" ONLY when the server said so; from the cache it is reported as an unknown plan.
+        if (!snapshot.exists()) {
+            return if (fromCache) {
+                EntitlementRead(
+                    active = false,
+                    expiresAtMillis = null,
+                    fromCache = true,
+                )
+            } else {
+                null
+            }
+        }
         return EntitlementRead(
             active = snapshot.getBoolean("active") == true,
             expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
+            fromCache = fromCache,
         )
     }
 
@@ -190,6 +280,8 @@ class FirestoreMiffStore(
                 .await()
             true
         } catch (e: FirebaseFirestoreException) {
+            // No network is not "refused": it is told apart (the callers read it as a failed probe), only a refusal answers false.
+            if (interpretMiffError(e) == MiffFailure.OFFLINE) throw e
             false
         }
 

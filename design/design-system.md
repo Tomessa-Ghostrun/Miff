@@ -2,7 +2,7 @@
 
 **Source de vérité visuelle** : les maquettes du fichier Figma original "Miff - App" (`Byi9NgQxkBPbmbhU403HSf`, lecture seule).
 **Source des tokens et composants** : fichier de travail "Miff - Claude" (`RbX84qKbxppvAy5iypLYP2`), construit pour coller aux maquettes originales.
-**Dernière mise à jour** : 2026-10-16, après recensement des 10 pages du fichier original (couleurs, polices, arrondis, ombres mesurés sur ~85 écrans, barre d'état exclue).
+**Dernière mise à jour** : 2026-10-16, après recensement des 10 pages du fichier original (couleurs, polices, arrondis, ombres mesurés sur ~85 écrans, barre d'état exclue). **Complété le 2026-11-07** : le §7 recense les jetons et composants **réellement livrés dans les apps** pour le Feed, la barre d'onglets en verre et l'Update (valeurs lues dans `android/app/src/main/java/com/tomessa/miff/ui/` et `ios/Miff/DesignSystem/`, fichier cité à chaque ligne), et le §6 liste les écarts maquette / implémentation.
 
 Les noms de code ci-dessous sont ceux enregistrés dans Figma (`codeSyntax`) : le nom Web est `var(--color-…)`, les noms Android et iOS sont identiques (camelCase).
 
@@ -25,7 +25,7 @@ Les noms de code ci-dessous sont ceux enregistrés dans Figma (`codeSyntax`) : l
 |---|---|---|---|
 | En sécurité | `status/safe` `#d1d828` | `status/safe-tint` | Dans un lieu de confiance / update récente |
 | Attention | `status/warning` `#ffb650` (orange) | `status/warning-tint` | Palier orange (voir `docs/specs/update-et-escalade-statut.md`) |
-| Danger | `status/danger` `#ff5650` | `status/danger-tint` | Palier rouge, zone à risque |
+| Danger | `status/danger` `#ff5650` | `status/danger-tint` | Palier rouge, zone de danger |
 
 Noms de code : `colorStatusSafe`, `colorStatusWarning`, `colorStatusDanger` et leurs `…Tint`. Le texte d'erreur de formulaire utilise `text/error` (`colorTextError`), qui pointe vers le rouge plus foncé `status/red-700` `#d60700` (même teinte que le statut danger, contraste 5,4:1 sur blanc, au-dessus du minimum WCAG AA de 4,5:1). `#ff5650` ne sert qu'aux anneaux, fonds et pastilles, jamais au texte (3,0:1, insuffisant).
 
@@ -106,8 +106,8 @@ Arrondis rares vus dans les maquettes (3, 15, 20) : à traiter comme des écarts
 | **Avatar** | `Status=Safe / Warning / Danger / Neutral` | Cercle 46 px, anneau 3 px selon statut. La photo s'applique au niveau de l'instance. |
 | **Button** | `Style=Primary / Secondary` | Primaire : fond `action/primary`, ombre `shadow/default`, arrondi `radius/md`. Propriété texte `Label`. État désactivé = fond à 30 %. |
 | **Badge** | `Status=Safe / Warning / Danger` | Fond teinte 30 %, texte en couleur pleine, arrondi `radius/sm`. Propriété texte `Label`. |
-| **StatusCard** | — | Avatar + nom + badge + % batterie + horodatage + photo. Contient des instances d'Avatar et de Badge. |
-| **Tabbar** | — | Importée telle quelle comme image vectorielle (maison / bouton central / profil). Icônes non recolorables pour l'instant. |
+| **StatusCard** | — | Avatar + nom + badge + % batterie + horodatage + photo. Contient des instances d'Avatar et de Badge. **Version livrée (carte membre du Feed)** : voir §7.3 ; la batterie n'affiche plus d'heure de mesure (D44), l'aperçu de photo est un carré centré (D39), plus de pastille « Toi » (D42). |
+| **Tabbar** | — | Barre flottante à 3 entrées (maison / bouton central / profil) **en verre translucide** : Liquid Glass natif sous iOS 26 (repli matériau sous iOS 16 à 25), flou d'arrière-plan sous Android 12+ (repli sans flou, puis opaque), deux variantes (claire, sur photo), bouton central à la couleur du statut. Spécification complète, tokens `tabbar/*`, contrastes et accessibilité : `design/tab-bar-liquid-glass.md` ; écran Update : `design/screens/update.md`. L'image vectorielle importée dans Figma reste la référence de dessin des icônes (non recolorables pour l'instant). |
 
 ### Composants ajoutés pour le flux Miff (2026-10-27, page « Composants », section « Flux Miff — composants (MIFF-0) »)
 Créés dans Figma, **non encore contrôlés visuellement** (quota d'appels atteint juste après la création). Détail dans `design/screens/miff-*.md`.
@@ -140,3 +140,72 @@ Champ à soulignement, champ encadré, carte de choix (créer/rejoindre une Miff
 - **Fonds décoratifs** (formes organiques du carrousel de bienvenue) : importés comme vecteurs, non éditables.
 - Certaines icônes de petites sections (Nouvelle Miff, Paywall) sont des emojis provisoires dans "Miff - Claude" : à remplacer par les vraies icônes avant la phase de développement des écrans concernés.
 - **Couleurs secondaires suggérées** (lavande, rose, turquoise, image de la page "Design system" du Figma original) : non utilisées dans les écrans, donc **non incluses**. À ajouter si le PM les valide.
+
+### Écarts connus entre le design system, les fiches et les apps (relevés le 2026-11-07)
+| # | Écart | Où | Statut |
+|---|---|---|---|
+| 1 | **Espacements** : le §6 dit « non tokenisés » ; Android a un objet `Spacing` (4 / 8 / 16 / 24 / 32, cible tactile 48, largeur du logo 200, avatar de membre 46) qui « évite d'éparpiller les nombres bruts » et déclare lui-même n'être pas un jeton Figma | `ui/theme/Spacing.kt` | Pas de jeton Figma ; iOS : aucun équivalent recensé |
+| 2 | **Jetons du Feed absents d'iOS** : `status/*-text`, gris neutre, jetons de l'Update vivent dans des fichiers Android à part (`FeedColor.kt`, `UpdateColor.kt`) pour ne pas casser le test de parité des couleurs ; **aucun n'existe dans `ios/Miff/DesignSystem/ColorTokens.swift` sur `main`** (pas de Feed iOS) | Android / iOS | À ajouter côté iOS avec le Feed iOS, mêmes noms et mêmes valeurs |
+| 3 | **`bg/overlay-header` (`#f9f9f7` à 60 %, flou)** : défini ici, **non utilisé par l'en-tête du Feed livré** (fond `bg/canvas` opaque, ombre `shadow/subtle`) | `ui/feed/FeedHeader.kt` | Voir `screens/feed/entete-et-selecteur.md` |
+| 4 | **`display/headline` 24 / 30** ici ; les fiches du Feed disent 24 / 32 (bulle) et 17 / 24 (prénom) alors que le code suit le jeton (24 / 30 et `display/label` 16 / 22) | `ui/feed/FeedBubble.kt`, `FeedCards.kt` | Le jeton fait foi |
+| 5 | **Seuil de masquage de la batterie** : 6 h (décision du PM, 2026-11-07) contre 24 h dans le ticket et le code de la PR #105 | `docs/tickets/feed.md`, `domain/feed/FeedBuilder.kt` | Incohérence non tranchée (voir `screens/feed/cartes-membres.md`) |
+| 6 | **Mouvement de la bulle** : précision du PM (étirement / écrasement déphasés) absente du code de `main` | `ui/feed/BubbleMotion.kt` | Voir `screens/feed/bulles.md` |
+| 7 | **Ombre de la barre d'onglets** : Android `shadow/default`, iOS noir 18 %, rayon 10, décalage 6 | `ui/main/GlassTabBar.kt`, `ios/.../TabBarTokens.swift` (PR #102) | Voir `tab-bar-liquid-glass.md` §14 |
+| 8 | **Tailles d'icônes de la barre** : 26 (Android, spécification) contre 24 (iOS, PR #102) | idem | Voir `tab-bar-liquid-glass.md` §14 |
+
+---
+
+## 7. Jetons et composants livrés dans les apps (Feed, barre d'onglets, Update)
+
+> Rien ci-dessous n'est une proposition : chaque valeur est copiée du code, avec son fichier. Racine Android : `android/app/src/main/java/com/tomessa/miff/ui/`. iOS : `ios/Miff/DesignSystem/` (la barre d'onglets iOS n'est que dans la PR brouillon #102, non fusionnée ; le Feed et l'Update n'existent pas encore sur iOS).
+
+### 7.1 Jetons de couleur ajoutés par le Feed et l'Update
+| Token | Valeur | Nom de code | Fichier | Usage |
+|---|---|---|---|---|
+| `status/safe-text` | `#4d5200` | `colorStatusSafeText` | `ui/theme/FeedColor.kt` | Texte et pictogramme **sur** la teinte 30 % verte (7,28:1) |
+| `status/warning-text` | `#7a4300` | `colorStatusWarningText` | `ui/theme/FeedColor.kt` | Idem, orange (6,76:1) |
+| `status/danger-text` | `#a30500` | `colorStatusDangerText` | `ui/theme/FeedColor.kt` | Idem, rouge (5,73:1) |
+| `status/neutral` | `#c9c4bd` | `colorStatusNeutral` | `ui/theme/FeedColor.kt` | Anneau, liseré et bulle d'une personne **sans statut connu** : jamais de vert quand on ne sait pas |
+| `status/neutral-tint` | `#c9c4bd` à 45 % | `colorStatusNeutralTint` | `ui/theme/FeedColor.kt` | Teinte de la bulle neutre |
+| `status/warning-bubble` | `#face90` | `colorStatusWarningBubble` | `ui/theme/UpdateColor.kt` | Bulle d'incitation orange (texte noir 14,3:1) |
+| `status/danger-bubble` | `#fa9490` | `colorStatusDangerBubble` | `ui/theme/UpdateColor.kt` | Bulle d'incitation rouge (9,7:1) |
+| `update/stage` | `#1d1f20` | `colorUpdateStage` | `ui/theme/UpdateColor.kt` | Fond sombre autour de la photo de l'aperçu |
+| `update/scrim` | noir à 45 % | `colorUpdateScrim` | `ui/theme/UpdateColor.kt` | Fond de la croix de l'aperçu |
+| `update/veil` | noir à 30 % | `colorUpdateVeil` | `ui/theme/UpdateColor.kt` | Voile sur la photo en cours de partage |
+| `update/toast` | `#222222` à 92 % | `colorUpdateToast` | `ui/theme/UpdateColor.kt` | Pastille calme de confirmation |
+
+### 7.2 Jetons de la barre d'onglets en verre (`tabbar/*`)
+Source : `ui/theme/GlassTokens.kt` (Android) ; `ios/Miff/DesignSystem/TabBarTokens.swift` (iOS, PR #102). Mêmes valeurs sur les deux plateformes.
+| Token | Variante claire | Variante sur photo |
+|---|---|---|
+| `tabbar/glass-tint` (voile, avec flou ou matériau) | blanc 80 % | noir 60 % |
+| `tabbar/glass-tint-noblur` (sans flou, Android) | blanc 92 % | noir 72 % |
+| `tabbar/surface-opaque` | `#ffffff` | `#222222` |
+| `tabbar/glass-border` (1 dp / 1 pt) | blanc 55 % | blanc 18 % |
+| `tabbar/icon-active` | `action/primary` | `#ffffff` |
+| `tabbar/icon-inactive` | `#595959` | blanc 78 % |
+| `tabbar/pill-active` | `action/primary-tint-20` | blanc 24 % |
+| `tabbar/blur-radius` | 20 dp (Android seulement) | idem |
+| Plaque du bouton central | `#ffffff` opaque (`GlassCentralPlate`) | idem |
+Le choix de la variante est fait **par l'écran** (claire : Feed, Profil ; sur photo : viseur de l'Update), jamais par un réglage.
+
+### 7.3 Composants livrés
+| Composant | Description réelle | Fichier |
+|---|---|---|
+| **Barre d'onglets en verre** | Barre flottante de 64 dp, arrondi 20 dp, marges latérales 24 dp, 22 dp au-dessus du bas ; 3 entrées de 64 x 48 ; verre à trois niveaux (Android : flou Haze 2.0.1 + voile + liseré / sans flou / opaque ; iOS : verre natif `glassEffect` sous iOS 26 / `.regularMaterial` + voile sous iOS 16 à 25 / opaque avec « Réduire la transparence » ou « Augmenter le contraste ») ; icônes de 26 dp (Android) ; le contenu défile **sous** la barre | `ui/main/MainTabBar.kt`, `GlassTabBar.kt` ; `ios/Miff/Views/Main/MainTabBar.swift` (PR #102) |
+| **Bouton central** | Plaque blanche opaque 44, anneau 3 de `action/primary` (36 de diamètre), pastille de statut 24 (vert, orange, rouge) ; neutre : anneau et pastille `#595959` ; **aucun pictogramme** ; ombre noir 30 %, décalage 1, flou 4 | `ui/main/GlassTabBar.kt` (`CentralStatusButton`) ; `MainTabBar.swift` |
+| **Avatar de statut** | Disque de 46 dp, anneau 3 dp (`StrokeAvatarRing`) de la couleur du niveau, fond `status/neutral`, initiales `body/bold-14` ; **couleur seule, aucun pictogramme** ; décoratif pour le lecteur d'écran | `ui/feed/FeedStyle.kt` (`FeedAvatar`) |
+| **Pastille de statut (étiquette d'état)** | Texte `body/regular-14` en `status/*-text` sur la teinte 30 % du niveau, arrondi `radius/sm`, marges 8 / 4 ; **texte seul, sans pictogramme** | `ui/feed/FeedCards.kt` (`StateChip`), `FeedStyle.kt` (`tint()`, `onTint()`) |
+| **Carte membre** | Fond `bg/surface`, arrondi `radius/sm`, ombre `shadow/subtle`, contour 1 dp `border/default`, liseré de 5 dp de la couleur du niveau ; avatar, prénom `display/label`, pastille de batterie (« 85 % » seul), étiquette d'état, ligne de temps, aperçu carré de la photo, boutons Localiser / Message / Appeler de 48 dp (aucun sur ma carte, qui est la dernière et porte la ligne « Ce que tes proches voient de toi ») | `ui/feed/FeedCards.kt`, `FeedPhoto.kt` |
+| **Bulle de la Miff** | Tache organique (10 points), teinte 30 % du niveau, hauteur minimale 176 dp, marges 40 / 56 / 40 / 46 dp ; titre `display/headline` ; pictogramme dans un disque blanc 70 % de 40 dp ; mouvement lent continu (`BubbleMotion.kt`), immobile sans animations ; carrousel avec pastilles 8 dp (page courante 22 x 8 dp) | `ui/feed/FeedBubble.kt`, `BubbleMotion.kt` |
+| **En-tête rétractable du Feed** | Avatar (zone 48 dp, anneau du statut) · logo 100 dp de large · pastille de Miff ; fond `bg/canvas` opaque, ombre `shadow/subtle`, marges 16 dp ; **se masque au défilement vers le bas, réapparaît dès qu'on remonte** ; toujours visible : chargement, erreur, hors connexion, lecteur d'écran actif, sélecteur ouvert | `ui/feed/FeedHeader.kt`, `CollapsingHeader.kt` |
+| **Pastille de Miff** | Une seule Miff : fond noir 5 %, 40 dp de haut, non cliquable, sans ombre ni flèche ; Miff+ : fond `bg/surface`, ombre `shadow/default`, 48 dp, flèche bleue, liste de lignes de 48 dp | `ui/feed/FeedHeader.kt` (`Pill`, `MiffPill`) |
+| **Bulle d'incitation (Update)** | Rectangle arrondi 20 dp aux couleurs `status/*-bubble`, texte `body/italic`, marges 18 dp (côtés) et 16 dp (haut, bas), queue de 22 x 11 dp à 4 dp au-dessus de la barre, opaque, annoncée comme région polie | `ui/update/UpdateBubble.kt` |
+| **Viseur (Update)** | Plein écran ; déclencheur de 80 dp (anneau blanc 4 dp, anneau bleu 3 dp), à 48 dp au-dessus de la barre ; bouton de bascule de 48 dp ; dégradé sombre de 110 dp en haut ; double toucher = changer de caméra | `ui/update/UpdateScreen.kt` |
+| **Tirer pour actualiser** | Indicateur Material 3 (`PullToRefreshBox`), fond `bg/surface`, trait `action/primary`, sous l'en-tête ; 1 relecture serveur par 15 s, 8 s au plus | `ui/feed/FeedScreen.kt`, `FeedViewModel.kt` |
+
+### 7.4 Règles transverses confirmées par le code
+- **Couleur seule autorisée** pour le niveau sur l'anneau d'avatar, le liseré de carte et la pastille du bouton central (décision du PM, 2026-11-06) ; les **mots** de l'état restent dans l'étiquette et dans le nom parlé.
+- **Texte coloré** sur teinte 30 % : toujours les teintes `status/*-text`, jamais `status/*` pleine.
+- **Aucune animation d'alarme** ; seul mouvement continu autorisé : la bulle de la Miff (D40), jamais accéléré selon le niveau, immobile avec les animations supprimées.
+- **Cibles tactiles** : 48 dp minimum (`Spacing.minTouchTarget`).

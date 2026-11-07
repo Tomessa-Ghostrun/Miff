@@ -43,6 +43,10 @@ struct DirectoryReady: Equatable, CustomStringConvertible {
     let premium: Bool
     /// Ce qui est montré vient du cache du téléphone (pas de réponse du serveur) : une mention calme, aucune alarme.
     let fromCache: Bool
+    /// Faux quand la formule de la personne n'est PAS connue (lecture de l'abonnement échouée, ou réponse venue du cache) : `premium`
+    /// vaut alors faux par défaut, ce qui ne veut pas dire « gratuit ». Les écrans des lieux n'affirment rien de la formule gratuite
+    /// dans ce cas.
+    var premiumKnown = true
 
     var active: MiffSummary? {
         miffs.first { $0.id == activeId }
@@ -187,6 +191,22 @@ final class MiffDirectory: ObservableObject {
         return true
     }
 
+    /// La personne quitte cette Miff, ou la supprime, exprès : le message unique « Tu n'as plus accès… » n'est jamais montré
+    /// pour elle (MIFF-4 : personne n'apprend qu'il a perdu ce qu'il vient de laisser). Oublié à la fin de la session.
+    func expectDeparture(miffId: String) {
+        announced.insert(miffId)
+    }
+
+    /// La personne vient de quitter cette Miff, ou de la supprimer, et le serveur l'a confirmé : aucun message « tu n'as plus
+    /// accès » pour elle, purge du cache du téléphone (rien de cette Miff ne doit rester lisible hors ligne), liste des Miffs
+    /// relue.
+    func afterOwnDeparture(miffId: String) async {
+        expectDeparture(miffId: miffId)
+        cache.markPurgePending()
+        _ = await cache.purge()
+        await refresh()
+    }
+
     func dismissNotice() {
         notices = Array(notices.dropFirst())
     }
@@ -198,7 +218,13 @@ final class MiffDirectory: ObservableObject {
         }
         activeStore.choose(miffId)
         state = .ready(
-            DirectoryReady(miffs: ready.miffs, activeId: miffId, premium: ready.premium, fromCache: ready.fromCache)
+            DirectoryReady(
+                miffs: ready.miffs,
+                activeId: miffId,
+                premium: ready.premium,
+                fromCache: ready.fromCache,
+                premiumKnown: ready.premiumKnown
+            )
         )
     }
 
@@ -215,7 +241,13 @@ final class MiffDirectory: ObservableObject {
         let wanted = activeStore.chosen()
         let active = loaded.miffs.first { $0.id == wanted }?.id ?? loaded.miffs.first?.id
         state = .ready(
-            DirectoryReady(miffs: loaded.miffs, activeId: active, premium: loaded.premium, fromCache: loaded.fromCache)
+            DirectoryReady(
+                miffs: loaded.miffs,
+                activeId: active,
+                premium: loaded.premium,
+                fromCache: loaded.fromCache,
+                premiumKnown: loaded.premiumKnown
+            )
         )
     }
 

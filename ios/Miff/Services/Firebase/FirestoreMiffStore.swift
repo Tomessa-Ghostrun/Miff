@@ -20,8 +20,14 @@ enum FirestoreFieldConversion {
             return flag
         case .bytes(let bytes):
             return bytes
+        case .integer(let number):
+            return number
+        case .double(let number):
+            return number
         case .serverTimestamp:
             return FieldValue.serverTimestamp()
+        case .timestamp(let millis):
+            return Timestamp(date: Date(timeIntervalSince1970: Double(millis) / 1000))
         case .null:
             return NSNull()
         case .map(let nested):
@@ -32,11 +38,17 @@ enum FirestoreFieldConversion {
 
 extension MiffRepositoryRules {
     /// Les règles de l'app : l'identifiant d'une nouvelle Miff vient du SDK (20 lettres et chiffres, tiré en local, aucun
-    /// réseau), le code d'un tirage cryptographique, l'heure de l'horloge du téléphone.
-    static func live() -> MiffRepositoryRules {
-        MiffRepositoryRules(newMiffId: {
-            Firestore.firestore().collection("miffs").document().documentID
-        })
+    /// réseau), le code d'un tirage cryptographique, l'heure de l'horloge du téléphone. `deviceId` et `recheckSession` viennent de la
+    /// session de l'appareil (SESS-3).
+    static func live(
+        deviceId: @escaping () -> String?,
+        recheckSession: @escaping () async -> Void
+    ) -> MiffRepositoryRules {
+        MiffRepositoryRules(
+            newMiffId: { Firestore.firestore().collection("miffs").document().documentID },
+            deviceId: deviceId,
+            recheckSession: recheckSession
+        )
     }
 }
 
@@ -44,7 +56,7 @@ extension MiffRepositoryRules {
 /// confirmation » veut toujours dire « rien d'écrit ». L'instance Firestore est résolue à CHAQUE usage, jamais gardée : elle
 /// est remplacée après une purge du cache. Rien ici n'ouvre Firestore avant qu'un écran ne le demande.
 final class FirestoreMiffStore: MiffStore {
-    private func firestore() throws -> Firestore {
+    func firestore() throws -> Firestore {
         guard FirebaseBootstrap.isConfigured else {
             // Sans configuration Firebase (poste sans fichier de configuration), rien n'est joignable.
             throw NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)
@@ -95,8 +107,9 @@ final class FirestoreMiffStore: MiffStore {
     }
 
     /// La Miff d'un document, s'il existe et a la forme qu'exigent les règles ; nil sinon. Le nom vient du réseau : il est
-    /// nettoyé comme tout nom reçu d'un autre téléphone.
-    static func details(of snapshot: DocumentSnapshot) -> MiffDetails? {
+    /// nettoyé comme tout nom reçu d'un autre téléphone, SAUF quand le nom n'est pas montré mais recopié dans un lot
+    /// (`cleaningName` faux : le document du code doit porter exactement le nom de la Miff).
+    static func details(of snapshot: DocumentSnapshot, cleaningName: Bool = true) -> MiffDetails? {
         guard snapshot.exists,
               let data = snapshot.data(),
               let name = data["name"] as? String,
@@ -105,7 +118,8 @@ final class FirestoreMiffStore: MiffStore {
               let owner = data["ownerUid"] as? String else {
             return nil
         }
-        return MiffDetails(id: snapshot.documentID, name: MiffName.clean(name), joinCode: code, ownerUid: owner)
+        let kept = cleaningName ? MiffName.clean(name) : name
+        return MiffDetails(id: snapshot.documentID, name: kept, joinCode: code, ownerUid: owner)
     }
 
     func readEntitlement(uid: String) async throws -> EntitlementRead? {
@@ -129,6 +143,68 @@ final class FirestoreMiffStore: MiffStore {
         }
         let sharing = snapshot.data()?["sharing"] as? [String: Any]
         return sharing?["enabled"] as? Bool
+    }
+
+    func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead? {
+        guard MiffId.isValid(miffId) else {
+            throw InvalidWriteError()
+        }
+        let snapshot = try await firestore()
+            .collection("miffs").document(miffId).collection("members").document(uid)
+            .getDocument(source: .server)
+        guard snapshot.exists else {
+            return nil
+        }
+        let sharing = snapshot.data()?["sharing"] as? [String: Any]
+        return SharingConsentRead(
+            enabled: (sharing?["enabled"] as? Bool) == true,
+            version: sharing?["consentVersion"] as? String
+        )
+    }
+
+    func commitWhereSharing(
+        uid: String,
+        miffIds: [String],
+        build: @escaping ([String]) -> [DocWrite]
+    ) async throws -> [String] {
+        // Jamais un chemin construit avec une valeur qui n'a pas la forme d'un identifiant.
+        guard miffIds.allSatisfy(MiffId.isValid), !uid.isEmpty, !uid.contains("/") else {
+            throw InvalidWriteError()
+        }
+        let database = try firestore()
+        let result = try await database.runTransaction { transaction, errorPointer in
+            // Toutes les lectures D'ABORD (une transaction ne peut pas lire après avoir écrit), puis le lot, fait seulement
+            // pour les Miffs où la fiche dit encore « je partage ».
+            var active: [String] = []
+            for miffId in miffIds {
+                let reference = database.collection("miffs").document(miffId).collection("members").document(uid)
+                let snapshot: DocumentSnapshot
+                do {
+                    snapshot = try transaction.getDocument(reference)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                let sharing = snapshot.data()?["sharing"] as? [String: Any]
+                let version = sharing?["consentVersion"] as? String
+                // Seulement où je partage ENCORE et où le texte accepté est ENCORE un ancien : une Miff renouvelée entre-temps
+                // (autre téléphone) n'est pas réécrite (les règles refuseraient une version qui n'est pas plus récente).
+                if snapshot.exists, (sharing?["enabled"] as? Bool) == true, MiffSharingConsent.isRenewalDue(version) {
+                    active.append(miffId)
+                }
+            }
+            if !active.isEmpty {
+                // Le même garde que les autres sites d'écriture (SESS-3) : un lot de renouvellement ne contient aucun statut.
+                let writes = build(active)
+                guard SessionWriteGuard.isSendable(writes) else {
+                    errorPointer?.pointee = NSError(domain: InvalidWriteError.domain, code: 1)
+                    return nil
+                }
+                FirestoreMiffStore.apply(writes, to: transaction, in: database)
+            }
+            return active
+        }
+        return (result as? [String]) ?? []
     }
 
     func serverReachable(uid: String) async -> Bool {
@@ -158,7 +234,8 @@ final class FirestoreMiffStore: MiffStore {
                     return nil
                 }
                 let writes = build(profile)
-                guard !writes.isEmpty else {
+                // Un lot vide, ou un statut / une position sans l'identifiant de session (SESS-3), n'est jamais envoyé.
+                guard SessionWriteGuard.isSendable(writes) else {
                     errorPointer?.pointee = NSError(domain: InvalidWriteError.domain, code: 1)
                     return nil
                 }
@@ -171,7 +248,8 @@ final class FirestoreMiffStore: MiffStore {
     }
 
     func commit(_ writes: [DocWrite]) async throws {
-        guard !writes.isEmpty else {
+        // Un statut ou une position sans l'identifiant de la session (SESS-3) n'est jamais envoyé : contrat I-1 de SESS-1.
+        guard SessionWriteGuard.isSendable(writes) else {
             throw InvalidWriteError()
         }
         let database = try firestore()
@@ -181,7 +259,7 @@ final class FirestoreMiffStore: MiffStore {
         }
     }
 
-    private static func apply(_ writes: [DocWrite], to transaction: Transaction, in database: Firestore) {
+    static func apply(_ writes: [DocWrite], to transaction: Transaction, in database: Firestore) {
         for write in writes {
             let reference = database.document(write.path)
             switch write.kind {

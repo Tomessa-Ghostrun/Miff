@@ -5,6 +5,7 @@ import XCTest
 final class ScreenRecorder {
     var lost: [String] = []
     var nameChanges = 0
+    var left: [String] = []
 }
 
 /// Ce que partagent les tests de l'écran d'une Miff : un dépôt double qui pilote l'écoute, un réseau double, et l'écoute lancée
@@ -14,6 +15,7 @@ class MiffScreenTestCase: XCTestCase {
     let repo = FakeMiffRepository()
     let network = FakeNetwork()
     let recorder = ScreenRecorder()
+    lazy var deletions = FakeDeletionController()
     var observing: [Task<Void, Never>] = []
 
     func screen(uid: String = "uid-owner", confirmLoss: Bool = true) -> MiffScreenViewModel {
@@ -26,7 +28,9 @@ class MiffScreenTestCase: XCTestCase {
                 log.lost.append(miffId)
                 return confirmLoss
             },
-            onNameChanged: { log.nameChanges += 1 }
+            onNameChanged: { log.nameChanges += 1 },
+            deletions: deletions,
+            onLeft: { log.left.append($0) }
         )
         let viewModel = MiffScreenViewModel(miffId: testMiffId, dependencies: dependencies)
         let listening = Task {
@@ -50,7 +54,7 @@ class MiffScreenTestCase: XCTestCase {
             MiffSnapshot(
                 miff: testMiffDetails(code: code, owner: owner),
                 members: people,
-                places: [MiffPlace(id: "p1", name: "Maison")],
+                places: [testPlace(id: "p1", name: "Maison")],
                 fromCache: false
             )
         )

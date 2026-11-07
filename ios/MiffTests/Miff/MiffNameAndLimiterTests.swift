@@ -98,11 +98,11 @@ final class MiffNameAndLimiterTests: XCTestCase {
     }
 
     func testServerPlaceIsCleanedAndDroppedWhenNothingVisibleIsLeft() {
-        let place = MiffPlace.fromServer(id: "p1", rawName: "\u{202E}Maison\u{200B}")
+        let place = Place.fromServer(id: "p1", miffId: testMiffId, fields: placeFields(name: "\u{202E}Maison\u{200B}"))
 
         XCTAssertEqual(place?.name, "Maison")
         XCTAssertEqual(place?.id, "p1")
-        XCTAssertNil(MiffPlace.fromServer(id: "p2", rawName: "\u{200B}\u{202E} "))
+        XCTAssertNil(Place.fromServer(id: "p2", miffId: testMiffId, fields: placeFields(name: "\u{200B}\u{202E} ")))
     }
 
     func testCleanIsAppliedToWhatComesFromTheServerToo() {

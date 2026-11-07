@@ -174,9 +174,9 @@ Rien n'est tranché ici sans le dire. Chaque point renvoie à la règle proposé
 
 ### Incohérences **hors périmètre** repérées en chemin (à porter à leur challenge, sans réponse nécessaire ici)
 
-- **Tracking** : « on enregistre sa localisation » à l'ouverture et à la fermeture de l'app, et **Feed** : bouton « Localiser » vers une carte avec « les coordonnées de la dernière position connue » ; or le modèle de données **ne stocke jamais de coordonnées** (`data-model.md` §1). L'amorce de localisation (§6.11) ne peut promettre « jamais ta position précise » que si ces deux tickets sont alignés : **tant qu'ils ne le sont pas, l'amorce n'écrit pas cette promesse** (texte conditionnel noté en §6.11).
+- **Tracking** : « on enregistre sa localisation » à l'ouverture et à la fermeture de l'app, et **Feed** : bouton « Localiser » vers une carte avec « les coordonnées de la dernière position connue » ; or le modèle de données **ne stockait jamais de coordonnées** (`data-model.md` §1). **Mise à jour du 2026-11-01 : la dernière position connue est maintenant stockée côté serveur (décision du PM) ; la promesse « jamais ta position précise » ne doit donc plus jamais être écrite.** L'amorce de localisation (§6.11) n'écrit pas cette promesse (texte conditionnel noté en §6.11, à réviser avec le consentement v3).
 - **Tracking** : « les 20 lieux les plus proches » pour Android alors que la limite est de 100 ; « Toujours + précision exacte exigées » (message d'erreur anxiogène « Miff a besoin de l'option… pour fonctionner »).
-- **Premium** : « alors qu'il en a déjà 2 » pour les lieux alors que la règle gratuite est **1** lieu ; paywall « toutes les 10 visites » ; achats non validables sans serveur.
+- **Premium** : « alors qu'il en a déjà 2 » pour les lieux alors que la règle gratuite était **1** lieu (**2** depuis la décision du PM du 2026-11-01, ce qui lève l'écart) ; paywall « toutes les 10 visites » ; achats non validables sans serveur.
 - **Feed** : bouton « Message » (SMS) et « Téléphone » : voir Q1.
 - **Centre de notifications** (icône du Feed) : sans push, sa source de données n'existe pas.
 - **`data-model.md` Q20** (déconnexion et partage) : se déconnecter n'arrête pas le statut des proches, qui voient alors un état figé ; la confirmation de déconnexion de §6.9 l'écrit honnêtement.

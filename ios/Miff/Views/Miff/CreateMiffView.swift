@@ -65,17 +65,16 @@ struct CreateNameStep: View {
     }
 
     var body: some View {
-        MiffFrame(title: L10n.string("miff_create_title"), onBack: state.saving ? nil : actions.onBack) {
+        // Le texte du consentement (version 3) est long : il défile, et le bouton reste épinglé en bas (maquette 24).
+        MiffPinnedFrame(title: L10n.string("miff_create_title"), onBack: state.saving ? nil : actions.onBack) {
             nameField
             Text(verbatim: helper)
                 .miffTextStyle(textBodyCaption)
                 .foregroundColor(colorTextDescription.color)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
-            SharingConsentCard(
-                sentence: L10n.string("miff_consent_create"),
-                systemNote: L10n.string("miff_consent_system_note_create")
-            )
+            SharingConsentCard(sentence: L10n.string("miff_consent3_create"))
+        } footer: {
             if let message = state.message {
                 MiffNotice(text: actionMessageText(message))
             }

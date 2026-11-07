@@ -9,14 +9,14 @@
 - **Vide** : "Pas encore de Miff" → CTA "Créer une Miff" / "Rejoindre une Miff" (voir [miff-groupes.md](miff-groupes.md)).
 - **Tout va bien** : bandeau "Tout le monde est en sécurité", mis à jour il y a X min.
 - **Membre parti** : "[Prénom] a quitté la maison".
-- **Zone à risque** : "[Prénom] est dans une zone à risque" (voir [lieux-de-confiance.md](lieux-de-confiance.md) pour la notion de zone à risque).
+- **Zone de danger** : "[Prénom] est dans une zone de danger" (la maquette dit « zone à risque » ; voir [lieux-de-confiance.md](lieux-de-confiance.md) pour la notion de zone de danger, réservée au premium).
 - **Plus de nouvelles** : "Plus de nouvelles de [Prénom]" (lié à l'escalade orange/rouge, voir [update-et-escalade-statut.md](update-et-escalade-statut.md)).
 
 ## Contenu d'une carte membre
-Avatar (anneau coloré selon statut), nom, % batterie du téléphone, badge de statut (ex. "À la maison", "Dans une zone à risque"), horodatage de dernière activité ("Arrivé il y a 12 min"), photo de la dernière update (optionnelle).
+Avatar (anneau coloré selon statut), nom, % batterie du téléphone, badge de statut (ex. "À la maison", "Dans une zone de danger"), horodatage de dernière activité ("Arrivé il y a 12 min"), photo de la dernière update (optionnelle).
 
 ## Critères d'acceptation
-- Sélecteur de Miff active en haut de l'écran si l'utilisateur appartient à plusieurs Miffs (Premium uniquement, cf. modèle freemium).
+- Sélecteur de Miff active en haut de l'écran si l'utilisateur appartient à plusieurs Miffs (premium « Miff+ » uniquement, cf. modèle freemium).
 - Chaque membre du cercle affiché avec son statut le plus récent.
 - Rafraîchissement du statut en temps réel ou quasi temps réel dès qu'une update/un événement de geofencing arrive.
 

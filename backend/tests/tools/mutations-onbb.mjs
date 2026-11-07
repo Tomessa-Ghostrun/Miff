@@ -153,13 +153,13 @@ export const ONBB_MUTATIONS = [
 
   // --- MIFF-0 : lot d'entrée -----------------------------------------------------------------------
   mut('EN3-statut-sans-partage-actif', 'un statut peut être publié sans que la fiche ait le partage activé dans le lot',
-    [edit('&& getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;', '&& true;', 1, 2)],
+    [edit('&& getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;', '&& true;')],
     ['EN3', 'EN4']),
   mut('EN3-statut-ecrit-par-autrui', 'un membre écrit le statut d\'un autre dans le lot',
     [edit('allow create, update: if isSelf(uid) && validStatus(miffId, uid);', 'allow create, update: if isSignedIn() && validStatus(miffId, uid);')],
     ['EN3']),
   mut('EN3-statut-cles-ouvertes', 'le statut initial accepte des clés inconnues (coordonnées)',
-    [edit("return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])", "return d.keys().hasAny(['presence'])")],
+    [edit("return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId'])", "return d.keys().hasAny(['presence'])")],
     ['EN3']),
   mut('EN3-adhesion-sans-index', 'l\'adhésion n\'exige plus l\'index d\'appartenance dans le lot',
     [edit('&& exists(/databases/$(database)/documents/miffs/$(miffId))\n        && indexAfterOk(uid, miffId);', '&& exists(/databases/$(database)/documents/miffs/$(miffId));')],

@@ -1,5 +1,5 @@
 // Plan de test, section 1 : accès par défaut et lecture (R1 à R12)
-import { ID, CODE, suite, assertFails, assertSucceeds, photoDoc } from '../helpers/fixtures.js';
+import { ID, CODE, suite, assertFails, assertSucceeds, photoLegacyDoc } from '../helpers/fixtures.js';
 
 const s = suite();
 const M1 = `miffs/${ID.M1}`;
@@ -81,7 +81,7 @@ s.tc('R11', 'chemins inconnus : lecture et écriture refusées', async ({ db }) 
 
 s.tc('R12', 'photo : get autorisé à un membre qui partage, list refusé', async ({ db, admin }) => {
   await admin(async (f) => {
-    await f.doc(`${M1}/photos/alice`).set(photoDoc());
+    await f.doc(`${M1}/photos/alice`).set(photoLegacyDoc());
     await f.doc(`${M1}/status/alice`).update({ hasPhoto: true });
   });
   const bob = db('bob');

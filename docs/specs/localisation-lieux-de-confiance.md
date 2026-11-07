@@ -23,7 +23,7 @@ Les deux plateformes offrent un mécanisme dédié, économe en batterie, qui ne
 | Déclaration store | `NSLocationAlwaysAndWhenInUseUsageDescription` (texte de justification affiché à l'utilisateur) + review Apple stricte sur l'usage "Always" — doit démontrer un vrai besoin fonctionnel continu | Formulaire "Background Location" à remplir dans Play Console avant publication, avec justification et captures d'écran du parcours de consentement |
 | Fiabilité | Peut être retardé si Économie d'énergie actif ou après immobilité prolongée | Peut être retardé selon les optimisations batterie du fabricant (particulièrement agressif sur certains Android — Samsung, Xiaomi, etc.) |
 
-**Impact direct sur le modèle freemium** ("lieux de confiance illimités" en Premium) : au-delà de 20 lieux (iOS) / 100 lieux (Android) simultanément actifs, il faut une stratégie de priorisation dynamique — ex. ne monitorer que les N lieux les plus proches de la position actuelle, et ré-enregistrer les géofences au fur et à mesure des déplacements significatifs de l'utilisateur.
+**Impact direct sur le modèle freemium** (2 lieux de confiance gratuits, illimités avec « Miff+ ») : au-delà de 20 lieux (iOS) / 100 lieux (Android) simultanément actifs, il faut une stratégie de priorisation dynamique — ex. ne monitorer que les N lieux les plus proches de la position actuelle, et ré-enregistrer les géofences au fur et à mesure des déplacements significatifs de l'utilisateur.
 
 ## Solution UX recommandée
 1. **Ne jamais demander "Always" au premier lancement.** Demander d'abord "Lors de l'utilisation" — nécessaire de toute façon pour positionner un lieu sur une carte.
@@ -45,4 +45,4 @@ Les deux plateformes offrent un mécanisme dédié, économe en batterie, qui ne
 - Au-delà de la limite de zones (20 iOS / 100 Android), quelle priorisation : proximité actuelle, fréquence de visite, ou choix manuel par l'utilisateur ?
 - Faut-il notifier l'utilisateur qu'un lieu n'est plus monitoré activement à cause de la limite atteinte ?
 - Sur Android, pendant l'aller-retour vers les Réglages système pour "Autoriser tout le temps", quel écran/état affiche-t-on à l'utilisateur ?
-- Existe-t-il un type de lieu "Zone à risque" en plus de "Zone de confiance" (vu dans l'écran de création de lieu) ? Si oui, voir [lieux-de-confiance.md](lieux-de-confiance.md) — ça a un impact direct ici (2 catégories de geofences avec des règles opposées : alerte à l'entrée vs. à la sortie).
+- Le type de lieu "Zone de danger" (maquette : « Zone à risque »), en plus de "Zone de confiance", existe et est réservé au premium (décision du PM, 2026-11-01) ; son comportement exact reste à définir, voir [lieux-de-confiance.md](lieux-de-confiance.md) — ça a un impact direct ici (2 catégories de geofences avec des règles opposées : alerte à l'entrée vs. à la sortie).

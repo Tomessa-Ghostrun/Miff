@@ -101,11 +101,26 @@ targets:
         path: ci/inject-google-url-scheme.sh
         basedOnDependencyAnalysis: false
     # Info.plist genere par XcodeGen (fichier non versionne, voir ios/.gitignore).
-    # Volontairement ABSENTS : toute cle NSLocation* et NSAppTransportSecurity (ATS).
+    # LOC-4a : EXACTEMENT deux cles de localisation (les textes d'usage des fenetres du systeme), et RIEN d'autre : ni
+    # NSLocationAlwaysUsageDescription (ancien, inutile des iOS 11), ni NSLocationTemporaryUsageDescriptionDictionary, ni
+    # UIBackgroundModes. La surveillance de regions et le changement de position significatif (LOC-4b, livre) relancent l'app
+    # terminee sans le mode d'arriere-plan « location », qui sert aux mises a jour CONTINUES de position : Miff n'en fait pas
+    # (guideline 2.5.4 : aucun mode d'arriere-plan inutile). A rouvrir SEULEMENT si la recette sur iPhone (docs/qa/checklists/
+    # loc-4b-ios-recette-pm.md) DEMONTRE qu'une relance est manquee a cause de son absence. Toujours ABSENT :
+    # NSAppTransportSecurity (ATS). Controle : AppConfigurationTests, InfoPlistStaticTests et ci/check-binaries.sh.
     info:
       path: Config/Info.plist
       properties:
         CFBundleDisplayName: Miff
+        # Textes d'usage de la localisation : valeur par defaut = ANGLAIS (langue de repli) ; francais et anglais dans
+        # Miff/Resources/InfoPlist.xcstrings. Ils disent COMPLETEMENT l'usage (docs/release/app-store-confidentialite-et-revue.md
+        # §4) : la derniere position connue est visible des membres de la Miff qui partagent aussi, avec l'heure.
+        NSLocationWhenInUseUsageDescription: "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history. You can stop at any time."
+        # INTERRUPTEUR DE COMPILATION du blocage de la localisation (decision du PM du 2026-11-01) : YES (defaut) = l'ecran
+        # « Toujours autoriser » ne se quitte pas sans « Toujours » ; NO le relache. Se change par `xcodebuild ... MIFF_LOCATION_BLOCKING=NO`
+        # (entree `location_blocking` du workflow ios-testflight). Toute valeur inconnue BLOQUE (LocationBlockingSwitch).
+        MiffLocationBlocking: "$(MIFF_LOCATION_BLOCKING)"
         # Langue de repli = ANGLAIS : un telephone dans une langue non prise en charge affiche l'anglais.
         # (Le francais reste la langue SOURCE des textes : sourceLanguage du catalogue.)
         CFBundleDevelopmentRegion: en
@@ -167,6 +182,8 @@ targets:
         ENABLE_DEBUG_DYLIB: NO
         # Le script Crashlytics lit des fichiers en dehors de la liste d'entrees declaree.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+        # Interrupteur de compilation du blocage de la localisation (LOC-4a) : voir la cle MiffLocationBlocking de l'Info.plist.
+        MIFF_LOCATION_BLOCKING: "YES"
       configs:
         # Capacite App Attest (App Check) : seulement pour les builds qui seront signes et installes sur iPhone.
         # En Debug (simulateur, fournisseur de debogage), aucune entitlement.

@@ -2,6 +2,8 @@ package com.tomessa.miff
 
 import android.app.Application
 import com.tomessa.miff.data.AppCheckInstaller
+import com.tomessa.miff.data.tracking.ForegroundObserver
+import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.domain.startup.StartupMark
 import com.tomessa.miff.startup.StartupTrace
 import com.tomessa.miff.ui.splash.SplashArtwork
@@ -39,6 +41,14 @@ class MiffApplication : Application() {
             // collection only starts after the account's own choice (users/{uid}) has been read, see SessionManager.start().
             StartupTrace.section("Miff.privacy.pauseCollection") { container.privacySettings.pauseCollection() }
             startWarmUp()
+            // LOC-2b: the position is looked at when the app opens and when it goes to the background (ticket 6.5). Nothing is built here:
+            // the engine is created on the first call, and it does nothing unless the person agreed and gave "Toujours".
+            registerActivityLifecycleCallbacks(
+                ForegroundObserver(
+                    onForeground = { container.trackingLooksAgain(TrackingEngine.Reason.OPENED) },
+                    onBackground = { container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED) },
+                ),
+            )
         }
         StartupTrace.mark(StartupMark.APP_CREATE_END)
     }

@@ -49,6 +49,7 @@ class FakeMiffStore : MiffStore {
     /** What `get miffs/{id}` answers by id: a value, or an exception (a refusal of the rules, a network error). */
     val miffs = mutableMapOf<String, Any>()
     var entitlement: EntitlementRead? = null
+    var entitlementFailure: Exception? = null
     var reachable = true
     var profile: ProfileCopy? = ProfileCopy("Léa", "Martin", "+33612345678", null)
 
@@ -91,6 +92,7 @@ class FakeMiffStore : MiffStore {
 
     override suspend fun readEntitlement(uid: String): EntitlementRead? {
         calls += "entitlement"
+        entitlementFailure?.let { throw it }
         return entitlement
     }
 
@@ -102,6 +104,37 @@ class FakeMiffStore : MiffStore {
     ): Boolean? {
         calls += "sharing"
         return sharing
+    }
+
+    /** The consent of my card by Miff id (LOC-2a), or an exception to throw (offline, refused). Missing = no card. */
+    val consents = mutableMapOf<String, Any>()
+
+    override suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ): com.tomessa.miff.data.miff.SharingConsentRead? {
+        calls += "consent:$miffId"
+        return when (val answer = consents[miffId]) {
+            null -> null
+            is Exception -> throw answer
+            is com.tomessa.miff.data.miff.SharingConsentRead -> answer
+            else -> error("unexpected")
+        }
+    }
+
+    /** What the transaction of a renewal does: the card is read in it, the lot is made for the Miffs where the person still shares. */
+    override suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<DocWrite>,
+    ): List<String> {
+        calls += "commitWhereSharing"
+        val active =
+            miffIds.filter {
+                (consents[it] as? com.tomessa.miff.data.miff.SharingConsentRead)?.enabled == true
+            }
+        if (active.isNotEmpty()) record(build(active))
+        return active
     }
 
     override suspend fun serverReachable(uid: String): Boolean {
