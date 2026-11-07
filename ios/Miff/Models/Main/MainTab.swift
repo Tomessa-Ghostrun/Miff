@@ -67,7 +67,7 @@ enum TabBarNames {
             return "tabbar_feed_a11y"
         case .update:
             // Tant que le bouton ne fait pas encore ce qu'il promet, son nom le dit.
-            return "tabbar_update_soon_a11y"
+            return "ios_tabbar_update_soon_a11y"
         case .profile:
             return "tabbar_profile_a11y"
         }

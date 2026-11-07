@@ -14637,6 +14637,23 @@
           }
         }
       }
+    },
+    "ios_tabbar_update_soon_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share an update, coming soon"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donner des nouvelles, bientôt disponible"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
