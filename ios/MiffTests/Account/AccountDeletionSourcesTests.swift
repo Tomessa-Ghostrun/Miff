@@ -100,6 +100,31 @@ final class AccountDeletionSourcesTests: XCTestCase {
         XCTAssertTrue(marker.contains(".atomic"))
     }
 
+    /// Décision du PM du 2026-11-07 : la suppression du compte n'est accessible QUE depuis Réglages > Mon compte.
+    func testTheOnlyEntryToTheDeletionIsSettingsMyAccount() throws {
+        let app = iosRoot.appendingPathComponent("Miff")
+        guard let files = FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil) else {
+            throw XCTSkip("Sources introuvables.")
+        }
+        var entries: [String] = []
+        for case let file as URL in files where file.pathExtension == "swift" {
+            let relative = String(file.path.dropFirst(app.path.count + 1))
+            let text = try String(contentsOf: file, encoding: .utf8)
+            let markers = ["DeleteAccountLink(", "DeleteAccountFlowView(", "deleteAccountCover"]
+            for line in text.components(separatedBy: "
+") where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
+                if markers.contains(where: { line.contains($0) }) {
+                    entries.append(relative)
+                }
+            }
+        }
+
+        XCTAssertEqual(
+            entries.sorted(),
+            ["Views/Settings/AccountAndPrivacyViews.swift", "Views/Settings/SettingsDestinationView.swift"]
+        )
+    }
+
     func testEveryTextKeyTheScreensQuoteExistsInBothLanguages() throws {
         let pattern = try NSRegularExpression(pattern: "\"([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\"")
         var keys = Set<String>()

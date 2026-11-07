@@ -4,8 +4,8 @@ import SwiftUI
 /// l'autre n'écrit quoi que ce soit : la suppression ne commence qu'après une ré-authentification réussie, et prend alors tout l'écran
 /// (`AppDestination.accountDeletion`), cette vue disparaissant avec le reste de l'app connectée.
 ///
-/// Deux endroits l'ouvrent : Réglages > Mon compte (poussée dans la pile unique de l'app) et, pour une personne qui n'a pas encore pu
-/// atteindre les Réglages (« Créer ou rejoindre », compte qui ne peut pas être lu), un affichage plein écran (`deleteAccountCover`).
+/// Un seul endroit l'ouvre : Réglages > Mon compte (poussée dans la pile unique de l'app). Décision du PM du 2026-11-07 : la suppression
+/// n'est accessible que depuis les Réglages.
 /// `onClose` revient d'où l'on vient, sans rien avoir touché (SC4).
 struct DeleteAccountFlowView: View {
     private enum Step {
@@ -55,15 +55,6 @@ struct DeleteAccountFlowView: View {
                 onBack: { step = .information },
                 onForgotPassword: { showingReset = true }
             )
-        }
-    }
-}
-
-extension View {
-    /// Ouvre le parcours de suppression en plein écran, depuis un endroit qui n'est pas Mon compte (SC1, Apple 5.1.1(v)).
-    func deleteAccountCover(isPresented: Binding<Bool>, environment: AppEnvironment) -> some View {
-        fullScreenCover(isPresented: isPresented) {
-            DeleteAccountFlowView(environment: environment, onClose: { isPresented.wrappedValue = false })
         }
     }
 }

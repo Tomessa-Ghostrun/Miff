@@ -707,3 +707,9 @@ Le PM a validé **toutes les recommandations du §16** (relayées par `product-s
 ## Décision du PM (2026-11-06) : ordre de la session dans la suppression de compte
 
 Le PM a validé (réponse « OK » aux points de la revue de AUTH-5b) que la **session « un compte, un appareil » est supprimée juste après l'inventaire, avant les lots de Miffs**, et non après comme le disaient §5.5 (étape 5), §5.13 et `backend-data/data-model.md` §10 : les autres téléphones du même compte se déconnectent aussitôt au lieu de voir les Miffs disparaître une à une. La suppression est refaite une seconde fois avant le profil (idempotent). Appliqué par la PR AUTH-5b Android ; à répercuter dans §5.5, §5.13 et dans `data-model.md` §10 (`backend-data`).
+
+## Décision du PM (2026-11-07) : une seule entrée, Réglages > Mon compte
+
+Le PM a décidé que **la suppression de compte n'est accessible que depuis les paramètres** : Réglages > Mon compte > Supprimer mon compte, et nulle part ailleurs (pas sur « Choisis comment tu veux commencer », pas sur « On n'a pas pu lire ton compte »). Appliquée sur iOS (PR AUTH-5c, #113) : les liens des deux écrans sont retirés, la procédure et les écrans de la suppression sont inchangés. À répercuter sur Android (qui a ces entrées depuis AUTH-5a) et sur SC1 (« visible dans Réglages > Mon compte pour toute personne connectée, avec ou sans Miff »).
+
+**CONSÉQUENCE, point ouvert BLOQUANT pour la soumission (App Store 5.1.1(v))** : un compte **sans Miff** n'a pas accès aux Réglages aujourd'hui (barre masquée, décision Q13) ; il ne peut donc pas se supprimer dans l'app, ce qui est contraire à la règle d'Apple. Question pour le PM : donner accès à Réglages > Mon compte aux comptes sans Miff, ou garder un lien sur l'écran sans Miff. L'accès aux Réglages n'a pas été modifié.

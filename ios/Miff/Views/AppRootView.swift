@@ -10,8 +10,6 @@ struct AppRootView: View {
     @StateObject private var panel: ConsentPanelViewModel
     /// La « Dernière vérification » de la suppression du compte (AUTH-5c) : gardée à ce niveau pour survivre aux changements d'écran.
     @StateObject private var lastCheck: DeleteReauthViewModel
-    /// « Supprimer mon compte » depuis l'écran où le compte ne peut pas être lu (AUTH-5c, Apple 5.1.1(v)).
-    @State private var deletingAccount = false
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -23,8 +21,6 @@ struct AppRootView: View {
     var body: some View {
         content
             .onChange(of: sessionState.state) { newState in
-                // La couverture de suppression (écran « compte illisible ») ne survit jamais à un changement d'écran.
-                deletingAccount = false
                 if newState != .ready(.consentPanel) {
                     panel.reset()
                 }
@@ -53,13 +49,7 @@ struct AppRootView: View {
         case .loading:
             SessionLoadingView()
         case .lookupFailed:
-            AccountLookupFailedView(
-                onRetry: { environment.session.retry() },
-                onSignOut: signOut,
-                onDelete: { deletingAccount = true }
-            )
-            // Attaché à cet écran seulement : quand la suppression prend tout l'écran, il disparaît avec lui.
-            .deleteAccountCover(isPresented: $deletingAccount, environment: environment)
+            AccountLookupFailedView(onRetry: { environment.session.retry() }, onSignOut: signOut)
         case .ready(let destination):
             screen(for: destination)
         }

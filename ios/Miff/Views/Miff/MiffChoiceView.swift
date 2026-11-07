@@ -36,8 +36,6 @@ struct MiffChoiceView: View {
     let onCreate: () -> Void
     let onJoin: () -> Void
     let onSignOut: () -> Void
-    /// « Supprimer mon compte » (AUTH-5c, Apple 5.1.1(v)) : une personne qui n'a pas encore de Miff n'atteint pas les Réglages.
-    var onDeleteAccount: (() -> Void)?
 
     var body: some View {
         MiffFrame(title: nil, onBack: nil) {
@@ -68,9 +66,6 @@ struct MiffChoiceView: View {
                         .miffTextStyle(textBodyBold16)
                         .foregroundColor(colorActionPrimary.color)
                         .frame(minHeight: Spacing.minTouchTarget)
-                }
-                if let onDeleteAccount {
-                    DeleteAccountLink(action: onDeleteAccount)
                 }
             }
             .frame(maxWidth: .infinity)

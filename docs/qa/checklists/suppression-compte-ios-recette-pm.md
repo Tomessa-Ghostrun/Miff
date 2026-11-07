@@ -24,13 +24,17 @@
 - Le contact affiché dans l'app (tomessa.mfouka@gmail.com) est **provisoire** (décision Q11) : il sera remplacé avant la bêta externe.
 - iOS ne permet pas de « fermer l'app » à la place de la personne : le bouton « Plus tard » de la partie D montre un écran de pause, vous quittez l'app vous-même.
 
-## Partie A : l'entrée et l'écran d'information (8 min), compte E1 (sans Miff)
+## Un seul chemin (décision du PM du 2026-11-07), et son point bloquant
 
-1. [ ] Créez E1 (inscription e-mail, profil, numéro). Sur « Choisis comment tu veux commencer » : sous « Se déconnecter », un **lien en texte rouge « Supprimer mon compte »** (pas un bouton plein, moins visible que les deux cartes).
-2. [ ] Touchez-le : écran « Supprimer mon compte ». Après un très court chargement (« Un instant, on vérifie tes Miffs… ») : la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. », **pas** de ligne de position (vous n'avez aucune Miff), le contact pour une copie des données, l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ». **Continuer** et **Annuler**.
-3. [ ] **Annuler** (ou la flèche, ou le geste de retour depuis le bord) : retour à « Choisis comment tu veux commencer », rien n'a changé.
+**« Supprimer mon compte » n'existe que dans Réglages > Mon compte.** Or un compte **sans Miff** n'a pas accès aux Réglages aujourd'hui (barre masquée, décision Q13) : il ne peut donc **pas** se supprimer dans l'app. **C'est contraire à la règle 5.1.1(v) de l'App Store et bloque la soumission** tant que le PM n'a pas tranché (donner accès à Réglages > Mon compte aux comptes sans Miff, ou garder un lien sur l'écran sans Miff). Dans cette recette, **tous les comptes doivent donc avoir une Miff** (créée ou rejointe) pour atteindre l'entrée ; le cas « compte sans Miff » (ligne de position absente, texte « Ton profil, ta photo… » seul) n'est testable qu'une fois ce point tranché.
+
+## Partie A : l'entrée et l'écran d'information (8 min), compte E1 (une Miff créée, seul dedans)
+
+1. [ ] Créez E1 (inscription e-mail, profil, numéro), puis **créez une Miff** « Recette AUTH-5c » (voir l'encadré « Un seul chemin » ci-dessous). Sur « Choisis comment tu veux commencer » et sur « On n'a pas pu lire ton compte », **il n'y a PAS de « Supprimer mon compte »** (décision du PM du 2026-11-07). Ouvrez Profil > Réglages > Mon compte : un **lien en texte rouge « Supprimer mon compte »** sous « Se déconnecter » (pas un bouton plein).
+2. [ ] Touchez-le : écran « Supprimer mon compte ». Après un très court chargement (« Un instant, on vérifie tes Miffs… ») : la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. » et la ligne de position effacée, « Ta Miff » « Recette AUTH-5c » (sans « 0 proche »), le contact pour une copie des données, l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ». **Continuer** et **Annuler**.
+3. [ ] **Annuler** (ou la flèche, ou le geste de retour depuis le bord) : retour à Mon compte, rien n'a changé.
 4. [ ] **Mode avion**, rouvrez l'écran : « Pas de connexion pour le moment. Tes Miffs s'afficheront dès que tu auras du réseau. » et **Continuer grisé**. Réactivez le réseau : la page se complète **toute seule**.
-5. [ ] Créez une Miff avec E1 (« Recette AUTH-5c »). Profil > Réglages > Mon compte : « Supprimer mon compte » est un **lien rouge sous « Se déconnecter »** (le sous-titre « bientôt » a disparu). Touchez-le : l'écran cite maintenant « Ta Miff » « Recette AUTH-5c » (sans « 0 proche »), la ligne « Ta dernière position connue est effacée… » et la phrase « Cette Miff sera supprimée, avec ses lieux. », **sans** bouton « Prévenir mes proches » (personne d'autre dans la Miff).
+5. [ ] (Vérification) Le compte n'ayant que sa propre Miff, l'écran n'offre **pas** « Prévenir mes proches » (personne d'autre dans la Miff).
 6. [ ] Lisez tous les textes en **français puis en anglais** (Réglages iPhone > Général > Langue) : ton calme, aucun mot alarmiste (« irrécupérable », « danger »…). Notez tout ce que vous voudriez changer (les textes sont validés par défaut, vous pouvez les ajuster ici).
 7. [ ] Mettez le texte à la **plus grande taille** (Réglages > Accessibilité > Affichage et luminosité > Taille du texte) : « Continuer » reste atteignable en faisant défiler. Avec **VoiceOver** : chaque carte est lue d'un bloc, le lien « Supprimer mon compte » annonce « Ouvre une page qui explique ce qui sera supprimé. Rien n'est supprimé tout de suite. ».
 
@@ -88,7 +92,7 @@ Comptes **E2** (créateur, sur l'iPhone), **E3** et **E4** (membres, sur l'OPPO 
 
 36. [ ] Écran de vérification pour G1 : le texte « Confirme avec le compte Google que tu utilises dans Miff. » et le bouton **Continuer avec Google**. Choisissez **un autre compte Google** que celui de G1 : « Ce n'est pas le compte avec lequel tu es connecté(e). Choisis le bon compte pour continuer. », rien n'est supprimé. Fermez la fenêtre Google : **aucun message**.
 37. [ ] Choisissez le bon compte : la suppression se déroule comme en C. La console montre l'utilisateur supprimé. Réinscrivez-vous avec le même compte Google : tout neuf.
-38. [ ] **Compte connecté mais illisible** (mode avion au lancement après une connexion) : l'écran « On n'a pas pu lire ton compte » propose « Réessayer », « Se déconnecter » **et le lien « Supprimer mon compte »** ; il ouvre l'écran d'information en plein écran, « Annuler » revient.
+38. [ ] **Compte connecté mais illisible** (mode avion au lancement après une connexion) : l'écran « On n'a pas pu lire ton compte » propose « Réessayer » et « Se déconnecter » **seulement** (pas de « Supprimer mon compte » : décision du PM du 2026-11-07).
 39. [ ] **Session fermée en route** (cas rare : mot de passe changé ailleurs pendant la suppression) : « La suppression n'est pas terminée » / « Ta session s'est fermée avant la fin de la suppression de ton compte. Reconnecte-toi avec le même compte : on la termine. » avec « Me reconnecter » ; reconnectez-vous avec **le même compte** : la suppression **reprend et se termine**.
 
 ## Partie I : vie privée (3 min)
