@@ -26,7 +26,7 @@ class PermissionPrivacyTest {
     private val declared = Regex("""<uses-permission\s+android:name="([^"]+)"\s*/>""")
     private val sensitive =
         Regex(
-            """permission\.(ACCESS_\w*LOCATION\w*|FOREGROUND_SERVICE\w*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_\w+|ACTIVITY_RECOGNITION)""",
+            """permission\.(ACCESS_\w*LOCATION\w*|FOREGROUND_SERVICE\w*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_\w+|ACTIVITY_RECOGNITION|CAMERA|RECORD_AUDIO|READ_MEDIA_\w+|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)""",
         )
 
     @Test
@@ -44,12 +44,39 @@ class PermissionPrivacyTest {
                 "android.permission.POST_NOTIFICATIONS",
                 // LOC-2b: the zones of the geofencing are erased when the phone restarts; they are armed again at the restart (criterion AND2).
                 "android.permission.RECEIVE_BOOT_COMPLETED",
+                // UPDATE-1: the viewfinder of the Update screen. The ONLY new permission: criterion P4 of the Update ticket.
+                "android.permission.CAMERA",
             ),
             names,
         )
         // No foreground service (the system delivers the zones and the moves to the receiver), no media location.
         assertFalse(manifest.contains("FOREGROUND_SERVICE"))
         assertFalse(manifest.contains("ACCESS_MEDIA_LOCATION"))
+    }
+
+    @Test
+    fun theCameraIsTheOnlyNewPermissionOfTheUpdate_noStorage_noPhotoLibrary_noMicrophone_andNeverRequired() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        // Nothing of the photo library, the storage or the microphone: the photo is taken in memory and never written anywhere (criteria P4, V4).
+        listOf(
+            "READ_MEDIA_IMAGES",
+            "READ_MEDIA_VISUAL_USER_SELECTED",
+            "READ_EXTERNAL_STORAGE",
+            "WRITE_EXTERNAL_STORAGE",
+            "MANAGE_EXTERNAL_STORAGE",
+            "RECORD_AUDIO",
+        ).forEach { assertFalse("$it must never be declared", manifest.contains(it)) }
+        // The camera and the front camera are NOT required: a phone without them can install Miff (criterion P4).
+        listOf(
+            "android.hardware.camera",
+            "android.hardware.camera.front",
+            "android.hardware.camera.autofocus",
+        ).forEach { feature ->
+            val declaration =
+                Regex("""<uses-feature\s+android:name="${Regex.escape(feature)}"\s+android:required="false"\s*/>""")
+            assertTrue("$feature must be declared as not required", declaration.containsMatchIn(manifest))
+        }
+        assertFalse(Regex("""android:required="true"""").containsMatchIn(manifest))
     }
 
     @Test
@@ -67,6 +94,7 @@ class PermissionPrivacyTest {
                     "android.permission.ACCESS_COARSE_LOCATION",
                     "android.permission.ACCESS_BACKGROUND_LOCATION",
                     "android.permission.POST_NOTIFICATIONS",
+                    "android.permission.CAMERA",
                 ),
                 found,
             )

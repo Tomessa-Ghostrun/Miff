@@ -49,7 +49,7 @@
 
 - [ ] Sur la journée de test, relevez dans Firestore > Utilisation le nombre d'écritures du jour **avant** et **après** la recette, et le nombre d'ouvertures / sorties faites : on attend **au plus 1 écriture par Miff et par tentative**, et au plus 1 tentative par quart d'heure. Chiffres : ______
 - [ ] Version de développement : l'écran de diagnostic (journal de détection) montre des lignes `BATTERY_WRITTEN` (jamais plus de 40 par jour) et le niveau ; **aucune coordonnée**.
-- [ ] Les seuils d'alerte de `docs/dev/surveillance-quotas.md` (écritures du jour > 12 000, ratio de lectures > 150) ne sont pas modifiés ; la section « Batterie rafraîchie » donne le coût estimé et le signal de bascule.
+- [ ] Les seuils d'alerte de `docs/dev/surveillance-quotas.md` (écritures du jour > 12 000, ratio de lectures > 150) ne sont pas modifiés ; la section « 5 ter. Android » donne le coût estimé et le signal de bascule.
 
 ## Résultat
 

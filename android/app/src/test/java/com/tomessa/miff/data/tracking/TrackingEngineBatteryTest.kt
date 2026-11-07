@@ -336,7 +336,7 @@ class TrackingEngineBatteryTest {
         }
 
     @Test
-    fun theStatusBreakerBeingFull_doesNotStopTheBattery_andTheBatteryNeverFillsIt() =
+    fun theStatusBreakerBeingUsedUp_stopsTheBattery_andTheBatteryNeverFillsIt() =
         runTest {
             openedOnceWithABatteryWrite()
             env.now += 4 * hour
@@ -344,8 +344,13 @@ class TrackingEngineBatteryTest {
             local.state =
                 local.state!!.copyWith(breaker = BreakerState(day, TrackingLimits.MAX_STATUS_WRITES_PER_DAY, 0, 0))
             engine.refreshBattery()
-            assertEquals(1, batteryWrites().size)
+            assertTrue(
+                "aligned with iOS: no battery write once the breaker of the statuses is used up",
+                batteryWrites().isEmpty(),
+            )
+            assertTrue(JournalKind.BREAKER_STATUS in journal.kinds)
             assertEquals(TrackingLimits.MAX_STATUS_WRITES_PER_DAY, local.state!!.breaker!!.statusWrites)
+            assertEquals(0, local.state!!.breaker!!.batteryWrites)
         }
 
     // --- NEVER create, never write without the sharing --------------------------------------------------------------------------------------

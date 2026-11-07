@@ -82,7 +82,6 @@ Le plan gratuit risque de ne plus suffire, ou quelqu'un abuse. Dans cet ordre (d
 | **Écritures de la détection iOS (LOC-4b)** : mêmes bornes et mêmes valeurs qu'Android (`TrackingLimits`) | normal : 6 à 10 statuts + 20 à 60 positions par Miff ; **borné** à 60 statuts + 150 positions par téléphone ; **en plus**, sur iPhone, une relecture **forcée** des Miffs ET des lieux (sans attendre l'heure) à chaque lieu écrit par le créateur et à chaque changement de partage (`refresh(.sharingChanged)`, `ChangeNotifyingPlaceRepository`) : **10 à 30 lectures par enregistrement** selon le nombre de Miffs et de lieux (rare, mais à compter si le créateur modifie plusieurs lieux de suite) ; **relance par le système** : estimée à **4 à 6 lectures + 2 à 3 lectures de règles par écriture**, **à mesurer** à la recette partie C (relever Firestore > Utilisation avant et après la sortie, puis noter ici le chiffre réel) ; signal de bascule : lectures du jour > 40 000 de façon répétée avec peu de testeurs | Firestore > Utilisation, puis le journal de la recette (`docs/qa/checklists/loc-4b-ios-recette-pm.md`, partie C) |
 | **Lectures par réveil de la détection (LOC-2b), estimation à mesurer à la recette** | une relecture (au plus 1 par heure de réveil, plus à chaque ouverture après 1 h, retour du réseau, changement de partage, redémarrage) = **M + N × (5 + P)** lectures, M = Miffs de la personne, N = Miffs où elle partage sous la v3, P = lieux d'une Miff (index : M documents ; par Miff : 1 fiche + 2 lectures de règles, puis P lieux + 2 lectures de règles) ; exemple 1 Miff, 3 lieux : ≈ 9. À cela s'ajoutent les lectures de règles des écritures : **1** par statut écrit, **2** par position écrite. Jusqu'à 12 relectures par jour : ≈ 110 lectures, plus 40 à 120 lectures de règles pour les positions : de l'ordre de **150 à 250 lectures par utilisateur actif et par jour**, soit bien plus que les ~75 estimés avant la détection. **À mesurer à la recette** ; signal : ratio lectures / utilisateurs actifs > 150 deux jours de suite (§2). | Firestore > Utilisation, journal de la recette |
 | **Photos d'update (R-PHOTO-LOC, localisation obligatoire, décision du PM du 2026-11-06)** | chaque photo ouverte par un autre membre = **1 lecture du document + 3 lectures de règles = 4 lectures facturées** (3 avant la localisation de la photo), car toute photo est localisée et sa lecture vérifie la Miff, mon partage et **ma** position publiée. **Estimation, pas une mesure** : Miff de 4 membres, une photo ouverte par autre membre à chaque ouverture à froid (~3 par jour) = 36 lectures par jour et par utilisateur actif au lieu de 27 (+9) ; Miff de 8 membres : 84 au lieu de 63. Avec les ~176 à 320 lectures de la détection et de la session, on passe à environ **210 à 355** dans ce cas haut, soit **~140 à 240 utilisateurs actifs par jour** avant les 50 000 lectures de Spark (contre ~155 à 285 avant) ; l'ordre de grandeur est inchangé, la limite basse baisse jusqu'à ~10 à 15 % par rapport à un Feed sans photo (hypothèse pessimiste : chaque autre membre a toujours une photo et chaque ouverture à froid relit tout). **Limite connue** : le coût est proportionnel au nombre de photos OUVERTES, donc au comportement de l'application. **Signal** : celui du §2 (ratio > 150 deux jours de suite) ; si le ratio monte nettement dès que les photos sont en usage, **vérifier d'abord que l'application ne pré-charge pas les photos du Feed** (une lecture par ouverture, cache tant que la date de mise à jour ne change pas : levier gratuit), avant de parler de Blaze. | Firestore > Utilisation, journal de la recette |
-| **Batterie rafraîchie à l'ouverture et à la sortie de l'app (Android, décision du PM du 2026-11-07, ticket Feed D46)** | **1 écriture + 3 lectures de règles par Miff et par rafraîchissement**, plus **1 lecture de snapshot pour chaque autre membre qui a le Feed ouvert à ce moment** (jusqu'à N−1). Bornes de l'application : au plus une tentative toutes les 15 min, pas d'écriture si le niveau a bougé de moins de 5 points (sauf dernière écriture de plus de 3 h), **compteur du jour dédié plafonné à 40 écritures par téléphone** (en plus des 60 statuts et 150 positions, qu'il ne consomme pas). Estimation par utilisateur actif : **~6 écritures et ~36 lectures par jour** (Miff de 4 membres, borne haute des écouteurs), 10 écritures et 60 lectures les jours chargés ; détail, scénarios 100 / 1 000 / 10 000 et signal de bascule dans la section « Batterie rafraîchie » ci-dessous. | Firestore > Utilisation ; journal de la recette (`docs/qa/checklists/batterie-android-recette-pm.md`) |
 | **Rappel** | le **20 000 écritures par jour** de Spark compte **toutes** les écritures du projet (statuts, positions, photos, adhésions, lots de lieux), et se remet à zéro à minuit **heure du Pacifique (≈ 9 h à Paris)**, pas à minuit chez la personne | |
 | Suppressions Firestore : 20 000 par jour | rarement en jeu | Firestore > Utilisation |
 | Transfert sortant : 10 GiB par mois | 6 GiB par mois | Firestore > Utilisation |
@@ -90,14 +89,42 @@ Le plan gratuit risque de ne plus suffire, ou quelqu'un abuse. Dans cet ordre (d
 | Authentication : 50 000 utilisateurs actifs par mois | très loin | Authentication > Utilisation |
 | App Check, Play Integrity : 10 000 appels par jour (palier standard, d'après la documentation Firebase) | à surveiller dès quelques centaines d'utilisateurs : chaque jeton demandé compte | Console Google Cloud > API Play Integrity > Métriques (emplacement exact à vérifier) |
 
-### Batterie rafraîchie à l'ouverture et à la sortie de l'app (Android, 2026-11-07)
+
+---
+
+## 4. Alertes automatiques (facultatif, à vérifier par le PM)
+
+Une alerte qui t'écrit quand les lectures dépassent un seuil serait idéale, mais **sa disponibilité sur le plan gratuit n'est pas confirmée** (la documentation Google dit que les alertes d'usage se configurent dans Cloud Monitoring, sans préciser si la facturation est requise). À tester par toi :
+
+1. Console Google Cloud (projet `miff-3d283`) > **Monitoring** > **Alertes** > **Créer une règle d'alerte**.
+2. Métrique : Cloud Firestore > « Document Reads » (lectures de documents). Seuil : par exemple 30 000 sur 24 heures.
+3. Canal de notification : ton e-mail.
+4. **Si Google demande d'activer la facturation ou de saisir un moyen de paiement : arrête-toi.** Il n'y a alors pas d'alerte gratuite ; on reste sur le relevé manuel de la section 1. Ne saisis aucun moyen de paiement sans décision explicite.
+
+Dans tous les cas, ton relevé quotidien reste la référence.
+
+---
+
+## 5. Journal de relevé (modèle à recopier)
+
+Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
+
+| Date | Lectures | Utilisateurs actifs | Ratio | Nouveaux comptes | Requêtes vérifiées (App Check) | Niveau | Remarque |
+|---|---|---|---|---|---|---|---|
+| (jj/mm) | | | | | | Normal / À examiner / Signal | |
+
+**Deux jours de suite au niveau « Signal » = décision à prendre**, pas à reporter.
+
+---
+
+## 5 ter. Android : batterie rafraîchie à l’ouverture et à la sortie de l’app (2026-11-07)
 
 **Ce que fait l'application.** À chaque passage au premier plan et à chaque passage à l'arrière-plan, si la personne est éligible (connectée, appareil actif, consentement de localisation v3, partage activé, statut existant), elle réécrit **le niveau de batterie seul** (et l'heure d'écriture `updatedAt`) dans le statut de chaque Miff où elle partage : un lot d'une seule écriture par Miff, aucune position, aucune lecture du serveur par le rafraîchissement lui-même. Les écritures de statut existantes (arrivée, départ, update, accès à la localisation) continuent d'écrire le niveau frais et **comptent comme un rafraîchissement** (pas de doublon).
 
 **Les garde-fous de coût** (constantes nommées dans `TrackingLimits.kt`, un seul endroit à changer) :
 - **15 min** au moins entre deux tentatives (`BATTERY_MIN_INTERVAL_MILLIS`), quel que soit le résultat (un refus n'est pas répété à chaque ouverture) ;
 - **pas d'écriture si le niveau a bougé de moins de 5 points** depuis la dernière valeur écrite (`BATTERY_MIN_DELTA_PCT`), **sauf si la dernière écriture a plus de 3 h** (`BATTERY_FORCE_AFTER_MILLIS` : le Feed masque la batterie au-delà de 6 h) ;
-- **disjoncteur du jour dédié : 40 écritures de batterie par téléphone et par jour** (`MAX_BATTERY_WRITES_PER_DAY`, compté par document écrit, c'est-à-dire par Miff). Choix : un compteur **à part** et non les 60 écritures de statut existantes, pour qu'un téléphone souvent ouvert ne puisse jamais priver ses proches d'une arrivée ou d'un départ (le cœur du produit) ; le plafond absolu d'un téléphone passe de 60 statuts + 150 positions à **60 + 150 + 40** écritures par jour ;
+- **disjoncteur du jour dédié : 40 écritures de batterie par téléphone et par jour** (`MAX_BATTERY_WRITES_PER_DAY`, compté par document écrit, c'est-à-dire par Miff). Choix : un compteur **à part** et non les 60 écritures de statut existantes, pour qu'un téléphone souvent ouvert ne puisse jamais priver ses proches d'une arrivée ou d'un départ (le cœur du produit) ; le plafond absolu d'un téléphone passe de 60 statuts + 150 positions à **60 + 150 + 40** écritures par jour. **Alignement iOS** (même règle des deux côtés, voir « 5 bis. iOS ») : le rafraîchissement s'arrête aussi quand le disjoncteur des statuts est épuisé ;
 - une écriture attend **4 s** au plus et un passage **8 s** au plus ; un passage qui ne peut pas démarrer tout de suite (le moteur est occupé) est abandonné.
 
 **Coût d'un rafraîchissement, par Miff** (estimations, pas des mesures) :
@@ -126,31 +153,6 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 1. Les relevés habituels (écritures du jour > **12 000**, ratio lectures ÷ utilisateurs actifs > **150** deux jours de suite) restent les déclencheurs. Si l'un d'eux se déclenche après la mise en service, **regarder d'abord la part de la batterie** : dans la version de développement, le journal de détection compte les lignes `BATTERY_WRITTEN` (recette, partie C) ; plus de 10 par téléphone et par jour sur une journée normale est anormal.
 2. **Leviers gratuits, un seul chiffre à changer chacun** : passer l'intervalle de 15 min à 30 min ou 60 min ; passer les 5 points à 10 ; ne rafraîchir qu'à l'ouverture et plus à la sortie (la moitié des écritures) ; baisser le plafond de 40. Tous réduisent le coût sans toucher à la sécurité.
 3. **Bascule en Blaze** : la même que pour le reste (écritures ou lectures du jour au seuil des sections 2 et 3 de façon répétée), décision du PM ; le plafond de 40 écritures par téléphone borne une application **non modifiée** qui boucle ; il ne protège pas d'un client modifié (les règles ne peuvent pas compter les écritures : c'est le rôle d'App Check et de la surveillance de la section 1).
-
----
-
-## 4. Alertes automatiques (facultatif, à vérifier par le PM)
-
-Une alerte qui t'écrit quand les lectures dépassent un seuil serait idéale, mais **sa disponibilité sur le plan gratuit n'est pas confirmée** (la documentation Google dit que les alertes d'usage se configurent dans Cloud Monitoring, sans préciser si la facturation est requise). À tester par toi :
-
-1. Console Google Cloud (projet `miff-3d283`) > **Monitoring** > **Alertes** > **Créer une règle d'alerte**.
-2. Métrique : Cloud Firestore > « Document Reads » (lectures de documents). Seuil : par exemple 30 000 sur 24 heures.
-3. Canal de notification : ton e-mail.
-4. **Si Google demande d'activer la facturation ou de saisir un moyen de paiement : arrête-toi.** Il n'y a alors pas d'alerte gratuite ; on reste sur le relevé manuel de la section 1. Ne saisis aucun moyen de paiement sans décision explicite.
-
-Dans tous les cas, ton relevé quotidien reste la référence.
-
----
-
-## 5. Journal de relevé (modèle à recopier)
-
-Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
-
-| Date | Lectures | Utilisateurs actifs | Ratio | Nouveaux comptes | Requêtes vérifiées (App Check) | Niveau | Remarque |
-|---|---|---|---|---|---|---|---|
-| (jj/mm) | | | | | | Normal / À examiner / Signal | |
-
-**Deux jours de suite au niveau « Signal » = décision à prendre**, pas à reporter.
 
 ---
 

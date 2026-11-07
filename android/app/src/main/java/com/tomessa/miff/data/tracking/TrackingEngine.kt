@@ -900,7 +900,7 @@ class TrackingEngine(
      * the identifier of the session (replaced phone, session not verified), write while the account is being deleted or after a sign-out, write while a status
      * of the Miff waits (that one carries a fresh level itself), read a position, or read the server (not a single read: the local list is the one the last
      * look produced; a Miff whose sharing stopped meanwhile answers with a refusal and is looked at again soon, as for any other automatic write).
-     * Limits: one attempt every 15 minutes, a level that moved by 5 points or more (or a last write older than 3 hours), the dedicated daily breaker.
+     * Limits: one attempt every 15 minutes, a level that moved by 5 points or more (or a last write older than 3 hours), the dedicated daily breaker; the pass also stops when the breaker of the statuses is used up (same rule as iOS).
      */
     suspend fun refreshBattery() {
         if (!mutex.tryLock()) return
@@ -939,6 +939,11 @@ class TrackingEngine(
             val now = env.nowMillis()
             if (gate.ended() || now - startedAt > TrackingLimits.BATTERY_PASS_MAX_MILLIS) break
             val day = WriteBreaker.dayKey(now)
+            // Aligned with iOS: the refresh also stops when the breaker of the statuses is used up (a phone at that limit is already writing too much).
+            if (!WriteBreaker.canWriteStatus(state.breaker?.toState(), day)) {
+                journal.record(JournalKind.BREAKER_STATUS)
+                break
+            }
             if (!WriteBreaker.canWriteBattery(state.breaker?.toState(), day)) {
                 journal.record(JournalKind.BREAKER_BATTERY)
                 break

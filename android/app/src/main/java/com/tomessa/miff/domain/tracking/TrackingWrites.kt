@@ -98,6 +98,35 @@ object TrackingWrites {
         )
     }
 
+    /**
+     * UPDATE-1 (the manual update, the ONLY status write of the Update screen; it lives here so that it carries `deviceId` like every other one, which
+     * `DeviceIdInEveryWriteTest` counts). An UPDATE of the fields of the photo only: `presence`, `placeId`, `presenceAt` and `locationAccess` are NOT sent
+     * (the merged document keeps them, R-LIEU-1), `lastUpdateAt` is the SERVER time (it is the moment of the update, and what the colour restarts from).
+     * [photoPublished] true: a photo is published (`hasPhoto = true`, `updateText = null`: no text in v1). False: the photo of the author was removed
+     * because it expired (`hasPhoto = false`), `lastUpdateAt` is then left alone.
+     */
+    fun photoStatus(
+        miffId: String,
+        uid: String,
+        photoPublished: Boolean,
+        batteryPct: Int?,
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        val data =
+            mutableMapOf<String, Any?>(
+                "hasPhoto" to photoPublished,
+                "batteryPct" to batteryPct?.takeIf { it in 0..100 },
+                "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
+            )
+        if (photoPublished) {
+            data["lastUpdateAt"] = FieldValue.serverTimestamp()
+            data["updateText"] = null
+        }
+        return DocWrite("miffs/$miffId/status/$uid", WriteKind.UPDATE, data)
+    }
+
     /** The last known position in ONE Miff (data-model.md section 2.12): latitude, longitude with 5 decimals, time of the measure. Nothing else. */
     fun position(
         miffId: String,
