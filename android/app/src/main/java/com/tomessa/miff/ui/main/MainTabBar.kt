@@ -105,9 +105,23 @@ private fun TabItem(
     val name =
         stringResource(
             when (tab) {
-                MainTab.FEED -> R.string.tabbar_feed_a11y
-                MainTab.PROFILE -> R.string.tabbar_profile_a11y
-                MainTab.UPDATE -> if (enabled) R.string.tabbar_update_a11y else R.string.tabbar_update_soon_a11y
+                MainTab.FEED -> {
+                    R.string.tabbar_feed_a11y
+                }
+
+                MainTab.PROFILE -> {
+                    R.string.tabbar_profile_a11y
+                }
+
+                // The colour is the ONLY visual signal of the central button (D25): the spoken name says the state for the screen reader.
+                MainTab.UPDATE -> {
+                    when (updateStatus) {
+                        StatusLevel.GREEN -> R.string.tabbar_update_green_a11y
+                        StatusLevel.ORANGE -> R.string.tabbar_update_orange_a11y
+                        StatusLevel.RED -> R.string.tabbar_update_red_a11y
+                        StatusLevel.NEUTRAL -> R.string.tabbar_update_a11y
+                    }
+                }
             },
         )
     val tint = if (selected) palette.iconActive else palette.iconInactive

@@ -1,0 +1,228 @@
+package com.tomessa.miff.data.feed
+
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.tomessa.miff.data.session.SessionTeardown
+import com.tomessa.miff.domain.update.SharedPhoto
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.tasks.await
+
+/*
+ * PRIVACY and COST, for this file (FEED-4):
+ * - The Feed READS a photo and never writes, nor deletes one (FeedPrivacyRuleTest). A refusal of the rules is NEVER taken for "expired": it also means
+ *   "this photo has a place and you have not published yours yet" (R-PHOTO-LOC, reciprocity), so nothing is ever deleted on a permission-denied
+ *   (backend/data-model.md, section 8, Feed).
+ * - ONE `get` of a document (never a list), when the card comes on screen and only if the status says `hasPhoto` and the last update is less than 25 h old
+ *   (the caller decides). A photo already read is NOT downloaded again: it is kept in memory (at most [MAX_ENTRIES] photos, 150 KB each at the most) and
+ *   shown again as long as the status has not changed. Nothing is saved on the disk by this code (the SDK of Firestore keeps its own copy, as for every
+ *   document: the purge of the cache at sign-out covers it, a known limit of the data model).
+ * - What is read is cleaned before use ([SharedPhoto.fromServer]). The photo, its place and its times are never logged nor sent anywhere.
+ */
+
+/** What reading the photo of a member said. */
+sealed interface PhotoLookup {
+    class Found(
+        val photo: SharedPhoto,
+    ) : PhotoLookup {
+        override fun toString(): String = "Found(redacted)"
+    }
+
+    /** No photo (not there, expired, not valid): the card shows nothing, no message. */
+    data object Missing : PhotoLookup
+
+    /** The rules refused: a photo with a place is only read by a member who published their own position. A calm sentence, never "error". */
+    data object NeedsOwnPosition : PhotoLookup
+
+    /** The server could not be reached (and the phone had no copy). Nothing is shown, no message; the next appearance of the card tries again. */
+    data object Offline : PhotoLookup
+}
+
+interface PhotoReader {
+    /**
+     * The photo of [uid] in [miffId]. [lastUpdateAtMillis] is the last update of the status the Feed has just read: a copy made for the same value is
+     * shown again with no reading.
+     */
+    suspend fun read(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ): PhotoLookup
+}
+
+/** The photos read, in memory, for the session. The photo of the author is put here at the moment of the publication, so that no one re-reads it. */
+class PhotoCache(
+    private val maxEntries: Int = MAX_ENTRIES,
+) : SessionTeardown {
+    private class Entry(
+        val photo: SharedPhoto,
+        /** The `lastUpdateAt` of the status this copy was read for; null for the photo of the author, valid until it expires. */
+        val forLastUpdateMillis: Long?,
+    )
+
+    private val entries =
+        object : LinkedHashMap<String, Entry>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?): Boolean = size > maxEntries
+        }
+
+    private val missing =
+        object : LinkedHashMap<String, Long>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?): Boolean =
+                size > maxEntries * MISSING_FACTOR
+        }
+
+    @Synchronized
+    fun get(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long?,
+        nowMillis: Long,
+    ): SharedPhoto? {
+        val key = key(miffId, uid)
+        val entry = entries[key] ?: return null
+        if (entry.photo.isExpired(nowMillis)) {
+            entries.remove(key)
+            return null
+        }
+        val current = entry.forLastUpdateMillis == null || entry.forLastUpdateMillis == lastUpdateAtMillis
+        return entry.photo.takeIf { current }
+    }
+
+    /** The server said there is nothing to show for this status (absent, expired, not valid): not asked again for the same `lastUpdateAt` (review C8). */
+    @Synchronized
+    fun putMissing(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ) {
+        missing[key(miffId, uid)] = lastUpdateAtMillis
+    }
+
+    @Synchronized
+    fun isMissing(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ): Boolean = missing[key(miffId, uid)] == lastUpdateAtMillis
+
+    @Synchronized
+    fun putRead(
+        miffId: String,
+        uid: String,
+        photo: SharedPhoto,
+        lastUpdateAtMillis: Long,
+    ) {
+        missing.remove(key(miffId, uid))
+        entries[key(miffId, uid)] = Entry(photo, lastUpdateAtMillis)
+    }
+
+    /** The photo I just published: shown on my card with no reading of the server. */
+    @Synchronized
+    fun putOwn(
+        miffId: String,
+        uid: String,
+        photo: SharedPhoto,
+    ) {
+        missing.remove(key(miffId, uid))
+        entries[key(miffId, uid)] = Entry(photo, null)
+    }
+
+    @Synchronized
+    fun remove(
+        miffId: String,
+        uid: String,
+    ) {
+        entries.remove(key(miffId, uid))
+        missing.remove(key(miffId, uid))
+    }
+
+    @Synchronized
+    fun clear() {
+        entries.clear()
+        missing.clear()
+    }
+
+    /** End of the session: nothing of the photos stays in memory for the next person. */
+    override suspend fun stop() = clear()
+
+    private fun key(
+        miffId: String,
+        uid: String,
+    ) = "$miffId/$uid"
+
+    private companion object {
+        const val MAX_ENTRIES = 16
+        const val MISSING_FACTOR = 4
+        const val INITIAL_CAPACITY = 16
+        const val LOAD_FACTOR = 0.75f
+    }
+}
+
+/**
+ * What a refusal of the rules means for the card (backend/data-model.md: "un refus de lecture est ambigu"). It is NEVER a reason to delete anything. If I have
+ * published my own position in this Miff, the refusal is NOT the reciprocity (the photo expired, or sharing stopped): nothing is shown. If I have not, it is the
+ * reciprocity: the calm sentence "Partage ta position pour voir cette photo.".
+ */
+internal fun refusalLookup(ownPositionPublished: Boolean): PhotoLookup =
+    if (ownPositionPublished) PhotoLookup.Missing else PhotoLookup.NeedsOwnPosition
+
+class FirestorePhotoReader(
+    private val cache: PhotoCache,
+    /** Have I published my own position in this Miff? (known locally: it is the detection that writes it). */
+    private val ownPositionPublished: (miffId: String) -> Boolean = { false },
+    private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+    private val nowMillis: () -> Long = System::currentTimeMillis,
+) : PhotoReader {
+    override suspend fun read(
+        miffId: String,
+        uid: String,
+        lastUpdateAtMillis: Long,
+    ): PhotoLookup {
+        cache.get(miffId, uid, lastUpdateAtMillis, nowMillis())?.let { return PhotoLookup.Found(it) }
+        // Nothing to show for this very status (an expired photo, for instance): the server is not asked again at each opening (review C8).
+        if (cache.isMissing(miffId, uid, lastUpdateAtMillis)) return PhotoLookup.Missing
+        return try {
+            val snapshot =
+                firestore()
+                    .collection("miffs")
+                    .document(miffId)
+                    .collection("photos")
+                    .document(uid)
+                    .get()
+                    .await()
+            if (!snapshot.exists()) {
+                cache.putMissing(miffId, uid, lastUpdateAtMillis)
+                return PhotoLookup.Missing
+            }
+            val photo =
+                SharedPhoto.fromServer(
+                    jpeg = snapshot.getBlob("jpeg")?.toBytes(),
+                    createdAtMillis = (snapshot.get("createdAt") as? Timestamp)?.toDate()?.time,
+                    expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
+                    lat = snapshot.get("lat") as? Number,
+                    lng = snapshot.get("lng") as? Number,
+                    measuredAtMillis = (snapshot.get("measuredAt") as? Timestamp)?.toDate()?.time,
+                    nowMillis = nowMillis(),
+                ) ?: run {
+                    cache.putMissing(miffId, uid, lastUpdateAtMillis)
+                    return PhotoLookup.Missing
+                }
+            cache.putRead(miffId, uid, photo, lastUpdateAtMillis)
+            PhotoLookup.Found(photo)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: FirebaseFirestoreException) {
+            when (e.code) {
+                FirebaseFirestoreException.Code.PERMISSION_DENIED -> refusalLookup(ownPositionPublished(miffId))
+
+                FirebaseFirestoreException.Code.UNAVAILABLE,
+                FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
+                -> PhotoLookup.Offline
+
+                else -> PhotoLookup.Missing
+            }
+        } catch (e: Exception) {
+            PhotoLookup.Missing
+        }
+    }
+}

@@ -57,6 +57,7 @@ import com.tomessa.miff.domain.profile.ProfileForm
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.rememberSystemCamera
 import com.tomessa.miff.ui.profile.CountryField
 import com.tomessa.miff.ui.profile.CountryPickerSheet
 import com.tomessa.miff.ui.profile.LabeledOutlinedField
@@ -216,12 +217,8 @@ private fun Form(
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickVisualMedia(),
         ) { uri -> onPhotoChosen(uri?.toString()) }
-    // The address of the camera file survives the destruction of the screen while the camera application is open.
-    var captureUri by rememberSaveable { mutableStateOf<String?>(null) }
-    val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-            if (taken) onPhotoChosen(captureUri) else AvatarCapture.deleteAll(context)
-        }
+    // The camera application of the phone (see ui/components/SystemCamera.kt: since UPDATE-1 Android wants the CAMERA permission for it).
+    val takePhoto = rememberSystemCamera(onPhoto = onPhotoChosen, onUnavailable = onCameraUnavailable)
     val locale: Locale = LocalConfiguration.current.locales[0]
     val country = remember(state.regionCode, locale) { PhoneNumbers.country(state.regionCode, locale) }
     val example = remember(state.regionCode) { PhoneNumbers.exampleHint(state.regionCode) }
@@ -306,13 +303,7 @@ private fun Form(
             onDismiss = { sheetOpen = false },
             onTakePhoto = {
                 sheetOpen = false
-                val uri = AvatarCapture.newCaptureUri(context)
-                captureUri = uri.toString()
-                try {
-                    cameraLauncher.launch(uri)
-                } catch (e: ActivityNotFoundException) {
-                    onCameraUnavailable()
-                }
+                takePhoto()
             },
             // The system Photo Picker: no permission to ask, the app only receives the photo that was chosen.
             onChoose = {
