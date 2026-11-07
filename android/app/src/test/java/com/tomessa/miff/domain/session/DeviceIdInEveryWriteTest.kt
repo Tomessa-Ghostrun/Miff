@@ -40,14 +40,15 @@ class DeviceIdInEveryWriteTest {
                 TrackingWrites.statusUpdate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, DEVICE_A),
                 TrackingWrites.statusUpdate(miffId, uid, departure, now, null, LocationAccess.BACKGROUND, DEVICE_A),
                 TrackingWrites.accessUpdate(miffId, uid, 50, LocationAccess.DENIED, DEVICE_A),
+                TrackingWrites.batteryUpdate(miffId, uid, 50, DEVICE_A),
                 TrackingWrites.position(miffId, uid, 48.8566, 2.3522, now, DEVICE_A),
             ) +
                 MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, DEVICE_A)
         val statusAndPositionWrites = writes.filter { isStatusOrPosition(it) }
-        // 4 writes of tracking (the status update twice) + the status of create, join and resume.
-        assertEquals(7, statusAndPositionWrites.size)
+        // 5 writes of tracking (the status update twice) + the status of create, join and resume.
+        assertEquals(8, statusAndPositionWrites.size)
         statusAndPositionWrites.forEach { write ->
             val what = "${write.kind} of ${write.path.split("/")[2]}"
             assertTrue("$what is a set or a (partial) update", write.kind != WriteKind.DELETE)
@@ -64,6 +65,9 @@ class DeviceIdInEveryWriteTest {
         val access = TrackingWrites.accessUpdate(miffId, uid, 80, LocationAccess.BACKGROUND, DEVICE_A)
         assertEquals(WriteKind.UPDATE, access.kind)
         assertEquals(DEVICE_A, access.data["deviceId"])
+        val battery = TrackingWrites.batteryUpdate(miffId, uid, 80, DEVICE_A)
+        assertEquals(WriteKind.UPDATE, battery.kind)
+        assertEquals(DEVICE_A, battery.data["deviceId"])
     }
 
     @Test
@@ -83,6 +87,7 @@ class DeviceIdInEveryWriteTest {
                 listOf<() -> Any>(
                     { TrackingWrites.statusUpdate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, id) },
                     { TrackingWrites.accessUpdate(miffId, uid, 50, LocationAccess.DENIED, id) },
+                    { TrackingWrites.batteryUpdate(miffId, uid, 50, id) },
                     { TrackingWrites.position(miffId, uid, 48.8566, 2.3522, now, id) },
                     { MiffWrites.initialStatus(LocationAccess.UNKNOWN, id) },
                     { MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, id) },
@@ -121,13 +126,13 @@ class DeviceIdInEveryWriteTest {
 
     @Test
     fun theTwoBuilderFiles_areNotExemptInBulk_theirWritesAreCounted() {
-        // 3 in TrackingWrites (status update, access update, position) + 3 in MiffWrites (first status of create, join, resume).
+        // 4 in TrackingWrites (status update, access update, battery update, position) + 3 in MiffWrites (first status of create, join, resume).
         // A new write of a status or a position there forces this number, and the test of the builders above, to be updated on purpose.
         val counts =
             kotlinSources()
                 .filter { it.name == "TrackingWrites.kt" || it.name == "MiffWrites.kt" }
                 .associate { it.name to statusOrPositionWrite.findAll(it.readText()).count() }
-        assertEquals(mapOf("TrackingWrites.kt" to 3, "MiffWrites.kt" to 3), counts)
+        assertEquals(mapOf("TrackingWrites.kt" to 4, "MiffWrites.kt" to 3), counts)
     }
 
     @Test

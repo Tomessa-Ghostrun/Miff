@@ -8,6 +8,7 @@ import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffSharingConsent
+import com.tomessa.miff.domain.tracking.BatteryRefresh
 import com.tomessa.miff.domain.tracking.DerivedPresence
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.domain.tracking.EventTime
@@ -47,6 +48,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * - "Un compte, un seul appareil" (SESS-2): NOTHING is written (status, access, position) unless [ActiveDevice.clearance] says this phone holds the session, checked
  *   against the server before the first write of a pass (and again at the return of the network); every write carries the identifier of the session. A phone that
  *   was replaced keeps what waits (it is erased by [stop], which the forced sign-out calls) and writes nothing; a refused write makes the session be looked at again.
+ * - The battery (opening / leaving the app, see [refreshBattery]) is an UPDATE of the battery level alone: it never creates a status, reads no position, reads
+ *   nothing from the server, and passes through the same gates as every other write (sharing under the consent of version 3, session, deletion, sign-out).
  * No log, no analytics event: only the local journal of the debug build, which cannot hold a coordinate.
  */
 class TrackingEngine(
@@ -717,15 +720,18 @@ class TrackingEngine(
             val access = accessNow()
             // R-LIEU-1 (deployed): the update leaves `presenceAt` / `lastUpdateAt` alone unless the event changes them (the stored `lastUpdateAt` is accepted whatever its
             // age), so a refusal is never answered by writing the time of the event into `lastUpdateAt`.
-            val outcome = writeStatus(uid, miffId, fact, at, access, deviceId)
+            val battery = env.batteryPct()
+            val outcome = writeStatus(uid, miffId, fact, at, access, battery, deviceId)
             if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
             state =
                 when (outcome) {
                     is Guarded.Value -> {
-                        journal.record(JournalKind.STATUS_WRITTEN, pending.placeId, env.batteryPct())
+                        journal.record(JournalKind.STATUS_WRITTEN, pending.placeId, battery)
                         state
                             .copyWith(breaker = WriteBreaker.recordStatus(state.breaker?.toState(), day))
-                            .withMiff(miffId) { it.copyWith(pending = null, access = access.value) }
+                            .withMiff(miffId) {
+                                it.copyWith(pending = null, access = access.value).withBattery(battery, now)
+                            }
                     }
 
                     is Guarded.Failed -> {
@@ -758,12 +764,13 @@ class TrackingEngine(
         fact: StatusFact,
         at: Long,
         access: LocationAccess,
+        battery: Int?,
         deviceId: String,
     ): Guarded<Unit> =
         // A status that does not exist any more (deleted meanwhile) is NOT recreated here: with the real rules an update of a missing status answers
         // PERMISSION_DENIED (probe on the emulator), i.e. the ordinary refusal below ("look at the Miff again soon"), as before SESS-2.
         guardedCall(timeoutMillis) {
-            store.commit(listOf(TrackingWrites.statusUpdate(miffId, uid, fact, at, env.batteryPct(), access, deviceId)))
+            store.commit(listOf(TrackingWrites.statusUpdate(miffId, uid, fact, at, battery, access, deviceId)))
         }
 
     /**
@@ -790,9 +797,10 @@ class TrackingEngine(
             // SESS-2: without the identifier of the session nothing is written, and the change stays to be told (the access is not marked as done).
             val deviceId = gate.deviceId() ?: continue
             if (gate.ended()) break
+            val battery = env.batteryPct()
             val outcome =
                 guardedCall(timeoutMillis) {
-                    store.commit(listOf(TrackingWrites.accessUpdate(miffId, uid, env.batteryPct(), access, deviceId)))
+                    store.commit(listOf(TrackingWrites.accessUpdate(miffId, uid, battery, access, deviceId)))
                 }
             if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
             state =
@@ -800,7 +808,7 @@ class TrackingEngine(
                     is Guarded.Value -> {
                         state
                             .copyWith(breaker = WriteBreaker.recordStatus(state.breaker?.toState(), day))
-                            .withMiff(miffId) { it.copyWith(access = access.value) }
+                            .withMiff(miffId) { it.copyWith(access = access.value).withBattery(battery, now) }
                     }
 
                     is Guarded.Failed -> {
@@ -868,6 +876,109 @@ class TrackingEngine(
         }
         return state.copyWith(positionCursor = served ?: state.positionCursor)
     }
+
+    // --- The battery, when the app is opened and when it is left ---------------------------------------------------------------------------
+
+    /**
+     * What the app asks when it looks again for any [reason]: the recalculation ([refresh]) and, when the app was OPENED or LEFT, the battery. On leaving, the battery
+     * comes FIRST (a short write, while the process is surely alive) and the recalculation (position, zones) after; on opening it comes AFTER the recalculation,
+     * which has just read the Miffs where the person shares and verified the session.
+     */
+    suspend fun lookAgain(reason: Reason) {
+        if (reason == Reason.BACKGROUNDED) refreshBattery()
+        refresh(reason)
+        if (reason == Reason.OPENED) refreshBattery()
+    }
+
+    /**
+     * The app was opened or left (PM decision, 2026-11-07): the battery level of the status of every Miff where the person shares is written again, so that the
+     * loved ones see a recent level. Best effort and short: a pass that cannot start at once (another pass holds the engine) is given up, a write waits
+     * [TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS] at most and the whole pass [TrackingLimits.BATTERY_PASS_MAX_MILLIS]; whatever goes wrong, nothing is thrown.
+     *
+     * What it never does: create a status (the write is an UPDATE of three keys, see [TrackingWrites.batteryUpdate]; a missing status is a refusal of the
+     * rules), write for a Miff that is not in the local list (sharing under the consent of version 3, as read from the server by the last look), write without
+     * the identifier of the session (replaced phone, session not verified), write while the account is being deleted or after a sign-out, write while a status
+     * of the Miff waits (that one carries a fresh level itself), read a position, or read the server (not a single read: the local list is the one the last
+     * look produced; a Miff whose sharing stopped meanwhile answers with a refusal and is looked at again soon, as for any other automatic write).
+     * Limits: one attempt every 15 minutes, a level that moved by 5 points or more (or a last write older than 3 hours), the dedicated daily breaker.
+     */
+    suspend fun refreshBattery() {
+        if (!mutex.tryLock()) return
+        try {
+            if (!sessionEnded()) doRefreshBattery()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A best-effort write must never take the app down; nothing is logged (no personal data here, and the app never logs).
+        } finally {
+            mutex.unlock()
+        }
+    }
+
+    private suspend fun doRefreshBattery() {
+        val uid = env.uid() ?: return
+        // No local copy = the Miffs where the person shares are not known yet (the first look of the opening has not happened): nothing to do, nothing to read.
+        val start = stateFor(uid) ?: return
+        if (start.miffs.isEmpty()) return
+        val battery = env.batteryPct() ?: return
+        val startedAt = env.nowMillis()
+        if (!BatteryRefresh.passAllowed(start.batteryTriedAtMillis, startedAt)) return
+        val due =
+            rotated(start.miffs.keys, null).filter { miffId ->
+                val miff = start.miffs.getValue(miffId)
+                miff.pending == null &&
+                    BatteryRefresh.shouldWrite(miff.batteryPct, miff.batteryAtMillis, battery, startedAt)
+            }
+        if (due.isEmpty() || !env.isOnline()) return
+
+        // One attempt per 15 minutes whatever the outcome: a refusal (status missing, sharing stopped) is not repeated at every opening.
+        var state = start.copyWith(batteryTriedAtMillis = startedAt)
+        local.save(state)
+        val gate = WriteGate(recheck = false)
+        for (miffId in due) {
+            val now = env.nowMillis()
+            if (gate.ended() || now - startedAt > TrackingLimits.BATTERY_PASS_MAX_MILLIS) break
+            val day = WriteBreaker.dayKey(now)
+            if (!WriteBreaker.canWriteBattery(state.breaker?.toState(), day)) {
+                journal.record(JournalKind.BREAKER_BATTERY)
+                break
+            }
+            // SESS-2: no identifier of session = nothing is written (replaced, not verified, signed out).
+            val deviceId = gate.deviceId() ?: break
+            if (gate.ended()) break
+            val outcome =
+                guardedCall(minOf(timeoutMillis, TrackingLimits.BATTERY_WRITE_TIMEOUT_MILLIS)) {
+                    store.commit(listOf(TrackingWrites.batteryUpdate(miffId, uid, battery, deviceId)))
+                }
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
+            state =
+                when (outcome) {
+                    is Guarded.Value -> {
+                        journal.record(JournalKind.BATTERY_WRITTEN, batteryPct = battery)
+                        state
+                            .copyWith(breaker = WriteBreaker.recordBattery(state.breaker?.toState(), day))
+                            .withMiff(miffId) { it.withBattery(battery, now) }
+                    }
+
+                    is Guarded.Failed -> {
+                        if (outcome.failure == MiffFailure.REFUSED) {
+                            // No status, no more sharing, or no consent of the right version, according to the server: the Miff is looked at again soon.
+                            journal.record(JournalKind.BATTERY_REFUSED)
+                            recheckSoon(state, now)
+                        } else {
+                            state
+                        }
+                    }
+                }
+            local.save(state)
+        }
+    }
+
+    /** The level written to this Miff and when (a null level, when the phone did not say, leaves the record as it was). */
+    private fun LocalMiff.withBattery(
+        pct: Int?,
+        atMillis: Long,
+    ): LocalMiff = if (pct == null) this else copyWith(batteryPct = pct, batteryAtMillis = atMillis)
 
     private fun updateNetworkWake(state: LocalState) {
         if (state.miffs.values.any { it.pending != null }) networkWake.watch() else networkWake.stop()

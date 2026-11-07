@@ -73,6 +73,31 @@ object TrackingWrites {
         )
     }
 
+    /**
+     * Only the battery level (the app was opened or left). An UPDATE of three keys: the merged document keeps `presence`, `placeId`, `presenceAt`,
+     * `lastUpdateAt`, `updateText`, `hasPhoto`, `locationAccess` and `escalationDueAt` exactly as the server holds them (R-LIEU-1: the stored times are accepted
+     * whatever their age), so it passes `validStatus` with no change of the rules. An UPDATE never creates: a status that does not exist (sharing stopped,
+     * deleted) is answered by a refusal, never recreated. The level is required: a phone that does not say its level writes nothing.
+     */
+    fun batteryUpdate(
+        miffId: String,
+        uid: String,
+        batteryPct: Int,
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        require(batteryPct in 0..100) { "battery range" }
+        return DocWrite(
+            "miffs/$miffId/status/$uid",
+            WriteKind.UPDATE,
+            mapOf(
+                "batteryPct" to batteryPct,
+                "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
+            ),
+        )
+    }
+
     /** The last known position in ONE Miff (data-model.md section 2.12): latitude, longitude with 5 decimals, time of the measure. Nothing else. */
     fun position(
         miffId: String,
