@@ -6,7 +6,7 @@ import Foundation
 // cache son contenu dans sa description : rien d'ici ne finit dans un journal, un événement ou un message d'erreur.
 
 /// Une Miff que le compte a créée, telle que l'écran d'information la liste : son nom et le nombre des AUTRES personnes qui y sont.
-struct OwnedMiff: Equatable, CustomStringConvertible {
+struct AccountOwnedMiff: Equatable, CustomStringConvertible {
     let miffId: String
     let name: String
     let otherMembers: Int
@@ -21,7 +21,7 @@ struct AccountMiffsSummary: Equatable, CustomStringConvertible {
     /// Combien de Miffs le compte a REJOINTES (il les quitte).
     let joined: Int
     /// Les Miffs qu'il a CRÉÉES, avec le nombre des autres personnes dans chacune : elles sont supprimées.
-    let owned: [OwnedMiff]
+    let owned: [AccountOwnedMiff]
 
     static let none = AccountMiffsSummary(joined: 0, owned: [])
 
@@ -38,7 +38,7 @@ struct AccountMiffsSummary: Equatable, CustomStringConvertible {
 /// Ce que le SERVEUR dit que le compte détient et que la suppression doit traiter d'abord : les Miffs.
 struct MiffsInventory: Equatable, CustomStringConvertible {
     let joined: [MembershipRef]
-    let owned: [OwnedMiff]
+    let owned: [AccountOwnedMiff]
     /// Les index PÉRIMÉS (la Miff a été supprimée ou la personne retirée) : seul l'index reste.
     let stale: [MembershipRef]
 

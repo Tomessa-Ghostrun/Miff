@@ -37,7 +37,7 @@ final class StoreAccountMiffs: AccountMiffs {
             return .failed(failure)
         }
         var joined: [MembershipRef] = []
-        var owned: [OwnedMiff] = []
+        var owned: [AccountOwnedMiff] = []
         var stale: [MembershipRef] = []
         var reachable: Bool?
         var seen = Set<String>()
@@ -63,7 +63,7 @@ final class StoreAccountMiffs: AccountMiffs {
 
     private enum Kind {
         case joined
-        case owned(OwnedMiff)
+        case owned(AccountOwnedMiff)
         case stale
         case failed(MiffFailure)
     }
@@ -87,7 +87,7 @@ final class StoreAccountMiffs: AccountMiffs {
             switch ids {
             case .value(let members):
                 let others = members.filter { $0 != uid }.count
-                return .owned(OwnedMiff(miffId: ref.miffId, name: details.name, otherMembers: others))
+                return .owned(AccountOwnedMiff(miffId: ref.miffId, name: details.name, otherMembers: others))
             case .failed(let failure, _):
                 return .failed(failure)
             }

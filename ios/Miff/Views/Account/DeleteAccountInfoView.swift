@@ -122,7 +122,7 @@ struct DeleteAccountInfoView: View {
 /// Les Miffs créées, comme l'écran d'information les liste (maquettes A7 et A8) : trois noms au plus, puis « et {k} autres ». Chaque
 /// nom est une donnée personnelle : il n'est ni journalisé ni envoyé ailleurs que dans la feuille de partage choisie par la personne.
 private struct DeleteOwnedMiffsBlock: View {
-    let owned: [OwnedMiff]
+    let owned: [AccountOwnedMiff]
     let plan: WarnPlan
 
     private var titleKey: String {
@@ -130,7 +130,7 @@ private struct DeleteOwnedMiffsBlock: View {
     }
 
     /// Les trois premières Miffs, numérotées pour que deux Miffs de même nom n'aient pas la même identité.
-    private var listed: [(offset: Int, element: OwnedMiff)] {
+    private var listed: [(offset: Int, element: AccountOwnedMiff)] {
         Array(owned.prefix(AccountMiffsSummary.maxListedOwned).enumerated())
     }
 
@@ -170,7 +170,7 @@ private struct DeleteOwnedMiffsBlock: View {
         L10n.string("miff_screen_title_loading")
     }
 
-    private func row(_ miff: OwnedMiff) -> some View {
+    private func row(_ miff: AccountOwnedMiff) -> some View {
         HStack(alignment: .top, spacing: Spacing.sm) {
             Image(systemName: "person.2")
                 .foregroundColor(colorActionPrimary.color)

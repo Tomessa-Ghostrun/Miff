@@ -14,13 +14,13 @@ func testRef(key: String = testJoinedKey, miffId: String = testJoinedMiffId) -> 
     MembershipRef(key: key, miffId: miffId)
 }
 
-func testOwned(id: String = testOwnedMiffId, name: String = "Chez nous", others: Int = 2) -> OwnedMiff {
-    OwnedMiff(miffId: id, name: name, otherMembers: others)
+func testOwned(id: String = testOwnedMiffId, name: String = "Chez nous", others: Int = 2) -> AccountOwnedMiff {
+    AccountOwnedMiff(miffId: id, name: name, otherMembers: others)
 }
 
 func testInventory(
     joined: [MembershipRef] = [],
-    owned: [OwnedMiff] = [],
+    owned: [AccountOwnedMiff] = [],
     stale: [MembershipRef] = []
 ) -> MiffsInventory {
     MiffsInventory(joined: joined, owned: owned, stale: stale)

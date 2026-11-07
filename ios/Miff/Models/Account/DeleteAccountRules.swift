@@ -37,7 +37,7 @@ enum DeleteAccountRules {
     }
 
     /// « « {nom} » : N autres proches », ou le nom seul quand il n'y a personne d'autre (jamais « 0 proche »).
-    static func ownedRowText(_ miff: OwnedMiff, fallbackName: String) -> String {
+    static func ownedRowText(_ miff: AccountOwnedMiff, fallbackName: String) -> String {
         let name = miff.name.isEmpty ? fallbackName : miff.name
         if miff.otherMembers == 0 {
             return L10n.format("settings_delete_owned_row_alone", name)
@@ -46,7 +46,7 @@ enum DeleteAccountRules {
     }
 
     /// La phrase sous la liste des Miffs créées (maquettes A7 et A8) : ce qui arrive aux autres selon le nombre de Miffs et de proches.
-    static func ownedExplainKey(owned: [OwnedMiff]) -> String {
+    static func ownedExplainKey(owned: [AccountOwnedMiff]) -> String {
         let anyOthers = owned.contains { $0.otherMembers > 0 }
         switch (anyOthers, owned.count == 1) {
         case (true, true):

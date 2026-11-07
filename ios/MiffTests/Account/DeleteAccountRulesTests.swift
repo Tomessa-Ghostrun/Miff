@@ -30,8 +30,8 @@ final class DeleteAccountRulesTests: XCTestCase {
     }
 
     func testAMiffWithNobodyElseIsNeverSaidToHaveZeroOthers() {
-        let alone = OwnedMiff(miffId: "a", name: "Chez nous", otherMembers: 0)
-        let two = OwnedMiff(miffId: "b", name: "Chez nous", otherMembers: 2)
+        let alone = AccountOwnedMiff(miffId: "a", name: "Chez nous", otherMembers: 0)
+        let two = AccountOwnedMiff(miffId: "b", name: "Chez nous", otherMembers: 2)
 
         let aloneText = DeleteAccountRules.ownedRowText(alone, fallbackName: "…")
         let twoText = DeleteAccountRules.ownedRowText(two, fallbackName: "…")
@@ -42,14 +42,14 @@ final class DeleteAccountRulesTests: XCTestCase {
     }
 
     func testABlankNameUsesTheFallback() {
-        let blank = OwnedMiff(miffId: "a", name: "", otherMembers: 0)
+        let blank = AccountOwnedMiff(miffId: "a", name: "", otherMembers: 0)
 
         XCTAssertTrue(DeleteAccountRules.ownedRowText(blank, fallbackName: "Miff").contains("Miff"))
     }
 
     func testTheExplanationDependsOnHowManyMiffsAndWhetherAnyoneElseIsThere() {
-        let alone = OwnedMiff(miffId: "a", name: "A", otherMembers: 0)
-        let others = OwnedMiff(miffId: "b", name: "B", otherMembers: 1)
+        let alone = AccountOwnedMiff(miffId: "a", name: "A", otherMembers: 0)
+        let others = AccountOwnedMiff(miffId: "b", name: "B", otherMembers: 1)
 
         XCTAssertEqual(DeleteAccountRules.ownedExplainKey(owned: [others]), "settings_delete_owned_explain_one")
         XCTAssertEqual(DeleteAccountRules.ownedExplainKey(owned: [others, alone]), "settings_delete_owned_explain")
@@ -62,12 +62,12 @@ final class DeleteAccountRulesTests: XCTestCase {
     func testTheAccountSummaryOnlyCountsMiffsThePersonKnowsAbout() {
         XCTAssertFalse(AccountMiffsSummary.none.hasMiffs)
         XCTAssertTrue(AccountMiffsSummary(joined: 1, owned: []).hasMiffs)
-        let alone = OwnedMiff(miffId: "a", name: "A", otherMembers: 0)
+        let alone = AccountOwnedMiff(miffId: "a", name: "A", otherMembers: 0)
         XCTAssertTrue(AccountMiffsSummary(joined: 0, owned: [alone]).hasMiffs)
     }
 
     func testNothingPersonalIsInTheTextualFormOfTheTypes() {
-        let owned = OwnedMiff(miffId: "SecretMiffId", name: "Secret", otherMembers: 1)
+        let owned = AccountOwnedMiff(miffId: "SecretMiffId", name: "Secret", otherMembers: 1)
         let summary = AccountMiffsSummary(joined: 1, owned: [owned])
         let inventory = MiffsInventory(joined: [], owned: [owned], stale: [])
         let mark = AccountDeletionMark(uid: "secret-uid")

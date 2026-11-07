@@ -38,7 +38,7 @@ final class StoreAccountMiffsTests: XCTestCase {
         let found = try XCTUnwrap(read)
 
         XCTAssertEqual(found.joined.map { $0.miffId }, [testJoinedMiffId])
-        XCTAssertEqual(found.owned, [OwnedMiff(miffId: testOwnedMiffId, name: "Chez nous", otherMembers: 2)])
+        XCTAssertEqual(found.owned, [AccountOwnedMiff(miffId: testOwnedMiffId, name: "Chez nous", otherMembers: 2)])
         XCTAssertEqual(found.stale.map { $0.miffId }, [staleId], "une Miff disparue : il ne reste que l'index")
         XCTAssertEqual(found.visibleCount, 2, "un index périmé n'est jamais montré")
         XCTAssertTrue(store.calls.contains("memberships:server"), "lu auprès du serveur, jamais du cache")
