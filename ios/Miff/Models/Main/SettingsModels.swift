@@ -2,7 +2,7 @@ import Foundation
 
 /// Les écrans qu'on atteint depuis l'onglet Profil : la liste des Réglages et ses sous-écrans. Seuls des mots fixes voyagent dans une
 /// destination : jamais un nom, un numéro ni une adresse.
-enum SettingsRoute: Hashable {
+enum SettingsRoute: Hashable, CaseIterable {
     case settings
     case myInfo
     case account

@@ -10,6 +10,15 @@ enum MiffRoute: Hashable {
     case placeForm(placeId: String?, miffId: String?)
     case placeDetail(miffId: String, placeId: String)
     case placePaywall(PaywallReason)
+    /// Un écran des Réglages (ONB-7) : poussé dans la MÊME pile que les écrans de la Miff, jamais dans une pile imbriquée.
+    case settings(SettingsRoute)
+
+    var isSettingsScreen: Bool {
+        if case .settings = self {
+            return true
+        }
+        return false
+    }
 
     /// Cet écran dépend de cette Miff : il part avec elle quand son accès est perdu.
     func belongs(to miffId: String) -> Bool {
@@ -20,7 +29,7 @@ enum MiffRoute: Hashable {
             return id == miffId
         case .placeForm(_, let id):
             return id == miffId
-        case .create, .join, .placePaywall:
+        case .create, .join, .placePaywall, .settings:
             return false
         }
     }
@@ -72,7 +81,7 @@ struct MiffOnboardingHost: View {
                     onOpenMiff: { _ in openExisting() }
                 )
             )
-        case .miff, .placeForm, .placeDetail, .placePaywall:
+        case .miff, .placeForm, .placeDetail, .placePaywall, .settings:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         }
@@ -118,6 +127,8 @@ struct MiffHomeHost: View {
     /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
     @ObservedObject private var placeNotices: PlaceNotices
     @State private var path: [MiffRoute] = []
+    /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
+    @StateObject private var profile: ProfileTabViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
     @State private var banner: DeletionBanner?
 
@@ -125,15 +136,20 @@ struct MiffHomeHost: View {
         self.environment = environment
         _directory = ObservedObject(wrappedValue: environment.miffDirectory)
         _placeNotices = ObservedObject(wrappedValue: environment.placeNotices)
+        let session = environment.session
+        _profile = StateObject(
+            wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
+        )
     }
 
     var body: some View {
         ZStack {
             NavigationStack(path: $path) {
                 MainShellView(
-                    environment: environment,
                     miffs: directory.state,
+                    profile: profile,
                     onOpenMiff: { open(.miff($0)) },
+                    onOpenSettings: { open(.settings($0)) },
                     feed: { MiffHomeContent(state: directory.state, actions: homeActions, embedded: true) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
@@ -148,6 +164,12 @@ struct MiffHomeHost: View {
             }
             if let notice = directory.notices.first {
                 AccessLostView(miffName: notice.name, onAcknowledge: { acknowledge(notice) })
+            }
+        }
+        // La dernière Miff a disparu : les écrans des Réglages empilés partent (un compte sans Miff n'a pas accès aux Réglages, Q13).
+        .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
+            if noMiff {
+                path.removeAll { $0.isSettingsScreen }
             }
         }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
@@ -224,6 +246,14 @@ struct MiffHomeHost: View {
                 places: placeContext(for: miffId),
                 onBack: { pop() }
             )
+        case .settings(let screen):
+            SettingsDestinationView(
+                route: screen,
+                environment: environment,
+                profile: profile,
+                navigate: { open(.settings($0)) },
+                onBack: { pop() }
+            )
         default:
             placeDestination(route)
         }
@@ -258,7 +288,7 @@ struct MiffHomeHost: View {
             )
         case .placePaywall(let reason):
             PlacePaywallView(reason: reason, tracker: environment.analyticsTracker, onClose: { pop() })
-        case .create, .join, .miff:
+        case .create, .join, .miff, .settings:
             EmptyView()
         }
     }

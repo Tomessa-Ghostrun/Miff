@@ -329,6 +329,8 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 10. **Feed embarqué** : « Se déconnecter » (et la carte « Mes Miffs ») n'apparaissent plus dans l'onglet Feed (ils sont dans Réglages et Profil) ; le lien de déconnexion ne reste que dans les états sans barre (« Pas encore de Miff », état illisible hors connexion).
 11. **Barre masquée tant que les Miffs ne sont pas lues** (pas de clignotement) ; si la dernière Miff disparaît (quittée, supprimée, accès perdu), la coquille retombe sur le Feed et vide la pile des Réglages (règles dans `MainShellRules`, testées).
 
+**Navigation** : une seule `NavigationStack` pour toute l'app (celle de `MiffHomeHost`). La coquille n'en crée aucune ; les écrans des Réglages sont des routes `MiffRoute.settings(SettingsRoute)` rendues par `SettingsDestinationView`. Une pile imbriquée dans l'onglet Profil faisait planter l'app au toucher d'une carte « Mes Miffs » (build TestFlight 16) ; un test refuse toute `NavigationStack` dans `Views/Main` et `Views/Settings`.
+
 Rien n'est compilé en local : la CI fait foi ; le rendu natif du verre se juge sur l'iPhone 11 Pro (TestFlight).
 
 ## Suivi des lieux : arrivées, départs, dernière position (LOC-4b, miroir d'Android LOC-2b)

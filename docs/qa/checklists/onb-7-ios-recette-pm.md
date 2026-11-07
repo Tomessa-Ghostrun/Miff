@@ -48,6 +48,7 @@
 |---|---|---|
 | 18 | En haut : photo (ou initiales), **Prénom Nom**, « C'est toi », engrenage. Aucune donnée inventée (« Famille Martin »…) | [ ] |
 | 19 | Sous l'en-tête : « Mes Miffs » avec **une carte par Miff** ; la toucher ouvre l'écran de la Miff (code, membres, lieux) | [ ] |
+| 19b | **Toucher une carte « Mes Miffs » depuis le Profil ouvre l'écran de la Miff, et le retour (flèche ou balayage) ramène au Profil avec la barre** (cas du plantage du build 16) | [ ] |
 | 20 | Toucher la photo ou le nom ouvre « Mes informations » (photo, prénom, nom, pays, numéro, mention « seuls les membres de tes Miffs verront ce numéro ») | [ ] |
 | 21 | Mode avion avant d'ouvrir l'app : l'en-tête dit calmement qu'il ne peut pas s'afficher, avec « Réessayer » | [ ] |
 | 22 | Le Feed ne montre plus la carte « Mes Miffs » ni « Se déconnecter » (ils sont dans Profil et Réglages) | [ ] |
@@ -57,6 +58,7 @@
 | # | Vérifier | OK |
 |---|---|---|
 | 23 | L'engrenage ouvre la liste : **Mes informations, Mon compte, Langue, Confidentialité** ; pas de Notifications ni d'offre Premium ; la version est en bas | [ ] |
+| 23b | Chaque écran des Réglages (Mes informations, Mon compte, Supprimer mon compte, Langue, Confidentialité, Si les détections tardent) s'ouvre et se referme avec le retour, sans fermeture de l'app ; Conditions et Politique ouvrent le navigateur | [ ] |
 | 24 | **Langue** : la ligne dit « Langue actuelle : Français » ; la toucher ouvre les réglages de l'iPhone pour Miff. Changer la langue de l'app : au retour, l'app est dans l'autre langue | [ ] |
 | 25 | **Mon compte** : e-mail affiché (non modifiable). Compte e-mail : « Changer mon mot de passe » envoie un e-mail (le bouton se met en pause environ 1 minute). Compte Google ou Apple : pas de bouton mot de passe, « Connecté avec Google/Apple » | [ ] |
 | 26 | « Se déconnecter » demande **« Te déconnecter ? »** avec deux boutons de même poids ; Annuler ne fait rien ; confirmer ramène à l'écran de connexion | [ ] |
