@@ -353,10 +353,7 @@ private struct PagerDots: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             ForEach(0..<count, id: .self) { position in
-                let selected = position == current
-                Capsule()
-                    .fill(selected ? level.onTint : colorStatusNeutral.color)
-                    .frame(width: selected ? 22 : 8, height: 8)
+                dot(selected: position == current)
             }
         }
         .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
@@ -375,5 +372,13 @@ private struct PagerDots: View {
         }
         .accessibilityAction(named: Text("feed_bubble_previous_a11y")) { select(current - 1) }
         .accessibilityAction(named: Text("feed_bubble_next_a11y")) { select(current + 1) }
+    }
+
+    private func dot(selected: Bool) -> some View {
+        let tint: Color = selected ? level.onTint : colorStatusNeutral.color
+        let width: CGFloat = selected ? 22 : 8
+        return Capsule()
+            .fill(tint)
+            .frame(width: width, height: 8)
     }
 }
