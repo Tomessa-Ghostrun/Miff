@@ -62,8 +62,14 @@ class FeedInput(
 }
 
 object FeedBuilder {
+    /**
+     * BATTERY_MAX_AGE (decision of the PM, 2026-11-07, D44): past 6 h the battery is no longer shown ("where we have no information"). The age is
+     * counted from `updatedAt` of the status (the SERVER time of the last write, which always carries a fresh battery), NEVER from `lastUpdateAt`
+     * (the last photo): a write that only refreshes the battery moves `updatedAt` and nothing else.
+     */
+    const val BATTERY_MAX_AGE_MILLIS = 6 * HOUR_MILLIS
+
     private val LIMITED_ACCESS = setOf(MemberLocationAccess.DENIED, MemberLocationAccess.FOREGROUND)
-    private const val BATTERY_HIDDEN_AFTER_MILLIS = DAY_MILLIS
 
     fun build(
         input: FeedInput,
@@ -273,10 +279,10 @@ object FeedBuilder {
         now: Long,
     ): Battery? {
         val pct = status.batteryPct ?: return null
-        // A time the server has not filled in yet (a write still pending) is "now". Past a day the value is hidden; the card never says WHEN
-        // the level was measured (decision of the PM, 2026-11-07): the pill is the percentage alone.
+        // A time the server has not filled in yet (a write still pending) is "now". Past BATTERY_MAX_AGE_MILLIS the value is hidden; the card
+        // never says WHEN the level was measured (decision of the PM, 2026-11-07): the pill is the percentage alone.
         val written = status.updatedAtMillis ?: return Battery(pct)
-        return if (now - written > BATTERY_HIDDEN_AFTER_MILLIS) null else Battery(pct)
+        return if (now - written > BATTERY_MAX_AGE_MILLIS) null else Battery(pct)
     }
 
     @Suppress("LongParameterList")

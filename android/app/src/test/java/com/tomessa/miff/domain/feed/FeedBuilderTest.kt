@@ -303,18 +303,34 @@ class FeedBuilderTest {
     // --- Battery (C4) ----------------------------------------------------------------------------------------------
 
     @Test
-    fun battery_isThePercentageAlone_neverDated_hiddenAfterADay_orWhenAbsent() {
+    fun battery_isThePercentageAlone_neverDated_hiddenAfterSixHours_orWhenAbsent() {
         // Decision of the PM (2026-11-07): the card never says WHEN the level was measured, whatever the age of the value.
         val recent = card(build(trio, mapOf("t" to status(updatedAgo = 59 * minute))), "t")
         assertEquals(Battery(85), recent.battery)
         val anHourAndAHalf = card(build(trio, mapOf("t" to status(updatedAgo = 90 * minute))), "t")
         assertEquals(Battery(85), anHourAndAHalf.battery)
-        val almostADay = card(build(trio, mapOf("t" to status(updatedAgo = 23 * hour))), "t")
-        assertEquals(Battery(85), almostADay.battery)
+        // Decision of the PM (2026-11-07): hidden past 6 h (BATTERY_MAX_AGE), the limit itself still shown.
+        assertEquals(6 * hour, FeedBuilder.BATTERY_MAX_AGE_MILLIS)
+        val almostSixHours = card(build(trio, mapOf("t" to status(updatedAgo = 5 * hour + 59 * minute))), "t")
+        assertEquals(Battery(85), almostSixHours.battery)
+        val sixHours = card(build(trio, mapOf("t" to status(updatedAgo = 6 * hour))), "t")
+        assertEquals(Battery(85), sixHours.battery)
+        val justOver = card(build(trio, mapOf("t" to status(updatedAgo = 6 * hour + minute))), "t")
+        assertNull(justOver.battery)
         val old = card(build(trio, mapOf("t" to status(updatedAgo = 25 * hour))), "t")
         assertNull(old.battery)
         val absent = card(build(trio, mapOf("t" to status(battery = null))), "t")
         assertNull(absent.battery)
+    }
+
+    @Test
+    fun battery_ageIsCountedFromUpdatedAt_notFromTheLastUpdate() {
+        // A write that only refreshes the battery moves updatedAt and nothing else: the old photo (lastUpdateAt, 10 h ago) must not hide it...
+        val refreshed = status(PresenceValue.IN_TRUSTED, presenceAgo = 10 * hour, lastUpdateAgo = 10 * hour, updatedAgo = minute)
+        assertEquals(Battery(85), card(build(trio, mapOf("t" to refreshed)), "t").battery)
+        // ...and a recent photo does not keep an old battery on screen.
+        val stale = status(PresenceValue.IN_TRUSTED, presenceAgo = minute, lastUpdateAgo = minute, updatedAgo = 7 * hour)
+        assertNull(card(build(trio, mapOf("t" to stale)), "t").battery)
     }
 
     // --- "Localisation limitée" (C5) ---------------------------------------------------------------------------------

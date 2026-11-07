@@ -70,7 +70,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] Si un membre n'a pas de numéro (ancien compte) : seul le bouton position est visible.
 - [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise ; il a quand même un bouton position (voir la partie D : « n'a pas encore de position connue »).
 - [ ] Un membre qui a **arrêté de partager** : « Partage arrêté », jamais rouge.
-- [ ] Batterie (D44) : le pourcentage s'affiche **seul** (« 12 % »), **jamais d'heure de mesure**, même après 1 h sans mise à jour du statut ; après 24 h elle disparaît. **Aucune alerte de batterie faible.**
+- [ ] Batterie (D44) : le pourcentage s'affiche **seul** (« 12 % »), **jamais d'heure de mesure**, même après 1 h sans mise à jour du statut ; **au-delà de 6 h sans mise à jour elle disparaît** (D44). **Aucune alerte de batterie faible.**
 - [ ] « Ajouter un proche » ouvre la feuille de partage (nom, code, lien). (À 15 membres le bouton devient « Cette Miff est bien remplie ! » : couvert par un test, pas à refaire à la main.)
 
 ## Partie C — Couleur de la Miff et bulle (10 min, avec l'astuce de la console)
