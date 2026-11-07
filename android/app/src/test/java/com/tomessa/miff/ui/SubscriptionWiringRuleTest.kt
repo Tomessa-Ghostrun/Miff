@@ -60,9 +60,10 @@ class SubscriptionWiringRuleTest {
         val block = routeBlock(text, "SettingsRoute")
         assertTrue("the callback is in the route of the full Settings", "onOpenSubscription" in block)
         assertTrue("the callback only exists once the read answered", "subscription?.let" in block)
+        // Whatever the line breaks of the formatter: the ViewModel of THIS screen is built from the repository.
         assertTrue(
             "the read is the ViewModel of that screen",
-            "SubscriptionViewModel(container.subscriptionRepository)" in block,
+            Regex("""SubscriptionViewModel\(\s*container\.subscriptionRepository\s*,?\s*\)""").containsMatchIn(block),
         )
     }
 
