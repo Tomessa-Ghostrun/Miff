@@ -150,6 +150,10 @@ final class AppEnvironment {
     /// Créé à la première demande. Lit seulement l'ÉTAT des autorisations (le gestionnaire qui lit la position est celui du suivi,
     /// `LocationTracking`, créé au démarrage).
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
+    /// ONB-7 (coquille de l'app) : le profil de la personne connectée (onglet Profil, Mes informations) et son adresse e-mail (Mon
+    /// compte), lus à la demande et gardés seulement par l'écran qui les montre.
+    lazy var profileReader: ProfileReading = FirestoreProfileReader()
+    lazy var accountInfo: AccountInfoSource = FirebaseAccountInfo()
 
     private let userProfiles: UserProfileRepository = FirestoreUserProfileRepository()
     /// Ce que la personne a saisi dans les étapes du profil : sur l'appareil seulement, effacé une fois le serveur ayant

@@ -321,6 +321,6 @@ Apple propose maintenant les niveaux 4+, 9+, 13+, 16+ et 18+. Le questionnaire c
 - [ ] URL support, politique, conditions et suppression de compte **en ligne** et accessibles sans connexion.
 - [ ] Captures d'écran produites selon `screenshots-brief.md` (formats vérifiés dans la console au moment du dépôt).
 - [ ] Compte de démonstration à deux comptes et Miff d'exemple prêts pour l'équipe de revue d'Apple (une app de réassurance sans cercle est vide) ; la revue doit pouvoir voir le texte de justification de la localisation en arrière-plan.
-- [ ] Aucune mention de Miff+, d'essai, de prix, de « Économisez 30 % », de notifications.
+- [ ] Aucune mention de Miff+, d'essai, de prix, de « Économisez 30 % » ni de « presque 30 % d'économie » (décidé le 2026-11-07), de notifications.
 - [ ] Classification d'âge décidée (section 6) et réponses identiques à celles de la fiche Google Play.
 - [ ] Nom « Miff » : **une app nommée « MIFF » existe déjà dans l'App Store** (Moscow International Film Festival, développeur MEDIAFEST, catégorie Divertissement ; fiche canadienne lue le 2026-11-07, disponibilité en France non constatée). Le nom complet « Miff - Cercle de confiance » est différent et d'un autre domaine, mais la vérification d'antériorité de marque (risque J18, INPI) reste à faire par le PM. Voir `decisions-stores-avant-soumission.md`, point 9.

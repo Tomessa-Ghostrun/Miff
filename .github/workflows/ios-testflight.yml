@@ -15,14 +15,15 @@ on:
     inputs:
       archive_mode:
         description: >-
-          unsigned = archive non signee, signature faite a l'export (defaut : evite de creer
-          un certificat de developpement orphelin a chaque run ; support NON CONFIRME, echec
-          rapide possible a l'export). signed = archive signee automatiquement (plan de repli).
+          signed = archive signee automatiquement (DEFAUT : seul mode des succès constatés : miff-4,
+          loc-3, loc-4a). unsigned = archive non signee, signature faite a l'export :
+          ECHEC constate a l'export (frameworks binaires Firebase et gRPC "not properly signed",
+          4 runs le 2026-11-06), ne plus l'utiliser sans nouvelle verification.
         type: choice
         options:
-          - unsigned
           - signed
-        default: unsigned
+          - unsigned
+        default: signed
       location_blocking:
         description: >-
           LOC-4a, interrupteur de compilation de l'ecran « Toujours autoriser » (decision du PM du 2026-11-01). yes = bloquant

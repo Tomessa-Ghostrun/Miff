@@ -473,10 +473,10 @@ Un seul document par membre et par Miff, **écrasé**. N'existe que si `members/
 | `lastUpdateAt` | timestamp | Dernier signal "tout va bien" : update manuelle OU entrée en zone de confiance. Mêmes bornes et même exception de conservation (R-LIEU-1) que `presenceAt`. |
 | `updateText` | string ≤ 140 \| null | Légende de la dernière update. |
 | `hasPhoto` | bool | `true` si `photos/{uid}` existe. |
-| `batteryPct` | int 0–100 \| null | Écrit avec les autres champs (pas d'écriture périodique dédiée, pour limiter le coût). |
+| `batteryPct` | int 0–100 \| null | Écrit avec les autres champs, et **rafraîchi** seul par une mise à jour PARTIELLE `{ batteryPct, updatedAt (heure du serveur), deviceId }` : à l'ouverture et à la sortie de l'app, puis selon les seuils 15 min / 5 points / 3 h, plafond de 40 écritures par jour et par appareil (contrat des clients, pas une règle ; coût borné). Masqué au-delà de 6 h par le Feed, l'âge se calcule depuis `updatedAt`. Les règles jugent le document résultant : `presenceAt` et `lastUpdateAt` restent « conservés » (R-LIEU-1), `deviceId` doit être celui de la session, aucune création possible ; tests `27-batterie-partielle` et `28-batterie-partielle-temps2`, plan §23. Limite connue, inoffensive : un `escalationDueAt` ancien non nul bloque ce rafraîchissement (tous les clients l'écrivent `null`). |
 | `locationAccess` | `"background"` \| `"foreground"` \| `"denied"` \| `"unknown"` | Permission système constatée (alimente l'état "localisation limitée"). |
 | `escalationDueAt` | timestamp \| null | Prochaine échéance d'escalade. **Inutile en Spark** ; prévu pour la fonction planifiée Blaze (§13). |
-| `updatedAt` | timestamp | Heure serveur de l'écriture ("mis à jour il y a X min"). |
+| `updatedAt` | timestamp | Heure serveur de la **dernière écriture du statut, y compris un rafraîchissement de la batterie** (ce n'est donc PAS l'heure du dernier signal « tout va bien », qui est `lastUpdateAt`) ; sert de base à l'âge de `batteryPct`. |
 | `deviceId` | string 16–64 `[A-Za-z0-9_-]`, **facultatif** (SESS-1, temps 1) puis **obligatoire** (temps 2) | Identifiant de la session de l'appareil qui écrit, **égal à `users/{uid}/session/active.deviceId`** (une lecture de règles de plus quand la clé est présente). Aléatoire, sans lien avec l'appareil. **Lisible des membres autorisés** avec le reste du statut (limite connue, à déclarer, voir « Un compte, un seul appareil »). Les autres clés restent toutes obligatoires. |
 
 Exemple (membre parti de la maison à 16h02, sans update depuis) :
