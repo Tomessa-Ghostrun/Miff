@@ -20,13 +20,36 @@ private struct TabLayer<Content: View>: View {
     }
 }
 
+/// Ce que la coquille a besoin de l'Update (UPDATE-3) : le view model de l'écran, et MON statut dans la Miff affichée (la couleur du bouton
+/// central, la bulle d'incitation, le nettoyage de la photo expirée).
+struct UpdateShell {
+    let model: UpdateViewModel
+    let status: MyStatusStore
+    /// « Revoir et accepter » : l'écran de renouvellement de l'accord (la porte des autorisations l'écoute).
+    var onReviewAgreement: () -> Void = {}
+}
+
+extension Notification.Name {
+    /// La personne veut revoir le texte de consentement depuis l'Update : la porte des autorisations montre l'écran de renouvellement.
+    static let miffReviewAgreementRequested = Notification.Name("com.tomessa.miff.review-agreement-requested")
+}
+
+/// Ce qui relance le nettoyage de la photo expirée : l'annuaire lu, ou un changement de ma photo.
+private struct CleanupKey: Equatable {
+    let ready: Bool
+    let facts: MyStatusFacts?
+}
+
 /// La COQUILLE de l'app une fois l'onboarding fini (ticket Profil / Réglages, ONB-7) : les trois onglets et leur barre en verre.
 ///
 /// Points d'accroche des chantiers suivants :
-/// - le Feed iOS (FEED-5 à 8) remplace le contenu de l'onglet Feed (`feed`) ; la bulle d'incitation (visible sur tous les onglets
-///   sauf Update, `design/screens/update.md` §4) sera posée dans la zone du bas, avec la barre, par la même `safeAreaInset` ;
-/// - l'Update iOS (UPDATE-3) remplace `UpdateSoonView` et nourrit `central` (la couleur de la pastille) ;
+/// - le Feed iOS (FEED-5 à 8) remplace le contenu de l'onglet Feed (`feed`) ; quand il aura son écouteur de MON statut, il le donnera à
+///   `UpdateShell.status` (`MyStatusStore.update`) et `follow` n'écoutera plus (D19 : UN seul écouteur) ;
 /// - la suppression de compte (AUTH-5c/d) remplace `DeleteAccountSoonView`, atteinte par Mon compte.
+///
+/// L'Update (UPDATE-3) : le bouton central est actif, sa pastille prend la couleur de MON statut, et la bulle d'incitation (visible sur tous
+/// les onglets sauf l'Update) est posée dans la zone du bas, AU-DESSUS de la barre, par la même `safeAreaInset` : la marge basse de chaque
+/// onglet est donc exactement la hauteur de la barre et de la bulle.
 ///
 /// La barre n'est visible que sur les écrans racines : elle disparaît dès qu'un écran est empilé (les Réglages, l'écran d'une Miff, la
 /// création, les lieux : tous poussés dans la pile UNIQUE de l'hôte, qui les dessine par-dessus cette coquille), avec le clavier, et
@@ -38,21 +61,33 @@ private struct TabLayer<Content: View>: View {
 struct MainShellView<Feed: View>: View {
     private let miffs: DirectoryState
     @ObservedObject private var profile: ProfileTabViewModel
+    @ObservedObject private var updateModel: UpdateViewModel
+    @ObservedObject private var myStatus: MyStatusStore
+    private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: Feed
     @State private var selected: MainTab = .feed
     @State private var keyboardVisible = false
+    @State private var nowMillis = Int(Date().timeIntervalSince1970 * 1000)
+    @State private var minuteTick = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    @State private var confirmation: String?
+    @State private var lastPrompt: PromptLevel = .hidden
+    @Environment(\.scenePhase) private var scenePhase
 
     init(
         miffs: DirectoryState,
         profile: ProfileTabViewModel,
+        update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
         @ViewBuilder feed: () -> Feed
     ) {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
+        _updateModel = ObservedObject(wrappedValue: update.model)
+        _myStatus = ObservedObject(wrappedValue: update.status)
+        self.update = update
         self.onOpenMiff = onOpenMiff
         self.onOpenSettings = onOpenSettings
         self.feed = feed()
@@ -70,6 +105,56 @@ struct MainShellView<Feed: View>: View {
     /// Les écrans empilés recouvrent cette coquille (pile de l'hôte) : `pathIsEmpty` vaut toujours vrai ici.
     private var barVisible: Bool {
         MainShellRules.barVisible(keyboardVisible: keyboardVisible, pathIsEmpty: true, directory: miffs)
+    }
+
+    // MARK: - L'Update : la couleur, la bulle
+
+    private var activeMiffId: String? {
+        if case .ready(let ready) = miffs {
+            return ready.activeId
+        }
+        return nil
+    }
+
+    private var miffCount: Int {
+        if case .ready(let ready) = miffs {
+            return ready.miffs.count
+        }
+        return 0
+    }
+
+    /// Un statut existe seulement quand je partage (l'arrêt du partage le supprime dans le même lot) : sans statut, neutre.
+    private var central: CentralButtonState {
+        CentralButtonState(level: UpdatePrompt.level(myStatus.facts, sharing: true, nowMillis: nowMillis))
+    }
+
+    private var prompt: PromptLevel {
+        UpdatePrompt.prompt(myStatus.facts, sharing: true, nowMillis: nowMillis)
+    }
+
+    private var bubbleVisible: Bool {
+        MainShellRules.bubbleVisible(prompt: prompt, selected: shownTab, barVisible: barVisible)
+    }
+
+    private var cleanupKey: CleanupKey {
+        CleanupKey(ready: activeMiffId != nil, facts: myStatus.facts)
+    }
+
+    private var updateActions: UpdateActions {
+        UpdateActions(
+            onClose: { selected = .feed },
+            onResumeSharing: {
+                selected = .feed
+                if let id = activeMiffId {
+                    onOpenMiff(id)
+                }
+            },
+            onReviewAgreement: {
+                selected = .feed
+                update.onReviewAgreement()
+            },
+            onOpenSettings: { updateModel.openSettings() }
+        )
     }
 
     var body: some View {
@@ -91,12 +176,12 @@ struct MainShellView<Feed: View>: View {
                     )
                 }
                 if shownTab == .update {
-                    UpdateSoonView()
+                    UpdateTabView(model: updateModel, miffCount: miffCount, actions: updateActions)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if barVisible {
-                    MainTabBar(config: .current, selected: shownTab, central: .neutral, onSelect: { selected = $0 })
+                    bottomLayer(screenHeight: Self.fullHeight(of: proxy))
                         .padding(.bottom, TabBarLayout.bottomPadding(safeAreaBottom: proxy.safeAreaInsets.bottom))
                 }
             }
@@ -113,5 +198,98 @@ struct MainShellView<Feed: View>: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardVisible = false
         }
+        .onAppear {
+            updateModel.onPublished = { _ in
+                publishedArrived()
+            }
+        }
+        // UN seul écouteur de mon statut, dans la Miff affichée (D19) ; relancé quand la Miff affichée change.
+        .task(id: activeMiffId) {
+            await myStatus.follow(miffId: activeMiffId)
+        }
+        .task(id: cleanupKey) {
+            cleanUp()
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                refreshClock()
+                cleanUp()
+            }
+        }
+        .onChange(of: prompt) { current in
+            promptChanged(to: current)
+        }
+        .onReceive(minuteTick) { _ in
+            refreshClock()
+        }
+        .task(id: confirmation) {
+            if confirmation != nil {
+                try? await Task.sleep(nanoseconds: UInt64(UpdateLayout.confirmationSeconds * 1_000_000_000))
+                confirmation = nil
+            }
+        }
+    }
+
+    /// Le message calme, la bulle d'incitation et la barre, dans UNE colonne : ils ne peuvent jamais se chevaucher (le message va AU-DESSUS
+    /// de la bulle, dont la queue s'arrête 4 pt au-dessus de la barre).
+    private func bottomLayer(screenHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            if let confirmation {
+                UpdateConfirmation(text: confirmation)
+                    .padding(.bottom, bubbleVisible ? Spacing.sm : Spacing.md)
+            }
+            if bubbleVisible {
+                IncentiveBubble(level: prompt, maxBodyHeight: screenHeight * UpdateLayout.bubbleMaxScreenShare)
+                    .transition(.opacity)
+            }
+            MainTabBar(
+                config: .current,
+                selected: shownTab,
+                central: central,
+                variant: updateModel.stage.glassVariant(updateTabSelected: shownTab == .update),
+                onSelect: { selected = $0 }
+            )
+        }
+    }
+
+    /// La hauteur de l'écran entier (zones sûres comprises) : la bulle prend 40 % de celle-ci au plus.
+    private static func fullHeight(of proxy: GeometryProxy) -> CGFloat {
+        proxy.size.height + proxy.safeAreaInsets.top + proxy.safeAreaInsets.bottom
+    }
+
+    // MARK: - Comportements de l'Update
+
+    /// Une photo est publiée : retour au Feed, où ma carte montrera la photo ; un message calme sans son ni vibration, retiré après 3 secondes.
+    private func publishedArrived() {
+        // Retour au Feed seulement si la personne est encore sur l'Update ; sinon elle reste où elle est, avec le message calme.
+        if shownTab == .update {
+            selected = .feed
+        }
+        let text = L10n.string("update_published")
+        confirmation = text
+        UpdateAnnouncer.post(text)
+    }
+
+    /// La bulle est annoncée au lecteur d'écran une fois à son apparition et au passage de l'orange au rouge (D34), sans son ni vibration.
+    private func promptChanged(to current: PromptLevel) {
+        let previous = lastPrompt
+        lastPrompt = current
+        if bubbleVisible && UpdatePrompt.shouldAnnounce(previous: previous, current: current) {
+            UpdateAnnouncer.post(L10n.string(current == .red ? "update_bubble_red" : "update_bubble_orange"))
+        }
+    }
+
+    /// Chaque minute, sans lecture du serveur : le niveau est recalculé avec l'horloge (B3).
+    private func refreshClock() {
+        nowMillis = Int(Date().timeIntervalSince1970 * 1000)
+    }
+
+    /// Au lancement et au retour au premier plan : MA photo expirée est retirée de la base (aucune lecture tant que la date locale existe).
+    private func cleanUp() {
+        guard cleanupKey.ready else {
+            return
+        }
+        let mine = myStatus.facts.map { MyPhotoFacts(hasPhoto: $0.hasPhoto, lastUpdateAtMillis: $0.lastUpdateAtMillis) }
+        updateModel.cleanUpExpiredPhoto(mine)
     }
 }

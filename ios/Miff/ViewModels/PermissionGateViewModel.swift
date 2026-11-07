@@ -224,6 +224,20 @@ final class PermissionGateViewModel: ObservableObject {
         publish()
     }
 
+    /// « Revoir et accepter » depuis l'Update : l'écran de renouvellement revient, même si « Pas maintenant » avait été choisi. Si rien n'est
+    /// connu à renouveler (la vérification n'avait pas répondu), elle est refaite.
+    func onAgreementReviewAsked() async {
+        if renewalState != .due {
+            await checkRenewal()
+        }
+        guard renewalState == .due, !renewalBusy else {
+            return
+        }
+        renewalDeferred = false
+        renewalMessage = nil
+        publish()
+    }
+
     func onRenewalAccepted() async {
         guard let uid = currentUid(), !renewalBusy, renewalState == .due else {
             return

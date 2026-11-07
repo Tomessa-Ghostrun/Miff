@@ -47,7 +47,9 @@ final class SessionWriteSitesTests: XCTestCase {
             XCTAssertEqual(sends, guards, "\(path) : \(sends) envois de lot, \(guards) gardes")
             applyCalls += sends
         }
-        XCTAssertEqual(applyCalls, 4, "quatre sites d'écriture réels")
+        // UPDATE-3 : la transaction de l'Update (`FirestorePhotoStore`, photo + statut dans le même lot) est le cinquième site ; elle appelle
+        // le même garde.
+        XCTAssertEqual(applyCalls, 5, "cinq sites d'écriture réels")
     }
 
     func testOnlyTheKnownFilesWriteDocumentsDirectly() throws {
@@ -80,8 +82,14 @@ final class SessionWriteSitesTests: XCTestCase {
         }
         // Créer, rejoindre et reprendre le partage : trois statuts initiaux, tous estampillés par `initialStatus`. LOC-4b : la mise à
         // jour automatique du statut, la mise à jour de l'accès et la dernière position (`TrackingWrites`), toutes estampillées par
-        // `SessionWriteGuard.stamped`. Toute autre écriture de statut ou de position doit s'ajouter ICI après relecture.
-        XCTAssertEqual(found, ["Models/Miff/MiffWrites.swift": 3, "Models/Tracking/TrackingWrites.swift": 3])
+        // `SessionWriteGuard.stamped`. UPDATE-3 : le statut de la photo (`UpdateWrites.photoStatus`, estampillé lui aussi). Toute autre
+        // écriture de statut ou de position doit s'ajouter ICI après relecture.
+        let expected = [
+            "Models/Miff/MiffWrites.swift": 3,
+            "Models/Tracking/TrackingWrites.swift": 3,
+            "Models/Update/UpdateWrites.swift": 1
+        ]
+        XCTAssertEqual(found, expected)
     }
 
     func testOnlyTheKnownFilesBuildStatusAndPositionFields() throws {
@@ -91,7 +99,10 @@ final class SessionWriteSitesTests: XCTestCase {
         }
         XCTAssertEqual(
             Set(builders.keys),
-            ["Models/Miff/MiffWrites.swift", "Models/Tracking/TrackingWrites.swift"],
+            [
+                "Models/Miff/MiffWrites.swift", "Models/Tracking/TrackingWrites.swift",
+                "Models/Update/UpdateWrites.swift"
+            ],
             "les champs d'un statut ou d'une position : stamped"
         )
     }

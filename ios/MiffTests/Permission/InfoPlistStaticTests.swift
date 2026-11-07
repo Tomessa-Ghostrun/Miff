@@ -51,6 +51,18 @@ final class InfoPlistStaticTests: XCTestCase {
         XCTAssertEqual(locationKeys.count, 2, "chaque clé une seule fois")
     }
 
+    func testProjectDeclaresExactlyTheCameraUsageKeyAndNoPhotoLibraryKey() throws {
+        // UPDATE-3 : la caméra du viseur, rien d'autre. La photo est prise EN MÉMOIRE et n'est jamais écrite dans la photothèque : aucune clé
+        // NSPhotoLibrary*, aucune clé de micro ni de reconnaissance.
+        let lines = try yamlLines().map { $0.trimmingCharacters(in: .whitespaces) }
+        let cameraKeys = lines.filter { $0.hasPrefix("NSCamera") }.map { String($0.prefix { $0 != ":" }) }
+
+        XCTAssertEqual(cameraKeys, ["NSCameraUsageDescription"])
+        for forbidden in ["NSPhotoLibrary", "NSMicrophone", "NSContacts", "NSFaceID", "NSSpeechRecognition"] {
+            XCTAssertFalse(lines.contains { $0.hasPrefix(forbidden) }, forbidden)
+        }
+    }
+
     func testNoBackgroundModeNoOldAlwaysKeyNoATSExceptionIsDeclared() throws {
         let lines = try yamlLines()
         let joined = lines.joined(separator: "\n")
@@ -79,7 +91,10 @@ final class InfoPlistStaticTests: XCTestCase {
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
         let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
 
-        for key in ["NSLocationWhenInUseUsageDescription", "NSLocationAlwaysAndWhenInUseUsageDescription"] {
+        for key in [
+            "NSLocationWhenInUseUsageDescription", "NSLocationAlwaysAndWhenInUseUsageDescription",
+            "NSCameraUsageDescription"
+        ] {
             let entry = try XCTUnwrap(strings[key])
             let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
             let english = try XCTUnwrap(localizations["en"] as? [String: Any])
@@ -122,6 +137,9 @@ final class InfoPlistStaticTests: XCTestCase {
 
         let expectedKeys = "NSLocationAlwaysAndWhenInUseUsageDescription NSLocationWhenInUseUsageDescription"
         XCTAssertTrue(binaries.contains(expectedKeys))
+        // UPDATE-3 : la caméra (une seule clé NSCamera*) et aucune clé de photothèque sont contrôlées sur le binaire.
+        XCTAssertTrue(binaries.contains("NSCameraUsageDescription"))
+        XCTAssertTrue(binaries.contains("NSPhotoLibrary"))
         XCTAssertTrue(binaries.contains("UIBackgroundModes"))
         XCTAssertTrue(binaries.contains("MiffLocationBlocking"))
         // Un build de PUBLICATION qui relâche le blocage est refusé, sauf demande expresse.
