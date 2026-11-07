@@ -33,6 +33,7 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | `miff_` | Créer, rejoindre, gérer une Miff, membres, code secret | Android et iOS |
 | `place_` | Lieux de confiance | Android et iOS |
 | `permission_` | Écrans d'autorisation du système (notifications, localisation « Toujours ») et leur divulgation (LOC-2a) | Android et iOS |
+| `update_` | L'Update (UPDATE-1, UPDATE-2, FEED-4) : explication et refus de la caméra, viseur, aperçu, publication et ses messages calmes, bulle d'incitation (`update_bubble_*`, textes des maquettes du PM), photo dans le Feed (`update_card_photo_*`, `update_photo_*`). Les noms parlés du bouton central sont sous `tabbar_update_*_a11y` | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |
 | `home_` | Écran d'accueil | Android et iOS |
 | `diag_` | Écran de diagnostic interne (builds debug / TestFlight, jamais en release) | Android et iOS |
