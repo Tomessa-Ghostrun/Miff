@@ -6,6 +6,12 @@ import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorBgGradientEnd
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorStatusDanger
+import com.tomessa.miff.ui.theme.colorStatusDangerText
+import com.tomessa.miff.ui.theme.colorStatusDangerTint
+import com.tomessa.miff.ui.theme.colorStatusSafeText
+import com.tomessa.miff.ui.theme.colorStatusSafeTint
+import com.tomessa.miff.ui.theme.colorStatusWarningText
+import com.tomessa.miff.ui.theme.colorStatusWarningTint
 import com.tomessa.miff.ui.theme.colorTextError
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,5 +60,27 @@ class ColorContrastTest {
     fun statusDangerRedIsUnchanged() {
         // colorStatusDanger is a status/fill color (rings, badges): it is deliberately NOT darkened.
         assertEquals(0xFFFF5650.toInt(), colorStatusDanger.toArgb())
+    }
+
+    /** The tint is drawn over a white card: the colour the text sits on is the tint blended with white. */
+    private fun overWhite(tint: Color): Color {
+        val a = tint.alpha
+        return Color(
+            red = tint.red * a + (1 - a),
+            green = tint.green * a + (1 - a),
+            blue = tint.blue * a + (1 - a),
+        )
+    }
+
+    @Test
+    fun feedStateLabelsAreReadableOnTheirTint() {
+        listOf(
+            "safe" to (colorStatusSafeText to colorStatusSafeTint),
+            "warning" to (colorStatusWarningText to colorStatusWarningTint),
+            "danger" to (colorStatusDangerText to colorStatusDangerTint),
+        ).forEach { (name, pair) ->
+            val ratio = contrast(pair.first, overWhite(pair.second))
+            assertTrue("status/$name-text on its tint has contrast $ratio, below 4.5", ratio >= 4.5)
+        }
     }
 }

@@ -173,6 +173,7 @@ class FirestoreMiffObserver(
                         avatarJpeg = doc.getBlob("avatar")?.toBytes(),
                         role = role,
                         sharingEnabled = doc.getBoolean("sharing.enabled") == true,
+                        phone = MiffMember.phoneFromServer(doc.getString("phone")),
                     ),
                     joinedAt,
                 )

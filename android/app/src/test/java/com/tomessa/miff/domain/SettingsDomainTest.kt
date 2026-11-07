@@ -16,18 +16,12 @@ class SettingsDomainTest {
     // --- Tab bar (decision Q1, criteria A1 and TB5) --------------------------------------------------------------------
 
     @Test
-    fun anInternalBuildShowsTheCentralButton_butItCannotBeOpened() {
-        val bar = TabBarConfig.forBuild(isInternalBuild = true)
-        assertEquals(listOf(MainTab.FEED, MainTab.UPDATE, MainTab.PROFILE), bar.tabs)
-        assertTrue(bar.isEnabled(MainTab.FEED))
-        assertTrue(bar.isEnabled(MainTab.PROFILE))
-        assertFalse("nothing to open until the UPDATE ticket exists", bar.isEnabled(MainTab.UPDATE))
-    }
-
-    @Test
-    fun aBuildForOutsideTestersHasTwoTabsAndNoCentralButton() {
-        val bar = TabBarConfig.forBuild(isInternalBuild = false)
-        assertEquals(listOf(MainTab.FEED, MainTab.PROFILE), bar.tabs)
+    fun theCentralButtonIsOpenInEveryBuild_sinceTheUpdateScreenExists() {
+        listOf(true, false).forEach { internal ->
+            val bar = TabBarConfig.forBuild(isInternalBuild = internal)
+            assertEquals(listOf(MainTab.FEED, MainTab.UPDATE, MainTab.PROFILE), bar.tabs)
+            bar.tabs.forEach { assertTrue("$it can be opened (build internal = $internal)", bar.isEnabled(it)) }
+        }
     }
 
     // --- Languages (decision Q4, criterion A9) -------------------------------------------------------------------------

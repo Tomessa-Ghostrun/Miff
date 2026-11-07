@@ -1,11 +1,11 @@
 # Feed : bandeaux d'état, chargement, états vides (maquettes 10, 11)
 
-**Pour** : FEED-1 (états vides, chargement), FEED-2 (états de partage, hors connexion), puis iOS. **Date** : 2026-11-05. **Sources** : `docs/tickets/feed.md` §5.9 (V4 à V8), §7, §8, E1 à E4, C6 ; `design/screens/lieux/reconsentement-position-v3.md` (encart « En attente de ton accord », maquette 23) ; textes existants `feed_*`.
+**Pour** : FEED-1 (états vides, chargement), FEED-2 (états de partage, hors connexion), puis iOS. **Date** : 2026-11-05 ; **alignée le 2026-11-07** (en-tête qui se masque, D41 ; tirer pour actualiser). **Sources** : `docs/tickets/feed.md` §5.9 (V4 à V8), §7, §8, E1 à E4, C6 ; `design/screens/lieux/reconsentement-position-v3.md` (encart « En attente de ton accord », maquette 23) ; textes existants `feed_*`.
 
 Règle commune : **aucun état ne dit « tout va bien » sans connaître ni dater l'information**, aucun n'est une erreur technique, aucun n'est rouge.
 
 ## 10 : bandeaux d'état
-Les bandeaux se placent **sous l'en-tête fixe**, au-dessus de la bulle, dans le fil (ils défilent). Une seule ligne ou un petit bloc ; jamais de bouton de fermeture quand l'état est permanent.
+Les bandeaux se placent **sous l'en-tête**, au-dessus de la bulle, dans le fil (ils défilent avec lui). L'en-tête, lui, **se masque au défilement vers le bas et réapparaît en remontant (D41)**, sauf dans les états ci-dessous où il reste visible : **chargement, erreur, hors connexion, liste trop courte pour défiler, lecteur d'écran actif, sélecteur de Miff ouvert** (`entete-et-selecteur.md`). Une seule ligne ou un petit bloc ; jamais de bouton de fermeture quand l'état est permanent.
 
 | | État | Bandeau | Bulle et cartes |
 |---|---|---|---|
@@ -37,6 +37,16 @@ Les bandeaux se placent **sous l'en-tête fixe**, au-dessus de la bulle, dans le
 | D | **Miff pleine** (15 membres) | Le bouton « Ajouter un proche » est remplacé par une note verte non interactive, pictogramme de groupe : « Cette Miff est bien remplie ! » / "This Miff is nicely full!". Elle n'a pas l'air d'un bouton grisé |
 
 **Accessibilité** : D est lue comme du texte ; A est une région « occupée » ; B et C : titre en premier. Taille de texte maximale : les boutons de C passent à deux lignes sans tronquer.
+
+## Tirer pour actualiser (ajouté le 2026-11-06, décision du PM)
+- **Geste** : tirer la liste vers le bas, **en haut de liste seulement** ; indicateur rond discret (fond `bg/surface` blanc, trait bleu `action/primary`), posé **sous l'en-tête** (qui ne bouge pas pendant le geste : l'en-tête est visible en haut de liste). Il se termine dès que le serveur répond, ou après **8 s au plus** ; sans réponse, le bandeau honnête « Dernières informations de … » (maquette 10 A) : jamais de phrase d'erreur ou culpabilisante.
+- **Borné : une relecture serveur par tranche de 15 s au plus** (un tirage plus rapproché se termine aussitôt et ne lit rien) ; hors connexion il se termine tout de suite, le bandeau hors connexion est déjà là. Une relecture ne fait que **lire** (aucune écriture) et recalcule les couleurs ; elle ne remplace pas la mise à jour en direct. Valeurs de référence : `MIN_REFRESH_INTERVAL_MILLIS` (15 000 ms) et `REFRESH_TIMEOUT_MILLIS` (8 000 ms) dans `android/app/src/main/java/com/tomessa/miff/ui/feed/FeedViewModel.kt`.
+- **Accessibilité** : action TalkBack / VoiceOver « Actualiser » (« Refresh ») sur la liste, équivalente au geste ; annonce polie « Actualisation en cours » puis « Informations actualisées ». Marche aussi sur une liste trop courte pour défiler.
+- Pas de nouvelle maquette : l'indicateur est celui du système (Material 3 `PullToRefreshBox`, iOS : `refreshable`), aux couleurs de l'app.
+
+### Écarts connus (tirer pour actualiser)
+- L'indicateur est celui du système (Material 3 `PullToRefreshBox`) aux couleurs de l'app ; aucune maquette PNG ne le montre.
+- Le Feed n'existe pas encore sur iOS : `refreshable` y est à écrire avec la même borne de 15 s.
 
 ## Cas du §8 non dessinés
 Accès perdu en cours d'affichage, plusieurs alertes disparaissant, lieu supprimé (libellé générique) : pas de nouveau dessin, ils réutilisent l'écran « accès perdu » du ticket Miff, le carrousel (03) et la carte (06).

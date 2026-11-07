@@ -28,11 +28,12 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | `onboarding_` | Carrousel de bienvenue (et, plus tard, les autres écrans du ticket Onboarding) | Android et iOS |
 | `profile_` | Étapes de création du profil (photo, prénom, nom, recadrage, pays et numéro de téléphone) ; onglet Profil (`profile_tab_`) ; les champs de Réglages > Mes informations en réutilisent les clés (ticket Onboarding, ONB-2 et ONB-3a) | Android et iOS |
 | `tabbar_` | Barre d'onglets : noms parlés (lecteur d'écran) des trois onglets (ONB-3a) | Android et iOS |
-| `feed_` | Onglet Feed ; pour l'instant l'écran provisoire (ONB-3a), puis le vrai Feed (tickets FEED) | Android et iOS |
+| `feed_` | Onglet Feed : en-tête, bulle, cartes, Localiser, états (tickets FEED). Les heures s'écrivent par **trois familles** de formules (`feed_moment_at_*` « à 16 h 02 », `feed_moment_since_*` « depuis 16 h 02 », `feed_moment_from_*` « de 16 h 02 ») × trois cas (aujourd'hui, hier, un autre jour), et par les motifs `feed_time_pattern_24`, `feed_time_pattern_12`, `feed_date_pattern` (format Java / Foundation propre à la langue). Les lieux dans une phrase sont les clés `feed_place_noun_*` (« la maison »). Les valeurs et les cas de test de la logique sont le contrat entre iOS et Android (`FeedBuilderTest`, `FeedTextsTest`) | Android et iOS |
 | `settings_` | Réglages : liste, Mes informations, Mon compte, Langue, Confidentialité (ONB-3a, ONB-3b) | Android et iOS |
 | `miff_` | Créer, rejoindre, gérer une Miff, membres, code secret | Android et iOS |
 | `place_` | Lieux de confiance | Android et iOS |
 | `permission_` | Écrans d'autorisation du système (notifications, localisation « Toujours ») et leur divulgation (LOC-2a) | Android et iOS |
+| `update_` | L'Update (UPDATE-1, UPDATE-2, FEED-4) : explication et refus de la caméra, viseur, aperçu, publication et ses messages calmes, bulle d'incitation (`update_bubble_*`, textes des maquettes du PM), photo dans le Feed (`update_card_photo_*`, `update_photo_*`). Les noms parlés du bouton central sont sous `tabbar_update_*_a11y` | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |
 | `home_` | Écran d'accueil | Android et iOS |
 | `diag_` | Écran de diagnostic interne (builds debug / TestFlight, jamais en release) | Android et iOS |

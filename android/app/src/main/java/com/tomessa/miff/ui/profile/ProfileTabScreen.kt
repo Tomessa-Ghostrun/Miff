@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
@@ -88,7 +89,8 @@ fun ProfileTabScreen(
                 .miffTopInsets()
                 .verticalScroll(scroll)
                 // TABBAR-GLASS: the glass bar floats over the tab; this margin lets the last element scroll above it.
-                .padding(bottom = LocalTabBarInset.current)
+                // The bubble of encouragement (UPDATE-2) is drawn over the bottom of this tab, above the bar: the content keeps a margin as tall as it.
+                .padding(bottom = LocalTabBarInset.current + LocalBottomOverlayPadding.current)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },
         verticalArrangement = Arrangement.spacedBy(Spacing.l),

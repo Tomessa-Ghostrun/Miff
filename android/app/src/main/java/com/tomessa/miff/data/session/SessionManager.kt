@@ -598,6 +598,9 @@ class SessionManager(
             return
         }
         sessionActive = true
+        // No deletion of THIS account is under way (it would have been resolved above): a "closed" marker left on the disk by a deletion that was cancelled while
+        // the process died (AUTH-5b) must not keep this phone silent for ever.
+        device.reopen()
         // Off until the account has been read (also at "Réessayer"), but the previous crash report is kept for now.
         privacy.pauseCollection()
         mutableState.value = SessionState.Loading

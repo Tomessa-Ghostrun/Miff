@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Network access. No storage, no camera, no contacts. -->
+    <!-- Network access. No storage, no contacts. The camera is the Update screen only (see CAMERA below). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -22,6 +22,31 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        UPDATE-1 (ticket Update, decision of the PM, Notion "Update": "il doit donner son autorisation pour qu'on accède à son appareil photo"). CAMERA, for the
+        viewfinder of the Update screen, and nothing else of the family: NO storage, NO photo library, NO microphone, NO location of the media. It is only ASKED
+        from the Update screen, after a pop-in that says what the camera is for, who sees the photo and for how long (never at the start of the app), and the
+        camera only runs while that screen is visible. The photo is taken in memory: no file, nothing in the gallery. If it is refused, only the settings of
+        the phone can allow it: Android also refuses to start the camera application of the phone ("ACTION_IMAGE_CAPTURE") from an app that declares CAMERA
+        and does not hold it (see ui/components/SystemCamera.kt), so there is no way round. Checked on the merged manifests by the CI and by PermissionPrivacyTest.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        The camera and the front camera are NOT required: a phone or a tablet without them can still install Miff (the detection of the places works without
+        a camera). Without them the Update screen says calmly that the camera cannot be used (the camera application of the phone is offered when the camera of Miff is
+        granted but cannot start). Autofocus is not required either: without it the declaration CAMERA alone would exclude phones with a fixed-focus camera.
+    -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.front"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <!--
         LOC-2b. The zones of the geofencing are erased by Android when the phone restarts: this normal permission (no window, nothing asked of the

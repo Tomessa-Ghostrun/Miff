@@ -28,9 +28,19 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.feed.FeedBuilder
+import com.tomessa.miff.domain.feed.FeedInput
+import com.tomessa.miff.domain.feed.MemberStatus
+import com.tomessa.miff.domain.feed.StatusesView
+import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.miff.MiffRole
+import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.profile.MyProfile
+import com.tomessa.miff.domain.tracking.PresenceValue
+import com.tomessa.miff.ui.feed.FeedHost
+import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.profile.ProfileTabStatus
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.theme.GlassConditions
@@ -43,6 +53,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.time.Instant
+import java.time.ZoneOffset
 
 /**
  * The glass bar floats over the tabs, which are drawn full screen: a tab that scrolls must keep a bottom margin of the height of the
@@ -50,8 +62,8 @@ import org.robolectric.annotation.GraphicsMode
  * `MainTabs`, is scrolled to its very end, and its last element must END ABOVE the top of the bar (a text check of the source, as in
  * `TabBarInsetRuleTest`, only proves that a line exists; this proves what the person sees).
  *
- * The same check is written as [assertLastRowAboveBar], ready for the real Feed once its PR is merged (see the PR: the Feed needs
- * `contentPadding = PaddingValues(bottom = Spacing.m + LocalTabBarInset.current, ...)` and `GlassTabHost`).
+ * The same check is made for the real Feed (PR FEED-1 to FEED-3: `contentPadding = PaddingValues(bottom = Spacing.m + LocalTabBarInset.current, ...)`,
+ * hosted by `GlassTabHost`), whose header hides while scrolling down: no margin is broken by the two together.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -135,6 +147,72 @@ class TabBarContentMarginTest {
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).performClick()
         composeRule.waitForIdle()
         assertLastRowAboveBar(lastRow)
+    }
+
+    @Test
+    fun theFeedTab_scrolledToTheEnd_endsAboveTheBar_withItsHeaderMoving() {
+        val me = "me"
+        val miffId = "AbCdEfGhIjKlMnOpQrSt"
+        val now = Instant.parse("2026-11-05T17:00:00Z").toEpochMilli()
+        val members =
+            listOf(MiffMember(me, "Camille", "X", null, MiffRole.OWNER, true, "+33612345678")) +
+                (1..10).map { MiffMember("u$it", "Proche$it", "X", null, MiffRole.MEMBER, true, "+33612345678") }
+        val statuses =
+            members.associate {
+                it.uid to
+                    MemberStatus(PresenceValue.IN_TRUSTED, null, now - 720_000, now - 720_000, false, 85, null, now)
+            }
+        val content =
+            FeedBuilder.build(
+                FeedInput(
+                    miffId,
+                    "Famille",
+                    "XTZRSP367988",
+                    members,
+                    emptyList(),
+                    me,
+                    StatusesView.Loaded(statuses),
+                    false,
+                    false,
+                ),
+                now,
+                ZoneOffset.UTC,
+            )
+        composeRule.setContent {
+            MiffTheme {
+                CompositionLocalProvider(LocalDensity provides Density(3f, 1f)) {
+                    Box(Modifier.fillMaxSize()) {
+                        MainTabs(
+                            tabBar = TabBarConfig.forBuild(isInternalBuild = true),
+                            profileState =
+                                ProfileTabUiState(
+                                    ProfileTabStatus.READY,
+                                    MyProfile("Emmanuelle", "Martin", "+33612345678", null),
+                                ),
+                            onOpenMyInfo = {},
+                            onOpenSettings = {},
+                            onRetryProfile = {},
+                            miffs =
+                                DirectoryState.Ready(
+                                    listOf(MiffSummary(miffId, "Famille")),
+                                    miffId,
+                                    premium = false,
+                                    fromCache = false,
+                                ),
+                            onRetryMiffs = {},
+                            onSelectMiff = {},
+                            onCreateMiff = {},
+                            onJoinMiff = {},
+                            onOpenMiff = {},
+                            feed = FeedHost(state = FeedUiState.Ready(content)),
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        // The last element of the Feed is the button "Ajouter un proche": it must end above the top of the bar.
+        assertLastRowAboveBar(text(R.string.feed_add_loved_one))
     }
 
     /** The control: the same long tab WITHOUT the margin does end under the bar, so the check above can fail. */

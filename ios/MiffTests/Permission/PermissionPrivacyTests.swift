@@ -1,10 +1,11 @@
 import XCTest
 @testable import Miff
 
-/// Ce que les autorisations de LOC-4a ne doivent JAMAIS faire, vérifié sur les SOURCES pour qu'un changement ultérieur ne puisse
-/// pas le casser sans que personne ne le voie (critères AUT7, VIE1, VIE4 ; décisions (g), (h) du PM) : aucune position lue nulle
-/// part dans cette version, CoreLocation importé dans UN seul fichier (pour lire l'ÉTAT des autorisations), rien de journalisé
-/// ni envoyé comme événement par les écrans de permission, les textes de la version 3. Miroir de `PermissionPrivacyTest` d'Android.
+/// Ce que les autorisations de LOC-4a et le suivi de LOC-4b ne doivent JAMAIS faire, vérifié sur les SOURCES pour qu'un changement
+/// ultérieur ne puisse pas le casser sans que personne le voie (critères AUT7, VIE1, VIE4 ; décisions (g), (h) du PM) : toute lecture
+/// de position et toute surveillance de région confinées à UN fichier (`SystemLocationManager`, appelé par le moteur seulement après
+/// l'accord), CoreLocation importé dans DEUX fichiers (l'état des autorisations, et ce pont), rien de journalisé ni envoyé comme
+/// événement par les écrans de permission, les textes de la version 3. Miroir de `PermissionPrivacyTest` d'Android.
 final class PermissionPrivacyTests: XCTestCase {
     private var iosRoot: URL {
         URL(fileURLWithPath: #filePath)
@@ -40,11 +41,15 @@ final class PermissionPrivacyTests: XCTestCase {
         }
     }
 
-    // MARK: - Aucune position lue
+    /// L'UNIQUE fichier qui demande une position au système et surveille des régions (LOC-4b).
+    private static let trackingBridge = "Services/Tracking/SystemLocationManager.swift"
 
-    func testNoPositionIsReadAnywhereInThisVersion() throws {
-        let sources = try appSources()
-        XCTAssertGreaterThan(sources.count, 100, "motif de recherche cassé : presque aucune source trouvée")
+    // MARK: - La position n'est lue qu'à un seul endroit
+
+    func testPositionApisAreConfinedToTheTrackingBridge() throws {
+        let all = try appSources()
+        XCTAssertGreaterThan(all.count, 100, "motif de recherche cassé : presque aucune source trouvée")
+        let sources = all.filter { $0.path != Self.trackingBridge }
         let forbidden = [
             "startUpdatingLocation", "stopUpdatingLocation", "requestLocation(", "startMonitoring",
             "startMonitoringSignificantLocationChanges", "startMonitoringVisits", "startRangingBeacons",
@@ -58,15 +63,59 @@ final class PermissionPrivacyTests: XCTestCase {
         XCTAssertEqual(
             offenders(in: sources, matching: forbidden),
             [],
-            "aucune position ne peut être lue avant LOC-4b (et jamais avant l'accord de la personne)"
+            "aucune position lue ni région surveillée hors du pont du suivi (et jamais avant l'accord de la personne)"
         )
+    }
+
+    /// Ce que le pont fait, et ce qu'il ne fera jamais : une position unique, le changement significatif, la surveillance de régions ;
+    /// aucune mise à jour CONTINUE, aucun mode d'arrière-plan, aucun géocodeur, aucune balise.
+    func testTheTrackingBridgeAsksOnlyForTheOneShotThePlainSignificantChangeAndTheRegions() throws {
+        let bridge = try XCTUnwrap(try appSources().first { $0.path == Self.trackingBridge })
+        let code = bridge.lines.joined(separator: "\n")
+
+        let expected = [
+            "requestLocation()", "startMonitoringSignificantLocationChanges",
+            "startMonitoring(for:", "requestState(for:"
+        ]
+        for fragment in expected {
+            XCTAssertTrue(code.contains(fragment), "attendu : \(fragment)")
+        }
+        let forbidden = [
+            "startUpdatingLocation", "allowsBackgroundLocationUpdates", "startMonitoringVisits",
+            "showsBackgroundLocationIndicator", "CLGeocoder", "CLBeaconRegion", "startRangingBeacons", "CLMonitor",
+            "CLLocationUpdate", "CLServiceSession", "requestAlwaysAuthorization", "requestWhenInUseAuthorization",
+            "distanceFilter", "print(", "NSLog", "os_log", "Logger("
+        ]
+        for fragment in forbidden {
+            XCTAssertFalse(code.contains(fragment), "interdit dans le pont : \(fragment)")
+        }
+    }
+
+    /// Les rappels d'entrée et de sortie de région NE LISENT AUCUNE POSITION (critère VIE1) : ils ne prennent que l'identifiant de la
+    /// région. Analyse statique du corps de chacun.
+    func testTheRegionCallbacksReadNoPosition() throws {
+        let bridge = try XCTUnwrap(try appSources().first { $0.path == Self.trackingBridge })
+        let code = bridge.lines.joined(separator: "\n")
+
+        for name in ["didEnterRegion", "didExitRegion", "didDetermineState"] {
+            let signature = "func locationManager(_ manager: CLLocationManager, \(name)"
+            let start = try XCTUnwrap(code.range(of: signature), name)
+            let rest = code[start.upperBound...]
+            let end = rest.range(of: "    func locationManager")?.lowerBound ?? rest.endIndex
+            let body = String(rest[..<end])
+            for forbidden in [".location", ".coordinate", "CLLocation", "latitude", "longitude", "center"] {
+                XCTAssertFalse(body.contains(forbidden), "\(name) lit une position : \(forbidden)")
+            }
+            XCTAssertTrue(body.contains("region.identifier"), name)
+        }
     }
 
     /// Les cartes (MapKit) et les coordonnées appartiennent aux écrans des LIEUX (LOC-3 : fichiers dont le chemin contient
     /// « Place ») : nulle part ailleurs, et jamais la position de la personne (`showsUserLocation`, `MKUserLocation`).
     func testMapsAndCoordinatesLiveOnlyInThePlaceFilesAndNeverShowThePersonsPosition() throws {
         let sources = try appSources()
-        let outsidePlaces = sources.filter { !$0.path.contains("Place") }
+        // Les coordonnées appartiennent aux écrans des lieux et au pont du suivi (qui les transforme tout de suite en `Fix`).
+        let outsidePlaces = sources.filter { !$0.path.contains("Place") && $0.path != Self.trackingBridge }
 
         let imports = outsidePlaces.filter { $0.lines.contains { $0.contains("import MapKit") } }.map { $0.path }
         XCTAssertEqual(imports, [], "MapKit hors des fichiers des lieux")
@@ -82,16 +131,17 @@ final class PermissionPrivacyTests: XCTestCase {
         )
     }
 
-    func testCoreLocationIsImportedByOneFileOnlyToReadTheStateOfTheAuthorization() throws {
+    func testCoreLocationIsImportedByTwoFilesTheStateOfTheAuthorizationAndTheTrackingBridge() throws {
         let sources = try appSources()
+        let permissions = "Services/Permission/SystemDevicePermissions.swift"
 
         let importing = sources.filter { $0.lines.contains { $0.contains("import CoreLocation") } }.map { $0.path }
-        XCTAssertEqual(importing, ["Services/Permission/SystemDevicePermissions.swift"])
+        XCTAssertEqual(importing, [permissions, Self.trackingBridge])
         let usingManager = sources.filter { $0.lines.contains { $0.contains("CLLocationManager") } }.map { $0.path }
-        XCTAssertEqual(usingManager, ["Services/Permission/SystemDevicePermissions.swift"])
+        XCTAssertEqual(usingManager, [permissions, Self.trackingBridge])
 
-        // Ce que ce fichier appelle sur le gestionnaire : l'état, la fenêtre d'autorisation, rien d'autre.
-        let used = try XCTUnwrap(sources.first { $0.path == importing.first })
+        // Ce que le fichier des autorisations appelle sur le gestionnaire : l'état, la fenêtre d'autorisation, rien d'autre.
+        let used = try XCTUnwrap(sources.first { $0.path == permissions })
         let calls = used.lines.joined(separator: "\n")
         let allowedCalls = [
             "authorizationStatus", "accuracyAuthorization", "locationServicesEnabled", "requestAlwaysAuthorization"
@@ -104,17 +154,22 @@ final class PermissionPrivacyTests: XCTestCase {
         XCTAssertFalse(calls.contains("requestTemporaryFullAccuracyAuthorization"))
     }
 
-    func testThePositionIsOnlyEverDeletedInTheSourcesNeverWritten() throws {
+    /// La dernière position est écrite à UN seul endroit (`TrackingWrites.position`) ; partout ailleurs elle n'est que supprimée.
+    func testThePositionIsWrittenInOnePlaceOnlyAndDeletedEverywhereElse() throws {
         let sources = try appSources()
+        let writer = "Models/Tracking/TrackingWrites.swift"
         let positionWrites = sources.flatMap { source in
             source.lines.filter { $0.contains("/positions/") && $0.contains("DocWrite(") }
                 .map { "\(source.path) : \($0.trimmingCharacters(in: .whitespaces))" }
         }
 
-        XCTAssertGreaterThanOrEqual(positionWrites.count, 5)
-        for line in positionWrites {
+        XCTAssertGreaterThanOrEqual(positionWrites.count, 6)
+        for line in positionWrites where !line.hasPrefix(writer) {
             XCTAssertTrue(line.contains(".delete"), "une position n'est ici que supprimée : \(line)")
         }
+        let written = positionWrites.filter { $0.hasPrefix(writer) }
+        XCTAssertEqual(written.count, 1)
+        XCTAssertTrue(written.first?.contains(".set") == true)
     }
 
     // MARK: - Rien de journalisé, rien d'envoyé

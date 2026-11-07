@@ -26,6 +26,8 @@ enum FirestoreFieldConversion {
             return number
         case .serverTimestamp:
             return FieldValue.serverTimestamp()
+        case .timestamp(let millis):
+            return Timestamp(date: Date(timeIntervalSince1970: Double(millis) / 1000))
         case .null:
             return NSNull()
         case .map(let nested):

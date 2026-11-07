@@ -1,22 +1,27 @@
 package com.tomessa.miff.ui.settings
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -50,6 +56,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
+import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.domain.auth.AuthForm
 import com.tomessa.miff.ui.auth.AuthMessage
 import com.tomessa.miff.ui.auth.AuthTextField
@@ -165,25 +172,30 @@ fun DeleteAccountLink(
     }
 }
 
-/** A white card with a pale blue icon tile and one sentence. */
+/** A white card with, for each row, a pale blue icon tile and one sentence. */
 @Composable
 private fun InfoCard(
-    @DrawableRes icon: Int,
-    text: String,
+    rows: List<Pair<Int, String>>,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(ShapeMd)
                 .background(colorBgSurface)
-                .padding(Spacing.m)
-                .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s + Spacing.xs),
+                .padding(Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        IconTile(icon)
-        Text(text = text, style = textBodyRegular, color = colorTextForm, modifier = Modifier.weight(1f))
+        rows.forEach { (icon, text) ->
+            Row(
+                modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s + Spacing.xs),
+            ) {
+                IconTile(icon)
+                Text(text = text, style = textBodyRegular, color = colorTextForm, modifier = Modifier.weight(1f))
+            }
+        }
     }
 }
 
@@ -246,8 +258,9 @@ private fun InfoBox(
 
 /**
  * A. "Supprimer mon compte" (information). Reads the Miffs of the account on the SERVER and never shows an incomplete list (SC2): while
- * loading, offline or on a failed read, "Continuer" is greyed and nothing is lost. In this version only an account WITHOUT Miff goes on
- * (AUTH-5a); a Miff gives the calm "bientôt" state and nothing is touched (the deletion with Miffs is AUTH-5b).
+ * loading, offline or on a failed read, "Continuer" is greyed and nothing is lost. With Miffs (AUTH-5b) the Miffs CREATED are listed with the number
+ * of OTHER people in each (three names, then "et {k} autres"), and "Prévenir mes proches" (facultatif, SC7) opens the share sheet of the system with the
+ * message of decision QM9: the app sends nothing by itself and the deletion does not move.
  */
 @Composable
 fun DeleteAccountInfoScreen(
@@ -258,6 +271,8 @@ fun DeleteAccountInfoScreen(
     onContact: () -> Unit,
     onKeep: () -> Unit,
     onConfirm: () -> Unit,
+    /** The share sheet: the name of the Miff in the message (decision QM9), or null for the message without a name (several Miffs). */
+    onWarn: (miffName: String?) -> Unit = {},
 ) {
     SettingsScaffold(
         title = stringResource(R.string.settings_delete_title),
@@ -307,26 +322,30 @@ fun DeleteAccountInfoScreen(
                 )
             }
 
-            DeleteInventory.HAS_MIFFS -> {
-                // Calm "coming soon": nothing was touched, nothing will be (AUTH-5b does the Miffs).
-                ContactSentence(
-                    format = R.string.settings_delete_miffs_soon,
-                    onContact = onContact,
-                    icon = R.drawable.ic_loc_info,
-                )
-            }
-
-            DeleteInventory.NO_MIFFS -> {
+            DeleteInventory.LOADED -> {
                 Text(
                     text = stringResource(R.string.settings_delete_intro),
                     style = textBodyRegular,
                     color = colorTextForm,
                 )
                 Spacer(Modifier.size(Spacing.m))
+                val miffs = state.miffs
+                // "Tu quitteras les Miffs que tu as rejointes" only when there is one to leave: a creator with none joined gets the short sentence.
+                val you = if (miffs.joined > 0) R.string.settings_delete_you else R.string.settings_delete_you_nomiff
                 InfoCard(
-                    icon = R.drawable.ic_person_outline,
-                    text = stringResource(R.string.settings_delete_you_nomiff),
+                    rows =
+                        buildList {
+                            add(R.drawable.ic_person_outline to stringResource(you))
+                            // The last known location is erased with the cards: said only when there is a Miff (design sheet, to validate).
+                            if (miffs.hasMiffs) {
+                                add(R.drawable.ic_loc_pin to stringResource(R.string.settings_delete_position))
+                            }
+                        },
                 )
+                if (state.ownsMiffs) {
+                    Spacer(Modifier.size(Spacing.m))
+                    OwnedMiffsBlock(owned = miffs.owned, plan = state.warnPlan, onWarn = onWarn)
+                }
                 Spacer(Modifier.size(Spacing.s))
                 ContactSentence(
                     format = R.string.settings_delete_copy,
@@ -343,7 +362,12 @@ fun DeleteAccountInfoScreen(
         }
     }
     if (state.confirming) {
-        DeleteAccountConfirmDialog(offline = state.confirmOffline, onKeep = onKeep, onConfirm = onConfirm)
+        DeleteAccountConfirmDialog(
+            offline = state.confirmOffline,
+            onKeep = onKeep,
+            onConfirm = onConfirm,
+            ownsMiffs = state.ownsMiffs,
+        )
     }
 }
 
@@ -356,6 +380,8 @@ fun DeleteAccountConfirmDialog(
     offline: Boolean,
     onKeep: () -> Unit,
     onConfirm: () -> Unit,
+    /** The account created Miffs: the sentence says "tes Miffs" too (mockup B2). */
+    ownsMiffs: Boolean = false,
 ) {
     val keepFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { keepFocus.requestFocus() }
@@ -384,7 +410,14 @@ fun DeleteAccountConfirmDialog(
                 modifier = Modifier.semantics { heading() },
             )
             Text(
-                text = stringResource(R.string.settings_delete_confirm_body),
+                text =
+                    stringResource(
+                        if (ownsMiffs) {
+                            R.string.settings_delete_confirm_body_owner
+                        } else {
+                            R.string.settings_delete_confirm_body
+                        },
+                    ),
                 style = textBodyRegular,
                 color = colorTextDescription,
             )
@@ -404,6 +437,145 @@ fun DeleteAccountConfirmDialog(
         }
     }
 }
+
+/** The Miffs created, as the information screen lists them (mockups A7, A8): at most three names, then "et {k} autres". */
+@Composable
+private fun OwnedMiffsBlock(
+    owned: List<OwnedMiff>,
+    plan: WarnPlan,
+    onWarn: (String?) -> Unit,
+) {
+    val anyOthers = owned.any { it.otherMembers > 0 }
+    Text(
+        text =
+            stringResource(
+                if (owned.size == 1) R.string.settings_delete_owned_title_one else R.string.settings_delete_owned_title,
+            ),
+        style = textTitleBold20,
+        color = colorTextPrimary,
+        modifier = Modifier.padding(bottom = Spacing.s).semantics { heading() },
+    )
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(ShapeMd)
+                .background(colorBgSurface)
+                .padding(Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        owned.take(MAX_LISTED_MIFFS).forEach { OwnedRow(it) }
+        if (owned.size > MAX_LISTED_MIFFS) {
+            Text(
+                text = stringResource(R.string.settings_delete_owned_more, owned.size - MAX_LISTED_MIFFS),
+                style = textBodyRegular,
+                color = colorTextDescription,
+                modifier = Modifier.padding(start = Spacing.l + Spacing.s),
+            )
+        }
+        val explain =
+            when {
+                anyOthers && owned.size == 1 -> R.string.settings_delete_owned_explain_one
+                anyOthers -> R.string.settings_delete_owned_explain
+                owned.size == 1 -> R.string.settings_delete_owned_explain_alone
+                else -> R.string.settings_delete_owned_explain_alone_many
+            }
+        Text(
+            text = stringResource(explain),
+            style = textBodyRegular,
+            color = colorTextDescription,
+            modifier = Modifier.padding(top = Spacing.xs),
+        )
+        // Only when at least one Miff has another person in it: nothing to say to nobody (SC7). ONE Miff: the plain button of the mockup; several: one
+        // button per Miff listed that has other people, and one more (message without a name) for the ones that cannot be named.
+        if (plan.single) {
+            WarnButton(
+                text = stringResource(R.string.settings_delete_warn_button),
+                onClick = { onWarn(plan.named.single()) },
+            )
+        } else {
+            plan.named.forEach { name ->
+                WarnButton(
+                    text = stringResource(R.string.settings_delete_warn_button_named, name),
+                    onClick = { onWarn(name) },
+                )
+            }
+            if (plan.generic) {
+                WarnButton(
+                    text = stringResource(R.string.settings_delete_warn_button_other),
+                    onClick = { onWarn(null) },
+                )
+            }
+        }
+    }
+}
+
+/** One Miff created: its name in bold, then how many OTHER people (nothing said when there are none: never "0 proche"). */
+@Composable
+private fun OwnedRow(miff: OwnedMiff) {
+    val name = miff.name.ifBlank { stringResource(R.string.miff_screen_title_loading) }
+    val full =
+        if (miff.otherMembers == 0) {
+            stringResource(R.string.settings_delete_owned_row_alone, name)
+        } else {
+            pluralStringResource(R.plurals.settings_delete_owned_row, miff.otherMembers, name, miff.otherMembers)
+        }
+    val styled =
+        buildAnnotatedString {
+            val at = full.indexOf(name)
+            if (at < 0) {
+                append(full)
+            } else {
+                append(full.substring(0, at))
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(name) }
+                append(full.substring(at + name.length))
+            }
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_group),
+            contentDescription = null,
+            tint = colorActionPrimary,
+            modifier = Modifier.padding(top = 1.dp).size(Spacing.l),
+        )
+        Text(text = styled, style = textBodyRegular, color = colorTextForm, modifier = Modifier.weight(1f))
+    }
+}
+
+/** "Prévenir mes proches": a secondary button (never more visible than "Continuer") with the share icon; it is announced as a button. */
+@Composable
+private fun WarnButton(
+    text: String,
+    onClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = ShapeMd,
+        colors =
+            ButtonDefaults.outlinedButtonColors(
+                containerColor = colorBgSurface,
+                contentColor = colorActionPrimary,
+            ),
+        border = BorderStroke(StrokeAccent, colorActionPrimary),
+        contentPadding = PaddingValues(horizontal = Spacing.m, vertical = Spacing.s),
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs).heightIn(min = Spacing.minTouchTarget),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_share),
+            contentDescription = null, // decorative: the label says everything
+            modifier = Modifier.size(Spacing.l),
+        )
+        Spacer(Modifier.width(Spacing.s))
+        Text(text = text, style = textBodyLarge)
+    }
+}
+
+/** Three Miffs are named, the others are counted ("et 2 autres"). */
+private const val MAX_LISTED_MIFFS = MAX_LISTED_OWNED
 
 private val DialogMaxWidth = 320.dp
 
