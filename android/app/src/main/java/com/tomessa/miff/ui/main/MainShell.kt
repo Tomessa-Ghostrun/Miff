@@ -44,6 +44,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.auth.SignInProvider
@@ -51,6 +52,7 @@ import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.profile.AvatarCodec
+import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
@@ -83,6 +85,9 @@ import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.review.ReviewHost
+import com.tomessa.miff.ui.review.ReviewPromptHost
+import com.tomessa.miff.ui.review.rememberReviewHost
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountViewModel
 import com.tomessa.miff.ui.settings.DeleteAccountInfoScreen
@@ -309,6 +314,8 @@ private fun MainNavigation(
                         avatarCodec = container.avatarCodec,
                         onReviewAgreement = container.awaitingAgreement::requestReview,
                     ),
+                // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
+                review = rememberReviewHost(container, scopeKey),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -590,6 +597,7 @@ fun MainTabs(
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
+    review: ReviewHost? = null,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
@@ -762,6 +770,19 @@ fun MainTabs(
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
+    }
+    // The review window sits over the tabs and their bar. The condition on the build flag is a constant: in a release build the whole call is removed.
+    if (BuildConfig.REVIEW_PROMPT && review != null) {
+        ReviewPromptHost(
+            host = review,
+            situation =
+                ReviewSituation(
+                    hasMiff = ready?.miffs?.isNotEmpty() == true,
+                    friendStatusSeen = ReviewSituation.friendStatusSeen(feedContent),
+                    updateScreenOpen = selected == MainTab.UPDATE,
+                    keyboardOpen = keyboardOpen,
+                ),
+        )
     }
 }
 

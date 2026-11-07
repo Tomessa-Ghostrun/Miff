@@ -85,6 +85,7 @@ import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.data.profile.CurrentProfile
 import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
 import com.tomessa.miff.data.profile.MyProfileRepository
+import com.tomessa.miff.data.review.ForegroundTicks
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.FirestoreSessionDocuments
@@ -220,6 +221,9 @@ class AppContainer(
     }
 
     val onboardingFlags: OnboardingFlags by lazy { OnboardingFlags(sessionFlags) }
+
+    /** The returns of the app to the foreground, counted (read by the review window, which looks at its rules once per return). */
+    val foregroundTicks: ForegroundTicks by lazy { ForegroundTicks() }
 
     val accountRepository: AccountRepository by lazy { FirestoreAccountRepository() }
 

@@ -389,6 +389,16 @@ Ticket `docs/tickets/update.md` (décisions D16 à D26), fiche `design/screens/u
 - **Ce que le téléphone ne fait jamais** : écrire un fichier de la photo (cache, galerie, sauvegarde), la journaliser, l'envoyer à Analytics ou à Crashlytics, la mettre dans le presse-papier, supprimer une photo sur un refus des règles ; `UpdatePrivacyRuleTest` le vérifie sur les sources.
 - **Appareil photo du système** : depuis que l'application déclare `CAMERA`, Android refuse de le lancer sans la permission (`SecurityException`) ; la photo de profil passe par `ui/components/SystemCamera.kt`, qui demande la permission d'abord. Conséquence assumée pour l'Update : **pas de repli sur l'appareil photo du téléphone quand la caméra est refusée pour de bon** (voir la PR).
 
+## Fenêtre d'avis « Que penses-tu de Miff ? » (décision du PM du 2026-11-07, risque assumé)
+
+Ticket `docs/tickets/pop-ins-avis.md`, maquette `design/exports/pop-ins/03-avis-store.png`, recette `docs/qa/checklists/avis-android-recette-pm.md`. Détail dans `CHANGELOG.md` (0.18.0).
+
+- **Où** : `domain/review/ReviewPrompt.kt` (les règles d'affichage et les états : pur et testé), `data/review/` (état local, demande du store, compteur des retours au premier plan), `ui/review/` (la fenêtre, son view model, son hôte posé sur les onglets par `MainShell.kt`). Carte de recette dans l'écran de diagnostic (`src/debug`).
+- **Réglages par défaut à confirmer** (constantes nommées dans `ReviewPromptDefaults`) : 7 jours depuis la première Miff, 90 jours entre deux fenêtres après une réponse, 30 jours après une fermeture, 2 fermetures au plus, 1,5 s d'attente après le retour au premier plan, 1,6 s de « Merci ! ».
+- **Absente des builds de diffusion** : `BuildConfig.REVIEW_PROMPT` est **vrai en debug, faux en release et releaseLike**. `-Pmiff.reviewPrompt=true|false` le force pour un essai ; un build de release refuse `true` sauf `-Pmiff.allowReviewPromptInRelease=true` donné en plus, volontairement (garde sur `preReleaseBuild` / `preReleaseLikeBuild`, comme `LOCATION_BLOCKING`), et seulement après la reconfirmation du PM à la porte « prêt à soumettre ». Preuve : `ReviewPromptReleaseTest` (le drapeau, la garde, chaque usage derrière le drapeau) et, sur le vrai bundle, l'étape « Check that the release bundle contains no debug-only code » de `android.yml` (le texte `REVIEWPROMPTPROBE` absent du bundle release et de l'APK releaseLike, présent dans l'APK debug).
+- **Ce qui part du téléphone** : rien. Aucun événement Analytics, aucun journal, aucune permission, aucune donnée personnelle. « J'adore ! » demande l'avis au store (Google Play In-App Review, bibliothèque `play-review`, repli : la fiche du store) ; « Peux faire mieux... » **n'ouvre pas** la boîte du store et propose « Nous écrire » (le client e-mail de la personne, adresse de support seule). L'étoile touchée n'est jamais gardée.
+- **Limite connue** : le store a son propre quota et ne dit pas s'il a affiché sa fenêtre ; le repli (fiche du store) n'est pris que lorsque l'API échoue (application pas installée depuis Google Play, par exemple un APK de recette). Plan de repli du ticket : retirer la fenêtre par une mise à jour.
+
 ## Zones sûres : barre d'état, barre de navigation, encoche, clavier (règle pour tout écran)
 
 L'app dessine « bord à bord » (`enableEdgeToEdge` dans `MainActivity`, et Android 15 l'impose de toute façon : `targetSdk` 36). Sans précaution, un écran se dessine donc SOUS l'heure, la batterie, les touches ou la barre de gestes, et l'encoche.
@@ -664,6 +674,7 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | kotlinx-coroutines-play-services | 1.11.0 | Apache 2.0 |
 | Google Play services location (géofencing, fournisseur fusionné ; LOC-2b ; la mesure de la position de la photo, UPDATE-1) | 21.4.0 | Android SDK License (Google) |
 | AndroidX CameraX (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`) | 1.6.2 (publiée le 2026-08-26) | Apache 2.0 (viseur de l'Update, UPDATE-1 ; gratuite, sans clé ni télémétrie ; la photo est prise en mémoire) |
+| Google Play In-App Review (`com.google.android.play:review`, fenêtre d'avis ; demande d'avis au store après « J'adore ! ») | 2.0.2 (dernière stable, 2024-10-18) | Conditions « Play Core SDK » de Google (gratuite, sans clé ni permission ; code derrière `BuildConfig.REVIEW_PROMPT`, retiré du release par R8) |
 | Haze (`haze`, `haze-blur`, flou de la barre d'onglets ; TABBAR-GLASS) | 2.0.1 (épinglée) | Apache 2.0 (sans réseau, permission ni clé ; `third_party/licenses/haze-NOTICE.md`) |
 | Firebase Firestore | 27.1.0 | Apache 2.0 |
 | Firebase Authentication | 25.0.0 | Android SDK License (Google) |

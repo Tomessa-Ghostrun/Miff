@@ -1,0 +1,365 @@
+package com.tomessa.miff.ui.review
+
+import android.os.Build
+import android.view.WindowManager
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import com.tomessa.miff.R
+import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.theme.ShadowDefault
+import com.tomessa.miff.ui.theme.ShapeMd
+import com.tomessa.miff.ui.theme.Spacing
+import com.tomessa.miff.ui.theme.StrokeAccent
+import com.tomessa.miff.ui.theme.colorActionPrimary
+import com.tomessa.miff.ui.theme.colorBgCanvas
+import com.tomessa.miff.ui.theme.colorBgSurface
+import com.tomessa.miff.ui.theme.colorBorderAction
+import com.tomessa.miff.ui.theme.colorBrandPrimary
+import com.tomessa.miff.ui.theme.colorTextDescription
+import com.tomessa.miff.ui.theme.miffShadow
+import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyRegular
+import com.tomessa.miff.ui.theme.textTitleBold20
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+
+/**
+ * The review window "Que penses-tu de Miff ?" (mockup `design/exports/pop-ins/03-avis-store.png`, built AS DRAWN by decision of the PM of 2026-11-07,
+ * risk assumed: `docs/tickets/pop-ins-avis.md`). Stateless: [ReviewPromptHost] feeds it.
+ *
+ * Differences from the mockup, all listed in the pull request: informal "tu" (decision of 2026-11-01), a small cross at the top (the mockup has no way
+ * out except the back gesture, which nobody can see), a thin frame like the other dialogs of the app, the page behind blurred where the phone allows it
+ * (Android 12 and later, if the system's window blur is on) and covered by a light veil everywhere else.
+ */
+@Composable
+fun ReviewPromptWindow(
+    stage: ReviewStage,
+    onStar: (Int) -> Unit,
+    onLove: () -> Unit,
+    onBetter: () -> Unit,
+    onClose: () -> Unit,
+    onWrite: () -> Unit,
+    onLater: () -> Unit,
+) {
+    if (stage == ReviewStage.Hidden) return
+    Dialog(
+        onDismissRequest = onClose,
+        properties =
+            DialogProperties(
+                // "Merci !" lasts a moment and moves on by itself: the back gesture does nothing there. A tap on the veil never closes (it would count as a closure).
+                dismissOnBackPress = stage != ReviewStage.ThanksForLove,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
+    ) {
+        BlurBehindWindow()
+        Box(
+            modifier = Modifier.fillMaxSize().background(colorBgCanvas.copy(alpha = VEIL_ALPHA)),
+            contentAlignment = Alignment.Center,
+        ) {
+            ReviewCard {
+                when (stage) {
+                    ReviewStage.Question -> QuestionContent(onStar, onLove, onBetter, onClose)
+                    ReviewStage.ThanksForLove -> ThanksContent()
+                    ReviewStage.ThanksForFeedback -> FeedbackContent(onWrite, onLater)
+                    ReviewStage.Hidden -> Unit
+                }
+            }
+        }
+    }
+}
+
+/** The system's own blur of what is behind the window (Android 12+), when the phone allows it; the veil of the window does the rest. */
+@Composable
+private fun BlurBehindWindow() {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    SideEffect {
+        if (window != null) {
+            // The veil is drawn by the content: no system dimming on top of it.
+            window.setDimAmount(0f)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                window.attributes = window.attributes.also { it.blurBehindRadius = BLUR_RADIUS_PX }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewCard(content: @Composable () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .padding(Spacing.m)
+                .widthIn(max = Spacing.dialogWidth)
+                .fillMaxWidth()
+                .miffShadow(ShadowDefault, ShapeMd)
+                .clip(ShapeMd)
+                .background(colorBgSurface)
+                .border(StrokeAccent, colorBorderAction, ShapeMd)
+                // Reading order for the screen reader: the title, the stars, the buttons, and the cross last.
+                .semantics { isTraversalGroup = true }
+                // The marker of this window: its code is absent from a release build (BuildConfig.REVIEW_PROMPT is false there), and the check of the
+                // build looks for this very text in it (ReviewPromptReleaseTest, android.yml). Also the handle of the UI tests.
+                .testTag(REVIEW_PROMPT_PROBE),
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun QuestionContent(
+    onStar: (Int) -> Unit,
+    onLove: () -> Unit,
+    onBetter: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // A row of its own for the cross, so that it never covers the title (large text, other languages).
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            val closeName = stringResource(R.string.review_close_a11y)
+            Box(
+                modifier =
+                    Modifier
+                        .padding(top = Spacing.xs, end = Spacing.xs)
+                        .size(Spacing.minTouchTarget)
+                        .clip(ShapeMd)
+                        .clickable(role = Role.Button, onClick = onClose)
+                        .semantics {
+                            contentDescription = closeName
+                            traversalIndex = CLOSE_ORDER
+                        },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_loc_close),
+                    contentDescription = null,
+                    tint = colorTextDescription,
+                    modifier = Modifier.size(Spacing.l),
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m + Spacing.xs).padding(bottom = Spacing.l),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.review_title),
+                style = textTitleBold20,
+                color = colorActionPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
+            )
+            Spacer(Modifier.height(Spacing.m))
+            ReviewStars(onStar)
+            Spacer(Modifier.height(Spacing.l))
+            MiffButton(
+                text = stringResource(R.string.review_love_action),
+                onClick = onLove,
+                modifier = Modifier.fillMaxWidth().semantics { traversalIndex = ACTION_ORDER },
+            )
+            MiffButton(
+                text = stringResource(R.string.review_better_action),
+                onClick = onBetter,
+                modifier = Modifier.fillMaxWidth().semantics { traversalIndex = ACTION_ORDER + 1f },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ThanksContent() {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l)
+                // Said once by the screen reader when it appears; there is nothing to press.
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.review_thanks_title),
+            style = textTitleBold20,
+            color = colorActionPrimary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            text = stringResource(R.string.review_thanks_body),
+            style = textBodyRegular,
+            color = colorTextDescription,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun FeedbackContent(
+    onWrite: () -> Unit,
+    onLater: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.m + Spacing.xs, vertical = Spacing.l),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.review_feedback_title),
+            style = textTitleBold20,
+            color = colorActionPrimary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            text = stringResource(R.string.review_feedback_body),
+            style = textBodyRegular,
+            color = colorTextDescription,
+            textAlign = TextAlign.Center,
+        )
+        MiffButton(
+            text = stringResource(R.string.review_feedback_write),
+            onClick = onWrite,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        TextButton(
+            onClick = onLater,
+            modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
+        ) {
+            Text(stringResource(R.string.review_feedback_later), style = textBodyBold16, color = colorActionPrimary)
+        }
+    }
+}
+
+/**
+ * The five stars of the mockup: small, medium, large, medium, small, in the brand yellow-green. DECORATIVE to the eye, but each one is a named element for
+ * the screen reader ("Étoile 3 sur 5") and can be touched (the fifth is "J'adore !", the others "Peux faire mieux...": see [ReviewPromptViewModel.onStarTouched]).
+ * Each star has a touch area at least 48 dp high and as wide as a fifth of the row.
+ */
+@Composable
+private fun ReviewStars(onStar: (Int) -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        STAR_SIZES.forEachIndexed { index, size ->
+            val number = index + 1
+            val name = stringResource(R.string.review_star_a11y, number)
+            Box(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = STAR_ROW_HEIGHT)
+                        .clip(ShapeMd)
+                        .clickable(role = Role.Button, onClick = { onStar(number) })
+                        .semantics { contentDescription = name },
+                contentAlignment = Alignment.Center,
+            ) {
+                Star(size)
+            }
+        }
+    }
+}
+
+@Composable
+private fun Star(size: Dp) {
+    Canvas(modifier = Modifier.size(size)) {
+        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+        // The rounded corners of the mockup: the star is drawn a little smaller, then its outline is drawn with round joins.
+        val rounding = this.size.minDimension * STAR_ROUNDING
+        val outer = this.size.minDimension / 2f - rounding / 2f
+        val path = starPath(center, outer, outer * STAR_INNER_RATIO)
+        drawPath(path, colorBrandPrimary, style = Fill)
+        drawPath(path, colorBrandPrimary, style = Stroke(width = rounding, join = StrokeJoin.Round))
+    }
+}
+
+/** Five points, the first straight up; [inner] is the radius of the inner corners. */
+internal fun starPath(
+    center: Offset,
+    outer: Float,
+    inner: Float,
+): Path =
+    Path().apply {
+        for (corner in 0 until STAR_CORNERS * 2) {
+            val radius = if (corner % 2 == 0) outer else inner
+            val angle = -PI / 2 + corner * PI / STAR_CORNERS
+            val x = center.x + radius * cos(angle).toFloat()
+            val y = center.y + radius * sin(angle).toFloat()
+            if (corner == 0) moveTo(x, y) else lineTo(x, y)
+        }
+        close()
+    }
+
+/**
+ * The text that marks this window inside the code of the app: a release build must not contain it (the window is behind `BuildConfig.REVIEW_PROMPT`, false
+ * there, so the code is removed). Do not rename without changing `android.yml` and `ReviewPromptReleaseTest`.
+ */
+const val REVIEW_PROMPT_PROBE = "REVIEWPROMPTPROBE"
+
+private const val VEIL_ALPHA = 0.6f
+private const val BLUR_RADIUS_PX = 40
+private const val CLOSE_ORDER = 10f
+private const val ACTION_ORDER = 5f
+private const val STAR_CORNERS = 5
+private const val STAR_INNER_RATIO = 0.5f
+private const val STAR_ROUNDING = 0.12f
+private val STAR_ROW_HEIGHT = 64.dp
+
+/** Small, medium, large, medium, small: the proportions of the mockup. */
+private val STAR_SIZES = listOf(30.dp, 42.dp, 58.dp, 42.dp, 30.dp)

@@ -875,4 +875,23 @@
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>
+
+    <!-- Fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md). Tutoiement, ton calme. -->
+    <string name="review_title">Que penses-tu de Miff ?</string>
+    <string name="review_star_a11y">Étoile %1$d sur 5</string>
+    <string name="review_close_a11y">Fermer</string>
+    <string name="review_love_action">J\'adore ! (5 étoiles)</string>
+    <string name="review_better_action">Peux faire mieux...</string>
+    <string name="review_thanks_title">Merci !</string>
+    <string name="review_thanks_body">Ça nous fait vraiment plaisir. Si tu en as envie, tu peux aussi le dire dans la boutique d\'applications.</string>
+    <string name="review_feedback_title">Merci de nous le dire !</string>
+    <string name="review_feedback_body">On a envie de faire mieux. Si tu veux nous expliquer ce qui pourrait être mieux, écris-nous : ça nous aide à avancer.</string>
+    <string name="review_feedback_write">Nous écrire</string>
+    <string name="review_feedback_later">Plus tard</string>
+    <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
+    <string name="android_diag_review_title">Fenêtre d\'avis (essai)</string>
+    <string name="android_diag_review_force">Afficher la fenêtre au prochain retour dans l\'app</string>
+    <string name="android_diag_review_force_armed">Prête : mets l\'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l\'Update).</string>
+    <string name="android_diag_review_reset">Remettre à zéro l\'état de la fenêtre</string>
+    <string name="android_diag_review_reset_done">État remis à zéro : la fenêtre repart de zéro (7 jours, 90 jours, fermetures).</string>
 </resources>
