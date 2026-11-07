@@ -116,6 +116,50 @@ Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une convers
 
 ---
 
+## 5 bis. iOS : coût de la batterie rafraîchie à l'ouverture et à la sortie (décision du PM, 2026-11-07)
+
+> Section propre à iOS (`ios/CHANGELOG.md`). Android a la sienne. **Estimations, pas des mesures** : à relever à la recette (`docs/qa/checklists/batterie-ios-recette-pm.md`).
+
+**Ce que fait l'app** : quand la personne ouvre ou quitte l'app, elle réécrit son niveau de batterie dans `miffs/{id}/status/{uid}` de chaque Miff où elle partage (un `update` de `batteryPct` + `updatedAt`, aucune règle Firestore modifiée). Pour que ça reste raisonnable :
+
+| Limite (constante `TrackingLimits`) | Valeur | Effet |
+|---|---|---|
+| `batteryMinIntervalMillis` | 15 min | jamais deux rafraîchissements (ou tentatives) d'une même Miff à moins de 15 min |
+| `batteryMinDeltaPoints` | 5 points | rien si la batterie a bougé de moins de 5 points depuis la dernière valeur écrite... |
+| `batteryMaxAgeMillis` | 3 h | ... sauf si cette dernière écriture a plus de 3 h (le Feed masque la batterie après 6 h) |
+| `maxBatteryWritesPerDay` | 40 par jour et par téléphone | compteur **dédié** (pas les 60 statuts : un rafraîchissement ne prend jamais la place d'une arrivée ou d'un départ) ; pire cas 60 + 40 = 100 statuts par téléphone et par jour |
+
+**Coût d'UN rafraîchissement dans UNE Miff** :
+
+| Poste | Quantité | Remarque |
+|---|---|---|
+| Écriture Firestore | 1 | compte dans les 20 000 écritures par jour de Spark |
+| Lectures de règles | 2 | `validStatus` : la session de l'appareil (1) + mon partage actif (1) |
+| Lecture de session côté app | 1 par passage qui écrit (pas par Miff) | `DeviceSession.clearance`, déjà faite avant toute première écriture d'un passage |
+| Lectures de snapshot chez les proches | jusqu'à N - 1 | une par proche dont le Feed écoute en ce moment (N = membres de la Miff) ; 0 si personne n'a l'app ouverte |
+
+Soit **≈ 3 lectures + 1 écriture pour une Miff, plus N - 1 lectures de snapshot** au plus. Un passage sans rafraîchissement (moins de 15 min, moins de 5 points, niveau inconnu, hors ligne) **ne lit ni n'écrit rien**.
+
+**Hypothèses** : par utilisateur actif et par jour, **4 rafraîchissements** en usage normal (plage 2 à 6 ; plafond théorique 40), 1 Miff de 4 membres (N - 1 = 3, tous à l'écoute : pire cas raisonnable). Référence du reste de l'app : ~48 écritures par utilisateur actif et par jour (8 statuts + 40 positions, milieu des fourchettes du §3) et 210 à 355 lectures (§3).
+
+| Utilisateurs actifs par jour | Écritures de batterie / jour | Lectures de batterie / jour (3 + 3 par écriture) | Part de Spark (écritures 20 000 / lectures 50 000) pour la batterie seule | Pire cas (40 par jour chacun) |
+|---|---|---|---|---|
+| 100 | ≈ 400 | ≈ 2 400 | 2 % / 5 % | 4 000 écritures (20 %), 24 000 lectures (48 %) |
+| 1 000 | ≈ 4 000 | ≈ 24 000 | 20 % / 48 % | 40 000 écritures, 240 000 lectures : au-delà de Spark |
+| 10 000 | ≈ 40 000 | ≈ 240 000 | 2 x le quota d'écritures, 5 x le quota de lectures | 400 000 écritures, 2,4 millions de lectures |
+
+**Ce que ça change pour la limite de Spark** (estimation) : l'ensemble de l'app consomme déjà ~48 écritures par utilisateur actif ; la batterie en ajoute ~4 (+ 8 %). Le plafond de 20 000 écritures par jour passe d'environ **415** à environ **385 utilisateurs actifs par jour**. Côté lectures, +24 par utilisateur (+ 7 à 11 % des 210 à 355 du §3) : le plafond de 50 000 lectures passe de **~140 à 240** à **~130 à 215** utilisateurs actifs par jour. Autrement dit : **la batterie rapproche la bascule d'environ 8 à 10 %, elle ne la crée pas** (les positions pèsent bien plus).
+
+**Ordre de grandeur sous Blaze** (tarifs publics Google à vérifier avec leur calculateur, non confirmés ici ; les quotas gratuits quotidiens restent offerts) : à 10 000 utilisateurs actifs, la batterie ajoute ~1,2 million d'écritures et ~7 millions de lectures par mois, soit **de l'ordre de 3 à 4 EUR par mois**. Rien d'inquiétant en soi.
+
+**Signal de bascule** (aucun agent n'active Blaze ; la décision est celle du PM) :
+- le signal général du §2 (ratio lectures / utilisateurs actifs > 150 deux jours de suite) ou plus de **12 000 écritures par jour** dans la console ;
+- spécifique à la batterie : un testeur dont le journal montre **plus de 10 `batteryRefreshed` par jour** un jour normal (les limites ne jouent pas comme prévu), ou le disjoncteur de 40 atteint (`breakerStatus` dans le journal juste après un `batteryRefreshSkipped`).
+
+**Leviers gratuits avant Blaze** (dans l'ordre, par un petit changement de constante) : passer le seuil de 5 à 10 points ; passer l'intervalle de 15 à 30 min ; ne rafraîchir qu'à la sortie ; baisser le plafond de 40 à 20. Aucun ne demande de réécriture.
+
+---
+
 ## 6. Ce que les agents font de leur côté
 
 - `backend-data` garde ces seuils et la procédure à jour (`backend/data-model.md` §12) et prépare, si le signal se confirme, la condition d'e-mail vérifié (gratuite) ou le plan de fonction « rejoindre » (Blaze).
