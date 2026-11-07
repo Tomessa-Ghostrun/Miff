@@ -78,15 +78,25 @@ final class AccountDeletionSourcesTests: XCTestCase {
         XCTAssertEqual(found, [], "la clé Apple vit dans la console Firebase, jamais dans l'app ni le dépôt")
     }
 
-    func testTheAppleAuthorizationCodeIsNeverStoredNorKept() throws {
-        let files = [
-            "Miff/Services/Firebase/FirebaseAppleTokenRevoker.swift",
-            "Miff/ViewModels/DeleteAccountViewModels.swift"
-        ]
-        for file in files {
-            for line in try codeLines(file) {
-                for fragment in ["UserDefaults", "Keychain", "SecItem", ".write(", "FileManager"] {
-                    XCTAssertFalse(line.contains(fragment), "\(file) : \(line)")
+    /// Le code d'autorisation d'Apple ne passe que de la feuille Apple au retrait de l'autorisation : aucune propriété (`var` ou `let`
+    /// de type ou d'instance) ne le garde, dans AUCUNE source de l'app, et aucune ligne qui le cite n'écrit sur le disque.
+    func testTheAppleAuthorizationCodeIsNeverStoredNorKeptAnywhere() throws {
+        let app = iosRoot.appendingPathComponent("Miff")
+        guard let files = FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil) else {
+            throw XCTSkip("Sources introuvables.")
+        }
+        let pattern = #"^\s*(private |fileprivate |public )?(static )?(var|let)\s+\w*[Aa]uthorizationCode\b"#
+        let property = try NSRegularExpression(pattern: pattern)
+        let writes = ["UserDefaults", "Keychain", "SecItem", ".write(", "FileManager"]
+        for case let file as URL in files where file.pathExtension == "swift" {
+            let relative = String(file.path.dropFirst(app.path.count + 1))
+            let text = try String(contentsOf: file, encoding: .utf8)
+            let lines = text.components(separatedBy: "\n")
+            for line in lines where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
+                let range = NSRange(line.startIndex..., in: line)
+                XCTAssertNil(property.firstMatch(in: line, range: range), "\(relative) : \(line)")
+                if line.contains("uthorizationCode") {
+                    XCTAssertFalse(writes.contains { line.contains($0) }, "\(relative) : \(line)")
                 }
             }
         }
@@ -111,8 +121,8 @@ final class AccountDeletionSourcesTests: XCTestCase {
             let relative = String(file.path.dropFirst(app.path.count + 1))
             let text = try String(contentsOf: file, encoding: .utf8)
             let markers = ["DeleteAccountLink(", "DeleteAccountFlowView(", "deleteAccountCover"]
-            for line in text.components(separatedBy: "
-") where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
+            let lines = text.components(separatedBy: "\n")
+            for line in lines where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
                 if markers.contains(where: { line.contains($0) }) {
                     entries.append(relative)
                 }

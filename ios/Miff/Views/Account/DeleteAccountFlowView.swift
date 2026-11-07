@@ -64,7 +64,10 @@ struct DeleteAccountFlowView: View {
 struct AccountDeletedBanner: View {
     /// Assez long pour être lu, assez court pour ne pas gêner.
     private static let seconds: UInt64 = 6
+    /// Avec le guide Apple, plus de temps pour lire.
+    private static let secondsWithGuide: UInt64 = 20
 
+    let showsAppleGuide: Bool
     let onDismiss: () -> Void
 
     var body: some View {
@@ -73,11 +76,18 @@ struct AccountDeletedBanner: View {
                 Image(systemName: "checkmark.circle")
                     .foregroundColor(colorActionPrimary.color)
                     .accessibilityHidden(true)
-                Text("auth_account_deleted_notice")
-                    .miffTextStyle(textBodyRegular)
-                    .foregroundColor(colorTextForm.color)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("auth_account_deleted_notice")
+                        .miffTextStyle(textBodyRegular)
+                        .foregroundColor(colorTextForm.color)
+                    if showsAppleGuide {
+                        Text("ios_settings_delete_apple_failed")
+                            .miffTextStyle(textBodyRegular14)
+                            .foregroundColor(colorTextDescription.color)
+                    }
+                }
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(Spacing.md)
             .background(
@@ -92,9 +102,12 @@ struct AccountDeletedBanner: View {
         .accessibilityElement(children: .combine)
         .onAppear {
             Announcer.announce(L10n.string("auth_account_deleted_notice"))
+            if showsAppleGuide {
+                Announcer.announce(L10n.string("ios_settings_delete_apple_failed"))
+            }
         }
         .task {
-            try? await Task.sleep(nanoseconds: Self.seconds * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: (showsAppleGuide ? Self.secondsWithGuide : Self.seconds) * 1_000_000_000)
             if !Task.isCancelled {
                 onDismiss()
             }

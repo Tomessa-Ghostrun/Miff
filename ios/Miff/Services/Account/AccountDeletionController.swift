@@ -28,7 +28,6 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
     private let network: NetworkMonitor
     private let currentUid: () -> String?
     private var running = false
-    private var job: Task<Void, Never>?
     /// Ce qui est arrivé à l'autorisation Apple, retenu pour l'écran final (la dernière ré-authentification Apple fait foi).
     private var apple: AppleRevocation = .notNeeded
 
@@ -48,14 +47,23 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
 
     // MARK: - Ce que les écrans demandent
 
-    func start(apple outcome: AppleRevocation) {
-        guard let uid = currentUid(), !running else {
-            return
+    @discardableResult
+    func start(apple outcome: AppleRevocation) -> Bool {
+        if running {
+            // Un geste = une opération : déjà en route.
+            return true
+        }
+        guard let uid = currentUid() else {
+            return false
         }
         remember(outcome)
-        // Sur le disque AVANT le premier changement : une app tuée aussitôt reprend quand même (SC26).
-        marker.write(AccountDeletionMark(uid: uid))
+        // Sur le disque AVANT le premier changement : une app tuée aussitôt reprend quand même (SC26). Marqueur impossible à écrire :
+        // la suppression ne démarre PAS (rien n'a été touché), la personne peut réessayer.
+        guard marker.write(AccountDeletionMark(uid: uid, appleRevocation: apple)) else {
+            return false
+        }
         launch(uid: uid, resumed: false, retrying: false)
+        return true
     }
 
     func resume() {
@@ -63,6 +71,8 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
             // Jamais la reprise d'une suppression qui n'est pas celle de ce compte.
             return
         }
+        // Une app relancée retrouve ce qui est arrivé à l'autorisation Apple (sinon l'écran de fin croirait qu'elle est retirée).
+        apple = mark.appleRevocation
         launch(uid: uid, resumed: true, retrying: false)
     }
 
@@ -73,12 +83,22 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
         launch(uid: uid, resumed: false, retrying: true)
     }
 
-    func reauthenticated(apple outcome: AppleRevocation) {
-        guard let uid = currentUid(), !running else {
-            return
+    @discardableResult
+    func reauthenticated(apple outcome: AppleRevocation) -> Bool {
+        if running {
+            return true
+        }
+        guard let uid = currentUid() else {
+            return false
         }
         remember(outcome)
+        // Le résultat de la dernière feuille Apple est gardé avec le marqueur (même mot fixe, rien de sensible).
+        if var mark = marker.read(), mark.uid == uid, mark.appleRevocation != apple {
+            mark.appleRevocation = apple
+            marker.write(mark)
+        }
         launch(uid: uid, resumed: false, retrying: false)
+        return true
     }
 
     func acknowledge() {
@@ -87,18 +107,14 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
         }
     }
 
+    /// « Me reconnecter » / « Me déconnecter » : la session est fermée, le marqueur reste. Le contrôleur repasse à `idle` : à la
+    /// reconnexion du même compte, l'écran de la suppression le trouve au repos et la REPREND (sinon il resterait sur
+    /// `needsSignIn` / `stuck` et ne ferait plus rien).
     func signInAgain() {
         Task {
             await self.session.endSessionKeepingDeletionMarker()
+            self.state = .idle
         }
-    }
-
-    /// Fin de session (déconnexion, session perdue) : plus rien ne tourne ; le marqueur reste.
-    func stop() {
-        job?.cancel()
-        job = nil
-        running = false
-        state = .idle
     }
 
     // MARK: - La procédure
@@ -114,7 +130,7 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
     private func launch(uid: String, resumed: Bool, retrying: Bool) {
         running = true
         state = .running(resumed: resumed, retrying: retrying, step: .checking)
-        job = Task {
+        Task {
             await self.drive(uid: uid, resumed: resumed, retrying: retrying)
         }
     }

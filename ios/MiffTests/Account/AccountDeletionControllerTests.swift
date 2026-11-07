@@ -255,6 +255,81 @@ final class AccountDeletionControllerTests: XCTestCase {
         XCTAssertNotNil(marker.mark, "se reconnecter avec le même compte reprend la suppression")
     }
 
+    // MARK: - Reconnexion, marqueur impossible à écrire, résultat Apple
+
+    func testAReconnectionAfterAClosedSessionResumesTheDeletionOnTheSameInstance() async {
+        procedure.runs = [.sessionExpired, .completed]
+        let controller = makeController()
+        controller.start(apple: .notNeeded)
+        await waitUntil { controller.state == .needsSignIn }
+
+        controller.signInAgain()
+        await waitUntil { controller.state == .idle }
+        XCTAssertEqual(session.keptMarker, 1)
+        XCTAssertNotNil(marker.mark)
+        // Le même compte se reconnecte : l'écran de la suppression trouve le contrôleur au repos et le relance.
+        controller.resume()
+        await finished(controller)
+
+        XCTAssertEqual(procedure.runCalls, 2)
+        XCTAssertEqual(controller.state, .done(appleRevocation: .notNeeded))
+    }
+
+    func testTheStopAfterThreeFailuresAlsoLeavesTheWayToResumeAfterAReconnection() async {
+        procedure.runs = [.failed, .failed, .failed, .completed]
+        let controller = makeController()
+        controller.start(apple: .notNeeded)
+        await waitUntil { controller.state == .stuck }
+
+        controller.signInAgain()
+        await waitUntil { controller.state == .idle }
+        controller.resume()
+        await finished(controller)
+
+        XCTAssertEqual(controller.state, .done(appleRevocation: .notNeeded))
+    }
+
+    func testNothingStartsWhenTheMarkerCannotBeWritten() async {
+        marker.writeFails = true
+        let controller = makeController()
+
+        let started = controller.start(apple: .notNeeded)
+        try? await Task.sleep(nanoseconds: 30_000_000)
+
+        XCTAssertFalse(started)
+        XCTAssertEqual(procedure.runCalls, 0)
+        XCTAssertEqual(session.begun, 0, "rien n'est arrêté ni touché")
+        XCTAssertEqual(controller.state, .idle)
+    }
+
+    func testTheAppleOutcomeIsKeptWithTheMarkerAndFoundAgainAfterARelaunch() async {
+        let first = makeController()
+        first.start(apple: .failed)
+        XCTAssertEqual(marker.mark?.appleRevocation, .failed)
+        await finished(first)
+
+        // Un nouveau processus : le contrôleur reprend depuis le marqueur seul.
+        marker.mark = AccountDeletionMark(uid: testAccountUid, appleRevocation: .failed)
+        let relaunched = makeController()
+        relaunched.resume()
+        await finished(relaunched)
+
+        // Jamais « retirée » quand le résultat est perdu.
+        XCTAssertEqual(relaunched.state, .done(appleRevocation: .failed))
+    }
+
+    func testALaterAppleSheetUpdatesTheMarker() async {
+        procedure.runs = [.needsRecentLogin, .completed]
+        let controller = makeController()
+        controller.start(apple: .revoked)
+        await waitUntil { controller.state == .needsRecentLogin }
+
+        controller.reauthenticated(apple: .failed)
+
+        XCTAssertEqual(marker.mark?.appleRevocation, .failed)
+        await finished(controller)
+    }
+
     func testAcknowledgingTheEndScreenGoesBackToIdle() async {
         let controller = makeController()
         controller.start(apple: .notNeeded)

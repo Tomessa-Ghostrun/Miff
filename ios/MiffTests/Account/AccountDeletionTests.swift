@@ -298,32 +298,82 @@ final class AccountDeletionTests: XCTestCase {
 
     // MARK: - Reprise après une coupure
 
-    func testAnInterruptionAtEveryStepIsResumedFromTheServerState() async {
-        // Chaque opération échoue tour à tour (pas de réseau) ; la relancer, une fois le réseau revenu, termine toujours.
-        let operations = ["count", "devices", "profile"]
-        for operation in operations {
+    /// Un compte avec une Miff rejointe, deux Miffs créées, deux appareils et un index périmé.
+    private func makeWorld(_ timeline: Timeline) -> AccountWorld {
+        AccountWorld(
+            timeline: timeline,
+            joined: [testRef()],
+            owned: [testOwned(id: testOwnedMiffId), testOwned(id: "SecondOwnedMiff000001", name: "Autre")],
+            devices: ["device-a", "device-b"]
+        )
+    }
+
+    private func procedure(for world: AccountWorld, gateway: FakeAuthGateway, timeline: Timeline) -> AccountDeletion {
+        AccountDeletion(
+            store: world, gateway: gateway, cache: FakeCachePurger(timeline: timeline), session: world, miffs: world
+        )
+    }
+
+    /// Une coupure (pas de réseau) à CHAQUE opération du serveur, une par une : la procédure s'arrête sans rien casser, la relancer
+    /// termine, tout ce que le compte détient a disparu, le compte est supprimé UNE seule fois et jamais avant le profil.
+    func testACutAtEveryServerCallIsResumedAndFinishesInTheRightOrder() async {
+        let reference = Timeline()
+        let referenceWorld = makeWorld(reference)
+        let referenceGateway = FakeAuthGateway(timeline: reference)
+        referenceGateway.setSignedIn(testAccountUid)
+        let referenceRun = procedure(for: referenceWorld, gateway: referenceGateway, timeline: reference)
+        let clean = await referenceRun.run(uid: testAccountUid) { _ in }
+        XCTAssertEqual(clean, .completed)
+        XCTAssertTrue(referenceWorld.isEmpty)
+        let total = referenceWorld.calls
+        XCTAssertGreaterThan(total, 8)
+
+        for cut in 1...total {
             let local = Timeline()
-            let localStore = FakeAccountDataStore(timeline: local)
-            let localGateway = FakeAuthGateway(timeline: local)
-            localGateway.setSignedIn(testAccountUid)
-            let localMiffs = FakeAccountMiffs(timeline: local)
-            let procedure = AccountDeletion(
-                store: localStore,
-                gateway: localGateway,
-                cache: FakeCachePurger(timeline: local),
-                session: FakeAccountSession(timeline: local),
-                miffs: localMiffs
-            )
-            localStore.failures[operation] = firestoreError(FirestoreErrorNumber.unavailable)
+            let world = makeWorld(local)
+            let gateway = FakeAuthGateway(timeline: local)
+            gateway.setSignedIn(testAccountUid)
+            let deletion = procedure(for: world, gateway: gateway, timeline: local)
+            world.cutAt = cut
 
-            let first = await procedure.run(uid: testAccountUid) { _ in }
-            localStore.failures[operation] = nil
-            let second = await procedure.run(uid: testAccountUid) { _ in }
+            let first = await deletion.run(uid: testAccountUid) { _ in }
+            XCTAssertEqual(first, .offline, "coupure n° \(cut)")
+            XCTAssertEqual(gateway.deleteCalls, 0, "coupure n° \(cut) : le compte n'est pas touché")
+            XCTAssertNotNil(gateway.currentUid)
+            world.cutAt = -1
+            let second = await deletion.run(uid: testAccountUid) { _ in }
 
-            XCTAssertEqual(first, .offline, operation)
-            XCTAssertEqual(second, .completed, operation)
-            XCTAssertEqual(localGateway.deleteCalls, 1, operation)
+            XCTAssertEqual(second, .completed, "reprise après la coupure n° \(cut)")
+            XCTAssertTrue(world.isEmpty, "coupure n° \(cut)")
+            XCTAssertEqual(gateway.deleteCalls, 1, "coupure n° \(cut) : le compte est supprimé une seule fois")
+            XCTAssertNil(gateway.currentUid)
+            let entries = local.entries
+            let profile = entries.firstIndex(of: "profile") ?? Int.max
+            let account = entries.firstIndex(of: "delete") ?? Int.min
+            XCTAssertLessThan(profile, account, "coupure n° \(cut) : jamais le compte avant le profil")
+            XCTAssertEqual(entries.last, "delete", "coupure n° \(cut) : le compte est la dernière chose")
         }
+    }
+
+    /// La coupure entre le profil supprimé et le compte supprimé : le profil est déjà parti, la reprise supprime le compte, une seule fois.
+    func testACutBetweenTheDeletedProfileAndTheDeletedAccountIsResumed() async {
+        let local = Timeline()
+        let world = makeWorld(local)
+        let gateway = FakeAuthGateway(timeline: local)
+        gateway.setSignedIn(testAccountUid)
+        gateway.deleteResults = [.network, nil]
+        let deletion = procedure(for: world, gateway: gateway, timeline: local)
+
+        let first = await deletion.run(uid: testAccountUid) { _ in }
+        XCTAssertEqual(first, .offline)
+        XCTAssertFalse(world.profileExists)
+        XCTAssertNotNil(gateway.currentUid, "le compte existe encore")
+        let second = await deletion.run(uid: testAccountUid) { _ in }
+
+        XCTAssertEqual(second, .completed)
+        XCTAssertTrue(world.isEmpty)
+        XCTAssertNil(gateway.currentUid)
+        XCTAssertEqual(gateway.deleteCalls, 2, "un essai coupé, puis un seul qui supprime")
     }
 
     func testAnInterruptedInventoryIsAPauseAndNothingIsTouched() async {

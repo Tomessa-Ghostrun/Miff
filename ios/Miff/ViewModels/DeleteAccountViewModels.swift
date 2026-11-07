@@ -197,13 +197,14 @@ final class DeleteReauthViewModel: ObservableObject {
     private let network: NetworkMonitor
     private let social: SocialCredentialSource
     private let revoker: AppleTokenRevoker
-    private let onVerified: (AppleRevocation) -> Void
+    /// Vrai = la suppression a démarré (ou était déjà en route) ; faux = elle n'a PAS démarré, rien n'a été touché.
+    private let onVerified: (AppleRevocation) -> Bool
     private let email: () -> String?
 
     init(
         dependencies: DeleteReauthDependencies,
         last: Bool,
-        onVerified: @escaping (AppleRevocation) -> Void
+        onVerified: @escaping (AppleRevocation) -> Bool
     ) {
         gateway = dependencies.gateway
         email = dependencies.email
@@ -311,7 +312,11 @@ final class DeleteReauthViewModel: ObservableObject {
     private func finish(_ failure: AuthFailure?, isSocial: Bool, apple: AppleRevocation) {
         guard let failure else {
             // Reste « occupé » : la suppression commence et cet écran est remplacé ; un second toucher ne doit pas lancer une autre opération.
-            onVerified(apple)
+            // Si elle ne peut pas démarrer (marqueur impossible à écrire), rien n'est touché : phrase calme, la personne peut réessayer.
+            if !onVerified(apple) {
+                state.busy = false
+                state.message = .deletionNotStarted
+            }
             return
         }
         state.busy = false

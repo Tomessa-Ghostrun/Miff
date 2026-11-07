@@ -21,6 +21,9 @@ enum AuthMessage: Equatable {
     case reauthWrongAccount
     /// Suppression du compte : la session a expiré, il faut se reconnecter puis réessayer.
     case reauthExpired
+    /// Suppression du compte : la vérification a réussi mais la suppression n'a pas pu démarrer (le marqueur local n'a pas pu être
+    /// écrit). Rien n'a été touché ; on peut réessayer.
+    case deletionNotStarted
 }
 
 extension AuthFailure {

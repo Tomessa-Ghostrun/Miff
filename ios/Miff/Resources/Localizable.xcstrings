@@ -11238,19 +11238,53 @@
         }
       }
     },
+    "ios_settings_delete_not_erased": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What remains: statistics already sent with your consent contain neither your name nor your account and follow the retention period of the privacy policy; copies of your card kept on other members’ phones disappear the next time they connect."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce qui reste : les statistiques déjà envoyées avec ton accord ne contiennent ni ton nom ni ton compte et suivent la durée de conservation de la politique de confidentialité ; les copies de ta fiche gardées sur le téléphone des autres membres disparaissent à leur prochaine connexion."
+          }
+        }
+      }
+    },
+    "ios_settings_delete_miffs_blocked_more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Miffs you had already left or deleted during this attempt stay that way."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les Miffs que tu avais déjà quittées ou supprimées pendant cette tentative le restent."
+          }
+        }
+      }
+    },
     "ios_settings_delete_reauth_apple": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple will ask you to confirm. After that, Miff will no longer be allowed to use “Sign in with Apple”."
+            "value": "Apple will ask you to confirm. We’ll then try to remove the “Sign in with Apple” authorization from your Apple account."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Apple va te demander de confirmer. Ensuite, Miff n’aura plus l’autorisation « Se connecter avec Apple »."
+            "value": "Apple va te demander de confirmer. On essaiera ensuite de retirer l’autorisation « Se connecter avec Apple » de ton compte Apple."
           }
         }
       }

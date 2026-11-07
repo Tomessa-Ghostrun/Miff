@@ -50,6 +50,8 @@ extension AuthMessage {
             return L10n.string("settings_delete_reauth_wrong_account")
         case .reauthExpired:
             return L10n.string("settings_delete_reauth_expired")
+        case .deletionNotStarted:
+            return L10n.format("settings_delete_failed", AppLinks.supportEmail)
         }
     }
 }

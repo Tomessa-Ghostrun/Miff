@@ -20,6 +20,11 @@ enum MiffRoute: Hashable {
         return false
     }
 
+    /// « Mes informations » : le seul écran des Réglages qu'un compte sans Miff n'a pas.
+    var isMyInfoScreen: Bool {
+        self == .settings(.myInfo)
+    }
+
     /// Cet écran dépend de cette Miff : il part avec elle quand son accès est perdu.
     func belongs(to miffId: String) -> Bool {
         switch self {
@@ -52,7 +57,8 @@ struct MiffOnboardingHost: View {
             MiffChoiceView(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
-                onSignOut: { signOut() }
+                onSignOut: { signOut() },
+                onOpenSettings: { open(.settings(.settings)) }
             )
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: MiffRoute.self) { route in
@@ -81,7 +87,18 @@ struct MiffOnboardingHost: View {
                     onOpenMiff: { _ in openExisting() }
                 )
             )
-        case .miff, .placeForm, .placeDetail, .placePaywall, .settings:
+        case .settings(let screen):
+            // Les Réglages RESTREINTS d'un compte sans Miff (décision du PM du 2026-11-07) : dans cette même pile, sans profil lu
+            // (aucune lecture de plus), pour pouvoir supprimer son compte depuis l'app.
+            SettingsDestinationView(
+                route: screen,
+                environment: environment,
+                profile: nil,
+                restricted: true,
+                navigate: { open(.settings($0)) },
+                onBack: { pop() }
+            )
+        case .miff, .placeForm, .placeDetail, .placePaywall:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         }
@@ -166,10 +183,11 @@ struct MiffHomeHost: View {
                 AccessLostView(miffName: notice.name, onAcknowledge: { acknowledge(notice) })
             }
         }
-        // La dernière Miff a disparu : les écrans des Réglages empilés partent (un compte sans Miff n'a pas accès aux Réglages, Q13).
+        // La dernière Miff a disparu : « Mes informations » empilé part (un compte sans Miff n'a que Mon compte et Confidentialité,
+        // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
-                path.removeAll { $0.isSettingsScreen }
+                path.removeAll { $0.isMyInfoScreen }
             }
         }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
@@ -216,7 +234,8 @@ struct MiffHomeHost: View {
             onCreate: { open(.create) },
             onJoin: { open(.join) },
             onOpenMiff: { open(.miff($0)) },
-            onSignOut: { signOut() }
+            onSignOut: { signOut() },
+            onOpenSettings: { open(.settings(.settings)) }
         )
     }
 
@@ -251,6 +270,7 @@ struct MiffHomeHost: View {
                 route: screen,
                 environment: environment,
                 profile: profile,
+                restricted: MainShellRules.hasNoMiff(directory.state),
                 navigate: { open(.settings($0)) },
                 onBack: { pop() }
             )

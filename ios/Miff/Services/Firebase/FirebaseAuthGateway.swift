@@ -12,9 +12,6 @@ final class FirebaseAuthGateway: AuthGateway {
     /// Nom donné par Apple à la première connexion (une seule fois) : gardé en mémoire SEULEMENT, pour pré-remplir
     /// l'étape profil. Jamais écrit sur le disque, jamais journalisé.
     private var appleName = AppleNameMemory()
-    /// Code d'autorisation d'Apple (voir `SocialCredential`) : gardé en mémoire pour la révocation future, jamais écrit
-    /// sur le disque ni journalisé ; oublié à la déconnexion.
-    private var appleAuthorizationCode: String?
 
     var currentUid: String? {
         guard FirebaseBootstrap.isConfigured else {
@@ -60,9 +57,8 @@ final class FirebaseAuthGateway: AuthGateway {
     }
 
     func signIn(with credential: SocialCredential) async -> AuthOutcome {
-        if case .apple(_, _, let name, let code) = credential {
+        if case .apple(_, _, let name, _) = credential {
             appleName.record(name)
-            appleAuthorizationCode = code ?? appleAuthorizationCode
         }
         let firebaseCredential = firebaseCredential(for: credential)
         return await run(.social) {
@@ -194,7 +190,6 @@ final class FirebaseAuthGateway: AuthGateway {
 
     func signOut() {
         appleName.forget()
-        appleAuthorizationCode = nil
         // Le SDK Google garde aussi sa propre session : sans ceci, le choix du compte Google ne serait plus proposé.
         GIDSignIn.sharedInstance.signOut()
         guard FirebaseBootstrap.isConfigured else {

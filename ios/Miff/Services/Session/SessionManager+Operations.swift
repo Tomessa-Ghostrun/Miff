@@ -312,6 +312,7 @@ extension SessionManager {
     /// Nouveau compte créé par e-mail et mot de passe : on sait qu'il n'y a pas de profil, aucune lecture n'est utile.
     func completeEmailSignUp(uid: String) async {
         sessionActive = true
+        clearForeignDeletionMarker(uid: uid)
         flags.set(true, forKey: Self.keyReturningUser)
         // Le geste sur « Rejoindre » a accepté les conditions ET les statistiques (décision du 2026-10-28).
         pending.save(PendingConsent(uid: uid, termsVersion: ConsentVersions.terms, analyticsAccepted: true))
@@ -339,6 +340,7 @@ extension SessionManager {
         signUpConsent: ConsentChoice?
     ) async {
         sessionActive = true
+        clearForeignDeletionMarker(uid: uid)
         // AUTH-5c : le même compte se reconnecte alors que sa suppression est en cours (session fermée dans notre dos) : la suppression
         // reprend, il n'est pas routé comme un compte ordinaire (son profil est peut-être déjà parti) et AUCUNE session d'appareil
         // n'est écrite pour lui.

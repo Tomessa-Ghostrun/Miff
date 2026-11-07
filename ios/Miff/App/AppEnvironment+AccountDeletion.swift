@@ -14,10 +14,14 @@ struct AccountDeletionServices {
     /// Les réglages gardés pour un compte, effacés avec lui (voir `AccountLocalData`).
     static func localData() -> [LocalDataEraser] {
         AccountLocalData.erasers(
-            notificationAsks: UserDefaultsNotificationAskStore(),
-            pendingMiffDeletions: PendingDeletionFileStore(),
-            activeMiff: UserDefaultsActiveMiffStore(),
-            notifications: SystemLocalNotificationsCleaner()
+            AccountLocalStores(
+                notificationAsks: UserDefaultsNotificationAskStore(),
+                pendingMiffDeletions: PendingDeletionFileStore(),
+                activeMiff: UserDefaultsActiveMiffStore(),
+                notifications: SystemLocalNotificationsCleaner(),
+                trackingLocal: TrackingLocalFileStore(),
+                detectionJournal: DetectionJournals.make()
+            )
         )
     }
 
@@ -76,11 +80,7 @@ extension AppEnvironment {
             dependencies: dependencies,
             last: last,
             onVerified: { apple in
-                if last {
-                    controller.reauthenticated(apple: apple)
-                } else {
-                    controller.start(apple: apple)
-                }
+                last ? controller.reauthenticated(apple: apple) : controller.start(apple: apple)
             }
         )
     }

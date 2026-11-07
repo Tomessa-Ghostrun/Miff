@@ -42,10 +42,17 @@ final class MemoryDeletionMarker: AccountDeletionMarker {
         mark
     }
 
-    func write(_ newMark: AccountDeletionMark) {
+    /// Le disque refuse d'écrire le marqueur (disque plein, stockage refusé).
+    var writeFails = false
+
+    func write(_ newMark: AccountDeletionMark) -> Bool {
+        if writeFails {
+            return false
+        }
         mark = newMark
         writes.append(newMark)
         timeline.add("markerWrite")
+        return true
     }
 
     func clear() {
@@ -236,5 +243,117 @@ final class FakeAppleRevoker: AppleTokenRevoker {
     func revoke(authorizationCode: String) async -> Bool {
         codes.append(authorizationCode)
         return result
+    }
+}
+
+/// Un « serveur » avec de vrais documents : chaque suppression retire vraiment quelque chose, chaque opération est numérotée, et on
+/// peut en couper UNE (pas de réseau) pour prouver qu'une reprise termine toujours, dans le bon ordre, sans rien supprimer deux fois
+/// ni supprimer le compte avant le profil. Implémente à la fois les index / appareils / profil, les Miffs et la session d'appareil.
+final class AccountWorld: AccountDataStore, AccountMiffs, AccountSession {
+    private let timeline: Timeline
+    private(set) var joined: [MembershipRef]
+    private(set) var owned: [AccountOwnedMiff]
+    private(set) var memberships: Set<String>
+    private(set) var devices: [String]
+    private(set) var profileExists = true
+    private(set) var sessionExists = true
+    /// Les opérations tentées jusqu'ici (coupées comprises) ; `cutAt` : le numéro (à partir de 1) de celle qui échoue faute de réseau.
+    private(set) var calls = 0
+    var cutAt = -1
+
+    init(timeline: Timeline, joined: [MembershipRef], owned: [AccountOwnedMiff], devices: [String]) {
+        self.timeline = timeline
+        self.joined = joined
+        self.owned = owned
+        self.devices = devices
+        // Plus un index périmé (sa Miff a disparu) : il part en silence.
+        memberships = Set(joined.map { $0.key } + owned.map { "key-\($0.miffId)" } + ["stale-key-0000001"])
+    }
+
+    /// Faux = cette opération est coupée.
+    private func pass() -> Bool {
+        calls += 1
+        return calls != cutAt
+    }
+
+    private func cut() -> Error {
+        firestoreError(FirestoreErrorNumber.unavailable)
+    }
+
+    func membershipCount(uid: String) async throws -> Int {
+        guard pass() else {
+            throw cut()
+        }
+        return memberships.count
+    }
+
+    func deviceIds(uid: String) async throws -> [String] {
+        guard pass() else {
+            throw cut()
+        }
+        return devices
+    }
+
+    func deleteDevice(uid: String, deviceId: String) async throws {
+        guard pass() else {
+            throw cut()
+        }
+        devices.removeAll { $0 == deviceId }
+    }
+
+    func deleteProfile(uid: String) async throws {
+        guard pass() else {
+            throw cut()
+        }
+        profileExists = false
+        timeline.add("profile")
+    }
+
+    func deleteSession(uid: String) async throws {
+        guard pass() else {
+            throw OperationTimedOut()
+        }
+        sessionExists = false
+    }
+
+    func inventory(uid: String) async -> MiffsRead {
+        guard pass() else {
+            return .failed(.offline)
+        }
+        let ownedKeys = Set(owned.map { "key-\($0.miffId)" })
+        let stale = memberships.subtracting(joined.map { $0.key }).subtracting(ownedKeys)
+        let staleRefs = stale.sorted().map { MembershipRef(key: $0, miffId: "Stale-\($0)") }
+        return .read(MiffsInventory(joined: joined, owned: owned, stale: staleRefs))
+    }
+
+    func dropStale(uid: String, ref: MembershipRef) async -> MiffStep {
+        guard pass() else {
+            return .failed(.offline)
+        }
+        memberships.remove(ref.key)
+        return .done
+    }
+
+    func leave(uid: String, ref: MembershipRef) async -> MiffStep {
+        guard pass() else {
+            return .failed(.offline)
+        }
+        joined.removeAll { $0.key == ref.key }
+        memberships.remove(ref.key)
+        return .done
+    }
+
+    func deleteOwned(uid: String, miffId: String) async -> MiffStep {
+        guard pass() else {
+            return .failed(.offline)
+        }
+        owned.removeAll { $0.miffId == miffId }
+        memberships.remove("key-\(miffId)")
+        return .done
+    }
+
+    /// Tout ce que le compte détient sur le serveur a disparu.
+    var isEmpty: Bool {
+        joined.isEmpty && owned.isEmpty && memberships.isEmpty && devices.isEmpty && !profileExists && !sessionExists
     }
 }

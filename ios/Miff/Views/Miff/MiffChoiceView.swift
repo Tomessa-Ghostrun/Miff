@@ -36,6 +36,8 @@ struct MiffChoiceView: View {
     let onCreate: () -> Void
     let onJoin: () -> Void
     let onSignOut: () -> Void
+    /// L'entrée discrète vers les Réglages restreints (compte sans Miff), pour pouvoir supprimer son compte depuis l'app.
+    let onOpenSettings: () -> Void
 
     var body: some View {
         MiffFrame(title: nil, onBack: nil) {
@@ -67,6 +69,7 @@ struct MiffChoiceView: View {
                         .foregroundColor(colorActionPrimary.color)
                         .frame(minHeight: Spacing.minTouchTarget)
                 }
+                RestrictedSettingsLink(action: onOpenSettings)
             }
             .frame(maxWidth: .infinity)
         }

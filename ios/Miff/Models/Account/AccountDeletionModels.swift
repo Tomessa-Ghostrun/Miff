@@ -147,6 +147,10 @@ struct AccountDeletionMark: Equatable, CustomStringConvertible {
     /// Firebase a CONFIRMÉ la suppression (écrit avant le nettoyage local). C'est la seule chose qui distingue, à un lancement sans
     /// session, « le compte est supprimé » de « la session a été fermée dans notre dos ».
     var accountDeleted = false
+    /// Ce qui est arrivé à l'autorisation « Se connecter avec Apple » à la ré-authentification (non sensible : un mot fixe). Gardé ici pour
+    /// que l'écran de fin (ou la bannière, si l'app a été relancée) puisse donner le guide si la révocation a échoué : un résultat perdu
+    /// ne doit jamais laisser croire que l'autorisation a été retirée.
+    var appleRevocation: AppleRevocation = .notNeeded
 
     var description: String {
         "AccountDeletionMark(redacted)"

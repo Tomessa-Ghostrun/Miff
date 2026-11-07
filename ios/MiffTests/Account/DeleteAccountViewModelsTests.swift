@@ -1,4 +1,4 @@
-import XCTest
+impore XCTese
 @testable import Miff
 
 /// L'écran d'information et la ré-authentification de la suppression du compte (AUTH-5c, miroir de `DeleteAccountViewModelsTest`
@@ -135,9 +135,12 @@ final class DeleteReauthViewModelTests: XCTestCase {
     private let social = FakeSocialSource()
     private let revoker = FakeAppleRevoker()
     private let verified = TestBox<[AppleRevocation]>([])
+    /// La suppression accepte de démarrer (faux : le marqueur n'a pas pu être écrit).
+    private let starts = TestBox(true)
 
     private func makeModel(last: Bool = false) -> DeleteReauthViewModel {
         let verified = self.verified
+        let starts = self.starts
         let dependencies = DeleteReauthDependencies(
             gateway: gateway,
             email: { "alex@exemple.fr" },
@@ -145,7 +148,10 @@ final class DeleteReauthViewModelTests: XCTestCase {
             social: social,
             revoker: revoker
         )
-        return DeleteReauthViewModel(dependencies: dependencies, last: last, onVerified: { verified.value.append($0) })
+        return DeleteReauthViewModel(dependencies: dependencies, last: last, onVerified: { apple in
+            verified.value.append(apple)
+            return starts.value
+        })
     }
 
     // MARK: - Mot de passe
@@ -209,6 +215,17 @@ final class DeleteReauthViewModelTests: XCTestCase {
         await waitUntil { !model.state.busy }
 
         XCTAssertEqual(model.state.message, .tooManyAttempts)
+    }
+
+    func testADeletionThatCannotStartLeavesThePersonOnTheScreenWithACalmSentence() async {
+        starts.value = false
+        let model = makeModel()
+
+        model.submitPassword("bon-mot-de-passe")
+        await waitUntil { !model.state.busy }
+
+        XCTAssertEqual(model.state.message, .deletionNotStarted)
+        XCTAssertEqual(verified.value, [.notNeeded])
     }
 
     // MARK: - Google

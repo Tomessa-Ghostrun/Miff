@@ -14,6 +14,8 @@ final class AccountDeletionFileMarker: AccountDeletionMarker {
     private struct Stored: Codable {
         let uid: String
         let accountDeleted: Bool
+        /// Absent des marqueurs écrits avant ce champ : alors « pas d'Apple ».
+        let appleRevocation: String?
     }
 
     private let directory: URL
@@ -36,19 +38,30 @@ final class AccountDeletionFileMarker: AccountDeletionMarker {
     func read() -> AccountDeletionMark? {
         lock.lock()
         defer { lock.unlock() }
+        return load()
+    }
+
+    private func load() -> AccountDeletionMark? {
         guard let data = try? Data(contentsOf: fileURL),
               let stored = try? JSONDecoder().decode(Stored.self, from: data),
               !stored.uid.isEmpty else {
             return nil
         }
-        return AccountDeletionMark(uid: stored.uid, accountDeleted: stored.accountDeleted)
+        let apple = stored.appleRevocation.flatMap { AppleRevocation(rawValue: $0) } ?? .notNeeded
+        return AccountDeletionMark(uid: stored.uid, accountDeleted: stored.accountDeleted, appleRevocation: apple)
     }
 
-    func write(_ mark: AccountDeletionMark) {
+    /// Vrai SEULEMENT si le fichier, relu, est bien ce qu'on a voulu écrire. Un marqueur impossible à écrire (disque plein, stockage
+    /// refusé) fait REFUSER le démarrage de la suppression : sans lui, une app tuée en route ne pourrait pas la reprendre, et un profil déjà
+    /// supprimé enverrait la personne vers « crée ton profil ».
+    @discardableResult
+    func write(_ mark: AccountDeletionMark) -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        guard let data = try? JSONEncoder().encode(Stored(uid: mark.uid, accountDeleted: mark.accountDeleted)) else {
-            return
+        let apple = mark.appleRevocation.rawValue
+        let stored = Stored(uid: mark.uid, accountDeleted: mark.accountDeleted, appleRevocation: apple)
+        guard let data = try? JSONEncoder().encode(stored) else {
+            return false
         }
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -58,9 +71,9 @@ final class AccountDeletionFileMarker: AccountDeletionMarker {
             try? folder.setResourceValues(values)
             try data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch {
-            // Le marqueur est un filet : s'il ne peut pas être écrit, la suppression tourne quand même, sans reprise automatique si
-            // l'app est tuée (la personne peut la relancer depuis Réglages).
+            return false
         }
+        return load() == mark
     }
 
     func clear() {

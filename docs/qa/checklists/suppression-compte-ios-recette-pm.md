@@ -11,6 +11,7 @@
 1. **Console Firebase pour Apple** (une seule fois, 20 minutes) : suivre `docs/dev/apple-revocation-suppression-compte.md`. **Sans cela, tout marche sauf le retrait de l'autorisation Apple** (la partie G montre alors l'écran de secours, c'est le comportement prévu). La clé `.p8` ne se donne à personne, elle ne va que dans la console.
 2. **Lancer la version de test** (vous, sur l'ordinateur) : GitHub > Actions > **ios-testflight** > Run workflow > branche `ios/auth-5c-suppression-compte` > mode **signed** > Run. Puis, dans TestFlight sur l'iPhone, installer le nouveau build. (Claude ne lance jamais ce workflow.)
 3. **Comptes jetables à prévoir** (un passage chacun : la suppression est définitive) :
+   - **E0** : e-mail + mot de passe (`prenom+auth5c0@gmail.com`), qui n'aura **jamais de Miff** (compte sans Miff) ;
    - **E1** et **E2** : e-mail + mot de passe (`prenom+auth5c1@gmail.com`, `prenom+auth5c2@gmail.com`) ;
    - **G1** : un compte Google que vous acceptez de supprimer ;
    - **A1** : un compte « Se connecter avec Apple » jetable (choisissez « Masquer mon adresse e-mail » si vous voulez) ;
@@ -24,19 +25,29 @@
 - Le contact affiché dans l'app (tomessa.mfouka@gmail.com) est **provisoire** (décision Q11) : il sera remplacé avant la bêta externe.
 - iOS ne permet pas de « fermer l'app » à la place de la personne : le bouton « Plus tard » de la partie D montre un écran de pause, vous quittez l'app vous-même.
 
-## Un seul chemin (décision du PM du 2026-11-07), et son point bloquant
+## Un seul chemin (décision du PM du 2026-11-07), y compris sans Miff
 
-**« Supprimer mon compte » n'existe que dans Réglages > Mon compte.** Or un compte **sans Miff** n'a pas accès aux Réglages aujourd'hui (barre masquée, décision Q13) : il ne peut donc **pas** se supprimer dans l'app. **C'est contraire à la règle 5.1.1(v) de l'App Store et bloque la soumission** tant que le PM n'a pas tranché (donner accès à Réglages > Mon compte aux comptes sans Miff, ou garder un lien sur l'écran sans Miff). Dans cette recette, **tous les comptes doivent donc avoir une Miff** (créée ou rejointe) pour atteindre l'entrée ; le cas « compte sans Miff » (ligne de position absente, texte « Ton profil, ta photo… » seul) n'est testable qu'une fois ce point tranché.
+**« Supprimer mon compte » n'existe que dans Réglages > Mon compte.** Un compte **sans Miff** y accède par des **Réglages restreints** (même décision, option 1 : elle révise la décision « ni barre ni Réglages sans Miff ») : un lien discret **« Réglages »** sur « Pas encore de Miff » et sur « Choisis comment tu veux commencer » ouvre une liste réduite à **Mon compte** et **Confidentialité** (ni Mes informations ni Langue, toujours pas de barre d'onglets). Le cas « compte sans Miff » (ligne de position absente, texte « Ton profil, ta photo… » seul) se teste donc avec le compte **E0** de la partie A bis.
 
 ## Partie A : l'entrée et l'écran d'information (8 min), compte E1 (une Miff créée, seul dedans)
 
-1. [ ] Créez E1 (inscription e-mail, profil, numéro), puis **créez une Miff** « Recette AUTH-5c » (voir l'encadré « Un seul chemin » ci-dessous). Sur « Choisis comment tu veux commencer » et sur « On n'a pas pu lire ton compte », **il n'y a PAS de « Supprimer mon compte »** (décision du PM du 2026-11-07). Ouvrez Profil > Réglages > Mon compte : un **lien en texte rouge « Supprimer mon compte »** sous « Se déconnecter » (pas un bouton plein).
+1. [ ] Créez E1 (inscription e-mail, profil, numéro), puis **créez une Miff** « Recette AUTH-5c ». Sur « Choisis comment tu veux commencer » et sur « On n'a pas pu lire ton compte », **il n'y a PAS de « Supprimer mon compte »** (décision du PM du 2026-11-07). Ouvrez Profil > Réglages > Mon compte : un **lien en texte rouge « Supprimer mon compte »** sous « Se déconnecter » (pas un bouton plein).
 2. [ ] Touchez-le : écran « Supprimer mon compte ». Après un très court chargement (« Un instant, on vérifie tes Miffs… ») : la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. » et la ligne de position effacée, « Ta Miff » « Recette AUTH-5c » (sans « 0 proche »), le contact pour une copie des données, l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ». **Continuer** et **Annuler**.
 3. [ ] **Annuler** (ou la flèche, ou le geste de retour depuis le bord) : retour à Mon compte, rien n'a changé.
 4. [ ] **Mode avion**, rouvrez l'écran : « Pas de connexion pour le moment. Tes Miffs s'afficheront dès que tu auras du réseau. » et **Continuer grisé**. Réactivez le réseau : la page se complète **toute seule**.
 5. [ ] (Vérification) Le compte n'ayant que sa propre Miff, l'écran n'offre **pas** « Prévenir mes proches » (personne d'autre dans la Miff).
 6. [ ] Lisez tous les textes en **français puis en anglais** (Réglages iPhone > Général > Langue) : ton calme, aucun mot alarmiste (« irrécupérable », « danger »…). Notez tout ce que vous voudriez changer (les textes sont validés par défaut, vous pouvez les ajuster ici).
 7. [ ] Mettez le texte à la **plus grande taille** (Réglages > Accessibilité > Affichage et luminosité > Taille du texte) : « Continuer » reste atteignable en faisant défiler. Avec **VoiceOver** : chaque carte est lue d'un bloc, le lien « Supprimer mon compte » annonce « Ouvre une page qui explique ce qui sera supprimé. Rien n'est supprimé tout de suite. ».
+
+## Partie A bis : Réglages restreints d'un compte sans Miff (8 min), compte E0 (jamais de Miff)
+
+- [ ] **RS1** Créez E0 (inscription e-mail, profil, numéro) et **ne créez ni ne rejoignez de Miff**. Sur « Choisis comment tu veux commencer », un lien discret **« Réglages »** (icône d'engrenage) sous « Se déconnecter ». **Pas** de « Supprimer mon compte » à cet endroit.
+- [ ] **RS2** Touchez-le : la liste des Réglages ne montre que **Mon compte** et **Confidentialité** (pas de Mes informations, pas de Langue). **Pas de barre d'onglets.** La flèche de retour (ou le geste depuis le bord) ramène à « Choisis comment tu veux commencer ».
+- [ ] **RS3** Mon compte : l'e-mail, le mot de passe, « Se déconnecter » et, dessous, le lien rouge **« Supprimer mon compte »**. Confidentialité : les textes légaux, les autorisations, le contact.
+- [ ] **RS4** Mon compte > Supprimer mon compte : l'écran d'information **sans** ligne de position ni liste de Miffs (« Ton profil, ta photo et ton numéro de téléphone seront supprimés. »). **Annuler** : retour à Mon compte, rien n'a changé.
+- [ ] **RS5** Avec VoiceOver : le lien est lu « Réglages, bouton » ; sa zone de toucher fait au moins 44 pt ; avec la plus grande taille de texte, rien n'est coupé.
+- [ ] **RS6** Créez ensuite une Miff avec E0 : le lien « Réglages » n'est plus proposé (la barre d'onglets et le Profil prennent le relais) et la liste des Réglages montre les quatre lignes. Quittez la Miff (ou supprimez-la) : « Pas encore de Miff » revient avec le lien « Réglages ».
+- [ ] **RS7** Le compte E0 (sans Miff) mène sa suppression jusqu'au bout depuis ce chemin (ré-authentification, écran de fin, console : plus d'utilisateur ni de document `users/{uid}`).
 
 ## Partie B : la confirmation et la vérification d'identité, compte E1 (8 min)
 

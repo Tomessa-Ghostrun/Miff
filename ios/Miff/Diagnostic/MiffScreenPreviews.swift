@@ -19,7 +19,7 @@ struct MiffScreenPreview: View {
     var body: some View {
         switch name {
         case "miff-choice":
-            MiffChoiceView(onCreate: noAction, onJoin: noAction, onSignOut: noAction)
+            MiffChoiceView(onCreate: noAction, onJoin: noAction, onSignOut: noAction, onOpenSettings: noAction)
         case "miff-create", "miff-create-limit", "miff-create-saving", "miff-create-offline", "miff-ready":
             CreateMiffContent(state: createState, actions: createActions)
         case "miff-join", "miff-join-error", "miff-join-foreign", "miff-join-paused", "miff-join-member",
@@ -114,7 +114,8 @@ struct MiffScreenPreview: View {
             onCreate: noAction,
             onJoin: noAction,
             onOpenMiff: { _ in },
-            onSignOut: noAction
+            onSignOut: noAction,
+            onOpenSettings: noAction
         )
     }
 

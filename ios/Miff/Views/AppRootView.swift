@@ -38,9 +38,15 @@ struct AppRootView: View {
                 },
                 message: {
                     // Une Miff est apparue pendant la suppression : le compte n'a PAS été supprimé. Une phrase calme, avec la suite.
-                    Text(verbatim: L10n.format("settings_delete_miffs_blocked", AppLinks.supportEmail))
+                    // Les Miffs déjà quittées ou supprimées pendant la tentative le restent (phrase propre à iOS, la clé d'Android ne le dit pas).
+                    Text(verbatim: deletionBlockedMessage)
                 }
             )
+    }
+
+    private var deletionBlockedMessage: String {
+        L10n.format("settings_delete_miffs_blocked", AppLinks.supportEmail) + "\n\n"
+            + L10n.string("ios_settings_delete_miffs_blocked_more")
     }
 
     @ViewBuilder

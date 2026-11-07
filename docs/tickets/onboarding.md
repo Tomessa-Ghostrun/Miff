@@ -662,7 +662,7 @@ Réponses du PM aux 14 questions du challenge (détail et motifs : `docs/tickets
 | Q10 | Logo | **Le PM autorise `design-system` à extraire le logo depuis le Figma** (lancée séparément) | §5.2, ONB-0 |
 | Q11 | Langue | Recommandation retenue | §6.10, RG5, I4 |
 | Q12 | Réglages minimaux | Recommandation retenue | §6.9, RG |
-| Q13 | Barre d'onglets et état « sans Miff » | Recommandation retenue | §6.2, §6.7 |
+| Q13 | Barre d'onglets et état « sans Miff » | Recommandation retenue. **Révisée le 2026-11-07 (décision du PM)** : pas de barre d'onglets sans Miff, mais un lien discret « Réglages » donne accès à des Réglages **restreints** (Mon compte et Confidentialité seulement), pour que tout compte puisse se supprimer dans l'app (Apple 5.1.1(v)) ; voir `suppression-compte.md` | §6.2, §6.7 |
 | Q14 | Échappatoire | **Pas de lien « Ce n'est pas toi ? » ; la déconnexion se fait depuis les Paramètres (contre ma recommandation)** | §6.3, R16, PR10 |
 
 **N1 tranchée (2026-10-24, option A)** : un utilisateur voit uniquement les numéros de téléphone des membres des Miffs auxquelles il appartient, et son numéro n'est vu que par eux (via la copie dans la fiche de membre), sans condition de partage de position. Options B, C, D écartées (§6.4). La mention de visibilité est obligatoire sur l'écran de saisie. **Plus aucune question ouverte** ; le risque « fuite du code = fuite des numéros » reste un risque assumé (R7).

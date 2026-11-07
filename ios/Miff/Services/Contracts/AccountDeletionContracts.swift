@@ -29,8 +29,9 @@ enum AccountSessionCheck: Equatable {
 /// lancement : sans lui, un profil déjà supprimé enverrait la personne vers « crée ton profil ».
 protocol AccountDeletionMarker {
     func read() -> AccountDeletionMark?
-    /// Écrit sur le disque AVANT de rendre la main : une app tuée aussitôt reprend quand même.
-    func write(_ mark: AccountDeletionMark)
+    /// Écrit sur le disque AVANT de rendre la main : une app tuée aussitôt reprend quand même. Vrai SEULEMENT si le marqueur est relu sur
+    /// le disque : sans lui la suppression ne démarre pas (une app tuée en route ne pourrait pas la reprendre).
+    func write(_ mark: AccountDeletionMark) -> Bool
     func clear()
 }
 
@@ -111,8 +112,9 @@ protocol AccountDeletionControls: AnyObject {
     var state: AccountDeletionState { get }
 
     /// La personne vient de se ré-authentifier : le marqueur est écrit, l'app arrête ce qui tourne, la suppression continue.
-    /// `apple` : ce que la ré-authentification a fait de l'autorisation Apple (retenu pour l'écran final).
-    func start(apple: AppleRevocation)
+    /// `apple` : ce que la ré-authentification a fait de l'autorisation Apple (retenu pour l'écran final). Faux = la suppression n'a PAS
+    /// démarré (personne de connecté, ou marqueur impossible à écrire sur le disque) : rien n'a été touché, la personne peut réessayer.
+    func start(apple: AppleRevocation) -> Bool
 
     /// Lancement avec un marqueur et une session valide : la suppression reprend, sans nouvelle ré-authentification.
     func resume()
@@ -121,7 +123,7 @@ protocol AccountDeletionControls: AnyObject {
     func retry()
 
     /// La personne s'est ré-authentifiée (« Dernière vérification ») : la dernière étape est retentée. `apple` : voir `start`.
-    func reauthenticated(apple: AppleRevocation)
+    func reauthenticated(apple: AppleRevocation) -> Bool
 
     /// L'écran de fin a été fermé.
     func acknowledge()

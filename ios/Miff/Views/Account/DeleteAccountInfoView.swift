@@ -90,6 +90,8 @@ struct DeleteAccountInfoView: View {
             systemImage: "envelope",
             hint: L10n.string("settings_privacy_open_mail_a11y")
         )
+        // Ce qui n'est PAS supprimé, dit avec la même honnêteté calme que ce qui l'est.
+        SettingsBody(text: L10n.string("ios_settings_delete_not_erased"))
         DeleteInfoBox(text: L10n.string("settings_delete_irreversible"), boldLead: true)
     }
 

@@ -97,6 +97,14 @@ extension SessionManager: AccountDeletionSession {
     /// - plus de session : si Firebase avait CONFIRMÉ la suppression, c'est un SUCCÈS (nettoyage, carrousel, bannière) ; sinon la session a
     ///   été fermée dans notre dos et le marqueur reste (jamais « supprimé » sans preuve) ;
     /// - la session d'UN AUTRE compte : le marqueur n'est pas le sien, il est ignoré et effacé.
+    /// Une connexion d'un AUTRE compte que celui du marqueur, dans le même processus : le marqueur n'est pas le sien, il est effacé tout
+    /// de suite (sans attendre le lancement suivant).
+    func clearForeignDeletionMarker(uid: String) {
+        if let mark = deletionMarker?.read(), mark.uid != uid {
+            deletionMarker?.clear()
+        }
+    }
+
     func resolveAccountDeletion(uid: String?) async -> Bool {
         guard let marker = deletionMarker, let mark = marker.read() else {
             return false
@@ -107,7 +115,7 @@ extension SessionManager: AccountDeletionSession {
         }
         guard uid != nil else {
             if mark.accountDeleted {
-                await finishDeletionBehindTheScreen(uid: mark.uid)
+                await finishDeletionBehindTheScreen(mark)
             } else {
                 await endSessionKeepingDeletionMarker()
             }
@@ -119,8 +127,10 @@ extension SessionManager: AccountDeletionSession {
     }
 
     /// La suppression est finie mais l'écran de fin n'a jamais été vu : ce qui reste est effacé, puis le carrousel et sa bannière.
-    private func finishDeletionBehindTheScreen(uid: String) async {
-        await eraseAfterAccountDeletion(uid: uid)
+    private func finishDeletionBehindTheScreen(_ mark: AccountDeletionMark) async {
+        await eraseAfterAccountDeletion(uid: mark.uid)
+        // Le résultat de la révocation Apple vient du marqueur (lu AVANT son effacement) : s'il n'est pas prouvé, le guide suit la bannière.
+        appleGuideAfterDeletion = mark.appleRevocation == .failed
         setNotice(.accountDeleted)
         leaveAfterAccountDeletion()
     }

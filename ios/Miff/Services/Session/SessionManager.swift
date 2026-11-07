@@ -151,6 +151,10 @@ final class SessionManager {
     /// du PM du 2026-10-31 : « Ton compte a été supprimé », puis le carrousel, puis inscription ou connexion).
     var carouselAfterDeletion = false
 
+    /// Vrai une fois : la suppression s'est terminée derrière l'écran ET la révocation Apple n'est pas prouvée (échouée, ou résultat perdu) : la
+    /// bannière donne alors aussi le guide pour retirer l'autorisation à la main.
+    var appleGuideAfterDeletion = false
+
     private(set) var state: SessionState = .loading {
         didSet {
             if oldValue != state {
@@ -261,6 +265,13 @@ final class SessionManager {
         }
         notice = nil
         return true
+    }
+
+    /// Le guide « retirer l'autorisation Apple à la main » a été montré (avec la bannière).
+    func consumeAppleGuideAfterDeletion() -> Bool {
+        let shown = appleGuideAfterDeletion
+        appleGuideAfterDeletion = false
+        return shown
     }
 
     /// Vrai une fois après la suppression d'un compte : le carrousel de bienvenue est montré de nouveau.

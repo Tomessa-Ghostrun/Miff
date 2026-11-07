@@ -17,6 +17,30 @@ final class AccountDeletionFileMarkerTests: XCTestCase {
         super.tearDown()
     }
 
+    func testAMarkerThatCannotBeWrittenIsReportedAndNothingIsClaimed() throws {
+        // Un fichier à la place du dossier : rien ne peut être écrit.
+        try Data("x".utf8).write(to: directory)
+        let marker = AccountDeletionFileMarker(directory: directory)
+
+        XCTAssertFalse(marker.write(AccountDeletionMark(uid: "uid-1")))
+        XCTAssertNil(marker.read())
+    }
+
+    func testTheOutcomeOfTheAppleRevocationSurvivesAKilledProcess() {
+        let marker = AccountDeletionFileMarker(directory: directory)
+        XCTAssertTrue(marker.write(AccountDeletionMark(uid: "uid-1", appleRevocation: .failed)))
+
+        XCTAssertEqual(AccountDeletionFileMarker(directory: directory).read()?.appleRevocation, .failed)
+    }
+
+    func testAMarkerWrittenBeforeTheAppleFieldReadsAsNoApple() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let old = Data("{\"uid\":\"uid-1\",\"accountDeleted\":false}".utf8)
+        try old.write(to: directory.appendingPathComponent("account-deletion.json"))
+
+        XCTAssertEqual(AccountDeletionFileMarker(directory: directory).read()?.appleRevocation, .notNeeded)
+    }
+
     func testNothingIsThereBeforeTheFirstWrite() {
         XCTAssertNil(AccountDeletionFileMarker(directory: directory).read())
     }
@@ -32,7 +56,8 @@ final class AccountDeletionFileMarkerTests: XCTestCase {
         XCTAssertTrue(text.contains("uid-1"))
         XCTAssertFalse(text.contains("@"), "ni e-mail")
         let keys = (try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])?.keys.sorted()
-        XCTAssertEqual(keys, ["accountDeleted", "uid"], "l'identifiant et le drapeau, rien d'autre")
+        // L'identifiant et deux drapeaux fixes, rien d'autre.
+        XCTAssertEqual(keys, ["accountDeleted", "appleRevocation", "uid"])
     }
 
     func testTheConfirmationOfFirebaseIsRecordedAndTheMarkerCanBeErased() {
@@ -116,6 +141,38 @@ final class AccountLocalDataTests: XCTestCase {
         }
     }
 
+    private final class RecordingTrackingStore: TrackingLocalStore {
+        private(set) var clears = 0
+
+        func load() -> LocalState? {
+            nil
+        }
+
+        func save(_ state: LocalState) {
+            // Rien à garder.
+        }
+
+        func clear() {
+            clears += 1
+        }
+    }
+
+    private final class RecordingJournal: DetectionJournal {
+        private(set) var clears = 0
+
+        func record(kind: JournalKind, placeId: String?, batteryPct: Int?) {
+            // Rien à garder.
+        }
+
+        func lines() -> [JournalLine] {
+            []
+        }
+
+        func clear() {
+            clears += 1
+        }
+    }
+
     private func suite() -> UserDefaults {
         let name = "account-local-data-\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: name) else {
@@ -137,8 +194,13 @@ final class AccountLocalDataTests: XCTestCase {
         let active = MemoryActiveMiffStore()
         active.choose(testMiffId)
         let cleaner = RecordingCleaner()
+        let tracking = RecordingTrackingStore()
+        let journal = RecordingJournal()
         let erasers = AccountLocalData.erasers(
-            notificationAsks: asks, pendingMiffDeletions: pending, activeMiff: active, notifications: cleaner
+            AccountLocalStores(
+                notificationAsks: asks, pendingMiffDeletions: pending, activeMiff: active, notifications: cleaner,
+                trackingLocal: tracking, detectionJournal: journal
+            )
         )
 
         for erase in erasers {
@@ -151,6 +213,8 @@ final class AccountLocalDataTests: XCTestCase {
         XCTAssertEqual(pending.ids(uid: "uid-2"), [testOtherMiffId])
         XCTAssertNil(active.chosen())
         XCTAssertEqual(cleaner.removals, 1)
+        XCTAssertEqual(tracking.clears, 1, "la copie locale du suivi est effacée directement")
+        XCTAssertEqual(journal.clears, 1, "le journal de détection aussi")
     }
 
     func testAFlagOfAccountsThatNeverHadOneIsHarmless() async {

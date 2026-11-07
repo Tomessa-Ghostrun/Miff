@@ -8,6 +8,8 @@ struct MiffHomeActions {
     let onJoin: () -> Void
     let onOpenMiff: (String) -> Void
     let onSignOut: () -> Void
+    /// L'entrée discrète des Réglages restreints, montrée seulement dans l'état « Pas encore de Miff ».
+    let onOpenSettings: () -> Void
 }
 
 /// L'accueil de l'app une fois l'onboarding fini (destination « fil »), PROVISOIRE comme son équivalent d'Android avant le
@@ -93,6 +95,8 @@ struct MiffHomeContent: View {
             Text("feed_join_action")
         }
         .buttonStyle(.miffPrimaryFullWidth)
+        // Pas de barre d'onglets sans Miff : l'entrée vers les Réglages restreints (Mon compte, Confidentialité) est ici, discrète.
+        RestrictedSettingsLink(action: actions.onOpenSettings)
     }
 }
 

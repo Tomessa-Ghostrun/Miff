@@ -118,8 +118,9 @@ struct PersonNameParts: Equatable {
 /// Contient des jetons : jamais journalisé, jamais stocké, jamais affiché (la description est volontairement vide).
 enum SocialCredential: Equatable {
     case google(idToken: String, accessToken: String)
-    /// `authorizationCode` : code à usage unique donné par Apple en plus du jeton. Gardé seulement en mémoire, pour la
-    /// révocation du jeton Apple à la suppression d'un compte (AUTH-5, à venir) ; jamais stocké ni journalisé.
+    /// `authorizationCode` : code à usage unique donné par Apple en plus du jeton. Il ne sert qu'à la
+    /// révocation du jeton Apple à la suppression d'un compte (AUTH-5c, `DeleteReauthViewModel`) : il passe d'ici au retrait de
+    /// l'autorisation et nulle part ailleurs (ni gardé par la passerelle, ni stocké, ni journalisé).
     case apple(idToken: String, rawNonce: String, name: PersonNameParts?, authorizationCode: String? = nil)
 }
 

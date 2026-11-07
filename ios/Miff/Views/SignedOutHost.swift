@@ -28,6 +28,8 @@ struct SignedOutHost: View {
     /// La bannière « Ton compte a été supprimé. » (G2), décidée à l'arrivée : la suppression s'est terminée derrière l'écran (app
     /// relancée). Lue sans l'effacer ici (voir `onAppear`) : un écran recréé ne la perd pas.
     @State private var showDeletedBanner: Bool
+    /// Le guide « retirer l'autorisation Apple à la main » accompagne la bannière quand la révocation n'est pas prouvée.
+    @State private var showAppleGuide: Bool
 
     init(environment: AppEnvironment, start: AppDestination) {
         self.environment = environment
@@ -40,6 +42,7 @@ struct SignedOutHost: View {
                 start: start, carouselSeen: environment.onboardingFlags.carouselSeen)
         )
         _showDeletedBanner = State(initialValue: environment.session.hasAccountDeletedNotice)
+        _showAppleGuide = State(initialValue: environment.session.appleGuideAfterDeletion)
     }
 
     /// L'écran racine (sans flèche de retour) quand ce n'est pas le carrousel.
@@ -61,13 +64,14 @@ struct SignedOutHost: View {
         }
         .overlay(alignment: .top) {
             if showDeletedBanner {
-                AccountDeletedBanner(onDismiss: { showDeletedBanner = false })
+                AccountDeletedBanner(showsAppleGuide: showAppleGuide, onDismiss: { showDeletedBanner = false })
             }
         }
         .onAppear {
             // Le carrousel et la bannière ne sont montrés qu'UNE fois : maintenant qu'ils sont décidés, ils sont consommés.
             _ = environment.session.consumeCarouselAfterDeletion()
             _ = environment.session.consumeAccountDeletedNotice()
+            _ = environment.session.consumeAppleGuideAfterDeletion()
         }
     }
 

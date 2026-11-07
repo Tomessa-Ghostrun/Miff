@@ -233,5 +233,19 @@ final class SessionManagerAccountDeletionTests: XCTestCase {
         _ = await harness.manager.signInWithEmail(email: "alex@exemple.fr", password: "motdepasse")
 
         XCTAssertEqual(harness.manager.state, .ready(.feed))
+        XCTAssertNil(marker.mark, "le marqueur d'un autre compte est effacé à la connexion, dans le même processus")
+    }
+
+    func testTheAppleGuideFollowsTheBannerOnlyWhenTheRevocationIsNotProven() async {
+        for (apple, expected) in [(AppleRevocation.failed, true), (.revoked, false), (.notNeeded, false)] {
+            let mark = AccountDeletionMark(uid: "uid-1", accountDeleted: true, appleRevocation: apple)
+            let harness = SessionHarness(deletionMarker: MemoryDeletionMarker(timeline: Timeline(), mark: mark))
+
+            await harness.manager.startAndResolve()
+
+            XCTAssertEqual(harness.manager.appleGuideAfterDeletion, expected, "\(apple)")
+            XCTAssertEqual(harness.manager.consumeAppleGuideAfterDeletion(), expected)
+            XCTAssertFalse(harness.manager.consumeAppleGuideAfterDeletion(), "une seule fois")
+        }
     }
 }

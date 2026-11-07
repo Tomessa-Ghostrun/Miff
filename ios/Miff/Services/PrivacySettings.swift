@@ -67,7 +67,7 @@ final class PrivacySettings: ObservableObject, CollectionConsentApplying {
     }
 
     /// Suppression du compte (AUTH-5c, ticket §5.10) : la collecte est coupée EN PREMIER (aucun événement n'est envoyé pour la
-    /// suppression), les rapports de plantage pas encore envoyés sont effacés, et ce que les SDK gardent sur l'installation est oublié.
+    /// suppression), les rapports de plantage pas encore envoyés sont effacés, et l'identifiant d'installation d'Analytics est réinitialisé (Crashlytics n'a rien d'autre à oublier : ses rapports non envoyés sont effacés par la coupure).
     func eraseCollectedData() {
         applyAccountConsent(false)
         analytics.forgetInstallation()
