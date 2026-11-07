@@ -326,10 +326,12 @@ class FeedBuilderTest {
     @Test
     fun battery_ageIsCountedFromUpdatedAt_notFromTheLastUpdate() {
         // A write that only refreshes the battery moves updatedAt and nothing else: the old photo (lastUpdateAt, 10 h ago) must not hide it...
-        val refreshed = status(PresenceValue.IN_TRUSTED, presenceAgo = 10 * hour, lastUpdateAgo = 10 * hour, updatedAgo = minute)
+        val refreshed =
+            status(PresenceValue.IN_TRUSTED, presenceAgo = 10 * hour, lastUpdateAgo = 10 * hour, updatedAgo = minute)
         assertEquals(Battery(85), card(build(trio, mapOf("t" to refreshed)), "t").battery)
         // ...and a recent photo does not keep an old battery on screen.
-        val stale = status(PresenceValue.IN_TRUSTED, presenceAgo = minute, lastUpdateAgo = minute, updatedAgo = 7 * hour)
+        val stale =
+            status(PresenceValue.IN_TRUSTED, presenceAgo = minute, lastUpdateAgo = minute, updatedAgo = 7 * hour)
         assertNull(card(build(trio, mapOf("t" to stale)), "t").battery)
     }
 
