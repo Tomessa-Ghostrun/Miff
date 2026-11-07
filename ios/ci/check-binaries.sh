@@ -147,7 +147,8 @@ for file in BalooThambi2-Variable.ttf HankenGrotesk-Regular.ttf HankenGrotesk-Bo
 done
 
 # --- Diagnostic et fournisseur App Check de débogage (marqueurs écrits dans NOTRE code seulement) ---
-diagnostic_markers='DIAGNOSTICPROBE|DiagnosticViewModel|DiagnosticRepository|TokenGalleryView|DiagnosticLaunchOptions|analytics_diagnostic_test'
+# LOC-4b : le journal local de la détection (VIE2) est de l'outil de test : son marqueur et le fichier qui l'écrit sont dans le même lot.
+diagnostic_markers='DIAGNOSTICPROBE|DiagnosticViewModel|DiagnosticRepository|TokenGalleryView|DiagnosticLaunchOptions|analytics_diagnostic_test|DETECTIONJOURNAL|FileDetectionJournal|DetectionJournalCard'
 debug_provider_marker='MiffDebugAppCheck'
 diagnostic_hits="$(count_strings "$diagnostic_markers")"
 debug_provider_hits="$(count_strings "$debug_provider_marker")"
@@ -181,6 +182,25 @@ case "$mode" in
       report "Release : aucune trace du diagnostic ni du fournisseur App Check de débogage dans l'exécutable (OK)"
     fi
     # Les textes du catalogue restent dans l'app (clés diag_*) : texte inerte, sans code pour l'afficher.
+    ;;
+esac
+
+# --- Journal local de la détection (LOC-4b, critère VIE2) : présent en Debug et Internal (témoin positif), ABSENT en publication ---
+journal_hits="$(count_strings 'DETECTIONJOURNAL')"
+case "$mode" in
+  debug | internal)
+    if [ "${journal_hits:-0}" -eq 0 ]; then
+      fail "Le build ${mode} devrait contenir le journal local de la détection (marqueur DETECTIONJOURNAL absent)."
+    else
+      report "Journal de détection : présent dans le build ${mode} (OK)"
+    fi
+    ;;
+  release)
+    if [ "${journal_hits:-0}" -ne 0 ]; then
+      fail "Le build Release contient le journal local de la détection (${journal_hits} trace(s) du marqueur DETECTIONJOURNAL)."
+    else
+      report "Release : aucune trace du journal local de la détection (OK)"
+    fi
     ;;
 esac
 

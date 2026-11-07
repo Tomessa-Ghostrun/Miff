@@ -57,11 +57,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
+import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.feed.FeedBanner
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
@@ -126,6 +128,8 @@ class FeedHost(
     val refreshing: Boolean = false,
     val onRefresh: () -> Unit = {},
     val observe: suspend () -> Unit = {},
+    /** FEED-4: where the photos are read (null: no photo is drawn). */
+    val photos: PhotoReader? = null,
 )
 
 /** The hand-overs to the applications of the system, with the calm message of the ticket when none answers. */
@@ -184,6 +188,8 @@ fun FeedScreen(
     val reduceMotion = ReduceMotion.isRequested(LocalContext.current)
 
     suspend fun toTop() = if (reduceMotion) listState.scrollToItem(0) else listState.animateScrollToItem(0)
+    // FEED-4: the photo opened in full screen (nothing of it is kept once it is closed or the screen is left).
+    var opened by remember { mutableStateOf<OpenedPhoto?>(null) }
     val paneName = stringResource(R.string.feed_pane_a11y)
     val content = (feed as? FeedUiState.Ready)?.content
     val density = LocalDensity.current
@@ -264,6 +270,7 @@ fun FeedScreen(
                         listState,
                         actions,
                         onRetry,
+                        onOpenPhoto = { opened = it },
                         topRoom = headerRoom,
                         refreshing = refreshing,
                     )
@@ -309,6 +316,15 @@ fun FeedScreen(
         // Polite announcement of "Actualiser" (a node of one dp INSIDE the safe area, drawn nowhere).
         RefreshAnnouncement(refreshing, offline)
     }
+    opened?.let { photo ->
+        PhotoFullScreen(
+            opened = photo,
+            texts = texts,
+            nowMillis = System.currentTimeMillis(),
+            onOpenMap = actions.onOpenMap,
+            onDismiss = { opened = null },
+        )
+    }
     val shown = locate as? LocateUiState.Shown
     if (shown != null) {
         LocateSheet(
@@ -332,6 +348,7 @@ private fun FeedBody(
     listState: androidx.compose.foundation.lazy.LazyListState,
     actions: FeedActions,
     onRetry: () -> Unit,
+    onOpenPhoto: (OpenedPhoto) -> Unit,
     /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
     topRoom: Dp,
     refreshing: Boolean,
@@ -373,8 +390,8 @@ private fun FeedBody(
                     start = Spacing.m,
                     end = Spacing.m,
                     top = topRoom + Spacing.m,
-                    // TABBAR-GLASS: the last element scrolls above the glass bar, never under it.
-                    bottom = Spacing.m + LocalTabBarInset.current,
+                    // TABBAR-GLASS: the last element scrolls above the glass bar, never under it; and above the bubble of encouragement when it is shown (UPDATE-2).
+                    bottom = Spacing.m + LocalTabBarInset.current + LocalBottomOverlayPadding.current,
                 ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -412,7 +429,7 @@ private fun FeedBody(
                 }
 
                 is FeedUiState.Ready -> {
-                    readyItems(feed.content, locate, texts, actions)
+                    readyItems(feed.content, locate, texts, actions, onOpenPhoto)
                 }
             }
         }
@@ -424,6 +441,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
     locate: LocateUiState,
     texts: FeedTexts,
     actions: FeedActions,
+    onOpenPhoto: (OpenedPhoto) -> Unit,
 ) {
     items(content.banners, key = { it::class.simpleName.orEmpty() }) { banner -> BannerView(banner, texts) }
     item(key = "bubble") {
@@ -443,6 +461,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             onLocate = actions.onLocate,
             onMessage = actions.onMessage,
             onCall = actions.onCall,
+            miffId = content.miffId,
+            nowMillis = System.currentTimeMillis(),
+            onOpenPhoto = onOpenPhoto,
         )
     }
     item(key = "add") {

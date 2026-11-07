@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.tracking.MemberStatusFacts
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.update.UpdatePrompt
 import java.time.ZoneId
 
 /*
@@ -118,6 +119,12 @@ object FeedBuilder {
             banners = banners,
             cards = cards,
             announceKey = announceKey(bubble),
+            myPrompt = UpdatePrompt.level(statuses[input.myUid], mySharing && !input.waitingAgreement, nowMillis),
+            myPhoto =
+                statuses[input.myUid]
+                    ?.takeIf {
+                        mySharing && !input.waitingAgreement
+                    }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
         )
     }
 
@@ -206,7 +213,26 @@ object FeedBuilder {
             // Ticket 5.6: another member whose sharing is on, while mine is on and the statuses are REALLY read (the rules ask for my own status
             // to be published): even with no known status. "No position yet" is one of the calm answers of the sheet.
             canLocate = !isMe && mySharing && !hidden && member.sharingEnabled && input.statuses is StatusesView.Loaded,
+            photo = photoSlot(status, member.sharingEnabled && !(hidden && !isMe), now),
         )
+    }
+
+    /** FEED-4: the photo is read only when the status says so, and the last update is recent enough for it to be readable (the sharing is on). */
+    private fun photoSlot(
+        status: MemberStatus?,
+        visible: Boolean,
+        now: Long,
+    ): PhotoSlot {
+        val update = status?.lastUpdateAtMillis
+        if (!visible || status == null || !status.hasPhoto || update == null) return PhotoSlot.None
+        // A last update in the future (a wrong clock) counts as now; one older than the life of a photo cannot have a readable photo.
+        return if (now - minOf(update, now) <
+            PhotoSlot.READ_WINDOW_MILLIS
+        ) {
+            PhotoSlot.Candidate(update)
+        } else {
+            PhotoSlot.None
+        }
     }
 
     private fun placeRef(
