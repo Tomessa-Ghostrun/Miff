@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -57,6 +56,8 @@ import com.tomessa.miff.domain.diagnostic.OfferState
 import com.tomessa.miff.domain.diagnostic.RulesProbeOutcome
 import com.tomessa.miff.domain.diagnostic.isExpectedProject
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.splash.LocalSplashCovering
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -95,7 +96,7 @@ fun DiagnosticScreen(
             Modifier
                 .fillMaxSize()
                 .background(GradientAuthBackground)
-                .safeDrawingPadding()
+                .miffScreenInsets()
                 .verticalScroll(rememberScrollState())
                 .padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
@@ -111,122 +112,129 @@ fun DiagnosticScreen(
             Text(stringResource(R.string.diag_open_home), style = textBodyBold14, color = colorActionPrimary)
         }
 
+        InsetsDiagnosticCard()
+
         BuildIdentityCard(projectId = state.firebaseProjectId)
 
-        SectionCard(stringResource(R.string.diag_test1_title)) {
-            Body(stringResource(R.string.diag_test1_description))
-            MiffButton(
-                text = stringResource(R.string.diag_test1_action),
-                onClick = viewModel::runTest1,
-                enabled = state.test1 !is Test1State.Running,
-            )
-            LiveResult {
-                when (val t = state.test1) {
-                    Test1State.Idle -> Unit
-                    Test1State.Running -> Body(stringResource(R.string.diag_test1_running))
-                    is Test1State.Done -> Test1Result(t.outcome)
-                }
-            }
-        }
-
-        SectionCard(stringResource(R.string.diag_test2_title)) {
-            Body(stringResource(R.string.diag_test2_description))
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text(stringResource(R.string.diag_test2_email_label)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                colors = fieldColors(),
-                shape = ShapeMd,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text(stringResource(R.string.diag_test2_password_label)) },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = fieldColors(),
-                shape = ShapeMd,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            MiffButton(
-                text = stringResource(R.string.diag_test2_action),
-                onClick = {
-                    viewModel.runTest2(email, password)
-                    password = "" // never keep the password longer than the request
-                },
-                enabled = state.test2 !is Test2State.Running,
-            )
-            LiveResult {
-                when (val t = state.test2) {
-                    Test2State.Idle -> Unit
-                    Test2State.Running -> Body(stringResource(R.string.diag_test2_running))
-                    is Test2State.InputProblem -> Warning(inputProblemText(t.problem))
-                    is Test2State.Done -> Test2ResultView(t.result)
-                }
-            }
-        }
-
-        SectionCard(stringResource(R.string.diag_appcheck_title)) {
-            Body(stringResource(R.string.diag_appcheck_description))
-            MiffButton(
-                text = stringResource(R.string.diag_appcheck_action),
-                onClick = viewModel::checkAppCheck,
-                enabled = state.appCheck !is AppCheckState.Running,
-            )
-            LiveResult {
-                when (val a = state.appCheck) {
-                    AppCheckState.Idle -> {}
-
-                    AppCheckState.Running -> {
-                        Body(stringResource(R.string.diag_appcheck_running))
+        // Debug builds only: the rest of this long screen is composed once the launch animation has left. Its first composition
+        // (unoptimised code, many fields) used to freeze the screen for seconds under the animation, so that the "M" stayed
+        // alone for about 4 s on the OPPO (PM recette 2026-10-31). The release build has no such screen.
+        if (!LocalSplashCovering.current) {
+            SectionCard(stringResource(R.string.diag_test1_title)) {
+                Body(stringResource(R.string.diag_test1_description))
+                MiffButton(
+                    text = stringResource(R.string.diag_test1_action),
+                    onClick = viewModel::runTest1,
+                    enabled = state.test1 !is Test1State.Running,
+                )
+                LiveResult {
+                    when (val t = state.test1) {
+                        Test1State.Idle -> Unit
+                        Test1State.Running -> Body(stringResource(R.string.diag_test1_running))
+                        is Test1State.Done -> Test1Result(t.outcome)
                     }
+                }
+            }
 
-                    is AppCheckState.Done -> {
-                        when (a.outcome) {
-                            AppCheckOutcome.TokenObtained -> Strong(stringResource(R.string.diag_appcheck_ok))
-                            AppCheckOutcome.NoToken -> Body(stringResource(R.string.diag_appcheck_none))
+            SectionCard(stringResource(R.string.diag_test2_title)) {
+                Body(stringResource(R.string.diag_test2_description))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(stringResource(R.string.diag_test2_email_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = fieldColors(),
+                    shape = ShapeMd,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(stringResource(R.string.diag_test2_password_label)) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = fieldColors(),
+                    shape = ShapeMd,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                MiffButton(
+                    text = stringResource(R.string.diag_test2_action),
+                    onClick = {
+                        viewModel.runTest2(email, password)
+                        password = "" // never keep the password longer than the request
+                    },
+                    enabled = state.test2 !is Test2State.Running,
+                )
+                LiveResult {
+                    when (val t = state.test2) {
+                        Test2State.Idle -> Unit
+                        Test2State.Running -> Body(stringResource(R.string.diag_test2_running))
+                        is Test2State.InputProblem -> Warning(inputProblemText(t.problem))
+                        is Test2State.Done -> Test2ResultView(t.result)
+                    }
+                }
+            }
+
+            SectionCard(stringResource(R.string.diag_appcheck_title)) {
+                Body(stringResource(R.string.diag_appcheck_description))
+                MiffButton(
+                    text = stringResource(R.string.diag_appcheck_action),
+                    onClick = viewModel::checkAppCheck,
+                    enabled = state.appCheck !is AppCheckState.Running,
+                )
+                LiveResult {
+                    when (val a = state.appCheck) {
+                        AppCheckState.Idle -> {}
+
+                        AppCheckState.Running -> {
+                            Body(stringResource(R.string.diag_appcheck_running))
+                        }
+
+                        is AppCheckState.Done -> {
+                            when (a.outcome) {
+                                AppCheckOutcome.TokenObtained -> Strong(stringResource(R.string.diag_appcheck_ok))
+                                AppCheckOutcome.NoToken -> Body(stringResource(R.string.diag_appcheck_none))
+                            }
                         }
                     }
                 }
             }
+
+            SectionCard(stringResource(R.string.diag_privacy_title)) {
+                Body(stringResource(R.string.diag_privacy_description))
+                SwitchRow(
+                    label = stringResource(R.string.diag_switch_analytics),
+                    checked = state.analyticsEnabled,
+                    onCheckedChange = viewModel::setAnalyticsEnabled,
+                )
+                SwitchRow(
+                    label = stringResource(R.string.diag_switch_crash),
+                    checked = state.crashReportsEnabled,
+                    onCheckedChange = viewModel::setCrashReportsEnabled,
+                )
+                MiffButton(
+                    text = stringResource(R.string.diag_event_action),
+                    onClick = viewModel::sendTestEvent,
+                )
+                MiffButton(
+                    text = stringResource(R.string.diag_event_location_action),
+                    onClick = viewModel::tryToSendPosition,
+                )
+                LiveResult { state.eventFeedback?.let { EventFeedbackView(it) } }
+                MiffButton(
+                    text = stringResource(R.string.diag_crash_action),
+                    onClick = viewModel::triggerTestCrash,
+                    enabled = state.crashReportsEnabled,
+                )
+                if (!state.crashReportsEnabled) Body(stringResource(R.string.diag_crash_hint))
+            }
+
+            TokenGallery()
+
+            LanguageCard()
         }
-
-        SectionCard(stringResource(R.string.diag_privacy_title)) {
-            Body(stringResource(R.string.diag_privacy_description))
-            SwitchRow(
-                label = stringResource(R.string.diag_switch_analytics),
-                checked = state.analyticsEnabled,
-                onCheckedChange = viewModel::setAnalyticsEnabled,
-            )
-            SwitchRow(
-                label = stringResource(R.string.diag_switch_crash),
-                checked = state.crashReportsEnabled,
-                onCheckedChange = viewModel::setCrashReportsEnabled,
-            )
-            MiffButton(
-                text = stringResource(R.string.diag_event_action),
-                onClick = viewModel::sendTestEvent,
-            )
-            MiffButton(
-                text = stringResource(R.string.diag_event_location_action),
-                onClick = viewModel::tryToSendPosition,
-            )
-            LiveResult { state.eventFeedback?.let { EventFeedbackView(it) } }
-            MiffButton(
-                text = stringResource(R.string.diag_crash_action),
-                onClick = viewModel::triggerTestCrash,
-                enabled = state.crashReportsEnabled,
-            )
-            if (!state.crashReportsEnabled) Body(stringResource(R.string.diag_crash_hint))
-        }
-
-        TokenGallery()
-
-        LanguageCard()
     }
 }
 

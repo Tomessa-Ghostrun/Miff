@@ -15,14 +15,25 @@ on:
     inputs:
       archive_mode:
         description: >-
-          unsigned = archive non signee, signature faite a l'export (defaut : evite de creer
-          un certificat de developpement orphelin a chaque run ; support NON CONFIRME, echec
-          rapide possible a l'export). signed = archive signee automatiquement (plan de repli).
+          signed = archive signee automatiquement (DEFAUT : seul mode des succès constatés : miff-4,
+          loc-3, loc-4a). unsigned = archive non signee, signature faite a l'export :
+          ECHEC constate a l'export (frameworks binaires Firebase et gRPC "not properly signed",
+          4 runs le 2026-11-06), ne plus l'utiliser sans nouvelle verification.
         type: choice
         options:
-          - unsigned
           - signed
-        default: unsigned
+          - unsigned
+        default: signed
+      location_blocking:
+        description: >-
+          LOC-4a, interrupteur de compilation de l'ecran « Toujours autoriser » (decision du PM du 2026-11-01). yes = bloquant
+          (DEFAUT : l'onboarding ne se termine pas sans « Toujours »). no = RELACHE (lien « Plus tard »), a n'utiliser qu'APRES
+          un refus d'Apple 5.1.2(i) ou pour un essai : jamais un oubli.
+        type: choice
+        options:
+          - "yes"
+          - "no"
+        default: "yes"
 
 permissions:
   contents: read
@@ -130,8 +141,48 @@ jobs:
           chmod +x "$tools/xcodegen/bin/xcodegen"
           echo "$tools/xcodegen/bin" >> "$GITHUB_PATH"
 
+      - name: Recréer la configuration Firebase (secret, jamais affichée)
+        # GoogleService-Info.plist n'est JAMAIS dans le depot : recree ici depuis un secret GitHub (base64) avant la
+        # generation du projet (XcodeGen l'embarque s'il existe), et supprime a la fin du job (etape de nettoyage).
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+        run: |
+          set +x
+          target="Config/GoogleService-Info.plist"
+          mkdir -p Config
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_B64" ]; then
+            echo "::error title=Secret manquant::Le secret GitHub GOOGLE_SERVICE_INFO_PLIST_B64 est absent. Le PM doit le créer (PowerShell) : [Convert]::ToBase64String([IO.File]::ReadAllBytes(\"chemin\\GoogleService-Info.plist\")) | gh secret set GOOGLE_SERVICE_INFO_PLIST_B64 --repo Tomessa-Ghostrun/Miff"
+            exit 1
+          fi
+          umask 077
+          if ! printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_B64" | base64 -d > "$target" 2>/dev/null || ! plutil -lint "$target" > /dev/null 2>&1; then
+            rm -f "$target"
+            echo "::error title=Secret invalide::GOOGLE_SERVICE_INFO_PLIST_B64 n'est pas un fichier .plist encodé en base64 valide."
+            exit 1
+          fi
+          project_id=$(/usr/libexec/PlistBuddy -c "Print :PROJECT_ID" "$target" 2>/dev/null || true)
+          bundle_id=$(/usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" "$target" 2>/dev/null || true)
+          if [ "$project_id" != "miff-3d283" ] || [ "$bundle_id" != "com.tomessa.miff" ]; then
+            rm -f "$target"
+            echo "::error title=Mauvais projet Firebase::Le fichier décodé ne correspond pas au projet miff-3d283 / à l'app com.tomessa.miff (compte Apple et Firebase partagés avec un autre projet : arrêt avant toute signature)."
+            exit 1
+          fi
+          echo "Configuration Firebase recréée (projet et identifiant d'app vérifiés)."
+
       - name: Générer le projet Xcode
         run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
+
+      - name: Figer les versions des paquets Swift (Package.resolved versionné)
+        run: |
+          set -euo pipefail
+          # Meme fichier que celui verifie par le workflow ios : l'archive utilise exactement les versions testees.
+          if [ -f Package.resolved ]; then
+            mkdir -p Miff.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+            cp Package.resolved Miff.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            echo "Package.resolved appliqué."
+          else
+            echo "::warning::ios/Package.resolved absent : les versions des paquets Swift ne sont pas figées pour cette archive."
+          fi
 
       - name: Garde-fou - bundle ID exact (compte Apple partagé avec Ghostrun)
         run: |
@@ -168,6 +219,7 @@ jobs:
         env:
           BUILD_NUMBER: ${{ github.run_number }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
         run: |
           set -uo pipefail
           bash ci/timed.sh "Archive (non signée)" bash -c '
@@ -175,10 +227,12 @@ jobs:
             xcodebuild archive \
               -project Miff.xcodeproj -scheme Miff -configuration Internal \
               -destination "generic/platform=iOS" \
+              -onlyUsePackageVersionsFromResolvedFile \
               -archivePath build/Miff.xcarchive \
               CODE_SIGNING_ALLOWED=NO \
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
               2>&1 | tee build/xcodebuild-archive.log | xcbeautify
           '
 
@@ -191,6 +245,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
         run: |
           set -uo pipefail
           # Pas de "set -x" : la ligne de commande contient des identifiants.
@@ -201,6 +256,7 @@ jobs:
             xcodebuild archive \
               -project Miff.xcodeproj -scheme Miff -configuration Internal \
               -destination "generic/platform=iOS" \
+              -onlyUsePackageVersionsFromResolvedFile \
               -archivePath build/Miff.xcarchive \
               -allowProvisioningUpdates \
               -authenticationKeyPath "$ASC_KEY_PATH" \
@@ -208,6 +264,7 @@ jobs:
               -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
               2>&1 | tee build/xcodebuild-archive.log | xcbeautify
           '
 
@@ -257,6 +314,94 @@ jobs:
           fi
           exit "$fail"
 
+      - name: Contenu de l'archive (Info.plist, entitlements, diagnostic) (bloquante)
+        if: success()
+        env:
+          ARCHIVE_MODE: ${{ inputs.archive_mode }}
+        run: |
+          set -uo pipefail
+          app="$(ls -d build/Miff.xcarchive/Products/Applications/*.app 2>/dev/null | head -n 1)"
+          if [ ! -d "$app" ]; then
+            echo "::error::Application introuvable dans l'archive : envoi annulé."
+            exit 1
+          fi
+          plist="$app/Info.plist"
+          binary="$app/Miff"
+          fail=0
+          note() { echo "$1"; echo "- $1" >> "$GITHUB_STEP_SUMMARY"; }
+          bad() { echo "::error::$1 : envoi annulé."; fail=1; }
+          { echo; echo "Contenu de l'archive :"; } >> "$GITHUB_STEP_SUMMARY"
+          # Collecte éteinte, apparence claire, configuration Internal.
+          for key in FIREBASE_ANALYTICS_COLLECTION_ENABLED FirebaseCrashlyticsCollectionEnabled FirebaseDataCollectionDefaultEnabled; do
+            value="$(plutil -extract "$key" raw -o - "$plist" 2>/dev/null || echo absent)"
+            if [ "$value" = "false" ]; then note "Info.plist : ${key} = false (OK)"; else bad "Info.plist : ${key} vaut « ${value} » au lieu de false"; fi
+          done
+          style="$(plutil -extract UIUserInterfaceStyle raw -o - "$plist" 2>/dev/null || echo absent)"
+          if [ "$style" = "Light" ]; then note "Info.plist : apparence claire (OK)"; else bad "UIUserInterfaceStyle vaut « ${style} » au lieu de Light"; fi
+          configuration="$(plutil -extract MiffBuildConfiguration raw -o - "$plist" 2>/dev/null || echo absent)"
+          if [ "$configuration" = "Internal" ]; then note "Info.plist : configuration Internal (OK)"; else bad "MiffBuildConfiguration vaut « ${configuration} » au lieu de Internal"; fi
+          # LOC-4a : EXACTEMENT les deux clés de localisation, aucun mode d'arrière-plan, pas d'exception ATS.
+          location_keys="$(plutil -p "$plist" | grep -o -E 'NSLocation[A-Za-z]*' | sort -u | tr '\n' ' ')"
+          if [ "$location_keys" = "NSLocationAlwaysAndWhenInUseUsageDescription NSLocationWhenInUseUsageDescription " ]; then
+            note "Info.plist : exactement les deux clés de localisation attendues (OK)"
+          else
+            bad "L'Info.plist a les clés de localisation « ${location_keys} » au lieu des deux attendues"
+          fi
+          if plutil -p "$plist" | grep -q -E 'UIBackgroundModes|NSAppTransportSecurity'; then
+            bad "L'Info.plist contient un mode d'arrière-plan ou une exception ATS"
+          else
+            note "Info.plist : aucun mode d'arrière-plan, aucune exception ATS (OK)"
+          fi
+          blocking="$(plutil -extract MiffLocationBlocking raw -o - "$plist" 2>/dev/null || echo absent)"
+          if [ "$blocking" = "YES" ]; then note "Info.plist : l'écran « Toujours » est BLOQUANT (MiffLocationBlocking = YES)"; else note "Info.plist : l'écran « Toujours » est RELÂCHÉ dans ce build (MiffLocationBlocking = ${blocking})"; fi
+          # Configuration Firebase embarquée = projet Miff (compte Apple et Firebase partagés avec un autre projet).
+          project_id="$(plutil -extract PROJECT_ID raw -o - "$app/GoogleService-Info.plist" 2>/dev/null || echo absent)"
+          if [ "$project_id" = "miff-3d283" ]; then note "GoogleService-Info.plist embarqué : projet miff-3d283 (OK)"; else bad "Le projet Firebase embarqué n'est pas miff-3d283"; fi
+          # Diagnostic présent (build Internal), fournisseur App Check de débogage absent, pas d'identifiant publicitaire.
+          if [ "$(strings -a "$binary" | grep -c DIAGNOSTICPROBE || true)" -eq 0 ]; then bad "Le diagnostic est absent du build Internal"; else note "Diagnostic présent (OK)"; fi
+          if [ "$(strings -a "$binary" | grep -c MiffDebugAppCheck || true)" -ne 0 ]; then bad "Le fournisseur App Check de débogage est présent"; else note "Fournisseur App Check de débogage absent (OK)"; fi
+          if [ "$(strings -a "$binary" | grep -c advertisingIdentifier || true)" -ne 0 ]; then bad "Référence à l'identifiant publicitaire dans l'exécutable"; else note "Aucune référence à l'identifiant publicitaire (OK)"; fi
+          # Entitlements : App Attest en production. Lisibles seulement si l'archive est signée.
+          entitlements="$(codesign -d --entitlements :- "$app" 2>/dev/null || true)"
+          if [ -z "$entitlements" ]; then
+            entitlements="$(cat "$app/archived-expanded-entitlements.xcent" 2>/dev/null || true)"
+          fi
+          if [ -z "$entitlements" ]; then
+            if [ "$ARCHIVE_MODE" = "signed" ]; then
+              bad "Entitlements illisibles dans une archive signée"
+            else
+              echo "::warning::Entitlements non lisibles (archive non signée) : l'entitlement App Attest ne peut pas être vérifié ici. Si App Check ne donne pas de jeton sur l'iPhone, relancer en mode signed."
+              echo "- Entitlements : non vérifiables en mode unsigned (à constater sur l'iPhone : App Check)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          elif echo "$entitlements" | grep -q "com.apple.developer.devicecheck.appattest-environment" && echo "$entitlements" | grep -q "production"; then
+            note "Entitlement App Attest (production) présent (OK)"
+          else
+            bad "L'entitlement App Attest (production) est absent de l'application"
+          fi
+          exit "$fail"
+
+      - name: Envoyer les symboles de plantage à Crashlytics (étape sans secret)
+        # Étape SÉPARÉE et sans secret : le script de phase de compilation ne le fait pas en CI (il aurait accès à la
+        # clé .p8 en mode signed). La clé est supprimée AVANT de lancer l'outil tiers ; l'export la recrée.
+        # Jamais bloquante : des symboles non envoyés donnent un rapport moins lisible, pas une app cassée.
+        if: success()
+        timeout-minutes: 5
+        run: |
+          set -uo pipefail
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 || true
+          dsyms="build/Miff.xcarchive/dSYMs"
+          tool="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path '*checkouts/firebase-ios-sdk/Crashlytics/upload-symbols' -type f 2>/dev/null | head -n 1)"
+          if [ -z "$tool" ] || [ ! -d "$dsyms" ]; then
+            echo "::warning::Outil upload-symbols ou dossier dSYMs introuvable : symboles non envoyés (rapports de plantage non symbolisés)."
+            exit 0
+          fi
+          chmod +x "$tool" || true
+          if "$tool" -gsp Config/GoogleService-Info.plist -p ios "$dsyms" > build/upload-symbols.log 2>&1; then
+            echo "Symboles envoyés à Crashlytics."
+          else
+            echo "::warning::L'envoi des symboles à Crashlytics a échoué (voir build/upload-symbols.log si l'artefact d'échec est déposé)."
+          fi
+
       - name: Exporter et envoyer à TestFlight
         timeout-minutes: 10
         env:
@@ -305,6 +450,7 @@ jobs:
         if: always()
         run: |
           rm -f "$RUNNER_TEMP"/AuthKey_*.p8 || true
+          rm -f Config/GoogleService-Info.plist || true
           if [ -n "${CI_KEYCHAIN:-}" ]; then
             security delete-keychain "$CI_KEYCHAIN" || true
           fi

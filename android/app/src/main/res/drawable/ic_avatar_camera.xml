@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Camera of the profile photo (mockup "Welcoming screen-1"): lime body, white lens ring. Drawn for Miff. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="#D1D828"
+        android:pathData="M10,20h8l3,-5h22l3,5h8a4,4 0,0 1,4 4v26a4,4 0,0 1,-4 4H10a4,4 0,0 1,-4 -4V24a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M32,37m-9,0a9,9 0,1 1,18 0a9,9 0,1 1,-18 0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5" />
+</vector>

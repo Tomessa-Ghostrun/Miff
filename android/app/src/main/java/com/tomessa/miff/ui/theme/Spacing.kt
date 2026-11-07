@@ -13,6 +13,17 @@ object Spacing {
     val m = 16.dp
     val l = 24.dp
     val xl = 32.dp
-    val logoSize = 120.dp
+
+    /** Wordmark width on the welcome screen; height follows the 981:380 ratio of the drawable. */
+    val logoWidth = 200.dp
     val minTouchTarget = 48.dp
+
+    // Sizes of the Miff flow components, from the fiches design/screens/miff-*.md (the design system has no token for them yet).
+    val sectionIconBox = 33.dp
+    val sectionIcon = 20.dp
+    val pillHeight = 20.dp
+    val memberAvatar = 46.dp
+
+    /** Width of the confirmation dialog (design fiche `miff-dialogues.md`: 280). */
+    val dialogWidth = 280.dp
 }

@@ -4,7 +4,7 @@ import {
   profile, sharingOff,
 } from '../helpers/fixtures.js';
 
-const s = suite();
+const s = suite({ extraProfiles: false });
 
 s.tc('A1', 'on ne s\'attribue pas le premium (écriture de entitlements)', async ({ db }) => {
   await assertFails(db('eve').doc('entitlements/eve').set({ active: true, expiresAt: inMs(365 * DAY) }));

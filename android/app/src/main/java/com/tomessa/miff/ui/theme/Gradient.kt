@@ -22,3 +22,14 @@ val GradientAuthBackground: Brush =
         0.17f to colorBgCanvas,
         1f to colorBgGradientEnd,
     )
+
+/**
+ * Header of the Profile tab (mockup "profil"): the brand yellow-green at 30 % fading into the canvas colour. NOT a token of
+ * design/design-system.md (the mockup draws it as an organic blob): approximated here, to confirm with the design owner.
+ */
+val GradientProfileHeader: Brush =
+    Brush.verticalGradient(
+        0f to colorBrandPrimary.copy(alpha = 0.30f),
+        0.45f to colorBgCanvas,
+        1f to colorBgCanvas,
+    )

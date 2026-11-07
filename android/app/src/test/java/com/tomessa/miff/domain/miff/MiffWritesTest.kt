@@ -1,0 +1,369 @@
+package com.tomessa.miff.domain.miff
+
+import com.google.firebase.firestore.Blob
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.tomessa.miff.testsupport.DEVICE_A
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * The lots of ticket Miff 5.4, 5.7 and 5.13, against the contract of backend/firestore.rules and data-model.md section 8:
+ * the exact set of keys of each document (the rules refuse a missing key and an unknown one), the dates of the server, the
+ * explicit consent written with the entry, no coordinate anywhere (criteria C4, K2, K5, K6, V1).
+ */
+class MiffWritesTest {
+    private val uid = "uid-1"
+    private val miffId = "AbCdEfGhIjKlMnOpQrSt"
+    private val code = "XTZRSP367988"
+    private val profile = ProfileCopy("Léa", "Martin", "+33612345678", ByteArray(100) { 1 })
+    private val serverTime = FieldValue.serverTimestamp()
+
+    private fun List<DocWrite>.at(path: String) = single { it.path == path }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Map<String, Any?>.sharing() = this["sharing"] as Map<String, Any?>
+
+    // --- Create ---------------------------------------------------------------------------------------------------
+
+    @Test
+    fun create_isFiveWrites_inOneLot_withTheRightPaths() {
+        val writes =
+            MiffWrites.create(
+                uid,
+                miffId,
+                code,
+                "  Chez nous ",
+                profile,
+                "free",
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
+        assertEquals(
+            setOf(
+                "miffs/$miffId",
+                "joinCodes/$code",
+                "miffs/$miffId/members/$uid",
+                "users/$uid/memberships/free",
+                "miffs/$miffId/status/$uid",
+            ),
+            writes.map { it.path }.toSet(),
+        )
+        assertEquals(5, writes.size)
+        assertTrue(writes.all { it.kind == WriteKind.SET })
+    }
+
+    @Test
+    fun create_miffAndCode_haveExactlyTheKeysOfTheRules_andTheTrimmedName() {
+        val writes =
+            MiffWrites.create(
+                uid,
+                miffId,
+                code,
+                "  Chez nous ",
+                profile,
+                "free",
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
+        val miff = writes.at("miffs/$miffId").data
+        assertEquals(setOf("ownerUid", "name", "joinCode", "createdAt"), miff.keys)
+        assertEquals("Chez nous", miff["name"])
+        assertEquals(uid, miff["ownerUid"])
+        assertEquals(code, miff["joinCode"])
+        assertEquals(serverTime, miff["createdAt"])
+        val joinCode = writes.at("joinCodes/$code").data
+        assertEquals(setOf("miffId", "miffName", "createdAt"), joinCode.keys)
+        assertEquals("Chez nous", joinCode["miffName"])
+        assertEquals(miffId, joinCode["miffId"])
+    }
+
+    @Test
+    fun create_ownerCard_hasAllKeys_noJoinCode_andTheExplicitConsentOfTheEntry() {
+        val card =
+            MiffWrites
+                .create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A)
+                .at("miffs/$miffId/members/$uid")
+                .data
+        assertEquals(setOf("role", "firstName", "lastName", "avatar", "phone", "joinedAt", "sharing"), card.keys)
+        assertEquals("owner", card["role"])
+        assertEquals("+33612345678", card["phone"])
+        assertEquals(serverTime, card["joinedAt"])
+        assertTrue(card["avatar"] is Blob)
+        val sharing = card.sharing()
+        assertEquals(setOf("enabled", "consentedAt", "consentVersion", "revokedAt"), sharing.keys)
+        assertEquals(true, sharing["enabled"])
+        assertEquals(serverTime, sharing["consentedAt"])
+        assertEquals(MiffSharingConsent.VERSION, sharing["consentVersion"])
+        assertNull(sharing["revokedAt"])
+    }
+
+    @Test
+    fun create_cardWithoutPhoto_hasNoAvatarKey_notANullOne() {
+        val noPhoto = ProfileCopy("Léa", "Martin", "+33612345678", null)
+        val card =
+            MiffWrites
+                .create(uid, miffId, code, "Chez nous", noPhoto, "free", LocationAccess.UNKNOWN, DEVICE_A)
+                .at("miffs/$miffId/members/$uid")
+                .data
+        assertFalse(card.containsKey("avatar"))
+    }
+
+    @Test
+    fun create_indexKey_isFreeForAFreeAccount_andTheMiffIdForAPremiumOne() {
+        val free = MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A)
+        assertEquals(setOf("miffId", "joinedAt"), free.at("users/$uid/memberships/free").data.keys)
+        assertEquals(miffId, free.at("users/$uid/memberships/free").data["miffId"])
+        val premium =
+            MiffWrites.create(
+                uid,
+                miffId,
+                code,
+                "Chez nous",
+                profile,
+                miffId,
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
+        assertNotNull(premium.at("users/$uid/memberships/$miffId"))
+    }
+
+    @Test
+    fun create_initialStatus_isUnknown_withTheRealPermission_andNoCoordinate() {
+        val status =
+            MiffWrites
+                .create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.FOREGROUND, DEVICE_A)
+                .at("miffs/$miffId/status/$uid")
+                .data
+        assertEquals(
+            setOf(
+                "presence",
+                "placeId",
+                "presenceAt",
+                "lastUpdateAt",
+                "updateText",
+                "hasPhoto",
+                "batteryPct",
+                "locationAccess",
+                "escalationDueAt",
+                "updatedAt",
+                "deviceId",
+            ),
+            status.keys,
+        )
+        assertEquals("unknown", status["presence"])
+        assertEquals("foreground", status["locationAccess"])
+        assertEquals(false, status["hasPhoto"])
+        assertNull(status["placeId"])
+        assertNull(status["batteryPct"])
+        assertEquals(serverTime, status["updatedAt"])
+        assertEquals(serverTime, status["presenceAt"])
+        assertEquals(serverTime, status["lastUpdateAt"])
+    }
+
+    @Test
+    fun noLotEverWritesACoordinateAnAddressOrAPlaceName() {
+        val forbidden =
+            setOf("lat", "lng", "lon", "latitude", "longitude", "address", "coords", "coordinates", "position")
+        val all =
+            MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
+                MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
+                MiffWrites.rename(miffId, code, "Nouveau") +
+                MiffWrites.stopSharing(miffId, uid) +
+                MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, DEVICE_A) +
+                MiffWrites.leave(miffId, uid, "free")
+        all.forEach { write ->
+            write.data.keys.forEach { key -> assertFalse("$key", key.lowercase() in forbidden) }
+        }
+    }
+
+    @Test
+    fun create_refusesABadNameOrCode_beforeAnythingIsWritten() {
+        runCatching { MiffWrites.create(uid, miffId, code, "a", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) }
+            .also { assertTrue(it.exceptionOrNull() is IllegalArgumentException) }
+        runCatching {
+            MiffWrites.create(
+                uid,
+                miffId,
+                "XTZRSP36798I",
+                "Chez nous",
+                profile,
+                "free",
+                LocationAccess.UNKNOWN,
+                DEVICE_A,
+            )
+        }.also { assertTrue(it.exceptionOrNull() is IllegalArgumentException) }
+    }
+
+    // --- Join -----------------------------------------------------------------------------------------------------
+
+    @Test
+    fun join_isThreeWrites_cardWithTheCode_index_andInitialStatus() {
+        val writes = MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.DENIED, DEVICE_A)
+        assertEquals(
+            setOf("miffs/$miffId/members/$uid", "users/$uid/memberships/free", "miffs/$miffId/status/$uid"),
+            writes.map { it.path }.toSet(),
+        )
+        assertEquals(3, writes.size)
+        val card = writes.at("miffs/$miffId/members/$uid").data
+        assertEquals(
+            setOf("role", "firstName", "lastName", "avatar", "phone", "joinedAt", "joinCode", "sharing"),
+            card.keys,
+        )
+        assertEquals("member", card["role"])
+        assertEquals(code, card["joinCode"])
+        assertEquals(true, card.sharing()["enabled"])
+        assertEquals(MiffSharingConsent.VERSION, card.sharing()["consentVersion"])
+        assertEquals("denied", writes.at("miffs/$miffId/status/$uid").data["locationAccess"])
+    }
+
+    @Test
+    fun consentVersion_fitsTheRules_oneToTwentyCharacters() {
+        assertTrue(MiffSharingConsent.VERSION.length in 1..20)
+    }
+
+    // --- Rename, sharing ------------------------------------------------------------------------------------------
+
+    @Test
+    fun rename_updatesTheMiffAndTheNameKeptWithTheCode_inTheSameLot() {
+        val writes = MiffWrites.rename(miffId, code, " Nouvelle  Miff ")
+        assertEquals(2, writes.size)
+        assertEquals(mapOf<String, Any?>("name" to "Nouvelle  Miff"), writes.at("miffs/$miffId").data)
+        assertEquals(mapOf<String, Any?>("miffName" to "Nouvelle  Miff"), writes.at("joinCodes/$code").data)
+        assertTrue(writes.all { it.kind == WriteKind.UPDATE })
+    }
+
+    @Test
+    fun stopSharing_marksTheCard_andDeletesTheStatusThePhotoAndTheLocation_inTheSameLot() {
+        val writes = MiffWrites.stopSharing(miffId, uid)
+        // LOC-2a: 4 writes (the contract of the rules); the rules refuse the stop while a position survives.
+        assertEquals(4, writes.size)
+        val card = writes.at("miffs/$miffId/members/$uid")
+        assertEquals(WriteKind.UPDATE, card.kind)
+        // Only two sub-fields change: the date and version of the first consent are kept as they were.
+        assertEquals(setOf("sharing.enabled", "sharing.revokedAt"), card.data.keys)
+        assertEquals(false, card.data["sharing.enabled"])
+        assertEquals(serverTime, card.data["sharing.revokedAt"])
+        assertEquals(WriteKind.DELETE, writes.at("miffs/$miffId/status/$uid").kind)
+        assertEquals(WriteKind.DELETE, writes.at("miffs/$miffId/photos/$uid").kind)
+        assertEquals(WriteKind.DELETE, writes.at("miffs/$miffId/positions/$uid").kind)
+    }
+
+    @Test
+    fun resumeSharing_writesANewConsent_andTheInitialStatus() {
+        val writes = MiffWrites.resumeSharing(miffId, uid, LocationAccess.BACKGROUND, DEVICE_A)
+        assertEquals(2, writes.size)
+        val card = writes.at("miffs/$miffId/members/$uid")
+        assertEquals(WriteKind.UPDATE, card.kind)
+        assertEquals(true, card.data["sharing.enabled"])
+        assertEquals(serverTime, card.data["sharing.consentedAt"])
+        assertEquals(MiffSharingConsent.VERSION, card.data["sharing.consentVersion"])
+        assertNull(card.data["sharing.revokedAt"])
+        assertTrue(card.data.containsKey("sharing.revokedAt"))
+        val status = writes.at("miffs/$miffId/status/$uid")
+        assertEquals(WriteKind.SET, status.kind)
+        assertEquals("unknown", status.data["presence"])
+        assertEquals("background", status.data["locationAccess"])
+    }
+
+    @Test
+    fun renewConsent_isOneUpdateOfTheCard_withTheFourKeysOfSharingExactly_andNothingElse() {
+        val writes = MiffWrites.renewConsent(miffId, uid)
+        assertEquals(1, writes.size)
+        val card = writes.single()
+        assertEquals("miffs/$miffId/members/$uid", card.path)
+        assertEquals(WriteKind.UPDATE, card.kind)
+        // Only the field "sharing" is touched (names, photo, phone, role stay), as a whole map of exactly the four keys of the rules.
+        assertEquals(setOf("sharing"), card.data.keys)
+        @Suppress("UNCHECKED_CAST")
+        val sharing = card.data["sharing"] as Map<String, Any?>
+        assertEquals(setOf("enabled", "consentedAt", "consentVersion", "revokedAt"), sharing.keys)
+        assertEquals(true, sharing["enabled"])
+        assertEquals(serverTime, sharing["consentedAt"])
+        assertEquals("2026-11-v03", sharing["consentVersion"])
+        assertNull(sharing["revokedAt"])
+    }
+
+    @Test
+    fun everyLotThatEndsAMembership_deletesTheLastKnownLocationToo() {
+        val lots =
+            listOf(
+                MiffWrites.stopSharing(miffId, uid),
+                MiffWrites.leave(miffId, uid, "free"),
+                MiffWrites.leave(miffId, uid, null),
+                MiffWrites.removeMember(miffId, uid, "Chez nous", code, "BCDFGHK23456"),
+                MiffWrites.finalDelete(miffId, uid, code, codeExists = true, membershipKey = "free"),
+                MiffWrites.finalDelete(miffId, uid, code, codeExists = false, membershipKey = null),
+                MiffWrites.dropIndex(miffId, uid, "free"),
+            )
+        lots.forEach { lot ->
+            val position = lot.filter { it.path == "miffs/$miffId/positions/$uid" }
+            assertEquals("one deletion of the position per lot: $lot", 1, position.size)
+            assertEquals(WriteKind.DELETE, position.single().kind)
+        }
+    }
+
+    // --- Clean-up -------------------------------------------------------------------------------------------------
+
+    @Test
+    fun leave_isFiveDeletions_andDropIndexIsTwo() {
+        val leave = MiffWrites.leave(miffId, uid, "free")
+        assertEquals(5, leave.size)
+        assertTrue(leave.all { it.kind == WriteKind.DELETE })
+        assertEquals(
+            setOf(
+                "miffs/$miffId/members/$uid",
+                "miffs/$miffId/status/$uid",
+                "miffs/$miffId/photos/$uid",
+                "miffs/$miffId/positions/$uid",
+                "users/$uid/memberships/free",
+            ),
+            leave.map { it.path }.toSet(),
+        )
+        // A last known location left behind by an older build goes with the index (its author may always delete it).
+        val drop = MiffWrites.dropIndex(miffId, uid, "free")
+        assertEquals(listOf("miffs/$miffId/positions/$uid", "users/$uid/memberships/free"), drop.map { it.path })
+        assertTrue(drop.all { it.kind == WriteKind.DELETE })
+    }
+
+    // --- Profile copy and failures --------------------------------------------------------------------------------
+
+    @Test
+    fun profileCopy_needsNamesAndAValidPhone() {
+        val ok = mapOf<String, Any?>("firstName" to "Léa", "lastName" to "Martin", "phone" to "+33612345678")
+        assertNotNull(ProfileCopy.from(ok))
+        assertNull(ProfileCopy.from(null))
+        assertNull(ProfileCopy.from(ok - "phone"))
+        assertNull(ProfileCopy.from(ok + ("phone" to "0612345678")))
+        assertNull(ProfileCopy.from(ok - "firstName"))
+        // An empty photo is no photo; one over 20 000 bytes is dropped (the rules would refuse the card).
+        assertNull(ProfileCopy.from(ok + ("avatar" to ByteArray(0)))!!.avatarJpeg)
+        assertNull(ProfileCopy.from(ok + ("avatar" to ByteArray(20_001)))!!.avatarJpeg)
+        assertNotNull(ProfileCopy.from(ok + ("avatar" to ByteArray(20_000)))!!.avatarJpeg)
+    }
+
+    @Test
+    fun profileCopy_toString_showsNothing() {
+        assertFalse(profile.toString().contains("Léa"))
+        assertFalse(profile.toString().contains("3361"))
+    }
+
+    @Test
+    fun errors_areReducedToACalmCategory_andANetworkCutIsNeverALossOfAccess() {
+        fun error(code: FirebaseFirestoreException.Code) = FirebaseFirestoreException("x", code)
+        assertEquals(MiffFailure.OFFLINE, interpretMiffError(error(FirebaseFirestoreException.Code.UNAVAILABLE)))
+        assertEquals(MiffFailure.OFFLINE, interpretMiffError(error(FirebaseFirestoreException.Code.DEADLINE_EXCEEDED)))
+        // "Quota" is said as "no connection" (criterion H4).
+        assertEquals(MiffFailure.OFFLINE, interpretMiffError(error(FirebaseFirestoreException.Code.RESOURCE_EXHAUSTED)))
+        assertEquals(MiffFailure.REFUSED, interpretMiffError(error(FirebaseFirestoreException.Code.PERMISSION_DENIED)))
+        assertEquals(MiffFailure.UNKNOWN, interpretMiffError(IllegalStateException("x")))
+        assertTrue(isAccessLostError(error(FirebaseFirestoreException.Code.PERMISSION_DENIED)))
+        assertFalse(isAccessLostError(error(FirebaseFirestoreException.Code.UNAVAILABLE)))
+        assertFalse(isAccessLostError(error(FirebaseFirestoreException.Code.DEADLINE_EXCEEDED)))
+        assertFalse(isAccessLostError(IllegalStateException("x")))
+    }
+}

@@ -8,15 +8,27 @@ ktlint = "1.8.0"
 composeBom = "2026.09.00"
 firebaseBom = "35.1.0"
 coreKtx = "1.19.1"
+coreSplashscreen = "1.2.0"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
 navigationCompose = "2.10.2"
 serializationJson = "1.12.0"
 coroutines = "1.11.0"
 junit = "4.13.2"
+robolectric = "4.17"
+credentials = "1.6.0"
+googleid = "1.2.1"
+libphonenumber = "9.0.42"
+exifinterface = "1.4.2"
+profileinstaller = "1.4.1"
+maplibre = "13.7.1"
+playServicesLocation = "21.4.0"
+camerax = "1.6.2"
+haze = "2.0.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
@@ -37,7 +49,40 @@ firebase-appcheck-debug = { module = "com.google.firebase:firebase-appcheck-debu
 firebase-appcheck-playintegrity = { module = "com.google.firebase:firebase-appcheck-playintegrity" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+google-googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
+# Phone numbers (ONB-2): Google libphonenumber, Apache 2.0, official source of the numbering plans (about 360 KB).
+libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version.ref = "libphonenumber" }
+# Reads the orientation of a photo before it is re-encoded without any metadata (AndroidX, Apache 2.0).
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+# Installs the Baseline Profile of the APK (AndroidX, Apache 2.0).
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
+# Map of the place form and detail (LOC-1): MapLibre Native (BSD-2-Clause, free, no key, no telemetry). Tiles: OpenFreeMap (no key).
+# The OpenGL ES flavour on purpose: the default "android-sdk" artifact draws with Vulkan and CRASHES the app on a phone without a
+# Vulkan GPU (seen on an emulator, 2026-11-01: "No Vulkan compatible GPU found"). OpenGL ES runs everywhere from minSdk 26.
+maplibre-android = { module = "org.maplibre.gl:android-sdk-opengl", version.ref = "maplibre" }
+# Geofencing and the fused provider of positions (LOC-2b): Google Play services location, free, no key, maintained by Google (Android SDK terms).
+# The Play services of the phone do the work; Miff sends no position to any service but its own Firestore (criterion POS5).
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+# Viewfinder of the Update screen (UPDATE-1): CameraX (AndroidX, Apache 2.0, free, no key, no telemetry). Pinned to 1.6.2 (published 2026-08-26, more than two
+# weeks old; minSdk 23, we are at 26). Four modules only: core (ImageCapture), camera2 (the implementation), lifecycle (binds to the screen), view (PreviewView).
+# The photo is captured IN MEMORY (OnImageCapturedCallback): no file, no gallery, no storage permission. CameraX declares no permission of its own: the only
+# new one is CAMERA, in the manifest, checked on the merged manifests by the CI.
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+# Frosted glass of the tab bar (TABBAR-GLASS): Haze (chrisbanes/haze), Apache 2.0, free, no network, no permission, no key. PINNED to 2.0.1 (published
+# 2026-09-29, more than two weeks old; 2.1.0 is from 2026-11-02): do not raise without reading its changelog (the API moves fast). BLUR MODULE ONLY
+# (haze = hazeSource, haze-blur = the blur); NOT the Glass module (refraction, GPU cost) nor the Materials module. Plan B if it is ever dropped: a home-made
+# blur from API 31 (design/tab-bar-liquid-glass.md section 4.3). Licence notice: android/third_party/licenses/haze-NOTICE.md.
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

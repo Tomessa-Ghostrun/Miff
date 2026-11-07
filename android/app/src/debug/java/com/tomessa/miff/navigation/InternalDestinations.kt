@@ -10,13 +10,13 @@ import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.FirebaseDiagnosticRepository
 import com.tomessa.miff.ui.diagnostic.DiagnosticScreen
 import com.tomessa.miff.ui.diagnostic.DiagnosticViewModel
-import com.tomessa.miff.ui.navigation.HomeRoute
+import com.tomessa.miff.ui.navigation.AppRoute
 import kotlinx.serialization.Serializable
 
 @Serializable
 data object DiagnosticRoute
 
-/** Debug build: the internal diagnostic screen is the start destination and can open the welcome screen. */
+/** Debug build: the internal diagnostic screen is the start destination and can open the real app. */
 object InternalDestinations {
     val startDestination: Any = DiagnosticRoute
 
@@ -41,7 +41,7 @@ object InternalDestinations {
                 )
             DiagnosticScreen(
                 viewModel = viewModel,
-                onOpenHome = { navController.navigate(HomeRoute) },
+                onOpenHome = { navController.navigate(AppRoute) },
             )
         }
     }

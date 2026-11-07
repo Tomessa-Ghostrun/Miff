@@ -2,9 +2,58 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The only permissions of the app: network access. No location, no notification, no storage. -->
+    <!-- Network access. No storage, no contacts. The camera is the Update screen only (see CAMERA below). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+        LOCATION (ticket LOC-2a, decision of the PM: the precise location ALL THE TIME is required, Miff does not work without). These three and
+        POST_NOTIFICATIONS are the ONLY sensitive permissions the app declares; nothing else (no foreground service, no media location,
+        no Wi-Fi state). They are only ASKED from the screens of ui/permission, after the person tapped a button that says why, with the
+        disclosure that Google Play requires on the screen itself (docs/release/google-play-localisation-arriere-plan.md). Since LOC-2b the app
+        reads the position (and watches the zones of the geofencing) ONLY once the person agreed (consent of version 3) AND granted these
+        permissions. The merged manifest is checked in CI (android.yml) and by PermissionPrivacyTest.
+        - ACCESS_FINE_LOCATION: the precise position, needed by the geofencing of the places.
+        - ACCESS_COARSE_LOCATION: Android 12+ requires it to be declared (and asked) together with the precise one.
+        - ACCESS_BACKGROUND_LOCATION: "all the time", so that arrivals and departures are noticed while the app is closed.
+        - POST_NOTIFICATIONS: Android 13+, for the notifications (none is sent yet: plan Spark, no Cloud Function).
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        UPDATE-1 (ticket Update, decision of the PM, Notion "Update": "il doit donner son autorisation pour qu'on accède à son appareil photo"). CAMERA, for the
+        viewfinder of the Update screen, and nothing else of the family: NO storage, NO photo library, NO microphone, NO location of the media. It is only ASKED
+        from the Update screen, after a pop-in that says what the camera is for, who sees the photo and for how long (never at the start of the app), and the
+        camera only runs while that screen is visible. The photo is taken in memory: no file, nothing in the gallery. If it is refused, only the settings of
+        the phone can allow it: Android also refuses to start the camera application of the phone ("ACTION_IMAGE_CAPTURE") from an app that declares CAMERA
+        and does not hold it (see ui/components/SystemCamera.kt), so there is no way round. Checked on the merged manifests by the CI and by PermissionPrivacyTest.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        The camera and the front camera are NOT required: a phone or a tablet without them can still install Miff (the detection of the places works without
+        a camera). Without them the Update screen says calmly that the camera cannot be used (the camera application of the phone is offered when the camera of Miff is
+        granted but cannot start). Autofocus is not required either: without it the declaration CAMERA alone would exclude phones with a fixed-focus camera.
+    -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.front"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <!--
+        LOC-2b. The zones of the geofencing are erased by Android when the phone restarts: this normal permission (no window, nothing asked of the
+        person) lets Miff arm them again at the restart, without opening the app (criterion AND2). No foreground service, no notification of its own:
+        the geofencing and the reports of a move of more than 250 m are delivered by the system to the receiver below.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- The Analytics SDK merges advertising-ID, ad-attribution and install-referrer permissions: Miff uses none of them. -->
     <uses-permission
@@ -19,6 +68,27 @@
         tools:node="remove" />
     <uses-permission
         android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE"
+        tools:node="remove" />
+
+    <!--
+        androidx.credentials (Sign in with Google) merges the biometric permissions for passkeys. Miff offers no passkey
+        and no biometric prompt (only the Google account dialog), so they are removed: nothing in the app needs them,
+        and a store reviewer would otherwise ask why a family-reassurance app declares biometrics.
+    -->
+    <uses-permission
+        android:name="android.permission.USE_BIOMETRIC"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.USE_FINGERPRINT"
+        tools:node="remove" />
+
+    <!--
+        MapLibre (map of the places, ticket LOC-1) also merges ACCESS_WIFI_STATE for its optional "my position" layer, which Miff never
+        shows: removed. (WAKE_LOCK stays: it comes from the Analytics library.) The location permissions of the map library are the same as
+        the ones declared above, so nothing else is added by it.
+    -->
+    <uses-permission
+        android:name="android.permission.ACCESS_WIFI_STATE"
         tools:node="remove" />
 
     <application
@@ -61,10 +131,44 @@
             android:name="google_analytics_default_allow_ad_personalization_signals"
             android:value="false" />
 
+        <!--
+            Photo taken with the camera application of the system (profile photo, Onboarding ticket 6.3). No CAMERA permission:
+            the system camera writes the picture to ONE file of our private cache, through a content address that only this
+            request can use (not exported). The file is deleted as soon as it has been read. See res/xml/avatar_capture_paths.xml.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.avatarcapture"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/avatar_capture_paths" />
+        </provider>
+
+        <!--
+            adjustResize: on Android 8 to 10 the height of the keyboard only reaches Compose (ui/components/ScreenInsets.kt) with
+            this mode; without it the system may "pan" the whole screen instead and push its top under the status bar.
+            From Android 11 the app receives the keyboard height whatever the mode.
+        -->
+        <!--
+            LOC-2b: the ONE receiver of the detection. Not exported: only the system (restart of the phone, update of the app) and the PendingIntents
+            of the app itself (geofencing, move of more than 250 m, network back) reach it. It never reads the location that comes with a geofence event.
+        -->
+        <receiver
+            android:name=".data.tracking.TrackingReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Miff">
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Miff.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

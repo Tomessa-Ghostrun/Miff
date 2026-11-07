@@ -1,0 +1,1008 @@
+/*
+ * Page d'accueil (landing) de Miff : chargée en plus de site.css, uniquement sur /, /fr/ et /en/.
+ * Mobile d'abord (320 px), puis 40 rem, 48 rem et 64 rem. Mêmes jetons que site.css (design/design-system.md) :
+ * aucune couleur inventée, aucune ressource externe, aucun style en ligne (CSP du site).
+ * Les « maquettes de téléphone » sont du HTML et du CSS : leurs dimensions sont en em, elles se redimensionnent
+ * d'un seul coup en changeant la taille de police de .phone.
+ */
+
+.page-home .site-header {
+  padding-inline: 1rem;
+}
+
+.page-home .site-header-inner {
+  max-width: 72rem;
+}
+
+.page-home .site-nav ul {
+  gap: 0 0.75rem;
+}
+
+.page-home .site-nav a {
+  font-size: 0.9375rem;
+  padding-right: 0.5rem;
+}
+
+.page-home main {
+  max-width: none;
+  padding: 0;
+}
+
+/* ---- Sections ---- */
+.section {
+  padding: 3.5rem 1rem;
+}
+
+.section-white {
+  background: var(--color-bg-surface);
+  border-block: 1px solid var(--color-border-default);
+}
+
+.section-inner {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.page-home h2 {
+  font-size: clamp(1.75rem, 5.5vw, 2.5rem);
+  line-height: 1.15;
+  margin: 0 0 0.75rem;
+}
+
+.page-home h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.section-lead {
+  max-width: 40rem;
+  margin: 0 0 2rem;
+  font-size: 1.125rem;
+  color: var(--color-text-description);
+}
+
+/* ---- Héros ---- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem 1rem 3rem;
+  isolation: isolate;
+}
+
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.hero::before {
+  width: 38rem;
+  height: 35.5rem;
+  right: -16rem;
+  top: -6rem;
+  background-image: url("/assets/img/blob-a.svg");
+}
+
+.hero::after {
+  width: 32rem;
+  height: 24.5rem;
+  left: -16rem;
+  bottom: -9rem;
+  background-image: url("/assets/img/blob-b.svg");
+}
+
+.hero-inner {
+  position: relative;
+  max-width: 72rem;
+  margin-inline: auto;
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.375rem 1rem;
+  border: 2px solid var(--color-action-primary);
+  border-radius: 9999px;
+  background: var(--color-bg-surface);
+  color: var(--color-action-primary);
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.page-home h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2.375rem, 9.5vw, 4rem);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+}
+
+.page-home h1 em {
+  font-style: normal;
+  color: var(--color-action-primary);
+  background-image: linear-gradient(transparent 68%, rgba(209, 216, 40, 0.6) 68%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.hero-lead {
+  max-width: 34rem;
+  margin: 0 0 1.75rem;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  color: var(--color-text-description);
+}
+
+.hero-points {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.hero-points li {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hero-points li::before,
+.trust-list h3::before {
+  content: "";
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--color-brand-primary) url("/assets/img/check.svg") center / 0.8rem no-repeat;
+}
+
+/* ---- Boutons de téléchargement « bientôt » (aucun badge officiel : à remplacer à la publication) ---- */
+.cta-stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.store-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1 1 9.5rem;
+  max-width: 14rem;
+  min-width: 9.5rem;
+  min-height: 3.5rem;
+  padding: 0.5rem 1.25rem;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  color: var(--color-text-description);
+  font: inherit;
+  text-align: left;
+  line-height: 1.2;
+  cursor: not-allowed;
+}
+
+.store-button:disabled {
+  opacity: 1;
+}
+
+.store-small {
+  font-size: 0.8125rem;
+}
+
+.store-name {
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-form);
+}
+
+.cta-notify {
+  margin: 0 0 0.5rem;
+}
+
+.cta-note {
+  max-width: 30rem;
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-description);
+}
+
+.cta .button-primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+}
+
+.cta .button-primary:hover {
+  text-decoration: underline;
+}
+
+/* ---- Téléphone (maquette HTML/CSS de l'écran « Ma Miff ») ---- */
+.hero-visual {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+  padding-bottom: 0.5rem;
+}
+
+.phone {
+  position: relative;
+  width: 21em;
+  max-width: 100%;
+  margin-inline: auto;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  border: 0.55em solid #222222;
+  border-radius: 2.6em;
+  background-color: var(--color-bg-canvas);
+  background-image: linear-gradient(180deg, var(--color-bg-canvas) 17%, var(--color-bg-gradient-end) 100%);
+  box-shadow: 0 1.8em 3.2em rgba(4, 60, 209, 0.22), 0 0.4em 1em rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.phone::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  width: 8em;
+  height: 1.5em;
+  transform: translateX(-50%);
+  border-radius: 0 0 1em 1em;
+  background: #222222;
+}
+
+.phone::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: auto 0 0;
+  height: 4.5em;
+  background: linear-gradient(180deg, rgba(237, 239, 185, 0), var(--color-bg-gradient-end) 75%);
+}
+
+.phone-screen {
+  height: 36em;
+  padding: 2.4em 1.1em 0;
+  overflow: hidden;
+}
+
+.phone p {
+  margin: 0;
+}
+
+.app-logo {
+  display: block;
+  width: 5em;
+  height: auto;
+  margin: 0 auto 0.9em;
+}
+
+.app-selector {
+  width: fit-content;
+  margin: 0 auto 1em;
+  padding: 0.35em 1.2em;
+  border-radius: 0.6em;
+  background: var(--color-bg-surface);
+  box-shadow: 0 0.25em 0.3em rgba(0, 0, 0, 0.25);
+  font-style: italic;
+  font-size: 1.05em;
+}
+
+.app-caret {
+  display: inline-block;
+  margin-left: 0.6em;
+  border-inline: 0.35em solid transparent;
+  border-top: 0.5em solid var(--color-action-primary);
+  vertical-align: middle;
+}
+
+.app-banner {
+  position: relative;
+  margin-bottom: 1.2em;
+  padding: 1.7em 1.4em 1.5em;
+  border-radius: 55% 45% 50% 50% / 55% 50% 50% 45%;
+  background: rgba(209, 216, 40, 0.34);
+}
+
+.app-banner-title {
+  max-width: 13em;
+  font-family: var(--font-title);
+  font-size: 1.45em;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.app-banner-sub {
+  margin-top: 0.4em !important;
+  font-size: 1em;
+}
+
+.app-star {
+  position: absolute;
+  right: 2.2em;
+  bottom: 1.8em;
+  width: 2em;
+  height: 2em;
+  fill: var(--color-brand-primary);
+}
+
+.app-card {
+  margin-bottom: 0.9em;
+  padding: 0.8em 0.9em 0.9em;
+  border: 1px solid var(--color-border-default);
+  border-left: 0.3em solid var(--color-brand-primary);
+  border-radius: 0.4em;
+  background: var(--color-bg-surface);
+  box-shadow: 0 0.1em 0.5em rgba(0, 0, 0, 0.1);
+}
+
+.app-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.app-avatar {
+  flex: none;
+  width: 3.2em;
+  height: 3.2em;
+  border: 0.22em solid var(--color-brand-primary);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.app-name {
+  font-family: var(--font-title);
+  font-size: 1.25em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.app-badge {
+  width: fit-content;
+  margin-top: 0.3em !important;
+  padding: 0.1em 0.7em;
+  border-radius: 0.4em;
+  background: rgba(209, 216, 40, 0.34);
+  font-size: 0.95em;
+}
+
+.app-meta {
+  margin: 0.6em 0 0.5em !important;
+  font-size: 0.9em;
+  color: var(--color-text-description);
+}
+
+.app-photo {
+  display: block;
+  width: 100%;
+  height: 6.2em;
+  border-radius: 0.3em;
+  object-fit: cover;
+}
+
+/* Petites notifications (bulles) : statiques sous le téléphone sur mobile, flottantes dès 48 rem */
+.hero-chips {
+  position: relative;
+  z-index: 3;
+  margin-top: -2.5rem;
+  display: grid;
+  gap: 0.625rem;
+  justify-items: center;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 19rem;
+  padding: 0.625rem 0.875rem 0.625rem 0.625rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.18);
+}
+
+.toast p {
+  margin: 0;
+}
+
+.toast-avatar {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 3px solid var(--color-brand-primary);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.toast-title {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.toast-sub {
+  font-size: 0.8125rem;
+  color: var(--color-text-description);
+}
+
+/* ---- Étapes ---- */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.5rem;
+  counter-reset: step;
+}
+
+.step {
+  position: relative;
+  margin: 0;
+  padding: 1.25rem 1.25rem 1.5rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.06);
+  counter-increment: step;
+}
+
+.step::before {
+  content: counter(step);
+  position: absolute;
+  z-index: 1;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--color-action-primary);
+  color: var(--color-text-on-action);
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.step p {
+  margin: 0;
+  color: var(--color-text-description);
+}
+
+.step-visual {
+  display: grid;
+  place-items: center;
+  min-height: 13.5rem;
+  margin: -0.25rem -0.25rem 1.25rem;
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-canvas);
+  background-image: linear-gradient(180deg, var(--color-bg-canvas) 10%, var(--color-bg-gradient-end) 100%);
+}
+
+/* Mini-écrans des étapes */
+.mini {
+  width: 100%;
+  max-width: 16.5rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.12);
+  font-size: 0.8125rem;
+}
+
+.mini p {
+  margin: 0;
+}
+
+.mini-title {
+  margin-bottom: 0.6rem !important;
+  font-family: var(--font-title);
+  font-size: 1.0625rem !important;
+  font-weight: 700;
+  color: var(--color-action-primary) !important;
+}
+
+.mini-label {
+  margin-bottom: 0.25rem !important;
+  color: var(--color-text-description) !important;
+}
+
+.mini-field {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  color: var(--color-text-form) !important;
+}
+
+.mini-code {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mini-button {
+  margin-top: 0.75rem !important;
+  padding: 0.55rem;
+  border-radius: var(--radius-md);
+  background: var(--color-action-primary);
+  box-shadow: 0 0.2rem 0.25rem rgba(0, 0, 0, 0.25);
+  color: var(--color-text-on-action) !important;
+  font-weight: 700;
+  text-align: center;
+}
+
+.mini-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+.mini-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.mini-row .mini-label {
+  margin: 0 !important;
+}
+
+.mini-toasts {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.mini-toasts .toast {
+  max-width: none;
+}
+
+/* ---- Cartes de bénéfices et de cas d'usage ---- */
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.card-feature {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+}
+
+.card-feature p {
+  margin: 0;
+  color: var(--color-text-description);
+}
+
+.icon-bubble {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  background: rgba(4, 60, 209, 0.1);
+  color: var(--color-action-primary);
+}
+
+.icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- Confiance et vie privée ---- */
+.trust {
+  background: var(--color-action-primary);
+  color: var(--color-text-on-action);
+}
+
+.trust h2,
+.trust h3,
+.trust .section-lead {
+  color: var(--color-text-on-action);
+}
+
+.trust-grid {
+  display: grid;
+  gap: 2.5rem;
+}
+
+.trust-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.trust-list li {
+  margin: 0;
+}
+
+.trust-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.25rem;
+}
+
+.trust-list p {
+  margin: 0 0 0 1.875rem;
+}
+
+.who {
+  align-self: start;
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  color: var(--color-text-form);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+}
+
+.trust .who h3 {
+  color: var(--color-text-form);
+}
+
+.who-list {
+  margin: 0 0 1.25rem;
+}
+
+.who-row {
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.who-row dt {
+  font-family: var(--font-title);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-action-primary);
+}
+
+.who-row dd {
+  margin: 0.125rem 0 0;
+  color: var(--color-text-description);
+}
+
+.who-note {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  font-size: 0.9375rem;
+  color: var(--color-text-description);
+}
+
+.who-link {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* ---- Tarif honnête ---- */
+.pricing {
+  max-width: 44rem;
+}
+
+.plans {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.plan {
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+}
+
+.plan-premium {
+  border-color: var(--color-action-primary);
+}
+
+.plan h3 {
+  margin-bottom: 0.5rem;
+}
+
+.plan ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.pricing-note {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-description);
+}
+
+/* ---- Questions fréquentes ---- */
+.faq {
+  max-width: 48rem;
+}
+
+.faq-list details {
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.faq-list details:first-child {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.faq-list summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.75rem 0;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-list summary::after {
+  content: "+";
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(4, 60, 209, 0.1);
+  color: var(--color-action-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.faq-list details[open] summary::after {
+  content: "–";
+}
+
+.faq-list details p {
+  margin: 0 0 1rem;
+  color: var(--color-text-description);
+}
+
+/* ---- Appel à l'action final ---- */
+.final {
+  padding-top: 1rem;
+}
+
+.final-inner {
+  max-width: 56rem;
+  padding: 2.5rem 1.25rem;
+  border-radius: 1.5rem;
+  background: rgba(209, 216, 40, 0.3);
+  text-align: center;
+}
+
+.final-inner .section-lead {
+  margin-inline: auto;
+}
+
+.final-inner .cta-stores {
+  justify-content: center;
+}
+
+.final-inner .cta-note {
+  margin-inline: auto;
+}
+
+/* ---- Mentions de fin de page ---- */
+.landing-notes {
+  padding: 1rem 1rem 2rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-description);
+}
+
+.landing-notes p {
+  max-width: 48rem;
+  margin: 0 0 0.75rem;
+}
+
+/* ---- Racine (choix de langue sans JavaScript) ---- */
+.hero-root {
+  padding-bottom: 4rem;
+}
+
+.hero-root .hero-inner {
+  max-width: 48rem;
+}
+
+.choose-title {
+  font-family: var(--font-body);
+  font-size: 1.125rem !important;
+  margin: 0 0 0.75rem !important;
+}
+
+/* ---- Écrans moyens et larges ---- */
+@media (min-width: 40rem) {
+  .cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cards-three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .plans {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section {
+    padding-block: 4.5rem;
+  }
+}
+
+@media (min-width: 48rem) {
+  .hero {
+    padding: 2.5rem 1.5rem 4.5rem;
+  }
+
+  .hero-inner {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 2rem;
+  }
+
+  .hero-root .hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-chips {
+    display: contents;
+  }
+
+  .hero-visual {
+    max-width: 30rem;
+    padding: 1rem 0 0.5rem;
+  }
+
+  .phone {
+    font-size: 0.9375rem;
+  }
+
+  .hero-chips .toast {
+    position: absolute;
+    z-index: 3;
+    width: 15.5rem;
+    max-width: none;
+  }
+
+  .hero-chips .toast-1 {
+    right: -0.5rem;
+    top: 13.5rem;
+  }
+
+  .hero-chips .toast-2 {
+    left: -0.5rem;
+    bottom: 4rem;
+  }
+
+  .steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .trust-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: start;
+    gap: 3.5rem;
+  }
+
+  .final-inner {
+    padding: 3.5rem 2rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .page-home .site-header-inner {
+    flex-wrap: nowrap;
+    gap: 2rem;
+  }
+
+  .page-home .site-nav {
+    flex: 1 1 auto;
+    order: 2;
+  }
+
+  .page-home .site-nav ul {
+    justify-content: flex-end;
+  }
+
+  .page-home .lang-switch {
+    order: 3;
+  }
+
+  .cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .cards-three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .hero-visual {
+    max-width: 32rem;
+  }
+
+  .phone {
+    font-size: 1rem;
+  }
+
+  .hero-chips .toast {
+    width: 17.5rem;
+  }
+
+  .hero-chips .toast-1 {
+    right: -1.25rem;
+    top: -1.25rem;
+  }
+
+  .hero-chips .toast-2 {
+    left: -3.5rem;
+  }
+}
+
+/* Mouvement : une très légère flottaison des bulles, jamais si l'utilisateur préfère moins d'animations */
+@media (min-width: 48rem) and (prefers-reduced-motion: no-preference) {
+  @keyframes float-soft {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-0.4rem);
+    }
+  }
+
+  .hero-chips .toast-1 {
+    animation: float-soft 4.5s ease-in-out infinite alternate;
+  }
+
+  .hero-chips .toast-2 {
+    animation: float-soft 5.5s ease-in-out -2s infinite alternate;
+  }
+}

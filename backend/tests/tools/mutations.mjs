@@ -6,6 +6,13 @@
 // une modification de firestore.rules qui rendrait la mutation sans effet) ; on remplace la nième occurrence.
 // equivalent : raison pour laquelle aucun test ne PEUT voir la mutation (mutant équivalent, protection redondante).
 
+import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
+import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
+import { PHOTO_MUTATIONS } from './mutations-photo.mjs';
+import { POSITION_MUTATIONS } from './mutations-position.mjs';
+import { SESSION_MUTATIONS } from './mutations-session.mjs';
+import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
+
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
 
@@ -313,18 +320,7 @@ export const MUTATIONS = [
     tests: ['S15'],
     equivalent: 'chaque clé est lue ensuite par les règles ; lire une clé absente est une erreur => refus quand même (hasAll est redondant)',
   },
-  {
-    id: 'X5-lastUpdateAt-passe',
-    why: 'lastUpdateAt peut être trop ancien',
-    edits: [edit("&& d.lastUpdateAt >= request.time - duration.value(1, 'd')", '&& true')],
-    tests: ['X5'],
-  },
-  {
-    id: 'X5-lastUpdateAt-futur',
-    why: 'lastUpdateAt peut être dans le futur',
-    edits: [edit("&& d.lastUpdateAt <= request.time + duration.value(5, 'm')", '&& true')],
-    tests: ['X5'],
-  },
+  // X5-lastUpdateAt-* : voir mutations-statut.mjs (R-LIEU-1 : les bornes sont dans statusInstant).
   {
     id: 'X5-locationAccess',
     why: 'locationAccess accepte n\'importe quelle valeur',
@@ -409,7 +405,7 @@ export const MUTATIONS = [
   {
     id: 'H5a-photo-expiree-lisible',
     why: 'une photo dont expiresAt est passé reste lisible',
-    edits: [edit('\n          && (resource == null || resource.data.expiresAt > request.time);', ';')],
+    edits: [edit('\n          && (resource == null || resource.data.expiresAt > request.time)', '')],
     tests: ['H5a'],
   },
   {
@@ -427,7 +423,7 @@ export const MUTATIONS = [
   {
     id: 'H5d-duree-premium',
     why: 'les comptes premium obtiennent une durée de photo plus longue (7 jours) que les comptes gratuits',
-    edits: [edit("request.time + duration.value(25, 'h')", "request.time + (isPremium(uid) ? duration.value(7, 'd') : duration.value(25, 'h'))")],
+    edits: [edit("request.time + duration.value(25, 'h')", "request.time + (isPremiumOneRead(uid) ? duration.value(7, 'd') : duration.value(25, 'h'))")],
     tests: ['H5d'],
   },
   {
@@ -463,14 +459,252 @@ export const MUTATIONS = [
   {
     id: 'X4-photo-sans-partage',
     why: 'une photo peut être posée sans que le partage soit activé',
-    edits: [edit(`&& getAfter(${DB}/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;`, '&& true;', 2, 2)],
+    edits: [edit('&& s.enabled == true\n        && validPhotoLocation(d, s);', '&& validPhotoLocation(d, s);')],
     tests: ['X4'],
   },
   {
     id: 'X7-premium-inactif',
-    why: 'isPremium ignore le champ active (abonnement désactivé mais non expiré)',
-    edits: [edit(`&& get(${DB}/entitlements/$(uid)).data.active == true`, '&& true')],
+    why: 'isPremiumOneRead ignore le champ active (abonnement désactivé mais non expiré)',
+    edits: [edit('return e.active == true && e.expiresAt > request.time;', 'return e.expiresAt > request.time;')],
     tests: ['X7'],
   },
+  // --- AUTH-B : consentement facultatif (b) statistiques / plantages et acceptation (a) des CGU (users/{uid}) ------
+  {
+    id: 'AB4-creation-date-consentement-client',
+    why: 'à la création, la date du consentement (b) peut être celle du client (plus d\'égalité avec l\'heure serveur)',
+    edits: [edit('|| (c.enabled == true && c.consentedAt == request.time && isConsentVersion(c.consentVersion))', '|| (c.enabled == true && c.consentedAt is timestamp && isConsentVersion(c.consentVersion))')],
+    tests: ['AB4'],
+  },
+  {
+    id: 'AB4-creation-version-facultative',
+    why: 'à la création, un consentement (b) donné peut ne pas porter de version du texte',
+    edits: [edit('|| (c.enabled == true && c.consentedAt == request.time && isConsentVersion(c.consentVersion))', '|| (c.enabled == true && c.consentedAt == request.time)')],
+    tests: ['AB4', 'AB5'],
+  },
+  {
+    id: 'AB4-creation-non-consenti-avec-donnees',
+    why: 'à la création, l\'état « non consenti » peut porter une date ou une version de consentement',
+    edits: [edit('(c.enabled == false && c.consentedAt == null && c.consentVersion == null)', '(c.enabled == false)')],
+    tests: ['AB4'],
+  },
+  {
+    id: 'AB4-creation-retrait-renseigne',
+    why: 'à la création, revokedAt peut être renseigné',
+    edits: [edit('return hasConsentKeys(c)\n        && c.revokedAt == null\n', 'return hasConsentKeys(c)\n')],
+    tests: ['AB4'],
+  },
+  {
+    id: 'AB5-version-format',
+    why: 'la version du consentement n\'est plus contrôlée au format AAAA-MM-vNN (n\'importe quel texte de 1 à 20 caractères)',
+    edits: [edit("return v is string && v.matches('^20[0-9]{2}-(0[1-9]|1[0-2])-v[0-9]{2}$');", 'return v is string && v.size() >= 1 && v.size() <= 20;')],
+    tests: ['AB5'],
+  },
+  {
+    id: 'AB5-bloc-cles-en-trop',
+    why: 'le bloc de consentement accepte des clés inconnues',
+    edits: [edit("&& c.keys().hasOnly(['enabled', 'consentedAt', 'consentVersion', 'revokedAt'])", '&& true')],
+    tests: ['AB5', 'AB17'],
+  },
+  {
+    id: 'AB5-bloc-cles-manquantes',
+    why: 'le bloc de consentement n\'exige plus les quatre clés (hasAll)',
+    edits: [edit("&& c.keys().hasAll(['enabled', 'consentedAt', 'consentVersion', 'revokedAt']);", '&& true;')],
+    tests: ['AB5'],
+    equivalent: 'défense en profondeur : lire une clé absente fait échouer la règle (refus) dans chaque branche de validAnalyticsConsentCreate et validAnalyticsConsentChange',
+  },
+  {
+    id: 'AB5-bloc-pas-une-map',
+    why: 'le bloc de consentement n\'est plus vérifié comme étant une map',
+    edits: [edit('return c is map\n        && c.keys()', 'return c.keys()')],
+    tests: ['AB5'],
+    equivalent: 'défense en profondeur : appeler keys() sur une valeur qui n\'est pas une map fait échouer la règle (refus)',
+  },
+  {
+    id: 'AB1-bloc-obligatoire',
+    why: 'resserrement : le bloc de consentement devient obligatoire à la création (le test AB1 prouve que son absence est acceptée)',
+    edits: [edit("request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion'])", "request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])")],
+    tests: ['AB1'],
+  },
+  {
+    id: 'AB6-cgu-horodatage-client',
+    why: 'termsAcceptedAt n\'est plus l\'heure du serveur à la création',
+    edits: [edit('&& request.resource.data.termsAcceptedAt == request.time', '&& true')],
+    tests: ['AB6'],
+  },
+  {
+    id: 'AB6-cgu-non-obligatoires',
+    why: 'un profil peut être créé sans termsAcceptedAt ni termsVersion',
+    edits: [edit("request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion'])", "request.resource.data.keys().hasAll(['firstName', 'lastName', 'phone', 'createdAt'])")],
+    tests: ['AB6'],
+    equivalent: 'défense en profondeur : lire termsAcceptedAt ou termsVersion absents fait échouer la règle (refus) ; la clé est lue juste après',
+  },
+  {
+    id: 'AB6-cgu-version-non-controlee',
+    why: 'la version des CGU n\'est plus contrôlée (vide, 21 caractères, non texte) à la création',
+    edits: [edit("&& isStr(request.resource.data.termsVersion, 1, 20)\n        && (!('analyticsConsent'", "&& (!('analyticsConsent'")],
+    tests: ['AB6'],
+  },
+  {
+    id: 'AB7-creation-profil-usurpation',
+    why: 'n\'importe quel utilisateur connecté peut créer le profil (et le consentement) d\'un autre uid',
+    edits: [edit("allow create: if isSelf(uid)\n        && request.resource.data.keys().hasOnly(['firstName'", "allow create: if isSignedIn()\n        && request.resource.data.keys().hasOnly(['firstName'")],
+    tests: ['AB7'],
+  },
+  {
+    id: 'AB8-consentement-modifie-par-autrui',
+    why: 'n\'importe quel utilisateur connecté peut mettre à jour le profil (donc le consentement) d\'un autre',
+    edits: [edit("allow update: if isSelf(uid)\n        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])", "allow update: if isSignedIn()\n        && affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])")],
+    tests: ['AB8'],
+  },
+  {
+    id: 'AB9-activation-date-client',
+    why: 'l\'activation du consentement (b) accepte une date fournie par le client',
+    edits: [edit('&& next.consentedAt == request.time\n            && isConsentVersion(next.consentVersion)', '&& next.consentedAt is timestamp\n            && isConsentVersion(next.consentVersion)')],
+    tests: ['AB9'],
+  },
+  {
+    id: 'AB9-activation-sans-version',
+    why: 'l\'activation du consentement (b) n\'exige plus une version valide du texte',
+    edits: [edit('&& isConsentVersion(next.consentVersion)\n            && next.revokedAt == null', '&& next.revokedAt == null')],
+    tests: ['AB9'],
+  },
+  {
+    id: 'AB9-activation-retrait-renseigne',
+    why: 'l\'activation du consentement (b) accepte une date de retrait renseignée',
+    edits: [edit('&& next.revokedAt == null\n            && (prev == null', '&& (prev == null')],
+    tests: ['AB9'],
+  },
+  {
+    id: 'AB9-activation-depuis-absent-refusee',
+    why: 'resserrement : un profil sans bloc ne peut plus activer (b) (le test AB9 prouve que c\'est possible)',
+    edits: [edit('((prev == null || prev.enabled == false)', '((prev != null && prev.enabled == false)')],
+    tests: ['AB9'],
+  },
+  {
+    id: 'AB9-mise-a-jour-sans-validation',
+    why: 'le bloc de consentement n\'est plus validé du tout à la mise à jour',
+    edits: [edit("|| validAnalyticsConsentChange(resource.data.get('analyticsConsent', null), request.resource.data.analyticsConsent));", '|| true);')],
+    tests: ['AB9', 'AB10', 'AB12'],
+  },
+  {
+    id: 'AB10-retrait-efface-la-date',
+    why: 'le retrait peut effacer ou changer la date du consentement (la preuve disparaît)',
+    edits: [edit('&& next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)', '&& next.consentVersion == prev.consentVersion)')],
+    tests: ['AB10'],
+  },
+  {
+    id: 'AB10-retrait-efface-la-version',
+    why: 'le retrait peut effacer ou changer la version du consentement (la preuve disparaît)',
+    edits: [edit('&& next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)', '&& next.consentedAt == prev.consentedAt)')],
+    tests: ['AB10'],
+  },
+  {
+    id: 'AB10-retrait-date-client',
+    why: 'le retrait accepte une date de retrait fournie par le client',
+    edits: [edit('&& next.enabled == false\n            && next.revokedAt == request.time\n            && next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)', '&& next.enabled == false\n            && next.revokedAt is timestamp\n            && next.consentedAt == prev.consentedAt\n            && next.consentVersion == prev.consentVersion)')],
+    tests: ['AB10'],
+  },
+  {
+    id: 'AB10-retrait-sans-consentement-actif',
+    why: 'un « retrait » est accepté même si le consentement n\'était pas actif (fausse trace de retrait)',
+    edits: [edit('(prev != null && prev.enabled == true\n', '(prev != null\n')],
+    tests: ['AB10'],
+  },
+  {
+    id: 'AB11-reactivation-refusee',
+    why: 'resserrement : un consentement retiré ne peut plus être réactivé (le test AB11 prouve que c\'est possible)',
+    edits: [edit('((prev == null || prev.enabled == false)', '((prev == null)')],
+    tests: ['AB11'],
+  },
+  {
+    id: 'AB12-retrogradation-de-version',
+    why: 'la réactivation du consentement (b) accepte une version plus ancienne que la dernière enregistrée',
+    edits: [edit('&& (prev == null || prev.consentVersion == null || next.consentVersion >= prev.consentVersion))', '&& true)')],
+    tests: ['AB12'],
+  },
+  {
+    id: 'AB12-reecriture-sans-retrait',
+    why: 'un consentement actif peut être réécrit (nouvelle date, autre version) sans retrait préalable',
+    edits: [edit('((prev == null || prev.enabled == false)\n            && next.enabled == true', '(true\n            && next.enabled == true')],
+    tests: ['AB12'],
+  },
+  {
+    id: 'AB13-profil-champs-non-verrouilles',
+    why: 'la mise à jour du profil accepte n\'importe quelle clé (termsAcceptedAt, termsVersion, createdAt, champs inconnus)',
+    edits: [edit("&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])", '&& true')],
+    tests: ['AB13'],
+  },
+  {
+    id: 'AB13-cgu-modifiables',
+    why: 'termsAcceptedAt et termsVersion redeviennent modifiables après la création',
+    edits: [edit("&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent'])", "&& affected().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'analyticsConsent', 'termsAcceptedAt', 'termsVersion'])")],
+    tests: ['AB13'],
+  },
+  {
+    id: 'AB15-profil-supprime-par-autre',
+    why: 'n\'importe quel utilisateur connecté peut supprimer le profil (et le consentement) d\'un autre',
+    edits: [edit('allow delete: if isSelf(uid);', 'allow delete: if isSignedIn();', 1, 2)],
+    tests: ['AB15'],
+  },
+  {
+    id: 'AB16-profil-lisible-par-tous',
+    why: 'n\'importe quel utilisateur connecté peut lire le profil (donc le consentement) d\'un autre',
+    edits: [edit('match /users/{uid} {\n      allow get: if isSelf(uid);', 'match /users/{uid} {\n      allow get: if isSignedIn();')],
+    tests: ['AB16'],
+  },
+  {
+    id: 'AB16-liste-des-profils',
+    why: 'la liste de la collection users (et les requêtes sur le consentement) devient possible',
+    edits: [edit('match /users/{uid} {\n      allow get: if isSelf(uid);\n      allow list: if false;', 'match /users/{uid} {\n      allow get: if isSelf(uid);\n      allow list: if isSignedIn();')],
+    tests: ['AB16'],
+  },
+  {
+    id: 'AB17-creation-champs-inconnus',
+    why: 'la création du profil accepte n\'importe quelle clé (âge, date de naissance, e-mail, position...)',
+    edits: [edit("request.resource.data.keys().hasOnly(['firstName', 'lastName', 'avatar', 'phone', 'createdAt', 'termsAcceptedAt', 'termsVersion', 'analyticsConsent'])", 'true')],
+    tests: ['AB17'],
+  },
+  // --- Pas de Miff créée ni rejointe sans profil portant l'acceptation (a) (décision PM du 2026-10-24) --------------------
+  {
+    id: 'AB18-miff-sans-profil-nulle-part',
+    why: 'plus aucun contrôle du profil à la création de la fiche membre (ni création de Miff ni adhésion)',
+    edits: [edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'")],
+    tests: ['AB18', 'AB19', 'AB21'],
+  },
+  {
+    id: 'AB18-creation-miff-sans-profil',
+    why: 'le profil n\'est plus exigé que pour rejoindre (la création d\'une Miff est permise sans profil)',
+    edits: [
+      edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
+      edit("(d.role == 'member' && memberJoinOk(miffId, uid, d))", "(d.role == 'member' && memberJoinOk(miffId, uid, d) && termsAcceptedAfter(uid))"),
+    ],
+    tests: ['AB18', 'AB21'],
+  },
+  {
+    id: 'AB19-adhesion-sans-profil',
+    why: 'le profil n\'est plus exigé que pour créer une Miff (l\'adhésion par code est permise sans profil)',
+    edits: [
+      edit("        && termsAcceptedAfter(uid)\n        && (\n          (d.role == 'owner'", "        && (\n          (d.role == 'owner'"),
+      edit("(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid))", "(d.role == 'owner' && !('joinCode' in d) && ownerCreateOk(miffId, uid) && termsAcceptedAfter(uid))"),
+    ],
+    tests: ['AB19', 'AB21'],
+  },
+  {
+    id: 'AB21-profil-sans-acceptation',
+    why: 'un profil sans termsAcceptedAt / termsVersion suffit (seule son existence est contrôlée)',
+    edits: [edit(".data.keys().hasAll(['termsAcceptedAt', 'termsVersion']);", '.data != null;')],
+    tests: ['AB21'],
+  },
+  // --- DUR-3 (R14) : protections du §7.3 du ticket (voir mutations-dur3.mjs) ---
+  ...DUR3_MUTATIONS,
+  // --- ONB-B (téléphone) et MIFF-0 (lot d'entrée) : voir mutations-onbb.mjs ---
+  ...ONBB_MUTATIONS,
+  // --- R-LIEU-POS (dernière position connue) : voir mutations-position.mjs ---
+  ...POSITION_MUTATIONS,
+  // --- SESS-1 (un compte, un seul appareil) : voir mutations-session.mjs ---
+  ...SESSION_MUTATIONS,
+  // --- R-PHOTO-LOC (localisation de la photo d'update) : voir mutations-photo.mjs ---
+  ...PHOTO_MUTATIONS,
+  // --- R-LIEU-1 (statut de plus de 24 h) et bornes d'horodatage du statut : voir mutations-statut.mjs ---
+  ...STATUS_TIME_MUTATIONS,
 ];
-

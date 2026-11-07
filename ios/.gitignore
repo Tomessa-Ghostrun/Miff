@@ -13,3 +13,7 @@ xcuserdata/
 *.p12
 *.cer
 *.mobileprovision
+
+# Configuration Firebase (jamais dans le depot : recreee par la CI depuis un secret GitHub)
+Config/GoogleService-Info.plist
+GoogleService-Info*.plist

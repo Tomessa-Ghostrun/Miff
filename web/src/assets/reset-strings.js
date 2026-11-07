@@ -1,0 +1,73 @@
+// Textes de la page « Choisir un nouveau mot de passe » (FR + EN).
+// Tutoiement partout (décision du PM, ticket authentification Q2). Ton rassurant, jamais de code technique visible.
+// Source des formulations : docs/tickets/authentification.md §7.3. Un test vérifie la parité FR/EN et le tutoiement.
+
+export const SUPPORTED_LANGUAGES = ['fr', 'en'];
+export const FALLBACK_LANGUAGE = 'en'; // langue de repli du projet (CLAUDE.md)
+
+export const STRINGS = {
+  fr: {
+    pageTitle: 'Choisir un nouveau mot de passe - Miff',
+    skip: 'Aller au contenu',
+    checking: 'On vérifie ton lien…',
+    formTitle: 'Choisis un nouveau mot de passe',
+    formIntro: 'Choisis un nouveau mot de passe pour ton compte Miff. Tu pourras ensuite te reconnecter dans l’app.',
+    newPasswordLabel: 'Nouveau mot de passe',
+    newPasswordHint: '8 caractères minimum.',
+    confirmPasswordLabel: 'Confirme ton nouveau mot de passe',
+    show: 'Afficher',
+    hide: 'Masquer',
+    showNewPassword: 'Afficher le nouveau mot de passe',
+    hideNewPassword: 'Masquer le nouveau mot de passe',
+    showConfirmPassword: 'Afficher la confirmation du mot de passe',
+    hideConfirmPassword: 'Masquer la confirmation du mot de passe',
+    submit: 'Confirmer',
+    submitting: 'Un instant…',
+    errorTooShort: '8 caractères minimum.',
+    errorMismatch: 'Les deux mots de passe ne sont pas identiques.',
+    errorWeak: 'Ce mot de passe n’est pas accepté. Essaie-en un autre, avec au moins 8 caractères.',
+    errorOffline: 'Pas de connexion pour le moment. Réessaie dès que tu as du réseau.',
+    errorGeneric: 'Quelque chose n’a pas fonctionné. Réessaie dans un instant.',
+    errorDisabled: 'Ce compte n’est pas disponible pour le moment.',
+    invalidTitle: 'Ce lien n’est plus valable',
+    invalidBody:
+      'Il a peut-être déjà été utilisé, ou il a expiré. Pas de souci : ouvre l’app Miff, choisis « Mot de passe oublié ? » et demande un nouvel e-mail.',
+    problemTitle: 'On n’arrive pas à continuer',
+    problemBody: 'Réessaie dans un instant. Si le problème continue, demande un nouvel e-mail depuis l’app Miff.',
+    retry: 'Réessayer',
+    successTitle: 'C’est fait !',
+    successBody: 'C’est fait : ton mot de passe est à jour. Tu peux revenir dans l’app Miff et te connecter.',
+  },
+  en: {
+    pageTitle: 'Choose a new password - Miff',
+    skip: 'Skip to content',
+    checking: 'Checking your link…',
+    formTitle: 'Choose a new password',
+    formIntro: 'Choose a new password for your Miff account. You can then sign back in to the app.',
+    newPasswordLabel: 'New password',
+    newPasswordHint: 'At least 8 characters.',
+    confirmPasswordLabel: 'Confirm your new password',
+    show: 'Show',
+    hide: 'Hide',
+    showNewPassword: 'Show the new password',
+    hideNewPassword: 'Hide the new password',
+    showConfirmPassword: 'Show the password confirmation',
+    hideConfirmPassword: 'Hide the password confirmation',
+    submit: 'Confirm',
+    submitting: 'One moment…',
+    errorTooShort: 'At least 8 characters.',
+    errorMismatch: 'The two passwords are not the same.',
+    errorWeak: 'This password is not accepted. Try another one, with at least 8 characters.',
+    errorOffline: 'No connection right now. Try again as soon as you have a network.',
+    errorGeneric: 'Something went wrong. Please try again in a moment.',
+    errorDisabled: 'This account is not available right now.',
+    invalidTitle: 'This link is no longer valid',
+    invalidBody:
+      'It may have been used already, or it may have expired. No worries: open the Miff app, choose “Forgot password?” and ask for a new e-mail.',
+    problemTitle: 'We can’t continue right now',
+    problemBody: 'Please try again in a moment. If the problem continues, ask for a new e-mail from the Miff app.',
+    retry: 'Try again',
+    successTitle: 'All done!',
+    successBody: 'All done: your password is up to date. You can go back to the Miff app and sign in.',
+  },
+};

@@ -1,0 +1,92 @@
+<!doctype html>
+<!--
+  Gabarit de l'image de partage (Open Graph / Twitter), 1200 x 630 px. Outil de développement : non publié.
+  Rendu par web/tools/make-landing-images.mjs (adresse : /web/tools/og-image.html?lang=fr ou ?lang=en).
+  Reprend le logo officiel (design/assets/logo/master), les polices et les couleurs du design system.
+  Les photos sont celles du carrousel de bienvenue (licence Pexels, voir design/exports/onboarding-photos/CREDITS.md).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Miff - image de partage</title>
+<style>
+@font-face { font-family: "Baloo Thambi 2"; src: url("/android/app/src/main/res/font/baloo_thambi_2.ttf"); font-weight: 400 800; }
+@font-face { font-family: "Hanken Grotesk"; src: url("/android/app/src/main/res/font/hanken_grotesk.ttf"); font-weight: 100 900; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body {
+  position: relative;
+  font-family: "Hanken Grotesk", sans-serif;
+  color: #222222;
+  background: linear-gradient(180deg, #f9f9f7 17%, #edefb9 100%);
+}
+.blob { position: absolute; border-radius: 50%; background: #d1d828; opacity: 0.22; }
+.blob-a { width: 760px; height: 600px; right: -140px; top: -120px; border-radius: 58% 42% 55% 45% / 50% 60% 40% 50%; }
+.blob-b { width: 520px; height: 420px; left: -180px; bottom: -200px; border-radius: 45% 55% 40% 60% / 55% 45% 55% 45%; opacity: 0.16; }
+.logo { position: absolute; left: 72px; top: 64px; width: 232px; height: 90px; }
+.pill {
+  position: absolute; left: 72px; top: 196px;
+  display: inline-block; padding: 8px 20px; border-radius: 999px;
+  background: #ffffff; border: 2px solid #043cd1; color: #043cd1;
+  font-weight: 700; font-size: 24px;
+}
+h1 {
+  position: absolute; left: 72px; top: 262px; width: 620px;
+  font-family: "Baloo Thambi 2", sans-serif; font-weight: 800;
+  font-size: 66px; line-height: 1.08; color: #222222;
+}
+h1 em { font-style: normal; color: #043cd1; }
+.chip {
+  position: absolute; display: flex; align-items: center; gap: 18px;
+  width: 410px; padding: 16px 20px 16px 16px;
+  background: #ffffff; border: 1px solid #d9d9d9; border-radius: 12px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+.chip img { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #043cd1; object-fit: cover; }
+.chip b { display: block; font-family: "Baloo Thambi 2", sans-serif; font-size: 28px; line-height: 1.15; }
+.chip span { display: block; font-size: 22px; color: #4b4b4a; margin-top: 4px; }
+.chip-1 { right: 56px; top: 112px; }
+.chip-2 { right: 100px; top: 262px; }
+.chip-3 { right: 40px; top: 412px; }
+.dot { position: absolute; right: 52px; top: 96px; width: 30px; height: 30px; border-radius: 50%; background: #d1d828; }
+</style>
+</head>
+<body>
+<div class="blob blob-a"></div>
+<div class="blob blob-b"></div>
+<img class="logo" src="/design/assets/logo/master/miff-wordmark-color.svg" alt="">
+<span class="pill" id="pill"></span>
+<h1 id="title"></h1>
+<div class="dot"></div>
+<div class="chip chip-1"><img src="/web/src/assets/img/avatar-thomas.webp" alt=""><div><b id="c1t"></b><span id="c1s"></span></div></div>
+<div class="chip chip-2"><img src="/web/src/assets/img/avatar-maman.webp" alt=""><div><b id="c2t"></b><span id="c2s"></span></div></div>
+<div class="chip chip-3"><img src="/web/src/assets/img/avatar-amandine.webp" alt=""><div><b id="c3t"></b><span id="c3s"></span></div></div>
+<script>
+const texts = {
+  fr: {
+    pill: 'Bientôt sur iPhone et Android',
+    title: 'Savoir que tes proches vont bien, <em>sans les déranger.</em>',
+    c1: ['Thomas est bien arrivé à l’école', 'Il y a 2 min.'],
+    c2: ['Maman vient de quitter le travail', 'À l’instant'],
+    c3: ['Amandine est rentrée à la maison', 'Il y a 5 min.'],
+  },
+  en: {
+    pill: 'Coming soon on iPhone and Android',
+    title: 'Know your loved ones are okay, <em>without bothering them.</em>',
+    c1: ['Thomas got to school safely', '2 min ago.'],
+    c2: ['Mum just left work', 'Just now'],
+    c3: ['Amandine is back home', '5 min ago.'],
+  },
+};
+const lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'fr';
+const t = texts[lang];
+document.documentElement.lang = lang;
+document.getElementById('pill').textContent = t.pill;
+document.getElementById('title').innerHTML = t.title;
+[['c1', t.c1], ['c2', t.c2], ['c3', t.c3]].forEach(([id, [title, sub]]) => {
+  document.getElementById(`${id}t`).textContent = title;
+  document.getElementById(`${id}s`).textContent = sub;
+});
+</script>
+</body>
+</html>

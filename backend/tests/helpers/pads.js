@@ -77,4 +77,21 @@ export function injectPads(rules, hosts, k) {
   return out;
 }
 
+/**
+ * Variante de injectPads avec un nombre de lectures factices PAR hôte (counts[i] pour hosts[i]) : sert à la mesure des lots,
+ * où la limite de 10 lectures par écriture ne doit pas être atteinte avant la limite de 20 du lot (voir measure.js).
+ * Les indices des documents factices sont tous distincts.
+ */
+export function injectPadCounts(rules, hosts, counts) {
+  if (counts.length !== hosts.length) throw new Error('un nombre de lectures factices par hôte est attendu');
+  let next = 0;
+  let out = rules;
+  hosts.forEach((host, idx) => {
+    if (counts[idx] <= 0) return;
+    const indices = Array.from({ length: counts[idx] }, () => next++);
+    out = injectOne(out, host, padExpression(indices)).rules;
+  });
+  return out;
+}
+
 export { injectOne as _injectOneForTests };

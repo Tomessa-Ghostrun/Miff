@@ -1,0 +1,403 @@
+import Foundation
+
+extension SocialCredential {
+    /// Le mode de connexion tel que le contrat Analytics le nomme.
+    var method: AnalyticsEvent.Method {
+        switch self {
+        case .google:
+            return .google
+        case .apple:
+            return .apple
+        }
+    }
+}
+
+extension AccountLoad {
+    var snapshot: AccountSnapshot? {
+        if case .loaded(let value) = self {
+            return value
+        }
+        return nil
+    }
+}
+
+// Les opérations lancées par les écrans.
+extension SessionManager {
+    /// nil = connecté (l'état avance tout seul) ; sinon pourquoi ça n'a pas fonctionné.
+    func signInWithEmail(email: String, password: String) async -> AuthFailure? {
+        await cache.purgeIfPending()
+        guard clearLeftoverSession() else {
+            return .unknown
+        }
+        switch await gateway.signInWithEmail(email: email, password: password) {
+        case .failure(let failure):
+            return failure
+        case .success(let uid, _):
+            await completeAuthentication(uid: uid, method: .email, signUpConsent: nil)
+            return nil
+        }
+    }
+
+    /// `consent` doit avoir accepté (a) : un compte n'est jamais créé sans cela.
+    func createAccountWithEmail(email: String, password: String, consent: ConsentChoice) async -> AuthFailure? {
+        guard consent.termsAccepted else {
+            return .unknown
+        }
+        await cache.purgeIfPending()
+        guard clearLeftoverSession() else {
+            return .unknown
+        }
+        switch await gateway.createAccountWithEmail(email: email, password: password) {
+        case .failure(let failure):
+            return failure
+        case .success(let uid, _):
+            await completeEmailSignUp(uid: uid)
+            return nil
+        }
+    }
+
+    /// Jeton Google ou Apple -> Firebase. `signUpConsent` est l'acceptation donnée par le geste quand il vient de l'écran
+    /// d'inscription (nil depuis l'écran de connexion : une personne nouvelle reçoit alors le panneau de consentement).
+    func signIn(with credential: SocialCredential, signUpConsent: ConsentChoice?) async -> AuthFailure? {
+        if let signUpConsent, !signUpConsent.termsAccepted {
+            return .unknown
+        }
+        await cache.purgeIfPending()
+        guard clearLeftoverSession() else {
+            return .unknown
+        }
+        switch await gateway.signIn(with: credential) {
+        case .failure(let failure):
+            return failure
+        case .success(let uid, _):
+            await completeAuthentication(uid: uid, method: credential.method, signUpConsent: signUpConsent)
+            return nil
+        }
+    }
+
+    /// Panneau de consentement, « Continuer ». Rend faux (sans rien faire) si (a) n'est pas accepté.
+    func acceptConsentPanel(_ consent: ConsentChoice) -> Bool {
+        guard consent.termsAccepted else {
+            return false
+        }
+        // Seulement depuis le panneau lui-même : un second appel (double toucher) n'enregistre rien deux fois et
+        // n'envoie pas un second événement.
+        guard case .ready(.consentPanel) = state, let uid = gateway.currentUid else {
+            return false
+        }
+        // « Continuer » accepte les conditions ET les statistiques (décision du 2026-10-28) : les deux sont enregistrées
+        // ensemble.
+        pending.save(PendingConsent(uid: uid, termsVersion: ConsentVersions.terms, analyticsAccepted: true))
+        flags.set(true, forKey: Self.keyReturningUser)
+        privacy.applyAccountConsent(true)
+        tracker.track(.signUpCompleted(method: gateway.signInMethod() ?? .email))
+        setState(.ready(.profile))
+        return true
+    }
+
+    /// Panneau de consentement refusé (bouton, geste de retour, fermeture) : le compte tout juste créé est supprimé,
+    /// rien n'est gardé, rien n'est envoyé. Si Firebase réclame une connexion récente, `source` redemande à la personne de
+    /// choisir son compte Google ou Apple ; c'est la seule étape en plus, et elle s'annule sans aucun message.
+    func refuseConsentPanel(source: SocialCredentialSource) async -> RefuseResult {
+        // Un compte qui appartient déjà à une Miff n'est jamais supprimé par un refus du panneau (ce serait orpheliner la
+        // Miff et la vue qu'en ont les autres membres) : la personne garde le panneau, avec le message neutre.
+        if accountSnapshot?.hasMembership == true {
+            return .failed(.unknown)
+        }
+        ending = true
+        // SESS-3 : la session d'appareil du compte qui va disparaître est supprimée tant que nous sommes connectés (après, plus
+        // personne ne pourrait la supprimer). SANS accusé de suppression, le compte n'est PAS supprimé (la personne garde le
+        // panneau et peut réessayer). Si le compte est gardé finalement (voir plus bas), la session est réécrite.
+        guard await deleteDeviceSessionBeforeAccountRemoval(uid: gateway.currentUid) else {
+            ending = false
+            resumeDeviceWatch()
+            return .failed(.network)
+        }
+        cache.markPurgePending()
+        var failure = await gateway.deleteCurrentAccount()
+        if failure == .recentLoginRequired {
+            switch await requestFreshCredential(source: source) {
+            case .credential(let credential):
+                failure = await gateway.reauthenticate(with: credential)
+                if failure == nil {
+                    failure = await gateway.deleteCurrentAccount()
+                }
+            case .cancelled:
+                // La session est réécrite AVANT de rendre la main : tant que `ending` est vrai, aucune vérification en file ne
+                // peut déclencher une déconnexion forcée.
+                await restoreDeviceSession()
+                ending = false
+                return .cancelled
+            case .unavailable:
+                failure = .unknown
+            case .failed(let reason):
+                failure = reason
+            }
+        }
+        if let failure {
+            // On reste sur le panneau : jamais un compte utilisable sans (a). La session est réécrite avant de rendre la main.
+            await restoreDeviceSession()
+            ending = false
+            return .failed(failure)
+        }
+        setState(.loading)
+        await stopEverything()
+        _ = await cache.purge()
+        finishSignedOut(destination: .signIn, notice: .accountNotCreated, markReturning: false)
+        return .done
+    }
+
+    /// Seul un compte Google ou Apple peut être invité à se prouver ici : on ne laisse jamais la personne coincée devant
+    /// une fenêtre qui ne peut pas fonctionner.
+    private func requestFreshCredential(source: SocialCredentialSource) async -> SocialTokenResult {
+        switch gateway.signInMethod() ?? .email {
+        case .google:
+            return await source.requestGoogle()
+        case .apple:
+            return await source.requestApple()
+        case .email:
+            return .unavailable
+        }
+    }
+
+    /// Le profil (ou son numéro) vient d'être ÉCRIT ET CONFIRMÉ par le serveur : le compte est relu et l'app passe à ce
+    /// dont le compte a maintenant besoin (créer / rejoindre une Miff, ou le fil si un ancien compte en a déjà une). Si
+    /// cette lecture échoue, l'app avance d'après ce qui vient d'être écrit (un nouveau profil n'a pas encore de Miff)
+    /// plutôt que d'afficher un écran « réessayer » juste après un succès.
+    func onProfileSaved(analyticsConsentEnabled: Bool) async {
+        guard let uid = gateway.currentUid else {
+            return
+        }
+        let load = await accounts.load(uid: uid)
+        guard gateway.currentUid == uid else {
+            return
+        }
+        let snapshot: AccountSnapshot
+        if let read = load.snapshot, read.profileExists, read.hasPhone {
+            snapshot = read
+        } else {
+            snapshot = AccountSnapshot(
+                profileExists: true,
+                hasMembership: load.snapshot?.hasMembership ?? false,
+                analyticsConsentEnabled: analyticsConsentEnabled
+            )
+        }
+        applyAccount(uid: uid, snapshot: snapshot, method: nil, signUpGesture: false)
+    }
+
+    /// Le serveur détient-il déjà un profil complet (avec son numéro) pour la personne connectée ? Sert après une
+    /// écriture refusée, pour distinguer un vrai refus d'un premier essai arrivé en retard. Une lecture ; faux au moindre
+    /// doute.
+    func profileAlreadySaved() async -> Bool {
+        guard let uid = gateway.currentUid, let read = await accounts.load(uid: uid).snapshot else {
+            return false
+        }
+        return gateway.currentUid == uid && read.profileExists && read.hasPhone
+    }
+
+    /// Déconnexion volontaire (ticket §7.6) : les écoutes s'arrêtent, les écritures en attente partent, SA session d'appareil est
+    /// supprimée (jamais celle d'un autre téléphone), le cache est purgé, puis la déconnexion. L'ordre est celui du contrat de
+    /// `backend/data-model.md` : la session part avant la purge (`terminate()`) et avant la déconnexion, après quoi plus aucune
+    /// requête authentifiée n'est possible.
+    func signOut() async {
+        let uid = gateway.currentUid
+        ending = true
+        cache.markPurgePending()
+        setState(.loading)
+        await stopEverything()
+        await cache.flushPendingWrites()
+        await releaseDeviceSession(uid: uid)
+        _ = await cache.purge()
+        finishSignedOut(destination: .signIn, notice: nil, markReturning: true)
+    }
+
+    // MARK: - Miff (MIFF-3)
+
+    /// Une Miff vient d'être créée ou rejointe ET le serveur l'a CONFIRMÉ (ticket Miff). Le compte compte désormais comme
+    /// ayant une Miff. La fin de l'onboarding n'est comptée (`onboarding_completed`, si le consentement le permet) que quand
+    /// la personne était à l'étape « créer ou rejoindre » ; l'app NE change PAS d'écran ici (l'écran « Ta Miff est prête »
+    /// doit encore être vu) : voir `continueAfterMiff`.
+    func onMiffEntered(via: AnalyticsEvent.OnboardingVia) {
+        if let known = accountSnapshot {
+            setSnapshot(
+                AccountSnapshot(
+                    profileExists: known.profileExists,
+                    hasMembership: true,
+                    analyticsConsentEnabled: known.analyticsConsentEnabled,
+                    hasPhone: known.hasPhone,
+                    hasTermsVersion: known.hasTermsVersion
+                )
+            )
+        }
+        if currentDestination() == .miffChoice {
+            tracker.track(.onboardingCompleted(via: via))
+        }
+    }
+
+    /// De l'étape « créer ou rejoindre » au fil (sans effet ailleurs).
+    func continueAfterMiff() {
+        if currentDestination() == .miffChoice {
+            setState(.ready(.feed))
+        }
+    }
+
+    private func currentDestination() -> AppDestination? {
+        if case .ready(let destination) = state {
+            return destination
+        }
+        return nil
+    }
+
+    // MARK: - Intérieur
+
+    /// Aucune connexion ne démarre tant qu'une ancienne session est ouverte : un compte ne doit jamais se mélanger à un
+    /// autre. Une déconnexion qui avait échoué est retentée ici ; faux si la session reste ouverte.
+    private func clearLeftoverSession() -> Bool {
+        if gateway.currentUid != nil {
+            // Un candidat laissé par ce compte ne doit jamais être réutilisé par un autre.
+            device.clearLocal()
+        }
+        for _ in 0..<2 where gateway.currentUid != nil {
+            gateway.signOut()
+        }
+        return gateway.currentUid == nil
+    }
+
+    /// Démarrage à froid et « Réessayer » : la même règle, quoi qu'il soit arrivé avant.
+    func resolveCurrent() async {
+        guard let uid = gateway.currentUid else {
+            sessionActive = false
+            // Pas de session = pas de consentement à envoyer quoi que ce soit : un rapport laissé par un plantage avant que
+            // la personne ait dit oui disparaît.
+            setSnapshot(nil)
+            drafts?.clear()
+            privacy.applyAccountConsent(false)
+            pending.clear()
+            // SESS-3 : une déconnexion forcée faite alors que l'app était fermée laisse son message à montrer sur l'écran de connexion.
+            if flags.value(forKey: Self.keyReplacedNoticePending, default: false), !hasNotice {
+                setNotice(.sessionReplaced)
+            }
+            setState(.ready(entryDestination()))
+            return
+        }
+        sessionActive = true
+        // Éteint jusqu'à la lecture du compte (aussi à « Réessayer »), mais le rapport du plantage précédent est gardé.
+        privacy.pauseCollection()
+        setState(.loading)
+        // SESS-3 : la session de CET appareil est vérifiée AVANT toute lecture du compte et toute écriture. Remplacée : la
+        // déconnexion forcée est déjà faite ; non confirmée après une connexion : « Réessayer » est déjà affiché.
+        guard await prepareDeviceSession(uid: uid) else {
+            return
+        }
+        let load = await accounts.load(uid: uid)
+        // La session a pu être perdue pendant la lecture : le gestionnaire de perte a déjà remis l'app sur la connexion.
+        guard gateway.currentUid == uid else {
+            return
+        }
+        switch load {
+        case .unavailable:
+            setState(.lookupFailed)
+        case .loaded(let snapshot):
+            applyAccount(uid: uid, snapshot: snapshot, method: nil, signUpGesture: false)
+        }
+    }
+
+    /// Nouveau compte créé par e-mail et mot de passe : on sait qu'il n'y a pas de profil, aucune lecture n'est utile.
+    func completeEmailSignUp(uid: String) async {
+        sessionActive = true
+        flags.set(true, forKey: Self.keyReturningUser)
+        // Le geste sur « Rejoindre » a accepté les conditions ET les statistiques (décision du 2026-10-28).
+        pending.save(PendingConsent(uid: uid, termsVersion: ConsentVersions.terms, analyticsAccepted: true))
+        privacy.applyAccountConsent(true)
+        tracker.track(.signUpCompleted(method: .email))
+        // SESS-3 : la session de cet appareil est ouverte (et confirmée) avant d'aller plus loin. Sans accusé : « Réessayer »,
+        // qui retente l'écriture puis retrouve l'étape du profil grâce au consentement gardé ci-dessus.
+        guard await beginDeviceSession(uid: uid) else {
+            if gateway.currentUid == uid, !ending {
+                setState(.lookupFailed)
+            }
+            return
+        }
+        guard gateway.currentUid == uid else {
+            return
+        }
+        setState(.ready(.profile))
+    }
+
+    /// Connexion par n'importe quelle méthode (ou Google / Apple depuis l'écran d'inscription) : lire le compte, PUIS
+    /// décider de ce qui est collecté.
+    func completeAuthentication(
+        uid: String,
+        method: AnalyticsEvent.Method,
+        signUpConsent: ConsentChoice?
+    ) async {
+        sessionActive = true
+        // Rien n'est collecté tant que le choix propre du compte n'a pas été lu (en pause, rien n'est encore effacé).
+        privacy.pauseCollection()
+        if signUpConsent != nil {
+            pending.save(PendingConsent(uid: uid, termsVersion: ConsentVersions.terms, analyticsAccepted: true))
+        }
+        setState(.loading)
+        // SESS-3 : la session de cet appareil est écrite et confirmée AVANT de lire le compte ; sans accusé, « Réessayer ».
+        guard await beginDeviceSession(uid: uid) else {
+            if gateway.currentUid == uid, !ending {
+                setState(.lookupFailed)
+            }
+            return
+        }
+        let load = await accounts.load(uid: uid)
+        guard gateway.currentUid == uid else {
+            return
+        }
+        switch load {
+        case .unavailable:
+            setState(.lookupFailed)
+        case .loaded(let snapshot):
+            applyAccount(uid: uid, snapshot: snapshot, method: method, signUpGesture: signUpConsent != nil)
+        }
+    }
+
+    /// `method` est renseigné quand un geste de connexion ou d'inscription vient d'avoir lieu (des événements peuvent
+    /// partir), nil au démarrage à froid. Profil existant : le choix du COMPTE commande (même si l'écran d'inscription
+    /// a servi) ; pas de profil : le choix donné par le geste sur l'écran d'inscription et enregistré sur cet appareil
+    /// commande, et seulement s'il l'a été pour CE compte (une personne qui arrive sur le panneau n'a encore rien
+    /// enregistré : rien n'est collecté).
+    func applyAccount(uid: String, snapshot: AccountSnapshot, method: AnalyticsEvent.Method?, signUpGesture: Bool) {
+        setSnapshot(snapshot)
+        var recorded: PendingConsent?
+        if snapshot.profileExists {
+            pending.clear()
+            drafts?.clear()
+            privacy.applyAccountConsent(snapshot.analyticsConsentEnabled)
+            if let method, snapshot.analyticsConsentEnabled {
+                tracker.track(.signInCompleted(method: method))
+            }
+        } else {
+            recorded = pending.read(uid: uid)
+            privacy.applyAccountConsent(recorded?.analyticsAccepted == true)
+            if let method, signUpGesture, recorded?.analyticsAccepted == true {
+                tracker.track(.signUpCompleted(method: method))
+            }
+        }
+        let destination = resolveDestination(
+            signedIn: true,
+            account: snapshot,
+            hasPendingTerms: recorded != nil,
+            returningUser: true
+        )
+        // L'app compte comme « utilisée » dès qu'un compte utilisable existe ; un panneau refusé ne laisse aucune trace.
+        if method != nil && destination != .consentPanel {
+            flags.set(true, forKey: Self.keyReturningUser)
+        }
+        setState(.ready(destination))
+    }
+
+    private func entryDestination() -> AppDestination {
+        resolveDestination(
+            signedIn: false,
+            account: nil,
+            hasPendingTerms: false,
+            returningUser: flags.value(forKey: Self.keyReturningUser, default: false)
+        )
+    }
+}

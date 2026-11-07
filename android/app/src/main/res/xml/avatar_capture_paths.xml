@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The only folder the camera application may write to: cache/avatar_capture/ (private, emptied after each photo). -->
+<paths>
+    <cache-path
+        name="avatar_capture"
+        path="avatar_capture/" />
+</paths>

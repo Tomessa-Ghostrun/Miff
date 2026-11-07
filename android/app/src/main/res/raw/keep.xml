@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The google-services plugin generates the string "default_web_client_id" (the OAuth web client used by "Continuer
+    avec Google") but the app reads it BY NAME at runtime (CredentialManagerGoogleSource.webClientIdFrom), which the
+    release resource shrinker cannot see: without this file it removes the string and Google sign-in never works in a
+    release build. The wildcard form is used so that nothing breaks when the configuration has no web client (the fake
+    configuration of Dependabot): a pattern that matches nothing is simply ignored.
+-->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@string/default_web_client_id*" />

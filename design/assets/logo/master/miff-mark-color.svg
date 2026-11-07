@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="227" height="241" viewBox="0 0 227 241" role="img">
+  <title>Miff - marque (M, i et coeur) couleur</title>
+  <desc>Recreation vectorielle (formes geometrisees) de l'icone fournie par le PM le 2026-10-24.</desc>
+  <path id="miff-m-i" fill="#043CD1" d="M0 40.63L69.47 40.63L112.15 172.49L149.41 73.49L180.74 90.15L224 74.32L224 240.63L175 240.63L175 104.4L122.75 240.63L91.95 240.63L40.72 95.2L40.72 240.63L0 240.63Z"/>
+  <path id="miff-coeur" fill="#D1D828" d="M184.1 8.08C190.48 1.7 199.8 -0.72 208.48 1.7C217.16 4.14 223.85 11.08 225.98 19.82C228.12 28.59 225.37 37.82 218.78 43.97L184.68 75.87C183.22 77.22 181.79 77.19 180.39 75.76L147.8 42.35C141.5 35.88 139.18 26.54 141.71 17.88C144.25 9.24 151.25 2.63 160.04 0.59C168.82 -1.44 178.02 1.42 184.1 8.08Z"/>
+</svg>

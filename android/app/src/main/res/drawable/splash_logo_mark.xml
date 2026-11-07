@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Launch screen artwork: the official "M + i" of ic_launcher_foreground.xml WITHOUT the heart (the heart is the
+    animation: it appears on the "i", swells like a balloon and bursts, see ui/splash). Same 108-unit canvas as the
+    adaptive icon, drawn at 288 dp (the size of the Android 12 launch-screen icon without icon background), so that the
+    Compose animation takes over from the system launch screen without any visible jump.
+    The path must stay identical to the first path of ic_launcher_foreground.xml (SplashArtworkTest enforces it).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31.34 36.82L45.4 36.82L54.04 63.5L61.57 43.47L67.91 46.84L76.67 43.64L76.67 77.29L66.75 77.29L66.75 49.72L56.18 77.29L49.95 77.29L39.58 47.86L39.58 77.29L31.34 77.29Z" />
+</vector>

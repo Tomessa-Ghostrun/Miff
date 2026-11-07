@@ -2,17 +2,215 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Spike INIT-3 : l'app ne collecte aucune donnee, n'effectue aucun suivi, n'a aucun
-	     acces reseau et n'utilise aucune API a "raison requise" (UserDefaults, horodatage
-	     de fichiers, espace disque, etc.). Ce manifeste devra etre mis a jour des qu'une
-	     de ces conditions change (Firebase, localisation...) : voir INIT-4. -->
+	<!-- Manifeste de confidentialité de l'APP (INIT-4). Les SDK Firebase embarquent leur propre manifeste ;
+	     celui-ci déclare ce que fait l'app elle-même. À revoir à chaque nouvelle fonctionnalité qui collecte
+	     une donnée (compte, localisation...) et par le release-manager avant la soumission : la fiche
+	     « confidentialité » d'App Store Connect doit lui correspondre.
+
+	     Position (LOC-4a, décision du PM du 2026-11-01 : la dernière position connue est stockée côté serveur et lisible des
+	     membres de la Miff qui partagent aussi) : « position précise » (PreciseLocation), LIÉE à l'identité de la personne, pour le
+	     FONCTIONNEMENT de l'app seulement, jamais pour le suivi ni la publicité. LOC-4b (le suivi des lieux) lit la position de la
+	     personne et en écrit la DERNIÈRE POSITION CONNUE dans Firestore (une seule par Miff, avec l'heure de la mesure, sans
+	     historique, 5 décimales) : c'est ce que cette déclaration décrit. Le manifeste, les étiquettes d'App Store Connect
+	     (docs/release/app-store-confidentialite-et-revue.md §2) et la politique de confidentialité doivent dire la même chose. Les
+	     deux textes d'usage NSLocation* sont dans InfoPlist.xcstrings.
+	     Aussi écrits avec le statut, visibles des membres qui partagent : l'état de présence (identifiant du lieu, heure) et le
+	     niveau de batterie. Le manifeste n'a pas de catégorie « batterie » : son classement dans les étiquettes d'App Store Connect
+	     est un point ouvert pour le release-manager (voir la PR LOC-4b).
+
+	     LOC-3 (lieux de confiance) : la carte et la recherche d'adresse de MapKit ne lisent PAS la position de la personne. Les LIEUX
+	     que le créateur d'une Miff définit sont écrits dans Firestore, liés à son compte et visibles des membres de la Miff : adresse
+	     postale d'un lieu (PhysicalAddress), nom du lieu (OtherUserContent) ; ses coordonnées sont celles de l'ADRESSE choisie, pas
+	     celles de l'appareil (classification « Precise Location » à confirmer, docs/release/app-store-confidentialite-et-revue.md).
+	     Le texte tapé pour chercher une adresse part au service de suggestions d'Apple (fournisseur du système) et n'est pas gardé.
+	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
+
+	     Données du COMPTE (AUTH-3, ONB-6), liées à l'identité de la personne, pour le fonctionnement de l'app seulement
+	     (jamais pour de la publicité ni du suivi) : identifiant de compte (UserID), adresse e-mail (e-mail ou Google ou
+	     Apple), prénom et nom, photo de profil facultative, numéro de téléphone. Ils sont créés par la personne
+	     elle-même à l'inscription et dans les étapes du profil ; ils sont lisibles par elle seule et, pour le profil et
+	     le numéro, par les membres de ses Miffs (backend/data-model.md). Le numéro n'est jamais vérifié par SMS.
+
+	     Données d'USAGE, SEULEMENT après le geste « Rejoindre » / « Continuer » (qui vaut accord, décision du PM du
+	     2026-10-28) ou le choix enregistré du compte, retirable dans les Réglages ; jamais liées à l'identité :
+	     - Analytics (FirebaseAnalyticsCore) : interactions avec le produit (événements de la liste blanche),
+	       identifiant d'instance de l'app, données de diagnostic techniques.
+	     - Crashlytics : rapports de plantage et données de diagnostic. -->
 	<key>NSPrivacyTracking</key>
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
-	<array/>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePreciseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCrashData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
-	<array/>
+	<array>
+		<!-- UserDefaults : le choix de l'utilisateur pour Analytics et les rapports de plantage est enregistré
+		     dans le stockage de l'app elle-même (raison CA92.1 : lire et écrire des informations propres à l'app). -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<!-- Horloge du système : `ProcessInfo.systemUptime` (`Models/Support/AppClock.swift`) mesure des durées dans l'app
+		     (plancher de durée des réponses, pauses, animation de lancement), jamais pour identifier l'appareil.
+		     Raison 35F9.1 : mesurer le temps écoulé entre deux événements de l'app. Le test PrivacyManifestApiTests
+		     compare ce manifeste aux API réellement utilisées par le code. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

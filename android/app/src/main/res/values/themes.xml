@@ -9,4 +9,17 @@
     </style>
 
     <style name="Theme.Miff" parent="Base.Theme.Miff" />
+
+    <!--
+        System launch screen: blue background and the "M + i" without the heart; the animated splash in Compose
+        (ui/splash) continues from here. Android 12+ uses the platform Splash Screen API, older versions the back-port of
+        androidx.core:core-splashscreen. MainActivity calls installSplashScreen(), which then switches to Theme.Miff.
+    -->
+    <style name="Theme.Miff.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.Miff</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>

@@ -30,8 +30,12 @@ const KEEP_RUNNING = new Set(['ios-testflight.yml']);
 // Seuls ces workflows ont le droit de lire des secrets, et seulement ceux-ci (liste fermée, noms exacts).
 // Tout autre workflow, ou tout autre secret, fait échouer le test : l'ajout d'un secret doit être une décision visible en revue.
 const SECRETS_ALLOWED = {
-  'android.yml': ['GOOGLE_SERVICES_JSON_B64'],
-  'ios-testflight.yml': ['APPLE_TEAM_ID', 'ASC_ISSUER_ID', 'ASC_KEY_ID', 'ASC_KEY_P8_B64'],
+  // android.yml : la configuration Firebase + le keystore de debug stable (SHA-1 fixe pour la connexion Google).
+  'android.yml': ['DEBUG_KEYSTORE_B64', 'GOOGLE_SERVICES_JSON_B64'],
+  // ios.yml : seulement la configuration Firebase (recréée pour la compilation, supprimée en fin de job).
+  'ios.yml': ['GOOGLE_SERVICE_INFO_PLIST_B64'],
+  // ios-testflight.yml : les 4 secrets de signature + la configuration Firebase (mêmes règles que ios.yml).
+  'ios-testflight.yml': ['APPLE_TEAM_ID', 'ASC_ISSUER_ID', 'ASC_KEY_ID', 'ASC_KEY_P8_B64', 'GOOGLE_SERVICE_INFO_PLIST_B64'],
 };
 
 test('WORKFLOWS - permissions minimales, annulation des exécutions obsolètes, jamais pull_request_target', () => {
@@ -86,6 +90,17 @@ test('WORKFLOWS - hygiene : sur toute PR (aucun filtre de chemins), gitleaks ép
   assert.ok(!text.includes('gitleaks-action'), 'gitleaks-action interdit (licence payante pour les organisations)');
   assert.match(text, /check-forbidden-files\.mjs/);
   assert.match(text, /check-i18n-parity\.mjs/);
+});
+
+test('WORKFLOWS - web : filtre web/** et docs/legal/**, tests node:test, aucun déploiement ni commande Firebase', () => {
+  const { doc, text } = workflows.find((w) => w.file === 'web.yml');
+  const paths = doc.on.pull_request.paths;
+  assert.ok(paths.includes('web/**') && paths.includes('docs/legal/**'));
+  const code = stripComments(text);
+  assert.match(code, /node scripts\/build-web\.mjs/);
+  assert.match(code, /node --test "web\/tests\/\*\.test\.mjs"/);
+  assert.ok(!/firebase|deploy/i.test(code.replace(/web\/tests|web-predeploy-check\.mjs|déploiement/gi, '')), 'web.yml ne déploie jamais et n\'appelle pas Firebase');
+  assert.ok(!text.includes('MIFF_WEB_API_KEY'), 'la clé web n\'est jamais fournie à la CI');
 });
 
 test('WORKFLOWS - la durée de chaque job est consignée dans le résumé', () => {

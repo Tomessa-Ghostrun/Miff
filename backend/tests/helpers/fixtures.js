@@ -9,11 +9,12 @@ import { fileURLToPath } from 'node:url';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { assertSafeEnvironment } from './guard.js';
+import { assertSafeEnvironment, testProjectId } from './guard.js';
 
 export { assertSucceeds, assertFails };
 
-export const PROJECT_ID = 'demo-miff-rules';
+// Projet annoncé par l'émulateur (GCLOUD_PROJECT posé par emulators:exec), pas une constante : le garde-fou juge le projet réellement utilisé.
+export const PROJECT_ID = testProjectId();
 export const RULES_PATH = fileURLToPath(new URL('../../firestore.rules', import.meta.url));
 // MIFF_RULES_FILE : réservé à l'outil de mutation (tests/tools/mutation-check.mjs), qui teste des règles volontairement affaiblies.
 export const readRules = () => readFileSync(process.env.MIFF_RULES_FILE ?? RULES_PATH, 'utf8');
@@ -60,7 +61,42 @@ export const sharingOff = () => ({ enabled: false, consentedAt: null, consentVer
 export const sharingOnSeed = () => ({ enabled: true, consentedAt: T0, consentVersion: 'v1', revokedAt: null });
 export const sharingOnNow = () => ({ enabled: true, consentedAt: serverTs(), consentVersion: 'v1', revokedAt: null });
 
-export const profile = (first) => ({ firstName: first, lastName: 'Test' });
+// ONB-B : le profil porte le téléphone obligatoire (E.164). Tous les comptes de test partagent PHONE par défaut (aucune unicité
+// côté règles) ; PHONE_B sert aux cas « numéro différent » / « numéro modifié ».
+export const PHONE = '+33612345678';
+export const PHONE_B = '+242061234567';
+export const profile = (first) => ({ firstName: first, lastName: 'Test', phone: PHONE });
+
+// R-LIEU-POS (dernière position connue) : le texte de consentement qui couvre la position est la version 3 ou plus. Les fixtures du
+// partage de base portent 'v1' (comptes sans position) ; sharingOnSeedV3 / sharingOnNowV3 portent une version qui autorise la position.
+export const CONSENT_POSITION = '2026-11-v03'; // AAAA-MM-vNN, largeur fixe (contrat de nommage)
+export const sharingOnSeedV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: T0, consentVersion: version, revokedAt: null });
+export const sharingOnNowV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: serverTs(), consentVersion: version, revokedAt: null });
+
+// SESS-1 (un compte, un seul appareil) : identifiant d'appareil aléatoire (16 à 64 caractères `[A-Za-z0-9_-]`) et document de session.
+export const DEVICE_A = 'DeviceAaaaaaaaaaaaaaaaaaaa';
+export const DEVICE_B = 'DeviceBbbbbbbbbbbbbbbbbbbb';
+/** Session telle qu'un client l'écrit à la connexion : identifiant + heure du serveur. */
+export const sessionDoc = (deviceId = DEVICE_A, over = {}) => ({ deviceId, startedAt: serverTs(), ...over });
+/** Session déjà enregistrée (état injecté avec les règles désactivées). */
+export const sessionSeed = (deviceId = DEVICE_A, over = {}) => ({ deviceId, startedAt: T0, ...over });
+export const SESSION_PATH = (uid) => `users/${uid}/session/active`;
+/**
+ * TEMPS 2 du déploiement (SESS-1) : bascule deviceIdRequired() à true dans le texte des règles (une seule ligne). Refuse de continuer si le
+ * motif n'est pas trouvé exactement une fois (les tests du temps 2 ne doivent jamais rejouer les règles du temps 1 sans le savoir).
+ */
+export function temps2(text) {
+  const from = 'function deviceIdRequired() {\n      return false;\n    }';
+  const to = 'function deviceIdRequired() {\n      return true;\n    }';
+  const normalized = text.replace(/\r\n/g, '\n');
+  if (normalized.split(from).length !== 2) throw new Error('deviceIdRequired() introuvable ou multiple : bascule du temps 2 impossible');
+  return normalized.replace(from, to);
+}
+
+/** Dernière position telle qu'un client l'envoie : latitude, longitude, heure de la mesure (rien d'autre). */
+export const positionDoc = (over = {}) => ({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-5 * 60_000), ...over });
+/** Position déjà enregistrée (état injecté avec les règles désactivées). */
+export const positionSeed = (over = {}) => positionDoc({ measuredAt: T0, ...over });
 
 export const statusDoc = (over = {}) => ({
   presence: 'in_trusted',
@@ -79,6 +115,7 @@ export const statusDoc = (over = {}) => ({
 export const placeSeed = (over = {}) => ({
   name: 'Maison',
   type: 'trusted',
+  category: 'home',
   address: null,
   lat: 48.8566,
   lng: 2.3522,
@@ -94,6 +131,7 @@ export const placeSeed = (over = {}) => ({
 export const placeInput = (uid, over = {}) => ({
   name: 'Ecole',
   type: 'trusted',
+  category: 'school',
   address: null,
   lat: 48.85,
   lng: 2.35,
@@ -105,12 +143,34 @@ export const placeInput = (uid, over = {}) => ({
   ...over,
 });
 
+// Photo telle qu'un client l'écrit depuis le resserrage R-PHOTO-LOC du 2026-11-06 (« une photo d'update doit être attachée à une position,
+// forcément ») : les SIX clés, toujours : lat, lng et measuredAt (une minute avant la photo) comprises. Elle n'est acceptée qu'avec un partage
+// actif ET un consentement de version 03 ou plus (voir setConsentV3 ci-dessous : le jeu de départ porte 'v1').
 export const photoDoc = (over = {}) => ({
+  jpeg: bytes(1000),
+  createdAt: serverTs(),
+  expiresAt: inMs(DAY),
+  lat: 48.85661,
+  lng: 2.35222,
+  measuredAt: inMs(-60_000),
+  ...over,
+});
+
+// ANCIEN document de photo, SANS localisation (la forme d'avant le resserrage). Les règles le REFUSENT à l'écriture ; il sert (1) à
+// injecter, règles désactivées, un éventuel ancien document pour vérifier que sa lecture reste permissive, (2) aux cas « photo sans
+// localisation refusée ».
+export const photoLegacyDoc = (over = {}) => ({
   jpeg: bytes(1000),
   createdAt: serverTs(),
   expiresAt: inMs(DAY),
   ...over,
 });
+
+/** Donne aux comptes le texte de consentement de version 03 (règles désactivées) : exigé pour TOUTE photo depuis le resserrage. */
+export const setConsentV3 = (h, ...uids) =>
+  h.admin(async (f) => {
+    for (const uid of uids) await f.doc(`miffs/${ID.M1}/members/${uid}`).update({ 'sharing.consentVersion': CONSENT_POSITION });
+  });
 
 export const userDoc = (over = {}) => ({
   firstName: 'Eve',
@@ -118,8 +178,26 @@ export const userDoc = (over = {}) => ({
   createdAt: serverTs(),
   termsAcceptedAt: serverTs(),
   termsVersion: 'v1',
+  phone: PHONE,
   ...over,
 });
+
+// Consentement facultatif (b) « statistiques d'usage et rapports de plantage » (AUTH-B) : bloc `analyticsConsent`
+// de users/{uid}, mêmes quatre clés que `sharing` ; la version suit le format AAAA-MM-vNN (ordre lexicographique = ordre chronologique).
+export const CONSENT_V1 = '2026-10-v01';
+export const CONSENT_V2 = '2026-10-v02';
+export const consentOff = (over = {}) => ({ enabled: false, consentedAt: null, consentVersion: null, revokedAt: null, ...over });
+/** Consentement donné « maintenant » par le client : l'heure est celle du serveur. */
+export const consentOnNow = (over = {}) => ({ enabled: true, consentedAt: serverTs(), consentVersion: CONSENT_V1, revokedAt: null, ...over });
+/** Consentement déjà enregistré (état injecté avec les règles désactivées). */
+export const consentOnSeed = (over = {}) => ({ enabled: true, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: null, ...over });
+/** Consentement retiré (état injecté) : la trace du dernier consentement est conservée. */
+export const consentRevokedSeed = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V2, revokedAt: T0, ...over });
+/** Retrait tel qu'un client l'envoie, à partir d'un consentement donné : heure de retrait fournie par le serveur. */
+export const consentRevokeNow = (over = {}) => ({ enabled: false, consentedAt: T0, consentVersion: CONSENT_V1, revokedAt: serverTs(), ...over });
+/** Profil d'un utilisateur existant avec son consentement (état injecté). */
+export const userWithConsent = (uid, analyticsConsent, phone = PHONE) =>
+  userDoc({ ...profile(uid), phone, createdAt: T0, termsAcceptedAt: T0, analyticsConsent });
 
 // ---------------------------------------------------------------------------
 // Opérations de batch : { type: 'set' | 'update' | 'delete', path, data }
@@ -175,7 +253,44 @@ export function joinOps({ uid, miffId = ID.M1, code = CODE.M1, key = 'free', sha
   };
 }
 
-/** Quitter une Miff (batch de 4 suppressions). */
+/**
+ * Statut initial écrit à l'entrée dans une Miff (MIFF-0) : presence = unknown, aucune coordonnée, toutes les clés présentes.
+ * Les horodatages sont ceux du serveur (le client écrit « maintenant »).
+ */
+export const statusInitial = (over = {}) => ({
+  presence: 'unknown',
+  placeId: null,
+  presenceAt: serverTs(),
+  lastUpdateAt: serverTs(),
+  updateText: null,
+  hasPhoto: false,
+  batteryPct: null,
+  locationAccess: 'unknown',
+  escalationDueAt: null,
+  updatedAt: serverTs(),
+  ...over,
+});
+
+/** « Rejoindre et partager » : fiche (partage activé), index et statut initial, 3 écritures dans UN lot. */
+export function joinShareOps({ uid, miffId = ID.M1, code = CODE.M1, key = 'free', status = statusInitial() } = {}) {
+  return {
+    ...joinOps({ uid, miffId, code, key, sharing: sharingOnNow() }),
+    status: set(`miffs/${miffId}/status/${uid}`, status),
+  };
+}
+
+/** « Créer et partager » : Miff, code, fiche du créateur (partage activé), index et statut initial, 5 écritures dans UN lot. */
+export function createShareOps({ uid, miffId = ID.NEW, code = CODE.NEW, name = 'Cercle', key = 'free', status = statusInitial() } = {}) {
+  return {
+    ...createMiffOps({ uid, miffId, code, name, key, sharing: sharingOnNow() }),
+    status: set(`miffs/${miffId}/status/${uid}`, status),
+  };
+}
+
+/**
+ * Quitter une Miff : variante EXACTE des applications actuelles (MIFF-1/2 Android, MIFF-3 iOS), 4 suppressions SANS la dernière position.
+ * Elle doit continuer à passer tant qu'aucune position n'existe (tests de main qui rejouent les lots du client).
+ */
 export function leaveOps(uid, miffId = ID.M1, key = 'free') {
   return {
     member: del(`miffs/${miffId}/members/${uid}`),
@@ -183,6 +298,12 @@ export function leaveOps(uid, miffId = ID.M1, key = 'free') {
     photo: del(`miffs/${miffId}/photos/${uid}`),
     index: del(`users/${uid}/memberships/${key}`),
   };
+}
+
+/** Quitter une Miff, variante des builds qui écrivent une position (R-LIEU-POS) : 5 suppressions, la position comprise. */
+export function leaveWithPositionOps(uid, miffId = ID.M1, key = 'free') {
+  const { member, status, photo, index } = leaveOps(uid, miffId, key);
+  return { member, status, photo, position: del(`miffs/${miffId}/positions/${uid}`), index };
 }
 
 // ---------------------------------------------------------------------------
@@ -208,11 +329,14 @@ function addMiff(batch, f, { miffId, name, code, ownerUid, members, status = [],
   if (place) batch.set(f.doc(`miffs/${miffId}/places/p1`), placeSeed({ createdBy: ownerUid }));
 }
 
-async function seedBase(env) {
+// extraProfiles : eve et frank (comptes sans Miff) ont un profil avec acceptation des CGU, comme tout compte qui crée ou
+// rejoint une Miff (AUTH-B : les règles exigent le profil). Les fichiers qui testent la création de profil ou l'absence de
+// profil (07, 08, 13) le désactivent pour que eve et frank n'aient pas de profil au départ.
+async function seedBase(env, { extraProfiles = true } = {}) {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const f = ctx.firestore();
     const batch = f.batch();
-    for (const uid of ['alice', 'bob', 'carol', 'dave', 'zoe']) {
+    for (const uid of extraProfiles ? ['alice', 'bob', 'carol', 'dave', 'zoe', 'eve', 'frank'] : ['alice', 'bob', 'carol', 'dave', 'zoe']) {
       batch.set(f.doc(`users/${uid}`), userDoc({ ...profile(uid), createdAt: T0, termsAcceptedAt: T0 }));
     }
     batch.set(f.doc('entitlements/dave'), { active: true, expiresAt: inMs(30 * DAY), source: 'manual', updatedAt: T0 });
@@ -260,7 +384,9 @@ export async function adminDo(env, callback) {
 // ---------------------------------------------------------------------------
 // Suite de tests : branche l'émulateur, nettoie et recharge les données avant chaque cas
 // ---------------------------------------------------------------------------
-export function suite() {
+// transformRules : transformation du texte des règles avant chargement (SESS-1 : rejouer les tests au « temps 2 » en basculant
+// deviceIdRequired). Elle s'applique AU-DESSUS de MIFF_RULES_FILE, donc aussi aux règles mutées par l'outil de mutation.
+export function suite({ extraProfiles = true, transformRules = (text) => text } = {}) {
   let env;
   let contexts = new Map();
 
@@ -284,12 +410,12 @@ export function suite() {
 
   before(async () => {
     assertSafeEnvironment({ projectId: PROJECT_ID });
-    env = await initializeTestEnvironment({ projectId: PROJECT_ID, firestore: { rules: readRules() } });
+    env = await initializeTestEnvironment({ projectId: PROJECT_ID, firestore: { rules: transformRules(readRules()) } });
   });
   beforeEach(async () => {
     contexts = new Map();
     await env.clearFirestore();
-    await seedBase(env);
+    await seedBase(env, { extraProfiles });
   });
   after(async () => {
     if (env) await env.cleanup();
@@ -305,8 +431,9 @@ export function suite() {
 export { seedBase };
 
 /**
- * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 6 écritures dans UN lot,
- * dont le renouvellement du code secret (nouveau code créé, ancien supprimé).
+ * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : variante EXACTE des applications actuelles, 6 écritures dans UN lot
+ * SANS la dernière position, dont le renouvellement du code secret (nouveau code créé, ancien supprimé). Doit continuer à passer tant
+ * qu'aucune position n'existe.
  */
 export function removeMemberOps({
   target,
@@ -322,5 +449,16 @@ export function removeMemberOps({
     miff: update(`miffs/${miffId}`, { joinCode: newCode }),
     newCode: set(`joinCodes/${newCode}`, { miffId, miffName: name, createdAt: serverTs() }),
     oldCode: del(`joinCodes/${oldCode}`),
+  };
+}
+
+/** Retrait d'un membre, variante des builds qui écrivent une position (R-LIEU-POS) : 7 écritures, la position de la cible comprise. */
+export function removeMemberWithPositionOps(args = {}) {
+  const ops = removeMemberOps(args);
+  const { target, miffId = ID.M1 } = args;
+  return {
+    member: ops.member, status: ops.status, photo: ops.photo,
+    position: del(`miffs/${miffId}/positions/${target}`),
+    miff: ops.miff, newCode: ops.newCode, oldCode: ops.oldCode,
   };
 }

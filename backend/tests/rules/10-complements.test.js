@@ -3,15 +3,23 @@
 // devient rouge quand cette règle est affaiblie).
 import {
   ID, CODE, DAY, HOUR, T0, suite, assertFails, assertSucceeds, commit, createMiffOps, removeMemberOps, update, set, del, serverTs,
-  inMs, statusDoc, photoDoc, placeInput, sharingOnNow,
+  inMs, userDoc, statusDoc, photoDoc, photoLegacyDoc, placeInput, sharingOnNow, sharingOnNowV3, positionSeed,
 } from '../helpers/fixtures.js';
 
 const s = suite();
 const M1 = `miffs/${ID.M1}`;
 const all = (ops) => Object.values(ops);
 
-s.tc('X1', 'photo : lisible par un membre qui partage, pas par un membre dont le partage est désactivé', async ({ db, admin }) => {
-  await admin((f) => f.doc(`${M1}/photos/alice`).set(photoDoc()));
+s.tc('X1', 'photo : lisible par un membre qui partage, pas par un membre dont le partage est désactivé (ancien document sans localisation, puis photo localisée avec la position du lecteur)', async ({ db, admin }) => {
+  // Ancien document SANS localisation (aucune application publiée n'en écrit plus) : lecture permissive comme avant.
+  await admin((f) => f.doc(`${M1}/photos/alice`).set(photoLegacyDoc()));
+  await assertSucceeds(db('bob').doc(`${M1}/photos/alice`).get());
+  await assertFails(db('carol').doc(`${M1}/photos/alice`).get());
+  // Photo localisée (la seule forme écrite depuis le resserrage) : en plus, le lecteur a publié sa propre position (réciprocité formelle).
+  await admin(async (f) => {
+    await f.doc(`${M1}/photos/alice`).set(photoDoc({ createdAt: T0, measuredAt: T0 }));
+    await f.doc(`${M1}/positions/bob`).set(positionSeed());
+  });
   await assertSucceeds(db('bob').doc(`${M1}/photos/alice`).get());
   await assertFails(db('carol').doc(`${M1}/photos/alice`).get());
 });
@@ -29,11 +37,17 @@ s.tc('X3', 'profil : un autre utilisateur ne supprime pas users/{uid}', async ({
   await assertFails(db('bob').doc('users/alice').delete());
 });
 
-s.tc('X4', 'photo : refusée si le partage est désactivé, acceptée si activé dans le même batch', async ({ db }) => {
+s.tc('X4', 'photo : refusée si le partage est désactivé, acceptée si activé (texte de version 03) dans le même batch ; refusée avec le texte v1', async ({ db, admin }) => {
   const carol = db('carol');
+  // Partage arrêté MAIS texte de version 03 déjà accepté : le seul défaut est le partage (sinon le refus viendrait du consentement).
+  await admin((f) => f.doc(`${M1}/members/carol`).update({ 'sharing.consentVersion': '2026-11-v03' }));
   await assertFails(carol.doc(`${M1}/photos/carol`).set(photoDoc()));
-  await assertSucceeds(
+  // Texte v1 : le partage est actif mais la photo (toujours localisée) exige le texte de version 03 ou plus.
+  await assertFails(
     commit(carol, [update(`${M1}/members/carol`, { sharing: sharingOnNow() }), set(`${M1}/photos/carol`, photoDoc())]),
+  );
+  await assertSucceeds(
+    commit(carol, [update(`${M1}/members/carol`, { sharing: sharingOnNowV3() }), set(`${M1}/photos/carol`, photoDoc())]),
   );
 });
 
@@ -59,7 +73,7 @@ s.tc('X5', 'statut : lastUpdateAt, locationAccess, escalationDueAt et hasPhoto s
 });
 
 s.tc('X6', 'photo restante : bloque le départ, le retrait et la désactivation du partage', async ({ db, admin }) => {
-  await admin((f) => f.doc(`${M1}/photos/bob`).set(photoDoc({ createdAt: T0, expiresAt: inMs(DAY) })));
+  await admin((f) => f.doc(`${M1}/photos/bob`).set(photoLegacyDoc({ createdAt: T0, expiresAt: inMs(DAY) })));
   const bob = db('bob');
   const alice = db('alice');
   // Départ en oubliant la photo
@@ -79,6 +93,7 @@ s.tc('X6', 'photo restante : bloque le départ, le retrait et la désactivation 
 });
 
 s.tc('X7', 'premium : un abonnement non expiré mais active=false ne donne pas les droits premium', async ({ db, admin }) => {
+  await admin((f) => f.doc('users/gina').set(userDoc({ createdAt: T0, termsAcceptedAt: T0 })));
   await admin((f) => f.doc('entitlements/gina').set({ active: false, expiresAt: inMs(30 * DAY), source: 'manual', updatedAt: T0 }));
   await assertFails(commit(db('gina'), all(createMiffOps({ uid: 'gina', key: ID.NEW }))));
   // Contrôle : le même abonnement avec active=true est accepté.

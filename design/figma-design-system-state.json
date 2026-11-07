@@ -130,5 +130,25 @@
   },
   "reconstructionTemplate": "Per screen: 1) get_design_context on original nodeId (fileKey Byi9NgQxkBPbmbhU403HSf) to get asset URLs + exact positions/colors/text. 2) For decorative/bespoke visuals (gradients, organic shapes, mockup photos): curl-download each asset URL, upload_assets (batch) into RbX84qKbxppvAy5iypLYP2, then position via use_figma using the x/y/w/h/rotation values from the design-context code. 3) For functional UI (buttons, avatars, badges, status cards): use createInstance() from the matching component in page 4:15 instead of rebuilding from scratch. 4) Validate with get_screenshot after assembly. Cost so far: ~8 MCP calls for one onboarding screen (5 downloads/uploads + 1 assembly script + 1 screenshot, plus the initial get_design_context read). Extrapolated: full ~85-frame app is roughly 500-700 MCP calls — a multi-day effort even on a 200/day plan.",
   "completedSteps": ["phase0-discovery", "new-file-created", "phase1-color-tokens", "phase1-text-styles", "phase2-page-skeleton", "phase3-base-components-complete", "onboarding-screen-1-of-22"],
-  "blockedOn": null
+  "blockedOn": "MIFF-0 : quota d'appels MCP Figma atteint (message « tool call limit on the Starter plan ») le 2026-10-27 ; la reprise du dessin attend le retour du quota",
+  "fluxMiff": {
+    "ticket": "MIFF-0 (docs/tickets/miff.md)",
+    "date": "2026-10-27",
+    "page": "NON CRÉÉE : la page « Flux Miff » n'existe pas encore dans « Miff - Claude » (vérifié le 2026-10-27 : pages Cover, Fondations, Composants, Onboarding)",
+    "componentsCreated": {
+      "page": "4:15 (Composants), section à partir de y=780",
+      "Header": "51:5",
+      "TextField": "51:36",
+      "CodeField": "51:57",
+      "Notice": "51:70",
+      "Toast": "51:71",
+      "visualCheck": "NON FAIT (aucun screenshot possible après la création)"
+    },
+    "componentsToCreate": ["RolePill", "MemberRow", "ToggleRow", "SectionHeader", "Dialog"],
+    "screensToDraw": ["B1-B4 Nouvelle Miff", "C1-C2 Ta Miff est prête", "D1-D7 Saisie du code", "E1-E4 Confirmation d'entrée", "F1-F7 Miff créateur", "G1-G3 Miff membre", "H1-H3 Retirer", "I1 Quitter", "J1, J3, J4 Supprimer", "K1-K2 Renouveler", "L Accès perdu", "M1-M2 Arrêter/reprendre le partage"],
+    "plan": "1) Contrôle visuel des 5 composants (1 screenshot). 2) Créer les 5 composants restants (2 appels). 3) Créer la page « Flux Miff » et dessiner par groupe : création+rejoindre (2-3 appels), Miff F/G (2 appels), dialogues (2 appels) ; un screenshot par groupe. Total estimé : 12 à 15 appels. Fonds gradient/auth-background, cadre 320 x 660, logo = clone de 37:22 (non modifié), variables et styles liés par nom (text/*, action/*, radius/*).",
+    "docs": ["design/screens/miff-creation.md", "design/screens/miff-rejoindre.md", "design/screens/miff-ecran-miff.md", "design/screens/miff-dialogues.md", "design/screens/miff-points-a-valider.md"],
+    "mcpCallsUsedThisSession": "environ 12 appels (lectures + création des composants) ; le total de la journée n'est pas connu : la session interrompue a pu en consommer",
+    "knownGotchas": ["Le message d'erreur du quota cite le plan Starter, pas les 200 appels/jour du CLAUDE.md : le quota réel semble plus bas ; économiser les appels."]
+  }
 }

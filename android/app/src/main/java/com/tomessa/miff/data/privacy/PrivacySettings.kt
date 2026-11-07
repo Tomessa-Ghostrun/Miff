@@ -25,15 +25,29 @@ interface BooleanStore {
 
 /** Switch of an SDK data collection (Analytics, Crashlytics). */
 interface CollectionSwitch {
+    /** `false` = no consent: stop collecting AND forget what was kept for sending (crash reports left on disk). */
     fun setEnabled(enabled: Boolean)
+
+    /**
+     * Stop collecting for now, WITHOUT deleting anything already kept for sending. Used at every start of the app
+     * (the choice of the account is not known yet), so that the report of the previous crash survives until the
+     * account says yes (then it is sent) or no (then [setEnabled] with `false` deletes it).
+     */
+    fun pause()
+
+    /**
+     * The deletion of the account: forget what this SDK keeps on the phone about the installation (Analytics: `resetAnalyticsData`,
+     * which also gives a new installation identifier). The data already sent follows the durations of the privacy policy.
+     */
+    fun forgetInstallation() {}
 }
 
 /**
  * User choices for Analytics and crash reports. Both are OFF by default and the manifest also disables them
- * at startup, so nothing is collected before the user opts in (the real consent screen comes with onboarding;
- * for now the only way to switch them on is the debug diagnostic screen).
+ * at startup, so nothing is collected before the user opts in.
  *
- * The choice is kept on the device and re-applied at every start, because the manifest always starts disabled.
+ * The choice that counts is the one of the ACCOUNT (`users/{uid}.analyticsConsent`), applied by the SessionManager
+ * once it has been read. The value kept on the device is deliberately NOT re-applied at a cold start.
  */
 class PrivacySettings(
     private val store: BooleanStore,
@@ -46,10 +60,17 @@ class PrivacySettings(
     val analyticsEnabled: StateFlow<Boolean> = analyticsState.asStateFlow()
     val crashReportsEnabled: StateFlow<Boolean> = crashState.asStateFlow()
 
-    /** Called once from Application.onCreate: pushes the stored choices to the SDKs. */
-    fun applyStoredChoices() {
-        analytics.setEnabled(analyticsState.value)
-        crashReports.setEnabled(crashState.value)
+    /**
+     * Cold start, and every moment the account is being (re)read: collect nothing, but keep the crash report of the
+     * previous run on disk (see [CollectionSwitch.pause]); the account's answer then sends it or deletes it.
+     */
+    fun pauseCollection() {
+        store.put(KEY_ANALYTICS, false)
+        store.put(KEY_CRASH, false)
+        analyticsState.value = false
+        crashState.value = false
+        analytics.pause()
+        crashReports.pause()
     }
 
     fun setAnalyticsEnabled(enabled: Boolean) {
@@ -64,16 +85,43 @@ class PrivacySettings(
         crashReports.setEnabled(enabled)
     }
 
+    /**
+     * The single switch of the "statistics and crash reports" consent (one choice, two SDKs): applies the choice of
+     * the ACCOUNT (read from `users/{uid}.analyticsConsent`, or given by the tap at sign-up) to both collections at once.
+     * `false` cuts both AND deletes the crash reports not yet sent: it is the withdrawal of the consent, the sign-out
+     * and the refusal. For "not known yet" use [pauseCollection], which deletes nothing.
+     */
+    fun applyAccountConsent(enabled: Boolean) {
+        setAnalyticsEnabled(enabled)
+        setCrashReportsEnabled(enabled)
+    }
+
+    /**
+     * The deletion of the account (AUTH-5, ticket 5.10): the collection is cut, the reports not yet sent are deleted, what the SDKs keep
+     * about the installation is forgotten. No event is sent for it (criterion D6): the collection is off before anything else.
+     */
+    fun eraseCollectedData() {
+        applyAccountConsent(false)
+        analytics.forgetInstallation()
+        crashReports.forgetInstallation()
+    }
+
     companion object {
         const val KEY_ANALYTICS = "analytics_enabled"
         const val KEY_CRASH = "crash_reports_enabled"
     }
 }
 
+/**
+ * [synchronous] writes to disk before returning (`commit`), for flags that must survive a process kill right after
+ * (for example "a cache purge is pending").
+ */
 class SharedPreferencesBooleanStore(
     context: Context,
+    name: String = "miff_privacy",
+    private val synchronous: Boolean = false,
 ) : BooleanStore {
-    private val prefs = context.applicationContext.getSharedPreferences("miff_privacy", Context.MODE_PRIVATE)
+    private val prefs = context.applicationContext.getSharedPreferences(name, Context.MODE_PRIVATE)
 
     override fun get(
         key: String,
@@ -84,7 +132,7 @@ class SharedPreferencesBooleanStore(
         key: String,
         value: Boolean,
     ) {
-        prefs.edit { putBoolean(key, value) }
+        prefs.edit(commit = synchronous) { putBoolean(key, value) }
     }
 }
 
@@ -96,15 +144,39 @@ class FirebaseAnalyticsSwitch(
     override fun setEnabled(enabled: Boolean) {
         analytics.setAnalyticsCollectionEnabled(enabled)
     }
+
+    override fun pause() = setEnabled(false)
+
+    // Erases what Analytics holds on the phone and gives the installation a new identifier (deletion of the account, AUTH-5).
+    override fun forgetInstallation() = analytics.resetAnalyticsData()
 }
 
-class FirebaseCrashlyticsSwitch : CollectionSwitch {
+/** The two Crashlytics calls we need, so that the rule "pause keeps the reports, refusal deletes them" is testable. */
+interface CrashReportsClient {
+    fun setCollectionEnabled(enabled: Boolean)
+
+    fun deleteUnsentReports()
+}
+
+class FirebaseCrashReportsClient : CrashReportsClient {
+    private val crashlytics get() = FirebaseCrashlytics.getInstance()
+
+    override fun setCollectionEnabled(enabled: Boolean) = crashlytics.setCrashlyticsCollectionEnabled(enabled)
+
+    override fun deleteUnsentReports() = crashlytics.deleteUnsentReports()
+}
+
+class FirebaseCrashlyticsSwitch(
+    private val client: CrashReportsClient = FirebaseCrashReportsClient(),
+) : CollectionSwitch {
     override fun setEnabled(enabled: Boolean) {
-        val crashlytics = FirebaseCrashlytics.getInstance()
-        crashlytics.setCrashlyticsCollectionEnabled(enabled)
+        client.setCollectionEnabled(enabled)
         // Without consent, a report left on disk must never be sent later by surprise.
-        if (!enabled) crashlytics.deleteUnsentReports()
+        if (!enabled) client.deleteUnsentReports()
     }
+
+    /** Collection off, but the report of the previous crash stays on disk until the account has answered. */
+    override fun pause() = client.setCollectionEnabled(false)
 }
 
 /** Hands validated events to Firebase Analytics. Only used through AnalyticsTracker. */
