@@ -5,11 +5,19 @@ import Foundation
 // l'identifiant du compte connecté ; les règles (`isSelf`) refusent le reste. Les identifiants passent par ici et nulle part ailleurs
 // (ni journal, ni événement). Chaque écriture est une TRANSACTION, comme celles du profil et des Miffs : une écriture simple faite sans
 // réseau est mise en file et part plus tard toute seule ; une transaction n'existe qu'en ligne, donc « pas d'accusé » veut toujours dire
-// « rien d'écrit ». Aucun identifiant n'entre dans un chemin sans avoir la forme d'un identifiant (pas de « / »).
+// « rien d'écrit ». Les suppressions passent par le MÊME point d'écriture que les lots des Miffs (`MiffStore.commit`, donc le même garde
+// `SessionWriteGuard` et aucun nouveau fichier qui écrit dans Firestore). Aucun identifiant n'entre dans un chemin sans avoir la forme
+// d'un identifiant (pas de « / »).
 
 /// Ce que la suppression du compte lit et supprime dans Firestore en plus des Miffs (AUTH-5c) : les index `memberships`, les appareils et
 /// le profil.
 final class FirestoreAccountDataStore: AccountDataStore {
+    private let writer: MiffStore
+
+    init(writer: MiffStore = FirestoreMiffStore()) {
+        self.writer = writer
+    }
+
     func membershipCount(uid: String) async throws -> Int {
         try Self.check(uid)
         let snapshot = try await Self.user(uid).collection("memberships").getDocuments(source: .server)
@@ -25,22 +33,12 @@ final class FirestoreAccountDataStore: AccountDataStore {
     func deleteDevice(uid: String, deviceId: String) async throws {
         try Self.check(uid)
         try Self.check(deviceId)
-        let database = Firestore.firestore()
-        let reference = database.collection("users").document(uid).collection("devices").document(deviceId)
-        _ = try await database.runTransaction { transaction, _ in
-            transaction.deleteDocument(reference)
-            return nil
-        }
+        try await writer.commit([DocWrite(path: "users/\(uid)/devices/\(deviceId)", kind: .delete)])
     }
 
     func deleteProfile(uid: String) async throws {
         try Self.check(uid)
-        let database = Firestore.firestore()
-        let reference = database.collection("users").document(uid)
-        _ = try await database.runTransaction { transaction, _ in
-            transaction.deleteDocument(reference)
-            return nil
-        }
+        try await writer.commit([DocWrite(path: "users/\(uid)", kind: .delete)])
     }
 
     // MARK: - Intérieur
