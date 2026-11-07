@@ -47,6 +47,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.settings.DeleteAccountLink
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -54,6 +55,7 @@ import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint20
+import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderAction
 import com.tomessa.miff.ui.theme.colorBorderDefault
@@ -73,13 +75,18 @@ import com.tomessa.miff.ui.theme.textDisplayHeadline
  * They are state-in, events-out: the view models decide, these only draw (and give a name to every part for the screen reader).
  */
 
-/** The frame of the flow: auth gradient, system bars respected, scrolls when the content is taller than the screen. */
+/**
+ * The frame of the flow: auth gradient, system bars respected, scrolls when the content is taller than the screen. With a [footer]
+ * (LOC-2a, design decision D1 of screen 24: the consent text v3 is longer than a screen) the content scrolls and the footer, the main
+ * button, stays pinned at the bottom, always visible; its safe area is the one of the frame.
+ */
 @Composable
 fun MiffFrame(
     title: String?,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     background: Brush = GradientAuthBackground,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -88,13 +95,35 @@ fun MiffFrame(
                 .fillMaxSize()
                 .background(background)
                 .miffScreenInsets()
-                .verticalScroll(rememberScrollState())
-                .semantics { if (title != null) paneTitle = title }
-                .padding(horizontal = Spacing.l, vertical = Spacing.s),
-        verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                .then(if (footer == null) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                .semantics { if (title != null) paneTitle = title },
     ) {
-        if (title != null) MiffHeader(title = title, onBack = onBack)
-        content()
+        Column(
+            modifier =
+                Modifier
+                    .then(
+                        if (footer == null) {
+                            Modifier
+                        } else {
+                            Modifier.weight(1f).verticalScroll(rememberScrollState())
+                        },
+                    ).padding(horizontal = Spacing.l, vertical = Spacing.s),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            if (title != null) MiffHeader(title = title, onBack = onBack)
+            content()
+        }
+        if (footer != null) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(
+                            colorBgCanvas,
+                        ).padding(horizontal = Spacing.l, vertical = Spacing.s),
+                content = footer,
+            )
+        }
     }
 }
 
@@ -110,6 +139,7 @@ fun MiffChoiceScreen(
     onCreate: () -> Unit,
     onJoin: () -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit,
 ) {
     val pane = stringResource(R.string.miff_choice_title)
     Column(
@@ -152,6 +182,8 @@ fun MiffChoiceScreen(
         TextButton(onClick = onSignOut, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
             Text(stringResource(R.string.auth_signout_action), style = textBodyBold16, color = colorActionPrimary)
         }
+        // AUTH-5a: the deletion must be reachable here too (a person without a Miff never sees Settings).
+        DeleteAccountLink(onClick = onDeleteAccount)
     }
 }
 
@@ -190,44 +222,6 @@ private fun ChoiceCard(
 
 // --- B and C. Create -------------------------------------------------------------------------------------------------
 
-/** The explicit consent: the sentence of the PM, what the members see of the person, the note about the phone's permission. */
-@Composable
-fun SharingConsentCard(
-    sentence: String,
-    systemNote: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(ShapeMd)
-                .background(colorBgSurface)
-                .border(StrokeHairline, colorBorderAction, ShapeMd)
-                .padding(Spacing.m)
-                .semantics(mergeDescendants = true) {},
-        verticalArrangement = Arrangement.spacedBy(Spacing.s),
-    ) {
-        Text(text = sentence, style = textBodyRegular14, color = colorTextPrimary)
-        Text(
-            text = stringResource(R.string.miff_consent_members_see_title),
-            style = textBodyBold14,
-            color = colorTextPrimary,
-        )
-        Text(
-            text = stringResource(R.string.miff_consent_members_see_body),
-            style = textBodyRegular14,
-            color = colorTextPrimary,
-        )
-        Text(
-            text = stringResource(R.string.miff_consent_places),
-            style = textBodyRegular14,
-            color = colorTextPrimary,
-        )
-        Text(text = systemNote, style = textBodyCaption, color = colorTextDescription)
-    }
-}
-
 /** B ("Nouvelle Miff": one field, the consent, one button) then C ("Ta Miff est prête": the code, share, copy, continue). */
 @Composable
 fun CreateMiffScreen(
@@ -253,7 +247,19 @@ private fun CreateNameStep(
 ) {
     // Back is a way out only before the Miff is being written (one tap = one operation).
     BackHandler(enabled = state.saving) {}
-    MiffFrame(title = stringResource(R.string.miff_create_title), onBack = if (state.saving) null else onBack) {
+    MiffFrame(
+        title = stringResource(R.string.miff_create_title),
+        onBack = if (state.saving) null else onBack,
+        footer = {
+            state.message?.let { MiffNotice(text = actionMessageText(it)) }
+            MiffButton(
+                text = stringResource(if (state.saving) R.string.miff_create_saving else R.string.miff_create_action),
+                onClick = onSubmit,
+                enabled = state.canSubmit,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+    ) {
         NameField(
             name = state.name,
             limitReached = state.limitReached,
@@ -261,17 +267,7 @@ private fun CreateNameStep(
             onNameChanged = onNameChanged,
             onDone = onSubmit,
         )
-        SharingConsentCard(
-            sentence = stringResource(R.string.miff_consent_create),
-            systemNote = stringResource(R.string.miff_consent_system_note_create),
-        )
-        state.message?.let { MiffNotice(text = actionMessageText(it)) }
-        MiffButton(
-            text = stringResource(if (state.saving) R.string.miff_create_saving else R.string.miff_create_action),
-            onClick = onSubmit,
-            enabled = state.canSubmit,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        SharingConsentCard(sentence = stringResource(R.string.miff_consent3_create))
     }
 }
 
@@ -491,7 +487,26 @@ private fun JoinConfirmStep(
     BackHandler(enabled = !state.joining, onBack = onCancelConfirm)
     BackHandler(enabled = state.joining) {}
     val title = stringResource(R.string.miff_join_confirm_title, state.miffName.orEmpty())
-    MiffFrame(title = null, onBack = null) {
+    MiffFrame(
+        title = null,
+        onBack = null,
+        footer = {
+            state.confirmMessage?.let { MiffNotice(text = actionMessageText(it)) }
+            MiffButton(
+                text = stringResource(if (state.joining) R.string.miff_join_joining else R.string.miff_join_action),
+                onClick = onConfirm,
+                enabled = !state.joining,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            TextButton(
+                onClick = onCancelConfirm,
+                enabled = !state.joining,
+                modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = Spacing.minTouchTarget),
+            ) {
+                Text(stringResource(R.string.common_cancel), style = textBodyBold16, color = colorActionPrimary)
+            }
+        },
+    ) {
         Spacer(Modifier.size(Spacing.s))
         Text(
             text = title,
@@ -500,24 +515,7 @@ private fun JoinConfirmStep(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().semantics { heading() },
         )
-        SharingConsentCard(
-            sentence = stringResource(R.string.miff_consent_join),
-            systemNote = stringResource(R.string.miff_consent_system_note_join),
-        )
-        state.confirmMessage?.let { MiffNotice(text = actionMessageText(it)) }
-        MiffButton(
-            text = stringResource(if (state.joining) R.string.miff_join_joining else R.string.miff_join_action),
-            onClick = onConfirm,
-            enabled = !state.joining,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        TextButton(
-            onClick = onCancelConfirm,
-            enabled = !state.joining,
-            modifier = Modifier.align(Alignment.CenterHorizontally).heightIn(min = Spacing.minTouchTarget),
-        ) {
-            Text(stringResource(R.string.common_cancel), style = textBodyBold16, color = colorActionPrimary)
-        }
+        SharingConsentCard(sentence = stringResource(R.string.miff_consent3_join))
     }
 }
 

@@ -12,9 +12,9 @@ import com.tomessa.miff.domain.miff.MemberDepartures
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSharingConsent
+import com.tomessa.miff.domain.place.Place
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
@@ -84,7 +84,7 @@ class MiffScreenState(
     val joinCode: String = "",
     val isOwner: Boolean = false,
     val members: List<MiffMember> = emptyList(),
-    val places: List<MiffPlace> = emptyList(),
+    val places: List<Place> = emptyList(),
     val myUid: String = "",
     /** Whether I am sharing my status with this Miff (my own card). Null until my card is read. */
     val sharing: Boolean? = null,
@@ -139,7 +139,7 @@ class MiffScreenState(
         joinCode: String = this.joinCode,
         isOwner: Boolean = this.isOwner,
         members: List<MiffMember> = this.members,
-        places: List<MiffPlace> = this.places,
+        places: List<Place> = this.places,
         myUid: String = this.myUid,
         sharing: Boolean? = this.sharing,
         nameInput: String = this.nameInput,

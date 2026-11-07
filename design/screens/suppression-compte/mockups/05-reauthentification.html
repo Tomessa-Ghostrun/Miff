@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C. Ré-authentification</title>
+<style>
+/* Maquettes « Lieux de confiance » — tokens de design/design-system.md (valeurs en pt/px, non mises à l'échelle).
+   Source unique : ce fichier est inclus tel quel dans chaque HTML par build.mjs (les HTML sont autonomes). */
+@font-face{font-family:"Hanken Grotesk";font-weight:400;font-style:normal;src:url("../../../../ios/Miff/Resources/Fonts/HankenGrotesk-Regular.ttf")}
+@font-face{font-family:"Hanken Grotesk";font-weight:700;font-style:normal;src:url("../../../../ios/Miff/Resources/Fonts/HankenGrotesk-Bold.ttf")}
+@font-face{font-family:"Hanken Grotesk";font-weight:400;font-style:italic;src:url("../../../../ios/Miff/Resources/Fonts/HankenGrotesk-Italic.ttf")}
+@font-face{font-family:"Baloo Thambi 2";font-weight:400 800;src:url("../../../../ios/Miff/Resources/Fonts/BalooThambi2-Variable.ttf")}
+
+:root{
+  --brand-primary:#d1d828;
+  --action:#043cd1; --action-t5:rgba(4,60,209,.05); --action-t10:rgba(4,60,209,.10); --action-t20:rgba(4,60,209,.20); --action-t30:rgba(4,60,209,.30);
+  --on-action:#fff;
+  --safe:#d1d828; --safe-tint:rgba(209,216,40,.30);
+  --warning:#ffb650; --warning-tint:rgba(255,182,80,.30);
+  --danger:#ff5650; --danger-tint:rgba(255,86,80,.30);
+  --text-error:#d60700;
+  --canvas:#f9f9f7; --surface:#fff; --placeholder:#d9d9d9; --overlay-header:rgba(249,249,247,.6); --gradient-end:#edefb9;
+  --text:#000; --text-form:#222; --text-placeholder:rgba(34,34,34,.5); --text-desc:rgba(0,0,0,.7); --text-muted:rgba(0,0,0,.5); --text-secondary:#7d7c7c;
+  --border-default:#efefef; --border-strong:rgba(0,0,0,.5); --border-subtle:rgba(0,0,0,.3);
+  --r-md:10px; --r-sm:5px; --r-full:9999px;
+  --shadow:0 4px 4px rgba(0,0,0,.25);
+  --shadow-subtle:0 0 3px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#e9e9e6}
+body{font-family:"Hanken Grotesk",system-ui,sans-serif;font-size:16px;line-height:22px;color:var(--text);-webkit-font-smoothing:antialiased}
+svg{display:block}
+.ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- cadre d'écran 390 x 844 ---------- */
+.frame{position:relative;width:390px;height:844px;overflow:hidden;background:var(--canvas);isolation:isolate}
+.frame.tall{height:auto;min-height:844px;overflow:visible}
+.frame.grad{background:linear-gradient(180deg,var(--canvas) 17%,var(--gradient-end) 100%)}
+.frame.fragment{height:auto;overflow:visible;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.fold{position:absolute;left:0;right:0;top:844px;border-top:1px dashed rgba(0,0,0,.28);z-index:50;pointer-events:none}
+.fold span{position:absolute;right:6px;top:2px;font-size:10px;line-height:12px;color:rgba(0,0,0,.4);background:rgba(249,249,247,.85);padding:0 3px}
+
+.status{height:47px;padding:14px 26px 0 30px;display:flex;justify-content:space-between;align-items:flex-start;font-weight:700;font-size:15px;color:#000}
+.status .r{display:flex;gap:6px;align-items:center}
+.status svg{width:18px;height:12px;fill:#000}
+
+/* ---------- en-tête ---------- */
+.header{position:sticky;top:0;z-index:10;background:var(--overlay-header);backdrop-filter:blur(10px);box-shadow:0 2px 4px rgba(0,0,0,.12)}
+.header .bar{height:56px;display:flex;align-items:center;justify-content:center;position:relative}
+.header .back{position:absolute;left:12px;top:6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--action)}
+.header .right{position:absolute;right:16px;top:6px;height:44px;display:flex;align-items:center;font-weight:700;color:var(--action)}
+.header h1{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+
+.content{padding:20px 16px 24px}
+.section{margin-bottom:24px;position:relative}
+.sec-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.pill{width:33px;height:33px;border-radius:var(--r-md);background:var(--action-t20);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.pill .ico{width:20px;height:20px}
+.sec-head h2{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+.sec-head p{font-size:12px;line-height:16px;color:var(--text-desc);margin-top:0}
+.sec-body{padding-left:0}
+
+/* ---------- champs ---------- */
+.field{position:relative;min-height:46px;border:1px solid var(--border-strong);border-radius:var(--r-md);background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:10px;font-size:16px;line-height:22px;color:var(--text-form)}
+.field .ph{color:var(--text-placeholder)}
+.field .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field.focus{border:2px solid var(--action);padding:0 13px}
+.field.error{border:2px solid var(--text-error);padding:0 13px}
+.field.disabled{opacity:.5}
+.field .tail{color:var(--text-secondary);display:flex;align-items:center}
+.field .caret{display:inline-block;width:2px;height:20px;background:var(--action);margin-left:1px;vertical-align:-4px}
+.under{display:flex;justify-content:space-between;gap:12px;margin-top:4px;font-size:12px;line-height:16px;color:var(--text-desc);min-height:16px}
+.under .cnt{margin-left:auto;color:var(--text-secondary);white-space:nowrap}
+.err{color:var(--text-error)}
+.hint{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:16px;color:var(--text-desc);margin-top:6px}
+.hint .ico{width:14px;height:14px;margin-top:1px;color:var(--text-secondary)}
+
+/* Miffs : chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;padding:6px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 6px 0 12px;border-radius:var(--r-full);background:var(--action-t10);color:var(--action);font-size:14px;font-weight:700;line-height:20px;border:1px solid var(--action-t30)}
+.chip .x{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.chip .x .ico{width:12px;height:12px;stroke-width:2.4}
+.chip.ro{padding:0 12px}
+.field.multi{padding:2px 10px 2px 8px}
+
+/* suggestions */
+.sugg{margin-top:6px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border-default);box-shadow:var(--shadow);overflow:hidden}
+.sugg .row{display:flex;gap:12px;align-items:center;min-height:56px;padding:8px 14px;border-bottom:1px solid var(--border-default)}
+.sugg .row:last-of-type{border-bottom:0}
+.sugg .row.press{background:var(--action-t5)}
+.sugg .t{font-size:14px;line-height:20px;color:var(--text)}
+.sugg .t b{font-weight:700}
+.sugg .s{font-size:12px;line-height:16px;color:var(--text-desc)}
+.sugg .src{padding:6px 14px;font-size:10px;line-height:14px;color:var(--text-secondary);background:var(--canvas);border-top:1px solid var(--border-default)}
+.mini-pin{width:32px;height:32px;border-radius:50%;background:var(--action-t10);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none}
+.mini-pin .ico{width:16px;height:16px}
+.skel{height:12px;border-radius:6px;background:rgba(217,217,217,.6)}
+.msg-row{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;font-size:14px;line-height:20px;color:var(--text-form)}
+.msg-row .ico{width:20px;height:20px;color:var(--text-secondary);margin-top:0}
+.link{color:var(--action);font-weight:700}
+
+/* carte */
+.map{position:relative;height:176px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border-default);background:#f1f0e8}
+.map svg.m{width:100%;height:100%}
+.map .attr{position:absolute;right:0;bottom:0;font-size:9px;line-height:12px;color:#555;background:rgba(255,255,255,.8);padding:0 4px}
+.map.big{height:210px}
+.map.empty{background:var(--placeholder);background:repeating-linear-gradient(135deg,#ececea 0 10px,#f3f3f1 10px 20px);display:flex;align-items:center;justify-content:center;text-align:center;padding:0 40px;color:var(--text-desc);font-size:14px;line-height:20px;flex-direction:column;gap:8px}
+.map.empty .ico{width:28px;height:28px;color:var(--text-secondary)}
+
+/* curseur */
+.slider{display:flex;align-items:center;gap:14px;margin-top:14px}
+.track{position:relative;flex:1;height:4px;border-radius:2px;background:var(--border-subtle)}
+.track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--action)}
+.track .thumb{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#fff;border:2px solid var(--action);box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.slider.off .fill{background:var(--border-subtle)}
+.slider.off .thumb{border-color:var(--border-subtle);box-shadow:none}
+.val{min-width:64px;height:30px;padding:0 10px;border-radius:var(--r-sm);background:#ededeb;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.val.off{color:var(--text-muted)}
+.scale{display:flex;justify-content:space-between;font-size:10px;line-height:14px;color:var(--text-secondary);margin:4px 78px 0 0}
+
+/* type */
+.types{display:flex;gap:10px}
+.type{flex:1;position:relative;border-radius:var(--r-md);padding:10px 10px 10px 10px;display:flex;gap:8px;align-items:flex-start;background:var(--surface);min-height:62px;border:1px solid}
+.type .ico{width:22px;height:22px;margin-top:1px}
+.type b{display:block;font-size:14px;line-height:18px}
+.type span{display:block;font-size:12px;line-height:15px;color:var(--text-desc)}
+.type.trust{border-color:rgba(168,174,10,.7)}
+.type.trust .ico{color:#9a9f08}
+.type.trust.sel{background:var(--safe-tint);border:2px solid var(--brand-primary);padding:9px}
+.type.risk{border-color:rgba(255,86,80,.6)}
+.type.risk .ico{color:var(--text-error)}
+.type.risk.sel{background:var(--danger-tint);border:2px solid var(--danger);padding:9px}
+.type .tick{position:absolute;right:6px;top:6px;width:18px;height:18px;border-radius:50%;background:var(--action);color:#fff;display:flex;align-items:center;justify-content:center}
+.type .tick .ico{width:11px;height:11px;stroke-width:3;margin:0}
+.type .plus{position:absolute;right:6px;top:6px;height:18px;padding:0 7px;border-radius:var(--r-full);background:var(--action-t10);color:var(--action);font-size:11px;line-height:18px;font-weight:700;display:flex;align-items:center;gap:3px}
+.type .plus .ico{width:10px;height:10px;margin:0;color:var(--action);stroke-width:2.6}
+.type-help{margin-top:8px;font-size:12px;line-height:16px;color:var(--text-desc)}
+
+/* catégories (liste à choix unique) */
+.cats{display:flex;flex-direction:column}
+.cat{display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px}
+.radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--border-strong);flex:none;display:flex;align-items:center;justify-content:center}
+.radio.on{border-color:var(--action)}
+.radio.on::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--action)}
+.cic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--action-t10);color:var(--action);display:flex;align-items:center;justify-content:center;flex:none}
+.cic .ico{width:18px;height:18px}
+.cic.lg{width:44px;height:44px;border-radius:var(--r-md);background:var(--action-t20)}
+.cic.lg .ico{width:26px;height:26px}
+.cic.xl{width:72px;height:72px;border-radius:14px;background:var(--action-t20)}
+.cic.xl .ico{width:42px;height:42px;stroke-width:1.6}
+
+/* boutons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:46px;border-radius:var(--r-md);font-size:16px;line-height:22px;font-weight:400;border:1px solid transparent;text-align:center}
+.btn.primary{background:var(--action);color:var(--on-action);box-shadow:var(--shadow)}
+.btn.primary.disabled{background:var(--action-t30);box-shadow:none}
+.btn.secondary{background:var(--surface);color:var(--action);border-color:var(--action);box-shadow:var(--shadow-subtle)}
+.btn.sensitive{background:var(--surface);color:var(--text-error);border-color:var(--text-error)}
+.btn.tall2{height:auto;min-height:46px;padding:8px 14px}
+.btn.link{border:0;background:none;color:var(--action);font-weight:700;height:44px;width:auto;padding:0 12px}
+.btn .spin{width:20px;height:20px;border-radius:50%;border:3px solid rgba(255,255,255,.4);border-top-color:#fff}
+.btn-stack{display:flex;flex-direction:column;gap:12px}
+.footer{padding:12px 16px 28px;background:linear-gradient(180deg,rgba(249,249,247,0),var(--canvas) 22%)}
+
+/* notice / toast */
+.notice{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border-subtle);font-size:14px;line-height:20px;color:var(--text-form)}
+.notice .ico{width:20px;height:20px;margin-top:0}
+.notice.info{border-color:var(--action);background:var(--action-t5)}
+.notice.info .ico{color:var(--action)}
+.notice.offline .ico{color:var(--text-secondary)}
+.notice.error{border:1.5px solid var(--text-error)}
+.notice.error .ico{color:var(--text-error)}
+.toast{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:var(--r-md);background:rgba(34,34,34,.92);color:#fff;font-size:14px;line-height:20px}
+
+/* ---------- dialogue et pop-in ---------- */
+.veil{position:absolute;inset:0;background:rgba(0,0,0,.28);z-index:20}
+.dialog{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);z-index:30;background:var(--surface);border:2px solid var(--action);border-radius:var(--r-md);box-shadow:var(--shadow);padding:24px 20px 12px;display:flex;flex-direction:column;gap:16px}
+.dialog h3{font-weight:700;font-size:20px;line-height:26px;color:var(--text)}
+.dialog p{color:var(--text-desc)}
+.dialog .btn{height:44px}
+.dialog .cancel{height:44px;display:flex;align-items:center;justify-content:center;color:var(--action);font-weight:700}
+.dlist{background:var(--canvas);border-radius:var(--r-sm);padding:8px 12px;font-size:14px;line-height:20px;color:var(--text-form)}
+.dlist div{display:flex;gap:8px;align-items:center;min-height:28px}
+.dlist .ico{width:16px;height:16px;color:var(--action)}
+
+.backdrop{position:absolute;inset:0;z-index:0;background:var(--canvas)}
+.backdrop .inner{position:absolute;inset:0;filter:blur(5px)}
+.backdrop::after{content:"";position:absolute;inset:0;background:rgba(249,249,247,.55)}
+.popin{position:absolute;left:24px;right:24px;top:50%;transform:translateY(-50%);z-index:30;background:var(--surface);border:1.5px solid var(--action);border-radius:var(--r-md);box-shadow:var(--shadow);padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.popin h3{font-weight:700;font-size:20px;line-height:26px;color:var(--action)}
+.popin p.body{font-size:14px;line-height:20px;color:var(--text)}
+.popin .btn{height:46px}
+.popin .errmsg{font-size:13px;line-height:18px;color:#ea4335;font-size:13px}
+.popin .errmsg.ds{color:var(--text-error)}
+.popin .calm{font-size:12px;line-height:16px;color:var(--text-desc)}
+.popin .later{height:40px;display:flex;align-items:center;color:var(--action);font-weight:700;font-size:14px}
+.facts{align-self:stretch;display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--canvas);border-radius:var(--r-md);padding:12px}
+.fact{display:flex;gap:10px;align-items:flex-start}
+.fact .ico{width:20px;height:20px;color:var(--action);margin-top:1px}
+.fact b{display:block;font-size:13px;line-height:17px}
+.fact span{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
+.steps{align-self:stretch;display:flex;flex-direction:column;gap:10px;text-align:left}
+.step{display:flex;gap:12px;align-items:center;font-size:14px;line-height:20px}
+.step i{width:26px;height:26px;border-radius:50%;background:var(--action-t20);color:var(--action);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:13px;flex:none}
+.step b{font-weight:700}
+
+/* backdrop Feed (flou) */
+.fb-head{display:flex;justify-content:space-between;align-items:center;padding:6px 18px}
+.fb-av{width:46px;height:46px;border-radius:50%;border:3px solid var(--safe);background:#c9c4bd}
+.fb-logo{font-family:"Baloo Thambi 2";font-weight:800;font-size:48px;line-height:48px;color:var(--action)}
+.fb-bell{width:30px;height:30px;color:var(--action)}
+.fb-bell .ico{width:30px;height:30px}
+.fb-sel{margin:14px auto 0;width:180px;height:38px;border-radius:var(--r-md);background:#eee;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-style:italic}
+.fb-blob{margin:26px 16px 0;height:190px;border-radius:50% 46% 52% 48%/60% 55% 45% 40%;background:var(--safe-tint);padding:50px 28px;font-family:"Baloo Thambi 2";font-weight:700;font-size:24px;line-height:36px}
+.fb-card{margin:20px 16px 0;height:150px;background:#fff;border-radius:var(--r-sm);box-shadow:var(--shadow-subtle)}
+.fb-tab{position:absolute;left:24px;right:24px;bottom:22px;height:56px;border-radius:var(--r-md);background:#fff;box-shadow:var(--shadow)}
+
+/* pop-in : pictogramme de localisation */
+.locart{width:92px;height:92px}
+
+/* paywall */
+.pw-close{position:absolute;left:16px;top:56px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.15);color:#fff;display:flex;align-items:center;justify-content:center;z-index:5}
+.pw-close .ico{width:16px;height:16px;stroke-width:2.6}
+.pw-logo{width:112px;margin:56px auto 0}
+.pw-logo svg{width:100%;height:auto}
+.pw-title{text-align:center;font-weight:700;font-size:24px;line-height:30px;margin:20px 20px 0;background:linear-gradient(90deg,#043cd1,#d1d52c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pw-ctx{margin:16px 16px 0;padding:14px;border-radius:var(--r-md);background:var(--surface);border:2px solid var(--action);box-shadow:var(--shadow);display:flex;gap:12px;align-items:center}
+.pw-ctx b{display:block;font-size:16px;line-height:22px}
+.pw-ctx span{display:block;font-size:14px;line-height:20px;color:var(--text-desc)}
+.dots{display:flex;gap:6px;margin-top:6px}
+.dots i{width:22px;height:22px;border-radius:50%;background:var(--action);display:flex;align-items:center;justify-content:center;color:#fff}
+.dots i .ico{width:12px;height:12px;stroke-width:2.4}
+.dots i.empty{background:none;border:2px dashed var(--border-subtle);color:var(--text-muted)}
+.pw-list{margin:14px 16px 0;display:flex;flex-direction:column;gap:10px}
+.pw-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:var(--r-md);background:var(--surface);box-shadow:var(--shadow-subtle);border:1px solid var(--border-default)}
+.pw-item.hl{border:2px solid var(--action);padding:11px}
+.pw-item b{display:block;font-size:14px;line-height:20px}
+.pw-item span{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
+.pw-cta{position:absolute;left:16px;right:16px;bottom:34px}
+.pw-cta .tag{position:absolute;right:10px;top:-11px;height:16px;padding:0 8px;border-radius:var(--r-sm);background:var(--brand-primary);border:1px solid #000;font-size:8px;line-height:14px;color:#000;z-index:2}
+.pw-cta small{display:block;text-align:center;margin-top:10px;font-size:14px;line-height:20px;color:var(--action)}
+
+/* détail / liste */
+.card{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-sm);box-shadow:var(--shadow-subtle)}
+.kv{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-default);min-height:52px}
+.kv:last-child{border-bottom:0}
+.kv .k{font-size:12px;line-height:16px;color:var(--text-secondary)}
+.kv .v{font-size:16px;line-height:22px;color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-sm);font-size:14px;line-height:20px}
+.badge .ico{width:14px;height:14px}
+.badge.trust{background:var(--safe-tint)}
+.badge.risk{background:var(--danger-tint)}
+.explain{display:flex;gap:10px;padding:12px 14px;border-radius:var(--r-md);background:var(--action-t5);border:1px solid var(--action-t20);font-size:14px;line-height:20px;color:var(--text-form)}
+.explain .ico{width:20px;height:20px;color:var(--action);margin-top:0}
+.sect-title{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px}
+.place-row{display:flex;gap:12px;align-items:center;padding:10px 12px;min-height:60px}
+.place-row .n{font-size:16px;line-height:22px}
+.place-row .a{font-size:12px;line-height:16px;color:var(--text-secondary)}
+.place-row .chev{margin-left:auto;color:var(--text-secondary)}
+.add-dashed{margin:8px 12px 12px;border:1px dashed var(--action);border-radius:var(--r-md);min-height:46px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--action);font-size:16px}
+.plus-tag{height:18px;padding:0 7px;border-radius:var(--r-full);background:var(--action-t10);color:var(--action);font-size:11px;line-height:18px;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+.plus-tag .ico{width:10px;height:10px;stroke-width:2.6}
+.sm{font-size:12px;line-height:16px;color:var(--text-desc)}
+.miff-card{margin:0 16px;padding:14px;display:flex;gap:12px;align-items:center}
+.avs{display:flex}
+.avs i{width:28px;height:28px;border-radius:50%;border:2px solid var(--action);margin-left:-6px;background:#cfc7bd}
+.avs i:first-child{margin-left:0}
+.prof-top{background:linear-gradient(180deg,#d9de3d,#e8eb9a 60%,rgba(249,249,247,0));padding:0 16px 24px}
+
+/* planche d'états (hors maquette) */
+.board{display:flex;flex-wrap:wrap;gap:36px;padding:28px;align-items:flex-start;background:#e9e9e6}
+.slot{display:flex;flex-direction:column;gap:8px}
+.cap{font-size:13px;line-height:18px;font-weight:700;color:#333;max-width:390px}
+.cap span{display:block;font-weight:400;color:#555}
+.pad{padding:16px}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:300px;background:#d3d6dc;z-index:15;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.dev{background:#fff;border:1px dashed #999;border-radius:6px;padding:10px 12px;font-size:12px;line-height:16px;color:#444}
+.type .tx{padding-right:16px}
+.fold span{left:50%;right:auto;transform:translateX(-50%);white-space:nowrap}
+.type .tx{padding-right:0}
+.type .tick{top:auto;bottom:6px}
+.type .plus{top:auto;bottom:6px}
+.kbd{height:260px}
+
+/* ---------- consentement v3 et re-consentement (écrans 21 à 24) ---------- */
+.frame.pf>.header{position:absolute;left:0;right:0;top:0}
+.scroll{position:absolute;left:0;right:0;bottom:0;overflow:hidden}
+.scroll-in{position:absolute;left:0;right:0;top:0;padding:0 16px}
+.scroll-in.end{top:auto;bottom:0}
+.pfoot{position:absolute;left:0;right:0;bottom:0;z-index:12;padding:12px 16px 18px;background:var(--canvas);box-shadow:0 -4px 12px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:8px}
+.pfoot .lnk{height:44px;display:flex;align-items:center;justify-content:center;color:var(--action);font-weight:700;font-size:16px}
+.pfoot .lnk.off,.btn.off{opacity:.5}
+.wm{width:88px;margin:14px auto 0}
+.wm svg{width:100%;height:auto}
+.hl{font-family:"Baloo Thambi 2";font-weight:700;font-size:24px;line-height:30px;color:var(--text-form);text-align:center;margin:18px 4px 0}
+.lead{font-size:14px;line-height:20px;color:var(--text);margin:12px 2px 0}
+.ccard{margin-top:14px;background:var(--surface);border:1px solid var(--action);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:12px}
+.ccard .ct{font-weight:700;font-size:16px;line-height:22px;color:var(--text)}
+.ccard .cs{font-size:14px;line-height:20px;color:var(--text)}
+.ccard .cn{font-size:12px;line-height:16px;color:var(--text-desc)}
+.crow{display:flex;gap:10px;align-items:flex-start}
+.crow .ico{width:20px;height:20px;color:var(--action);margin-top:1px}
+.crow b{display:block;font-size:13px;line-height:18px;color:var(--text)}
+.crow span{display:block;font-size:13px;line-height:18px;color:var(--text-desc)}
+.crow+.crow{padding-top:12px;border-top:1px solid var(--border-default)}
+.outs{margin-top:18px;padding:14px;border-radius:var(--r-md);background:rgba(255,255,255,.7);border:1px solid var(--border-default)}
+.outs p{font-size:13px;line-height:18px;color:var(--text-desc)}
+.outs .lnk2{height:44px;display:flex;align-items:center;gap:10px;color:var(--action);font-weight:700;font-size:15px;border-top:1px solid var(--border-default);margin-top:2px}
+.outs .lnk2:first-of-type{margin-top:6px}
+.outs .lnk2 .ico{width:18px;height:18px}
+.mchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;justify-content:center}
+.fld-l{font-size:12px;line-height:16px;font-weight:700;color:var(--text-form);margin:2px 0 4px}
+.sw{width:51px;height:31px;border-radius:16px;background:var(--action);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;right:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 3px rgba(0,0,0,.3)}
+.sw.off{background:rgba(0,0,0,.3)}
+.sw.off::after{right:auto;left:2px}
+.trow{display:flex;gap:12px;align-items:center;padding:14px 16px}
+.trow .tt{flex:1;min-width:0}
+.trow b{display:block;font-size:16px;line-height:22px}
+.trow span{display:block;font-size:14px;line-height:20px;color:var(--text-desc)}
+.member{display:flex;gap:12px;align-items:center;padding:10px 12px;min-height:60px}
+.member i.av{width:40px;height:40px;border-radius:50%;background:#cfc7bd;flex:none}
+.member .nm{font-size:16px;line-height:22px}
+.rp{display:inline-flex;height:20px;padding:0 8px;border-radius:var(--r-full);font-size:12px;line-height:20px;font-weight:700;margin-top:2px}
+.rp.cr{background:var(--action-t10);color:var(--action)}
+.rp.me{background:var(--border-default);color:var(--text)}
+.sbanner{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--action);box-shadow:var(--shadow-subtle)}
+.sbanner .pill{margin-top:0}
+.sbanner b{display:block;font-size:16px;line-height:22px}
+.sbanner p{font-size:14px;line-height:20px;color:var(--text-desc);margin-top:2px}
+.sbanner .btn{margin-top:12px;height:44px}
+.pstate{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-full);font-size:13px;line-height:18px;font-weight:700;border:1px solid var(--border-subtle);background:var(--surface)}
+.pstate .ico{width:14px;height:14px}
+.pstate.ok{background:var(--safe-tint);border-color:rgba(168,174,10,.7)}
+.pstate.wait{background:var(--action-t5);border-color:var(--action);color:var(--action)}
+.setcard{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-md);box-shadow:var(--shadow-subtle);padding:14px 16px}
+.setcard h3{font-size:16px;line-height:22px;font-weight:700}
+.setcard p{font-size:14px;line-height:20px;color:var(--text-desc);margin-top:2px}
+.miffrow{margin-top:12px;padding-top:12px;border-top:1px solid var(--border-default)}
+.miffrow .top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.miffrow .top b{font-size:16px;line-height:22px}
+.stay{font-size:14px;line-height:20px;color:var(--action);font-weight:700;display:flex;align-items:center;min-height:44px}
+.fb-plain{background:#fff;border-radius:var(--r-sm);box-shadow:var(--shadow-subtle);padding:16px;font-size:14px;line-height:20px;color:var(--text-desc)}
+
+
+.dcard{background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-md);box-shadow:var(--shadow-subtle);padding:14px;display:flex;flex-direction:column;gap:14px}
+.drow{display:flex;gap:12px;align-items:flex-start}
+.drow .tx{flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--text-form)}
+.drow .tx b{font-weight:700;color:var(--text)}
+.drow .tx .s{display:block;font-size:12px;line-height:16px;color:var(--text-desc)}
+.drow .pill{margin-top:0}
+.ttl{font-family:"Baloo Thambi 2";font-weight:700;font-size:20px;line-height:26px;margin:20px 0 8px}
+.mrow{display:flex;gap:10px;align-items:center;min-height:36px;font-size:14px;line-height:20px}
+.mrow .ico{width:18px;height:18px;color:var(--action)}
+.mrow b{font-weight:700}
+.mrow .c{color:var(--text-desc)}
+.sso{display:flex;align-items:center;justify-content:center;gap:10px;height:46px;border-radius:var(--r-md);font-weight:700;font-size:16px;box-shadow:var(--shadow-subtle)}
+.sso.g{background:#fff;border:1px solid var(--border-subtle);color:#222}
+.sso.a{background:#000;color:#fff}
+.sso .glyph{width:18px;height:18px;border:1.5px dashed currentColor;border-radius:4px;opacity:.55}
+.sso-note{font-size:11px;line-height:14px;color:var(--text-secondary);text-align:center;margin-top:6px}
+.cbig{width:88px;height:88px;border-radius:50%;background:var(--safe-tint);display:flex;align-items:center;justify-content:center;color:var(--text)}
+.cbig .ico{width:44px;height:44px;stroke-width:1.8}
+.cbig.calm{background:var(--action-t10);color:var(--action)}
+.spin-big{width:56px;height:56px;border-radius:50%;border:5px solid var(--action-t20);border-top-color:var(--action)}
+.center{position:absolute;left:0;right:0;top:215px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 28px;gap:14px}
+.h24{font-family:"Baloo Thambi 2";font-weight:700;font-size:24px;line-height:30px;color:var(--text-form)}
+.pline{font-size:16px;line-height:22px;font-weight:700;color:var(--action)}
+.sub{font-size:14px;line-height:20px;color:var(--text-desc)}
+.bar-ind{width:200px;height:4px;border-radius:2px;background:var(--action-t20);position:relative;overflow:hidden}
+.bar-ind i{position:absolute;left:30%;width:40%;top:0;bottom:0;background:var(--action);border-radius:2px}
+.howto{align-self:stretch;text-align:left;background:var(--surface);border:1px solid var(--border-default);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow-subtle)}
+.howto b{font-size:14px;line-height:20px;display:block;margin-bottom:6px}
+.howto ol{margin:0;padding-left:20px;font-size:14px;line-height:20px;color:var(--text-form)}
+.howto li+li{margin-top:4px}
+.howto .tbc{display:block;margin-top:8px;font-size:11px;line-height:14px;color:var(--text-secondary)}
+.skeleton{display:flex;flex-direction:column;gap:10px}
+.skeleton .skel{height:14px}
+.car-blob{position:absolute;left:-40px;right:-40px;top:110px;height:420px;border-radius:50%;background:rgba(209,216,40,.22)}
+.car-phone{position:absolute;left:46px;right:46px;top:160px;height:270px;background:#fff;border-radius:6px;box-shadow:var(--shadow);padding:16px}
+.car-phone .l1{height:10px;width:60%;border-radius:5px;background:#e3e3df;margin-bottom:10px}
+.car-phone .l2{height:56px;border-radius:30px;background:var(--safe-tint);margin:12px 0 14px}
+.car-phone .l3{height:70px;border-radius:5px;background:#f1f1ee}
+.car-dots{position:absolute;left:0;right:0;top:450px;display:flex;gap:8px;justify-content:center}
+.car-dots i{width:9px;height:9px;border-radius:50%;background:var(--border-subtle)}
+.car-dots i.on{background:var(--action)}
+.car-title{position:absolute;left:28px;right:28px;top:486px;text-align:center;font-weight:700;font-size:24px;line-height:30px;background:linear-gradient(90deg,#043cd1,#d1d52c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.banner{position:absolute;left:16px;right:16px;top:56px;z-index:12;display:flex;gap:10px;align-items:center;min-height:48px;padding:10px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--border-subtle);box-shadow:var(--shadow);font-size:14px;line-height:20px;color:var(--text-form)}
+.banner .ico{width:20px;height:20px;color:var(--action)}
+.ro-field{background:#f1f1ee;color:var(--text-secondary)}
+.lnk-del{display:flex;align-items:center;justify-content:center;min-height:44px;color:var(--text-error);font-size:16px}
+.share-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 24px;background:#d9d9d5}
+.bubble{background:#fff;border-radius:18px;padding:14px 16px;font-size:15px;line-height:21px;color:var(--text-form);box-shadow:var(--shadow-subtle);max-width:300px}
+
+</style></head>
+<body>
+<div class="board" style="width:1298px"><div class="slot"><div class="cap">C1. Mot de passe : champ vide<span>Écran plein cadre (pas une fenêtre) : tout reste visible avec le clavier. « Confirmer » grisé tant que le champ est vide. Rappel du compte concerné (adresse déjà connue de la personne). « Mot de passe oublié ? » abandonne la suppression sans rien avoir touché (rien n’a commencé).</span></div><div class="frame pf "><div class="header"><div class="status"><span>12:22</span><span class="r"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 24 12"><rect x="0" y="1" width="21" height="10" rx="3" fill="none" stroke="#000" stroke-width="1.2"/><rect x="2" y="3" width="15" height="6" rx="1.5"/><rect x="22" y="4" width="1.6" height="4" rx=".8"/></svg></span></div><div class="bar"><div class="back"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></div><h1>Une dernière vérification</h1></div></div><div class="scroll" style="top:103px"><div class="scroll-in " style="padding:16px 16px 176px"><div class="drow"><div class="pill"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><p style="font-size:16px;line-height:22px;flex:1;padding-top:5px">Pour te protéger, confirme que c’est bien toi.</p></div><div style="margin-top:18px"><div class="sm" style="margin:2px 0 14px">Compte : laura@gmail.com</div><div class="fld-l">Mot de passe</div><div class="field focus"><span class="grow ph"><i class="caret"></i></span><span class="tail"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div><div style="margin-top:12px"><span class="link" style="display:inline-flex;min-height:44px;align-items:center">Mot de passe oublié ?</span></div></div></div></div><div class="pfoot"><div class="btn primary disabled ">Confirmer</div><div class="sm" style="text-align:center;margin-bottom:2px">Dès que tu confirmes, la suppression commence.</div><div class="lnk" style="">Annuler</div></div></div></div><div class="slot"><div class="cap">C2. Mot de passe saisi (œil)<span>Champ masqué par défaut, œil pour afficher ; la saisie automatique du gestionnaire de mots de passe est autorisée. Le mot de passe n’est conservé nulle part après la vérification (revue de code SC13).</span></div><div class="frame pf "><div class="header"><div class="status"><span>12:22</span><span class="r"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 24 12"><rect x="0" y="1" width="21" height="10" rx="3" fill="none" stroke="#000" stroke-width="1.2"/><rect x="2" y="3" width="15" height="6" rx="1.5"/><rect x="22" y="4" width="1.6" height="4" rx=".8"/></svg></span></div><div class="bar"><div class="back"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></div><h1>Une dernière vérification</h1></div></div><div class="scroll" style="top:103px"><div class="scroll-in " style="padding:16px 16px 176px"><div class="drow"><div class="pill"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><p style="font-size:16px;line-height:22px;flex:1;padding-top:5px">Pour te protéger, confirme que c’est bien toi.</p></div><div style="margin-top:18px"><div class="sm" style="margin:2px 0 14px">Compte : laura@gmail.com</div><div class="fld-l">Mot de passe</div><div class="field focus"><span class="grow">Mimosa2026!<i class="caret"></i></span><span class="tail"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 6.2A9.6 9.6 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 7.6A17 17 0 0 0 2 12s3.6 6 10 6a9.6 9.6 0 0 0 3.6-.7"/></svg></span></div><div style="margin-top:12px"><span class="link" style="display:inline-flex;min-height:44px;align-items:center">Mot de passe oublié ?</span></div></div></div></div><div class="pfoot"><div class="btn primary  ">Confirmer</div><div class="sm" style="text-align:center;margin-bottom:2px">Dès que tu confirmes, la suppression commence.</div><div class="lnk" style="">Annuler</div></div></div></div><div class="slot"><div class="cap">C3. Mot de passe incorrect<span>Message de §8, contour d’erreur 2 px `text/error` + texte : l’erreur ne repose pas sur la couleur seule. La personne est déjà connectée : aucun risque d’énumération, aucun compteur d’essais punitif.</span></div><div class="frame pf "><div class="header"><div class="status"><span>12:22</span><span class="r"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 24 12"><rect x="0" y="1" width="21" height="10" rx="3" fill="none" stroke="#000" stroke-width="1.2"/><rect x="2" y="3" width="15" height="6" rx="1.5"/><rect x="22" y="4" width="1.6" height="4" rx=".8"/></svg></span></div><div class="bar"><div class="back"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></div><h1>Une dernière vérification</h1></div></div><div class="scroll" style="top:103px"><div class="scroll-in " style="padding:16px 16px 176px"><div class="drow"><div class="pill"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><p style="font-size:16px;line-height:22px;flex:1;padding-top:5px">Pour te protéger, confirme que c’est bien toi.</p></div><div style="margin-top:18px"><div class="sm" style="margin:2px 0 14px">Compte : laura@gmail.com</div><div class="fld-l">Mot de passe</div><div class="field error"><span class="grow">•••••••••••</span><span class="tail"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div><div class="under"><span class="err">Ce mot de passe ne correspond pas. Tu peux réessayer.</span></div><div style="margin-top:12px"><span class="link" style="display:inline-flex;min-height:44px;align-items:center">Mot de passe oublié ?</span></div></div></div></div><div class="pfoot"><div class="btn primary  ">Confirmer</div><div class="sm" style="text-align:center;margin-bottom:2px">Dès que tu confirmes, la suppression commence.</div><div class="lnk" style="">Annuler</div></div></div></div><div class="slot"><div class="cap">C4. Compte Google<span>Pas de champ : bouton « Continuer avec Google » (composant officiel de la plateforme ; la maquette n’en dessine que l’emplacement). Sélecteur de compte système ; fermer la fenêtre ne produit aucun message.</span></div><div class="frame pf "><div class="header"><div class="status"><span>12:22</span><span class="r"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 24 12"><rect x="0" y="1" width="21" height="10" rx="3" fill="none" stroke="#000" stroke-width="1.2"/><rect x="2" y="3" width="15" height="6" rx="1.5"/><rect x="22" y="4" width="1.6" height="4" rx=".8"/></svg></span></div><div class="bar"><div class="back"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></div><h1>Une dernière vérification</h1></div></div><div class="scroll" style="top:103px"><div class="scroll-in " style="padding:16px 16px 76px"><div class="drow"><div class="pill"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><p style="font-size:16px;line-height:22px;flex:1;padding-top:5px">Confirme avec le compte Google que tu utilises dans Miff.</p></div><div style="margin-top:22px"><div class="sm" style="margin:2px 0 14px">Compte : laura@gmail.com</div><div class="sso g"><i class="glyph"></i>Continuer avec Google</div><div class="sso-note">Bouton officiel du système à utiliser (maquette : emplacement du logo en pointillés).</div></div></div></div><div class="pfoot"><div class="lnk" style="">Annuler</div></div></div></div><div class="slot"><div class="cap">C5. Compte Apple (iOS)<span>Bouton « Continuer avec Apple » officiel ; la feuille Apple sert aussi à retirer l’autorisation « Se connecter avec Apple » (obligatoire, ticket §5.4) : la phrase le dit avant, pour que rien ne soit caché [proposée].</span></div><div class="frame pf "><div class="header"><div class="status"><span>12:22</span><span class="r"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 24 12"><rect x="0" y="1" width="21" height="10" rx="3" fill="none" stroke="#000" stroke-width="1.2"/><rect x="2" y="3" width="15" height="6" rx="1.5"/><rect x="22" y="4" width="1.6" height="4" rx=".8"/></svg></span></div><div class="bar"><div class="back"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></div><h1>Une dernière vérification</h1></div></div><div class="scroll" style="top:103px"><div class="scroll-in " style="padding:16px 16px 76px"><div class="drow"><div class="pill"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><p style="font-size:16px;line-height:22px;flex:1;padding-top:5px">Apple va te demander de confirmer. Ensuite, Miff n’aura plus l’autorisation « Se connecter avec Apple ».</p></div><div style="margin-top:22px"><div class="sm" style="margin:2px 0 14px">Compte : laura@gmail.com</div><div class="sso a"><i class="glyph"></i>Continuer avec Apple</div><div class="sso-note">Bouton officiel du système à utiliser (maquette : emplacement du logo en pointillés).</div></div></div></div><div class="pfoot"><div class="lnk" style="">Annuler</div></div></div></div><div class="slot"><div class="cap">C6. Vérification en cours<span>Après « Confirmer » : bouton avec indicateur, « Annuler » inactif le temps de la vérification (un appui = une opération). Annoncé « Vérification en cours ». Une fois réussie : le point de non-retour est franchi, écran de progression.</span></div><div class="frame pf "><div class="header"><div class="status"><span>12:22</span><span class="r"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 24 12"><rect x="0" y="1" width="21" height="10" rx="3" fill="none" stroke="#000" stroke-width="1.2"/><rect x="2" y="3" width="15" height="6" rx="1.5"/><rect x="22" y="4" width="1.6" height="4" rx=".8"/></svg></span></div><div class="bar"><div class="back"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></div><h1>Une dernière vérification</h1></div></div><div class="scroll" style="top:103px"><div class="scroll-in " style="padding:16px 16px 176px"><div class="drow"><div class="pill"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><p style="font-size:16px;line-height:22px;flex:1;padding-top:5px">Pour te protéger, confirme que c’est bien toi.</p></div><div style="margin-top:18px"><div class="sm" style="margin:2px 0 14px">Compte : laura@gmail.com</div><div class="fld-l">Mot de passe</div><div class="field focus"><span class="grow">•••••••••••<i class="caret"></i></span><span class="tail"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span></div><div style="margin-top:12px"><span class="link" style="display:inline-flex;min-height:44px;align-items:center">Mot de passe oublié ?</span></div></div></div></div><div class="pfoot"><div class="btn primary "><span class="spin"></span>Vérification…</div><div class="sm" style="text-align:center;margin-bottom:2px">Dès que tu confirmes, la suppression commence.</div><div class="lnk off">Annuler</div></div></div></div></div>
+</body></html>

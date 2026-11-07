@@ -34,24 +34,15 @@ struct MiffMember: Equatable, CustomStringConvertible {
         "\(firstName) \(lastName)".trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Comment les questions du créateur nomment cette personne (« Retirer {prénom} de la Miff ? ») : le prénom, ou le nom de
+    /// famille quand le prénom n'a rien de visible. Jamais écartée de la liste pour autant : le créateur doit pouvoir la retirer.
+    var callName: String {
+        let first = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return first.isEmpty ? lastName.trimmingCharacters(in: .whitespacesAndNewlines) : first
+    }
+
     var description: String {
         "MiffMember(redacted)"
-    }
-}
-
-/// Un lieu de la Miff, par son nom seulement (création et modification : ticket Lieux).
-struct MiffPlace: Equatable, CustomStringConvertible {
-    let id: String
-    let name: String
-
-    var description: String {
-        "MiffPlace(redacted)"
-    }
-
-    /// Un lieu tel que le serveur le décrit : le nom est nettoyé (`MiffName.fromServer`) ; un lieu sans nom visible n'est pas
-    /// montré (nil).
-    static func fromServer(id: String, rawName: String) -> MiffPlace? {
-        MiffName.fromServer(rawName).map { MiffPlace(id: id, name: $0) }
     }
 }
 
@@ -75,7 +66,7 @@ struct MiffSummary: Equatable, CustomStringConvertible {
 struct MiffSnapshot: Equatable, CustomStringConvertible {
     let miff: MiffDetails
     let members: [MiffMember]
-    let places: [MiffPlace]
+    let places: [Place]
     /// Vrai tant que ce qui est montré vient seulement du cache du téléphone (pas encore de réponse du serveur, ou hors ligne).
     let fromCache: Bool
 
@@ -95,16 +86,57 @@ enum MiffObservation: Equatable {
 }
 
 /// Version du texte montré avant « Rejoindre et partager » / « Créer et partager » / « Reprendre le partage » (règles : 1 à
-/// 20 caractères).
+/// 20 caractères) et sur l'écran de re-consentement.
 enum MiffSharingConsent {
-    /// Constante partagée avec Android : à changer EN MÊME TEMPS que le texte des clés `miff_consent_*` (critère K8).
-    /// Version « 2026-10-v2 » : la phrase du PM, la courte liste de ce que les membres voient (prénom, nom, photo, numéro),
-    /// la phrase sur les lieux (choisis par le créateur, visibles de tous), et le rappel sur la permission du téléphone. Une
-    /// nouvelle formulation = une nouvelle version. (« 2026-10-v1 » était le même texte sans la phrase sur les lieux.)
-    static let version = "2026-10-v2"
+    /// Constante partagée avec Android : à changer EN MÊME TEMPS que le texte des clés `miff_consent3_*` (critère K8).
+    /// Version « 2026-11-v03 » (LOC-4a, miroir de LOC-2a) : le texte de docs/legal/consentement-localisation-v3.md, option A
+    /// (décision du PM du 2026-11-04), qui dit que Miff garde la DERNIÈRE POSITION CONNUE avec l'heure de la mesure, que les
+    /// membres qui partagent aussi peuvent la voir, que Miff utilise la localisation du téléphone même app fermée et qu'elle
+    /// est effacée quand la personne arrête. Une nouvelle formulation = une nouvelle version ; le numéro NN ne repart jamais
+    /// de zéro et le format est `AAAA-MM-vNN` de LARGEUR FIXE (les règles comparent les versions comme des chaînes :
+    /// backend/firestore.rules, isConsentVersion et isPositionConsentVersion). (« 2026-10-v1 » et « 2026-10-v2 » sont les
+    /// anciens textes, qui ne disent rien d'une position.)
+    static let version = "2026-11-v03"
 
     /// Nombre maximal de membres, créateur compris (décision QM5) : un plafond doux, montré par l'app seulement.
     static let softMemberLimit = 15
+
+    /// Le format que les règles exigent d'une version qu'on leur demande de renouveler : année, mois, « v », deux chiffres.
+    private static let fixedWidthPattern = "20[0-9]{2}-(0[1-9]|1[0-2])-v[0-9]{2}"
+
+    /// Les deux textes écrits avant la largeur fixe (octobre 2026) : lus comme d'ANCIENNES versions, jamais réécrits.
+    private static let legacyPattern = "20[0-9]{2}-(0[1-9]|1[0-2])-v[0-9]+"
+
+    /// Ce que `isPositionConsentVersion` des règles accepte : NN de 03 à 99. Seul un tel texte couvre la dernière position.
+    private static let coversPositionPattern = "20[0-9]{2}-(0[1-9]|1[0-2])-v(0[3-9]|[1-9][0-9])"
+
+    /// Vrai si la chaîne ENTIÈRE a la forme du motif (jamais un morceau, jamais un retour à la ligne en plus).
+    private static func matches(_ pattern: String, _ value: String) -> Bool {
+        value.range(of: pattern, options: .regularExpression) == value.startIndex..<value.endIndex
+    }
+
+    static func isFixedWidth(_ version: String) -> Bool {
+        matches(fixedWidthPattern, version)
+    }
+
+    /// Le texte de cette version couvre-t-il la dernière position connue ? (LOC-4b n'écrira une position que sous un tel texte.)
+    static func coversPosition(_ version: String?) -> Bool {
+        guard let version else {
+            return false
+        }
+        return matches(coversPositionPattern, version)
+    }
+
+    /// Un membre qui partage sous un texte PLUS ANCIEN voit l'écran de re-consentement (R-LIEU-3 des règles : actif vers
+    /// actif, version strictement supérieure). Une version qui n'a aucune des formes connues n'est pas touchée (les règles
+    /// refuseraient le renouvellement : la comparaison se fait sur des chaînes de même forme), et une version plus récente
+    /// que celle de ce build n'est jamais « renouvelée » en arrière.
+    static func isRenewalDue(_ stored: String?) -> Bool {
+        guard let stored, matches(fixedWidthPattern, stored) || matches(legacyPattern, stored) else {
+            return false
+        }
+        return stored < version
+    }
 }
 
 /// Ce que la permission de localisation de l'appareil dit, écrit dans le premier statut (ticket §5.4, étape 7).

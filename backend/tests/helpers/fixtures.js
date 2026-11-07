@@ -67,6 +67,37 @@ export const PHONE = '+33612345678';
 export const PHONE_B = '+242061234567';
 export const profile = (first) => ({ firstName: first, lastName: 'Test', phone: PHONE });
 
+// R-LIEU-POS (dernière position connue) : le texte de consentement qui couvre la position est la version 3 ou plus. Les fixtures du
+// partage de base portent 'v1' (comptes sans position) ; sharingOnSeedV3 / sharingOnNowV3 portent une version qui autorise la position.
+export const CONSENT_POSITION = '2026-11-v03'; // AAAA-MM-vNN, largeur fixe (contrat de nommage)
+export const sharingOnSeedV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: T0, consentVersion: version, revokedAt: null });
+export const sharingOnNowV3 = (version = CONSENT_POSITION) => ({ enabled: true, consentedAt: serverTs(), consentVersion: version, revokedAt: null });
+
+// SESS-1 (un compte, un seul appareil) : identifiant d'appareil aléatoire (16 à 64 caractères `[A-Za-z0-9_-]`) et document de session.
+export const DEVICE_A = 'DeviceAaaaaaaaaaaaaaaaaaaa';
+export const DEVICE_B = 'DeviceBbbbbbbbbbbbbbbbbbbb';
+/** Session telle qu'un client l'écrit à la connexion : identifiant + heure du serveur. */
+export const sessionDoc = (deviceId = DEVICE_A, over = {}) => ({ deviceId, startedAt: serverTs(), ...over });
+/** Session déjà enregistrée (état injecté avec les règles désactivées). */
+export const sessionSeed = (deviceId = DEVICE_A, over = {}) => ({ deviceId, startedAt: T0, ...over });
+export const SESSION_PATH = (uid) => `users/${uid}/session/active`;
+/**
+ * TEMPS 2 du déploiement (SESS-1) : bascule deviceIdRequired() à true dans le texte des règles (une seule ligne). Refuse de continuer si le
+ * motif n'est pas trouvé exactement une fois (les tests du temps 2 ne doivent jamais rejouer les règles du temps 1 sans le savoir).
+ */
+export function temps2(text) {
+  const from = 'function deviceIdRequired() {\n      return false;\n    }';
+  const to = 'function deviceIdRequired() {\n      return true;\n    }';
+  const normalized = text.replace(/\r\n/g, '\n');
+  if (normalized.split(from).length !== 2) throw new Error('deviceIdRequired() introuvable ou multiple : bascule du temps 2 impossible');
+  return normalized.replace(from, to);
+}
+
+/** Dernière position telle qu'un client l'envoie : latitude, longitude, heure de la mesure (rien d'autre). */
+export const positionDoc = (over = {}) => ({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-5 * 60_000), ...over });
+/** Position déjà enregistrée (état injecté avec les règles désactivées). */
+export const positionSeed = (over = {}) => positionDoc({ measuredAt: T0, ...over });
+
 export const statusDoc = (over = {}) => ({
   presence: 'in_trusted',
   placeId: 'p1',
@@ -84,6 +115,7 @@ export const statusDoc = (over = {}) => ({
 export const placeSeed = (over = {}) => ({
   name: 'Maison',
   type: 'trusted',
+  category: 'home',
   address: null,
   lat: 48.8566,
   lng: 2.3522,
@@ -99,6 +131,7 @@ export const placeSeed = (over = {}) => ({
 export const placeInput = (uid, over = {}) => ({
   name: 'Ecole',
   type: 'trusted',
+  category: 'school',
   address: null,
   lat: 48.85,
   lng: 2.35,
@@ -110,12 +143,34 @@ export const placeInput = (uid, over = {}) => ({
   ...over,
 });
 
+// Photo telle qu'un client l'écrit depuis le resserrage R-PHOTO-LOC du 2026-11-06 (« une photo d'update doit être attachée à une position,
+// forcément ») : les SIX clés, toujours : lat, lng et measuredAt (une minute avant la photo) comprises. Elle n'est acceptée qu'avec un partage
+// actif ET un consentement de version 03 ou plus (voir setConsentV3 ci-dessous : le jeu de départ porte 'v1').
 export const photoDoc = (over = {}) => ({
+  jpeg: bytes(1000),
+  createdAt: serverTs(),
+  expiresAt: inMs(DAY),
+  lat: 48.85661,
+  lng: 2.35222,
+  measuredAt: inMs(-60_000),
+  ...over,
+});
+
+// ANCIEN document de photo, SANS localisation (la forme d'avant le resserrage). Les règles le REFUSENT à l'écriture ; il sert (1) à
+// injecter, règles désactivées, un éventuel ancien document pour vérifier que sa lecture reste permissive, (2) aux cas « photo sans
+// localisation refusée ».
+export const photoLegacyDoc = (over = {}) => ({
   jpeg: bytes(1000),
   createdAt: serverTs(),
   expiresAt: inMs(DAY),
   ...over,
 });
+
+/** Donne aux comptes le texte de consentement de version 03 (règles désactivées) : exigé pour TOUTE photo depuis le resserrage. */
+export const setConsentV3 = (h, ...uids) =>
+  h.admin(async (f) => {
+    for (const uid of uids) await f.doc(`miffs/${ID.M1}/members/${uid}`).update({ 'sharing.consentVersion': CONSENT_POSITION });
+  });
 
 export const userDoc = (over = {}) => ({
   firstName: 'Eve',
@@ -232,7 +287,10 @@ export function createShareOps({ uid, miffId = ID.NEW, code = CODE.NEW, name = '
   };
 }
 
-/** Quitter une Miff (batch de 4 suppressions). */
+/**
+ * Quitter une Miff : variante EXACTE des applications actuelles (MIFF-1/2 Android, MIFF-3 iOS), 4 suppressions SANS la dernière position.
+ * Elle doit continuer à passer tant qu'aucune position n'existe (tests de main qui rejouent les lots du client).
+ */
 export function leaveOps(uid, miffId = ID.M1, key = 'free') {
   return {
     member: del(`miffs/${miffId}/members/${uid}`),
@@ -240,6 +298,12 @@ export function leaveOps(uid, miffId = ID.M1, key = 'free') {
     photo: del(`miffs/${miffId}/photos/${uid}`),
     index: del(`users/${uid}/memberships/${key}`),
   };
+}
+
+/** Quitter une Miff, variante des builds qui écrivent une position (R-LIEU-POS) : 5 suppressions, la position comprise. */
+export function leaveWithPositionOps(uid, miffId = ID.M1, key = 'free') {
+  const { member, status, photo, index } = leaveOps(uid, miffId, key);
+  return { member, status, photo, position: del(`miffs/${miffId}/positions/${uid}`), index };
 }
 
 // ---------------------------------------------------------------------------
@@ -320,7 +384,9 @@ export async function adminDo(env, callback) {
 // ---------------------------------------------------------------------------
 // Suite de tests : branche l'émulateur, nettoie et recharge les données avant chaque cas
 // ---------------------------------------------------------------------------
-export function suite({ extraProfiles = true } = {}) {
+// transformRules : transformation du texte des règles avant chargement (SESS-1 : rejouer les tests au « temps 2 » en basculant
+// deviceIdRequired). Elle s'applique AU-DESSUS de MIFF_RULES_FILE, donc aussi aux règles mutées par l'outil de mutation.
+export function suite({ extraProfiles = true, transformRules = (text) => text } = {}) {
   let env;
   let contexts = new Map();
 
@@ -344,7 +410,7 @@ export function suite({ extraProfiles = true } = {}) {
 
   before(async () => {
     assertSafeEnvironment({ projectId: PROJECT_ID });
-    env = await initializeTestEnvironment({ projectId: PROJECT_ID, firestore: { rules: readRules() } });
+    env = await initializeTestEnvironment({ projectId: PROJECT_ID, firestore: { rules: transformRules(readRules()) } });
   });
   beforeEach(async () => {
     contexts = new Map();
@@ -365,8 +431,9 @@ export function suite({ extraProfiles = true } = {}) {
 export { seedBase };
 
 /**
- * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : 6 écritures dans UN lot,
- * dont le renouvellement du code secret (nouveau code créé, ancien supprimé).
+ * Retrait d'un membre par la créatrice (ticket durcissement §4.2) : variante EXACTE des applications actuelles, 6 écritures dans UN lot
+ * SANS la dernière position, dont le renouvellement du code secret (nouveau code créé, ancien supprimé). Doit continuer à passer tant
+ * qu'aucune position n'existe.
  */
 export function removeMemberOps({
   target,
@@ -382,5 +449,16 @@ export function removeMemberOps({
     miff: update(`miffs/${miffId}`, { joinCode: newCode }),
     newCode: set(`joinCodes/${newCode}`, { miffId, miffName: name, createdAt: serverTs() }),
     oldCode: del(`joinCodes/${oldCode}`),
+  };
+}
+
+/** Retrait d'un membre, variante des builds qui écrivent une position (R-LIEU-POS) : 7 écritures, la position de la cible comprise. */
+export function removeMemberWithPositionOps(args = {}) {
+  const ops = removeMemberOps(args);
+  const { target, miffId = ID.M1 } = args;
+  return {
+    member: ops.member, status: ops.status, photo: ops.photo,
+    position: del(`miffs/${miffId}/positions/${target}`),
+    miff: ops.miff, newCode: ops.newCode, oldCode: ops.oldCode,
   };
 }

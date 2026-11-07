@@ -1,6 +1,8 @@
 package com.tomessa.miff.data.miff
 
 import com.tomessa.miff.data.auth.CachePurger
+import com.tomessa.miff.data.session.ActiveDevice
+import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
 import com.tomessa.miff.domain.miff.LocationAccess
@@ -133,6 +135,11 @@ sealed interface MyMiffsLoad {
         val premium: Boolean,
         /** True when the answer comes from the phone's cache because the server could not be reached. */
         val fromCache: Boolean,
+        /**
+         * False when [premium] is only a guess: the read of the subscription failed, or the whole answer comes from the cache.
+         * Screens then claim nothing about the plan (never "free plan" on a doubt).
+         */
+        val premiumKnown: Boolean = true,
     ) : MyMiffsLoad {
         override fun toString(): String = "Loaded(redacted)"
     }
@@ -192,7 +199,7 @@ interface MiffRepository {
     suspend fun renewCode(miffId: String): CodeChangeResult
 
     /**
-     * Removes one member (ticket R1 to R7): the creator only. ONE lot of 6 writes that ALWAYS renews the code (the rules refuse a
+     * Removes one member (ticket R1 to R7): the creator only. ONE lot of 7 writes that ALWAYS renews the code (the rules refuse a
      * removal that does not), even if the person had already left. Headless on purpose: the Premium ticket (end of a subscription)
      * and the deletion of an account (AUTH-5) call it with no screen. Never queued offline: no answer from the server = nothing
      * written (the lot is a transaction).
@@ -202,7 +209,7 @@ interface MiffRepository {
         targetUid: String,
     ): CodeChangeResult
 
-    /** "Quitter la Miff" (ticket Q1): a member only (the creator can only delete the Miff). ONE lot of 4 deletions. */
+    /** "Quitter la Miff" (ticket Q1): a member only (the creator deletes the Miff instead). ONE lot of 5 deletions. */
     suspend fun leave(
         uid: String,
         miffId: String,
@@ -221,12 +228,23 @@ class FirestoreMiffRepository(
     private val store: MiffStore,
     private val observer: MiffObserver,
     private val location: LocationAccessProbe,
+    /**
+     * "Un compte, un seul appareil" (SESS-2): the first status of a lot that starts to share (create, join, resume) carries the identifier of the session of this
+     * phone, which is verified against the server just before (a person acting by hand on a phone that was replaced is told the neutral "it did not work",
+     * never that access to a Miff was lost, criterion D3 / SES5).
+     */
+    private val device: ActiveDevice,
     private val newMiffId: () -> String,
     private val newCode: () -> String = { JoinCode.generate() },
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val timeoutMillis: Long = TIMEOUT_MS,
     /** Purges the phone cache after a clean-up that nobody is told about (see [cleanUpSilently]). */
     private val cache: CachePurger? = null,
+    /**
+     * Called after a write that changes WHO the person shares with (a Miff created, joined, left, cleaned up; sharing stopped or resumed): the
+     * detection (LOC-2b) looks at its Miffs again. Nothing about the Miff is passed (no name, no identifier).
+     */
+    private val onSharingChanged: () -> Unit = {},
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -238,6 +256,12 @@ class FirestoreMiffRepository(
             }
         // A stale index (removed, or Miff deleted) is cleaned BEFORE the write, or the rules would refuse it for nothing.
         cleanUpSilently(uid, state.lost)
+        // An unknown plan is NOT "free": with a Miff already there, the offer is never answered on a doubt (the person retries).
+        if (!state.premium && !state.premiumKnown &&
+            state.valid.isNotEmpty()
+        ) {
+            return CreatePreparation.Failed(MiffFailure.OFFLINE)
+        }
         if (!state.premium && state.valid.isNotEmpty()) return CreatePreparation.NeedsPremium
         return CreatePreparation.Ready(premium = state.premium, firstMiff = state.valid.isEmpty())
     }
@@ -255,6 +279,12 @@ class FirestoreMiffRepository(
             }
         val miffId = newMiffId()
         val access = location.current()
+        val deviceId =
+            when (val clearance = device.clearance(recheck = true)) {
+                is Clearance.Cleared -> clearance.deviceId
+                Clearance.Replaced -> return CreateResult.Failed(MiffFailure.REFUSED)
+                Clearance.Unverified -> return CreateResult.Failed(MiffFailure.OFFLINE)
+            }
         val result =
             write {
                 store.commitWithProfile(uid) { profile ->
@@ -266,17 +296,20 @@ class FirestoreMiffRepository(
                         profile = profile,
                         membershipKey = keyFor(preparation.premium, miffId),
                         access = access,
+                        deviceId = deviceId,
                     )
                 }
             }
         return when (result) {
             MiffWriteResult.Done -> {
+                onSharingChanged()
                 CreateResult.Created(miffId, code, MiffName.stored(name), preparation.firstMiff)
             }
 
             is MiffWriteResult.Failed -> {
                 // A lot that left but whose answer was lost must not be shown as a failure (ticket H3, one tap = one Miff).
                 if (result.failure.mayHaveLanded() && landed(miffId)) {
+                    onSharingChanged()
                     CreateResult.Created(miffId, code, MiffName.stored(name), preparation.firstMiff)
                 } else {
                     CreateResult.Failed(result.failure)
@@ -336,6 +369,12 @@ class FirestoreMiffRepository(
         cleanUpSilently(uid, state.lost)
         // Compared on the FIELD miffId of the indexes, never on the id of the document ("free").
         if (state.valid.any { it.miffId == miffId }) return JoinPreparation.AlreadyMember(miffId, miffName)
+        // An unknown plan is NOT "free": never the offer on a doubt, the person retries.
+        if (!state.premium && !state.premiumKnown &&
+            state.valid.isNotEmpty()
+        ) {
+            return JoinPreparation.Failed(MiffFailure.OFFLINE)
+        }
         if (!state.premium && state.valid.isNotEmpty()) return JoinPreparation.NeedsPremium
         return JoinPreparation.Ready(
             miffId = miffId,
@@ -351,6 +390,12 @@ class FirestoreMiffRepository(
         preparation: JoinPreparation.Ready,
     ): JoinResult {
         val access = location.current()
+        val deviceId =
+            when (val clearance = device.clearance(recheck = true)) {
+                is Clearance.Cleared -> clearance.deviceId
+                Clearance.Replaced -> return JoinResult.Failed(MiffFailure.REFUSED)
+                Clearance.Unverified -> return JoinResult.Failed(MiffFailure.OFFLINE)
+            }
         val result =
             write {
                 store.commitWithProfile(uid) { profile ->
@@ -361,17 +406,20 @@ class FirestoreMiffRepository(
                         profile = profile,
                         membershipKey = keyFor(preparation.premium, preparation.miffId),
                         access = access,
+                        deviceId = deviceId,
                     )
                 }
             }
         return when (result) {
             MiffWriteResult.Done -> {
+                onSharingChanged()
                 JoinResult.Joined(preparation.miffId, preparation.firstMiff)
             }
 
             is MiffWriteResult.Failed -> {
                 when {
                     result.failure.mayHaveLanded() && landed(preparation.miffId) -> {
+                        onSharingChanged()
                         JoinResult.Joined(preparation.miffId, preparation.firstMiff)
                     }
 
@@ -412,11 +460,19 @@ class FirestoreMiffRepository(
     ): MiffWriteResult {
         val writes: List<DocWrite> =
             if (enabled) {
-                MiffWrites.resumeSharing(miffId, uid, location.current())
+                // Resuming writes a status: the session of this phone is verified first. Stopping writes nothing of the kind (deletions carry no content).
+                val deviceId =
+                    when (val clearance = device.clearance(recheck = true)) {
+                        is Clearance.Cleared -> clearance.deviceId
+                        Clearance.Replaced -> return MiffWriteResult.Failed(MiffFailure.REFUSED)
+                        Clearance.Unverified -> return MiffWriteResult.Failed(MiffFailure.OFFLINE)
+                    }
+                MiffWrites.resumeSharing(miffId, uid, location.current(), deviceId)
             } else {
                 MiffWrites.stopSharing(miffId, uid)
             }
         val result = write { store.commit(writes) }
+        if (result == MiffWriteResult.Done) onSharingChanged()
         // A refusal can also mean "already in the state asked for": the dialog asks for the opposite of what the card said when it
         // was opened, and the card may have changed since (another phone), in which case the rules refuse a no-op write
         // (false -> false, true -> true). The server's card is read, and the wanted state counts as a success.
@@ -424,7 +480,10 @@ class FirestoreMiffRepository(
             (result.failure.mayHaveLanded() || result.failure == MiffFailure.REFUSED)
         ) {
             val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
-            if (sharing == enabled) return MiffWriteResult.Done
+            if (sharing == enabled) {
+                onSharingChanged()
+                return MiffWriteResult.Done
+            }
         }
         return result
     }
@@ -501,10 +560,14 @@ class FirestoreMiffRepository(
                 is Guarded.Failed -> return MiffWriteResult.Failed(read.failure)
             }
         val result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        if (result == MiffWriteResult.Done) onSharingChanged()
         if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
             // The answer was lost: if the server now refuses the Miff to this person, the lot did leave.
             val check = guarded { store.readMiff(miffId, fromServer = true) }
-            if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) return MiffWriteResult.Done
+            if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) {
+                onSharingChanged()
+                return MiffWriteResult.Done
+            }
         }
         return result
     }
@@ -522,6 +585,7 @@ class FirestoreMiffRepository(
             lost = state.lost,
             premium = state.premium,
             fromCache = state.fromCache,
+            premiumKnown = state.premiumKnown,
         )
     }
 
@@ -531,9 +595,13 @@ class FirestoreMiffRepository(
     ): Boolean {
         // Clean-up needs the server: without it nothing is touched (the next start will do it).
         val leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
-        if (leave == MiffWriteResult.Done) return true
+        if (leave == MiffWriteResult.Done) {
+            onSharingChanged()
+            return true
+        }
         // Removed: the card is already gone, the lot is refused. Only the index is left, and the rules allow deleting it now.
-        val indexOnly = write { store.commit(MiffWrites.dropIndex(uid, lost.ref.key)) }
+        val indexOnly = write { store.commit(MiffWrites.dropIndex(lost.ref.miffId, uid, lost.ref.key)) }
+        if (indexOnly == MiffWriteResult.Done) onSharingChanged()
         return indexOnly == MiffWriteResult.Done
     }
 
@@ -565,7 +633,7 @@ class FirestoreMiffRepository(
         uid: String,
         withNames: Boolean = false,
     ): StateRead {
-        val premium = premium(uid)
+        val plan = plan(uid)
         var fromCache = false
         val refs =
             when (val server = guarded { store.readMemberships(uid, fromServer = true) }) {
@@ -622,7 +690,18 @@ class FirestoreMiffRepository(
                 }
             }
         }
-        return StateRead.Value(State(valid, summaries, lost, premium, fromCache))
+        // A failed read (or an answer taken from the cache) leaves the plan UNKNOWN: it still picks the key of the index (limit F1
+        // of MIFF-1, the rules decide for real) but no screen may present it as "free".
+        return StateRead.Value(
+            State(
+                valid,
+                summaries,
+                lost,
+                plan.premium,
+                fromCache,
+                premiumKnown = plan.known && !fromCache,
+            ),
+        )
     }
 
     private suspend fun cachedName(miffId: String): String? =
@@ -639,6 +718,7 @@ class FirestoreMiffRepository(
         val lost: List<LostMiff>,
         val premium: Boolean,
         val fromCache: Boolean,
+        val premiumKnown: Boolean = true,
     )
 
     private sealed interface StateRead {
@@ -651,12 +731,29 @@ class FirestoreMiffRepository(
         ) : StateRead
     }
 
-    /** Premium = an active entitlement that has not expired (the rules decide for real: this only chooses the key). */
-    private suspend fun premium(uid: String): Boolean {
-        val read = (guarded { store.readEntitlement(uid) } as? Guarded.Value)?.value ?: return false
-        val expires = read.expiresAtMillis ?: return false
-        return read.active && expires > nowMillis()
+    /**
+     * Premium = an active entitlement that has not expired (the rules decide for real: this only chooses the key). [Plan.known] is
+     * false when the read failed or came from the phone's cache: the plan is then UNKNOWN (never "free"), and [Plan.premium] is only
+     * the best guess for the key of the index. No document at all, said by the server, = free.
+     *
+     * The expiry is compared with the clock of the DEVICE, whereas the rules use the server time (documented, minor: a wrong clock
+     * can only pick the wrong key or the wrong screen, the rules decide for real).
+     */
+    private suspend fun plan(uid: String): Plan {
+        val read =
+            when (val answer = guarded { store.readEntitlement(uid) }) {
+                is Guarded.Value -> answer.value ?: return Plan(premium = false, known = true)
+                is Guarded.Failed -> return Plan(premium = false, known = false)
+            }
+        val expires = read.expiresAtMillis
+        val premium = expires != null && read.active && expires > nowMillis()
+        return Plan(premium, known = !read.fromCache)
     }
+
+    private class Plan(
+        val premium: Boolean,
+        val known: Boolean,
+    )
 
     private fun keyFor(
         premium: Boolean,

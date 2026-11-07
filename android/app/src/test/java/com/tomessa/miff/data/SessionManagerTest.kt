@@ -452,8 +452,8 @@ class SessionManagerTest {
 
             assertEquals(RefuseResult.Done, result)
             assertEquals(
-                "delete first, then stop listeners, purge, close the session",
-                listOf("markPending", "delete", "teardown", "purge", "signOut"),
+                "release the session, delete the account, then stop listeners, purge, close the session",
+                listOf("markPending", "session-delete", "delete", "teardown", "purge", "signOut"),
                 h.timeline.entries,
             )
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
@@ -525,6 +525,29 @@ class SessionManagerTest {
         }
 
     @Test
+    fun panelRefuse_aFailureOfTheRecentSignInDialog_isTheNeutralMessage_whateverTheGoogleCause() =
+        run { h ->
+            h.manager.start()
+            h.accounts.setLoaded(profileExists = false)
+            h.manager.signInWithGoogle("token", signUpConsent = null)
+            val causes =
+                listOf(
+                    AuthFailure.GOOGLE_NO_ACCOUNT,
+                    AuthFailure.GOOGLE_SERVICES_UNAVAILABLE,
+                    AuthFailure.GOOGLE_INTERRUPTED,
+                    AuthFailure.UNKNOWN,
+                )
+            for (cause in causes) {
+                h.gateway.deleteResults.addLast(AuthFailure.RECENT_LOGIN_REQUIRED)
+                val result = h.manager.refuseConsentPanel { GoogleTokenResult.Failed(cause) }
+                // "Continue with your e-mail address" would make no sense in a refusal: only the plain neutral message.
+                assertEquals("$cause", RefuseResult.Failed(AuthFailure.UNKNOWN), result)
+                assertEquals(AppDestination.CONSENT_PANEL, h.manager.destination())
+                assertEquals("uid-1", h.gateway.currentUid)
+            }
+        }
+
+    @Test
     fun theSessionLossWatcher_doesNotReactToOurOwnRefusal() =
         run { h ->
             h.manager.start()
@@ -577,7 +600,10 @@ class SessionManagerTest {
 
             h.manager.signOut()
 
-            assertEquals(listOf("markPending", "teardown", "flush", "purge", "signOut"), h.timeline.entries)
+            assertEquals(
+                listOf("markPending", "teardown", "flush", "session-delete", "purge", "signOut"),
+                h.timeline.entries,
+            )
             assertEquals(AppDestination.SIGN_IN, h.manager.destination())
             assertNull(h.gateway.currentUid)
             assertFalse(h.privacy.analyticsEnabled.value)

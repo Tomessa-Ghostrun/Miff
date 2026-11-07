@@ -125,7 +125,7 @@ class SettingsScreensTest {
     }
 
     @Test
-    fun tabBar_internalBuild_hasThreeTabsWithSpokenNames_theCentralOneIsDisabled() {
+    fun tabBar_hasThreeTabsWithSpokenNames_theCentralOneIsOpen_inEveryBuild() {
         val picked = mutableListOf<MainTab>()
         show { StatefulBar(internal) { picked += it } }
         shoot("tabbar-internal")
@@ -135,31 +135,29 @@ class SettingsScreensTest {
                 text(R.string.tabbar_profile_a11y),
             ).assertIsNotSelected()
             .assertIsEnabled()
-        composeRule
-            .onNodeWithContentDescription(text(R.string.tabbar_update_soon_a11y))
-            .assertIsNotEnabled()
-            .performClick()
-        assertTrue("the disabled central button selects nothing", picked.isEmpty())
+        // Since the Update exists the central button leads somewhere: enabled, and it selects the Update.
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertIsEnabled().performClick()
+        assertEquals(listOf(MainTab.UPDATE), picked)
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertIsSelected()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).performClick()
-        assertEquals(listOf(MainTab.PROFILE), picked)
+        assertEquals(listOf(MainTab.UPDATE, MainTab.PROFILE), picked)
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertIsSelected()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertIsNotSelected()
     }
 
     @Test
-    fun tabBar_buildForOutsideTesters_hasNoCentralButtonAtAll() {
+    fun tabBar_buildForOutsideTesters_hasTheCentralButtonToo_theUpdateIsOpenEverywhere() {
         show { StatefulBar(external) }
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertExists()
-        composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_update_soon_a11y)).assertCountEquals(0)
-        composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_update_a11y)).assertCountEquals(0)
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertExists().assertIsEnabled()
         shoot("tabbar-external")
     }
 
     @Test
     fun tabBar_everyTabIsAtLeast48dpTall_andWide() {
         show { StatefulBar(internal) }
-        listOf(R.string.tabbar_feed_a11y, R.string.tabbar_update_soon_a11y, R.string.tabbar_profile_a11y).forEach {
+        listOf(R.string.tabbar_feed_a11y, R.string.tabbar_update_a11y, R.string.tabbar_profile_a11y).forEach {
             composeRule
                 .onNodeWithContentDescription(text(it))
                 .assertHeightIsAtLeast(48.dp)
@@ -196,7 +194,7 @@ class SettingsScreensTest {
         val middle =
             composeRule
                 .onNodeWithContentDescription(
-                    text(R.string.tabbar_update_soon_a11y),
+                    text(R.string.tabbar_update_a11y),
                 ).getUnclippedBoundsInRoot()
         val profile =
             composeRule
@@ -209,7 +207,7 @@ class SettingsScreensTest {
     // --- Provisional Feed ---------------------------------------------------------------------------------------------------------
 
     @Test
-    fun feed_saysHonestlyThatItIsNotBuiltYet_noBell_noInventedPerson_noPromiseOfSafety() {
+    fun feed_whileItLoads_showsTheSkeleton_noBell_noInventedPerson_noPromiseOfSafety() {
         show {
             FeedScreen(
                 state =
@@ -226,14 +224,13 @@ class SettingsScreensTest {
                 onJoin = {},
             )
         }
-        shoot("feed-placeholder")
-        composeRule.onNodeWithText(text(R.string.feed_empty_title)).assertExists()
-        composeRule.onNodeWithText(text(R.string.feed_empty_body)).assertExists()
+        shoot("feed-loading")
+        composeRule.onNodeWithContentDescription(text(R.string.feed_loading_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertExists()
         // The words of the mockup that would promise something the app cannot know (decision Q12, no bell: Q15).
         composeRule.onAllNodesWithText("safe", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("sécurité", substring = true, ignoreCase = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Famille", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Tout va bien", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule
             .onAllNodesWithContentDescription(
                 "notification",
@@ -437,9 +434,9 @@ class SettingsScreensTest {
     // --- Account (criteria B1, B2) --------------------------------------------------------------------------------------------------
 
     @Test
-    fun account_showsTheEmailAsReadOnly_aSecondarySignOut_andNoDeleteLine() {
+    fun account_showsTheEmailAsReadOnly_aSecondarySignOut_andADiscreetDeleteLink() {
         show {
-            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {})
+            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {}, {})
         }
         shoot("account")
         composeRule
@@ -452,7 +449,11 @@ class SettingsScreensTest {
                 text(R.string.settings_account_sign_out_action),
             ).assertHasClickAction()
             .assertHeightIsAtLeast(48.dp)
-        composeRule.onAllNodesWithText("Delete", substring = true, ignoreCase = true).assertCountEquals(0)
+        // AUTH-5: "Supprimer mon compte" is a discreet TEXT link under "Se déconnecter" (SC1), reachable by a finger, never alarming.
+        composeRule
+            .onNodeWithText(text(R.string.settings_delete_entry))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
         composeRule.onAllNodesWithText("irrecoverable", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("password", substring = true, ignoreCase = true).assertCountEquals(0)
     }
@@ -477,6 +478,7 @@ class SettingsScreensTest {
                     cancelled++
                     state = state.copy(confirmingSignOut = false)
                 },
+                onDeleteRequested = {},
             )
         }
         composeRule.onNodeWithText(text(R.string.settings_account_sign_out_action)).performClick()

@@ -110,4 +110,63 @@ class AuthFailureTest {
         assertEquals(AuthMessage.UNKNOWN, GoogleTokenResult.Unavailable.toMessage())
         assertEquals(AuthMessage.NETWORK, GoogleTokenResult.Failed(AuthFailure.NETWORK).toMessage())
     }
+
+    // --- AUTH-5: re-authentication and deletion of the account ---------------------------------------------------------------
+
+    @Test
+    fun reauthenticationWithAWrongPassword_isTheCalmWrongPasswordFailure() {
+        val error = FirebaseAuthInvalidCredentialsException("ERROR_WRONG_PASSWORD", "bad")
+        assertEquals(AuthFailure.INVALID_CREDENTIALS, interpret(error, AuthAttempt.REAUTH_EMAIL))
+        // For Google, "invalid credential" never means "wrong password".
+        assertEquals(AuthFailure.UNKNOWN, interpret(error, AuthAttempt.REAUTH_SOCIAL))
+    }
+
+    @Test
+    fun aCredentialOfAnotherAccount_isTheWrongAccountFailure() {
+        val error = FirebaseAuthInvalidCredentialsException("ERROR_USER_MISMATCH", "mismatch")
+        assertEquals(AuthFailure.WRONG_ACCOUNT, interpret(error, AuthAttempt.REAUTH_SOCIAL))
+        assertEquals(AuthMessage.REAUTH_WRONG_ACCOUNT, AuthFailure.WRONG_ACCOUNT.toMessage())
+    }
+
+    @Test
+    fun aUserThatDoesNotExistAnyMore_isTheAccountGoneFailure_forTheAttemptsOnTheOpenSession_only() {
+        val error = FirebaseAuthInvalidUserException("ERROR_USER_NOT_FOUND", "gone")
+        for (
+        attempt in
+        listOf(
+            AuthAttempt.DELETE_ACCOUNT,
+            AuthAttempt.CHECK_SESSION,
+            AuthAttempt.REAUTH_EMAIL,
+            AuthAttempt.REAUTH_SOCIAL,
+        )
+        ) {
+            assertEquals("$attempt", AuthFailure.ACCOUNT_GONE, interpret(error, attempt))
+        }
+        // At sign-in, "user not found" stays the ONE message of "unknown address or wrong password" (no enumeration).
+        val notFound = FirebaseAuthInvalidUserException("ERROR_USER_NOT_FOUND", "gone")
+        assertEquals(AuthFailure.INVALID_CREDENTIALS, interpret(notFound, AuthAttempt.SIGN_IN_EMAIL))
+    }
+
+    @Test
+    fun anExpiredOrRevokedToken_isNEVERTheAccountGone_itIsASessionToRenew() {
+        // Honest wording: an expired or revoked token does not prove the account was deleted.
+        for (code in listOf("ERROR_USER_TOKEN_EXPIRED", "ERROR_INVALID_USER_TOKEN")) {
+            val error = FirebaseAuthInvalidUserException(code, "token")
+            for (attempt in listOf(AuthAttempt.DELETE_ACCOUNT, AuthAttempt.CHECK_SESSION, AuthAttempt.REAUTH_EMAIL)) {
+                assertEquals("$code $attempt", AuthFailure.SESSION_EXPIRED, interpret(error, attempt))
+            }
+        }
+        assertEquals(AuthMessage.REAUTH_EXPIRED, AuthFailure.SESSION_EXPIRED.toMessage())
+    }
+
+    @Test
+    fun aDisabledAccount_isNotConfusedWithAGoneOne() {
+        val disabled = FirebaseAuthInvalidUserException("ERROR_USER_DISABLED", "disabled")
+        assertEquals(AuthFailure.ACCOUNT_DISABLED, interpret(disabled, AuthAttempt.DELETE_ACCOUNT))
+    }
+
+    @Test
+    fun theNewFailures_neverShowATechnicalCode() {
+        assertEquals(AuthMessage.REAUTH_EXPIRED, AuthFailure.ACCOUNT_GONE.toMessage())
+    }
 }

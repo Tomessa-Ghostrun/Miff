@@ -6,7 +6,6 @@ import com.tomessa.miff.data.miff.MiffWriteResult
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.testsupport.FakeDeletionController
@@ -14,6 +13,7 @@ import com.tomessa.miff.testsupport.FakeMiffRepository
 import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.miffDetails
+import com.tomessa.miff.testsupport.testPlace
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -72,7 +72,7 @@ class MiffScreenMiff2Test {
         MiffSnapshot(
             miffDetails(code = code, owner = owner),
             members,
-            listOf(MiffPlace("p1", "Maison")),
+            listOf(testPlace("p1", "Maison")),
             fromCache = false,
         ),
     )

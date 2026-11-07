@@ -18,8 +18,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
+import com.tomessa.miff.ui.main.DeleteAccountRoute
+import com.tomessa.miff.ui.main.deleteAccountRoutes
+import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.place.ConsumeNoticeOnLeave
+import com.tomessa.miff.ui.place.PlaceDetailRoute
+import com.tomessa.miff.ui.place.PlaceFormRoute
+import com.tomessa.miff.ui.place.PlacesExtras
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -140,8 +148,12 @@ fun MiffOnboardingHost(container: AppContainer) {
                 onCreate = { navController.openMiffRoute(CreateMiffRoute) },
                 onJoin = { navController.openMiffRoute(JoinMiffRoute) },
                 onSignOut = { scope.launch { session.signOut() } },
+                onDeleteAccount = { navController.openMiffRoute(DeleteAccountRoute) },
             )
         }
+        // AUTH-5a: "Supprimer mon compte" from here too (information, then verification); nothing starts before the verification succeeds.
+        deleteAccountRoutes(container, navController, "${session.currentUid}-${session.generation}")
+        passwordResetRoute(container, navController)
         miffEntryRoutes(
             container = container,
             navController = navController,
@@ -179,7 +191,27 @@ fun NavGraphBuilder.miffScreenRoute(
                         }
                     },
             )
-        MiffScreenHost(viewModel = viewModel, onBack = { navController.popBackStackIfSafe() })
+        // LOC-1: the places of this Miff. Miff+ comes from the Miffs of the person (read once for the Feed), the confirmation of a save
+        // from the notices (in memory, gone when the screen is left).
+        val directory by container.miffDirectory.state.collectAsStateWithLifecycle()
+        val notice by container.placeNotices.notice.collectAsStateWithLifecycle()
+        ConsumeNoticeOnLeave(container.placeNotices::consume)
+        // LOC-2b (design 23B): this Miff waits for the agreement of the person.
+        val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
+        MiffScreenHost(
+            viewModel = viewModel,
+            onBack = { navController.popBackStackIfSafe() },
+            agreementWaiting = route.miffId in waiting,
+            onReviewAgreement = container.awaitingAgreement::requestReview,
+            placesExtras =
+                PlacesExtras(
+                    premium = (directory as? DirectoryState.Ready)?.premiumOrNull,
+                    savedName = notice?.name,
+                    onOpenPlace = { place -> navController.openMiffRoute(PlaceDetailRoute(route.miffId, place.id)) },
+                    // Always the form: it relies on the SERVER for the plan and shows the offer itself at the real limit.
+                    onAddPlace = { navController.openMiffRoute(PlaceFormRoute()) },
+                ),
+        )
     }
 }
 
@@ -192,6 +224,9 @@ fun NavGraphBuilder.miffScreenRoute(
 fun MiffScreenHost(
     viewModel: MiffScreenViewModel,
     onBack: () -> Unit,
+    placesExtras: PlacesExtras = PlacesExtras(),
+    agreementWaiting: Boolean = false,
+    onReviewAgreement: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -219,5 +254,8 @@ fun MiffScreenHost(
         onActionDismissed = viewModel::onActionDismissed,
         onInviteLater = viewModel::onInviteLater,
         onDeletionRetry = viewModel::onDeletionRetry,
+        placesExtras = placesExtras,
+        agreementWaiting = agreementWaiting,
+        onReviewAgreement = onReviewAgreement,
     )
 }

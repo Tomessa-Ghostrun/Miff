@@ -122,7 +122,7 @@ class WelcomeCarouselTest {
             "Quel type de zone définissez-vous ?",
             "Zone de confiance",
             "Lieu sûr pour vos proches",
-            "Zone à risque",
+            "Zone de danger",
             "Lieu à éviter",
         )
     }
@@ -134,7 +134,7 @@ class WelcomeCarouselTest {
         assertTexts(
             "Thomas est bien arrivé à l’école",
             "Il y a 2 min.",
-            "Amandine n’est toujours pas rentré à la maison",
+            "Amandine n’est toujours pas rentrée à la maison",
             "Il y a 2 h.",
             "Maman vient de quitter le travail",
             "À l’instant",
@@ -164,7 +164,7 @@ class WelcomeCarouselTest {
     fun english_slide2() {
         show(1)
         shoot("welcome-2-en")
-        assertTexts("New place", "Name", "Address", "Radius", "Trusted zone", "Risk zone")
+        assertTexts("New place", "Name", "Address", "Radius", "Trusted zone", "Danger zone")
     }
 
     // --- Sharpness: the same screens at the smallest and the largest densities, and with the largest font ----------

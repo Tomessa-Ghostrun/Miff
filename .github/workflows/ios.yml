@@ -51,8 +51,9 @@ jobs:
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
     # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) sur les runners du depot prive ; le
     # 2026-10-30, depuis le passage du depot en public, les memes etapes ont depasse 15 min a deux reprises
-    # (runners macOS plus lents ou files d'attente). 30 min laisse de la marge ; les minutes sont gratuites en public.
-    timeout-minutes: 30
+    # (runners macOS plus lents ou files d'attente). 30 min ne suffisaient plus le 2026-11-04 (30,8 min mesurées sur MIFF-4, dont 12 min de captures) : 40 min ; les
+    # minutes sont gratuites en public. L'étape des captures a sa propre limite de 15 min (la moins critique).
+    timeout-minutes: 40
     defaults:
       run:
         shell: bash
@@ -356,6 +357,7 @@ jobs:
 
       - name: Captures d'écran (français, anglais, repli, pseudo-langue, droite-à-gauche...)
         if: env.HEAVY_CHECKS == 'true'
+        timeout-minutes: 15
         run: |
           set -uo pipefail
           # Le test 1 interroge le vrai Firestore (une lecture non authentifiée) : seulement avec la vraie configuration.

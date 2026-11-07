@@ -53,6 +53,8 @@ fun SignUpScreen(
 
     AuthScaffold(paneTitle = stringResource(R.string.auth_signup_title), onBack = onBack) {
         GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
+        // Why Google did not work, right under the button that can be tapped again (nothing when the dialog was closed).
+        GoogleMessageArea(state.googleMessage)
         OrText()
 
         AuthTextField(
@@ -92,6 +94,17 @@ fun SignUpScreen(
         if (state.isLoading) LoadingIndicator()
         UnderlinedLink(text = stringResource(R.string.auth_signup_have_account), onClick = onGoToSignIn)
     }
+}
+
+/**
+ * The reason why "Continuer avec Google" did not work, just under that button. It stays until the next attempt and is
+ * announced by the screen reader (see [MessageText]); the Google button itself is the way to try again.
+ */
+@Composable
+internal fun GoogleMessageArea(message: AuthMessage?) {
+    if (message == null) return
+    Spacer(Modifier.size(Spacing.s))
+    AuthMessageArea(message)
 }
 
 /** The error under the buttons; "address already used" also offers the way to the sign-in screen (criterion S6). */

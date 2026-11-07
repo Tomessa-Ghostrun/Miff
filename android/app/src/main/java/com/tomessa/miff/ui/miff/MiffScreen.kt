@@ -30,6 +30,9 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.place.PlaceListUi
+import com.tomessa.miff.ui.place.PlaceRows
+import com.tomessa.miff.ui.place.PlacesExtras
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorTextDescription
@@ -63,6 +66,11 @@ fun MiffScreen(
     onActionDismissed: () -> Unit = {},
     onInviteLater: () -> Unit = {},
     onDeletionRetry: () -> Unit = {},
+    /** LOC-1: Miff+ or not (null while unknown), the name of the place just saved, and the two ways into the places. */
+    placesExtras: PlacesExtras = PlacesExtras(),
+    /** LOC-2b, design 23B: this Miff waits for the agreement of the person ("Pas maintenant"), and the way back to the renewal screen. */
+    agreementWaiting: Boolean = false,
+    onReviewAgreement: () -> Unit = {},
 ) {
     RecentsPrivacy()
     val context = LocalContext.current
@@ -111,6 +119,9 @@ fun MiffScreen(
                     onLeaveRequested = onLeaveRequested,
                     onDeleteRequested = onDeleteRequested,
                     onInviteLater = onInviteLater,
+                    placesExtras = placesExtras,
+                    agreementWaiting = agreementWaiting,
+                    onReviewAgreement = onReviewAgreement,
                 )
             }
         }
@@ -129,11 +140,8 @@ fun MiffScreen(
                 } else {
                     {
                         // The same consent card and the same consent version as at the entry (criterion K6); only the opening sentence differs
-                        // (miff_sharing_resume_body, "Tu partages à nouveau…", instead of miff_consent_create).
-                        SharingConsentCard(
-                            sentence = stringResource(R.string.miff_sharing_resume_body),
-                            systemNote = stringResource(R.string.miff_consent_system_note_create),
-                        )
+                        // (miff_consent3_resume, "Tu partages à nouveau…", instead of miff_consent3_create).
+                        SharingConsentCard(sentence = stringResource(R.string.miff_consent3_resume))
                     }
                 },
             confirmLabel =
@@ -173,6 +181,9 @@ private fun MiffContent(
     onLeaveRequested: () -> Unit,
     onDeleteRequested: () -> Unit,
     onInviteLater: () -> Unit,
+    placesExtras: PlacesExtras,
+    agreementWaiting: Boolean,
+    onReviewAgreement: () -> Unit,
 ) {
     val context = LocalContext.current
     val copiedText = stringResource(R.string.miff_code_copied)
@@ -292,12 +303,27 @@ private fun MiffContent(
         }
     }
 
+    if (agreementWaiting) {
+        // Design 23B: the card is the way back to the agreement. The switch stays USABLE (review I6): the person can always stop sharing, and what
+        // Miff says is exact: it no longer updates the status, but the last one is still visible to the members until sharing is stopped.
+        AwaitingAgreementCard(
+            body =
+                stringResource(
+                    if (state.isOwner) R.string.miff_waiting_miff_body_owner else R.string.miff_waiting_miff_body,
+                ),
+            onReview = onReviewAgreement,
+        )
+    }
     state.sharing?.let { sharing ->
         MiffSwitchRow(
             title = stringResource(R.string.miff_sharing_title),
             description =
                 stringResource(
-                    if (sharing) R.string.miff_sharing_on_description else R.string.miff_sharing_off_description,
+                    when {
+                        sharing && agreementWaiting -> R.string.miff_sharing_waiting_description
+                        sharing -> R.string.miff_sharing_on_description
+                        else -> R.string.miff_sharing_off_description
+                    },
                 ),
             checked = sharing,
             enabled = state.canWrite,
@@ -315,24 +341,11 @@ private fun MiffContent(
             stringResource(R.string.miff_section_places_title),
             stringResource(R.string.miff_section_places_description),
         )
-        if (state.places.isEmpty()) {
-            Text(
-                text = stringResource(R.string.miff_places_empty),
-                style = textBodyRegular14,
-                color = colorTextDescription,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.s),
-            )
-        } else {
-            state.places.forEach { place ->
-                Text(
-                    text = place.name,
-                    style = textBodyRegular14,
-                    color = colorTextDescription,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.s, vertical = Spacing.xs),
-                )
-            }
-        }
+        PlaceRows(
+            ui = PlaceListUi(state.places, state.isOwner, placesExtras.premium, placesExtras.savedName),
+            onOpen = placesExtras.onOpenPlace,
+            onAdd = placesExtras.onAddPlace,
+        )
     }
     MiffFoot(state = state, onLeaveRequested = onLeaveRequested, onDeleteRequested = onDeleteRequested)
     Spacer(Modifier.size(Spacing.l))

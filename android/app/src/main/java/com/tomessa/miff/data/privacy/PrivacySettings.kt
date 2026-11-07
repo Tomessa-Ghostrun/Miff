@@ -34,6 +34,12 @@ interface CollectionSwitch {
      * account says yes (then it is sent) or no (then [setEnabled] with `false` deletes it).
      */
     fun pause()
+
+    /**
+     * The deletion of the account: forget what this SDK keeps on the phone about the installation (Analytics: `resetAnalyticsData`,
+     * which also gives a new installation identifier). The data already sent follows the durations of the privacy policy.
+     */
+    fun forgetInstallation() {}
 }
 
 /**
@@ -90,6 +96,16 @@ class PrivacySettings(
         setCrashReportsEnabled(enabled)
     }
 
+    /**
+     * The deletion of the account (AUTH-5, ticket 5.10): the collection is cut, the reports not yet sent are deleted, what the SDKs keep
+     * about the installation is forgotten. No event is sent for it (criterion D6): the collection is off before anything else.
+     */
+    fun eraseCollectedData() {
+        applyAccountConsent(false)
+        analytics.forgetInstallation()
+        crashReports.forgetInstallation()
+    }
+
     companion object {
         const val KEY_ANALYTICS = "analytics_enabled"
         const val KEY_CRASH = "crash_reports_enabled"
@@ -130,6 +146,9 @@ class FirebaseAnalyticsSwitch(
     }
 
     override fun pause() = setEnabled(false)
+
+    // Erases what Analytics holds on the phone and gives the installation a new identifier (deletion of the account, AUTH-5).
+    override fun forgetInstallation() = analytics.resetAnalyticsData()
 }
 
 /** The two Crashlytics calls we need, so that the rule "pause keeps the reports, refusal deletes them" is testable. */

@@ -5,7 +5,7 @@
 // pourrait refuser à sa place et la protection visée resterait non testée.
 import {
   ID, CODE, T0, HOUR, suite, assertFails, assertSucceeds, commit, createMiffOps, joinOps, update, del, serverTs,
-  statusDoc, photoDoc, bytes, inMs, sharingOnNow, sharingOff, placeInput, userDoc,
+  statusDoc, photoDoc, setConsentV3, bytes, inMs, sharingOnNow, sharingOff, placeInput, userDoc,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -84,7 +84,9 @@ s.tc('S12b', 'statut : batterie négative ou non entière, placeId vide ou trop 
   await assertSucceeds(ref.set(statusDoc({ batteryPct: null, placeId: null })));
 });
 
-s.tc('S16b', 'photo : vide, clé inconnue, createdAt client ou déjà expirée refusées', async ({ db }) => {
+s.tc('S16b', 'photo : vide, clé inconnue, createdAt client ou déjà expirée refusées', async (h) => {
+  const { db } = h;
+  await setConsentV3(h, 'bob'); // le seul défaut de chaque essai est celui qui est testé
   const ref = db('bob').doc(`${M1}/photos/bob`);
   await assertFails(ref.set(photoDoc({ jpeg: bytes(0) })));
   await assertFails(ref.set(photoDoc({ legende: 'x' })));
