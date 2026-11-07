@@ -163,6 +163,8 @@ Soit **≈ 3 lectures + 1 écriture pour une Miff, plus N - 1 lectures de snapsh
 
 **Leviers gratuits avant Blaze** (dans l'ordre, par un petit changement de constante) : passer le seuil de 5 à 10 points ; passer l'intervalle de 15 à 30 min ; ne rafraîchir qu'à la sortie ; baisser le plafond de 40 à 20. Aucun ne demande de réécriture.
 
+---
+
 ## 5 ter. Android : batterie rafraîchie à l’ouverture et à la sortie de l’app (2026-11-07)
 
 **Ce que fait l'application.** À chaque passage au premier plan et à chaque passage à l'arrière-plan, si la personne est éligible (connectée, appareil actif, consentement de localisation v3, partage activé, statut existant), elle réécrit **le niveau de batterie seul** (et l'heure d'écriture `updatedAt`) dans le statut de chaque Miff où elle partage : un lot d'une seule écriture par Miff, aucune position, aucune lecture du serveur par le rafraîchissement lui-même. Les écritures de statut existantes (arrivée, départ, update, accès à la localisation) continuent d'écrire le niveau frais et **comptent comme un rafraîchissement** (pas de doublon).

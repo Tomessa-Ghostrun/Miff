@@ -132,3 +132,42 @@ final class BatteryPolicyTests: XCTestCase {
         TrackingWrites.batteryUpdate(miffId: miff, uid: uid, batteryPct: level, deviceId: device)
     }
 }
+
+/// L'état de la batterie (historique, compteur du jour, curseur) vit DANS la copie locale du suivi : aucun nouveau fichier, donc la
+/// purge de la suppression de compte (`AccountLocalData`, `trackingLocal.clear()`) l'efface avec le reste.
+final class BatteryLocalStateTests: XCTestCase {
+    func testTheBatteryStateIsPartOfTheTrackingLocalCopyAndSurvivesARoundTrip() throws {
+        var state = LocalState(uid: "uid-1")
+        state.miffs[testMiffId] = LocalMiff()
+        state.update(testMiffId) { $0.noteBatteryWritten(64, at: TrackingFixtures.noon) }
+        state.breaker = WriteBreaker.recordBattery(nil, dayKey: "2026-11-3")
+        state.batteryCursor = testMiffId
+
+        let data = try JSONEncoder().encode(state)
+        let back = try JSONDecoder().decode(LocalState.self, from: data)
+
+        XCTAssertEqual(back, state)
+        XCTAssertEqual(back.miffs[testMiffId]?.batteryPct, 64)
+        XCTAssertEqual(back.breaker?.batteryWrites, 1)
+    }
+
+    func testTheBatteryHistoryIsForgottenWhenTheDetectionIsReset() {
+        var miff = LocalMiff()
+        miff.noteBatteryWritten(64, at: TrackingFixtures.noon)
+
+        miff.resetDetection()
+
+        XCTAssertEqual(miff.batteryHistory, BatteryHistory())
+    }
+
+    func testClearingTheTrackingLocalStoreErasesTheBatteryState() {
+        let store = MemoryTrackingLocalStore()
+        var state = LocalState(uid: "uid-1")
+        state.breaker = WriteBreaker.recordBattery(nil, dayKey: "2026-11-3")
+        store.save(state)
+
+        store.clear()
+
+        XCTAssertNil(store.load())
+    }
+}
