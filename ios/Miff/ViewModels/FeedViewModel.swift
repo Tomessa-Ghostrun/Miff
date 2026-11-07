@@ -98,9 +98,9 @@ final class FeedViewModel: ObservableObject {
     @Published private(set) var directoryState: DirectoryState = .loading {
         didSet { recompute() }
     }
-    @Published private(set) var locate: LocateUiState = .idle
+    @Published var locate: LocateUiState = .idle
     /// Vrai pendant une relecture forcée d'« Actualiser » : l'indicateur.
-    @Published private(set) var refreshing = false
+    @Published var refreshing = false
     @Published private(set) var me = FeedMe()
     /// Monte à « Réessayer » : l'écran relance son observation.
     @Published private(set) var restarts = 0
