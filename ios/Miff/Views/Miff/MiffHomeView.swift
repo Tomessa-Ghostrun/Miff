@@ -48,6 +48,8 @@ struct MiffHomeContent: View {
             }
             .frame(maxWidth: .infinity)
         }
+        // Sans barre d'onglets (donc sans Profil) : la roue crantée mène aux Réglages restreints (Mon compte, Confidentialité).
+        .restrictedSettingsGear(visible: MainShellRules.hasNoMiff(state), action: actions.onOpenSettings)
     }
 
     private var showsSignOut: Bool {
@@ -95,8 +97,6 @@ struct MiffHomeContent: View {
             Text("feed_join_action")
         }
         .buttonStyle(.miffPrimaryFullWidth)
-        // Pas de barre d'onglets sans Miff : l'entrée vers les Réglages restreints (Mon compte, Confidentialité) est ici, discrète.
-        RestrictedSettingsLink(action: actions.onOpenSettings)
     }
 }
 

@@ -69,10 +69,11 @@ struct MiffChoiceView: View {
                         .foregroundColor(colorActionPrimary.color)
                         .frame(minHeight: Spacing.minTouchTarget)
                 }
-                RestrictedSettingsLink(action: onOpenSettings)
             }
             .frame(maxWidth: .infinity)
         }
+        // La roue crantée en haut à droite (comme le Profil) : Réglages restreints, pour pouvoir supprimer son compte.
+        .restrictedSettingsGear(action: onOpenSettings)
     }
 }
 

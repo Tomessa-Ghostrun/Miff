@@ -59,7 +59,7 @@ final class RestrictedSettingsTests: XCTestCase {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
-    /// L'entrée discrète n'est posée que sur les écrans SANS Miff (« Pas encore de Miff » et le choix créer ou rejoindre), jamais sur un
+    /// La roue crantée n'est posée que sur les écrans SANS Miff (« Pas encore de Miff » et le choix créer ou rejoindre), jamais sur un
     /// écran de compte qui a des Miffs : ceux-là ont la barre d'onglets et le Profil.
     func testTheDiscreetEntryIsOnTheScreensWithoutMiffOnly() throws {
         guard let files = FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil) else {
@@ -69,7 +69,7 @@ final class RestrictedSettingsTests: XCTestCase {
         for case let file as URL in files where file.pathExtension == "swift" {
             let relative = String(file.path.dropFirst(app.path.count + 1))
             let text = try String(contentsOf: file, encoding: .utf8)
-            if text.contains("RestrictedSettingsLink(") && relative != "Views/Settings/RestrictedSettingsLink.swift" {
+            if text.contains(".restrictedSettingsGear(") && relative != "Views/Settings/RestrictedSettingsLink.swift" {
                 users.append(relative)
             }
         }
