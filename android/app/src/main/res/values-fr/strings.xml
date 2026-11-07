@@ -815,7 +815,7 @@
     <string name="settings_subscription_active_until">Actif jusqu\'au %1$s</string>
     <string name="settings_subscription_source_manual">Accordé par l\'équipe Miff</string>
     <string name="settings_subscription_source_other">Offre en cours</string>
-    <string name="settings_subscription_store_soon">La gestion de l\'abonnement via le store arrive bientôt.</string>
+    <string name="settings_subscription_no_store_note">Cet accès ne passe pas par un store.</string>
     <string name="settings_detection_help_title">Si les arrivées et départs tardent</string>
     <string name="settings_detection_help_intro">Certains téléphones (Oppo, Xiaomi, Samsung, Huawei...) arrêtent les applications en arrière-plan pour économiser la batterie. Miff peut alors repérer une arrivée ou un départ avec du retard. Ces réglages sont facultatifs : ils peuvent aider, et Miff fonctionne sans.</string>
     <string name="settings_detection_help_step_battery">1. Dans les réglages de Miff, ouvre « Batterie » (ou « Consommation d\'énergie ») et choisis « Aucune restriction » (ou « Ne pas optimiser »).</string>

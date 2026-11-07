@@ -59,11 +59,14 @@ fun SubscriptionScreen(
                 color = colorTextDescription,
             )
         }
-        Text(
-            text = stringResource(R.string.settings_subscription_store_soon),
-            style = textBodyRegular14,
-            color = colorTextDescription,
-            modifier = Modifier.padding(top = Spacing.l),
-        )
+        // A factual sentence for an access granted by hand, and nothing for the other sources: no promise of a date or of a feature.
+        if (subscription.grantedByTeam) {
+            Text(
+                text = stringResource(R.string.settings_subscription_no_store_note),
+                style = textBodyRegular14,
+                color = colorTextDescription,
+                modifier = Modifier.padding(top = Spacing.l),
+            )
+        }
     }
 }

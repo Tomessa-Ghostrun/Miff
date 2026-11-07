@@ -24,11 +24,11 @@ Pour chaque compte, copiez son **UID** (Authentication > Users), puis Firestore 
 ## Partie A : compte Miff+ accordé à la main (compte A) (8 min)
 
 1. [ ] Ouvrez Profil > engrenage : la liste des Réglages montre **Mes informations, Mon compte, Langue, Confidentialité, puis Abonnement** (icône « + », sous-titre « Consulte ton abonnement »). Pas de bandeau « Débloquez l'ensemble des fonctionnalités », aucun prix, aucun essai gratuit.
-2. [ ] Touchez **Abonnement** : l'écran affiche, de haut en bas, **Miff+** (en gras), « **Actif jusqu'au 12 janvier 2027** » (la date que vous avez saisie, écrite en toutes lettres), « **Accordé par l'équipe Miff** », puis la phrase « La gestion de l'abonnement via le store arrive bientôt. ».
+2. [ ] Touchez **Abonnement** : l'écran affiche, de haut en bas, **Miff+** (en gras), « **Actif jusqu'au 12 janvier 2027** » (la date que vous avez saisie, écrite en toutes lettres), « **Accordé par l'équipe Miff** », puis la phrase factuelle « **Cet accès ne passe pas par un store.** » (aucune promesse « bientôt »).
 3. [ ] **Aucun bouton** : ni « Changer d'abonnement », ni « Arrêter l'abonnement », ni « Prochain paiement », ni prix (« 4,99 € », « 6,99 € »), ni « presque 30 % d'économie ». Le mot « Premium » n'apparaît nulle part. Seule la flèche retour est touchable.
 4. [ ] Flèche retour, puis retour du système : retour aux Réglages, la ligne est toujours là.
-5. [ ] Passez l'app en **anglais** (Réglages > Langue) : « Subscription », « Active until January 12, 2027 », « Granted by the Miff team », « Managing your subscription through the store is coming soon. ». Repassez en français.
-6. [ ] Dans la console, **changez `source`** en `google_play` (ou supprimez le champ), fermez les Réglages et rouvrez-les : l'écran dit « **Offre en cours** » à la place de « Accordé par l'équipe Miff » (jamais la mention d'une équipe).
+5. [ ] Passez l'app en **anglais** (Réglages > Langue) : « Subscription », « Active until January 12, 2027 », « Granted by the Miff team », « This access doesn't go through a store. ». Repassez en français.
+6. [ ] Dans la console, **changez `source`** en `google_play` (ou supprimez le champ), fermez les Réglages et rouvrez-les : l'écran dit « **Offre en cours** » à la place de « Accordé par l'équipe Miff », et la phrase « Cet accès ne passe pas par un store. » **disparaît** (jamais la mention d'une équipe).
 7. [ ] Remettez `source` à `manual`.
 8. [ ] TalkBack (facultatif) : « Abonnement » est annoncé comme un bouton ; sur l'écran, « Miff+ » est annoncé comme un titre. Agrandissez la police au maximum : tout reste lisible et défile.
 
@@ -46,7 +46,8 @@ Pour chaque compte, copiez son **UID** (Authentication > Users), puis Firestore 
 12. [ ] **Compte sans Miff** (c'est le cas du compte B avant de créer sa Miff, ou un compte neuf) : sur l'écran « Choisis comment tu veux commencer », la roue crantée ouvre une liste **Mon compte + Confidentialité seulement** : **jamais** de ligne Abonnement, même si le compte a un document `entitlements` actif. *(Cette étape n'existe que si la PR #116 est fusionnée dans le build testé.)*
 13. [ ] **Mode avion** avec le compte A, ouvrez les Réglages : la ligne **Abonnement n'apparaît pas** et **aucun message d'erreur** ne s'affiche (les autres lignes marchent). Réactivez le réseau, quittez les Réglages et rouvrez-les : la ligne apparaît.
 14. [ ] Dans la console, vérifiez le document du compte A : **rien n'a changé** (`updatedAt` identique : l'app n'écrit jamais `entitlements`).
-15. [ ] Lisez tous les textes : **ton calme**, aucune promesse de prix ni de date de fonctionnalité. Notez ce que vous voudriez changer (par exemple « via le store » : le nom exact « Google Play » viendra avec le ticket Premium).
+15. [ ] Lisez tous les textes : **ton calme**, aucune promesse de prix ni de date de fonctionnalité. Notez ce que vous voudriez changer (par exemple le libellé « Offre en cours » pour une autre source que `manual`, à valider).
+16. [ ] **Limite connue (un cas, facultatif)** : l'affichage suit l'horloge du téléphone, les droits réels restent décidés par le serveur (`request.time`). Avec le compte A, mettez `expiresAt` dans 5 minutes, puis avancez l'horloge du téléphone de 10 minutes (Réglages > Date et heure, heure automatique désactivée) : la ligne disparaît à la réouverture des Réglages, car l'affichage se fonde sur l'heure du téléphone. **Remettez ensuite l'heure automatique** (si la connexion se perturbe entre-temps, c'est normal : l'heure est fausse). À l'inverse, un téléphone en retard peut montrer « Actif jusqu'au… » un peu après l'échéance sans rien débloquer : c'est attendu.
 
 ## Contrôle de coût (facultatif, développeur)
 

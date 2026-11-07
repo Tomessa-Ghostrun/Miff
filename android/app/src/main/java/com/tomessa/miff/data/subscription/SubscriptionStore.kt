@@ -16,6 +16,20 @@ data class EntitlementDocument(
     val source: String?,
 )
 
+/**
+ * Reads the data of `entitlements/{uid}` (null = no document). Only the EXACT expected types count: `active` a boolean (the string
+ * "true" is not one), `expiresAt` a Firestore timestamp (a text "2027-01-12", an integer or a double typed by hand in the console is
+ * not one), `source` a string. Anything else reads as a missing field, never as an error: the account then simply stays without the line.
+ */
+fun entitlementFrom(data: Map<String, Any?>?): EntitlementDocument? {
+    if (data == null) return null
+    return EntitlementDocument(
+        active = data["active"] as? Boolean,
+        expiresAtMillis = (data["expiresAt"] as? Timestamp)?.toDate()?.time,
+        source = data["source"] as? String,
+    )
+}
+
 /** The Firestore read behind [SubscriptionRepository], behind an interface so that the logic is tested with a fake. */
 interface SubscriptionStore {
     /** The document, or null if there is none. Throws when the server cannot be reached or refuses. */
@@ -36,13 +50,7 @@ class FirestoreSubscriptionStore(
                 .document(uid)
                 .get(Source.SERVER)
                 .await()
-        if (!snapshot.exists()) return null
-        // `as?` and not `getBoolean`/`getString`: a field of an unexpected type (typed by hand) must read as "missing", never throw.
-        return EntitlementDocument(
-            active = snapshot.get("active") as? Boolean,
-            expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
-            source = snapshot.get("source") as? String,
-        )
+        return entitlementFrom(snapshot.data)
     }
 }
 

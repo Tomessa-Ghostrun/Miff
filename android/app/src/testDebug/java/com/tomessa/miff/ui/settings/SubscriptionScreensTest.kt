@@ -87,12 +87,6 @@ class SubscriptionScreensTest {
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
     }
 
-    @Test
-    fun settingsList_explicitlyWithoutTheCallback_hasNoSubscriptionLine() {
-        show { SettingsScreen({}, {}, {}, {}, {}, onOpenSubscription = null) }
-        composeRule.onAllNodesWithText(text(R.string.settings_subscription_title)).assertCountEquals(0)
-    }
-
     // --- The screen (criteria F2, F4) ---------------------------------------------------------------------------------------------
 
     @Test
@@ -101,8 +95,10 @@ class SubscriptionScreensTest {
         composeRule.onNodeWithText("Miff+").assertExists()
         composeRule.onNodeWithText("Active until January 12, 2027").assertExists()
         composeRule.onNodeWithText("Granted by the Miff team").assertExists()
-        composeRule.onNodeWithText(text(R.string.settings_subscription_store_soon)).assertExists()
+        composeRule.onNodeWithText("This access doesn't go through a store.").assertExists()
         composeRule.onNodeWithText(text(R.string.settings_subscription_title)).assertExists()
+        // No promise without a date: nothing "coming soon".
+        composeRule.onAllNodesWithText("soon", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 
     @Test
@@ -112,7 +108,8 @@ class SubscriptionScreensTest {
         composeRule.onNodeWithText("Miff+").assertExists()
         composeRule.onNodeWithText("Actif jusqu'au 12 janvier 2027").assertExists()
         composeRule.onNodeWithText("Accordé par l'équipe Miff").assertExists()
-        composeRule.onNodeWithText("La gestion de l'abonnement via le store arrive bientôt.").assertExists()
+        composeRule.onNodeWithText("Cet accès ne passe pas par un store.").assertExists()
+        composeRule.onAllNodesWithText("bientôt", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("Premium", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 
@@ -121,6 +118,9 @@ class SubscriptionScreensTest {
         show { SubscriptionScreen(SubscriptionInfo(expiry, grantedByTeam = false), onBack = {}) }
         composeRule.onNodeWithText(text(R.string.settings_subscription_source_other)).assertExists()
         composeRule.onAllNodesWithText(text(R.string.settings_subscription_source_manual)).assertCountEquals(0)
+        // Nothing is said about stores for another source: the sentence only describes an access granted by hand.
+        composeRule.onAllNodesWithText(text(R.string.settings_subscription_no_store_note)).assertCountEquals(0)
+        composeRule.onAllNodesWithText("store", substring = true, ignoreCase = true).assertCountEquals(0)
     }
 
     @Test
@@ -157,6 +157,6 @@ class SubscriptionScreensTest {
             }
         }
         composeRule.onNodeWithText("Active until January 12, 2027").assertExists()
-        composeRule.onNodeWithText(text(R.string.settings_subscription_store_soon)).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_subscription_no_store_note)).assertExists()
     }
 }

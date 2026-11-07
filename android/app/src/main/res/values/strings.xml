@@ -838,7 +838,7 @@
     <string name="settings_subscription_active_until">Active until %1$s</string>
     <string name="settings_subscription_source_manual">Granted by the Miff team</string>
     <string name="settings_subscription_source_other">Current plan</string>
-    <string name="settings_subscription_store_soon">Managing your subscription through the store is coming soon.</string>
+    <string name="settings_subscription_no_store_note">This access doesn\'t go through a store.</string>
     <string name="settings_detection_help_title">If arrivals and departures are slow</string>
     <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them.</string>
     <string name="settings_detection_help_step_battery">1. In the Miff settings, open \"Battery\" (or \"Power consumption\") and choose \"No restrictions\" (or \"Don\'t optimize\").</string>

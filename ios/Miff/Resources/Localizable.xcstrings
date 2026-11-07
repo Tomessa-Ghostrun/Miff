@@ -13162,19 +13162,19 @@
         }
       }
     },
-    "settings_subscription_store_soon": {
+    "settings_subscription_no_store_note": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Managing your subscription through the store is coming soon."
+            "value": "This access doesn't go through a store."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La gestion de l'abonnement via le store arrive bientôt."
+            "value": "Cet accès ne passe pas par un store."
           }
         }
       }
