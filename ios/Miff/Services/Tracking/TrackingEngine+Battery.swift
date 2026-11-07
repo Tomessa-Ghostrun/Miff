@@ -82,6 +82,13 @@ extension TrackingEngine {
             journal.record(.batteryRefreshed, batteryPct: level)
             state.breaker = WriteBreaker.recordBattery(state.breaker, dayKey: day)
             state.update(miffId) { $0.noteBatteryWritten(level, at: now) }
+            state.batteryCursor = miffId
+            // Sauvé TOUT DE SUITE : si le temps d'arrière-plan s'arrête avant la fin du passage (sortie de l'app), l'historique, le
+            // compteur et le curseur de cette Miff sont déjà gardés et la sortie suivante ne réécrit pas. Pas après un arrêt de session
+            // (la copie locale a été effacée : rien n'est reconstruit).
+            if !pass.permission.ended() {
+                deps.local.save(state)
+            }
             return .written
         case .failed(let failure, _):
             return await settleBatteryFailure(failure, miffId: miffId, state: &state, pass: pass, now: now)

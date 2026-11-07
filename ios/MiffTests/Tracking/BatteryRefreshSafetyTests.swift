@@ -34,15 +34,46 @@ final class BatteryRefreshSafetyTests: XCTestCase {
 
     func testAMissingStatusLeavesNothingCreatedAndIsNotRetriedAtOnce() async {
         rig.position.fix = nil
-        // Le serveur répond « introuvable » : un update sur un document absent échoue, rien n'est créé.
-        rig.store.commitFailure = firestoreError(5)
+        // Un update sur un statut absent : les règles voient un document sans les clés obligatoires et répondent permission-denied
+        // (le code que le serveur donne vraiment) ; rien n'est créé.
+        rig.store.commitFailure = firestoreError(FirestoreErrorNumber.permissionDenied)
 
         await open()
+
+        let attemptedAt = rig.env.now
+        XCTAssertEqual(rig.store.commitAttempts, 1)
+        XCTAssertEqual(rig.device.refusalChecks, 1, "la session est relue après le refus")
+        XCTAssertEqual(
+            rig.local.state?.checkedAtMillis,
+            attemptedAt - TrackingLimits.placesRereadMillis + TrackingLimits.recheckAfterRefusalMillis,
+            "la Miff sera regardée de nouveau bientôt"
+        )
+        XCTAssertEqual(rig.local.state?.miffs[testMiffId]?.batteryTriedAtMillis, attemptedAt)
         rig.env.now += 5 * minute
         await rig.engine.refresh(.backgrounded)
+        XCTAssertEqual(rig.store.commitAttempts, 1, "pas de nouvelle tentative tout de suite")
+        XCTAssertTrue(rig.store.writes.isEmpty, "rien n'est créé")
+    }
 
-        XCTAssertTrue(rig.store.writes.isEmpty)
-        XCTAssertEqual(rig.store.commitAttempts, 1)
+    func testAnInterruptedExitAfterMiffAHasAlreadySavedItsHistoryAndCounter() async {
+        rig.addMiff(testOtherMiffId, places: [TrackingFixtures.home])
+        rig.position.fix = nil
+        var savedWhenBWasSent: LocalState?
+        rig.store.beforeCommit = { [unowned self] write in
+            if write.path.contains(testOtherMiffId) {
+                savedWhenBWasSent = rig.local.state
+            }
+        }
+
+        await open()
+
+        // Au moment où l'écriture de B part (le temps peut s'arrêter ici), la copie locale sur le disque garde déjà celle de A.
+        let saved = savedWhenBWasSent
+        XCTAssertEqual(saved?.miffs[testMiffId]?.batteryPct, 80)
+        XCTAssertNotNil(saved?.miffs[testMiffId]?.batteryWrittenAtMillis)
+        XCTAssertNil(saved?.miffs[testOtherMiffId]?.batteryWrittenAtMillis)
+        XCTAssertEqual(saved?.breaker?.batteryWrites, 1)
+        XCTAssertEqual(saved?.batteryCursor, testMiffId)
     }
 
     func testAStatusWaitingToBeWrittenGoesBeforeTheBattery() async {

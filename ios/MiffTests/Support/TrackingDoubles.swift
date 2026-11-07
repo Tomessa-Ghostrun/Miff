@@ -89,6 +89,8 @@ final class FakeTrackingStore: TrackingStore {
     private(set) var readCount = 0
     /// Les écritures tentées, réussies ou non (`commits` ne garde que celles qui ont réussi).
     private(set) var commitAttempts = 0
+    /// Appelé AVANT chaque écriture (pour regarder ce que le téléphone avait déjà gardé à cet instant).
+    var beforeCommit: ((DocWrite) -> Void)?
 
     func memberships(uid: String) async throws -> [MembershipRef] {
         readCount += 1
@@ -116,6 +118,7 @@ final class FakeTrackingStore: TrackingStore {
 
     func commit(_ writes: [DocWrite]) async throws {
         commitAttempts += 1
+        writes.forEach { beforeCommit?($0) }
         if let commitFailure {
             throw commitFailure
         }

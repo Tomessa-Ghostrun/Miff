@@ -57,7 +57,7 @@
 
 ## Partie F : coût (à relever)
 
-- [ ] Après une journée d'usage normal, relevez dans Firebase > Firestore > Utilisation le **nombre d'écritures** et de **lectures** du jour, comparez avec le relevé de la préparation, et comptez dans le journal le nombre de `batteryRefreshed` du jour. **Attendu** : de 2 à 6 par jour et par Miff ; **plus de 10 par jour** = à signaler (les limites ne jouent pas comme prévu). Reportez les chiffres dans `docs/dev/surveillance-quotas.md` (section « 5 bis »).
+- [ ] Après une journée d'usage normal, relevez dans Firebase > Firestore > Utilisation le **nombre d'écritures** et de **lectures** du jour, comparez avec le relevé de la préparation, et comptez dans le journal le nombre de `batteryRefreshed` du jour. **Attendu** : de 6 à 12 par jour et par Miff ; **plus de 15 par jour et par Miff** = à signaler (les limites ne jouent pas comme prévu). Reportez les chiffres dans `docs/dev/surveillance-quotas.md` (section « 5 bis »).
 
 ## Verdict
 
