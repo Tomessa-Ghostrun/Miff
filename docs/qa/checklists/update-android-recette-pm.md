@@ -108,6 +108,9 @@ Compte **B** : il doit avoir **publié sa propre position** (ouvrir l'applicatio
 - [ ] **Bulle plafonnée** : à la plus grande police, la bulle ne dépasse pas **40 % de la hauteur de l'écran** ; son texte défile **dans** la bulle ; la pastille reste visible.
 - [ ] **Grande police** (réglages > Affichage > taille de la police, au maximum) : les boutons « Recommencer » et « Publier » restent **visibles sans défiler** et à 48 px au moins, la bulle ne cache pas la pastille.
 - [ ] **Réduire les animations** activé : pas d'animation de la bulle.
+- [ ] **Après la fusion avec la barre en verre** : sur le Feed et sur le Profil, le **bas de la bulle touche le haut de la barre** (ni dessous, ni en l'air) ; la **dernière carte du Feed** et le **dernier élément du Profil** défilent **au-dessus** de la bulle ; juste après une publication, le message « publié » est **au-dessus** de la bulle, jamais dessus.
+- [ ] **Verre de la barre** : sur les fenêtres d'explication de l'Update (appareil photo), la barre est **claire** (icônes foncées) ; elle est **sombre** (icônes blanches) seulement sur le viseur et l'aperçu.
+- [ ] **À observer (comportement voulu)** : la pastille du bouton central et la bulle ne se mettent à jour que sur l'onglet **Feed** (une seule écoute) ; sur le Profil ou l'Update elles peuvent être périmées jusqu'au retour sur le Feed.
 
 ## I. Ce qui ne doit jamais arriver
 

@@ -10,6 +10,7 @@ import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.update.CameraAccess
 import com.tomessa.miff.domain.update.CameraAccessScreen
 import com.tomessa.miff.domain.update.UpdatePhoto
+import com.tomessa.miff.ui.theme.GlassVariant
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +64,18 @@ sealed interface UpdateStage {
         override fun toString(): String = "Preview(redacted)"
     }
 }
+
+/**
+ * The glass of the tab bar follows what is BEHIND it (review of the merge): the dark one (white icons) only over the viewfinder and over the preview, whose
+ * backgrounds are dark; over the light pop-ins (permission, camera unavailable, sharing stopped) and the empty state it is the light glass, as on the Feed.
+ */
+fun UpdateStage.hasDarkBackground(): Boolean = this is UpdateStage.Viewfinder || this is UpdateStage.Preview
+
+/** The variant of glass for the tab in use: the dark one only on the Update tab, and only when its stage is dark. */
+fun glassVariantFor(
+    updateTabSelected: Boolean,
+    stage: UpdateStage,
+): GlassVariant = if (updateTabSelected && stage.hasDarkBackground()) GlassVariant.ON_PHOTO else GlassVariant.LIGHT
 
 /** The calm sentence shown over the photo when "Publier" did not end in a publication. The photo is always still there. */
 sealed interface PreviewNotice {

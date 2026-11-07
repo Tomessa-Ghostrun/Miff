@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -69,7 +71,7 @@ fun IncentiveBubble(
         }
     Column(
         // Absorbs the taps: a tap on the bubble never reaches a card or a button under it.
-        modifier = modifier.fillMaxWidth().pointerInput(Unit) { detectTapGestures {} },
+        modifier = modifier.fillMaxWidth().testTag(BUBBLE_TAG).pointerInput(Unit) { detectTapGestures {} },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -111,7 +113,7 @@ fun UpdateConfirmation(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.testTag(CONFIRMATION_TAG), contentAlignment = Alignment.Center) {
         Text(
             text = text,
             style = textBodyRegular14,
@@ -123,5 +125,49 @@ fun UpdateConfirmation(
                     .padding(horizontal = Spacing.m, vertical = Spacing.s + Spacing.xs)
                     .semantics { liveRegion = LiveRegionMode.Polite },
         )
+    }
+}
+
+const val BUBBLE_TAG = "update_bubble"
+const val CONFIRMATION_TAG = "update_confirmation"
+
+/**
+ * What the Update draws just above the tab bar, in ONE column so that the two can never overlap: the calm message after a publication ABOVE, the bubble of
+ * encouragement BELOW it, whose bottom edge is at the top of the bar ([barInset] = the height of the bar as the host measures it, `LocalTabBarInset`; the bubble
+ * brings its own 4 dp of air under its tail). Without a bubble the message sits [Spacing.m] above the bar. [onBubbleHeight] gives the measured height of the bubble
+ * (0 when there is none), so that the tabs keep a margin as tall as it.
+ */
+@Composable
+fun UpdateBottomLayer(
+    barInset: Dp,
+    prompt: PromptLevel,
+    confirmation: String?,
+    maxBodyHeight: Dp,
+    onBubbleHeight: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val bubbleShown = prompt != PromptLevel.NONE
+    Column(
+        modifier = modifier.padding(bottom = barInset),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        confirmation?.let { text ->
+            UpdateConfirmation(
+                text = text,
+                modifier = Modifier.padding(bottom = if (bubbleShown) Spacing.s else Spacing.m),
+            )
+        }
+        if (bubbleShown) {
+            IncentiveBubble(
+                level = prompt,
+                maxBodyHeight = maxBodyHeight,
+                modifier =
+                    Modifier
+                        .padding(
+                            start = Spacing.m,
+                            end = Spacing.m,
+                        ).onSizeChanged { onBubbleHeight(it.height) },
+            )
+        }
     }
 }

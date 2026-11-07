@@ -400,7 +400,6 @@ class GlassTabBarTest {
             composeRule.onNodeWithContentDescription(text(centralName(level))).assertIsEnabled()
         }
         showBar(TabBarGlass.Default, Color.White)
-        showBar(TabBarGlass.Default, Color.White)
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertIsSelected().assertIsEnabled()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertIsEnabled()
     }

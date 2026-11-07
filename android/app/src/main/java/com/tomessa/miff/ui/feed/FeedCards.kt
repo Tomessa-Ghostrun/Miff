@@ -129,7 +129,7 @@ fun MemberCardView(
                         .timeLine(
                             card.time,
                         )?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
-                    // FEED-4: the photo of the last update (a window of 108 dp, the whole photo in full screen); "no photo" draws nothing (no hole, no message).
+                    // FEED-4: the photo of the last update (a centred square, the whole photo in full screen); "no photo" draws nothing (no hole, no message).
                     MemberPhotoSlot(card, miffId, texts, nowMillis, onOpenPhoto)
                     if (card.isMe) {
                         Row(

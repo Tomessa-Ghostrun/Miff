@@ -254,7 +254,6 @@
     <!-- Barre d'onglets, Feed provisoire, onglet Profil, Réglages (ONB-3a) -->
     <string name="tabbar_feed_a11y">Fil de ta Miff</string>
     <string name="tabbar_update_a11y">Donner des nouvelles</string>
-    <string name="tabbar_update_soon_a11y">Donner des nouvelles, bientôt disponible</string>
     <string name="tabbar_profile_a11y">Profil</string>
     <string name="feed_pane_a11y">Fil de ta Miff</string>
     <string name="feed_empty_title">Ton fil n\'est pas encore prêt</string>

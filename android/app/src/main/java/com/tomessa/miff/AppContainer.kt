@@ -536,7 +536,7 @@ class AppContainer(
 
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
-        accountLocalDataErasers(notificationAsks, pendingMiffDeletions)
+        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger)
     }
 
     val sessionManager: SessionManager by lazy {

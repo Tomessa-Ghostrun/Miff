@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  checkKeyNames, compareKeys, extractAndroidKeys, extractIosKeys, run, ANDROID_STRINGS,
+  checkKeyNames, compareKeys, extractAndroidKeys, extractIosKeys, findDuplicateIosKeys, run, ANDROID_STRINGS,
 } from '../check-i18n-parity.mjs';
 
 const fixture = (name) => fileURLToPath(new URL(`./fixtures/${name}/`, import.meta.url));
@@ -148,4 +148,43 @@ test('checkKeyNames : les préfixes home_ et diag_ sont connus', () => {
 test('checkKeyNames : le préfixe profile_ (étapes de création du profil, ONB-2) est connu', () => {
   const { errors, warnings } = checkKeyNames(['profile_title', 'profile_phone_visibility'], 'Android');
   assert.deepEqual([errors, warnings], [[], []]);
+});
+
+test('findDuplicateIosKeys : une clé répétée sous "strings" est vue (JSON.parse, lui, l\'absorbe)', () => {
+  const text = `{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "auth_a" : { "localizations" : { "fr" : { "stringUnit" : { "value" : "a \\"x\\": b" } } } },
+    "auth_b" : { "extractionState" : "manual" },
+    "auth_a" : { "extractionState" : "manual" }
+  },
+  "version" : "1.0"
+}`;
+  assert.deepEqual(extractIosKeys(text), ['auth_a', 'auth_b']);
+  assert.deepEqual(findDuplicateIosKeys(text), ['auth_a']);
+  // Même nom de clé à un autre niveau (« extractionState », « fr ») : ce n'est pas un doublon du catalogue.
+  assert.deepEqual(findDuplicateIosKeys(text.replace('"auth_a" : { "extractionState" : "manual" }', '"auth_c" : {}')), []);
+});
+
+test('run : clé en double dans le catalogue iOS -> échec explicite', () => {
+  const root = mkdtempSync(join(tmpdir(), 'miff-i18n-dup-'));
+  try {
+    mkdirSync(join(root, 'android/app/src/main/res/values-fr'), { recursive: true });
+    mkdirSync(join(root, 'ios/Miff/Resources'), { recursive: true });
+    writeFileSync(join(root, ANDROID_STRINGS), '<resources><string name="auth_a">A</string></resources>');
+    writeFileSync(
+      join(root, 'ios/Miff/Resources/Localizable.xcstrings'),
+      '{"strings":{"auth_a":{},"auth_a":{}},"version":"1.0"}',
+    );
+    const { code, lines } = run({ root });
+    assert.equal(code, 1);
+    assert.match(lines.join('\n'), /clé en double « auth_a »/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('le vrai catalogue iOS du dépôt n\'a aucune clé en double', () => {
+  const real = fileURLToPath(new URL('../../ios/Miff/Resources/Localizable.xcstrings', import.meta.url));
+  assert.deepEqual(findDuplicateIosKeys(readFileSync(real, 'utf8')), []);
 });

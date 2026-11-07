@@ -151,7 +151,6 @@ class SettingsScreensTest {
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertExists().assertIsEnabled()
-        composeRule.onAllNodesWithContentDescription(text(R.string.tabbar_update_soon_a11y)).assertCountEquals(0)
         shoot("tabbar-external")
     }
 

@@ -11799,23 +11799,6 @@
         }
       }
     },
-    "tabbar_update_soon_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share an update, coming soon"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Donner des nouvelles, bientôt disponible"
-          }
-        }
-      }
-    },
     "permission_notifications_title": {
       "extractionState": "manual",
       "localizations": {
@@ -13291,23 +13274,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Miff a besoin de ta position exacte, et non d'une zone approximative, pour savoir quand tu arrives ou pars de tes lieux."
-          }
-        }
-      }
-    },
-    "auth_session_replaced_notice": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your account is now being used on another phone. You've been signed out of this one."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci."
           }
         }
       }

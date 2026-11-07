@@ -275,7 +275,6 @@
     <!-- Tab bar, provisional Feed, Profile tab, Settings (ONB-3a) -->
     <string name="tabbar_feed_a11y">Your Miff feed</string>
     <string name="tabbar_update_a11y">Share an update</string>
-    <string name="tabbar_update_soon_a11y">Share an update, coming soon</string>
     <string name="tabbar_profile_a11y">Profile</string>
     <string name="feed_pane_a11y">Your Miff feed</string>
     <string name="feed_empty_title">Your feed isn\'t ready yet</string>

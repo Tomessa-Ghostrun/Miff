@@ -53,6 +53,59 @@ export function extractIosKeys(catalogText) {
     .map(([key]) => key);
 }
 
+/**
+ * Clés en double directement sous "strings" dans un String Catalog. `JSON.parse` garde silencieusement la dernière occurrence d'une clé
+ * répétée : le doublon ne se voit donc qu'en lisant le texte brut. Un petit lecteur suit les objets ouverts et compte les clés de l'objet "strings".
+ */
+export function findDuplicateIosKeys(catalogText) {
+  const duplicates = [];
+  const stack = [];
+  let pendingName = null;
+  let i = 0;
+  const text = catalogText;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === '"') {
+      let j = i + 1;
+      let value = '';
+      while (j < text.length && text[j] !== '"') {
+        if (text[j] === '\\') {
+          value += text[j] + text[j + 1];
+          j += 2;
+        } else {
+          value += text[j];
+          j += 1;
+        }
+      }
+      let k = j + 1;
+      while (k < text.length && /\s/.test(text[k])) k += 1;
+      if (text[k] === ':') {
+        const top = stack[stack.length - 1];
+        if (top?.keys) {
+          if (top.name === 'strings' && stack.length === 2) {
+            if (top.keys.has(value)) duplicates.push(value);
+            top.keys.add(value);
+          }
+          pendingName = value;
+        }
+      }
+      i = j + 1;
+      continue;
+    }
+    if (c === '{') {
+      stack.push({ keys: new Set(), name: pendingName });
+      pendingName = null;
+    } else if (c === '[') {
+      stack.push({ keys: null, name: pendingName });
+      pendingName = null;
+    } else if (c === '}' || c === ']') {
+      stack.pop();
+    }
+    i += 1;
+  }
+  return duplicates;
+}
+
 /** Compare deux listes de clés ; les préfixes propres à une plateforme sont ignorés. */
 export function compareKeys(androidKeys, iosKeys) {
   const shared = (keys, ownPrefix) => new Set(keys.filter((k) => !k.startsWith(ownPrefix)));
@@ -124,11 +177,16 @@ export function run({ root }) {
 
   let androidKeys = [];
   let iosKeys = [];
+  const duplicateIosKeys = [];
   try {
     if (hasAndroid) androidKeys = extractAndroidKeys(readFileSync(androidFile, 'utf8'));
     for (const file of iosFiles) {
       try {
-        iosKeys.push(...extractIosKeys(readFileSync(file, 'utf8')));
+        const catalogText = readFileSync(file, 'utf8');
+        iosKeys.push(...extractIosKeys(catalogText));
+        for (const key of new Set(findDuplicateIosKeys(catalogText))) {
+          duplicateIosKeys.push(`${relative(root, file).split(sep).join('/')} : clé en double « ${key} » (une seule occurrence par clé)`);
+        }
       } catch (error) {
         throw new Error(`${relative(root, file).split(sep).join('/')} : ${error.message}`);
       }
@@ -140,6 +198,10 @@ export function run({ root }) {
   iosKeys = [...new Set(iosKeys)];
 
   let failed = false;
+  for (const message of duplicateIosKeys) {
+    lines.push(`ERREUR iOS : ${message}`);
+    failed = true;
+  }
   const names = [
     ...(hasAndroid ? [checkKeyNames(androidKeys, 'Android')] : []),
     ...(hasIos ? [checkKeyNames(iosKeys, 'iOS')] : []),

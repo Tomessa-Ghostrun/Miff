@@ -99,15 +99,16 @@ import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
-import com.tomessa.miff.ui.theme.GlassVariant
 import com.tomessa.miff.ui.theme.Spacing
-import com.tomessa.miff.ui.update.IncentiveBubble
 import com.tomessa.miff.ui.update.UpdateActions
-import com.tomessa.miff.ui.update.UpdateConfirmation
+import com.tomessa.miff.ui.update.UpdateBottomLayer
 import com.tomessa.miff.ui.update.UpdateEvent
+import com.tomessa.miff.ui.update.UpdateStage
 import com.tomessa.miff.ui.update.UpdateTab
 import com.tomessa.miff.ui.update.UpdateViewModel
+import com.tomessa.miff.ui.update.glassVariantFor
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
@@ -596,6 +597,13 @@ fun MainTabs(
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
     val holder = rememberSaveableStateHolder()
     val keyboardOpen = miffKeyboardVisible()
+    // The dark glass is only for the viewfinder and the preview (dark backgrounds); the pop-ins of the Update are light (see glassVariantFor).
+    val stageFlow =
+        remember(update?.viewModel) {
+            update?.viewModel?.stage
+                ?: MutableStateFlow<UpdateStage>(UpdateStage.Idle)
+        }
+    val updateStage by stageFlow.collectAsStateWithLifecycle()
     val density = LocalDensity.current
     val feedContent = (feed.state as? FeedUiState.Ready)?.content
     // D19: the dot of the central button, the ring of my photo and the bubble follow the Miff shown by the Feed (one listener, no reading more).
@@ -644,7 +652,7 @@ fun MainTabs(
     val overlayPadding = if (bubbleShown) with(density) { bubbleHeightPx.toDp() } + Spacing.s else 0.dp
     // TABBAR-GLASS: the tabs fill the screen and pass UNDER the glass bar (GlassTabBar.kt); each tab keeps a bottom margin (LocalTabBarInset).
     GlassTabHost(
-        variant = if (selected == MainTab.UPDATE) GlassVariant.ON_PHOTO else GlassVariant.LIGHT,
+        variant = glassVariantFor(selected == MainTab.UPDATE, updateStage),
         barVisible = !keyboardOpen,
         bar = { glass ->
             MainTabBar(
@@ -744,23 +752,15 @@ fun MainTabs(
                     }
                 }
             }
-            if (bubbleShown) {
-                IncentiveBubble(
-                    level = prompt,
-                    maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(start = Spacing.m, end = Spacing.m, bottom = barInset)
-                            .onSizeChanged { bubbleHeightPx = it.height },
-                )
-            }
-            confirmation?.let { text ->
-                UpdateConfirmation(
-                    text = text,
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = barInset + Spacing.m),
-                )
-            }
+            // The calm message and the bubble share ONE column above the bar: they can never overlap (the message goes above the bubble).
+            UpdateBottomLayer(
+                barInset = barInset,
+                prompt = if (bubbleShown) prompt else PromptLevel.NONE,
+                confirmation = confirmation,
+                maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
+                onBubbleHeight = { bubbleHeightPx = it },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 }
