@@ -11,10 +11,16 @@ final class UIKitBackgroundExecution: BackgroundExecution {
     }
 
     private var handles: [Int: Handle] = [:]
+    private let name: String
+
+    /// `name` : le nom de la tâche, visible dans les outils de diagnostic du système (jamais un nom de Miff ni de lieu).
+    init(name: String = "miff-deletion") {
+        self.name = name
+    }
 
     func begin() -> Int {
         let handle = Handle()
-        handle.identifier = UIApplication.shared.beginBackgroundTask(withName: "miff-deletion") {
+        handle.identifier = UIApplication.shared.beginBackgroundTask(withName: name) {
             // Le temps accordé est écoulé : la tâche est rendue (le système suspendrait l'app sinon).
             if handle.identifier != .invalid {
                 UIApplication.shared.endBackgroundTask(handle.identifier)

@@ -2286,13 +2286,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This screen is still being built. Once it is ready, you'll see news from your loved ones here. Your location is not used for now."
+            "value": "This screen is still being built. Once it is ready, you'll see news from your loved ones here."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cet écran est encore en construction. Quand il sera prêt, tu y verras les nouvelles de tes proches. Ta position n'est pas utilisée pour l'instant."
+            "value": "Cet écran est encore en construction. Quand il sera prêt, tu y verras les nouvelles de tes proches."
           }
         }
       }
@@ -4163,6 +4163,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "En cliquant sur « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
+          }
+        }
+      }
+    },
+    "ios_diag_detection_clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear the log"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacer le journal"
+          }
+        }
+      }
+    },
+    "ios_diag_detection_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The latest events of the detection of your places: type, place, time, battery. Never a location, an address or a name. Only visible in test versions."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les derniers événements de la détection de tes lieux : type, lieu, heure, batterie. Jamais de position, d'adresse ni de nom. Visible seulement dans les versions de test."
+          }
+        }
+      }
+    },
+    "ios_diag_detection_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No event yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun événement pour l'instant."
+          }
+        }
+      }
+    },
+    "ios_diag_detection_refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualiser"
+          }
+        }
+      }
+    },
+    "ios_diag_detection_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detection log"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journal de détection"
           }
         }
       }

@@ -103,9 +103,10 @@ targets:
     # Info.plist genere par XcodeGen (fichier non versionne, voir ios/.gitignore).
     # LOC-4a : EXACTEMENT deux cles de localisation (les textes d'usage des fenetres du systeme), et RIEN d'autre : ni
     # NSLocationAlwaysUsageDescription (ancien, inutile des iOS 11), ni NSLocationTemporaryUsageDescriptionDictionary, ni
-    # UIBackgroundModes. La surveillance de regions et le changement de position significatif (LOC-4b) relancent l'app sans le
-    # mode d'arriere-plan « location », qui sert aux mises a jour CONTINUES de position : Miff n'en fait pas (guideline 2.5.4 :
-    # aucun mode d'arriere-plan inutile ; a rouvrir dans LOC-4b seulement si l'essai sur iPhone le DEMONTRE). Toujours ABSENT :
+    # UIBackgroundModes. La surveillance de regions et le changement de position significatif (LOC-4b, livre) relancent l'app
+    # terminee sans le mode d'arriere-plan « location », qui sert aux mises a jour CONTINUES de position : Miff n'en fait pas
+    # (guideline 2.5.4 : aucun mode d'arriere-plan inutile). A rouvrir SEULEMENT si la recette sur iPhone (docs/qa/checklists/
+    # loc-4b-ios-recette-pm.md) DEMONTRE qu'une relance est manquee a cause de son absence. Toujours ABSENT :
     # NSAppTransportSecurity (ATS). Controle : AppConfigurationTests, InfoPlistStaticTests et ci/check-binaries.sh.
     info:
       path: Config/Info.plist

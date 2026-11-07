@@ -59,10 +59,14 @@ protocol ConsentRenewals {
 final class FirestoreConsentRenewals: ConsentRenewals {
     private let store: MiffStore
     private let timeoutSeconds: TimeInterval
+    /// Le consentement a été renouvelé (par ce téléphone, ou déjà par un autre) : le suivi des lieux peut désormais écrire la position
+    /// de ces Miffs (LOC-4b). Appelé depuis n'importe quel fil.
+    private let onRenewed: () -> Void
 
-    init(store: MiffStore, timeoutSeconds: TimeInterval = 20) {
+    init(store: MiffStore, timeoutSeconds: TimeInterval = 20, onRenewed: @escaping () -> Void = {}) {
         self.store = store
         self.timeoutSeconds = timeoutSeconds
+        self.onRenewed = onRenewed
     }
 
     func check(uid: String) async -> ConsentRenewalCheck {
@@ -124,12 +128,14 @@ final class FirestoreConsentRenewals: ConsentRenewals {
         }
         switch outcome {
         case .value:
+            onRenewed()
             return .done
         case .failed(let failure, _):
             // Un lot dont la réponse s'est perdue a pu partir, et un refus peut vouloir dire « déjà renouvelé » (un autre
             // téléphone l'a fait : les règles veulent une version strictement plus récente) : le serveur est interrogé avant
             // de dire à la personne que ça a échoué.
             if await check(uid: uid) == .nothingToRenew {
+                onRenewed()
                 return .done
             }
             return .failed(failure)

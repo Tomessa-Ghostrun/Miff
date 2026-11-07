@@ -55,6 +55,8 @@ struct SessionDependencies {
     /// Le brouillon local des étapes du profil. Effacé dès qu'il ne peut plus servir : personne n'est connecté, ou le
     /// profil existe (ceinture et bretelles à côté de l'arrêt à la déconnexion et de l'effacement après l'écriture).
     let drafts: ProfileDraftStore?
+    /// Copie de `generation` lisible depuis n'importe quel fil (le moteur de suivi des lieux, LOC-4b). Facultative : les tests n'en ont pas besoin.
+    var generationCounter: GenerationCounter?
 }
 
 /// L'unique responsable de « qui est connecté et où s'ouvre l'app » (tickets Authentification §5, §7.6, §7.8 et §8).
@@ -92,6 +94,7 @@ final class SessionManager {
     let device: DeviceSession
     let network: NetworkMonitor
     let drafts: ProfileDraftStore?
+    private let generationCounter: GenerationCounter?
 
     /// Appelé à chaque changement d'état (un seul observateur : l'interface).
     var onStateChange: ((SessionState) -> Void)?
@@ -107,7 +110,11 @@ final class SessionManager {
     /// Monte à chaque fin de session (déconnexion, panneau refusé, session perdue). Un écran qui garde des données
     /// personnelles en mémoire (les étapes du profil) s'en sert comme clé : une nouvelle personne ne retrouve jamais ce
     /// que la précédente avait saisi.
-    private(set) var generation = 0
+    private(set) var generation = 0 {
+        didSet {
+            generationCounter?.set(generation)
+        }
+    }
 
     /// Ce que la dernière lecture du compte a dit (nil avant la première lecture et après une déconnexion).
     private(set) var accountSnapshot: AccountSnapshot?
@@ -150,6 +157,7 @@ final class SessionManager {
         device = dependencies.device
         network = dependencies.network
         drafts = dependencies.drafts
+        generationCounter = dependencies.generationCounter
         // Un remplacement découvert après un refus d'écriture lance la même déconnexion forcée que l'écoute de la session.
         device.setReplacedHandler { [weak self] in
             Task { @MainActor in
