@@ -18,7 +18,7 @@ final class UpdatePrivacyTests: XCTestCase {
     /// ajoutent les quelques fichiers de l'Update qui vivent ailleurs.
     private var updateFiles: [String] {
         var files = [
-            "Services/Firebase/FirestorePhotoStore.swift", "Services/Firebase/FirestoreMyStatusObserver.swift",
+            "Services/Firebase/FirestorePhotoStore.swift",
             "ViewModels/UpdateViewModel.swift", "ViewModels/MyStatusStore.swift", "App/UpdateServices.swift"
         ]
         let app = iosRoot.appendingPathComponent("Miff")

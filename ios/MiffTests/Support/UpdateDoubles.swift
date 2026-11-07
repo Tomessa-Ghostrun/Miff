@@ -149,23 +149,6 @@ final class FakeCameraPermission: CameraPermissionProviding {
     }
 }
 
-/// Mon statut, scripté : chaque Miff suivie reçoit ce que le test lui donne.
-final class FakeMyStatusObserver: MyStatusObserving {
-    private(set) var observed: [String] = []
-    private var continuations: [AsyncStream<MyStatusFacts?>.Continuation] = []
-
-    func observe(miffId: String, uid: String) -> AsyncStream<MyStatusFacts?> {
-        observed.append(miffId)
-        return AsyncStream { continuation in
-            self.continuations.append(continuation)
-        }
-    }
-
-    func send(_ facts: MyStatusFacts?) {
-        continuations.last?.yield(facts)
-    }
-}
-
 /// Ce que les tests de l'Update ont en commun : l'horloge, une photo, un lieu, et la fabrication du publieur.
 enum UpdateFixtures {
     static let noon = TrackingFixtures.noon

@@ -29,22 +29,24 @@ struct UpdateShell {
     var onReviewAgreement: () -> Void = {}
 }
 
-extension Notification.Name {
-    /// La personne veut revoir le texte de consentement depuis l'Update : la porte des autorisations montre l'écran de renouvellement.
-    static let miffReviewAgreementRequested = Notification.Name("com.tomessa.miff.review-agreement-requested")
-}
-
 /// Ce qui relance le nettoyage de la photo expirée : l'annuaire lu, ou un changement de ma photo.
 private struct CleanupKey: Equatable {
     let ready: Bool
     let facts: MyStatusFacts?
 }
 
+/// Ce que la coquille dit au Feed : est-il l'onglet en usage (sinon rien n'est écouté), et comment ouvrir l'onglet Profil (l'avatar de
+/// l'en-tête du Feed).
+struct FeedShellContext {
+    let isActive: Bool
+    let openProfile: () -> Void
+}
+
 /// La COQUILLE de l'app une fois l'onboarding fini (ticket Profil / Réglages, ONB-7) : les trois onglets et leur barre en verre.
 ///
 /// Points d'accroche des chantiers suivants :
-/// - le Feed iOS (FEED-5 à 8) remplace le contenu de l'onglet Feed (`feed`) ; quand il aura son écouteur de MON statut, il le donnera à
-///   `UpdateShell.status` (`MyStatusStore.update`) et `follow` n'écoutera plus (D19 : UN seul écouteur) ;
+/// - le Feed iOS (FEED-5 à 8) est le contenu de l'onglet Feed (`feed`) ; il est l'UNIQUE écouteur de MON statut (D19) et le donne à
+///   `UpdateShell.status` (`MyStatusStore.update`) : couleur du bouton central, bulle, état « partage arrêté », nettoyage de la photo ;
 /// - la suppression de compte est faite (AUTH-5c, `DeleteAccountFlowView`) : atteinte par Mon compte.
 ///
 /// L'Update (UPDATE-3) : le bouton central est actif, sa pastille prend la couleur de MON statut, et la bulle d'incitation (visible sur tous
@@ -66,7 +68,7 @@ struct MainShellView<Feed: View>: View {
     private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
-    private let feed: Feed
+    private let feed: (FeedShellContext) -> Feed
     @State private var selected: MainTab = .feed
     @State private var keyboardVisible = false
     @State private var nowMillis = Int(Date().timeIntervalSince1970 * 1000)
@@ -81,7 +83,7 @@ struct MainShellView<Feed: View>: View {
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
-        @ViewBuilder feed: () -> Feed
+        @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
@@ -90,7 +92,7 @@ struct MainShellView<Feed: View>: View {
         self.update = update
         self.onOpenMiff = onOpenMiff
         self.onOpenSettings = onOpenSettings
-        self.feed = feed()
+        self.feed = feed
     }
 
     private var hasNoMiff: Bool {
@@ -161,7 +163,7 @@ struct MainShellView<Feed: View>: View {
         GeometryReader { proxy in
             ZStack {
                 TabLayer(isActive: shownTab == .feed) {
-                    feed
+                    feed(FeedShellContext(isActive: shownTab == .feed, openProfile: { selected = .profile }))
                 }
                 TabLayer(isActive: shownTab == .profile) {
                     ProfileTabView(
@@ -202,10 +204,6 @@ struct MainShellView<Feed: View>: View {
             updateModel.onPublished = { _ in
                 publishedArrived()
             }
-        }
-        // UN seul écouteur de mon statut, dans la Miff affichée (D19) ; relancé quand la Miff affichée change.
-        .task(id: activeMiffId) {
-            await myStatus.follow(miffId: activeMiffId)
         }
         .task(id: cleanupKey) {
             cleanUp()

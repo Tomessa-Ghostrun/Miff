@@ -60,12 +60,16 @@ struct UpdateServices {
             store: photoStore, device: device, network: network, ledger: ledger, environment: environment
         )
         cleanerDependencies.reader = photoStore
-        let sharingStopped = Self.sharingProbe(gateway: gateway, directory: directory)
+        let myStatus = MyStatusStore()
+        // D36 : « partage arrêté » n'est connu d'avance qu'avec UNE seule Miff ; c'est le Feed qui le dit (aucune lecture de plus).
+        let sharingStopped: () async -> Bool = {
+            myStatus.sharingStopped && Self.miffIds(of: directory.state).count == 1
+        }
         return UpdateServices(
             ledger: ledger,
             publisher: UpdatePublisher(publisherDependencies),
             cleaner: PhotoCleaner(cleanerDependencies),
-            myStatus: MyStatusStore(observer: FirestoreMyStatusObserver(), currentUid: { gateway.currentUid }),
+            myStatus: myStatus,
             permission: SystemCameraPermission(),
             sharingStopped: sharingStopped
         )
@@ -77,23 +81,6 @@ struct UpdateServices {
             return ready.miffs.map { $0.id }
         }
         return []
-    }
-
-    /// D36 : « partage arrêté » n'est connu d'avance qu'avec UNE seule Miff (une lecture de MA fiche auprès du serveur à l'ouverture de
-    /// l'Update, 3 s au plus) ; avec plusieurs, le cas mixte est traité à l'écriture. Hors ligne ou sans réponse : faux (la publication le dira).
-    private static func sharingProbe(gateway: AuthGateway, directory: MiffDirectory) -> () async -> Bool {
-        let store = FirestoreMiffStore()
-        return {
-            guard case .ready(let ready) = directory.state, ready.miffs.count == 1, let miff = ready.miffs.first,
-                  let uid = gateway.currentUid else {
-                return false
-            }
-            let miffId = miff.id
-            let sharing = try? await timedOperation(seconds: 3) {
-                try await store.readSharing(miffId: miffId, uid: uid)
-            }
-            return sharing == false
-        }
     }
 
     /// Le view model de l'écran Update, créé pour la session.

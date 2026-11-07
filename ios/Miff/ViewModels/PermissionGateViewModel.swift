@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 // CONFIDENTIALITÉ, pour ce fichier : rien ici ne lit une position (AUT7) ni n'écrit autre chose que le renouvellement du
@@ -45,6 +46,8 @@ struct PermissionGateDependencies {
     let leaver: (String, String) async -> MiffWriteResult
     /// Ce que l'app fait une fois une Miff quittée (purge du cache, liste des Miffs relue).
     let onLeft: (String) async -> Void
+    /// Les Miffs qui attendent l'accord (FEED-5 : le Feed le dit pendant que « Pas maintenant » est choisi) ; nil dans les tests qui n'en ont pas besoin.
+    var awaiting: AwaitingAgreement?
 }
 
 /// Les réglages de la porte : l'interrupteur de COMPILATION, l'ordre « accord d'abord », la durée maximale de l'attente.
@@ -73,6 +76,8 @@ final class PermissionGateViewModel: ObservableObject {
     private let leaver: (String, String) async -> MiffWriteResult
     /// Ce que l'app fait une fois une Miff quittée (purge du cache, liste des Miffs relue).
     private let onLeft: (String) async -> Void
+    private let awaiting: AwaitingAgreement?
+    private var reviewSubscription: AnyCancellable?
     private let consentBeforeLocation: Bool
     private let checkTimeoutSeconds: TimeInterval
 
@@ -96,6 +101,7 @@ final class PermissionGateViewModel: ObservableObject {
         currentUid = dependencies.currentUid
         leaver = dependencies.leaver
         onLeft = dependencies.onLeft
+        awaiting = dependencies.awaiting
         locationBlocking = settings.locationBlocking
         consentBeforeLocation = settings.consentBeforeLocation
         checkTimeoutSeconds = settings.checkTimeoutSeconds
@@ -116,6 +122,10 @@ final class PermissionGateViewModel: ObservableObject {
             return
         }
         started = true
+        // « Revoir et accepter » depuis le Feed : l'écran de renouvellement revient.
+        reviewSubscription = awaiting?.$reviewRequests.dropFirst().sink { [weak self] _ in
+            self?.onReviewRequested()
+        }
         permissions.onLocationChange = { [weak self] in
             Task { @MainActor in
                 await self?.refresh()
@@ -221,20 +231,16 @@ final class PermissionGateViewModel: ObservableObject {
         }
         renewalDeferred = true
         renewalMessage = nil
+        // Le Feed dit la vérité tant que l'accord n'est pas donné : rien n'est partagé avec ces Miffs.
+        awaiting?.replace(Set(due.map { $0.miffId }))
         publish()
     }
 
-    /// « Revoir et accepter » depuis l'Update : l'écran de renouvellement revient, même si « Pas maintenant » avait été choisi. Si rien n'est
-    /// connu à renouveler (la vérification n'avait pas répondu), elle est refaite.
-    func onAgreementReviewAsked() async {
-        if renewalState != .due {
-            await checkRenewal()
-        }
+    private func onReviewRequested() {
         guard renewalState == .due, !renewalBusy else {
             return
         }
         renewalDeferred = false
-        renewalMessage = nil
         publish()
     }
 
@@ -250,6 +256,7 @@ final class PermissionGateViewModel: ObservableObject {
         case .done:
             due = []
             renewalState = .nothingDue
+            awaiting?.replace([])
         case .failed(let failure):
             renewalMessage = ActionMessage(failure: failure)
         }
@@ -286,6 +293,7 @@ final class PermissionGateViewModel: ObservableObject {
         switch await leaver(uid, miff.miffId) {
         case .done:
             await onLeft(miff.miffId)
+            awaiting?.remove(miff.miffId)
             due = []
             renewalState = .nothingDue
             leaveAsked = false
