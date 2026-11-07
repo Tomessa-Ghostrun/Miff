@@ -196,8 +196,8 @@ jobs:
             echo "::error::Aucun fichier dex dans le bundle release : verification impossible."
             exit 1
           fi
-          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck'; then
-            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE ou DebugAppCheck : l'ecran de diagnostic ou le fournisseur App Check de debug a fuite dans le build release."
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL'; then
+            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck ou DETECTIONJOURNAL : l'ecran de diagnostic, le fournisseur App Check de debug ou le journal de detection (LOC-2b) a fuite dans le build release."
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
@@ -209,8 +209,8 @@ jobs:
           # releaseLike is built from the release sources: same proof for its APK.
           like=app/build/outputs/apk/releaseLike/app-releaseLike.apk
           test -f "$like" || { echo "::error::APK releaseLike introuvable : $like"; exit 1; }
-          if unzip -p "$like" 'classes*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck'; then
-            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic ou le fournisseur App Check de debug."
+          if unzip -p "$like" 'classes*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL'; then
+            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug ou le journal de detection."
             exit 1
           fi
           echo "APK releaseLike : aucune trace du diagnostic ni du fournisseur App Check de debug."
@@ -230,6 +230,33 @@ jobs:
             exit 1
           fi
           echo "Bundle release : client web Google present, aucune permission biometrique."
+
+      # LOC-2a: the app now DECLARES its location permissions (FINE, COARSE, BACKGROUND) and POST_NOTIFICATIONS; UPDATE-1 adds CAMERA (the viewfinder of
+      # the Update screen; CameraX declares none of its own, and no storage, photo-library or microphone permission may appear). They are the ONLY sensitive
+      # permissions allowed. The check reads the MERGED manifests (what the phone really gets), not the source one: a library update that merges
+      # another one (another location permission, a foreground service, Wi-Fi state) is caught here. The three location permissions must be
+      # present (the app does not work without them) and nothing else of that family may appear. Never skipped (also for Dependabot).
+      - name: Check the sensitive permissions of the merged manifests (location, notifications)
+        run: |
+          allowed='android.permission.ACCESS_FINE_LOCATION android.permission.ACCESS_COARSE_LOCATION android.permission.ACCESS_BACKGROUND_LOCATION android.permission.POST_NOTIFICATIONS android.permission.RECEIVE_BOOT_COMPLETED android.permission.CAMERA'
+          check_manifest() {
+            # xargs puts the sorted names on one line (no newline character to escape in this file).
+            found=$(grep -a -o -E 'android[.]permission[.](ACCESS_[A-Z_]*LOCATION[A-Z_]*|FOREGROUND_SERVICE[A-Z_]*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_[A-Z_]+|ACTIVITY_RECOGNITION|RECEIVE_BOOT_COMPLETED|CAMERA|RECORD_AUDIO|READ_MEDIA_[A-Z_]+|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)' | sort -u | xargs)
+            expected=$(printf '%s ' $allowed | xargs -n1 | sort -u | xargs)
+            if [ "$found" != "$expected" ]; then
+              echo "::error title=Permissions sensibles::$1 declare : [$found] au lieu de : [$expected]. Une bibliotheque a ajoute une permission (la retirer avec tools:node=\"remove\" dans AndroidManifest.xml), ou une permission des tickets LOC-2a (localisation) ou UPDATE-1 (CAMERA, rien d'autre : ni stockage, ni photos, ni micro) manque."
+              return 1
+            fi
+          }
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          test -f "$bundle" || { echo "::error::Bundle release introuvable : $bundle"; exit 1; }
+          unzip -p "$bundle" base/manifest/AndroidManifest.xml | check_manifest "Le bundle release" || exit 1
+          manifests=$(find app/build/intermediates/merged_manifests -name AndroidManifest.xml)
+          test -n "$manifests" || { echo "::error::Aucun manifeste fusionne trouve."; exit 1; }
+          for m in $manifests; do
+            check_manifest "$m" < "$m" || exit 1
+          done
+          echo "Manifestes fusionnes (bundle release et variantes) : exactement la localisation (precise, approximative, arriere-plan), les notifications, le redemarrage du telephone (LOC-2b) et la camera (UPDATE-1)."
 
       # actions/upload-artifact v7.0.2
       - name: Upload debug APK (short retention)

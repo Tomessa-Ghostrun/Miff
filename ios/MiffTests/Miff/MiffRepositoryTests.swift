@@ -46,7 +46,8 @@ final class MiffRepositoryTests: XCTestCase {
             newMiffId: { testMiffId },
             newCode: { draws.value.isEmpty ? testCode : draws.value.removeFirst() },
             epochMillis: { clock.value },
-            timeoutSeconds: 1
+            timeoutSeconds: 1,
+            deviceId: { testDeviceId }
         )
         return FirestoreMiffRepository(
             store: custom ?? store,
@@ -180,7 +181,10 @@ final class MiffRepositoryTests: XCTestCase {
             return XCTFail("l'entrée devrait continuer")
         }
         XCTAssertEqual(store.commitsAsLots.count, 1, "seul le lot qui est passé est enregistré")
-        XCTAssertEqual(store.commitsAsLots.first?.map { $0.path }, ["users/\(uid)/memberships/free"])
+        XCTAssertEqual(
+            store.commitsAsLots.first?.map { $0.path },
+            ["miffs/\(testOtherMiffId)/positions/\(uid)", "users/\(uid)/memberships/free"]
+        )
         XCTAssertEqual(commitCount(), 2)
     }
 
@@ -442,6 +446,44 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(load?.lost.isEmpty, true)
     }
 
+    // MARK: - La formule est-elle connue ? (LOC-3, revue I1)
+
+    func testMyMiffsTheSubscriptionIsKnownWhenTheServerAnswered() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous")
+
+        let noDocument = loaded(await repo().myMiffs(uid: uid))
+
+        XCTAssertEqual(noDocument?.premiumKnown, true, "pas de document d'abonnement = un vrai « gratuit »")
+        XCTAssertEqual(noDocument?.premium, false)
+        store.entitlement = EntitlementRead(active: true, expiresAtMillis: now.value + 10_000)
+        let active = loaded(await repo().myMiffs(uid: uid))
+        XCTAssertEqual(active?.premiumKnown, true)
+        XCTAssertEqual(active?.premium, true)
+    }
+
+    func testMyMiffsAFailedSubscriptionReadIsUnknownNeverFree() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous")
+        store.entitlementFailure = firestoreError(FirestoreErrorNumber.unavailable)
+
+        let load = loaded(await repo().myMiffs(uid: uid))
+
+        XCTAssertEqual(load?.premiumKnown, false)
+        XCTAssertEqual(load?.fromCache, false)
+    }
+
+    func testMyMiffsAnAnswerFromTheCacheDoesNotKnowTheSubscription() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.membershipsFailure = firestoreError(FirestoreErrorNumber.unavailable)
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous")
+
+        let load = loaded(await repo().myMiffs(uid: uid))
+
+        XCTAssertEqual(load?.fromCache, true)
+        XCTAssertEqual(load?.premiumKnown, false)
+    }
+
     func testMyMiffsNothingAtAllToShowIsUnavailableNotAnEmptyListThatLooksLikeNoMiff() async {
         store.membershipsFailure = firestoreError(FirestoreErrorNumber.unavailable)
         store.cachedMembershipsFailure = firestoreError(FirestoreErrorNumber.unavailable)
@@ -493,10 +535,10 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(store.commitsAsLots.count, 1)
     }
 
-    func testSetSharingStopIsTheLotOfThreeResumeTheLotOfTwo() async {
+    func testSetSharingStopIsTheLotOfFourResumeTheLotOfTwo() async {
         let stop = await repo().setSharing(miffId: testMiffId, uid: uid, enabled: false)
         XCTAssertEqual(stop, .done)
-        XCTAssertEqual(store.commitsAsLots.last?.count, 3)
+        XCTAssertEqual(store.commitsAsLots.last?.count, 4)
 
         let resume = await repo().setSharing(miffId: testMiffId, uid: uid, enabled: true)
 
@@ -517,14 +559,15 @@ final class MiffRepositoryTests: XCTestCase {
         let lost = LostMiff(ref: MembershipRef(key: "free", miffId: testMiffId), name: "Chez nous")
         let first = await repo().cleanUpLost(uid: uid, lost: lost)
         XCTAssertTrue(first)
-        XCTAssertEqual(store.commitsAsLots.first?.count, 4)
+        XCTAssertEqual(store.commitsAsLots.first?.count, 5)
         store.clearLots()
         store.commitFailures = [firestoreError(FirestoreErrorNumber.permissionDenied), nil]
 
         let second = await repo().cleanUpLost(uid: uid, lost: lost)
 
         XCTAssertTrue(second)
-        XCTAssertEqual(store.commitsAsLots.first?.count, 1)
+        // Le repli : la dernière position connue (si un retrait plus ancien en a laissé une) et l'index.
+        XCTAssertEqual(store.commitsAsLots.first?.count, 2)
     }
 
     func testAStaleIndexCleanedWhileCreatingOrJoiningNeverLeavesThatMiffReadableOffline() async {

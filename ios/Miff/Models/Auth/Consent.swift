@@ -34,8 +34,15 @@ enum FieldValueSpec: Equatable {
     case string(String)
     case bool(Bool)
     case bytes(Data)
+    /// Un entier (le rayon d'un lieu : les règles exigent un entier, pas un décimal).
+    case integer(Int)
+    /// Un décimal (latitude et longitude d'un lieu).
+    case double(Double)
     /// Heure du serveur (jamais celle du téléphone).
     case serverTimestamp
+    /// Une heure PRÉCISE, en millisecondes depuis 1970 : l'heure RÉELLE d'un événement de zone ou de la mesure d'une position
+    /// (LOC-4b), que les règles bornent entre 24 h dans le passé et 5 minutes dans le futur. Jamais utilisée pour un consentement.
+    case timestamp(millis: Int)
     case null
     case map([String: FieldValueSpec])
 }

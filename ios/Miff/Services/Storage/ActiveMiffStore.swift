@@ -30,14 +30,3 @@ final class UserDefaultsActiveMiffStore: ActiveMiffStore {
         defaults.removeObject(forKey: Self.key)
     }
 }
-
-/// La permission de localisation de l'appareil pour le premier statut. L'app ne demande pas encore cette permission (c'est le
-/// ticket Localisation) et ne lie pas la bibliothèque de localisation : tant qu'elle ne l'a jamais demandée, l'état réel est
-/// « jamais demandée », c'est-à-dire `unknown` (l'app n'affirme jamais un refus qu'elle ne peut pas distinguer d'un « pas
-/// encore demandé »). Le ticket Localisation lira ici l'autorisation du système (inconnue : `unknown`, refusée ou restreinte :
-/// `denied`, en cours d'utilisation : `foreground`, toujours : `background`).
-struct SystemLocationAccessProbe: LocationAccessProbe {
-    func current() -> LocationAccess {
-        .unknown
-    }
-}

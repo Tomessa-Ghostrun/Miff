@@ -1,6 +1,7 @@
 package com.tomessa.miff.data.auth
 
 import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
@@ -8,6 +9,8 @@ import com.tomessa.miff.domain.auth.AccountSignIn
 import com.tomessa.miff.domain.auth.AuthAttempt
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.AuthOutcome
+import com.tomessa.miff.domain.auth.SessionCheck
+import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.auth.interpretAuthError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
@@ -41,8 +44,29 @@ interface AuthGateway {
     /** Null = done. */
     suspend fun reauthenticateWithGoogle(idToken: String): AuthFailure?
 
+    /**
+     * The same proof for the deletion of the account (AUTH-5): the errors are read as errors on the OPEN session (wrong Google account,
+     * session expired...). The refusal of the consent panel keeps [reauthenticateWithGoogle].
+     */
+    suspend fun reauthenticateWithGoogleForDeletion(idToken: String): AuthFailure?
+
+    /**
+     * Proves who the person is again with the password of the account (AUTH-5). Null = done. The password goes to Firebase and
+     * nowhere else: it is not kept, not logged, not part of any message of ours.
+     */
+    suspend fun reauthenticateWithPassword(password: String): AuthFailure?
+
     /** Deletes the current account. Null = done (also when there is no account any more). */
     suspend fun deleteCurrentAccount(): AuthFailure?
+
+    /** The sign-in methods linked to the current account (empty if nobody is signed in). */
+    fun linkedProviders(): Set<SignInProvider>
+
+    /**
+     * Asks Firebase whether the session of the current account still exists (one `reload`). Used by the deletion of the account:
+     * when a step is refused, "the account is gone" means the deletion is already done (AUTH-5, criterion SC28).
+     */
+    suspend fun checkSession(): SessionCheck
 
     /** How the current account signs in; null if no one is signed in. */
     fun signInMethod(): AnalyticsEvent.Method?
@@ -101,11 +125,40 @@ class FirebaseAuthGateway(
             user.reauthenticate(GoogleAuthProvider.getCredential(idToken, null)).await()
         }
 
+    override suspend fun reauthenticateWithGoogleForDeletion(idToken: String): AuthFailure? =
+        runCatchingAuth(AuthAttempt.REAUTH_SOCIAL) {
+            val user = auth.currentUser ?: throw IllegalStateException("no session")
+            user.reauthenticate(GoogleAuthProvider.getCredential(idToken, null)).await()
+        }
+
+    override suspend fun reauthenticateWithPassword(password: String): AuthFailure? {
+        val user = auth.currentUser
+        val email = user?.email
+        if (user == null || email.isNullOrBlank()) return AuthFailure.UNKNOWN
+        return runCatchingAuth(AuthAttempt.REAUTH_EMAIL) {
+            user.reauthenticate(EmailAuthProvider.getCredential(email, password)).await()
+        }
+    }
+
     override suspend fun deleteCurrentAccount(): AuthFailure? =
         runCatchingAuth(AuthAttempt.DELETE_ACCOUNT) {
             val user = auth.currentUser ?: return@runCatchingAuth
             user.delete().await()
         }
+
+    override fun linkedProviders(): Set<SignInProvider> =
+        providersFrom(
+            auth.currentUser
+                ?.providerData
+                .orEmpty()
+                .map { it.providerId },
+        )
+
+    override suspend fun checkSession(): SessionCheck {
+        // Nobody signed in: the account may exist or not, we cannot tell: never "gone".
+        val user = auth.currentUser ?: return SessionCheck.EXPIRED
+        return sessionCheckOf(runCatchingAuth(AuthAttempt.CHECK_SESSION) { user.reload().await() })
+    }
 
     override fun signInMethod(): AnalyticsEvent.Method? {
         val providers =
@@ -153,6 +206,31 @@ class FirebaseAuthGateway(
         } catch (e: Exception) {
             AuthOutcome.Failure(interpretAuthError(e, attempt))
         }
+
+    internal companion object {
+        const val APPLE_PROVIDER_ID = "apple.com"
+
+        /** The sign-in methods Miff knows, from the provider ids Firebase holds for the user. */
+        fun providersFrom(providerIds: List<String>): Set<SignInProvider> =
+            providerIds
+                .mapNotNull {
+                    when (it) {
+                        EmailAuthProvider.PROVIDER_ID -> SignInProvider.PASSWORD
+                        GoogleAuthProvider.PROVIDER_ID -> SignInProvider.GOOGLE
+                        APPLE_PROVIDER_ID -> SignInProvider.APPLE
+                        else -> null
+                    }
+                }.toSet()
+
+        /** What a `reload` answer means: only `ERROR_USER_NOT_FOUND` says "gone"; an expired or revoked token says "sign in again". */
+        fun sessionCheckOf(failure: AuthFailure?): SessionCheck =
+            when (failure) {
+                null -> SessionCheck.VALID
+                AuthFailure.ACCOUNT_GONE -> SessionCheck.GONE
+                AuthFailure.SESSION_EXPIRED -> SessionCheck.EXPIRED
+                else -> SessionCheck.UNKNOWN
+            }
+    }
 
     private suspend fun runCatchingAuth(
         attempt: AuthAttempt,

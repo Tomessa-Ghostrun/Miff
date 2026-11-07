@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Star of the bubble "Tout va bien". Provisional drawing ported from the mockups of design/screens/feed (the design owner exports the final ones from Figma). 1.8 stroke, round ends, 24 grid. Colour given by the tint of the Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#222222"
+        android:pathData="M12 2c.8 5 2.2 7.2 8 10-5.8 2.8-7.2 5-8 10-.8-5-2.2-7.2-8-10 5.8-2.8 7.2-5 8-10z" />
+</vector>

@@ -35,9 +35,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
+import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.theme.GradientProfileHeader
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -70,6 +72,8 @@ fun ProfileTabScreen(
     onRetry: () -> Unit,
     miffs: DirectoryState = DirectoryState.Loading,
     onOpenMiff: (String) -> Unit = {},
+    /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
+    placesContent: @Composable () -> Unit = {},
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -84,6 +88,9 @@ fun ProfileTabScreen(
                 .background(GradientProfileHeader)
                 .miffTopInsets()
                 .verticalScroll(scroll)
+                // TABBAR-GLASS: the glass bar floats over the tab; this margin lets the last element scroll above it.
+                // The bubble of encouragement (UPDATE-2) is drawn over the bottom of this tab, above the bar: the content keeps a margin as tall as it.
+                .padding(bottom = LocalTabBarInset.current + LocalBottomOverlayPadding.current)
                 .padding(horizontal = Spacing.l, vertical = Spacing.m)
                 .semantics { paneTitle = paneName },
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
@@ -106,6 +113,7 @@ fun ProfileTabScreen(
             Unavailable(onRetry)
         }
         MiffCards(miffs, onOpenMiff)
+        placesContent()
     }
 }
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.settings.DeleteAccountLink
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -57,6 +58,7 @@ fun SessionLoadingScreen() {
 fun AccountLookupFailedScreen(
     onRetry: () -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit,
 ) {
     CenteredFrame {
         MessageText(text = stringResource(R.string.auth_lookup_failed), isError = false)
@@ -72,5 +74,7 @@ fun AccountLookupFailedScreen(
                 color = colorActionPrimary,
             )
         }
+        // AUTH-5a: reachable here too (the account could not be read: the screen of the information reads it again).
+        DeleteAccountLink(onClick = onDeleteAccount)
     }
 }

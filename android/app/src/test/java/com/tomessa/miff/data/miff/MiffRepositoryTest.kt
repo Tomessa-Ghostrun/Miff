@@ -1,11 +1,14 @@
 package com.tomessa.miff.data.miff
 
 import com.google.firebase.firestore.FirebaseFirestoreException.Code
+import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.testsupport.CODE
+import com.tomessa.miff.testsupport.DEVICE_A
+import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
 import com.tomessa.miff.testsupport.FakeMiffObserver
@@ -33,12 +36,14 @@ class MiffRepositoryTest {
     private var now = 1_000_000L
     private val timeline = Timeline()
     private val cache = FakeCachePurger(timeline)
+    private val device = FakeActiveDevice()
 
     private fun repo() =
         FirestoreMiffRepository(
             store = store,
             observer = FakeMiffObserver(),
             location = location,
+            device = device,
             newMiffId = { MIFF_ID },
             newCode = { drawn.removeFirstOrNull() ?: CODE },
             nowMillis = { now },
@@ -112,7 +117,7 @@ class MiffRepositoryTest {
                         throw firestoreError(Code.UNAVAILABLE)
                 }
             val result =
-                FirestoreMiffRepository(offline, FakeMiffObserver(), location, {
+                FirestoreMiffRepository(offline, FakeMiffObserver(), location, FakeActiveDevice(), {
                     MIFF_ID
                 }, { CODE }).prepareJoin(uid, CODE)
             assertEquals(JoinPreparation.Failed(MiffFailure.OFFLINE), result)
@@ -142,7 +147,10 @@ class MiffRepositoryTest {
             val result = repo().prepareJoin(uid, CODE)
             assertTrue(result is JoinPreparation.Ready)
             assertEquals("only the lot that went through is recorded", 1, store.commitsAsLots.size)
-            assertEquals(listOf("users/$uid/memberships/free"), store.commitsAsLots.single().map { it.path })
+            assertEquals(
+                listOf("miffs/$OTHER_MIFF_ID/positions/$uid", "users/$uid/memberships/free"),
+                store.commitsAsLots.single().map { it.path },
+            )
             assertEquals(2, store.calls.count { it == "commit" })
         }
 
@@ -204,6 +212,84 @@ class MiffRepositoryTest {
             assertFalse((repo().myMiffs(uid) as MyMiffsLoad.Loaded).premium)
         }
 
+    // --- The plan is "unknown" when it could not be read (LOC-1 fix: never "free" on a doubt) -----------------------------
+
+    @Test
+    fun myMiffs_aSubscriptionThatCannotBeRead_isUnknown_notFree() =
+        runTest {
+            store.entitlementFailure = firestoreError(Code.UNAVAILABLE)
+            val load = repo().myMiffs(uid) as MyMiffsLoad.Loaded
+            assertFalse("the key of the index still falls back to free", load.premium)
+            assertFalse("but the plan is not known", load.premiumKnown)
+        }
+
+    @Test
+    fun myMiffs_noSubscriptionDocument_isKnownFree_andAReadOneIsKnownPremium() =
+        runTest {
+            store.entitlement = null
+            val free = repo().myMiffs(uid) as MyMiffsLoad.Loaded
+            assertFalse(free.premium)
+            assertTrue(free.premiumKnown)
+            store.entitlement = EntitlementRead(active = true, expiresAtMillis = now + 10_000)
+            val premium = repo().myMiffs(uid) as MyMiffsLoad.Loaded
+            assertTrue(premium.premium)
+            assertTrue(premium.premiumKnown)
+        }
+
+    @Test
+    fun myMiffs_anAnswerTakenFromTheCache_leavesThePlanUnknown() =
+        runTest {
+            store.memberships = listOf(MembershipRef("free", MIFF_ID))
+            store.miffs[MIFF_ID] = miffDetails()
+            store.membershipsFailure = firestoreError(Code.UNAVAILABLE)
+            val load = repo().myMiffs(uid) as MyMiffsLoad.Loaded
+            assertTrue(load.fromCache)
+            assertFalse(load.premiumKnown)
+        }
+
+    @Test
+    fun myMiffs_aCachedSubscription_isUnknown_butStillPicksTheKey() =
+        runTest {
+            store.entitlement = EntitlementRead(active = true, expiresAtMillis = now + 10_000, fromCache = true)
+            val load = repo().myMiffs(uid) as MyMiffsLoad.Loaded
+            assertTrue("the cached Miff+ still chooses the key of the index offline", load.premium)
+            assertFalse("but it proves nothing", load.premiumKnown)
+            // A missing document in the cache proves nothing either: not "free".
+            store.entitlement = EntitlementRead(active = false, expiresAtMillis = null, fromCache = true)
+            assertFalse((repo().myMiffs(uid) as MyMiffsLoad.Loaded).premiumKnown)
+        }
+
+    @Test
+    fun create_withAMiffAndAnUnknownPlan_isATryAgain_neverTheOffer() =
+        runTest {
+            store.memberships = listOf(MembershipRef("free", OTHER_MIFF_ID))
+            store.miffs[OTHER_MIFF_ID] = miffDetails(id = OTHER_MIFF_ID)
+            store.entitlementFailure = firestoreError(Code.UNAVAILABLE)
+            assertEquals(CreatePreparation.Failed(MiffFailure.OFFLINE), repo().prepareCreate(uid))
+            store.entitlementFailure = null
+            store.entitlement = EntitlementRead(active = false, expiresAtMillis = null, fromCache = true)
+            assertEquals(CreatePreparation.Failed(MiffFailure.OFFLINE), repo().prepareCreate(uid))
+            // Once the plan is known, the answer is the real one.
+            store.entitlement = null
+            assertEquals(CreatePreparation.NeedsPremium, repo().prepareCreate(uid))
+            assertTrue(store.commitsAsLots.isEmpty())
+        }
+
+    @Test
+    fun join_withAMiffAndAnUnknownPlan_isATryAgain_neverTheOffer_andAMiffPlusGoesThrough() =
+        runTest {
+            joinable()
+            store.memberships = listOf(MembershipRef("free", OTHER_MIFF_ID))
+            store.miffs[OTHER_MIFF_ID] = miffDetails(id = OTHER_MIFF_ID, name = "Autre")
+            store.entitlementFailure = firestoreError(Code.UNAVAILABLE)
+            assertEquals(JoinPreparation.Failed(MiffFailure.OFFLINE), repo().prepareJoin(uid, CODE))
+            // A Miff+ read from the cache is a good guess for the key: the rules decide for real.
+            store.entitlementFailure = null
+            store.entitlement = EntitlementRead(active = true, expiresAtMillis = now + 10_000, fromCache = true)
+            assertTrue(ready(repo().prepareJoin(uid, CODE)).premium)
+            assertTrue(store.commitsAsLots.isEmpty())
+        }
+
     // --- Join: the lot (ticket 5.4 step 7) ------------------------------------------------------------------------
 
     @Test
@@ -260,6 +346,63 @@ class MiffRepositoryTest {
             repo().join(uid, prepared)
             val status = store.commitsAsLots.single().single { it.path.contains("/status/") }
             assertEquals("foreground", status.data["locationAccess"])
+        }
+
+    // --- "Un compte, un seul appareil" (SESS-2): the first status carries the identifier of the session -------------
+
+    private fun statusOf(lot: List<com.tomessa.miff.domain.miff.DocWrite>) = lot.single { it.path.contains("/status/") }
+
+    @Test
+    fun join_theFirstStatusCarriesTheIdentifierOfTheSession_verifiedJustBefore() =
+        runTest {
+            joinable()
+            val prepared = ready(repo().prepareJoin(uid, CODE))
+            repo().join(uid, prepared)
+            assertEquals(DEVICE_A, statusOf(store.commitsAsLots.single()).data["deviceId"])
+            assertEquals("the session is asked against the server before a manual entry", listOf(true), device.rechecks)
+        }
+
+    @Test
+    fun create_andResume_theFirstStatusCarriesTheIdentifierOfTheSession() =
+        runTest {
+            val preparation = repo().prepareCreate(uid) as CreatePreparation.Ready
+            repo().create(uid, "Chez nous", preparation)
+            assertEquals(DEVICE_A, statusOf(store.commitsAsLots.single()).data["deviceId"])
+            repo().setSharing(MIFF_ID, uid, enabled = true)
+            assertEquals(DEVICE_A, statusOf(store.commitsAsLots.last()).data["deviceId"])
+        }
+
+    @Test
+    fun stopSharing_writesNoStatus_soItAsksNothingOfTheSession() =
+        runTest {
+            repo().setSharing(MIFF_ID, uid, enabled = false)
+            assertTrue("a deletion carries no content: nothing to compare", device.rechecks.isEmpty())
+        }
+
+    @Test
+    fun aPhoneThatWasReplaced_cannotJoinCreateOrResume_andIsNeverToldItLostAMiff() =
+        runTest {
+            joinable()
+            val prepared = ready(repo().prepareJoin(uid, CODE))
+            val preparation = repo().prepareCreate(uid) as CreatePreparation.Ready
+            // The code of the Miff to join is taken: a new Miff draws a free one.
+            store.codes.clear()
+            device.answer = Clearance.Replaced
+            // The neutral "it did not work" (REFUSED), not "not found" and nothing about access: the forced sign-out is under way.
+            assertEquals(JoinResult.Failed(MiffFailure.REFUSED), repo().join(uid, prepared))
+            assertEquals(CreateResult.Failed(MiffFailure.REFUSED), repo().create(uid, "Chez nous", preparation))
+            assertEquals(MiffWriteResult.Failed(MiffFailure.REFUSED), repo().setSharing(MIFF_ID, uid, enabled = true))
+            assertTrue("nothing at all reached the server", store.commitsAsLots.isEmpty())
+        }
+
+    @Test
+    fun aSessionThatCannotBeVerified_isTheNoConnectionAnswer_andNothingIsWritten() =
+        runTest {
+            joinable()
+            val prepared = ready(repo().prepareJoin(uid, CODE))
+            device.answer = Clearance.Unverified
+            assertEquals(JoinResult.Failed(MiffFailure.OFFLINE), repo().join(uid, prepared))
+            assertTrue(store.commitsAsLots.isEmpty())
         }
 
     // --- Create (ticket 5.3, criteria C4, C5, C7) -----------------------------------------------------------------
@@ -397,6 +540,7 @@ class MiffRepositoryTest {
                     ghost,
                     FakeMiffObserver(),
                     location,
+                    FakeActiveDevice(),
                     { MIFF_ID },
                     { CODE },
                 ).myMiffs(uid) as MyMiffsLoad.Loaded
@@ -416,10 +560,10 @@ class MiffRepositoryTest {
         }
 
     @Test
-    fun setSharing_stop_isTheLotOfThree_resume_theLotOfTwo() =
+    fun setSharing_stop_isTheLotOfFour_resume_theLotOfTwo() =
         runTest {
             assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = false))
-            assertEquals(3, store.commitsAsLots.last().size)
+            assertEquals(4, store.commitsAsLots.last().size)
             assertEquals(MiffWriteResult.Done, repo().setSharing(MIFF_ID, uid, enabled = true))
             assertEquals(2, store.commitsAsLots.last().size)
         }
@@ -437,11 +581,11 @@ class MiffRepositoryTest {
         runTest {
             val lost = LostMiff(MembershipRef("free", MIFF_ID), "Chez nous")
             assertTrue(repo().cleanUpLost(uid, lost))
-            assertEquals(4, store.commitsAsLots.single().size)
+            assertEquals(5, store.commitsAsLots.single().size)
             store.commitsAsLots.clear()
             store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED), null))
             assertTrue(repo().cleanUpLost(uid, lost))
-            assertEquals(1, store.commitsAsLots.single().size)
+            assertEquals(2, store.commitsAsLots.single().size)
         }
 
     @Test
@@ -540,6 +684,17 @@ open class MiffStoreByDelegation(
         miffId: String,
         uid: String,
     ) = inner.readSharing(miffId, uid)
+
+    override suspend fun readSharingConsent(
+        miffId: String,
+        uid: String,
+    ) = inner.readSharingConsent(miffId, uid)
+
+    override suspend fun commitWhereSharing(
+        uid: String,
+        miffIds: List<String>,
+        build: (List<String>) -> List<com.tomessa.miff.domain.miff.DocWrite>,
+    ) = inner.commitWhereSharing(uid, miffIds, build)
 
     override suspend fun commitWithProfile(
         uid: String,

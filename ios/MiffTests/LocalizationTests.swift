@@ -79,7 +79,7 @@ final class LocalizationTests: XCTestCase {
             throw XCTSkip("Sources introuvables (\(sources.path)).")
         }
         let regex = try NSRegularExpression(
-            pattern: "\"((?:diag|home|auth|place|common|profile|feed|miff|ios)_[a-z0-9_]+)\""
+            pattern: "\"((?:diag|home|auth|place|common|profile|feed|miff|permission|ios)_[a-z0-9_]+)\""
         )
         // Les noms d'événements Analytics (`miff_created`, `miff_joined`) ont la même forme qu'une clé de texte `miff_` : ce ne
         // sont pas des clés.

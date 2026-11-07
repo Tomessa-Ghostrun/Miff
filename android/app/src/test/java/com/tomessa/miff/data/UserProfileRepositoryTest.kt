@@ -291,11 +291,20 @@ class UserProfileRepositoryTest {
     @Test
     fun theContainerRegistersTheDraftAsATeardown_andGivesItToTheSession_M26() {
         val source = File("src/main/java/com/tomessa/miff/AppContainer.kt").readText()
-        // The profile kept in memory (ONB-3a), the withdrawals of consent (ONB-3b) and the Miffs kept in memory (MIFF-1) go with
-        // the session too, next to the draft.
+        // The profile kept in memory (ONB-3a), the withdrawals of consent (ONB-3b), the Miffs kept in memory (MIFF-1), and the
+        // confirmation of a saved place and the cache of address searches (LOC-1), the detection and the Miffs that wait for the agreement
+        // (LOC-2b), and the photos read and the ledger of the Update (UPDATE-1, FEED-4) go with the session too, next to the draft.
+        // Whitespace does not matter (the formatter may put the list on several lines).
+        val flat =
+            source
+                .replace(Regex("""\s+"""), " ")
+                .replace(", )", ")")
+                .replace("( ", "(")
+                .replace(" )", ")")
         assertTrue(
-            source.contains(
-                "teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory)",
+            flat.contains(
+                "teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory, " +
+                    "trackingEngine, awaitingAgreement, photoCache, SessionTeardown { publishLedger.clear() }, placeNotices, addressSearch, mapTileCache)",
             ),
         )
         assertTrue(source.contains("drafts = profileDrafts"))

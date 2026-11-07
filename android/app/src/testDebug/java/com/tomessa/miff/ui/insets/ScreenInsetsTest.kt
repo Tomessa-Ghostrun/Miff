@@ -39,16 +39,23 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.data.account.AccountDeletionControls
+import com.tomessa.miff.data.account.AccountDeletionState
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.onboarding.DraftStep
 import com.tomessa.miff.data.profile.BitmapPhoto
+import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.MiffMember
-import com.tomessa.miff.domain.miff.MiffPlace
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.AddressSuggestion
+import com.tomessa.miff.domain.place.OwnedMiff
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.settings.AppLanguage
+import com.tomessa.miff.testsupport.testPlace
+import com.tomessa.miff.ui.auth.AccountLookupFailedScreen
 import com.tomessa.miff.ui.auth.ConsentPanelScreen
 import com.tomessa.miff.ui.auth.ConsentPanelUiState
 import com.tomessa.miff.ui.auth.PasswordResetScreen
@@ -78,6 +85,15 @@ import com.tomessa.miff.ui.miff.MiffChoiceScreen
 import com.tomessa.miff.ui.miff.MiffScreenState
 import com.tomessa.miff.ui.miff.MiffScreenStatus
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.place.LocalPlaceMapRenderer
+import com.tomessa.miff.ui.place.PlaceDetailScreen
+import com.tomessa.miff.ui.place.PlaceDetailState
+import com.tomessa.miff.ui.place.PlaceDetailStatus
+import com.tomessa.miff.ui.place.PlaceFormActions
+import com.tomessa.miff.ui.place.PlaceFormMode
+import com.tomessa.miff.ui.place.PlaceFormScreen
+import com.tomessa.miff.ui.place.PlaceFormState
+import com.tomessa.miff.ui.place.PlacePaywallScreen
 import com.tomessa.miff.ui.profile.CropState
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.PhoneStepScreen
@@ -86,8 +102,14 @@ import com.tomessa.miff.ui.profile.ProfileStepScreen
 import com.tomessa.miff.ui.profile.ProfileTabStatus
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileUiState
+import com.tomessa.miff.ui.settings.AccountDeletionContent
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountUiState
+import com.tomessa.miff.ui.settings.DeleteAccountInfoScreen
+import com.tomessa.miff.ui.settings.DeleteAccountReauthScreen
+import com.tomessa.miff.ui.settings.DeleteInfoUiState
+import com.tomessa.miff.ui.settings.DeleteInventory
+import com.tomessa.miff.ui.settings.DeleteReauthUiState
 import com.tomessa.miff.ui.settings.LanguageScreen
 import com.tomessa.miff.ui.settings.MyInfoLoad
 import com.tomessa.miff.ui.settings.MyInfoScreen
@@ -422,8 +444,13 @@ class ScreenInsetsTest {
         feedWithFallback()
         val reported = Phone(statusBar = 40.dp, navigationBottom = 0.dp)
         applyInsets(reported)
-        val expected = px(reported.statusBar) + px(Spacing.m)
-        assertTrue("logo top=${logoTop()} expected about $expected", kotlin.math.abs(logoTop() - expected) <= TOLERANCE)
+        // The logo sits inside the 56 dp row of the fixed header, right under the status bar: below the REPORTED bar, and no extra margin.
+        val bar = px(reported.statusBar)
+        assertTrue("logo top=${logoTop()} must be below the reported bar ($bar px)", logoTop() >= bar - TOLERANCE)
+        assertTrue(
+            "logo top=${logoTop()} must be less than 16 dp under the bar ($bar px): no margin added",
+            logoTop() <= bar + px(16.dp) + TOLERANCE,
+        )
     }
 
     // --- The BOTTOM of the fallback (3 buttons reported as 0) ----------------------------------------------------------------------
@@ -661,7 +688,91 @@ class ScreenInsetsTest {
     @Test
     fun account_isInsideTheSafeArea() =
         assertScreenIsSafe("account", withBackArrow = true) {
-            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {})
+            AccountScreen(AccountUiState(email = "emmanuelle@example.org"), {}, {}, {}, {}, {}, {})
+        }
+
+    @Test
+    fun deleteAccountInfo_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-info", withBackArrow = true) {
+            DeleteAccountInfoScreen(
+                state = DeleteInfoUiState(inventory = DeleteInventory.LOADED, appleLinked = true),
+                onBack = {},
+                onContinue = {},
+                onRetry = {},
+                onContact = {},
+                onKeep = {},
+                onConfirm = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountReauth_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-reauth", withBackArrow = true) {
+            DeleteAccountReauthScreen(
+                state =
+                    DeleteReauthUiState(
+                        "emmanuelle@example.org",
+                        setOf(SignInProvider.PASSWORD, SignInProvider.GOOGLE),
+                        last = false,
+                    ),
+                onBack = {},
+                onSubmitPassword = {},
+                onGoogle = {},
+                onForgotPassword = {},
+                onCancelOrLater = {},
+                onContact = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountProgress_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-progress") {
+            AccountDeletionContent(
+                state = AccountDeletionState.Running(resumed = false),
+                controls = NoControls,
+                reauthHost = {},
+                onLeave = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountDone_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-done") {
+            AccountDeletionContent(
+                state = AccountDeletionState.Done(appleLinked = true),
+                controls = NoControls,
+                reauthHost = {},
+                onLeave = {},
+            )
+        }
+
+    @Test
+    fun deleteAccountNeedsSignIn_isInsideTheSafeArea() =
+        assertScreenIsSafe("delete-needs-sign-in") {
+            AccountDeletionContent(
+                state = AccountDeletionState.NeedsSignIn,
+                controls = NoControls,
+                reauthHost = {},
+                onLeave = {},
+            )
+        }
+
+    @Test
+    fun accountLookupFailed_isInsideTheSafeArea() =
+        assertScreenIsSafe("lookup-failed") { AccountLookupFailedScreen({}, {}, {}) }
+
+    @Test
+    fun deleteAccount_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape {
+            DeleteAccountInfoScreen(
+                state = DeleteInfoUiState(inventory = DeleteInventory.LOADED),
+                onBack = {},
+                onContinue = {},
+                onRetry = {},
+                onContact = {},
+                onKeep = {},
+                onConfirm = {},
+            )
         }
 
     @Test
@@ -777,7 +888,7 @@ class ScreenInsetsTest {
                     ),
                     MiffMember("other", "Thomas", "Alberta", null, MiffRole.MEMBER, true),
                 ),
-            places = listOf(MiffPlace("p1", "Maison")),
+            places = listOf(testPlace("p1", "Maison")),
             myUid = "me",
             sharing = true,
             nameInput = "Famille Alberta",
@@ -820,7 +931,7 @@ class ScreenInsetsTest {
     }
 
     @Test
-    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}) }
+    fun miffChoice_isInsideTheSafeArea() = assertScreenIsSafe("miff-choice") { MiffChoiceScreen({}, {}, {}, {}) }
 
     @Test
     fun createMiff_nameStep_isInsideTheSafeArea() =
@@ -897,7 +1008,7 @@ class ScreenInsetsTest {
 
     @Test
     fun miffChoice_inLandscapeWithACutout_staysInsideIt() =
-        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}) }
+        assertScreenIsSafeInLandscape { MiffChoiceScreen({}, {}, {}, {}) }
 
     @Test
     fun createMiff_inLandscapeWithACutout_staysInsideIt() =
@@ -953,8 +1064,17 @@ class ScreenInsetsTest {
     @Test
     fun createMiff_withTheKeyboardOpen_theButtonCanBeReachedAboveIt() {
         show { CreateMiffScreen(CreateUiState(name = "Famille"), {}, {}, {}, {}) }
-        applyInsets(phone)
-        assertLastItemAboveKeyboard(text(R.string.miff_create_action))
+        // LOC-2a: the button is PINNED under the scrolling text (no scrolling needed): it must sit above the keyboard as it is.
+        val keyboardPhone = phone.copy(keyboard = 300.dp)
+        applyInsets(keyboardPhone)
+        composeRule.waitForIdle()
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val bottom =
+            composeRule
+                .onNodeWithText(text(R.string.miff_create_action))
+                .fetchSemanticsNode()
+                .boundsInRoot.bottom
+        assertTrue("the pinned button is under the keyboard", bottom <= root.bottom - px(keyboardPhone.keyboard) + 1f)
     }
 
     @Test
@@ -970,6 +1090,109 @@ class ScreenInsetsTest {
         applyInsets(phone)
         assertLastItemAboveKeyboard("Maison")
     }
+
+    // --- LOC-1: the places (form, detail, offer). The map of the real app is MapLibre (native library): a plain box stands in. ---------
+
+    @Composable
+    private fun WithStubMap(content: @Composable () -> Unit) {
+        CompositionLocalProvider(LocalPlaceMapRenderer provides { _, _, modifier -> Box(modifier) }) { content() }
+    }
+
+    private val placeSuggestion =
+        AddressSuggestion("17 Avenue d'Italie", "75013 Paris, France", "17 Avenue d'Italie, 75013 Paris", 48.8, 2.3)
+
+    private fun placeForm() =
+        PlaceFormState(
+            loading = false,
+            name = "Maison du père de Nathan",
+            owned = listOf(OwnedMiff("m1", "Famille", 1L), OwnedMiff("m2", "Les tuches", 2L)),
+            selectedMiffIds = listOf("m1", "m2"),
+            addressText = placeSuggestion.label,
+            chosen = placeSuggestion,
+        )
+
+    private val placeDetail =
+        PlaceDetailState(
+            status = PlaceDetailStatus.READY,
+            place = testPlace("p1", "Maison de Papa", address = "26 rue du Volnay, 21000 Dijon, France"),
+            miffName = "Famille Martin",
+            creatorName = "Emmanuelle Martin",
+            canEdit = true,
+        )
+
+    @Test
+    fun placeForm_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-form", withBackArrow = true) {
+            WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) }
+        }
+
+    @Test
+    fun placeForm_inEditMode_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-form-edit", withBackArrow = true) {
+            WithStubMap { PlaceFormScreen(placeForm().copy(mode = PlaceFormMode.EDIT), PlaceFormActions()) }
+        }
+
+    @Test
+    fun placeForm_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+
+    @Test
+    fun placeForm_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun placeForm_withTheKeyboardOpen_theFixedSaveButtonStaysAboveIt() {
+        // The button is in the fixed foot (it does not scroll): it must rise with the keyboard, never go under it.
+        show { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+        val keyboardPhone = phone.copy(keyboard = 300.dp)
+        applyInsets(keyboardPhone)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val bottom =
+            composeRule
+                .onNodeWithText(
+                    text(R.string.place_save_action),
+                ).fetchSemanticsNode()
+                .boundsInRoot.bottom
+        assertTrue(
+            "the save button (bottom=$bottom) is under the keyboard",
+            bottom <= root.bottom - px(keyboardPhone.keyboard) + TOLERANCE,
+        )
+    }
+
+    @Test
+    fun placeForm_withTheKeyboardOpen_theLastCategoryCanBeReachedAboveIt() {
+        show { WithStubMap { PlaceFormScreen(placeForm(), PlaceFormActions()) } }
+        applyInsets(phone)
+        assertLastItemAboveKeyboard(text(R.string.place_category_other))
+    }
+
+    @Test
+    fun placeDetail_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-detail", withBackArrow = true) {
+            WithStubMap { PlaceDetailScreen(placeDetail, {}, {}, {}) }
+        }
+
+    @Test
+    fun placeDetail_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { WithStubMap { PlaceDetailScreen(placeDetail, {}, {}, {}) } }
+
+    @Test
+    fun placeDetail_withTheLargestFont_staysBelowTheStatusBar() {
+        show(fontScale = 2f) { WithStubMap { PlaceDetailScreen(placeDetail, {}, {}, {}) } }
+        applyInsets(phone)
+        assertAllContentInsideSafeArea(phone)
+    }
+
+    @Test
+    fun placeOffer_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-offer") { PlacePaywallScreen(PaywallReason.LIMIT, {}) }
+
+    @Test
+    fun placeOffer_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { PlacePaywallScreen(PaywallReason.DANGER, {}) }
 
     // --- Helpers ---------------------------------------------------------------------------------------------------------------------
 
@@ -993,5 +1216,22 @@ class ScreenInsetsTest {
     private companion object {
         /** Rounding of dp to pixels and of text boxes. */
         const val TOLERANCE = 2f
+    }
+
+    /** Controls that do nothing: the screens of the deletion are only LOOKED AT here. */
+    private object NoControls : AccountDeletionControls {
+        override val state = kotlinx.coroutines.flow.MutableStateFlow<AccountDeletionState>(AccountDeletionState.Idle)
+
+        override fun start() = Unit
+
+        override fun resume() = Unit
+
+        override fun retry() = Unit
+
+        override fun reauthenticated() = Unit
+
+        override fun acknowledge() = Unit
+
+        override fun signInAgain() = Unit
     }
 }

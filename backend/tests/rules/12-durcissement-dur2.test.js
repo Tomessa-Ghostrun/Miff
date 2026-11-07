@@ -6,15 +6,15 @@
 // Même jeu de données qu'à la section 0 du plan. Chaque cas isole UNE protection (voir tests/tools/mutations.mjs).
 import {
   ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, set, update,
-  del, serverTs, statusDoc, photoDoc, inMs, sharingOnNow, sharingOnSeed,
+  del, serverTs, statusDoc, photoDoc, photoLegacyDoc, setConsentV3, inMs, sharingOnNow, sharingOnSeed,
 } from '../helpers/fixtures.js';
 
 const s = suite();
 const M1 = `miffs/${ID.M1}`;
 const M3 = `miffs/${ID.M3}`;
 const all = (ops) => Object.values(ops);
-const expiredPhoto = () => photoDoc({ createdAt: T0, expiresAt: inMs(-HOUR) });
-const validPhoto = () => photoDoc({ createdAt: T0, expiresAt: inMs(DAY) });
+const expiredPhoto = () => photoLegacyDoc({ createdAt: T0, expiresAt: inMs(-HOUR) });
+const validPhoto = () => photoLegacyDoc({ createdAt: T0, expiresAt: inMs(DAY) });
 
 // Lot final de suppression de la Miff par alice (DUR-1) : alice et ses données, la Miff, la pierre tombale, le code.
 const deleteMiffLot = () => [
@@ -196,7 +196,9 @@ s.tc('H5a', 'photos : illisible après expiresAt ; photo absente = introuvable (
   await assertMissing(bob.doc(`${M1}/photos/carol`).get());
 });
 
-s.tc('H5b', 'photos : expiresAt au plus 24 h + 1 h de marge à la création (+26 h et +7 jours refusés)', async ({ db }) => {
+s.tc('H5b', 'photos : expiresAt au plus 24 h + 1 h de marge à la création (+26 h et +7 jours refusés)', async (h) => {
+  const { db } = h;
+  await setConsentV3(h, 'bob'); // toute photo exige le texte de version 03 (localisation obligatoire)
   const ref = db('bob').doc(`${M1}/photos/bob`);
   await assertFails(ref.set(photoDoc({ expiresAt: inMs(26 * HOUR) })));
   await assertFails(ref.set(photoDoc({ expiresAt: inMs(7 * DAY) })));
@@ -223,6 +225,8 @@ s.tc('H5d', 'photos : mêmes règles de durée et d\'expiration pour un compte p
     miffId: ID.M3, name: 'Premiere', code: CODE.M3, ownerUid: 'dave',
     members: [{ uid: 'dave', role: 'owner', sharing: true }],
   });
+  await setConsentV3({ admin }, 'bob'); // toute photo exige le texte de version 03 (localisation obligatoire)
+  await admin((f) => f.doc(`${M3}/members/dave`).update({ 'sharing.consentVersion': '2026-11-v03' }));
   for (const [uid, base] of [['bob', M1], ['dave', M3]]) {
     const ref = db(uid).doc(`${base}/photos/${uid}`);
     await assertFails(ref.set(photoDoc({ expiresAt: inMs(26 * HOUR) })));

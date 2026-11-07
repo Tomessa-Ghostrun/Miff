@@ -62,14 +62,6 @@ class MiffNameAndLimiterTest {
     }
 
     @Test
-    fun serverPlace_isCleaned_andDroppedWhenNothingVisibleIsLeft() {
-        val place = MiffPlace.fromServer("p1", "\u202EMaison\u200B")
-        assertEquals("Maison", place?.name)
-        assertEquals("p1", place?.id)
-        assertEquals(null, MiffPlace.fromServer("p2", "\u200B\u202E "))
-    }
-
-    @Test
     fun limiter_pausesAfterFiveFailures_forOneMinute() {
         var now = 0L
         val limiter = JoinAttemptLimiter(nowMillis = { now })

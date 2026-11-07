@@ -42,11 +42,30 @@ fun SignInScreen(
 
     AuthScaffold(paneTitle = stringResource(R.string.auth_signin_title), onBack = onBack) {
         GoogleButton(onClick = onGoogle, enabled = !state.isLoading)
+        // Why Google did not work, right under the button that can be tapped again (nothing when the dialog was closed).
+        GoogleMessageArea(state.googleMessage)
         OrText()
 
         if (state.showAccountNotCreatedNote) {
             // A reassurance, not an error: neutral colour.
             MessageText(text = stringResource(R.string.auth_panel_refused_notice), isError = false)
+            Spacer(Modifier.size(Spacing.m))
+        }
+
+        if (state.showSessionReplacedNote) {
+            // The account is now used on another phone (SESS-2): calm information, neutral colour, nothing about any Miff.
+            MessageText(text = stringResource(R.string.auth_session_replaced_notice), isError = false)
+            Spacer(Modifier.size(Spacing.m))
+        }
+
+        if (state.showSessionGoneNote) {
+            // The session disappeared (the account is being deleted on another device): calm, careful information, neutral colour, nothing about any Miff.
+            MessageText(text = stringResource(R.string.auth_session_gone_notice), isError = false)
+            Spacer(Modifier.size(Spacing.m))
+        }
+
+        if (state.showDeletionPendingNote) {
+            MessageText(text = stringResource(R.string.settings_delete_signin_again), isError = false)
             Spacer(Modifier.size(Spacing.m))
         }
 

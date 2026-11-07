@@ -131,18 +131,37 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | # | Cas | Attendu |
 |---|---|---|
 | P1 | `alice` (gratuite) crée `places/p1` type `trusted` dans une Miff sans lieu | OK |
-| P2 | `alice` (gratuite) crée un 2e lieu (ID auto) | KO |
-| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
+| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1` et `p2`) | KO |
+| P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type` vers `risk`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
 | P4 | `alice` (gratuite) crée un lieu `type="risk"` (ID `p1`) | KO |
 | P5 | `dave` (premium) crée 3 lieux (ID auto) dont 1 `risk` | OK |
 | P6 | `frank` (premium expiré) crée un 2e lieu | KO |
 | P7 | `bob` (membre) crée / modifie / supprime un lieu | KO |
-| P8 | `alice` change le `type` d'un lieu existant | KO |
+| P8 | `alice` (gratuite) passe le `type` d'un lieu existant à `risk` ; puis, sur un lieu `risk` hérité, repasse à `trusted` (R-LIEU-6) | KO ; OK |
 | P9 | `alice` : `radiusM=10` ou `5000`, `lat=95`, `lng=200`, nom vide | KO |
 | P10 | `alice` supprime puis recrée `p1` | OK |
 | P11 | `alice` modifie `createdBy` d'un lieu | KO |
 | P12 | Lieu avec `createdAt` client | KO |
 | P13 | `eve` lit `places` de M1 | KO |
+| P14 | `alice` (gratuite, `p1` existe) crée `p2` `trusted` ; puis `p3`, un ID auto, `P2` | OK ; KO ×3 (R-LIEU-5 : 2 lieux gratuits) |
+| P14b | `alice` (gratuite) crée `p2` en `risk` ; crée `p2` en `trusted` ; supprime `p1` puis le recrée | KO ; OK ; OK ; OK |
+| P15 | Création sans `category`, ou avec `""`, `maison`, `Home`, `HOME`, ` home`, `home `, `danger`, `null`, `3`, liste, objet ; puis avec `home` (R-LIEU-2) | KO ×11 + sans clé ; OK |
+| P15b | `dave` (premium) crée un lieu pour chacune des 7 catégories (`home`, `work`, `school`, `sport`, `relative`, `leisure`, `other`) | OK ×7 |
+| P16 | `alice` change la `category` (valide), puis invalide (`maison`, `""`, `null`, `7`) ; un lieu sans `category` (hérité) : nom seul, puis nom + catégorie | OK ; KO ×4 ; KO ; OK |
+| P17 | `dave` (premium) : `trusted` vers `risk` (+ catégorie), `risk` vers `trusted`, `type="banane"` (R-LIEU-6) | OK ; OK ; KO |
+| P18 | `alice` (gratuite) : `trusted` vers `risk` (seul, ou avec catégorie et nom) ; nom + rayon + catégorie | KO ×2 ; OK |
+| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`, `p2` en `trusted` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; KO ; OK ; KO |
+| P20 | `dave` (premium, 5 Miffs) crée en UN lot 5 lieux de même identifiant, un par Miff | OK |
+| P20b | Même lot dont une Miff est celle d'`alice` | KO, rien n'est écrit dans les 4 autres |
+| P20c | Même lot avec une catégorie invalide dans une seule copie ; avec un identifiant invalide dans une seule copie | KO ; KO |
+| P21 | `dave` modifie (`type="risk"`, catégorie) puis supprime ce lieu dans 5 Miffs, un lot chacune | OK ; OK |
+| P22 | `bob` (membre) crée `p2`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×4 |
+| P23 | `alice` modifie `createdBy` ou `createdAt` en même temps que le type ou la catégorie | KO ×2 |
+| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1` et `p2` dans CHACUNE ; un identifiant libre ou le passage à `risk` | OK ×4 (4 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO |
+| P25 | Échange de Miffs d'un lieu : 2 suppressions + 2 créations en UN lot ; même lot avec une Miff d'un autre créateur | OK ; KO, rien n'est écrit (au-delà de 4 + 4 le changement se fait en deux lots NON atomiques : budget figé dans `tests/unit/budgets.test.js`) |
+| P26 | Abonnement dont `expiresAt` ou `active` n'a pas le bon type | KO (traité comme absent) |
+| P27 | `alice` (gratuite) fait un `set` complet de `p1` existant avec `type="risk"` | KO |
+| P28 | Contrats du client NON imposés par les règles : adresse nulle, rayon de 2000 m | OK (comportement figé) |
 
 ## 7. Premium et attaques de privilèges
 
@@ -388,3 +407,179 @@ Les lots sont ceux que le client Android écrit (`MiffWrites.kt`) : mêmes chemi
 | MS5 | Cinq lieux supprimés dans un lot par la créatrice ; par un membre ; lieu absent | OK ; KO ; OK |
 | MS6 | Code courant absent : lot final avec sa suppression, puis sans | KO, puis OK |
 | MS7 | Après la suppression : arrivée avec le dernier code connu ou un ancien code | KO |
+
+## 18. R-LIEU-POS : dernière position connue (ticket `docs/tickets/lieux-de-confiance.md` v3 §6.9, §7, risques R16 à R18 ; décisions du PM du 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ
+
+Un document `miffs/{id}/positions/{uid}` = `{ lat, lng, measuredAt }` par membre et par Miff, **séparé du statut** (le statut garde un schéma fermé sans coordonnées : S11, S19). Écrit par son auteur seul, **Miff existante**, avec partage actif **et** texte de consentement de version 3 ou plus, au format **`AAAA-MM-vNN` de largeur fixe** (2 lectures de règles : Miff + `getAfter` de la fiche). Lu (`get` uniquement, jamais de liste) par soi-même, ou par un autre membre qui remplit les conditions des statuts (Miff existante, partage actif, statut publié) **plus** sa propre position publiée (réciprocité **formelle** : elle prouve qu'un document existe, pas que la position est vraie) et si la cible partage encore. Le créateur n'a aucun droit de plus. Supprimé **dans le même lot** que le statut et la photo (arrêt du partage, départ, retrait). Tests dans `tests/rules/19-derniere-position.test.js` ; mutations dans `tests/tools/mutations-position.mjs` ; mesures de lectures dans `tests/rules/09-rule-reads.test.js` (`READS-position-*`). Fixtures : `bothPublished` = alice et bob ont le texte v3 et une position (leur statut existe déjà dans le jeu de départ).
+
+| # | Cas | Attendu |
+|---|---|---|
+| DP1 | `bob` (partage actif, texte v3) écrit, remplace puis modifie sa position | OK ; un seul document dans `positions` (aucun historique) |
+| DP2 | Version du consentement : `v1`, `2026-10-v1`, `2026-10-v2`, `2026-10-v02`, `2026-11-v01`, `2026-09-v1` ; formats invalides (`v3`, `2026-11-v3` sans zéro de tête, `2026-11-v100`, `2026-13-v03`, espace, retour à la ligne, NUL, chiffres non latins) ; puis `2026-11-v03`, `2026-10-v03`, `2027-01-v04`, `2026-12-v09`, `2026-12-v10`, `2027-02-v99` | KO pour les deux premiers groupes ; OK pour le dernier (contrat de nommage : `AAAA-MM-vNN` de largeur fixe, NN de 03 à 99, quel que soit le mois ; sonde Y1) |
+| DP2b | Version du consentement de la fiche `null` ou numérique | KO |
+| DP3 | Partage jamais activé (`carol`) ou arrêté (`bob`, `revokedAt` renseigné), même avec le texte v3 | KO |
+| DP4 | `bob` écrit `positions/alice` ; `alice` (créatrice) crée ou modifie `positions/bob` ; `eve`, visiteur, membre d'une autre Miff (`zoe`) | KO partout |
+| DP5 | Clé en trop (`accuracyM`, `speed`, `altitude`, `updatedAt`, `history`, `address`, `placeId`), clé manquante (chacune des trois), `lat` > 90 ou < -90, `lng` > 180 ou < -180, NaN, infini, texte, `null`, booléen | KO ; bornes incluses (90, -90, 180, -180, 0) : OK |
+| DP5b | `measuredAt` à -25 h, -3 jours, +10 min, +1 jour ; `null`, texte, nombre, booléen, 1970 | KO ; -23 h, +4 min, heure serveur : OK |
+| DP6 | `bob` et `alice` (texte v3, position publiée, statut publié) lisent la position l'un de l'autre | OK ; la valeur lue est celle enregistrée |
+| DP6b | `bob` sans sa propre position publiée ; sans son statut publié ; partage arrêté (état injecté) ; fiche retirée | KO pour chacun ; OK dès que la condition est rétablie |
+| DP6c | `carol` (partage désactivé), `eve`, `zoe` (autre Miff), visiteur ; Miff supprimée (survivant) | KO partout |
+| DP6d | Lecteur au consentement antérieur (texte sans position), statut publié, sans position : il ne lit rien ; il ne peut pas écrire sa position ; avec le texte v3 et sa position, il lit | KO, KO, puis OK |
+| DP7 | La créatrice lit celle d'un membre dans les mêmes conditions ; sans sa propre position, ou partage arrêté, ou dans une autre Miff : aucune exception | OK dans les conditions communes ; KO sinon |
+| DP8 | `list` de `positions` (membre qui partage, créatrice, requête filtrée, groupe de collections `positions`, étranger, visiteur) | KO partout |
+| DP9 | On relit toujours sa propre position, même partage arrêté ; pas celle des autres dans ce cas | OK / KO |
+| DP10 | Une position mesurée il y a plusieurs mois reste lisible : les règles n'appliquent pas de durée (le masquage après 24 h est un affichage du client, date toujours affichée) | OK (comportement figé, voir `data-model.md` §2.12) |
+| DP11 | `bob` arrête son partage : lot sans la suppression de la position ; lot avec la position seule ; lot complet (fiche + statut + photo + position) | KO, KO, OK ; la position a disparu et un autre membre ne la lit plus |
+| DP11b | Arrêt du partage sans aucune position enregistrée, lot de 3 comme avant | OK (rien à supprimer) |
+| DP12 | `bob` quitte la Miff : lot sans la position ; lot complet de 5 | KO ; OK |
+| DP12b | `alice` retire `bob` : lot sans la position ; lot de 7 (position comprise, nouveau code) | KO ; OK |
+| DP12c | `alice` supprime la Miff : lot final sans sa position ; avec | KO ; OK |
+| DP13 | Suppression d'une position par un autre membre, un étranger, un membre d'une autre Miff, un visiteur ; par la créatrice (retrait) ; par soi ; par un ex-membre dont la fiche a disparu | KO pour les quatre premiers ; OK pour les trois derniers |
+| DP13b | Le droit de suppression de la créatrice ne lui donne ni l'écriture de la position d'un membre ni sa lecture sans les conditions communes | KO |
+| DP14 | Après un arrêt, réactivation avec l'ancien texte : la présence repart, la position reste refusée ; arrêt puis réactivation avec le texte v3 : position acceptée | KO, puis OK |
+| DP14b | `carol` active le partage (texte v3) et écrit statut + position en UN lot ; même lot avec l'ancien texte (rien d'écrit) ; `bob` révoque et écrit sa position dans le même lot | OK ; KO ; KO |
+| DP15 | Aucune coordonnée ailleurs : statut (`lat`, `lng`, `measuredAt`), fiche de membre, profil, `positions/bob` hors d'une Miff, `users/bob/positions/x`, `places`, `photos`, chemin `position` | KO partout |
+| DP16 | Un compte premium écrit sa position pour 8 Miffs dans UN lot | OK (2 lectures de règles par Miff : 16 sur 20) |
+| DP16b | Le même pour 11 Miffs (22 lectures) | KO en bloc, rien d'écrit (limite de 20) : le client écrit 8 Miffs au plus par lot |
+| DP6e | Sonde Y4 : position de reliquat d'un non-membre (`zoe`) ou d'un membre dont le partage est arrêté (`carol`) ; contrôle : un membre qui partage reste lisible | KO ; KO ; OK |
+| DP17 | Sonde X4 / Y5 (assumé) : la créatrice supprime la position d'un membre à tout moment, hors lot de retrait ; elle ne gagne ni écriture ni lecture | OK ; KO ; KO |
+| DP18 | Sonde X2 : position écrite ou modifiée sous une Miff supprimée par un membre survivant ; il peut effacer la sienne | KO ; KO ; OK |
+| DP19 | Aucun chemin de suppression de fiche (soi, créatrice qui retire, créatrice qui part) ni d'arrêt du partage (seul, sans photo, avec une position écrite dans le lot, avec la position d'un autre) ne laisse la position | KO partout, aucune position supprimée ; le lot complet : OK |
+| DP20 | Contrat client : arrêt du partage dans 6 Miffs en UN lot (3 × 6 = 18), départ de 4 Miffs (4 × 4 = 16) | OK (budgets figés dans `tests/unit/budgets.test.js` : l'émulateur accepte aussi des lots plus gros, grâce à son cache) |
+
+Cas touchés dans les sections précédentes : `leaveOps` (quitter) passe à 5 écritures et `removeMemberOps` (retrait) à 7 (la suppression de la position y est ajoutée : S4, M-retrait, H5 et les autres cas qui les réutilisent restent valables, la position n'existant pas dans le jeu de départ) ; les mesures `READS-leave`, `READS-remove-member`, `READS-delete-miff` et `READS-consent-off` incluent la suppression de la position. Les cas S11 et S19 (statut sans coordonnées) restent inchangés.
+
+## 19. R-LIEU-3 : renouvellement d'un consentement de partage actif (acceptée par le PM, confirmée le 2026-11-01 « avant le Tracking ») — PRÉPARÉ, NON DÉPLOYÉ
+
+Nouvelle transition de `members/{uid}.sharing` : **actif -> actif** avec un texte plus récent, **sans arrêter le partage** (donc sans perdre statut, photo ni position, et sans rien exiger dans le lot). Conditions : `consentedAt` = heure serveur, `consentVersion` au format **`AAAA-MM-vNN` de largeur fixe** (sinon l'ordre alphabétique n'est pas l'ordre chronologique) et **strictement supérieure** à l'ancienne, **jamais de sortie de la couverture « position »** (si l'ancienne version couvre la position, la nouvelle aussi), `revokedAt` nul, les quatre clés exactes. **0 lecture de règles.** Tests dans `tests/rules/20-renouvellement-consentement.test.js` ; mutations dans `tests/tools/mutations-position.mjs` (RC-*) ; mesure `READS-consent-renew`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| RC1 | `bob` (partage actif, texte `2026-10-v2`) renouvelle avec `2026-11-v03`, avec photo et position déjà enregistrées | OK ; version et date mises à jour, `enabled` vrai, `revokedAt` nul ; statut, photo et position conservés |
+| RC1b | Régression : `2026-10-v1` -> `2026-10-v2` -> `2026-11-v03` -> `2026-12-v04` ; position refusée en v2, permise dès la v3, conservée au renouvellement suivant | OK ; KO puis OK |
+| RC1c | Renouvellement et écriture de la position dans le même lot | OK |
+| RC2 | Même version, version plus ancienne (autre mois ou même mois), texte vide, `null`, nombre | KO ; `2026-12-v04` : OK |
+| RC2b | `consentedAt` du client, conservé ou nul ; `revokedAt` renseigné ; clé en trop, clé manquante, bloc nul | KO partout |
+| RC3 | `enabled=false` avec une version supérieure, sans purge (seul, avec statut et photo supprimés, ou avec la position supprimée mais déguisé en renouvellement) | KO : le renouvellement ne contourne pas l'arrêt du partage |
+| RC4 | Renouvellement par la créatrice, un autre membre, un étranger, un visiteur ; partage arrêté (désactivé -> désactivé) ; l'activation d'un partage arrêté reste celle d'avant | KO ; OK pour l'activation |
+| RC5 | Régression sur `2026-10-v2` : arrêt sans purge KO, arrêt avec purge OK, réactivation OK | KO ; OK ; OK |
+| RC6 | Sondes X1, X1b, X1c (I1) : `2026-11-v10` -> `2026-11-v2` (alphabétiquement plus haut), `v9` sans zéro, texte libre `zzzzzzzz`, `v1000`, retour à la ligne, mois 13, `v09` plus ancienne ; puis `v11`, `2027-01-v12` ; `2026-10-v2` -> `2026-11-v02` | KO pour les sept premiers ; OK pour les suivants |
+| RC7 | Renouvellement dans deux Miffs en un lot | OK |
+| RC8 | Sondes X1, X1b (I1) : depuis un texte qui couvre la position, renouveler vers `2027-01-v01`, `v02`, `2026-12-v00`, `2027-01-v1`, `v2` ; vers `2027-01-v04` ; depuis un texte sans position vers un autre sans position | KO ×5 ; OK (la position reste écrivable et lisible) ; OK |
+| RC9 | Sonde Y6 : plusieurs mises à jour de la même fiche dans un lot ; la seconde sort de la couverture « position » | OK pour l'aller-retour qui reste couvert ; KO pour la sortie, rien de changé |
+
+## 21. SESS-1 : un compte, un seul appareil (mécanisme validé par le PM le 2026-11-01) — PRÉPARÉ, NON DÉPLOYÉ
+
+Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (propriétaire seul, schéma fermé, chemin fixe) ; clé `deviceId` **facultative** dans le statut et la dernière position (**temps 1**), **obligatoire** au **temps 2** (une seule ligne basculée : `deviceIdRequired()`), égale à celle de la session. +1 lecture de règles par statut / position écrits avec la clé ; rien d'autre ne lit la session. Mesure de COHÉRENCE, pas de sécurité. Tests : `tests/rules/22-session-appareil.test.js` (temps 1, règles telles que livrées), `23-session-appareil-temps2.test.js` (temps 2 : même fichier de règles, ligne basculée par `temps2()` de `fixtures.js`), `24-session-voie1-sonde.test.js` (sonde de la voie 1, écartée). Mutations `SS*` dans `tests/tools/mutations-session.mjs`. Budgets figés dans `tests/unit/budgets.test.js`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| SE1 | `alice` écrit sa session (identifiant + heure du serveur), la relit, la remplace par un autre identifiant (la dernière connexion gagne), puis reprend la place | OK partout |
+| SE2 | Schéma fermé : plateforme, position ou toute clé en plus ; clé manquante ; identifiant vide, de 15 ou 65 caractères, avec `/`, espace, retour à la ligne, accent, `null`, nombre, booléen, objet ; heure du client ; mise à jour partielle qui ajoute une clé. Bornes de 16 et 64 caractères | KO partout ; OK pour les deux bornes |
+| SE3 | La session de `bob` : `alice` (créatrice de sa Miff), `carol`, `zoe`, `eve` et un visiteur la lisent, l'écrivent, la suppriment | KO partout ; la session de `bob` ne change pas |
+| SE4 | Déconnexion volontaire : `bob` supprime sa session (même absente) ; `alice` supprime celle de `bob` ; lecture d'une session absente | OK ; KO ; « introuvable » sans erreur de droits |
+| SE5 | Un seul chemin : autre identifiant sous `session/`, `sessions/active`, liste de la sous-collection, sous-document ; les jetons de notification (`devices`) inchangés ; la session s'écrit sans profil | KO ×5 ; OK ; OK |
+| SE6 | Temps 1 : statut et position SANS `deviceId` (applications actuelles), sans session puis avec une session existante | OK partout (le trou du temps 1) |
+| SE7 | Statut avec `deviceId` : sans session ; égal à la session ; différent ; casse différente ; `null`, vide, nombre, booléen, tableau, objet ; mise à jour partielle qui l'envoie | KO ; OK ; KO ; KO ; KO ; OK |
+| SE8 | Scénario complet : A écrit, B se connecte, A refusé (le statut de B n'est pas écrasé), B accepté, A reprend la place, B refusé | OK / KO / OK / OK / KO / OK |
+| SE9 | `bob` utilise l'identifiant de la session d'`alice` pour son statut et sa position (sans session, puis avec la sienne) ; il écrit le statut d'`alice` | KO ; KO ; OK avec le sien ; KO |
+| SE10 | Session supprimée : statut et position portant le `deviceId` ; statut sans la clé | KO ; KO ; OK (temps 1) |
+| SE11 | Position : sans session ; égal ; différent après remplacement (la position de l'appareil actif n'est pas écrasée) ; `null` ; clé en plus (`accuracyM`) | KO ; OK ; KO ; KO ; KO |
+| SE12 | Lots d'entrée (rejoindre et partager, créer et partager gratuit, créer et partager premium avec emplacement gratuit conservé) : statut initial avec un `deviceId` faux, puis le bon | KO (rien n'est écrit) puis OK |
+| SE13 | Activer le partage (fiche + statut + position, un lot) et mise à jour manuelle (photo + statut) : appareil remplacé, puis appareil actif | KO en entier (la photo n'est pas écrite) ; OK |
+| SE14 | **Limite connue** : un appareil remplacé quitte une Miff (lot des applications actuelles) ; la créatrice retire un membre | OK (une suppression n'a pas de charge utile) |
+| SE15 | **Limite connue** : un appareil remplacé écrit un lieu, le supprime, met à jour sa fiche, écrit une photo seule, renouvelle son consentement | OK partout (actions manuelles, budget des lots de lieux préservé) |
+| SE16 | **Limite connue** : un membre autorisé lit le statut de `bob` avec son `deviceId` ; un étranger ne lit rien | OK ; KO |
+| SE17 | Régression : les écritures SANS `deviceId` d'avant (rejoindre, créer, statut invalide, batterie 101, clé en plus avec ou sans `deviceId`) | comme avant : OK / KO selon le cas |
+| SE18 | R-LIEU-1 + SESS-1 ensemble : statut de plus de 24 h, départ en mise à jour partielle avec `lastUpdateAt` ancien conservé : mauvais `deviceId`, `deviceId` nul, nouvelle valeur ancienne avec le bon `deviceId`, bon `deviceId` ; puis un autre appareil prend la place | KO ; KO ; KO ; OK (heure conservée) ; ancien appareil KO, nouveau OK |
+| SE19 | **Limite connue (temps 1)** : un `update` qui retire la clé `deviceId` (`FieldValue.delete()`) après remplacement de l'appareil | OK (refusé au temps 2 : SF11) |
+| SE20 | Ancienne application sur un compte déjà passé par une application SESS puis déconnecté (session supprimée, clé en base) : mise à jour partielle sans la clé ; `set` complet sans la clé ; mise à jour partielle ensuite | KO ; OK ; OK |
+| SF1 | Garde-fou : la bascule du temps 2 change exactement UNE ligne de `firestore.rules` | OK |
+| SF2 | Temps 2 : statut sans `deviceId` (avec ou sans session), avec un faux, avec `null` ; avec le bon ; mise à jour avec le bon | KO ; KO ; KO ; OK ; OK |
+| SF3 | Temps 2 : position sans `deviceId`, avec un faux (appareil remplacé), avec le bon | KO ; KO ; OK |
+| SF4 | Temps 2 : lots d'entrée (rejoindre, créer, créer en premium) sans `deviceId`, puis avec | KO ; OK |
+| SF5 | Temps 2 : entrée sans partage (aucun statut), lieux, fiche, photo seule, renouvellement du consentement, quitter (lot actuel), retrait | OK partout |
+| SF6 | Temps 2 : départ avec la position, sans session ni `deviceId` | OK |
+| SF7 | Temps 2 : activer le partage (fiche + statut + position) sans `deviceId` sur le statut, sans sur la position, avec les deux | KO ; KO ; OK |
+| SF8 | Temps 2 : la session s'écrit avant tout statut, un nouvel appareil prend la place | OK ; l'ancien refusé ; le nouveau OK |
+| SF9 | **Limite connue** : mise à jour PARTIELLE sans `deviceId`, jugée sur le document résultant | OK si la valeur en base est celle de la session ; KO si elle est périmée ; OK de nouveau quand l'appareil actif a écrit |
+| SF10 | Temps 2 + R-LIEU-1 : statut ancien sans `deviceId` en base, départ partiel sans clé, avec un faux, avec le bon | KO ; KO ; OK |
+| SF11 | Temps 2 : `update` qui retire la clé ; recréation du statut après suppression sans la clé, avec une fausse, avec la bonne | KO ; KO ; KO ; OK |
+| SF12 | Temps 2 : lot mixte statut avec la clé + position sans la clé (puis avec une fausse) ; puis les deux avec la bonne | KO en entier, rien d'écrit ; KO ; OK |
+| SV1 | Sonde (voie 1, écartée) : `request.auth.token.auth_time` est un entier utilisable dans une règle (l'écriture n'accepte que l'`auth_time` du jeton) | OK |
+| SV2 | Sonde : deux jetons de `auth_time` différents ; seul celui de la session passe | OK / KO |
+| SV3 | Sonde, limite : deux connexions de même `auth_time` (même seconde) ne sont pas distinguées | OK pour les deux |
+
+## 20. R-LIEU-1 : statut dont les horodatages ont plus de 24 h (acceptée par le PM le 2026-11-01 ; demandée par le client Android LOC-2b) — PRÉPARÉ, NON DÉPLOYÉ
+
+`presenceAt` et `lastUpdateAt` restent bornés (pas plus de 24 h dans le passé, pas plus de 5 min dans le futur) **sauf si la valeur envoyée est identique, à la microseconde (précision de stockage de Firestore), à celle déjà enregistrée dans le même statut** : elle peut alors être conservée quel que soit son âge. Chaque champ n'est comparé qu'à lui-même ; le statut doit déjà exister ; tout le reste de la validation (clés, valeurs, heure serveur, consentement actif) est inchangé. `escalationDueAt` n'est PAS concerné (limite connue). **0 lecture de règles de plus** (`resource` ne coûte rien). Tests dans `tests/rules/21-statut-ancien.test.js` ; mutations `R-LIEU-1-*` dans `tests/tools/mutations-statut.mjs`.
+
+| # | Cas | Attendu |
+|---|---|---|
+| RL1 | Cas Android LOC-2b : statut en base vieux de plus de 24 h ; `bob` écrit un départ (`out`) avec `presenceAt` récent et `lastUpdateAt` **conservé** | OK ; `lastUpdateAt` inchangé en base |
+| RL1b | Mise à jour manuelle après un long séjour (`lastUpdateAt` = maintenant, `presenceAt` conservé) ; rafraîchissement de `locationAccess` avec les deux horodatages conservés | OK ; OK |
+| RL1c | Régression : deux horodatages récents (statut récent, puis statut ancien), jusqu'à +4 min 55 s dans le futur | OK partout |
+| RL2 | Nouvelle valeur ancienne : à ±1 ms de celle de la base, avancée de 1 h mais encore ancienne, il y a 3 jours, 1970, ±1 microseconde ; pour `lastUpdateAt` puis pour `presenceAt` | KO partout |
+| RL2b | La valeur de `lastUpdateAt` mise dans `presenceAt` et inversement ; puis chacune à sa place | KO ; KO ; OK |
+| RL3 | Conservation sans statut en base : création d'un statut (activation du partage, valeurs anciennes) ; recréation après suppression dans une écriture SÉPARÉE avec les anciennes valeurs | KO ; KO ; (valeurs récentes : OK) |
+| RL3b | `resource` vaut l'état d'AVANT le lot : un lot `[supprimer son statut, le recréer avec les anciennes valeurs]` est accepté (équivaut à une mise à jour, inoffensif : aucune valeur nouvelle) ; le même lot avec une nouvelle ancienne valeur est refusé | OK ; KO |
+| RL6b | Base injectée (règles désactivées) SANS `lastUpdateAt` (puis sans `presenceAt`) : une ancienne valeur n'est pas acceptée (une clé absente en base ne vaut jamais « conservée ») | KO ; KO |
+| RL4 | `bob` écrit le statut d'`alice` avec les valeurs d'`alice` conservées, ou avec les siennes ; `bob` recopie dans son statut la valeur ancienne d'`alice` ; visiteur ; membre d'une autre Miff (`zoe`) | KO partout |
+| RL5 | L'avenir reste borné : +10 min (conservé ou non), +1 jour ; une valeur de +4 min écrite puis conservée | KO ; KO ; KO ; OK |
+| RL6 | Type : `null`, texte, nombre, booléen, objet à la place d'un horodatage (les deux champs) ; base contenant `null` et `null` renvoyé | KO partout |
+| RL7 | Le reste ne bouge pas : `escalationDueAt` ancien conservé (limite connue) ; `updatedAt` client ; clé en trop (`lat`) ; `presence`, `locationAccess`, `batteryPct`, `updateText` invalides ; clé manquante | KO partout ; `escalationDueAt` nul : OK |
+| RL8 | Consentement exigé : partage arrêté, puis fiche retirée, avec les valeurs conservées | KO ; KO |
+| RL9 | Lecture inchangée : un statut ancien reste lisible par `alice` (membre qui partage), pas par un étranger ni un visiteur | OK ; KO ; KO |
+
+## 22. R-PHOTO-LOC : localisation de la photo d'update, OBLIGATOIRE (décision du PM du 2026-11-05 « OK reco », resserrée le 2026-11-06 : « une photo d'update doit être attachée à une position, forcément ») — PRÉPARÉ, NON DÉPLOYÉ
+
+Le document `miffs/{id}/photos/{uid}` porte **toujours** `lat`, `lng` et `measuredAt` (jamais nulles) : la position figée au moment de la photo et l'heure de sa mesure (bornes de `positions.measuredAt` : -24 h, +5 min). Écriture : par l'intéressé seul ; **toute** photo exige un consentement de version 03 ou plus (fonction dédiée `isPhotoLocationConsentVersion`, même seuil que la dernière position) ; une photo sans localisation, une seule ou deux clés sur trois, une mise à jour qui supprimerait une clé, sont **refusées** (le document fusionné doit rester valide). Lecture (**inchangée**) : une photo n'est lisible que par son auteur ou par un membre qui a **publié sa propre position** ; **pas** de contrôle « l'auteur partage encore » (décision du PM du 2026-11-06 : un reliquat est borné par l'expiration de 24 h) ; un éventuel **ancien document** sans localisation (aucune application publiée n'en écrit) reste lisible comme avant. Expiration (24 h), suppression et lots de purge : **inchangés**. Fichiers : `tests/rules/25-photo-localisee.test.js` (PL1 à PL16, PL18 à PL23), `tests/rules/26-photo-localisee-temps2.test.js` (PL17).
+
+| ID | Cas | Résultat |
+|---|---|---|
+| PL1 | **Photo sans localisation refusée** : aucune clé (jpeg, createdAt, expiresAt), `lat`/`lng` nuls, les trois nuls, avec le texte v1 ; mise à jour d'un **ancien document** qui le laisse sans localisation ; contrôle : la même photo localisée ; ajout de la localisation à l'ancien document par mise à jour ; **lecture** d'un ancien document par un membre sans position (et avec `lat`/`lng` nuls) ; suppression | KO ×6 ; OK ; KO ; OK ; OK ; OK |
+| PL2 | Schéma fermé : `deviceId`, précision, adresse, `locationAt`, `updatedAt`, vitesse, objet `position` en plus ; **chacune des six clés manquante, une par une** (`jpeg`, `createdAt`, `expiresAt`, `lat`, `lng`, `measuredAt`) | KO partout |
+| PL3 | **Toute** photo avec le consentement `v1`, `2026-10-v1`, `2026-10-v2`, `v02`, `2026-11-v3` (sans zéro), `v00`, `v01`, `v003`, mois 13, nul ; puis `2026-11-v03`, `2026-12-v04`, `2027-01-v05`, `2026-11-v99` | KO ; OK |
+| PL4 | Photo avec partage arrêté ; activer avec le texte v1 dans le même lot ; activer avec le texte v3 dans le même lot ; révoquer dans le même lot | KO ; KO ; OK ; KO |
+| PL5 | Écrire la photo d'un autre : membre, créatrice, étranger, visiteur ; mise à jour de la localisation de la photo d'un autre ; l'intéressé | KO ×5 ; KO ; OK |
+| PL6 | **Jamais nulles** : une seule clé, ou une valeur nulle, ou les deux nulles, ou la paire valide sans heure de mesure ; bornes 90 / -90 / 180 / -180 / 0 ; juste au-delà ; NaN, infini, texte, booléen, tableau, objet ; mise à jour partielle qui ajoute la localisation à un ancien document (valide, puis `lat` 91) ; taille, durée, `createdAt` client | KO ; OK ; KO ; KO ; OK puis KO ; KO |
+| PL7 | Lecture d'une photo : sans position publiée ; avec (coordonnées **et heure de mesure** lues telles qu'écrites) ; la position publiée de la seule cible ne suffit pas | KO ; OK ; KO |
+| PL8 | L'auteur relit sa photo sans position publiée ; **ancien document** sans localisation d'un autre sans position publiée (contrôle) ; document **à moitié localisé** (une seule coordonnée, injecté) lu sans position publiée | OK ; OK ; KO ×2 |
+| PL9 | Photo : membre au partage arrêté (position injectée), étranger, membre d'une autre Miff, visiteur, liste de la sous-collection | KO partout (le cas nominal : OK) |
+| PL10 | La créatrice sans position publiée lit la photo d'un membre ; puis avec sa position | KO ; OK (aucun droit de lecture de plus) |
+| PL11 | **Reliquat** (décision du PM du 2026-11-06, pas de contrôle de l'auteur) : photo dont l'auteur ne partage plus, non expirée ; la même, expirée ; ancien document sans localisation (comportement d'avant) ; lecteur au partage arrêté | OK (borné par l'expiration) ; KO ; OK ; KO |
+| PL12 | Photo expirée (lecteur avec position, auteur) ; photo absente avec ou sans position publiée ; photo de 24 h 59 min | KO ; « introuvable » sans erreur de droits ; OK |
+| PL13 | Arrêt du partage et départ avec une photo localisée : lot sans la suppression de la photo, puis avec | KO ; OK (photo disparue) |
+| PL13b | Retrait par la créatrice (7 écritures) et suppression de la Miff avec la photo localisée : sans la photo, puis avec | KO ; OK (photo disparue) |
+| PL13c | Lots des applications actuelles (sans position, avec un **ancien document** de photo) : départ, retrait | OK |
+| PL14 | Suppression d'une photo localisée : membre (valide), étranger, visiteur ; auteur ; créatrice ; étranger (expirée) ; membre (expirée) | KO ; KO ; KO ; OK ; OK ; KO ; OK |
+| PL15 | SESS-1 : mise à jour manuelle (photo localisée + statut) avec un `deviceId` périmé puis le bon ; **limite connue** : photo SEULE d'un appareil remplacé | KO en entier (photo non écrite) ; OK ; OK |
+| PL16 | Revue de schéma : clés de la photo = `jpeg, createdAt, expiresAt, lat, lng, measuredAt` exactement, **et les six sont dans `hasAll`** (aucune facultative) ; aucune clé de précision, adresse, `deviceId` ; le statut ne porte toujours aucune coordonnée | OK |
+| PL17 | Temps 2 de SESS-1 : photo localisée seule sans `deviceId` ; photo sans localisation (refusée aussi) ; avec `deviceId` ; mise à jour manuelle sans `deviceId` ou avec un périmé, puis avec le bon | OK ; KO ; KO ; KO ; KO ; OK |
+| PL18 | **Heure de la mesure** : `measuredAt` absente, nulle, ou d'un autre type ; sans paire ou avec une paire nulle (même avec une heure valide) ; bornes (maintenant, -1 min, -2 h, -23 h, +4 min / -25 h, -3 jours, +10 min, +30 min, +1 jour) ; mises à jour partielles (retirer l'heure, mettre la paire à null, retirer la localisation, renouveler l'heure, remplacer la localisation) ; mise à jour qui garde une mesure de plus de 24 h, puis de 2 h ; l'heure d'une photo d'un autre | KO ; KO ; OK / KO ; KO ; OK ; KO ; OK ; KO |
+| PL19 | Suppression d'**une seule** clé de la localisation (`FieldValue.delete` sur `lat`, sur `lng`, sur `measuredAt`), de deux d'entre elles, **des trois à la fois** (une photo ne peut plus être non localisée) ; la photo garde sa localisation | KO partout |
+| PL20 | Un non-membre (position injectée dans la Miff), un ex-membre (position restée, fiche supprimée), un visiteur lisent la photo ou un ancien document | KO partout |
+| PL21 | **Une ou deux clés de localisation sur trois**, absentes puis nulles, dans toutes les combinaisons ; les trois clés valides | KO ×14 ; OK |
+| PL22 | **Trois clés valides + partage + consentement dans le même lot** (carol, partage arrêté) ; le même lot sans localisation, sans heure, ou avec le texte v1 ; mise à jour manuelle suivante (photo + statut) | OK ; KO ; KO ; KO ; OK |
+| PL23 | **Lecture par réciprocité** d'une photo écrite par les règles : lecteur sans position publiée, auteur, lecteur avec sa position, membre au partage arrêté, étranger | KO ; OK ; OK ; KO ; KO |
+
+## 23. Rafraîchissement de la batterie par une mise à jour PARTIELLE du statut (PR iOS #106 `ios/batterie-rafraichie`, PR Android #110 `android/batterie-rafraichie`) — AUCUNE modification des règles
+
+Les applications rafraîchissent `batteryPct` avec un `update()` qui n'envoie que `{ batteryPct, updatedAt (heure du serveur), deviceId }`. Les règles jugent le document **résultant** (base fusionnée avec la requête) : `presenceAt` et `lastUpdateAt` y sont « conservés » (R-LIEU-1, section 20), `deviceId` est comparé à la session (SESS-1, section 21), `updatedAt` doit être l'heure du serveur. **`firestore.rules` n'est pas modifié** : ces tests prouvent que `validStatus` suffit. Aucune création possible (un `update()` sur un statut absent, ou un `set` avec fusion, est refusé). Le plafond (40 par jour et par appareil) et les seuils (15 min / 5 points / 3 h) sont un contrat des clients, pas des règles. Limite connue et inoffensive : un `escalationDueAt` ancien et non nul en base bloque le rafraîchissement (tous les clients l'écrivent `null`). Tests : `tests/rules/27-batterie-partielle.test.js` (temps 1, règles telles que livrées), `tests/rules/28-batterie-partielle-temps2.test.js` (temps 2).
+
+| ID | Cas | Attendu |
+|---|---|---|
+| BP1 | `presenceAt` et `lastUpdateAt` vieux de plus de 24 h, `deviceId` déjà en base et égal à la session : rafraîchissement ; relu : `presenceAt`, `lastUpdateAt`, `locationAccess`, `presence`, `updateText`, jeu de clés inchangés, `updatedAt` avancé ; un second rafraîchissement d'affilée | OK ; OK |
+| BP2 | Temps 1 : `deviceId` absent de la base (la requête l'apporte) ; présent en base mais périmé (session passée à B) avec l'ancien, puis le nouveau | OK ; KO ; OK |
+| BP2b | Temps 1 : rafraîchissement SANS `deviceId` (applications d'avant SESS-1) | OK |
+| BP3 | `deviceId` ≠ session : session absente, appareil remplacé, identifiant inventé, nul, nombre, 15 caractères, session d'un autre compte ; contrôle avec le bon | KO partout ; OK |
+| BP4 | Statut absent : `update()` partiel ; `set` avec `merge` des trois clés | KO ; KO ; aucun statut créé |
+| BP5 | Partage désactivé (`members/{uid}.sharing.enabled = false`), puis fiche retirée (contrôle : OK avant) | OK ; KO ; KO |
+| BP6 | `batteryPct` = 101, -1, 1000, texte, vide, décimal, booléen, objet, tableau ; bornes 0, 100 et `null` | KO partout (base inchangée) ; OK ×3 |
+| BP7 | `updatedAt` fourni par le client (passé, futur, 1970, valeur de la base), omis, `FieldValue.delete()`, texte ; contrôle avec l'heure du serveur | KO partout ; OK |
+| BP8 | **Cas documentaire** : `escalationDueAt` ancien non nul (limite connue, inoffensive), ou à +2 jours ; `null` ; dans la fenêtre (-2 h, +4 min) | KO ; KO ; OK ; OK ; OK |
+| BP9 | Autre que le propriétaire : `alice` (créatrice), `carol` (partage arrêté), `zoe` (autre Miff), `eve`, visiteur ; le statut de `bob` ne change pas ; contrôle propriétaire | KO ×5 ; OK |
+| BP10 | Pas de contournement : `lat`, `lng`, clé inconnue, `locationAccess` ou `presence` hors schéma, nouvelle ancienne `presenceAt` dans le même update partiel | KO partout |
+| BP11 | Temps 2 : avec le bon `deviceId` sur un statut de plus de 24 h (base avec ou sans `deviceId`) ; horodatages et `locationAccess` inchangés | OK ; OK |
+| BP12 | Temps 2 : SANS `deviceId` quand la base n'en porte pas ou porte un identifiant périmé ; faux ou nul ; puis le bon | KO ×6 ; OK |
+| BP13 | Temps 2, **limite connue (SF9)** : sans `deviceId` dans la requête, le document résultant garde celui de la base ; il passe s'il est égal à la session (contrat : les clients l'envoient toujours) | OK |

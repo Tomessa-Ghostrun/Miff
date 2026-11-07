@@ -15,14 +15,25 @@ on:
     inputs:
       archive_mode:
         description: >-
-          unsigned = archive non signee, signature faite a l'export (defaut : evite de creer
-          un certificat de developpement orphelin a chaque run ; support NON CONFIRME, echec
-          rapide possible a l'export). signed = archive signee automatiquement (plan de repli).
+          signed = archive signee automatiquement (DEFAUT : seul mode des succès constatés : miff-4,
+          loc-3, loc-4a). unsigned = archive non signee, signature faite a l'export :
+          ECHEC constate a l'export (frameworks binaires Firebase et gRPC "not properly signed",
+          4 runs le 2026-11-06), ne plus l'utiliser sans nouvelle verification.
         type: choice
         options:
-          - unsigned
           - signed
-        default: unsigned
+          - unsigned
+        default: signed
+      location_blocking:
+        description: >-
+          LOC-4a, interrupteur de compilation de l'ecran « Toujours autoriser » (decision du PM du 2026-11-01). yes = bloquant
+          (DEFAUT : l'onboarding ne se termine pas sans « Toujours »). no = RELACHE (lien « Plus tard »), a n'utiliser qu'APRES
+          un refus d'Apple 5.1.2(i) ou pour un essai : jamais un oubli.
+        type: choice
+        options:
+          - "yes"
+          - "no"
+        default: "yes"
 
 permissions:
   contents: read
@@ -208,6 +219,7 @@ jobs:
         env:
           BUILD_NUMBER: ${{ github.run_number }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
         run: |
           set -uo pipefail
           bash ci/timed.sh "Archive (non signée)" bash -c '
@@ -220,6 +232,7 @@ jobs:
               CODE_SIGNING_ALLOWED=NO \
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
               2>&1 | tee build/xcodebuild-archive.log | xcbeautify
           '
 
@@ -232,6 +245,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
         run: |
           set -uo pipefail
           # Pas de "set -x" : la ligne de commande contient des identifiants.
@@ -250,6 +264,7 @@ jobs:
               -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
               2>&1 | tee build/xcodebuild-archive.log | xcbeautify
           '
 
@@ -325,11 +340,20 @@ jobs:
           if [ "$style" = "Light" ]; then note "Info.plist : apparence claire (OK)"; else bad "UIUserInterfaceStyle vaut « ${style} » au lieu de Light"; fi
           configuration="$(plutil -extract MiffBuildConfiguration raw -o - "$plist" 2>/dev/null || echo absent)"
           if [ "$configuration" = "Internal" ]; then note "Info.plist : configuration Internal (OK)"; else bad "MiffBuildConfiguration vaut « ${configuration} » au lieu de Internal"; fi
-          if plutil -p "$plist" | grep -q -E 'NSLocation|NSAppTransportSecurity'; then
-            bad "L'Info.plist contient une clé de localisation ou une exception ATS"
+          # LOC-4a : EXACTEMENT les deux clés de localisation, aucun mode d'arrière-plan, pas d'exception ATS.
+          location_keys="$(plutil -p "$plist" | grep -o -E 'NSLocation[A-Za-z]*' | sort -u | tr '\n' ' ')"
+          if [ "$location_keys" = "NSLocationAlwaysAndWhenInUseUsageDescription NSLocationWhenInUseUsageDescription " ]; then
+            note "Info.plist : exactement les deux clés de localisation attendues (OK)"
           else
-            note "Info.plist : aucune clé NSLocation*, aucune exception ATS (OK)"
+            bad "L'Info.plist a les clés de localisation « ${location_keys} » au lieu des deux attendues"
           fi
+          if plutil -p "$plist" | grep -q -E 'UIBackgroundModes|NSAppTransportSecurity'; then
+            bad "L'Info.plist contient un mode d'arrière-plan ou une exception ATS"
+          else
+            note "Info.plist : aucun mode d'arrière-plan, aucune exception ATS (OK)"
+          fi
+          blocking="$(plutil -extract MiffLocationBlocking raw -o - "$plist" 2>/dev/null || echo absent)"
+          if [ "$blocking" = "YES" ]; then note "Info.plist : l'écran « Toujours » est BLOQUANT (MiffLocationBlocking = YES)"; else note "Info.plist : l'écran « Toujours » est RELÂCHÉ dans ce build (MiffLocationBlocking = ${blocking})"; fi
           # Configuration Firebase embarquée = projet Miff (compte Apple et Firebase partagés avec un autre projet).
           project_id="$(plutil -extract PROJECT_ID raw -o - "$app/GoogleService-Info.plist" 2>/dev/null || echo absent)"
           if [ "$project_id" = "miff-3d283" ]; then note "GoogleService-Info.plist embarqué : projet miff-3d283 (OK)"; else bad "Le projet Firebase embarqué n'est pas miff-3d283"; fi

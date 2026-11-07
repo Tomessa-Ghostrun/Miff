@@ -357,19 +357,36 @@ final class SessionHarness {
     let cache: FakeCachePurger
     let accounts = FakeAccountRepository()
     let drafts = MemoryDraftStore()
+    let remote: FakeDeviceSessionRemote
+    let deviceStore = MemoryDeviceIdStore()
+    let device: DeviceSession
+    let network = FakeNetwork()
     let manager: SessionManager
 
     /// Ce qui était collecté au moment où le compte a été lu : ce doit être rien (critère X9).
     private(set) var collectionWhenAccountRead: Bool?
 
     /// `freshInstall` vrai : la première ouverture d'une installation (aucun repère d'installation sur l'appareil).
-    init(teardown: [SessionTeardown] = [], freshInstall: Bool = false) {
+    init(teardown: [SessionTeardown] = [], freshInstall: Bool = false, generationCounter: GenerationCounter? = nil) {
         let timeline = self.timeline
         let gateway = FakeAuthGateway(timeline: timeline)
         let privacy = self.privacy
         self.gateway = gateway
         tracker = AnalyticsTracker(sink: sink, isEnabled: { privacy.analyticsEnabled })
         cache = FakeCachePurger(timeline: timeline)
+        let remote = FakeDeviceSessionRemote(timeline: timeline)
+        let store = deviceStore
+        let counter = TestBox(0)
+        let device = DeviceSession(
+            remote: remote,
+            store: store,
+            makeIdentifier: {
+                counter.value += 1
+                return String(format: "test-device-id-%04d", counter.value)
+            }
+        )
+        self.remote = remote
+        self.device = device
         manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -380,7 +397,10 @@ final class SessionHarness {
                 tracker: tracker,
                 cache: cache,
                 teardown: teardown,
-                drafts: drafts
+                device: device,
+                network: network,
+                drafts: drafts,
+                generationCounter: generationCounter
             )
         )
         accounts.onLoad = { [weak self] in

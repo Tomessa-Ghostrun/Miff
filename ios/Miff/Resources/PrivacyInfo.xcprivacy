@@ -7,7 +7,22 @@
 	     une donnée (compte, localisation...) et par le release-manager avant la soumission : la fiche
 	     « confidentialité » d'App Store Connect doit lui correspondre.
 
-	     Position : l'app ne collecte AUCUNE position à ce stade (aucune clé NSLocation*, aucun accès à CoreLocation).
+	     Position (LOC-4a, décision du PM du 2026-11-01 : la dernière position connue est stockée côté serveur et lisible des
+	     membres de la Miff qui partagent aussi) : « position précise » (PreciseLocation), LIÉE à l'identité de la personne, pour le
+	     FONCTIONNEMENT de l'app seulement, jamais pour le suivi ni la publicité. LOC-4b (le suivi des lieux) lit la position de la
+	     personne et en écrit la DERNIÈRE POSITION CONNUE dans Firestore (une seule par Miff, avec l'heure de la mesure, sans
+	     historique, 5 décimales) : c'est ce que cette déclaration décrit. Le manifeste, les étiquettes d'App Store Connect
+	     (docs/release/app-store-confidentialite-et-revue.md §2) et la politique de confidentialité doivent dire la même chose. Les
+	     deux textes d'usage NSLocation* sont dans InfoPlist.xcstrings.
+	     Aussi écrits avec le statut, visibles des membres qui partagent : l'état de présence (identifiant du lieu, heure) et le
+	     niveau de batterie. Le manifeste n'a pas de catégorie « batterie » : son classement dans les étiquettes d'App Store Connect
+	     est un point ouvert pour le release-manager (voir la PR LOC-4b).
+
+	     LOC-3 (lieux de confiance) : la carte et la recherche d'adresse de MapKit ne lisent PAS la position de la personne. Les LIEUX
+	     que le créateur d'une Miff définit sont écrits dans Firestore, liés à son compte et visibles des membres de la Miff : adresse
+	     postale d'un lieu (PhysicalAddress), nom du lieu (OtherUserContent) ; ses coordonnées sont celles de l'ADRESSE choisie, pas
+	     celles de l'appareil (classification « Precise Location » à confirmer, docs/release/app-store-confidentialite-et-revue.md).
+	     Le texte tapé pour chercher une adresse part au service de suggestions d'Apple (fournisseur du système) et n'est pas gardé.
 	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
 
 	     Données du COMPTE (AUTH-3, ONB-6), liées à l'identité de la personne, pour le fonctionnement de l'app seulement
@@ -27,6 +42,18 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePreciseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeUserID</string>
@@ -78,6 +105,30 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

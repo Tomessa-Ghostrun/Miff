@@ -21,6 +21,13 @@ enum MiffSharing {
         L10n.format("miff_share_message", MiffName.clean(miffName), JoinCode.grouped(code), downloadUrl())
     }
 
+    /// « Prévenir mes proches » (décision QM9) : le message que le créateur envoie LUI-MÊME, à qui il veut, depuis la feuille de
+    /// partage du système. L'app n'envoie rien et ne sait pas qui l'a reçu. Il ne contient que le nom de la Miff : jamais le
+    /// code, jamais un identifiant.
+    static func closingNotice(miffName: String) -> String {
+        L10n.format("miff_delete_notice_message", MiffName.clean(miffName))
+    }
+
     /// Copie le code seul. Le presse-papiers est marqué « local seulement » (le code ne passe pas aux autres appareils de la
     /// personne par le presse-papiers universel) et expire. Aucun libellé : certains claviers le montrent.
     @MainActor

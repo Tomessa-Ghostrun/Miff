@@ -64,6 +64,7 @@ import com.tomessa.miff.domain.profile.PhoneNumbers
 import com.tomessa.miff.domain.profile.ProfileForm
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.miffBottomInsets
+import com.tomessa.miff.ui.components.rememberSystemCamera
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgSurface
@@ -112,12 +113,8 @@ fun ProfileStepScreen(
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickVisualMedia(),
         ) { uri -> onPhotoChosen(uri?.toString()) }
-    // The address of the camera file survives the destruction of the screen while the camera application is open.
-    var captureUri by rememberSaveable { mutableStateOf<String?>(null) }
-    val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-            if (taken) onPhotoChosen(captureUri) else AvatarCapture.deleteAll(context)
-        }
+    // The camera application of the phone (see ui/components/SystemCamera.kt: since UPDATE-1 Android wants the CAMERA permission for it).
+    val takePhoto = rememberSystemCamera(onPhoto = onPhotoChosen, onUnavailable = onCameraUnavailable)
     val keyboardActions = KeyboardActions(onDone = { if (state.canContinueFromProfile) onContinue() })
 
     ProfileScaffold(
@@ -175,13 +172,7 @@ fun ProfileStepScreen(
             onDismiss = { sheetOpen = false },
             onTakePhoto = {
                 sheetOpen = false
-                val uri = AvatarCapture.newCaptureUri(context)
-                captureUri = uri.toString()
-                try {
-                    cameraLauncher.launch(uri)
-                } catch (e: ActivityNotFoundException) {
-                    onCameraUnavailable()
-                }
+                takePhoto()
             },
             // The system Photo Picker: no permission to ask, the app only receives the photo that was chosen.
             onChoose = {

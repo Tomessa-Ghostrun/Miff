@@ -7,7 +7,7 @@ Les notifications push sont essentielles au concept produit : c'est ce qui alert
 
 ## Déclencheurs de notification déductibles des autres specs
 - Changement de statut d'un membre (entrée/sortie de lieu de confiance, passage orange/rouge — voir [update-et-escalade-statut.md](update-et-escalade-statut.md)).
-- Entrée dans une "zone à risque" (voir [lieux-de-confiance.md](lieux-de-confiance.md)).
+- Entrée dans une "zone de danger" (premium) (voir [lieux-de-confiance.md](lieux-de-confiance.md)).
 - Invitation/nouvel arrivant dans une Miff (voir [miff-groupes.md](miff-groupes.md)).
 
 ## Ton attendu

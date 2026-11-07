@@ -20,7 +20,14 @@ final class MiffWritesTests: XCTestCase {
         access: LocationAccess = .unknown,
         profile customProfile: ProfileCopy? = nil
     ) -> MiffEntry {
-        MiffEntry(uid: uid, miffId: miffId, membershipKey: key, profile: customProfile ?? profile, access: access)
+        MiffEntry(
+            uid: uid,
+            miffId: miffId,
+            membershipKey: key,
+            profile: customProfile ?? profile,
+            access: access,
+            deviceId: testDeviceId
+        )
     }
 
     private func write(_ writes: [DocWrite], _ path: String) throws -> DocWrite {
@@ -118,9 +125,10 @@ final class MiffWritesTests: XCTestCase {
             Set(status.keys),
             [
                 "presence", "placeId", "presenceAt", "lastUpdateAt", "updateText", "hasPhoto", "batteryPct",
-                "locationAccess", "escalationDueAt", "updatedAt"
+                "locationAccess", "escalationDueAt", "updatedAt", "deviceId"
             ]
         )
+        XCTAssertEqual(status["deviceId"], .string(testDeviceId))
         XCTAssertEqual(status["presence"], .string("unknown"))
         XCTAssertEqual(status["locationAccess"], .string("foreground"))
         XCTAssertEqual(status["hasPhoto"], .bool(false))
@@ -139,7 +147,7 @@ final class MiffWritesTests: XCTestCase {
             + MiffWrites.join(entry: entry(), code: code)
             + MiffWrites.rename(miffId: miffId, code: code, name: "Nouveau")
             + MiffWrites.stopSharing(miffId: miffId, uid: uid)
-            + MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .unknown)
+            + MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .unknown, deviceId: testDeviceId)
             + MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: "free")
 
         for item in all {
@@ -199,10 +207,13 @@ final class MiffWritesTests: XCTestCase {
         XCTAssertTrue(MiffWrites.rename(miffId: miffId, code: code, name: "x").isEmpty)
     }
 
-    func testStopSharingMarksTheCardAndDeletesTheStatusAndThePhotoInTheSameLot() throws {
+    func testStopSharingMarksTheCardAndDeletesTheStatusThePhotoAndThePositionInTheSameLot() throws {
         let writes = MiffWrites.stopSharing(miffId: miffId, uid: uid)
 
-        XCTAssertEqual(writes.count, 3)
+        // 4 écritures (LOC-4a) : la fiche, puis la suppression du statut, de la photo ET de la dernière position connue : les
+        // règles refusent l'arrêt si la position survit.
+        XCTAssertEqual(writes.count, 4)
+        XCTAssertEqual(try write(writes, "miffs/\(miffId)/positions/\(uid)").kind, .delete)
         let card = try write(writes, "miffs/\(miffId)/members/\(uid)")
         XCTAssertEqual(card.kind, .update)
         // Deux sous-champs seulement changent : la date et la version du premier consentement restent telles quelles.
@@ -214,7 +225,7 @@ final class MiffWritesTests: XCTestCase {
     }
 
     func testResumeSharingWritesANewConsentAndTheInitialStatus() throws {
-        let writes = MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .background)
+        let writes = MiffWrites.resumeSharing(miffId: miffId, uid: uid, access: .background, deviceId: testDeviceId)
 
         XCTAssertEqual(writes.count, 2)
         let card = try write(writes, "miffs/\(miffId)/members/\(uid)")
@@ -227,25 +238,27 @@ final class MiffWritesTests: XCTestCase {
         XCTAssertEqual(status.kind, .set)
         XCTAssertEqual(status.data["presence"], .string("unknown"))
         XCTAssertEqual(status.data["locationAccess"], .string("background"))
+        XCTAssertEqual(status.data["deviceId"], .string(testDeviceId))
     }
 
     // MARK: - Nettoyage
 
-    func testLeaveIsFourDeletionsAndDropIndexIsOne() {
+    func testLeaveIsFiveDeletionsAndDropIndexIsTwoPositionIncluded() {
         let leave = MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: "free")
 
-        XCTAssertEqual(leave.count, 4)
+        XCTAssertEqual(leave.count, 5)
         XCTAssertTrue(leave.allSatisfy { $0.kind == .delete })
         XCTAssertEqual(
             Set(leave.map { $0.path }),
             [
                 "miffs/\(miffId)/members/\(uid)", "miffs/\(miffId)/status/\(uid)", "miffs/\(miffId)/photos/\(uid)",
-                "users/\(uid)/memberships/free"
+                "miffs/\(miffId)/positions/\(uid)", "users/\(uid)/memberships/free"
             ]
         )
-        let drop = MiffWrites.dropIndex(uid: uid, membershipKey: "free")
-        XCTAssertEqual(drop.map { $0.path }, ["users/\(uid)/memberships/free"])
-        XCTAssertEqual(drop.first?.kind, .delete)
+        // Le repli (la fiche a déjà disparu) emporte aussi une dernière position laissée par un retrait d'un build plus ancien.
+        let drop = MiffWrites.dropIndex(miffId: miffId, uid: uid, membershipKey: "free")
+        XCTAssertEqual(drop.map { $0.path }, ["miffs/\(miffId)/positions/\(uid)", "users/\(uid)/memberships/free"])
+        XCTAssertTrue(drop.allSatisfy { $0.kind == .delete })
     }
 
     // MARK: - Copie du profil et erreurs

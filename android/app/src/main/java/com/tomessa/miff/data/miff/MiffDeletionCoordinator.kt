@@ -109,6 +109,12 @@ class MiffDeletionCoordinator(
     /** After the Miff is gone: purge of the local cache, refresh of the list of Miffs. */
     private val onDeleted: suspend (miffId: String) -> Unit,
     private val retryPauseMillis: Long = RETRY_PAUSE_MS,
+    /**
+     * "Un compte, un seul appareil" (SESS-2): true when this phone is no longer the one the account is used on. The rules do not look at deletions (they carry no
+     * content), so the long procedure asks before each try: a phone that was replaced stops quietly (the marker stays: the deletion is taken up from the phone
+     * that holds the session, or from this one if the person signs in here again).
+     */
+    private val replaced: suspend () -> Boolean = { false },
 ) : DeletionController {
     private val mutableStates = MutableStateFlow<Map<String, DeletionState>>(emptyMap())
     override val states: StateFlow<Map<String, DeletionState>> = mutableStates.asStateFlow()
@@ -155,6 +161,10 @@ class MiffDeletionCoordinator(
         var otherFailures = 0
         var pause = retryPauseMillis
         while (true) {
+            if (replaced()) {
+                mutableStates.update { it - miffId }
+                return
+            }
             set(miffId, DeletionState.Running(resumed))
             when (val result = deletion.run(uid, miffId)) {
                 MiffDeletionResult.Deleted -> {

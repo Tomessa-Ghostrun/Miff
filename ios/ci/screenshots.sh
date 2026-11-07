@@ -97,6 +97,34 @@ shot 62-fr-miff-accueil 2 "${fr_args[@]}" -MiffPreview miff-home
 shot 63-fr-miff-accueil-sans-miff 2 "${fr_args[@]}" -MiffPreview miff-home-empty
 shot 64-en-miff-rejoindre-confirmation 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-join-confirm
 shot 65-en-miff-ecran-createur 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-screen-owner
+# MIFF-4 : retirer (question puis nouveau code), supprimer (question puis progression). Les questions sont des feuilles : attente
+# de 3 s (animation). Peu de captures exprès : le job macOS est proche de sa limite de 30 minutes (les autres états sont dans les
+# previews `miff-screen-*` et se lancent à la main).
+shot 68-fr-miff-retirer 3 "${fr_args[@]}" -MiffPreview miff-screen-remove
+shot 69-fr-miff-retire-nouveau-code 3 "${fr_args[@]}" -MiffPreview miff-screen-removed
+shot 73-fr-miff-supprimer 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 75-fr-miff-suppression-en-cours 3 "${fr_args[@]}" -MiffPreview miff-screen-deleting
+
+# LOC-3 : les lieux de confiance (formulaire dans ses états, liste, détail, offre, suppression). Les VRAIS écrans, nourris par des
+# états fixes (Diagnostic/PlaceScreenPreviews.swift, option -MiffPreview place-*, build Debug seulement). La carte demande ses
+# tuiles à Apple : attente plus longue sur les écrans qui en montrent une.
+shot 80-fr-lieu-vide 4 "${fr_args[@]}" -MiffPreview place-form-empty
+shot 81-fr-lieu-suggestions 3 "${fr_args[@]}" -MiffPreview place-form-suggestions
+shot 82-fr-lieu-rempli 6 "${fr_args[@]}" -MiffPreview place-form-filled
+shot 83-fr-lieu-rayon-petit 6 "${fr_args[@]}" -MiffPreview place-form-small-radius
+shot 84-fr-lieu-erreurs 4 "${fr_args[@]}" -MiffPreview place-form-errors
+shot 85-fr-lieu-modifier 6 "${fr_args[@]}" -MiffPreview place-form-edit
+shot 86-fr-lieu-supprimer 4 "${fr_args[@]}" -MiffPreview place-form-delete
+shot 87-fr-lieu-miffs 4 "${fr_args[@]}" -MiffPreview place-form-miffs
+shot 88-fr-lieu-liste-gratuit 3 "${fr_args[@]}" -MiffPreview place-list-free
+shot 89-fr-lieu-liste-miff-plus 3 "${fr_args[@]}" -MiffPreview place-list-premium
+shot 90-fr-lieu-liste-membre 3 "${fr_args[@]}" -MiffPreview place-list-member
+shot 91-fr-lieu-enregistre 3 "${fr_args[@]}" -MiffPreview place-list-saved
+shot 92-fr-lieu-detail 6 "${fr_args[@]}" -MiffPreview place-detail
+shot 93-fr-lieu-detail-danger 6 "${fr_args[@]}" -MiffPreview place-detail-danger
+shot 94-fr-lieu-offre-limite 3 "${fr_args[@]}" -MiffPreview place-paywall-limit
+shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
+shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
@@ -116,9 +144,12 @@ xcrun simctl ui "$udid" content_size accessibility-extra-extra-extra-large > /de
 shot 13-fr-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR
 shot 40-fr-inscription-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview signup
 shot 41-fr-telephone-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview phone
+shot 97-fr-lieu-texte-tres-grand 6 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview place-form-filled
+shot 98-fr-lieu-liste-texte-tres-grand 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview place-list-free
 shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview carousel1
 shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
 shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
+shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

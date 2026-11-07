@@ -158,7 +158,7 @@ class AuthViewModelsTest {
             val vm = SignInViewModel(h.manager, FakeNetwork(), nowMillis = { currentTime })
             vm.submitGoogle(FakeGoogle(GoogleTokenResult.Token("t")))
             advanceUntilIdle()
-            assertEquals(AuthMessage.TOO_MANY_REQUESTS, vm.uiState.value.message)
+            assertEquals(AuthMessage.TOO_MANY_REQUESTS, vm.uiState.value.googleMessage)
         }
 
     @Test
@@ -340,6 +340,44 @@ class AuthViewModelsTest {
             assertEquals(AuthMessage.ACCOUNT_UNAVAILABLE, vm.uiState.value.message)
         }
 
+    @Test
+    fun signIn_afterAnotherPhoneTookTheAccount_showsTheCalmNote_once_andNoError() =
+        runTest(dispatcher) {
+            val h = harness()
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.retry()
+            advanceUntilIdle()
+            assertEquals(AppDestination.FEED, h.destination())
+            // Another phone signs in with the same account.
+            h.sessions.takeOver("uid-1")
+            advanceUntilIdle()
+            assertEquals(AppDestination.SIGN_IN, h.destination())
+            val first = SignInViewModel(h.manager, FakeNetwork())
+            assertTrue(first.uiState.value.showSessionReplacedNote)
+            assertNull("not an error message", first.uiState.value.message)
+            assertFalse(first.uiState.value.showAccountNotCreatedNote)
+            val second = SignInViewModel(h.manager, FakeNetwork())
+            assertFalse("shown once", second.uiState.value.showSessionReplacedNote)
+            assertFalse(first.uiState.value.showSessionGoneNote)
+        }
+
+    @Test
+    fun signIn_theNoteGoesAwayAtTheFirstAttempt() =
+        runTest(dispatcher) {
+            val h = harness()
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.retry()
+            advanceUntilIdle()
+            h.sessions.takeOver("uid-1")
+            advanceUntilIdle()
+            val vm = SignInViewModel(h.manager, FakeNetwork())
+            assertTrue(vm.uiState.value.showSessionReplacedNote)
+            vm.submitEmail("a@b.fr", "password-1")
+            assertFalse(vm.uiState.value.showSessionReplacedNote)
+        }
+
     // --- Consent panel (no box: "Continuer" accepts, "Annuler" refuses) --------------------------------------------
 
     @Test
@@ -390,5 +428,26 @@ class AuthViewModelsTest {
             assertEquals(AppDestination.CONSENT_PANEL, h.destination())
             assertEquals(AuthMessage.NETWORK, vm.uiState.value.message)
             assertFalse(vm.uiState.value.isLoading)
+        }
+
+    @Test
+    fun theSessionGoneNote_isShownOnce_neverTheReplacedOne() =
+        runTest(dispatcher) {
+            val h = harness()
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.retry()
+            advanceUntilIdle()
+            assertEquals(AppDestination.FEED, h.destination())
+            // The session document disappears (the account is being deleted on another device).
+            h.sessions.remove("uid-1")
+            advanceUntilIdle()
+            assertEquals(AppDestination.SIGN_IN, h.destination())
+            val first = SignInViewModel(h.manager, FakeNetwork())
+            assertTrue(first.uiState.value.showSessionGoneNote)
+            assertFalse(first.uiState.value.showSessionReplacedNote)
+            assertNull("not an error message", first.uiState.value.message)
+            val second = SignInViewModel(h.manager, FakeNetwork())
+            assertFalse("shown once", second.uiState.value.showSessionGoneNote)
         }
 }

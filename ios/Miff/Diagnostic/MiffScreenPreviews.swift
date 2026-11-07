@@ -145,7 +145,15 @@ struct MiffScreenPreview: View {
             onSaveName: noAction,
             onSharingRequested: noAction,
             onSharingConfirmed: noAction,
-            onSharingDismissed: noAction
+            onSharingDismissed: noAction,
+            onRemoveRequested: { _ in },
+            onRenewRequested: noAction,
+            onLeaveRequested: noAction,
+            onDeleteRequested: noAction,
+            onActionConfirmed: noAction,
+            onActionDismissed: noAction,
+            onInviteLater: noAction,
+            onDeletionRetry: noAction
         )
     }
 
@@ -159,7 +167,32 @@ struct MiffScreenPreview: View {
         state.isOwner = name != "miff-screen-member"
         state.myUid = state.isOwner ? "u1" : "u2"
         state.members = members
-        state.places = [MiffPlace(id: "p1", name: "Maison de Papa"), MiffPlace(id: "p2", name: "École")]
+        state.places = [
+            Place(
+                id: "p1",
+                miffId: Self.demoMiff,
+                name: "Maison de Papa",
+                type: .trusted,
+                category: .home,
+                address: "26 rue du Volnay, 21000 Dijon, France",
+                lat: 47.32207,
+                lng: 5.04148,
+                radiusM: 150,
+                createdBy: "u1"
+            ),
+            Place(
+                id: "p2",
+                miffId: Self.demoMiff,
+                name: "École",
+                type: .trusted,
+                category: .school,
+                address: "4 rue des Écoles, 21000 Dijon, France",
+                lat: 47.32011,
+                lng: 5.04602,
+                radiusM: 100,
+                createdBy: "u1"
+            )
+        ]
         state.sharing = name != "miff-screen-sharing-off"
         applyVariant(to: &state)
         return state
@@ -190,6 +223,37 @@ struct MiffScreenPreview: View {
                     sharingEnabled: true
                 )
             }
+        default:
+            applyActionVariant(to: &state)
+        }
+    }
+
+    /// Les questions et la progression de MIFF-4 (retirer, renouveler, quitter, supprimer), pour les captures de la CI.
+    private func applyActionVariant(to state: inout MiffScreenState) {
+        switch name {
+        case "miff-screen-remove":
+            state.action = .remove(uid: "u2", firstName: "Ryadh")
+        case "miff-screen-removed":
+            state.action = .removedDone(firstName: "Ryadh", newCode: "BCDFGHK23456")
+        case "miff-screen-renew":
+            state.action = .renew
+        case "miff-screen-invite":
+            state.inviteToRenew = true
+        case "miff-screen-leave":
+            state.isOwner = false
+            state.myUid = "u2"
+            state.action = .leave
+        case "miff-screen-delete":
+            state.action = .delete(othersCount: 2)
+        case "miff-screen-delete-alone":
+            state.members = Array(members.prefix(1))
+            state.action = .delete(othersCount: 0)
+        case "miff-screen-deleting":
+            state.deletion = .running(resumed: false)
+        case "miff-screen-deleting-paused":
+            state.deletion = .waitingForNetwork
+        case "miff-screen-deleted":
+            state.deletion = .done
         default:
             break
         }

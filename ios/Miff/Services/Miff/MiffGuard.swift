@@ -29,4 +29,14 @@ struct MiffRepositoryRules {
     /// L'heure du mur en millisecondes depuis 1970 (la fin d'un abonnement est une vraie date).
     var epochMillis: () -> Int = { Int(Date().timeIntervalSince1970 * 1000) }
     var timeoutSeconds: TimeInterval = 20
+    /// L'identifiant de la session de cet appareil (`DeviceSession.currentDeviceId`), SEULEMENT si le serveur l'a confirmé (SESS-3).
+    /// Il part dans chaque statut écrit par un lot d'entrée. Par défaut nil : sans session confirmée, AUCUN lot qui écrit un
+    /// statut ne part (le refus est la bonne réponse par défaut).
+    var deviceId: () -> String? = { nil }
+    /// Relit la session auprès du serveur : après le refus d'un lot qui écrit un statut, ou quand aucune session n'est confirmée.
+    /// Remplacée par un autre appareil : la déconnexion forcée est lancée par le gestionnaire de session.
+    var recheckSession: () async -> Void = {}
+    /// Le partage de la personne a changé (entrée dans une Miff, arrêt ou reprise du partage, départ, perte d'accès) : le suivi des lieux
+    /// relit les Miffs et les lieux (LOC-4b). Appelé après une écriture CONFIRMÉE par le serveur, depuis n'importe quel fil.
+    var onSharingChanged: () -> Void = {}
 }
