@@ -14,7 +14,7 @@ struct FeedListActions {
     let onRefresh: () async -> Void
 }
 
-/// Où est le haut du contenu dans la zone de défilement (lu par l'écran pour déplacer l'en-tête).
+/// Où est le haut du contenu sur l'écran (lu par l'écran pour déplacer l'en-tête ; seuls les écarts comptent).
 private struct ContentTopKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
 
@@ -39,7 +39,6 @@ struct FeedListView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let topId = "feed-top"
-    private static let space = "feed-scroll"
 
     private var content: FeedContent? {
         if case .ready(let value) = feed {
@@ -59,7 +58,6 @@ struct FeedListView: View {
                 .padding(.top, topInset + Spacing.md)
                 .padding(.bottom, Spacing.md)
             }
-            .coordinateSpace(name: Self.space)
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
             .refreshable { await actions.onRefresh() }
             // Retour en haut (le logo) : sans animation avec « Réduire les animations ».
@@ -83,7 +81,7 @@ struct FeedListView: View {
             .id(Self.topId)
             .background(
                 GeometryReader { proxy in
-                    Color.clear.preference(key: ContentTopKey.self, value: proxy.frame(in: .named(Self.space)).minY)
+                    Color.clear.preference(key: ContentTopKey.self, value: proxy.frame(in: .global).minY)
                 }
             )
             .accessibilityHidden(true)
