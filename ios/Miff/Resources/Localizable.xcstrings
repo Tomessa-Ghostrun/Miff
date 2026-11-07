@@ -13057,6 +13057,128 @@
         }
       }
     },
+    "settings_subscription_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        }
+      }
+    },
+    "settings_subscription_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consulte ton abonnement"
+          }
+        }
+      }
+    },
+    "settings_subscription_plan_name": {
+      "extractionState": "manual",
+      "comment": "Nom de l'offre, jamais traduit ni remplacé par « Premium ».",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+"
+          }
+        }
+      }
+    },
+    "settings_subscription_active_until": {
+      "extractionState": "manual",
+      "comment": "Argument : date de fin au format long de la langue, formatée par le système (ex. 12 janvier 2027).",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "settings_subscription_source_manual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted by the Miff team"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accordé par l'équipe Miff"
+          }
+        }
+      }
+    },
+    "settings_subscription_source_other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre en cours"
+          }
+        }
+      }
+    },
+    "settings_subscription_store_soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Managing your subscription through the store is coming soon."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La gestion de l'abonnement via le store arrive bientôt."
+          }
+        }
+      }
+    },
     "ios_permission_location_upgrade_title": {
       "extractionState": "manual",
       "localizations": {

@@ -3,11 +3,11 @@ package com.tomessa.miff.domain
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.FirebaseFirestoreException.Code
-import com.tomessa.miff.domain.diagnostic.OfferState
 import com.tomessa.miff.domain.diagnostic.RulesProbeOutcome
-import com.tomessa.miff.domain.diagnostic.interpretEntitlement
 import com.tomessa.miff.domain.diagnostic.interpretRulesProbeFailure
 import com.tomessa.miff.domain.diagnostic.isExpectedProject
+import com.tomessa.miff.domain.entitlement.OfferState
+import com.tomessa.miff.domain.entitlement.interpretEntitlement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
