@@ -78,6 +78,10 @@
 | 35 | Au lancement, la barre n'apparaît pas puis disparaît (pas de clignotement) ; en mode avion sans cache, l'écran propose « Réessayer » et « Se déconnecter » | [ ] |
 | 36 | **À vérifier sur l'iPhone** (aide à la détection) : si fermer Miff en la balayant dans le sélecteur d'apps retarde réellement la reprise des détections (le texte de l'aide ne l'affirme pas) | [ ] |
 
+## Point connu : plantage sur le build 16
+
+**Toucher une Miff depuis le Profil plantait sur le build 16** (d6ce9c6). Cause **probable, non confirmée** (aucun journal de plantage, rien compilé en local) : la coquille posait une seconde pile de navigation dans l'onglet Profil, à l'intérieur de celle de l'accueil où l'écran de la Miff est empilé. Elle est supprimée dans cette PR (une seule pile ; les écrans des Réglages passent par la même pile, avec tout leur environnement) et un test interdit d'en recréer. **À reconfirmer sur le prochain build** (lignes 19b et 23b). Si ça plante encore : envoyer le rapport de plantage TestFlight ou Crashlytics.
+
 ## Ce qui n'est pas dans cette PR (connu, listé dans le journal des changements)
 
 - **Mes informations** est en lecture seule (la modification vient dans un chantier suivant).

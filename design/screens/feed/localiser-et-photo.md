@@ -34,12 +34,12 @@
 **Vie privée** : aucune coordonnée dans l'état sauvegardé de l'écran, un journal ou un rapport de plantage (L4).
 
 ## 09 : photo en plein écran
-**Déclenchement** : toucher la photo d'une carte. Fond noir ; photo centrée, zoom au pincement (1x à 4x), double toucher pour zoomer ; barre d'état claire.
+**Déclenchement** : toucher l'aperçu carré de la photo d'une carte (D39). **La photo s'ouvre complète, jamais recadrée** (l'aperçu carré de la carte n'est qu'un affichage). Fond noir ; photo centrée, zoom au pincement (1x à 4x), double toucher pour zoomer ; barre d'état claire.
 
 | Cas | Contenu |
 |---|---|
 | A. Avec localisation (Q1 déployée) | « Photo de {Prénom} · 15 h 40 » ; « Position figée au moment de la photo. » **[proposé]** ; bouton **« Voir où c'était »** (contour blanc, 46 pt) → carte du système, coordonnées seules, **aucun nom** |
-| B. Sans localisation | « Photo de {Prénom} · 15 h 40 » seulement. **Rien** à la place du bouton (pas de « localisation indisponible ») |
+| B. Sans localisation | « Photo de {Prénom} · 15 h 40 » seulement. **Rien** à la place du bouton (pas de « localisation indisponible »). **Cas devenu théorique depuis D27 (2026-11-06) : toute photo publiée est localisée** (localisation obligatoire, `docs/tickets/update.md`) ; il ne reste que pour une éventuelle photo plus ancienne sans position |
 | C. Dans le fil : photo localisée sans ma position publiée | Tuile bleu pâle à bord pointillé + cadenas + « Partage ta position pour voir cette photo. » (réciprocité : même règle que Localiser). Les photos sans localisation restent visibles |
 
 | Élément | FR | EN |
