@@ -367,7 +367,7 @@ private struct PagerDots: View {
 
     private var dots: some View {
         HStack(spacing: Spacing.sm) {
-            ForEach(0..<count, id: .self) { position in
+            ForEach(0..<count, id: \.self) { position in
                 dot(selected: position == current)
             }
         }
