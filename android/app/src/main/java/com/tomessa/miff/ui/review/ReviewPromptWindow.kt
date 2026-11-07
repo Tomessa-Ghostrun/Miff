@@ -58,7 +58,6 @@ import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeAccent
 import com.tomessa.miff.ui.theme.colorActionPrimary
-import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderAction
 import com.tomessa.miff.ui.theme.colorBrandPrimary
@@ -77,7 +76,7 @@ import kotlin.math.sin
  *
  * Differences from the mockup, all listed in the pull request: informal "tu" (decision of 2026-11-01), a small cross at the top (the mockup has no way
  * out except the back gesture, which nobody can see), a thin frame like the other dialogs of the app, the page behind blurred where the phone allows it
- * (Android 12 and later, if the system's window blur is on) and covered by a light veil everywhere else.
+ * (Android 12 and later, if the system's window blur is on) and dimmed a little by the window everywhere else.
  */
 @Composable
 fun ReviewPromptWindow(
@@ -94,18 +93,14 @@ fun ReviewPromptWindow(
         onDismissRequest = onClose,
         properties =
             DialogProperties(
-                // "Merci !" lasts a moment and moves on by itself: the back gesture does nothing there. A tap on the veil never closes (it would count as a closure).
+                // "Merci !" lasts a moment and moves on by itself: the back gesture does nothing there. A tap beside the card never closes (it would count as a closure).
                 dismissOnBackPress = stage != ReviewStage.ThanksForLove,
                 dismissOnClickOutside = false,
                 usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false,
             ),
     ) {
         BlurBehindWindow()
-        Box(
-            modifier = Modifier.fillMaxSize().background(colorBgCanvas.copy(alpha = VEIL_ALPHA)),
-            contentAlignment = Alignment.Center,
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             ReviewCard {
                 when (stage) {
                     ReviewStage.Question -> QuestionContent(onStar, onLove, onBetter, onClose)
@@ -118,14 +113,17 @@ fun ReviewPromptWindow(
     }
 }
 
-/** The system's own blur of what is behind the window (Android 12+), when the phone allows it; the veil of the window does the rest. */
+/**
+ * What is behind the window: dimmed a little by the window itself (all of the screen, system bars included: the insets stay the business of ui/components/ScreenInsets.kt)
+ * and, on Android 12 and later when the phone allows it, blurred by the system, like the mockup.
+ */
 @Composable
 private fun BlurBehindWindow() {
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
     SideEffect {
         if (window != null) {
-            // The veil is drawn by the content: no system dimming on top of it.
-            window.setDimAmount(0f)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.setDimAmount(DIM_AMOUNT)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
                 window.attributes = window.attributes.also { it.blurBehindRadius = BLUR_RADIUS_PX }
@@ -352,7 +350,7 @@ internal fun starPath(
  */
 const val REVIEW_PROMPT_PROBE = "REVIEWPROMPTPROBE"
 
-private const val VEIL_ALPHA = 0.6f
+private const val DIM_AMOUNT = 0.3f
 private const val BLUR_RADIUS_PX = 40
 private const val CLOSE_ORDER = 10f
 private const val ACTION_ORDER = 5f

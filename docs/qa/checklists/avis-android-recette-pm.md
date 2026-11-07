@@ -15,7 +15,7 @@
 ## A. La fenêtre telle que maquettée (5 min)
 
 Provoquez la fenêtre comme ci-dessus.
-- [ ] Une **carte blanche à bord bleu** apparaît au centre, l'écran derrière est **flouté ou voilé** (le flou dépend du téléphone : un voile clair est normal s'il n'y a pas de flou).
+- [ ] Une **carte blanche à bord bleu** apparaît au centre, l'écran derrière est **flouté ou assombri** (le flou dépend du téléphone : un simple assombrissement léger est normal s'il n'y a pas de flou).
 - [ ] Titre bleu **« Que penses-tu de Miff ? »** (au tutoiement : c'est l'écart voulu avec la maquette « Que pensez vous de Miff ? »).
 - [ ] **Cinq étoiles** vert-jaune : petite, moyenne, **grande au milieu**, moyenne, petite (comme la maquette).
 - [ ] Deux boutons bleus : **« J'adore ! (5 étoiles) »** et **« Peux faire mieux... »**.
@@ -44,7 +44,7 @@ Remettez à zéro, provoquez la fenêtre.
 - [ ] Touchez la **croix** : la fenêtre se ferme ; la carte affiche **fermetures : 1** (issue « CLOSED »).
 - [ ] Provoquez la fenêtre, fermez avec le **geste retour** : **fermetures : 2**.
 - [ ] Provoquez-la une troisième fois **avec** « Afficher la fenêtre au prochain retour » : elle apparaît (c'est le bouton de recette qui force). En production, après deux fermetures, elle **ne reviendrait plus jamais** (testé par `ReviewPromptRulesTest`).
-- [ ] Un toucher **à côté** de la carte (sur le voile) **ne ferme pas** la fenêtre.
+- [ ] Un toucher **à côté** de la carte (sur la partie assombrie) **ne ferme pas** la fenêtre.
 
 ## E. Là où elle ne doit jamais apparaître (3 min)
 

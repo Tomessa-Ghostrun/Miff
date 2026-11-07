@@ -75,7 +75,7 @@ PR brouillon `android/fenetre-avis` ; code dans `android/app/src/main/java/com/t
 1. **Tutoiement** (« Que penses-tu de Miff ? », décision du 2026-11-01).
 2. **Une petite croix en haut à droite** : la maquette n'a aucune sortie visible, or la fermeture sans répondre est prévue (geste retour seul, invisible).
 3. **Cadre** de 2 dp, aux couleurs et aux proportions des autres fenêtres de l'app (280 dp de large au plus, rayon 10 dp), au lieu du filet de 1 px de l'export.
-4. **Fond** : flou du système derrière la fenêtre sur Android 12 et plus quand le téléphone l'autorise (la maquette montre le Feed flouté), voile clair partout ailleurs.
+4. **Fond** : flou du système derrière la fenêtre sur Android 12 et plus quand le téléphone l'autorise (la maquette montre le Feed flouté), léger assombrissement de l'écran partout ailleurs.
 5. **Étoiles** : cinq étoiles dessinées (petite, moyenne, grande, moyenne, petite), vert-jaune de la marque, coins arrondis ; zone tactile de 48 dp de haut.
 6. **Écrans non maquettés ajoutés** : « Merci ! » (avant la demande du store) et « Merci de nous le dire ! » (après « Peux faire mieux... »).
 7. **Plus grand texte du système** : la carte défile au lieu de se couper.
