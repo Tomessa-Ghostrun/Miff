@@ -28,7 +28,7 @@ final class TabBarModelsTests: XCTestCase {
     }
 
     func testTheCentralButtonNameSaysItIsComingSoon() {
-        XCTAssertEqual(TabBarNames.key(for: .update), "tabbar_update_soon_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update), "ios_tabbar_update_soon_a11y")
     }
 
     // MARK: - Le niveau de verre
