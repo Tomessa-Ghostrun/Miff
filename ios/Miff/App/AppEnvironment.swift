@@ -195,11 +195,7 @@ final class AppEnvironment {
         )
         let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
         let updateServices = UpdateServices.make(
-            gateway: gateway,
-            network: networkMonitor,
-            device: device,
-            tracking: trackingServices,
-            directory: miff.directory
+            gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
         let manager = SessionManager(
             SessionDependencies(
@@ -212,18 +208,9 @@ final class AppEnvironment {
                 cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: [
-                    { drafts.clear() },
-                    { await miff.directory.stop() },
-                    { await miff.deletions.stop() },
-                    // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
-                    { await places.stop() },
-                    // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
-                    trackingServices.teardown,
-                    // L'Update : le garde-fou des publications et mon statut suivi partent ; la date de la photo envoyée reste (elle
-                    // est nettoyée par le même compte à sa reconnexion), elle ne part qu'avec la suppression du compte.
-                    { updateServices.stop() }
-                ],
+                teardown: Self.teardowns(
+                    drafts: drafts, miff: miff, places: places, tracking: trackingServices, update: updateServices
+                ),
                 device: device,
                 network: networkMonitor,
                 drafts: drafts,
@@ -249,6 +236,27 @@ final class AppEnvironment {
         update = updateServices
         profileDrafts = drafts
         pendingConsent = pending
+    }
+
+    /// Ce que la fin de session arrête, dans l'ordre : le brouillon (noms, photo, numéro) et les Miffs en mémoire, les suppressions en
+    /// cours, le message d'un lieu et ce qui a été tapé dans la recherche d'adresse, le suivi des lieux (zones retirées, position, lieux
+    /// et statuts en attente effacés, borné à 5 s), puis l'Update : le garde-fou des publications et mon statut suivi partent ; la date de
+    /// la photo envoyée RESTE (elle est nettoyée par le même compte à sa reconnexion), elle ne part qu'avec la suppression du compte.
+    private static func teardowns(
+        drafts: ProfileDraftFileStore,
+        miff: MiffServices,
+        places: PlaceServices,
+        tracking: TrackingServices,
+        update: UpdateServices
+    ) -> [SessionTeardown] {
+        [
+            { drafts.clear() },
+            { await miff.directory.stop() },
+            { await miff.deletions.stop() },
+            { await places.stop() },
+            tracking.teardown,
+            { update.stop() }
+        ]
     }
 
     /// Les dépendances des étapes du profil.

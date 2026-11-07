@@ -19,8 +19,9 @@ struct UpdateServices {
         network: NetworkMonitor,
         device: DeviceSession,
         tracking: TrackingServices,
-        directory: MiffDirectory
+        miff: MiffServices
     ) -> UpdateServices {
+        let directory = miff.directory
         let ledger = FilePublishLedger()
         let photoStore = FirestorePhotoStore()
         let permissions = SystemDevicePermissions()
