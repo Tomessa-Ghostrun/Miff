@@ -182,7 +182,9 @@ final class SessionDeviceFlowTests: XCTestCase {
         await harness.waitUntil { harness.manager.state == .ready(.signIn) }
 
         XCTAssertEqual(harness.manager.state, ready(.signIn))
-        XCTAssertEqual(harness.manager.consumeNotice(), .sessionReplaced)
+        // Le document a DISPARU (compte supprimé ailleurs) : personne n'a pris la place, donc la note prudente et non « autre téléphone »
+        // (PR Android #100, AUTH-5c). Le remplacement par un autre téléphone garde sa note (test plus haut).
+        XCTAssertEqual(harness.manager.consumeNotice(), .sessionGone)
         XCTAssertEqual(harness.remote.writtenIds.count, 1, "session disparue : pas réécrite")
     }
 

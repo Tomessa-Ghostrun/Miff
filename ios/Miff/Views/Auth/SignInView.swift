@@ -42,6 +42,16 @@ struct SignInContent: View {
                 MessageText(text: L10n.string("auth_session_replaced_notice"), isError: false)
                     .padding(.bottom, Spacing.md)
             }
+            if state.showSessionGoneNote {
+                // Le document de session a disparu : le compte est en cours de suppression ailleurs. Jamais « autre téléphone ».
+                MessageText(text: L10n.string("auth_session_gone_notice"), isError: false)
+                    .padding(.bottom, Spacing.md)
+            }
+            if state.showDeletionPendingNote {
+                // La suppression du compte n'est pas finie : se reconnecter avec le même compte la reprend.
+                MessageText(text: L10n.string("settings_delete_signin_again"), isError: false)
+                    .padding(.bottom, Spacing.md)
+            }
             fields
             FieldLink(key: "auth_signin_forgot_password") {
                 actions.forgotPassword(AuthForm.normalizeEmail(email))

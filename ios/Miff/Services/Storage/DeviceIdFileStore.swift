@@ -35,6 +35,10 @@ final class DeviceIdFileStore: DeviceIdStore {
         directory.appendingPathComponent("device-revoked")
     }
 
+    private var goneURL: URL {
+        directory.appendingPathComponent("device-gone")
+    }
+
     init(directory: URL? = nil) {
         if let directory {
             self.directory = directory
@@ -119,14 +123,24 @@ final class DeviceIdFileStore: DeviceIdStore {
             if value {
                 return prepareDirectory() && write(Data([1]), to: revokedURL)
             }
-            do {
-                try FileManager.default.removeItem(at: revokedURL)
-            } catch let error as NSError {
-                let missing = error.domain == NSCocoaErrorDomain
-                    && (error.code == NSFileNoSuchFileError || error.code == NSFileReadNoSuchFileError)
-                return missing
+            // La raison (« session disparue ») n'a de sens qu'avec le marqueur : elle part avec lui.
+            removeFile(goneURL)
+            return removeMarker(revokedURL)
+        }
+    }
+
+    func isGone() -> Bool {
+        queue.sync {
+            FileManager.default.fileExists(atPath: goneURL.path)
+        }
+    }
+
+    func setGone(_ value: Bool) -> Bool {
+        queue.sync {
+            if value {
+                return prepareDirectory() && write(Data([1]), to: goneURL)
             }
-            return true
+            return removeMarker(goneURL)
         }
     }
 
@@ -156,5 +170,17 @@ final class DeviceIdFileStore: DeviceIdStore {
 
     private func removeFile(_ url: URL) {
         try? FileManager.default.removeItem(at: url)
+    }
+
+    /// Retire un marqueur : vrai s'il n'y est plus (déjà absent compris), faux si le disque refuse.
+    private func removeMarker(_ url: URL) -> Bool {
+        do {
+            try FileManager.default.removeItem(at: url)
+        } catch let error as NSError {
+            let missing = error.domain == NSCocoaErrorDomain
+                && (error.code == NSFileNoSuchFileError || error.code == NSFileReadNoSuchFileError)
+            return missing
+        }
+        return true
     }
 }

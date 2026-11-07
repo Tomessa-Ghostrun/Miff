@@ -11,6 +11,61 @@ enum SettingsRoute: Hashable, CaseIterable {
     case detectionHelp
 }
 
+/// Les lignes de la liste des Réglages, et ce qu'un compte SANS Miff en voit. Décision du PM du 2026-11-07 (qui révise la décision Q13 « ni
+/// barre ni Réglages sans Miff ») : un compte sans Miff doit pouvoir se supprimer dans l'app (Apple 5.1.1(v)), donc il atteint des Réglages
+/// RESTREINTS : « Mon compte » (e-mail, mot de passe, déconnexion, supprimer mon compte) et « Confidentialité » (textes légaux,
+/// autorisations, contact). Ni Mes informations, ni Langue : le reste vient avec les Miffs. La barre d'onglets reste masquée sans Miff.
+enum SettingsListRow: Equatable, CaseIterable {
+    case myInfo
+    case account
+    case language
+    case privacy
+}
+
+enum SettingsAccess {
+    /// Les lignes montrées : toutes, ou seulement Mon compte et Confidentialité pour un compte sans Miff.
+    static func rows(restricted: Bool) -> [SettingsListRow] {
+        restricted ? [.account, .privacy] : SettingsListRow.allCases
+    }
+
+    /// Un écran des Réglages est-il permis à un compte sans Miff ? (Mes informations ne l'est pas.)
+    static func isAllowed(_ route: SettingsRoute, restricted: Bool) -> Bool {
+        guard restricted else {
+            return true
+        }
+        return route != .myInfo
+    }
+
+    /// Les écrans qu'ouvre un écran des Réglages (la liste ouvre les trois premiers, Mon compte ouvre la suppression, Confidentialité
+    /// l'aide à la détection) : sert à prouver, par un test, que la suppression ne s'atteint que par Réglages > Mon compte.
+    static func children(of route: SettingsRoute) -> [SettingsRoute] {
+        switch route {
+        case .settings:
+            return [.myInfo, .account, .privacy]
+        case .account:
+            return [.deleteAccount]
+        case .privacy:
+            return [.detectionHelp]
+        case .myInfo, .deleteAccount, .detectionHelp:
+            return []
+        }
+    }
+
+    /// Tous les écrans atteignables depuis la liste des Réglages, la liste comprise.
+    static func reachable(restricted: Bool) -> Set<SettingsRoute> {
+        var found: Set<SettingsRoute> = [.settings]
+        var pending: [SettingsRoute] = [.settings]
+        while let current = pending.popLast() {
+            let next = children(of: current).filter { isAllowed($0, restricted: restricted) && !found.contains($0) }
+            for child in next {
+                found.insert(child)
+                pending.append(child)
+            }
+        }
+        return found
+    }
+}
+
 /// La langue en cours de l'app, pour la ligne « Langue » des Réglages. Sur iPhone la langue se choisit dans les réglages du téléphone
 /// (décision Q4 du ticket Feed / Profil / Réglages) : l'app n'a pas de sélecteur à elle, elle dit seulement laquelle elle utilise.
 enum AppLanguageName {

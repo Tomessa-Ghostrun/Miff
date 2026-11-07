@@ -72,6 +72,14 @@ final class RecordingPrivacy: CollectionConsentApplying {
         log.append(enabled ? "on" : "off")
     }
 
+    /// Suppression du compte (AUTH-5c) : combien de fois la collecte a été effacée (installation oubliée comprise).
+    private(set) var eraseCalls = 0
+
+    func eraseCollectedData() {
+        eraseCalls += 1
+        applyAccountConsent(false)
+    }
+
     /// Le journal sans répétitions immédiates (le gestionnaire peut mettre en pause deux fois de suite).
     var states: [String] {
         log.enumerated().filter { index, entry in index == 0 || log[index - 1] != entry }.map { $0.element }
@@ -199,6 +207,54 @@ final class FakeAuthGateway: AuthGateway {
         return reauthResult
     }
 
+    // MARK: - Suppression du compte (AUTH-5c)
+
+    /// Les méthodes de connexion liées au compte.
+    var providers: Set<SignInProvider> = [.password]
+    /// Les réponses des ré-authentifications (une par appel ; la dernière se répète). nil = fait.
+    var passwordResults: [AuthFailure?] = []
+    var deletionReauthResults: [AuthFailure?] = []
+    /// Ce que répond `checkSession` (une par appel ; la dernière se répète).
+    var sessionChecks: [AccountSessionCheck] = []
+    private(set) var passwordCalls = 0
+    private(set) var deletionReauthCalls = 0
+    private(set) var checkSessionCalls = 0
+
+    func linkedProviders() -> Set<SignInProvider> {
+        providers
+    }
+
+    func reauthenticateWithPassword(_ password: String) async -> AuthFailure? {
+        passwordCalls += 1
+        timeline.add("reauthPassword")
+        if let scripted = next(&passwordResults) {
+            return scripted
+        }
+        return nil
+    }
+
+    func reauthenticateForDeletion(with credential: SocialCredential) async -> AuthFailure? {
+        deletionReauthCalls += 1
+        timeline.add("reauthSocial")
+        if let scripted = next(&deletionReauthResults) {
+            return scripted
+        }
+        return nil
+    }
+
+    func checkSession() async -> AccountSessionCheck {
+        checkSessionCalls += 1
+        return next(&sessionChecks) ?? .valid
+    }
+
+    /// Une réponse par appel, la dernière se répète ; nil quand rien n'a été scripté.
+    private func next<Element>(_ list: inout [Element]) -> Element? {
+        if list.count > 1 {
+            return list.removeFirst()
+        }
+        return list.first
+    }
+
     func deleteCurrentAccount() async -> AuthFailure? {
         deleteCalls += 1
         timeline.add("delete")
@@ -266,6 +322,8 @@ final class FakeCachePurger: CachePurger {
     private let timeline: Timeline
     private(set) var purgeCalls = 0
     private(set) var purgeIfPendingCalls = 0
+    /// Tourne quand les écritures en attente partent (pour simuler une session perdue à cet instant précis).
+    var onFlush: () -> Void = {}
 
     init(timeline: Timeline) {
         self.timeline = timeline
@@ -273,6 +331,7 @@ final class FakeCachePurger: CachePurger {
 
     func flushPendingWrites() async {
         timeline.add("flush")
+        onFlush()
     }
 
     func purge() async -> Bool {
@@ -347,7 +406,7 @@ final class TestClock {
 /// Tout ce dont un `SessionManager` a besoin, câblé avec des doubles, et ce qu'il faut regarder ensuite.
 @MainActor
 final class SessionHarness {
-    let timeline = Timeline()
+    let timeline: Timeline
     let gateway: FakeAuthGateway
     let flags = MemoryBooleanStore()
     let pending = MemoryPendingConsentStore()
@@ -367,8 +426,15 @@ final class SessionHarness {
     private(set) var collectionWhenAccountRead: Bool?
 
     /// `freshInstall` vrai : la première ouverture d'une installation (aucun repère d'installation sur l'appareil).
-    init(teardown: [SessionTeardown] = [], freshInstall: Bool = false, generationCounter: GenerationCounter? = nil) {
-        let timeline = self.timeline
+    init(
+        teardown: [SessionTeardown] = [],
+        freshInstall: Bool = false,
+        generationCounter: GenerationCounter? = nil,
+        deletionMarker: AccountDeletionMarker? = nil,
+        localData: [LocalDataEraser] = [],
+        timeline: Timeline = Timeline()
+    ) {
+        self.timeline = timeline
         let gateway = FakeAuthGateway(timeline: timeline)
         let privacy = self.privacy
         self.gateway = gateway
@@ -400,7 +466,9 @@ final class SessionHarness {
                 device: device,
                 network: network,
                 drafts: drafts,
-                generationCounter: generationCounter
+                generationCounter: generationCounter,
+                deletionMarker: deletionMarker,
+                localData: localData
             )
         )
         accounts.onLoad = { [weak self] in

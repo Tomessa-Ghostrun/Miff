@@ -8,6 +8,8 @@ struct MiffHomeActions {
     let onJoin: () -> Void
     let onOpenMiff: (String) -> Void
     let onSignOut: () -> Void
+    /// L'entrée discrète des Réglages restreints, montrée seulement dans l'état « Pas encore de Miff ».
+    let onOpenSettings: () -> Void
 }
 
 /// L'accueil de l'app une fois l'onboarding fini (destination « fil »), PROVISOIRE comme son équivalent d'Android avant le
@@ -46,6 +48,8 @@ struct MiffHomeContent: View {
             }
             .frame(maxWidth: .infinity)
         }
+        // Sans barre d'onglets (donc sans Profil) : la roue crantée mène aux Réglages restreints (Mon compte, Confidentialité).
+        .restrictedSettingsGear(visible: MainShellRules.hasNoMiff(state), action: actions.onOpenSettings)
     }
 
     private var showsSignOut: Bool {
