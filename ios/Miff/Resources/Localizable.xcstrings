@@ -14331,6 +14331,329 @@
           }
         }
       }
+    },
+    "ios_settings_language_current": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current language: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue actuelle : %1$@"
+          }
+        }
+      }
+    },
+    "ios_settings_language_hint_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "opens the iPhone settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ouvre les réglages de l'iPhone"
+          }
+        }
+      }
+    },
+    "ios_settings_version": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %1$@ (build %2$@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %1$@ (build %2$@)"
+          }
+        }
+      }
+    },
+    "ios_myinfo_edit_soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You will be able to edit your details in an upcoming update."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
+          }
+        }
+      }
+    },
+    "ios_account_apple": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in with Apple"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté avec Apple"
+          }
+        }
+      }
+    },
+    "ios_account_delete_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This feature is coming soon on iPhone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette fonction arrive bientôt sur iPhone"
+          }
+        }
+      }
+    },
+    "ios_delete_soon_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting your account from the app is coming soon on iPhone. Until then, write to us at %1$@ and we will take care of your request."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La suppression du compte depuis l'app arrive bientôt sur iPhone. En attendant, écris-nous à %1$@ : nous nous occupons de ta demande."
+          }
+        }
+      }
+    },
+    "ios_delete_soon_contact_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write to the Miff team"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Écrire à l'équipe Miff"
+          }
+        }
+      }
+    },
+    "ios_privacy_notifications_status_on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed on this phone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorisées sur ce téléphone."
+          }
+        }
+      }
+    },
+    "ios_privacy_notifications_status_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed on this phone yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore autorisées sur ce téléphone."
+          }
+        }
+      }
+    },
+    "ios_update_soon_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share an update"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donner des nouvelles"
+          }
+        }
+      }
+    },
+    "ios_update_soon_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is coming soon: you will be able to let your circle know you are doing fine in one tap."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette fonction arrive bientôt : tu pourras dire à ton cercle que tu vas bien en un geste."
+          }
+        }
+      }
+    },
+    "ios_detection_help_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An arrival or a departure can take a few minutes to be noticed. If it takes longer, these points may help."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une arrivée ou un départ peut mettre quelques minutes à être repéré. Si ça tarde, ces points peuvent aider."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. In the Miff settings, location must be set to “Always”, with “Precise Location” turned on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Dans les réglages de Miff, la localisation doit être sur « Toujours », avec « Position exacte » activée."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Keep “Background App Refresh” turned on for Miff (Settings > General)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Garde « Actualisation en arrière-plan » activée pour Miff (Réglages > Général)."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_saver": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Low Power Mode can delay detections: if you can, avoid it while you are on the move."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Le mode économie d'énergie peut retarder les détections : si possible, évite-le pendant tes déplacements."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_swipe": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. If a detection is late, opening Miff once lets you check that everything is in order."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. Si une détection tarde, rouvrir Miff une fois permet de vérifier que tout est en ordre."
+          }
+        }
+      }
+    },
+    "ios_detection_help_outro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The exact names of the settings can change depending on the iOS version."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les noms exacts des réglages peuvent changer selon la version d'iOS."
+          }
+        }
+      }
+    },
+    "ios_tabbar_update_soon_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share an update, coming soon"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donner des nouvelles, bientôt disponible"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
