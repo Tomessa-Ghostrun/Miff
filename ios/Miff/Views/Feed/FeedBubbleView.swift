@@ -130,8 +130,9 @@ private struct CalmBubbleLines: View {
     }
 }
 
-/// La tache et son pictogramme. Seuls LA FORME et le disque du pictogramme bougent (jamais le texte, pour qu'il reste lisible et
-/// posé) : voir `BubbleMotion`. Immobile avec « Réduire les animations ».
+/// La tache et son pictogramme (D45) : la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
+/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le disque du
+/// pictogramme respire sur son propre cycle. Voir `BubbleMotion` (constantes nommées). Immobile avec « Réduire les animations ».
 private struct BubbleBlob<Content: View>: View {
     let level: StatusLevel
     let pictogram: String
@@ -141,70 +142,52 @@ private struct BubbleBlob<Content: View>: View {
     private static var minHeight: CGFloat { 176 }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            AnimatedShape(level: level, motion: motion)
+        // En pause (animations réduites, bulle hors écran ou app en arrière-plan) la vue est dessinée UNE fois : aucun rendu continu.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !motion)) { timeline in
+            let seconds = timeline.date.timeIntervalSinceReferenceDate
+            let blob = BubbleMotion.phase(at: seconds, period: BubbleMotion.blobPeriodSeconds)
+            let star = BubbleMotion.phase(at: seconds, period: BubbleMotion.starPeriodSeconds)
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 content()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: Self.minHeight, alignment: .topLeading)
             .padding(.leading, 40)
             .padding(.trailing, 56)
             .padding(.top, 40)
             .padding(.bottom, 46)
-            PictogramDisc(symbol: pictogram, level: level, motion: motion)
-                .padding(.trailing, 40)
-                .padding(.bottom, 40)
-        }
-        .frame(maxWidth: .infinity, minHeight: Self.minHeight)
-    }
-}
-
-/// La tache : un étirement / écrasement lent, les deux axes en déphasage, et une très légère dérive (voir `BubbleMotion`).
-private struct AnimatedShape: View {
-    let level: StatusLevel
-    let motion: Bool
-
-    var body: some View {
-        // En pause (animations réduites, bulle hors écran ou app en arrière-plan) la vue est dessinée UNE fois : aucun rendu continu.
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !motion)) { timeline in
-            let phase = BubbleMotion.phase(
-                at: timeline.date.timeIntervalSinceReferenceDate, period: BubbleMotion.blobPeriodSeconds
+            .background(
+                BubbleShape()
+                    .fill(level.tint)
+                    .scaleEffect(
+                        x: motion ? BubbleMotion.scaleX(blob) : 1,
+                        y: motion ? BubbleMotion.scaleY(blob) : 1
+                    )
+                    .rotationEffect(.degrees(motion ? BubbleMotion.tilt(blob) : 0))
+                    .accessibilityHidden(true)
             )
-            BubbleShape()
-                .fill(level.tint)
-                .scaleEffect(
-                    x: motion ? BubbleMotion.scaleX(phase) : 1,
-                    y: motion ? BubbleMotion.scaleY(phase) : 1
-                )
-                .offset(y: motion ? BubbleMotion.drift(phase) : 0)
+            .overlay(alignment: .bottomTrailing) {
+                PictogramDisc(symbol: pictogram, level: level)
+                    .scaleEffect(motion ? BubbleMotion.starScale(star) : 1)
+                    .offset(y: motion ? BubbleMotion.starDrift(star) : 0)
+                    .padding(.trailing, 40)
+                    .padding(.bottom, 40)
+            }
+            .offset(y: motion ? BubbleMotion.drift(blob) : 0)
         }
-        .accessibilityHidden(true)
     }
 }
 
 private struct PictogramDisc: View {
     let symbol: String
     let level: StatusLevel
-    let motion: Bool
 
     var body: some View {
-        // L'étoile respire sur son propre cycle, un peu différent : tache et étoile ne bougent jamais en cadence.
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !motion)) { timeline in
-            let phase = BubbleMotion.phase(
-                at: timeline.date.timeIntervalSinceReferenceDate, period: BubbleMotion.starPeriodSeconds
-            )
-            Image(systemName: symbol)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(level == .neutral ? colorTextDescription.color : level.onTint)
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(Color.white.opacity(0.7)))
-                .scaleEffect(
-                    x: motion ? BubbleMotion.scaleX(phase) : 1,
-                    y: motion ? BubbleMotion.scaleY(phase) : 1
-                )
-                .offset(y: motion ? BubbleMotion.starDrift(phase) : 0)
-        }
-        .accessibilityHidden(true)
+        Image(systemName: symbol)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundColor(level == .neutral ? colorTextDescription.color : level.onTint)
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(Color.white.opacity(0.7)))
+            .accessibilityHidden(true)
     }
 }
 

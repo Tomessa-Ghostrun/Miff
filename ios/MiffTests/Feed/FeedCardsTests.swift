@@ -155,12 +155,12 @@ final class FeedCardsTests: XCTestCase {
 
     // MARK: - La batterie (D44)
 
-    func testTheBatteryIsThePercentageAloneAndHiddenAfterADayOrWhenAbsent() {
+    func testTheBatteryIsThePercentageAloneAndHiddenAfterSixHoursOrWhenAbsent() {
         let members = [feedMember("a"), feedMember("b"), feedMember("c"), feedMember("d"), feedMember("me")]
         let statuses = [
             "a": feedStatus(battery: 85, writtenAgo: feedMinutes(5)),
             "b": feedStatus(battery: 85, writtenAgo: feedHours(5)),
-            "c": feedStatus(battery: 85, writtenAgo: feedHours(25)),
+            "c": feedStatus(battery: 85, writtenAgo: feedHours(6) + 1),
             "d": feedStatus(battery: nil)
         ]
 
@@ -168,7 +168,8 @@ final class FeedCardsTests: XCTestCase {
 
         XCTAssertEqual(content.card("a")?.battery, Battery(pct: 85))
         XCTAssertEqual(content.card("b")?.battery, Battery(pct: 85), "plus d'heure de mesure à côté du niveau (D44)")
-        XCTAssertNil(content.card("c")?.battery)
+        XCTAssertNil(content.card("c")?.battery, "au-delà de 6 h : masquée (D44)")
+        XCTAssertEqual(FeedBuilder.batteryMaxAgeMillis, feedHours(6))
         XCTAssertNil(content.card("d")?.battery)
     }
 

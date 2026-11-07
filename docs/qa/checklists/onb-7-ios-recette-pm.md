@@ -48,6 +48,7 @@
 |---|---|---|
 | 18 | En haut : photo (ou initiales), **Prénom Nom**, « C'est toi », engrenage. Aucune donnée inventée (« Famille Martin »…) | [ ] |
 | 19 | Sous l'en-tête : « Mes Miffs » avec **une carte par Miff** ; la toucher ouvre l'écran de la Miff (code, membres, lieux) | [ ] |
+| 19b | **Toucher une carte « Mes Miffs » depuis le Profil ouvre l'écran de la Miff, et le retour (flèche ou balayage) ramène au Profil avec la barre** (cas du plantage du build 16) | [ ] |
 | 20 | Toucher la photo ou le nom ouvre « Mes informations » (photo, prénom, nom, pays, numéro, mention « seuls les membres de tes Miffs verront ce numéro ») | [ ] |
 | 21 | Mode avion avant d'ouvrir l'app : l'en-tête dit calmement qu'il ne peut pas s'afficher, avec « Réessayer » | [ ] |
 | 22 | Le Feed ne montre plus la carte « Mes Miffs » ni « Se déconnecter » (ils sont dans Profil et Réglages) | [ ] |
@@ -57,6 +58,7 @@
 | # | Vérifier | OK |
 |---|---|---|
 | 23 | L'engrenage ouvre la liste : **Mes informations, Mon compte, Langue, Confidentialité** ; pas de Notifications ni d'offre Premium ; la version est en bas | [ ] |
+| 23b | Chaque écran des Réglages (Mes informations, Mon compte, Supprimer mon compte, Langue, Confidentialité, Si les détections tardent) s'ouvre et se referme avec le retour, sans fermeture de l'app ; Conditions et Politique ouvrent le navigateur | [ ] |
 | 24 | **Langue** : la ligne dit « Langue actuelle : Français » ; la toucher ouvre les réglages de l'iPhone pour Miff. Changer la langue de l'app : au retour, l'app est dans l'autre langue | [ ] |
 | 25 | **Mon compte** : e-mail affiché (non modifiable). Compte e-mail : « Changer mon mot de passe » envoie un e-mail (le bouton se met en pause environ 1 minute). Compte Google ou Apple : pas de bouton mot de passe, « Connecté avec Google/Apple » | [ ] |
 | 26 | « Se déconnecter » demande **« Te déconnecter ? »** avec deux boutons de même poids ; Annuler ne fait rien ; confirmer ramène à l'écran de connexion | [ ] |
@@ -75,6 +77,10 @@
 | 34 | **Cas de l'impasse** : avec une seule Miff, aller sur l'onglet Profil, ouvrir la Miff, la **quitter** (ou la supprimer). Attendu : retour sur **« Pas encore de Miff »** avec Créer / Rejoindre (jamais un Profil sans barre) ; même chose si l'accès à la Miff est perdu | [ ] |
 | 35 | Au lancement, la barre n'apparaît pas puis disparaît (pas de clignotement) ; en mode avion sans cache, l'écran propose « Réessayer » et « Se déconnecter » | [ ] |
 | 36 | **À vérifier sur l'iPhone** (aide à la détection) : si fermer Miff en la balayant dans le sélecteur d'apps retarde réellement la reprise des détections (le texte de l'aide ne l'affirme pas) | [ ] |
+
+## Point connu : plantage sur le build 16
+
+**Toucher une Miff depuis le Profil plantait sur le build 16** (d6ce9c6). Cause **probable, non confirmée** (aucun journal de plantage, rien compilé en local) : la coquille posait une seconde pile de navigation dans l'onglet Profil, à l'intérieur de celle de l'accueil où l'écran de la Miff est empilé. Elle est supprimée dans cette PR (une seule pile ; les écrans des Réglages passent par la même pile, avec tout leur environnement) et un test interdit d'en recréer. **À reconfirmer sur le prochain build** (lignes 19b et 23b). Si ça plante encore : envoyer le rapport de plantage TestFlight ou Crashlytics.
 
 ## Ce qui n'est pas dans cette PR (connu, listé dans le journal des changements)
 

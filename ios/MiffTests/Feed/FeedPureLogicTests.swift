@@ -196,28 +196,48 @@ final class FeedPureLogicTests: XCTestCase {
         XCTAssertFalse(BubbleMotion.enabled(reduceMotion: false, active: false))
     }
 
-    func testTheMotionStaysWithinItsNamedAmplitudesAndIsSlow() {
-        var largestStretch = 0.0
-        var largestSquash = 1.0
-        for step in 0..<200 {
-            let phase = Double(step) / 200
-            largestStretch = max(largestStretch, BubbleMotion.scaleX(phase), BubbleMotion.scaleY(phase))
-            largestSquash = min(largestSquash, BubbleMotion.scaleX(phase), BubbleMotion.scaleY(phase))
+    func testTheShapeOnlyShrinksFromItsFullSizeAndTheDriftStaysWithinItsConstants() {
+        var smallestX = 1.0
+        var smallestY = 1.0
+        var largest = 0.0
+        for step in 0..<400 {
+            let phase = Double(step) / 400
+            smallestX = min(smallestX, BubbleMotion.scaleX(phase))
+            smallestY = min(smallestY, BubbleMotion.scaleY(phase))
+            largest = max(largest, BubbleMotion.scaleX(phase), BubbleMotion.scaleY(phase))
             XCTAssertLessThanOrEqual(abs(BubbleMotion.drift(phase)), BubbleMotion.driftPoints + 1e-9)
+            XCTAssertLessThanOrEqual(abs(BubbleMotion.tilt(phase)), BubbleMotion.tiltDegrees + 1e-9)
+            XCTAssertLessThanOrEqual(abs(BubbleMotion.starDrift(phase)), BubbleMotion.starDriftPoints + 1e-9)
+            XCTAssertLessThanOrEqual(abs(BubbleMotion.starScale(phase) - 1), BubbleMotion.starScaleAmplitude + 1e-9)
         }
 
-        XCTAssertEqual(largestStretch, 1 + BubbleMotion.scaleAmplitude, accuracy: 0.001)
-        XCTAssertEqual(largestSquash, 1 - BubbleMotion.scaleAmplitude, accuracy: 0.001)
-        XCTAssertEqual(BubbleMotion.scaleAmplitude, 0.05, "amplitude initiale demandée par le PM")
-        XCTAssertTrue((5.0...8.0).contains(BubbleMotion.blobPeriodSeconds), "un cycle de 5 à 8 s")
-        XCTAssertTrue((5.0...8.0).contains(BubbleMotion.starPeriodSeconds))
+        XCTAssertLessThanOrEqual(largest, 1 + 1e-9, "la forme ne dépasse jamais sa boîte : aucun bord coupé")
+        XCTAssertEqual(smallestX, 1 - 2 * BubbleMotion.squashX, accuracy: 0.001, "largeur de 100 % à 92 %")
+        XCTAssertEqual(smallestY, 1 - 2 * BubbleMotion.squashY, accuracy: 0.001, "hauteur de 100 % à 90 %")
     }
 
-    func testTheTwoAxesAreOutOfPhase() {
-        // Quand la tache s'allonge en largeur, elle s'écrase en hauteur.
-        XCTAssertGreaterThan(BubbleMotion.scaleX(0.25), 1)
-        XCTAssertLessThan(BubbleMotion.scaleY(0.25), 1)
-        XCTAssertEqual(BubbleMotion.scaleX(0), 1, accuracy: 1e-9)
+    func testTheNamedValuesOfDecisionD45() {
+        XCTAssertEqual(BubbleMotion.squashX, 0.04)
+        XCTAssertEqual(BubbleMotion.squashY, 0.05)
+        XCTAssertEqual(BubbleMotion.tiltDegrees, 0.8)
+        XCTAssertEqual(BubbleMotion.driftPoints, 3.5)
+        XCTAssertEqual(BubbleMotion.starDriftPoints, 0.5)
+        XCTAssertTrue((5.0...8.0).contains(BubbleMotion.blobPeriodSeconds), "un cycle de 5 à 8 s")
+        XCTAssertTrue((5.0...8.0).contains(BubbleMotion.starPeriodSeconds))
+        XCTAssertNotEqual(BubbleMotion.blobPeriodSeconds, BubbleMotion.starPeriodSeconds, "jamais en cadence")
+    }
+
+    func testTheTwoAxesAreOutOfPhaseSoTheShapeDeformsInsteadOfBreathingUniformly() {
+        var differs = false
+        for step in 0..<100 {
+            let phase = Double(step) / 100
+            let stretch = (1 - BubbleMotion.scaleX(phase)) / BubbleMotion.squashX
+            let squash = (1 - BubbleMotion.scaleY(phase)) / BubbleMotion.squashY
+            differs = differs || abs(stretch - squash) > 0.2
+        }
+
+        XCTAssertTrue(differs, "les deux axes ne suivent pas la même courbe")
+        XCTAssertEqual(BubbleMotion.scaleX(0.25), 1, accuracy: 1e-9, "pleine taille au sommet de la vague")
     }
 
     func testThePhaseIsACycleFractionAndTheMotionIsTheSameInEveryColour() {

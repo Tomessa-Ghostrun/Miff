@@ -36,33 +36,33 @@ struct FeedShellContext {
 /// - la suppression de compte (AUTH-5c/d) remplace `DeleteAccountSoonView`, atteinte par Mon compte.
 ///
 /// La barre n'est visible que sur les écrans racines : elle disparaît dès qu'un écran est empilé (les Réglages, l'écran d'une Miff, la
-/// création, les lieux, qui vivent dans la navigation de l'hôte), avec le clavier, et pour un compte qui n'a aucune Miff (l'écran
-/// « Pas encore de Miff » est plein écran, décision Q13 de l'onboarding). Le contenu passe SOUS la barre : chaque défilement garde
-/// sa marge basse grâce à la zone sûre que la barre déclare.
+/// création, les lieux : tous poussés dans la pile UNIQUE de l'hôte, qui les dessine par-dessus cette coquille), avec le clavier, et
+/// pour un compte qui n'a aucune Miff (l'écran « Pas encore de Miff » est plein écran, décision Q13 de l'onboarding). Le contenu passe
+/// SOUS la barre : chaque défilement garde sa marge basse grâce à la zone sûre que la barre déclare.
+///
+/// Aucune pile de navigation n'est créée ici : une pile imbriquée dans celle de l'hôte (où l'écran de la Miff est empilé) est ce qui
+/// faisait planter l'app au toucher d'une carte « Mes Miffs » sur le Profil.
 struct MainShellView<Feed: View>: View {
-    private let environment: AppEnvironment
     private let miffs: DirectoryState
+    @ObservedObject private var profile: ProfileTabViewModel
     private let onOpenMiff: (String) -> Void
+    private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: (FeedShellContext) -> Feed
-    @StateObject private var profile: ProfileTabViewModel
     @State private var selected: MainTab = .feed
-    @State private var settingsPath: [SettingsRoute] = []
     @State private var keyboardVisible = false
 
     init(
-        environment: AppEnvironment,
         miffs: DirectoryState,
+        profile: ProfileTabViewModel,
         onOpenMiff: @escaping (String) -> Void,
+        onOpenSettings: @escaping (SettingsRoute) -> Void,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
-        self.environment = environment
         self.miffs = miffs
+        _profile = ObservedObject(wrappedValue: profile)
         self.onOpenMiff = onOpenMiff
+        self.onOpenSettings = onOpenSettings
         self.feed = feed
-        let session = environment.session
-        _profile = StateObject(
-            wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
-        )
     }
 
     private var hasNoMiff: Bool {
@@ -74,8 +74,9 @@ struct MainShellView<Feed: View>: View {
         MainShellRules.effectiveTab(selected: selected, hasNoMiff: hasNoMiff)
     }
 
+    /// Les écrans empilés recouvrent cette coquille (pile de l'hôte) : `pathIsEmpty` vaut toujours vrai ici.
     private var barVisible: Bool {
-        MainShellRules.barVisible(keyboardVisible: keyboardVisible, pathIsEmpty: settingsPath.isEmpty, directory: miffs)
+        MainShellRules.barVisible(keyboardVisible: keyboardVisible, pathIsEmpty: true, directory: miffs)
     }
 
     var body: some View {
@@ -85,7 +86,16 @@ struct MainShellView<Feed: View>: View {
                     feed(FeedShellContext(isActive: shownTab == .feed, openProfile: { selected = .profile }))
                 }
                 TabLayer(isActive: shownTab == .profile) {
-                    profileStack
+                    ProfileTabView(
+                        state: profile.state,
+                        miffs: miffs,
+                        actions: ProfileTabActions(
+                            onOpenMyInfo: { onOpenSettings(.myInfo) },
+                            onOpenSettings: { onOpenSettings(.settings) },
+                            onRetry: { profile.retry() },
+                            onOpenMiff: onOpenMiff
+                        )
+                    )
                 }
                 if shownTab == .update {
                     UpdateSoonView()
@@ -98,11 +108,10 @@ struct MainShellView<Feed: View>: View {
                 }
             }
         }
-        // La dernière Miff a disparu : on repart du Feed, avec une pile de Réglages vide (rien ne reste ouvert sans barre pour en sortir).
+        // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
                 selected = .feed
-                settingsPath = []
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -110,77 +119,6 @@ struct MainShellView<Feed: View>: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardVisible = false
-        }
-    }
-
-    // MARK: - Profil et Réglages
-
-    /// Le Profil a sa propre pile : les Réglages et leurs écrans s'y empilent, et la barre se cache tant qu'elle n'est pas vide.
-    private var profileStack: some View {
-        NavigationStack(path: $settingsPath) {
-            ProfileTabView(
-                state: profile.state,
-                miffs: miffs,
-                actions: ProfileTabActions(
-                    onOpenMyInfo: { push(.myInfo) },
-                    onOpenSettings: { push(.settings) },
-                    onRetry: { profile.retry() },
-                    onOpenMiff: onOpenMiff
-                )
-            )
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: SettingsRoute.self) { route in
-                destination(route)
-                    .toolbar(.hidden, for: .navigationBar)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func destination(_ route: SettingsRoute) -> some View {
-        switch route {
-        case .settings:
-            SettingsListView(
-                actions: SettingsActions(
-                    onBack: { pop() },
-                    onOpenMyInfo: { push(.myInfo) },
-                    onOpenAccount: { push(.account) },
-                    onOpenPrivacy: { push(.privacy) }
-                ),
-                build: .current
-            )
-        case .myInfo:
-            MyInfoView(
-                state: profile.state,
-                tools: environment.phoneTools,
-                onBack: { pop() },
-                onRetry: { profile.retry() }
-            )
-        case .account:
-            AccountView(environment: environment, onBack: { pop() }, onDelete: { push(.deleteAccount) })
-        case .deleteAccount:
-            DeleteAccountSoonView(onBack: { pop() })
-        case .privacy:
-            PrivacyView(
-                permissions: environment.devicePermissions,
-                onBack: { pop() },
-                onOpenDetectionHelp: { push(.detectionHelp) }
-            )
-        case .detectionHelp:
-            DetectionHelpView(onBack: { pop() })
-        }
-    }
-
-    /// Deux touchers rapprochés ouvrent un seul écran, pas deux.
-    private func push(_ route: SettingsRoute) {
-        if settingsPath.last != route {
-            settingsPath.append(route)
-        }
-    }
-
-    private func pop() {
-        if !settingsPath.isEmpty {
-            settingsPath.removeLast()
         }
     }
 }

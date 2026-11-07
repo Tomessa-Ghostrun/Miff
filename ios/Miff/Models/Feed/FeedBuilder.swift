@@ -57,7 +57,10 @@ struct FeedInput: CustomStringConvertible {
 }
 
 enum FeedBuilder {
-    private static let batteryHiddenAfterMillis = FeedMillis.day
+    /// BATTERY_MAX_AGE (décision du PM, 2026-11-07, D44) : au-delà de 6 h la batterie n'est plus montrée (« là où on n'a pas l'info »). L'âge se
+    /// compte depuis `updatedAt` du statut (l'heure SERVEUR de la dernière écriture, qui porte toujours une batterie fraîche), JAMAIS depuis
+    /// `lastUpdateAt` (la dernière photo). Le seuil est susceptible de changer : une seule constante.
+    static let batteryMaxAgeMillis = 6 * FeedMillis.hour
     private static let limitedAccess: Set<MemberLocationAccess> = [.denied, .foreground]
 
     /// Ce que les fonctions du calcul se passent (une fonction à plus de 5 paramètres est refusée par SwiftLint).
@@ -271,7 +274,7 @@ enum FeedBuilder {
     }
 
     /// Décision D44 : la pastille dit « 85 % » seul, jamais l'heure de la mesure. Une heure que le serveur n'a pas encore remplie
-    /// (une écriture en attente) est « maintenant » ; au-delà d'un jour la valeur est masquée.
+    /// (une écriture en attente) est « maintenant » ; au-delà de `batteryMaxAgeMillis` la valeur est masquée.
     private static func battery(_ status: MemberStatus, now: Int) -> Battery? {
         guard let pct = status.batteryPct else {
             return nil
@@ -279,7 +282,7 @@ enum FeedBuilder {
         guard let written = status.updatedAtMillis else {
             return Battery(pct: pct)
         }
-        return now - written > batteryHiddenAfterMillis ? nil : Battery(pct: pct)
+        return now - written > batteryMaxAgeMillis ? nil : Battery(pct: pct)
     }
 
     // MARK: - La bulle

@@ -2,7 +2,7 @@
 
 **Pour qui** : vous, sur l'**iPhone 11 Pro** (iOS 26.5.2), avec **deux comptes de test dans la même Miff** : le compte **A** sur l'iPhone, le compte **B** sur l'OPPO Find X5 Lite (APK du Feed Android) ou, à défaut, un second compte que l'on modifie à la main dans la console (voir l'astuce).
 **Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 1 h et 2 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce). La sortie réelle est facultative.
-**Ce qui est testé** : le Feed iOS reproduit le Feed Android déjà validé en recette, **avec les trois ajustements du 2026-11-07** (D42 : plus de « Toi » à côté du prénom ; D43 : votre carte est la **dernière** ; D44 : la batterie n'affiche **plus l'heure**), et la demande du PM sur la bulle (mouvement plus visible).
+**Ce qui est testé** : le Feed iOS reproduit le Feed Android déjà validé en recette, **avec les trois ajustements du 2026-11-07** (D42 : plus de « Toi » à côté du prénom ; D43 : votre carte est la **dernière** ; D44 : la batterie n'affiche **plus l'heure**), et la décision D45 sur la bulle (mouvement plus visible, qui déforme la forme).
 
 ## Installer (TestFlight)
 
@@ -42,7 +42,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si un téléphone bouge o
 ## Partie B — Cartes (6 min)
 
 - [ ] **Les cartes des autres viennent d'abord, la vôtre est la dernière** (D43), **sans mention « Toi »** à côté de votre prénom (D42) ; elle porte la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
-- [ ] La carte de B : prénom, **étiquette d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie « 85 % » seule** (D44 : jamais d'heure à côté, même si le statut a plus d'1 h ; elle disparaît après 24 h), puis **trois boutons** : position, message, téléphone.
+- [ ] La carte de B : prénom, **étiquette d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie « 85 % » seule** (D44 : jamais d'heure à côté ; **elle disparaît au-delà de 6 h** sans mise à jour du statut, ou si elle est absente), puis **trois boutons** : position, message, téléphone.
 - [ ] **Message** ouvre **Messages** avec le numéro de B **préparé** (rien n'est envoyé) ; **Téléphone** ouvre le composeur et **iOS demande confirmation** avant l'appel (aucun appel lancé par Miff). Aucune demande d'autorisation « contacts » ni « téléphone ».
 - [ ] Un membre sans numéro (ancien compte) : seul le bouton position est visible.
 - [ ] Un membre qui vient d'entrer : « Pas encore de nouvelles », étiquette grise, anneau gris. Un membre qui a **arrêté de partager** : « Partage arrêté », jamais rouge.
@@ -65,8 +65,8 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 
 ## Partie C bis — Mouvement de la bulle (3 min, **à juger**)
 
-- [ ] Regardez la bulle quelques secondes : elle **s'étire et s'écrase doucement** (la largeur grandit quand la hauteur diminue), **de façon visible mais calme**, et se déplace de quelques points ; un cycle prend **plus de 6 secondes**. Seuls la **tache** et le **disque du petit dessin** bougent : le **texte reste immobile**. Rien ne clignote ni ne rebondit, **même sur une bulle rouge**.
-- [ ] **Trop ou pas assez ?** Dites si l'amplitude (±5 %) vous convient : c'est une constante (`BubbleMotion.scaleAmplitude`) qu'on règle en une ligne.
+- [ ] Regardez la bulle quelques secondes : elle **s'écrase et s'étire doucement, de façon visible mais calme** (la largeur et la hauteur ne suivent pas le même rythme : la forme se déforme comme une goutte), s'incline très légèrement et monte et descend de quelques points ; un cycle prend **6 secondes**. Seule la **forme** est déformée ; le **texte et le bouton** ne sont pas déformés (ils suivent seulement la montée et la descente). Rien ne clignote ni ne rebondit, **même sur une bulle rouge**.
+- [ ] **Trop ou pas assez ?** Dites si l'amplitude vous convient : ce sont des constantes nommées (`BubbleMotion.squashX`, `squashY`, `tiltDegrees`, `driftPoints`, `blobPeriodSeconds`) qu'on règle en une ligne.
 - [ ] **Réduire les animations** : Réglages de l'iPhone > Accessibilité > Mouvement > **Réduire les animations**. Rouvrez le Feed : **la bulle est parfaitement immobile**. Remettez le réglage.
 - [ ] **Pas de mouvement hors du Feed** : passez au Profil ou mettez l'app en arrière-plan puis revenez : le mouvement reprend doucement et ne tourne pas pendant ce temps (l'iPhone ne doit pas chauffer).
 
@@ -114,10 +114,10 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 
 ## Points ouverts pour vous (à noter à la fin)
 
-- [ ] L'amplitude de la bulle (±5 %) et le fait que **seule la tache bouge** (pas le texte) vous conviennent-ils ?
+- [ ] L'amplitude de la bulle (D45) vous convient-elle, comparée à celle de l'OPPO ?
 - [ ] Le sélecteur de Miff en **feuille du système** (sans coche) vous convient-il ?
 - [ ] Les trois clés de texte devenues inutiles (`feed_card_you`, `feed_battery_dated`, `feed_battery_dated_a11y`) seront retirées par la PR Android #105 ; rien à faire ici.
 
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
-La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, l'ordre (moi en dernier), les phrases FR et EN (lues dans le vrai catalogue), les six réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans une description, les liens `sms:` / `tel:` (numéro vérifié), la logique de l'en-tête, les amplitudes du mouvement, la parité des clés de texte avec Android.
+La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, l'ordre (moi en dernier), les phrases FR et EN (lues dans le vrai catalogue), les six réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans une description, les liens `sms:` / `tel:` (numéro vérifié), la logique de l'en-tête, les constantes du mouvement de la bulle, la batterie masquée à 6 h, la parité des clés de texte avec Android.

@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.captureToImage
@@ -113,6 +112,16 @@ class GlassTabBarTest {
 
     private val barParams = mutableStateOf<BarParams?>(null)
     private var barShown = false
+    private var lastStatus = StatusLevel.NEUTRAL
+
+    /** The spoken name of the central button follows the status (UPDATE-2): the colour is not the only signal. */
+    private fun centralName(status: StatusLevel = lastStatus): Int =
+        when (status) {
+            StatusLevel.GREEN -> R.string.tabbar_update_green_a11y
+            StatusLevel.ORANGE -> R.string.tabbar_update_orange_a11y
+            StatusLevel.RED -> R.string.tabbar_update_red_a11y
+            StatusLevel.NEUTRAL -> R.string.tabbar_update_a11y
+        }
 
     /** A bar alone over [background], as the glass sees it. Can be called again in a test: it then updates the bar already shown. */
     private fun showBar(
@@ -124,6 +133,7 @@ class GlassTabBarTest {
         fontScale: Float = 1f,
     ) {
         barParams.value = BarParams(glass, background, config, selected, status, fontScale)
+        lastStatus = status
         if (!barShown) {
             barShown = true
             composeRule.setContent {
@@ -336,7 +346,7 @@ class GlassTabBarTest {
     // --- The central button ------------------------------------------------------------------------------------------------------------
 
     private fun centralCenter(): Pair<Dp, Dp> {
-        val b = bounds(R.string.tabbar_update_soon_a11y)
+        val b = bounds(centralName())
         return ((b.left + b.right) / 2) to ((b.top + b.bottom) / 2)
     }
 
@@ -382,8 +392,13 @@ class GlassTabBarTest {
 
     @Test
     fun centralButton_keepsItsSpokenName_andItsStateForTheScreenReader() {
+        // Since UPDATE-1 the central button opens the Update screen: it is enabled, and selectable like the others.
         showBar(TabBarGlass.Default, Color.White, selected = MainTab.UPDATE)
-        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_soon_a11y)).assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_a11y)).assertIsSelected().assertIsEnabled()
+        StatusLevel.entries.forEach { level ->
+            showBar(TabBarGlass.Default, Color.White, status = level)
+            composeRule.onNodeWithContentDescription(text(centralName(level))).assertIsEnabled()
+        }
         showBar(TabBarGlass.Default, Color.White)
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertIsSelected().assertIsEnabled()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertIsEnabled()
@@ -394,7 +409,7 @@ class GlassTabBarTest {
     @Test
     fun everyEntry_is64By48dp_inABarOf64dp_withMargins24dpOnTheSides() {
         showBar(TabBarGlass.Default, Color.White)
-        listOf(R.string.tabbar_feed_a11y, R.string.tabbar_update_soon_a11y, R.string.tabbar_profile_a11y).forEach {
+        listOf(R.string.tabbar_feed_a11y, centralName(), R.string.tabbar_profile_a11y).forEach {
             composeRule.onNodeWithContentDescription(text(it)).assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(48.dp)
         }
         val root = composeRule.onRoot().getUnclippedBoundsInRoot()
@@ -412,22 +427,24 @@ class GlassTabBarTest {
     fun theCentralButton_isExactlyInTheMiddleOfTheScreen() {
         showBar(TabBarGlass.Default, Color.White)
         val root = composeRule.onRoot().getUnclippedBoundsInRoot()
-        val middle = bounds(R.string.tabbar_update_soon_a11y)
+        val middle = bounds(centralName())
         assertEquals(root.right.value / 2, (middle.left.value + middle.right.value) / 2, 0.5f)
     }
 
     @Test
     fun theBar_keepsItsSize_withTheLargestFont() {
         showBar(TabBarGlass.Default, Color.White, fontScale = 2f)
-        listOf(R.string.tabbar_feed_a11y, R.string.tabbar_update_soon_a11y, R.string.tabbar_profile_a11y).forEach {
+        listOf(R.string.tabbar_feed_a11y, centralName(), R.string.tabbar_profile_a11y).forEach {
             composeRule.onNodeWithContentDescription(text(it)).assertWidthIsEqualTo(64.dp).assertHeightIsEqualTo(48.dp)
         }
     }
 
     @Test
-    fun buildForOutsideTesters_hasTwoEntries_andTheProfileIsNotInTheMiddle() {
+    fun buildForOutsideTesters_hasTheSameThreeEntries_theCentralButtonIsNoLongerHidden() {
+        // Since UPDATE-1 the central button is in every build (decision D14 of the Update ticket is lifted).
         showBar(TabBarGlass.Default, Color.White, config = external)
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_feed_a11y)).assertWidthIsEqualTo(64.dp)
+        composeRule.onNodeWithContentDescription(text(centralName())).assertWidthIsEqualTo(64.dp).assertIsEnabled()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_profile_a11y)).assertWidthIsEqualTo(64.dp)
     }
 
