@@ -12,9 +12,6 @@ final class FirebaseAuthGateway: AuthGateway {
     /// Nom donné par Apple à la première connexion (une seule fois) : gardé en mémoire SEULEMENT, pour pré-remplir
     /// l'étape profil. Jamais écrit sur le disque, jamais journalisé.
     private var appleName = AppleNameMemory()
-    /// Code d'autorisation d'Apple (voir `SocialCredential`) : gardé en mémoire pour la révocation future, jamais écrit
-    /// sur le disque ni journalisé ; oublié à la déconnexion.
-    private var appleAuthorizationCode: String?
 
     var currentUid: String? {
         guard FirebaseBootstrap.isConfigured else {
@@ -60,9 +57,8 @@ final class FirebaseAuthGateway: AuthGateway {
     }
 
     func signIn(with credential: SocialCredential) async -> AuthOutcome {
-        if case .apple(_, _, let name, let code) = credential {
+        if case .apple(_, _, let name, _) = credential {
             appleName.record(name)
-            appleAuthorizationCode = code ?? appleAuthorizationCode
         }
         let firebaseCredential = firebaseCredential(for: credential)
         return await run(.social) {
@@ -95,6 +91,78 @@ final class FirebaseAuthGateway: AuthGateway {
         }
     }
 
+    func linkedProviders() -> Set<SignInProvider> {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return []
+        }
+        return Self.providers(from: user.providerData.map { $0.providerID })
+    }
+
+    func reauthenticateWithPassword(_ password: String) async -> AuthFailure? {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser,
+              let email = user.email, !email.isEmpty else {
+            return .unknown
+        }
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+        do {
+            _ = try await user.reauthenticate(with: credential)
+            return nil
+        } catch {
+            return interpretAuthError(error, attempt: .reauthEmail)
+        }
+    }
+
+    func reauthenticateForDeletion(with credential: SocialCredential) async -> AuthFailure? {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return .sessionExpired
+        }
+        let firebaseCredential = firebaseCredential(for: credential)
+        do {
+            _ = try await user.reauthenticate(with: firebaseCredential)
+            return nil
+        } catch {
+            return interpretAuthError(error, attempt: .reauthSocial)
+        }
+    }
+
+    func checkSession() async -> AccountSessionCheck {
+        // Personne de connecté : le compte existe peut-être encore, on ne peut pas le savoir. Jamais « disparu ».
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return .expired
+        }
+        do {
+            try await user.reload()
+            return .valid
+        } catch {
+            switch interpretAuthError(error, attempt: .checkSession) {
+            case .accountGone:
+                return .gone
+            case .sessionExpired:
+                return .expired
+            default:
+                return .unknown
+            }
+        }
+    }
+
+    /// Les méthodes que Miff connaît, d'après les identifiants de fournisseur de Firebase.
+    static func providers(from providerIds: [String]) -> Set<SignInProvider> {
+        var result = Set<SignInProvider>()
+        for identifier in providerIds {
+            switch identifier {
+            case "password":
+                result.insert(.password)
+            case "google.com":
+                result.insert(.google)
+            case "apple.com":
+                result.insert(.apple)
+            default:
+                continue
+            }
+        }
+        return result
+    }
+
     func signInMethod() -> AnalyticsEvent.Method? {
         guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
             return nil
@@ -122,7 +190,6 @@ final class FirebaseAuthGateway: AuthGateway {
 
     func signOut() {
         appleName.forget()
-        appleAuthorizationCode = nil
         // Le SDK Google garde aussi sa propre session : sans ceci, le choix du compte Google ne serait plus proposé.
         GIDSignIn.sharedInstance.signOut()
         guard FirebaseBootstrap.isConfigured else {

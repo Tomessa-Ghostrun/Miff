@@ -229,8 +229,7 @@ final class SettingsModelsTests: XCTestCase {
         let keys = [
             "settings_title", "settings_my_info_title", "settings_account_title", "settings_language_title",
             "settings_privacy_title", "ios_settings_language_current", "ios_settings_version", "ios_myinfo_edit_soon",
-            "ios_account_apple", "ios_account_delete_subtitle", "ios_delete_soon_body",
-            "ios_delete_soon_contact_action",
+            "ios_account_apple", "ios_settings_delete_entry_hint",
             "ios_privacy_notifications_status_on", "ios_privacy_notifications_status_off",
             "ios_update_restricted_title", "ios_update_restricted_body", "ios_detection_help_intro",
             "ios_detection_help_step_location"

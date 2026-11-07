@@ -36,6 +36,8 @@ struct MiffChoiceView: View {
     let onCreate: () -> Void
     let onJoin: () -> Void
     let onSignOut: () -> Void
+    /// L'entrée discrète vers les Réglages restreints (compte sans Miff), pour pouvoir supprimer son compte depuis l'app.
+    let onOpenSettings: () -> Void
 
     var body: some View {
         MiffFrame(title: nil, onBack: nil) {
@@ -70,6 +72,8 @@ struct MiffChoiceView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        // La roue crantée en haut à droite (comme le Profil) : Réglages restreints, pour pouvoir supprimer son compte.
+        .restrictedSettingsGear(action: onOpenSettings)
     }
 }
 

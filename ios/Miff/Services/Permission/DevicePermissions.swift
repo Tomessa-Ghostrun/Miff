@@ -30,6 +30,15 @@ protocol DevicePermissions: AnyObject {
 protocol NotificationAskStore {
     func wasShown(uid: String) -> Bool
     func markShown(uid: String)
+    /// Oublie le drapeau de CE compte (suppression du compte, AUTH-5c).
+    func forget(uid: String)
+}
+
+extension NotificationAskStore {
+    /// Les doubles qui ne gardent rien n'ont rien à oublier.
+    func forget(uid: String) {
+        // Rien à oublier par défaut.
+    }
 }
 
 /// Un drapeau par compte dans les réglages de l'app : ni secret, ni position, jamais envoyé nulle part. Les réglages de l'app
@@ -49,5 +58,9 @@ final class UserDefaultsNotificationAskStore: NotificationAskStore {
 
     func markShown(uid: String) {
         defaults.set(true, forKey: Self.prefix + uid)
+    }
+
+    func forget(uid: String) {
+        defaults.removeObject(forKey: Self.prefix + uid)
     }
 }

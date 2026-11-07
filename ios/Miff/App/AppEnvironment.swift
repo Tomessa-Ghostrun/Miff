@@ -149,6 +149,9 @@ final class AppEnvironment {
     let detectionJournal: DetectionJournal
     /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
     let update: UpdateServices
+    /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
+    /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
+    lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
     /// Créé à la première demande. Lit seulement l'ÉTAT des autorisations (le gestionnaire qui lit la position est celui du suivi,
     /// `LocationTracking`, créé au démarrage).
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
@@ -208,14 +211,12 @@ final class AppEnvironment {
                 cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: Self.teardowns(
-                    drafts: drafts, miff: miff, places: places,
-                    trackingServices: trackingServices, update: updateServices
-                ),
+                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices),
                 device: device,
                 network: networkMonitor,
-                drafts: drafts,
-                generationCounter: trackingServices.generation
+                drafts: drafts, generationCounter: trackingServices.generation,
+                deletionMarker: AccountDeletionFileMarker(),
+                localData: AccountDeletionServices.localData(updateLedger: updateServices.ledger)
             )
         )
         privacySettings = privacy
@@ -244,11 +245,11 @@ final class AppEnvironment {
     /// et statuts en attente effacés, borné à 5 s), puis l'Update : le garde-fou des publications et mon statut suivi partent ; la date de
     /// la photo envoyée RESTE (elle est nettoyée par le même compte à sa reconnexion), elle ne part qu'avec la suppression du compte.
     private static func teardowns(
-        drafts: ProfileDraftFileStore,
-        miff: MiffServices,
-        places: PlaceServices,
-        trackingServices: TrackingServices,
-        update: UpdateServices
+        _ drafts: ProfileDraftFileStore,
+        _ miff: MiffServices,
+        _ places: PlaceServices,
+        _ trackingServices: TrackingServices,
+        _ update: UpdateServices
     ) -> [SessionTeardown] {
         [
             { drafts.clear() },

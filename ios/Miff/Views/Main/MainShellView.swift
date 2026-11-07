@@ -45,7 +45,7 @@ private struct CleanupKey: Equatable {
 /// Points d'accroche des chantiers suivants :
 /// - le Feed iOS (FEED-5 à 8) remplace le contenu de l'onglet Feed (`feed`) ; quand il aura son écouteur de MON statut, il le donnera à
 ///   `UpdateShell.status` (`MyStatusStore.update`) et `follow` n'écoutera plus (D19 : UN seul écouteur) ;
-/// - la suppression de compte (AUTH-5c/d) remplace `DeleteAccountSoonView`, atteinte par Mon compte.
+/// - la suppression de compte est faite (AUTH-5c, `DeleteAccountFlowView`) : atteinte par Mon compte.
 ///
 /// L'Update (UPDATE-3) : le bouton central est actif, sa pastille prend la couleur de MON statut, et la bulle d'incitation (visible sur tous
 /// les onglets sauf l'Update) est posée dans la zone du bas, AU-DESSUS de la barre, par la même `safeAreaInset` : la marge basse de chaque
