@@ -27,6 +27,9 @@ enum class JournalKind {
     NOT_ELIGIBLE,
     WAKE_NETWORK,
     WAKE_REARM,
+    BATTERY_WRITTEN,
+    BATTERY_REFUSED,
+    BREAKER_BATTERY,
 }
 
 /** A line of the journal as it is kept and shown. */
