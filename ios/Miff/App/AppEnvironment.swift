@@ -209,7 +209,8 @@ final class AppEnvironment {
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
                 teardown: Self.teardowns(
-                    drafts: drafts, miff: miff, places: places, tracking: trackingServices, update: updateServices
+                    drafts: drafts, miff: miff, places: places,
+                    trackingServices: trackingServices, update: updateServices
                 ),
                 device: device,
                 network: networkMonitor,
@@ -246,7 +247,7 @@ final class AppEnvironment {
         drafts: ProfileDraftFileStore,
         miff: MiffServices,
         places: PlaceServices,
-        tracking: TrackingServices,
+        trackingServices: TrackingServices,
         update: UpdateServices
     ) -> [SessionTeardown] {
         [
@@ -254,7 +255,7 @@ final class AppEnvironment {
             { await miff.directory.stop() },
             { await miff.deletions.stop() },
             { await places.stop() },
-            tracking.teardown,
+            trackingServices.teardown,
             { update.stop() }
         ]
     }
