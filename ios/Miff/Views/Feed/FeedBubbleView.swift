@@ -350,28 +350,27 @@ private struct PagerDots: View {
     let level: StatusLevel
     let select: (Int) -> Void
 
+    private var spokenPage: String {
+        L10n.format("feed_bubble_page_a11y", current + 1, count)
+    }
+
     var body: some View {
+        dots
+            .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: spokenPage))
+            .accessibilityAdjustableAction(adjust)
+            .accessibilityAction(named: Text("feed_bubble_previous_a11y"), goToPrevious)
+            .accessibilityAction(named: Text("feed_bubble_next_a11y"), goToNext)
+    }
+
+    private var dots: some View {
         HStack(spacing: Spacing.sm) {
             ForEach(0..<count, id: .self) { position in
                 dot(selected: position == current)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: L10n.format("feed_bubble_page_a11y", current + 1, count)))
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment:
-                select(current + 1)
-            case .decrement:
-                select(current - 1)
-            @unknown default:
-                break
-            }
-        }
-        .accessibilityAction(named: Text("feed_bubble_previous_a11y")) { select(current - 1) }
-        .accessibilityAction(named: Text("feed_bubble_next_a11y")) { select(current + 1) }
     }
 
     private func dot(selected: Bool) -> some View {
@@ -380,5 +379,24 @@ private struct PagerDots: View {
         return Capsule()
             .fill(tint)
             .frame(width: width, height: 8)
+    }
+
+    private func adjust(_ direction: AccessibilityAdjustmentDirection) {
+        switch direction {
+        case .increment:
+            goToNext()
+        case .decrement:
+            goToPrevious()
+        @unknown default:
+            break
+        }
+    }
+
+    private func goToPrevious() {
+        select(current - 1)
+    }
+
+    private func goToNext() {
+        select(current + 1)
     }
 }
