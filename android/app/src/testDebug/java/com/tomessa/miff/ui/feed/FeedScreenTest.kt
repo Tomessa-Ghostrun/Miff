@@ -377,8 +377,42 @@ class FeedScreenTest {
         composeRule
             .onAllNodesWithText(text(R.string.feed_battery_a11y, 85), useUnmergedTree = true)
             .assertCountEquals(3)
-        composeRule.onNodeWithText("Toi").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_card_you_sees)).assertIsDisplayed()
+    }
+
+    @Test
+    fun cards_noMentionToi_nextToMyName_butTheLineOfMyCardIsReadWithMyName() {
+        feed(ready(nominal))
+        // Decision of the PM (2026-11-07): no "Toi" anywhere on the cards, seen or read, in the merged or the unmerged tree.
+        composeRule.onAllNodesWithText("Toi", useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Toi").assertCountEquals(0)
+        // The screen reader still knows it is my card: the line "Ce que tes proches voient de toi" is in the SAME block as my name.
+        val mine =
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText("Camille"),
+                ).fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
+                .first { it.contains("Camille") && it.size > 1 }
+        assertTrue("block of my card: $mine", mine.contains(text(R.string.feed_card_you_sees)))
+        assertFalse("block of my card: $mine", mine.contains("Toi"))
+    }
+
+    @Test
+    fun cards_myCardIsTheLastOne_afterTheOthers() {
+        feed(ready(nominal))
+
+        fun top(first: String): Float =
+            composeRule
+                .onAllNodes(
+                    androidx.compose.ui.test
+                        .hasText(first),
+                ).fetchSemanticsNodes()
+                .first { it.config[SemanticsProperties.Text].size > 1 }
+                .boundsInRoot.top
+        assertTrue(top("Thomas") < top("Amandine"))
+        assertTrue(top("Amandine") < top("Camille"))
     }
 
     @Test
@@ -459,11 +493,13 @@ class FeedScreenTest {
     }
 
     @Test
-    fun cards_aBatteryOfMoreThanAnHour_isDated() {
+    fun cards_aBatteryOfMoreThanAnHour_isNeverDated() {
         feed(ready(content(trio, mapOf(me to status(), "t" to status(updatedAgo = 90 * minute, battery = 12)))))
-        composeRule
-            .onNodeWithText(text(R.string.feed_battery_dated_a11y, 12, "à 15 h 30".t()), useUnmergedTree = true)
-            .assertExists()
+        // Decision of the PM (2026-11-07): the percentage alone, whatever the age of the value (no "12 % · 15 h 30", no "à 15 h 30").
+        composeRule.onNodeWithText(text(R.string.feed_battery_a11y, 12), useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("12 %", useUnmergedTree = true).assertExists()
+        composeRule.onAllNodesWithText("15 h 30", substring = true, useUnmergedTree = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("·", substring = true, useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test

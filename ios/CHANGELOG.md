@@ -26,6 +26,10 @@ Choix économiques et limites :
 - **Non vu sur un iPhone** : orientation et reflet de la caméra, double toucher, rendu du verre sombre sur le viseur, voile des applications récentes. Signal de repli du verre : `GlassPolicy.nativeGlassAllowed = false`.
 - **Pas de test d'émulateur des règles pour iOS** : le format est celui qu'Android a rejoué contre les règles (28 cas sur 29, PR #93) ; les clés et les bornes sont vérifiées par `UpdateRulesTests`.
 
+### CI - `ios-testflight` : `archive_mode` vaut `signed` par défaut
+
+Les 4 échecs du 2026-11-06 (« exportArchive Invalid Signature ... Miff.app/Frameworks/*.framework is not properly signed ») avaient tous été lancés avec `archive_mode = unsigned`, l'ancien défaut dont le support était « non confirmé » ; tous les succès (miff-4, loc-3, loc-4a) étaient en `signed`. Le défaut devient `signed`. Aucun code applicatif, aucune dépendance, aucun secret modifié. Coût : inchangé (le mode `signed` peut créer un certificat de développement « Created via API », voir `docs/dev/ios-spike.md` section 10).
+
 ### ONB-7 - Coquille de l'app : barre d'onglets en verre, Profil, Réglages (miroir d'Android ONB-3a/3b et TABBAR-GLASS)
 
 Tickets `docs/tickets/feed-profil-reglages.md` (ONB-7a/7b, décisions Q1 à Q7 du 2026-10-30), `docs/tickets/onboarding.md` (§6.7 à §6.10), spec `design/tab-bar-liquid-glass.md`, fiche `design/screens/update.md`, planche `design/exports/update/claude/07-tab-bar-ios.png`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro : `docs/qa/checklists/onb-7-ios-recette-pm.md`. Le Feed iOS (FEED-5 à 8), l'Update (UPDATE-3) et la suppression de compte (AUTH-5c/d) se brancheront sur cette coquille (points d'accroche dans `MainShellView`).

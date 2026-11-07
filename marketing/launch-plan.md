@@ -18,7 +18,7 @@ Références : `positioning.md` (ton, vocabulaire, consentement), `store-listing
 **Non actif, donc jamais dans les fiches des stores ni dans les contenus publics** :
 - les **notifications push** (la politique de confidentialité dit explicitement qu'aucune n'est envoyée et qu'aucun jeton n'est enregistré ; elles exigent un serveur : plan Blaze non activé) ;
 - l'**abonnement Miff+** (décidé le 2026-10-31 : essai de 7 jours sur l'annuel seulement, annuel 4,99 EUR/mois soit 59,88 EUR par an reconduit au même tarif, mensuel 6,99 EUR/mois ; mais aucun achat n'est branché : le premium est accordé à la main) ;
-- la phrase « Économisez 30 % » (le calcul réel est 28,6 %, écart assumé par le PM dans le paywall : ne jamais la reprendre dans un contenu public).
+- la phrase « Économisez 30 % » (le calcul réel est 28,6 %, écart assumé par le PM dans le paywall : ne jamais la reprendre dans un contenu public) **et sa remplaçante décidée le 2026-11-07, « presque 30 % d'économie » / « almost 30% off »** : tant que Miff+ n'est pas vendu, **aucun pourcentage dans un contenu public** (règle « false price » d'Apple 2.3.1(a), à recalculer si les tarifs changent).
 
 **Contrainte structurante : l'effet de réseau.** Une Miff ne sert à rien toute seule : chaque nouvel utilisateur doit en convaincre au moins un autre. C'est à la fois le risque principal (taux d'activation faible) et le levier de croissance gratuit (le partage du code). Tout le plan est construit autour de **cercles complets** (2 à 5 personnes qui installent ensemble), pas d'utilisateurs isolés.
 

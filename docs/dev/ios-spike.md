@@ -96,8 +96,8 @@ Il se lance **tout seul** sur une pull request qui modifie `ios/**` ou `.github/
 
 ### Le workflow `ios-testflight` (archive signée et envoi)
 **Manuel uniquement** : onglet **Actions** > **ios-testflight** > **Run workflow** > choisir la branche > **Run workflow**. Deux options :
-- `archive_mode = unsigned` (**défaut**) : archive non signée, la signature se fait à l'export. Choisi par défaut parce qu'il évite de créer un certificat de développement orphelin à chaque essai (section 10). **Son fonctionnement n'est pas confirmé** (nous n'avons pas pu le tester sans Mac) ; s'il échoue, l'échec arrive vite, à l'export.
-- `archive_mode = signed` : signature automatique dès l'archive. Plan de repli si `unsigned` échoue ; c'est lui qui peut créer des certificats de développement (section 10) et provoquer l'erreur « no devices » (section 6).
+- `archive_mode = signed` (**défaut depuis le 2026-11-07**) : signature automatique dès l'archive. Seul mode des succès constatés (miff-4, loc-3, loc-4a). Il peut créer des certificats de développement (section 10) et provoquer l'erreur « no devices » (section 6).
+- `archive_mode = unsigned` : archive non signée, signature à l'export. **Échoue** : `exportArchive Invalid Signature ... Miff.app/Frameworks/<grpc|openssl_grpc|absl|FirebaseAnalytics|FirebaseFirestoreInternal|GoogleAppMeasurement|grpcpp>.framework/... is not properly signed` (4 runs identiques le 2026-11-06, tous lancés avec ce mode ; les 3 derniers succès, loc-3, miff-4 et loc-4a, étaient en `signed`). Les frameworks binaires dynamiques ne sont pas re-signés par l'export d'une archive non signée. Ne plus l'utiliser.
 
 Avant l'archive, le workflow vérifie que l'identifiant d'app est exactement `com.tomessa.miff` (le compte Apple est partagé avec Ghostrun) ; après l'archive, une étape **bloquante** contrôle l'identifiant, la version minimale d'iOS (16.0) et le numéro de build, et annule l'envoi au moindre écart.
 
@@ -250,7 +250,7 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 Avec `-allowProvisioningUpdates`, Xcode peut créer, **à chaque exécution**, un certificat de **développement** (nom du type « Created via API », ou « Apple Development: Created via API ») dans votre compte Apple. Sa clé privée reste sur le runner, qui est détruit à la fin du job : le certificat reste chez Apple, inutilisable par personne, et s'accumule. Apple limite le nombre de certificats par compte, et **ce compte est partagé avec Ghostrun** : une accumulation pourrait gêner Ghostrun. Nous n'avons pas pu confirmer ce comportement sans Mac.
 
 Consignes :
-1. **Essayer d'abord `archive_mode = unsigned`** (c'est le défaut du workflow) : l'archive n'est pas signée, donc aucun certificat de développement n'est nécessaire ; seul le certificat de distribution « géré dans le cloud » (sans clé privée à conserver, géré par Apple) intervient à l'export. Support **non confirmé** : si l'export échoue, l'échec est rapide, et le mode `signed` reste disponible.
+1. ~~Essayer d'abord `archive_mode = unsigned`~~ (**abandonné le 2026-11-07** : échec à l'export, voir plus haut ; le défaut est `signed`) : l'archive n'est pas signée, donc aucun certificat de développement n'est nécessaire ; seul le certificat de distribution « géré dans le cloud » (sans clé privée à conserver, géré par Apple) intervient à l'export. Support **non confirmé** : si l'export échoue, l'échec est rapide, et le mode `signed` reste disponible.
 2. **Regarder developer.apple.com > Certificats, Identifiants et profils > Certificates avant et après chaque essai**, et noter le nombre et les dates.
 3. **Ne révoquer que ce qui est daté du jour de l'essai et nommé « Created via API ».**
 4. **Ne JAMAIS révoquer un certificat que vous ne reconnaissez pas** : il peut appartenir à Ghostrun (compte partagé), et sa révocation casserait la signature de cette app.
