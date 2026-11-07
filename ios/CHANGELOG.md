@@ -2,7 +2,7 @@
 
 ## Non publié
 
-### FEED-5 à FEED-7 - Le Feed : cercle, statuts, Localiser (miroir d'Android FEED-1 à FEED-3, avec D42 à D44)
+### FEED-5 à FEED-7 - Le Feed : cercle, statuts, Localiser (miroir d'Android FEED-1 à FEED-3, avec D42 à D45)
 
 Branche `ios/feed-5-7`, **PR en brouillon qui dépend de #102** (coquille ONB-7) ; ticket `docs/tickets/feed.md` (décisions D1 à D44), maquettes `design/exports/feed/` et `design/exports/feed/claude/`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro (TestFlight, le Feed est l'onglet de la coquille) : `docs/qa/checklists/feed-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md`, section « Le Feed ».
 
@@ -25,6 +25,10 @@ Modifié :
 - `MainShellView` : le paramètre `feed` reçoit un `FeedShellContext` (onglet en usage, ouvrir le Profil) ; `MiffHomeHost` pose `FeedTab` (l'accueil provisoire n'est plus utilisé que par les aperçus du diagnostic).
 - `PermissionGateDependencies` : un champ facultatif `awaiting` ; `AppEnvironment` : `awaitingAgreement`, `feedServices` ; `FirestoreMiffObserver` lit le numéro du membre.
 - Les clés `feed_card_you`, `feed_battery_dated` et `feed_battery_dated_a11y` (D42, D44) ne sont plus utilisées : laissées au catalogue tant que la PR Android #105 (qui les retire des deux côtés) n'est pas fusionnée.
+
+### CI - `ios-testflight` : `archive_mode` vaut `signed` par défaut
+
+Les 4 échecs du 2026-11-06 (« exportArchive Invalid Signature ... Miff.app/Frameworks/*.framework is not properly signed ») avaient tous été lancés avec `archive_mode = unsigned`, l'ancien défaut dont le support était « non confirmé » ; tous les succès (miff-4, loc-3, loc-4a) étaient en `signed`. Le défaut devient `signed`. Aucun code applicatif, aucune dépendance, aucun secret modifié. Coût : inchangé (le mode `signed` peut créer un certificat de développement « Created via API », voir `docs/dev/ios-spike.md` section 10).
 
 ### ONB-7 - Coquille de l'app : barre d'onglets en verre, Profil, Réglages (miroir d'Android ONB-3a/3b et TABBAR-GLASS)
 

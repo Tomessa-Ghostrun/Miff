@@ -5,7 +5,7 @@ PNG 1x (320 px de large). Même design pour Android et iOS (natif d'abord).
 | Fichier | Écran |
 |---|---|
 | `Welcoming screen.png` | Réglages (utilisateur gratuit) : Mes informations / Mon compte / Langue / Notifications + encart Premium « Commencer l'essai gratuit (7 j) — Puis 4,99 €/mois pendant 1 an », pastille « Annulable à tout moment » |
-| `Welcoming screen-1.png` | Idem, encart Premium déplié : « Annuel (4,99 €/mois pour 1 an) — Économisez 30 % » / « Sans engagement (6,99 €/mois) » |
+| `Welcoming screen-1.png` | Idem, encart Premium déplié : « Annuel (4,99 €/mois pour 1 an) — Économisez 30 % » **(PNG non modifié ; décision du PM du 2026-11-07 : le texte à implémenter est « presque 30 % d'économie » / « almost 30% off », voir `docs/release/decisions-stores-avant-soumission.md` §16)** / « Sans engagement (6,99 €/mois) » |
 | `Welcoming screen-2.png` | Réglages (utilisateur premium) : ligne « Abonnement » à la place de l'encart |
 | `Welcoming screen-3.png` | Mes informations : photo, prénom, nom (compteurs x/50), pays (indicatif), téléphone (le libellé du champ téléphone est « Nom » par erreur) |
 | `Welcoming screen-14.png` | Mes informations, états d'erreur (« 3 caractères minimum », « Numéro invalide », bouton désactivé) |

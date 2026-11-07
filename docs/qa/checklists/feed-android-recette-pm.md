@@ -64,13 +64,13 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 ## Partie B — Cartes (5 min)
 
-- [ ] **Votre carte est la première**, avec « Toi », votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
-- [ ] La carte de B vient ensuite : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] **Votre carte est la DERNIÈRE** (D43), **sans** mention « Toi » à côté de votre prénom (D42), avec votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
+- [ ] La carte de B vient avant la vôtre : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
 - [ ] **Message** ouvre l'application SMS avec le numéro de B **préparé** (rien n'est envoyé) ; **Téléphone** ouvre le **composeur** avec le numéro (aucun appel lancé). Revenez avec « retour ».
 - [ ] Si un membre n'a pas de numéro (ancien compte) : seul le bouton position est visible.
 - [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise ; il a quand même un bouton position (voir la partie D : « n'a pas encore de position connue »).
 - [ ] Un membre qui a **arrêté de partager** : « Partage arrêté », jamais rouge.
-- [ ] Batterie : après 1 h sans mise à jour du statut elle s'affiche **datée** (« 12 % · 16 h 02 ») ; après 24 h elle disparaît. **Aucune alerte de batterie faible.**
+- [ ] Batterie (D44) : le pourcentage s'affiche **seul** (« 12 % »), **jamais d'heure de mesure**, même après 1 h sans mise à jour du statut ; **au-delà de 6 h sans mise à jour elle disparaît** (D44). **Aucune alerte de batterie faible.**
 - [ ] « Ajouter un proche » ouvre la feuille de partage (nom, code, lien). (À 15 membres le bouton devient « Cette Miff est bien remplie ! » : couvert par un test, pas à refaire à la main.)
 
 ## Partie C — Couleur de la Miff et bulle (10 min, avec l'astuce de la console)
@@ -83,13 +83,13 @@ Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte *
 - [ ] **Zone de danger** : B `in_risk` : bulle rouge **« B est à {nom du lieu} »** + « Depuis … » + « Une zone définie par ta Miff ». La carte de B : « Dans une zone de danger ». **Nulle part** le mot « zone à risque ».
 - [ ] **Vous seul(e) en orange ou en rouge** (modifiez votre propre statut, B reste vert) : la bulle vous parle : « Tu as quitté la maison à … », « Tes proches n'ont pas eu de tes nouvelles depuis … », « Tu es dans une zone de danger de ta Miff » (+ « Tes proches le voient aussi »). **Pas** de bouton « Envoyer un message » sur votre propre page.
 - [ ] **Plusieurs alertes** (B rouge et un troisième membre orange, ou deux comptes) : des **pastilles** apparaissent sous la bulle (la page courante est **allongée**), le **rouge d'abord**, on change de page en **glissant**, **rien ne défile tout seul**. Avec une seule alerte : pas de pastilles.
-- [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (vous, puis l'ordre d'arrivée).
+- [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (les autres dans l'ordre d'arrivée, puis vous en dernier).
 - [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
 - [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent dans la pastille, et la bulle garde son petit dessin décoratif (étoile, horloge, « ! », sablier) : points validés par le PM le 2026-11-06.
 
 ## Partie C bis — Mouvement très léger de la bulle (3 min)
 
-- [ ] **Constater le mouvement** : ouvrez le Feed et regardez la bulle de couleur quelques secondes, sans y toucher : elle **respire très doucement** (à peine plus grande puis à peine plus petite, et elle se déplace de quelques millimètres vers le haut puis le bas), un cycle prend **plus de 6 secondes**. L'étoile (ou l'horloge, le « ! », le sablier) du coin suit un rythme un peu différent. **Rien ne clignote, ne rebondit ni ne s'accélère**, y compris sur une bulle rouge (essayez avec l'astuce de la console).
+- [ ] **Constater le mouvement** : ouvrez le Feed et regardez la bulle de couleur quelques secondes, sans y toucher : elle **respire de façon bien visible mais calme, comme une bulle de savon** (D45) : la forme s'**étire puis s'écrase**, tantôt plus large et plus basse, tantôt plus étroite et plus haute (les deux directions ne bougent pas ensemble), s'incline très légèrement et monte et descend de quelques millimètres ; **le texte et le bouton à l'intérieur ne se déforment pas** ; un cycle prend **environ 6 secondes**. L'étoile (ou l'horloge, le « ! », le sablier) du coin suit un rythme un peu différent. **Rien ne clignote, ne rebondit ni ne s'accélère**, y compris sur une bulle rouge (essayez avec l'astuce de la console).
 - [ ] **Rien d'autre ne bouge** : les cartes, le texte de la bulle, la barre d'onglets et les marges restent immobiles ; le carrousel des alertes ne défile **jamais tout seul** (seulement quand vous glissez).
 - [ ] **Supprimer le mouvement** : Réglages du téléphone > Accessibilité > Améliorations de la visibilité (ou « Options pour les développeurs » > « Échelle de durée d'animation ») > **Supprimer les animations** (ou échelle à « Animation désactivée »). Revenez dans Miff (fermez-la puis rouvrez-la, ou changez d'onglet et revenez) : **la bulle est parfaitement immobile**. Remettez le réglage normal pour la suite.
 - [ ] **Pas de mouvement hors du Feed** : passez à l'onglet Profil, ou mettez l'app en arrière-plan, puis revenez : le mouvement reprend doucement, sans à-coup, et ne tourne pas pendant ce temps (batterie : le téléphone ne doit pas chauffer, la consommation de Miff en arrière-plan ne change pas).
