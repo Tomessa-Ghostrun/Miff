@@ -32,6 +32,12 @@ struct PermissionGateHost<Content: View>: View {
                     }
                 }
             }
+            // « Revoir et accepter » depuis l'Update : l'écran de renouvellement du consentement revient.
+            .onReceive(NotificationCenter.default.publisher(for: .miffReviewAgreementRequested)) { _ in
+                Task {
+                    await viewModel.onAgreementReviewAsked()
+                }
+            }
     }
 
     @ViewBuilder

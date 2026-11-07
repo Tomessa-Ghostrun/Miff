@@ -288,11 +288,15 @@ final class PermissionPrivacyTests: XCTestCase {
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
 
+        // UPDATE-3 : le texte d'usage de la caméra s'ajoute aux deux de la localisation (voir le test de la caméra ci-dessous).
         XCTAssertEqual(
             Set(strings.keys),
-            ["NSLocationAlwaysAndWhenInUseUsageDescription", "NSLocationWhenInUseUsageDescription"]
+            [
+                "NSLocationAlwaysAndWhenInUseUsageDescription", "NSLocationWhenInUseUsageDescription",
+                "NSCameraUsageDescription"
+            ]
         )
-        for key in strings.keys {
+        for key in strings.keys where key.hasPrefix("NSLocation") {
             let french = try text(key, "fr", in: strings)
             let english = try text(key, "en", in: strings)
             // Elles disent COMPLÈTEMENT l'usage (docs/release/app-store-confidentialite-et-revue.md §4) : la dernière position
@@ -307,5 +311,24 @@ final class PermissionPrivacyTests: XCTestCase {
         let always = try text("NSLocationAlwaysAndWhenInUseUsageDescription", "fr", in: strings)
         XCTAssertTrue(always.contains("même quand l'app est fermée"))
         XCTAssertTrue(always.contains("Tu peux arrêter à tout moment"))
+    }
+
+    func testTheCameraUsageTextSaysWhenWhoSeesThePhotoForHowLongAndThatNothingIsSavedToTheLibrary() throws {
+        let url = iosRoot.appendingPathComponent("Miff/Resources/InfoPlist.xcstrings")
+        let data = try Data(contentsOf: url)
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
+        let french = try text("NSCameraUsageDescription", "fr", in: strings)
+        let english = try text("NSCameraUsageDescription", "en", in: strings)
+
+        // Ton bienveillant, tutoiement, usage COMPLET : quand, qui voit, combien de temps, la position, rien dans la photothèque.
+        XCTAssertTrue(french.contains("quand tu ouvres") && french.contains("membres de tes Miffs"))
+        XCTAssertTrue(french.contains("24 h") && french.contains("avec ta position"))
+        XCTAssertTrue(french.contains("photothèque"))
+        XCTAssertTrue(english.contains("only when you open") && english.contains("members of your Miffs"))
+        XCTAssertTrue(english.contains("24 hours") && english.contains("with your position"))
+        XCTAssertTrue(english.contains("photo library"))
+        // Rien d'alarmiste : pas de point d'exclamation.
+        XCTAssertFalse(french.contains("!") || english.contains("!"))
     }
 }

@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "fr",
   "strings": {
+    "NSCameraUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. The photo is published with your position and can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your photo library."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff utilise la caméra seulement quand tu ouvres l'écran « Donner des nouvelles », pour prendre une photo de toi ou de ce qui t'entoure. La photo est publiée avec ta position et visible des membres de tes Miffs pendant 24 h, puis elle n'est plus lisible. Rien n'est enregistré dans ta photothèque."
+          }
+        }
+      }
+    },
     "NSLocationAlwaysAndWhenInUseUsageDescription": {
       "extractionState": "manual",
       "localizations": {

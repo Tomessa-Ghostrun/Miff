@@ -13533,40 +13533,6 @@
         }
       }
     },
-    "ios_update_soon_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share an update"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Donner des nouvelles"
-          }
-        }
-      }
-    },
-    "ios_update_soon_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This is coming soon: you will be able to let your circle know you are doing fine in one tap."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cette fonction arrive bientôt : tu pourras dire à ton cercle que tu vas bien en un geste."
-          }
-        }
-      }
-    },
     "ios_detection_help_intro": {
       "extractionState": "manual",
       "localizations": {
@@ -14634,6 +14600,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta position n'est pas accessible : la localisation du téléphone est éteinte, ou Miff n'a plus le droit de l'utiliser. Tu peux la rallumer dans les réglages, puis réessayer."
+          }
+        }
+      }
+    },
+    "ios_update_restricted_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera isn't accessible"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La caméra n'est pas accessible"
+          }
+        }
+      }
+    },
+    "ios_update_restricted_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera is restricted on this device. This action isn't available here."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La caméra est restreinte sur cet appareil. Cette action n'est pas disponible ici."
           }
         }
       }

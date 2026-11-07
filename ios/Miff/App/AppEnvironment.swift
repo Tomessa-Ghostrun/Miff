@@ -147,6 +147,8 @@ final class AppEnvironment {
     let tracking: TrackingRuntime
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
+    /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
+    let update: UpdateServices
     /// Créé à la première demande. Lit seulement l'ÉTAT des autorisations (le gestionnaire qui lit la position est celui du suivi,
     /// `LocationTracking`, créé au démarrage).
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
@@ -192,6 +194,13 @@ final class AppEnvironment {
             onSharingChanged: trackingServices.sharingChanged
         )
         let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
+        let updateServices = UpdateServices.make(
+            gateway: gateway,
+            network: networkMonitor,
+            device: device,
+            tracking: trackingServices,
+            directory: miff.directory
+        )
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -210,7 +219,10 @@ final class AppEnvironment {
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() },
                     // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
-                    trackingServices.teardown
+                    trackingServices.teardown,
+                    // L'Update : le garde-fou des publications et mon statut suivi partent ; la date de la photo envoyée reste (elle
+                    // est nettoyée par le même compte à sa reconnexion), elle ne part qu'avec la suppression du compte.
+                    { updateServices.stop() }
                 ],
                 device: device,
                 network: networkMonitor,
@@ -234,6 +246,7 @@ final class AppEnvironment {
         consentRenewals = miff.renewals
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
+        update = updateServices
         profileDrafts = drafts
         pendingConsent = pending
     }

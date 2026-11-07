@@ -5,14 +5,14 @@ import Foundation
 /// système l'inverse en droite-à-gauche.
 enum MainTab: Equatable, Hashable, CaseIterable {
     case feed
-    /// « Donner des nouvelles » (ticket Update, UPDATE-3) : pour l'instant un emplacement calme « bientôt ».
+    /// « Donner des nouvelles » (ticket Update, UPDATE-3) : le viseur, l'aperçu et la publication de la photo du moment.
     case update
     case profile
 }
 
-/// Ce que montre la barre. Le bouton central est VISIBLE dans les builds que l'équipe essaie elle-même (Debug, Internal) et ABSENT des
-/// builds destinés à des testeurs extérieurs (Release : la barre n'a alors que deux onglets) : un bouton qui n'a pas encore de
-/// fonction ne doit jamais atteindre quelqu'un qui ne sait pas pourquoi (décision Q1, 2026-10-30).
+/// Ce que montre la barre. Le bouton central est ACTIF dans TOUS les builds depuis l'Update (UPDATE-3) : la décision Q1 du 2026-10-30
+/// (« absent des builds de diffusion tant qu'il n'a pas de fonction ») est levée par le ticket Update (D14), comme sur Android.
+/// `forBuild` est gardé pour que le choix reste une ligne.
 struct TabBarConfig: Equatable {
     let showsUpdateButton: Bool
 
@@ -22,7 +22,7 @@ struct TabBarConfig: Equatable {
     }
 
     static func forBuild(isInternalBuild: Bool) -> TabBarConfig {
-        TabBarConfig(showsUpdateButton: isInternalBuild)
+        TabBarConfig(showsUpdateButton: true)
     }
 
     static var current: TabBarConfig {
@@ -31,13 +31,39 @@ struct TabBarConfig: Equatable {
 }
 
 /// La couleur de la pastille du bouton central : celle du statut de la personne, SANS pictogramme (décision du PM, 2026-11-06). Grise
-/// quand le statut est inconnu ou que le partage est arrêté. Rien n'alimente encore les trois couleurs : le bouton reste gris
-/// jusqu'à UPDATE-3.
+/// quand le statut est inconnu ou que le partage est arrêté. Elle vient de `StatusColor.level` (UN seul calcul), via `init(level:)`.
 enum CentralButtonState: Equatable, CaseIterable {
     case neutral
     case safe
     case warning
     case danger
+
+    init(level: StatusLevel) {
+        switch level {
+        case .neutral:
+            self = .neutral
+        case .green:
+            self = .safe
+        case .orange:
+            self = .warning
+        case .red:
+            self = .danger
+        }
+    }
+
+    /// Le nom parlé du bouton central : il dit l'état (jamais la couleur seule, D25).
+    var accessibilityKey: String {
+        switch self {
+        case .neutral:
+            return "tabbar_update_a11y"
+        case .safe:
+            return "tabbar_update_green_a11y"
+        case .warning:
+            return "tabbar_update_orange_a11y"
+        case .danger:
+            return "tabbar_update_red_a11y"
+        }
+    }
 
     var dotColor: ColorToken {
         switch self {
@@ -59,15 +85,14 @@ enum CentralButtonState: Equatable, CaseIterable {
 }
 
 /// Les noms parlés (VoiceOver) de la barre : une clé du catalogue par onglet. L'état « sélectionné » est annoncé à part, jamais par la
-/// couleur seule.
+/// couleur seule. Le nom du bouton central dit l'état de la personne (« Donner des nouvelles, tu es en orange »).
 enum TabBarNames {
-    static func key(for tab: MainTab) -> String {
+    static func key(for tab: MainTab, central: CentralButtonState = .neutral) -> String {
         switch tab {
         case .feed:
             return "tabbar_feed_a11y"
         case .update:
-            // Tant que le bouton ne fait pas encore ce qu'il promet, son nom le dit.
-            return "tabbar_update_soon_a11y"
+            return central.accessibilityKey
         case .profile:
             return "tabbar_profile_a11y"
         }
