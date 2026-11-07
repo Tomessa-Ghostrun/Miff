@@ -281,18 +281,28 @@ private fun BubbleBlob(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 176.dp)
-                // Drawn, never laid out: a breath of scale and a drift of two dp, read in the draw phase only (no recomposition, no margin moves).
+                // Drawn, never laid out: the slow vertical drift of the whole bubble, read in the draw phase only (no recomposition, no
+                // margin moves, no touch area moved by more than the drift itself).
                 .graphicsLayer {
-                    if (phases != null) {
-                        val phase = phases.blob.value
-                        val breath = BubbleMotion.scale(phase)
-                        scaleX = breath
-                        scaleY = breath
-                        translationY = BubbleMotion.driftDp(phase) * density
-                    }
-                }.clip(BubbleShape)
-                .background(level.tint()),
+                    if (phases != null) translationY = BubbleMotion.driftDp(phases.blob.value) * density
+                },
     ) {
+        // The SHAPE only is deformed (squashed and stretched out of phase, a fraction of a degree of tilt, decision D45): the text and the button
+        // in front of it are not scaled nor rotated. A layer of the GPU, read in the draw phase: no recomposition, no layout.
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        if (phases != null) {
+                            val phase = phases.blob.value
+                            scaleX = BubbleMotion.scaleX(phase)
+                            scaleY = BubbleMotion.scaleY(phase)
+                            rotationZ = BubbleMotion.tiltDegrees(phase)
+                        }
+                    }.clip(BubbleShape)
+                    .background(level.tint()),
+        )
         Column(
             modifier = Modifier.padding(start = 40.dp, end = 56.dp, top = 40.dp, bottom = 46.dp),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -309,7 +319,7 @@ private fun BubbleBlob(
                     .graphicsLayer {
                         if (phases != null) {
                             val phase = phases.star.value
-                            val breath = BubbleMotion.scale(phase)
+                            val breath = BubbleMotion.starScale(phase)
                             scaleX = breath
                             scaleY = breath
                             translationY = BubbleMotion.starDriftDp(phase) * density
