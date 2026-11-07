@@ -74,6 +74,31 @@ object TrackingWrites {
     }
 
     /**
+     * Only the battery level (the app was opened or left). An UPDATE of three keys: the merged document keeps `presence`, `placeId`, `presenceAt`,
+     * `lastUpdateAt`, `updateText`, `hasPhoto`, `locationAccess` and `escalationDueAt` exactly as the server holds them (R-LIEU-1: the stored times are accepted
+     * whatever their age), so it passes `validStatus` with no change of the rules. An UPDATE never creates: a status that does not exist (sharing stopped,
+     * deleted) is answered by a refusal, never recreated. The level is required: a phone that does not say its level writes nothing.
+     */
+    fun batteryUpdate(
+        miffId: String,
+        uid: String,
+        batteryPct: Int,
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        require(batteryPct in 0..100) { "battery range" }
+        return DocWrite(
+            "miffs/$miffId/status/$uid",
+            WriteKind.UPDATE,
+            mapOf(
+                "batteryPct" to batteryPct,
+                "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
+            ),
+        )
+    }
+
+    /**
      * UPDATE-1 (the manual update, the ONLY status write of the Update screen; it lives here so that it carries `deviceId` like every other one, which
      * `DeviceIdInEveryWriteTest` counts). An UPDATE of the fields of the photo only: `presence`, `placeId`, `presenceAt` and `locationAccess` are NOT sent
      * (the merged document keeps them, R-LIEU-1), `lastUpdateAt` is the SERVER time (it is the moment of the update, and what the colour restarts from).

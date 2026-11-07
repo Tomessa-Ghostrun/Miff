@@ -74,6 +74,9 @@ class LocalMiff(
     val positionLng: Double? = null,
     val positionAtMillis: Long? = null,
     val pending: PendingStatus? = null,
+    /** The last battery level written to this Miff by this phone (any status write counts) and when: the refresh on opening / leaving writes only a real change. Not a location. */
+    val batteryPct: Int? = null,
+    val batteryAtMillis: Long? = null,
 ) {
     fun derived(): DerivedPresence? = PresenceValue.fromWire(presence)?.let { DerivedPresence(it, presencePlaceId) }
 
@@ -91,6 +94,8 @@ class LocalMiff(
         access: String? = this.access,
         written: WrittenPosition? = written(),
         pending: PendingStatus? = this.pending,
+        batteryPct: Int? = this.batteryPct,
+        batteryAtMillis: Long? = this.batteryAtMillis,
     ) = LocalMiff(
         places = places,
         readAtMillis = readAtMillis,
@@ -101,6 +106,8 @@ class LocalMiff(
         positionLng = written?.lng,
         positionAtMillis = written?.atMillis,
         pending = pending,
+        batteryPct = batteryPct,
+        batteryAtMillis = batteryAtMillis,
     )
 
     override fun toString(): String = "LocalMiff(redacted)"
@@ -111,11 +118,13 @@ class LocalBreaker(
     val dayKey: String,
     val statusWrites: Int,
     val positionWrites: Int,
+    val batteryWrites: Int = 0,
 ) {
-    fun toState() = BreakerState(dayKey, statusWrites, positionWrites)
+    fun toState() = BreakerState(dayKey, statusWrites, positionWrites, batteryWrites)
 
     companion object {
-        fun of(state: BreakerState) = LocalBreaker(state.dayKey, state.statusWrites, state.positionWrites)
+        fun of(state: BreakerState) =
+            LocalBreaker(state.dayKey, state.statusWrites, state.positionWrites, state.batteryWrites)
     }
 }
 
@@ -139,6 +148,8 @@ class LocalState(
     /** The last Miff served by a pass of statuses / of positions: the next pass starts AFTER it, so that a breaker never spares the same Miffs for good. */
     val statusCursor: String? = null,
     val positionCursor: String? = null,
+    /** When a battery refresh (opening / leaving the app) was last TRIED, whatever its outcome (0 = never): at most one attempt every 15 minutes. */
+    val batteryTriedAtMillis: Long = 0L,
 ) {
     fun fix(): Fix? =
         if (fixLat != null && fixLng != null &&
@@ -159,6 +170,7 @@ class LocalState(
         checkedAtMillis: Long = this.checkedAtMillis,
         statusCursor: String? = this.statusCursor,
         positionCursor: String? = this.positionCursor,
+        batteryTriedAtMillis: Long = this.batteryTriedAtMillis,
     ) = LocalState(
         uid = uid,
         miffs = miffs,
@@ -172,6 +184,7 @@ class LocalState(
         checkedAtMillis = checkedAtMillis,
         statusCursor = statusCursor,
         positionCursor = positionCursor,
+        batteryTriedAtMillis = batteryTriedAtMillis,
     )
 
     override fun toString(): String = "LocalState(redacted)"

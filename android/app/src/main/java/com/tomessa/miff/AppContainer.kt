@@ -329,7 +329,7 @@ class AppContainer(
         trackingScope.launch {
             // A purge of the cache left by a failed sign-out comes before any other access to Firestore.
             cachePurger.purgeIfPending()
-            trackingEngine.refresh(reason)
+            trackingEngine.lookAgain(reason)
         }
     }
 
