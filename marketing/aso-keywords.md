@@ -42,7 +42,8 @@ Règles à respecter (Google, vérifiées le 2026-11-07) : pas de répétition d
 
 Une recherche web ponctuelle sur la présence de « Miff » et sur les apps de partage de position entre proches a montré :
 
-- Aucune app nommée « Miff » parmi les premiers résultats (ce n'est **pas** une vérification d'antériorité : voir risque J18 de `docs/legal/README.md`).
+- **Mise à jour du 2026-11-07 (`release-manager`)** : une seconde recherche a trouvé dans l'App Store une app nommée **« MIFF »** (application officielle du Moscow International Film Festival, développeur MEDIAFEST, catégorie Divertissement ; fiche canadienne lue, disponibilité en France non constatée). Le nom complet de Miff (« Miff - Cercle de confiance ») est différent et d'un autre domaine, mais la phrase d'origine ci-dessous (« aucune app nommée Miff ») est **fausse** et ne doit plus être reprise. Aucune vérification côté Google Play ni dans la base de marques de l'INPI n'a pu être faite (`docs/release/decisions-stores-avant-soumission.md`, n° 9).
+- Première recherche (même jour, premiers résultats seulement) : aucune app nommée « Miff » (ce n'est **pas** une vérification d'antériorité : voir risque J18 de `docs/legal/README.md`).
 - Une offre abondante d'apps de « localisation familiale » ou de « traceur », dont les fiches mettent en avant : la position en direct, les alertes à l'arrivée ou au départ de lieux enregistrés (la même fonctionnalité que Miff, avec un autre ton), l'invitation à un cercle par code, et des offres gratuites avec achats intégrés.
 - Je ne cite pas leurs noms (règle du PM) et je n'en tire **aucune donnée de volume**.
 
@@ -84,7 +85,7 @@ Légende : **Pertinence** = jugement de l'agent (haute / moyenne / faible) vis-�
 | position | Fonction (voir H4) | Moyenne | Élevée | Mots-clés iOS, à retirer si les avis montrent une attente de carte |
 | sans déranger | Bénéfice | Haute | Faible | Sous-titre, descriptions |
 | code secret / rejoindre un groupe | Fonction | Moyenne | Faible | Descriptions |
-| mise à jour photo | Fonction | Moyenne | Faible | Descriptions |
+| photo du moment (« donner des nouvelles ») | Fonction | Moyenne | Faible | Descriptions |
 | **géolocalisation, localisation famille** | Besoin « carte » | Moyenne | Très élevée (hypothèse) | **Écarté** du nom et du sous-titre (attire des attentes de suivi en direct) ; apparition naturelle dans la description seulement si le PM le valide |
 | **traceur GPS, tracker, suivi GPS, pister, surveiller, espionner, mouchard** | Outil de contrôle | Faible, **contraire au positionnement** | Très élevée | **Écarté définitivement** ; risque en plus de relecture par les stores sur le suivi à l'insu |
 | **enfant, surveillance enfant, contrôle parental** | Audience mineure | Faible | Élevée | **Écarté** : ne pas viser les enfants (voir classification d'âge) ; un contrôle parental n'est pas ce que fait Miff |
@@ -114,7 +115,7 @@ Légende : **Pertinence** = jugement de l'agent (haute / moyenne / faible) vis-�
 | Mots-clés iOS (99 / 100) | proches,famille,amis,couple,rassurer,rassurance,arrivée,départ,lieux,groupe,partage,position,maison | (96 / 100) family,friends,partner,loved ones,reassurance,peace of mind,arrive,leave,places,group,share,home |
 | Description courte Play | Des nouvelles de tes proches, sans les déranger. Partage consenti et révocable. | News from your loved ones, without bothering them. Sharing is your choice. |
 
-Sur Google Play, la description longue est indexée : elle emploie naturellement (sans répétition forcée) les termes « proches », « cercle de confiance », « lieux de confiance », « arrivée », « départ », « mise à jour », « famille », « amis », « couple ».
+Sur Google Play, la description longue est indexée : elle emploie naturellement (sans répétition forcée) les termes « proches », « cercle de confiance », « lieux de confiance », « arrivée », « départ », « donner des nouvelles », « famille », « amis », « couple ».
 
 ---
 

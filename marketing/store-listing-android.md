@@ -4,8 +4,10 @@
 Langue principale : français. Langue de repli : anglais.
 
 **À lire avant d'utiliser ce fichier**
-- Les déclarations déjà arrêtées dans `docs/release/` (notamment `google-play-data-safety.md`, `google-play-localisation-arriere-plan.md` et `update-photo-declarations.md`) **ne doivent jamais être contredites**. **Je n'ai pas pu les relire** (absentes de la copie du dépôt dont je disposais). La description reste donc volontairement **minimale** sur la localisation et les données ; la section 0 de `store-listing-ios.md` (C1 à C14) vaut aussi pour Android et doit être recoupée avec ces fichiers.
+- Les déclarations déjà arrêtées dans `docs/release/` (notamment `google-play-data-safety.md`, `google-play-localisation-arriere-plan.md` et `update-photo-declarations.md`) **ne doivent jamais être contredites**. **Recoupé le 2026-11-07 par `release-manager`** avec ces fichiers, `docs/legal/*`, `web/src/landing.json`, `backend/data-model.md`, `docs/tickets/*.md` et le code Android de `main` (`8e87ebd`). Corrections faites dans ce fichier : la localisation en arrière-plan n'est **plus décrite comme facultative** (« Toujours » est obligatoire, décision du PM du 2026-11-01) ; la description reprend la phrase exigée par `google-play-localisation-arriere-plan.md` §5 (arrière-plan, app fermée, statut **et dernière position connue** vus du cercle) ; « petit mot » est retiré (la photo n'a **pas de texte** en v1 et porte **toujours son endroit**) ; la formule gratuite est de **2 lieux** ; l'exigence de test fermé de Google est vérifiée (section 5).
+- La section 0 de `store-listing-ios.md` (C1 à C15) vaut aussi pour Android, avec cette différence : **l'Android a le Feed, l'Update et les Réglages (dont la suppression de compte)** ; c'est l'iOS qui ne les a pas encore.
 - Notifications push et abonnement (Miff+) **non actifs** : aucune mention. Aucune marque tierce.
+- **Rien n'est « prêt à soumettre »** (`docs/qa/release-checklist.md` n'existe pas encore). Décisions et actions du PM : `docs/release/decisions-stores-avant-soumission.md`.
 - Règles de métadonnées Google Play vérifiées le 2026-11-07 (page officielle « Metadata policy ») : titre de 30 caractères au plus ; pas d'émojis ni de symboles répétés dans le titre ; pas de majuscules abusives ; pas de mots-clés répétés ou sans rapport ; pas de prix ni d'offre promotionnelle dans le titre ; pas de mention de classement (« n° 1 », « populaire ») ; pas de témoignages anonymes dans la description ; captures et vidéo fidèles à l'expérience réelle. Description courte : 80 caractères (page officielle des spécifications). Description longue : 4000 caractères (connaissance de l'agent, à revérifier dans la console).
 
 ---
@@ -35,21 +37,22 @@ Une Miff, c'est ton cercle de confiance : famille, amis, couple... On la crée e
 La maison, l'école, le travail... Le créateur de la Miff définit les lieux, et chaque membre les retrouve dans l'app.
 
 3. Les nouvelles arrivent toutes seules
-Si tu l'acceptes, ton téléphone repère quand tu arrives dans un lieu de confiance ou que tu en pars. Ton cercle voit un statut tout simple, comme « À la maison », sans que tu aies rien à écrire.
+Avec ton accord, ton téléphone repère quand tu arrives dans un lieu de confiance ou que tu en pars, même quand l'app est fermée. Ton cercle voit un statut tout simple, comme « À la maison », et ta dernière position connue avec l'heure, sans que tu aies rien à écrire.
 
 4. Donne des nouvelles quand tu veux
-Une photo, un petit mot : une mise à jour en un geste.
+Une photo prise sur le moment avec la caméra de Miff, sans texte. Elle est publiée avec l'endroit où tu l'as prise et visible 24 heures.
 
 5. Un coup d'oeil, et c'est fait
 Tu ouvres Miff, tu vois où en sont tes proches, tu refermes. Si l'envie t'en prend, un bouton t'envoie vers ton application habituelle pour écrire un message ou appeler.
 
 TU GARDES LA MAIN
 
-- Le partage de ta localisation est ton choix, Miff par Miff. Miff t'explique à quoi il sert avant que ton téléphone te demande l'autorisation.
-- Pour repérer tes arrivées et tes départs quand l'app est fermée, Miff te demande l'autorisation d'utiliser ta localisation en arrière-plan. C'est facultatif : sans elle, tu envoies tes mises à jour à la main.
-- Tu peux arrêter le partage à tout moment, sans te justifier.
-- Seuls les membres de ta Miff voient ce que tu partages. On ne rejoint une Miff qu'avec son code secret.
-- Les photos de mise à jour ne sont plus visibles après 24 heures.
+- Miff utilise la localisation de ton téléphone, y compris en arrière-plan et même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de confiance et partager ton statut et ta dernière position connue avec les membres de ta Miff qui partagent aussi. Tu peux arrêter à tout moment.
+- Cette autorisation (« Toujours », avec la position précise) est nécessaire au fonctionnement de Miff : sans elle, l'app ne peut pas être utilisée normalement. Miff t'explique à quoi elle sert avant que ton téléphone te la demande.
+- Le partage avec chaque Miff est ton choix : il ne démarre qu'avec ton accord, et tu peux l'arrêter à tout moment, sans te justifier. Ton statut, ta photo et ta dernière position sont alors effacés.
+- Ce que voit ton cercle : ton statut, ta dernière position connue avec l'heure de sa mesure, et ta photo avec l'endroit où elle a été prise. Ce n'est pas un suivi en direct, et Miff ne garde aucun historique de tes trajets.
+- Seuls les membres de ta Miff qui partagent aussi leur position voient la tienne et ta photo. On ne rejoint une Miff qu'avec son code secret.
+- Les photos ne sont plus visibles après 24 heures. Un proche peut toutefois en faire une capture d'écran.
 - Aucune publicité, aucune revente de données.
 - Tu peux supprimer ton compte depuis l'app.
 
@@ -59,15 +62,16 @@ En famille, entre amis, en couple : le cercle que tu choisis, avec l'accord de c
 
 BON À SAVOIR
 
-- Dans cette version, tu peux être dans une Miff à la fois, avec un lieu de confiance.
+- Dans cette version, tu peux être dans une Miff à la fois, avec 2 lieux de confiance.
 - La détection des arrivées et des départs dépend de ton téléphone et de ses réglages d'économie d'énergie : elle peut être en retard ou ne pas se produire. Un statut en retard ne veut pas dire qu'il y a un problème.
 - Miff n'est pas un service d'urgence. En cas de danger ou de doute sérieux, appelle le 112.
+- Un compte ne fonctionne que sur un téléphone à la fois.
 - Disponible en français et en anglais.
 
 Une question, une idée ? Écris-nous depuis les Réglages de l'app.
 ```
 
-Différences avec la fiche iOS : « iPhone » devient « téléphone » ; ajout d'une phrase explicite sur la localisation en arrière-plan (Google exige une information visible, dans l'app avant la demande ; la rappeler dans la fiche n'est pas obligatoire mais évite une surprise à la revue) ; mention des réglages d'économie d'énergie des fabricants, qui sont le risque de fiabilité le plus probable sur Android (appareil de test du PM : un téléphone avec surcouche constructeur).
+Différences avec la fiche iOS : « iPhone » devient « téléphone » ; la **première puce de « Tu gardes la main » reprend mot pour mot la phrase que Google exige dans la description de la fiche** (`google-play-localisation-arriere-plan.md` §5, vérifiée le 2026-11-07 sur la page Google « Use of location permissions in the background » : la divulgation doit se trouver dans l'app **et** dans la description de la fiche **et** sur le site, avec les mots « location » et « background » ou « when the app is closed », et la liste des fonctions concernées) ; mention des réglages d'économie d'énergie des fabricants, qui sont le risque de fiabilité le plus probable sur Android (appareil de test du PM : un téléphone avec surcouche constructeur). « Écris-nous depuis les Réglages » est exact sur Android (Réglages > Confidentialité > Nous contacter).
 
 ### Notes de version (FR)
 
@@ -76,8 +80,8 @@ Première version de Miff.
 
 - Crée ta Miff ou rejoins celle d'un proche avec son code secret.
 - Choisis des lieux de confiance.
-- Si tu l'acceptes, tes arrivées et tes départs sont partagés avec ton cercle, sans rien faire.
-- Envoie une mise à jour (photo, petit mot) quand tu veux.
+- Avec ton accord, tes arrivées et tes départs sont partagés avec ton cercle, sans rien faire.
+- Publie une photo du moment quand tu veux (visible 24 heures).
 - Disponible en français et en anglais.
 
 Une idée, un souci ? Écris-nous depuis les Réglages.
@@ -90,7 +94,7 @@ Une idée, un souci ? Écris-nous depuis les Réglages.
 | Champ | Texte | Caractères |
 |---|---|---|
 | **App name** | Miff - Trusted Circle | 21 / 30 |
-| **Short description** | News from your loved ones, without bothering them. Sharing is your choice. | 74 / 80 |
+| **Short description** | News from loved ones, without bothering them. Consented, revocable sharing. | 75 / 80 |
 
 ### Full description (EN)
 
@@ -108,21 +112,22 @@ A Miff is your circle of trust: family, friends, partner... You create one and s
 Home, school, work... The creator of the Miff sets the places, and every member finds them in the app.
 
 3. News arrives by itself
-If you agree to it, your phone notices when you arrive at or leave a trusted place. Your circle sees a very simple status, like "At home", with nothing for you to write.
+With your agreement, your phone notices when you arrive at or leave a trusted place, even when the app is closed. Your circle sees a very simple status, like "At home", and your last known location with the time, with nothing for you to write.
 
 4. Share news whenever you like
-A photo, a short note: an update in one tap.
+A photo taken on the spot with Miff's camera, with no text. It is published with the place where you took it and visible for 24 hours.
 
 5. One glance, and done
 You open Miff, you see how your loved ones are doing, you close it. If you feel like it, a button takes you to your usual app to write a message or call.
 
 YOU STAY IN CONTROL
 
-- Sharing your location is your choice, Miff by Miff. Miff explains what it is for before your phone asks for permission.
-- To notice your arrivals and departures when the app is closed, Miff asks for permission to use your location in the background. It is optional: without it, you send your updates by hand.
-- You can stop sharing at any time, without having to explain yourself.
-- Only the members of your Miff see what you share. A Miff can only be joined with its secret code.
-- Update photos are no longer visible after 24 hours.
+- Miff uses your phone's location, including in the background and even when the app is closed, to detect your arrivals and departures at trusted places and to share your status and last known location with the members of your Miff who also share. You can stop at any time.
+- This permission ("Always", with precise location) is needed for Miff to work: without it, the app cannot be used normally. Miff explains what it is for before your phone asks for it.
+- Sharing with each Miff is your choice: it only starts with your agreement, and you can stop at any time, without having to explain yourself. Your status, your photo and your last known location are then erased.
+- What your circle sees: your status, your last known location with the time it was measured, and your photo with the place where it was taken. This is not live tracking, and Miff keeps no history of your trips.
+- Only the members of your Miff who also share their location see yours and your photo. A Miff can only be joined with its secret code.
+- Photos are no longer visible after 24 hours. A loved one can still take a screenshot of one.
 - No ads, no data resale.
 - You can delete your account from the app.
 
@@ -132,9 +137,10 @@ Families, friends, couples: the circle you choose, with everyone's agreement. Mi
 
 GOOD TO KNOW
 
-- In this version, you can be in one Miff at a time, with one trusted place.
+- In this version, you can be in one Miff at a time, with 2 trusted places.
 - Detection of arrivals and departures depends on your phone and its battery-saving settings: it can be late or may not happen. A late status does not mean something is wrong.
 - Miff is not an emergency service. In case of danger or serious doubt, call your local emergency number.
+- An account only works on one phone at a time.
 - Available in French and English.
 
 A question, an idea? Write to us from the app's Settings.
@@ -147,8 +153,8 @@ First version of Miff.
 
 - Create your Miff or join a loved one's with its secret code.
 - Choose trusted places.
-- If you agree, your arrivals and departures are shared with your circle, with nothing to do.
-- Send an update (photo, short note) whenever you like.
+- With your agreement, your arrivals and departures are shared with your circle, with nothing to do.
+- Publish a photo of the moment whenever you like (visible for 24 hours).
 - Available in French and English.
 
 An idea, a problem? Write to us from Settings.
@@ -169,8 +175,8 @@ An idea, a problem? Write to us from Settings.
 | Téléphone | Ne pas inventer ; aucun numéro n'est acté | À FOURNIR ou laisser vide si la console l'accepte |
 | URL de la politique de confidentialité | **À FOURNIR.** Pages prévues : `/fr/confidentialite` et `/en/privacy` | À FOURNIR |
 | URL de suppression de compte (exigée par Google en plus du chemin dans l'app) | **À FOURNIR.** Pages prévues : `/fr/supprimer-mon-compte` et `/en/delete-account` | À FOURNIR |
-| Accès à l'app pour la revue (identifiants de démonstration) | **À FOURNIR** : un compte de démonstration et une Miff d'exemple | À FOURNIR |
-| Statut « professionnel » (trader) et coordonnées publiques | Selon les règles européennes, un développeur individuel qui vend (le jour où Miff+ existera) peut devoir afficher publiquement nom, adresse, e-mail. À vérifier dans la console au moment de la création de la fiche ; point de décision du rapport | À décider |
+| Accès à l'app pour la revue (identifiants de démonstration) | **À FOURNIR** : **deux comptes** dans la même Miff, chacun avec sa position publiée, sans double authentification (`update-photo-declarations.md` §4 et §13) | À FOURNIR |
+| Statut « professionnel » (trader) et coordonnées publiques | **Non vérifié côté Google** : la page d'aide Google sur le statut de « trader » n'a pas pu être lue le 2026-11-07 (erreur 404 sur l'adresse tentée). Côté Apple, la règle est lue (voir `store-listing-ios.md` §4). À lire dans la Play Console au moment de la création de la fiche ; point de décision `decisions-stores-avant-soumission.md`, n° 5 | À décider |
 
 Textes alternatifs des images (140 caractères au plus) et légendes (moins de 20 % de l'image) : voir `screenshots-brief.md`.
 
@@ -184,9 +190,11 @@ Textes alternatifs des images (140 caractères au plus) et légendes (moins de 2
 
 ### Public cible et contenu (déclaration « Public cible »)
 
-- **Proposition : ne pas cibler les enfants de moins de 13 ans** : choisir les tranches 13-15, 16-17 et 18 ans et plus (ou 16 ans et plus, au choix du PM). Raisons : (1) Miff ne vérifie pas l'âge et n'impose aucun âge minimum (risque J2 assumé par le PM, RGPD art. 8 : 15 ans en France) ; (2) cibler les moins de 13 ans soumet l'app à la politique « Familles » de Google, très stricte, qu'un produit de partage de localisation en arrière-plan aurait du mal à satisfaire (hypothèse : à confirmer sur la page officielle de la politique « Familles » avant de trancher).
+- **Proposition : ne pas cibler les enfants de moins de 13 ans** : choisir les tranches 13-15, 16-17 et 18 ans et plus (ou 16 ans et plus, au choix du PM). Les six tranches proposées par la console sont (page Google « Target audience », lue le 2026-11-07) : 5 ans et moins, 6-8, 9-12, 13-15, 16-17, 18 et plus. Raisons : (1) Miff ne vérifie pas l'âge et n'impose aucun âge minimum (risque J2 assumé par le PM, RGPD art. 8 : 15 ans en France) ; (2) **vérifié le 2026-11-07** : si une tranche d'enfants est cochée, la politique « Familles » s'applique (« if one of the target audiences for your app is children »), avec une obligation de déclarer toute collecte d'informations personnelles ou sensibles d'enfants, y compris par les SDK, et l'interdiction de demander la localisation pour les apps qui visent **uniquement** les enfants ; les apps mixtes (enfants et plus âgés) ont d'autres obligations (écran d'âge neutre pour les publicités, identifiants). Un produit de partage de position en arrière-plan n'a pas de raison de s'y exposer.
+- **Si la fiche ou l'imagerie plaît aux enfants** alors que la tranche déclarée les exclut, Google peut refuser l'app (« Google Play may reject it ») : retirer ces éléments, ou changer de tranche. La page précise aussi que, selon la loi locale, des utilisateurs jusqu'à 21 ans peuvent être considérés comme des enfants : la tranche choisie ne règle pas tout.
 - **Risque** : les parents d'un enfant de moins de 13 ans ne seront pas visés par la fiche. Le texte reste honnête (« avec l'accord de chacun »).
 - Ne pas utiliser d'images ou de personnages qui attirent les enfants.
+- **Cohérence** : mêmes réponses qu'Apple (`store-listing-ios.md` §6). Voir l'incohérence à connaître avec « Miff n'impose pas d'âge minimum » dans les CGU et la politique.
 
 ### Classification du contenu (questionnaire IARC)
 
@@ -195,8 +203,8 @@ Réponses proposées (hypothèses à confirmer en remplissant le questionnaire r
 | Rubrique | Réponse |
 |---|---|
 | Violence, sexualité, langage, substances, jeux d'argent | Aucun contenu |
-| Les utilisateurs peuvent interagir / échanger du contenu | **Oui** (mise à jour photo + texte entre membres d'une Miff, groupe privé) |
-| Partage de la position avec d'autres utilisateurs | **Oui** (c'est le coeur du produit : le dire honnêtement) |
+| Les utilisateurs peuvent interagir / échanger du contenu | **Oui** (une photo, sans texte, visible 24 h des membres d'une Miff, groupe privé fermé par un code ; ni commentaires, ni messagerie) |
+| Partage de la position avec d'autres utilisateurs | **Oui** (c'est le coeur du produit : la dernière position connue, et l'endroit de la photo, vus des membres qui partagent aussi ; le dire honnêtement) |
 | Achats numériques | Non au moment de la soumission (changer le jour où Miff+ est activé) |
 | Publicité | Non |
 
@@ -210,17 +218,20 @@ Ces déclarations sont du ressort de `release-manager` et doivent reprendre **ex
 
 ## 5. Contraintes de calendrier propres à Google Play (voir `launch-plan.md`)
 
-D'après la page d'aide officielle de Google (référencée par plusieurs sources consultées le 2026-11-07, contenu à revérifier sur `support.google.com/googleplay/android-developer/answer/14151465`) : pour un **compte développeur personnel créé après le 13 novembre 2023**, il faut mener un **test fermé** avec **au moins 12 testeurs inscrits en continu pendant 14 jours** avant de pouvoir demander l'accès à la production. **Je ne sais pas si le compte existant du PM (créé pour un autre projet) relève de cette règle** : sa date de création et son type (personnel ou organisation) ne sont pas dans les documents que j'ai pu lire. À vérifier dans la console avant de fixer la date de lancement.
+**Vérifié le 2026-11-07 sur la page d'aide officielle de Google** (`support.google.com/googleplay/android-developer/answer/14151465`, lue directement) : « Google Play requires personal developer accounts created after November 13, 2023, to test their apps. » ; « At least 12 testers must be opted in to your closed test when you apply for production access » ; ils doivent être inscrits « continuously for the preceding 14 days » ; un testeur qui s'inscrit, teste moins de 14 jours puis se désinscrit **ne compte pas**.
+
+**Ce que la page ne dit pas** (donc non vérifié) : (a) si la règle vaut **pour chaque nouvelle app** d'un compte ou seulement pour la première (la page parle d'« son app » au singulier) ; (b) le sort des comptes « organisation » (la page n'en parle pas ; des sources tierces disent qu'ils en sont exemptés, non vérifié chez Google). **Ce que je ne sais pas non plus** : la date de création et le type (personnel ou organisation) du compte Google Play du PM, créé pour Ghostrun. Le PM le lit dans la Play Console (détails du compte ; l'intitulé exact du menu n'est pas vérifié) ; **tant qu'il ne l'a pas fait, il faut planifier comme si la règle s'appliquait à Miff** (au moins 14 jours entre le premier testeur inscrit et la demande de production, avec 12 vraies personnes). Les services de « testeurs à louer » ne sont pas une option (voir `launch-plan.md`).
 
 ---
 
 ## 6. Checklist avant soumission (côté marketing)
 
-- [ ] Section 0 de `store-listing-ios.md` recoupée pour Android (C1 à C14).
+- [ ] Section 0 de `store-listing-ios.md` recoupée pour Android (C1 à C15) le jour de la soumission.
+- [ ] La description contient toujours la phrase de divulgation de la localisation en arrière-plan (première puce de « Tu gardes la main »), identique à celle de l'app et du site.
 - [ ] Description courte et titre recomptés dans la console.
 - [ ] Icône 512, image de présentation 1024 x 500, 4 captures au moins en 1080 px (voir `screenshots-brief.md`).
 - [ ] URL de politique et de suppression de compte en ligne.
 - [ ] Public cible et IARC décidés.
-- [ ] Test fermé de 14 jours planifié si la règle s'applique.
+- [ ] Type et date de création du compte Google Play lus dans la console ; test fermé de 14 jours (12 testeurs) planifié si la règle s'applique.
 - [ ] Aucune mention de Miff+, d'essai, de prix, de « Économisez 30 % », de notifications.
-- [ ] Nom « Miff » : vérification d'antériorité (risque J18).
+- [ ] Nom « Miff » : vérification d'antériorité (risque J18) ; une app « MIFF » existe dans l'App Store (festival du film de Moscou), aucune vérification faite côté Google Play (`decisions-stores-avant-soumission.md`, n° 9).
