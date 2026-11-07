@@ -20,6 +20,13 @@ private struct TabLayer<Content: View>: View {
     }
 }
 
+/// Ce que la coquille dit au Feed : est-il l'onglet en usage (sinon rien n'est écouté), et comment ouvrir l'onglet Profil (l'avatar de
+/// l'en-tête du Feed).
+struct FeedShellContext {
+    let isActive: Bool
+    let openProfile: () -> Void
+}
+
 /// La COQUILLE de l'app une fois l'onboarding fini (ticket Profil / Réglages, ONB-7) : les trois onglets et leur barre en verre.
 ///
 /// Points d'accroche des chantiers suivants :
@@ -36,7 +43,7 @@ struct MainShellView<Feed: View>: View {
     private let environment: AppEnvironment
     private let miffs: DirectoryState
     private let onOpenMiff: (String) -> Void
-    private let feed: Feed
+    private let feed: (FeedShellContext) -> Feed
     @StateObject private var profile: ProfileTabViewModel
     @State private var selected: MainTab = .feed
     @State private var settingsPath: [SettingsRoute] = []
@@ -46,12 +53,12 @@ struct MainShellView<Feed: View>: View {
         environment: AppEnvironment,
         miffs: DirectoryState,
         onOpenMiff: @escaping (String) -> Void,
-        @ViewBuilder feed: () -> Feed
+        @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.environment = environment
         self.miffs = miffs
         self.onOpenMiff = onOpenMiff
-        self.feed = feed()
+        self.feed = feed
         let session = environment.session
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
@@ -75,7 +82,7 @@ struct MainShellView<Feed: View>: View {
         GeometryReader { proxy in
             ZStack {
                 TabLayer(isActive: shownTab == .feed) {
-                    feed
+                    feed(FeedShellContext(isActive: shownTab == .feed, openProfile: { selected = .profile }))
                 }
                 TabLayer(isActive: shownTab == .profile) {
                     profileStack

@@ -141,6 +141,10 @@ final class AppEnvironment {
     /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
+    /// FEED-5 : les Miffs qui attendent l'accord de la personne (« Pas maintenant » au renouvellement), dites par le Feed.
+    let awaitingAgreement: AwaitingAgreement
+    /// FEED-5 : les lectures du Feed (statuts en direct, position au toucher, actualisation). Elles ne lisent qu'à l'usage.
+    let feedServices = FeedServices.live()
     let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
     /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
     /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
@@ -180,6 +184,7 @@ final class AppEnvironment {
         // Un seul purgeur de cache pour toute l'app : la session, l'annuaire des Miffs et le dépôt purgent le MÊME cache.
         let cache = FirestoreCachePurger(flags: flagStore)
         let networkMonitor = NWNetworkMonitor()
+        let awaiting = AwaitingAgreement()
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
@@ -209,6 +214,8 @@ final class AppEnvironment {
                     { await miff.deletions.stop() },
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() },
+                    // Plus personne n'attend un accord une fois la session finie.
+                    { await awaiting.stop() },
                     // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
                     trackingServices.teardown
                 ],
@@ -232,6 +239,7 @@ final class AppEnvironment {
         placeNotices = places.notices
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
+        awaitingAgreement = awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
         profileDrafts = drafts
@@ -281,7 +289,8 @@ final class AppEnvironment {
                 renewals: consentRenewals,
                 currentUid: { session.currentUid },
                 leaver: { uid, miffId in await repository.leave(uid: uid, miffId: miffId) },
-                onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
+                onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) },
+                awaiting: awaitingAgreement
             ),
             settings: PermissionGateSettings(locationBlocking: LocationBlockingSwitch.current)
         )

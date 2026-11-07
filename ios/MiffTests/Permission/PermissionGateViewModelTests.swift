@@ -133,7 +133,8 @@ final class PermissionGateViewModelTests: XCTestCase {
         _ snapshot: PermissionSnapshot,
         _ options: RigOptions = RigOptions(),
         asks: FakeAsks = FakeAsks(),
-        renewals: FakeRenewals = FakeRenewals()
+        renewals: FakeRenewals = FakeRenewals(),
+        awaiting: AwaitingAgreement? = nil
     ) -> Rig {
         let permissions = FakePermissions(snapshot)
         let leaves = LeaveRecorder()
@@ -145,7 +146,8 @@ final class PermissionGateViewModelTests: XCTestCase {
                 renewals: renewals,
                 currentUid: { uid },
                 leaver: { uid, miffId in await leaves.leave(uid: uid, miffId: miffId) },
-                onLeft: { miffId in await leaves.afterLeft(miffId: miffId) }
+                onLeft: { miffId in await leaves.afterLeft(miffId: miffId) },
+                awaiting: awaiting
             ),
             settings: PermissionGateSettings(
                 locationBlocking: options.blocking,
@@ -342,6 +344,41 @@ final class PermissionGateViewModelTests: XCTestCase {
 
         XCTAssertEqual(rig.model.state.screen, .none)
         XCTAssertTrue(renewals.renewCalls.isEmpty, "« Pas maintenant » n'écrit rien")
+    }
+
+    func testNotNowTellsTheFeedWhichMiffWaitsAndReviewBringsTheScreenBack() async {
+        let awaiting = AwaitingAgreement()
+        let renewals = FakeRenewals()
+        renewals.checkResult = due()
+        let rig = makeRig(snap(.always), renewals: renewals, awaiting: awaiting)
+        await rig.model.start()
+        XCTAssertTrue(awaiting.waiting.isEmpty, "rien n'attend tant que la personne n'a pas dit « Pas maintenant »")
+
+        rig.model.onRenewalPutOff()
+        XCTAssertEqual(awaiting.waiting, [miffId])
+        XCTAssertEqual(rig.model.state.screen, .none)
+
+        awaiting.requestReview()
+        XCTAssertEqual(rig.model.state.screen, .renewal, "« Revoir et accepter » ramène l'écran de renouvellement")
+
+        await rig.model.onRenewalAccepted()
+        XCTAssertTrue(awaiting.waiting.isEmpty, "l'accord donné : plus rien n'attend")
+        XCTAssertEqual(rig.model.state.screen, .none)
+    }
+
+    func testLeavingTheMiffThatWaitsClearsItToo() async {
+        let awaiting = AwaitingAgreement()
+        let renewals = FakeRenewals()
+        renewals.checkResult = due()
+        let rig = makeRig(snap(.always), renewals: renewals, awaiting: awaiting)
+        await rig.model.start()
+        rig.model.onRenewalPutOff()
+        awaiting.requestReview()
+
+        rig.model.onLeaveRequested()
+        await rig.model.onLeaveConfirmed()
+
+        XCTAssertTrue(awaiting.waiting.isEmpty)
     }
 
     func testNotNowComesBackAtTheNextLaunch() async {
