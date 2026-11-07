@@ -137,7 +137,8 @@ final class FirestoreMiffObserver: MiffObserver {
                 lastName: MiffName.clean(last),
                 avatarJpeg: avatar,
                 role: (data["role"] as? String) == "owner" ? .owner : .member,
-                sharingEnabled: sharing == true
+                sharingEnabled: sharing == true,
+                phone: MiffMember.phoneFromServer(data["phone"])
             )
             let joined = (data["joinedAt"] as? Timestamp)?.dateValue() ?? Date.distantFuture
             return DatedMember(member: member, joinedAt: joined)

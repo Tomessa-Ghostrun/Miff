@@ -105,6 +105,15 @@ Dans tous les cas, ton relevé quotidien reste la référence.
 
 ---
 
+### Le Feed (FEED-1 à FEED-7) : ce qu'il coûte et ce qui n'est pas protégé encore
+
+Le Feed est le premier gros consommateur de lectures : **environ 130 lectures par utilisateur actif et par jour** (estimation du ticket `docs/tickets/feed.md` §11, pas encore mesurée ; le modèle de ce document en comptait ~75). Le ratio « normal » monte donc à ~130 : tant que le recalibrage de `backend-data` n'est pas fait, un faux « À examiner » est attendu.
+
+- **Ouverture à froid** : 9 + 2 x membres + lieux lectures (environ 20 pour 4 membres et 3 lieux).
+- **« Actualiser » (tirer pour actualiser) relit tout, comme une ouverture à froid (~20 lectures), SANS garde côté serveur** : seule la limite de l'application (une relecture forcée toutes les 15 s, soit au plus ~4 par minute) la borne, et un client modifié la contourne. **Firebase App Check est à prévoir** (déjà dans les décisions du projet) avant d'ouvrir la bêta à des inconnus ; c'est lui qui protège le quota contre un usage abusif.
+- **Retour d'onglet ou d'arrière-plan** : l'écoute est détachée hors de l'onglet Feed (voulu, rien n'écoute sur le Profil) ; y revenir **dans les 30 minutes** ne coûte qu'environ 10 lectures (les lectures de règles ; les documents inchangés sont resservis par le cache). **Au-delà de 30 minutes**, Firestore refacture tous les documents : le retour coûte alors une ouverture à froid (~20 lectures).
+- **« Localiser »** : 6 lectures par toucher (1 + 5 de règles).
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
