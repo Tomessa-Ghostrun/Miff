@@ -56,12 +56,15 @@ extension SessionManager: AccountDeletionSession {
     }
 
     /// Des Miffs ont continué d'apparaître pendant la suppression (un autre téléphone du compte en créait ou en rejoignait) : elle est
-    /// ANNULÉE. Le profil et le compte ne sont jamais supprimés avec une Miff derrière eux. Le marqueur est déjà effacé : l'app repart
+    /// ANNULÉE. Le profil et le compte ne sont jamais supprimés avec une Miff derrière eux. L'app repart
     /// (compte relu, routage habituel, session de l'appareil réécrite, suivi relancé) et le dit UNE fois, calmement.
     func cancelAccountDeletion() async {
         // La session supprimée à l'étape 1 est réécrite : cet appareil redevient l'appareil actif (`begin` lève le marqueur « fermé »).
         // `ending` reste vrai tant que c'est fait : aucune vérification en file ne peut lancer une déconnexion forcée entre-temps.
         await restoreDeviceSession()
+        // Le marqueur part APRÈS la réouverture de l'appareil : tué entre les deux, l'app reprend la suppression (qui s'annule de
+        // nouveau) au lieu de laisser un appareil fermé sans marqueur de suppression.
+        deletionMarker?.clear()
         bumpGeneration()
         ending = false
         sessionActive = true

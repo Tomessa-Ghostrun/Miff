@@ -97,8 +97,8 @@ protocol AccountDeletionSession: AnyObject {
     /// marqueur EN DERNIER (une app tuée avant purge de nouveau au lancement suivant).
     func eraseAfterAccountDeletion(uid: String) async
 
-    /// Des Miffs ont continué d'apparaître pendant la suppression : elle est ANNULÉE. Le marqueur est déjà effacé ; l'app est remise
-    /// sur ses rails (compte relu, routage habituel, ce qui s'était arrêté repart) et le dit UNE fois, calmement.
+    /// Des Miffs ont continué d'apparaître pendant la suppression : elle est ANNULÉE. La session rouvre l'appareil puis efface le marqueur ; l'app
+    /// est remise sur ses rails (compte relu, routage habituel, ce qui s'était arrêté repart) et le dit UNE fois, calmement.
     func cancelAccountDeletion() async
 
     /// La session ne peut plus servir : cache purgé, retour à l'écran de connexion avec le marqueur GARDÉ et une phrase calme.

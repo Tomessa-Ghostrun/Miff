@@ -158,10 +158,12 @@ final class AccountDeletionController: ObservableObject, AccountDeletionControls
             state = .needsRecentLogin
             return false
         case .miffsRemain:
-            // Une ANNULATION, jamais une impasse : le marqueur part, l'app est remise sur ses rails et le dit calmement.
-            marker.clear()
+            // Une ANNULATION, jamais une impasse : l'app est remise sur ses rails et le dit calmement. La session rouvre l'appareil
+            // PUIS efface le marqueur (une app tuée entre les deux reprend la suppression, qui s'annule de nouveau : jamais un appareil
+            // laissé fermé sans marqueur) ; l'effacement ici est un filet.
             state = .idle
             await session.cancelAccountDeletion()
+            marker.clear()
             return false
         case .sessionExpired:
             state = .needsSignIn

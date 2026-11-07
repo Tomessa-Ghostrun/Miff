@@ -176,11 +176,14 @@ final class SessionManagerAccountDeletionTests: XCTestCase {
         harness.accounts.setLoaded(profileExists: true, hasMembership: true, analyticsConsent: true)
         await harness.manager.startAndResolve()
         XCTAssertEqual(harness.manager.state, .ready(.accountDeletion))
-        marker.clear()
         let generation = harness.manager.generation
 
         await harness.manager.cancelAccountDeletion()
 
+        XCTAssertNil(marker.mark, "la session efface le marqueur, après avoir rouvert l'appareil")
+        let written = timeline.entries.firstIndex(of: "sessionWrite") ?? Int.max
+        let cleared = timeline.entries.firstIndex(of: "markerClear") ?? Int.min
+        XCTAssertLessThan(written, cleared, "l'appareil est rouvert AVANT l'effacement du marqueur")
         XCTAssertEqual(harness.manager.state, .ready(.feed))
         XCTAssertTrue(harness.manager.deletionBlockedNotice)
         XCTAssertFalse(harness.device.isRevoked, "cet appareil redevient l'appareil actif")
