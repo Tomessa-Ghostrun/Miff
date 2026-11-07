@@ -79,7 +79,7 @@ Créez un compte jetable 5 avec une Miff de **3 ou 4 proches** (le plus long à 
 
 ## Partie I bis : l'impasse, « Me déconnecter » (très difficile à provoquer, facultatif)
 
-29 bis. [ ] Si l'écran « **La suppression n'est pas terminée** » apparaît (refus durable d'une étape), il propose **Réessayer**, le contact et **Me déconnecter**. « Me déconnecter » mène à l'écran de connexion avec un message calme ; **se reconnecter avec le même compte reprend la suppression** (rien n'est abandonné, rien n'est supprimé de plus par la déconnexion). Il n'y a **pas** de bouton « Annuler » : la suppression ne s'abandonne pas à moitié. **Sans fermer ni relancer l'app** : après la reconnexion, l'écran de progression (« On reprend… ») revient aussitôt, il ne réaffiche pas « La suppression n'est pas terminée » (correctif 0.16.1). Même chose pour « Me reconnecter » quand la session a expiré.
+29 bis. [ ] Si l'écran « **La suppression n'est pas terminée** » apparaît (refus durable d'une étape), il propose **Réessayer**, le contact et **Me déconnecter**. « Me déconnecter » mène à l'écran de connexion avec un message calme ; **se reconnecter avec le même compte reprend la suppression** (rien n'est abandonné, rien n'est supprimé de plus par la déconnexion). Il n'y a **pas** de bouton « Annuler » : la suppression ne s'abandonne pas à moitié. **Sans fermer ni relancer l'app** : après la reconnexion, l'écran de progression (« On reprend… ») revient aussitôt, il ne réaffiche pas « La suppression n'est pas terminée » (correctif 0.17.0). Même chose pour « Me reconnecter » quand la session a expiré.
 
 ## Partie I ter : réserves connues de la revue (à lire, facultatif à reproduire)
 

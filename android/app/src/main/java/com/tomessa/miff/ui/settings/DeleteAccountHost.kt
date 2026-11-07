@@ -86,17 +86,34 @@ import kotlinx.coroutines.delay
 @Composable
 fun AccountDeletionHost(container: AppContainer) {
     val controls: AccountDeletionControls = container.accountDeletion
-    val state by controls.state.collectAsStateWithLifecycle()
-    // Launch with the marker: the session opened this host and the deletion is taken up again, with no new re-authentication.
-    LaunchedEffect(Unit) { if (controls.state.value == AccountDeletionState.Idle) controls.resume() }
-    AccountDeletionContent(
-        state = state,
+    AccountDeletionHostFor(
         controls = controls,
         reauthHost = { ReauthLast(container, controls) },
         onLeave = {
             controls.acknowledge()
             container.sessionManager.leaveAfterAccountDeletion()
         },
+    )
+}
+
+/**
+ * The host without the container (what the tests drive): every time it ENTERS the composition (launch, or a new sign-in after "Me reconnecter")
+ * it takes the deletion up again from the marker, but only from [AccountDeletionState.Idle] (a run under way or a stop is never overwritten).
+ */
+@Composable
+internal fun AccountDeletionHostFor(
+    controls: AccountDeletionControls,
+    reauthHost: @Composable () -> Unit,
+    onLeave: () -> Unit,
+) {
+    val state by controls.state.collectAsStateWithLifecycle()
+    // Launch with the marker: the session opened this host and the deletion is taken up again, with no new re-authentication.
+    LaunchedEffect(Unit) { if (controls.state.value == AccountDeletionState.Idle) controls.resume() }
+    AccountDeletionContent(
+        state = state,
+        controls = controls,
+        reauthHost = reauthHost,
+        onLeave = onLeave,
     )
 }
 

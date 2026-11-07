@@ -25,7 +25,6 @@ import com.tomessa.miff.ui.miff.MiffChoiceScreen
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountUiState
-import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -37,8 +36,10 @@ import org.robolectric.annotation.Config
 /**
  * A person with NO Miff reaches Settings > Mon compte > Supprimer mon compte, and ONLY that way (decision of the PM, 2026-11-07, which
  * revises Q13): the gear of the choice screen opens the RESTRICTED list (Mon compte, Confidentialité), no tab bar, no other entry to the
- * deletion. The graph below wires the real screens exactly as [com.tomessa.miff.ui.miff.MiffOnboardingHost] does (the routes are the real
- * ones), without the container, which is not needed to follow the navigation.
+ * deletion. WHAT IS COVERED: the choice screen (real), the restricted LIST (the very route of the app, [restrictedSettingsListRoute], so the test fails if
+ * "Mes informations" or "Langue" come back) and the screens behind it, wired like the app does (Mon compte with the deletion entry). NOT covered
+ * here, because it needs the container: that [restrictedSettingsRoutes] is registered in the onboarding host and that it adds
+ * [sharedSettingsRoutes] with the deletion routes; [RestrictedSettingsRuleTest] guards those lines in the sources.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class, qualifiers = "en-w360dp-h800dp-port-xxhdpi")
@@ -62,15 +63,7 @@ class RestrictedSettingsNavigationTest {
                     onOpenSettings = { nav.openSettings() },
                 )
             }
-            composable<SettingsRoute> {
-                SettingsScreen(
-                    onBack = { nav.popBackStackIfSafe() },
-                    onOpenMyInfo = null,
-                    onOpenAccount = { nav.navigate(AccountRoute) { launchSingleTop = true } },
-                    onOpenLanguage = null,
-                    onOpenPrivacy = { nav.navigate(PrivacyRoute) { launchSingleTop = true } },
-                )
-            }
+            restrictedSettingsListRoute(nav)
             composable<AccountRoute> {
                 AccountScreen(
                     state = AccountUiState(email = "a@b.fr"),
@@ -100,6 +93,8 @@ class RestrictedSettingsNavigationTest {
         composeRule.onNodeWithContentDescription(text(R.string.profile_tab_settings_a11y)).performClick()
         // The restricted list: still no deletion entry (it lives inside "Mon compte").
         composeRule.onNodeWithText(text(R.string.settings_account_title)).assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.settings_my_info_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_language_title)).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.settings_privacy_title)).assertIsDisplayed()
         deleteEntries().assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.settings_account_title)).performClick()

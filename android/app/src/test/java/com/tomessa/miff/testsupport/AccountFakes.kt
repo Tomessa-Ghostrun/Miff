@@ -25,14 +25,16 @@ class MemoryDeletionMarker(
 
     override fun read(): AccountDeletionMark? = stored
 
-    /** False = the disk refuses: nothing is written and the result says so. */
+    /**
+     * False = the disk refuses and the result says so. Like a SharedPreferences whose commit() fails, the new value STAYS in memory: read()
+     * returns it until somebody clears it (the controller must).
+     */
     var writeSucceeds = true
 
     override fun write(mark: AccountDeletionMark): Boolean {
         timeline?.plusAssign("marker.write")
-        if (!writeSucceeds) return false
         stored = mark
-        return true
+        return writeSucceeds
     }
 
     override fun clear() {

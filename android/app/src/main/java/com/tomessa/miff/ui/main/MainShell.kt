@@ -794,6 +794,15 @@ internal fun NavGraphBuilder.restrictedSettingsRoutes(
     navController: NavHostController,
     scopeKey: String,
 ) {
+    restrictedSettingsListRoute(navController)
+    sharedSettingsRoutes(container, navController, scopeKey)
+}
+
+/**
+ * The LIST of the restricted Settings: "Mon compte" and "Confidentialité" only (no "Mes informations", no "Langue"). Its own function so that
+ * the navigation test builds the very same route as the app ([restrictedSettingsRoutes]).
+ */
+internal fun NavGraphBuilder.restrictedSettingsListRoute(navController: NavHostController) {
     composable<SettingsRoute> {
         SettingsScreen(
             onBack = { navController.popBackStackIfSafe() },
@@ -803,7 +812,6 @@ internal fun NavGraphBuilder.restrictedSettingsRoutes(
             onOpenPrivacy = { navController.open(PrivacyRoute) },
         )
     }
-    sharedSettingsRoutes(container, navController, scopeKey)
 }
 
 /** The same launch-once navigation as the other hosts, for the entry of the restricted Settings. */

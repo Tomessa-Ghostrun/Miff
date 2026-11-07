@@ -488,7 +488,16 @@ class AccountDeletionControllerTest {
             advanceUntilIdle()
             assertEquals(0, session.begins)
             assertEquals(0, procedure.runs)
-            assertNull(marker.stored)
+            // The refused value stayed "in memory" in the double (as in SharedPreferences): the controller removed it, read() is empty.
+            assertNull(marker.read())
+            assertEquals(AccountDeletionState.Idle, controller.state.value)
+            // "Réessayer" and the re-authentication launch nothing without a marker on the disk; nor does a resume.
+            controller.retry()
+            controller.reauthenticated()
+            controller.resume()
+            advanceUntilIdle()
+            assertEquals(0, procedure.runs)
+            assertEquals(0, session.begins)
             assertEquals(AccountDeletionState.Idle, controller.state.value)
             // The disk answers again: the person can start, and it goes through.
             marker.writeSucceeds = true

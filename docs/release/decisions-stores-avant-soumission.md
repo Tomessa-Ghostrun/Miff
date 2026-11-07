@@ -382,3 +382,7 @@ Rappel (détail et numérotation d'origine dans ce dossier) : lire et trancher l
 - l'application réelle de ces règles par les relecteurs : mes probabilités de rejet sont des estimations qualitatives, pas des mesures.
 
 Ces règles changent : les relire avant chaque soumission.
+
+## Suppression de compte : écrans bloquants (point ouvert, 2026-11-07)
+
+**RISQUE connu, point ouvert à trancher par le PM (revue de la PR #116, 2026-11-07) : suppression impossible tant que certains écrans bloquants ne sont pas passés.** Un compte arrêté sur l'écran de localisation bloquant (`PermissionGate`), sur le panneau de consentement ou sur une étape du profil n'a que « Se déconnecter » : il ne peut pas se supprimer dans l'app tant qu'il n'a pas passé ces écrans (les Réglages restreints ne sont offerts que depuis « Choisis comment tu veux commencer », donc après le profil). Google Play (suppression lançable dans l'app pour les comptes créés dans l'app) et Apple 5.1.1(v) peuvent le relever à la revue. Aucun changement de code pour l'instant. Pistes, à décider : (a) la même roue crantée sur ces écrans ; (b) laisser en l'état et compter sur la page web et la demande par e-mail (§5.12) ; (c) un lien « Supprimer mon compte » minimal sur ces seuls écrans bloquants (contredit la décision du 2026-11-07, donc à ne faire que sur décision explicite). Voir `docs/tickets/suppression-compte.md` (décision du 2026-11-07) et la PR Android #116.

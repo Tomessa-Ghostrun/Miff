@@ -124,7 +124,12 @@ class AccountDeletionController(
         if (isRunning()) return true
         // On the disk BEFORE the first change: an app killed at once still resumes (SC26). If the write is not confirmed, NOTHING starts
         // (no silent carry-on without a marker: a killed app would then find an account half deleted and no trace of it).
-        if (!marker.write(AccountDeletionMark(uid, isAppleLinked()))) return false
+        if (!marker.write(AccountDeletionMark(uid, isAppleLinked()))) {
+            // A SharedPreferences commit() that fails still leaves the new value IN MEMORY: remove it, so that read() never returns a marker that
+            // is not on the disk (a "Réessayer" or a resume would then run a deletion that nothing would take up again after a kill).
+            marker.clear()
+            return false
+        }
         launch(uid, resumed = false, retrying = false)
         return true
     }
@@ -139,13 +144,13 @@ class AccountDeletionController(
 
     override fun retry() {
         val uid = currentUid() ?: return
-        if (isRunning()) return
+        if (isRunning() || !hasMarkerOf(uid)) return
         launch(uid, resumed = false, retrying = true)
     }
 
     override fun reauthenticated() {
         val uid = currentUid() ?: return
-        if (isRunning()) return
+        if (isRunning() || !hasMarkerOf(uid)) return
         launch(uid, resumed = false, retrying = false)
     }
 
@@ -164,6 +169,9 @@ class AccountDeletionController(
     }
 
     private fun isRunning() = job?.isActive == true
+
+    /** Nothing is (re)launched without the marker of THIS account on the disk: it is what makes a killed app pick the deletion up again. */
+    private fun hasMarkerOf(uid: String) = marker.read()?.uid == uid
 
     private fun launch(
         uid: String,
