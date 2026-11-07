@@ -17,4 +17,15 @@ protocol CollectionSwitch {
     /// démarrage de l'app (le choix du compte n'est pas encore connu) : le rapport du plantage précédent survit jusqu'à
     /// ce que le compte dise oui (il part) ou non (`setEnabled(false)` l'efface).
     func pause()
+
+    /// Suppression du compte (AUTH-5c) : oublier ce que le SDK garde sur l'installation (Analytics : `resetAnalyticsData`). La collecte
+    /// est déjà coupée. Rien n'est envoyé pour cela.
+    func forgetInstallation()
+}
+
+extension CollectionSwitch {
+    /// Un interrupteur qui ne garde rien sur l'installation n'a rien à oublier.
+    func forgetInstallation() {
+        // Rien à oublier par défaut.
+    }
 }

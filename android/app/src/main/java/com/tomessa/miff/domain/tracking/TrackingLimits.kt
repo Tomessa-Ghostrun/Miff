@@ -58,6 +58,65 @@ object TrackingLimits {
      * refused every time and would read the server at each wake-up).
      */
     const val RECHECK_AFTER_REFUSAL_MILLIS = 5L * 60L * 1000L
+
+    /**
+     * Circuit breaker, battery refresh (opening / leaving the app): writes of `status/{moi}` a day and per phone that only carry the battery level,
+     * counted per document written (one per Miff). It is a DEDICATED counter, not the 60 of [MAX_STATUS_WRITES_PER_DAY]: a battery refresh must never eat the
+     * budget of the arrivals and departures (the heart of the product). With the limits below a normal day is a handful of writes (5 to 10 passes at most,
+     * each one skipped when the level moved by less than 5 points); 40 stops a loop, or a phone opened hundreds of times, from burning the quota.
+     * Signal to change it: a tester who reaches it on a normal day (the journal says so), or more than 12 000 writes a day in the console.
+     */
+    const val MAX_BATTERY_WRITES_PER_DAY = 40
+
+    /** Two battery refreshes are never closer than this (PM decision, 2026-11-07): the first opening writes, ten openings in a row write once. */
+    const val BATTERY_MIN_INTERVAL_MILLIS = 15L * 60L * 1000L
+
+    /** The battery is not written again unless the level moved by at least this many points since the last value written ... */
+    const val BATTERY_MIN_DELTA_PCT = 5
+
+    /**
+     * ... except when the last write is older than this: the Feed hides a battery older than 6 hours (it reads `updatedAt`), so a steady level is still
+     * written every 3 hours at most when the app is opened or left, instead of disappearing from the loved ones' screens for no reason.
+     */
+    const val BATTERY_FORCE_AFTER_MILLIS = 3L * 60L * 60L * 1000L
+
+    /** One battery write waits this long at most (leaving the app is best effort: the process may be frozen a few seconds later). */
+    const val BATTERY_WRITE_TIMEOUT_MILLIS = 4_000L
+
+    /** A whole battery pass (all the Miffs) never goes on longer than this; what is not reached waits for the next opening. */
+    const val BATTERY_PASS_MAX_MILLIS = 8_000L
+}
+
+/** What the battery refresh decides, with no I/O (PM decision, 2026-11-07: the battery is updated when the app is opened and when it is left). */
+object BatteryRefresh {
+    /**
+     * Must the current level be written to a Miff? [lastPct] / [lastAtMillis]: the last battery level written to it by this phone (any status write counts),
+     * both null when none is known. Never twice within 15 minutes; yes after 3 hours; in between only if the level moved by 5 points or more.
+     */
+    fun shouldWrite(
+        lastPct: Int?,
+        lastAtMillis: Long?,
+        currentPct: Int?,
+        nowMillis: Long,
+    ): Boolean {
+        if (currentPct == null || currentPct !in 0..100) return false
+        if (lastAtMillis == null || lastPct == null) return true
+        val elapsed = nowMillis - lastAtMillis
+        // A clock that went back cannot be compared: write (the dedicated breaker still applies).
+        if (elapsed < 0) return true
+        if (elapsed < TrackingLimits.BATTERY_MIN_INTERVAL_MILLIS) return false
+        if (elapsed >= TrackingLimits.BATTERY_FORCE_AFTER_MILLIS) return true
+        return kotlin.math.abs(currentPct - lastPct) >= TrackingLimits.BATTERY_MIN_DELTA_PCT
+    }
+
+    /** May a pass be tried now? One attempt at most every 15 minutes, whatever its outcome (a refused or failed attempt is not repeated at every opening). */
+    fun passAllowed(
+        lastTriedAtMillis: Long,
+        nowMillis: Long,
+    ): Boolean {
+        val elapsed = nowMillis - lastTriedAtMillis
+        return lastTriedAtMillis == 0L || elapsed < 0 || elapsed >= TrackingLimits.BATTERY_MIN_INTERVAL_MILLIS
+    }
 }
 
 /** The time of an event as it is written (criterion STA3). */
@@ -81,6 +140,8 @@ data class BreakerState(
     val dayKey: String,
     val statusWrites: Int,
     val positionWrites: Int,
+    /** Writes that only carried the battery (opening / leaving the app), counted apart from [statusWrites]. */
+    val batteryWrites: Int = 0,
 )
 
 object WriteBreaker {
@@ -97,7 +158,7 @@ object WriteBreaker {
     private fun today(
         state: BreakerState?,
         dayKey: String,
-    ): BreakerState = if (state != null && state.dayKey == dayKey) state else BreakerState(dayKey, 0, 0)
+    ): BreakerState = if (state != null && state.dayKey == dayKey) state else BreakerState(dayKey, 0, 0, 0)
 
     fun canWriteStatus(
         state: BreakerState?,
@@ -108,6 +169,16 @@ object WriteBreaker {
         state: BreakerState?,
         dayKey: String,
     ): Boolean = today(state, dayKey).positionWrites < TrackingLimits.MAX_POSITION_WRITES_PER_DAY
+
+    fun canWriteBattery(
+        state: BreakerState?,
+        dayKey: String,
+    ): Boolean = today(state, dayKey).batteryWrites < TrackingLimits.MAX_BATTERY_WRITES_PER_DAY
+
+    fun recordBattery(
+        state: BreakerState?,
+        dayKey: String,
+    ): BreakerState = today(state, dayKey).let { it.copy(batteryWrites = it.batteryWrites + 1) }
 
     fun recordStatus(
         state: BreakerState?,

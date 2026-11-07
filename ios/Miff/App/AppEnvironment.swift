@@ -162,6 +162,9 @@ final class AppEnvironment {
     let tracking: TrackingRuntime
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
+    /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
+    /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
+    lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
     /// Créé à la première demande. Lit seulement l'ÉTAT des autorisations (le gestionnaire qui lit la position est celui du suivi,
     /// `LocationTracking`, créé au démarrage).
     lazy var devicePermissions: DevicePermissions = SystemDevicePermissions()
@@ -229,8 +232,8 @@ final class AppEnvironment {
                 ],
                 device: device,
                 network: networkMonitor,
-                drafts: drafts,
-                generationCounter: trackingServices.generation
+                drafts: drafts, generationCounter: trackingServices.generation,
+                deletionMarker: AccountDeletionFileMarker(), localData: AccountDeletionServices.localData()
             )
         )
         privacySettings = privacy

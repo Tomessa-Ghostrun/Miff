@@ -54,6 +54,22 @@ final class FirestoreDeviceSessionRemote: DeviceSessionRemote {
         }
     }
 
+    /// Suppression du COMPTE : la session part quel que soit son détenteur, en une transaction (donc jamais mise en file hors
+    /// connexion : pas d'accusé = rien de supprimé). Un document déjà absent n'est pas une erreur.
+    func delete(uid: String) async -> Bool {
+        guard FirebaseBootstrap.isConfigured, Self.isValidUid(uid) else {
+            return false
+        }
+        do {
+            try await timedOperation(seconds: Self.timeoutSeconds) {
+                try await Self.commitDelete(uid: uid)
+            }
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func changes(uid: String) -> AsyncStream<RemoteSession> {
         AsyncStream { continuation in
             guard FirebaseBootstrap.isConfigured, Self.isValidUid(uid) else {
@@ -120,6 +136,15 @@ final class FirestoreDeviceSessionRemote: DeviceSessionRemote {
     private static func fetch(uid: String) async throws -> RemoteSession {
         let snapshot = try await documentReference(uid: uid, in: Firestore.firestore()).getDocument(source: .server)
         return remoteSession(of: snapshot)
+    }
+
+    private static func commitDelete(uid: String) async throws {
+        let database = Firestore.firestore()
+        let reference = documentReference(uid: uid, in: database)
+        _ = try await database.runTransaction { transaction, _ in
+            transaction.deleteDocument(reference)
+            return nil
+        }
     }
 
     private static func commitDeleteIfMine(uid: String, deviceId: String) async throws {

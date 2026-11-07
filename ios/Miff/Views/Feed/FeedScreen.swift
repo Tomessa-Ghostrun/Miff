@@ -17,6 +17,7 @@ struct FeedScreenActions {
     /// Donne les coordonnées à Plans ; dit ensuite si une application les a prises.
     let onOpenMap: (PositionFix, @escaping (Bool) -> Void) -> Void
     let onSignOut: () -> Void
+    let onOpenSettings: () -> Void
 }
 
 private struct HeaderHeightKey: PreferenceKey {
@@ -101,6 +102,8 @@ struct FeedScreen: View {
             }
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
+        // Sans Miff, la roue crantée des Réglages restreints (Réglages > Mon compte : déconnexion, suppression) est la seule sortie.
+        .restrictedSettingsGear(visible: ready?.miffs.isEmpty == true, action: actions.onOpenSettings)
         .onPreferenceChange(HeaderHeightKey.self) { height in
             headerHeight = height
             headerModel.measured(height)

@@ -66,6 +66,14 @@ final class PrivacySettings: ObservableObject, CollectionConsentApplying {
         crashReports.setEnabled(enabled)
     }
 
+    /// Suppression du compte (AUTH-5c, ticket §5.10) : la collecte est coupée EN PREMIER (aucun événement n'est envoyé pour la
+    /// suppression), les rapports de plantage pas encore envoyés sont effacés, et l'identifiant d'installation d'Analytics est réinitialisé (Crashlytics n'a rien d'autre à oublier : ses rapports non envoyés sont effacés par la coupure).
+    func eraseCollectedData() {
+        applyAccountConsent(false)
+        analytics.forgetInstallation()
+        crashReports.forgetInstallation()
+    }
+
     /// L'interrupteur unique du consentement « statistiques et rapports de plantage » (un seul choix, deux SDK) :
     /// applique le choix du COMPTE (lu dans `users/{uid}.analyticsConsent`, ou donné par le geste à l'inscription) aux
     /// deux collectes à la fois. `false` coupe les deux ET efface les rapports pas encore envoyés : c'est le retrait du

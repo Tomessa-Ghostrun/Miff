@@ -33,7 +33,7 @@ struct FeedShellContext {
 /// - le Feed iOS (FEED-5 à 8) remplace le contenu de l'onglet Feed (`feed`) ; la bulle d'incitation (visible sur tous les onglets
 ///   sauf Update, `design/screens/update.md` §4) sera posée dans la zone du bas, avec la barre, par la même `safeAreaInset` ;
 /// - l'Update iOS (UPDATE-3) remplace `UpdateSoonView` et nourrit `central` (la couleur de la pastille) ;
-/// - la suppression de compte (AUTH-5c/d) remplace `DeleteAccountSoonView`, atteinte par Mon compte.
+/// - la suppression de compte est faite (AUTH-5c, `DeleteAccountFlowView`) : atteinte par Mon compte.
 ///
 /// La barre n'est visible que sur les écrans racines : elle disparaît dès qu'un écran est empilé (les Réglages, l'écran d'une Miff, la
 /// création, les lieux : tous poussés dans la pile UNIQUE de l'hôte, qui les dessine par-dessus cette coquille), avec le clavier, et

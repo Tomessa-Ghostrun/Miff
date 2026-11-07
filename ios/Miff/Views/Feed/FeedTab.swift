@@ -12,6 +12,8 @@ struct FeedTabActions {
     /// « Reprendre le partage » : ouvre l'écran de cette Miff, qui tient le dialogue et le consentement.
     let onOpenMiff: (String) -> Void
     let onSignOut: () -> Void
+    /// L'entrée discrète des Réglages restreints (#113), montrée seulement dans l'état « Pas encore de Miff ».
+    let onOpenSettings: () -> Void
 }
 
 /// Ce qui relance l'observation : la Miff affichée, l'onglet en usage / l'app au premier plan, « Réessayer ».
@@ -105,7 +107,8 @@ struct FeedTab: View {
                 }
                 openURL(url) { accepted in done(accepted) }
             },
-            onSignOut: actions.onSignOut
+            onSignOut: actions.onSignOut,
+            onOpenSettings: actions.onOpenSettings
         )
     }
 

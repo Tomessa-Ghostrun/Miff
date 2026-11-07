@@ -72,6 +72,11 @@ protocol DeviceSessionRemote {
     /// n'y avait rien à supprimer pour cet appareil ; faux si le serveur n'a pas répondu (alors RIEN n'est supprimé).
     func deleteIfMine(uid: String, deviceId: String) async -> Bool
 
+    /// Supprime la session QUI QUE SOIT celui qui la tient (suppression du compte seulement, AUTH-5c : le compte disparaît, les
+    /// autres téléphones voient le document partir et se déconnectent). Vrai SEULEMENT après l'accusé du serveur (transaction) ou
+    /// s'il n'y avait rien à supprimer ; faux si le serveur n'a pas répondu (alors rien n'est supposé supprimé).
+    func delete(uid: String) async -> Bool
+
     /// Les instantanés CONFIRMÉS PAR LE SERVEUR du document de session, à chaque changement. Jamais un instantané du cache, jamais
     /// une écriture locale encore en attente : hors ligne personne n'est déconnecté. Le flux s'arrête quand on l'abandonne.
     func changes(uid: String) -> AsyncStream<RemoteSession>
@@ -121,4 +126,9 @@ protocol DeviceIdStore {
     func isRevoked() -> Bool
     /// Pose ou retire le marqueur « révoqué ». Faux si cela n'a pas pu être enregistré.
     func setRevoked(_ value: Bool) -> Bool
+    /// Pourquoi cet appareil a été révoqué (persistant, comme le marqueur ci-dessus) : vrai quand le DOCUMENT de session a disparu
+    /// (le compte est en cours de suppression ailleurs) plutôt qu'un autre téléphone qui prend la place. Il ne décide que de la note
+    /// calme de l'écran de connexion (`SignedOutNotice.sessionGone`). Posé avec le marqueur « révoqué », retiré avec lui.
+    func isGone() -> Bool
+    func setGone(_ value: Bool) -> Bool
 }
