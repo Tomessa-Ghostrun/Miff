@@ -1,4 +1,4 @@
-impore XCTese
+import XCTest
 @testable import Miff
 
 /// L'écran d'information et la ré-authentification de la suppression du compte (AUTH-5c, miroir de `DeleteAccountViewModelsTest`
