@@ -17,6 +17,8 @@ struct MiffServices {
     let deletions: MiffDeletionCoordinator
     /// Le renouvellement du consentement des membres qui partagent sous un texte plus ancien (LOC-4a, règle R-LIEU-3).
     let renewals: ConsentRenewals
+    /// FEED-5 : les Miffs qui attendent l'accord de la personne (« Pas maintenant » au renouvellement), dites par le Feed.
+    let awaiting = AwaitingAgreement()
 
     static func make(
         gateway: AuthGateway,
@@ -75,6 +77,15 @@ struct MiffServices {
             deletions: deletions,
             renewals: FirestoreConsentRenewals(store: store, onRenewed: onSharingChanged)
         )
+    }
+}
+
+extension MiffServices {
+    /// Fin de session : l'annuaire oublie les Miffs, la suppression en cours est arrêtée, plus personne n'attend d'accord.
+    func stop() async {
+        await directory.stop()
+        await deletions.stop()
+        await awaiting.stop()
     }
 }
 
@@ -141,6 +152,10 @@ final class AppEnvironment {
     /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
+    /// FEED-5 : les Miffs qui attendent l'accord de la personne (« Pas maintenant » au renouvellement), dites par le Feed.
+    let awaitingAgreement: AwaitingAgreement
+    /// FEED-5 : les lectures du Feed (statuts en direct, position au toucher, actualisation). Elles ne lisent qu'à l'usage.
+    let feedServices = FeedServices.live()
     let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
     /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
     /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
@@ -205,8 +220,8 @@ final class AppEnvironment {
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
                 teardown: [
                     { drafts.clear() },
-                    { await miff.directory.stop() },
-                    { await miff.deletions.stop() },
+                    // L'annuaire des Miffs, la suppression d'une Miff sans écran, et les Miffs qui attendent un accord.
+                    { await miff.stop() },
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() },
                     // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
@@ -232,6 +247,7 @@ final class AppEnvironment {
         placeNotices = places.notices
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
+        awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
         profileDrafts = drafts
@@ -281,7 +297,8 @@ final class AppEnvironment {
                 renewals: consentRenewals,
                 currentUid: { session.currentUid },
                 leaver: { uid, miffId in await repository.leave(uid: uid, miffId: miffId) },
-                onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) }
+                onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) },
+                awaiting: awaitingAgreement
             ),
             settings: PermissionGateSettings(locationBlocking: LocationBlockingSwitch.current)
         )
