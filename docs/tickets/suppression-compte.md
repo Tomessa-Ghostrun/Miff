@@ -703,3 +703,7 @@ Le PM a validé **toutes les recommandations du §16** (relayées par `product-s
 - Règles déployées : la suppression doit purger la **dernière position** (`positions/{uid}`, dans le même lot que la fiche : déjà fait par les lots existants) ; lots recomptés (Quitter 5 écritures / 4 lectures de règles, retrait 7 / 18, final 8 / 13) ; à tester (SC-B).
 - Quand la session « un compte, un appareil » existera : une suppression de plus (SC39b).
 - Maquettes : les textes ajoutés par les maquettes (listés dans leur README) sont à valider avec elles.
+
+## Décision du PM (2026-11-06) : ordre de la session dans la suppression de compte
+
+Le PM a validé (réponse « OK » aux points de la revue de AUTH-5b) que la **session « un compte, un appareil » est supprimée juste après l'inventaire, avant les lots de Miffs**, et non après comme le disaient §5.5 (étape 5), §5.13 et `backend-data/data-model.md` §10 : les autres téléphones du même compte se déconnectent aussitôt au lieu de voir les Miffs disparaître une à une. La suppression est refaite une seconde fois avant le profil (idempotent). Appliqué par la PR AUTH-5b Android ; à répercuter dans §5.5, §5.13 et dans `data-model.md` §10 (`backend-data`).

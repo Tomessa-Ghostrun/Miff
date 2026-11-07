@@ -82,6 +82,26 @@ object MiffSharing {
     }
 
     /**
+     * "Prévenir mes proches" for a Miff that cannot be named (several Miffs created, AUTH-5b): the same share sheet, a message WITHOUT a name. Still no code and
+     * no identifier; the app sends nothing.
+     */
+    fun shareClosingNoticeGeneric(context: Context) {
+        val send =
+            Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, context.getString(R.string.settings_delete_warn_message_generic))
+        try {
+            context.startActivity(
+                Intent
+                    .createChooser(send, context.getString(R.string.miff_delete_notify_action))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        } catch (e: ActivityNotFoundException) {
+            // No app can take the text: nothing happens, and nothing is lost (the deletion does not depend on this).
+        }
+    }
+
+    /**
      * Copies the code alone. From Android 13 the system shows its own confirmation and hides the content (marked sensitive):
      * returns true when the app has to confirm itself ("Code copié", older versions).
      */

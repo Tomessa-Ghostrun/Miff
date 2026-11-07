@@ -367,7 +367,7 @@ final class SessionHarness {
     private(set) var collectionWhenAccountRead: Bool?
 
     /// `freshInstall` vrai : la première ouverture d'une installation (aucun repère d'installation sur l'appareil).
-    init(teardown: [SessionTeardown] = [], freshInstall: Bool = false) {
+    init(teardown: [SessionTeardown] = [], freshInstall: Bool = false, generationCounter: GenerationCounter? = nil) {
         let timeline = self.timeline
         let gateway = FakeAuthGateway(timeline: timeline)
         let privacy = self.privacy
@@ -399,7 +399,8 @@ final class SessionHarness {
                 teardown: teardown,
                 device: device,
                 network: network,
-                drafts: drafts
+                drafts: drafts,
+                generationCounter: generationCounter
             )
         )
         accounts.onLoad = { [weak self] in

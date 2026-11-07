@@ -78,16 +78,21 @@ final class SessionWriteSitesTests: XCTestCase {
                 }
             }
         }
-        // Créer, rejoindre et reprendre le partage : trois statuts initiaux, tous estampillés par `initialStatus`. Toute autre
-        // écriture de statut ou de position (LOC-4b) doit utiliser `SessionWriteGuard.stamped` et s'ajouter ICI après relecture.
-        XCTAssertEqual(found, ["Models/Miff/MiffWrites.swift": 3])
+        // Créer, rejoindre et reprendre le partage : trois statuts initiaux, tous estampillés par `initialStatus`. LOC-4b : la mise à
+        // jour automatique du statut, la mise à jour de l'accès et la dernière position (`TrackingWrites`), toutes estampillées par
+        // `SessionWriteGuard.stamped`. Toute autre écriture de statut ou de position doit s'ajouter ICI après relecture.
+        XCTAssertEqual(found, ["Models/Miff/MiffWrites.swift": 3, "Models/Tracking/TrackingWrites.swift": 3])
     }
 
-    func testTheInitialStatusIsTheOnlyPlaceThatBuildsStatusFields() throws {
+    func testOnlyTheKnownFilesBuildStatusAndPositionFields() throws {
         let all = try sources()
         let builders = all.filter { _, lines in
             lines.contains { $0.contains("SessionWriteGuard.stamped(") }
         }
-        XCTAssertEqual(Set(builders.keys), ["Models/Miff/MiffWrites.swift"], "les champs d'un statut : stamped")
+        XCTAssertEqual(
+            Set(builders.keys),
+            ["Models/Miff/MiffWrites.swift", "Models/Tracking/TrackingWrites.swift"],
+            "les champs d'un statut ou d'une position : stamped"
+        )
     }
 }

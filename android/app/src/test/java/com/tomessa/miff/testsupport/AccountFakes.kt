@@ -6,8 +6,15 @@ import com.tomessa.miff.data.account.AccountDeletionMark
 import com.tomessa.miff.data.account.AccountDeletionMarker
 import com.tomessa.miff.data.account.AccountDeletionProcedure
 import com.tomessa.miff.data.account.AccountDeletionSession
+import com.tomessa.miff.data.account.AccountMiffs
+import com.tomessa.miff.data.account.AccountMiffsSummary
 import com.tomessa.miff.data.account.DeletionRun
+import com.tomessa.miff.data.account.DeletionStep
 import com.tomessa.miff.data.account.Inventory
+import com.tomessa.miff.data.account.MiffStep
+import com.tomessa.miff.data.account.MiffsInventory
+import com.tomessa.miff.data.account.MiffsRead
+import com.tomessa.miff.domain.miff.MembershipRef
 
 /** The marker of a deletion under way, in memory. */
 class MemoryDeletionMarker(
@@ -85,18 +92,28 @@ class FakeAccountDataStore(
 
 /** The procedure, scripted: one answer per run (the last one is repeated). */
 class FakeProcedure(
-    var inventory: Inventory = Inventory.NoMiffs,
+    var inventory: Inventory = Inventory.Loaded(AccountMiffsSummary.NONE),
 ) : AccountDeletionProcedure {
     val results = ArrayDeque<DeletionRun>()
     var runs = 0
+
+    /** The steps the procedure announces during each run, in order (to drive the progress screen). */
+    var steps: List<DeletionStep> = emptyList()
+
+    /** The steps of the Nth run (from 0) when they differ from one run to the next (a deletion that makes progress); else [steps]. */
+    var stepsByRun: List<List<DeletionStep>> = emptyList()
 
     /** Runs when a run starts (to look at what the controller did BEFORE it). */
     var onRun: () -> Unit = {}
 
     override suspend fun inventory(uid: String): Inventory = inventory
 
-    override suspend fun run(uid: String): DeletionRun {
+    override suspend fun run(
+        uid: String,
+        onStep: (DeletionStep) -> Unit,
+    ): DeletionRun {
         runs++
+        (stepsByRun.getOrNull(runs - 1) ?: steps).forEach(onStep)
         onRun()
         return if (results.size > 1) results.removeFirst() else results.firstOrNull() ?: DeletionRun.Completed
     }
@@ -148,5 +165,52 @@ class FakeAccountSession(
         timeline += "session.delete"
         failures.removeFirstOrNull()?.let { throw it }
         deleted += uid
+    }
+}
+
+/** The Miffs of the account, scripted (the orchestration of the procedure is tested without a server). Each call is recorded in the timeline. */
+class FakeAccountMiffs(
+    private val timeline: Timeline = Timeline(),
+) : AccountMiffs {
+    var inventory: MiffsRead = MiffsRead.Read(MiffsInventory(emptyList(), emptyList(), emptyList()))
+    val leaves = mutableListOf<String>()
+    val dropped = mutableListOf<String>()
+    val deleted = mutableListOf<String>()
+
+    /** One answer per call of leave / dropStale / deleteOwned (null = done). */
+    val failures = ArrayDeque<com.tomessa.miff.domain.miff.MiffFailure?>()
+
+    private fun step(): MiffStep = failures.removeFirstOrNull()?.let { MiffStep.Failed(it) } ?: MiffStep.Done
+
+    override suspend fun inventory(uid: String): MiffsRead {
+        timeline += "miffs.inventory"
+        return inventory
+    }
+
+    override suspend fun dropStale(
+        uid: String,
+        ref: MembershipRef,
+    ): MiffStep {
+        timeline += "miffs.dropStale"
+        dropped += ref.miffId
+        return step()
+    }
+
+    override suspend fun leave(
+        uid: String,
+        ref: MembershipRef,
+    ): MiffStep {
+        timeline += "miffs.leave"
+        leaves += ref.miffId
+        return step()
+    }
+
+    override suspend fun deleteOwned(
+        uid: String,
+        miffId: String,
+    ): MiffStep {
+        timeline += "miffs.deleteOwned"
+        deleted += miffId
+        return step()
     }
 }

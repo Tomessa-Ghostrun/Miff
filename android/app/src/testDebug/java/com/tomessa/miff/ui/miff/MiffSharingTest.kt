@@ -72,4 +72,31 @@ class MiffSharingTest {
         clipboard().setPrimaryClip(ClipData.newPlainText("x", "xtzr sp36 7988"))
         assertEquals("xtzr sp36 7988", MiffSharing.pastedText(context()))
     }
+
+    // --- AUTH-5b: "Prévenir mes proches" (decision QM9) ---------------------------------------------------------------------
+
+    private fun sharedText(): String? {
+        val started =
+            org.robolectric.Shadows
+                .shadowOf(context() as Application)
+                .nextStartedActivity ?: return null
+        val inner = started.getParcelableExtra<android.content.Intent>(android.content.Intent.EXTRA_INTENT)
+        return inner?.getStringExtra(android.content.Intent.EXTRA_TEXT)
+    }
+
+    @Test
+    fun closingNotice_namesTheMiff_andHasNoCodeNorLink() {
+        MiffSharing.shareClosingNotice(context(), "Famille Martin")
+        val text = sharedText()
+        assertNotNull(text)
+        assertTrue(text!!.contains("« Famille Martin »"))
+        assertFalse(text.contains("http"))
+    }
+
+    @Test
+    fun closingNoticeWithoutAName_saysNoNameAndNothingElse() {
+        MiffSharing.shareClosingNoticeGeneric(context())
+        val text = sharedText()
+        assertEquals("Je ferme notre Miff dans Miff : elle ne sera plus accessible.", text)
+    }
 }

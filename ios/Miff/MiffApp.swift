@@ -42,6 +42,8 @@ struct MiffApp: App {
             .onOpenURL { url in
                 _ = GIDSignIn.sharedInstance.handle(url)
             }
+            // LOC-4b : à l'ouverture et au passage en arrière-plan, le suivi des lieux lit la position (s'il en a le droit).
+            .trackingLifecycle(environment.tracking)
         }
     }
 }
