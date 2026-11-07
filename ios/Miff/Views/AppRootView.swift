@@ -8,20 +8,43 @@ struct AppRootView: View {
     @ObservedObject private var sessionState: SessionObservable
     /// Gardé à ce niveau (et non dans la branche du panneau) pour pouvoir être vidé quand on quitte le panneau.
     @StateObject private var panel: ConsentPanelViewModel
+    /// La « Dernière vérification » de la suppression du compte (AUTH-5c) : gardée à ce niveau pour survivre aux changements d'écran.
+    @StateObject private var lastCheck: DeleteReauthViewModel
+    /// « Supprimer mon compte » depuis l'écran où le compte ne peut pas être lu (AUTH-5c, Apple 5.1.1(v)).
+    @State private var deletingAccount = false
 
     init(environment: AppEnvironment) {
         self.environment = environment
         _sessionState = ObservedObject(wrappedValue: environment.sessionState)
         _panel = StateObject(wrappedValue: ConsentPanelViewModel(session: environment.session))
+        _lastCheck = StateObject(wrappedValue: environment.makeDeleteReauthViewModel(last: true))
     }
 
     var body: some View {
         content
             .onChange(of: sessionState.state) { newState in
+                // La couverture de suppression (écran « compte illisible ») ne survit jamais à un changement d'écran.
+                deletingAccount = false
                 if newState != .ready(.consentPanel) {
                     panel.reset()
                 }
             }
+            .alert(
+                Text("settings_delete_failed_title"),
+                isPresented: Binding(
+                    get: { sessionState.deletionBlocked },
+                    set: { if !$0 { environment.session.dismissDeletionBlockedNotice() } }
+                ),
+                actions: {
+                    Button("miff_lost_ok_action") {
+                        environment.session.dismissDeletionBlockedNotice()
+                    }
+                },
+                message: {
+                    // Une Miff est apparue pendant la suppression : le compte n'a PAS été supprimé. Une phrase calme, avec la suite.
+                    Text(verbatim: L10n.format("settings_delete_miffs_blocked", AppLinks.supportEmail))
+                }
+            )
     }
 
     @ViewBuilder
@@ -30,7 +53,13 @@ struct AppRootView: View {
         case .loading:
             SessionLoadingView()
         case .lookupFailed:
-            AccountLookupFailedView(onRetry: { environment.session.retry() }, onSignOut: signOut)
+            AccountLookupFailedView(
+                onRetry: { environment.session.retry() },
+                onSignOut: signOut,
+                onDelete: { deletingAccount = true }
+            )
+            // Attaché à cet écran seulement : quand la suppression prend tout l'écran, il disparaît avec lui.
+            .deleteAccountCover(isPresented: $deletingAccount, environment: environment)
         case .ready(let destination):
             screen(for: destination)
         }
@@ -59,6 +88,13 @@ struct AppRootView: View {
             // L'onboarding n'est complet qu'une fois une Miff créée ou rejointe (CLAUDE.md).
             MiffOnboardingHost(environment: environment)
                 .id(sessionKey(for: "choice"))
+        case .accountDeletion:
+            // AUTH-5c : la suppression du compte a PRIORITÉ sur toute autre destination tant que son marqueur local existe.
+            AccountDeletionHostView(
+                controller: environment.accountDeletion.controller,
+                lastCheck: lastCheck,
+                onLeave: { environment.session.leaveAfterAccountDeletion() }
+            )
         case .feed:
             // LOC-4a : l'écran des notifications, le renouvellement du consentement et l'écran bloquant de la localisation
             // passent AVANT le Feed ; un hôte neuf par compte et par session, comme le Feed lui-même.

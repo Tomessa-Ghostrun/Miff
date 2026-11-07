@@ -95,6 +95,78 @@ final class FirebaseAuthGateway: AuthGateway {
         }
     }
 
+    func linkedProviders() -> Set<SignInProvider> {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return []
+        }
+        return Self.providers(from: user.providerData.map { $0.providerID })
+    }
+
+    func reauthenticateWithPassword(_ password: String) async -> AuthFailure? {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser,
+              let email = user.email, !email.isEmpty else {
+            return .unknown
+        }
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+        do {
+            _ = try await user.reauthenticate(with: credential)
+            return nil
+        } catch {
+            return interpretAuthError(error, attempt: .reauthEmail)
+        }
+    }
+
+    func reauthenticateForDeletion(with credential: SocialCredential) async -> AuthFailure? {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return .sessionExpired
+        }
+        let firebaseCredential = firebaseCredential(for: credential)
+        do {
+            _ = try await user.reauthenticate(with: firebaseCredential)
+            return nil
+        } catch {
+            return interpretAuthError(error, attempt: .reauthSocial)
+        }
+    }
+
+    func checkSession() async -> AccountSessionCheck {
+        // Personne de connecté : le compte existe peut-être encore, on ne peut pas le savoir. Jamais « disparu ».
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return .expired
+        }
+        do {
+            try await user.reload()
+            return .valid
+        } catch {
+            switch interpretAuthError(error, attempt: .checkSession) {
+            case .accountGone:
+                return .gone
+            case .sessionExpired:
+                return .expired
+            default:
+                return .unknown
+            }
+        }
+    }
+
+    /// Les méthodes que Miff connaît, d'après les identifiants de fournisseur de Firebase.
+    static func providers(from providerIds: [String]) -> Set<SignInProvider> {
+        var result = Set<SignInProvider>()
+        for identifier in providerIds {
+            switch identifier {
+            case "password":
+                result.insert(.password)
+            case "google.com":
+                result.insert(.google)
+            case "apple.com":
+                result.insert(.apple)
+            default:
+                continue
+            }
+        }
+        return result
+    }
+
     func signInMethod() -> AnalyticsEvent.Method? {
         guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
             return nil

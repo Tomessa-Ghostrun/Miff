@@ -11289,6 +11289,57 @@
         }
       }
     },
+    "ios_settings_delete_reauth_apple": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple will ask you to confirm. After that, Miff will no longer be allowed to use “Sign in with Apple”."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple va te demander de confirmer. Ensuite, Miff n’aura plus l’autorisation « Se connecter avec Apple »."
+          }
+        }
+      }
+    },
+    "ios_settings_delete_apple_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn’t remove the “Sign in with Apple” authorization automatically. You can do it in your Apple ID settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n’a pas pu retirer l’autorisation « Se connecter avec Apple » automatiquement. Tu peux le faire dans les réglages de ton identifiant Apple."
+          }
+        }
+      }
+    },
+    "ios_settings_delete_entry_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a page that explains what will be deleted. Nothing is deleted yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre une page qui explique ce qui sera supprimé. Rien n’est supprimé tout de suite."
+          }
+        }
+      }
+    },
     "settings_language_subtitle": {
       "extractionState": "manual",
       "localizations": {
@@ -13461,57 +13512,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connecté avec Apple"
-          }
-        }
-      }
-    },
-    "ios_account_delete_subtitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This feature is coming soon on iPhone"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cette fonction arrive bientôt sur iPhone"
-          }
-        }
-      }
-    },
-    "ios_delete_soon_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deleting your account from the app is coming soon on iPhone. Until then, write to us at %1$@ and we will take care of your request."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La suppression du compte depuis l'app arrive bientôt sur iPhone. En attendant, écris-nous à %1$@ : nous nous occupons de ta demande."
-          }
-        }
-      }
-    },
-    "ios_delete_soon_contact_action": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Write to the Miff team"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Écrire à l'équipe Miff"
           }
         }
       }

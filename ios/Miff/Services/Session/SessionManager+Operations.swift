@@ -265,7 +265,12 @@ extension SessionManager {
 
     /// Démarrage à froid et « Réessayer » : la même règle, quoi qu'il soit arrivé avant.
     func resolveCurrent() async {
-        guard let uid = gateway.currentUid else {
+        let current = gateway.currentUid
+        // AUTH-5c : une suppression de compte en cours a PRIORITÉ sur le routage (ticket §5.6, critères SC27 à SC29).
+        if await resolveAccountDeletion(uid: current) {
+            return
+        }
+        guard let uid = current else {
             sessionActive = false
             // Pas de session = pas de consentement à envoyer quoi que ce soit : un rapport laissé par un plantage avant que
             // la personne ait dit oui disparaît.
@@ -273,9 +278,11 @@ extension SessionManager {
             drafts?.clear()
             privacy.applyAccountConsent(false)
             pending.clear()
-            // SESS-3 : une déconnexion forcée faite alors que l'app était fermée laisse son message à montrer sur l'écran de connexion.
+            // SESS-3 : une déconnexion forcée faite alors que l'app était fermée laisse son message à montrer sur l'écran de connexion
+            // (la note prudente « modifié sur un autre appareil » quand le document de session avait disparu).
             if flags.value(forKey: Self.keyReplacedNoticePending, default: false), !hasNotice {
-                setNotice(.sessionReplaced)
+                let gone = flags.value(forKey: Self.keyGoneNoticePending, default: false)
+                setNotice(gone ? .sessionGone : .sessionReplaced)
             }
             setState(.ready(entryDestination()))
             return
@@ -332,6 +339,13 @@ extension SessionManager {
         signUpConsent: ConsentChoice?
     ) async {
         sessionActive = true
+        // AUTH-5c : le même compte se reconnecte alors que sa suppression est en cours (session fermée dans notre dos) : la suppression
+        // reprend, il n'est pas routé comme un compte ordinaire (son profil est peut-être déjà parti) et AUCUNE session d'appareil
+        // n'est écrite pour lui.
+        if deletionMarker?.read()?.uid == uid {
+            await beginAccountDeletion()
+            return
+        }
         // Rien n'est collecté tant que le choix propre du compte n'a pas été lu (en pause, rien n'est encore effacé).
         privacy.pauseCollection()
         if signUpConsent != nil {

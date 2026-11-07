@@ -105,6 +105,11 @@ struct SignInUiState: Equatable {
     /// Après une déconnexion forcée parce que le compte est utilisé sur un autre téléphone (SESS-3) : une information calme,
     /// pas une erreur.
     var showSessionReplacedNote = false
+    /// Après une déconnexion forcée parce que le document de session avait disparu : le compte est en cours de suppression sur un autre
+    /// appareil (PR Android #100). Une note prudente, ni « autre téléphone » ni une erreur.
+    var showSessionGoneNote = false
+    /// Après une session fermée PENDANT la suppression du compte (AUTH-5c) : « reconnecte-toi avec le même compte, on termine ».
+    var showDeletionPendingNote = false
 }
 
 /// Écran de connexion (ticket §3 B).
@@ -133,7 +138,12 @@ final class SignInViewModel: ObservableObject {
             state.message = .accountUnavailable
         case .sessionReplaced:
             state.showSessionReplacedNote = true
-        case nil:
+        case .sessionGone:
+            state.showSessionGoneNote = true
+        case .deletionPending:
+            state.showDeletionPendingNote = true
+        case .accountDeleted, nil:
+            // « Ton compte a été supprimé » est montré au-dessus du carrousel, pas ici.
             break
         }
     }
@@ -166,6 +176,8 @@ final class SignInViewModel: ObservableObject {
     private func clearNotes() {
         state.showAccountNotCreatedNote = false
         state.showSessionReplacedNote = false
+        state.showSessionGoneNote = false
+        state.showDeletionPendingNote = false
     }
 
     /// Ce qui empêche d'essayer maintenant : la pause après trop d'échecs, ou l'absence de réseau.

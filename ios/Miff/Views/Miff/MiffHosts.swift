@@ -42,6 +42,7 @@ enum MiffRoute: Hashable {
 struct MiffOnboardingHost: View {
     private let environment: AppEnvironment
     @State private var path: [MiffRoute] = []
+    @State private var deletingAccount = false
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -52,7 +53,8 @@ struct MiffOnboardingHost: View {
             MiffChoiceView(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
-                onSignOut: { signOut() }
+                onSignOut: { signOut() },
+                onDeleteAccount: { deletingAccount = true }
             )
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: MiffRoute.self) { route in
@@ -60,6 +62,8 @@ struct MiffOnboardingHost: View {
                     .toolbar(.hidden, for: .navigationBar)
             }
         }
+        // AUTH-5c : une personne qui n'a pas encore de Miff n'atteint pas les Réglages, elle peut quand même supprimer son compte.
+        .deleteAccountCover(isPresented: $deletingAccount, environment: environment)
     }
 
     @ViewBuilder

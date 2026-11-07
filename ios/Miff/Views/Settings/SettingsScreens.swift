@@ -100,25 +100,6 @@ struct MyInfoView: View {
     }
 }
 
-/// Réglages > Mon compte > Supprimer mon compte : en attendant AUTH-5c et AUTH-5d, un écran honnête (rien n'est supprimé ici) qui dit
-/// que la suppression dans l'app arrive bientôt sur iPhone et qui propose d'écrire à l'équipe, qui s'en occupe.
-struct DeleteAccountSoonView: View {
-    let onBack: () -> Void
-
-    var body: some View {
-        MiffFrame(title: L10n.string("settings_delete_title"), onBack: onBack, usesCanvas: true) {
-            SettingsBody(text: L10n.format("ios_delete_soon_body", AppLinks.supportEmail))
-            Button {
-                ExternalOpener.open(ContactLinks.supportMailURL())
-            } label: {
-                Text("ios_delete_soon_contact_action")
-            }
-            .buttonStyle(.miffSecondaryFullWidth)
-            .accessibilityHint(Text(verbatim: L10n.string("settings_privacy_open_mail_a11y")))
-        }
-    }
-}
-
 /// « Si les détections tardent » : ce qui peut retarder une arrivée ou un départ sur un iPhone. Texte calme, sans rien promettre.
 struct DetectionHelpView: View {
     let onBack: () -> Void

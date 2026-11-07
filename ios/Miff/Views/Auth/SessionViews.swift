@@ -44,6 +44,8 @@ struct SessionLoadingView: View {
 struct AccountLookupFailedView: View {
     let onRetry: () -> Void
     let onSignOut: () -> Void
+    /// « Supprimer mon compte » (AUTH-5c, Apple 5.1.1(v)) : une personne dont le compte ne peut pas être lu n'atteint pas les Réglages.
+    var onDelete: (() -> Void)?
 
     var body: some View {
         CenteredFrame {
@@ -55,6 +57,9 @@ struct AccountLookupFailedView: View {
                     .miffTextStyle(textBodyBold16)
                     .foregroundColor(colorActionPrimary.color)
                     .frame(minHeight: Spacing.minTouchTarget)
+            }
+            if let onDelete {
+                DeleteAccountLink(action: onDelete)
             }
         }
     }

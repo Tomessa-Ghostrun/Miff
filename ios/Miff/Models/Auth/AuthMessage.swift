@@ -15,11 +15,21 @@ enum AuthMessage: Equatable {
     case network
     case unknown
     case accountUnavailable
+    /// Suppression du compte (AUTH-5c) : « Ce mot de passe ne correspond pas. Tu peux réessayer. »
+    case reauthPasswordWrong
+    /// Suppression du compte : le compte Google ou Apple choisi n'est pas celui de la session.
+    case reauthWrongAccount
+    /// Suppression du compte : la session a expiré, il faut se reconnecter puis réessayer.
+    case reauthExpired
 }
 
 extension AuthFailure {
     func toMessage() -> AuthMessage {
         switch self {
+        case .wrongAccount:
+            return .reauthWrongAccount
+        case .accountGone, .sessionExpired:
+            return .reauthExpired
         case .invalidCredentials:
             return .invalidCredentials
         case .network:
@@ -34,6 +44,21 @@ extension AuthFailure {
             return .otherMethod
         case .recentLoginRequired, .unknown:
             return .unknown
+        }
+    }
+}
+
+extension AuthFailure {
+    /// La phrase calme de chaque cause d'une ré-authentification qui échoue ; jamais un code (critère SC10). Seul un mot de passe peut
+    /// être « faux » ici : la personne est déjà connectée, aucun compte ne se devine.
+    func reauthMessage(isSocial: Bool) -> AuthMessage {
+        switch self {
+        case .invalidCredentials:
+            return .reauthPasswordWrong
+        case .tooManyAttempts:
+            return isSocial ? .tooManyRequests : .tooManyAttempts
+        default:
+            return toMessage()
         }
     }
 }

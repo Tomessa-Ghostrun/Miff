@@ -18,6 +18,16 @@ enum SignedOutNotice: Equatable {
     /// Le compte est maintenant utilisé sur un autre téléphone (SESS-3) : déconnexion locale forcée, message calme. Jamais
     /// présenté comme un accès perdu à une Miff.
     case sessionReplaced
+    /// Le document de session du compte a DISPARU (SESS-3 + AUTH-5c) : le compte est en cours de suppression sur un autre appareil (ou
+    /// l'a été, depuis la console). Ce n'est pas « utilisé sur un autre téléphone » (personne n'a pris la place, et une suppression peut
+    /// encore être annulée), et jamais un accès perdu à une Miff : une note prudente et calme.
+    case sessionGone
+    /// La suppression du compte s'est terminée sans que l'écran de fin ait été vu (l'app a été tuée puis relancée, ticket §5.6) : le
+    /// carrousel de bienvenue le dit une fois, calmement.
+    case accountDeleted
+    /// La session a été fermée dans notre dos PENDANT une suppression du compte (jeton expiré ou révoqué, déconnexion forcée) : le compte
+    /// existe peut-être encore, RIEN ne dit « supprimé ». Le marqueur reste ; se reconnecter avec le même compte reprend la suppression.
+    case deletionPending
 }
 
 enum RefuseResult: Equatable {
@@ -36,7 +46,21 @@ protocol CollectionConsentApplying {
     /// Applique le choix du COMPTE aux statistiques et aux rapports de plantage à la fois. `false` coupe les deux ET
     /// efface les rapports pas encore envoyés (retrait du consentement, déconnexion, refus).
     func applyAccountConsent(_ enabled: Bool)
+    /// Suppression du compte (AUTH-5c) : collecte coupée, rapports non envoyés effacés, installation oubliée des SDK.
+    func eraseCollectedData()
 }
+
+extension CollectionConsentApplying {
+    /// Par défaut : seulement couper la collecte (les doubles qui ne gardent rien).
+    func eraseCollectedData() {
+        applyAccountConsent(false)
+    }
+}
+
+/// Ce que la suppression du compte efface du téléphone POUR CE COMPTE, en plus de ce que la fin d'une session arrête déjà
+/// (`SessionTeardown`) : les réglages gardés pour un compte (un drapeau par compte, les marqueurs de suppression d'une Miff...).
+/// `uid` est le compte supprimé. Tout stockage lié à un compte doit être listé dans l'un des deux (voir `AccountLocalData`).
+typealias LocalDataEraser = (_ uid: String) async -> Void
 
 /// Tout ce dont un `SessionManager` a besoin.
 struct SessionDependencies {
@@ -57,6 +81,11 @@ struct SessionDependencies {
     let drafts: ProfileDraftStore?
     /// Copie de `generation` lisible depuis n'importe quel fil (le moteur de suivi des lieux, LOC-4b). Facultative : les tests n'en ont pas besoin.
     var generationCounter: GenerationCounter?
+    /// Le marqueur d'une suppression de compte en cours (AUTH-5c). Quand il existe, il a PRIORITÉ sur le routage du lancement.
+    /// nil là où la suppression n'existe pas (les tests plus anciens).
+    var deletionMarker: AccountDeletionMarker?
+    /// Les réglages gardés pour un compte, effacés quand ce compte est supprimé.
+    var localData: [LocalDataEraser] = []
 }
 
 /// L'unique responsable de « qui est connecté et où s'ouvre l'app » (tickets Authentification §5, §7.6, §7.8 et §8).
@@ -82,6 +111,9 @@ final class SessionManager {
     /// suivant. Une déconnexion forcée peut avoir lieu alors que l'app est fermée (réveil par une zone, LOC-4b) : le message attend
     /// l'écran de connexion. Même clé que sur Android.
     static let keyReplacedNoticePending = "session_replaced_notice_pending"
+    /// Avec la clé ci-dessus : la note à montrer est la note prudente « modifié sur un autre appareil » (`sessionGone`), pas « autre
+    /// téléphone ». Même clé qu'Android.
+    static let keyGoneNoticePending = "session_gone_notice_pending"
 
     let gateway: AuthGateway
     let accounts: AccountRepository
@@ -95,9 +127,29 @@ final class SessionManager {
     let network: NetworkMonitor
     let drafts: ProfileDraftStore?
     private let generationCounter: GenerationCounter?
+    /// Suppression du compte (AUTH-5c).
+    let deletionMarker: AccountDeletionMarker?
+    let localData: [LocalDataEraser]
 
     /// Appelé à chaque changement d'état (un seul observateur : l'interface).
     var onStateChange: ((SessionState) -> Void)?
+
+    /// Appelé quand le message « une suppression de compte annulée » apparaît ou est fermé (un seul observateur : l'interface).
+    var onDeletionBlockedChange: ((Bool) -> Void)?
+
+    /// Vrai après une suppression ANNULÉE parce qu'une Miff est apparue : un message calme, montré par-dessus l'app jusqu'à ce qu'il soit
+    /// compris (`dismissDeletionBlockedNotice`).
+    private(set) var deletionBlockedNotice = false {
+        didSet {
+            if oldValue != deletionBlockedNotice {
+                onDeletionBlockedChange?(deletionBlockedNotice)
+            }
+        }
+    }
+
+    /// Vrai une fois après la suppression d'un compte : le carrousel de bienvenue est montré de nouveau, même s'il l'a déjà été (décision
+    /// du PM du 2026-10-31 : « Ton compte a été supprimé », puis le carrousel, puis inscription ou connexion).
+    var carouselAfterDeletion = false
 
     private(set) var state: SessionState = .loading {
         didSet {
@@ -158,6 +210,8 @@ final class SessionManager {
         network = dependencies.network
         drafts = dependencies.drafts
         generationCounter = dependencies.generationCounter
+        deletionMarker = dependencies.deletionMarker
+        localData = dependencies.localData
         // Un remplacement découvert après un refus d'écriture lance la même déconnexion forcée que l'écoute de la session.
         device.setReplacedHandler { [weak self] in
             Task { @MainActor in
@@ -181,14 +235,49 @@ final class SessionManager {
         notice != nil
     }
 
+    /// La bannière « Ton compte a été supprimé. » attend-elle d'être montrée au-dessus du carrousel ? (Lecture sans effet : l'écran la
+    /// regarde à sa création, et ne l'efface qu'une fois affiché, pour qu'une recréation de l'écran ne la perde pas.)
+    var hasAccountDeletedNotice: Bool {
+        notice == .accountDeleted
+    }
+
     /// Lit (et oublie) le message unique de l'écran de connexion.
     func consumeNotice() -> SignedOutNotice? {
         let current = notice
         notice = nil
-        if current == .sessionReplaced {
+        if current == .sessionReplaced || current == .sessionGone {
             flags.set(false, forKey: Self.keyReplacedNoticePending)
+            flags.set(false, forKey: Self.keyGoneNoticePending)
         }
         return current
+    }
+
+    /// Vrai une fois, quand une suppression de compte s'est terminée derrière l'écran (l'app relancée, ticket §5.6) : la bannière
+    /// « Ton compte a été supprimé. » est montrée au-dessus du carrousel. Seule cette note est prise ; les autres restent pour
+    /// l'écran de connexion.
+    func consumeAccountDeletedNotice() -> Bool {
+        guard notice == .accountDeleted else {
+            return false
+        }
+        notice = nil
+        return true
+    }
+
+    /// Vrai une fois après la suppression d'un compte : le carrousel de bienvenue est montré de nouveau.
+    func consumeCarouselAfterDeletion() -> Bool {
+        let shown = carouselAfterDeletion
+        carouselAfterDeletion = false
+        return shown
+    }
+
+    /// Le message « suppression annulée » a été compris.
+    func dismissDeletionBlockedNotice() {
+        deletionBlockedNotice = false
+    }
+
+    /// Pour les extensions (le didSet est ici, la valeur ne se pose qu'ici).
+    func showDeletionBlockedNotice() {
+        deletionBlockedNotice = true
     }
 
     func start() {
@@ -292,8 +381,9 @@ final class SessionManager {
         ending = true
         stopDeviceWatch()
         device.forget()
-        if newNotice == .sessionReplaced {
+        if newNotice == .sessionReplaced || newNotice == .sessionGone {
             flags.set(true, forKey: Self.keyReplacedNoticePending)
+            flags.set(newNotice == .sessionGone, forKey: Self.keyGoneNoticePending)
         }
         cache.markPurgePending()
         state = .loading
@@ -311,8 +401,17 @@ final class SessionManager {
         guard !ending, sessionActive else {
             return
         }
+        // Pendant la suppression du compte, la session est traitée par la suppression elle-même : ni déconnexion forcée, ni jamais la note
+        // « autre téléphone ».
+        if case .ready(.accountDeletion) = state {
+            return
+        }
+        // La raison est lue AVANT l'oubli de l'identifiant : le document de session a-t-il DISPARU (compte supprimé ailleurs) ou un autre
+        // téléphone a-t-il pris la place ? Deux notes différentes (PR Android #100) : jamais « autre téléphone » quand personne n'a pris la
+        // place.
+        let kind: SignedOutNotice = device.replacedBecauseGone ? .sessionGone : .sessionReplaced
         ending = true
-        await Task { await self.endLocally(notice: .sessionReplaced) }.value
+        await Task { await self.endLocally(notice: kind) }.value
     }
 
     func stopEverything() async {

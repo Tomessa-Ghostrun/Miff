@@ -44,6 +44,12 @@ extension AuthMessage {
             return L10n.string("auth_error_unknown")
         case .accountUnavailable:
             return L10n.format("auth_error_account_unavailable", AppLinks.supportEmail)
+        case .reauthPasswordWrong:
+            return L10n.string("settings_delete_reauth_password_wrong")
+        case .reauthWrongAccount:
+            return L10n.string("settings_delete_reauth_wrong_account")
+        case .reauthExpired:
+            return L10n.string("settings_delete_reauth_expired")
         }
     }
 }
