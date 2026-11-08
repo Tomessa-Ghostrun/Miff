@@ -2,7 +2,7 @@ import XCTest
 @testable import Miff
 
 /// Un faux serveur d'images (aucun vrai réseau) : répond à des adresses connues, note celles qu'on lui demande.
-private final class StubPhotoServer: URLProtocol {
+private class StubPhotoServer: URLProtocol {
     struct Reply {
         var status = 200
         var headers: [String: String] = ["Content-Type": "image/jpeg"]
