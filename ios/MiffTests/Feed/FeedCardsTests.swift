@@ -168,19 +168,32 @@ final class FeedCardsTests: XCTestCase {
         XCTAssertEqual(card?.level, .red)
     }
 
-    func testADangerZoneIsRedOnlyWhenTheLastUpdateIsMoreThanOneHourOld() {
-        func level(updatedAgo: Int) -> StatusLevel {
+    func testADangerZoneIsGreenForOneHourAfterAnUpdatePostedAfterTheEntryThenRed() {
+        func level(enteredAgo: Int, updatedAgo: Int?) -> StatusLevel {
             let input = feedInput(
                 members: [feedMember("a"), feedMember("me")],
-                statuses: ["a": feedStatus(.inRisk, departedAgo: feedMinutes(5), updatedAgo: updatedAgo)]
+                statuses: ["a": feedStatus(.inRisk, departedAgo: enteredAgo, updatedAgo: updatedAgo)]
             )
             return buildFeed(input).card("a")?.level ?? .neutral
         }
 
-        XCTAssertEqual(level(updatedAgo: feedMinutes(59)), .green)
-        XCTAssertEqual(level(updatedAgo: feedHours(1)), .green)
-        XCTAssertEqual(level(updatedAgo: feedHours(1) + 1000), .red)
+        XCTAssertEqual(level(enteredAgo: feedHours(3), updatedAgo: feedMinutes(59)), .green)
+        XCTAssertEqual(level(enteredAgo: feedHours(3), updatedAgo: feedHours(1)), .green)
+        XCTAssertEqual(level(enteredAgo: feedHours(3), updatedAgo: feedHours(1) + 1000), .red)
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: feedMinutes(30)), .red, "update avant l'entrée : rouge")
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: feedMinutes(5)), .red, "même instant : pas postérieure")
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: feedMinutes(2)), .green)
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: nil), .red)
         XCTAssertEqual(StatusThresholds.dangerZoneRedAfterMillis, FeedMillis.hour)
+    }
+
+    func testTheBubbleIsRedAsSoonAsSomeoneEntersADangerZoneAndGreenAgainAfterALaterUpdate() {
+        let members = [feedMember("a"), feedMember("me")]
+        let entered = ["a": feedStatus(.inRisk, departedAgo: feedMinutes(5), updatedAgo: feedMinutes(20))]
+        let updated = ["a": feedStatus(.inRisk, departedAgo: feedMinutes(5), updatedAgo: feedMinutes(1))]
+
+        XCTAssertEqual(buildFeed(feedInput(members: members, statuses: entered)).miffLevel, .red)
+        XCTAssertEqual(buildFeed(feedInput(members: members, statuses: updated)).miffLevel, .green)
     }
 
     // MARK: - Les lignes de temps
