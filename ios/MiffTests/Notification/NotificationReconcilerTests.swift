@@ -130,6 +130,18 @@ final class NotificationReconcilerTests: ReconcilerTestCase {
         XCTAssertTrue(rig.scheduler.pending.isEmpty, "rien de l'ancienne Miff n'est affiché")
     }
 
+    func testLeavingTheLastMiffCancelsEverythingEvenWithAnOldSnapshot() async {
+        let rig = makeRig(now: at(14, 0))
+        seed(rig, [out("me", ref: at(13, 40)), green("x")])
+        await rig.reconciler.reconcile()
+
+        // L'annuaire est lu et ne contient plus aucune Miff : la valeur ne correspond à aucune Miff de l'instantané.
+        rig.state.active = ""
+        await rig.reconciler.reconcile()
+
+        XCTAssertTrue(rig.scheduler.pending.isEmpty)
+    }
+
     func testTurningATypeOrEverythingOffCancelsAndRemovesWhatIsOnScreen() async {
         let rig = makeRig(now: at(14, 0))
         seed(rig, [out("me", ref: at(13, 40)), green("x")])
