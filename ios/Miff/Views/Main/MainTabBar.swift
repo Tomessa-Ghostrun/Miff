@@ -105,7 +105,7 @@ struct MainTabBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(verbatim: L10n.string(TabBarNames.key(for: tab))))
+        .accessibilityLabel(Text(verbatim: L10n.string(TabBarNames.key(for: tab, central: central))))
         .accessibilityAddTraits(.isButton)
         .accessibilityAddTraits(isSelected ? AccessibilityTraits.isSelected : AccessibilityTraits())
     }

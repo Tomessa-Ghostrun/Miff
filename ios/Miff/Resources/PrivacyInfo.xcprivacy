@@ -25,6 +25,13 @@
 	     Le texte tapé pour chercher une adresse part au service de suggestions d'Apple (fournisseur du système) et n'est pas gardé.
 	     Suivi (tracking) : aucun, aucun domaine de suivi, aucun identifiant publicitaire.
 
+	     UPDATE-3 (la photo du moment, tickets docs/tickets/update.md) : la caméra n'ajoute AUCUNE catégorie. La photo prise (en mémoire,
+	     jamais dans la photothèque, ré-encodée sans métadonnée, 24 h) relève de « Photos ou vidéos » (PhotosorVideos, déjà déclarée pour la
+	     photo de profil : Linked, pas de suivi, fonctionnement de l'app) ; sa position (lat, lng, heure de la mesure) relève de la « position
+	     précise » (PreciseLocation, déjà déclarée). Le texte d'usage NSCameraUsageDescription est dans InfoPlist.xcstrings. Les étiquettes
+	     d'App Store Connect (docs/release/app-store-confidentialite-et-revue.md) doivent le dire : « photo de mise à jour (24 h), avec sa
+	     position ».
+
 	     Données du COMPTE (AUTH-3, ONB-6), liées à l'identité de la personne, pour le fonctionnement de l'app seulement
 	     (jamais pour de la publicité ni du suivi) : identifiant de compte (UserID), adresse e-mail (e-mail ou Google ou
 	     Apple), prénom et nom, photo de profil facultative, numéro de téléphone. Ils sont créés par la personne
