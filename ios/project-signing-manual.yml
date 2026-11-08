@@ -1,0 +1,26 @@
+# Superposition XcodeGen pour la SIGNATURE MANUELLE de l'archive TestFlight (docs/dev/apple-certificats-ci.md).
+#
+# Utilisee UNIQUEMENT par le workflow ios-testflight, quand les 3 secrets DIST_CERT_P12_B64, DIST_CERT_P12_PASSWORD et
+# APPSTORE_PROFILE_B64 existent (xcodegen generate --spec project-signing-manual.yml). project.yml n'est PAS modifie :
+# le chemin de signature automatique (repli), la CI `ios` (simulateur) et les tests gardent exactement la meme configuration.
+#
+# Ce que cette superposition change : la configuration Internal de la cible Miff, et rien d'autre.
+# - CODE_SIGN_STYLE Manual ;
+# - identite Apple Distribution et profil « Miff CI App Store », pour les builds sur appareil seulement ([sdk=iphoneos*]) :
+#   le simulateur et les controles sans signature de la CI ne sont pas touches ;
+# - rien n'est passe en ligne de commande (un profil donne en ligne de commande s'appliquerait aussi aux paquets Swift, qui
+#   n'en acceptent pas).
+# Le nom du profil est le meme que celui controle par le workflow et celui de ci/ExportOptions.manual.plist.template.
+include:
+  - project.yml
+
+targets:
+  Miff:
+    settings:
+      configs:
+        Internal:
+          # Repete expres : un fichier inclus est fusionne, pas remplace, mais ce reglage ne doit jamais disparaitre.
+          CODE_SIGN_ENTITLEMENTS: Config/Miff.entitlements
+          CODE_SIGN_STYLE: Manual
+          "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Distribution"
+          "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": "Miff CI App Store"

@@ -5,10 +5,20 @@ name: ios-testflight
 # et un numero de build TestFlight (qui ne peut jamais etre reutilise).
 # Mode d'emploi pas a pas : docs/dev/ios-spike.md
 #
-# Principe de signature (gratuit, sans fastlane, sans Mac) : signature automatique de Xcode
-# pilotee par une cle d'API App Store Connect (-allowProvisioningUpdates + -authenticationKey*).
-# Apple fournit alors un certificat de distribution "gere dans le cloud" : aucun certificat
-# ni profil n'est stocke dans GitHub, seule la cle d'API l'est (secret ASC_KEY_P8_B64).
+# DEUX CHEMINS DE SIGNATURE (gratuits, sans fastlane, sans Mac), choisis automatiquement :
+#
+# 1. SIGNATURE MANUELLE (chemin cible, docs/dev/apple-certificats-ci.md) : active seulement si les 3 secrets
+#    DIST_CERT_P12_B64, DIST_CERT_P12_PASSWORD et APPSTORE_PROFILE_B64 existent. UN certificat "Apple Distribution"
+#    persistant (cree une fois par le PM) et un profil App Store, installes dans un trousseau temporaire. Aucun
+#    certificat n'est cree par execution, aucun appareil n'est requis. La cle d'API App Store Connect ne sert
+#    plus qu'a l'ENVOI. Le projet est genere depuis ios/project-signing-manual.yml (reglages manuels de la
+#    configuration Internal de la cible Miff seulement).
+# 2. SIGNATURE AUTOMATIQUE (comportement d'avant, tant que les 3 secrets sont absents) : Xcode piloté par la cle
+#    d'API (-allowProvisioningUpdates). Defaut : archive_mode=signed. ATTENTION : ce chemin cree un certificat de
+#    DEVELOPPEMENT "Created via API" a chaque execution et finit par atteindre la limite de certificats du compte
+#    (echec constate le 2026-11-08). Il n'est conserve que pour ne pas casser les builds tant que le PM n'a pas
+#    pose les 3 secrets.
+# Si seulement 1 ou 2 des 3 secrets existent, le workflow s'arrete (configuration partielle).
 
 on:
   workflow_dispatch:
@@ -113,8 +123,33 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          DIST_CERT_P12_B64: ${{ secrets.DIST_CERT_P12_B64 }}
+          DIST_CERT_P12_PASSWORD: ${{ secrets.DIST_CERT_P12_PASSWORD }}
+          APPSTORE_PROFILE_B64: ${{ secrets.APPSTORE_PROFILE_B64 }}
         run: |
           set -euo pipefail
+          # Chemin de signature : les 3 secrets de la signature manuelle sont tous presents, tous absents, ou la
+          # configuration est partielle (arret : on ne devine pas).
+          manual_present=0
+          [ -z "$DIST_CERT_P12_B64" ] || manual_present=$((manual_present + 1))
+          [ -z "$DIST_CERT_P12_PASSWORD" ] || manual_present=$((manual_present + 1))
+          [ -z "$APPSTORE_PROFILE_B64" ] || manual_present=$((manual_present + 1))
+          case "$manual_present" in
+            3)
+              echo "MANUAL_SIGNING=yes" >> "$GITHUB_ENV"
+              echo "Signature MANUELLE : les 3 secrets (certificat, mot de passe, profil) sont présents."
+              echo "- Signature : MANUELLE (certificat Apple Distribution persistant, aucun certificat créé par exécution)" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            0)
+              echo "MANUAL_SIGNING=no" >> "$GITHUB_ENV"
+              echo "::warning title=Signature automatique (ancien chemin)::Les secrets DIST_CERT_P12_B64, DIST_CERT_P12_PASSWORD et APPSTORE_PROFILE_B64 sont absents : signature AUTOMATIQUE comme avant. Ce chemin crée un certificat de développement par exécution et peut échouer (« maximum number of certificates »). Pour la signature manuelle : docs/dev/apple-certificats-ci.md."
+              echo "- Signature : AUTOMATIQUE (ancien chemin, 3 secrets de signature manuelle absents)" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "::error::Configuration de signature manuelle PARTIELLE (${manual_present} secret(s) sur 3 : DIST_CERT_P12_B64, DIST_CERT_P12_PASSWORD, APPSTORE_PROFILE_B64). Poser les 3, ou aucun. Voir docs/dev/apple-certificats-ci.md."
+              exit 1
+              ;;
+          esac
           missing=""
           [ -n "$ASC_KEY_ID" ] || missing="$missing ASC_KEY_ID"
           [ -n "$ASC_ISSUER_ID" ] || missing="$missing ASC_ISSUER_ID"
@@ -170,7 +205,16 @@ jobs:
           echo "Configuration Firebase recréée (projet et identifiant d'app vérifiés)."
 
       - name: Générer le projet Xcode
-        run: bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec project.yml
+        run: |
+          set -euo pipefail
+          # Signature manuelle : la superposition ajoute les réglages manuels à la configuration Internal de la cible Miff
+          # (project.yml n'est pas modifié : le chemin automatique, la CI `ios` et les tests restent identiques).
+          spec="project.yml"
+          if [ "${MANUAL_SIGNING:-no}" = "yes" ]; then
+            spec="project-signing-manual.yml"
+          fi
+          echo "Spécification XcodeGen : ${spec}"
+          bash ci/timed.sh "XcodeGen (génération du projet)" xcodegen generate --spec "$spec"
 
       - name: Figer les versions des paquets Swift (Package.resolved versionné)
         run: |
@@ -210,11 +254,137 @@ jobs:
           security default-keychain -d user -s "$keychain"
           echo "CI_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
+      - name: Installer le certificat de distribution et le profil (signature manuelle)
+        if: env.MANUAL_SIGNING == 'yes'
+        env:
+          DIST_CERT_P12_B64: ${{ secrets.DIST_CERT_P12_B64 }}
+          DIST_CERT_P12_PASSWORD: ${{ secrets.DIST_CERT_P12_PASSWORD }}
+          APPSTORE_PROFILE_B64: ${{ secrets.APPSTORE_PROFILE_B64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          # Pas de "set -x" : ce pas manipule des secrets. Les fichiers déchiffrés vivent dans $RUNNER_TEMP (runner détruit
+          # après le job) et sont supprimés par l'étape de nettoyage.
+          umask 077
+          echo "::add-mask::$DIST_CERT_P12_PASSWORD"
+          work="$RUNNER_TEMP/manual-signing"
+          mkdir -p "$work"
+          echo "MANUAL_SIGNING_DIR=$work" >> "$GITHUB_ENV"
+          fail=0
+          bad() { echo "::error title=Signature manuelle::$1"; fail=1; }
+          if ! printf '%s' "$DIST_CERT_P12_B64" | tr -d ' \r\n' | openssl base64 -d -A > "$work/dist.p12" 2>/dev/null || [ ! -s "$work/dist.p12" ]; then
+            bad "DIST_CERT_P12_B64 n'est pas un fichier encodé en base64 valide."
+          fi
+          if ! printf '%s' "$APPSTORE_PROFILE_B64" | tr -d ' \r\n' | openssl base64 -d -A > "$work/profile.mobileprovision" 2>/dev/null || [ ! -s "$work/profile.mobileprovision" ]; then
+            bad "APPSTORE_PROFILE_B64 n'est pas un fichier encodé en base64 valide."
+          fi
+          [ "$fail" -eq 0 ] || exit 1
+
+          # 1. Le certificat (.p12) dans le trousseau temporaire (créé par l'étape précédente).
+          security unlock-keychain -p "" "$CI_KEYCHAIN"
+          if ! security import "$work/dist.p12" -k "$CI_KEYCHAIN" -P "$DIST_CERT_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security > "$work/import.log" 2>&1; then
+            bad "Import du .p12 refusé (mot de passe faux, ou format non reconnu : refaire le .p12 avec l'option -legacy, voir docs/dev/apple-certificats-ci.md)."
+            exit 1
+          fi
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$CI_KEYCHAIN" > /dev/null 2>&1 || bad "Autorisation de la clé pour codesign impossible."
+          identity_line="$(security find-identity -v -p codesigning "$CI_KEYCHAIN" | grep -E '"Apple Distribution:' | head -n 1 || true)"
+          if [ -z "$identity_line" ]; then
+            bad "Aucune identité « Apple Distribution » dans le .p12 (un certificat de développement, ou un .p12 sans clé privée ?)."
+            exit 1
+          fi
+          identity_sha1="$(printf '%s' "$identity_line" | awk '{print $2}' | tr 'a-f' 'A-F')"
+          echo "Identité de signature importée : ${identity_sha1} (Apple Distribution)."
+
+          # 2. Le profil : décodé, contrôlé (nom, équipe, identifiant d'app, type, certificat, expiration), puis installé.
+          profile="$work/profile.mobileprovision"
+          plist="$work/profile.plist"
+          if ! security cms -D -i "$profile" > "$plist" 2>/dev/null; then
+            bad "APPSTORE_PROFILE_B64 n'est pas un profil de provisionnement lisible."
+            exit 1
+          fi
+          read_profile() { /usr/libexec/PlistBuddy -c "Print :$1" "$plist" 2>/dev/null || echo ""; }
+          name="$(read_profile Name)"
+          uuid="$(read_profile UUID)"
+          team="$(read_profile TeamIdentifier:0)"
+          app_id="$(read_profile Entitlements:application-identifier)"
+          expiry="$(plutil -extract ExpirationDate raw -o - "$plist" 2>/dev/null || echo "")"
+          [ "$name" = "Miff CI App Store" ] || bad "Le profil s'appelle « ${name} » au lieu de « Miff CI App Store » (nom exact attendu, voir docs/dev/apple-certificats-ci.md)."
+          [ "$team" = "$APPLE_TEAM_ID" ] || bad "Le profil appartient à une autre équipe que APPLE_TEAM_ID (compte Apple partagé avec un autre projet : arrêt)."
+          [ "$app_id" = "${APPLE_TEAM_ID}.com.tomessa.miff" ] || bad "Le profil est pour « ${app_id} » au lieu de « ${APPLE_TEAM_ID}.com.tomessa.miff »."
+          if [ -n "$(read_profile ProvisionedDevices)" ] || [ "$(read_profile ProvisionsAllDevices)" = "true" ]; then
+            bad "Ce n'est pas un profil App Store (il liste des appareils ou vise une entreprise) : créer un profil « App Store Connect »."
+          fi
+          if [ "$(read_profile Entitlements:get-task-allow)" = "true" ]; then
+            bad "Profil de développement (get-task-allow) : un profil App Store est attendu."
+          fi
+          now="$(date -u +%s)"
+          if [ -z "$expiry" ]; then
+            bad "Date d'expiration du profil illisible."
+          else
+            expiry_epoch="$(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$expiry" +%s 2>/dev/null || echo 0)"
+            if [ "$expiry_epoch" -le "$now" ]; then
+              bad "Le profil a EXPIRÉ le ${expiry} : le régénérer (docs/dev/apple-certificats-ci.md, renouvellement) et remplacer APPSTORE_PROFILE_B64."
+            elif [ "$expiry_epoch" -le $((now + 2592000)) ]; then
+              echo "::warning title=Profil bientôt expiré::Le profil expire le ${expiry} (moins de 30 jours) : prévoir le renouvellement (docs/dev/apple-certificats-ci.md)."
+            fi
+          fi
+          # Le certificat importé doit être celui que le profil autorise.
+          matched=0
+          for index in 0 1 2 3 4 5 6 7 8 9; do
+            plutil -extract "DeveloperCertificates.${index}" raw -o - "$plist" 2>/dev/null | openssl base64 -d -A > "$work/profile-cert-${index}.der" 2>/dev/null || break
+            [ -s "$work/profile-cert-${index}.der" ] || break
+            sha1="$(openssl x509 -inform DER -in "$work/profile-cert-${index}.der" -noout -fingerprint -sha1 2>/dev/null | sed 's/.*=//; s/://g' | tr 'a-f' 'A-F')"
+            if [ "$sha1" = "$identity_sha1" ]; then
+              matched=1
+              if ! openssl x509 -inform DER -in "$work/profile-cert-${index}.der" -noout -checkend 0 > /dev/null; then
+                bad "Le certificat de distribution a EXPIRÉ : en créer un nouveau (docs/dev/apple-certificats-ci.md)."
+              elif ! openssl x509 -inform DER -in "$work/profile-cert-${index}.der" -noout -checkend 2592000 > /dev/null; then
+                echo "::warning title=Certificat bientôt expiré::Le certificat de distribution expire dans moins de 30 jours : prévoir le renouvellement."
+              fi
+            fi
+          done
+          [ "$matched" -eq 1 ] || bad "Le certificat du .p12 n'est pas l'un de ceux que le profil autorise (profil créé avec un autre certificat : le régénérer avec le bon)."
+          [ "$fail" -eq 0 ] || exit 1
+          for dir in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$dir"
+            cp "$profile" "$dir/${uuid}.mobileprovision"
+          done
+          echo "MANUAL_PROFILE_UUID=${uuid}" >> "$GITHUB_ENV"
+          {
+            echo "- Certificat : Apple Distribution (empreinte ${identity_sha1:0:8}…), profil « ${name} » valide jusqu'au ${expiry}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Profil « ${name} » installé et contrôlé (équipe, identifiant d'app, type App Store, certificat, expiration)."
+
+      - name: Archiver (signature manuelle, configuration Internal)
+        if: env.MANUAL_SIGNING == 'yes'
+        timeout-minutes: 10
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
+        run: |
+          set -uo pipefail
+          # AUCUN -allowProvisioningUpdates, AUCUNE clé d'API : l'archive est signée avec l'identité Apple Distribution du
+          # trousseau temporaire et le profil installé (réglages manuels de la configuration Internal de la cible Miff,
+          # dans la superposition project-signing-manual.yml : rien en ligne de commande).
+          bash ci/timed.sh "Archive (signature manuelle)" bash -c '
+            set -o pipefail
+            xcodebuild archive \
+              -project Miff.xcodeproj -scheme Miff -configuration Internal \
+              -destination "generic/platform=iOS" \
+              -onlyUsePackageVersionsFromResolvedFile \
+              -archivePath build/Miff.xcarchive \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+              MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
+              2>&1 | tee build/xcodebuild-archive.log | xcbeautify
+          '
+
       # Mode unsigned : l'archive n'a PAS besoin de la clé, qui n'est donc pas écrite sur le disque
       # pendant cette étape. Le chemin de la clé n'est jamais exporté (pas de GITHUB_ENV) :
       # chaque étape qui en a besoin le recalcule.
       - name: Archiver (non signée, configuration Internal)
-        if: inputs.archive_mode == 'unsigned'
+        if: env.MANUAL_SIGNING != 'yes' && inputs.archive_mode == 'unsigned'
         timeout-minutes: 10
         env:
           BUILD_NUMBER: ${{ github.run_number }}
@@ -237,7 +407,7 @@ jobs:
           '
 
       - name: Archiver (signature automatique, configuration Internal)
-        if: inputs.archive_mode == 'signed'
+        if: env.MANUAL_SIGNING != 'yes' && inputs.archive_mode == 'signed'
         timeout-minutes: 10
         env:
           BUILD_NUMBER: ${{ github.run_number }}
@@ -292,6 +462,15 @@ jobs:
             echo
           } >> "$GITHUB_STEP_SUMMARY"
           fail=0
+          if [ "${MANUAL_SIGNING:-no}" = "yes" ]; then
+            case "$signing" in
+              "Apple Distribution"*) ;;
+              *)
+                echo "::error::Identité de signature de l'archive « ${signing} » au lieu de « Apple Distribution » : envoi annulé."
+                fail=1
+                ;;
+            esac
+          fi
           if [ "$device_family" != "Array{1}" ]; then
             echo "::error::UIDeviceFamily « ${device_family} » au lieu de iPhone seul (1) : envoi annulé."
             fail=1
@@ -367,7 +546,7 @@ jobs:
             entitlements="$(cat "$app/archived-expanded-entitlements.xcent" 2>/dev/null || true)"
           fi
           if [ -z "$entitlements" ]; then
-            if [ "$ARCHIVE_MODE" = "signed" ]; then
+            if [ "$ARCHIVE_MODE" = "signed" ] || [ "${MANUAL_SIGNING:-no}" = "yes" ]; then
               bad "Entitlements illisibles dans une archive signée"
             else
               echo "::warning::Entitlements non lisibles (archive non signée) : l'entitlement App Attest ne peut pas être vérifié ici. Si App Check ne donne pas de jeton sur l'iPhone, relancer en mode signed."
@@ -402,7 +581,36 @@ jobs:
             echo "::warning::L'envoi des symboles à Crashlytics a échoué (voir build/upload-symbols.log si l'artefact d'échec est déposé)."
           fi
 
+      - name: Exporter et envoyer à TestFlight (signature manuelle)
+        if: env.MANUAL_SIGNING == 'yes'
+        timeout-minutes: 10
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -uo pipefail
+          # Pas de "set -x" : la ligne de commande contient des identifiants.
+          # La clé d'API ne sert ICI qu'à l'ENVOI à App Store Connect : la signature est celle du certificat et du profil
+          # installés (export manuel, aucun -allowProvisioningUpdates, aucun certificat créé).
+          bash ci/write-asc-key.sh || exit 1
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          sed "s/__TEAM_ID__/${APPLE_TEAM_ID}/" ci/ExportOptions.manual.plist.template > build/ExportOptions.plist
+          bash ci/timed.sh "Export signé (manuel) + envoi App Store Connect" bash -c '
+            set -o pipefail
+            xcodebuild -exportArchive \
+              -archivePath build/Miff.xcarchive \
+              -exportOptionsPlist build/ExportOptions.plist \
+              -exportPath build/export \
+              -authenticationKeyPath "$ASC_KEY_PATH" \
+              -authenticationKeyID "$ASC_KEY_ID" \
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+              2>&1 | tee build/xcodebuild-export.log | xcbeautify
+          '
+
       - name: Exporter et envoyer à TestFlight
+        if: env.MANUAL_SIGNING != 'yes'
         timeout-minutes: 10
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -453,6 +661,14 @@ jobs:
           rm -f Config/GoogleService-Info.plist || true
           if [ -n "${CI_KEYCHAIN:-}" ]; then
             security delete-keychain "$CI_KEYCHAIN" || true
+          fi
+          # Signature manuelle : fichiers déchiffrés (.p12, profil) et profil installé.
+          if [ -n "${MANUAL_SIGNING_DIR:-}" ]; then
+            rm -rf "$MANUAL_SIGNING_DIR" || true
+          fi
+          if [ -n "${MANUAL_PROFILE_UUID:-}" ]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/${MANUAL_PROFILE_UUID}.mobileprovision" || true
+            rm -f "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/${MANUAL_PROFILE_UUID}.mobileprovision" || true
           fi
           rm -f build/ExportOptions.plist || true
 

@@ -367,6 +367,56 @@ jobs:
             bash ci/screenshots.sh "$SIM_UDID" build/DerivedData/Build/Products/Debug-iphonesimulator/Miff.app build/screenshots "$with_test1" \
             || echo "SCREENSHOTS_FAILED=true" >> "$GITHUB_ENV"
 
+      - name: Contrôler la superposition de signature manuelle (TestFlight, sans secret ni signature)
+        # ios/project-signing-manual.yml n'est utilisé que par ios-testflight (impossible à essayer sans les secrets de
+        # signature) : on vérifie ici, à chaque exécution lourde, qu'il se génère et donne les bons réglages sans toucher
+        # aux autres configurations.
+        if: env.HEAVY_CHECKS == 'true'
+        timeout-minutes: 5
+        run: |
+          set -uo pipefail
+          out="build/manual-signing-check"
+          mkdir -p "$out"
+          if ! xcodegen generate --spec project-signing-manual.yml --project "$out" > build/manual-signing-check.log 2>&1; then
+            cat build/manual-signing-check.log
+            echo "::error::project-signing-manual.yml ne se génère pas."
+            echo "MANUAL_SIGNING_CHECK_FAILED=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          settings() {
+            xcodebuild -showBuildSettings -project "$out/Miff.xcodeproj" -target Miff -configuration "$1" -sdk "$2" \
+              -clonedSourcePackagesDirPath build/SourcePackages -disableAutomaticPackageResolution 2>/dev/null
+          }
+          value() { awk -F' = ' -v key="$1" '$1 ~ "^[[:space:]]*" key "$" {print $2}'; }
+          fail=0
+          expect() {
+            if [ "$3" != "$4" ]; then
+              echo "::error::Superposition de signature manuelle : $1 vaut « $3 » au lieu de « $4 » ($2)."
+              fail=1
+            fi
+          }
+          internal_device="$(settings Internal iphoneos)"
+          expect CODE_SIGN_STYLE "Internal, appareil" "$(value CODE_SIGN_STYLE <<< "$internal_device")" "Manual"
+          expect CODE_SIGN_IDENTITY "Internal, appareil" "$(value CODE_SIGN_IDENTITY <<< "$internal_device")" "Apple Distribution"
+          expect PROVISIONING_PROFILE_SPECIFIER "Internal, appareil" "$(value PROVISIONING_PROFILE_SPECIFIER <<< "$internal_device")" "Miff CI App Store"
+          expect CODE_SIGN_ENTITLEMENTS "Internal, appareil" "$(value CODE_SIGN_ENTITLEMENTS <<< "$internal_device")" "Config/Miff.entitlements"
+          expect PRODUCT_BUNDLE_IDENTIFIER "Internal, appareil" "$(value PRODUCT_BUNDLE_IDENTIFIER <<< "$internal_device")" "com.tomessa.miff"
+          internal_simulator="$(settings Internal iphonesimulator)"
+          expect PROVISIONING_PROFILE_SPECIFIER "Internal, simulateur" "$(value PROVISIONING_PROFILE_SPECIFIER <<< "$internal_simulator")" ""
+          debug_device="$(settings Debug iphoneos)"
+          expect CODE_SIGN_STYLE "Debug" "$(value CODE_SIGN_STYLE <<< "$debug_device")" "Automatic"
+          expect PROVISIONING_PROFILE_SPECIFIER "Debug" "$(value PROVISIONING_PROFILE_SPECIFIER <<< "$debug_device")" ""
+          # Le projet normal (project.yml) reste en signature automatique : le repli de ios-testflight en dépend.
+          normal="$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Internal -sdk iphoneos \
+            -clonedSourcePackagesDirPath build/SourcePackages -disableAutomaticPackageResolution 2>/dev/null)"
+          expect CODE_SIGN_STYLE "project.yml, Internal" "$(value CODE_SIGN_STYLE <<< "$normal")" "Automatic"
+          expect PROVISIONING_PROFILE_SPECIFIER "project.yml, Internal" "$(value PROVISIONING_PROFILE_SPECIFIER <<< "$normal")" ""
+          if [ "$fail" -ne 0 ]; then
+            echo "MANUAL_SIGNING_CHECK_FAILED=true" >> "$GITHUB_ENV"
+          else
+            echo "Superposition de signature manuelle : réglages conformes (Internal manuel sur appareil, le reste inchangé)."
+          fi
+
       - name: Enregistrer le cache des paquets Swift
         if: always() && steps.resolve.outcome == 'success' && steps.spm-cache.outputs.cache-hit != 'true'
         # actions/cache v6.1.0 (meme empreinte que la restauration)
@@ -390,6 +440,7 @@ jobs:
           if [ "${RELEASE_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Release a échoué."; fail=1; fi
           if [ "${INTERNAL_BUILD_FAILED:-}" = "true" ]; then echo "::error::La compilation Internal a échoué."; fail=1; fi
           if [ "${SCREENSHOTS_FAILED:-}" = "true" ]; then echo "::error::Les captures d'écran ont échoué."; fail=1; fi
+          if [ "${MANUAL_SIGNING_CHECK_FAILED:-}" = "true" ]; then echo "::error::La superposition de signature manuelle (ios/project-signing-manual.yml) est incorrecte (voir l'étape de contrôle)."; fail=1; fi
           case "${PACKAGE_RESOLVED_STATE:-ok}" in
             missing | stale)
               echo "::error title=Package.resolved::ios/Package.resolved est ${PACKAGE_RESOLVED_STATE} : committer le fichier de l'artefact « ios-resolved-${{ github.run_number }} » (Package.resolved.generated) sous ios/Package.resolved."

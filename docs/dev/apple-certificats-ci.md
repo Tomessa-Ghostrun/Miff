@@ -1,125 +1,159 @@
-# Certificats Apple et signature de la CI iOS : solution durable et gratuite
+# Certificats Apple et signature de la CI iOS : guide pas à pas (option « signature manuelle »)
 
-**Rédigé le** 2026-11-08 par `ios-dev`. **Statut : proposition, rien n'est modifié** (ni `ios-testflight.yml`, ni `project.yml`, ni secrets). Décision du PM attendue.
-**Contexte** : le run `42429656978` (build 20, `archive_mode=signed`) échoue à l'archive avec `Choose a certificate to revoke. Your account has reached the maximum number of certificates` puis `No profiles for 'com.tomessa.miff' were found: ... iOS App Development provisioning profiles`. `archive_mode=unsigned` échoue à l'export (`Frameworks/*.framework is not properly signed`, 4 runs le 2026-11-06). Le compte Apple est **partagé avec Ghostrun**.
-**Convention** : [Constaté] = lu dans les journaux de la CI ; [Connu] = connaissance générale d'Apple/Xcode, **non revérifiée aujourd'hui** (l'outil de recherche web n'était pas disponible pour cette analyse) ; [À vérifier] = à constater sur developer.apple.com ou au premier run.
+**Statut** : **option (a) validée par le PM le 2026-11-08**. Le workflow `ios-testflight` sait maintenant signer manuellement (PR « CI : signature manuelle »). **Il reste au PM à créer le certificat et à poser 3 secrets** (§4). Tant qu'ils sont absents, le workflow garde l'ancien chemin automatique, avec un avertissement clair dans le journal.
+**Convention** : [Constaté] = lu dans les journaux de la CI ; [Vérifié] = essayé pour de vrai pendant la rédaction (commandes `openssl` rejouées sous Windows avec le `openssl` fourni avec Git) ; [Connu] = connaissance générale d'Apple/Xcode, **non revérifiée aujourd'hui** (l'outil de recherche web n'était pas disponible : les limites exactes d'Apple sont à constater sur developer.apple.com) ; [À vérifier] = à constater au premier essai.
 
-## 1. Cause racine
+## 1. Pourquoi (rappel court)
 
-- [Constaté] L'échec est dans **l'archive**, pas dans l'export : Xcode, en signature automatique avec `-allowProvisioningUpdates`, signe l'archive avec un certificat **« Apple Development »** et un profil **de développement** (`iOS App Development provisioning profiles`).
-- [Connu] Un certificat de développement exige sa **clé privée** sur la machine qui signe. Le runner GitHub est neuf à chaque run : sa clé disparaît avec lui. Xcode crée donc **un nouveau certificat de développement « Created via API » à chaque run**, qui reste chez Apple, inutilisable (c'est le risque « orphelins » de `docs/dev/ios-spike.md` §10, désormais réalisé). Apple limite le nombre de certificats de développement par équipe/personne : la limite est atteinte, Xcode demande lequel révoquer, et la CI ne peut pas répondre.
-- [Connu] Un profil de développement exige aussi au moins un appareil enregistré : un second point de fragilité de ce mode.
-- Le certificat de **distribution** n'est pas en cause : avec la clé d'API, Apple le gère « dans le cloud » (sans clé privée sur le runner). C'est pourquoi il ne pose pas de problème tant que l'archive n'a pas besoin de signer elle-même.
-- Pourquoi `unsigned` échoue : l'archive non signée contient des frameworks binaires dynamiques (Firebase, gRPC, abseil, openssl_grpc) ; l'export signé par le cloud ne les re-signe pas. [Constaté] « not properly signed » sur les 7 frameworks.
+- [Constaté] Run `42429656978` (build 20, signature automatique) : `Choose a certificate to revoke. Your account has reached the maximum number of certificates` puis `No profiles for 'com.tomessa.miff' were found: ... iOS App Development provisioning profiles`. L'archive était signée avec un certificat **de développement** : Xcode en crée un **nouveau à chaque exécution** (« Created via API »), car sa clé privée disparaît avec le runner ; la limite du compte a été atteinte.
+- Le mode `unsigned` échoue à l'export (frameworks binaires Firebase / gRPC non signés).
+- **Solution** : n'utiliser **aucun** certificat de développement. Un **seul** certificat « Apple Distribution » **persistant**, créé par toi une fois, et un profil « App Store » : la CI les installe à chaque run dans un trousseau temporaire. Coût : 0 €.
 
-**Conclusion** : il ne faut plus jamais de certificat de **développement** dans la CI. Le TestFlight n'a besoin que d'une archive signée **directement en distribution**.
+## 2. Ce que contiennent tes 18 certificats et ce qu'on en fait
 
-## 2. Les trois options
+D'après ta liste (le PM a révoqué les 10 certificats « Created via API » de la CI Miff, clé `d1ec3c23…`) :
 
-### (a) Signature manuelle avec UN certificat « Apple Distribution » persistant, dédié à Miff  *(recommandée)*
-Un certificat de distribution créé une fois par le PM, exporté en `.p12`, et un profil « App Store » téléchargé : tous deux stockés comme secrets GitHub. La CI les installe dans un trousseau temporaire, archive **et** exporte en signature manuelle : aucun certificat créé par run, aucun appareil requis, frameworks signés par la même identité.
-- **Coût** : 0 €.
-- **Avantages** : déterministe, un seul certificat consommé (jamais d'accumulation), pas de dépendance à la clé d'API pour signer (elle ne sert plus qu'à l'envoi), c'est la méthode standard des CI iOS.
-- **Risques / entretien** : 3 secrets de plus ; le certificat et le profil expirent (1 an [Connu]) : rappel de renouvellement ; le profil doit être régénéré quand une capacité change (notifications APNs plus tard, etc.) ; le `.p12` est un secret sensible (voir §4) ; la création se fait sans Mac (openssl, §4) : un point de friction mais documenté.
-- **Complexité** : moyenne (workflow : un pas d'installation + deux commandes modifiées) ; non testable sans Mac, donc 1 à 2 allers-retours CI attendus.
+| Ligne | À faire |
+|---|---|
+| **1 « Distribution Managed »** (expire 2027/06/27, créé par toi, géré par Apple) | **Ne pas toucher.** C'est le certificat « géré dans le cloud » : Apple garde la clé privée, **aucun `.p12` n'en est exportable**, il ne peut donc pas servir à la signature manuelle. Il sert à l'ancien chemin (export automatique). On l'écarte pour la suite, sans le révoquer. |
+| 12 « Created via API » d'**autres clés** | **Ghostrun. Ne JAMAIS les révoquer.** |
+| 2 Push (Ghostrun) | Ne pas toucher. |
+| 3 Development nominatifs | Ne pas toucher (ce sont les tiens, utiles à Xcode sur un Mac). |
+| **Aucun « Apple Distribution » (non géré)** | Bonne nouvelle : **on en crée un seul, nouveau et distinct** (§4). |
 
-### (b) `unsigned` + re-signature des frameworks avant export
-Signer à la main chaque `.framework` de l'archive (`codesign`) puis exporter.
-- `codesign` exige une **identité avec clé privée** : avec un certificat de distribution « géré dans le cloud » (sans clé privée) c'est impossible. Il faut donc de toute façon le certificat et le `.p12` de l'option (a), **plus** un script de re-signature fragile (ordre des signatures, entitlements, bundles imbriqués), à refaire à chaque nouveau framework.
-- **Non retenue** : tous les inconvénients de (a) plus de la fragilité.
+**Limite de certificats** [Connu, à vérifier] : Apple limite le nombre de certificats de distribution par équipe (de l'ordre de **3**) et de développement par personne (quelques-uns). Ta liste ne montre **aucun** « Apple Distribution » non géré : en créer **un** reste largement sous une limite de 3, même si le « Distribution Managed » est compté. **Si Apple refuse la création (« maximum number of certificates »)** : **arrête-toi, ne révoque rien**, et dis-moi (copie le message et le nombre de certificats « Distribution » de ta liste) : plan B ci-dessous.
 
-### (c) fastlane `match` (gratuit, dépôt privé chiffré)
-`match` génère le certificat et le profil, les chiffre et les range dans un dépôt Git privé ; la CI les récupère.
-- **Coût** : 0 € (dépôt privé GitHub gratuit, fastlane déjà sur le runner), mais **un second dépôt**, une phrase secrète, un jeton d'accès à ce dépôt (3 secrets aussi), et un outil de plus à comprendre.
-- **Risque propre** [Connu] : si `match` ne peut pas déchiffrer ou ne trouve pas le certificat, il **en crée un nouveau** (consommation de la limite sur un compte partagé) ; sa commande `nuke` **révoque** : à proscrire ici (Ghostrun).
-- **Complexité** : la plus haute pour un seul app et une seule personne ; l'automatisation du renouvellement ne vaut pas ce coût aujourd'hui.
-- **Non retenue** (à reconsidérer si l'équipe grandit).
+**Plan B si la limite est atteinte** : (1) me dire combien de certificats de distribution existent et leurs dates ; (2) identifier avec toi un certificat **à ton nom, inutilisé et que tu reconnais** (jamais un certificat de Ghostrun) ; (3) à défaut, réutiliser le certificat de distribution de Ghostrun **uniquement sur ta décision explicite** (même `.p12`, mais une fuite toucherait les deux apps).
 
-### Comparatif
+**Renouvellement** [Connu] : un certificat de distribution et un profil durent **1 an**. Mets dans ton agenda un rappel **1 mois avant** l'expiration. La CI **échoue avec un message clair** si le profil ou le certificat a expiré, et **avertit 30 jours avant** (§5).
 
-| | (a) manuelle + .p12 | (b) re-signature | (c) match |
-|---|---|---|---|
-| Certificat créé à chaque run | non | non | non (si bien configuré) |
-| Certificat de développement | aucun | aucun | aucun |
-| Appareil enregistré requis | non | non | non |
-| Secrets à créer | 3 | 3 | 3 + un dépôt |
-| Fragilité | faible | haute | moyenne |
-| Entretien | renouvellement annuel | idem + script | renouvellement automatisable |
-| Risque pour Ghostrun | nul (certificat distinct) | nul | création possible d'un certificat de trop |
+## 3. Les règles (à relire avant de commencer)
 
-## 3. Recommandation : option (a)
+**Tu ne fais JAMAIS :**
+- révoquer un certificat que tu ne reconnais pas, ou de Ghostrun, ou le « Distribution Managed » ;
+- coller dans le dépôt, dans une conversation avec l'assistant, dans un e-mail ou un ticket : le fichier `.key`, le `.p12`, le `.p8`, le `.mobileprovision`, **le mot de passe du `.p12`** ou leur version encodée en base64 ;
+- mettre ces fichiers dans le dossier du projet (`C:\dev\miff`) : ils vivent dans un dossier à part, hors dépôt ;
+- taper le mot de passe dans une commande (il resterait dans l'historique de PowerShell) : les commandes ci-dessous le **demandent** à l'écran, sans l'afficher.
 
-Raisons : la plus simple qui supprime la cause racine, gratuite, sans outil supplémentaire, sans risque pour Ghostrun si le certificat est distinct, et la plus documentée côté Apple/Xcode.
+**Tu fais :** ranger le `.p12` **et** son mot de passe dans ton gestionnaire de mots de passe (sans la clé privée, il faudrait recréer un certificat) ; supprimer les fichiers intermédiaires à la fin (étape 9).
 
-## 4. Ce que le PM doit faire (developer.apple.com, aucun Mac requis)
+## 4. Pas à pas (Windows, PowerShell, aucun Mac)
 
-Les fichiers `.key`, `.p12` et `.mobileprovision` restent **sur ton poste** (hors dépôt, hors conversation avec l'assistant) ; ils partent directement vers les secrets GitHub avec `gh secret set ... < fichier`. Rien n'est jamais collé dans une conversation ni commité.
+### Avant de commencer : l'état « avant »
+1. Va sur https://developer.apple.com/account > **Certificates, Identifiers & Profiles** > **Certificates**.
+2. Note (ou prends une capture) : le **nombre total** de certificats (18) et la liste des types. **Ne change rien.**
 
-**Étape 0. Regarder ce qui existe déjà** (developer.apple.com > Certificates, Identifiers & Profiles > Certificates). Noter, pour chaque ligne, le type, le nom, la date de création et le créateur.
-- **Ne révoquer AUCUN certificat que tu ne reconnais pas** : « Apple Distribution » ou « iOS Distribution » peuvent appartenir à Ghostrun. Sa révocation casserait la signature de Ghostrun.
-- Le certificat **« Apple Distribution » de Ghostrun, s'il existe, ne doit pas être réutilisé** pour Miff sans décision explicite (même impact en cas de fuite, et sa clé privée est chez Ghostrun). On en crée un distinct.
-- [À vérifier] Apple limite le nombre de certificats de distribution par équipe (de l'ordre de 3 [Connu], non revérifié) : si la liste est déjà pleine de certificats de distribution reconnus comme utilisés, **s'arrêter et me le dire** : on choisira alors avec toi (réutiliser celui de Ghostrun, ou libérer un certificat **inutilisé** que tu reconnais).
-
-**Étape 1. Débloquer la CI tout de suite (optionnel, indépendant)** : révoquer uniquement les certificats **« Apple Development: Created via API »** (ou nommés ainsi) **datés des jours d'essai de la CI** (2026-11-05 à aujourd'hui), créés par la clé d'API de la CI. Leur clé privée est perdue : ils ne servent à personne. Ne pas toucher aux « Apple Development » à ton nom ni à ceux de Ghostrun. Ce n'est qu'un dépannage : sans l'option (a) la limite sera de nouveau atteinte.
-
-**Étape 2. Créer la demande de certificat (CSR) sur ton poste Windows** (Git Bash, openssl est fourni avec Git) :
+### Étape 1. Ouvrir PowerShell dans un dossier hors dépôt
+Menu Démarrer > « PowerShell » (Windows PowerShell suffit). Puis, **une ligne à la fois** :
+```powershell
+mkdir $HOME\miff-signing
+cd $HOME\miff-signing
+openssl version
 ```
-openssl req -new -newkey rsa:2048 -nodes -keyout miff-dist.key -out miff-dist.csr -subj "/CN=Miff Distribution/emailAddress=tomessa.mfouka@gmail.com"
-```
+Attendu : un numéro de version d'OpenSSL (par exemple `OpenSSL 3.x`). [Vérifié] `openssl` est fourni avec Git for Windows et PowerShell le trouve (`C:\Program Files\Git\mingw64\bin\openssl.exe`). **Si PowerShell répond « openssl n'est pas reconnu »**, remplace partout `openssl` par `& "C:\Program Files\Git\mingw64\bin\openssl.exe"`.
+> Pourquoi PowerShell et pas Git Bash : Git Bash réécrit certains arguments commençant par `/` (le `-subj "/CN=..."` d'openssl devient un chemin `C:/Program Files/Git/...` et échoue) [Vérifié]. PowerShell ne le fait pas, et le fichier de configuration ci-dessous évite de toute façon `-subj`.
 
-**Étape 3. Créer le certificat** : Certificates > **+** > **Apple Distribution** > importer `miff-dist.csr` > télécharger `distribution.cer`.
-
-**Étape 4. Fabriquer le `.p12`** (mot de passe fort, à ranger dans ton gestionnaire de mots de passe) :
+### Étape 2. Créer la demande de certificat (CSR) et la clé privée
+```powershell
+Set-Content -Path miff-csr.cnf -Value "[req]","distinguished_name = dn","prompt = no","[dn]","CN = Miff Distribution","emailAddress = tomessa.mfouka@gmail.com"
+openssl req -new -newkey rsa:2048 -nodes -keyout miff-dist.key -out miff-dist.csr -config miff-csr.cnf
+dir
 ```
+Attendu : deux fichiers `miff-dist.key` (**clé privée : ne jamais la partager**) et `miff-dist.csr` (la demande, sans danger). Vérification : `openssl req -in miff-dist.csr -noout -subject -verify` doit afficher `verify OK` et `CN=Miff Distribution`. [Vérifié]
+
+### Étape 3. Créer le certificat « Apple Distribution » sur developer.apple.com
+1. **Certificates** > bouton bleu **+** (à côté du titre « Certificates »).
+2. Sur la page « Create a New Certificate », section **Software**, choisis **Apple Distribution** (« Sign your app for submission to the App Store »). **Pas** « Apple Development », **pas** « Apple Distribution Managed ». > **Continue**.
+3. Page avec « Choose File » : **Choose File** > sélectionne `miff-dist.csr` (dans `miff-signing`) > **Continue**.
+4. Page « Download Your Certificate » : bouton **Download** : un fichier `distribution.cer` arrive dans Téléchargements. Copie-le dans `miff-signing` :
+```powershell
+Copy-Item "$HOME\Downloads\distribution.cer" "$HOME\miff-signing\distribution.cer"
+```
+> Si Apple répond « maximum number of certificates » : **stop, ne révoque rien**, voir le plan B (§2).
+> Le certificat apparaît dans la liste : type **Apple Distribution**, créé par toi, date d'aujourd'hui, expiration dans un an. **Note cette date d'expiration** dans ton agenda. (Les libellés exacts de developer.apple.com peuvent légèrement varier : le principe reste le même.)
+
+### Étape 4. Fabriquer le fichier `.p12` (certificat + clé privée)
+```powershell
 openssl x509 -inform DER -in distribution.cer -out distribution.pem
 openssl pkcs12 -export -inkey miff-dist.key -in distribution.pem -out miff-dist.p12 -name "Miff Distribution"
 ```
-[À vérifier] Si le runner refuse le `.p12` (« MAC verification failed »), refaire la commande avec `-legacy` (OpenSSL 3 et l'outil `security` de macOS ne s'entendent pas toujours).
+La 2e commande te **demande un mot de passe** (deux fois, sans l'afficher) : choisis un mot de passe long et unique, **range-le tout de suite dans ton gestionnaire de mots de passe**. [Vérifié] avec OpenSSL 3.5 (chaîne `.cer` → `.pem` → `.p12` rejouée).
+Contrôle : `openssl pkcs12 -in miff-dist.p12 -nokeys -clcerts | openssl x509 -noout -subject -enddate` (il demande le mot de passe) doit afficher `Apple Distribution: <ton nom> (<ID d'équipe>)` et la date d'expiration.
+> Si plus tard la CI répond « Import du .p12 refusé » alors que le mot de passe est bon : refais seulement le `.p12` avec `-legacy` (ancien format que macOS accepte toujours) : `openssl pkcs12 -export -legacy -inkey miff-dist.key -in distribution.pem -out miff-dist.p12 -name "Miff Distribution"`, puis repose le secret de l'étape 8 (garde donc `miff-dist.key` et `distribution.pem` jusqu'au premier run réussi). [Vérifié] la commande fonctionne ; [À vérifier] le besoin réel sur le runner.
 
-**Étape 5. Préparer l'identifiant d'app** (Identifiers > `com.tomessa.miff`) : vérifier que les capacités **« Sign In with Apple »** et **« App Attest »** sont cochées (ce sont les deux droits de `ios/Config/Miff.entitlements`). Avec la signature manuelle, Xcode ne les active plus tout seul.
+### Étape 5. Vérifier l'identifiant d'app
+**Identifiers** > ouvre `com.tomessa.miff`. Dans la liste des **Capabilities**, vérifie que **App Attest** et **Sign In with Apple** sont **cochées** (les deux droits de l'app, `ios/Config/Miff.entitlements`). Si l'une ne l'est pas : coche-la > **Save**. (En signature manuelle Xcode ne les active plus tout seul ; sans elles le profil de l'étape 6 ne les contiendrait pas.)
 
-**Étape 6. Créer le profil** : Profiles > **+** > **App Store Connect** (distribution) > App ID `com.tomessa.miff` > le certificat créé à l'étape 3 > nom exact **`Miff CI App Store`** > télécharger `Miff_CI_App_Store.mobileprovision`.
-
-**Étape 7. Créer les 3 secrets GitHub** (depuis le dossier des fichiers ; PowerShell, sans rien afficher) :
+### Étape 6. Créer le profil « App Store »
+1. **Profiles** > **+**.
+2. Section **Distribution** : choisis **App Store Connect** > **Continue**. **Pas** « Ad Hoc », **pas** « Development ».
+3. **App ID** : choisis `com.tomessa.miff` > **Continue**.
+4. **Certificates** : coche **le certificat que tu viens de créer** (Apple Distribution, date d'aujourd'hui) > **Continue**.
+5. **Provisioning Profile Name** : tape **exactement** `Miff CI App Store` (majuscules, espaces) > **Generate**.
+6. **Download** : `Miff_CI_App_Store.mobileprovision` arrive dans Téléchargements. Copie-le :
+```powershell
+Copy-Item "$HOME\Downloads\Miff_CI_App_Store.mobileprovision" "$HOME\miff-signing\Miff_CI_App_Store.mobileprovision"
 ```
-gh secret set DIST_CERT_P12_B64 --repo Tomessa-Ghostrun/Miff --body ([Convert]::ToBase64String([IO.File]::ReadAllBytes("miff-dist.p12")))
-gh secret set DIST_CERT_P12_PASSWORD --repo Tomessa-Ghostrun/Miff        # il demande le mot de passe en saisie masquée
-gh secret set APPSTORE_PROFILE_B64 --repo Tomessa-Ghostrun/Miff --body ([Convert]::ToBase64String([IO.File]::ReadAllBytes("Miff_CI_App_Store.mobileprovision")))
+> Le nom exact est contrôlé par la CI. S'il est faux, elle s'arrête avec « Le profil s'appelle ... au lieu de ... » : recrée le profil avec le bon nom.
+
+### Étape 7. Vérifier que GitHub est prêt
+```powershell
+gh auth status
+gh secret list --repo Tomessa-Ghostrun/Miff
 ```
-Puis **supprimer** `miff-dist.key`, `miff-dist.csr`, `distribution.cer`, `distribution.pem` ; garder `miff-dist.p12` + son mot de passe dans le gestionnaire de mots de passe (sauvegarde : sans la clé, il faudrait recréer un certificat).
+Attendu : connecté, et la liste des secrets **existants** (ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_B64, APPLE_TEAM_ID, GOOGLE_SERVICE_INFO_PLIST_B64...) **sans** les 3 nouveaux. (Les valeurs ne sont jamais affichées.)
 
-**Rappels** : certificat et profil expirent dans l'année [Connu] (date à mettre à l'agenda, un mois avant) ; à chaque nouvelle capacité (notifications APNs, etc.) : cocher la capacité sur l'identifiant, **régénérer le profil**, remplacer `APPSTORE_PROFILE_B64`.
+### Étape 8. Poser les 3 secrets
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\miff-signing\miff-dist.p12")) | gh secret set DIST_CERT_P12_B64 --repo Tomessa-Ghostrun/Miff
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\miff-signing\Miff_CI_App_Store.mobileprovision")) | gh secret set APPSTORE_PROFILE_B64 --repo Tomessa-Ghostrun/Miff
+gh secret set DIST_CERT_P12_PASSWORD --repo Tomessa-Ghostrun/Miff
+```
+La 3e commande **demande le mot de passe** (colle celui du gestionnaire de mots de passe ; il n'apparaît pas à l'écran). Chaque commande répond `✓ Set Actions secret ... for Tomessa-Ghostrun/Miff`. Les valeurs passent directement de ton disque à GitHub : rien dans l'historique ni dans le dépôt. **Poser les 3, ou aucun** : si un seul ou deux existent, la CI s'arrête (« configuration partielle »).
 
-## 5. Modifications à faire ensuite (par moi, dans une PR séparée, après ton accord)
+### Étape 9. Nettoyer
+Une fois les 3 secrets posés **et** le `.p12` + son mot de passe sauvegardés dans ton gestionnaire de mots de passe :
+```powershell
+Remove-Item "$HOME\miff-signing\miff-csr.cnf","$HOME\miff-signing\miff-dist.csr","$HOME\miff-signing\distribution.cer"
+Remove-Item "$HOME\Downloads\distribution.cer","$HOME\Downloads\Miff_CI_App_Store.mobileprovision"
+```
+Après le **premier run réussi**, supprime aussi `miff-dist.key`, `distribution.pem`, `miff-dist.p12` et `Miff_CI_App_Store.mobileprovision` du disque (la sauvegarde est dans le gestionnaire de mots de passe).
 
-**`.github/workflows/ios-testflight.yml`**
-1. Vérifier la présence des 3 nouveaux secrets (comme pour les 4 existants, sans les afficher).
-2. Nouveau pas « Installer le certificat et le profil » : trousseau temporaire (existant « Préparer un trousseau temporaire »), `security import` du `.p12` avec `-T /usr/bin/codesign`, `security set-key-partition-list`, copie du profil dans `~/Library/MobileDevice/Provisioning Profiles/<UUID>.mobileprovision` (UUID et nom lus avec `security cms -D`), **contrôle bloquant** : le nom du profil est `Miff CI App Store`, l'identifiant d'app est `<TEAM>.com.tomessa.miff`, le profil n'est pas expiré et contient le certificat importé.
-3. Pas d'archive unique en distribution : `xcodebuild archive` **sans** `-allowProvisioningUpdates` ni clé d'API, avec la signature manuelle (voir `project.yml`) ; supprimer les modes `signed` / `unsigned` (entrée `archive_mode` retirée, un seul chemin).
-4. Export : `ExportOptions.plist` avec `signingStyle` = `manual`, `signingCertificate` = `Apple Distribution`, `provisioningProfiles` = `{ com.tomessa.miff : Miff CI App Store }`, `destination` = `upload`. La clé d'API App Store Connect ne sert plus qu'à **l'envoi** (`-authenticationKeyPath/ID/IssuerID` sur `-exportArchive`).
-5. Nettoyage : supprimer le trousseau et les fichiers déchiffrés (déjà en place pour la clé `.p8`), ajouter le profil copié.
-6. Le contrôle « Identité de l'archive » vérifie en plus `SigningIdentity` = Apple Distribution (aujourd'hui informatif) et les entitlements **maintenant lisibles** (App Attest `production`, Sign in with Apple).
+### Étape 10. Vérifier (avant / après)
+1. `gh secret list --repo Tomessa-Ghostrun/Miff` : les **3 nouveaux noms** apparaissent, avec la date du jour.
+2. developer.apple.com > Certificates : **19** certificats (18 + 1 « Apple Distribution » à ton nom). **Aucun autre changement.**
+3. Dis-moi « secrets posés ». Je ne lance rien moi-même : lance `ios-testflight` **une seule fois** (ou donne-moi ton accord pour que je le fasse). Dans le **Résumé** du run, tu dois lire : « Signature : MANUELLE (certificat Apple Distribution persistant, aucun certificat créé par exécution) », puis « Certificat : Apple Distribution (empreinte …), profil « Miff CI App Store » valide jusqu'au … ».
+4. **Après le run** : developer.apple.com > Certificates doit **toujours en compter 19** (aucun nouveau « Created via API »). C'est la preuve que le problème est réglé.
 
-**`ios/project.yml`** : `CODE_SIGN_STYLE: Automatic` reste pour Debug et le simulateur. Pour la cible `Miff`, configuration `Internal` seulement, réglages propres à l'appareil : `CODE_SIGN_STYLE: Manual`, `CODE_SIGN_IDENTITY[sdk=iphoneos*]: Apple Distribution`, `PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]: Miff CI App Store`. Ne **pas** passer le profil en ligne de commande : il s'appliquerait aussi aux paquets Swift (Firebase, etc.), qui ne supportent pas les profils (erreur classique). `DEVELOPMENT_TEAM` reste fourni par la CI. La configuration `Release` (futur build public) recevra les mêmes réglages le moment venu.
+## 5. Ce que fait la CI (pour le développeur)
 
-**`ios/ci/ExportOptions.plist.template`** : passe en signature manuelle (point 4).
-**`docs/dev/ios-spike.md`** : §9 (« Décision de signature »), §10 (certificats orphelins : résolu) et §6 (erreurs) mis à jour.
+| Élément | Changement |
+|---|---|
+| `.github/workflows/ios-testflight.yml` | Contrôle des 3 secrets : **3 présents = signature manuelle** ; **0 présent = ancien chemin automatique** (avec `::warning` et ligne de résumé) ; **1 ou 2 = arrêt**. En manuel : installation du `.p12` dans le trousseau temporaire (`security import`, `set-key-partition-list`) ; contrôle **bloquant** du profil (nom `Miff CI App Store`, équipe = `APPLE_TEAM_ID`, identifiant `<équipe>.com.tomessa.miff`, type App Store sans appareils ni `get-task-allow`, **certificat du `.p12` autorisé par le profil**, **expiration** du profil et du certificat, avertissement à 30 jours) ; installation du profil ; **archive sans `-allowProvisioningUpdates` et sans clé d'API** ; contrôle que l'archive est signée « Apple Distribution » ; **export manuel** (`ExportOptions.manual.plist.template`) ; la clé `.p8` ne sert **qu'à l'envoi** ; nettoyage du trousseau, des fichiers déchiffrés et du profil. |
+| `ios/project-signing-manual.yml` (nouveau) | Superposition XcodeGen utilisée **seulement** par le chemin manuel : `CODE_SIGN_STYLE: Manual`, identité `Apple Distribution` et profil `Miff CI App Store` **dans la configuration Internal de la cible Miff, pour les builds sur appareil** (`[sdk=iphoneos*]`). Rien en ligne de commande. **`project.yml` n'est pas modifié** : sinon le repli automatique (qui sert tant que les secrets manquent) et la CI `ios` casseraient. Écart assumé avec la demande initiale (« réglages dans `project.yml` »), pour garder le repli. |
+| `ios/ci/ExportOptions.manual.plist.template` (nouveau) | `signingStyle: manual`, `signingCertificate: Apple Distribution`, `provisioningProfiles: { com.tomessa.miff : Miff CI App Store }`, `destination: upload`. L'ancien modèle reste pour le repli. |
+| `.github/workflows/ios.yml` | Nouveau contrôle (sans secret) : la superposition se génère et donne les bons réglages (Internal manuel sur appareil ; Debug, simulateur et `project.yml` inchangés). La signature manuelle ne pouvant pas être essayée sans les secrets, c'est ce qui la garde honnête à chaque PR. |
+| `docs/dev/ios-spike.md` | §3, §6, §9 et §10 mis à jour. |
 
-## 6. Risques de la solution et parades
+Quand le premier run manuel aura réussi, une PR de suivi supprimera le chemin automatique (`archive_mode`, `ExportOptions.plist.template`) : c'est lui qui crée des certificats de développement.
+
+## 6. Entretien
+
+- **Rappel d'agenda** : 1 mois avant l'expiration du certificat (date notée à l'étape 3).
+- **Renouvellement** : refaire les étapes 2 à 6 et 8 (nouveau CSR, nouveau certificat, nouveau profil, remplacer les 3 secrets), **puis** seulement, après un build réussi, révoquer l'**ancien certificat Miff** (celui dont tu as noté la date) : jamais un autre.
+- **Nouvelle capacité** (notifications APNs, etc.) : la cocher sur l'identifiant `com.tomessa.miff`, **régénérer le profil** (étape 6), remplacer `APPSTORE_PROFILE_B64` (étape 8), et ajouter l'entitlement dans `ios/Config/Miff.entitlements`.
+- **Fuite ou doute** (le `.p12` ou son mot de passe a été exposé) : révoquer **ce** certificat (le tien, « Apple Distribution », créé le jour de l'étape 3), supprimer les 3 secrets, recommencer. Aucun autre certificat n'est concerné.
+
+## 7. Risques et parades
 
 | Risque | Parade |
 |---|---|
-| Fuite du `.p12` ou de son mot de passe | Secrets GitHub (masqués dans les journaux, jamais dans le dépôt) ; gitleaks en CI ; en cas de doute : révoquer **ce** certificat (le nôtre, nommé « Miff Distribution »), en recréer un |
-| Profil sans la bonne capacité (échec à l'archive : droit non autorisé par le profil) | Étape 5 ; message d'erreur clair ; régénérer le profil |
-| `.p12` refusé par macOS | `-legacy` (étape 4) |
-| Expiration silencieuse | Rappel d'agenda ; le contrôle de la CI lit la date d'expiration du profil et **échoue avec un message explicite** (et un avertissement 30 jours avant) |
-| Premier run en échec pour une raison de signature manuelle (non testable sans Mac) | Prévoir 1 à 2 essais ; `ios-testflight` est manuel, ne tourne jamais sur une PR ; le diagnostic reste dans l'artefact de journaux assainis |
-| Collision avec Ghostrun | Certificat et profil **distincts**, noms préfixés « Miff » ; aucune révocation d'un certificat non reconnu ; Ghostrun n'est jamais ciblé |
+| Limite de certificats de distribution atteinte | Plan B (§2) ; on ne révoque jamais à l'aveugle |
+| `.p12` refusé | `-legacy` (étape 4) |
+| Profil créé avec un autre certificat ou sans les capacités | Contrôle bloquant « certificat autorisé par le profil » ; étape 5 |
+| Expiration silencieuse | Contrôle bloquant avec date explicite + avertissement 30 jours |
+| Fuite du `.p12` | Secrets GitHub masqués ; gitleaks en CI ; jamais dans le dépôt ; révocation ciblée (§6) |
+| Premier run manuel en échec (non testable sans Mac) | Chemin manuel jamais déclenché par une PR ; le repli automatique reste utilisable tant que les secrets sont absents ; journaux assainis déposés en artefact |
+| Collision avec Ghostrun | Certificat et profil **distincts** et nommés « Miff » ; aucune révocation d'un certificat non reconnu ; `APPLE_TEAM_ID` et l'identifiant d'app sont contrôlés |
 
-## 7. Questions pour le PM
-
-1. **Étape 0** : peux-tu me dire (ou noter) combien de certificats « Apple Distribution / iOS Distribution » existent, leurs dates et leur créateur ? Cela conditionne l'étape 3 (limite).
-2. OK pour l'option (a) et pour que je prépare la PR du workflow une fois les 3 secrets posés ?
-3. Veux-tu dépanner maintenant (étape 1) en révoquant les « Created via API » de la CI ?
-
-*Aucun montant à engager : tout est gratuit (compte développeur Apple déjà existant). Aucun texte légal concerné.*
+*Coût : 0 €. Aucun texte légal concerné.*

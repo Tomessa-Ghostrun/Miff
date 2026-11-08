@@ -2,6 +2,10 @@
 
 ## Non publié
 
+### CI - `ios-testflight` : signature manuelle (un certificat Apple Distribution persistant)
+
+Décision du PM du 2026-11-08 (option (a) de `docs/dev/apple-certificats-ci.md`, après l'échec « maximum number of certificates » du run 42429656978). Si les 3 secrets `DIST_CERT_P12_B64`, `DIST_CERT_P12_PASSWORD` et `APPSTORE_PROFILE_B64` existent, le workflow installe le certificat dans un trousseau temporaire, contrôle et installe le profil (nom, équipe, identifiant, type App Store, certificat autorisé, expiration), archive **sans `-allowProvisioningUpdates` ni clé d'API** puis exporte en manuel ; la clé `.p8` ne sert plus qu'à l'envoi. **Sans les 3 secrets, comportement inchangé** (signature automatique, avertissement dans le journal) ; avec 1 ou 2, arrêt. Nouveaux fichiers : `ios/project-signing-manual.yml` (superposition XcodeGen, `project.yml` inchangé pour garder le repli), `ios/ci/ExportOptions.manual.plist.template`. `ios.yml` vérifie la superposition à chaque exécution lourde. Aucun code applicatif, aucun secret modifié. Coût : 0 €. **Action du PM avant tout run manuel : le guide pas à pas Windows de `docs/dev/apple-certificats-ci.md`.**
+
 ### FEED-5 à FEED-7 - Le Feed : cercle, statuts, Localiser (miroir d'Android FEED-1 à FEED-3, avec D42 à D45)
 
 Branche `ios/feed-5-7`, **PR en brouillon qui dépend de #102** (coquille ONB-7) ; ticket `docs/tickets/feed.md` (décisions D1 à D44), maquettes `design/exports/feed/` et `design/exports/feed/claude/`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro (TestFlight, le Feed est l'onglet de la coquille) : `docs/qa/checklists/feed-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md`, section « Le Feed ».
