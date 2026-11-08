@@ -171,6 +171,9 @@ struct FeedContent: Equatable, CustomStringConvertible {
     let cards: [FeedMemberCard]
     /// Ne change que quand un NIVEAU ou l'ensemble des alertes change : le lecteur d'écran annonce la bulle alors, jamais à chaque minute.
     let announceKey: String
+    /// MON statut tel que l'Update en a besoin (couleur du bouton central, bulle, nettoyage de ma photo) : nil quand je ne partage pas ou
+    /// que mon accord est attendu. L'Update ne lit rien de plus : ce Feed est l'UNIQUE écouteur de ma fiche (D19).
+    var myFacts: MyStatusFacts?
 
     var description: String {
         "FeedContent(redacted)"

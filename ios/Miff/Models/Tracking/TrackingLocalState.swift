@@ -71,6 +71,22 @@ struct LocalMiff: Codable, Equatable, CustomStringConvertible {
     var positionLng: Double?
     var positionAtMillis: Int?
     var pending: PendingStatus?
+    /// La batterie dans le dernier statut écrit dans cette Miff (niveau et heure) et l'heure de la dernière tentative de
+    /// rafraîchissement : pour n'écrire qu'un CHANGEMENT, au plus toutes les 15 minutes. Aucune donnée de position.
+    var batteryPct: Int?
+    var batteryWrittenAtMillis: Int?
+    var batteryTriedAtMillis: Int?
+
+    var batteryHistory: BatteryHistory {
+        BatteryHistory(pct: batteryPct, writtenAtMillis: batteryWrittenAtMillis, triedAtMillis: batteryTriedAtMillis)
+    }
+
+    /// Un statut vient d'être écrit avec ce niveau de batterie (rafraîchissement, arrivée, départ, accès).
+    mutating func noteBatteryWritten(_ level: Int?, at millis: Int) {
+        batteryPct = level
+        batteryWrittenAtMillis = millis
+        batteryTriedAtMillis = millis
+    }
 
     var derived: DerivedPresence? {
         get {
@@ -102,6 +118,9 @@ struct LocalMiff: Codable, Equatable, CustomStringConvertible {
         derived = nil
         written = nil
         pending = nil
+        batteryPct = nil
+        batteryWrittenAtMillis = nil
+        batteryTriedAtMillis = nil
     }
 
     var description: String {
@@ -129,6 +148,7 @@ struct LocalState: Codable, Equatable, CustomStringConvertible {
     /// ménage pas toujours les mêmes Miffs.
     var statusCursor: String?
     var positionCursor: String?
+    var batteryCursor: String?
 
     var fix: Fix? {
         get {

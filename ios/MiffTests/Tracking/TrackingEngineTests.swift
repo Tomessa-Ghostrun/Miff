@@ -129,6 +129,7 @@ final class TrackingEngineTests: XCTestCase {
     func testArrivalWritesInTrustedWithTheRealTimeOfTheEvent() async throws {
         await rig.engine.refresh(.opened)
         let eventTime = rig.env.now - 40 * 1000
+        rig.env.battery = 80
 
         await rig.engine.onTransition(.enter, zoneKey: rig.homeKey, atMillis: eventTime)
 

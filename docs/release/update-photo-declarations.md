@@ -58,7 +58,7 @@ Décisions D24 à D26 du 2026-11-06 (viseur plein écran, aperçu un peu plus pe
 
 | Fait | Valeur | Source |
 |---|---|---|
-| Prise de vue | Caméra intégrée (CameraX / AVFoundation), **en direct uniquement** ; aucune photo de galerie ; aucune permission de photothèque ni de stockage ; la photo vit en mémoire jusqu'à la publication | ticket §5.3, §5.6, P4 |
+| Prise de vue | Caméra intégrée (CameraX / AVFoundation), **en direct uniquement** ; aucune photo de galerie ; aucune permission de photothèque ni de stockage ; la photo vit en mémoire jusqu'à la publication (jamais dans un fichier ni dans la photothèque de l'app ; **iOS** : le cache local du SDK Firestore peut ensuite en garder une copie, chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte) | ticket §5.3, §5.6, P4 |
 | Métadonnées | JPEG **ré-encodé depuis les pixels** : ni EXIF, ni GPS, ni date, ni modèle (**à prouver par un test d'octets**, critère V3 du ticket) | ticket §5.6 |
 | Taille | ≤ 150 000 octets, portrait 3:4, côté long ≤ 1 024 px | `firestore.rules` `validPhoto`, ticket V7 |
 | Hébergement | Octets dans Firestore (`miffs/{id}/photos/{uid}`), région Paris (europe-west9), **sans Cloud Storage** ; une copie par Miff où la personne partage ; **chaque photo écrase la précédente** | `data-model.md` §2.8 |
@@ -91,8 +91,10 @@ Sans cette clé, iOS interrompt l'app au premier accès caméra (connaissance g�
 
 | Langue | `NSCameraUsageDescription` |
 |---|---|
-| Français | « Miff utilise ta caméra uniquement quand tu ouvres « Donner des nouvelles », pour prendre la photo que tu choisis de partager. Les membres de tes Miffs la voient pendant 24 h. Rien n'est enregistré dans ta galerie. » |
-| English | "Miff uses your camera only when you open "Share news", to take the photo you choose to share. The members of your Miffs can see it for 24 hours. Nothing is saved to your photo library." |
+| Français | « Miff utilise la caméra seulement quand tu ouvres l'écran « Donner des nouvelles », pour prendre une photo de toi ou de ce qui t'entoure. La photo est publiée avec ta position et visible des membres de tes Miffs pendant 24 h, puis elle n'est plus lisible. Rien n'est enregistré dans ta photothèque. » |
+| English | "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. The photo is published with your position and can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your photo library." |
+
+**Texte final livré par UPDATE-3 (iOS, PR #111)** : le texte ci-dessus (plus complet que la proposition initiale, **volontairement** : il cite la position jointe à la photo, la durée et la fin de lisibilité, ce qu'exige « clearly and completely »). Il est dans `ios/Miff/Resources/InfoPlist.xcstrings` (FR et EN) et en valeur par défaut anglaise dans `ios/project.yml`. **La phrase sur le lieu de la photo est livrée aussi** dans les deux textes de la localisation (`NSLocationWhenInUseUsageDescription` et `NSLocationAlwaysAndWhenInUseUsageDescription`), mot pour mot comme ci-dessous ; **le texte d'usage de la localisation d'Android n'est pas concerné** (autre mécanisme). **Limite à dire honnêtement** : Après la publication, le cache local du SDK Firestore peut en garder une copie (chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte) ; l'app ne crée elle-même aucun fichier de la photo.
 
 Le nom du bouton est celui du nom parlé du ticket (« Donner des nouvelles » / « Share news ») : à aligner sur le libellé final des maquettes.
 
