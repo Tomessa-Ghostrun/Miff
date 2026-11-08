@@ -29,7 +29,7 @@
 7. **Révisions de décisions antérieures** (§18) : **Q6** (ligne « Notifications » masquée) est **rouverte** : Réglages > Notifications existe, exigence du PM du 2026-11-08 ; **Q15** (cloche retirée) est **rouverte** : la cloche revient dans le Feed. À confirmer (Q14, Q15).
 8. **Maquettes** : 11 écrans ou états à fournir (§16), dont la pré-autorisation **corrigée** (« n'est toujours pas rentrée » est anxiogène, avec un accord de genre ; et en P0 elle promettrait des notifications sur les proches qui n'existent pas encore).
 9. **Dépendances techniques** : les rappels orange / rouge ont besoin d'un **point de départ** (sortie d'un lieu : ticket Tracking) et d'un **moyen d'annulation** (ticket Update). Le moteur est écrit d'abord comme une fonction pure testable, branchée ensuite.
-10. **27 questions** (§17), les 8 premières suffisent pour démarrer P0. **Seuils décidés le 2026-11-08** : orange à 2 h, rouge à 4 h (le plus récent de la sortie du lieu et de la dernière update), rouge après 1 h sans update en zone de danger ; nouvelle question **Q27** (cette règle déclenche-t-elle un rappel ?). Étiquettes de lieu par catégorie intégrées aux textes d'arrivée.
+10. **Décidé le 2026-11-08** : seuils (orange 2 h, rouge 4 h, rouge après 1 h sans update en zone de danger) ; Q9 (nom du lieu affiché pour Loisir et Autre) ; Q27 (aucun rappel « à toi » en zone de danger) ; N4 = « rouge » ; limite iOS de N3 / N4 acceptée ; N5 abandonnée (phase 2). **Périmètre P0 sans serveur : voir §20 (N1, N2, N3, N4, N6 + autorisation + Réglages + centre local)**. Il reste **4 questions ouvertes avec valeur par défaut** (Q28, Q30, Q33, Q34 : §20.13) ; les 27 premières questions de §17 restent valables hors push (suspendues : Q3, Q4, Q5, Q6, Q23).
 
 ---
 
@@ -181,7 +181,7 @@ Il faut **qu'un code s'exécute au bon moment** : soit sur un serveur qui envoie
 |---|---|
 | **Hors d'un lieu de confiance** | `ref` = le **plus récent** de (heure de sortie du lieu de confiance, dernière update). **Orange après 2 h** (T_orange), **rouge après 4 h** (T_rouge) |
 | **Dans un lieu de confiance** | Vert ; aucun rappel |
-| **En zone de danger** | **Rouge si la dernière update date de plus d'1 h** (pas d'étape orange) ; **la confiance l'emporte** : un lieu de confiance qui recouvre une zone de danger donne le vert. La zone de danger n'est pas livrée en v1 (Q10 du 2026-10-30) : voir la question Q27 sur son effet sur les rappels |
+| **En zone de danger** | **Rouge si la dernière update date de plus d'1 h** (pas d'étape orange) ; **la confiance l'emporte** : un lieu de confiance qui recouvre une zone de danger donne le vert. La zone de danger ne crée **aucun rappel « à toi »** (Q27 = NON, décidé) ; son entrée est signalée à la personne par **N6** (§20.7) |
 
 Conséquences sur les rappels (valeurs par rapport à `ref`) : **A1 à 2 h**, **A3 (Premium) à 1 h 45**, **A2 à 4 h** (relance à 5 h au plus), **B1 à 4 h**, **B6 à 2 h**. Les textes donnent des **heures absolues** : exemple de suite cohérente utilisée dans ce document : dernière nouvelle **13 h 40** → A3 **15 h 25** → A1 **15 h 40** → B6 **15 h 40** → A2 et B1 **17 h 40**.
 
@@ -192,7 +192,7 @@ Conséquences sur les rappels (valeurs par rapport à `ref`) : **A1 à 2 h**, **
 3. **Annulation** : publier une update, rentrer dans un lieu de confiance, se déconnecter, désactiver le type ou l'ensemble des notifications, quitter la Miff, couper le partage ou perdre l'accès **annule immédiatement** les rappels programmés (§5.7).
 4. **Pas de culpabilisation, pas d'urgence théâtrale** : verbes d'invitation (« Un petit signe ? »), jamais d'impératif ni de « toujours pas », de « enfin », de « vite », de « danger » ; pas de MAJUSCULES ni d'émoticônes ; heures **absolues** (« depuis 13 h 40 ») plutôt que des compteurs.
 5. **Sans accord de genre** (A6 de `feed-profil-reglages.md` [Décidé]) : « est bien à l'école » (étiquettes de lieu, §5.3), « n'est plus à l'école », « a donné de ses nouvelles ».
-6. **Écran verrouillé sobre** : prénom et fait, **jamais** d'adresse ; l'étiquette du lieu est celle de la catégorie (« à l'école ») ; **le nom saisi par l'utilisateur** (catégories Loisir et Autre) n'apparaît pas à l'écran verrouillé par défaut (Q9) ; pas de photo ; pas de batterie.
+6. **Écran verrouillé sobre** : prénom et fait, **jamais** d'adresse ; l'étiquette du lieu est celle de la catégorie (« à l'école ») ou, pour **Loisir et Autre, le nom saisi** (décision du PM, Q9 : affiché même à l'écran verrouillé, risque assumé) ; pas de photo ; pas de batterie.
 7. **Premier plan** : si l'app est ouverte, **aucune notification n'est affichée** pour ce qui est déjà visible (la bulle d'incitation du Feed et l'anneau de l'avatar font le travail).
 8. **Tutoiement** partout [Décidé].
 
@@ -203,7 +203,7 @@ Légende de la colonne « Gratuit ? » : **G** = gratuit (phase indiquée), **P*
 | ID | Moment | Qui est notifié | Déclencheur exact et condition | Délai | Canal | Phase / Gratuit ? |
 |---|---|---|---|---|---|---|
 | **A1** | Passage en orange | **Moi** | Mon statut est « parti d'un lieu » (`presence = out`) ET aucune update ni entrée en lieu de confiance depuis `ref` (= le plus récent de la sortie du lieu et de la dernière update) ; passage à T_orange | **à `ref + 2 h`** (± quelques minutes, §14) | Notification locale | **P0 / G** |
-| **A2** | Passage en rouge | **Moi** | Même condition ; passage à T_rouge ; la **relance** éventuelle est limitée à une fois (§5.4). **En zone de danger** (si un jour livrée) : voir Q27 | **à `ref + 4 h`**, relance à +1 h au plus (5 h) | Notification locale | **P0 / G** |
+| **A2** | Passage en rouge | **Moi** | Même condition ; passage à T_rouge ; la **relance** éventuelle est limitée à une fois (§5.4). **Jamais pour un rouge dû à la zone de danger** (Q27 = NON, décidé) | **à `ref + 4 h`**, relance à +1 h au plus (5 h) | Notification locale | **P0 / G** |
 | **A3** | Rappel anticipé | Moi | 15 min avant T_orange, **seulement si activé** | `ref + 1 h 45` | Locale | **P0 / P** |
 | **C1** | « Depuis ta dernière visite » | Moi (dans l'app, **sans notification**) | À l'ouverture : comparaison de l'état actuel des proches avec l'état vu à la dernière visite | Immédiat | Centre | **P1 / G** |
 | **B1** | **Pas de nouvelles d'un proche** | **Les autres membres** | Statut d'un membre au niveau rouge (T_rouge) sans clôture ; **uniquement** s'il partage (`sharing.enabled`) | À `ref + 4 h` (+ horloge du serveur) | **Push** | **P2 / G** |
@@ -214,7 +214,7 @@ Légende de la colonne « Gratuit ? » : **G** = gratuit (phase indiquée), **P*
 | **B6** | Orange d'un proche | Les membres | Niveau orange | À `ref + 2 h` | Push | **P2 / P** (en gratuit : visible dans le Feed seulement, pas de push : réduit le bruit) |
 | **B7** | Résumé du jour | Moi | Une fois par jour à l'heure choisie | 1 par jour | Push **passif** | **P3 / P** |
 | **B8** | Arrivée attendue non survenue | Les membres | Heure d'arrivée **définie par la personne concernée** pour un lieu | À l'heure + marge | Push | **P3 / P**, avec consentement de la personne suivie |
-| **Z** | Zone de danger (entrée / sortie) | — | **Aucune notification d'entrée ni de sortie** (décision Q10 du 2026-10-30 : zone à risque non livrée en v1, `in_risk` affiché en neutre). La règle de couleur « rouge après 1 h sans update en zone de danger » (§5.0) est décidée mais **sans effet tant que la zone n'existe pas** ; son effet éventuel sur A2 est la question **Q27** | — | — | **Hors périmètre** |
+| **Z** | Zone de danger (entrée / sortie) | — | **Aucune notification d'entrée ni de sortie** (décision Q10 du 2026-10-30 : zone à risque non livrée en v1, `in_risk` affiché en neutre). La règle de couleur « rouge après 1 h sans update en zone de danger » (§5.0) est décidée mais **sans effet tant que la zone n'existe pas** ; elle ne crée **aucun rappel « à toi »** (Q27 = NON, décidé). L'entrée dans une zone de danger : **N6** pour la personne (§20.7), **N5** vers les autres en P2 (§20.6) | — | — | Voir §20 |
 
 ### 5.3 Textes proposés (français, anglais ; tutoiement ; **[Proposé]**)
 
@@ -233,7 +233,7 @@ Légende de la colonne « Gratuit ? » : **G** = gratuit (phase indiquée), **P*
 
 Remarques de ton : « Pas de nouvelles de {Prénom} depuis {heure} » est le format **déjà décidé** au Q11 du 2026-10-30 ; l'heure est celle de la dernière nouvelle (`ref`).
 
-**Étiquettes de lieu par catégorie (décision du PM, 2026-11-08)** : Maison = « À la maison », Travail = « Au travail », École = « À l'école », Sport = « Au sport », Chez un proche = « Chez un proche », Loisir et Autre = **nom du lieu**. Elles servent aux textes d'arrivée et de départ (B3, B4) sous leur **forme de phrase** (minuscule), ce qui évite tout accord de genre : B3 = « {Prénom} est bien {à la maison / au travail / à l'école / au sport / chez un proche} » ; B4 = « {Prénom} n'est plus {…} ». Pour Loisir et Autre : « {Prénom} est bien à « {nom du lieu} » » et « {Prénom} n'est plus à « {nom du lieu} » ». Anglais proposé : at home, at work, at school, at sports, at a loved one's, at “{name}”. **Point de vie privée à confirmer (Q9)** : pour Loisir et Autre, l'étiquette est le **nom saisi** par l'utilisateur (parfois un domicile : « Chez Mamie ») ; je recommande que **l'écran verrouillé** n'affiche alors que « {Prénom} est bien dans un lieu de confiance » et que le nom n'apparaisse **qu'à l'intérieur de l'app** (centre, Feed), sauf choix contraire du PM. Aucune notification ne contient le mot « orange » ou « rouge » : ce sont des couleurs de l'app, pas des qualificatifs de la personne.
+**Étiquettes de lieu par catégorie (décision du PM, 2026-11-08)** : Maison = « À la maison », Travail = « Au travail », École = « À l'école », Sport = « Au sport », Chez un proche = « Chez un proche », Loisir et Autre = **nom du lieu**. Elles servent aux textes d'arrivée et de départ (B3, B4) sous leur **forme de phrase** (minuscule), ce qui évite tout accord de genre : B3 = « {Prénom} est bien {à la maison / au travail / à l'école / au sport / chez un proche} » ; B4 = « {Prénom} n'est plus {…} ». Pour Loisir et Autre : « {Prénom} est bien à « {nom du lieu} » » et « {Prénom} n'est plus à « {nom du lieu} » ». Anglais proposé : at home, at work, at school, at sports, at a loved one's, at “{name}”. **Décision du PM (Q9, 2026-11-08), contre ma recommandation** : pour Loisir et Autre, **le nom saisi est affiché, même à l'écran verrouillé** (règle conservée : étiquette = nom du lieu) ; **jamais l'adresse**. **Risque de vie privée assumé par le PM et à écrire** : ce nom peut révéler un domicile (« Chez Mamie ») à toute personne qui voit l'écran verrouillé d'un proche ; l'option « aperçus » du système (iOS) ou le réglage de confidentialité de l'écran verrouillé (Android) reste le recours de la personne. Aucune notification ne contient le mot « orange » ou « rouge » : ce sont des couleurs de l'app, pas des qualificatifs de la personne.
 
 ### 5.4 Fréquence maximale, regroupement et lutte contre la fatigue
 
@@ -608,7 +608,7 @@ Préfixe **`notif_`** à ajouter au tableau de `docs/contracts/i18n-keys.md` **e
 | `notif_circle_arrived_title` / `_body` | {prénom} est bien {lieu} / Depuis {heure}. | {prénom} is {lieu} / Since {heure}. |
 | `notif_circle_left_title` / `_body` | {prénom} n'est plus {lieu} / Depuis {heure}. | {prénom} has left {lieu} / Since {heure}. |
 | `notif_place_at_home` / `_at_work` / `_at_school` / `_at_sport` / `_at_relative` | à la maison / au travail / à l'école / au sport / chez un proche | at home / at work / at school / at sports / at a loved one's |
-| `notif_place_at_named` / `notif_place_generic` | à « {nom} » / dans un lieu de confiance (écran verrouillé pour Loisir et Autre, sous réserve de Q9) | at “{nom}” / in a trusted place |
+| `notif_place_at_named` | à « {nom} » (Loisir et Autre : nom saisi, affiché aussi à l'écran verrouillé, décision Q9) | at “{nom}” |
 | `notif_circle_update_title` / `_body` | Nouvelle update de {prénom} / Ouvre Miff pour la voir. | A new update from {prénom} / Open Miff to see it. |
 | `notif_group_title` | {n} nouvelles dans ta Miff | {n} new things in your Miff |
 | `notif_center_title` | Notifications | Notifications |
@@ -684,7 +684,7 @@ Une branche et une PR par plateforme et par ticket ; **Android d'abord**, puis i
 - [ ] **N-M4** Android : après redémarrage, changement d'heure / de fuseau et mise à jour de l'app, les rappels sont **reprogrammés** ; au déclenchement, un niveau déjà dépassé produit le **texte du niveau réel** ou rien.
 - [ ] **N-M5** Aucun rappel n'est affiché si l'app est au premier plan.
 - [ ] **N-M6** Nuit calme : la bonne importance selon l'heure **locale** au déclenchement.
-- [ ] **N-M7** Les textes sont ceux de §5.3 ; aucun ne contient d'adresse, de position, de photo ou de batterie ; les étiquettes de lieu sont celles de §5.3 (nom saisi seulement pour Loisir et Autre, selon Q9) ; **aucun mot « orange », « rouge », « danger », « urgent », « toujours pas »**.
+- [ ] **N-M7** Les textes sont ceux de §5.3 ; aucun ne contient d'adresse, de position, de photo ou de batterie ; les étiquettes de lieu sont celles de §5.3 (nom saisi pour Loisir et Autre : décision Q9) ; **aucun mot « orange », « rouge », « danger », « urgent », « toujours pas »**.
 - [ ] **N-M8** Aucune permission d'alarme exacte n'est déclarée ; la permission de redémarrage est justifiée dans la PR.
 
 **Centre**
@@ -803,7 +803,7 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 - *Reco* : tout est **silencieux** sauf B1, B2 et A2 (« le moment qui compte ») ; le Premium personnalise les heures. *Alternative* : tout silencieux la nuit. *Impact* : importance des canaux Android, **fixée à la création**.
 
 **Q9. Que montre l'écran verrouillé ?**
-- *Reco* : **prénom + fait + étiquette du lieu par catégorie** (« Thomas est bien à l'école » ; étiquettes décidées le 2026-11-08, §5.3) ; **pour Loisir et Autre (étiquette = nom saisi)** : « Thomas est bien dans un lieu de confiance » sur l'écran verrouillé, nom seulement dans l'app, car ce nom peut révéler un domicile (**le PM peut préférer afficher le nom** : à trancher) ; jamais l'adresse ; **option « Aperçus discrets »** (« Thomas a donné de ses nouvelles ») à décider. *Impact* : textes ; vie privée.
+- **[Décidé le 2026-11-08, contre ma recommandation]** : **prénom + fait + étiquette du lieu par catégorie** (« Thomas est bien à l'école », §5.3) ; **pour Loisir et Autre, le nom saisi est affiché, même à l'écran verrouillé** (la variante « dans un lieu de confiance » est **retirée**) ; **jamais l'adresse** ; risque de vie privée assumé par le PM (§5.3) ; **option « Aperçus discrets »** (« Thomas a donné de ses nouvelles ») à décider. *Impact* : textes ; vie privée.
 **Q9bis. Niveaux d'importance des canaux Android** (fixés à la création, non relevables) : *Reco* : rappels = par défaut ; « pas de nouvelles » = par défaut (alerte sonore sans fenêtre flottante) ; nouvelles de la Miff = bas ; résumé = bas.
 
 **Q10. Action rapide « Je vais bien » : OK ?** Avec **déverrouillage obligatoire**, et sous réserve que le ticket Update accepte une update **sans photo** (question déjà ouverte).
@@ -829,7 +829,7 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 
 **Q17. Badge d'icône.** *Reco* : **aucun** (calme) ; la cloche suffit. *Impact* : n'ajoute pas l'option « badge » à la demande iOS.
 
-**Q18. Zone à risque / de danger : entrée et sortie.** *Reco* : **aucune notification d'entrée ni de sortie** (confirme Q10 du 2026-10-30). L'effet du **rouge après 1 h** en zone de danger sur les rappels est la question **Q27**. *Impact* : aucun.
+**Q18. Zone à risque / de danger : entrée et sortie.** *Reco* : **aucune notification de sortie** ; **entrée** : N6 pour la personne qui entre (§20.7) ; N5 vers les autres **abandonnée** en phase 2 (§20.6). Aucun rappel « à toi » dû à la zone (Q27 = NON, décidé). *Impact* : aucun.
 
 **Q19. Transparence envers la personne suivie.** Quand P2 existe, le rappel A1 dit-il « Si tu ne donnes pas de nouvelles, ta Miff sera prévenue vers 17 h 40 » ? Et le **texte de consentement** d'entrée dans une Miff (nouvelle version) cite-t-il l'alerte du cercle ?
 - *Reco* : **oui aux deux** : c'est le consentement éclairé. *Impact* : `consentVersion`, textes, ré-affichage aux comptes existants.
@@ -850,8 +850,7 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 
 **Q26. Maquettes.** Fournir M1 à M11 (§16) avant NOTIF-1A. *Reco* : par lots : M1, M2, M7, M9 d'abord (autorisation et réglages), M3 à M6 et M10 ensuite. *Impact* : calendrier.
 
-**Q27. Zone de danger : devenir rouge après 1 h sans update déclenche-t-il un rappel A2 ?** (Règle de couleur décidée le 2026-11-08 ; la zone de danger n'est pas livrée en v1, Q10 du 2026-10-30, donc rien n'est à construire tant qu'elle n'existe pas.)
-- *Reco* : **oui pour A2, non pour tout le reste, et seulement quand la zone sera livrée** : (1) **A2 à `dernière update + 1 h`** : un rappel **à soi** est inoffensif et utile, avec **le même texte neutre** que A2 (« Tes proches aimeraient de tes nouvelles ») : **jamais** le mot « danger » ni « zone » dans la notification, et **pas d'étape A1 orange** en zone de danger ; (2) **B1 vers le cercle** : même texte neutre « Pas de nouvelles de {Prénom} depuis {heure} » à `dernière update + 1 h` **seulement si** le PM confirme ce délai pour le cercle (c'est un push, donc P2) ; (3) **aucune notification d'entrée ni de sortie de zone** (Q18) ; (4) la personne qui entre dans une zone de danger **doit voir** que le délai est plus court (transparence, risque R16 : zone utilisée comme outil de contrôle) ; (5) le Premium reste hors de cette règle. *Impact* : moteur A2 (une branche de plus, testée aux bornes 59 min / 1 h 01), consentement de la personne concernée, ticket Lieux.
+**Q27. [Décidée le 2026-11-08 : NON.]** Devenir rouge à cause de la règle de zone de danger **ne déclenche aucun rappel « à toi »** (ni N1 ni N2, ni A1 ni A2). L'information de la personne passe par **N6** (§20.7), une seule fois, à l'entrée. Les rappels de la version précédente de ce ticket (A2 à `dernière update + 1 h`) sont **abandonnés**.
 
 ---
 
@@ -870,7 +869,10 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 | **E9** | Maquette `reglages/Welcoming screen-7.png` : « classiques / intelligentes » | Figma | Remplacée par des interrupteurs par type (Q20) |
 | **E10** | Maquette `01-notifications.png` : vouvoiement, « n'est toujours pas rentrée », accord de genre ; exemples fausses promesses en P0 | maquette | §8.3 |
 | **E11** | `data-model.md` §2.10 prévoit les jetons dans `users/{uid}/devices` **lisibles par leur propriétaire seul** ; un relais (b1) ne pourrait pas les lire sans droit admin | `data-model.md` | §4.3 : arbitrage pour `backend-data` (seulement si plan B) |
-| **E12** | **Exemplaire local du dépôt en retard** : `feed.md`, `update.md`, `session-appareil-unique.md`, `StatusColor` non lus | environnement | À relire avant NOTIF-3 ; ce document sera révisé si nécessaire |
+| **E12** | *(Résolu le 2026-11-08)* Exemplaire local en retard : `feed.md`, `update.md`, `session-appareil-unique.md`, `StatusColor`, `FeedBuilder`, le suivi des lieux ont été **relus dans le worktree à jour** pour §20 | environnement | Les sections §3 à §19 écrites avant cette relecture restent valables sauf là où §20 les remplace |
+| **E13** | Le ticket **Update** (« aucune notification », D10, critère A4) et le ticket **Feed** (« pas de cloche », D4, H1, C9) interdisent ce que le PM demande maintenant | `update.md`, `feed.md` | À lever par ces tickets (décisions du PM du 2026-11-08) |
+| **E14** | Le code rend la personne **rouge dès l'entrée** en zone de danger et l'update ne la ramène pas au vert (D8) ; la règle du PM du 2026-11-08 dit « rouge si la dernière update date de plus d'1 h » | `StatusColor`, `update.md` | À réconcilier par le ticket Feed (Q32) |
+| **E15** | Le code livré calcule les couleurs à **1 h / 2 h** (`StatusThresholds`) | code | Porter à **2 h / 4 h** (FEED-ALIGN) |
 
 ---
 
@@ -882,5 +884,273 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 4. **Décider** la trajectoire des proches (Q3, Q4) **avant la première bêta externe**.
 5. **Si Blaze** : saisir le moyen de paiement, créer l'alerte de budget, et (plus tard) la clé APNs.
 6. **Relire à voix haute** les textes de §5.3 (ton).
+
+---
+
+## 20. NOTIF-P0 : périmètre décidé sans serveur (PM, 2026-11-08)
+
+**Décisions du PM (2026-11-08)** : « avançons uniquement sur ce qu'il est possible de faire SANS SERVEUR » ; **Q9 = NON à ma recommandation** (pour Loisir et Autre, **le nom du lieu est affiché**, même à l'écran verrouillé ; jamais l'adresse) ; **Q27 = NON** (**la zone de danger ne crée aucun rappel « à toi » de type N1 / N2**) ; **N6 ajoutée** (l'utilisateur est informé quand il entre lui-même dans une zone de danger) ; **confirmations du PM** : N4 = « Ta Miff est passée en rouge » ; **la limite iOS de N3 / N4 est ACCEPTÉE** ; **N5 est ABANDONNÉE** pour l'instant (elle exige un serveur) et classée en phase 2. **Le périmètre P0 est donc : N1, N2, N3, N4, N6 + autorisation + Réglages > Notifications + centre local.** Cette section **prime sur §5 à §13 pour P0** (textes, déclencheurs, plafonds) : elle remplace A1 / A2 par **N1 / N2** (textes du PM, mot pour mot) et ajoute N3 à N6. Les questions Q3, Q4, Q5, Q6 et Q23 (push vers les proches) sont **suspendues** jusqu'à P2.
+
+**Lecture du code livré (worktree `docs/notifications-spec`, 2026-11-08)** :
+- la couleur d'un membre est calculée **sur le téléphone qui regarde** par `StatusColor.level(facts, now)` ; la couleur de la Miff par `FeedBuilder.miffLevel` (rouge si au moins un membre est rouge ; verte si tous les statuts connus sont verts ; sinon orange ; neutres ignorés ; moi compris) ;
+- les statuts viennent d'un écouteur `miffs/{id}/status` **attaché seulement quand le Feed est à l'écran** et quand mon propre statut est publié (`StatusObserver`) ; une lecture forcée existe (`FeedRefresher`, ≈ 20 lectures pour 4 membres) ;
+- le suivi des lieux est **livré** : Android, `TrackingReceiver` (récepteur de géofence, `goAsync`, budget 8,5 s, **aucun service de premier plan**) puis `TrackingEngine` et `PresenceMachine` ; iOS, `TrackingRuntime` (relance de l'app par région, fenêtre d'une dizaine de secondes) puis `TrackingEngine`. Il exige « Toujours » + localisation précise + accord de partage (version 3) + session active ;
+- les seuils du code sont encore **1 h / 2 h** (`StatusThresholds`) : à porter à **2 h / 4 h** par le ticket Feed (§5.0) ; ils restent **la seule source** (critère STA9).
+
+### 20.1 Les cinq notifications du périmètre P0 (N1, N2, N3, N4, N6)
+
+| ID | Moment | Qui | Titre FR | Description FR | Au toucher | Possible sans serveur ? |
+|---|---|---|---|---|---|---|
+| **N1** | **Je** passe **orange** (Miff active du Feed), hors zone de danger | Moi | « Tu es passé orange » | « Indique à ta Miff que tout va bien. » | Écran **Update** (onglet central) | **Oui** (locale) |
+| **N2** | Je passe **rouge** (par l'écoulement des 4 h), hors zone de danger | Moi | « Tu es passé rouge » | « Indique à ta Miff que tout va bien. » | Écran **Update** | **Oui** (locale) |
+| **N3** | **30 min après** que la **Miff** est passée **orange**, **si elle l'est toujours** au moment de partir et **sauf si je suis responsable** | Moi, observateur | « Ta Miff est passée en orange » | « Prends des nouvelles de tes proches. » | Écran **Feed** | **Android : oui** (vérification au déclenchement) ; **iOS : best effort** (§20.5) |
+| **N4** | Idem pour **rouge** (**confirmé par le PM** : « rouge ») | Moi, observateur | « Ta Miff est passée en rouge » | « Prends des nouvelles de tes proches. » | Écran **Feed** | Idem N3 |
+| ~~N5~~ | *Un autre membre entre dans une zone de danger → tous les membres* | — | — | — | — | **ABANDONNÉE tant que Blaze / un relais n'est pas décidé** (phase 2, §20.6) : **hors du périmètre P0** |
+| **N6** | **J'entre moi-même** dans une zone de danger | Moi | « Tu es dans une zone de danger de ta Miff » | « Pendant que tu y es, tes proches voient un état différent. » | Écran **Feed** | **Oui** (locale, immédiate, **0 €**) |
+
+Anglais proposé : N1 « You've turned orange » / « Let your Miff know everything's fine. » ; N2 « You've turned red » ; N3 « Your Miff has turned orange » / « Check in on your loved ones. » ; N4 « Your Miff has turned red » ; N6 « You're in a danger zone of your Miff » / « While you're there, your circle sees a different status. » **Exigence du PM : toutes consultables dans le centre de notifications** (§20.4).
+
+**Zone de danger et rappels** (**Q27 = NON, décidé**) : une personne devenue rouge **à cause de la zone de danger** ne reçoit ni N1 ni N2 ni aucun rappel de type « publie une update » ; elle reçoit **N6 une seule fois, à l'entrée** (§20.7). Les **proches**, eux, sont concernés comme pour toute couleur de la Miff : N3 / N4 s'appliquent à la couleur de la Miff, que la cause soit une zone de danger ou le temps.
+
+**Remarques de ton et de langue (textes du PM conservés mot pour mot, **décidés** ; à relire à voix haute avant la recette)** : (1) « Tu es passé orange » omet le « en » de la bulle d'incitation de l'Update (« Tu es passé en orange ») ; (2) « passé » n'est pas accordé (même choix que la bulle, D21) ; (3) « Ta Miff est passée en orange » est un **fait au passé** : il reste vrai même si la couleur a changé depuis, ce qui limite l'effet d'une notification obsolète (§20.5).
+
+### 20.2 Définitions exactes (le vocabulaire commun)
+
+- **M** = la **Miff active**, celle affichée dans le Feed (préférence locale existante). **N1 à N4 ne concernent que M.** Un compte gratuit n'a qu'une Miff. (N6 : §20.7.)
+- **Faits d'un membre** (`MemberStatusFacts`) : partage actif, `presence` (`in_trusted`, `out`, `in_risk`, `unknown`), `presenceAt`, `lastUpdateAt`. **Aucune position, aucun nom de lieu.**
+- **Niveau d'un membre à l'instant t** : `StatusColor.level(facts, t)` ; ordre neutre < vert < orange < rouge ; seuils **2 h / 4 h** (orange à `ref + 2 h`, rouge au-delà de `ref + 4 h`, `ref` = le plus récent de `presenceAt` et `lastUpdateAt`) ; en zone de danger : rouge si la dernière update date de plus d'1 h, la zone de confiance l'emporte (§5.0).
+- **Niveau de la Miff à t** : `miff(t) = FeedBuilder.miffLevel(niveaux de tous les membres à t)`.
+- **Instants de changement** : une **nouvelle fonction pure** `StatusColor.changeInstants(facts, now)` (même fichier que les seuils, mêmes constantes, **à l'identique sur Android et iOS**) renvoie les instants où le niveau d'un membre **peut** changer : `out` → `[ref + orangeAfter, ref + redAfter + 1 ms]` ; `in_risk` → `[repère + 1 h + 1 ms]` (repère : Q32) ; sinon `[]`. Test de contrat : `level(t − 1 ms) ≠ level(t)` à chaque instant renvoyé, constant entre deux instants.
+- **Début d'un épisode de la Miff** : pour une couleur C (orange, rouge), `startOf(C)` = le **dernier instant** `c ≤ maintenant` où `miff(c − 1 ms) ≠ C` et `miff(c) = C`, évalué **avec les faits actuels** ; si la Miff est dans cette couleur depuis toujours selon les faits : le plus ancien instant de changement. Une couleur **continue** = un seul épisode ; la Miff qui repasse vert puis orange en crée un nouveau.
+- **« Je suis responsable »** (N3 / N4) : mode **LARGE** (recommandé) : `responsable(t) = ( monNiveau(t) = miff(t) )` (je **contribue** à la couleur de la Miff, donc j'ai déjà N1 / N2 pour ce passage) ; mode **STRICT** : `monNiveau(t) = miff(t)` **ET** `miffSans(moi)(t) ≠ miff(t)` (je suis la **seule** cause). **Q28 tranche.** Exemples : moi orange, autres verts → responsable (les deux modes) ; moi orange et Thomas orange → LARGE : responsable (pas de N3), STRICT : non (N3) ; moi vert, Thomas orange → non responsable ; moi orange, Thomas rouge (Miff rouge) : N4 possible.
+- **Épisode et clé de déduplication** : `n1|{miffId}|{moi}|{ref}`, `n2|…|{ref}` (une nouvelle update ou un nouveau départ change `ref`) ; `n3|{miffId}|{début d'épisode orange}`, `n4|{miffId}|{début d'épisode rouge}` ; `n6|{miffId}|{placeId}|{presenceAt}`. Une clé **déjà notifiée** (liste locale, conservée 48 h) n'est **jamais** renotifiée.
+
+### 20.3 Machine d'états de N1 à N4
+
+États : **PLANNED** (programmée) → **SHOWN** (affichée) ou **SILENT** (entrée de centre sans notification système : app au premier plan, rattrapage tardif) ou **CANCELLED** (jamais affichée) ou **DROPPED** (vérification négative, plafond).
+
+**Fonction pure `plan(entrée) → notifications à programmer`** (entrée : `now`, M, `myUid`, faits de tous les membres de M, préférences, compteurs du jour, session valide, état de l'autorisation) :
+
+1. **Garde-fous** : pas de session valide, pas de Miff active, **interrupteur général coupé**, autorisation refusée, **mon partage arrêté ou mon accord en attente** → **liste vide**.
+2. **N1** (interrupteur actif ; **seulement si `presence = out`** : jamais en zone de danger, Q27) : `a` = premier instant de `changeInstants(mes faits)` où `monNiveau = orange`. Si `a > now` : programmer N1 à `a`. Si `a ≤ now` et monNiveau = orange : rattrapage (§20.8). Clé `n1|…|ref`.
+3. **N2** (idem, `presence = out`) : premier instant où `monNiveau = rouge`. **Aucun N2 pour un rouge dû à la zone de danger.**
+4. **N3 / N4** (interrupteur actif) : `E = startOf(C)` de la Miff (futur ou passé) ; `F = E + 30 min`. Programmer à `F` **si et seulement si** `miff(F) = C` **ET non** `responsable(F)` avec les faits actuels (projection). Si `F ≤ now` : rattrapage. Si la Miff passe rouge **avant** F : N3 n'est pas programmée.
+5. **Un seul rappel en attente par type et par Miff** (identifiants fixes `n1`…`n4` + `miffId`) : **au plus 4 demandes en attente** (loin de la limite iOS de 64).
+6. Sortie triée par instant ; **idempotente**.
+
+**Réconciliation `reconcile(raison)`** : `ancien` = demandes en attente ; `nouveau = plan(…)` ; annuler ce qui n'est plus dans `nouveau` ou a changé d'instant, programmer le reste ; jamais deux fois la même clé. Appelée à : lancement et retour au premier plan, **chaque changement d'un statut** (écouteur du Feed), **ma propre écriture de statut** (départ ou arrivée détectés par le suivi des lieux, publication d'une update), changement de Miff active, changement d'une préférence ou de l'autorisation, redémarrage, changement d'heure ou de fuseau, mise à jour de l'app, changement de langue (iOS : texte figé).
+
+| Événement | N1, N2 | N3, N4 |
+|---|---|---|
+| **J'ai publié une update** | Annulées ; reprogrammées avec le nouveau `ref` s'il y a lieu | Replanifiées |
+| **Je suis entré dans un lieu de confiance** (vert) | Annulées | Replanifiées |
+| **Je suis entré dans une zone de danger** | **Annulées** (plus aucun rappel « à toi », Q27) ; **N6** (§20.7) | Replanifiées (je suis responsable en mode LARGE) |
+| **Un autre membre** publie, entre, part, arrête de partager | Sans effet | Replanifiées (annulées si la Miff n'a plus la couleur à F, ou si je deviens responsable) |
+| **Je change de Miff active** | **Toutes** annulées ; replanifiées pour la nouvelle M (l'écouteur s'attache dans le Feed) ; clés déjà notifiées conservées | Idem |
+| **Je quitte la Miff / retiré / Miff supprimée / partage arrêté / accord attendu** | Annulées | Annulées |
+| **Interrupteur de type ou général coupé** | Annule le type (ou tout) **dans la seconde** | Idem |
+| **Autorisation du téléphone retirée** | Annulées au prochain lancement ; bandeau dans le centre | Idem |
+| **Déconnexion, suppression de compte, session prise par un autre appareil** | **Tout annulé**, clés notifiées et centre **purgés** (contrat DUR-3) | Idem |
+| **Redémarrage / heure / fuseau / mise à jour** (Android) | Reprogrammées depuis l'instantané local | Reprogrammées |
+
+**Source des données hors premier plan** : un **instantané local** (`NotifPlanSnapshot` : `miffId`, `myUid`, faits de chaque membre `{uid, partage, presence, presenceAt, lastUpdateAt}`, `savedAt`), écrit à **chaque** réponse de l'écouteur du Feed et à chaque écriture de mon statut. **Ni position, ni nom de lieu, ni photo.** Purgé avec le cache (déconnexion, suppression, perte d'accès). Sans lui, ni la reprogrammation après redémarrage ni la vérification ne sont possibles.
+
+**Plafonds par jour** (jour local, **proposés**, Q30) : **2 par type** (N1, N2, N3, N4) et **6 au total** ; **N6 : 3 par jour, hors du plafond de 6** ; au-delà : pas de notification système, **entrée de centre silencieuse** (Android). **Nuit calme** (22 h – 7 h, heure locale **à l'affichage**, interrupteur actif par défaut) : N1, N3 et N6 **sans son ni vibration** ; N2 et N4 **normales** (Q30). Android : canaux `…` et `…_quiet` (importance basse) choisis **à l'affichage** ; iOS : `interruptionLevel = .passive` si la nuit à l'instant programmé.
+
+**Hors connexion, app tuée, redémarrage, heure et fuseau** (voir §5.7) : (1) **instants absolus** (ref + durée) : l'heure d'été ne décale rien ; (2) Android : `RTC_WAKEUP` **inexactes**, reprogrammées à `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `ACTION_TIME_CHANGED`, `ACTION_TIMEZONE_CHANGED` ; (3) iOS : déclencheur **par intervalle** (`fireAt − now`, ≥ 1 s) recalculé à chaque premier plan ; (4) hors connexion, N1 / N2 sont inchangées (décision locale) ; N3 / N4 : §20.5.
+
+**Foreground** : app au premier plan à l'heure prévue → **aucune notification système** (la bulle du Feed parle déjà) ; **entrée de centre silencieuse**.
+
+**Appareil remplacé** (`session-appareil-unique.md`) : Android : le récepteur **vérifie la session** avant d'afficher, et la perte de session annule tout ; iOS : une demande déjà en attente **peut encore s'afficher** sur l'ancien appareil jusqu'à sa prochaine ouverture ; les textes sont **génériques** (aucun nom). **Résiduel accepté par le PM (2026-11-08, avec la limite iOS de N3 / N4).**
+
+### 20.4 Centre de notifications : ce que contiennent N1 à N4 et N6
+
+Entrée locale (`notif_item` : `id` = clé de déduplication, `type` N1 à N4 ou N6, `miffId`, `createdAt`, `readAt`, `state` SHOWN ou SILENT). Créée : **Android** : à l'affichage, au premier plan (SILENT), au rattrapage tardif (SILENT) ; **iOS** : **à l'ouverture suivante**, par réconciliation (toute demande dont l'heure est passée et non annulée est inscrite SHOWN ; limite : on ne sait pas si elle a été balayée) ; **N6 (iOS)** : inscrite **par le moteur de suivi** au moment de l'affichage (l'app est alors réveillée). Texte du centre = texte de la notification ; toucher ouvre la même destination (Update pour N1 / N2, Feed pour N3 à N6) ; entrée d'une Miff autre que la Miff active : **nom de la Miff affiché**, le toucher ouvre le Feed de la Miff active (jamais d'erreur). Rétention : 30 jours ou 100 éléments. Wireframes : §7.2 et §9.1.
+
+### 20.5 Faisabilité honnête de N1 à N4, plateforme par plateforme
+
+**N1 / N2 : locales, faisables sur les deux plateformes, 0 €.** Le départ d'un lieu est détecté par le suivi des lieux (livré) : c'est **à cet instant** que l'appareil programme N1 et N2 (réveil de l'app en arrière-plan par la géofence).
+
+| | Android | iOS |
+|---|---|---|
+| Programmation | `AlarmManager.setAndAllowWhileIdle` (inexacte). **Vérifié** (developer.android.com, « Schedule alarms ») : jamais avant l'heure ; Android 12+ : délivrée **dans l'heure** qui suit sauf économie d'énergie ; **Doze** : au plus une par 9 min et par app ; `SCHEDULE_EXACT_ALARM` refusée par défaut et `USE_EXACT_ALARM` réservée aux réveils / agendas : **non utilisées** | `UNUserNotificationCenter`, déclencheur par intervalle, **64 demandes en attente au plus** **[À vérifier]** (page Apple non chargeable) |
+| App fermée | L'alarme survit à la fermeture ; **disparaît à l'arrêt de l'appareil** (**vérifié** : reprogrammer) ; **un arrêt forcé ou un nettoyage constructeur (ColorOS) peut l'annuler** (dontkillmyapp : « aucune solution côté développeur connue ») | Délivrée app fermée **[À vérifier]** |
+| Annulation | **Excellente** : la cause (mon update, mon entrée dans un lieu) est une action **de mon propre téléphone** ; au déclenchement, le récepteur recalcule mon niveau avec l'instantané et n'affiche pas N1 si je ne suis plus orange | Même fiabilité d'annulation ; **pas de recalcul au déclenchement** : la demande est annulée dès que mon téléphone agit |
+| Limite | Retard possible (≤ 1 h en pire cas) : aucun texte ne contient de durée | Si la géofence de **sortie** n'a pas réveillé l'app, **rien n'est programmé** (pas de N1) |
+
+**N3 / N4 : la difficulté est « toujours orange au moment de partir ».**
+
+*Android : faisable, avec vérification.* À l'alarme, un travail expédié (WorkManager `setExpedited`, **vérifié** : démarre dès que le quota système le permet, moins affecté par Doze et l'économie d'énergie) :
+1. vérifie **session valide** (identifiant d'appareil), interrupteurs, autorisation, plafonds, clé non notifiée ;
+2. **relit les statuts de M sur le serveur** (`get(Source.SERVER)` de `miffs/{id}/status`, délai 10 s) : **N lectures + 3 lectures de règles** (7 pour 4 membres), **au plus 2 vérifications par épisode** ; refus de permission : abandon silencieux ;
+3. **recalcule** `miff(now)` et `responsable(now)` avec ces faits **frais** ; si `miff(now) = C` et non responsable : **affiche** ; sinon **abandon silencieux** ;
+4. **hors connexion** : une seule reprise 10 min plus tard, puis abandon silencieux (**Q33**) ;
+5. met à jour l'instantané et lance `reconcile`.
+
+À **vérifier en recette** : authentification Firebase et **App Check** (Play Integrity) obtenus **en arrière-plan** ; comportement de l'OPPO sous ColorOS ; **coût** ≤ 14 lectures par épisode et par observateur (négligeable face aux 50 000 lectures gratuites par jour, §4.5).
+
+*iOS : best effort, la condition ne peut pas être vérifiée.* Une notification locale **n'exécute aucun code avant son affichage** (l'extension de service ne vaut que pour les notifications distantes) **[À vérifier]**. Parades gratuites, **cumulées** :
+1. **réévaluer et reprogrammer à chaque ouverture, retour au premier plan et réponse de l'écouteur** (même identifiant : la demande est remplacée ou supprimée) ;
+2. **`BGAppRefreshTask`** demandé pour `F − 10 min` : lit les statuts (≈ 7 lectures), réévalue, **supprime** la demande si la condition n'est plus vraie. **Opportuniste, aucune garantie** **[À vérifier]** ;
+3. **réveils opportunistes** : régions de **mes** lieux, changement de réseau ;
+4. **horizon** : ne programmer N3 / N4 que si `F − savedAt ≤ 3 h` (constante) ;
+5. **formulation au passé**, vraie même périmée : « Ta Miff **est passée** en orange » ;
+6. **retrait à la reprise** (`removeDeliveredNotifications`) si la couleur est revenue ;
+7. **compteur local** (jamais envoyé) des notifications « affichées alors que la couleur était déjà revenue ».
+
+**Risque de fausse alerte (iOS)** : une N3 / N4 est fausse quand la couleur de la Miff est revenue **entre la dernière donnée de l'observateur et `F`**. Or **N1 / N2 invitent justement la personne à publier dans cette fenêtre** : plus N1 / N2 réussissent, plus N3 / N4 se trompent sur iOS. `P(fausse alerte) ≈ c × (1 − r)`, `c` = part des épisodes qui se terminent dans les 30 min (publication provoquée par N1, retour dans un lieu), `r` = part des cas où l'app de l'observateur a pu se rafraîchir avant `F`. **Valeurs inconnues** ; sensibilité (r = 10 %) : c = 10 % → **9 %** ; 30 % → **27 %** ; 50 % → **45 %**. **Android avec vérification : ≈ 0 par construction**, remplacée par un risque d'**omission** (alarme tuée, hors connexion), **à mesurer sur l'OPPO**. **Limite iOS ACCEPTÉE par le PM (2026-11-08)** : N3 / N4 sont livrées sur iOS en **best effort** avec les sept parades ci-dessus et la mesure en bêta ; une fausse alerte reste possible ; **l'horizon de 3 h (parade 4) est le réglage par défaut proposé** (une constante, modifiable après les premières mesures).
+
+### 20.6 N5 (phase 2) : « {Prénom} est dans une zone de danger » vers les autres membres : **ABANDONNÉE tant que Blaze / un relais n'est pas décidé**
+
+**Décision du PM (2026-11-08)** : N5 est **abandonnée pour l'instant** ; elle est **retirée du périmètre P0** (aucun ticket, aucun interrupteur, aucune clé de texte active, aucune promesse dans l'app ni dans les fiches de store). Elle redeviendra une option **si et seulement si** le PM décide Blaze (recommandé) ou un relais (plan B) : cette section est conservée **pour mémoire**, avec l'analyse de faisabilité et le ton à adopter ce jour-là. En attendant, ce que les autres membres voient reste **dans le Feed, app ouverte** (bulle et carte « Dans une zone de danger »).
+
+**Pas faisable de façon fiable sans serveur.** L'événement naît sur le téléphone d'**un autre** membre ; il faut qu'**un code s'exécute sur le téléphone de chaque destinataire** sans qu'il ouvre l'app (§4.1) : seul un push (FCM) le permet, et FCM exige un expéditeur serveur.
+
+*Possible gratuitement (jamais une notification fiable)* : (1) **app ouverte** : le Feed l'affiche déjà (bulle rouge, carte « Dans une zone de danger ») ; (2) **à l'ouverture** : une **entrée de centre silencieuse** « {Prénom} est dans une zone de danger depuis {heure} » **si le statut est encore `in_risk`** (un statut est **écrasé** : si le membre est ressorti avant, **rien n'est tracé**) ; (3) **Android seulement, expérimental** : sondage périodique (WorkManager ≥ 15 min, **suspendu en Doze**, tué par certains constructeurs) **seulement pour une Miff qui possède une zone de danger** (Premium) : ≈ 96 lectures par jour et par membre concerné, délai de 15 à 30 min : **non recommandé** (deux produits différents).
+
+*Options pour la rendre fiable* : **(c) Blaze + Cloud Functions + FCM** : fonction déclenchée à l'écriture d'un `status` avec `presence = in_risk` ; **volume** : seulement les entrées en zone de danger (Premium, rares) : **≈ 0 $** même à 10 000 utilisateurs (§4.5), mais exige la carte, les jetons, la clé APNs, la politique de confidentialité et le consentement mis à jour (§12). **Plan B relais Cloudflare (b1)** : adapté à un événement sans cron : le téléphone de l'auteur appelle le relais avec son jeton d'identité, le relais relit ses droits **avec ce jeton**, compose le texte et envoie via un compte de service **limité à l'envoi FCM** ; limites : §4.3.
+
+**Si elle revient (phase 2)** : **avec Blaze**, variante A ci-dessous, et **la personne qui entre ne reçoit pas N5 : elle a N6** (§20.7).
+
+**Ton de N5 (CLAUDE.md : jamais alarmiste)** : « {Prénom} est dans une zone de danger » est **factuel mais alarmiste** pour les proches ; la phrase elle-même **n'a pas d'accord de genre**, c'est le mot « danger » qui pose problème (risque R1 déjà noté par le ticket Feed, qui a conservé ce libellé dans l'app, D5). Deux variantes plus calmes mais factuelles :
+- **A (garde le mot du PM, le cadre)** : « {Prénom} est dans une zone signalée par ta Miff » / « Depuis 16 h 40. Un petit message peut faire du bien. »
+- **B (sans le mot « danger »)** : « {Prénom} est dans un lieu signalé » / « Depuis 16 h 40. Ouvre Miff pour voir. »
+
+La zone de danger est **Premium, définie par le créateur** (`lieux-de-confiance.md`) : le Feed la **lit** déjà, sa **création** passe par le Premium accordé à la main ; sans zone, N5 et N6 n'existent pas.
+
+### 20.7 N6 : « Tu es dans une zone de danger de ta Miff » (j'entre moi-même)
+
+**Faisable gratuitement, sans serveur, sur les deux plateformes, pour 0 €** : l'entrée est détectée **sur mon propre téléphone** par le moteur de suivi livré ; la notification est **locale et immédiate**, **sans aucune lecture ni écriture Firestore**.
+
+**Déclencheur exact.** Le moteur de suivi **valide** (dans son état local) une présence **`in_risk` différente de la précédente** pour une Miff X : sur Android, `PresenceMachine.onTransition` renvoie un statut `in_risk` (événement d'entrée), ou `reconcile` en reconstruit un (redémarrage, ouverture) ; sur iOS, le même cas via `didEnterRegion` / `didDetermineState`. Conséquences, lues dans `PresenceMachine` : (1) **entrer dans une zone de danger en étant déjà dans une zone de confiance ne produit rien** (la confiance l'emporte, `derive` reste `in_trusted`) ; (2) **sortir d'une zone de confiance en restant dans une zone de danger produit `in_risk` : N6** ; (3) re-détection d'un état **déjà `in_risk`** (redémarrage, ré-armement) : **aucune** N6.
+
+**Machine d'états.**
+1. **Garde-fous** (tous locaux) : session active (le moteur vérifie déjà l'appareil), interrupteur général et interrupteur N6 actifs, autorisation du téléphone, zone de type `risk`.
+2. **Clé** `n6|{miffId}|{placeId}|{presenceAt}` ; **retard de réarmement 60 min** par `(miffId, placeId)` (une sortie et une rentrée rapprochées, typiques d'une géofence qui oscille, ne donnent **qu'une** N6) ; **plafond 3 par jour**, hors du plafond de 6.
+3. **Affichage immédiat**, **avant** l'écriture du statut sur le serveur (la notification ne dépend pas du réseau) ; app au premier plan : pas de notification système, entrée de centre SILENT ; nuit calme : sans son ; sinon importance normale.
+4. **Aucune annulation** (rien n'est en attente) ; **aucune notification de sortie** de zone.
+5. **Entrée de centre** : type N6, nom de la Miff **si le compte a plusieurs Miffs**.
+
+**« Déjà dedans à l'armement »** : au redémarrage ou à l'ouverture, le moteur reconstruit « où je suis » à partir d'une position récente : si la dernière présence écrite n'était **pas** `in_risk` et que je suis dans une zone de danger, un statut `in_risk` est écrit (« une arrivée est ce que « déjà dedans » veut dire », DET3) : **N6 part une fois** (c'est vrai maintenant, et mes proches me voient rouge) ; si c'était déjà `in_risk`, **rien**. Sur iOS, `requestStates` à l'armement suit le même chemin.
+
+**Contraintes de plateforme.**
+- **Android** : le récepteur de géofence (`TrackingReceiver`) s'exécute **app fermée**, dans une fenêtre de ~10 s (`goAsync`, budget 8,5 s dans le code) ; **aucun service de premier plan** n'est nécessaire : poster une notification depuis le récepteur est la même opération que l'écriture du statut, déjà faite à cet endroit. Délai de détection : **celui du système** (non garanti, de quelques dizaines de secondes à quelques minutes) **[À vérifier]**. Fiabilité : celle du suivi (« Toujours » + localisation précise + accord de partage v3 ; ColorOS peut retarder ; ré-armement après redémarrage déjà géré).
+- **iOS** : la surveillance de régions **relance l'app terminée** (une dizaine de secondes, `TrackingRuntime`) ; on y ajoute une demande immédiate à `UNUserNotificationCenter`. Réserves **[À vérifier]** : l'iPhone ne relance pas toujours l'app après une fermeture forcée par l'utilisateur ; délai de détection d'une région (de l'ordre de la minute) ; rayon minimal conseillé.
+- **Coût** : **0** (aucune lecture, aucune écriture, aucun service payant).
+- **Zone non livrée** : la zone de danger est **livrée** côté création (**Premium**, accordé à la main, créateur de la Miff seul) et côté lecture (le Feed l'affiche) ; N6 **ne se produit qu'une fois qu'un créateur Premium en a posé une**, et **une personne gratuite dans cette Miff la reçoit aussi** (la zone s'applique à tous les membres).
+
+**Texte (calme, factuel, sans accord de genre, tutoiement)** :
+- **Variante A (recommandée ; reprend la formule à la 2e personne déjà recommandée par le ticket Feed, Q3)** : titre « Tu es dans une zone de danger de ta Miff » / corps « Pendant que tu y es, tes proches voient un état différent. » ; EN « You're in a danger zone of your Miff » / « While you're there, your circle sees a different status. »
+- **Variante B (plus douce, sans « danger »)** : « Tu es dans une zone signalée par ta Miff » / « Pendant que tu y es, tes proches voient un état différent. » ; EN « You're in a zone flagged by your Miff ».
+
+**Action au toucher : le Feed** (carte « moi » : « Tu es dans une zone de danger de ta Miff » ; la bulle d'incitation y est visible). **Pas l'Update** : en zone de danger, publier une update **ne ramène pas au vert** (D8 de l'Update) ; la bulle d'incitation existante invite déjà à publier. Aucun bouton d'action rapide.
+
+**Ton et transparence** : N6 est la **contrepartie de transparence** de ce que la Miff voit en zone de danger : la personne **sait** que sa Miff voit un état différent tant qu'elle est dans la zone (consentement explicite, risque d'outil de contrôle R16 déjà noté). Le texte **dit le fait** (« zone de danger de ta Miff » : zone définie par le cercle, pas un jugement sur la personne) et **la conséquence** sans l'alarmer. Il ne contient **aucun nom de lieu** ni adresse. Le **texte de consentement d'entrée dans une Miff** devra aussi mentionner l'existence de zones de danger (point déjà ouvert au ticket Feed, Q3).
+
+### 20.8 Rattrapage et cas limites (N1 à N4)
+
+- **Instant déjà passé à la planification** (`F ≤ now`) : app **au premier plan** → entrée de centre silencieuse ; **arrière-plan** (redémarrage, travail différé, alarme tardive) et retard **≤ 15 min** → affichage immédiat (après la vérification pour N3 / N4) ; retard **> 15 min** → entrée de centre silencieuse.
+- **N1 qui se déclenche alors que je suis déjà rouge** : non affichée (N2 prend le relais) ; **N3 alors que la Miff est déjà rouge** : abandon.
+- **Moi seul dans la Miff** : jamais de N3 / N4 (je suis responsable).
+- **Orange et rouge atteints au même instant** : la plus haute couleur l'emporte, N3 est abandonnée.
+- **Mon partage est arrêté** : plus aucune notification (statuts non lus, mon statut supprimé).
+- **Horloge fausse** : un repère dans le futur compte comme « maintenant » (vert), comme `StatusColor`.
+
+### 20.9 Vecteurs de test (le contrat de `plan` et de N6)
+
+Convention : membres **moi**, **X**, **Y** ; tous partagent ; mêmes jour et fuseau ; seuils 2 h / 4 h ; mode LARGE ; M active ; autorisation accordée ; « verts » = `in_trusted`.
+
+| # | Faits | `now` | Sortie attendue |
+|---|---|---|---|
+| T1 | Moi `out` ref 13:40 ; X, Y verts | 14:00 | N1 **15:40**, N2 **17:40** ; **ni N3 ni N4** (responsable) |
+| T2 | Moi vert ; X `out` ref 13:40 | 14:00 | Pas de N1 / N2 ; N3 **16:10** ; N4 **18:10** |
+| T3 | X `out` ref 13:40, moi `out` ref 13:50 | 14:00 | N1 **15:50**, N2 **17:50** ; LARGE : ni N3 ni N4 ; STRICT : N3 **16:10**, N4 **18:10** |
+| T4 | X `out` ref 13:40 ; Y `out` ref 14:30 ; moi vert | 14:45 | N3 **16:10** ; N4 **18:10** |
+| T5 | Comme T2 ; **X publie à 15:50** | 15:55 | N3 et N4 **annulées** ; nouvelles : N3 **18:20**, N4 **20:20** |
+| T6 | **Moi** `in_risk` (règle PM : rouge après 1 h sans update) | 15:10 | **Aucun N1, aucun N2** (Q27 = NON) ; si X est vert : pas de N3 / N4 (responsable) |
+| T6b | X `in_risk` repère 15:00 ; moi vert | 15:10 | Pas de N3 (pas d'orange) ; N4 **16:30** |
+| T7 | Comme T2 ; Y passe rouge à 16:05 | 16:05 | N3 **abandonnée** ; N4 **16:35** |
+| T8 | Comme T2 ; vérification Android à 16:10 : X a publié à 16:00 | 16:10 | **Abandon silencieux** ; iOS (aucune vérification) : affichée si non réévaluée (fausse alerte) |
+| T9 | Troisième N1 de la journée | — | Pas de notification ; entrée de centre silencieuse (Android) |
+| T10 | Changement de Miff active à 16:05 | 16:05 | **Tout annulé** ; replanifié pour la nouvelle M |
+| T11 | Redémarrage Android à 16:00, instantané de 15:55 | 16:00 | N3 **16:10** reprogrammée ; vérification au déclenchement |
+| T12 | App au premier plan à 16:10 | 16:10 | Pas de notification système ; entrée de centre silencieuse |
+| T13 | N3 due à 23:10 | 23:10 | Affichage **silencieux** |
+| T14 | Autorisation refusée | — | Liste vide ; bandeau « coupées » |
+| T15 | Mon partage arrêté | — | Liste vide ; demandes annulées |
+| V1 | Moi `out` ; j'entre dans une zone de danger de X (hors zone de confiance) | — | **N6 immédiate** ; N1 / N2 annulées |
+| V2 | Moi dans une zone de confiance **et** dans une zone de danger (confiance l'emporte) | — | **Pas de N6** ; puis je sors de la zone de confiance en restant dans la zone de danger : **N6** |
+| V3 | Redémarrage, déjà `in_risk` avant | — | **Aucune** N6 |
+| V4 | Redémarrage, dernière présence `out`, je suis dans la zone | — | **N6 une fois** |
+| V5 | Sortie puis rentrée dans la même zone en moins de 60 min | — | **Une seule** N6 |
+| V6 | Entrée à 02:00 | 02:00 | N6 **silencieuse** (sans son) |
+| V7 | Quatrième entrée du jour (plafond 3) | — | Pas de notification ; entrée de centre silencieuse |
+| V8 | App au premier plan | — | Pas de notification système ; entrée de centre silencieuse |
+| V9 | Interrupteur N6 coupé ou autorisation refusée | — | Aucune notification |
+| V10 | Compte gratuit membre d'une Miff dont le créateur Premium a posé la zone | — | **N6** reçue |
+
+### 20.10 Textes et clés (en plus de §11)
+
+| Clé | FR | EN |
+|---|---|---|
+| `notif_n1_title` / `_body` | Tu es passé orange / Indique à ta Miff que tout va bien. | You've turned orange / Let your Miff know everything's fine. |
+| `notif_n2_title` / `_body` | Tu es passé rouge / Indique à ta Miff que tout va bien. | You've turned red / Let your Miff know everything's fine. |
+| `notif_n3_title` / `_body` | Ta Miff est passée en orange / Prends des nouvelles de tes proches. | Your Miff has turned orange / Check in on your loved ones. |
+| `notif_n4_title` / `_body` | Ta Miff est passée en rouge / Prends des nouvelles de tes proches. | Your Miff has turned red / Check in on your loved ones. |
+| `notif_n6a_title` / `_body` | Tu es dans une zone de danger de ta Miff / Pendant que tu y es, tes proches voient un état différent. | You're in a danger zone of your Miff / While you're there, your circle sees a different status. |
+| `notif_n6b_title` | Tu es dans une zone signalée par ta Miff | You're in a zone flagged by your Miff |
+| `notif_settings_n1` … `_n4`, `_n6` | Quand je passe orange / rouge ; quand ma Miff passe orange / rouge ; quand j'entre dans une zone de danger | When I turn orange / red; when my Miff turns orange / red; when I enter a danger zone |
+
+Les textes A1 / A2 / A3 de §5.3 sont **remplacés** pour P0 par N1 / N2.
+
+### 20.11 Réglages > Notifications en P0 (rappel de §9)
+
+Interrupteur général ; **cinq** interrupteurs (N1, N2, N3, N4, N6), **tous actifs par défaut** ; « Nuit calme » ; état de l'autorisation ; liens « Voir mes notifications » et « Si les rappels n'arrivent pas » (Android). **Aucun interrupteur N5** (indisponible : ne pas montrer ce qui ne marche pas). Préférences **locales**, effacées à la déconnexion. Désactiver N6 coupe **la notification**, jamais ce que la Miff voit (c'est dit dans l'écran).
+
+### 20.12 Tickets de développement, dans l'ordre
+
+**Prérequis hors ce ticket** : (a) **FEED-ALIGN** : `StatusThresholds` à 2 h / 4 h, règle de zone de danger (§5.0), fonction `StatusColor.changeInstants` sur Android et iOS (tests de contrat = §20.9) ; (b) **décisions du PM encore ouvertes** : Q28, Q30, Q33, Q34 (valeurs par défaut recommandées ci-dessous : **le développement peut commencer** avec elles et les ajuster) ; (c) lever par leurs tickets les phrases « aucune notification » (Update D10, A4) et « pas de cloche » (Feed D4, H1, C9).
+
+| # | Ticket | Contenu | Taille | Dépend de |
+|---|---|---|---|---|
+| **NOTIF-0** | Décisions et maquettes | Réponses Q28, Q30, Q33, Q34 ; maquettes M1 à M10 ; **les développeurs commencent sans attendre**, en suivant les wireframes de ce document et en listant leurs écarts dans la PR | S à M | — |
+| **NOTIF-1A** | **Android : autorisation** | Amorce corrigée, fenêtre `POST_NOTIFICATIONS` (Android 13+), états, aide « coupées », canaux (famille et version calme), `RECEIVE_BOOT_COMPLETED` | M | NOTIF-0 ; ONB-4 |
+| **NOTIF-2A** | **Android : Réglages > Notifications** | Interrupteurs §20.11, état de l'autorisation, préférences locales ; mise à jour des tests existants | M | NOTIF-1A |
+| **NOTIF-3A** | **Android : planificateur pur + instantané** | `changeInstants`, `plan`, `reconcile`, instantané, clés, plafonds, nuit ; tests T1 à T15 | M à L | FEED-ALIGN |
+| **NOTIF-4A** | **Android : N1 et N2** | Alarmes inexactes, récepteurs, branchements (suivi des lieux, Update, changement de Miff, redémarrage, heure, session), routage vers l'Update | L | 1A, 2A, 3A |
+| **NOTIF-5A** | **Android : N3 et N4** | Alarme à `F`, travail expédié, lecture serveur, recalcul, abandon silencieux, reprise hors connexion | L | 4A |
+| **NOTIF-6A** | **Android : centre local** | Cloche (point), liste, états, lu / non lu, suppression, base locale, rétention, routage | M | 4A (parallèle de 5A) ; en-tête du Feed (D41) |
+| **NOTIF-7A** | **Android : N6** | Crochet dans le moteur de suivi (après validation d'une présence `in_risk`), clé, retard de réarmement 60 min, plafond, nuit, premier plan, entrée de centre, routage vers le Feed ; tests V1 à V10 | S à M | 1A, 2A, 6A (écriture du centre) ; suivi des lieux (livré) |
+| **NOTIF-1I à 7I** | **iOS** : mêmes livrables ; `UNUserNotificationCenter`, déclencheur par intervalle ; **N3 / N4 en best effort** (`BGAppRefreshTask`, horizon 3 h, retrait à la reprise, compteur local) ; N6 depuis `TrackingRuntime` ; TestFlight sur l'iPhone 11 Pro | — | Idem | Équivalents Android ; INIT-4 |
+| ~~NOTIF-S-N5~~ *(phase 2, **abandonnée** tant que Blaze / un relais n'est pas décidé)* | N5 : fonction ou relais, jetons, canaux, consentement | L | Décision Blaze |
+
+**Critères d'acceptation** : **N-P0-1** les vecteurs T1 à T15 et V1 à V10 passent sur les deux plateformes ; **N-P0-2** N1 / N2 n'apparaissent que si le niveau est bien orange / rouge à l'affichage (Android) ; **N-P0-3** publier une update annule N1 à N4 dans la seconde ; **N-P0-4** aucun doublon après redémarrage, heure ou fuseau ; **N-P0-5** changer de Miff active n'affiche rien de l'ancienne Miff ; **N-P0-6** Android : N3 / N4 vérifient le serveur et ne coûtent pas plus de N + 3 lectures par vérification ; **N-P0-7** iOS : au plus 4 demandes en attente ; **N-P0-8** les textes sont ceux du PM ; **N-P0-9** toutes sont dans le centre (SHOWN ou SILENT) ; **N-P0-10** aucune position, aucun nom de lieu, aucune adresse dans l'instantané, le centre et les journaux ; **N-P0-11** N6 ne produit **aucune** lecture ni écriture Firestore et ne part qu'à l'entrée **effective** (jamais pour une zone de danger couverte par une zone de confiance, jamais pour un état déjà `in_risk`) ; **N-P0-12** aucune zone de danger ne crée de N1 ni de N2.
+
+**Maquettes à fournir (sans bloquer le démarrage)** : M1 pré-autorisation corrigée (exemple N1) ; M3 à M6 centre (liste, vide, chargement, coupées, menu, cloche) ; M7 et M8 Réglages > Notifications (états de l'autorisation, cinq interrupteurs, nuit calme) ; M9 écrans d'aide ; M10 formats de notification N1 à N4 et N6 (Android et iOS).
+
+### 20.13 Questions nouvelles pour le PM (suite de §17)
+
+**Décidées le 2026-11-08** : **Q9** (nom du lieu affiché pour Loisir et Autre, même à l'écran verrouillé) ; **Q27** (aucun rappel « à toi » en zone de danger) ; **Q29** (textes N1 à N4 confirmés) ; **Q31** (limite iOS de N3 / N4 acceptée) ; **N5 abandonnée** (phase 2). **Restent ouvertes, avec une valeur par défaut qui permet de démarrer** : **Q28** (responsabilité LARGE), **Q30** (plafonds et nuit), **Q33** (rien afficher si la vérification est impossible), **Q34** (détails de N6). Q32 ne concerne plus que le ticket Feed.
+
+**Q28. « Responsable du changement d'état » (N3 / N4).** Mode **LARGE** (je suis responsable si **ma couleur est celle de la Miff**) ou **STRICT** (seulement si je suis **la seule cause**) ?
+- *Reco* : **LARGE** : en Miff de 2 avec un seul lieu gratuit, STRICT donne **quatre notifications par jour et par personne** (N1, N3, N2, N4). *Impact* : fatigue ; une constante.
+
+**Q29. [Décidée le 2026-11-08.]** N4 = « Ta Miff est passée en rouge » **confirmé** ; N1 / N2 restent **exactement** « Tu es passé orange » / « Tu es passé rouge » (texte du PM, sans « en »). Rien à trancher.
+
+**Q30. Plafonds et nuit pour N1 à N4 et N6.**
+- *Reco* : 2 par type et par jour, 6 au total ; N6 : 3 par jour hors plafond ; nuit calme 22 h – 7 h : N1, N3, N6 silencieuses, N2 et N4 normales.
+
+**Q31. [Décidée le 2026-11-08 : ACCEPTÉE.]** Limite iOS de N3 / N4 (best effort, fausse alerte possible, condition non vérifiable à l'affichage) et **résiduel d'appareil remplacé** : acceptés, avec les parades et la mesure en bêta (§20.5). Reste un **réglage** : l'horizon de 3 h (constante, modifiable).
+
+**Q32. [N5 abandonnée le 2026-11-08 ; reste un point pour le ticket Feed.]** N5 est hors P0 (phase 2, abandonnée tant que Blaze / un relais n'est pas décidé). **Reste** : le **repère de l'âge** de la règle « rouge après 1 h » en zone de danger (le code actuel rend la personne **rouge dès l'entrée** et l'update ne la ramène pas au vert, D8 de l'Update : à réconcilier avec la règle du 2026-11-08).
+- *Reco* : repère = dernière update, ou arrivée en l'absence d'update. *Impact* : `StatusColor.changeInstants` pour `in_risk` ; ticket Feed (FEED-ALIGN), pas ce ticket.
+
+**Q33. Vérification impossible (Android hors connexion).** Ne **rien afficher** après une reprise à +10 min, ou afficher quand même ?
+- *Reco* : ne rien afficher (jamais de fausse alerte).
+
+**Q34. N6 (j'entre moi-même dans une zone de danger).** (a) **Portée** : toutes mes Miffs dont une zone de danger me rend `in_risk` (recommandé, avec le nom de la Miff si j'en ai plusieurs) ou la seule Miff active ? (b) **Texte** : variante A (reprend « zone de danger de ta Miff ») ou B (« zone signalée par ta Miff ») ? (c) **Action au toucher** : Feed (recommandé : l'Update ne ramène pas au vert en zone de danger). (d) **Nuit** : silencieuse (recommandé) ; plafond 3 par jour, retard de réarmement 60 min ; (e) **interrupteur** « Quand j'entre dans une zone de danger » **présent** (recommandé : on coupe la notification, pas ce que la Miff voit) ; (f) mentionner les **zones de danger** dans le texte de consentement d'entrée dans une Miff (transparence).
+- *Reco* : (a) toutes, (b) A, (c) Feed, (d) oui, (e) oui, (f) oui. *Impact* : une clé de texte ; consentement (`consentVersion`) ; aucun coût.
+
+---
 
 *Ce document ne modifie ni le code, ni Notion, ni Figma, ni les règles Firestore, ni les textes légaux. Aucun texte n'est présenté comme relu par un juriste.*
