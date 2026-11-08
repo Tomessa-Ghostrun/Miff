@@ -5,8 +5,8 @@ import Foundation
 ///
 /// Un écran qui ne doit PAS être quitté par geste : une opération est en cours (écriture du profil, création d'une Miff, publication
 /// ou suppression d'un lieu, ré-authentification de la suppression du compte), ou bien l'écran n'a pas de flèche de retour parce que
-/// son seul chemin est un bouton (« Continuer », « Annuler »). Les écrans de l'Update (viseur, aperçu avant publication) ne se quittent
-/// que par leurs boutons : ils déclarent leur verrou avec `SwipeBackLock` (UPDATE-3).
+/// son seul chemin est un bouton (« Continuer », « Annuler »). L'Update est un onglet de la coquille, jamais empilé : à profondeur 1
+/// le geste ne démarre pas. Si un écran de publication y est un jour empilé, il posera `.swipeBack(for:)` avec un cas ici.
 enum SwipeBackScreen: Equatable {
     case signUp
     case signIn
@@ -25,8 +25,6 @@ enum SwipeBackScreen: Equatable {
     /// Liste des Réglages, Mes informations, Mon compte, Confidentialité, aide à la détection.
     case settings
     case deleteAccount(isBusy: Bool)
-    case updateViewfinder
-    case updatePreview
 
     var allowsSwipeBack: Bool {
         switch self {
@@ -40,7 +38,7 @@ enum SwipeBackScreen: Equatable {
             return !isBusy
         case .deleteAccount(let isBusy):
             return !isBusy
-        case .createMiffReady, .joinMiffConfirm, .updateViewfinder, .updatePreview:
+        case .createMiffReady, .joinMiffConfirm:
             return false
         }
     }

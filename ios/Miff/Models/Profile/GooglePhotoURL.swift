@@ -41,6 +41,7 @@ enum GooglePhotoURL {
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               components.scheme?.lowercased() == "https",
               let candidate = components.host?.lowercased(),
+              url.host?.lowercased() == candidate,
               candidate == host || candidate.hasSuffix("." + host),
               components.user == nil,
               components.password == nil,

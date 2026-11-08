@@ -10,12 +10,15 @@ private final class FakePhotoSource: ProviderPhotoSource {
     var data: Data? = Data(count: 30_000)
     var delayNanoseconds: UInt64 = 0
     private(set) var fetched: [URL] = []
+    /// Le téléchargement a-t-il vu son annulation (délai dépassé, ou la personne a choisi une autre photo) ?
+    private(set) var sawCancellation = false
 
     func fetch(_ url: URL) async -> Data? {
         fetched.append(url)
         if delayNanoseconds > 0 {
             try? await Task.sleep(nanoseconds: delayNanoseconds)
         }
+        sawCancellation = Task.isCancelled
         return data
     }
 }
@@ -132,6 +135,21 @@ final class GooglePhotoPrefillTests: XCTestCase {
         let jpeg = await make(source: source, timeout: 0.1).prefill.load(address)
         XCTAssertNil(jpeg)
         XCTAssertLessThan(Date().timeIntervalSince(started), 2)
+        // Le téléchargement en cours a été annulé avec le délai, pas laissé tourner.
+        XCTAssertTrue(source.sawCancellation)
+    }
+
+    func testCancellingTheCallerCancelsTheDownload() async {
+        let source = FakePhotoSource()
+        source.delayNanoseconds = 3_000_000_000
+        let prefill = make(source: source).prefill
+        let address = self.address
+        let task = Task { await prefill.load(address) }
+        await waitUntil { !source.fetched.isEmpty }
+        task.cancel()
+        let jpeg = await task.value
+        XCTAssertNil(jpeg)
+        XCTAssertTrue(source.sawCancellation)
     }
 
     func testTheDefaultTimeoutIsShort() {

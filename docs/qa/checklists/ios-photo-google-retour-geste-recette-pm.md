@@ -15,6 +15,7 @@
 | A2 | Toucher la photo. | « Choisir une autre photo » et « Supprimer la photo ». |
 | A3 | Supprimer la photo. | La photo disparaît, l'appareil photo revient, la phrase aussi. |
 | A4 | Fermer l'app (balayage) et la rouvrir. | Vous revenez à l'étape profil **sans photo** (votre choix est respecté, elle n'est pas remise). |
+| A4b | Fermer l'app (tuée) APRÈS avoir tapé un prénom mais avant la fin du chargement de la photo (jouer sur un réseau lent), puis la rouvrir. | Le brouillon existe déjà : il écarte la photo Google (elle n'est reprise qu'à une création sans brouillon). C'est voulu et sans gravité : la photo se rajoute à la main. |
 | A5 | Refaire A1 avec un autre compte Google, choisir une autre photo dans la photothèque, recadrer, valider. | Votre photo remplace celle de Google ; plus de phrase. |
 | A6 | Terminer l'inscription (prénom, nom, téléphone). Ouvrir l'onglet Profil, puis Réglages > Mes informations. | La photo gardée est celle de votre profil (Google ou choisie), nette, ronde. Les autres membres d'une Miff la voient aussi. |
 | A7 | Compte Google SANS photo (silhouette). | Aucune photo préremplie, aucune phrase, aucun message d'erreur. |
@@ -42,6 +43,7 @@ Pour chaque ligne : ouvrir l'écran, glisser depuis le bord gauche vers la droit
 | B11 | Sur un écran racine (Feed, Profil, carrousel, première étape du profil) glisser depuis le bord | **Rien ne se passe** (pas de blocage de l'écran). |
 | B12 | Glisser à moitié puis relâcher | L'écran revient à sa place, rien de cassé. |
 | B13 | Tout de suite après avoir ouvert un écran (pendant l'animation), glisser | Pas de blocage ni d'écran vide. |
+| B14 | Recette à la main, au bord gauche d'une CARTE : Nouveau lieu (carte de choix de l'adresse) et détail d'un lieu (carte). Glisser depuis le tout bord gauche, puis déplacer la carte avec un doigt. | Le glissement qui part du bord quitte l'écran ; déplacer la carte plus au centre ne quitte pas l'écran et la carte reste utilisable (pas de blocage ni de geste qui se bat avec la carte). Si le retour par le bord gêne la carte, le dire : une zone de garde est possible. |
 
 ## Si quelque chose cloche
 

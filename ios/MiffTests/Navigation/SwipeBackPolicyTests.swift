@@ -43,16 +43,11 @@ final class SwipeBackPolicyTests: XCTestCase {
         XCTAssertFalse(SwipeBackScreen.deleteAccount(isBusy: true).allowsSwipeBack)
     }
 
-    func testTheUpdateViewfinderAndPreviewAreNeverLeftBySwipe() {
-        XCTAssertFalse(SwipeBackScreen.updateViewfinder.allowsSwipeBack)
-        XCTAssertFalse(SwipeBackScreen.updatePreview.allowsSwipeBack)
-    }
-
     func testLockingIsTheExactOppositeOfAllowing() {
         let all: [SwipeBackScreen] = [
             .signUp, .signIn, .passwordReset, .profilePhone(isWriting: true), .createMiffName(isSaving: true),
             .createMiffReady, .joinMiffCode, .joinMiffConfirm, .miff, .placeDetail, .placeForm(isBusy: false),
-            .placePaywall, .settings, .deleteAccount(isBusy: false), .updateViewfinder, .updatePreview
+            .placePaywall, .settings, .deleteAccount(isBusy: false)
         ]
         for screen in all {
             XCTAssertNotEqual(screen.allowsSwipeBack, screen.locksSwipeBack, "\(screen)")

@@ -9,10 +9,14 @@ protocol ProviderPhotoSource {
     func fetch(_ url: URL) async -> Data?
 }
 
-/// Tout le chemin entre l'adresse donnée par Google et l'avatar du profil : choisir l'adresse, télécharger UNE fois, décoder,
-/// découper le carré au centre, ré-encoder SANS MÉTADONNÉE en 20 000 octets au plus (les mêmes outils que la photo choisie par la
-/// personne : `AvatarCodec`, `AvatarCompression`). Rend nil quand quelque chose échoue, y compris après `timeout` : jamais une
-/// erreur, jamais plus d'attente que ce délai. L'inscription ne dépend jamais de ce résultat.
+/// Tout le chemin entre l'adresse donnée par Google et l'avatar du profil : choisir l'adresse, télécharger UNE fois, décoder (par le
+/// chemin strict des photos reçues du réseau : `AvatarCodec.decodeRemote`), découper le carré au centre, ré-encoder SANS MÉTADONNÉE en
+/// 20 000 octets au plus (les mêmes outils que la photo choisie par la personne : `AvatarCodec`, `AvatarCompression`). Rend nil quand
+/// quelque chose échoue, y compris après `timeout` : jamais une erreur, jamais plus d'attente que ce délai. L'inscription ne dépend
+/// jamais de ce résultat.
+///
+/// Tout tourne dans des tâches STRUCTURÉES : au délai, ou quand l'appelant annule (la personne a choisi une autre photo), le
+/// téléchargement en cours est annulé lui aussi.
 struct GooglePhotoPrefill {
     /// Court exprès : la photo est un plus, la personne ne doit pas l'attendre (l'étape profil est déjà utilisable).
     static let defaultTimeout: TimeInterval = 8
@@ -25,13 +29,25 @@ struct GooglePhotoPrefill {
         guard let url = GooglePhotoURL.select(provided) else {
             return nil
         }
-        // Le délai dépassé donne nil (try?) : la personne continue sans photo, sans rien lui dire.
-        let jpeg = try? await timedOperation(seconds: timeout) { await self.avatar(from: url) }
-        return jpeg
+        let nanoseconds = UInt64(max(timeout, 0) * 1_000_000_000)
+        // Le premier des deux gagne : la photo (ou son échec), ou le délai. L'autre est annulé aussitôt.
+        return await withTaskGroup(of: Data?.self) { group in
+            group.addTask { await self.avatar(from: url) }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: nanoseconds)
+                return nil
+            }
+            let first = await group.next()
+            group.cancelAll()
+            return first ?? nil
+        }
     }
 
     private func avatar(from url: URL) async -> Data? {
-        guard let bytes = await source.fetch(url), let photo = await codec.decode(bytes) else {
+        guard let bytes = await source.fetch(url), !Task.isCancelled else {
+            return nil
+        }
+        guard let photo = await codec.decodeRemote(bytes) else {
             return nil
         }
         let crop = CropMath.toCrop(

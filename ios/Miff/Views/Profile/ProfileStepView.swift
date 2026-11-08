@@ -142,6 +142,9 @@ struct ProfileStepContent: View {
 
 /// « On a repris ta photo Google, tu peux la changer. » : discret, calme, dit une fois à VoiceOver à son apparition.
 struct GooglePhotoHint: View {
+    /// Dit une seule fois, même si l'écran se redessine ou revient à l'affichage.
+    @State private var announced = false
+
     var body: some View {
         Text("profile_google_photo_hint")
             .miffTextStyle(textBodyRegular14)
@@ -150,6 +153,10 @@ struct GooglePhotoHint: View {
             .frame(maxWidth: .infinity)
             .padding(.top, Spacing.sm)
             .onAppear {
+                guard !announced else {
+                    return
+                }
+                announced = true
                 Announcer.announce(L10n.string("profile_google_photo_hint"))
             }
     }

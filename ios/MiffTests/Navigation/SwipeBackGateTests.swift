@@ -67,6 +67,32 @@ final class SwipeBackGateTests: XCTestCase {
         XCTAssertTrue(gate.gestureRecognizerShouldBegin(recognizer))
     }
 
+    func testAScreenThatIsDeallocatedWithoutReleasingItsLockFreesTheGesture() throws {
+        let navigation = makeNavigation(depth: 3)
+        let recognizer = try XCTUnwrap(navigation.interactivePopGestureRecognizer)
+        let gate = SwipeBackGate.gate(for: navigation)
+        var screen: SwipeBackLock.LockController? = SwipeBackLock.LockController()
+        gate.setLocked(true, owner: try XCTUnwrap(screen))
+        XCTAssertEqual(gate.lockCount, 1)
+        XCTAssertFalse(gate.gestureRecognizerShouldBegin(recognizer))
+        screen = nil
+        XCTAssertEqual(gate.lockCount, 0)
+        XCTAssertTrue(gate.gestureRecognizerShouldBegin(recognizer))
+    }
+
+    func testAnObjectThatReusesTheAddressOfADeadLockerDoesNotInheritItsLock() {
+        let navigation = makeNavigation(depth: 3)
+        let gate = SwipeBackGate.gate(for: navigation)
+        var first: NSObject? = NSObject()
+        if let owner = first {
+            gate.setLocked(true, owner: owner)
+        }
+        first = nil
+        let second = NSObject()
+        gate.setLocked(false, owner: second)
+        XCTAssertEqual(gate.lockCount, 0)
+    }
+
     func testTheNavigationIsFoundFromAChildOfAStackedScreen() {
         let navigation = makeNavigation(depth: 2)
         guard let screen = navigation.topViewController else {

@@ -15,16 +15,22 @@ private var gateStorageKey: UInt8 = 0
 @MainActor
 final class SwipeBackGate: NSObject, UIGestureRecognizerDelegate {
     private weak var navigation: UINavigationController?
-    private var lockers = Set<ObjectIdentifier>()
+    /// Les écrans qui verrouillent, retenus FAIBLEMENT : un écran désalloué sans avoir pu se déclarer libre ne bloque jamais le geste.
+    private var lockers: [ObjectIdentifier: WeakOwner] = [:]
 
     init(navigation: UINavigationController) {
         self.navigation = navigation
         super.init()
     }
 
-    /// Le nombre d'écrans qui verrouillent le geste en ce moment.
+    private struct WeakOwner {
+        weak var object: AnyObject?
+    }
+
+    /// Le nombre d'écrans qui verrouillent le geste en ce moment (ceux qui ont disparu ne comptent plus).
     var lockCount: Int {
-        lockers.count
+        lockers = lockers.filter { $0.value.object != nil }
+        return lockers.count
     }
 
     /// Le gardien de cette navigation (créé à la première demande).
@@ -76,9 +82,9 @@ final class SwipeBackGate: NSObject, UIGestureRecognizerDelegate {
     func setLocked(_ locked: Bool, owner: AnyObject) {
         let identifier = ObjectIdentifier(owner)
         if locked {
-            lockers.insert(identifier)
+            lockers[identifier] = WeakOwner(object: owner)
         } else {
-            lockers.remove(identifier)
+            lockers[identifier] = nil
         }
     }
 
@@ -86,7 +92,7 @@ final class SwipeBackGate: NSObject, UIGestureRecognizerDelegate {
     func mayBegin() -> Bool {
         SwipeBackPolicy.gestureMayBegin(
             stackDepth: navigation?.viewControllers.count ?? 0,
-            lockCount: lockers.count,
+            lockCount: lockCount,
             isTransitioning: navigation?.transitionCoordinator != nil
         )
     }
