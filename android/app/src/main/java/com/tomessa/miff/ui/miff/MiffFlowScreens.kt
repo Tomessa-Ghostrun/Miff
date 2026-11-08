@@ -47,7 +47,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffScreenInsets
-import com.tomessa.miff.ui.settings.DeleteAccountLink
+import com.tomessa.miff.ui.profile.GearButton
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -132,14 +132,16 @@ fun MiffFrame(
 /**
  * "Choisis comment tu veux commencer" (mockup onboarding-original -3): two big cards, "Créer une nouvelle Miff" and "Rejoindre une
  * Miff existante". The code field of the original card moved to its own page (one single field for the code, ticket 4 #9).
- * No back arrow: the account was just created (decision Q11 of the sign-up ticket); a quiet "Se déconnecter" is the way out.
+ * No back arrow: the account was just created (decision Q11 of the sign-up ticket); a quiet "Se déconnecter" is the way out. No
+ * "Supprimer mon compte" here (decision of the PM, 2026-11-07: the deletion lives only in Settings > Mon compte); the way to it is the
+ * discreet gear at the top right, which opens the RESTRICTED Settings (Mon compte, Confidentialité): a person with no Miff has no tab bar.
  */
 @Composable
 fun MiffChoiceScreen(
     onCreate: () -> Unit,
     onJoin: () -> Unit,
     onSignOut: () -> Unit,
-    onDeleteAccount: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val pane = stringResource(R.string.miff_choice_title)
     Column(
@@ -154,7 +156,8 @@ fun MiffChoiceScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        Spacer(Modifier.size(Spacing.s))
+        // The way to Mon compte and Confidentialité (restricted Settings): no tab bar without a Miff, so no Profile gear either.
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { GearButton(onOpenSettings) }
         Image(
             painter = painterResource(R.drawable.miff_wordmark_color),
             contentDescription = stringResource(R.string.home_logo_a11y),
@@ -182,8 +185,6 @@ fun MiffChoiceScreen(
         TextButton(onClick = onSignOut, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
             Text(stringResource(R.string.auth_signout_action), style = textBodyBold16, color = colorActionPrimary)
         }
-        // AUTH-5a: the deletion must be reachable here too (a person without a Miff never sees Settings).
-        DeleteAccountLink(onClick = onDeleteAccount)
     }
 }
 

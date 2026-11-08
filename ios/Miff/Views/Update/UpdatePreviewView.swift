@@ -38,8 +38,11 @@ struct UpdatePreviewView: View {
                     .padding(.horizontal, Spacing.md)
                 buttons
                     .padding(.horizontal, Spacing.md)
-                    .padding(.vertical, Spacing.sm)
+                    .padding(.top, Spacing.sm)
+                    .padding(.bottom, UpdateLayout.previewButtonsBottomMargin)
             }
+            // La photo et les boutons restent au-dessus de la barre d'onglets (hauteur mesurée, jamais écrite en dur).
+            .aboveTabBar()
         }
         .onAppear {
             if image == nil {

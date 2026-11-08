@@ -54,6 +54,8 @@ enum UpdateLayout {
     /// « Recommencer » : 56 x 48 ; « Publier » : 48 de haut.
     static let retakeWidth: CGFloat = 56
     static let actionHeight: CGFloat = 48
+    /// Le bas de « Recommencer » et « Publier » : 16 pt au-dessus de la barre.
+    static let previewButtonsBottomMargin: CGFloat = 16
     static let previewCorner: CGFloat = 20
     /// Le message calme d'une publication : visible 3 secondes.
     static let confirmationSeconds = 3.0

@@ -119,6 +119,11 @@ enum TabBarLayout {
     static func bottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
         bottomMargin - safeAreaBottom
     }
+
+    /// Du bas de l'écran au haut de la barre, tel que le design la pose (sert aux tests de géométrie ; à l'écran, la coquille MESURE).
+    static func topClearance(barHeight: CGFloat = TabBarLayout.barHeight) -> CGFloat {
+        bottomMargin + barHeight
+    }
 }
 
 /// Le niveau de verre de la barre : natif (iOS 26 et plus), matériau translucide avec voile (iOS 16 à 25), ou opaque.

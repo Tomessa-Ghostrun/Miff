@@ -44,7 +44,8 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
  * passe", decision Q5: no form); a Google account only sees how it signs in. "Se déconnecter" is a SECONDARY button (the mockup made it as prominent
  * as the main action) and asks for a confirmation with two buttons of the same weight. "Supprimer mon compte" (AUTH-5, criterion SC1)
  * is a discreet red TEXT link under "Se déconnecter", for everyone who is signed in: never a filled button, never as visible as the main
- * action. It only opens the information screen; nothing is deleted or written from here.
+ * action. It only opens the information screen; nothing is deleted or written from here. It is the ONLY entry of the deletion in the app
+ * (decision of the PM, 2026-11-07): no other screen offers it.
  */
 @Composable
 fun AccountScreen(

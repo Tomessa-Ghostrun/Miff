@@ -80,6 +80,23 @@ enum TrackingWrites {
         return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
     }
 
+    /// Rafraîchissement de la batterie (à l'ouverture et à la sortie de l'app) : un UPDATE de `batteryPct` et `updatedAt` SEULS (plus
+    /// `deviceId`). Le document qui résulte garde, tels que la base les a, la présence, le lieu, `presenceAt`, `lastUpdateAt`,
+    /// `updateText`, `hasPhoto`, `locationAccess` et `escalationDueAt` : les règles l'acceptent (heures « conservées » R-LIEU-1,
+    /// `updatedAt` = heure du serveur, clé de session). Si le statut n'existe pas, un update échoue : jamais de création. Le niveau
+    /// doit être connu (0 à 100) : on n'efface jamais une batterie connue par un `null`.
+    static func batteryUpdate(miffId: String, uid: String, batteryPct: Int, deviceId: String) -> DocWrite? {
+        guard isWritable(miffId: miffId, uid: uid, deviceId: deviceId), (0...100).contains(batteryPct) else {
+            return nil
+        }
+        let fields: [String: FieldValueSpec] = [
+            "batteryPct": .integer(batteryPct),
+            "updatedAt": .serverTimestamp
+        ]
+        let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
+        return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
+    }
+
     /// La dernière position connue dans UNE Miff (`backend/data-model.md` §2.12) : latitude et longitude à 5 décimales, heure de la
     /// mesure. Rien d'autre (ni précision, ni vitesse, ni altitude, ni adresse, ni lieu).
     static func position(miffId: String, uid: String, point: WrittenPosition, deviceId: String) -> DocWrite? {

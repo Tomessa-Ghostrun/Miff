@@ -12,21 +12,26 @@
 - Le contact affiché dans l'app (tomessa.mfouka@gmail.com) est **provisoire** (décision Q11) : il sera remplacé avant la bêta externe.
 - Après chaque suppression, la console Firebase doit montrer : **plus d'utilisateur** dans Authentication, **plus de document** `users/{uid}`. Le document `entitlements/{uid}` (s'il existait) **reste** : c'est normal, vous le purgez à la main (rappel mensuel, décision Q4).
 
-## Comment obtenir un compte « sans Miff »
+## Où se trouve l'entrée (mise à jour du 2026-11-07, décision du PM)
 
-Le compte doit n'avoir **aucune Miff créée ni rejointe**. Deux entrées existent pour la suppression :
+**« Supprimer mon compte » n'existe plus qu'à UN seul endroit : Réglages > Mon compte** (lien en texte rouge sous « Se déconnecter »). Il a été **retiré** de l'écran « Choisis comment tu veux commencer » et de l'écran « On n'a pas pu lire ton compte ».
 
-- **Compte sans Miff** : après la création du compte et du profil, l'app ouvre « Choisis comment tu veux commencer » (créer ou rejoindre une Miff). **« Supprimer mon compte » y figure**, en lien texte rouge sous « Se déconnecter ». **C'est le chemin le plus direct** : créez un compte jetable, son profil, et arrêtez-vous là. Vous pouvez **fermer et rouvrir l'app** : vous retombez sur le même écran, avec le même lien.
-- **Compte qui avait une Miff** : Profil > Réglages > Mon compte (lien sous « Se déconnecter »). Pour ce parcours, **supprimez d'abord la Miff** depuis son écran (créateur) ou **quittez-la** (membre) : vous restez dans l'app, sur le Feed sans Miff.
+- **Compte avec une Miff** : Profil > roue crantée > Mon compte (la barre d'onglets est là).
+- **Compte SANS Miff** : pas de barre d'onglets (inchangé), mais l'écran « Choisis comment tu veux commencer » a une **roue crantée discrète en haut à droite** (la même que celle du Profil). Elle ouvre des **Réglages restreints** : seulement **Mon compte** et **Confidentialité** (pas de Mes informations, ni de Langue). Le chemin est donc : roue crantée > Mon compte > Supprimer mon compte. C'est le chemin le plus direct pour cette recette : créez un compte jetable, son profil, et arrêtez-vous là.
 
-Le même lien existe aussi sur l'écran « On n'a pas pu lire ton compte » (compte connecté mais illisible, par exemple hors connexion au lancement), avec « Réessayer » et « Se déconnecter ».
+## Partie 0 : l'entrée unique, avec et sans Miff (4 min)
+
+0. [ ] Compte jetable sans Miff, juste après la création du profil : sur « Choisis comment tu veux commencer », **les deux cartes, « Se déconnecter » et une roue crantée en haut à droite** ; **aucun** lien « Supprimer mon compte » sur cet écran. Touchez la roue crantée : un écran **Réglages** avec **deux lignes seulement**, **Mon compte** et **Confidentialité** (**pas** de Mes informations, **pas** de Langue, **pas** de barre d'onglets). La flèche retour (ou le retour du système) ramène à « Choisis comment tu veux commencer ».
+0 bis. [ ] **Confidentialité** (sans Miff) : l'écran s'ouvre, avec les mêmes sections que d'habitude (analyse anonyme, localisation, notifications, textes légaux, contact). **Mon compte** : votre e-mail, Se déconnecter, **Supprimer mon compte** (texte rouge) ; retour à la liste puis à l'écran de choix.
+0 ter. [ ] **TalkBack** : la roue crantée est annoncée « Réglages » comme un bouton, et se touche facilement (cible d'au moins 48 dp).
+0 quater. [ ] L'écran « On n'a pas pu lire ton compte » (mode avion au lancement avec un compte connecté) ne propose que « Réessayer » et « Se déconnecter » (**pas** de roue crantée, pas de suppression). Les écrans de permission de localisation et de consentement n'ont jamais eu de lien de suppression.
 
 ## Partie A : l'entrée et l'écran d'information (5 min)
 
-Compte jetable **1** (e-mail + mot de passe), sans Miff.
+Compte jetable **1** (e-mail + mot de passe), **sans Miff** (voir « Où se trouve l'entrée »).
 
-1. [ ] Sur « Choisis comment tu veux commencer » (compte sans Miff), sous « Se déconnecter », un **lien en texte rouge « Supprimer mon compte »** (pas un bouton plein, moins visible que les deux cartes). **Fermez l'app et rouvrez-la** : même écran, même lien. Puis, avec un compte qui a une Miff (ou après l'avoir supprimée), le même lien sous « Se déconnecter » dans Profil > Réglages > **Mon compte**.
-2. [ ] Touchez-le (depuis l'un ou l'autre endroit : l'écran est le même) : écran « Supprimer mon compte » avec, après un très court chargement (« Un instant, on vérifie tes Miffs… »), la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. », la ligne du contact (adresse en bleu, touchable : ouvre votre messagerie sans rien envoyer), et l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ».
+1. [ ] Roue crantée de l'écran de choix > **Mon compte** (ou, avec une Miff, Profil > Réglages > Mon compte) : sous « Se déconnecter », un **lien en texte rouge « Supprimer mon compte »** (pas un bouton plein). C'est la seule entrée (Partie 0). **Fermez l'app et rouvrez-la** : vous retombez sur « Choisis comment tu veux commencer ».
+2. [ ] Touchez-le : écran « Supprimer mon compte » avec, après un très court chargement (« Un instant, on vérifie tes Miffs… »), la phrase d'introduction, la carte « Ton profil, ta photo et ton numéro de téléphone seront supprimés. », la ligne du contact (adresse en bleu, touchable : ouvre votre messagerie sans rien envoyer), et l'encadré « **Ce n'est pas réversible.** Tu pourras toujours créer un nouveau compte. ».
 3. [ ] **Continuer** est actif ; **Annuler** est dessous. Touchez **Annuler** : retour à l'écran d'où vous venez. Recommencez et utilisez la **flèche retour**, puis le **retour du système** : même résultat, rien n'a changé (vous êtes toujours connecté).
 4. [ ] **Mode avion**, ouvrez l'écran : « Pas de connexion pour le moment. Tes Miffs s'afficheront dès que tu auras du réseau. » et **Continuer grisé**. Réactivez le réseau : la page se complète **toute seule** et Continuer devient actif.
 5. [ ] Lisez tous les textes : **ton calme, aucun mot qui fait peur** (« irrécupérable », « instantanément », « danger »...). Notez tout ce que vous voudriez changer (les textes sont validés par défaut, vous pouvez les ajuster ici).
