@@ -43,6 +43,9 @@ struct ProfileStepContent: View {
             nextButton: RoundNextButton(enabled: state.canContinueFromProfile, isLoading: false, action: submit)
         ) {
             PhotoButton(avatar: state.avatar, action: photoTapped)
+            if state.googlePhotoHint {
+                GooglePhotoHint()
+            }
             if state.message == .photoUnusable {
                 MessageText(text: L10n.string("profile_photo_unusable"), isError: true)
                     .padding(.top, Spacing.sm)
@@ -134,6 +137,21 @@ struct ProfileStepContent: View {
             pickerItem = nil
             actions.onPhotoChosen(data)
         }
+    }
+}
+
+/// « On a repris ta photo Google, tu peux la changer. » : discret, calme, dit une fois à VoiceOver à son apparition.
+struct GooglePhotoHint: View {
+    var body: some View {
+        Text("profile_google_photo_hint")
+            .miffTextStyle(textBodyRegular14)
+            .foregroundColor(colorTextDescription.color)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.top, Spacing.sm)
+            .onAppear {
+                Announcer.announce(L10n.string("profile_google_photo_hint"))
+            }
     }
 }
 

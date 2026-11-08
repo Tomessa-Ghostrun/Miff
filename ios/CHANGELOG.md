@@ -2,6 +2,24 @@
 
 ## Non publié
 
+### Photo Google à l'inscription et retour par geste (retours du PM après TestFlight, 2026-11-08)
+
+Branche `ios/photo-google-geste-retour`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette : `docs/qa/checklists/ios-photo-google-retour-geste-recette-pm.md`. Textes à aligner plus tard : `docs/release/photo-profil-google-a-aligner.md` (aucun texte légal modifié).
+
+Ajouté :
+- **Photo Google reprise comme photo de profil** (inscription avec Google seulement) : `AuthGateway.providerPhotoURL()` (photo du fournisseur `google.com` de Firebase Auth, nil par défaut et pour e-mail/Apple), `GooglePhotoURL` (https et `googleusercontent.com` seulement, pas d'identifiant ni de port dans l'adresse, silhouette générique refusée, taille demandée 256 px), `GooglePhotoDownloader` (UNE requête HTTPS en session éphémère : ni cache, ni cookies ; délai 6 s / 8 s, 512 Ko au plus, réponse 200 de type image, redirections refusées hors Google), `GooglePhotoPrefill` (décode, carré au centre, ré-encode SANS métadonnées en 20 000 octets au plus avec les mêmes outils que la photo choisie, délai global 8 s, nil au moindre échec).
+- `ProfileViewModel` : la photo arrive en arrière-plan et est écrite dans l'état de l'écran (jamais sur le disque avant la prochaine saisie du brouillon, chemin normal du profil) ; elle n'est appliquée que pour une création de profil SANS brouillon, si la personne n'a encore ni choisi ni retiré de photo et qu'elle est sur l'étape profil. La phrase discrète « On a repris ta photo Google, tu peux la changer. » (`profile_google_photo_hint`, FR et EN, **clé aussi ajoutée côté Android avec le même texte**) disparaît dès que la personne touche à la photo. Une connexion Google à un compte qui a déjà un profil n'ouvre jamais cet écran : sa photo n'est pas remplacée.
+- **Retour par geste sur tous les écrans empilés** : `SwipeBackGate` (UIKit) prend la place du délégué du geste de retour de chaque navigation, `SwipeBackPolicy` (logique pure : il faut au moins deux écrans, aucun verrou, pas de transition en cours) et `SwipeBackScreen` (la table des écrans : verrouillés pendant l'écriture du profil, la création d'une Miff et l'écran « prête », la confirmation « Rejoindre et partager », l'enregistrement ou la suppression d'un lieu, la vérification de la suppression du compte ; viseur et aperçu de l'Update déjà prévus dans la table).
+- Tests : `SwipeBackPolicyTests`, `SwipeBackGateTests` (vraie navigation UIKit), `GooglePhotoURLTests`, `GooglePhotoPrefillTests`, `GooglePhotoProfileTests`.
+
+Modifié :
+- **Cause du geste de retour qui ne marchait pas** : tous les écrans masquent la barre de navigation du système et dessinent leur propre flèche ; dans ce cas UIKit refuse le geste natif (son délégué par défaut ne l'autorise que barre visible). `SwipeBackLock` (déplacé dans `Views/Navigation`) installe maintenant le gardien et pose un verrou propre à chaque écran (valable seulement tant que l'écran est visible) ; `.swipeBackEnabled()` est posé sur la racine et les destinations de `SignedOutHost`, `MiffOnboardingHost` et `MiffHomeHost`. Le geste est celui d'iOS : du bord GAUCHE vers la droite.
+- `ProfileDependencies` : un champ facultatif `googlePhoto`. `SessionManager.suggestedPhotoURL()`.
+
+Coût et limites : une requête de quelques dizaines de Ko par inscription Google, aux serveurs d'images de Google (gratuit, aucun quota à notre charge). Signal de bascule : aucun. Limite : la photo n'est reprise qu'à la création du profil (jamais relue ensuite). Le diagnostic interne (`DiagnosticRootView`) garde sa pile sans geste (build interne seulement).
+
+Sécurité : l'adresse et les octets de la photo restent en mémoire, partent avec le profil comme toute photo de profil, aucun journal, aucun événement Analytics, aucune erreur détaillée ; HTTPS seulement, domaine contrôlé à chaque redirection.
+
 ### FEED-5 à FEED-7 - Le Feed : cercle, statuts, Localiser (miroir d'Android FEED-1 à FEED-3, avec D42 à D45)
 
 Branche `ios/feed-5-7`, **PR en brouillon qui dépend de #102** (coquille ONB-7) ; ticket `docs/tickets/feed.md` (décisions D1 à D44), maquettes `design/exports/feed/` et `design/exports/feed/claude/`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro (TestFlight, le Feed est l'onglet de la coquille) : `docs/qa/checklists/feed-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md`, section « Le Feed ».

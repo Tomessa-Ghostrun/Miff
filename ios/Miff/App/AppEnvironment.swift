@@ -267,7 +267,9 @@ final class AppEnvironment {
             avatars: avatarCodec,
             network: network,
             phoneTools: phoneTools,
-            deviceRegion: { Locale.current.region?.identifier }
+            deviceRegion: { Locale.current.region?.identifier },
+            // La photo du compte Google, proposée comme photo de profil préremplie (téléchargée une fois, jamais bloquante).
+            googlePhoto: GooglePhotoPrefill(source: GooglePhotoDownloader(), codec: avatarCodec)
         )
     }
 
