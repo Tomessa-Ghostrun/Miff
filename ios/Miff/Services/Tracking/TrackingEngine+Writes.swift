@@ -33,7 +33,7 @@ extension TrackingEngine {
     }
 
     /// Une écriture, SEULE, dans UNE transaction : « pas de réponse » veut dire « rien d'écrit ».
-    private func commit(_ write: DocWrite) async -> Guarded<Void> {
+    func commit(_ write: DocWrite) async -> Guarded<Void> {
         let store = deps.store
         return await guardedCall(timeoutSeconds: deps.timeoutSeconds) {
             try await store.commit([write])
@@ -124,6 +124,8 @@ extension TrackingEngine {
             state.update(miffId) {
                 $0.pending = nil
                 $0.access = pass.access.rawValue
+                // La batterie fraîche part avec chaque statut : le rafraîchissement d'ouverture / de sortie s'en souvient.
+                $0.noteBatteryWritten(pass.batteryPct, at: now)
             }
         case .failed(let failure, _):
             switch failure {
@@ -196,6 +198,7 @@ extension TrackingEngine {
             }
         } else {
             state.breaker = WriteBreaker.recordStatus(state.breaker, dayKey: day)
+            state.update(miffId) { $0.noteBatteryWritten(pass.batteryPct, at: now) }
         }
         state.update(miffId) { $0.access = access.rawValue }
     }
