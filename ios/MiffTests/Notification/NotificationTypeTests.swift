@@ -27,26 +27,48 @@ final class NotificationTypeTests: XCTestCase {
 
     // MARK: - Les textes du PM, mot pour mot
 
+    private struct ExpectedTexts {
+        let type: NotificationType
+        let french: (title: String, body: String)
+        let english: (title: String, body: String)
+    }
+
     func testTheTextsAreTheOnesOfThePMWordForWord() throws {
         let catalog = try catalog()
-        let expected: [(NotificationType, String, String, String, String)] = [
-            (.n1, "Tu es passé orange", "Indique à ta Miff que tout va bien.",
-             "You've turned orange", "Let your Miff know everything's fine."),
-            (.n2, "Tu es passé rouge", "Indique à ta Miff que tout va bien.",
-             "You've turned red", "Let your Miff know everything's fine."),
-            (.n3, "Ta Miff est passée en orange", "Prends des nouvelles de tes proches.",
-             "Your Miff has turned orange", "Check in on your loved ones."),
-            (.n4, "Ta Miff est passée en rouge", "Prends des nouvelles de tes proches.",
-             "Your Miff has turned red", "Check in on your loved ones."),
-            (.n6, "Tu es dans une zone de danger de ta Miff",
-             "Pendant que tu y es, tes proches voient un état différent.",
-             "You're in a danger zone of your Miff", "While you're there, your circle sees a different status.")
+        let expected: [ExpectedTexts] = [
+            ExpectedTexts(
+                type: .n1, french: ("Tu es passé orange", "Indique à ta Miff que tout va bien."),
+                english: ("You've turned orange", "Let your Miff know everything's fine.")
+            ),
+            ExpectedTexts(
+                type: .n2, french: ("Tu es passé rouge", "Indique à ta Miff que tout va bien."),
+                english: ("You've turned red", "Let your Miff know everything's fine.")
+            ),
+            ExpectedTexts(
+                type: .n3, french: ("Ta Miff est passée en orange", "Prends des nouvelles de tes proches."),
+                english: ("Your Miff has turned orange", "Check in on your loved ones.")
+            ),
+            ExpectedTexts(
+                type: .n4, french: ("Ta Miff est passée en rouge", "Prends des nouvelles de tes proches."),
+                english: ("Your Miff has turned red", "Check in on your loved ones.")
+            ),
+            ExpectedTexts(
+                type: .n6,
+                french: (
+                    "Tu es dans une zone de danger de ta Miff",
+                    "Pendant que tu y es, tes proches voient un état différent."
+                ),
+                english: (
+                    "You're in a danger zone of your Miff",
+                    "While you're there, your circle sees a different status."
+                )
+            )
         ]
-        for (type, frTitle, frBody, enTitle, enBody) in expected {
-            XCTAssertEqual(try text(type.titleKey, "fr", in: catalog), frTitle, "\(type)")
-            XCTAssertEqual(try text(type.bodyKey, "fr", in: catalog), frBody, "\(type)")
-            XCTAssertEqual(try text(type.titleKey, "en", in: catalog), enTitle, "\(type)")
-            XCTAssertEqual(try text(type.bodyKey, "en", in: catalog), enBody, "\(type)")
+        for item in expected {
+            XCTAssertEqual(try text(item.type.titleKey, "fr", in: catalog), item.french.title, "\(item.type)")
+            XCTAssertEqual(try text(item.type.bodyKey, "fr", in: catalog), item.french.body, "\(item.type)")
+            XCTAssertEqual(try text(item.type.titleKey, "en", in: catalog), item.english.title, "\(item.type)")
+            XCTAssertEqual(try text(item.type.bodyKey, "en", in: catalog), item.english.body, "\(item.type)")
         }
     }
 
