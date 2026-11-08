@@ -27,6 +27,8 @@ struct FeedTab: View {
     private let context: FeedShellContext
     private let actions: FeedTabActions
     @StateObject private var model: FeedViewModel
+    /// FEED-8 : la lecture des photos des cartes (paresseuse : rien n'est lu avant qu'une carte vienne à l'écran).
+    @StateObject private var photos: FeedPhotos
     @ObservedObject private var awaiting: AwaitingAgreement
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -53,6 +55,7 @@ struct FeedTab: View {
         // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
         dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
         _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
+        _photos = StateObject(wrappedValue: environment.makeFeedPhotos())
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
     }
 
@@ -70,6 +73,7 @@ struct FeedTab: View {
     var body: some View {
         let key = ObservationKey(miffId: activeMiffId, running: running, restarts: model.restarts)
         FeedScreen(model: model, awaiting: awaiting, isActive: running, actions: screenActions)
+            .environment(\.feedPhotos, photos)
             .task(id: key) {
                 if key.running {
                     await model.observe(miffId: key.miffId)
