@@ -198,35 +198,42 @@ private val RowMinHeight = Spacing.minTouchTarget + Spacing.l
 /**
  * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language, Privacy (ONB-3b). Nothing else: no
  * Notifications line (nothing is sent yet), no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
- * compte" (it arrives with the account deletion ticket).
+ * compte" line (it lives INSIDE "Mon compte").
+ *
+ * RESTRICTED list (decision of the PM, 2026-11-07, for a person with no Miff yet): [onOpenMyInfo] and [onOpenLanguage] are null and their
+ * rows are not drawn; only "Mon compte" and "Confidentialité" remain.
  */
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onOpenMyInfo: () -> Unit,
+    onOpenMyInfo: (() -> Unit)?,
     onOpenAccount: () -> Unit,
-    onOpenLanguage: () -> Unit,
+    onOpenLanguage: (() -> Unit)?,
     onOpenPrivacy: () -> Unit,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_title), onBack = onBack) {
-        SettingsRow(
-            icon = R.drawable.ic_edit,
-            title = stringResource(R.string.settings_my_info_title),
-            subtitle = stringResource(R.string.settings_my_info_subtitle),
-            onClick = onOpenMyInfo,
-        )
+        if (onOpenMyInfo != null) {
+            SettingsRow(
+                icon = R.drawable.ic_edit,
+                title = stringResource(R.string.settings_my_info_title),
+                subtitle = stringResource(R.string.settings_my_info_subtitle),
+                onClick = onOpenMyInfo,
+            )
+        }
         SettingsRow(
             icon = R.drawable.ic_person,
             title = stringResource(R.string.settings_account_title),
             subtitle = stringResource(R.string.settings_account_subtitle),
             onClick = onOpenAccount,
         )
-        SettingsRow(
-            icon = R.drawable.ic_flag,
-            title = stringResource(R.string.settings_language_title),
-            subtitle = stringResource(R.string.settings_language_subtitle),
-            onClick = onOpenLanguage,
-        )
+        if (onOpenLanguage != null) {
+            SettingsRow(
+                icon = R.drawable.ic_flag,
+                title = stringResource(R.string.settings_language_title),
+                subtitle = stringResource(R.string.settings_language_subtitle),
+                onClick = onOpenLanguage,
+            )
+        }
         SettingsRow(
             icon = R.drawable.ic_lock,
             title = stringResource(R.string.settings_privacy_title),

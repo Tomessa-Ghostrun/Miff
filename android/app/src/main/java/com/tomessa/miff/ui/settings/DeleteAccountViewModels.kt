@@ -178,13 +178,14 @@ data class DeleteReauthUiState(
 /**
  * Screen C, and the same screen as "Dernière vérification" ([DeleteReauthUiState.last]): the person proves who they are again, with a
  * method linked to the account. The password is a PARAMETER of [submitPassword], never a field of the state; [onVerified] is called
- * once Firebase accepted. Several attempts are allowed; one at a time.
+ * once Firebase accepted (it returns true when the deletion went on, false when it could not start: nothing was touched, the person
+ * can try again). Several attempts are allowed; one at a time.
  */
 class DeleteReauthViewModel(
     private val gateway: AuthGateway,
     private val network: NetworkMonitor,
     last: Boolean,
-    private val onVerified: () -> Unit,
+    private val onVerified: () -> Boolean,
 ) : ViewModel() {
     private val providers = gateway.linkedProviders()
     private val mutableState =
@@ -243,7 +244,10 @@ class DeleteReauthViewModel(
     ) {
         if (failure == null) {
             // Stays "busy": the deletion starts and this screen is replaced; a second tap must not start another operation.
-            onVerified()
+            if (!onVerified()) {
+                // The marker could not be written: nothing started, nothing was touched. A calm sentence, and the person can try again.
+                mutableState.update { it.copy(busy = false, message = AuthMessage.UNKNOWN) }
+            }
             return
         }
         mutableState.update { it.copy(busy = false, message = failure.reauthMessage(google)) }

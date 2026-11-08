@@ -542,7 +542,7 @@ class DeleteAccountScreensTest {
             signInAgains++
         }
 
-        override fun start() = Unit
+        override fun start() = true
 
         override fun resume() = Unit
 
@@ -748,39 +748,27 @@ class DeleteAccountScreensTest {
         assertEquals(1, dismissed)
     }
 
-    // --- The entry from the waiting screens (a person without a Miff never sees Settings) ----------------------------------
+    // --- No entry outside Settings > Mon compte (decision of the PM, 2026-11-07) ---------------------------------------------
 
     @Test
-    fun theEntry_isOnTheCreateOrJoinScreen_nextToSignOut_aDiscreetRedTextLink() {
-        var deleted = 0
+    fun theCreateOrJoinScreen_hasNoDeletionEntry_onlySignOut() {
         var signedOut = 0
-        show {
-            MiffChoiceScreen(
-                onCreate = {},
-                onJoin = {},
-                onSignOut = { signedOut++ },
-                onDeleteAccount = { deleted++ },
-            )
-        }
-        shoot("delete-entry-miff-choice")
-        composeRule.onNodeWithText(text(R.string.auth_signout_action)).assertHasClickAction()
-        composeRule
-            .onNodeWithText(text(R.string.settings_delete_entry))
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
-            .performClick()
-        assertEquals(1, deleted)
-        assertEquals(0, signedOut)
+        show { MiffChoiceScreen(onCreate = {}, onJoin = {}, onSignOut = { signedOut++ }, onOpenSettings = {}) }
+        shoot("delete-entry-miff-choice-absent")
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_entry)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.auth_signout_action)).assertHasClickAction().performClick()
+        assertEquals(1, signedOut)
     }
 
     @Test
-    fun theEntry_isOnTheScreenOfAnAccountThatCouldNotBeRead_too() {
-        var deleted = 0
-        show { AccountLookupFailedScreen(onRetry = {}, onSignOut = {}, onDeleteAccount = { deleted++ }) }
-        composeRule
-            .onNodeWithText(text(R.string.settings_delete_entry))
-            .assertHeightIsAtLeast(48.dp)
-            .performClick()
-        assertEquals(1, deleted)
+    fun theScreenOfAnAccountThatCouldNotBeRead_hasNoDeletionEntry_onlyRetryAndSignOut() {
+        var retried = 0
+        var signedOut = 0
+        show { AccountLookupFailedScreen(onRetry = { retried++ }, onSignOut = { signedOut++ }) }
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_entry)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.auth_retry_action)).assertHasClickAction().performClick()
+        composeRule.onNodeWithText(text(R.string.auth_signout_action)).assertHasClickAction().performClick()
+        assertEquals(1, retried)
+        assertEquals(1, signedOut)
     }
 }
