@@ -39,6 +39,7 @@ struct NotificationSettingsView: View {
                 spokenHint: "",
                 action: actions.onOpenCenter
             )
+            recordedCounters
         }
         .task { await model.refresh() }
         .onChange(of: scenePhase) { phase in
@@ -51,6 +52,16 @@ struct NotificationSettingsView: View {
                 onAllow: { Task { await model.primeAllowed() } },
                 onLater: { model.primeDeferred() }
             )
+        }
+    }
+
+    // MARK: - Recette (builds Debug et Internal seulement)
+
+    /// Les rappels N3 / N4 affichés alors que la couleur de la Miff était déjà revenue : un compteur LOCAL pour décider après la bêta.
+    @ViewBuilder
+    private var recordedCounters: some View {
+        if BuildFlavor.includesDiagnostic, let counters = model.recordedCounters {
+            SettingsBody(text: L10n.format("ios_notif_debug_counters", counters.falseAlerts, counters.judged))
         }
     }
 

@@ -108,11 +108,18 @@ extension NotificationReconciler {
     }
 
     /// Les compteurs de recette (locaux, jamais envoyés) : N3 / N4 jugées, dont fausses alertes.
-    func followUpCounters() -> (judged: Int, falseAlerts: Int)? {
+    func followUpCounters() -> FollowUpCounters? {
         guard let uid = deps.currentUid() else {
             return nil
         }
         let ledger = deps.plans.loadLedger(uid: uid)
-        return (ledger.judgedFollowUps, ledger.falseAlerts)
+        return FollowUpCounters(judged: ledger.judgedFollowUps, falseAlerts: ledger.falseAlerts)
     }
+}
+
+/// N3 / N4 dont on a pu juger (donnée plus récente que l'affichage), et parmi elles celles affichées alors que la couleur de la Miff
+/// était déjà revenue. Un compteur de recette : local, jamais envoyé.
+struct FollowUpCounters: Equatable {
+    let judged: Int
+    let falseAlerts: Int
 }

@@ -17,10 +17,16 @@ final class NotificationSettingsViewModel: ObservableObject {
 
     private let permissions: DevicePermissions
     private let service: NotificationPreferencesService
+    private let counters: () -> FollowUpCounters?
 
-    init(permissions: DevicePermissions, service: NotificationPreferencesService) {
+    init(
+        permissions: DevicePermissions,
+        service: NotificationPreferencesService,
+        counters: @escaping () -> FollowUpCounters? = { nil }
+    ) {
         self.permissions = permissions
         self.service = service
+        self.counters = counters
         preferences = service.preferences
         service.$preferences.assign(to: &$preferences)
     }
@@ -44,6 +50,11 @@ final class NotificationSettingsViewModel: ObservableObject {
     /// Les interrupteurs de type ne se touchent que si les notifications peuvent arriver.
     var typesAreEnabled: Bool {
         generalIsOn
+    }
+
+    /// Pour la recette seulement (builds Debug et Internal) : N3 / N4 jugées et fausses alertes, comptées sur CET appareil, jamais envoyées.
+    var recordedCounters: FollowUpCounters? {
+        counters()
     }
 
     func refresh() async {

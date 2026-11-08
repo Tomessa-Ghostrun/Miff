@@ -2,6 +2,22 @@
 
 ## Non publié
 
+### NOTIF-3I, NOTIF-4I, NOTIF-5I - Notifications, PR B : planificateur, N1 / N2 (« Tu es passé orange / rouge »), N3 / N4 (« Ta Miff est passée en orange / rouge »)
+
+Branche `ios/notifications-p0-b` (PR en brouillon, **empilée sur la PR A** ; elle contient aussi la fusion de `ios/feed-retours-recette` / #123 pour les seuils 2 h / 4 h et la règle de la zone de danger : son diff se réduira à la fusion de #123). Ticket `docs/tickets/notifications.md` §20.1 à §20.9. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/notifs-ios-recette-pm.md` (parties D et E). Détail, écarts et limites : `ios/README.md`, section « Notifications ». **0 € : notifications locales, aucun serveur, aucun push, aucune clé APNs.**
+
+Ajouté :
+- **`StatusColor.changeInstants`** (mêmes constantes que `level`, contrat testé : le niveau change à chaque instant rendu et reste constant entre deux).
+- **Planificateur pur** `NotificationPlanner.plan` : N1 / N2 (ma couleur, hors zone de danger), N3 / N4 (la couleur de la Miff active, 30 minutes après, si elle l'est toujours et sauf si j'en suis responsable : mode LARGE), un seul rappel par type et par Miff, clés jamais renotifiées (48 h), plafonds du jour (2 par type, 6 au total), nuit calme (N1 et N3 sans son), horizon de 3 h pour N3 / N4. Vecteurs T1 à T15 du ticket en tests.
+- **Réconciliation** (`NotificationReconciler`) : programme, annule, remplace (idempotent), retire à la reprise les notifications affichées qui ne sont plus vraies, rattrape (affichage aussitôt si moins de 15 minutes en arrière-plan, sinon entrée de centre silencieuse), inscrit dans le centre ce qui a sonné, compte (localement) les fausses alertes de N3 / N4.
+- **Branchements** : réponses du serveur du Feed (instantané réécrit), ma présence détectée par le suivi (même app fermée), réglages, Miff active, retour au premier plan, changement d'heure / fuseau / langue, déconnexion (tout retiré). Catégories, `threadIdentifier` par Miff, pas de pastille, `.passive` la nuit. Premier plan : rien d'affiché, entrée silencieuse. Toucher une notification : Update (N1, N2) ou Feed (N3, N4), jamais une erreur.
+- Compteur de fausses alertes visible dans Réglages > Notifications des builds Debug et Internal (clé `ios_notif_debug_counters`).
+
+Modifié : `TrackingServices.make` reçoit `onPresence` (la copie locale du suivi est décorée, le moteur n'est pas touché) ; `AppEnvironment.init` ; `FeedStatusesEvent` porte les membres ; `MainShellView` prend une demande d'onglet arrivée avant la coquille ; `AccountLocalStores` / `NotificationLocalData` gagnent l'instantané et le registre.
+
+**Non construit (points ouverts)** : la tâche de fond `BGAppRefreshTask` (parade iOS n° 2) exige `UIBackgroundModes: fetch` et `BGTaskSchedulerPermittedIdentifiers` dans l'Info.plist, ce qui contredit « aucune nouvelle capacité » ; elle est à décider par le PM. Branchement de `myUpdatePublished` sur l'Update (#111).
+
+
 ### NOTIF-1I, NOTIF-2I, NOTIF-6I - Notifications, PR A : autorisation, Réglages > Notifications, centre local (périmètre NOTIF-P0 sans serveur)
 
 Branche `ios/notifications-p0` ; ticket `docs/tickets/notifications.md` (§8, §9, §20), spec `docs/specs/notifications.md`, décisions du PM du 2026-11-08 (Q9, Q27, N4 « rouge », N5 abandonnée, limite iOS de N3 / N4 acceptée, Q28 LARGE, Q30, Q33, Q34). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Pas de maquettes : wireframes de la spec, écarts dans `ios/README.md` (section « Notifications »). Recette PM sur l'iPhone 11 Pro : `docs/qa/checklists/notifs-ios-recette-pm.md`. **Cette PR ne programme encore aucune notification** (les rappels N1 à N4 et N6 sont les PR suivantes) : elle pose l'autorisation, les Réglages et le centre dans lesquels ils s'inscriront.

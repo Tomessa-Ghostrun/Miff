@@ -41,13 +41,35 @@
 - [ ] Menu **⋯** : « Tout marquer comme lu » ; « Tout effacer » demande **confirmation**. Balayage vers la gauche ou appui long sur une ligne : « Supprimer ».
 - [ ] **VoiceOver** : la cloche est lue « Notifications » (« Notifications, 2 non lues » s'il y en a) ; une ligne est lue « {titre}, {heure}, non lu ».
 
-## Partie D — N1 et N2 : « Tu es passé orange / rouge » (livrés dans la PR B)
+## Partie D — N1 et N2 : « Tu es passé orange / rouge » (PR B) — 25 min, avec l'astuce de la console
 
-À remplir avec la PR B (sortie d'un lieu, 2 h puis 4 h ; N1 silencieuse la nuit, N2 normale ; annulation par une update ; un seul rappel par épisode ; plafond 2 par type et par jour, 6 au total).
+**Pour ne pas attendre 2 h et 4 h** : modifiez dans la console Firebase (projet **miff-3d283**, jamais l'autre) le statut de **votre** compte, `miffs/{id de la Miff}/status/{votre uid}` : `presence` = `out` et `presenceAt` = **il y a 1 h 55** (type « timestamp »). Ouvrez le Feed (la couleur est encore verte), puis fermez l'app : la notification orange arrive dans environ 5 minutes (le téléphone la programme d'après vos dernières données). Pour le rouge : **il y a 3 h 55**.
+**Autorisation** : acceptée. **Aucun des textes ne contient d'heure, de prénom ni de lieu.**
 
-## Partie E — N3 et N4 : « Ta Miff est passée en orange / rouge » (PR B)
+- [ ] **N1** : « **Tu es passé orange** / Indique à ta Miff que tout va bien. » arrive (sonore le jour). Toucher la notification ouvre **l'écran Update** (le bouton central ; dans un build sans bouton central, le Feed).
+- [ ] **N2** : « **Tu es passé rouge** / Indique à ta Miff que tout va bien. » arrive 2 h après N1 (ou, avec l'astuce, à la minute prévue), toucher ouvre l'écran Update. **Une seule N1 et une seule N2 par épisode** : rien ne se répète.
+- [ ] **Annulation** : juste après avoir programmé N1 (avant son heure), **publiez une update** (ou rentrez dans un lieu de confiance). Au retour au premier plan, la notification ne part pas ; si elle était déjà affichée, elle **disparaît du tiroir** à l'ouverture de l'app. *(Publier avec l'Update ne prévient le téléphone qu'à la fusion de la PR de l'Update : tant qu'elle n'est pas fusionnée, l'annulation a lieu au retour au Feed. Notez ce que vous observez.)*
+- [ ] **Zone de danger** : un compte dans une zone de danger (créée par un créateur Premium) ne reçoit **ni N1 ni N2**.
+- [ ] **Nuit calme** (22 h à 7 h) : N1 arrive **sans son ni vibration** (dans le tiroir, sans bannière) ; N2 garde son niveau normal. Pour l'essayer sans attendre la nuit, ajustez le `presenceAt` pour que l'heure prévue tombe la nuit.
+- [ ] **Réglages > Notifications** : éteindre « Quand je passe orange » annule N1 **immédiatement** (rien n'arrive) ; éteindre « Recevoir des notifications » annule tout **et retire** les notifications Miff du tiroir.
+- [ ] **Plafond** : pas plus de 2 par type et 6 au total par jour ; au-delà, rien n'est affiché mais le centre garde une entrée discrète.
+- [ ] Le **centre** (cloche) contient la notification, avec le point « non lu » ; toucher la ligne la marque lue.
+- [ ] **Premier plan** : si l'app est ouverte à l'heure prévue, **rien ne s'affiche** (la bulle du Feed parle déjà), mais le centre garde l'entrée.
+- [ ] **Redémarrage** de l'iPhone avant l'heure : la notification arrive quand même (les demandes survivent au redémarrage — à noter si ce n'est pas le cas).
+- [ ] **Changement de langue** (Réglages iOS) : au prochain passage au premier plan, la notification à venir est dans la nouvelle langue.
 
-À remplir avec la PR B. **Limite iOS acceptée** : la notification est programmée à l'avance et ne peut pas être vérifiée avant son affichage ; une fausse alerte est possible si la couleur de la Miff est revenue entre-temps (parades : recalcul à chaque ouverture, tâche de fond opportuniste, horizon de 3 h, formulation au passé, retrait à la reprise). **Notez chaque fausse alerte** : le compteur local sert à décider.
+## Partie E — N3 et N4 : « Ta Miff est passée en orange / rouge » (PR B) — 25 min
+
+**Limite iOS acceptée** : la notification est programmée à l'avance et ne peut pas être vérifiée avant son affichage ; une fausse alerte est possible si la couleur de la Miff est revenue entre-temps. Parades en place : recalcul à chaque ouverture et à chaque réponse du serveur, horizon de 3 h, formulation au passé, retrait à la reprise, compteur local. **La tâche de fond opportuniste n'est pas construite dans cette livraison** (voir la PR) : sur iPhone, une fausse alerte est donc plus probable que prévu.
+**Comment faire** : avec **deux comptes** (A sur l'iPhone, B sur l'autre téléphone ou modifié dans la console), A **vert** et B `out` depuis **il y a 1 h 55** : la Miff de A passe orange dans 5 minutes et N3 doit arriver 30 minutes plus tard. Ouvrez le Feed de A avant de fermer l'app.
+
+- [ ] **N3** : « **Ta Miff est passée en orange** / Prends des nouvelles de tes proches. » arrive environ 35 minutes après le départ de B, **sauf si vous êtes vous-même orange** (vous avez déjà eu N1 : pas de N3). Toucher ouvre le **Feed**.
+- [ ] **N4** : « **Ta Miff est passée en rouge** » arrive 30 minutes après le passage au rouge de la Miff (même règle).
+- [ ] **Si B donne de ses nouvelles avant l'heure** et que vous rouvrez l'app (ou qu'elle était ouverte) : la notification est **annulée** ; si elle était déjà affichée elle **disparaît du tiroir** à l'ouverture.
+- [ ] **Si B donne de ses nouvelles pendant que l'app est fermée** : N3 s'affiche quand même (limite iOS acceptée) ; à l'ouverture le Feed dit la vérité et la notification est retirée. **Notez chaque fausse alerte** : en bas de Réglages > Notifications (builds Debug et Internal) un compteur dit « x fausse(s) alerte(s) sur y ».
+- [ ] **Compte seul dans la Miff** : jamais de N3 ni N4. **Miff de deux personnes dont vous êtes la cause** : pas de N3 / N4 non plus (vous avez N1 / N2).
+- [ ] **Autre Miff active** (Premium) : changer de Miff active annule les rappels de l'ancienne.
+- [ ] Les mêmes vérifications que la partie D pour : nuit calme (N3 sans son, N4 normale), interrupteurs (« Quand ma Miff passe orange / rouge »), plafonds, centre, premier plan.
 
 ## Partie F — N6 : « Tu es dans une zone de danger de ta Miff » (PR C)
 
