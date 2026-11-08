@@ -35,7 +35,7 @@ struct NotificationSettingsView: View {
             sectionForYourMiff
             nightCalm
             SettingsLinkRow(
-                title: L10n.string("notif_settings_view_center"),
+                title: L10n.string("notif_settings_see_all"),
                 spokenHint: "",
                 action: actions.onOpenCenter
             )
@@ -60,7 +60,7 @@ struct NotificationSettingsView: View {
     private var authorizationCard: some View {
         if let authorization = model.authorization {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("notif_settings_auth_title")
+                Text("notif_settings_authorization")
                     .miffTextStyle(textBodyBold16)
                     .foregroundColor(colorTextPrimary.color)
                     .accessibilityAddTraits(.isHeader)
@@ -71,11 +71,11 @@ struct NotificationSettingsView: View {
                     Button {
                         model.openPhoneSettings()
                     } label: {
-                        Text("notif_settings_open_phone")
+                        Text("notif_state_open_settings")
                     }
                     .buttonStyle(.miffSecondaryFullWidth)
                     SettingsLinkRow(
-                        title: L10n.string("notif_settings_help_link"),
+                        title: L10n.string("ios_notif_help_link"),
                         spokenHint: "",
                         action: actions.onOpenHelp
                     )
@@ -101,7 +101,7 @@ struct NotificationSettingsView: View {
         typeRow(.n2)
         typeRow(.n6)
         // Couper N6 coupe la notification, jamais ce que la Miff voit : c'est dit ici.
-        SettingsBody(text: L10n.string("notif_settings_n6_note"))
+        SettingsBody(text: L10n.string("notif_settings_n6_hint"))
     }
 
     @ViewBuilder

@@ -132,7 +132,7 @@ struct NotificationsPopIn: View {
     var body: some View {
         PermissionPopIn {
             PopInTitle(text: "notif_prime_title")
-            NotificationExample(titleId: "notif_n1_title", bodyId: "notif_n1_body", timeId: "onboarding_sample_when_1")
+            NotificationExample(titleId: "notif_n1_title", bodyId: "notif_n1_body", timeId: "notif_prime_example_when")
             Text("notif_prime_body")
                 .miffTextStyle(textBodyRegular)
                 .foregroundColor(colorTextPrimary.color)

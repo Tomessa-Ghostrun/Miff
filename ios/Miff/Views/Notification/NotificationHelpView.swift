@@ -8,6 +8,8 @@ struct NotificationHelpView: View {
     var body: some View {
         MiffFrame(title: L10n.string("notif_help_title"), onBack: onBack, usesCanvas: true) {
             SettingsBody(text: L10n.string("notif_help_intro"))
+            SettingsBody(text: L10n.string("notif_help_choice"))
+            SettingsBody(text: L10n.string("notif_help_lead"))
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 HelpStep(number: 1, textKey: "notif_help_step_1")
                 HelpStep(number: 2, textKey: "notif_help_step_2")
@@ -16,10 +18,10 @@ struct NotificationHelpView: View {
             Button {
                 ExternalOpener.openSystemSettings()
             } label: {
-                Text("notif_settings_open_phone")
+                Text("notif_state_open_settings")
             }
             .buttonStyle(.miffPrimaryFullWidth)
-            SettingsBody(text: L10n.string("notif_help_outro"))
+            SettingsBody(text: L10n.string("notif_help_footer"))
         }
     }
 }

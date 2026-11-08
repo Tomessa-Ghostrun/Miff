@@ -63,11 +63,11 @@ struct NotificationSecondChanceCard: View {
                     .accessibilityAddTraits(.isHeader)
             }
             Button(action: onActivate) {
-                Text("notif_action_activate")
+                Text("notif_second_chance_action")
             }
             .buttonStyle(.miffSecondaryFullWidth)
             Button(action: onDismiss) {
-                Text("notif_second_chance_dismiss")
+                Text("notif_second_chance_later")
                     .miffTextStyle(textBodyBold16)
                     .foregroundColor(colorActionPrimary.color)
                     .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)

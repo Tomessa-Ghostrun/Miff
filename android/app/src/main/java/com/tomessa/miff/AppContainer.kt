@@ -52,6 +52,14 @@ import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
+import com.tomessa.miff.data.notification.AndroidNotificationTray
+import com.tomessa.miff.data.notification.NotificationAuthorization
+import com.tomessa.miff.data.notification.NotificationCenter
+import com.tomessa.miff.data.notification.NotificationChannels
+import com.tomessa.miff.data.notification.NotificationSettings
+import com.tomessa.miff.data.notification.NotificationTray
+import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
+import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -120,6 +128,7 @@ import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.startup.StartupTrace
+import com.tomessa.miff.ui.main.TabRequests
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -276,6 +285,49 @@ class AppContainer(
     val devicePermissions: DevicePermissions by lazy { AndroidDevicePermissions(context) }
 
     val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
+
+    /**
+     * NOTIF-P0 (ticket docs/tickets/notifications.md, section 20): notifications that need NO server. Everything here is LOCAL to the phone: the choices of
+     * Settings > Notifications, the centre (a list of types and times, never a position or a place), the tray of the system, the state of the permission,
+     * and the requests to show a tab. No read or write of Firestore, no event, no log.
+     */
+    val notificationSettings: NotificationSettings by lazy {
+        NotificationSettings(SharedPreferencesNotificationPreferencesStore(context))
+    }
+
+    val notificationTray: NotificationTray by lazy { AndroidNotificationTray(context) }
+
+    /** The centre of notifications; reading a line also takes its notification out of the tray. */
+    val notificationCenter: NotificationCenter by lazy {
+        NotificationCenter(
+            store = SharedPreferencesNotificationCenterStore(context),
+            onRead = { key -> notificationTray.cancel(key) },
+        )
+    }
+
+    val notificationAuthorization: NotificationAuthorization by lazy {
+        NotificationAuthorization(devicePermissions, notificationAsks)
+    }
+
+    /** NOTIF-P0: the centre, the choices and what is in the tray go with the session (contract of the purge, DUR-3). */
+    private val notificationTeardown: SessionTeardown by lazy {
+        SessionTeardown {
+            notificationCenter.purge()
+            notificationSettings.reset()
+            notificationTray.cancelAll()
+        }
+    }
+
+    /** A tap on a line of the centre (or, later, on a notification) asks the tabs to show the Feed or the Update. */
+    val tabRequests: TabRequests by lazy { TabRequests() }
+
+    /**
+     * Creates the four channels of the system (or refreshes their names, for a change of language). Cheap and idempotent, called at the start of the
+     * app and each time it comes to the front; never blocks the caller.
+     */
+    fun ensureNotificationChannels() {
+        trackingScope.launch { NotificationChannels.ensure(context) }
+    }
 
     /** LOC-2b (design 23): the Miffs that wait for the agreement of the person, in memory for the session. */
     val awaitingAgreement: AwaitingAgreement by lazy { AwaitingAgreement() }
@@ -562,6 +614,7 @@ class AppContainer(
                         miffDirectory,
                         trackingEngine,
                         awaitingAgreement,
+                        notificationTeardown,
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
                         placeNotices,
@@ -600,6 +653,7 @@ class AppContainer(
             authGateway.currentUid
             onboardingFlags
             languageStore
+            NotificationChannels.ensure(context)
             analyticsTracker
             networkMonitor
         }

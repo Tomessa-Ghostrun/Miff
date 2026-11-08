@@ -169,6 +169,22 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ---
 
+## 5 quater. Android : notifications locales (NOTIF-P0, 2026-11-08)
+
+**Ce que fait l'application (PR A : autorisation, Réglages, centre).** Rien ne touche Firestore : les choix de Réglages > Notifications, le centre de notifications (30 jours ou 100 lignes), l'état de l'autorisation et la carte de « deuxième chance » vivent dans des fichiers privés du téléphone (hors sauvegarde), effacés à la déconnexion. **0 lecture, 0 écriture, 0 appel réseau, 0 service payant, 0 dépendance nouvelle.** Le centre n'écrit **jamais** sur le serveur : l'historique en base coûterait ≈ 15 écritures par utilisateur et par jour (≈ +7 $ par mois à 10 000 utilisateurs, ticket §4.5), c'est le choix écarté.
+
+**Coût par notification** (le détail de la phase B est complété dans sa PR) :
+
+| Notification | Lectures Firestore | Écritures Firestore | Remarque |
+|---|---|---|---|
+| N1, N2 (rappels « à toi ») | **0** | **0** | décision locale à partir du dernier statut déjà connu du téléphone |
+| N6 (j'entre dans une zone de danger) | **0** | **0** | locale et immédiate, déclenchée par le suivi des lieux déjà livré |
+| N3, N4 (ma Miff change d'état) | relevées à l'heure prévue (voir la PR B) | **0** | une vérification sur le serveur avant d'afficher, bornée |
+
+**Limite connue et signal de bascule.** Les notifications locales ne coûtent rien quel que soit le nombre d'utilisateurs : il n'y a pas de seuil de bascule pour ce qui est local. Le seul poste qui pèse sur le quota de lectures est la vérification de N3 / N4 (PR B) ; il entre dans les relevés habituels (sections 1 à 3). **Ce que ces notifications ne font pas** : prévenir un **autre** téléphone au moment précis (arrivée, « pas de nouvelles de X », N5), qui exige un serveur (Blaze, décision du PM, phase 2).
+
+---
+
 ## 6. Ce que les agents font de leur côté
 
 - `backend-data` garde ces seuils et la procédure à jour (`backend/data-model.md` §12) et prépare, si le signal se confirme, la condition d'e-mail vérifié (gratuite) ou le plan de fonction « rejoindre » (Blaze).
