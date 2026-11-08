@@ -872,6 +872,8 @@
     <string name="update_photo_close_a11y">Fermer la photo</string>
     <string name="update_photo_position">Position mesurée %1$s.</string>
     <string name="update_photo_see_where">Voir où c\'était</string>
+    <string name="feed_photo_download">Enregistrer la photo</string>
+    <string name="feed_photo_download_done">Photo enregistrée.</string>
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>

@@ -20,7 +20,8 @@ final class FeedPhotoPrivacyTests: XCTestCase {
         "Models/Feed/SharedPhoto.swift", "Models/Feed/PhotoCache.swift", "Models/Feed/PhotoPan.swift",
         "Services/Contracts/FeedPhotoContracts.swift", "Services/Feed/PhotoLoader.swift", "Services/Feed/PhotoDecoder.swift",
         "Services/Firebase/FirestorePhotoSource.swift", "ViewModels/PhotoSlotViewModel.swift",
-        "Views/Feed/FeedPhotoViews.swift", "Views/Feed/FeedPhotoFullScreen.swift", "App/AppEnvironment+FeedPhotos.swift"
+        "Views/Feed/FeedPhotoViews.swift", "Views/Feed/FeedPhotoFullScreen.swift", "App/AppEnvironment+FeedPhotos.swift",
+        "Views/Feed/PhotoSaveButton.swift"
     ]
 
     private func code(_ relative: String) throws -> [String] {
@@ -52,7 +53,7 @@ final class FeedPhotoPrivacyTests: XCTestCase {
         let forbidden = [
             "import Photos", "PHPhotoLibrary", "PHAsset", "PHPicker", "UIImageWriteToSavedPhotosAlbum", "UIImagePickerController",
             "NSTemporaryDirectory", "cachesDirectory", "documentDirectory", "applicationSupportDirectory", "FileManager",
-            ".write(", "FileHandle", "OutputStream", "writeToFile", "createFile", "UIPasteboard", "UIActivityViewController",
+            ".write(", "FileHandle", "OutputStream", "writeToFile", "createFile", "UIPasteboard",
             "ShareLink", "URLCache", "NSCache", "UserDefaults", "SceneStorage", "AppStorage", "NSUbiquitous", "Keychain"
         ]
 

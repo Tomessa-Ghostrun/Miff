@@ -52,7 +52,17 @@ Sur l'OPPO (compte B) : onglet Update > prenez une photo > **Publier**. Sur l'iP
 - [ ] **Hors connexion** : mode avion avec une photo déjà vue dans la session : elle **reste affichée** ; une photo **jamais vue** ne s'affiche pas, **sans message** (le bandeau « Dernières informations de … » le dit déjà). Remettez le réseau : la photo **apparaît d'elle-même** (une lecture).
 - [ ] **Expiration (23 h)** : dans la console, mettez `lastUpdateAt` de B à **il y a 24 h** (ou attendez) : la photo **disparaît de la carte**, **sans message**. Le Feed **ne supprime rien** : la photo est toujours dans la console (le nettoyage est celui de l'auteur).
 - [ ] **Photo de B remplacée** : B publie une seconde photo : la carte montre la **nouvelle** (une seule nouvelle lecture).
-- [ ] **Aucune photo n'est enregistrée** dans l'app **Photos** de l'iPhone, à aucun moment.
+- [ ] **Aucune photo n'est enregistrée** dans l'app **Photos** de l'iPhone **de vous-même** : seul le bouton « Enregistrer la photo » (partie D bis), et seulement si vous choisissez « Enregistrer l'image », en écrit une.
+
+## Partie D bis — « Enregistrer la photo » (4 min)
+
+- [ ] **Au plein écran seulement** : le bouton « Enregistrer la photo » (contour blanc, icône flèche vers le bas) est **dans le pied du plein écran**, **visible sans défiler** avec un texte normal. Il n'y en a **pas** sur l'aperçu de la carte, ni dans l'Update.
+- [ ] Touchez-le : la **feuille de partage de l'iPhone** s'ouvre au-dessus de la photo, avec l'image et **« Enregistrer l'image »** parmi les actions. **Aucune demande d'autorisation** n'apparaît (ni « Miff souhaite accéder à vos photos » ni autre). **Si une autorisation est demandée ou si « Enregistrer l'image » n'apparaît pas : notez-le, c'est un blocage à signaler** (rien ne sera écrit directement dans Photos sans votre décision).
+- [ ] Choisissez **« Enregistrer l'image »** : la feuille se ferme, la photo apparaît dans l'app **Photos** (**dernier élément**) ; **notez son format** (JPEG, PNG ou HEIC) et regardez ses informations (i) : **aucun lieu, aucune date de prise de vue, aucun appareil**. Au plein écran : **« Photo enregistrée. »** s'affiche quelques secondes (et VoiceOver l'annonce), puis disparaît.
+- [ ] **Annuler** (glisser la feuille vers le bas) ou choisir **« Copier »** : **aucune** confirmation « Photo enregistrée. ». Le plein écran reste ouvert et se ferme comme avant (croix, glissement vers le bas).
+- [ ] **Sélecteur d'applications** : feuille de partage ouverte, faites le geste du sélecteur : la vignette n'affiche **pas** la photo.
+- [ ] **VoiceOver** : le bouton est lu **« Enregistrer la photo, bouton »** ; **taille de texte au maximum** : le bouton reste atteignable (le pied défile).
+- [ ] **English** : « Save the photo », « Photo saved. ».
 
 ## Partie E — Langue, taille de texte, animations (3 min)
 
