@@ -10,6 +10,7 @@ import com.tomessa.miff.domain.permission.PermissionSnapshot
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PlaceFact
+import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.TrackedZone
 import kotlinx.coroutines.tasks.await
 
@@ -115,4 +116,22 @@ class FirestoreTrackingStore(
             }
 
     override suspend fun commit(writes: List<DocWrite>) = base.commit(writes)
+}
+
+/**
+ * What the engine tells the notifications (NOTIF-4A): MY presence just changed on this phone. Local and immediate (nothing is read or written by the callee for
+ * N1 and N2): it lets the reminders follow a departure or an arrival without waiting for the Feed. It carries a keyword and a time, never a place or a position.
+ * A failure of the callee never reaches the detection ([TrackingEngine] swallows it).
+ */
+fun interface PresenceListener {
+    fun onMyPresence(
+        miffId: String,
+        presence: PresenceValue,
+        atMillis: Long,
+        setLastUpdate: Boolean,
+    )
+
+    companion object {
+        val None = PresenceListener { _, _, _, _ -> }
+    }
 }

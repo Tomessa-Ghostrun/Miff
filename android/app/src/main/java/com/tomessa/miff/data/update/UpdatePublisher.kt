@@ -108,6 +108,8 @@ class UpdatePublisher(
     private val published: PublishedPositions = PublishedPositions { true },
     /** Called when no Miff of the lot has my position yet: the detection is asked to write it (the person retries in a moment). */
     private val onPositionMissing: () -> Unit = {},
+    /** NOTIF-4A: told, locally, when an update left for [miffIds] at [atMillis] (it moves my last update: the reminders waiting for me are cancelled and planned again). */
+    private val onUpdatePublished: (miffIds: List<String>, atMillis: Long) -> Unit = { _, _ -> },
 ) {
     /**
      * Publishes [photo]. [only]: the Miffs a previous try did not reach (null = all). Never throws except for the cancellation of the caller.
@@ -282,6 +284,11 @@ class UpdatePublisher(
                 location = PhotoLocation(place.lat, place.lng, place.measuredAtMillis),
             )
         written.forEach { photos.putOwn(it, uid, shared) }
+        try {
+            onUpdatePublished(written, now)
+        } catch (e: Exception) {
+            // A reminder that cannot be brought up to date must never fail a publication that went through.
+        }
     }
 
     companion object {

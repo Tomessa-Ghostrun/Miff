@@ -61,7 +61,52 @@
 | 3.9 | Déconnexion. | Le centre est **vidé** (reconnexion : « Rien à signaler »). |
 | 3.10 | **TalkBack** : sur la cloche, puis sur une ligne. | « Notifications, 2 non lues » ; chaque ligne est lue d'un bloc (titre, phrase, heure, « non lu ») ; une action « Supprimer cette notification » est proposée. |
 
+## Astuce : fabriquer un orange ou un rouge depuis la console (parties 4 et 5)
+
+Les vrais délais sont de **2 h** (orange) et **4 h** (rouge) : attendre n'est pas nécessaire. Console Firebase > projet **Miff** (`miff-3d283`, jamais l'autre projet) > Firestore Database > `miffs/{id de la Miff}/status/{uid du compte}`. Modifiez **à la main** `presence` = `out` et `presenceAt` **et** `lastUpdateAt` = l'heure de votre choix :
+- **Rappel orange dans 5 minutes** : `presenceAt` = `lastUpdateAt` = **il y a 1 h 55**.
+- **Rappel rouge dans 5 minutes** : `presenceAt` = `lastUpdateAt` = **il y a 3 h 55** (le rappel orange est alors déjà passé : le téléphone ne le montre pas, il montre le rouge).
+- **Retour au vert** : `presence` = `in_trusted`, `presenceAt` et `lastUpdateAt` = maintenant.
+**Les notifications arrivent un peu après l'heure** (alarmes inexactes : quelques minutes de retard au plus en usage normal). **Rouvrir l'application peut réécrire votre vrai statut** : refaites la modification. Le Feed doit être ouvert **une fois** après la modification pour que le téléphone la connaisse (il la lit à ce moment) ; vous pouvez ensuite fermer l'application et verrouiller l'écran.
+
+## Partie 4 : mes rappels N1 « Tu es passé orange » et N2 « Tu es passé rouge » (PR B)
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| 4.1 | Compte A (Miff avec le compte B, **les deux vertes**). Fabriquez « orange dans 5 min » pour **A** (astuce ci-dessus), ouvrez le Feed, fermez l'application, verrouillez. | Environ 5 minutes plus tard : notification **« Tu es passé orange »** / « Indique à ta Miff que tout va bien. » Sur le **canal « Rappels pour toi »**, avec le son du téléphone (si c'est le jour). **Aucun mot « orange » hors du titre**, aucun nom, aucune heure. |
+| 4.2 | Touchez-la. | L'écran **Update** (bouton central) s'ouvre. La ligne apparaît dans le centre (cloche), lue. |
+| 4.3 | Refaites 4.1, puis **publiez une update avant l'heure**. | **Rien n'arrive** ; la ligne ne se crée pas. (Le téléphone replanifie à partir de l'update : +2 h.) |
+| 4.4 | Refaites 4.1, puis **entrez dans un lieu de confiance** (ou fabriquez `in_trusted`). | Rien n'arrive. |
+| 4.5 | Refaites 4.1, puis coupez « Quand je passe orange » (ou l'interrupteur général) **pendant l'attente**. | Rien n'arrive, **dès la seconde où vous coupez**. |
+| 4.6 | « Rouge dans 5 min » : fabriquez-le pour A, ouvrez le Feed, fermez. | **« Tu es passé rouge »** (pas de « orange » avant : le téléphone ne montre pas un orange déjà dépassé). |
+| 4.7 | Pendant la **nuit** (22 h à 7 h) : refaites 4.1 puis 4.6. | Orange : **sans son ni vibration** (dans le tiroir). Rouge : **normale** (avec son). « Nuit calme » coupée : tout est normal. |
+| 4.8 | Zone de danger : fabriquez `presence` = `in_risk` pour A depuis plus d'1 h. | **Ni « Tu es passé orange » ni « Tu es passé rouge »** (décision : la zone de danger ne déclenche aucun rappel « à toi » ; la partie 6 s'en occupe). |
+| 4.9 | Application **au premier plan** à l'heure prévue. | **Aucune notification du système** (la bulle du Feed parle) ; **une ligne silencieuse** dans le centre. |
+| 4.10 | **Troisième** passage en orange le même jour. | Plus de notification du système (2 par type et par jour, 6 en tout) ; une ligne silencieuse dans le centre. |
+| 4.11 | **Redémarrez le téléphone** pendant une attente, **sans rouvrir** l'application. | Le rappel arrive quand même (les alarmes sont remises en place au démarrage) ; **jamais deux fois**. |
+| 4.12 | Changez l'**heure** ou le **fuseau** du téléphone pendant une attente. | Pas de doublon ; le rappel arrive à l'heure réelle. |
+| 4.13 | Déconnectez-vous pendant une attente. | **Rien ne se déclenche** ensuite ; le centre est vidé. |
+| 4.14 | Verrouillez l'écran, regardez la notification. | Texte **sobre** : les deux phrases, rien d'autre. |
+
+## Partie 5 : « Ta Miff est passée en orange / rouge » (N3 / N4) et mesures sur l'OPPO (PR B)
+
+N3 et N4 concernent **la Miff vue par B** quand **c'est A qui est sorti**. Compte **B** (vert) sur l'OPPO, compte **A** sur l'autre téléphone ou la console.
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| 5.1 | Fabriquez « orange » pour **A** (il y a 2 h 10) ; sur le téléphone de **B**, ouvrez le Feed **après** la modification, puis fermez. | **30 minutes après** le passage au orange : **« Ta Miff est passée en orange »** / « Prends des nouvelles de tes proches. » sur le canal « Nouvelles de ta Miff ». Au toucher : le **Feed**. |
+| 5.2 | **Annulation par un proche** : avant l'heure, **A publie une update** (ou revient au vert). | **Rien n'arrive** chez B (le téléphone relit le serveur juste avant : la Miff n'est plus orange). |
+| 5.3 | « Rouge » pour A depuis plus de 4 h. | **« Ta Miff est passée en rouge »** chez B, 30 minutes après le passage. |
+| 5.4 | **B est lui-même celui qui est sorti** (A et B ont quitté le lieu) : mode **LARGE**. | **Pas de N3 / N4 chez B** (il a déjà reçu N1 / N2 : « je suis responsable »). |
+| 5.5 | **Hors connexion** (mode avion) à l'heure prévue, puis réseau **avant** 10 minutes. | Une reprise **10 minutes plus tard** : la notification arrive si c'est toujours vrai. |
+| 5.6 | Hors connexion **pendant plus de 10 minutes**. | **Rien** n'est affiché (jamais de fausse alerte, jamais de « on n'a pas pu vérifier »). |
+| 5.7 | **Mesure sur l'OPPO** : balayez l'application des récents, écran éteint, mode **économie d'énergie** activé, 15 minutes d'attente. | **Notez** si les rappels (4.1) et N3 (5.1) arrivent, et avec quel retard. **Risque connu (ColorOS)** : une application balayée peut perdre ses alarmes ; l'aide « Si les rappels n'arrivent pas » est dans Réglages > Notifications. |
+| 5.8 | Vérifiez dans la **console Firestore** (Utilisation) que N3 / N4 ont fait **quelques lectures** (7 pour une Miff de 4) et **aucune écriture**. | Cohérent avec `docs/dev/surveillance-quotas.md`, §5 quater. |
+| 5.9 | **À vérifier** : l'application **fermée**, la vérification de N3 obtient bien le jeton d'authentification et celui d'App Check en arrière-plan. | La notification de 5.1 arrive app fermée (sinon, signalez-le : c'est le point de la spec à confirmer sur appareil). |
+
 ## Ce qui est volontairement absent (à ne pas signaler comme un défaut)
+
+- **Aucun build « délais raccourcis ÷ 60 »** : voir l'astuce de la console ci-dessus.
 
 - Aucune notification d'**arrivée** ou de **départ** d'un proche, ni de « pas de nouvelles de Thomas » : cela exige un serveur (phase 2, **N5 abandonnée**).
 - Pas de swipe pour supprimer une ligne (appui long + action TalkBack), pas de squelette de chargement (le centre est local, il s'affiche tout de suite).

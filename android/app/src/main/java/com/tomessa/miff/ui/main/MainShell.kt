@@ -257,6 +257,7 @@ private fun MainNavigation(
                                     network = container.networkMonitor,
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
+                                    notifications = container.feedNotificationLink,
                                 )
                             }
                         },

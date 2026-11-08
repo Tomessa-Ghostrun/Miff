@@ -28,6 +28,7 @@ import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
 import com.tomessa.miff.data.feed.FeedRefresher
+import com.tomessa.miff.data.feed.FirestoreCircleStatusReader
 import com.tomessa.miff.data.feed.FirestoreFeedRefresher
 import com.tomessa.miff.data.feed.FirestorePhotoReader
 import com.tomessa.miff.data.feed.FirestorePositionReader
@@ -52,14 +53,21 @@ import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
+import com.tomessa.miff.data.notification.AndroidNotificationAlarms
+import com.tomessa.miff.data.notification.AndroidNotificationPresenter
 import com.tomessa.miff.data.notification.AndroidNotificationTray
+import com.tomessa.miff.data.notification.AppVisibility
+import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
+import com.tomessa.miff.data.notification.NotificationScheduler
 import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.notification.NotificationTray
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
+import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
+import com.tomessa.miff.data.notification.SharedPreferencesPlanSnapshotStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -112,6 +120,7 @@ import com.tomessa.miff.data.tracking.FusedPhotoPositionSource
 import com.tomessa.miff.data.tracking.FusedPositionSource
 import com.tomessa.miff.data.tracking.LocalPublishedPositions
 import com.tomessa.miff.data.tracking.PlayGeofenceArming
+import com.tomessa.miff.data.tracking.PresenceListener
 import com.tomessa.miff.data.tracking.SharedPreferencesTrackingLocalStore
 import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.data.tracking.TrackingEnvironment
@@ -125,6 +134,7 @@ import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
+import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.startup.StartupTrace
@@ -133,6 +143,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -235,6 +246,9 @@ class AppContainer(
     /** Local Firestore cache purge (sign-out, refusal of the panel, and loss of access to a Miff). One instance for all. */
     val cachePurger: CachePurger by lazy { FirestoreCachePurger(flags = sessionFlags) }
 
+    /** The phone's own copy of the identifier of its session and the markers "replaced" / "closed" (private file): read by the session AND, without any network, by the notifications. */
+    private val deviceIdStore: SharedPreferencesDeviceIdStore by lazy { SharedPreferencesDeviceIdStore(context) }
+
     /**
      * SESS-2, "un compte, un seul appareil": the session of this phone (identifier in a private file not backed up, document `users/{uid}/session/active`).
      * Used by the session manager (sign-in, launch, sign-out), by the detection engine and the Miff repository (nothing is written without it) and by the
@@ -242,7 +256,7 @@ class AppContainer(
      */
     val deviceSession: DeviceSession by lazy {
         DeviceSession(
-            ids = SharedPreferencesDeviceIdStore(context),
+            ids = deviceIdStore,
             documents = FirestoreSessionDocuments(),
             network = networkMonitor,
             currentUid = { authGateway.currentUid },
@@ -309,25 +323,98 @@ class AppContainer(
         NotificationAuthorization(devicePermissions, notificationAsks)
     }
 
-    /** NOTIF-P0: the centre, the choices and what is in the tray go with the session (contract of the purge, DUR-3). */
+    /**
+     * NOTIF-4A / 5A: plans, cancels and shows the reminders N1 to N4 (alarms, local snapshot, memory of what was notified). Local: nothing is read from or written to
+     * the server by N1 and N2; N3 and N4 read the statuses of the Miff once from the server a moment before they are shown (see [NotificationScheduler]).
+     */
+    val notificationScheduler: NotificationScheduler by lazy {
+        NotificationScheduler(
+            snapshots = SharedPreferencesPlanSnapshotStore(context),
+            settings = notificationSettings,
+            permissionAllowed = { notificationAuthorization.allowed() },
+            sessionValid = ::notificationSessionValid,
+            alarms = AndroidNotificationAlarms(context),
+            ledger = SharedPreferencesNotificationLedger(context),
+            center = notificationCenter,
+            presenter = AndroidNotificationPresenter(context),
+            appInForeground = { AppVisibility.inForeground },
+            reader = FirestoreCircleStatusReader(),
+        )
+    }
+
+    /**
+     * ONE thread, in order, for what the screens tell the notifications: the disk work (the snapshot, the alarms) never runs on the main thread, and two calls
+     * never overtake each other (the last status seen is the last one kept). A failure there never takes the app down (nothing is logged: it could hold a Miff).
+     */
+    private val notificationScope by lazy {
+        CoroutineScope(
+            SupervisorJob() + Dispatchers.Default.limitedParallelism(1) + CoroutineExceptionHandler { _, _ -> },
+        )
+    }
+
+    /** What the Feed tells the notifications (the snapshot of the Miff shown, the choice of another Miff): local, see [FeedNotificationLink]. */
+    val feedNotificationLink: FeedNotificationLink by lazy {
+        object : FeedNotificationLink {
+            override fun onStatuses(
+                miffId: String,
+                myUid: String,
+                members: List<SnapshotMember>,
+            ) {
+                notificationScope.launch { notificationScheduler.onStatuses(miffId, myUid, members) }
+            }
+
+            override fun onActiveMiff(miffId: String) {
+                notificationScope.launch { notificationScheduler.onActiveMiffChanged(miffId) }
+            }
+        }
+    }
+
+    /**
+     * Is somebody signed in on this phone with the session of [uid]? Answered on the PHONE (no read of the server, no wait): the account, the identifier of the session
+     * and the three markers (replaced by another phone, deletion under way, sign-out under way). A reminder never leaves for an account that is not the one in use.
+     */
+    private fun notificationSessionValid(uid: String): Boolean =
+        authGateway.currentUid == uid &&
+            deviceIdStore.read() != null &&
+            !deviceIdStore.isReplaced() &&
+            !deviceIdStore.isClosed() &&
+            !deviceIdStore.isGone() &&
+            accountDeletionMarker.read() == null
+
+    private val notificationWatchStarted =
+        java.util.concurrent.atomic
+            .AtomicBoolean(false)
+
+    /**
+     * The app came to the front (or woke up): the channels are written again (language), what the person chose in Settings is WATCHED (a switch cancels what it covers at
+     * once), and the plan is looked at again (the permission may have changed, the clock moved, a notification became due). Never blocks the caller.
+     */
+    fun notificationsLookAgain() {
+        notificationScope.launch {
+            NotificationChannels.ensure(context)
+            if (notificationWatchStarted.compareAndSet(false, true)) {
+                // Every change of a switch (the first value is the current one: skipped) asks the scheduler to bring the alarms in line, within the second.
+                notificationScope.launch {
+                    notificationSettings.preferences.drop(1).collect { notificationScheduler.reconcile() }
+                }
+            }
+            notificationScheduler.reconcile()
+        }
+    }
+
+    /** NOTIF-P0: the centre, the choices, the alarms and what is in the tray go with the session (contract of the purge, DUR-3). */
     private val notificationTeardown: SessionTeardown by lazy {
         SessionTeardown {
+            notificationScheduler.clearAll()
             notificationCenter.purge()
             notificationSettings.reset()
             notificationTray.cancelAll()
+            tabRequests.clear()
         }
     }
 
     /** A tap on a line of the centre (or, later, on a notification) asks the tabs to show the Feed or the Update. */
     val tabRequests: TabRequests by lazy { TabRequests() }
-
-    /**
-     * Creates the four channels of the system (or refreshes their names, for a change of language). Cheap and idempotent, called at the start of the
-     * app and each time it comes to the front; never blocks the caller.
-     */
-    fun ensureNotificationChannels() {
-        trackingScope.launch { NotificationChannels.ensure(context) }
-    }
 
     /** LOC-2b (design 23): the Miffs that wait for the agreement of the person, in memory for the session. */
     val awaitingAgreement: AwaitingAgreement by lazy { AwaitingAgreement() }
@@ -368,6 +455,11 @@ class AppContainer(
             // AUTH-5b: while the deletion of THIS account is under way (its marker is on the disk) nothing is armed, read or written, even by a receiver of the
             // system that wakes a cold process (the memory of the engine's stop is gone there).
             suspended = { accountDeletionMarker.read()?.uid?.let { it == authGateway.currentUid } == true },
+            // NOTIF-4A: a departure or an arrival of mine moves the reminders at once (local; nothing read or written).
+            presenceListener =
+                PresenceListener { miffId, presence, atMillis, setLastUpdate ->
+                    notificationScheduler.onMyPresence(miffId, presence, atMillis, setLastUpdate)
+                },
         )
     }
 
@@ -443,6 +535,12 @@ class AppContainer(
             // The photo is only written where my own position is published (contract of the data model); none yet: the detection is asked to write it.
             published = LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)),
             onPositionMissing = { trackingLooksAgain(TrackingEngine.Reason.OPENED) },
+            onUpdatePublished = {
+                miffIds,
+                at,
+                ->
+                notificationScope.launch { notificationScheduler.onMyUpdate(miffIds, at) }
+            },
         )
     }
 

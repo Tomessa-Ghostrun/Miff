@@ -91,4 +91,36 @@ object StatusColor {
             else -> StatusLevel.RED
         }
     }
+
+    /**
+     * The instants at which the level of a member CAN change with the facts known now (NOTIF-3A, ticket notifications.md section 20.2): the planner of the
+     * notifications asks "when will this person turn orange, when red?" without ever writing an hour count of its own (criterion STA9). Same file, same
+     * constants as [level], to be written identically on iOS. Ascending, without doubles; empty when the level never changes (no sharing, no status, a trusted
+     * zone, `unknown`, or red from the start).
+     *
+     * CONTRACT (tested on every shape of facts): at each instant `t` returned, `level(t - 1 ms) != level(t)`, and the level is constant between two
+     * consecutive instants (and before the first, and after the last). It holds by construction: the candidates (the thresholds of the age counted from the
+     * reference, and the end of the hour of grace of the danger zone) are kept only when the level really changes there.
+     */
+    fun changeInstants(facts: MemberStatusFacts?): List<Long> {
+        if (facts == null || !facts.sharingEnabled) return emptyList()
+        if (facts.presence != PresenceValue.OUT && facts.presence != PresenceValue.IN_RISK) return emptyList()
+        val candidates = mutableListOf<Long>()
+        listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()?.let { reference ->
+            safeAfter(reference, StatusThresholds.ORANGE_AFTER_MILLIS)?.let(candidates::add)
+            safeAfter(reference, StatusThresholds.RED_AFTER_MILLIS)?.let(candidates::add)
+        }
+        if (facts.presence == PresenceValue.IN_RISK) {
+            facts.lastUpdateAtMillis?.let { update ->
+                safeAfter(update, StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS)?.let(candidates::add)
+            }
+        }
+        return candidates.distinct().sorted().filter { level(facts, it - 1) != level(facts, it) }
+    }
+
+    /** The first millisecond AFTER `reference + duration` (the rules say "more than"); null for a reference so absurd that the sum would overflow. */
+    private fun safeAfter(
+        reference: Long,
+        durationMillis: Long,
+    ): Long? = if (reference in 0..(Long.MAX_VALUE / 4)) reference + durationMillis + 1 else null
 }

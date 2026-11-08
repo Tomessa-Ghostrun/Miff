@@ -71,6 +71,8 @@ class TrackingEngine(
      * written, even by a receiver of the system that wakes a COLD process (the memory of [stop] is gone there). Another account's marker does not count.
      */
     private val suspended: () -> Boolean = { false },
+    /** NOTIF-4A: told, locally and at once, when MY presence changes in a Miff (a departure, an arrival): the reminders follow without waiting for the Feed. */
+    private val presenceListener: PresenceListener = PresenceListener.None,
 ) : SessionTeardown {
     /** Why the engine is asked to look again (ticket 6.5: opening, going to the background, a move of more than 250 m, an entry in a zone). */
     enum class Reason { OPENED, BACKGROUNDED, MOVED, ZONE_ENTERED, REARM, SHARING_CHANGED, NETWORK_BACK }
@@ -531,6 +533,7 @@ class TrackingEngine(
                     }
                 }
             if (fact != null) {
+                tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
                 journal.record(
                     if (fact.presence ==
                         PresenceValue.UNKNOWN
@@ -549,6 +552,20 @@ class TrackingEngine(
             }
         }
         return state.copyWith(miffs = miffs, inside = inside)
+    }
+
+    /** The notifications are told that my presence changed; whatever they do, it never reaches the detection (a failure here is swallowed, nothing is logged). */
+    private fun tellPresence(
+        miffId: String,
+        presence: PresenceValue,
+        atMillis: Long,
+        setLastUpdate: Boolean,
+    ) {
+        try {
+            presenceListener.onMyPresence(miffId, presence, atMillis, setLastUpdate)
+        } catch (e: Exception) {
+            // A reminder that cannot be planned must never stop the detection of the arrivals and departures.
+        }
     }
 
     // --- The 20 zones ---------------------------------------------------------------------------------------------------------------------
@@ -649,6 +666,7 @@ class TrackingEngine(
                 PresenceMachine.onTransition(kind, zoneKey, at ?: now, zonesOf(state, miffId), inside, miff.derived())
                     ?: continue
             val (derived, fact) = result
+            tellPresence(miffId, derived.presence, at ?: now, fact.setLastUpdate)
             if (at == null) {
                 // Too old for the rules to accept: given up (no loop), but the local state moves on.
                 journal.record(JournalKind.STATUS_GIVEN_UP, derived.placeId)

@@ -1,6 +1,7 @@
 package com.tomessa.miff
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -17,7 +18,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.tomessa.miff.data.notification.NotificationIntents
 import com.tomessa.miff.data.settings.AndroidLanguageStore
+import com.tomessa.miff.domain.navigation.MainTab
+import com.tomessa.miff.domain.notification.NotificationDestination
 import com.tomessa.miff.domain.startup.StartupMark
 import com.tomessa.miff.startup.StartupMetricsOverlay
 import com.tomessa.miff.startup.StartupTrace
@@ -50,6 +54,8 @@ class MainActivity : ComponentActivity() {
         // Read once per launch; the person's "remove animations" choice gives a still logo instead of the animation.
         val reduceMotion = ReduceMotion.isRequested(this)
         recreateWhenLanguageChanges(container)
+        // A tap on a notification of Miff that started the app: the tab it is about (the Update for N1 and N2, the Feed for the others).
+        if (savedInstanceState == null) openFromNotification(intent)
         setContent {
             MiffTheme {
                 ProvideSystemBarsFallback {
@@ -71,6 +77,33 @@ class MainActivity : ComponentActivity() {
             }
         }
         StartupTrace.mark(StartupMark.ACTIVITY_CONTENT_SET)
+    }
+
+    /** A tap on a notification while the app is already open. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openFromNotification(intent)
+    }
+
+    /**
+     * Opens the tab a notification is about and marks its line of the centre as read. Only OUR intent is understood (its action and a known keyword); anything else
+     * is ignored, never an error. The request waits until the tabs are on screen: if the person is signed out, the sign-in comes first, and the request is
+     * forgotten at the sign-out (it never reaches another account). Nothing is logged.
+     */
+    private fun openFromNotification(intent: Intent?) {
+        val (destination, key) = NotificationIntents.parse(intent) ?: return
+        val container = (application as MiffApplication).container
+        container.tabRequests.request(
+            if (destination ==
+                NotificationDestination.UPDATE
+            ) {
+                MainTab.UPDATE
+            } else {
+                MainTab.FEED
+            },
+        )
+        key?.let { container.notificationCenter.markRead(it) }
     }
 
     /**
