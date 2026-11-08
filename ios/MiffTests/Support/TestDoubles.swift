@@ -147,7 +147,6 @@ final class FakeAuthGateway: AuthGateway {
     var deleteResults: [AuthFailure?] = []
     var reauthResult: AuthFailure?
     var name: String?
-    /// L'adresse de la photo du compte Google (nil = pas de photo).
     var photoURL: URL?
     /// Nombre de déconnexions qui échouent encore (la session reste ouverte), pour tester la reprise.
     var signOutFailures = 0

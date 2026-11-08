@@ -80,11 +80,8 @@ final class SwipeBackGateTests: XCTestCase {
         XCTAssertNil(SwipeBackGate.findNavigation(containing: UIViewController()))
     }
 
-    func testALockedScreenLocksOnlyWhileItsViewIsInTheWindow() throws {
+    func testALockedScreenLocksOnlyWhileItIsOnTopOfTheStack() throws {
         let navigation = makeNavigation(depth: 2)
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
-        window.rootViewController = navigation
-        window.makeKeyAndVisible()
         let screen = try XCTUnwrap(navigation.topViewController)
         let lock = SwipeBackLock.LockController()
         lock.isLocked = true
@@ -94,18 +91,19 @@ final class SwipeBackGateTests: XCTestCase {
         lock.apply()
         let gate = SwipeBackGate.gate(for: navigation)
         XCTAssertEqual(gate.lockCount, 1)
-        // L'écran est recouvert : sa vue quitte la fenêtre et son verrou ne retient plus personne.
+        // Un autre écran est empilé par-dessus : l'écran verrouillé est recouvert, son verrou ne retient plus personne.
+        navigation.pushViewController(UIViewController(), animated: false)
         lock.viewWillDisappear(false)
-        XCTAssertEqual(gate.lockCount, 0)
         lock.apply()
         XCTAssertEqual(gate.lockCount, 0)
+        // Retour sur l'écran verrouillé : le verrou revient.
+        navigation.popViewController(animated: false)
         lock.viewWillAppear(false)
         XCTAssertEqual(gate.lockCount, 1)
         // L'écran part pour de bon.
         lock.willMove(toParent: nil)
         lock.removeFromParent()
         XCTAssertEqual(gate.lockCount, 0)
-        window.isHidden = true
     }
 
     func testAnUnlockedScreenStillReEnablesTheGesture() throws {

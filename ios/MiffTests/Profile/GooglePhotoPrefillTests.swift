@@ -43,12 +43,19 @@ private final class FakePhotoCodec: AvatarCodec {
 final class GooglePhotoPrefillTests: XCTestCase {
     private let address = URL(string: "https://lh3.googleusercontent.com/a/ACg8ocJabc=s96-c")
 
+    private struct Setup {
+        let prefill: GooglePhotoPrefill
+        let source: FakePhotoSource
+        let codec: FakePhotoCodec
+    }
+
     private func make(
         source: FakePhotoSource = FakePhotoSource(),
         codec: FakePhotoCodec = FakePhotoCodec(),
         timeout: TimeInterval = 5
-    ) -> (prefill: GooglePhotoPrefill, source: FakePhotoSource, codec: FakePhotoCodec) {
-        (GooglePhotoPrefill(source: source, codec: codec, timeout: timeout), source, codec)
+    ) -> Setup {
+        let prefill = GooglePhotoPrefill(source: source, codec: codec, timeout: timeout)
+        return Setup(prefill: prefill, source: source, codec: codec)
     }
 
     func testThePhotoIsDownloadedOnceAtTheRequestedSizeAndCroppedAtTheCentre() async {
@@ -143,17 +150,17 @@ final class GooglePhotoPrefillTests: XCTestCase {
 
     func testTheDownloaderOnlyAcceptsASuccessfulImageAnswerFromGoogle() throws {
         let good = try XCTUnwrap(URL(string: "https://lh3.googleusercontent.com/a/abc=s256-c"))
-        func response(_ url: URL, status: Int = 200, type: String = "image/jpeg", length: Int = 20_000) -> URLResponse? {
+        func response(_ url: URL, status: Int = 200, mime: String = "image/jpeg", length: Int = 1_000) -> URLResponse? {
             HTTPURLResponse(
                 url: url,
                 statusCode: status,
                 httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": type, "Content-Length": String(length)]
+                headerFields: ["Content-Type": mime, "Content-Length": String(length)]
             )
         }
         XCTAssertTrue(GooglePhotoDownloader.isAcceptable(try XCTUnwrap(response(good))))
         XCTAssertFalse(GooglePhotoDownloader.isAcceptable(try XCTUnwrap(response(good, status: 404))))
-        XCTAssertFalse(GooglePhotoDownloader.isAcceptable(try XCTUnwrap(response(good, type: "text/html"))))
+        XCTAssertFalse(GooglePhotoDownloader.isAcceptable(try XCTUnwrap(response(good, mime: "text/html"))))
         XCTAssertFalse(GooglePhotoDownloader.isAcceptable(
             try XCTUnwrap(response(good, length: GooglePhotoDownloader.maxBytes + 1))
         ))

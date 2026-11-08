@@ -74,15 +74,28 @@ struct SwipeBackLock: UIViewControllerRepresentable {
             }
             let current = SwipeBackGate.gate(for: navigation)
             current.install()
-            // Le verrou ne vaut que pour un écran visible : un écran recouvert (sa vue n'est plus dans la fenêtre) ne verrouille pas
-            // celui qui est par-dessus.
-            let isVisible = !isLeaving && isViewLoaded && view.window != nil
-            current.setLocked(isLocked && isVisible, owner: self)
+            // Le verrou ne vaut que pour l'écran du dessus : un écran recouvert ne verrouille pas celui qui est par-dessus.
+            current.setLocked(isLocked && !isLeaving && isOnTop(of: navigation), owner: self)
             gate = current
         }
 
         private func release() {
             gate?.setLocked(false, owner: self)
+        }
+
+        /// Cet écran (ou son parent) est-il celui du dessus de la pile ?
+        private func isOnTop(of navigation: UINavigationController) -> Bool {
+            guard let top = navigation.topViewController else {
+                return false
+            }
+            var ancestor: UIViewController? = self
+            while let current = ancestor {
+                if current === top {
+                    return true
+                }
+                ancestor = current.parent
+            }
+            return false
         }
     }
 }
