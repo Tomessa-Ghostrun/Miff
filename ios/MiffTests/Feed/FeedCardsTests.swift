@@ -119,6 +119,27 @@ final class FeedCardsTests: XCTestCase {
         XCTAssertEqual(content.card("r")?.label, .at(.category(.relative)), "Chez un proche : la catégorie, pas le nom")
     }
 
+    func testAnEmptyOrBlankPlaceNameFallsBackToTheGenericPhraseAndAPaddedNameIsTrimmed() {
+        let places = [
+            feedPlace("p1", name: "   ", category: .leisure), feedPlace("p2", name: "", category: .other),
+            feedPlace("p3", name: "  Club de judo \n", category: .leisure), feedPlace("p4", name: " \t ", category: nil)
+        ]
+        let members = [feedMember("a"), feedMember("b"), feedMember("c"), feedMember("d"), feedMember("e"), feedMember("me")]
+        let statuses = [
+            "a": feedStatus(.inTrusted, placeId: "p1"), "b": feedStatus(.inTrusted, placeId: "p2"),
+            "c": feedStatus(.inTrusted, placeId: "p3"), "d": feedStatus(.out, placeId: "p4", departedAgo: feedMinutes(10)),
+            "e": feedStatus(.inRisk, placeId: "p1", departedAgo: feedMinutes(5))
+        ]
+
+        let content = buildFeed(feedInput(members: members, statuses: statuses, places: places))
+
+        XCTAssertEqual(content.card("a")?.label, .at(.unknown))
+        XCTAssertEqual(content.card("b")?.label, .at(.unknown))
+        XCTAssertEqual(content.card("c")?.label, .at(.named("Club de judo")))
+        XCTAssertEqual(content.card("d")?.label, .left(.unknown))
+        XCTAssertEqual(FeedBuilder.placeRef("p1", ["p1": places[0]], trusted: false), .unknown)
+    }
+
     func testLeisureAndOtherAreSaidByTheNameOfThePlace() {
         let places = [feedPlace("p1", name: "Club de judo", category: .leisure), feedPlace("p2", name: "Chez Léa", category: .other)]
         let members = [feedMember("a"), feedMember("b"), feedMember("c"), feedMember("me")]

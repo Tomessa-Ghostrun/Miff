@@ -118,6 +118,7 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 - [ ] **Étiquettes** : dans un lieu **Maison** « À la maison », **Travail** « Au travail », **École** « À l'école », **Sport** « Au sport », **Chez un proche** « Chez un proche » ; **Loisir** et **Autre** : le **nom du lieu seul** (sans « À » devant). Un nom long (40 signes) tient sur deux lignes au plus. En anglais : At home / At work / At school / At the gym / At a loved one's.
 - [ ] **Bulle centrée** : dans les **3 couleurs** (vert, orange, rouge) et sur **toutes les pages** du carrousel d'alertes, le texte et le bouton sont **au milieu de la tache**, à gauche comme à droite et en haut comme en bas, **pendant que la tache bouge**. Refaites-le avec une **grande taille de texte** (Réglages > Accessibilité > Affichage et luminosité > Taille du texte) : le texte reste centré et ne touche pas le disque du pictogramme en bas à droite.
 - [ ] **Seuils** : sorti d'un lieu depuis moins de 2 h : **vert** ; au-delà de 2 h : **orange** ; au-delà de 4 h : **rouge**. Une update plus récente repart du vert. **Zone de danger** : dernière update il y a plus d'1 h (ou aucune) : **rouge** ; il y a moins d'1 h : **verte**, la carte garde son étiquette « Dans une zone de danger ».
+- [ ] **Détail d'un lieu de danger** (Lieux > un lieu de danger) : le texte d'information dit « …tu n'as pas donné de nouvelles depuis plus d'une heure, ta Miff voit ton statut en rouge. ».
 
 ## Points ouverts pour vous (à noter à la fin)
 

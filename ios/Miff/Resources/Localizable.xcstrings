@@ -7501,13 +7501,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "While you're in this zone, your Miff sees your status in red. Only the Miff's creator can add or edit this kind of zone."
+            "value": "When you are in this zone and haven't shared news for over an hour, your Miff sees your status in red."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone."
+            "value": "Quand tu es dans cette zone et que tu n'as pas donné de nouvelles depuis plus d'une heure, ta Miff voit ton statut en rouge."
           }
         }
       }

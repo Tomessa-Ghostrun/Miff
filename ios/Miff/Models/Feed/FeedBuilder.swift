@@ -219,8 +219,10 @@ enum FeedBuilder {
         guard let placeId, let place = places[placeId] else {
             return .unknown
         }
+        // Un nom vide ou fait d'espaces ne se dit jamais (« À  ») : espaces retirés, puis formule générique (comme Android).
+        let name = place.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trusted else {
-            return .named(place.name)
+            return name.isEmpty ? .unknown : .named(name)
         }
         switch place.category {
         case .home:
@@ -234,7 +236,7 @@ enum FeedBuilder {
         case .relative:
             return .category(.relative)
         case .leisure, .other, nil:
-            return .named(place.name)
+            return name.isEmpty ? .unknown : .named(name)
         }
     }
 
