@@ -38,12 +38,16 @@ final class NotificationReconcilerTests: ReconcilerTestCase {
         XCTAssertEqual(rig.scheduler.added.count, count, "idempotent : même plan, mêmes demandes")
     }
 
-    func testTheMiffFollowUpsAreProgrammedForTheObserver() async {
+    func testTheMiffFollowUpIsProgrammedForTheObserverAndTheSecondOneOnceTheDataIsFreshEnough() async {
         let rig = makeRig(now: at(14, 0))
         seed(rig, [green("me"), out("x", ref: at(13, 40)), green("y")])
 
         await rig.reconciler.reconcile()
+        XCTAssertEqual(Set(rig.scheduler.pending.keys), [identifier(.n3)], "N4 est à plus de 3 h de la donnée")
 
+        rig.state.now = at(16, 0)
+        seed(rig, [green("me"), out("x", ref: at(13, 40)), green("y")])
+        await rig.reconciler.reconcile()
         XCTAssertEqual(Set(rig.scheduler.pending.keys), [identifier(.n3), identifier(.n4)])
     }
 
