@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.NotificationBell
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShadowSubtle
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -57,7 +59,8 @@ import com.tomessa.miff.ui.theme.textBodyItalic
 
 /*
  * The FIXED header of the Feed (maquette 01): my avatar with the ring of MY status (it opens the Profile tab), the logo (it brings the feed
- * back to the top), and, under them, the pastille of the Miff. No bell: nothing is notified (plan gratuit), the right side stays empty.
+ * back to the top), the bell of the centre of notifications (NOTIF-6A: it comes back, decision of the PM of 2026-11-08, which revises Q15) and,
+ * under them, the pastille of the Miff.
  */
 
 /** Me, for the header: the initials and the photo of my profile. */
@@ -76,6 +79,7 @@ internal fun FeedHeader(
     onOpenProfile: () -> Unit,
     onLogo: () -> Unit,
     modifier: Modifier = Modifier,
+    notifications: FeedNotifications = FeedNotifications(),
     pill: @Composable () -> Unit,
 ) {
     val profileLabel =
@@ -95,8 +99,7 @@ internal fun FeedHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), contentAlignment = Alignment.Center) {
-            // The zone of touch is 48 dp (the disc is 46). The right end of the row is RESERVED (48 dp) for the future button of the notifications:
-            // nothing is drawn there today (no bell), and the logo stays centred.
+            // The zone of touch is 48 dp (the disc is 46). The right end of the row holds the bell (48 dp, like the avatar at the other end), and the logo stays centred.
             Box(
                 modifier =
                     Modifier
@@ -109,7 +112,11 @@ internal fun FeedHeader(
             ) {
                 FeedAvatar(jpeg = me.avatarJpeg, initials = me.initials, level = myLevel)
             }
-            Spacer(Modifier.align(Alignment.CenterEnd).size(Spacing.minTouchTarget))
+            NotificationBell(
+                unreadCount = notifications.unreadCount,
+                onClick = notifications.onOpenCenter,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
             val scrollLabel = stringResource(R.string.feed_header_logo_a11y)
             Image(
                 painter = painterResource(R.drawable.miff_wordmark_color),
