@@ -556,11 +556,11 @@ Un seul document, d'identifiant fixe `active` (tout autre identifiant sous `sess
 
 ## 3. Statuts : ce qui est stocké, ce qui est calculé
 
-**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : les seuils ci-dessous (2 h / 4 h) et la priorité « zone de danger » sont ceux d'avant les décisions du 2026-11-01 (1 h / 2 h, zone de confiance prioritaire, ticket Lieux §6.9) ; ils seront réécrits avec le ticket Tracking, hors de cette PR.
+**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : **décision du PM du 2026-11-08** : orange à **2 h**, rouge à **4 h** (comptés depuis le plus récent du départ et de la dernière update ; elle remplace 1 h / 2 h du 2026-11-01). Orange inclus jusqu'à 4 h 00, rouge à partir de 4 h 01. **Règle « zone de danger et dernière update d'il y a moins d'une heure » : non implémentée, en attente de confirmation du PM** (« moins » ou « plus » ?) ; une zone de danger reste rouge. La zone de confiance prime sur la zone de danger (ticket Lieux §6.9).
 **Calculé par chaque client à l'affichage** (algorithme identique iOS/Android, paramètres en constantes partagées) :
 
 ```
-ORANGE_APRES = 2 h      ROUGE_APRES = 4 h      (spec : orange à +2 h, rouge à +2 h supplémentaires)
+ORANGE_APRES = 2 h      ROUGE_APRES = 4 h      (PM, 2026-11-08 ; constantes `StatusThresholds.ORANGE_AFTER_MILLIS` / `RED_AFTER_MILLIS`)
 
 niveau(membre, statut, maintenant):
   si !membre.sharing.enabled           -> PARTAGE_DESACTIVE      (carte neutre, jamais alarmiste)
@@ -571,7 +571,7 @@ niveau(membre, statut, maintenant):
     unknown     -> PAS_DE_NOUVELLES_NEUTRE  [Hypothèse : pas d'escalade sans départ connu, Q10]
     out         -> ref = max(presenceAt, lastUpdateAt)
                    écoulé = maintenant - ref
-                   < 2 h -> VERT (parti, tout va bien)   < 4 h -> ORANGE   sinon -> ROUGE
+                   < 2 h -> VERT (parti, tout va bien)   <= 4 h -> ORANGE   sinon -> ROUGE
   en plus : si locationAccess in (denied, foreground) -> badge "localisation limitée" (mises à jour manuelles encouragées)
 ```
 

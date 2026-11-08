@@ -14,7 +14,7 @@ import java.time.ZoneId
 /*
  * The whole logic of the Feed, as ONE pure function (ticket FEED, criteria B1 to B6, C1 to C7): from what the listeners said and the time of
  * the moment, to what the screens draw. Nothing is read, written or logged here. The colour of a member is ONLY ever computed by
- * [StatusColor.level] (the 1 h and 2 h constants live in StatusThresholds, they are never written again here).
+ * [StatusColor.level] (the thresholds of the colours live in StatusThresholds, they are never written again here).
  */
 
 /** What the status listener says, as the Feed sees it. */
@@ -188,7 +188,7 @@ object FeedBuilder {
 
                 status.presence == PresenceValue.IN_TRUSTED -> {
                     StateLabel.At(
-                        placeRef(status.placeId, places, trusted = true),
+                        labelRef(status.placeId, places),
                     )
                 }
 
@@ -235,6 +235,7 @@ object FeedBuilder {
         }
     }
 
+    /** For the sentences ("A quitté la maison"): the four categories with a noun are replaced, any other place is named. */
     private fun placeRef(
         placeId: String?,
         places: Map<String, Place>,
@@ -242,15 +243,35 @@ object FeedBuilder {
     ): PlaceRef {
         val place = placeId?.let { places[it] } ?: return PlaceRef.Unknown
         if (!trusted) return PlaceRef.Named(place.name)
-        val kind =
-            when (place.category) {
-                PlaceCategory.HOME -> PlaceKind.HOME
-                PlaceCategory.WORK -> PlaceKind.WORK
-                PlaceCategory.SCHOOL -> PlaceKind.SCHOOL
-                PlaceCategory.SPORT -> PlaceKind.SPORT
-                else -> null
-            }
+        val kind = sentenceKind(place.category)
         return if (kind != null) PlaceRef.Category(kind) else PlaceRef.Named(place.name)
+    }
+
+    private fun sentenceKind(category: PlaceCategory?): PlaceKind? =
+        when (category) {
+            PlaceCategory.HOME -> PlaceKind.HOME
+            PlaceCategory.WORK -> PlaceKind.WORK
+            PlaceCategory.SCHOOL -> PlaceKind.SCHOOL
+            PlaceCategory.SPORT -> PlaceKind.SPORT
+            else -> null
+        }
+
+    /**
+     * For the LABEL of a card in a trusted place (decision of the PM, 2026-11-08): the label depends on the CATEGORY of the place. Maison, Travail,
+     * École, Sport and Chez un proche have their own words; Loisir, Autre and a place written before categories existed show the NAME of the place
+     * (only the members of the Miff see it, as before). A place missing from the list (deleted) or with a blank name: the generic wording.
+     */
+    internal fun labelRef(
+        placeId: String?,
+        places: Map<String, Place>,
+    ): PlaceRef {
+        val place = placeId?.let { places[it] } ?: return PlaceRef.Unknown
+        val kind = if (place.category == PlaceCategory.RELATIVE) PlaceKind.RELATIVE else sentenceKind(place.category)
+        return when {
+            kind != null -> PlaceRef.Category(kind)
+            place.name.isBlank() -> PlaceRef.Unknown
+            else -> PlaceRef.Named(place.name.trim())
+        }
     }
 
     private fun timeLine(

@@ -20,7 +20,7 @@ import java.time.ZoneOffset
 /**
  * The logic of the Feed (ticket FEED, criteria B1 to B6, C1 to C7), with no screen: the colour of the Miff, the bubble, the labels, the
  * lines of time, the battery, the order, the states of sharing. The thresholds are NOT written here: they are read from [StatusThresholds]
- * (criterion STA9), and the limits 0 h 59, 1 h 00, 2 h 00, 2 h 01 are built from them.
+ * (criterion STA9), and the limits 1 h 59, 2 h 00, 2 h 01, 3 h 59, 4 h 00, 4 h 01 are built from them.
  */
 class FeedBuilderTest {
     private val zone = ZoneOffset.UTC
@@ -123,15 +123,17 @@ class FeedBuilderTest {
     fun levels_atTheLimits_use_theConstantsOfStatusThresholds() {
         val orange = StatusThresholds.ORANGE_AFTER_MILLIS
         val red = StatusThresholds.RED_AFTER_MILLIS
-        assertEquals(StatusLevel.GREEN, levelAfter(orange - minute)) // 0 h 59
-        assertEquals(StatusLevel.ORANGE, levelAfter(orange)) // 1 h 00
-        assertEquals(StatusLevel.ORANGE, levelAfter(red)) // 2 h 00 included
-        assertEquals(StatusLevel.RED, levelAfter(red + minute)) // 2 h 01
+        assertEquals(StatusLevel.GREEN, levelAfter(orange - minute)) // 1 h 59
+        assertEquals(StatusLevel.ORANGE, levelAfter(orange)) // 2 h 00
+        assertEquals(StatusLevel.ORANGE, levelAfter(orange + minute)) // 2 h 01
+        assertEquals(StatusLevel.ORANGE, levelAfter(red - minute)) // 3 h 59
+        assertEquals(StatusLevel.ORANGE, levelAfter(red)) // 4 h 00 included
+        assertEquals(StatusLevel.RED, levelAfter(red + minute)) // 4 h 01
     }
 
     @Test
     fun theColourOfAMemberMovesWithTheClock_withoutAnyNewReading() {
-        val statuses = mapOf("t" to status(PresenceValue.OUT, presenceAgo = 50 * minute, lastUpdateAgo = 50 * minute))
+        val statuses = mapOf("t" to status(PresenceValue.OUT, presenceAgo = 110 * minute, lastUpdateAgo = 110 * minute))
         val before = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now, zone)
         val later = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + 15 * minute, zone)
         assertEquals(StatusLevel.GREEN, card(before, "t").level)
@@ -148,7 +150,7 @@ class FeedBuilderTest {
                 members,
                 mapOf(
                     "t" to status(PresenceValue.IN_TRUSTED),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour, lastUpdateAgo = 3 * hour),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 5 * hour, lastUpdateAgo = 5 * hour),
                     me to status(PresenceValue.IN_TRUSTED),
                 ),
             )
@@ -238,11 +240,64 @@ class FeedBuilderTest {
     // --- Labels (C2) -----------------------------------------------------------------------------------------------
 
     @Test
-    fun labels_categoryForHomeWorkSchoolSport_nameForTheOthers() {
-        val home = card(build(trio, mapOf("t" to status(placeId = "p1"))), "t")
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.HOME)), home.label)
-        val relative = card(build(trio, mapOf("t" to status(placeId = "p2"))), "t")
-        assertEquals(StateLabel.At(PlaceRef.Named("Chez Léa")), relative.label)
+    fun labels_followTheCategoryOfThePlace_decisionOfThePm_2026_11_08() {
+        val places =
+            listOf(
+                testPlace("home", "Chez Mamie", category = PlaceCategory.HOME),
+                testPlace("work", "Bureau", category = PlaceCategory.WORK),
+                testPlace("school", "Lycée Hugo", category = PlaceCategory.SCHOOL),
+                testPlace("sport", "Salle Fit", category = PlaceCategory.SPORT),
+                testPlace("relative", "Chez Léa", category = PlaceCategory.RELATIVE),
+                testPlace("leisure", "Cinéma Gaumont", category = PlaceCategory.LEISURE),
+                testPlace("other", "Chez le coiffeur", category = PlaceCategory.OTHER),
+                testPlace("none", "Lieu ancien", category = null),
+                testPlace("blank", "   ", category = PlaceCategory.OTHER),
+            )
+
+        fun labelAt(placeId: String) =
+            card(
+                FeedBuilder.build(
+                    input(trio, StatusesView.Loaded(mapOf("t" to status(placeId = placeId))), places = places),
+                    now,
+                    zone,
+                ),
+                "t",
+            ).label
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.HOME)), labelAt("home"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.WORK)), labelAt("work"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL)), labelAt("school"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT)), labelAt("sport"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE)), labelAt("relative"))
+        // Loisir, Autre and a place with no category show the NAME of the place.
+        assertEquals(StateLabel.At(PlaceRef.Named("Cinéma Gaumont")), labelAt("leisure"))
+        assertEquals(StateLabel.At(PlaceRef.Named("Chez le coiffeur")), labelAt("other"))
+        assertEquals(StateLabel.At(PlaceRef.Named("Lieu ancien")), labelAt("none"))
+        // A blank name is never shown as an empty label.
+        assertEquals(StateLabel.At(PlaceRef.Unknown), labelAt("blank"))
+        // Same rule for MY card.
+        val mine =
+            FeedBuilder.build(
+                input(trio, StatusesView.Loaded(mapOf(me to status(placeId = "relative"))), places = places),
+                now,
+                zone,
+            )
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE)), mine.myLabel)
+    }
+
+    @Test
+    fun labels_aSentenceAboutAPlaceLeft_stillNamesARelativesPlace() {
+        val places = listOf(testPlace("relative", "Chez Léa", category = PlaceCategory.RELATIVE))
+        val left =
+            FeedBuilder.build(
+                input(
+                    trio,
+                    StatusesView.Loaded(mapOf("t" to status(PresenceValue.OUT, "relative", 30 * minute, 30 * minute))),
+                    places = places,
+                ),
+                now,
+                zone,
+            )
+        assertEquals(StateLabel.Left(PlaceRef.Named("Chez Léa")), card(left, "t").label)
     }
 
     @Test
@@ -277,10 +332,10 @@ class FeedBuilderTest {
         assertEquals(TimeLine.Since(Age.Minutes(12)), inside.time)
         val hours = card(build(trio, mapOf("t" to status(presenceAgo = 3 * hour))), "t")
         assertEquals(TimeLine.Since(Age.Hours(3)), hours.time)
-        val orange = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 70 * minute))), "t")
-        assertEquals(TimeLine.LatestNews(Moment(now - 70 * minute, Day.TODAY)), orange.time)
-        val red = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 3 * hour))), "t")
-        assertEquals(TimeLine.NoNewsSince(Moment(now - 3 * hour, Day.TODAY)), red.time)
+        val orange = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 130 * minute))), "t")
+        assertEquals(TimeLine.LatestNews(Moment(now - 130 * minute, Day.TODAY)), orange.time)
+        val red = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 5 * hour))), "t")
+        assertEquals(TimeLine.NoNewsSince(Moment(now - 5 * hour, Day.TODAY)), red.time)
     }
 
     @Test
@@ -414,13 +469,13 @@ class FeedBuilderTest {
                 four,
                 mapOf(
                     me to status(),
-                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
-                    "n" to status(PresenceValue.OUT, presenceAgo = 100 * minute),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 130 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 5 * hour),
+                    "n" to status(PresenceValue.OUT, presenceAgo = 170 * minute),
                 ),
             )
         val bubble = content.bubble as Bubble.Alerts
-        // Amandine is red; between the two oranges the OLDEST reference (Nathan, 100 min) comes first.
+        // Amandine is red; between the two oranges the OLDEST reference (Nathan, 170 min) comes first.
         assertEquals(listOf("a", "n", "t"), bubble.pages.map { it.member.uid })
         assertEquals(StatusLevel.RED, bubble.level)
         assertEquals(StatusLevel.RED, content.miffLevel)
@@ -432,8 +487,8 @@ class FeedBuilderTest {
             build(
                 trio,
                 mapOf(
-                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 90 * minute),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 130 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 150 * minute),
                 ),
             )
         assertEquals(2, (before.bubble as Bubble.Alerts).pages.size)
@@ -442,7 +497,7 @@ class FeedBuilderTest {
                 trio,
                 mapOf(
                     "t" to status(PresenceValue.IN_TRUSTED),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 90 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 150 * minute),
                 ),
             )
         assertEquals(1, (after.bubble as Bubble.Alerts).pages.size)
@@ -454,17 +509,17 @@ class FeedBuilderTest {
             build(
                 trio + member("n", "Nathan"),
                 mapOf(
-                    "t" to status(PresenceValue.OUT, "p1", 70 * minute, 70 * minute),
-                    "a" to status(PresenceValue.OUT, "p2", 3 * hour, 3 * hour),
+                    "t" to status(PresenceValue.OUT, "p1", 130 * minute, 130 * minute),
+                    "a" to status(PresenceValue.OUT, "p2", 5 * hour, 5 * hour),
                     "n" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 20 * minute),
                 ),
             )
         val pages = (content.bubble as Bubble.Alerts).pages.associateBy { it.member.uid }
         assertEquals(
-            AlertKind.Left(PlaceRef.Category(PlaceKind.HOME), Moment(now - 70 * minute, Day.TODAY)),
+            AlertKind.Left(PlaceRef.Category(PlaceKind.HOME), Moment(now - 130 * minute, Day.TODAY)),
             pages.getValue("t").kind,
         )
-        assertEquals(AlertKind.NoNewsSince(Moment(now - 3 * hour, Day.TODAY)), pages.getValue("a").kind)
+        assertEquals(AlertKind.NoNewsSince(Moment(now - 5 * hour, Day.TODAY)), pages.getValue("a").kind)
         // The danger zone says its NAME for the loved ones ("{Prénom} est à {lieu}").
         assertEquals(
             AlertKind.Danger(PlaceRef.Named("Zone chantier"), Moment(now - 20 * minute, Day.TODAY)),
@@ -479,9 +534,9 @@ class FeedBuilderTest {
             build(
                 members,
                 mapOf(
-                    me to status(PresenceValue.OUT, presenceAgo = 3 * hour),
-                    "t" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                    me to status(PresenceValue.OUT, presenceAgo = 5 * hour),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 5 * hour),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 5 * hour),
                 ),
             )
         val pages = (content.bubble as Bubble.Alerts).pages.associateBy { it.member.uid }
@@ -494,7 +549,7 @@ class FeedBuilderTest {
     @Test
     fun iAmTheOnlyOrangeOrRed_theBubbleSpeaksToMe() {
         val content =
-            build(trio, mapOf(me to status(PresenceValue.OUT, "p1", 70 * minute, 70 * minute), "t" to status()))
+            build(trio, mapOf(me to status(PresenceValue.OUT, "p1", 130 * minute, 130 * minute), "t" to status()))
         val pages = (content.bubble as Bubble.Alerts).pages
         assertEquals(1, pages.size)
         assertTrue(pages.single().isMe)
@@ -524,13 +579,14 @@ class FeedBuilderTest {
                 trio,
                 mapOf(
                     me to status(),
-                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 3 * hour),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 130 * minute),
+                    "a" to status(PresenceValue.OUT, presenceAgo = 5 * hour),
                 ),
             )
         assertEquals(content.miffLevel, content.bubble.level)
         assertEquals(StatusLevel.RED, content.bubble.level)
-        val orangeOnly = build(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute)))
+        val orangeOnly =
+            build(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, presenceAgo = 130 * minute)))
         assertEquals(StatusLevel.ORANGE, orangeOnly.bubble.level)
         assertEquals(orangeOnly.miffLevel, orangeOnly.bubble.level)
     }
@@ -609,7 +665,7 @@ class FeedBuilderTest {
                 trio,
                 mapOf(
                     me to status(updatedAgo = 5 * minute),
-                    "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute, updatedAgo = 40 * minute),
+                    "t" to status(PresenceValue.OUT, presenceAgo = 130 * minute, updatedAgo = 40 * minute),
                 ),
                 offline = true,
             )
@@ -648,13 +704,13 @@ class FeedBuilderTest {
 
     @Test
     fun announceKey_changesWithTheLevelOrTheAlerts_notWithTheMinutes() {
-        val statuses = mapOf("t" to status(PresenceValue.OUT, presenceAgo = 70 * minute, lastUpdateAgo = 70 * minute))
+        val statuses = mapOf("t" to status(PresenceValue.OUT, presenceAgo = 130 * minute, lastUpdateAgo = 130 * minute))
         val first = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now, zone)
         val later = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + 3 * minute, zone)
         assertEquals(first.announceKey, later.announceKey)
         val calm = build(trio, mapOf("t" to status()))
         assertTrue(first.announceKey != calm.announceKey)
-        val red = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + hour, zone)
+        val red = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now + 2 * hour, zone)
         assertTrue(first.announceKey != red.announceKey)
     }
 

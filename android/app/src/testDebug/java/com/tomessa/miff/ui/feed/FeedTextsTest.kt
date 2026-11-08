@@ -82,7 +82,9 @@ class FeedTextsFrenchTest {
         assertEquals("Au travail", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.WORK))))
         assertEquals("À l'école", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL))))
         assertEquals("Au sport", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
-        assertEquals("À Chez Léa", texts.label(StateLabel.At(PlaceRef.Named("Chez Léa"))))
+        // Chez un proche has its own words; Loisir and Autre show the NAME of the place alone (decision of the PM, 2026-11-08).
+        assertEquals("Chez un proche", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        assertEquals("Cinéma Gaumont", texts.label(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"))))
         assertEquals("A quitté le travail", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.WORK))))
         assertEquals("A quitté Chez Léa", texts.label(StateLabel.Left(PlaceRef.Named("Chez Léa"))))
         assertEquals("Dans un lieu de confiance", texts.label(StateLabel.At(PlaceRef.Unknown)))
@@ -191,8 +193,21 @@ class FeedTextsEnglishTest {
 
     @Test
     fun theSportPlaceReadsWellInASentence() {
-        assertEquals("At the sports club", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
-        assertEquals("Left the sports club", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("At the gym", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("Left the gym", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.SPORT))))
+    }
+
+    @Test
+    fun labelsFollowTheCategoryOfThePlace_decisionOfThePm_2026_11_08() {
+        assertEquals("At home", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.HOME))))
+        assertEquals("At work", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.WORK))))
+        assertEquals("At school", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL))))
+        assertEquals("At the gym", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
+        // The same words as the category of the place picker.
+        assertEquals("At a relative's", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        // Leisure, Other, no category: the NAME of the place alone.
+        assertEquals("Cinéma Gaumont", texts.label(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"))))
+        assertEquals("In a trusted place", texts.label(StateLabel.At(PlaceRef.Unknown)))
     }
 
     @Test
