@@ -502,7 +502,7 @@ Spec : `docs/tickets/notifications.md` §20.1 à §20.9 (vecteurs T1 à T15). **
 6. **Annulation par une publication** : `NotificationReconciler.myUpdatePublished(atMillis:)` doit être appelée par l'écran Update quand la publication est confirmée (PR #111, non fusionnée). **Tant qu'elle ne l'est pas, N1 / N2 ne sont annulées qu'au prochain retour du Feed au premier plan** (le Feed relit alors mon statut). À brancher à la fusion de #111 (une ligne).
 
 #### Tests (PR B)
-`NotificationPlannerTests` (T1 à T15 et plafonds, nuit, STRICT, bornes), `ChangeInstantsTests` (contrat avec la couleur), `NotificationReconcilerTests` et `NotificationReconcilerEventsTests` (programmer, idempotence, annuler, retrait à la reprise, rattrapage, premier plan, toucher, statuts du Feed, fausses alertes), `NotificationPlanModelsTests` (instantané, registre 48 h, identifiants, décorateur du suivi, fichier, demandes d'onglet).
+`NotificationPlannerTests` (T1 à T15 — contrat commun avec Android, donc **sans l'horizon de 3 h**, qui est un réglage propre à iOS et a ses propres tests, dont la borne inclusive à 3 h 00 —, plafonds, nuit, STRICT, bornes), `ChangeInstantsTests` (contrat avec la couleur), `NotificationReconcilerTests` et `NotificationReconcilerEventsTests` (programmer, idempotence, annuler, retrait à la reprise, rattrapage, premier plan, toucher, statuts du Feed, fausses alertes), `NotificationPlanModelsTests` (instantané, registre 48 h, identifiants, décorateur du suivi, fichier, demandes d'onglet).
 
 ## Suivi des lieux : arrivées, départs, dernière position (LOC-4b, miroir d'Android LOC-2b)
 
