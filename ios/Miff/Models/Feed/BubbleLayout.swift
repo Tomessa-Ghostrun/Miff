@@ -23,7 +23,6 @@ enum BubbleLayout {
         }
     }
 
-
     /// Marge de chaque côté du contenu (identique à gauche et à droite).
     static let horizontalInset: CGFloat = 52
 

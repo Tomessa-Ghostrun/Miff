@@ -74,7 +74,7 @@ final class BubbleLayoutTests: XCTestCase {
     }
 
     func testNoPictogramOnAGreenBubbleTheOthersKeepTheirs() {
-        XCTAssertNil(BubbleLayout.pictogram(for: .green), "décision du PM, 2026-11-08 : pas de symbole sur la bulle verte")
+        XCTAssertNil(BubbleLayout.pictogram(for: .green), "pas de symbole sur la bulle verte")
         XCTAssertEqual(BubbleLayout.pictogram(for: .orange), "clock")
         XCTAssertEqual(BubbleLayout.pictogram(for: .red), "exclamationmark")
         XCTAssertEqual(BubbleLayout.pictogram(for: .neutral), "hourglass")
