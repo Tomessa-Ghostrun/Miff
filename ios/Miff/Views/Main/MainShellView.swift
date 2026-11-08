@@ -75,6 +75,8 @@ struct MainShellView<Feed: View>: View {
     @State private var minuteTick = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     @State private var confirmation: String?
     @State private var lastPrompt: PromptLevel = .hidden
+    /// Le haut RÉEL de la barre (coordonnées globales), mesuré : l'Update s'arrête au-dessus (jamais de hauteur écrite en dur).
+    @State private var barTopY: CGFloat?
     @Environment(\.scenePhase) private var scenePhase
 
     init(
@@ -179,6 +181,7 @@ struct MainShellView<Feed: View>: View {
                 }
                 if shownTab == .update {
                     UpdateTabView(model: updateModel, miffCount: miffCount, actions: updateActions)
+                        .environment(\.tabBarTopY, barVisible ? barTopY : nil)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -188,6 +191,7 @@ struct MainShellView<Feed: View>: View {
                 }
             }
         }
+        .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
@@ -247,6 +251,7 @@ struct MainShellView<Feed: View>: View {
                 variant: updateModel.stage.glassVariant(updateTabSelected: shownTab == .update),
                 onSelect: { selected = $0 }
             )
+            .background(TabBarTopReader())
         }
     }
 
