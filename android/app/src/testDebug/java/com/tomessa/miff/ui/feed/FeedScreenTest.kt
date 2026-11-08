@@ -278,6 +278,49 @@ class FeedScreenTest {
         composeRule.onNodeWithText(text(R.string.feed_add_loved_one)).assertIsDisplayed()
     }
 
+    private fun centreOf(text: String): Float =
+        composeRule
+            .onNodeWithText(text)
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .boundsInRoot.center.x
+
+    @Test
+    fun bubble_textAndButton_areCentredInTheBlob_greenOrangeAndRed() {
+        // Decision of the PM, 2026-11-08 (TestFlight build 22): the text is centred in the coloured blob, whatever the colour (the blob fills the
+        // width of the screen with equal margins). Green first, then an orange page, then a red one with its button.
+        val rootCentre = {
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.center.x
+        }
+        feed(ready(nominal))
+        assertEquals(rootCentre(), centreOf("Tout va bien"), 6f)
+    }
+
+    @Test
+    fun bubble_orangeAndRedPages_areCentred_buttonIncluded() {
+        val both =
+            content(
+                trio,
+                mapOf(
+                    me to status(),
+                    "t" to status(PresenceValue.OUT, "p1", 150 * minute),
+                    "a" to status(PresenceValue.OUT, "p1", 5 * hour),
+                ),
+            )
+        feed(ready(both))
+        val rootCentre =
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.center.x
+        // The red page (Amandine) is the first one.
+        assertEquals(rootCentre, centreOf("Pas de nouvelles de Amandine depuis 12 h 00".t()), 6f)
+        assertEquals(rootCentre, centreOf(text(R.string.feed_bubble_message_action)), 6f)
+    }
+
     @Test
     fun bubble_orange_isFactual_withAnAbsoluteTime_andOffersAMessage() {
         var sent: String? = null
@@ -723,7 +766,29 @@ class FeedScreenTest {
         }
         // The NAME alone (no "À" in front), whole for the screen reader, drawn on two lines at most with an ellipsis.
         composeRule.onNodeWithText("Cinéma Gaumont").assertExists()
-        composeRule.onNodeWithText(LONG_LEISURE_NAME).assertExists()
+        val node =
+            composeRule
+                .onNodeWithText(
+                    LONG_LEISURE_NAME,
+                    useUnmergedTree = true,
+                ).assertIsDisplayed()
+                .fetchSemanticsNode()
+
+        // Really two lines at most. The layout result of the text is not read (the card measures its content twice, which makes it unreliable in
+        // a test); the heights are: a line of the same style without padding ("Depuis 12 min") gives the height of ONE line L, the chip of
+        // "Cinéma Gaumont" (one line) gives the vertical padding P, and the long chip must then be exactly 2 lines: height = 2 L + P.
+        fun height(text: String) =
+            composeRule
+                .onAllNodesWithText(text, useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .size.height
+        val line = height("Depuis 12 min")
+        val padding = height("Cinéma Gaumont") - line
+        val lines = (node.size.height - padding).toFloat() / line
+        assertEquals("lines of the long label: ${node.size.height} = n x $line + $padding", 2f, lines, 0.1f)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val box = node.boundsInRoot
+        assertTrue("inside the screen: $box in $root", box.left >= 0f && box.right <= root.right)
     }
 
     // --- sheet "Localiser" -----------------------------------------------------------------------------------------------------

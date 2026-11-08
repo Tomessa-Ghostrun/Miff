@@ -188,7 +188,7 @@ object FeedBuilder {
 
                 status.presence == PresenceValue.IN_TRUSTED -> {
                     StateLabel.At(
-                        labelRef(status.placeId, places),
+                        placeRef(status.placeId, places, trusted = true),
                     )
                 }
 
@@ -235,16 +235,26 @@ object FeedBuilder {
         }
     }
 
-    /** For the sentences ("A quitté la maison"): the categories with a noun are replaced, any other place (Loisir, Autre, none) is named. */
+    /**
+     * The place of a label ("À la maison") or of a sentence ("A quitté le domicile d'un proche"). Decision of the PM, 2026-11-08 (feed.md D48): Maison,
+     * Travail, École, Sport and Chez un proche are replaced by their category; Loisir, Autre and a place written before categories existed show the NAME
+     * (only the members of the Miff read it, no extra Firestore read). A place missing from the list (deleted) or with a blank name: the generic wording.
+     */
     private fun placeRef(
         placeId: String?,
         places: Map<String, Place>,
         trusted: Boolean,
     ): PlaceRef {
         val place = placeId?.let { places[it] } ?: return PlaceRef.Unknown
-        if (!trusted) return PlaceRef.Named(place.name)
-        val kind = sentenceKind(place.category)
-        return if (kind != null) PlaceRef.Category(kind) else PlaceRef.Named(place.name)
+        val kind = if (trusted) sentenceKind(place.category) else null
+        return when {
+            kind != null -> PlaceRef.Category(kind)
+
+            // A blank name is never written into a sentence ("A quitté ."): the generic wording instead.
+            place.name.isBlank() -> PlaceRef.Unknown
+
+            else -> PlaceRef.Named(place.name.trim())
+        }
     }
 
     private fun sentenceKind(category: PlaceCategory?): PlaceKind? =
@@ -256,24 +266,6 @@ object FeedBuilder {
             PlaceCategory.RELATIVE -> PlaceKind.RELATIVE
             else -> null
         }
-
-    /**
-     * For the LABEL of a card in a trusted place (decision of the PM, 2026-11-08): the label depends on the CATEGORY of the place. Maison, Travail,
-     * École, Sport and Chez un proche have their own words; Loisir, Autre and a place written before categories existed show the NAME of the place
-     * (only the members of the Miff see it, as before). A place missing from the list (deleted) or with a blank name: the generic wording.
-     */
-    internal fun labelRef(
-        placeId: String?,
-        places: Map<String, Place>,
-    ): PlaceRef {
-        val place = placeId?.let { places[it] } ?: return PlaceRef.Unknown
-        val kind = sentenceKind(place.category)
-        return when {
-            kind != null -> PlaceRef.Category(kind)
-            place.name.isBlank() -> PlaceRef.Unknown
-            else -> PlaceRef.Named(place.name.trim())
-        }
-    }
 
     private fun timeLine(
         level: StatusLevel,

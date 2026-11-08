@@ -317,18 +317,60 @@ class FeedBuilderTest {
     }
 
     @Test
-    fun labels_aDangerZone_isRedWhenTheLastUpdateIsOverAnHour_withItsOwnLabel() {
+    fun labels_aDangerZone_isRedFromTheEntry_greenForAnHourAfterAPosteriorUpdate_withItsOwnLabel() {
         val danger = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 2 * hour))), "t")
         assertEquals(StatusLevel.RED, danger.level)
         assertEquals(StateLabel.Danger, danger.label)
         assertEquals(TimeLine.InDangerSince(Moment(now - 20 * minute, Day.TODAY)), danger.time)
-        // A last update of less than an hour: not forced red (decision of the PM, 2026-11-08); the label stays factual.
+        // An update published AFTER the entry, less than an hour old: green (decision of the PM, 2026-11-08, feed.md D47); the label stays factual.
         val updated = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 5 * minute))), "t")
         assertEquals(StatusLevel.GREEN, updated.level)
         assertEquals(StateLabel.Danger, updated.label)
+        // An update that is recent but PREDATES the entry does not count: red at once.
+        val early = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 5 * minute, 10 * minute))), "t")
+        assertEquals(StatusLevel.RED, early.level)
         // No update at all: red.
         val none = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, null))), "t")
         assertEquals(StatusLevel.RED, none.level)
+    }
+
+    @Test
+    fun aDangerZoneWithARecentUpdate_isGreen_theMiffIsGreen_andTheBubbleSaysAllIsWell() {
+        // Decision of the PM, 2026-11-08 (feed.md D47): an update published after the entry takes the red away for an hour, here as on iOS.
+        val content =
+            build(trio, mapOf(me to status(), "t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 5 * minute)))
+        assertEquals(StatusLevel.GREEN, card(content, "t").level)
+        assertEquals(StateLabel.Danger, card(content, "t").label)
+        assertEquals(StatusLevel.GREEN, content.miffLevel)
+        assertTrue(content.bubble is Bubble.AllGood)
+    }
+
+    @Test
+    fun myOwnStatusInADangerZone_whoseLastUpdateIsNotKnownYet_isRed_untilTheServerAnswers() {
+        // The last update of a status still waiting for the server (serverTimestamp pending, or none at all) reads as null = "no update" = red in a
+        // danger zone. The rule is deliberately calm about it: it ends as soon as the write is acknowledged, but a phone that stays offline keeps the
+        // red card (and the bubble) until it is back online. Signalled in the recette (feed-android-recette-pm.md).
+        val content =
+            build(trio, mapOf(me to status(PresenceValue.IN_RISK, "p3", 20 * minute, null), "t" to status()))
+        assertEquals(StatusLevel.RED, content.myLevel)
+        assertEquals(StatusLevel.RED, content.miffLevel)
+        assertEquals(com.tomessa.miff.domain.update.PromptLevel.RED, content.myPrompt)
+    }
+
+    @Test
+    fun aPlaceWithABlankName_isGenericInASentenceToo_neverAnEmptyNoun() {
+        val places = listOf(testPlace("blank", "   ", category = PlaceCategory.OTHER))
+        val left =
+            FeedBuilder.build(
+                input(
+                    trio,
+                    StatusesView.Loaded(mapOf("t" to status(PresenceValue.OUT, "blank", 30 * minute, 30 * minute))),
+                    places = places,
+                ),
+                now,
+                zone,
+            )
+        assertEquals(StateLabel.Left(PlaceRef.Unknown), card(left, "t").label)
     }
 
     // --- Lines of time (C2) ----------------------------------------------------------------------------------------

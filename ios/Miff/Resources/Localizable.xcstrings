@@ -7501,13 +7501,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "While you're in this zone, your Miff sees your status in red. Only the Miff's creator can add or edit this kind of zone."
+            "value": "While you're in this zone, your Miff sees your status in red, except for the hour after you share an update. Only the Miff's creator can add or edit this kind of zone."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone."
+            "value": "Quand tu es dans cette zone, ta Miff voit ton statut en rouge, sauf pendant l'heure qui suit une update de ta part. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone."
           }
         }
       }

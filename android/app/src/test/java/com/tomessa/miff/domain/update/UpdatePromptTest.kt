@@ -91,10 +91,10 @@ class UpdatePromptTest {
         listOf(0L, 10 * hour, 40 * hour).forEach { later -> assertEquals(PromptLevel.RED, prompt(s, now = T0 + later)) }
     }
 
-    // --- The danger zone: red only while the last update is more than an hour old (PM, 2026-11-08) ------------------------------------
+    // --- The danger zone: red from the entry, green for an hour after an update posterior to it (PM, 2026-11-08) ---------------------
 
     @Test
-    fun inADangerZone_theBubbleIsRed_untilAnUpdateIsPublished_thenItGoes_andComesBackAnHourLater() {
+    fun inADangerZone_theBubbleIsRedFromTheEntry_untilAnUpdateIsPublishedAfterIt_thenItComesBackAnHourLater() {
         val entered = status(PresenceValue.IN_RISK, presenceAt = T0 - 10 * 60_000L, lastUpdateAt = T0 - 5 * hour)
         assertEquals(PromptLevel.RED, prompt(entered))
         val updated = status(PresenceValue.IN_RISK, presenceAt = T0 - 10 * 60_000L, lastUpdateAt = T0 - 60_000L)
@@ -102,9 +102,17 @@ class UpdatePromptTest {
         // The colour and the bubble are the same calculation: the update brought the colour back from red.
         val facts = MemberStatusFacts(true, updated.presence, updated.presenceAtMillis, updated.lastUpdateAtMillis)
         assertEquals(StatusLevel.GREEN, StatusColor.level(facts, T0))
-        // One hour (and one second) after the update, nothing new: red again, the bubble too.
+        // One hour after the update, nothing new: still nothing (included); one second later: red again, the bubble too.
         assertEquals(PromptLevel.NONE, prompt(updated, now = T0 - 60_000L + hour))
         assertEquals(PromptLevel.RED, prompt(updated, now = T0 - 60_000L + hour + 1_000L))
+    }
+
+    @Test
+    fun inADangerZone_anUpdateAtTheVeryInstantOfTheEntry_orBeforeIt_doesNotEndTheBubble() {
+        val same = status(PresenceValue.IN_RISK, presenceAt = T0 - 1_000L, lastUpdateAt = T0 - 1_000L)
+        assertEquals(PromptLevel.RED, prompt(same))
+        val before = status(PresenceValue.IN_RISK, presenceAt = T0 - 1_000L, lastUpdateAt = T0 - 60_000L)
+        assertEquals(PromptLevel.RED, prompt(before))
     }
 
     @Test
