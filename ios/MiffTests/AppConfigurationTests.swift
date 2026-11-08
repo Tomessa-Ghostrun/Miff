@@ -66,6 +66,15 @@ final class AppConfigurationTests: XCTestCase {
         }
     }
 
+    func testExactlyTheCameraUsageTextIsDeclaredAndNoPhotoLibraryKey() {
+        // UPDATE-3 : la caméra du viseur de l'Update. La photo est prise en mémoire et n'est jamais écrite dans la photothèque.
+        let cameraKeys = info.keys.filter { $0.hasPrefix("NSCamera") }
+
+        XCTAssertEqual(Set(cameraKeys), ["NSCameraUsageDescription"], "Clés de caméra inattendues : \(cameraKeys)")
+        XCTAssertFalse((info["NSCameraUsageDescription"] as? String ?? "").isEmpty, "texte d'usage de la caméra vide")
+        XCTAssertTrue(info.keys.filter { $0.hasPrefix("NSPhotoLibrary") }.isEmpty)
+    }
+
     func testNoBackgroundModeIsDeclared() {
         // Le mode « location » est pour les mises à jour continues de position : Miff n'en fait pas (guideline 2.5.4).
         XCTAssertNil(info["UIBackgroundModes"])

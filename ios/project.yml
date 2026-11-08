@@ -115,8 +115,13 @@ targets:
         # Textes d'usage de la localisation : valeur par defaut = ANGLAIS (langue de repli) ; francais et anglais dans
         # Miff/Resources/InfoPlist.xcstrings. Ils disent COMPLETEMENT l'usage (docs/release/app-store-confidentialite-et-revue.md
         # §4) : la derniere position connue est visible des membres de la Miff qui partagent aussi, avec l'heure.
-        NSLocationWhenInUseUsageDescription: "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history. You can stop at any time."
+        NSLocationWhenInUseUsageDescription: "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location. You can stop at any time."
+        # UPDATE-3 : la CAMERA, pour le viseur de l'Update (ticket docs/tickets/update.md, §5.3) : EXACTEMENT une cle NSCamera*, et aucune cle
+        # de photothèque (NSPhotoLibrary*) : la photo est prise en memoire et n'est jamais ecrite dans la photothèque. Valeur par defaut =
+        # ANGLAIS ; francais et anglais dans Miff/Resources/InfoPlist.xcstrings. La boite du systeme n'est montree qu'APRES un pop-in qui dit
+        # pourquoi, qui voit la photo et combien de temps (jamais au demarrage).
+        NSCameraUsageDescription: "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. The photo is published with your position and can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your photo library."
         # INTERRUPTEUR DE COMPILATION du blocage de la localisation (decision du PM du 2026-11-01) : YES (defaut) = l'ecran
         # « Toujours autoriser » ne se quitte pas sans « Toujours » ; NO le relache. Se change par `xcodebuild ... MIFF_LOCATION_BLOCKING=NO`
         # (entree `location_blocking` du workflow ios-testflight). Toute valeur inconnue BLOQUE (LocationBlockingSwitch).

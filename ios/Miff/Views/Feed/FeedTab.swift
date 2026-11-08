@@ -41,18 +41,18 @@ struct FeedTab: View {
         let repository = environment.miffRepository
         let network = environment.network
         let awaitingAgreement = environment.awaitingAgreement
-        _model = StateObject(
-            wrappedValue: FeedViewModel(
-                dependencies: FeedDependencies(
-                    directory: directory,
-                    repository: repository,
-                    services: services,
-                    network: network,
-                    awaiting: awaitingAgreement,
-                    currentUid: { session.currentUid }
-                )
-            )
+        let myStatus = environment.update.myStatus
+        var dependencies = FeedDependencies(
+            directory: directory,
+            repository: repository,
+            services: services,
+            network: network,
+            awaiting: awaitingAgreement,
+            currentUid: { session.currentUid }
         )
+        // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
+        dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
+        _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
     }
 
