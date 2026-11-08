@@ -155,7 +155,7 @@ final class PresenceMachineTests: XCTestCase {
     }
 }
 
-/// Les bornes de la couleur : 59 min 59 s, 1 h, 2 h, 2 h 00 min 01 s (critère STA6) ; mêmes cas qu'Android.
+/// Les bornes de la couleur (décision du PM, 2026-11-08) : 1 h 59, 2 h 00, 2 h 01, 3 h 59, 4 h 00, 4 h 01 ; mêmes cas qu'Android.
 final class StatusColorTests: XCTestCase {
     private let minute = 60 * 1000
     private let second = 1000
@@ -179,32 +179,86 @@ final class StatusColorTests: XCTestCase {
         StatusColor.level(facts, nowMillis: reference + elapsed)
     }
 
-    func testTheThresholdsAreOneHourAndTwoHoursInOnePlace() {
-        XCTAssertEqual(StatusThresholds.orangeAfterMillis, 60 * minute)
-        XCTAssertEqual(StatusThresholds.redAfterMillis, 120 * minute)
+    func testTheThresholdsAreTwoHoursAndFourHoursInOnePlace() {
+        XCTAssertEqual(StatusThresholds.orangeAfterMillis, 120 * minute)
+        XCTAssertEqual(StatusThresholds.redAfterMillis, 240 * minute)
     }
 
-    func testAfterADepartureGreenUntilOneHourThenOrangeThenRed() {
+    func testAfterADepartureGreenUntilTwoHoursThenOrangeThenRedAfterFourHours() {
         let left = facts(presence: .out)
 
         XCTAssertEqual(level(left, after: 0), .green)
-        XCTAssertEqual(level(left, after: 59 * minute + 59 * second), .green)
-        XCTAssertEqual(level(left, after: 60 * minute), .orange)
-        XCTAssertEqual(level(left, after: 120 * minute), .orange)
-        XCTAssertEqual(level(left, after: 120 * minute + second), .red)
+        XCTAssertEqual(level(left, after: 59 * minute), .green, "l'ancien seuil de 1 h ne change plus rien")
+        XCTAssertEqual(level(left, after: 119 * minute), .green)
+        XCTAssertEqual(level(left, after: 120 * minute), .green, "2 h 00 pile : « plus de 2 h » n'est pas atteint")
+        XCTAssertEqual(level(left, after: 121 * minute), .orange)
+        XCTAssertEqual(level(left, after: 239 * minute), .orange)
+        XCTAssertEqual(level(left, after: 240 * minute), .orange, "4 h 00 pile : « plus de 4 h » n'est pas atteint")
+        XCTAssertEqual(level(left, after: 240 * minute + second), .red)
+        XCTAssertEqual(level(left, after: 241 * minute), .red)
     }
 
     func testTheReferenceIsTheMostRecentOfTheDepartureAndTheLastUpdate() {
         let updated = facts(presence: .out, presenceAt: reference, lastUpdateAt: reference + 90 * minute)
 
-        XCTAssertEqual(level(updated, after: 100 * minute), .green)
-        XCTAssertEqual(level(updated, after: 150 * minute), .orange)
-        XCTAssertEqual(level(updated, after: 211 * minute), .red)
+        // Orange seulement quand la sortie ET la dernière update ont plus de 2 h : la plus récente (1 h 30 après) fait foi.
+        XCTAssertEqual(level(updated, after: 200 * minute), .green)
+        XCTAssertEqual(level(updated, after: 211 * minute), .orange)
+        XCTAssertEqual(level(updated, after: 330 * minute), .orange)
+        XCTAssertEqual(level(updated, after: 331 * minute), .red)
     }
 
-    func testInATrustedZoneAlwaysGreenInADangerZoneAlwaysRed() {
+    func testAnOldDepartureWithARecentUpdateStaysGreen() {
+        let updated = facts(presence: .out, presenceAt: reference - 10 * 60 * minute, lastUpdateAt: reference)
+
+        XCTAssertEqual(level(updated, after: 119 * minute), .green)
+        XCTAssertEqual(level(updated, after: 121 * minute), .orange)
+    }
+
+    func testInATrustedZoneAlwaysGreenWhateverTheAgeOfTheLastUpdate() {
         XCTAssertEqual(level(facts(presence: .inTrusted), after: 10 * 60 * minute), .green)
-        XCTAssertEqual(level(facts(presence: .inRisk), after: 0), .red)
+        // La zone de confiance l'emporte toujours (une personne dans les deux zones est `in_trusted`, jamais rouge).
+        let staleUpdate = facts(presence: .inTrusted, lastUpdateAt: reference - 5 * 60 * minute)
+        XCTAssertEqual(level(staleUpdate, after: 3 * 60 * minute), .green)
+    }
+
+    func testTheDangerZoneConstantIsOneHour() {
+        XCTAssertEqual(StatusThresholds.dangerZoneRedAfterMillis, 60 * minute)
+    }
+
+    /// Décision du PM (2026-11-08) : en zone de danger, rouge quand la dernière update a PLUS d'1 h (59:59, 1:00:00, 1:00:01).
+    func testInADangerZoneRedWhenTheLastUpdateIsMoreThanOneHourOld() {
+        let inDanger = facts(presence: .inRisk, presenceAt: reference - 30 * minute, lastUpdateAt: reference)
+
+        XCTAssertEqual(level(inDanger, after: 0), .green, "update toute fraîche : pas de rouge forcé")
+        XCTAssertEqual(level(inDanger, after: 59 * minute + 59 * second), .green)
+        XCTAssertEqual(level(inDanger, after: 60 * minute), .green, "1 h 00 pile : « plus d'1 h » n'est pas atteint")
+        XCTAssertEqual(level(inDanger, after: 60 * minute + second), .red)
+        XCTAssertEqual(level(inDanger, after: 5 * 60 * minute), .red)
+    }
+
+    func testInADangerZoneWithoutAnyUpdateItIsRed() {
+        XCTAssertEqual(level(facts(presence: .inRisk, lastUpdateAt: nil), after: 0), .red)
+        XCTAssertEqual(level(facts(presence: .inRisk, presenceAt: nil, lastUpdateAt: nil), after: 0), .red)
+    }
+
+    func testInADangerZoneARecentEntryDoesNotReplaceTheLastUpdate() {
+        // Entrée en zone de danger il y a 5 min, mais dernier signal « tout va bien » il y a 3 h : rouge.
+        let inDanger = facts(
+            presence: .inRisk,
+            presenceAt: reference - 5 * minute,
+            lastUpdateAt: reference - 3 * 60 * minute
+        )
+
+        XCTAssertEqual(level(inDanger, after: 0), .red)
+    }
+
+    func testInADangerZoneARecentUpdateFromAWrongClockCountsAsNow() {
+        XCTAssertEqual(level(facts(presence: .inRisk, lastUpdateAt: reference + 3 * 60 * minute), after: 0), .green)
+    }
+
+    func testSharingStoppedInADangerZoneStaysNeutral() {
+        XCTAssertEqual(level(facts(presence: .inRisk, sharing: false), after: 0), .neutral)
     }
 
     func testNeutralWhenSharingStoppedNoStatusUnknownOrNothingToMeasure() {

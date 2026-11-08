@@ -116,8 +116,11 @@ private struct StateChip: View {
     let level: StatusLevel
 
     var body: some View {
+        // Un nom de lieu (Loisir, Autre) peut être long (jusqu'à 40 signes) : deux lignes au plus, la fin coupée ensuite ; le lecteur
+        // d'écran lit toujours la carte en entier (`cardSpoken`).
         Text(verbatim: text)
             .miffTextStyle(textBodyRegular14)
+            .lineLimit(2)
             .foregroundColor(level.onTint)
             .padding(.horizontal, Spacing.sm)
             .padding(.vertical, Spacing.xs)
