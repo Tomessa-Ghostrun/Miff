@@ -19,6 +19,24 @@ final class TabBarModelsTests: XCTestCase {
         XCTAssertEqual(config.tabs, [.feed, .update, .profile])
     }
 
+    func testTheFeedIconIsAClassicHouseFilledWhenActive() {
+        // Décision du PM, 2026-11-08 : la maison classique du système (plus la maison avec un coeur).
+        XCTAssertEqual(TabBarSymbols.name(for: .feed, isSelected: false), "house")
+        XCTAssertEqual(TabBarSymbols.name(for: .feed, isSelected: true), "house.fill")
+    }
+
+    func testTheProfileIconFollowsTheSameActiveInactiveRule() {
+        XCTAssertEqual(TabBarSymbols.name(for: .profile, isSelected: false), "person")
+        XCTAssertEqual(TabBarSymbols.name(for: .profile, isSelected: true), "person.fill")
+    }
+
+    func testTheCentralButtonHasNoSymbolAndTheSpokenNamesAreUnchanged() {
+        XCTAssertNil(TabBarSymbols.name(for: .update, isSelected: false))
+        XCTAssertNil(TabBarSymbols.name(for: .update, isSelected: true))
+        XCTAssertEqual(TabBarNames.key(for: .feed), "tabbar_feed_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .profile), "tabbar_profile_a11y")
+    }
+
     func testEveryTabHasASpokenNameInBothLanguages() {
         for tab in MainTab.allCases {
             let key = TabBarNames.key(for: tab)
