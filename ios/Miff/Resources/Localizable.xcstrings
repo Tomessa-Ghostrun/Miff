@@ -11272,91 +11272,6 @@
         }
       }
     },
-    "ios_settings_delete_not_erased": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What remains: statistics already sent with your consent contain neither your name nor your account and follow the retention period of the privacy policy; copies of your card kept on other members’ phones disappear the next time they connect."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ce qui reste : les statistiques déjà envoyées avec ton accord ne contiennent ni ton nom ni ton compte et suivent la durée de conservation de la politique de confidentialité ; les copies de ta fiche gardées sur le téléphone des autres membres disparaissent à leur prochaine connexion."
-          }
-        }
-      }
-    },
-    "ios_settings_delete_miffs_blocked_more": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The Miffs you had already left or deleted during this attempt stay that way."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les Miffs que tu avais déjà quittées ou supprimées pendant cette tentative le restent."
-          }
-        }
-      }
-    },
-    "ios_settings_delete_reauth_apple": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple will ask you to confirm. We’ll then try to remove the “Sign in with Apple” authorization from your Apple account."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple va te demander de confirmer. On essaiera ensuite de retirer l’autorisation « Se connecter avec Apple » de ton compte Apple."
-          }
-        }
-      }
-    },
-    "ios_settings_delete_apple_failed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "We couldn’t remove the “Sign in with Apple” authorization automatically. You can do it in your Apple ID settings."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On n’a pas pu retirer l’autorisation « Se connecter avec Apple » automatiquement. Tu peux le faire dans les réglages de ton identifiant Apple."
-          }
-        }
-      }
-    },
-    "ios_settings_delete_entry_hint": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opens a page that explains what will be deleted. Nothing is deleted yet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ouvre une page qui explique ce qui sera supprimé. Rien n’est supprimé tout de suite."
-          }
-        }
-      }
-    },
     "settings_language_subtitle": {
       "extractionState": "manual",
       "localizations": {
@@ -13431,6 +13346,227 @@
         }
       }
     },
+    "ios_settings_language_current": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current language: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue actuelle : %1$@"
+          }
+        }
+      }
+    },
+    "ios_settings_language_hint_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "opens the iPhone settings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ouvre les réglages de l'iPhone"
+          }
+        }
+      }
+    },
+    "ios_settings_version": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %1$@ (build %2$@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %1$@ (build %2$@)"
+          }
+        }
+      }
+    },
+    "ios_myinfo_edit_soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You will be able to edit your details in an upcoming update."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
+          }
+        }
+      }
+    },
+    "ios_account_apple": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in with Apple"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté avec Apple"
+          }
+        }
+      }
+    },
+    "ios_privacy_notifications_status_on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed on this phone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorisées sur ce téléphone."
+          }
+        }
+      }
+    },
+    "ios_privacy_notifications_status_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed on this phone yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore autorisées sur ce téléphone."
+          }
+        }
+      }
+    },
+    "ios_detection_help_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An arrival or a departure can take a few minutes to be noticed. If it takes longer, these points may help."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une arrivée ou un départ peut mettre quelques minutes à être repéré. Si ça tarde, ces points peuvent aider."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. In the Miff settings, location must be set to “Always”, with “Precise Location” turned on."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Dans les réglages de Miff, la localisation doit être sur « Toujours », avec « Position exacte » activée."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Keep “Background App Refresh” turned on for Miff (Settings > General)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Garde « Actualisation en arrière-plan » activée pour Miff (Réglages > Général)."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_saver": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Low Power Mode can delay detections: if you can, avoid it while you are on the move."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Le mode économie d'énergie peut retarder les détections : si possible, évite-le pendant tes déplacements."
+          }
+        }
+      }
+    },
+    "ios_detection_help_step_swipe": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. If a detection is late, opening Miff once lets you check that everything is in order."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. Si une détection tarde, rouvrir Miff une fois permet de vérifier que tout est en ordre."
+          }
+        }
+      }
+    },
+    "ios_detection_help_outro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The exact names of the settings can change depending on the iOS version."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les noms exacts des réglages peuvent changer selon la version d'iOS."
+          }
+        }
+      }
+    },
     "update_permission_title": {
       "extractionState": "manual",
       "localizations": {
@@ -14400,132 +14536,47 @@
         }
       }
     },
-    "ios_settings_language_current": {
+    "ios_update_restricted_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current language: %1$@"
+            "value": "The camera isn't accessible"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Langue actuelle : %1$@"
+            "value": "La caméra n'est pas accessible"
           }
         }
       }
     },
-    "ios_settings_language_hint_a11y": {
+    "ios_update_restricted_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "opens the iPhone settings"
+            "value": "The camera is restricted on this device. This action isn't available here."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ouvre les réglages de l'iPhone"
+            "value": "La caméra est restreinte sur cet appareil. Cette action n'est pas disponible ici."
           }
         }
       }
     },
-    "ios_settings_version": {
+    "ios_tabbar_update_neutral_a11y": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Version %1$@ (build %2$@)"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Version %1$@ (build %2$@)"
-          }
-        }
-      }
-    },
-    "ios_myinfo_edit_soon": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You will be able to edit your details in an upcoming update."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
-          }
-        }
-      }
-    },
-    "ios_account_apple": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signed in with Apple"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connecté avec Apple"
-          }
-        }
-      }
-    },
-    "ios_privacy_notifications_status_on": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allowed on this phone."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Autorisées sur ce téléphone."
-          }
-        }
-      }
-    },
-    "ios_privacy_notifications_status_off": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not allowed on this phone yet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore autorisées sur ce téléphone."
-          }
-        }
-      }
-    },
-    "ios_update_soon_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share an update"
+            "value": "Share news"
           }
         },
         "fr": {
@@ -14536,138 +14587,87 @@
         }
       }
     },
-    "ios_update_soon_body": {
+    "ios_settings_delete_not_erased": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This is coming soon: you will be able to let your circle know you are doing fine in one tap."
+            "value": "What remains: statistics already sent with your consent contain neither your name nor your account and follow the retention period of the privacy policy; copies of your card kept on other members’ phones disappear the next time they connect."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cette fonction arrive bientôt : tu pourras dire à ton cercle que tu vas bien en un geste."
+            "value": "Ce qui reste : les statistiques déjà envoyées avec ton accord ne contiennent ni ton nom ni ton compte et suivent la durée de conservation de la politique de confidentialité ; les copies de ta fiche gardées sur le téléphone des autres membres disparaissent à leur prochaine connexion."
           }
         }
       }
     },
-    "ios_detection_help_intro": {
+    "ios_settings_delete_miffs_blocked_more": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "An arrival or a departure can take a few minutes to be noticed. If it takes longer, these points may help."
+            "value": "The Miffs you had already left or deleted during this attempt stay that way."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une arrivée ou un départ peut mettre quelques minutes à être repéré. Si ça tarde, ces points peuvent aider."
+            "value": "Les Miffs que tu avais déjà quittées ou supprimées pendant cette tentative le restent."
           }
         }
       }
     },
-    "ios_detection_help_step_location": {
+    "ios_settings_delete_reauth_apple": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. In the Miff settings, location must be set to “Always”, with “Precise Location” turned on."
+            "value": "Apple will ask you to confirm. We’ll then try to remove the “Sign in with Apple” authorization from your Apple account."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. Dans les réglages de Miff, la localisation doit être sur « Toujours », avec « Position exacte » activée."
+            "value": "Apple va te demander de confirmer. On essaiera ensuite de retirer l’autorisation « Se connecter avec Apple » de ton compte Apple."
           }
         }
       }
     },
-    "ios_detection_help_step_refresh": {
+    "ios_settings_delete_apple_failed": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "2. Keep “Background App Refresh” turned on for Miff (Settings > General)."
+            "value": "We couldn’t remove the “Sign in with Apple” authorization automatically. You can do it in your Apple ID settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "2. Garde « Actualisation en arrière-plan » activée pour Miff (Réglages > Général)."
+            "value": "On n’a pas pu retirer l’autorisation « Se connecter avec Apple » automatiquement. Tu peux le faire dans les réglages de ton identifiant Apple."
           }
         }
       }
     },
-    "ios_detection_help_step_saver": {
+    "ios_settings_delete_entry_hint": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "3. Low Power Mode can delay detections: if you can, avoid it while you are on the move."
+            "value": "Opens a page that explains what will be deleted. Nothing is deleted yet."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "3. Le mode économie d'énergie peut retarder les détections : si possible, évite-le pendant tes déplacements."
-          }
-        }
-      }
-    },
-    "ios_detection_help_step_swipe": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "4. If a detection is late, opening Miff once lets you check that everything is in order."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "4. Si une détection tarde, rouvrir Miff une fois permet de vérifier que tout est en ordre."
-          }
-        }
-      }
-    },
-    "ios_detection_help_outro": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The exact names of the settings can change depending on the iOS version."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les noms exacts des réglages peuvent changer selon la version d'iOS."
-          }
-        }
-      }
-    },
-    "ios_tabbar_update_soon_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share an update, coming soon"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Donner des nouvelles, bientôt disponible"
+            "value": "Ouvre une page qui explique ce qui sera supprimé. Rien n’est supprimé tout de suite."
           }
         }
       }

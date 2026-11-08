@@ -44,7 +44,8 @@ final class FakeTrackingEnvironment: TrackingEnvironment {
         preciseLocation: true,
         notifications: .authorized
     )
-    var battery: Int? = 80
+    /// Inconnue par défaut : les scénarios qui ne parlent pas de la batterie ne voient aucun rafraîchissement (`BatteryRefreshTests`).
+    var battery: Int?
     var online = true
     var now = TrackingFixtures.noon
     var conditions = SystemConditions()
@@ -86,6 +87,10 @@ final class FakeTrackingStore: TrackingStore {
     var failingPaths: [String: Error] = [:]
     private(set) var commits: [[DocWrite]] = []
     private(set) var readCount = 0
+    /// Les écritures tentées, réussies ou non (`commits` ne garde que celles qui ont réussi).
+    private(set) var commitAttempts = 0
+    /// Appelé AVANT chaque écriture (pour regarder ce que le téléphone avait déjà gardé à cet instant).
+    var beforeCommit: ((DocWrite) -> Void)?
 
     func memberships(uid: String) async throws -> [MembershipRef] {
         readCount += 1
@@ -112,6 +117,8 @@ final class FakeTrackingStore: TrackingStore {
     }
 
     func commit(_ writes: [DocWrite]) async throws {
+        commitAttempts += 1
+        writes.forEach { beforeCommit?($0) }
         if let commitFailure {
             throw commitFailure
         }
