@@ -90,6 +90,8 @@ struct FeedDependencies {
     var zone: () -> TimeZone = { TimeZone.current }
     var sleep: (Int) async -> Void = AppClock.live.pause
     var timings = FeedTimings()
+    /// MON statut et « mon partage est arrêté » à chaque calcul : l'Update en tire la couleur du bouton central et la bulle (D19).
+    var onMyStatus: (MyStatusFacts?, Bool) -> Void = { _, _ in }
 }
 
 @MainActor
@@ -172,6 +174,9 @@ final class FeedViewModel: ObservableObject {
         let next = compute()
         if next != uiState {
             uiState = next
+        }
+        if case .ready(let content) = next {
+            dependencies.onMyStatus(content.myFacts, content.myLabel == .sharingStopped)
         }
     }
 

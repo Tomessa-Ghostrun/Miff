@@ -33,6 +33,8 @@ enum JournalKind: String, CaseIterable {
     case backgroundRefreshOff
     case lowPowerMode
     case monitoringFailed
+    case batteryRefreshed
+    case batteryRefreshSkipped
 }
 
 /// Une ligne du journal telle qu'elle est gardée et montrée.
