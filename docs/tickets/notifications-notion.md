@@ -25,7 +25,7 @@
 
 ## 3. Règles proposées
 
-Seuils : constantes de `StatusColor` (écart à régler : 1 h / 2 h dans la demande, 2 h / 4 h dans les specs lues : Q1).
+Seuils : constantes de `StatusColor` (code livré et validé en recette : **orange à 1 h, rouge à 2 h** ; les 2 h / 4 h des anciennes specs sont périmés : Q1 est donc tranchée sur les seuils, reste la question du point de départ).
 
 | ID | Moment | Qui | Quand | Gratuit ? | Phase |
 |---|---|---|---|---|---|
@@ -202,7 +202,7 @@ M1 pré-autorisation corrigée (P0 et P2) · M2 carte « deuxième chance » · 
 
 ## 14. Questions pour toi (avec ma recommandation)
 
-- **Q1 Seuils et point de départ.** Demande : 1 h / 2 h ; specs lues : 2 h / 4 h. *Reco* : constantes de `StatusColor` comme source unique ; départ = max(présence, dernière update) ; plafonds pour le gratuit.
+- **Q1 Seuils et point de départ.** Seuils : **1 h / 2 h** (code livré, validé par le PM, source unique `StatusColor`). Reste à trancher le point de départ. *Reco* : départ = max(présence, dernière update) ; plafonds pour le gratuit.
 - **Q2 Livrer P0 seule en attendant le serveur ?** *Reco* : oui (valeur réelle, 0 €, rend honnête la permission déjà demandée).
 - **Q3 Trajectoire pour les proches.** *Reco* : Blaze avec garde-fous ; relais gratuit seulement en plan B ; jamais GitHub Actions.
 - **Q4 Blaze : carte, alerte de budget (5 € suggéré), App Check strict, limites ?** *Reco* : oui, au moment de P2, avant la première bêta externe.
@@ -231,6 +231,6 @@ M1 pré-autorisation corrigée (P0 et P2) · M2 carte « deuxième chance » · 
 
 ## 15. Écarts avec l'existant
 
-E1 seuils 1 h / 2 h contre 2 h / 4 h · E2 Q6 (ligne masquée) rouverte · E3 Q15 (cloche retirée) rouverte · E4 texte d'amorce « bientôt » devient faux dès P0 · E5 `paywall-premium` range « situation anormale » en Premium · E6 règle « update toutes les heures » · E7 exemples de l'ancienne spec (ton) · E8 la politique de confidentialité ne mentionne pas les rappels locaux · E9 maquette « classiques / intelligentes » · E10 maquette de pré-autorisation (ton, genre, fausses promesses) · E11 jetons d'appareil lisibles par leur seul propriétaire (relais) · E12 exemplaire local du dépôt en retard : `feed.md`, `update.md`, `session-appareil-unique.md` non lus.
+E1 seuils : 1 h / 2 h (code livré, validé) ; les 2 h / 4 h des anciennes specs sont périmés · E2 Q6 (ligne masquée) rouverte · E3 Q15 (cloche retirée) rouverte · E4 texte d'amorce « bientôt » devient faux dès P0 · E5 `paywall-premium` range « situation anormale » en Premium · E6 règle « update toutes les heures » · E7 exemples de l'ancienne spec (ton) · E8 la politique de confidentialité ne mentionne pas les rappels locaux · E9 maquette « classiques / intelligentes » · E10 maquette de pré-autorisation (ton, genre, fausses promesses) · E11 jetons d'appareil lisibles par leur seul propriétaire (relais) · E12 résolu : l'agent avait un exemplaire local en retard, `feed.md`, `update.md` et `session-appareil-unique.md` sont à relire avant le développement.
 
 *Ne modifie ni le code, ni Figma, ni les règles Firestore, ni les textes légaux. Aucun texte n'est présenté comme relu par un juriste.*
