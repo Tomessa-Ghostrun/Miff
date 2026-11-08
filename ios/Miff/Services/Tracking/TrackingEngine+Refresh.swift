@@ -113,6 +113,11 @@ extension TrackingEngine {
         state = await flushPending(state, pass: pass)
         state = await publishPosition(state, fix: fix, pass: pass, now: now)
         state = await syncAccess(state, pass: pass, now: now)
+        // Batterie rafraîchie à l'ouverture et à la sortie, EN DERNIER : ce qui précède (arrivée, départ, position, accès) passe avant et
+        // porte déjà la batterie fraîche. Rien d'autre que la batterie ; aucune position.
+        if reason == .opened || reason == .backgrounded {
+            state = await refreshBattery(state, pass: pass)
+        }
         deps.local.save(state)
     }
 

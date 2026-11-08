@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -49,7 +50,13 @@ class RestrictedSettingsRuleTest {
         val shell = source("ui/main/MainShell.kt")
         val list = body(shell, "internal fun NavGraphBuilder.restrictedSettingsListRoute(")
         assertTrue(list.contains("onOpenMyInfo = null") && list.contains("onOpenLanguage = null"))
+        // ABO-1 (decision of the PM, 2026-11-07): the restricted Settings never carry the "Abonnement" line.
+        assertFalse(
+            "the restricted list must not open the subscription",
+            list.contains("onOpenSubscription") || list.contains("Subscription"),
+        )
         val restricted = body(shell, "internal fun NavGraphBuilder.restrictedSettingsRoutes(")
+        assertFalse("the restricted routes know nothing of the subscription", restricted.contains("Subscription"))
         assertTrue(restricted.contains("restrictedSettingsListRoute(") && restricted.contains("sharedSettingsRoutes("))
         val shared = body(shell, "internal fun NavGraphBuilder.sharedSettingsRoutes(")
         listOf(

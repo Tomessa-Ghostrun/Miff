@@ -183,6 +183,36 @@ final class AccountLocalDataTests: XCTestCase {
         return defaults
     }
 
+    func testDeletingAnAccountErasesItsPhotoNoteOfTheUpdateButASimpleSignOutKeepsIt() async {
+        let ledger = MemoryPublishLedger()
+        ledger.notePhotoSent(uid: "uid-1", millis: 5_000)
+        ledger.recordPublication(nowMillis: 6_000, dayKey: "2026-11-07", count: 1)
+        let erasers = AccountLocalData.erasers(
+            AccountLocalStores(
+                notificationAsks: UserDefaultsNotificationAskStore(defaults: suite()),
+                pendingMiffDeletions: MemoryPendingDeletions(), activeMiff: MemoryActiveMiffStore(),
+                notifications: RecordingCleaner(), trackingLocal: RecordingTrackingStore(),
+                detectionJournal: RecordingJournal(), updateLedger: ledger
+            )
+        )
+
+        // Déconnexion simple (la fin de session de l'Update) : la photo reste en base, la note aussi.
+        ledger.clear()
+        XCTAssertEqual(ledger.photoSentMillis(uid: "uid-1"), 5_000)
+        // La suppression d'un AUTRE compte ne touche pas cette note.
+        for erase in erasers {
+            await erase("uid-2")
+        }
+        XCTAssertEqual(ledger.photoSentMillis(uid: "uid-1"), 5_000)
+        // La suppression de CE compte l'efface (photoSentUid et photoSentAt).
+        for erase in erasers {
+            await erase("uid-1")
+        }
+        XCTAssertNil(ledger.photoSentMillis(uid: "uid-1"))
+        XCTAssertNil(ledger.state.photoSentUid)
+        XCTAssertNil(ledger.state.photoSentAt)
+    }
+
     func testEveryAccountBoundStorageIsErasedForThatAccountOnly() async {
         let defaults = suite()
         let asks = UserDefaultsNotificationAskStore(defaults: defaults)
@@ -199,7 +229,7 @@ final class AccountLocalDataTests: XCTestCase {
         let erasers = AccountLocalData.erasers(
             AccountLocalStores(
                 notificationAsks: asks, pendingMiffDeletions: pending, activeMiff: active, notifications: cleaner,
-                trackingLocal: tracking, detectionJournal: journal
+                trackingLocal: tracking, detectionJournal: journal, updateLedger: MemoryPublishLedger()
             )
         )
 
