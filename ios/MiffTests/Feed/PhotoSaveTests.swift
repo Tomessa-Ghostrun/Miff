@@ -75,7 +75,7 @@ final class PhotoSaveTests: XCTestCase {
     }
 
     func testTheShareSheetIsGivenOneImageAndNothingElseAndOnlyThisFileBuildsIt() throws {
-        let sheet = try code("Views/Feed/PhotoSaveButton.swift")
+        let sheet = try code("Miff/Views/Feed/PhotoSaveButton.swift")
 
         XCTAssertTrue(sheet.contains("UIActivityViewController(activityItems: [image], applicationActivities: nil)"))
         for forbidden in ["UIImageWriteToSavedPhotosAlbum", "import Photos", "PHPhotoLibrary", "FileManager", ".write(", "jpegData", "pngData"] {
@@ -99,7 +99,7 @@ final class PhotoSaveTests: XCTestCase {
         for case let file as URL in FileManager.default.enumerator(at: miff, includingPropertiesForKeys: nil) ?? NSEnumerator()
         where file.pathExtension == "swift" {
             let source = UpdatePrivacyTests.codeLines(try String(contentsOf: file, encoding: .utf8)).joined(separator: "\n")
-            if source.contains("PhotoSaveButton(") || source.contains("PhotoShareSheet(") {
+            if source.contains("PhotoSaveButton(image:") || source.contains("PhotoShareSheet(") {
                 users.append(file.lastPathComponent)
             }
         }
@@ -108,7 +108,7 @@ final class PhotoSaveTests: XCTestCase {
     }
 
     func testTheButtonIsNamedForVoiceOverAndHasAComfortableTarget() throws {
-        let button = try code("Views/Feed/PhotoSaveButton.swift")
+        let button = try code("Miff/Views/Feed/PhotoSaveButton.swift")
 
         XCTAssertTrue(button.contains("Text(\"feed_photo_download\")"), "le nom parlé est le texte visible : « Enregistrer la photo »")
         XCTAssertTrue(button.contains("Spacing.minTouchTarget + Spacing.xs"), "au moins 44 pt")
