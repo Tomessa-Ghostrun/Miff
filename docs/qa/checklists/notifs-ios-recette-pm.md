@@ -71,9 +71,20 @@
 - [ ] **Autre Miff active** (Premium) : changer de Miff active annule les rappels de l'ancienne.
 - [ ] Les mêmes vérifications que la partie D pour : nuit calme (N3 sans son, N4 normale), interrupteurs (« Quand ma Miff passe orange / rouge »), plafonds, centre, premier plan.
 
-## Partie F — N6 : « Tu es dans une zone de danger de ta Miff » (PR C)
+## Partie F — N6 : « Tu es dans une zone de danger de ta Miff » (PR C) — 20 min
 
-À remplir avec la PR C (entrée réelle dans une zone de danger posée par le créateur Premium ; une seule notification, nuit silencieuse, 3 par jour au plus, jamais pour une zone de danger couverte par un lieu de confiance).
+**Il faut une zone de danger** : posée par le **créateur** de la Miff avec le Premium accordé à la main (une personne gratuite de cette Miff la reçoit aussi). **« Toujours » et la position exacte** doivent être accordés, le partage actif. Essayez **en vrai** : marchez jusqu'au rayon de la zone (le système signale une entrée au bout d'une à deux minutes).
+
+- [ ] **Entrée réelle** dans la zone de danger (hors de toute zone de confiance) : « **Tu es dans une zone de danger de ta Miff** / Pendant que tu y es, tes proches voient un état différent. » arrive **tout de suite**, **une seule fois**, **sans nom de lieu**. Toucher ouvre **le Feed** (carte « Tu es dans une zone de danger de ta Miff »), pas l'Update.
+- [ ] **Dans une zone de confiance qui recouvre la zone de danger** : aucune N6. En sortant de la zone de confiance en restant dans la zone de danger : une N6.
+- [ ] **Sortir puis rentrer en moins d'une heure** : une seule N6. **Plus d'une heure après** : une nouvelle.
+- [ ] **Redémarrer l'app** (ou l'iPhone) en restant dans la zone : **aucune** nouvelle N6 si le statut était déjà « zone de danger » ; **une** si l'app n'avait pas vu l'entrée.
+- [ ] **Nuit** (22 h à 7 h) : la N6 arrive **sans son ni vibration**. **Plafond** : pas plus de 3 par jour ; au-delà, seulement une ligne dans le centre.
+- [ ] **App ouverte** : aucune bannière, une ligne discrète dans le centre.
+- [ ] **Interrupteurs** : « Quand j'entre dans une zone de danger » éteint (ou « Recevoir des notifications » éteint) : **aucune N6**, mais ce que votre Miff voit de vous ne change pas (la phrase sous l'interrupteur le dit).
+- [ ] Vous avez eu N1 / N2 programmées (vous étiez sorti d'un lieu) : en entrant en zone de danger elles sont **annulées** (plus de rappel « à toi » en zone de danger).
+- [ ] **Plusieurs Miffs** (Premium) : la N6 est reçue pour **n'importe laquelle** de vos Miffs (pas seulement la Miff affichée) ; le centre montre le **nom de la Miff**.
+- [ ] Notez la **durée** entre l'entrée réelle et la notification, et tout cas où elle manque (app fermée de force, mode économie d'énergie, Actualisation en arrière-plan coupée) : ce sont les limites d'iOS à documenter.
 
 ## Ce que le PM décide ensuite
 

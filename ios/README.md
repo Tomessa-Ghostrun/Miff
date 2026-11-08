@@ -504,6 +504,17 @@ Spec : `docs/tickets/notifications.md` §20.1 à §20.9 (vecteurs T1 à T15). **
 #### Tests (PR B)
 `NotificationPlannerTests` (T1 à T15 et plafonds, nuit, STRICT, bornes), `ChangeInstantsTests` (contrat avec la couleur), `NotificationReconcilerTests` et `NotificationReconcilerEventsTests` (programmer, idempotence, annuler, retrait à la reprise, rattrapage, premier plan, toucher, statuts du Feed, fausses alertes), `NotificationPlanModelsTests` (instantané, registre 48 h, identifiants, décorateur du suivi, fichier, demandes d'onglet).
 
+### N6 : « Tu es dans une zone de danger de ta Miff » (PR C : NOTIF-7I)
+
+Spec : `docs/tickets/notifications.md` §20.7 (vecteurs V1 à V10) et la décision Q34 du PM : **toutes mes Miffs**, texte **variante A**, toucher = **le Feed**, interrupteur « Quand j'entre dans une zone de danger » **présent**, nuit silencieuse, plafond de 3 par jour hors de celui de N1 à N4, retard de réarmement de 60 minutes.
+
+- **Déclencheur** : le suivi des lieux écrit un nouveau statut `in_risk` en attente (le décorateur de la copie locale, `PresenceNotifyingLocalStore`, l'annonce ; **le moteur n'est pas modifié**). Le moteur de présence décide seul d'une entrée EFFECTIVE (testé, V2 à V4) : entrer dans une zone de danger en étant dans une zone de confiance ne change rien (la confiance l'emporte), sortir de la confiance en restant dans la zone de danger donne `in_risk`, une présence déjà `in_risk` ne produit rien, et le chemin « déjà dedans à l'armement » écrit `in_risk` une seule fois.
+- **Immédiate et locale** : la notification part AVANT l'écriture du statut sur le serveur, sans lecture ni écriture Firestore, sans événement Analytics, **0 €**. Texte fixe, **aucun nom de lieu ni de Miff** ; l'entrée du centre ne garde que le type, l'heure et la Miff (son nom s'affiche à la lecture, si le compte a plusieurs Miffs). Au premier plan : rien d'affiché, entrée de centre silencieuse. Nuit (22 h à 7 h) : sans son. Au-delà de 3 par jour : entrée silencieuse.
+- **Jamais annulée** : une demande de N6 n'est pas retirée par une réconciliation (`removeStale` et `removeObsolete` l'écartent), et le registre garde ses marques (clé `n6|Miff|lieu|heure d'entrée`, retard de réarmement par couple Miff / lieu) même si une réconciliation attend le système (les marques sont réunies, jamais écrasées). Elle **annule** N1 / N2 (Q27) parce que ma ligne passe à `in_risk`.
+- **Écart** : une même géofence qui oscille plus d'une fois par heure ne donne qu'une N6 ; une entrée annoncée deux fois (relance de l'app) aussi (clé).
+
+Tests : `NotificationDangerZoneDecisionTests` (V1 à V9 en décision pure + moteur de présence), `NotificationDangerZoneReconcilerTests` (immédiate, texte fixe, annule N1 / N2, jamais retirée, réarmement, nuit, plafond de 3, premier plan, interrupteurs, toutes les Miffs, hors plafond de N1 à N4).
+
 ## Suivi des lieux : arrivées, départs, dernière position (LOC-4b, miroir d'Android LOC-2b)
 
 Ticket `docs/tickets/lieux-de-confiance.md` (v3 : §6.4 à §6.9, §7, §8, §9 à §11, §13 ; critères POS1 à POS8, DET1 à DET4, STA1 à STA9, VIE1 à VIE4, HOR1, IOS1 à IOS4), décisions du PM du 2026-11-01 et du 2026-11-06, règles **déployées le 2026-11-06** (position, session temps 1, R-LIEU-1 ; **aucune règle modifiée**), implémentation Android de référence (`data/tracking/`, `domain/tracking/`). Recette du PM, sur l'iPhone : `docs/qa/checklists/loc-4b-ios-recette-pm.md` (TestFlight, à pied). Ce que fait réellement l'app, pour la fiche et la revue d'Apple : `docs/release/ios-loc-4b-comportement-reel.md`.

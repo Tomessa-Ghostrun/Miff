@@ -21,6 +21,8 @@ struct NotificationLedger: Codable, Equatable {
     var notified: [String: Int] = [:]
     /// Identifiant de la demande -> ce qui a été programmé.
     var scheduled: [String: ScheduledRecord] = [:]
+    /// Couple (Miff, lieu) -> heure de la dernière N6 : le retard de réarmement de 60 minutes (une géofence qui oscille ne donne qu'UNE N6).
+    var lastDanger: [String: Int] = [:]
     /// N3 / N4 affichées alors que la couleur de la Miff était déjà revenue (compteur local pour la recette, jamais envoyé).
     var falseAlerts = 0
     /// N3 / N4 dont on a pu juger (donnée plus récente que l'affichage) : le dénominateur du compteur ci-dessus.
@@ -40,6 +42,22 @@ struct NotificationLedger: Codable, Equatable {
     func pruned(nowMillis: Int) -> NotificationLedger {
         var copy = self
         copy.notified = notified.filter { nowMillis - $0.value <= NotificationPlanner.keysRetentionMillis }
+        copy.lastDanger = lastDanger.filter { nowMillis - $0.value <= NotificationPlanner.keysRetentionMillis }
+        return copy
+    }
+
+    /// Réunit les clés notifiées et les retards de réarmement de `other` (le plus récent gagne) : ils ne font que s'ajouter, donc une
+    /// réconciliation qui a attendu le système ne perd jamais ce qu'une autre (une N6, un toucher) a inscrit pendant ce temps.
+    func merging(marksOf other: NotificationLedger) -> NotificationLedger {
+        var copy = self
+        copy.notified.merge(other.notified) { max($0, $1) }
+        copy.lastDanger.merge(other.lastDanger) { max($0, $1) }
+        return copy
+    }
+
+    func markingDanger(placeKey: String, atMillis: Int) -> NotificationLedger {
+        var copy = self
+        copy.lastDanger[placeKey] = atMillis
         return copy
     }
 

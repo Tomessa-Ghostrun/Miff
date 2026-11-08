@@ -2,6 +2,18 @@
 
 ## Non publié
 
+### NOTIF-7I - Notifications, PR C : N6 « Tu es dans une zone de danger de ta Miff »
+
+Branche `ios/notifications-p0-c` (PR en brouillon, **empilée sur la PR B**). Ticket `docs/tickets/notifications.md` §20.7 (vecteurs V1 à V10), décision Q34. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/notifs-ios-recette-pm.md` (partie F). Détail : `ios/README.md`, section « Notifications ». **0 € : notification locale immédiate, aucune lecture ni écriture Firestore, aucun événement Analytics.**
+
+Ajouté :
+- **N6** quand le suivi des lieux écrit un NOUVEAU statut `in_risk` (toutes mes Miffs) : notification locale immédiate AVANT l'écriture du statut, texte fixe (variante A), sans nom de lieu ni de Miff, nuit silencieuse, 3 par jour au plus (hors du plafond de N1 à N4), retard de réarmement de 60 minutes par couple Miff / lieu, jamais deux fois la même entrée, premier plan = entrée de centre silencieuse, toucher = le Feed. Interrupteur « Quand j'entre dans une zone de danger » (déjà présent) respecté, ainsi que l'interrupteur général et l'autorisation.
+- Décision pure `NotificationDangerZone.decide`, `NotificationReconciler.dangerZoneEntered`, marques du registre (`lastDanger`) réunies sans écrasement par `NotificationLedger.merging`.
+- Tests : vecteurs V1 à V9 (le V10, un compte gratuit dans une Miff dont le créateur Premium a posé la zone, n'a aucune condition de formule dans le code).
+
+Modifié : `NotificationServices.presenceChanged` appelle aussi `dangerZoneEntered` pour un statut `in_risk` ; `NotificationReconciler` n'annule ni ne retire jamais une N6.
+
+
 ### NOTIF-3I, NOTIF-4I, NOTIF-5I - Notifications, PR B : planificateur, N1 / N2 (« Tu es passé orange / rouge »), N3 / N4 (« Ta Miff est passée en orange / rouge »)
 
 Branche `ios/notifications-p0-b` (PR en brouillon, **empilée sur la PR A** ; elle contient aussi la fusion de `ios/feed-retours-recette` / #123 pour les seuils 2 h / 4 h et la règle de la zone de danger : son diff se réduira à la fusion de #123). Ticket `docs/tickets/notifications.md` §20.1 à §20.9. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/notifs-ios-recette-pm.md` (parties D et E). Détail, écarts et limites : `ios/README.md`, section « Notifications ». **0 € : notifications locales, aucun serveur, aucun push, aucune clé APNs.**

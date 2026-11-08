@@ -80,7 +80,9 @@ final class NotificationReconciler {
         await removeObsolete(delivered: delivered, snapshot: snapshot, input: input)
         ledger = await program(plan, ledger: ledger, pending: pending, now: now)
         ledger = await catchUp(plan, ledger: ledger, now: now)
-        deps.plans.saveLedger(ledger, uid: uid)
+        // Pendant qu'on attendait le système, une N6 ou un toucher a pu inscrire une clé : elle est conservée.
+        let latest = deps.plans.loadLedger(uid: uid).pruned(nowMillis: now)
+        deps.plans.saveLedger(ledger.merging(marksOf: latest), uid: uid)
     }
 
     // MARK: - L'entrée du planificateur
@@ -161,7 +163,8 @@ final class NotificationReconciler {
         pending: Set<String>
     ) async -> NotificationLedger {
         let wanted = Set(plan.scheduled.map { $0.identifier })
-        let stale = pending.subtracting(wanted)
+        // N6 est immédiate et ne s'annule pas : sa demande d'une seconde n'est jamais retirée par une réconciliation concurrente.
+        let stale = pending.subtracting(wanted).filter { NotificationIdentifier.parse($0)?.type != .n6 }
         guard !stale.isEmpty else {
             return ledger
         }
@@ -183,9 +186,7 @@ final class NotificationReconciler {
             }
             let valid = input.preferences.isEnabled(parts.type)
                 && input.authorization.isAllowed
-                && snapshot?.miffId == parts.miffId
-                && input.activeMiffId == parts.miffId
-                && stillTrue(parts.type, snapshot: snapshot, atMillis: input.nowMillis)
+                && (parts.type == .n6 || isCurrent(parts, snapshot: snapshot, input: input))
             if !valid {
                 obsolete.append(identifier)
             }
@@ -193,6 +194,17 @@ final class NotificationReconciler {
         if !obsolete.isEmpty {
             await deps.scheduler.removeDelivered(obsolete)
         }
+    }
+
+    /// N1 à N4 : toujours vraie pour la Miff active, d'après l'instantané.
+    private func isCurrent(
+        _ parts: (type: NotificationType, miffId: String),
+        snapshot: NotificationPlanSnapshot?,
+        input: NotificationPlanInput
+    ) -> Bool {
+        snapshot?.miffId == parts.miffId
+            && input.activeMiffId == parts.miffId
+            && stillTrue(parts.type, snapshot: snapshot, atMillis: input.nowMillis)
     }
 
     private func stillTrue(_ type: NotificationType, snapshot: NotificationPlanSnapshot?, atMillis: Int) -> Bool {

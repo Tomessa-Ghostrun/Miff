@@ -87,6 +87,12 @@ struct NotificationServices {
         return { @Sendable miffId, fact in
             Task { @MainActor in
                 await reconciler.myPresenceChanged(miffId: miffId, fact: fact)
+                // N6 : j'entre moi-même dans une zone de danger (dans toutes mes Miffs), notification locale immédiate.
+                if fact.presence == .inRisk {
+                    await reconciler.dangerZoneEntered(
+                        miffId: miffId, placeId: fact.placeId, enteredAtMillis: fact.presenceAtMillis
+                    )
+                }
             }
         }
     }
