@@ -4,6 +4,8 @@ import XCTest
 /// Les vecteurs de test T1 à T15 du ticket Notifications (§20.9) : le contrat de `NotificationPlanner.plan` avec Android. Convention :
 /// membres moi, X, Y ; tous partagent ; seuils 2 h / 4 h ; mode LARGE ; Miff active ; autorisation accordée ; « verts » = `in_trusted`.
 /// Les heures sont écrites en heures et minutes d'un même jour (UTC) ; « + 1 ms » vient du « plus de 2 h » (à 2 h 00 pile : encore vert).
+/// L'horizon de 3 h de N3 / N4 est un réglage PROPRE À iOS (parade n° 4 de la limite iOS) : il est désactivé pour les vecteurs (le contrat
+/// commun avec Android) et a ses propres tests plus bas.
 final class NotificationPlannerTests: XCTestCase {
     private let miffId = "miff-1"
     private var utc: Calendar {
@@ -58,6 +60,7 @@ final class NotificationPlannerTests: XCTestCase {
             sessionUid: "me"
         )
         value.calendar = utc
+        value.horizonMillis = Int.max
         configure(&value)
         return value
     }
@@ -252,6 +255,45 @@ final class NotificationPlannerTests: XCTestCase {
         // 21 h 30 UTC = 22 h 30 à Paris (UTC+1 en novembre).
         XCTAssertFalse(NotificationPlanner.isNight(atMillis: at(21, 30), calendar: utc))
         XCTAssertTrue(NotificationPlanner.isNight(atMillis: at(21, 30), calendar: paris))
+    }
+
+    // MARK: - L'horizon de 3 h (parade iOS n° 4)
+
+    func testTheIosHorizonOnlyProgramsFollowUpsWithinThreeHoursOfTheFreshestData() {
+        let members = [green("me"), out("x", ref: at(13, 40)), green("y")]
+
+        let plan = NotificationPlanner.plan(input(members, now: at(14, 0)) {
+            $0.horizonMillis = NotificationPlanner.iosHorizonMillis
+        })
+
+        XCTAssertEqual(fires(plan), ["n3@\(after(16, 10))"], "N4 serait à 4 h 10 de la donnée : pas encore programmée")
+    }
+
+    func testTheHorizonIsInclusiveAtExactlyThreeHours() {
+        let members = [green("me"), out("x", ref: at(13, 40)), green("y")]
+        let horizon = NotificationPlanner.iosHorizonMillis
+        let exactly = after(18, 10) - horizon
+        let oneMillisecondTooFar = exactly - 1
+
+        let inside = NotificationPlanner.plan(input(members, now: at(15, 20), savedAt: exactly) {
+            $0.horizonMillis = horizon
+        })
+        let outside = NotificationPlanner.plan(input(members, now: at(15, 20), savedAt: oneMillisecondTooFar) {
+            $0.horizonMillis = horizon
+        })
+
+        XCTAssertEqual(inside.scheduled.map { $0.type }, [.n3, .n4])
+        XCTAssertEqual(outside.scheduled.map { $0.type }, [.n3])
+    }
+
+    func testTheHorizonNeverConcernsTheOwnRemindersWhoseCauseIsOnThisPhone() {
+        let members = [out("me", ref: at(13, 40)), green("x")]
+
+        let plan = NotificationPlanner.plan(input(members, now: at(14, 0), savedAt: at(14, 0) - 10 * 3_600_000) {
+            $0.horizonMillis = NotificationPlanner.iosHorizonMillis
+        })
+
+        XCTAssertEqual(fires(plan), ["n1@\(after(15, 40))", "n2@\(after(17, 40))"])
     }
 
     func testT14TheAuthorizationMustBeGrantedOtherwiseNothingIsPlanned() {

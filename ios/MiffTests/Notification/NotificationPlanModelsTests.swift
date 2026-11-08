@@ -30,7 +30,7 @@ final class NotificationPlanModelsTests: XCTestCase {
         XCTAssertFalse(snapshot.members[1].sharing)
         XCTAssertNil(snapshot.members[2].presence, "pas de statut : neutre")
         let data = try JSONEncoder().encode(snapshot)
-        let text = String(decoding: data, as: UTF8.self)
+        let text = String(data: data, encoding: .utf8) ?? ""
         for forbidden in ["placeId", "p1", "hasPhoto", "battery", "lat", "lng", "jpeg"] {
             XCTAssertFalse(text.contains(forbidden), forbidden)
         }

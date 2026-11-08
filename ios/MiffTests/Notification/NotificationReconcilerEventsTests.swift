@@ -174,7 +174,7 @@ final class NotificationReconcilerEventsTests: ReconcilerTestCase {
 
         XCTAssertEqual(rig.memory.plan.snapshots["me"]?.members.map { $0.uid }, ["me", "x"])
         XCTAssertEqual(rig.memory.plan.snapshots["me"]?.savedAtMillis, at(14, 0))
-        XCTAssertEqual(Set(rig.scheduler.pending.keys), [identifier(.n3), identifier(.n4)])
+        XCTAssertEqual(Set(rig.scheduler.pending.keys), [identifier(.n3)], "N4 attend une donnée plus récente")
     }
 
     func testAnEventWithoutMembersOrFromAnotherAccountChangesNothing() async {
