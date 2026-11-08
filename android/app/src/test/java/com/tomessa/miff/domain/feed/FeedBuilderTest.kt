@@ -124,7 +124,7 @@ class FeedBuilderTest {
         val orange = StatusThresholds.ORANGE_AFTER_MILLIS
         val red = StatusThresholds.RED_AFTER_MILLIS
         assertEquals(StatusLevel.GREEN, levelAfter(orange - minute)) // 1 h 59
-        assertEquals(StatusLevel.ORANGE, levelAfter(orange)) // 2 h 00
+        assertEquals(StatusLevel.GREEN, levelAfter(orange)) // 2 h 00 included in green ("plus de 2 h")
         assertEquals(StatusLevel.ORANGE, levelAfter(orange + minute)) // 2 h 01
         assertEquals(StatusLevel.ORANGE, levelAfter(red - minute)) // 3 h 59
         assertEquals(StatusLevel.ORANGE, levelAfter(red)) // 4 h 00 included
@@ -285,7 +285,7 @@ class FeedBuilderTest {
     }
 
     @Test
-    fun labels_aSentenceAboutAPlaceLeft_stillNamesARelativesPlace() {
+    fun labels_aSentenceAboutAPlaceLeft_saysTheHomeOfARelative() {
         val places = listOf(testPlace("relative", "Chez Léa", category = PlaceCategory.RELATIVE))
         val left =
             FeedBuilder.build(
@@ -297,7 +297,7 @@ class FeedBuilderTest {
                 now,
                 zone,
             )
-        assertEquals(StateLabel.Left(PlaceRef.Named("Chez Léa")), card(left, "t").label)
+        assertEquals(StateLabel.Left(PlaceRef.Category(PlaceKind.RELATIVE)), card(left, "t").label)
     }
 
     @Test

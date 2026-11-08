@@ -109,15 +109,10 @@ class FeedTexts(
                 s(
                     when (place.kind) {
                         PlaceKind.HOME -> R.string.feed_place_noun_home
-
                         PlaceKind.WORK -> R.string.feed_place_noun_work
-
                         PlaceKind.SCHOOL -> R.string.feed_place_noun_school
-
                         PlaceKind.SPORT -> R.string.feed_place_noun_sport
-
-                        // Never built for a sentence (FeedBuilder names the place there); kept so that the choice stays exhaustive.
-                        PlaceKind.RELATIVE -> R.string.place_category_relative
+                        PlaceKind.RELATIVE -> R.string.feed_place_noun_relative
                     },
                 )
             }
@@ -139,15 +134,10 @@ class FeedTexts(
                         s(
                             when (place.kind) {
                                 PlaceKind.HOME -> R.string.feed_label_at_home
-
                                 PlaceKind.WORK -> R.string.feed_label_at_work
-
                                 PlaceKind.SCHOOL -> R.string.feed_label_at_school
-
                                 PlaceKind.SPORT -> R.string.feed_label_at_sport
-
-                                // Same words as the category of the place picker: "Chez un proche".
-                                PlaceKind.RELATIVE -> R.string.place_category_relative
+                                PlaceKind.RELATIVE -> R.string.feed_label_at_relative
                             },
                         )
                     }

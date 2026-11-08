@@ -41,10 +41,11 @@ class UpdatePromptTest {
     // --- Orange and red, at the limits of the thresholds --------------------------------------------------------------------------
 
     @Test
-    fun justUnderTwoHours_nothing_atTwoHours_orange_atFourHoursIncluded_orange_justOver_red() {
+    fun upToTwoHoursIncluded_nothing_justOver_orange_atFourHoursIncluded_orange_justOver_red() {
         fun at(elapsed: Long) = prompt(status(PresenceValue.OUT, presenceAt = T0 - elapsed), now = T0)
         assertEquals(PromptLevel.NONE, at(StatusThresholds.ORANGE_AFTER_MILLIS - 1))
-        assertEquals(PromptLevel.ORANGE, at(StatusThresholds.ORANGE_AFTER_MILLIS))
+        assertEquals(PromptLevel.NONE, at(StatusThresholds.ORANGE_AFTER_MILLIS))
+        assertEquals(PromptLevel.ORANGE, at(StatusThresholds.ORANGE_AFTER_MILLIS + 1))
         assertEquals(PromptLevel.ORANGE, at(StatusThresholds.RED_AFTER_MILLIS))
         assertEquals(PromptLevel.RED, at(StatusThresholds.RED_AFTER_MILLIS + 1))
     }

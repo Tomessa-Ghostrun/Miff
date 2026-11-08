@@ -15,8 +15,8 @@ import com.tomessa.miff.domain.update.PromptLevel
 
 /**
  * The categories whose NAME is replaced by the category in the LABEL of a card ("À la maison"): Maison, Travail, École, Sport and Chez un proche
- * (decision of the PM, 2026-11-08). Loisir, Autre and a place with no category show the NAME of the place ([PlaceRef.Named]). In the middle of a
- * sentence ("A quitté la maison") only the first four are replaced: [RELATIVE] is built for the label alone, the sentences name the place.
+ * (decision of the PM, 2026-11-08), also in the sentences ("A quitté le domicile d'un proche"). Loisir, Autre and a place with no category show the
+ * NAME of the place ([PlaceRef.Named]).
  */
 enum class PlaceKind { HOME, WORK, SCHOOL, SPORT, RELATIVE }
 

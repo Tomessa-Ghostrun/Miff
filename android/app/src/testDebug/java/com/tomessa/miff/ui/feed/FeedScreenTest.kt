@@ -380,7 +380,7 @@ class FeedScreenTest {
         // Mine and Thomas's.
         composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
         composeRule.onNodeWithText("Depuis 12 min").assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.place_category_relative)).assertExists()
+        composeRule.onNodeWithText(text(R.string.feed_label_at_relative)).assertExists()
         // Mine, Thomas's and Amandine's.
         composeRule
             .onAllNodesWithText(text(R.string.feed_battery_a11y, 85), useUnmergedTree = true)

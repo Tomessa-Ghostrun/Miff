@@ -445,6 +445,7 @@
     <string name="feed_label_at_sport">At the gym</string>
     <!-- Leisure, Other, no category: the name of the trusted place alone (PM decision, 2026-11-08). -->
     <string name="feed_label_at_place">%1$s</string>
+    <string name="feed_label_at_relative">At a loved one\'s</string>
     <string name="feed_label_left">Left %1$s</string>
     <string name="feed_label_trusted_generic">In a trusted place</string>
     <string name="feed_label_danger">In a danger zone</string>
@@ -456,6 +457,7 @@
     <string name="feed_place_noun_work">work</string>
     <string name="feed_place_noun_school">school</string>
     <string name="feed_place_noun_sport">the gym</string>
+    <string name="feed_place_noun_relative">a loved one\'s place</string>
     <string name="feed_place_noun_generic">a trusted place</string>
     <string name="feed_time_since_minutes">For %1$d min</string>
     <string name="feed_time_since_hours">For %1$d h</string>

@@ -84,6 +84,10 @@ class FeedTextsFrenchTest {
         assertEquals("Au sport", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
         // Chez un proche has its own words; Loisir and Autre show the NAME of the place alone (decision of the PM, 2026-11-08).
         assertEquals("Chez un proche", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        assertEquals(
+            "A quitté le domicile d'un proche",
+            texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.RELATIVE))),
+        )
         assertEquals("Cinéma Gaumont", texts.label(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"))))
         assertEquals("A quitté le travail", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.WORK))))
         assertEquals("A quitté Chez Léa", texts.label(StateLabel.Left(PlaceRef.Named("Chez Léa"))))
@@ -203,8 +207,8 @@ class FeedTextsEnglishTest {
         assertEquals("At work", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.WORK))))
         assertEquals("At school", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL))))
         assertEquals("At the gym", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
-        // The same words as the category of the place picker.
-        assertEquals("At a relative's", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        assertEquals("At a loved one's", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        assertEquals("Left a loved one's place", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.RELATIVE))))
         // Leisure, Other, no category: the NAME of the place alone.
         assertEquals("Cinéma Gaumont", texts.label(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"))))
         assertEquals("In a trusted place", texts.label(StateLabel.At(PlaceRef.Unknown)))

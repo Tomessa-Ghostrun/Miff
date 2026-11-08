@@ -235,7 +235,7 @@ object FeedBuilder {
         }
     }
 
-    /** For the sentences ("A quitté la maison"): the four categories with a noun are replaced, any other place is named. */
+    /** For the sentences ("A quitté la maison"): the categories with a noun are replaced, any other place (Loisir, Autre, none) is named. */
     private fun placeRef(
         placeId: String?,
         places: Map<String, Place>,
@@ -253,6 +253,7 @@ object FeedBuilder {
             PlaceCategory.WORK -> PlaceKind.WORK
             PlaceCategory.SCHOOL -> PlaceKind.SCHOOL
             PlaceCategory.SPORT -> PlaceKind.SPORT
+            PlaceCategory.RELATIVE -> PlaceKind.RELATIVE
             else -> null
         }
 
@@ -266,7 +267,7 @@ object FeedBuilder {
         places: Map<String, Place>,
     ): PlaceRef {
         val place = placeId?.let { places[it] } ?: return PlaceRef.Unknown
-        val kind = if (place.category == PlaceCategory.RELATIVE) PlaceKind.RELATIVE else sentenceKind(place.category)
+        val kind = sentenceKind(place.category)
         return when {
             kind != null -> PlaceRef.Category(kind)
             place.name.isBlank() -> PlaceRef.Unknown

@@ -10,7 +10,7 @@ enum class StatusLevel { NEUTRAL, GREEN, ORANGE, RED }
 
 /**
  * The thresholds of the ticket Statut, in ONE place (criterion STA9): nobody else writes an hour count for a colour. Decision of the PM, 2026-11-08
- * (it replaces 1 h / 2 h): a member who LEFT a trusted zone turns orange from 2 h and red past 4 h, counted from the most recent of the departure
+ * (it replaces 1 h / 2 h): a member who LEFT a trusted zone turns orange past 2 h and red past 4 h (strictly "more than"), counted from the most recent of the departure
  * and the last update.
  */
 object StatusThresholds {
@@ -40,7 +40,7 @@ object StatusColor {
      * The order of the ticket: sharing stopped or no status = neutral; a trusted zone = green; else a danger zone = red when the last update is
      * older than [StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS] (or missing), otherwise the normal rule below; `unknown` = neutral (a person who
      * never went through a trusted zone, decision N4); else the age of the reference = the most recent of the departure and the last update
-     * (decision N2): under 2 h green, from 2 h to 4 h INCLUDED orange, over 4 h red. A reference in the future (a phone with a wrong clock) counts
+     * (decision N2): up to 2 h INCLUDED green, over 2 h up to 4 h INCLUDED orange, over 4 h red ("plus de": at 2:00 sharp still green). A reference in the future (a phone with a wrong clock) counts
      * as "now": green.
      */
     fun level(
@@ -86,7 +86,7 @@ object StatusColor {
                 ?: return StatusLevel.NEUTRAL
         val elapsed = nowMillis - reference
         return when {
-            elapsed < StatusThresholds.ORANGE_AFTER_MILLIS -> StatusLevel.GREEN
+            elapsed <= StatusThresholds.ORANGE_AFTER_MILLIS -> StatusLevel.GREEN
             elapsed <= StatusThresholds.RED_AFTER_MILLIS -> StatusLevel.ORANGE
             else -> StatusLevel.RED
         }

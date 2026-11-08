@@ -121,8 +121,9 @@ class StatusColorTest {
     }
 
     @Test
-    fun out_exactlyTwoHours_isOrange() {
-        assertEquals(StatusLevel.ORANGE, level(out(2 * hour)))
+    fun out_exactlyTwoHours_isStillGreen_moreThanTwoHoursIsOrange() {
+        assertEquals(StatusLevel.GREEN, level(out(2 * hour)))
+        assertEquals(StatusLevel.ORANGE, level(out(2 * hour + 1_000)))
     }
 
     @Test
@@ -170,7 +171,7 @@ class StatusColorTest {
     }
 
     @Test
-    fun theExampleOfTheTicket_leftAt15h_greenUntil17h_orangeUntil19hIncluded_thenRed() {
+    fun theExampleOfTheTicket_leftAt15h_greenUntil17hIncluded_orangeUntil19hIncluded_thenRed() {
         val left = now
 
         fun at(afterMinutes: Long) =
@@ -179,7 +180,8 @@ class StatusColorTest {
                 left + afterMinutes * minute,
             )
         assertEquals(StatusLevel.GREEN, at(119))
-        assertEquals(StatusLevel.ORANGE, at(120))
+        assertEquals(StatusLevel.GREEN, at(120))
+        assertEquals(StatusLevel.ORANGE, at(121))
         assertEquals(StatusLevel.ORANGE, at(240))
         assertEquals(StatusLevel.RED, at(241))
     }
