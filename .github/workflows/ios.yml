@@ -406,6 +406,10 @@ jobs:
           debug_device="$(settings Debug iphoneos)"
           expect CODE_SIGN_STYLE "Debug" "$(value CODE_SIGN_STYLE <<< "$debug_device")" "Automatic"
           expect PROVISIONING_PROFILE_SPECIFIER "Debug" "$(value PROVISIONING_PROFILE_SPECIFIER <<< "$debug_device")" ""
+          # Release (futur build public) : pas encore de signature manuelle, la superposition n'y touche pas.
+          release_device="$(settings Release iphoneos)"
+          expect CODE_SIGN_STYLE "Release" "$(value CODE_SIGN_STYLE <<< "$release_device")" "Automatic"
+          expect PROVISIONING_PROFILE_SPECIFIER "Release" "$(value PROVISIONING_PROFILE_SPECIFIER <<< "$release_device")" ""
           # Le projet normal (project.yml) reste en signature automatique : le repli de ios-testflight en dépend.
           normal="$(xcodebuild -showBuildSettings -project Miff.xcodeproj -target Miff -configuration Internal -sdk iphoneos \
             -clonedSourcePackagesDirPath build/SourcePackages -disableAutomaticPackageResolution 2>/dev/null)"

@@ -63,11 +63,12 @@ jobs:
     name: Archive signée et envoi TestFlight
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
     timeout-minutes: 20
-    # PROTECTION DES SECRETS : un "environment" GitHub avec relecteur obligatoire serait
-    # l'ideal, mais il n'est PAS disponible pour un depot prive en offre gratuite (GitHub Free).
-    # Si le compte passe en GitHub Pro : creer l'environnement "testflight" (Settings >
-    # Environments), y deplacer les 4 secrets, restreindre les branches et decommenter :
-    # environment: testflight
+    # PROTECTION DES SECRETS : le depot est PUBLIC. Les secrets de signature vivent dans l'ENVIRONNEMENT GitHub
+    # "testflight" (relecteur obligatoire = le PM, branches limitees a main et ios/*), disponible gratuitement pour un
+    # depot public. ATTENTION : si cet environnement n'existe pas, GitHub le CREE AUTOMATIQUEMENT SANS PROTECTION au
+    # premier run : le creer et le proteger AVANT (commandes gh api : docs/dev/apple-certificats-ci.md, etape 0).
+    # Chaque lancement attend l'approbation du PM (« Review deployments »).
+    environment: testflight
     defaults:
       run:
         shell: bash
@@ -99,7 +100,7 @@ jobs:
             echo "## TestFlight - durées des étapes"
             echo
             echo "- Numéro de build : ${BUILD_NUMBER}"
-            echo "- Mode d'archive : ${ARCHIVE_MODE}"
+            echo "- Option archive_mode : ${ARCHIVE_MODE} (ignorée en signature manuelle)"
             echo "- Xcode : ${xcode_version} ($(xcodebuild -version | awk 'NR==2'))"
             echo "- Image du runner : ${ImageVersion:-inconnue}"
             echo
@@ -243,12 +244,19 @@ jobs:
       - name: Préparer un trousseau temporaire
         run: |
           set -euo pipefail
-          # Trousseau vide et éphémère où Xcode pourra stocker ses propres clés de signature.
-          # Son mot de passe vide n'est pas un secret : le runner est détruit après le job.
+          # Trousseau éphémère (le runner est détruit après le job). Chemin automatique : mot de passe vide, où Xcode stocke
+          # ses propres clés. Signature manuelle : mot de passe ALÉATOIRE, masqué dans les journaux, qui protège la clé
+          # privée du certificat de distribution pendant le job.
           keychain="$RUNNER_TEMP/miff-ci.keychain-db"
-          security create-keychain -p "" "$keychain"
+          keychain_password=""
+          if [ "${MANUAL_SIGNING:-no}" = "yes" ]; then
+            keychain_password="$(openssl rand -hex 24)"
+            echo "::add-mask::$keychain_password"
+            echo "CI_KEYCHAIN_PASSWORD=$keychain_password" >> "$GITHUB_ENV"
+          fi
+          security create-keychain -p "$keychain_password" "$keychain"
           security set-keychain-settings -lut 7200 "$keychain"
-          security unlock-keychain -p "" "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
           # shellcheck disable=SC2046
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           security default-keychain -d user -s "$keychain"
@@ -281,15 +289,21 @@ jobs:
           [ "$fail" -eq 0 ] || exit 1
 
           # 1. Le certificat (.p12) dans le trousseau temporaire (créé par l'étape précédente).
-          security unlock-keychain -p "" "$CI_KEYCHAIN"
+          security unlock-keychain -p "$CI_KEYCHAIN_PASSWORD" "$CI_KEYCHAIN"
           if ! security import "$work/dist.p12" -k "$CI_KEYCHAIN" -P "$DIST_CERT_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security > "$work/import.log" 2>&1; then
             bad "Import du .p12 refusé (mot de passe faux, ou format non reconnu : refaire le .p12 avec l'option -legacy, voir docs/dev/apple-certificats-ci.md)."
             exit 1
           fi
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$CI_KEYCHAIN" > /dev/null 2>&1 || bad "Autorisation de la clé pour codesign impossible."
+          # Le .p12 et le journal d'import ne servent plus : supprimés tout de suite (avant l'archive et l'envoi des symboles).
+          rm -f "$work/dist.p12" "$work/import.log"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$CI_KEYCHAIN_PASSWORD" "$CI_KEYCHAIN" > /dev/null 2>&1 || bad "Autorisation de la clé pour codesign impossible."
           identity_line="$(security find-identity -v -p codesigning "$CI_KEYCHAIN" | grep -E '"Apple Distribution:' | head -n 1 || true)"
           if [ -z "$identity_line" ]; then
-            bad "Aucune identité « Apple Distribution » dans le .p12 (un certificat de développement, ou un .p12 sans clé privée ?)."
+            if security find-identity -p codesigning "$CI_KEYCHAIN" | grep -q 'Apple Distribution:'; then
+              bad "Le certificat « Apple Distribution » est importé mais n'est pas VALIDE : chaîne Apple (WWDR) introuvable sur le runner, ou certificat expiré / révoqué. Vérifier la date d'expiration du certificat (docs/dev/apple-certificats-ci.md)."
+            else
+              bad "Aucune identité « Apple Distribution » avec clé privée dans le .p12 (certificat de développement, ou .p12 fabriqué sans la clé privée ?)."
+            fi
             exit 1
           fi
           identity_sha1="$(printf '%s' "$identity_line" | awk '{print $2}' | tr 'a-f' 'A-F')"
@@ -311,6 +325,8 @@ jobs:
           [ "$name" = "Miff CI App Store" ] || bad "Le profil s'appelle « ${name} » au lieu de « Miff CI App Store » (nom exact attendu, voir docs/dev/apple-certificats-ci.md)."
           [ "$team" = "$APPLE_TEAM_ID" ] || bad "Le profil appartient à une autre équipe que APPLE_TEAM_ID (compte Apple partagé avec un autre projet : arrêt)."
           [ "$app_id" = "${APPLE_TEAM_ID}.com.tomessa.miff" ] || bad "Le profil est pour « ${app_id} » au lieu de « ${APPLE_TEAM_ID}.com.tomessa.miff »."
+          [ -n "$(read_profile Entitlements:com.apple.developer.devicecheck.appattest-environment)" ] || bad "Le profil ne contient pas App Attest : cocher « App Attest » sur l'identifiant d'app, puis régénérer le profil."
+          [ -n "$(read_profile Entitlements:com.apple.developer.applesignin)" ] || bad "Le profil ne contient pas Sign In with Apple : cocher « Sign In with Apple » sur l'identifiant d'app, puis régénérer le profil."
           if [ -n "$(read_profile ProvisionedDevices)" ] || [ "$(read_profile ProvisionsAllDevices)" = "true" ]; then
             bad "Ce n'est pas un profil App Store (il liste des appareils ou vise une entreprise) : créer un profil « App Store Connect »."
           fi
@@ -322,7 +338,9 @@ jobs:
             bad "Date d'expiration du profil illisible."
           else
             expiry_epoch="$(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$expiry" +%s 2>/dev/null || echo 0)"
-            if [ "$expiry_epoch" -le "$now" ]; then
+            if [ "$expiry_epoch" -eq 0 ]; then
+              bad "Date d'expiration du profil illisible (« $expiry », format inattendu) : régénérer le profil ou prévenir le développeur."
+            elif [ "$expiry_epoch" -le "$now" ]; then
               bad "Le profil a EXPIRÉ le ${expiry} : le régénérer (docs/dev/apple-certificats-ci.md, renouvellement) et remplacer APPSTORE_PROFILE_B64."
             elif [ "$expiry_epoch" -le $((now + 2592000)) ]; then
               echo "::warning title=Profil bientôt expiré::Le profil expire le ${expiry} (moins de 30 jours) : prévoir le renouvellement (docs/dev/apple-certificats-ci.md)."
@@ -442,6 +460,7 @@ jobs:
         if: success()
         env:
           BUILD_NUMBER: ${{ github.run_number }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -uo pipefail
           archive=build/Miff.xcarchive
@@ -470,6 +489,23 @@ jobs:
                 fail=1
                 ;;
             esac
+            # Signature réellement valide (tous les frameworks), bonne équipe, et le profil embarqué est celui qu'on a installé.
+            app_dir="$(ls -d "$archive"/Products/Applications/*.app 2>/dev/null | head -n 1)"
+            if ! codesign --verify --strict --deep "$app_dir" > /dev/null 2>&1; then
+              echo "::error::codesign --verify --strict --deep a échoué sur l'application de l'archive (un framework mal signé ?) : envoi annulé."
+              fail=1
+            fi
+            team_found="$(codesign -dv "$app_dir" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
+            if [ "$team_found" != "$APPLE_TEAM_ID" ]; then
+              echo "::error::TeamIdentifier de l'archive ne correspond pas à APPLE_TEAM_ID : envoi annulé."
+              fail=1
+            fi
+            security cms -D -i "$app_dir/embedded.mobileprovision" > "$MANUAL_SIGNING_DIR/embedded.plist" 2>/dev/null || true
+            embedded_uuid="$(/usr/libexec/PlistBuddy -c "Print :UUID" "$MANUAL_SIGNING_DIR/embedded.plist" 2>/dev/null || echo "")"
+            if [ "$embedded_uuid" != "${MANUAL_PROFILE_UUID:-}" ]; then
+              echo "::error::Le profil embarqué dans l'archive n'est pas celui installé par la CI : envoi annulé."
+              fail=1
+            fi
           fi
           if [ "$device_family" != "Array{1}" ]; then
             echo "::error::UIDeviceFamily « ${device_family} » au lieu de iPhone seul (1) : envoi annulé."

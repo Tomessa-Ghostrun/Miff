@@ -135,3 +135,97 @@ test('DEPENDABOT - github-actions et npm (backend) déclarés ; gradle / swift d
   assert.equal(ecosystems.gradle !== undefined, androidHasManifest, 'gradle : entrée Dependabot à synchroniser avec android/');
   assert.equal(ecosystems.swift !== undefined, iosHasManifest, 'swift : entrée Dependabot à synchroniser avec ios/');
 });
+
+// --- ios-testflight : signature manuelle (docs/dev/apple-certificats-ci.md) -------------------------------------------------
+const testflight = workflows.find((w) => w.file === 'ios-testflight.yml');
+const testflightSteps = testflight.doc.jobs['archive-and-upload'].steps;
+const stepNamed = (start) => {
+  const step = testflightSteps.find((s) => String(s.name).startsWith(start));
+  assert.ok(step, `étape « ${start} » introuvable`);
+  return step;
+};
+const code = (run) => stripComments(String(run ?? ''));
+const PROFILE_NAME = 'Miff CI App Store';
+
+test('TESTFLIGHT - déclenché à la main seulement, dans l\'environnement protégé « testflight »', () => {
+  assert.deepEqual(Object.keys(testflight.doc.on), ['workflow_dispatch']);
+  assert.equal(testflight.doc.jobs['archive-and-upload'].environment, 'testflight');
+});
+
+test('TESTFLIGHT - aucun secret hors des blocs env: des étapes', () => {
+  for (const step of testflightSteps) {
+    for (const field of ['run', 'if', 'with', 'name', 'working-directory']) {
+      assert.doesNotMatch(JSON.stringify(step[field] ?? ''), /secrets[.][A-Za-z_]/, `${step.name} : référence à un secret dans ${field}`);
+    }
+  }
+  // Pas au niveau du job ni du workflow non plus (sauf dans les env: d'étape, vérifié ci-dessus par exclusion).
+  const job = testflight.doc.jobs['archive-and-upload'];
+  assert.ok(!JSON.stringify(job.env ?? {}).includes('secrets.'), 'secret dans job.env');
+  assert.ok(!JSON.stringify(testflight.doc.env ?? {}).includes('secrets.'), 'secret dans env global');
+});
+
+test('TESTFLIGHT - jamais de set -x (la ligne de commande contient des identifiants)', () => {
+  for (const step of testflightSteps) {
+    assert.doesNotMatch(code(step.run), /^\s*set\s+(?:-[a-zA-Z]*x|.*\s-[a-zA-Z]*x)/m, `${step.name} : set -x interdit`);
+  }
+});
+
+test('TESTFLIGHT - l\'archive manuelle n\'utilise ni -allowProvisioningUpdates ni clé d\'API', () => {
+  const run = code(stepNamed('Archiver (signature manuelle').run);
+  assert.match(run, /xcodebuild archive/);
+  assert.doesNotMatch(run, /allowProvisioningUpdates/);
+  assert.doesNotMatch(run, /authenticationKey/);
+  assert.doesNotMatch(run, /ASC_KEY/);
+});
+
+test('TESTFLIGHT - l\'export manuel n\'utilise la clé d\'API que pour l\'envoi, sans -allowProvisioningUpdates', () => {
+  const step = stepNamed('Exporter et envoyer à TestFlight (signature manuelle');
+  const run = code(step.run);
+  assert.doesNotMatch(run, /allowProvisioningUpdates/);
+  assert.match(run, /-authenticationKeyPath/);
+  assert.match(run, /ExportOptions\.manual\.plist\.template/);
+  assert.match(String(step.if), /MANUAL_SIGNING == 'yes'/);
+});
+
+test('TESTFLIGHT - le nettoyage tourne toujours et efface trousseau, fichiers déchiffrés et profil', () => {
+  const step = stepNamed('Nettoyer');
+  assert.equal(step.if, 'always()');
+  const run = code(step.run);
+  assert.match(run, /security delete-keychain/);
+  assert.match(run, /rm -rf "\$MANUAL_SIGNING_DIR"/);
+  assert.match(run, /MANUAL_PROFILE_UUID/);
+  assert.match(run, /AuthKey_\*\.p8/);
+});
+
+test('TESTFLIGHT - le .p12 déchiffré est supprimé juste après l\'import', () => {
+  const run = code(stepNamed('Installer le certificat de distribution').run);
+  const importAt = run.indexOf('security import');
+  const removeAt = run.indexOf('rm -f "$work/dist.p12"');
+  assert.ok(importAt > 0 && removeAt > importAt, 'suppression du .p12 après l\'import');
+  assert.ok(removeAt < run.indexOf('security cms -D'), 'suppression avant le décodage du profil');
+});
+
+test('TESTFLIGHT - le nom du profil est identique partout', () => {
+  const places = {
+    workflow: testflight.text,
+    superposition: readFileSync(`${root}ios/project-signing-manual.yml`, 'utf8'),
+    exportOptions: readFileSync(`${root}ios/ci/ExportOptions.manual.plist.template`, 'utf8'),
+    ios: workflows.find((w) => w.file === 'ios.yml').text,
+    guide: readFileSync(`${root}docs/dev/apple-certificats-ci.md`, 'utf8'),
+  };
+  for (const [name, text] of Object.entries(places)) {
+    assert.ok(text.includes(PROFILE_NAME), `${name} : nom du profil « ${PROFILE_NAME} » absent`);
+    // Aucune variante proche (autre casse, autre libellé) : toute mention « Miff CI ... » est le nom exact.
+    for (const match of text.matchAll(/Miff CI [A-Za-z ]+Store/g)) {
+      assert.equal(match[0], PROFILE_NAME, `${name} : variante du nom du profil « ${match[0]} »`);
+    }
+  }
+});
+
+test('TESTFLIGHT - les trois secrets de la signature manuelle sont décrits dans le guide et vérifiés ensemble', () => {
+  const secretsStep = testflightSteps.find((s) => String(s.name).startsWith('Vérifier que les secrets'));
+  for (const name of ['DIST_CERT_P12_B64', 'DIST_CERT_P12_PASSWORD', 'APPSTORE_PROFILE_B64']) {
+    assert.ok(secretsStep.env?.[name], `${name} absent de l'étape de contrôle des secrets`);
+  }
+  assert.match(secretsStep.run, /PARTIELLE/);
+});
