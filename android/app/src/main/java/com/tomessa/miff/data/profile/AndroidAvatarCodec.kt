@@ -16,9 +16,11 @@ import com.tomessa.miff.domain.profile.DecodedPhoto
 import com.tomessa.miff.domain.profile.SquareCrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import kotlin.math.max
 
 /** A photo decoded in memory and already straightened (orientation applied). Lives in the view model, never on disk. */
@@ -65,6 +67,19 @@ class AndroidAvatarCodec(
             }
         }
 
+    override suspend fun decodeBytes(bytes: ByteArray): DecodedPhoto? =
+        withContext(Dispatchers.IO) {
+            try {
+                decodeFrom { ByteArrayInputStream(bytes) }?.let { BitmapPhoto(it) }
+            } catch (e: IOException) {
+                null
+            } catch (e: OutOfMemoryError) {
+                null
+            } catch (e: RuntimeException) {
+                null
+            }
+        }
+
     override suspend fun encode(
         photo: DecodedPhoto,
         crop: SquareCrop,
@@ -84,9 +99,14 @@ class AndroidAvatarCodec(
         // Only what our own launchers give: a content address (Photo Picker, or our camera file). Never a file path.
         if (uri.scheme != "content") return null
         val resolver = appContext.contentResolver
+        return decodeFrom { resolver.openInputStream(uri) }
+    }
+
+    /** [open] gives a NEW stream at each call (the source is read three times: size, pixels, orientation). */
+    private fun decodeFrom(open: () -> InputStream?): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         // decodeStream returns NULL when only the bounds are asked: never use its result as "failed".
-        val opened = resolver.openInputStream(uri) ?: return null
+        val opened = open() ?: return null
         opened.use { BitmapFactory.decodeStream(it, null, bounds) }
         val sourceSide = max(bounds.outWidth, bounds.outHeight)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
@@ -95,10 +115,10 @@ class AndroidAvatarCodec(
         while (sourceSide / (sample * 2) >= WORKING_SIDE) sample *= 2
         val options = BitmapFactory.Options().apply { inSampleSize = sample }
         val decoded =
-            resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
+            open()?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
         val orientation =
             try {
-                resolver.openInputStream(uri)?.use {
+                open()?.use {
                     ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
                 } ?: ExifInterface.ORIENTATION_NORMAL
             } catch (e: IOException) {

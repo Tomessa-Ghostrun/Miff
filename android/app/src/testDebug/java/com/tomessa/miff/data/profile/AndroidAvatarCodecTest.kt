@@ -245,6 +245,40 @@ class AndroidAvatarCodecTest {
         assertTrue("blue expected, got ${Integer.toHexString(pixel)}", Color.blue(pixel) > 200 && Color.red(pixel) < 60)
     }
 
+    // --- A photo already in memory (the Google photo of the account) ---------------------------------------------------------
+
+    private fun decodeBytesAndEncode(bytes: ByteArray): ByteArray? =
+        runBlocking {
+            val photo = codec.decodeBytes(bytes) ?: return@runBlocking null
+            val crop = CropMath.toCrop(photo.width, photo.height, 1f, photo.width / 2f, photo.height / 2f)
+            codec.encode(photo, crop)
+        }
+
+    @Test
+    fun aPhotoInMemory_comesOutSquare_withinTheLimitOfTheAvatar_andWithNoMetadata() {
+        // What Google serves is about 256 px; a bigger or a noisier one must fit too.
+        for (bitmap in listOf(smooth(256, 256), noise(256, 256, seed = 5), noise(1200, 800, seed = 6))) {
+            val source =
+                jpeg(bitmap) {
+                    it.setLatLong(48.8566, 2.3522)
+                    it.setAttribute(ExifInterface.TAG_MODEL, "TestPhoneModel")
+                }
+            val out = decodeBytesAndEncode(source)!!
+            assertTrue("${out.size} bytes", out.size <= 20_000)
+            val decoded = BitmapFactory.decodeByteArray(out, 0, out.size)
+            assertEquals(decoded.width, decoded.height)
+            val text = String(out, Charsets.ISO_8859_1)
+            listOf("Exif", "TestPhone", "GPS").forEach { assertFalse("not \"$it\"", text.contains(it)) }
+        }
+    }
+
+    @Test
+    fun aPhotoInMemory_thatIsNotAnImage_givesNothing_andDoesNotCrash() {
+        assertNull(runBlocking { codec.decodeBytes("this is not an image".toByteArray()) })
+        assertNull(runBlocking { codec.decodeBytes(ByteArray(0)) })
+        assertNull(runBlocking { codec.decodeBytes(ByteArray(5000) { (it * 7).toByte() }) })
+    }
+
     // --- What is refused -----------------------------------------------------------------------------------------------------
 
     @Test

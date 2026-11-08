@@ -2,6 +2,28 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.19.0] - 2026-11-08 : la photo Google devient la photo de profil à l'inscription (retour du PM)
+
+Retour du PM après ses tests (2026-11-08) : « Lorsqu'un utilisateur choisit de s'inscrire avec Google, on doit récupérer sa photo Google s'il en a une, et ça doit être sa photo de profil. » Branche `android/photo-google`, PR brouillon. Numéro de version : `main` est à 0.17.0 ; les PR ouvertes #117 (ABO-1) et #118 (fenêtre d'avis) prennent toutes deux 0.18.0 dans leur propre branche ; cette entrée prend **0.19.0** pour ne pas entrer en collision avec elles (à renuméroter au moment du merge si l'ordre change). Aucun changement du modèle de données, des règles Firestore ni des textes légaux.
+
+### Ajouté
+- **La photo Google préremplit la photo de profil.** À l'étape « Profil » d'une inscription avec Google, si le compte a une photo, elle apparaît dans le rond de la photo de profil, avec une phrase discrète : « On a repris ta photo Google, tu peux la changer. » (`profile_google_photo_hint`, FR et EN). La personne peut la remplacer (galerie, appareil photo) ou la supprimer comme n'importe quelle photo ; elle est écrite avec le profil à la fin de l'étape « Téléphone », comme n'importe quelle photo de profil. Détail technique : `android/README.md`, « Photo Google ».
+- **Téléchargée une fois, en HTTPS, depuis Google seulement.** `GooglePhotoUrl` n'accepte que `https` vers `googleusercontent.com` (et sous-domaines), sans identifiant dans l'adresse, port 443 ; elle demande 256 px ; la silhouette générique de Google est refusée. `HttpsGooglePhotoSource` (client HTTPS de Java, **aucune dépendance ajoutée**) : 6 s au plus, 512 Ko au plus, `image/*`, l'hôte est revérifié à chaque redirection (2 au plus). Même chemin de recadrage/ré-encodage que la photo choisie par la personne : JPEG 160 x 160 de 20 000 octets au plus, **sans métadonnées** (`AvatarCodec.decodeBytes`, nouveau, pour une photo déjà en mémoire).
+- **Jamais bloquant, jamais alarmiste.** L'étape est utilisable tout de suite. Pas de réseau, réponse lente, photo illisible, adresse refusée, silhouette générique : l'inscription continue sans photo et **sans aucun message**. La photo n'est pas posée si la personne a déjà choisi une photo, recadre une photo ou est passée à l'étape suivante.
+- **Parité iOS** : la clé `profile_google_photo_hint` est ajoutée au catalogue iOS (`ios/Miff/Resources/Localizable.xcstrings`, mêmes mots) ; `scripts/check-i18n-parity.mjs` est vert. L'écran iOS reste à faire par l'agent iOS.
+
+### Ne change pas
+- **Compte qui a déjà un profil** : il ne passe jamais par l'étape « Profil » ; sa photo n'est jamais écrasée. Un brouillon existant (la personne est déjà passée par l'étape) n'est jamais écrasé non plus et la photo n'est pas retéléchargée, même si elle l'avait retirée.
+- **Compte e-mail ou Apple** : aucune adresse de photo, rien ne change (aucun appel réseau).
+- **Confidentialité** : ni l'adresse ni la photo ne sont journalisées ni envoyées à Analytics. La photo n'est conservée nulle part en dehors du chemin normal du profil (brouillon local privé, effacé après la confirmation du serveur et à toute fin de session).
+
+### Choix et limites
+- **L'adresse vient de `FirebaseUser.providerData` (entrée `google.com`)** et non de `GoogleIdTokenCredential.profilePictureUri` : même valeur, déjà disponible après la connexion, sans toucher au contrat de `GoogleIdTokenSource` (utilisé aussi par la ré-authentification de la suppression de compte).
+- **Photo Google générique** : détectée par son adresse (`/default-user` et l'ancien dossier `AAAAAAAAAAA`). Si Google change ses formats, une silhouette pourrait passer ; la personne peut alors la retirer en un geste.
+- **Coût** : aucun (un téléchargement d'une dizaine de Ko par inscription Google, depuis le serveur d'images de Google ; aucune écriture de plus, la photo suit l'écriture unique du profil).
+- Tests : `GooglePhotoTest` (sélection de l'adresse, domaines et schémas refusés, silhouette générique, taille demandée, échec réseau, délai), `HttpsGooglePhotoSourceTest` (redirections, taille, type), `ProfileGooglePhotoTest` (préremplissage, hint, remplacer/retirer, compte existant/brouillon non écrasé, photo choisie pendant le téléchargement, échec silencieux, compte e-mail), `AndroidAvatarCodecTest` (photo en mémoire : carré, 20 000 octets, sans métadonnées, fichier illisible). Recette PM : `docs/qa/checklists/photo-google-android-recette-pm.md`.
+- À aligner avant publication (non fait ici) : politique de confidentialité et fiches des stores, voir `docs/legal/README.md` (« À aligner (2026-11-08) ») ; critère PR8 de `docs/tickets/onboarding.md` (« aucune photo importée »).
+
 ## [0.17.0] - 2026-11-07 : la suppression de compte n'est accessible que depuis les Réglages (AUTH-5, décision du PM)
 
 Décision du PM du 2026-11-07 : « la suppression de compte ne doit être accessible que depuis les paramètres » (Réglages > Mon compte > Supprimer mon compte). Branche `android/suppression-compte-reglages-seulement`, PR brouillon. Numéro de version : `main` est à 0.16.0 (batterie) ; le parcours change (nouvelle entrée vers les Réglages sans Miff), donc 0.17.0. Aucun changement du modèle de données, des règles Firestore ni des textes.

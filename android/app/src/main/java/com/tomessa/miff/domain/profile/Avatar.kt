@@ -103,6 +103,12 @@ interface DecodedPhoto {
 interface AvatarCodec {
     suspend fun decode(source: String): DecodedPhoto?
 
+    /**
+     * The same, for a photo already in memory (the Google photo of the account, downloaded once: nothing is written to disk).
+     * null = not an image, unreadable, or far too big.
+     */
+    suspend fun decodeBytes(bytes: ByteArray): DecodedPhoto?
+
     suspend fun encode(
         photo: DecodedPhoto,
         crop: SquareCrop,
