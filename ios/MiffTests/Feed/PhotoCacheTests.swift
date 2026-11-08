@@ -114,3 +114,4 @@ final class PhotoCacheTests: XCTestCase {
         XCTAssertNotNil(get("uidB"))
     }
 }
+// swiftlint:enable line_length

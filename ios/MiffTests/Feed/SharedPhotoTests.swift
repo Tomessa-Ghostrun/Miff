@@ -115,3 +115,4 @@ final class SharedPhotoTests: XCTestCase {
         }
     }
 }
+// swiftlint:enable line_length

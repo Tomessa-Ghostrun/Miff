@@ -221,3 +221,4 @@ final class PhotoLoaderTests: XCTestCase {
         XCTAssertFalse(OwnPositionProbe.isPublished(state: state, uid: nil, miffId: testMiffId))
     }
 }
+// swiftlint:enable line_length

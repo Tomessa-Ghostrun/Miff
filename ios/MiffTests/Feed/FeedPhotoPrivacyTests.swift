@@ -140,3 +140,4 @@ final class FeedPhotoPrivacyTests: XCTestCase {
         XCTAssertTrue(services.contains("photoCache.clear()"))
     }
 }
+// swiftlint:enable line_length
