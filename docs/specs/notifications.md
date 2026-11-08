@@ -9,11 +9,17 @@ Les notifications sont essentielles au concept produit : signaler sans que perso
 
 ## Déclencheurs déductibles des autres specs (inchangé)
 - Changement de statut d'un membre (entrée / sortie de lieu, passage orange / rouge, voir [update-et-escalade-statut.md](update-et-escalade-statut.md)).
-- Entrée dans une « zone à risque » : **aucune notification** (décision Q10 du 2026-10-30 : zone à risque non livrée en v1).
+- Entrée dans une « zone à risque » / de danger : **aucune notification d'entrée ni de sortie** (décision Q10 du 2026-10-30 : zone non livrée en v1). La règle de couleur décidée le 2026-11-08 (**rouge si la dernière update date de plus d'1 h en zone de danger**, la confiance l'emporte) est sans effet tant que la zone n'existe pas ; son effet éventuel sur le rappel rouge est la question Q27 du ticket.
+
+## Seuils décidés (PM, 2026-11-08)
+**Orange après 2 h, rouge après 4 h**, l'âge étant le plus récent de (heure de sortie du lieu de confiance, dernière update), en dehors d'un lieu de confiance seulement. Ils remplacent les 1 h / 2 h du code livré (`StatusColor`, à aligner par le ticket Feed). Rappels : orange à 2 h, rouge à 4 h (relance à 5 h au plus), rappel anticipé Premium à 1 h 45, « pas de nouvelles d'un proche » à 4 h.
+
+## Étiquettes de lieu (PM, 2026-11-08)
+Maison = « À la maison », Travail = « Au travail », École = « À l'école », Sport = « Au sport », Chez un proche = « Chez un proche », Loisir et Autre = nom du lieu. Utilisées dans les notifications d'arrivée et de départ (« Thomas est bien à l'école », « Thomas n'est plus à l'école »). Point de vie privée : le nom saisi pour Loisir et Autre peut révéler un domicile (ticket Q9).
 - Invitation / nouvel arrivant dans une Miff (voir [miff-groupes.md](miff-groupes.md)) : non repris dans la proposition (à rediscuter).
 
 ## Ton attendu
-Rassurant et informatif, jamais anxiogène (voir `CLAUDE.md`). Règles de rédaction proposées : tutoiement, sans accord de genre (« a bien rejoint », « a donné de ses nouvelles »), heures absolues, jamais de « toujours pas », ni de couleur nommée, jamais d'alerte sans clôture.
+Rassurant et informatif, jamais anxiogène (voir `CLAUDE.md`). Règles de rédaction proposées : tutoiement, sans accord de genre (« est bien à l'école », « n'est plus à l'école », « a donné de ses nouvelles »), heures absolues, jamais de « toujours pas », ni de couleur nommée, jamais d'alerte sans clôture.
 
 ## Ce que propose le ticket (résumé)
 - **P0 (gratuit, maintenant)** : rappels locaux orange / rouge, centre de notifications derrière la cloche du Feed, Réglages > Notifications (interrupteur général et par type, état de l'autorisation du téléphone), demande d'autorisation soignée.
@@ -25,9 +31,9 @@ Rassurant et informatif, jamais anxiogène (voir `CLAUDE.md`). Règles de rédac
 - Les questions de la version précédente de ce fichier (types de notification, désactivation individuelle, orange ou rouge seulement) reçoivent une réponse **proposée** dans le ticket (Q5 à Q8, §9).
 - **Q6 du 2026-10-30** (ligne Réglages > Notifications masquée) est **rouverte** par l'exigence du PM du 2026-11-08.
 - **Q15 du 2026-10-30** (cloche du Feed retirée) est **rouverte** (centre de notifications accessible depuis la home).
-- **Seuils orange / rouge** : 1 h / 2 h (demande) contre 2 h / 4 h (specs lues) : à réconcilier (Q1).
+- **Seuils orange / rouge** : écart **résolu** le 2026-11-08 (2 h / 4 h décidés ; le code livré à 1 h / 2 h est à aligner par le ticket Feed).
 - Texte de l'amorce de notifications d'`onboarding.md` (« arrivent bientôt, rien n'est envoyé ») devient faux dès la phase 0.
 - `paywall-premium.md` range « situation anormale » en Premium : la proposition met « pas de nouvelles d'un proche » en gratuit (Q5).
 
 ## Questions ouvertes pour le PM
-Voir la liste numérotée Q1 à Q26 dans [`docs/tickets/notifications.md`](../tickets/notifications.md) §17.
+Voir la liste numérotée Q1 à Q27 dans [`docs/tickets/notifications.md`](../tickets/notifications.md) §17.

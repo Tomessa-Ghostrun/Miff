@@ -9,7 +9,7 @@
 **Sources lues** : `CLAUDE.md` ; `docs/specs/notifications.md`, `update-et-escalade-statut.md`, `feed-cercle-de-confiance.md`, `paywall-premium.md`, `lieux-de-confiance.md` ; `docs/tickets/feed-profil-reglages.md` (en entier), `onboarding.md` (§6.6, §6.9, §6.11, R2, R15, PE9 à PE12), `initialisation-technique.md`, `onboarding-decisions-pm.md` ; `backend/data-model.md` (§2.7, §2.10, §3, §4, §12, §13) ; `docs/legal/*` ; `docs/contracts/i18n-keys.md` et `analytics-events.md` ; les maquettes `design/exports/pop-ins/01-notifications.png`, `feed/` (cloche avec pastille dans l'en-tête), `update/` (bulle d'incitation orange et rouge, anneau de l'avatar et bouton central colorés), `reglages/Welcoming screen-7.png` (« classiques / intelligentes ») ; le code Android (`PrivacyScreen.kt`, `ExternalLinks.kt`, `FeedPlaceholderScreen.kt`, manifeste) et iOS (`Miff.entitlements`, `Localizable.xcstrings`).
 
 **Limites de cette lecture (à connaître)** :
-- **Mon exemplaire local du dépôt est en retard sur `origin/main`** et je n'ai pas pu faire `git fetch` (pas d'outil shell dans cette session). **Non lus** : `docs/tickets/feed.md`, `docs/tickets/update.md`, `docs/tickets/session-appareil-unique.md`, `StatusColor.level` dans le code, les récentes PR « batterie ». Les seuils **1 h / 2 h** (orange / rouge) viennent du brief de la demande ; les documents que j'ai lus disent **2 h / 4 h** (`data-model.md` §3, `feed-profil-reglages.md` D1). **Écart E1 : à réconcilier avant tout développement** ; cette spec manipule des seuils **T_orange** et **T_rouge** (constantes partagées de `StatusColor`) et ne fige aucune durée.
+- **Mon exemplaire local du dépôt est en retard sur `origin/main`** et je n'ai pas pu faire `git fetch` (pas d'outil shell dans cette session). **Non lus** : `docs/tickets/feed.md`, `docs/tickets/update.md`, `docs/tickets/session-appareil-unique.md`, `StatusColor.level` dans le code, les récentes PR « batterie ». **Seuils (mise à jour du 2026-11-08, décision confirmée par le PM)** : **orange après 2 h, rouge après 4 h**, l'âge étant le **plus récent** de (heure de sortie du lieu de confiance, dernière update), **en dehors d'un lieu de confiance seulement** ; **en zone de danger : rouge si la dernière update date de plus d'1 h** (la confiance l'emporte). Ils **remplacent** les 1 h / 2 h du code livré (`StatusColor`, à aligner par le ticket Feed : hors de ce ticket) et concordent avec `data-model.md` §3 et `feed-profil-reglages.md` D1. L'écart E1 est **résolu** (retiré de §18). La spec manipule les constantes **T_orange = 2 h** et **T_rouge = 4 h** (une seule source : `StatusColor`).
 - Notion n'a pas été relu (la page « Notifs » est décrite comme quasi vide par la demande).
 - **Faits de plateforme** : les pages Android, Firebase, Cloudflare et GitHub citées en §3 ont été **lues ce jour**. Les pages Apple (`UserNotifications`) n'ont pas pu être chargées (rendu par JavaScript) : les faits iOS sont de **connaissance générale, marqués [À vérifier]**. Les tarifs Firestore au-delà du quota gratuit n'ont **pas** été vérifiés : les montants de §4.5 sont des ordres de grandeur **à vérifier dans le calculateur Google**.
 - Je n'ai modifié ni Notion, ni le code, ni les règles Firestore, ni les textes légaux.
@@ -24,12 +24,12 @@
 2. **Ce que cela ne fait PAS** : prévenir **tes proches**. Un téléphone ne peut pas être réveillé par la Miff sans un expéditeur côté serveur. Je l'écris sans détour dans l'app et dans les textes de store (honnêteté, R15 d'`onboarding.md`).
 3. **J'ai étudié sérieusement toutes les voies gratuites ou quasi gratuites pour les proches** (§4). Verdict : **(a) notifications locales calculées par le téléphone du proche** = peu fiable (faux positifs structurels, impossible de prévenir d'une arrivée, iOS ne peut même pas vérifier avant d'afficher) ; **(b) relais externe gratuit** (Cloudflare Workers) = **techniquement possible pour les arrivées/départs**, mais exige de sortir un secret de Google, n'a aucun engagement de service et rend la « vérification périodique » du silence dangereuse ; **GitHub Actions planifiés = à écarter** (quota, retards, conditions d'usage à ne pas risquer) ; **(c) Blaze avec garde-fous = ma recommandation** : coût réaliste **0 € jusqu'à ~1 000 utilisateurs actifs par jour, de l'ordre de 20 $/mois vers 10 000** (§4.5), et le seul risque est une facture non plafonnée, que l'on encadre.
 4. **Trajectoire proposée** : **P0** gratuit maintenant (rappels « à toi », centre local, réglages, autorisation) ; **P1** gratuit : « depuis ta dernière visite » à l'ouverture de l'app ; **P2** push aux proches **sur décision PM** (Blaze recommandé) ; **P3** Premium « intelligent » (horaires calmes personnalisés, regroupement, résumé, rappel anticipé).
-5. **Trouvaille à connaître** : avec **1 seul lieu gratuit**, une personne qui part travailler passera orange **tous les jours** (le lieu de travail n'est pas un lieu de confiance). Sans garde-fou, les utilisateurs gratuits recevraient un rappel quotidien : **fatigue garantie** et impression de pousser vers le Premium. Garde-fous proposés : plafonds par jour, un seul rappel par épisode, arrêt de la relance après trois rappels ignorés avec proposition (jamais automatique) de régler (§5.4).
+5. **Trouvaille à connaître (réévaluée avec les seuils 2 h / 4 h)** : avec **1 seul lieu gratuit**, les courtes sorties (courses, école des enfants : moins de 2 h) ne déclenchent plus rien, ce qui **réduit** le risque. Mais une **journée de travail** (le lieu de travail n'est pas un lieu de confiance) fait toujours passer orange à 2 h puis rouge à 4 h **tous les jours**, sans update : deux rappels quotidiens (A1 puis A2) pour un comportement normal. Fatigue et impression de pousser vers le Premium restent donc possibles. Garde-fous proposés : plafonds par jour, un seul rappel par niveau et par épisode, arrêt de la relance après trois rappels ignorés avec proposition (jamais automatique) de régler, compteur **local** de rappels ignorés pour décider en bêta (§5.4, Q1).
 6. **UX** : aucune notification sans chemin d'annulation (publier une update annule tout) ; **jamais d'alerte sans clôture** (si on a dit « pas de nouvelles de Thomas », on dit aussi « Thomas a donné de ses nouvelles » ou on remplace la notification) ; **écran verrouillé sobre** (prénom, jamais de nom ni d'adresse de lieu) ; **action rapide « Je vais bien »** avec **déverrouillage obligatoire** (sinon une personne qui aurait le téléphone d'un autre pourrait rassurer à sa place) ; **nuit calme** ; **pas de pastille sur l'icône**.
 7. **Révisions de décisions antérieures** (§18) : **Q6** (ligne « Notifications » masquée) est **rouverte** : Réglages > Notifications existe, exigence du PM du 2026-11-08 ; **Q15** (cloche retirée) est **rouverte** : la cloche revient dans le Feed. À confirmer (Q14, Q15).
 8. **Maquettes** : 11 écrans ou états à fournir (§16), dont la pré-autorisation **corrigée** (« n'est toujours pas rentrée » est anxiogène, avec un accord de genre ; et en P0 elle promettrait des notifications sur les proches qui n'existent pas encore).
 9. **Dépendances techniques** : les rappels orange / rouge ont besoin d'un **point de départ** (sortie d'un lieu : ticket Tracking) et d'un **moyen d'annulation** (ticket Update). Le moteur est écrit d'abord comme une fonction pure testable, branchée ensuite.
-10. **26 questions** (§17), les 8 premières suffisent pour démarrer P0.
+10. **27 questions** (§17), les 8 premières suffisent pour démarrer P0. **Seuils décidés le 2026-11-08** : orange à 2 h, rouge à 4 h (le plus récent de la sortie du lieu et de la dernière update), rouge après 1 h sans update en zone de danger ; nouvelle question **Q27** (cette règle déclenche-t-elle un rappel ?). Étiquettes de lieu par catégorie intégrées aux textes d'arrivée.
 
 ---
 
@@ -92,14 +92,14 @@ Il faut **qu'un code s'exécute au bon moment** : soit sur un serveur qui envoie
 | Constat | Détail |
 |---|---|
 | **Ne peut pas dire « Thomas est arrivé »** | L'observateur ne connaît l'événement que s'il a ouvert l'app **après** : aucune notification n'est possible pour ce qu'il n'a pas vu. Les **arrivées et départs sont hors de portée** de (a). |
-| **Annulation impossible app fermée** | Si Thomas publie à 8 h 45 (parce que **son propre rappel** orange l'y a invité), l'observateur n'en sait rien et son téléphone affichera « pas de nouvelles » : **le succès du rappel « à moi » fabrique la fausse alerte du proche**. |
+| **Annulation impossible app fermée** | Si Thomas publie à 10 h 05 (parce que **son propre rappel** orange de 10 h l'y a invité), l'observateur n'en sait rien et son téléphone affichera « pas de nouvelles » : **le succès du rappel « à moi » fabrique la fausse alerte du proche**. |
 | **Android** | Une alarme peut lancer une **vérification avant d'afficher** (lecture du statut puis affichage ou abandon) : faisable, mais l'alarme est inexacte (§3.1), l'app peut être tuée (ColorOS) et la lecture consomme des lectures Firestore. |
 | **iOS** | **Aucune vérification avant affichage** (la notification locale n'exécute pas de code). Le rafraîchissement en arrière-plan est **opportuniste** (le système décide ; peu fréquent pour une app peu ouverte). **Faux positifs inévitables.** |
 | **Limite iOS 64** | Une Miff de 15 membres × 2 niveaux = 30 ; deux Miffs (Premium) dépassent : il faut prioriser. |
 | **Mesure** (formule, sans taux inventé) | Faux positif si **Thomas publie entre la dernière synchronisation de l'observateur et l'heure de l'alarme**. Pour un trajet quotidien **vers un lieu de confiance** (donc une entrée qui vaut update), c'est **la majorité des cas**. À mesurer en bêta par un compteur **local** (jamais envoyé) si le PM voulait l'expérimenter. |
 | **Option (a+) Android : interroger Firestore toutes les ~15 min** (WorkManager) | **Min 15 min, suspendue en Doze, tuée par certains constructeurs.** Coût : une requête « statuts modifiés depuis ma dernière synchro » ≈ **96 lectures/jour/Miff/utilisateur** (1 lecture minimum par requête vide, hypothèse de facturation à confirmer) : **le quota gratuit de 50 000 lectures/jour est mangé vers ~500 utilisateurs** avant toute autre lecture. Iso-fonction impossible sur iOS : **deux produits différents**. |
 
-**Garde-fous si le PM veut tout de même expérimenter (a)** : (1) formulation **non affirmative** (« Dernière nouvelle de Thomas : 16 h 02. Ouvre Miff pour voir s'il y en a une plus récente »), jamais « pas de nouvelles » comme un fait ; (2) programmer **seulement si les données ont moins de 15 minutes** ; (3) Android : vérifier avant d'afficher ; (4) iOS : désactivé ; (5) délai plus long que les seuils réels (ne pas doubler la règle) ; (6) un seul message par épisode. **Verdict : ne pas livrer (a) comme canal de « pas de nouvelles »**. En revanche (a) a une vraie utilité en P1 : **à l'ouverture de l'app, résumer ce qui a changé depuis la dernière visite** (§7.5).
+**Garde-fous si le PM veut tout de même expérimenter (a)** : (1) formulation **non affirmative** (« Dernière nouvelle de Thomas : 13 h 40. Ouvre Miff pour voir s'il y en a une plus récente »), jamais « pas de nouvelles » comme un fait ; (2) programmer **seulement si les données ont moins de 15 minutes** ; (3) Android : vérifier avant d'afficher ; (4) iOS : désactivé ; (5) délai plus long que les seuils réels (ne pas doubler la règle) ; (6) un seul message par épisode. **Verdict : ne pas livrer (a) comme canal de « pas de nouvelles »**. En revanche (a) a une vraie utilité en P1 : **à l'ouverture de l'app, résumer ce qui a changé depuis la dernière visite** (§7.5).
 
 ### 4.3 Option (b) : relais externe gratuit qui envoie les push FCM
 
@@ -175,53 +175,65 @@ Il faut **qu'un code s'exécute au bon moment** : soit sur un serveur qui envoie
 
 ## 5. Moments clés et règles
 
+### 5.0 Seuils de couleur décidés (PM, 2026-11-08)
+
+| Situation | Règle |
+|---|---|
+| **Hors d'un lieu de confiance** | `ref` = le **plus récent** de (heure de sortie du lieu de confiance, dernière update). **Orange après 2 h** (T_orange), **rouge après 4 h** (T_rouge) |
+| **Dans un lieu de confiance** | Vert ; aucun rappel |
+| **En zone de danger** | **Rouge si la dernière update date de plus d'1 h** (pas d'étape orange) ; **la confiance l'emporte** : un lieu de confiance qui recouvre une zone de danger donne le vert. La zone de danger n'est pas livrée en v1 (Q10 du 2026-10-30) : voir la question Q27 sur son effet sur les rappels |
+
+Conséquences sur les rappels (valeurs par rapport à `ref`) : **A1 à 2 h**, **A3 (Premium) à 1 h 45**, **A2 à 4 h** (relance à 5 h au plus), **B1 à 4 h**, **B6 à 2 h**. Les textes donnent des **heures absolues** : exemple de suite cohérente utilisée dans ce document : dernière nouvelle **13 h 40** → A3 **15 h 25** → A1 **15 h 40** → B6 **15 h 40** → A2 et B1 **17 h 40**.
+
 ### 5.1 Principes (valables pour toutes les règles)
 
 1. **Peu de notifications, toujours utiles** : une notification qui n'appelle ni un geste ni une information utile n'existe pas (ex. « tout va bien » n'existe pas : voir §5.5).
 2. **Jamais d'alerte sans clôture** : toute notification d'inquiétude (« pas de nouvelles ») a sa clôture (« a donné de ses nouvelles »), qui **remplace** la première dans le tiroir quand c'est possible (même identifiant de regroupement : `tag` Android, `apns-collapse-id` / identifiant de demande iOS).
 3. **Annulation** : publier une update, rentrer dans un lieu de confiance, se déconnecter, désactiver le type ou l'ensemble des notifications, quitter la Miff, couper le partage ou perdre l'accès **annule immédiatement** les rappels programmés (§5.7).
-4. **Pas de culpabilisation, pas d'urgence théâtrale** : verbes d'invitation (« Un petit signe ? »), jamais d'impératif ni de « toujours pas », de « enfin », de « vite », de « danger » ; pas de MAJUSCULES ni d'émoticônes ; heures **absolues** (« depuis 16 h 02 ») plutôt que des compteurs.
-5. **Sans accord de genre** (A6 de `feed-profil-reglages.md` [Décidé]) : « a bien rejoint », « a quitté », « a donné de ses nouvelles ».
-6. **Écran verrouillé sobre** : prénom et fait, **jamais** de nom de lieu saisi par l'utilisateur ni d'adresse ; pas de photo ; pas de batterie.
+4. **Pas de culpabilisation, pas d'urgence théâtrale** : verbes d'invitation (« Un petit signe ? »), jamais d'impératif ni de « toujours pas », de « enfin », de « vite », de « danger » ; pas de MAJUSCULES ni d'émoticônes ; heures **absolues** (« depuis 13 h 40 ») plutôt que des compteurs.
+5. **Sans accord de genre** (A6 de `feed-profil-reglages.md` [Décidé]) : « est bien à l'école » (étiquettes de lieu, §5.3), « n'est plus à l'école », « a donné de ses nouvelles ».
+6. **Écran verrouillé sobre** : prénom et fait, **jamais** d'adresse ; l'étiquette du lieu est celle de la catégorie (« à l'école ») ; **le nom saisi par l'utilisateur** (catégories Loisir et Autre) n'apparaît pas à l'écran verrouillé par défaut (Q9) ; pas de photo ; pas de batterie.
 7. **Premier plan** : si l'app est ouverte, **aucune notification n'est affichée** pour ce qui est déjà visible (la bulle d'incitation du Feed et l'anneau de l'avatar font le travail).
 8. **Tutoiement** partout [Décidé].
 
 ### 5.2 Catalogue (qui, quand, quoi)
 
-Légende de la colonne « Gratuit ? » : **G** = gratuit (phase indiquée), **P** = Premium. Les seuils T_orange / T_rouge sont les constantes de `StatusColor` (Q1). Les heures dans les textes sont **locales à l'appareil**.
+Légende de la colonne « Gratuit ? » : **G** = gratuit (phase indiquée), **P** = Premium. Les seuils T_orange (2 h) / T_rouge (4 h) sont les constantes de `StatusColor` (§5.0). Les heures dans les textes sont **locales à l'appareil**.
 
 | ID | Moment | Qui est notifié | Déclencheur exact et condition | Délai | Canal | Phase / Gratuit ? |
 |---|---|---|---|---|---|---|
-| **A1** | Passage en orange | **Moi** | Mon statut est « parti d'un lieu » (`presence = out`) ET aucune update ni entrée en lieu de confiance depuis `ref` (= max(présence, dernière update)) ; passage à T_orange | **à `ref + T_orange`** (± quelques minutes, §14) | Notification locale | **P0 / G** |
-| **A2** | Passage en rouge | **Moi** | Même condition ; passage à T_rouge ; la **relance** éventuelle est limitée à une fois (§5.4) | **à `ref + T_rouge`**, relance à +1 h au plus | Notification locale | **P0 / G** |
-| **A3** | Rappel anticipé | Moi | 15 min avant T_orange, **seulement si activé** | `ref + T_orange − 15 min` | Locale | **P0 / P** |
+| **A1** | Passage en orange | **Moi** | Mon statut est « parti d'un lieu » (`presence = out`) ET aucune update ni entrée en lieu de confiance depuis `ref` (= le plus récent de la sortie du lieu et de la dernière update) ; passage à T_orange | **à `ref + 2 h`** (± quelques minutes, §14) | Notification locale | **P0 / G** |
+| **A2** | Passage en rouge | **Moi** | Même condition ; passage à T_rouge ; la **relance** éventuelle est limitée à une fois (§5.4). **En zone de danger** (si un jour livrée) : voir Q27 | **à `ref + 4 h`**, relance à +1 h au plus (5 h) | Notification locale | **P0 / G** |
+| **A3** | Rappel anticipé | Moi | 15 min avant T_orange, **seulement si activé** | `ref + 1 h 45` | Locale | **P0 / P** |
 | **C1** | « Depuis ta dernière visite » | Moi (dans l'app, **sans notification**) | À l'ouverture : comparaison de l'état actuel des proches avec l'état vu à la dernière visite | Immédiat | Centre | **P1 / G** |
-| **B1** | **Pas de nouvelles d'un proche** | **Les autres membres** | Statut d'un membre au niveau rouge (T_rouge) sans clôture ; **uniquement** s'il partage (`sharing.enabled`) | À T_rouge (+ horloge du serveur) | **Push** | **P2 / G** |
+| **B1** | **Pas de nouvelles d'un proche** | **Les autres membres** | Statut d'un membre au niveau rouge (T_rouge) sans clôture ; **uniquement** s'il partage (`sharing.enabled`) | À `ref + 4 h` (+ horloge du serveur) | **Push** | **P2 / G** |
 | **B2** | **Clôture** : nouvelles reçues | Les membres déjà prévenus par B1 | Update ou entrée en lieu de confiance après B1 | Immédiat | Push (remplace B1 si possible) | **P2 / G** |
 | **B3** | Arrivée dans un lieu de confiance | Les membres qui l'ont choisie | `presence = in_trusted` | Immédiat ; **regroupée** s'il y en a plusieurs en 10 min | Push, canal discret | **P2 / G** (gratuit : arrivée, **activée** par défaut) |
 | **B4** | Départ d'un lieu de confiance | Idem | `presence = out` | Immédiat | Push discret | **P2 / opt-in** (désactivée par défaut) |
 | **B5** | Update publiée (hors clôture) | Les membres qui l'ont choisie | Nouvelle update (texte, photo : **jamais dans la notification**) | Immédiat, regroupée | Push discret | **P2 / opt-in** |
-| **B6** | Orange d'un proche | Les membres | Niveau orange | À T_orange | Push | **P2 / P** (en gratuit : visible dans le Feed seulement, pas de push : réduit le bruit) |
+| **B6** | Orange d'un proche | Les membres | Niveau orange | À `ref + 2 h` | Push | **P2 / P** (en gratuit : visible dans le Feed seulement, pas de push : réduit le bruit) |
 | **B7** | Résumé du jour | Moi | Une fois par jour à l'heure choisie | 1 par jour | Push **passif** | **P3 / P** |
 | **B8** | Arrivée attendue non survenue | Les membres | Heure d'arrivée **définie par la personne concernée** pour un lieu | À l'heure + marge | Push | **P3 / P**, avec consentement de la personne suivie |
-| **Z** | Zone à risque (entrée / sortie) | — | **Aucune notification** (décision Q10 du 2026-10-30 : zone à risque non livrée en v1, `in_risk` affiché en neutre) | — | — | **Hors périmètre** |
+| **Z** | Zone de danger (entrée / sortie) | — | **Aucune notification d'entrée ni de sortie** (décision Q10 du 2026-10-30 : zone à risque non livrée en v1, `in_risk` affiché en neutre). La règle de couleur « rouge après 1 h sans update en zone de danger » (§5.0) est décidée mais **sans effet tant que la zone n'existe pas** ; son effet éventuel sur A2 est la question **Q27** | — | — | **Hors périmètre** |
 
 ### 5.3 Textes proposés (français, anglais ; tutoiement ; **[Proposé]**)
 
 | ID | Titre FR | Corps FR | Titre EN | Corps EN | Action au toucher | Actions rapides |
 |---|---|---|---|---|---|---|
-| A1 | Un petit signe à ta Miff ? | Ta dernière nouvelle date de 16 h 02. Une update, et tes proches sont rassurés. | A quick sign to your Miff? | Your last news was at 4:02 pm. One update and your circle is reassured. | Ouvre l'écran de publication d'update | « Je vais bien » (§10.3) |
+| A1 | Un petit signe à ta Miff ? | Ta dernière nouvelle date de 13 h 40. Une update, et tes proches sont rassurés. | A quick sign to your Miff? | Your last news was at 1:40 pm. One update and your circle is reassured. | Ouvre l'écran de publication d'update | « Je vais bien » (§10.3) |
 | A2 | Tes proches aimeraient de tes nouvelles | Un mot ou une update suffit à les rassurer. | Your circle would love to hear from you | A message or an update is all it takes to put their minds at ease. | Idem | « Je vais bien » |
 | A3 | Un petit signe avant que ça change ? | Dans un quart d'heure, ta Miff verra que tu n'as pas donné de nouvelles. | A quick sign before things change? | In a quarter of an hour, your Miff will see you haven't checked in. | Idem | « Je vais bien » |
-| B1 | Pas de nouvelles de Thomas | Depuis 16 h 02. Un petit message peut faire du bien. | No news from Thomas | Since 4:02 pm. A short message might help. | Ouvre le Feed sur la carte de Thomas | « Envoyer un message » (ouvre l'app Messages avec son numéro, aucun envoi automatique) |
+| B1 | Pas de nouvelles de Thomas | Depuis 13 h 40. Un petit message peut faire du bien. | No news from Thomas | Since 1:40 pm. A short message might help. | Ouvre le Feed sur la carte de Thomas | « Envoyer un message » (ouvre l'app Messages avec son numéro, aucun envoi automatique) |
 | B2 | Thomas a donné de ses nouvelles | Tout va bien de son côté. | Thomas checked in | All is well on their end. | Ouvre le Feed sur sa carte | — |
-| B3 | Thomas a bien rejoint l'école | À 8 h 02. | Thomas arrived at school | At 8:02 am. | Idem | — |
-| B4 | Thomas a quitté l'école | À 17 h 10. | Thomas left school | At 5:10 pm. | Idem | — |
+| B3 | Thomas est bien à l'école | Depuis 8 h 02. | Thomas is at school | Since 8:02 am. | Idem | — |
+| B4 | Thomas n'est plus à l'école | Depuis 17 h 10. | Thomas has left school | Since 5:10 pm. | Idem | — |
 | B5 | Nouvelle update de Thomas | Ouvre Miff pour la voir. | A new update from Thomas | Open Miff to see it. | Ouvre l'update | — |
 | Regroupée | 3 nouvelles dans ta Miff | Thomas, Amandine et Maman ont donné de leurs nouvelles. | 3 new things in your Miff | Thomas, Amandine and Mum have checked in. | Ouvre le centre | — |
 | B7 | Ta Miff aujourd'hui | 3 proches sur 4 ont donné des nouvelles. | Your Miff today | 3 of 4 have checked in. | Ouvre le Feed | — |
 
-Remarques de ton : « Pas de nouvelles de {Prénom} depuis 16 h 02 » est celui **déjà décidé** au Q11 du 2026-10-30. Le lieu (« l'école ») est la **catégorie** (maison, école, travail, chez un proche…, `initialisation-technique.md` §306), **jamais** le nom saisi ; si le PM préfère ne rien dire du lieu : « a bien rejoint un lieu de confiance » (Q9). Aucune notification ne contient le mot « orange » ou « rouge » : ce sont des couleurs de l'app, pas des qualificatifs de la personne.
+Remarques de ton : « Pas de nouvelles de {Prénom} depuis {heure} » est le format **déjà décidé** au Q11 du 2026-10-30 ; l'heure est celle de la dernière nouvelle (`ref`).
+
+**Étiquettes de lieu par catégorie (décision du PM, 2026-11-08)** : Maison = « À la maison », Travail = « Au travail », École = « À l'école », Sport = « Au sport », Chez un proche = « Chez un proche », Loisir et Autre = **nom du lieu**. Elles servent aux textes d'arrivée et de départ (B3, B4) sous leur **forme de phrase** (minuscule), ce qui évite tout accord de genre : B3 = « {Prénom} est bien {à la maison / au travail / à l'école / au sport / chez un proche} » ; B4 = « {Prénom} n'est plus {…} ». Pour Loisir et Autre : « {Prénom} est bien à « {nom du lieu} » » et « {Prénom} n'est plus à « {nom du lieu} » ». Anglais proposé : at home, at work, at school, at sports, at a loved one's, at “{name}”. **Point de vie privée à confirmer (Q9)** : pour Loisir et Autre, l'étiquette est le **nom saisi** par l'utilisateur (parfois un domicile : « Chez Mamie ») ; je recommande que **l'écran verrouillé** n'affiche alors que « {Prénom} est bien dans un lieu de confiance » et que le nom n'apparaisse **qu'à l'intérieur de l'app** (centre, Feed), sauf choix contraire du PM. Aucune notification ne contient le mot « orange » ou « rouge » : ce sont des couleurs de l'app, pas des qualificatifs de la personne.
 
 ### 5.4 Fréquence maximale, regroupement et lutte contre la fatigue
 
@@ -233,7 +245,7 @@ Remarques de ton : « Pas de nouvelles de {Prénom} depuis 16 h 02 » est celui 
 | **Regroupement** | Si ≥ 2 notifications B3 / B4 / B5 en 10 min : une seule (« 3 nouvelles dans ta Miff ») | Réduire le bruit |
 | **Un seul B1 par épisode et par proche**, plus B2 | — | Pas de compte à rebours |
 | **Rappels ignorés** | Après **3 rappels A1 ou A2 consécutifs sans action** : un message **dans l'app** (jamais une notification) : « Ces rappels te dérangent ? Tu peux les régler ici. » avec lien vers Réglages > Notifications. **Jamais de désactivation automatique** | Respect du choix |
-| **Trajet quotidien en gratuit (1 seul lieu)** | La personne repart travailler tous les jours : l'orange est atteint **chaque jour**. Garde-fou : **A1 limité à 2 par jour** ; question ouverte au PM (Q1) pour savoir si le palier doit commencer à compter **depuis la dernière update** plutôt que depuis la sortie | **Risque de produit à arbitrer** |
+| **Journée de travail en gratuit (1 seul lieu)** | Avec les seuils 2 h / 4 h, les **courtes sorties** (moins de 2 h) ne déclenchent plus rien : le risque **diminue**. Une **journée de travail** hors du seul lieu gratuit atteint toujours l'orange (2 h) puis le rouge (4 h) **chaque jour** si aucune update n'est publiée : **A1 puis A2 quotidiens**, soit 2 rappels sur le plafond de 3. Garde-fous : **A1 limité à 2 par jour**, plafond global, aide après 3 rappels ignorés ; une update publiée dans la journée **redémarre** le compte (`ref` = le plus récent de la sortie et de la dernière update) ; mesure locale en bêta, plafond à 1 A1 par jour si nécessaire (Q1) | **Risque de produit réduit mais présent** |
 | **Premier plan** | Pas de notification si l'app est ouverte | §5.1 |
 
 ### 5.5 Idées évaluées puis écartées (à challenger)
@@ -322,13 +334,13 @@ Ce que je **n'ai pas mis** en Premium : le seul moyen d'être prévenu qu'un pro
 │ └────────────────────────────────┘ │
 │ Aujourd'hui                        │
 │ ● Un petit signe à ta Miff ?       │   ● = non lu
-│   Ta dernière nouvelle : 16 h 02   │
-│   16 h 02                          │
+│   Ta dernière nouvelle : 13 h 40   │
+│   15 h 40                          │
 │ ○ Rappel annulé : tu as publié     │
 │   une update                       │
 │   16 h 20                          │
 │ Hier                               │
-│ ○ Thomas a bien rejoint l'école    │   (P2)
+│ ○ Thomas est bien à l'école        │   (P2)
 │   8 h 02                           │
 │ Plus ancien                        │
 │ ○ …                                │
@@ -363,7 +375,7 @@ Aucune donnée ne quitte l'appareil en P0. Le centre est **effacé** avec le cac
 
 ### 7.5 P1 : « depuis ta dernière visite »
 
-À l'ouverture : compare, **sans lecture supplémentaire** (les statuts sont déjà lus par le Feed), l'état actuel de chaque proche à l'état vu à la précédente visite. Affiche **au plus 3 lignes** dans le centre (« Thomas a quitté l'école à 17 h 10 », « Pas de nouvelles d'Amandine depuis 16 h 02 »). **Limite connue et dite** : un statut est **écrasé** (un seul document par membre, `data-model.md` §2.7) : on ne voit pas l'historique (arrivée puis départ), seulement la différence. **Aucune notification n'est émise.**
+À l'ouverture : compare, **sans lecture supplémentaire** (les statuts sont déjà lus par le Feed), l'état actuel de chaque proche à l'état vu à la précédente visite. Affiche **au plus 3 lignes** dans le centre (« Thomas a quitté l'école à 17 h 10 », « Pas de nouvelles d'Amandine depuis 13 h 40 »). **Limite connue et dite** : un statut est **écrasé** (un seul document par membre, `data-model.md` §2.7) : on ne voit pas l'historique (arrivée puis départ), seulement la différence. **Aucune notification n'est émise.**
 
 ---
 
@@ -399,8 +411,8 @@ La décision **Q4 d'`onboarding.md`** (**[Décidé]**, contre l'avis de l'agent)
 | Élément de la maquette | Constat | Correction proposée |
 |---|---|---|
 | Titre « Vous avertir, seulement quand c'est utile ! » | Vouvoiement (le PM a décidé le tutoiement le 2026-11-01) | « Un rappel, seulement quand c'est utile » |
-| « Amandine n'est toujours pas rentrée à la maison » | **Anxiogène** (« toujours pas »), **accord de genre** (« rentrée »), promet **une notification sur un proche qui n'existe pas en P0** | **P0** : exemple d'un **rappel à moi** (« Un petit signe à ta Miff ? »). **P2** : « Pas de nouvelles d'Amandine depuis 16 h 02 » |
-| « Thomas est bien arrivé à l'école » | Ton correct ; accord de genre ; **fausse promesse en P0** | **P2** : « Thomas a bien rejoint l'école » |
+| « Amandine n'est toujours pas rentrée à la maison » | **Anxiogène** (« toujours pas »), **accord de genre** (« rentrée »), promet **une notification sur un proche qui n'existe pas en P0** | **P0** : exemple d'un **rappel à moi** (« Un petit signe à ta Miff ? »). **P2** : « Pas de nouvelles d'Amandine depuis 13 h 40 » |
+| « Thomas est bien arrivé à l'école » | Ton correct ; accord de genre ; **fausse promesse en P0** | **P2** : « Thomas est bien à l'école » |
 | Bouton « Autoriser » seul | Pas de sortie sans fenêtre | Ajouter **« Plus tard »** (texte seul, déjà décidé dans `onboarding.md` §6.11) |
 | Texte actuel de l'amorce (`onboarding.md` §6.11) : « Les notifications arrivent bientôt… rien n'est envoyé pour l'instant » | **Devient faux dès P0** (les rappels existent) | Texte ci-dessous |
 
@@ -551,7 +563,7 @@ Si la personne est déconnectée ou hors Miff : écran de connexion ou de choix,
 
 ### 10.4 Écran verrouillé, badge, regroupement
 
-- **Écran verrouillé** : titre + corps de §5.3 ; **aucun nom de lieu saisi, aucune adresse, aucune photo** ; (iOS) les aperçus suivent le réglage du téléphone ; Q9 pour le prénom du proche.
+- **Écran verrouillé** : titre + corps de §5.3 ; **aucune adresse, aucune photo, aucun nom de lieu saisi pour Loisir et Autre (sauf choix du PM, Q9)** ; (iOS) les aperçus suivent le réglage du téléphone ; Q9 pour le prénom du proche.
 - **Badge d'icône** : **aucun** (iOS : on ne demande **pas** l'option « badge » ; Android : `showBadge = false` pour les canaux discrets). La cloche de l'app porte l'indication de non lu.
 - **Regroupement** : par Miff (`threadIdentifier` iOS, groupe de notifications Android) ; résumé du groupe « 3 nouvelles dans ta Miff ».
 - **Remplacement** : A1 est **remplacée** par A2 ; B1 est **remplacée** par B2 (même `tag` / identifiant).
@@ -593,8 +605,10 @@ Préfixe **`notif_`** à ajouter au tableau de `docs/contracts/i18n-keys.md` **e
 | `notif_action_send_message` | Envoyer un message | Send a message |
 | `notif_circle_silent_title` / `_body` | Pas de nouvelles de {prénom} / Depuis {heure}. Un petit message peut faire du bien. | No news from {prénom} / Since {heure}. A short message might help. |
 | `notif_circle_checked_in_title` / `_body` | {prénom} a donné de ses nouvelles / Tout va bien de son côté. | {prénom} checked in / All is well on their end. |
-| `notif_circle_arrived_title` / `_body` | {prénom} a bien rejoint {lieu} / À {heure}. | {prénom} arrived at {lieu} / At {heure}. |
-| `notif_circle_left_title` / `_body` | {prénom} a quitté {lieu} / À {heure}. | {prénom} left {lieu} / At {heure}. |
+| `notif_circle_arrived_title` / `_body` | {prénom} est bien {lieu} / Depuis {heure}. | {prénom} is {lieu} / Since {heure}. |
+| `notif_circle_left_title` / `_body` | {prénom} n'est plus {lieu} / Depuis {heure}. | {prénom} has left {lieu} / Since {heure}. |
+| `notif_place_at_home` / `_at_work` / `_at_school` / `_at_sport` / `_at_relative` | à la maison / au travail / à l'école / au sport / chez un proche | at home / at work / at school / at sports / at a loved one's |
+| `notif_place_at_named` / `notif_place_generic` | à « {nom} » / dans un lieu de confiance (écran verrouillé pour Loisir et Autre, sous réserve de Q9) | at “{nom}” / in a trusted place |
 | `notif_circle_update_title` / `_body` | Nouvelle update de {prénom} / Ouvre Miff pour la voir. | A new update from {prénom} / Open Miff to see it. |
 | `notif_group_title` | {n} nouvelles dans ta Miff | {n} new things in your Miff |
 | `notif_center_title` | Notifications | Notifications |
@@ -664,13 +678,13 @@ Une branche et une PR par plateforme et par ticket ; **Android d'abord**, puis i
 - [ ] **N-R5** Les préférences survivent au redémarrage de l'app et sont effacées à la déconnexion.
 
 **Rappels**
-- [ ] **N-M1** (fonction pure) Pour chaque cas : statut absent, `unknown`, `in_trusted`, `out` avant T_orange, **entre** T_orange et T_rouge, **après** T_rouge, partage désactivé, plus de Miff, appareil déconnecté : le plan est celui du tableau §5.2 ; **tests unitaires aux bornes** (T − 1 min, T, T + 1 min).
+- [ ] **N-M1** (fonction pure) Pour chaque cas : statut absent, `unknown`, `in_trusted`, `out` avant T_orange (2 h), **entre** T_orange et T_rouge (2 h à 4 h), **après** T_rouge (4 h), `ref` = le plus récent de la sortie du lieu et de la dernière update, zone de danger (rouge après 1 h sans update ; effet sur A2 selon Q27), lieu de confiance qui recouvre une zone de danger (vert), partage désactivé, plus de Miff, appareil déconnecté : le plan est celui du tableau §5.2 ; **tests unitaires aux bornes** (1 h 59, 2 h 00, 3 h 59, 4 h 00 ; 59 min et 1 h 01 en zone de danger ; A3 à 1 h 45).
 - [ ] **N-M2** Une update publiée, une entrée en lieu de confiance, une déconnexion, la désactivation du type, de l'ensemble, du partage ou la perte d'accès **annulent** les rappels (test pour chacun).
 - [ ] **N-M3** **Un rappel par niveau et par épisode**, une relance rouge au plus ; plafonds quotidiens respectés ; **jamais deux notifications identiques** après un redémarrage de l'appareil, un changement d'heure ou de fuseau.
 - [ ] **N-M4** Android : après redémarrage, changement d'heure / de fuseau et mise à jour de l'app, les rappels sont **reprogrammés** ; au déclenchement, un niveau déjà dépassé produit le **texte du niveau réel** ou rien.
 - [ ] **N-M5** Aucun rappel n'est affiché si l'app est au premier plan.
 - [ ] **N-M6** Nuit calme : la bonne importance selon l'heure **locale** au déclenchement.
-- [ ] **N-M7** Les textes sont ceux de §5.3 ; aucun ne contient de nom de lieu saisi, d'adresse, de position, de photo ou de batterie ; **aucun mot « orange », « rouge », « danger », « urgent », « toujours pas »**.
+- [ ] **N-M7** Les textes sont ceux de §5.3 ; aucun ne contient d'adresse, de position, de photo ou de batterie ; les étiquettes de lieu sont celles de §5.3 (nom saisi seulement pour Loisir et Autre, selon Q9) ; **aucun mot « orange », « rouge », « danger », « urgent », « toujours pas »**.
 - [ ] **N-M8** Aucune permission d'alarme exacte n'est déclarée ; la permission de redémarrage est justifiée dans la PR.
 
 **Centre**
@@ -691,7 +705,7 @@ Une branche et une PR par plateforme et par ticket ; **Android d'abord**, puis i
 | 1 | Premier lancement : amorce, « Autoriser », fenêtre | OPPO Find X5 Lite (Android 13) ; iPhone 11 Pro (TestFlight) | Rappel visible dans Réglages et Confidentialité : « Autorisées » |
 | 2 | « Plus tard », puis première update : carte de deuxième chance | idem | Une seule carte, jamais de fenêtre |
 | 3 | Refus : bandeau du centre, aide, retour réglages téléphone, réactivation | idem | Pas de texte culpabilisant ; état à jour au retour |
-| 4 | **Délais raccourcis (build interne uniquement)** : T_orange = 1 min, T_rouge = 2 min | idem | Rappel A1 puis A2 ; textes conformes ; le tutoiement ; son selon l'heure |
+| 4 | **Délais raccourcis (build interne uniquement, tout divisé par 60)** : T_orange = 2 min, T_rouge = 4 min, rappel anticipé à 1 min 45, relance rouge à +1 min, zone de danger à 1 min ; **jamais dans un build de production** (constante de compilation testée) | idem | Rappel A3 (si Premium), A1 à 2 min, A2 à 4 min ; textes conformes ; le tutoiement ; son selon l'heure |
 | 5 | Publier une update avant l'échéance | idem | Rien n'arrive ; centre : « Rappel annulé » |
 | 6 | Désactiver général / par type pendant l'attente | idem | Rien n'arrive |
 | 7 | App **fermée** (balayée), écran éteint, 15 min, mode économie d'énergie | OPPO | **Mesurer** si les rappels arrivent (risque ColorOS, §14) ; noter l'écart |
@@ -746,7 +760,7 @@ Une branche et une PR par plateforme et par ticket ; **Android d'abord**, puis i
 
 | # | Écran / état | Détails à montrer |
 |---|---|---|
-| M1 | **Pré-autorisation corrigée (P0)** | Texte §8.3, exemple de rappel à moi, « Autoriser » + « Plus tard » ; variante **P2** avec exemple « Pas de nouvelles d'Amandine depuis 16 h 02 » |
+| M1 | **Pré-autorisation corrigée (P0)** | Texte §8.3, exemple de rappel à moi, « Autoriser » + « Plus tard » ; variante **P2** avec exemple « Pas de nouvelles d'Amandine depuis 13 h 40 » |
 | M2 | **Carte « deuxième chance » dans le Feed** | Non modale, « Activer » / « Pas maintenant » |
 | M3 | **Centre de notifications** : liste (non lu, lu, groupes « Aujourd'hui / Hier / Plus ancien ») | Icônes par type, heure |
 | M4 | Centre : **état vide**, **chargement**, **notifications coupées** | Bandeau et bouton |
@@ -764,8 +778,8 @@ Une branche et une PR par plateforme et par ticket ; **Android d'abord**, puis i
 
 Chaque question donne **ma recommandation** et **l'impact**. Aucune décision produit ou juridique n'est prise à la place du PM. **Q1 à Q8 suffisent pour démarrer P0.**
 
-**Q1. Seuils et point de départ des rappels.** Le brief de la demande parle de **1 h / 2 h**, la documentation que j'ai lue de **2 h / 4 h** (écart E1). Faut-il que **T_orange** compte **depuis la sortie du lieu** (règle actuelle) ou **depuis la dernière update** ? (cf. §5.4 : avec 1 lieu gratuit, un trajet quotidien fait passer orange chaque jour.)
-- *Reco* : constantes de `StatusColor` comme **source unique** ; point de départ = règle actuelle `max(présence, dernière update)` ; plafonds du §5.4 pour le gratuit. *Impact* : tout le moteur ; aucune ligne de code ne fige les durées.
+**Q1. Fatigue des rappels avec 1 seul lieu gratuit** (les seuils et le point de départ sont **décidés** le 2026-11-08 : orange 2 h, rouge 4 h, `ref` = le plus récent de la sortie du lieu et de la dernière update ; l'ancienne Q1 est résolue). Une journée de travail hors du seul lieu gratuit déclenche A1 (2 h) puis A2 (4 h) **tous les jours** ; les courtes sorties (moins de 2 h) ne déclenchent plus rien.
+- *Reco* : garder les plafonds de §5.4 (A1 : 2 par jour, total 3 par jour), la relance rouge bornée, l'aide non automatique après 3 rappels ignorés, et **mesurer en bêta** (compteur local de rappels ignorés) pour décider ensuite d'un plafond à 1 A1 par jour. *Impact* : charge perçue du gratuit ; aucune durée figée dans le code (constantes de `StatusColor`).
 
 **Q2. Livrer P0 seule en attendant la décision sur le serveur ?** (rappels « à toi », centre local, réglages, autorisation)
 - *Reco* : **oui**. Elle apporte de la valeur réelle (et rend honnête la permission demandée à l'onboarding), coûte 0 € et ne bloque pas P2. *Impact* : lève R15 d'`onboarding.md` ; fiche de store à ajuster.
@@ -789,7 +803,7 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 - *Reco* : tout est **silencieux** sauf B1, B2 et A2 (« le moment qui compte ») ; le Premium personnalise les heures. *Alternative* : tout silencieux la nuit. *Impact* : importance des canaux Android, **fixée à la création**.
 
 **Q9. Que montre l'écran verrouillé ?**
-- *Reco* : **prénom + fait + catégorie du lieu** (« Thomas a bien rejoint l'école ») ; jamais le nom saisi du lieu ni l'adresse ; **option « Aperçus discrets »** (« Thomas a donné de ses nouvelles ») à décider. *Impact* : textes ; vie privée.
+- *Reco* : **prénom + fait + étiquette du lieu par catégorie** (« Thomas est bien à l'école » ; étiquettes décidées le 2026-11-08, §5.3) ; **pour Loisir et Autre (étiquette = nom saisi)** : « Thomas est bien dans un lieu de confiance » sur l'écran verrouillé, nom seulement dans l'app, car ce nom peut révéler un domicile (**le PM peut préférer afficher le nom** : à trancher) ; jamais l'adresse ; **option « Aperçus discrets »** (« Thomas a donné de ses nouvelles ») à décider. *Impact* : textes ; vie privée.
 **Q9bis. Niveaux d'importance des canaux Android** (fixés à la création, non relevables) : *Reco* : rappels = par défaut ; « pas de nouvelles » = par défaut (alerte sonore sans fenêtre flottante) ; nouvelles de la Miff = bas ; résumé = bas.
 
 **Q10. Action rapide « Je vais bien » : OK ?** Avec **déverrouillage obligatoire**, et sous réserve que le ticket Update accepte une update **sans photo** (question déjà ouverte).
@@ -815,7 +829,7 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 
 **Q17. Badge d'icône.** *Reco* : **aucun** (calme) ; la cloche suffit. *Impact* : n'ajoute pas l'option « badge » à la demande iOS.
 
-**Q18. Zone à risque.** *Reco* : **aucune notification** (confirme Q10 du 2026-10-30). *Impact* : aucun.
+**Q18. Zone à risque / de danger : entrée et sortie.** *Reco* : **aucune notification d'entrée ni de sortie** (confirme Q10 du 2026-10-30). L'effet du **rouge après 1 h** en zone de danger sur les rappels est la question **Q27**. *Impact* : aucun.
 
 **Q19. Transparence envers la personne suivie.** Quand P2 existe, le rappel A1 dit-il « Si tu ne donnes pas de nouvelles, ta Miff sera prévenue vers 17 h 40 » ? Et le **texte de consentement** d'entrée dans une Miff (nouvelle version) cite-t-il l'alerte du cercle ?
 - *Reco* : **oui aux deux** : c'est le consentement éclairé. *Impact* : `consentVersion`, textes, ré-affichage aux comptes existants.
@@ -836,13 +850,16 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 
 **Q26. Maquettes.** Fournir M1 à M11 (§16) avant NOTIF-1A. *Reco* : par lots : M1, M2, M7, M9 d'abord (autorisation et réglages), M3 à M6 et M10 ensuite. *Impact* : calendrier.
 
+**Q27. Zone de danger : devenir rouge après 1 h sans update déclenche-t-il un rappel A2 ?** (Règle de couleur décidée le 2026-11-08 ; la zone de danger n'est pas livrée en v1, Q10 du 2026-10-30, donc rien n'est à construire tant qu'elle n'existe pas.)
+- *Reco* : **oui pour A2, non pour tout le reste, et seulement quand la zone sera livrée** : (1) **A2 à `dernière update + 1 h`** : un rappel **à soi** est inoffensif et utile, avec **le même texte neutre** que A2 (« Tes proches aimeraient de tes nouvelles ») : **jamais** le mot « danger » ni « zone » dans la notification, et **pas d'étape A1 orange** en zone de danger ; (2) **B1 vers le cercle** : même texte neutre « Pas de nouvelles de {Prénom} depuis {heure} » à `dernière update + 1 h` **seulement si** le PM confirme ce délai pour le cercle (c'est un push, donc P2) ; (3) **aucune notification d'entrée ni de sortie de zone** (Q18) ; (4) la personne qui entre dans une zone de danger **doit voir** que le délai est plus court (transparence, risque R16 : zone utilisée comme outil de contrôle) ; (5) le Premium reste hors de cette règle. *Impact* : moteur A2 (une branche de plus, testée aux bornes 59 min / 1 h 01), consentement de la personne concernée, ticket Lieux.
+
 ---
 
 ## 18. Écarts et contradictions relevés
 
 | # | Écart | Source | Traitement proposé |
 |---|---|---|---|
-| **E1** | Seuils : **1 h / 2 h** (brief de la demande, `StatusColor.level`) contre **2 h / 4 h** (`data-model.md` §3, `feed-profil-reglages.md` D1, `update-et-escalade-statut.md` : « orange après 2 h, rouge après 2 h de plus ») | Documents lus | Q1 ; constantes partagées |
+| *(E1 retiré)* | Les seuils 1 h / 2 h du code livré sont **remplacés** par 2 h / 4 h (décision du PM, 2026-11-08) : écart **résolu**. Le code livré (`StatusColor`) est à aligner par le ticket Feed, hors de ce ticket | | |
 | **E2** | **Q6 du 2026-10-30** (ligne Notifications **masquée**) contredit l'exigence du PM du 2026-11-08 | `feed-profil-reglages.md` §13 ; demande | **Révisée** : ligne rouverte (Q15) ; tests Android existants à mettre à jour |
 | **E3** | **Q15 du 2026-10-30** (cloche **retirée** en v1) contredit « centre accessible depuis la home » | `feed-profil-reglages.md` §13 | **Révisée** (Q14) |
 | **E4** | `onboarding.md` §6.6 : amorce « les notifications arrivent bientôt, rien n'est envoyé » : **devient faux** dès P0 | `onboarding.md` | Texte de §8.3 ; PR d'`onboarding` à reprendre |
@@ -860,7 +877,7 @@ Chaque question donne **ma recommandation** et **l'impact**. Aucune décision pr
 ## 19. Ce que le PM doit faire (rien n'est fait par un agent)
 
 1. **Répondre** aux questions de §17 (au minimum Q1 à Q8 pour P0).
-2. **Réconcilier E1** (seuils) en confirmant la valeur en vigueur dans `StatusColor`.
+2. **Faire aligner le code livré** (`StatusColor`, 1 h / 2 h) sur les seuils décidés 2 h / 4 h (ticket Feed, hors de ce ticket).
 3. **Fournir** les maquettes M1 à M11 (§16).
 4. **Décider** la trajectoire des proches (Q3, Q4) **avant la première bêta externe**.
 5. **Si Blaze** : saisir le moyen de paiement, créer l'alerte de budget, et (plus tard) la clé APNs.

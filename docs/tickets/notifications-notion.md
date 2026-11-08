@@ -11,11 +11,11 @@
 3. **Toutes les voies gratuites pour les proches ont été étudiées** (voir §4). Verdict : locale chez le proche = faux positifs et ne dit jamais « arrivé » ; relais Cloudflare gratuit = possible seulement pour les arrivées, secret hors Google et aucun engagement de service ; GitHub Actions = à écarter ; **Blaze avec garde-fous = recommandé**.
 4. **Coût de Blaze** (hypothèses hautes, tarifs à vérifier) : ≈ 0 $ à 100 utilisateurs actifs/jour, ≈ 1 $ à 1 000, ≈ 20 $ à 10 000. Google ne permet que des **alertes** de budget, pas un vrai plafond : on encadre (alertes, App Check, limites).
 5. **Trajectoire** : P0 gratuit maintenant ; P1 gratuit « depuis ta dernière visite » ; P2 push aux proches (décision Blaze) ; P3 Premium « intelligent ».
-6. **Alerte** : avec **1 seul lieu gratuit**, partir au travail te met en orange **tous les jours** : risque de fatigue. Garde-fous proposés (plafonds, une seule relance, jamais de désactivation automatique).
+6. **Alerte (réévaluée avec 2 h / 4 h)** : avec **1 seul lieu gratuit**, les courtes sorties (moins de 2 h) ne déclenchent plus rien : le risque **diminue**. Une **journée de travail** met toujours en orange (2 h) puis en rouge (4 h) **tous les jours** sans update : deux rappels quotidiens. Garde-fous : plafonds, une seule relance, aide après 3 rappels ignorés, mesure locale en bêta.
 7. **UX** : toute alerte a sa clôture ; écran verrouillé sobre (prénom, jamais d'adresse) ; action « Je vais bien » avec **déverrouillage obligatoire** ; nuit calme ; pas de pastille sur l'icône.
 8. **Décisions rouvertes** : Q6 (ligne Notifications masquée) et Q15 (cloche retirée du Feed).
 9. **Dépendances** : les rappels ont besoin du ticket **Tracking** (départ d'un lieu) et du ticket **Update** (annulation).
-10. **26 questions** plus bas ; Q1 à Q8 suffisent pour lancer P0.
+10. **27 questions** plus bas ; Q1 à Q8 suffisent pour lancer P0. Nouvelle : **Q27** (zone de danger : rouge après 1 h déclenche-t-il un rappel ?).
 
 ## 2. Comment ça marche techniquement (en clair)
 
@@ -25,29 +25,29 @@
 
 ## 3. Règles proposées
 
-Seuils : constantes de `StatusColor` (code livré et validé en recette : **orange à 1 h, rouge à 2 h** ; les 2 h / 4 h des anciennes specs sont périmés : Q1 est donc tranchée sur les seuils, reste la question du point de départ).
+**Seuils décidés par toi le 2026-11-08** : **orange après 2 h, rouge après 4 h**, l'âge étant le **plus récent** de (sortie du lieu de confiance, dernière update), **hors d'un lieu de confiance seulement**. **En zone de danger : rouge si la dernière update date de plus d'1 h** (la confiance l'emporte). Ils remplacent les 1 h / 2 h du code livré (`StatusColor`, à aligner par le ticket Feed). Suite d'exemple : dernière nouvelle 13 h 40, rappel anticipé 15 h 25 (Premium), orange 15 h 40, rouge 17 h 40.
 
 | ID | Moment | Qui | Quand | Gratuit ? | Phase |
 |---|---|---|---|---|---|
-| A1 | Passage en orange | Toi | Parti d'un lieu, sans update, à T_orange | Oui (2 par jour max) | P0 |
-| A2 | Passage en rouge | Toi | À T_rouge, une relance à +1 h au plus | Oui | P0 |
-| A3 | Rappel anticipé | Toi | 15 min avant l'orange | Premium | P0 |
+| A1 | Passage en orange | Toi | Parti d'un lieu, sans update, **2 h** après la sortie ou la dernière update | Oui (2 par jour max) | P0 |
+| A2 | Passage en rouge | Toi | **4 h** après ; une relance à +1 h au plus | Oui | P0 |
+| A3 | Rappel anticipé | Toi | **1 h 45** (15 min avant l'orange) | Premium | P0 |
 | C1 | Depuis ta dernière visite | Toi, dans l'app | À l'ouverture, aucune notif | Oui | P1 |
-| B1 | Pas de nouvelles d'un proche | Les membres | À T_rouge | Oui (proposé) | P2 |
+| B1 | Pas de nouvelles d'un proche | Les membres | **4 h** | Oui (proposé) | P2 |
 | B2 | Clôture : nouvelles reçues | Les membres prévenus | Dès l'update | Oui | P2 |
 | B3 | Arrivée dans un lieu | Les membres | Immédiat, regroupée | Oui, activée par défaut | P2 |
 | B4 | Départ d'un lieu | Les membres | Immédiat | Opt-in | P2 |
 | B5 | Update d'un proche | Les membres | Immédiat, regroupée | Opt-in | P2 |
-| B6 | Orange d'un proche (push) | Les membres | À T_orange | Premium (gratuit : Feed seulement) | P2 |
+| B6 | Orange d'un proche (push) | Les membres | **2 h** | Premium (gratuit : Feed seulement) | P2 |
 | B7 | Résumé du jour | Toi | 1 par jour | Premium | P3 |
 | B8 | Arrivée attendue non survenue | Les membres | Heure définie par la personne suivie | Premium | P3 |
-| Zone à risque | Aucune notification | | | | Hors périmètre (décision Q10) |
+| Zone de danger | Aucune notification d'entrée ni de sortie. Effet du « rouge après 1 h » sur A2 : voir Q27 | | | | Hors périmètre (décision Q10) |
 
 **Idées écartées** : « tout va bien » régulier (bruit), rappel matin et soir (rituel culpabilisant), « tu as quitté un lieu sans arriver » (contrôle), alerte batterie (décision Q14), notification de coupure du partage.
 
 **Priorité** : P1 pas de nouvelles et clôture ; P2 rappel rouge ; P3 rappel orange ; P4 arrivée, départ, update (silencieux, regroupables) ; P5 résumé (passif). **Budget** : 3 rappels par jour à toi ; 6 par jour reçus (hors B1 et B2).
 
-**Règles communes** : une notification par niveau et par épisode ; publier une update, rentrer dans un lieu, se déconnecter, couper un type annule tout **immédiatement** ; aucune notification si l'app est ouverte ; textes sans accord de genre, sans durée ; jamais de nom de lieu ni d'adresse à l'écran verrouillé ; heure locale ; au déclenchement Android recalcule le niveau réel, iOS non (texte figé).
+**Règles communes** : une notification par niveau et par épisode ; publier une update, rentrer dans un lieu, se déconnecter, couper un type annule tout **immédiatement** ; aucune notification si l'app est ouverte ; textes sans accord de genre, sans durée ; jamais d'adresse à l'écran verrouillé ; lieu = étiquette de la catégorie (« à la maison », « au travail », « à l'école », « au sport », « chez un proche » ; pour Loisir et Autre, le nom saisi : voir Q9) ; heure locale ; au déclenchement Android recalcule le niveau réel, iOS non (texte figé).
 
 ## 4. Prévenir les proches : comparaison des architectures
 
@@ -62,7 +62,7 @@ Seuils : constantes de `StatusColor` (code livré et validé en recette : **oran
 | Conditions d'usage | RAS | Suspension possible à tout moment | OK |
 | GitHub Actions planifiés | Écarté : 5 min minimum, retards, quota, conditions d'usage à ne pas risquer | | |
 
-**Pourquoi (a) est piégeux** : si Thomas publie à 8 h 45 grâce à son propre rappel orange, ton téléphone (app fermée) affichera quand même « pas de nouvelles de Thomas » : **le succès du rappel crée la fausse alerte**. Sur iOS, impossible de vérifier avant d'afficher. Garde-fous si tu veux l'expérimenter : formulation non affirmative, données fraîches seulement, Android uniquement.
+**Pourquoi (a) est piégeux** : si Thomas publie à 10 h 05 grâce à son propre rappel orange de 10 h, ton téléphone (app fermée) affichera quand même « pas de nouvelles de Thomas » : **le succès du rappel crée la fausse alerte**. Sur iOS, impossible de vérifier avant d'afficher. Garde-fous si tu veux l'expérimenter : formulation non affirmative, données fraîches seulement, Android uniquement.
 
 **Pourquoi (b) n'est qu'un plan B** : possible pour les événements (le téléphone de l'auteur appelle un petit relais qui vérifie son identité Firebase, relit ses droits dans Firestore avec **son** jeton, compose le texte lui-même, et envoie via un compte de service **limité à l'envoi**). Mais : pas de « pas de nouvelles » sans donner au relais un accès à toutes les données, aucune garantie de service, CPU limité à 10 ms par requête, limitation de débit à inventer. Le code se porte ensuite vers Cloud Functions.
 
@@ -107,11 +107,11 @@ On ne fait pas payer le geste de sécurité de base (Q5).
 │ [Bandeau si coupées : Les réactiver]│
 │ Aujourd'hui                        │
 │ ● Un petit signe à ta Miff ?       │
-│   Ta dernière nouvelle : 16 h 02   │
+│   Ta dernière nouvelle : 13 h 40   │
 │ ○ Rappel annulé : tu as publié     │
 │   une update                       │
 │ Hier                               │
-│ ○ Thomas a bien rejoint l'école    │
+│ ○ Thomas est bien à l'école        │
 │ Vide : « Rien à signaler »         │
 └────────────────────────────────────┘
 ```
@@ -164,7 +164,9 @@ Voir mes notifications  >   |   Si les rappels n'arrivent pas  >
 - **Premier plan** : pas de notification pour ce qui est déjà visible (bulle d'incitation du Feed).
 - Android : 4 canaux ; iOS : catégories et regroupement par Miff, textes figés (donc sans durée ni état).
 
-**Exemples** : « Un petit signe à ta Miff ? Ta dernière nouvelle date de 16 h 02. Une update, et tes proches sont rassurés. » / « Tes proches aimeraient de tes nouvelles. Un mot ou une update suffit à les rassurer. » / « Pas de nouvelles de Thomas. Depuis 16 h 02. Un petit message peut faire du bien. » / « Thomas a donné de ses nouvelles. Tout va bien de son côté. » / « Thomas a bien rejoint l'école. À 8 h 02. » / « 3 nouvelles dans ta Miff ».
+**Exemples** : « Un petit signe à ta Miff ? Ta dernière nouvelle date de 13 h 40. Une update, et tes proches sont rassurés. » (envoyé à 15 h 40) / « Tes proches aimeraient de tes nouvelles. Un mot ou une update suffit à les rassurer. » (17 h 40) / « Pas de nouvelles de Thomas. Depuis 13 h 40. Un petit message peut faire du bien. » (17 h 40) / « Thomas a donné de ses nouvelles. Tout va bien de son côté. » / « Thomas est bien à l'école. Depuis 8 h 02. » / « Thomas n'est plus à l'école. Depuis 17 h 10. » / « 3 nouvelles dans ta Miff ».
+
+**Étiquettes de lieu (décidées le 2026-11-08)** : Maison = « à la maison », Travail = « au travail », École = « à l'école », Sport = « au sport », Chez un proche = « chez un proche », Loisir et Autre = le nom du lieu. Elles s'insèrent dans « {Prénom} est bien … » et « {Prénom} n'est plus … » : aucun accord de genre. **Point à confirmer (Q9)** : le nom saisi (Loisir, Autre) peut révéler un domicile (« Chez Mamie ») ; je recommande, pour l'écran verrouillé, « Thomas est bien dans un lieu de confiance » et le nom seulement dans l'app.
 
 ## 10. Données et vie privée
 
@@ -190,7 +192,7 @@ Chaque ticket existe en version Android puis iOS (TestFlight sur ton iPhone 11 P
 
 **Critères clés** : une seule amorce par compte ; « Plus tard » ne consomme pas la fenêtre ; désactiver annule les rappels en moins d'une seconde ; un rappel par niveau et par épisode ; publier une update annule tout ; textes FR et EN avec les mêmes clés `notif_` ; aucune position ni adresse dans la notification ; aucune alarme exacte ; tests aux bornes des seuils.
 
-**Recette PM** : (1) amorce et fenêtre ; (2) refus puis réactivation ; (3) délais raccourcis en build interne (1 et 2 min) ; (4) update avant l'échéance annule ; (5) désactivation pendant l'attente ; (6) app balayée, écran éteint, économie d'énergie sur l'OPPO (**mesurer**) ; (7) redémarrage et changement d'heure ; (8) écran verrouillé et « Je vais bien » ; (9) compte sans Miff ; (10) déconnexion.
+**Recette PM** : (1) amorce et fenêtre ; (2) refus puis réactivation ; (3) délais raccourcis en **build interne uniquement**, tout divisé par 60 (orange 2 min, rouge 4 min, anticipé 1 min 45, relance +1 min, zone de danger 1 min) ; (4) update avant l'échéance annule ; (5) désactivation pendant l'attente ; (6) app balayée, écran éteint, économie d'énergie sur l'OPPO (**mesurer**) ; (7) redémarrage et changement d'heure ; (8) écran verrouillé et « Je vais bien » ; (9) compte sans Miff ; (10) déconnexion.
 
 ## 12. Risques
 
@@ -202,7 +204,7 @@ M1 pré-autorisation corrigée (P0 et P2) · M2 carte « deuxième chance » · 
 
 ## 14. Questions pour toi (avec ma recommandation)
 
-- **Q1 Seuils et point de départ.** Seuils : **1 h / 2 h** (code livré, validé par le PM, source unique `StatusColor`). Reste à trancher le point de départ. *Reco* : départ = max(présence, dernière update) ; plafonds pour le gratuit.
+- **Q1 Fatigue avec 1 seul lieu gratuit.** Seuils et point de départ **décidés** (2 h / 4 h ; le plus récent de la sortie et de la dernière update). Une journée de travail déclenche A1 puis A2 tous les jours. *Reco* : garder les plafonds (A1 : 2/jour, total 3/jour), relance bornée, aide après 3 rappels ignorés ; mesurer en bêta (compteur local) puis, si besoin, 1 A1 par jour.
 - **Q2 Livrer P0 seule en attendant le serveur ?** *Reco* : oui (valeur réelle, 0 €, rend honnête la permission déjà demandée).
 - **Q3 Trajectoire pour les proches.** *Reco* : Blaze avec garde-fous ; relais gratuit seulement en plan B ; jamais GitHub Actions.
 - **Q4 Blaze : carte, alerte de budget (5 € suggéré), App Check strict, limites ?** *Reco* : oui, au moment de P2, avant la première bêta externe.
@@ -210,7 +212,7 @@ M1 pré-autorisation corrigée (P0 et P2) · M2 carte « deuxième chance » · 
 - **Q6 Arrivées / départs aux proches par défaut ?** *Reco* : arrivée ON, départ OFF, regroupement, 6 par jour max.
 - **Q7 Rouge « une update par heure » ?** *Reco* : une seule relance à +1 h, puis silence.
 - **Q8 Nuit calme (22 h – 7 h) : que sonne-t-il ?** *Reco* : tout silencieux sauf pas de nouvelles, clôture et rappel rouge ; Premium personnalise.
-- **Q9 Écran verrouillé.** *Reco* : prénom + fait + catégorie du lieu, jamais le nom saisi ni l'adresse ; option « aperçus discrets ». **Q9bis** importance des canaux Android (non relevable après création) : rappels et pas de nouvelles = par défaut ; nouvelles de la Miff et résumé = bas.
+- **Q9 Écran verrouillé.** *Reco* : prénom + fait + étiquette de la catégorie (« Thomas est bien à l'école ») ; pour Loisir et Autre (étiquette = nom saisi) : « dans un lieu de confiance » à l'écran verrouillé, nom dans l'app seulement (à toi de trancher : tu peux préférer afficher le nom) ; jamais l'adresse ; option « aperçus discrets ». **Q9bis** importance des canaux Android (non relevable après création) : rappels et pas de nouvelles = par défaut ; nouvelles de la Miff et résumé = bas.
 - **Q10 « Je vais bien » depuis la notification ?** *Reco* : oui avec déverrouillage obligatoire ; dépend d'Update (sans photo ?).
 - **Q11 Amorce.** *Reco* : fin d'onboarding conservée + deuxième chance non modale ; pas d'autorisation provisoire iOS ; texte P0 ci-dessus.
 - **Q12 Alarmes inexactes.** *Reco* : oui (quelques minutes de retard, jusqu'à ~1 h en pire cas), pas d'alarme exacte.
@@ -219,7 +221,7 @@ M1 pré-autorisation corrigée (P0 et P2) · M2 carte « deuxième chance » · 
 - **Q15 Réglages > Notifications (révise Q6).** Absente sans Miff ? *Reco* : oui, l'état reste dans Confidentialité.
 - **Q16 Où vivent les préférences ?** *Reco* : locales en P0, dans le compte en P2.
 - **Q17 Badge d'icône ?** *Reco* : aucun.
-- **Q18 Zone à risque.** *Reco* : aucune notification (confirme la décision Q10).
+- **Q18 Zone à risque / de danger : entrée et sortie.** *Reco* : aucune notification (confirme la décision Q10). Voir Q27 pour le « rouge après 1 h ».
 - **Q19 Transparence envers la personne suivie.** Le rappel orange dit-il « ta Miff sera prévenue vers 17 h 40 » (quand P2 existe) et le consentement d'entrée cite-t-il l'alerte du cercle ? *Reco* : oui aux deux.
 - **Q20 Catalogue Premium « intelligent ».** *Reco* : valider la liste du §5 ; remplacer « classiques / intelligentes » par des interrupteurs par type.
 - **Q21 Premium par utilisateur ou par Miff ?** *Reco* : par utilisateur pour la réception.
@@ -228,9 +230,10 @@ M1 pré-autorisation corrigée (P0 et P2) · M2 carte « deuxième chance » · 
 - **Q24 Langue des notifications serveur.** *Reco* : langue préférée sur le compte, défaut = langue du téléphone.
 - **Q25 Analyse.** *Reco* : aucun événement sur les notifications ; compteurs locaux pour la recette.
 - **Q26 Maquettes.** *Reco* : M1, M2, M7, M9 d'abord, puis M3 à M6 et M10.
+- **Q27 Zone de danger : devenir rouge après 1 h sans update déclenche-t-il un rappel A2 ?** (Règle de couleur décidée le 2026-11-08 ; la zone n'est pas livrée en v1, donc rien à construire tant qu'elle n'existe pas.) *Reco* : **oui pour A2 seulement**, à `dernière update + 1 h`, avec **le même texte neutre** (« Tes proches aimeraient de tes nouvelles », jamais « danger » ni « zone »), **sans étape orange** ; B1 vers le cercle au même délai seulement si tu le confirmes (push, P2), avec le même texte neutre ; **aucune notification d'entrée ni de sortie de zone** ; la personne qui entre dans une zone voit que le délai est plus court (transparence, risque d'outil de contrôle).
 
 ## 15. Écarts avec l'existant
 
-E1 seuils : 1 h / 2 h (code livré, validé) ; les 2 h / 4 h des anciennes specs sont périmés · E2 Q6 (ligne masquée) rouverte · E3 Q15 (cloche retirée) rouverte · E4 texte d'amorce « bientôt » devient faux dès P0 · E5 `paywall-premium` range « situation anormale » en Premium · E6 règle « update toutes les heures » · E7 exemples de l'ancienne spec (ton) · E8 la politique de confidentialité ne mentionne pas les rappels locaux · E9 maquette « classiques / intelligentes » · E10 maquette de pré-autorisation (ton, genre, fausses promesses) · E11 jetons d'appareil lisibles par leur seul propriétaire (relais) · E12 résolu : l'agent avait un exemplaire local en retard, `feed.md`, `update.md` et `session-appareil-unique.md` sont à relire avant le développement.
+*(E1 retiré : les seuils sont décidés, 2 h / 4 h ; le code livré à 1 h / 2 h est à aligner par le ticket Feed)* · E2 Q6 (ligne masquée) rouverte · E3 Q15 (cloche retirée) rouverte · E4 texte d'amorce « bientôt » devient faux dès P0 · E5 `paywall-premium` range « situation anormale » en Premium · E6 règle « update toutes les heures » · E7 exemples de l'ancienne spec (ton) · E8 la politique de confidentialité ne mentionne pas les rappels locaux · E9 maquette « classiques / intelligentes » · E10 maquette de pré-autorisation (ton, genre, fausses promesses) · E11 jetons d'appareil lisibles par leur seul propriétaire (relais) · E12 résolu : l'agent avait un exemplaire local en retard, `feed.md`, `update.md` et `session-appareil-unique.md` sont à relire avant le développement.
 
 *Ne modifie ni le code, ni Figma, ni les règles Firestore, ni les textes légaux. Aucun texte n'est présenté comme relu par un juriste.*
