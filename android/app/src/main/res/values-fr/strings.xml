@@ -419,7 +419,8 @@
     <string name="feed_label_at_work">Au travail</string>
     <string name="feed_label_at_school">À l\'école</string>
     <string name="feed_label_at_sport">Au sport</string>
-    <string name="feed_label_at_place">À %1$s</string>
+    <string name="feed_label_at_place">%1$s</string>
+    <string name="feed_label_at_relative">Chez un proche</string>
     <string name="feed_label_left">A quitté %1$s</string>
     <string name="feed_label_trusted_generic">Dans un lieu de confiance</string>
     <string name="feed_label_danger">Dans une zone de danger</string>
@@ -431,6 +432,7 @@
     <string name="feed_place_noun_work">le travail</string>
     <string name="feed_place_noun_school">l\'école</string>
     <string name="feed_place_noun_sport">le sport</string>
+    <string name="feed_place_noun_relative">le domicile d\'un proche</string>
     <string name="feed_place_noun_generic">un lieu de confiance</string>
     <string name="feed_time_since_minutes">Depuis %1$d min</string>
     <string name="feed_time_since_hours">Depuis %1$d h</string>

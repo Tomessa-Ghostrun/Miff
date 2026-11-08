@@ -78,7 +78,7 @@ final class FeedTextsTests: XCTestCase {
 
         XCTAssertEqual(fr.label(.at(.category(.home))), "À la maison")
         XCTAssertEqual(fr.label(.at(.category(.school))), "À l'école")
-        XCTAssertEqual(fr.label(.at(.named("Chez Mamie"))), "À Chez Mamie")
+        XCTAssertEqual(fr.label(.at(.named("Chez Mamie"))), "Chez Mamie", "Loisir, Autre : le nom du lieu, seul")
         XCTAssertEqual(fr.label(.at(.unknown)), "Dans un lieu de confiance")
         XCTAssertEqual(fr.label(.left(.category(.work))), "A quitté le travail")
         XCTAssertEqual(fr.label(.left(.unknown)), "A quitté un lieu de confiance")
@@ -87,6 +87,37 @@ final class FeedTextsTests: XCTestCase {
         XCTAssertEqual(fr.label(.sharingStopped), "Partage arrêté")
         XCTAssertEqual(en.label(.danger), "In a danger zone")
         XCTAssertEqual(en.label(.left(.category(.home))), "Left home")
+    }
+
+    /// Le mapping décidé par le PM (2026-11-08) : Maison, Travail, École, Sport, Chez un proche ont chacun leur étiquette ; Loisir et Autre
+    /// disent le nom du lieu.
+    func testTheLabelOfEachCategoryInFrenchAndEnglish() throws {
+        let fr = try french()
+        let en = try english()
+        let expected: [(PlaceKind, String, String)] = [
+            (.home, "À la maison", "At home"),
+            (.work, "Au travail", "At work"),
+            (.school, "À l'école", "At school"),
+            (.sport, "Au sport", "At the gym"),
+            (.relative, "Chez un proche", "At a loved one's")
+        ]
+
+        for (kind, frText, enText) in expected {
+            XCTAssertEqual(fr.label(.at(.category(kind))), frText)
+            XCTAssertEqual(en.label(.at(.category(kind))), enText)
+        }
+        XCTAssertEqual(fr.label(.at(.named("Salle Rivoli"))), "Salle Rivoli")
+        XCTAssertEqual(en.label(.at(.named("Salle Rivoli"))), "Salle Rivoli")
+    }
+
+    func testLeavingAPlaceByCategorySaysItInAFullSentence() throws {
+        let fr = try french()
+        let en = try english()
+
+        XCTAssertEqual(fr.label(.left(.category(.relative))), "A quitté le domicile d'un proche")
+        XCTAssertEqual(en.label(.left(.category(.relative))), "Left a loved one's place")
+        XCTAssertEqual(fr.label(.left(.category(.sport))), "A quitté le sport")
+        XCTAssertEqual(en.label(.left(.category(.sport))), "Left the gym")
     }
 
     func testTimeLines() throws {

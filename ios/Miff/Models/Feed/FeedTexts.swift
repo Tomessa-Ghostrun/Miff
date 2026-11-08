@@ -124,6 +124,8 @@ struct FeedTexts {
                 return text("feed_place_noun_school")
             case .sport:
                 return text("feed_place_noun_sport")
+            case .relative:
+                return text("feed_place_noun_relative")
             }
         case .named(let name):
             return name
@@ -163,8 +165,11 @@ struct FeedTexts {
                 return text("feed_label_at_school")
             case .sport:
                 return text("feed_label_at_sport")
+            case .relative:
+                return text("feed_label_at_relative")
             }
         case .named(let name):
+            // Loisir, Autre : le NOM du lieu, tel quel (décision du PM) ; la valeur du catalogue est « %@ » seul.
             return text("feed_label_at_place", name)
         case .unknown:
             return text("feed_label_trusted_generic")

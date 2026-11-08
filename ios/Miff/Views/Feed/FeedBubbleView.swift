@@ -130,7 +130,7 @@ private struct CalmBubbleLines: View {
     }
 }
 
-/// La tache et son pictogramme (D45) : la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
+/// La tache et son pictogramme (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
 /// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le disque du
 /// pictogramme respire sur son propre cycle. Voir `BubbleMotion` (constantes nommées). Immobile avec « Réduire les animations ».
 private struct BubbleBlob<Content: View>: View {
@@ -139,22 +139,21 @@ private struct BubbleBlob<Content: View>: View {
     let motion: Bool
     @ViewBuilder let content: () -> Content
 
-    private static var minHeight: CGFloat { 176 }
-
     var body: some View {
         // En pause (animations réduites, bulle hors écran ou app en arrière-plan) la vue est dessinée UNE fois : aucun rendu continu.
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !motion)) { timeline in
             let seconds = timeline.date.timeIntervalSinceReferenceDate
             let blob = BubbleMotion.phase(at: seconds, period: BubbleMotion.blobPeriodSeconds)
             let star = BubbleMotion.phase(at: seconds, period: BubbleMotion.starPeriodSeconds)
-            VStack(alignment: .leading, spacing: Spacing.sm) {
+            // Le contenu est CENTRÉ dans la tache (retour de recette du PM, 2026-11-08) : marges égales à gauche et à droite, en haut et
+            // en bas ; texte centré ligne par ligne ; zone plus haute que lui : il reste au milieu. Voir `BubbleLayout`.
+            VStack(alignment: .center, spacing: Spacing.sm) {
                 content()
             }
-            .frame(maxWidth: .infinity, minHeight: Self.minHeight, alignment: .topLeading)
-            .padding(.leading, 40)
-            .padding(.trailing, 56)
-            .padding(.top, 40)
-            .padding(.bottom, 46)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: BubbleLayout.minContentHeight, alignment: .center)
+            .padding(.horizontal, BubbleLayout.horizontalInset)
+            .padding(.vertical, BubbleLayout.verticalInset)
             .background(
                 FeedBubbleShape()
                     .fill(level.tint)
@@ -169,8 +168,8 @@ private struct BubbleBlob<Content: View>: View {
                 PictogramDisc(symbol: pictogram, level: level)
                     .scaleEffect(motion ? BubbleMotion.starScale(star) : 1)
                     .offset(y: motion ? BubbleMotion.starDrift(star) : 0)
-                    .padding(.trailing, 40)
-                    .padding(.bottom, 40)
+                    .padding(.trailing, BubbleLayout.discTrailing)
+                    .padding(.bottom, BubbleLayout.discBottom)
             }
             .offset(y: motion ? BubbleMotion.drift(blob) : 0)
         }
@@ -185,7 +184,7 @@ private struct PictogramDisc: View {
         Image(systemName: symbol)
             .font(.system(size: 20, weight: .semibold))
             .foregroundColor(level == .neutral ? colorTextDescription.color : level.onTint)
-            .frame(width: 40, height: 40)
+            .frame(width: BubbleLayout.discSize, height: BubbleLayout.discSize)
             .background(Circle().fill(Color.white.opacity(0.7)))
             .accessibilityHidden(true)
     }

@@ -2,6 +2,17 @@
 
 ## Non publié
 
+### Feed : retours de recette TestFlight du 2026-11-08 (étiquettes par catégorie, bulle centrée, seuils orange / rouge)
+
+Branche `ios/feed-retours-recette` (PR en brouillon), décisions D47 à D49 de `docs/tickets/feed.md`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Modifié :
+- **Seuils de couleur (décision du PM, remplace 1 h / 2 h)** : orange quand la sortie ET la dernière update datent de plus de **2 h**, rouge de plus de **4 h** (strict : 2 h 00 pile reste vert, 4 h 00 pile reste orange). **Zone de danger** : rouge quand la dernière update a plus d'**1 h** ou n'existe pas ; sinon pas de rouge forcé (la couleur suit l'âge habituel) ; la zone de confiance l'emporte. Constantes nommées `StatusThresholds.orangeAfterMillis`, `redAfterMillis`, `dangerZoneRedAfterMillis` (mêmes valeurs qu'Android). Aucun texte du catalogue ne citait 1 h ni 2 h.
+- **Étiquettes du Feed par catégorie du lieu** : Maison « À la maison », Travail « Au travail », École « À l'école », Sport « Au sport », **Chez un proche** « Chez un proche » (nouveau), Loisir et Autre : le nom du lieu seul (avant : « À {nom} »). EN : At home / At work / At school / **At the gym** (avant « At the sports club ») / At a loved one's. Clés ajoutées `feed_label_at_relative`, `feed_place_noun_relative` ; valeur de `feed_label_at_place` changée en « %@ ». Aucune lecture Firestore de plus.
+- **Bulle de la Miff centrée** : titre, lignes et bouton centrés dans la tache, marges égales (voir `BubbleLayout`) ; écart avec les maquettes (texte à gauche) assumé sur retour du PM.
+
+Ajouté : `BubbleLayoutTests` (géométrie), cas aux bornes de `StatusColorTests`, `FeedCardsTests`, `FeedTextsTests`.
+
 ### FEED-5 à FEED-7 - Le Feed : cercle, statuts, Localiser (miroir d'Android FEED-1 à FEED-3, avec D42 à D45)
 
 Branche `ios/feed-5-7`, **PR en brouillon qui dépend de #102** (coquille ONB-7) ; ticket `docs/tickets/feed.md` (décisions D1 à D44), maquettes `design/exports/feed/` et `design/exports/feed/claude/`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro (TestFlight, le Feed est l'onglet de la coquille) : `docs/qa/checklists/feed-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md`, section « Le Feed ».
