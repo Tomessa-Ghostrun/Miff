@@ -50,6 +50,10 @@ class ReviewPromptViewModelTest {
             this.state = state
         }
 
+        override fun clear() {
+            state = ReviewState()
+        }
+
         override fun forceNext(): Boolean = force
 
         override fun setForceNext(value: Boolean) {
@@ -67,7 +71,8 @@ class ReviewPromptViewModelTest {
     private fun viewModel(
         store: MemoryStore,
         debug: Boolean = false,
-    ) = ReviewPromptViewModel(store, { now }, debugForceAllowed = debug)
+        form: String = "",
+    ) = ReviewPromptViewModel(store, { now }, debugForceAllowed = debug, feedbackFormUrl = form)
 
     // --- appearance --------------------------------------------------------------------------------------------------------------------------------
 
@@ -151,24 +156,6 @@ class ReviewPromptViewModelTest {
         }
 
     @Test
-    fun theFifthStar_isTheSameAsLove_andAStarUnderFiveIsTheSameAsCanDoBetter() =
-        runTest(dispatcher) {
-            val five = viewModel(MemoryStore(oldMiff()))
-            five.onForeground(1, ready)
-            five.onStarTouched(5)
-            assertEquals(ReviewStage.ThanksForLove, five.stage.value)
-            advanceUntilIdle()
-            assertEquals(ReviewEffect.RequestStoreReview, five.effects.first())
-
-            for (stars in 1..4) {
-                val vm = viewModel(MemoryStore(oldMiff()))
-                vm.onForeground(1, ready)
-                vm.onStarTouched(stars)
-                assertEquals("star $stars", ReviewStage.ThanksForFeedback, vm.stage.value)
-            }
-        }
-
-    @Test
     fun theBackGestureDuringTheThanks_doesNothing() =
         runTest(dispatcher) {
             val vm = viewModel(MemoryStore(oldMiff()))
@@ -214,50 +201,102 @@ class ReviewPromptViewModelTest {
         }
 
     @Test
-    fun theBackGestureOnTheThanks_closesWithoutCountingAClosure() {
+    fun theBackGestureOnTheThanks_justCloses_andTheOutcomeStaysCanDoBetter() {
         val store = MemoryStore(oldMiff())
         val vm = viewModel(store)
         vm.onForeground(1, ready)
         vm.onCanDoBetter()
         vm.onClose()
         assertEquals(ReviewStage.Hidden, vm.stage.value)
-        assertEquals(0, store.state.closures)
         assertEquals(ReviewOutcome.CAN_DO_BETTER, store.state.lastOutcome)
     }
 
     // --- closing without an answer -----------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun closing_countsAClosure_theWindowComesBackAfterThirtyDays_andTheSecondClosureIsTheLast() {
+    fun closing_theWindowComesBackAfterThirtyDays_everyTime_withNoLimit() {
         val store = MemoryStore(oldMiff())
         val vm = viewModel(store)
-        vm.onForeground(1, ready)
-        vm.onClose()
-        assertEquals(ReviewStage.Hidden, vm.stage.value)
-        assertEquals(1, store.state.closures)
-
-        now += 29 * day
-        vm.onForeground(2, ready)
-        assertEquals(ReviewStage.Hidden, vm.stage.value)
-        now += 2 * day
-        vm.onForeground(3, ready)
-        assertEquals(ReviewStage.Question, vm.stage.value)
-        vm.onClose()
-        assertEquals(2, store.state.closures)
-
-        now += 1_000 * day
-        vm.onForeground(4, ready)
-        assertEquals(ReviewStage.Hidden, vm.stage.value)
+        var tick = 0
+        repeat(5) {
+            tick++
+            vm.onForeground(tick, ready)
+            assertEquals("appearance ${it + 1}", ReviewStage.Question, vm.stage.value)
+            vm.onClose()
+            assertEquals(ReviewStage.Hidden, vm.stage.value)
+            assertEquals(ReviewOutcome.CLOSED, store.state.lastOutcome)
+            now += 29 * day
+            tick++
+            vm.onForeground(tick, ready)
+            assertEquals(ReviewStage.Hidden, vm.stage.value)
+            now += 2 * day
+        }
     }
 
     @Test
-    fun closing_twiceInARow_countsOnce() {
+    fun closing_twiceInARow_closesOnce() {
         val store = MemoryStore(oldMiff())
         val vm = viewModel(store)
         vm.onForeground(1, ready)
         vm.onClose()
+        val after = store.state
         vm.onClose()
-        assertEquals(1, store.state.closures)
+        assertEquals(after, store.state)
+    }
+
+    // --- "Peux faire mieux..." and the external form -----------------------------------------------------------------------------------------------
+
+    @Test
+    fun withAFeedbackForm_canDoBetter_closesTheWindow_andOpensTheFormOnce_withoutTheStore() =
+        runTest(dispatcher) {
+            val store = MemoryStore(oldMiff())
+            val vm = viewModel(store, form = "https://forms.example.org/miff")
+            vm.onForeground(1, ready)
+            vm.onCanDoBetter()
+            vm.onCanDoBetter()
+            advanceUntilIdle()
+            assertEquals(ReviewStage.Hidden, vm.stage.value)
+            assertEquals(ReviewOutcome.CAN_DO_BETTER, store.state.lastOutcome)
+            assertEquals(ReviewEffect.OpenFeedbackForm("https://forms.example.org/miff"), vm.effects.first())
+            // Asked again only after 90 days.
+            now += 89 * day
+            vm.onForeground(2, ready)
+            assertEquals(ReviewStage.Hidden, vm.stage.value)
+            now += 2 * day
+            vm.onForeground(3, ready)
+            assertEquals(ReviewStage.Question, vm.stage.value)
+        }
+
+    @Test
+    fun withoutAFeedbackForm_orWithAnAddressThatIsNotHttps_theCalmScreenWithWriteToUsShows() {
+        for (form in listOf("", "   ", "http://forms.example.org/miff", "javascript:alert(1)")) {
+            val vm = viewModel(MemoryStore(oldMiff()), form = form)
+            vm.onForeground(1, ready)
+            vm.onCanDoBetter()
+            assertEquals(form, ReviewStage.ThanksForFeedback, vm.stage.value)
+        }
+    }
+
+    @Test
+    fun theLoveButton_neverOpensTheForm_andTheFormNeverOpensTheStore() =
+        runTest(dispatcher) {
+            val love = viewModel(MemoryStore(oldMiff()), form = "https://forms.example.org/miff")
+            love.onForeground(1, ready)
+            love.onLove()
+            advanceUntilIdle()
+            assertEquals(ReviewEffect.RequestStoreReview, love.effects.first())
+        }
+
+    @Test
+    fun aMessageOfTheApp_keepsTheWindowAway_evenForcedInDebug() {
+        val store = MemoryStore(oldMiff(), force = true)
+        val vm = viewModel(store, debug = true)
+        vm.onForeground(1, ready.copy(blockingMessageOpen = true))
+        assertEquals(ReviewStage.Hidden, vm.stage.value)
+        assertTrue(store.force)
+        val plain = viewModel(MemoryStore(oldMiff()))
+        plain.onForeground(1, ready.copy(blockingMessageOpen = true))
+        assertEquals(ReviewStage.Hidden, plain.stage.value)
     }
 
     // --- the debug option --------------------------------------------------------------------------------------------------------------------------

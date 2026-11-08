@@ -5,39 +5,72 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import com.google.android.play.core.review.ReviewInfo
 import com.google.android.play.core.review.ReviewManagerFactory
+import com.tomessa.miff.BuildConfig
+import com.tomessa.miff.domain.review.FeedbackForm
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 
 /**
- * The request of a review to the STORE, after the person touched "J'adore ! (5 étoiles)" (or the five stars). Miff NEVER listens to the
- * rating given in the store and never sends one anywhere: the store does it all, in its own window.
+ * The request of a review AND a comment to the STORE, after the person touched "J'adore !" (decision of the PM, 2026-11-08: natively, in the store's own
+ * window). Miff NEVER listens to what is given in the store and never sends anything about it to anyone: the store does it all.
+ * Returns true when something was shown or opened, false when nothing could be (the screen then says so calmly).
  */
 fun interface StoreReviewRequester {
-    suspend fun request(activity: Activity)
+    suspend fun request(activity: Activity): Boolean
+}
+
+/** The two calls of Google Play In-App Review, behind an interface so that the fallback below is tested without Google Play. */
+interface InAppReviewApi {
+    /** Asks for the review flow. Throws when the API cannot be used (the app does not come from Google Play, no Play services, no network...). */
+    suspend fun requestFlow(activity: Activity): Any
+
+    /** Shows the card of the store for what [requestFlow] returned. Its end says nothing about what the person did there. */
+    suspend fun launchFlow(
+        activity: Activity,
+        flow: Any,
+    )
+}
+
+/** Google Play In-App Review (library `com.google.android.play:review`, free, by Google): the store decides whether its card appears (it has its own quota). */
+class PlayInAppReviewApi : InAppReviewApi {
+    override suspend fun requestFlow(activity: Activity): Any =
+        ReviewManagerFactory.create(activity).requestReviewFlow().await()
+
+    override suspend fun launchFlow(
+        activity: Activity,
+        flow: Any,
+    ) {
+        ReviewManagerFactory.create(activity).launchReviewFlow(activity, flow as ReviewInfo).await()
+    }
 }
 
 /**
- * Google Play In-App Review (library `com.google.android.play:review`, free, by Google): the store decides whether its window appears
- * (it has its own quota, and says nothing when it does not show it), and the app learns nothing about what the person did there.
- *
- * FALLBACK: if the API is not usable (the app does not come from Google Play, no Play services, no network...), the page of the app in the
- * store is opened instead ([StoreListing]), once. Nothing is logged: a failure is only "use the fallback".
+ * FALLBACK: only when the API cannot be used AT ALL (the request of the flow fails), the page of Miff in the store is opened instead ([StoreListing]), once.
+ * When the API accepted the request, its card may already have been shown: a failure AFTER that never opens the page on top of it. Nothing is logged.
  */
-class PlayStoreReviewRequester : StoreReviewRequester {
-    override suspend fun request(activity: Activity) {
-        val shown =
+class PlayStoreReviewRequester(
+    private val api: InAppReviewApi = PlayInAppReviewApi(),
+    private val openListing: (Context) -> Boolean = StoreListing::open,
+) : StoreReviewRequester {
+    override suspend fun request(activity: Activity): Boolean {
+        val flow =
             try {
-                val manager = ReviewManagerFactory.create(activity)
-                val info = manager.requestReviewFlow().await()
-                manager.launchReviewFlow(activity, info).await()
-                true
+                api.requestFlow(activity)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                false
+                return openListing(activity)
             }
-        if (!shown) StoreListing.open(activity)
+        try {
+            api.launchFlow(activity, flow)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The card may have appeared: no second window on top of it.
+        }
+        return true
     }
 }
 
@@ -53,18 +86,61 @@ object StoreListing {
     /** The addresses to try, in order. */
     fun candidates(packageName: String): List<String> = listOf(marketAddress(packageName), webAddress(packageName))
 
+    /** Tries the addresses in order with [start] (true = something opened it); stops at the first that works. */
+    fun openFirst(
+        addresses: List<String>,
+        start: (String) -> Boolean,
+    ): Boolean = addresses.any { start(it) }
+
     /** Opens the first address that something on the phone can open; if none can, nothing happens (no crash, no technical message). */
-    fun open(context: Context): Boolean {
-        for (uri in candidates(context.packageName)) {
-            try {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                )
-                return true
-            } catch (e: ActivityNotFoundException) {
-                // Try the next address.
-            }
+    fun open(context: Context): Boolean =
+        openFirst(candidates(context.packageName)) { address -> ViewLinks.start(context, address) }
+}
+
+/** An ACTION_VIEW on an address, refused quietly (false) when nothing can open it or the system forbids it. */
+object ViewLinks {
+    fun start(
+        context: Context,
+        address: String,
+    ): Boolean =
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, address.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: ActivityNotFoundException) {
+            false
+        } catch (e: SecurityException) {
+            false
         }
-        return false
+}
+
+/**
+ * Opens the external feedback form ("Peux faire mieux...") in the browser: ACTION_VIEW on an HTTPS address only (anything else is refused here, whatever
+ * the setting says), the address AS IT IS. Nothing is added to the intent or to the address.
+ */
+object FeedbackFormLauncher {
+    fun open(
+        context: Context,
+        url: String,
+    ): Boolean {
+        val address = FeedbackForm.openableUrl(url) ?: return false
+        return ViewLinks.start(context, address)
     }
+}
+
+/** The e-mail application of the person on the support address and NOTHING else (no subject, no text, no extra): the same gesture as Settings. */
+object SupportMail {
+    fun open(context: Context): Boolean =
+        try {
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_SENDTO,
+                    "mailto:${BuildConfig.SUPPORT_EMAIL}".toUri(),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            true
+        } catch (e: ActivityNotFoundException) {
+            false
+        } catch (e: SecurityException) {
+            false
+        }
 }

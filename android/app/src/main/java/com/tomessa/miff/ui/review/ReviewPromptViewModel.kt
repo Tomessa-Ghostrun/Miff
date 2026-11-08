@@ -3,6 +3,7 @@ package com.tomessa.miff.ui.review
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.review.ReviewStateStore
+import com.tomessa.miff.domain.review.FeedbackForm
 import com.tomessa.miff.domain.review.ReviewOutcome
 import com.tomessa.miff.domain.review.ReviewPromptDefaults
 import com.tomessa.miff.domain.review.ReviewPromptRules
@@ -18,21 +19,20 @@ import kotlinx.coroutines.launch
 
 /*
  * PRIVACY, for this file: no event of analytics, no log, nothing about WHAT the person answered leaves the phone. The only trace is the local state
- * of [ReviewStateStore] (four small values). The star that was touched is never kept: only "five" (the request of the store) or "not five" is used,
- * at once, to choose the next screen.
+ * of [ReviewStateStore] (three small values).
  */
 
 /** What the window shows. */
 sealed interface ReviewStage {
     data object Hidden : ReviewStage
 
-    /** The mockup: "Que penses-tu de Miff ?", five stars, "J'adore ! (5 étoiles)" and "Peux faire mieux...". */
+    /** "Que penses-tu de Miff ?" and two buttons: "J'adore !" and "Peux faire mieux..." (no stars: decision of the PM, 2026-11-08). */
     data object Question : ReviewStage
 
     /** "Merci !": a few seconds, nothing to press; the request of the store follows. */
     data object ThanksForLove : ReviewStage
 
-    /** "Merci de nous le dire !": "Nous écrire" and "Plus tard". The store's window is NOT opened. */
+    /** "Merci de nous le dire !": "Nous écrire" and "Plus tard". Only while no feedback form is set. The store's window is NOT opened. */
     data object ThanksForFeedback : ReviewStage
 }
 
@@ -43,6 +43,11 @@ sealed interface ReviewEffect {
 
     /** Open the e-mail application on the support address, with nothing else in the message. */
     data object OpenMail : ReviewEffect
+
+    /** Open the external feedback form in the browser: [url] is HTTPS and is opened as it is, nothing about the person is added. */
+    data class OpenFeedbackForm(
+        val url: String,
+    ) : ReviewEffect
 }
 
 /**
@@ -56,8 +61,12 @@ class ReviewPromptViewModel(
     private val store: ReviewStateStore,
     private val nowMillis: () -> Long,
     private val debugForceAllowed: Boolean,
+    /** `BuildConfig.FEEDBACK_FORM_URL`: empty until the PM gives the address ([FeedbackForm]). */
+    feedbackFormUrl: String = "",
     private val thanksMillis: Long = ReviewPromptDefaults.THANKS_MILLIS,
 ) : ViewModel() {
+    private val feedbackForm: String? = FeedbackForm.openableUrl(feedbackFormUrl)
+
     private val mutableStage = MutableStateFlow<ReviewStage>(ReviewStage.Hidden)
     val stage: StateFlow<ReviewStage> = mutableStage.asStateFlow()
 
@@ -84,8 +93,8 @@ class ReviewPromptViewModel(
         if (mutableStage.value != ReviewStage.Hidden) return
         val now = nowMillis()
         val forced = debugForceAllowed && store.forceNext()
-        val free = !situation.updateScreenOpen && !situation.keyboardOpen
-        // A forced window that cannot appear now (Update, keyboard) waits for the next return: the tick is NOT consumed.
+        val free = !situation.updateScreenOpen && !situation.keyboardOpen && !situation.blockingMessageOpen
+        // A forced window that cannot appear now (Update, keyboard, a message) waits for the next return: the tick is NOT consumed.
         if (forced && !free) return
         handledTick = tick
         val state = store.read()
@@ -95,11 +104,6 @@ class ReviewPromptViewModel(
             store.write(state.shown(now))
             mutableStage.value = ReviewStage.Question
         }
-    }
-
-    /** A star was touched. Only "five" matters, and only for this screen: it is the same as "J'adore !". The star itself is never kept. */
-    fun onStarTouched(stars: Int) {
-        if (stars >= FIVE_STARS) onLove() else onCanDoBetter()
     }
 
     fun onLove() {
@@ -113,14 +117,23 @@ class ReviewPromptViewModel(
         }
     }
 
-    /** "Peux faire mieux..." (or a star under five): the store's window is NOT opened; a calm thank-you with a way to write to us. */
+    /**
+     * "Peux faire mieux...": the store's window is NOT opened. With a feedback form set, the window closes and the form opens in the browser; without one, a calm
+     * thank-you with a way to write to us.
+     */
     fun onCanDoBetter() {
         if (mutableStage.value != ReviewStage.Question) return
         store.write(store.read().answered(ReviewOutcome.CAN_DO_BETTER))
-        mutableStage.value = ReviewStage.ThanksForFeedback
+        val form = feedbackForm
+        if (form != null) {
+            mutableStage.value = ReviewStage.Hidden
+            mutableEffects.trySend(ReviewEffect.OpenFeedbackForm(form))
+        } else {
+            mutableStage.value = ReviewStage.ThanksForFeedback
+        }
     }
 
-    /** The cross or the back gesture. Without an answer it counts as a closure; after "Peux faire mieux..." it only closes. */
+    /** The cross or the back gesture. Without an answer the window comes back after 30 days (no limit); after "Peux faire mieux..." it only closes. */
     fun onClose() {
         when (mutableStage.value) {
             ReviewStage.Question -> {
@@ -146,8 +159,4 @@ class ReviewPromptViewModel(
     }
 
     fun onLater() = onClose()
-
-    private companion object {
-        const val FIVE_STARS = 5
-    }
 }

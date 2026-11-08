@@ -65,6 +65,7 @@ import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.feed.LocalPhotoReader
+import com.tomessa.miff.ui.feed.LocateUiState
 import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
@@ -278,6 +279,7 @@ private fun MainNavigation(
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
             val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
+            val lostNotices by container.miffDirectory.notice.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
                 profileState = profileState,
@@ -316,6 +318,7 @@ private fun MainNavigation(
                     ),
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
+                lostAccessNoticeOpen = lostNotices.isNotEmpty(),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -598,6 +601,8 @@ fun MainTabs(
     placesContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
     review: ReviewHost? = null,
+    /** The lost-access message is over everything (MainShell): the review window waits for it to be acknowledged. */
+    lostAccessNoticeOpen: Boolean = false,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
@@ -781,6 +786,13 @@ fun MainTabs(
                     friendStatusSeen = ReviewSituation.friendStatusSeen(feedContent),
                     updateScreenOpen = selected == MainTab.UPDATE,
                     keyboardOpen = keyboardOpen,
+                    blockingMessageOpen =
+                        ReviewSituation.messageOpen(
+                            lostAccessNotice = lostAccessNoticeOpen,
+                            awaitingAgreement = agreement.waiting.isNotEmpty(),
+                            locateSheetOpen = feed.locate != LocateUiState.Idle,
+                            myLabel = feedContent?.myLabel,
+                        ),
                 ),
         )
     }

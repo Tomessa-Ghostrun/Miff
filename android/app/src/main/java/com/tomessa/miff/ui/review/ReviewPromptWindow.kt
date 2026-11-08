@@ -71,17 +71,17 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * The review window "Que penses-tu de Miff ?" (mockup `design/exports/pop-ins/03-avis-store.png`, built AS DRAWN by decision of the PM of 2026-11-07,
- * risk assumed: `docs/tickets/pop-ins-avis.md`). Stateless: [ReviewPromptHost] feeds it.
+ * The review window "Que penses-tu de Miff ?" (mockup `design/exports/pop-ins/03-avis-store.png`, built by decision of the PM of 2026-11-07, risk assumed:
+ * `docs/tickets/pop-ins-avis.md`). Stateless: [ReviewPromptHost] feeds it.
  *
- * Differences from the mockup, all listed in the pull request: informal "tu" (decision of 2026-11-01), a small cross at the top (the mockup has no way
+ * Differences from the mockup, all listed in the pull request: NO STARS and two buttons "J'adore !" and "Peux faire mieux..." (decision of the PM of
+ * 2026-11-08), informal "tu" (decision of 2026-11-01), a small cross at the top (the mockup has no way
  * out except the back gesture, which nobody can see), a thin frame like the other dialogs of the app, the page behind blurred where the phone allows it
  * (Android 12 and later, if the system's window blur is on) and dimmed a little by the window everywhere else.
  */
 @Composable
 fun ReviewPromptWindow(
     stage: ReviewStage,
-    onStar: (Int) -> Unit,
     onLove: () -> Unit,
     onBetter: () -> Unit,
     onClose: () -> Unit,
@@ -103,7 +103,7 @@ fun ReviewPromptWindow(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             ReviewCard {
                 when (stage) {
-                    ReviewStage.Question -> QuestionContent(onStar, onLove, onBetter, onClose)
+                    ReviewStage.Question -> QuestionContent(onLove, onBetter, onClose)
                     ReviewStage.ThanksForLove -> ThanksContent()
                     ReviewStage.ThanksForFeedback -> FeedbackContent(onWrite, onLater)
                     ReviewStage.Hidden -> Unit
@@ -144,7 +144,7 @@ private fun ReviewCard(content: @Composable () -> Unit) {
                 .clip(ShapeMd)
                 .background(colorBgSurface)
                 .border(StrokeAccent, colorBorderAction, ShapeMd)
-                // Reading order for the screen reader: the title, the stars, the buttons, and the cross last.
+                // Reading order for the screen reader: the title, the buttons, and the cross last.
                 .semantics { isTraversalGroup = true }
                 // The marker of this window: its code is absent from a release build (BuildConfig.REVIEW_PROMPT is false there), and the check of the
                 // build looks for this very text in it (ReviewPromptReleaseTest, android.yml). Also the handle of the UI tests.
@@ -156,7 +156,6 @@ private fun ReviewCard(content: @Composable () -> Unit) {
 
 @Composable
 private fun QuestionContent(
-    onStar: (Int) -> Unit,
     onLove: () -> Unit,
     onBetter: () -> Unit,
     onClose: () -> Unit,
@@ -200,8 +199,6 @@ private fun QuestionContent(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { heading() },
             )
-            Spacer(Modifier.height(Spacing.m))
-            ReviewStars(onStar)
             Spacer(Modifier.height(Spacing.l))
             MiffButton(
                 text = stringResource(R.string.review_love_action),
@@ -288,63 +285,6 @@ private fun FeedbackContent(
 }
 
 /**
- * The five stars of the mockup: small, medium, large, medium, small, in the brand yellow-green. DECORATIVE to the eye, but each one is a named element for
- * the screen reader ("Étoile 3 sur 5") and can be touched (the fifth is "J'adore !", the others "Peux faire mieux...": see [ReviewPromptViewModel.onStarTouched]).
- * Each star has a touch area at least 48 dp high and as wide as a fifth of the row.
- */
-@Composable
-private fun ReviewStars(onStar: (Int) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        STAR_SIZES.forEachIndexed { index, size ->
-            val number = index + 1
-            val name = stringResource(R.string.review_star_a11y, number)
-            Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = STAR_ROW_HEIGHT)
-                        .clip(ShapeMd)
-                        .clickable(role = Role.Button, onClick = { onStar(number) })
-                        .semantics { contentDescription = name },
-                contentAlignment = Alignment.Center,
-            ) {
-                Star(size)
-            }
-        }
-    }
-}
-
-@Composable
-private fun Star(size: Dp) {
-    Canvas(modifier = Modifier.size(size)) {
-        val center = Offset(this.size.width / 2f, this.size.height / 2f)
-        // The rounded corners of the mockup: the star is drawn a little smaller, then its outline is drawn with round joins.
-        val rounding = this.size.minDimension * STAR_ROUNDING
-        val outer = this.size.minDimension / 2f - rounding / 2f
-        val path = starPath(center, outer, outer * STAR_INNER_RATIO)
-        drawPath(path, colorBrandPrimary, style = Fill)
-        drawPath(path, colorBrandPrimary, style = Stroke(width = rounding, join = StrokeJoin.Round))
-    }
-}
-
-/** Five points, the first straight up; [inner] is the radius of the inner corners. */
-internal fun starPath(
-    center: Offset,
-    outer: Float,
-    inner: Float,
-): Path =
-    Path().apply {
-        for (corner in 0 until STAR_CORNERS * 2) {
-            val radius = if (corner % 2 == 0) outer else inner
-            val angle = -PI / 2 + corner * PI / STAR_CORNERS
-            val x = center.x + radius * cos(angle).toFloat()
-            val y = center.y + radius * sin(angle).toFloat()
-            if (corner == 0) moveTo(x, y) else lineTo(x, y)
-        }
-        close()
-    }
-
-/**
  * The text that marks this window inside the code of the app: a release build must not contain it (the window is behind `BuildConfig.REVIEW_PROMPT`, false
  * there, so the code is removed). Do not rename without changing `android.yml` and `ReviewPromptReleaseTest`.
  */
@@ -354,10 +294,3 @@ private const val DIM_AMOUNT = 0.3f
 private const val BLUR_RADIUS_PX = 40
 private const val CLOSE_ORDER = 10f
 private const val ACTION_ORDER = 5f
-private const val STAR_CORNERS = 5
-private const val STAR_INNER_RATIO = 0.5f
-private const val STAR_ROUNDING = 0.12f
-private val STAR_ROW_HEIGHT = 64.dp
-
-/** Small, medium, large, medium, small: the proportions of the mockup. */
-private val STAR_SIZES = listOf(30.dp, 42.dp, 58.dp, 42.dp, 30.dp)

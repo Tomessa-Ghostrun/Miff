@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.review
 
+import com.tomessa.miff.domain.review.ReviewState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,10 +12,14 @@ import java.io.File
  * - AV2: the review window is ABSENT from the builds that can be distributed (release, releaseLike): its flag `BuildConfig.REVIEW_PROMPT` is false there, a release
  *   build can only turn it on with an explicit Gradle flag (guard on preReleaseBuild, like LOCATION_BLOCKING), and every use of the window outside its own package
  *   sits behind that flag, so that R8 removes it. The proof on the real bundle is a step of `.github/workflows/android.yml` (text REVIEWPROMPTPROBE).
- * - AV4: no analytics event, no log, no permission, no network address, no personal data in the window.
+ * - AV4: no analytics event, no log, no permission, no personal data in the window; the feedback form address comes from the build and nowhere else.
+ *
+ * The checks read the code with its WHITESPACE NORMALISED (one space), so that a reformatting by Spotless never breaks them.
  */
 class ReviewPromptReleaseTest {
-    private val gradle = File("build.gradle.kts").readText()
+    private fun normalised(file: File): String = file.readText().replace(Regex("\\s+"), " ")
+
+    private val gradle = normalised(File("build.gradle.kts"))
     private val main = File("src/main/java/com/tomessa/miff")
 
     private fun kotlinFiles(vararg dirs: String): List<File> =
@@ -26,6 +31,8 @@ class ReviewPromptReleaseTest {
             !line.startsWith("*") && !line.startsWith("//") && !line.startsWith("/*")
         }
 
+    private fun isInsideReview(file: File) = file.path.replace('\\', '/').contains("/review/")
+
     // --- AV2: the flag --------------------------------------------------------------------------------------------------------------------------
 
     @Test
@@ -35,13 +42,13 @@ class ReviewPromptReleaseTest {
         // ... and only the debug build type says true.
         val trueOnes =
             Regex(
-                """buildConfigField\("boolean", "REVIEW_PROMPT", reviewPromptProperty \?: "true"\)""",
+                """buildConfigField\( ?"boolean", "REVIEW_PROMPT", reviewPromptProperty \?: "true" ?\)""",
             ).findAll(gradle).count()
         assertEquals(1, trueOnes)
         val debugBlock = gradle.substringAfter("debug {").substringBefore("release {")
         assertTrue(debugBlock.contains("""reviewPromptProperty ?: "true""""))
-        val releaseBlocks = gradle.substringAfter("release {")
-        assertFalse(releaseBlocks.substringBefore("compileOptions").contains("""reviewPromptProperty ?: "true""""))
+        val restOfBuildTypes = gradle.substringAfter("release {").substringBefore("compileOptions")
+        assertFalse(restOfBuildTypes.contains("""reviewPromptProperty ?: "true""""))
     }
 
     @Test
@@ -51,43 +58,33 @@ class ReviewPromptReleaseTest {
         val guard = gradle.substringAfter("val reviewOnInRelease")
         assertTrue(guard.contains("preReleaseBuild") && guard.contains("preReleaseLikeBuild"))
         assertTrue(guard.contains("GradleException"))
-        // Only the value "true" is dangerous; anything else is refused at configuration time.
+        // Only the value "true" is dangerous; anything else than true or false is refused at configuration time.
         assertTrue(gradle.contains("miff.reviewPrompt must be true or false"))
     }
 
     @Test
-    fun theWindowIsOnlyUsedBehindTheFlag() {
-        val outside = kotlinFiles(".").filter { !it.path.replace('\\', '/').contains("/review/") }
+    fun theWindowIsOnlyUsedBehindTheFlag_andOnlyFromMainShell() {
         val uses =
             Regex(
-                """\b(ReviewPromptHost|ReviewPromptWindow|rememberReviewHost|ReviewPromptViewModel|PlayStoreReviewRequester|SharedPreferencesReviewStateStore)\b""",
+                """\b(ReviewPromptHost|ReviewPromptWindow|rememberReviewHost|ReviewPromptViewModel|PlayStoreReviewRequester|PlayInAppReviewApi)\b""",
             )
-        val offenders =
-            outside.flatMap { file ->
-                val lines = file.readLines()
-                lines
-                    .withIndex()
-                    .filter { (_, line) ->
-                        !line.trimStart().startsWith("import ") && !line.trimStart().startsWith("*") &&
-                            !line.trimStart().startsWith("//")
-                    }.filter { (_, line) -> uses.containsMatchIn(line) }
-                    // The line of use, or one of the three lines before it, names the flag (or, for the host factory, the function checks it itself).
-                    .filter { (index, _) ->
-                        lines
-                            .subList(
-                                (index - 3).coerceAtLeast(0),
-                                index + 1,
-                            ).none { it.contains("BuildConfig.REVIEW_PROMPT") }
-                    }.map { (index, line) -> "${file.name}:${index + 1}: ${line.trim()}" }
-            }
-        // The only allowed use outside the flag: the call of rememberReviewHost, whose first line is the check of the flag (asserted below).
-        assertEquals(listOf<String>(), offenders.filterNot { it.contains("rememberReviewHost(container, scopeKey)") })
-        val factory = File(main, "ui/review/ReviewPromptHost.kt").readText()
+        val users =
+            kotlinFiles(".")
+                .filter { !isInsideReview(it) }
+                .filter { file ->
+                    codeLines(file).any { line ->
+                        !line.trimStart().startsWith("import ") &&
+                            uses.containsMatchIn(line)
+                    }
+                }.map { it.name }
+        // Nothing but the main shell reaches for the window.
+        assertEquals(listOf("MainShell.kt"), users)
+        val shell = normalised(File(main, "ui/main/MainShell.kt"))
+        assertTrue(shell.contains("if (BuildConfig.REVIEW_PROMPT && review != null) { ReviewPromptHost("))
+        val factory = normalised(File(main, "ui/review/ReviewPromptHost.kt"))
         assertTrue(
             factory.substringAfter("fun rememberReviewHost").contains("if (!BuildConfig.REVIEW_PROMPT) return null"),
         )
-        val shell = File(main, "ui/main/MainShell.kt").readText()
-        assertTrue(shell.contains("if (BuildConfig.REVIEW_PROMPT && review != null)"))
     }
 
     @Test
@@ -95,15 +92,44 @@ class ReviewPromptReleaseTest {
         assertTrue(File("src/debug/java/com/tomessa/miff/ui/diagnostic/ReviewDebugCard.kt").exists())
         assertFalse(File(main, "ui/diagnostic").exists())
         assertTrue(
-            File(main, "ui/review/ReviewPromptHost.kt").readText().contains("debugForceAllowed = BuildConfig.DEBUG"),
+            normalised(File(main, "ui/review/ReviewPromptHost.kt")).contains("debugForceAllowed = BuildConfig.DEBUG"),
         )
+    }
+
+    @Test
+    fun theLibrariesActivity_isRemovedFromTheManifestOfTheBuildsThatAreDistributed() {
+        val manifest = normalised(File("src/release/AndroidManifest.xml"))
+        assertTrue(manifest.contains("com.google.android.play.core.common.PlayCoreDialogWrapperActivity"))
+        assertTrue(manifest.contains("""tools:node="remove""""))
+        // releaseLike has its own source set: it must be pointed at the same manifest.
+        assertTrue(gradle.contains("""manifest.srcFile("src/release/AndroidManifest.xml")"""))
+        assertTrue(normalised(File("../../.github/workflows/android.yml")).contains("PlayCoreDialogWrapperActivity"))
     }
 
     @Test
     fun theWindowKeepsItsMarker_forTheCheckOfTheBundle() {
         assertEquals("REVIEWPROMPTPROBE", REVIEW_PROMPT_PROBE)
-        val workflow = File("../../.github/workflows/android.yml").readText()
+        val workflow = normalised(File("../../.github/workflows/android.yml"))
         assertTrue("android.yml must look for the marker in the release bundle", workflow.contains("REVIEWPROMPTPROBE"))
+    }
+
+    // --- the feedback form -------------------------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun theFeedbackFormAddress_isOneBuildSetting_validatedAsHttps_andReadFromBuildConfigOnly() {
+        assertTrue(gradle.contains("""providers.gradleProperty("miff.feedbackFormUrl")"""))
+        assertTrue(gradle.contains("miff.feedbackFormUrl must be empty or an https:// address"))
+        assertTrue(gradle.contains("""buildConfigField("String", "FEEDBACK_FORM_URL""""))
+        val readers =
+            kotlinFiles(".")
+                .filter { file -> codeLines(file).any { it.contains("FEEDBACK_FORM_URL") } }
+                .map { it.name }
+        assertEquals(listOf("ReviewPromptHost.kt"), readers)
+        // Opened as it is: nothing is appended to the address, no extra is put in the intent.
+        val launcher = normalised(File(main, "data/review/StoreReview.kt"))
+        assertFalse(launcher.contains("putExtra"))
+        assertFalse(launcher.contains("appendQueryParameter"))
+        assertFalse(Regex("""openableUrl\([^)]*\) ?\+""").containsMatchIn(launcher))
     }
 
     // --- AV4: nothing leaves, nothing is logged --------------------------------------------------------------------------------------------------
@@ -111,7 +137,7 @@ class ReviewPromptReleaseTest {
     private val reviewFiles = kotlinFiles("ui/review", "domain/review", "data/review")
 
     @Test
-    fun noAnalyticsEvent_noLog_noNetworkAddress_inTheReviewCode() {
+    fun noAnalyticsEvent_noLog_noNetworkCode_inTheReviewCode() {
         val forbidden =
             listOf(
                 Regex("""analytics""", RegexOption.IGNORE_CASE),
@@ -132,36 +158,34 @@ class ReviewPromptReleaseTest {
     }
 
     @Test
-    fun theStarThatWasTouched_isNeverKept() {
-        // The store keeps four values: none of them is a rating.
-        val store = File(main, "data/review/ReviewStateStore.kt").readText()
-        assertFalse(
-            Regex(
-                """stars?|rating|note""",
-                RegexOption.IGNORE_CASE,
-            ).containsMatchIn(store.substringAfter("class SharedPreferencesReviewStateStore")),
-        )
-        val state =
-            File(
-                main,
-                "domain/review/ReviewPrompt.kt",
-            ).readText().substringAfter("data class ReviewState").substringBefore("/** What the screen")
-        assertFalse(Regex("""stars?|rating""", RegexOption.IGNORE_CASE).containsMatchIn(state))
+    fun whatThePhoneRemembers_isThreeValues_noneOfThemTheContentOfAnAnswer() {
+        val fields =
+            ReviewState::class.java.declaredFields
+                .map { it.name }
+                .filter { !it.startsWith("$") }
+                .toSet()
+        assertEquals(setOf("firstMiffSeenAtMillis", "lastShownAtMillis", "lastOutcome"), fields)
     }
 
     @Test
     fun theMailGoesThroughTheEmailApplicationOfThePerson_withTheSupportAddressAndNothingElse() {
-        // No permission is added (the merged manifests are checked by android.yml): the mail is the same mailto: as Settings, with no subject, no body, no extra.
-        val links = File(main, "ui/settings/ExternalLinks.kt").readText()
+        // No permission is added (the merged manifests are checked by android.yml): the same mailto: as Settings, with no subject, no body, no extra.
+        val links = normalised(File(main, "ui/settings/ExternalLinks.kt"))
         assertTrue(links.contains("""Uri.parse("mailto:" + BuildConfig.SUPPORT_EMAIL)"""))
-        assertTrue(File(main, "ui/review/ReviewPromptHost.kt").readText().contains("ExternalLinks::contactSupport"))
+        val mail = normalised(File(main, "data/review/StoreReview.kt"))
+        assertTrue(mail.contains(""""mailto:${'$'}{BuildConfig.SUPPORT_EMAIL}".toUri()"""))
+        assertFalse(mail.contains("EXTRA_"))
+        assertTrue(normalised(File(main, "ui/review/ReviewPromptHost.kt")).contains("SupportMail::open"))
     }
 
     @Test
     fun theStoreIsNeverToldWhatWasAnswered() {
         // The request of the store has no argument but the screen: no note, no text, no identifier.
-        val requester = File(main, "data/review/StoreReview.kt").readText()
-        assertTrue(requester.contains("fun interface StoreReviewRequester"))
-        assertTrue(requester.contains("suspend fun request(activity: Activity)"))
+        val requester = normalised(File(main, "data/review/StoreReview.kt"))
+        assertTrue(
+            requester.contains(
+                "fun interface StoreReviewRequester { suspend fun request(activity: Activity): Boolean }",
+            ),
+        )
     }
 }

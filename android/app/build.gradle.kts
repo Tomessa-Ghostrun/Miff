@@ -70,6 +70,17 @@ android {
             reviewPromptProperty == null || reviewPromptProperty == "true" || reviewPromptProperty == "false",
         ) { "miff.reviewPrompt must be true or false" }
         buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "false")
+        // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
+        // "miff.feedbackFormUrl" just below (empty for now; or -Pmiff.feedbackFormUrl=... for a test). Empty = the window shows its "Merci de nous le dire !" screen with
+        // "Nous écrire" instead. HTTPS only (checked here, and again in the app); it is read from BuildConfig ONLY (never from a received link) and opened as it is:
+        // nothing about the person (name, e-mail, Miff, position, identifier) is ever added to it, so do not put any in the address.
+        val feedbackFormUrl = providers.gradleProperty("miff.feedbackFormUrl").getOrElse("").trim()
+        require(
+            feedbackFormUrl.isEmpty() || Regex("""https://[^\s"\\$]+""").matches(feedbackFormUrl),
+        ) {
+            "miff.feedbackFormUrl must be empty or an https:// address (no spaces, quotes, backslashes or dollar signs)"
+        }
+        buildConfigField("String", "FEEDBACK_FORM_URL", "\"$feedbackFormUrl\"")
         // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
         buildConfigField("boolean", "STARTUP_METRICS", "false")
     }
@@ -135,6 +146,8 @@ android {
         getByName("releaseLike") {
             java.directories.add("src/release/java")
             kotlin.directories.add("src/release/java")
+            // The manifest of release too (it removes the activity of the review window's library, absent from these builds; see that file).
+            manifest.srcFile("src/release/AndroidManifest.xml")
         }
     }
 

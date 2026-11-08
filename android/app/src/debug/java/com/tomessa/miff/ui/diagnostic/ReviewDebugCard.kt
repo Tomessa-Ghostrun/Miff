@@ -8,8 +8,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.review.SharedPreferencesReviewStateStore
+import com.tomessa.miff.domain.review.FeedbackForm
 import com.tomessa.miff.domain.review.ReviewState
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.theme.colorTextPrimary
@@ -19,7 +21,7 @@ import java.util.Date
 
 /**
  * DEBUG BUILD ONLY. Lets the PM see the review window without waiting 7 or 90 days (docs/qa/checklists/avis-android-recette-pm.md): "show at the next return"
- * (the window then ignores the 7 / 90 days and the closures, but never covers the Update or the keyboard) and "reset" (the state starts from zero).
+ * (the window then ignores the 7 / 30 / 90 days, but never covers the Update, the keyboard or a message of the app) and "reset" (the state starts from zero).
  * The state is shown in clear: dates and counters, nothing personal. Neither exists in a release build (this file is in the debug source set).
  */
 @Composable
@@ -67,10 +69,19 @@ fun ReviewDebugCard() {
 }
 
 // Debug text, French only, never translated (the diagnostic screen is for the team).
+private fun form(): String =
+    if (FeedbackForm.openableUrl(BuildConfig.FEEDBACK_FORM_URL) !=
+        null
+    ) {
+        "renseigné (ouvert dans le navigateur)"
+    } else {
+        "non renseigné (écran « Merci de nous le dire ! »)"
+    }
+
 private fun describe(state: ReviewState): String {
     fun date(millis: Long?): String = millis?.let { DateFormat.getDateTimeInstance().format(Date(it)) } ?: "jamais"
     return "première Miff vue : ${date(
         state.firstMiffSeenAtMillis,
     )} ; dernière apparition : ${date(state.lastShownAtMillis)} ; " +
-        "issue : ${state.lastOutcome ?: "aucune"} ; fermetures : ${state.closures}"
+        "issue : ${state.lastOutcome ?: "aucune"} ; formulaire externe : ${form()}"
 }

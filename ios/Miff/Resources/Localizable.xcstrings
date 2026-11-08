@@ -9843,30 +9843,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "I love it! (5 stars)"
+            "value": "I love it!"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "J'adore ! (5 étoiles)"
+            "value": "J'adore !"
           }
         }
       }
     },
-    "review_star_a11y": {
+    "review_open_failed": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Star %1$d of 5"
+            "value": "Nothing could be opened on your phone. You can try again in a moment."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Étoile %1$d sur 5"
+            "value": "Rien n'a pu s'ouvrir sur ton téléphone. Tu peux réessayer dans un instant."
           }
         }
       }
@@ -9877,13 +9877,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "That really makes us happy. If you feel like it, you can say it in the app store too."
+            "value": "That really makes us happy. If you feel like it, leave us a review and a comment in the app store."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ça nous fait vraiment plaisir. Si tu en as envie, tu peux aussi le dire dans la boutique d'applications."
+            "value": "Ça nous fait vraiment plaisir. Si tu en as envie, laisse-nous un avis et un commentaire dans la boutique d'applications."
           }
         }
       }
