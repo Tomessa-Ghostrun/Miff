@@ -7,6 +7,23 @@ import CoreGraphics
 // forme : l'échelle et l'inclinaison de la tache se font autour de son centre, la dérive verticale s'applique à toute la bulle.
 // Miroir d'Android (mêmes valeurs).
 enum BubbleLayout {
+    /// Le pictogramme d'une bulle selon sa couleur (la couleur n'est jamais seule pour l'orange, le rouge et le neutre). Décision du PM
+    /// (2026-11-08, build 22) : AUCUN pictogramme sur une bulle VERTE (« Tout va bien » parle de lui-même) ; l'orange garde l'horloge, le
+    /// rouge le point d'exclamation, le neutre le sablier. nil = pas de disque, et le contenu reste centré dans la tache.
+    static func pictogram(for level: StatusLevel) -> String? {
+        switch level {
+        case .orange:
+            return "clock"
+        case .red:
+            return "exclamationmark"
+        case .neutral:
+            return "hourglass"
+        case .green:
+            return nil
+        }
+    }
+
+
     /// Marge de chaque côté du contenu (identique à gauche et à droite).
     static let horizontalInset: CGFloat = 52
 

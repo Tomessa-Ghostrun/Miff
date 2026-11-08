@@ -11,6 +11,9 @@ Modifié :
 - **Étiquettes du Feed par catégorie du lieu** : Maison « À la maison », Travail « Au travail », École « À l'école », Sport « Au sport », **Chez un proche** « Chez un proche » (nouveau), Loisir et Autre : le nom du lieu seul (avant : « À {nom} »). EN : At home / At work / At school / **At the gym** (avant « At the sports club ») / At a loved one's. Clés ajoutées `feed_label_at_relative`, `feed_place_noun_relative` ; valeur de `feed_label_at_place` changée en « %@ ». Aucune lecture Firestore de plus.
 - **Nom de lieu vide** : un nom vide ou fait d'espaces (ou entouré d'espaces) est nettoyé, puis remplacé par « Dans un lieu de confiance » / « A quitté un lieu de confiance » (comme Android).
 - **Information du détail d'un lieu de danger** (`place_detail_info_danger`) : « Quand tu es dans cette zone et que tu n'as pas donné de nouvelles depuis plus d'une heure, ta Miff voit ton statut en rouge. » (EN reformulé de même) ; la phrase sur le créateur seul est retirée de ce texte, comme Android.
+- **Plus de pictogramme sur la bulle verte** (décision du PM, 2026-11-08, build 22) : la bulle verte n'a que ses textes, centrés ; orange, rouge et neutre gardent leur pictogramme.
+- **Bulle d'incitation de l'Update** : elle suit la couleur du bouton central, sans exception de zone de danger (en zone de danger : rouge dès l'entrée, bulle masquée pendant 1 h de vert après une update postérieure, puis elle revient).
+- **Fusion de `main`** (PR #106 et #111 fusionnées) : conflit de `CHANGELOG.md` résolu en gardant les deux blocs.
 - **Bulle de la Miff centrée** : titre, lignes et bouton centrés dans la tache, marges égales (voir `BubbleLayout`) ; écart avec les maquettes (texte à gauche) assumé sur retour du PM.
 
 Ajouté : `BubbleLayoutTests` (géométrie), cas aux bornes de `StatusColorTests`, `FeedCardsTests`, `FeedTextsTests`.

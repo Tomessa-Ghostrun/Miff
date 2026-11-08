@@ -73,6 +73,20 @@ final class BubbleLayoutTests: XCTestCase {
         }
     }
 
+    func testNoPictogramOnAGreenBubbleTheOthersKeepTheirs() {
+        XCTAssertNil(BubbleLayout.pictogram(for: .green), "décision du PM, 2026-11-08 : pas de symbole sur la bulle verte")
+        XCTAssertEqual(BubbleLayout.pictogram(for: .orange), "clock")
+        XCTAssertEqual(BubbleLayout.pictogram(for: .red), "exclamationmark")
+        XCTAssertEqual(BubbleLayout.pictogram(for: .neutral), "hourglass")
+    }
+
+    func testEveryAllGoodBubbleIsGreenSoItHasNoPictogram() {
+        let allGood = Bubble.allGood(latestNews: nil, answered: nil, total: nil)
+
+        XCTAssertEqual(allGood.level, .green)
+        XCTAssertNil(BubbleLayout.pictogram(for: allGood.level))
+    }
+
     func testWithReducedMotionNothingMoves() {
         XCTAssertFalse(BubbleMotion.enabled(reduceMotion: true, active: true))
         XCTAssertFalse(BubbleMotion.enabled(reduceMotion: false, active: false))
