@@ -78,6 +78,19 @@ if [ "$location_keys" = "$expected_location_keys" ]; then
 else
   fail "Info.plist : clés de localisation « ${location_keys} » au lieu des deux attendues (NSLocationAlwaysAndWhenInUseUsageDescription, NSLocationWhenInUseUsageDescription)."
 fi
+# UPDATE-3 : la caméra du viseur, EXACTEMENT une clé NSCamera* (NSCameraUsageDescription), et AUCUNE clé de photothèque : la photo est prise
+# en mémoire et n'est jamais écrite dans la photothèque.
+camera_keys="$(plutil -p "$plist" | grep -o -E 'NSCamera[A-Za-z]*' | sort -u | tr '\n' ' ')"
+if [ "$camera_keys" = "NSCameraUsageDescription " ]; then
+  report "Info.plist : exactement la clé de caméra NSCameraUsageDescription (OK)"
+else
+  fail "Info.plist : clés de caméra « ${camera_keys} » au lieu de NSCameraUsageDescription seule."
+fi
+if plutil -p "$plist" | grep -q -E 'NSPhotoLibrary'; then
+  fail "Info.plist : une clé de photothèque (NSPhotoLibrary*) est déclarée : la photo n'est jamais écrite dans la photothèque."
+else
+  report "Info.plist : aucune clé de photothèque (OK)"
+fi
 if plutil -p "$plist" | grep -q -E 'UIBackgroundModes|NSAppTransportSecurity'; then
   fail "L'Info.plist du build contient un mode d'arrière-plan (UIBackgroundModes) ou une exception ATS."
 else
