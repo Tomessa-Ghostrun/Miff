@@ -68,7 +68,10 @@ struct ViewfinderView: View {
             let aspect = UpdatePhotoFormat.boundedAspect(widthPx: Int(full.width), heightPx: Int(full.height))
             ZStack {
                 background(full: full, aspect: aspect)
+                // Les boutons restent entièrement au-dessus de la barre d'onglets (sa hauteur est mesurée, jamais écrite en dur) ; le
+                // viseur, lui, reste plein écran SOUS la barre.
                 controls(aspect: aspect)
+                    .aboveTabBar()
             }
         }
         .onAppear {
