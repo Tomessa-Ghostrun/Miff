@@ -52,9 +52,9 @@ import com.tomessa.miff.data.Test2Result
 import com.tomessa.miff.domain.auth.CredentialsInputProblem
 import com.tomessa.miff.domain.auth.SignInFailure
 import com.tomessa.miff.domain.diagnostic.EXPECTED_FIREBASE_PROJECT_ID
-import com.tomessa.miff.domain.diagnostic.OfferState
 import com.tomessa.miff.domain.diagnostic.RulesProbeOutcome
 import com.tomessa.miff.domain.diagnostic.isExpectedProject
+import com.tomessa.miff.domain.entitlement.OfferState
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.splash.LocalSplashCovering
