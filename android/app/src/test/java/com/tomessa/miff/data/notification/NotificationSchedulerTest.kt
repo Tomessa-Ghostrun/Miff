@@ -6,6 +6,7 @@ import com.tomessa.miff.domain.feed.MemberStatus
 import com.tomessa.miff.domain.notification.DailyCounters
 import com.tomessa.miff.domain.notification.ItemState
 import com.tomessa.miff.domain.notification.NotificationItem
+import com.tomessa.miff.domain.notification.NotificationPolicy
 import com.tomessa.miff.domain.notification.NotificationPreferences
 import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.notification.NotifiedKeys
@@ -618,6 +619,148 @@ class NotificationSchedulerTest {
             assertEquals(listOf(NotificationType.N4), presenter.shown.map { it.type })
             assertFalse(presenter.shown.single().quiet)
         }
+
+    // --- N6: I entered a danger zone (vectors V1 to V10) ------------------------------------------------------------------------------------------
+
+    private val zoneId = "z1"
+    private val minute = 60L * 1000L
+
+    private fun n6Lines() = lines().filter { it.type == NotificationType.N6 }
+
+    private fun n6Shown() = presenter.shown.filter { it.type == NotificationType.N6 }
+
+    @Test
+    fun v1_iEnterADangerZone_n6IsShownAtOnce_theRemindersToMeAreCancelled_nothingIsReadFromTheServer() {
+        feedSees(out(me, at(13, 40)), trusted("x"))
+        assertEquals(setOf(NotificationType.N1, NotificationType.N2), alarms.map.keys)
+        now = at(14, 10)
+        // The detection says both: my presence is now in_risk, and I entered the zone.
+        scheduler.onMyPresence(miff, PresenceValue.IN_RISK, now, setLastUpdate = false)
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertTrue("N1 and N2 are cancelled (no reminder to me in a danger zone, decision Q27)", alarms.map.isEmpty())
+        val shown = n6Shown().single()
+        assertEquals("n6|$miff|$zoneId|$now", shown.key)
+        assertFalse("by day: with sound", shown.quiet)
+        assertEquals(ItemState.SHOWN, n6Lines().single().state)
+        assertEquals(miff, n6Lines().single().miffId)
+        assertEquals("N6 reads nothing from the server", 0, reader.reads)
+        assertEquals(1, ledger.counters.count(NotificationType.N6))
+    }
+
+    @Test
+    fun v5_aZoneLeftAndEnteredAgainWithinSixtyMinutes_givesOneNotification_afterThatAnotherOne() {
+        assertEquals(60 * minute, NotificationPolicy.N6_REARM_MILLIS)
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        now += 30 * minute
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertEquals(1, n6Shown().size)
+        now += 29 * minute // 59 minutes after the first
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertEquals(1, n6Shown().size)
+        // Past the 60 minutes (counted from the last notification: 61 minutes later).
+        now += 62 * minute
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertEquals(2, n6Shown().size)
+        // Another zone is not held back by the first.
+        scheduler.onEnteredDanger(me, miff, "z2", now + 1)
+        assertEquals(3, n6Shown().size)
+    }
+
+    @Test
+    fun theSameKeyNeverTwice_andAKeyIsPerMiffAndZone() {
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertEquals(1, n6Shown().size)
+        scheduler.onEnteredDanger(me, "miff-2", zoneId, now)
+        assertEquals("another Miff, same zone identifier: its own notification", 2, n6Shown().size)
+    }
+
+    @Test
+    fun v6_anEntryAtTwoInTheMorning_isShownQuietly() {
+        now = at(2, 0)
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertTrue(n6Shown().single().quiet)
+    }
+
+    @Test
+    fun v7_theFourthEntryOfTheDay_isOnlyALineOfTheCentre_theCapIsThreeOutsideTheTotalOfSix() {
+        // Three zones in a row, then a fourth: three shown, the fourth silent.
+        listOf("a", "b", "c", "d").forEachIndexed { i, zone ->
+            scheduler.onEnteredDanger(me, miff, zone, now + i)
+        }
+        assertEquals(3, n6Shown().size)
+        val lastLine = n6Lines().first { it.id.endsWith("|d|${now + 3}") }
+        assertEquals(ItemState.SILENT, lastLine.state)
+        // N6 does not count against the total of six, and the six do not block N6.
+        ledger.counters =
+            DailyCounters(
+                "2026-11-08",
+                mapOf(
+                    NotificationType.N1 to 2,
+                    NotificationType.N2 to 2,
+                    NotificationType.N3 to 1,
+                    NotificationType.N4 to 1,
+                ),
+            )
+        presenter.shown.clear()
+        scheduler.onEnteredDanger(me, "miff-9", "e", now + 10)
+        // The counters above were replaced by a state with the six of N1 to N4 reached and no N6: N6 is outside that total, so it is still shown.
+        assertEquals(1, n6Shown().size)
+    }
+
+    @Test
+    fun v8_theAppInFront_noSystemNotification_aSilentLine() {
+        foreground = true
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertTrue(n6Shown().isEmpty())
+        assertEquals(ItemState.SILENT, n6Lines().single().state)
+        assertEquals("a silent line does not use up the cap", 0, ledger.counters.count(NotificationType.N6))
+    }
+
+    @Test
+    fun v9_theSwitchOff_theGeneralSwitchOff_thePermissionRefused_orNoSession_nothingAtAll() {
+        settings.setType(NotificationType.N6, false)
+        scheduler.onEnteredDanger(me, miff, "a", now)
+        settings.setType(NotificationType.N6, true)
+        settings.setEnabled(false)
+        scheduler.onEnteredDanger(me, miff, "b", now + 1)
+        settings.setEnabled(true)
+        permission = false
+        scheduler.onEnteredDanger(me, miff, "c", now + 2)
+        permission = true
+        session = false
+        scheduler.onEnteredDanger(me, miff, "d", now + 3)
+        scheduler.onEnteredDanger("someone-else", miff, "e", now + 4)
+        session = true
+        assertTrue(n6Shown().isEmpty())
+        assertTrue("not even a line of the centre", n6Lines().isEmpty())
+        // A switch off does not use up the re-arm: turned back on, the very next entry is told.
+        scheduler.onEnteredDanger(me, miff, "a", now + 5)
+        assertEquals(1, n6Shown().size)
+    }
+
+    @Test
+    fun v10_aFreeAccountMemberOfAMiffWhoseCreatorPlacedTheZone_receivesN6_likeAnyone() {
+        // N6 does not look at the plan of the account: the zone applies to every member of the Miff, and so does the notification.
+        scheduler.onEnteredDanger(me, miff, "zone-of-the-creator", now)
+        assertEquals(1, n6Shown().size)
+    }
+
+    @Test
+    fun n6_needsNoSnapshotNoServer_andLeavesTheRemindersOfOtherMiffsAlone() {
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertNull(snapshots.value)
+        assertEquals(0, reader.reads)
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun n6_hasNoAlarm_itIsImmediate() {
+        feedSees(trusted(me), out("x", at(13, 40)))
+        scheduler.onEnteredDanger(me, miff, zoneId, now)
+        assertTrue(alarms.map.keys.none { it == NotificationType.N6 })
+        assertTrue(NotificationScheduler.PLANNED_TYPES.none { it == NotificationType.N6 })
+    }
 
     // --- Privacy ---------------------------------------------------------------------------------------------------------------------------
 

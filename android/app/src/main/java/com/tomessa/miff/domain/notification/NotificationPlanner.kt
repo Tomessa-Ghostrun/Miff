@@ -37,6 +37,9 @@ object NotificationPolicy {
     /** A key already notified is never notified again; it is remembered this long (section 20.2). */
     const val KEEP_KEYS_MILLIS = 48L * 60L * 60L * 1000L
 
+    /** N6: a danger zone left and entered again within this time (a geofence that oscillates) gives ONE notification (section 20.7). */
+    const val N6_REARM_MILLIS = 60L * 60L * 1000L
+
     /** Daily caps of the local day (decision Q30): per type and in all, for N1 to N4; N6 has its own, outside the total. */
     const val MAX_PER_TYPE_PER_DAY = 2
     const val MAX_TOTAL_PER_DAY = 6

@@ -137,6 +137,7 @@ import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.tracking.DetectionJournal
+import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.startup.StartupTrace
 import com.tomessa.miff.ui.main.TabRequests
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -457,8 +458,21 @@ class AppContainer(
             suspended = { accountDeletionMarker.read()?.uid?.let { it == authGateway.currentUid } == true },
             // NOTIF-4A: a departure or an arrival of mine moves the reminders at once (local; nothing read or written).
             presenceListener =
-                PresenceListener { miffId, presence, atMillis, setLastUpdate ->
-                    notificationScheduler.onMyPresence(miffId, presence, atMillis, setLastUpdate)
+                object : PresenceListener {
+                    override fun onMyPresence(
+                        miffId: String,
+                        presence: PresenceValue,
+                        atMillis: Long,
+                        setLastUpdate: Boolean,
+                    ) = notificationScheduler.onMyPresence(miffId, presence, atMillis, setLastUpdate)
+
+                    // N6 (NOTIF-7A): immediate and local, in the few seconds of the receiver of the geofencing; nothing is read or written.
+                    override fun onEnteredDanger(
+                        myUid: String,
+                        miffId: String,
+                        placeId: String,
+                        atMillis: Long,
+                    ) = notificationScheduler.onEnteredDanger(myUid, miffId, placeId, atMillis)
                 },
         )
     }
