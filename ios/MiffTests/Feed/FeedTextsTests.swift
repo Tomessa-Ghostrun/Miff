@@ -94,17 +94,16 @@ final class FeedTextsTests: XCTestCase {
     func testTheLabelOfEachCategoryInFrenchAndEnglish() throws {
         let fr = try french()
         let en = try english()
-        let expected: [(PlaceKind, String, String)] = [
-            (.home, "À la maison", "At home"),
-            (.work, "Au travail", "At work"),
-            (.school, "À l'école", "At school"),
-            (.sport, "Au sport", "At the gym"),
-            (.relative, "Chez un proche", "At a loved one's")
+        let frLabels: [PlaceKind: String] = [
+            .home: "À la maison", .work: "Au travail", .school: "À l'école", .sport: "Au sport", .relative: "Chez un proche"
+        ]
+        let enLabels: [PlaceKind: String] = [
+            .home: "At home", .work: "At work", .school: "At school", .sport: "At the gym", .relative: "At a loved one's"
         ]
 
-        for (kind, frText, enText) in expected {
-            XCTAssertEqual(fr.label(.at(.category(kind))), frText)
-            XCTAssertEqual(en.label(.at(.category(kind))), enText)
+        for kind in [PlaceKind.home, .work, .school, .sport, .relative] {
+            XCTAssertEqual(fr.label(.at(.category(kind))), frLabels[kind])
+            XCTAssertEqual(en.label(.at(.category(kind))), enLabels[kind])
         }
         XCTAssertEqual(fr.label(.at(.named("Salle Rivoli"))), "Salle Rivoli")
         XCTAssertEqual(en.label(.at(.named("Salle Rivoli"))), "Salle Rivoli")

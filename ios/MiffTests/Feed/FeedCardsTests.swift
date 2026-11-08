@@ -79,7 +79,7 @@ final class FeedCardsTests: XCTestCase {
     func testLabelsAtAndLeftAPlaceByCategoryByNameAndWhenTheyAreUnknown() {
         let places = [
             feedPlace("p1", category: .home),
-            feedPlace("p2", name: "Chez Mamie", category: .relative)
+            feedPlace("p2", name: "Chez Mamie", category: .other)
         ]
         let members = [feedMember("a"), feedMember("b"), feedMember("c"), feedMember("d"), feedMember("me")]
         let statuses = [

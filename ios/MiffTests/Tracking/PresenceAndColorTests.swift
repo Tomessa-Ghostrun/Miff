@@ -218,7 +218,8 @@ final class StatusColorTests: XCTestCase {
     func testInATrustedZoneAlwaysGreenWhateverTheAgeOfTheLastUpdate() {
         XCTAssertEqual(level(facts(presence: .inTrusted), after: 10 * 60 * minute), .green)
         // La zone de confiance l'emporte toujours (une personne dans les deux zones est `in_trusted`, jamais rouge).
-        XCTAssertEqual(level(facts(presence: .inTrusted, lastUpdateAt: reference - 5 * 60 * minute), after: 3 * 60 * minute), .green)
+        let staleUpdate = facts(presence: .inTrusted, lastUpdateAt: reference - 5 * 60 * minute)
+        XCTAssertEqual(level(staleUpdate, after: 3 * 60 * minute), .green)
     }
 
     func testTheDangerZoneConstantIsOneHour() {
@@ -243,7 +244,11 @@ final class StatusColorTests: XCTestCase {
 
     func testInADangerZoneARecentEntryDoesNotReplaceTheLastUpdate() {
         // Entrée en zone de danger il y a 5 min, mais dernier signal « tout va bien » il y a 3 h : rouge.
-        let inDanger = facts(presence: .inRisk, presenceAt: reference - 5 * minute, lastUpdateAt: reference - 3 * 60 * minute)
+        let inDanger = facts(
+            presence: .inRisk,
+            presenceAt: reference - 5 * minute,
+            lastUpdateAt: reference - 3 * 60 * minute
+        )
 
         XCTAssertEqual(level(inDanger, after: 0), .red)
     }

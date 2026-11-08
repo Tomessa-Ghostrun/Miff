@@ -16,7 +16,10 @@ final class BubbleLayoutTests: XCTestCase {
     }
 
     func testTheContentIsCentredWhateverItsSizeFromOneLineToTheLargestTextSize() {
-        let sizes = [CGSize(width: 150, height: 40), CGSize(width: 239, height: 120), CGSize(width: 239, height: 175), CGSize(width: 239, height: 400)]
+        let sizes = [
+            CGSize(width: 150, height: 40), CGSize(width: 239, height: 120),
+            CGSize(width: 239, height: 175), CGSize(width: 239, height: 400)
+        ]
 
         for content in sizes {
             let outer = BubbleLayout.outerSize(content: content)
