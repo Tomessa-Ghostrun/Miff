@@ -442,6 +442,71 @@ class AccountDeletionControllerTest {
         }
 
     @Test
+    fun signingInAgain_afterTheSessionWasClosed_takesTheDeletionUpOnTheSameInstance_fromNeedsSignIn() =
+        runTest {
+            procedure.results += listOf(DeletionRun.SessionExpired, DeletionRun.Completed)
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.NeedsSignIn, controller.state.value)
+            // "Me reconnecter": session closed, marker kept; the controller must not stay on NeedsSignIn.
+            controller.signInAgain()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Idle, controller.state.value)
+            assertNotNull(marker.stored)
+            // The same account signs in again: the host sees Idle and calls resume() on THIS instance.
+            controller.resume()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Done(false), controller.state.value)
+            assertEquals(2, procedure.runs)
+            assertEquals(listOf("uid-1"), session.erased)
+        }
+
+    @Test
+    fun signingInAgain_afterTheCalmStop_takesTheDeletionUpOnTheSameInstance_fromStuck() =
+        runTest {
+            procedure.results +=
+                listOf(DeletionRun.Failed, DeletionRun.Failed, DeletionRun.Failed, DeletionRun.Completed)
+            val controller = controller()
+            controller.start()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Stuck, controller.state.value)
+            controller.signInAgain()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Idle, controller.state.value)
+            controller.resume()
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Done(false), controller.state.value)
+        }
+
+    @Test
+    fun ifTheMarkerCannotBeWritten_theDeletionDoesNotStart_nothingIsTouched() =
+        runTest {
+            marker.writeSucceeds = false
+            val controller = controller()
+            assertEquals(false, controller.start())
+            advanceUntilIdle()
+            assertEquals(0, session.begins)
+            assertEquals(0, procedure.runs)
+            // The refused value stayed "in memory" in the double (as in SharedPreferences): the controller removed it, read() is empty.
+            assertNull(marker.read())
+            assertEquals(AccountDeletionState.Idle, controller.state.value)
+            // "Réessayer" and the re-authentication launch nothing without a marker on the disk; nor does a resume.
+            controller.retry()
+            controller.reauthenticated()
+            controller.resume()
+            advanceUntilIdle()
+            assertEquals(0, procedure.runs)
+            assertEquals(0, session.begins)
+            assertEquals(AccountDeletionState.Idle, controller.state.value)
+            // The disk answers again: the person can start, and it goes through.
+            marker.writeSucceeds = true
+            assertEquals(true, controller.start())
+            advanceUntilIdle()
+            assertEquals(AccountDeletionState.Done(false), controller.state.value)
+        }
+
+    @Test
     fun afterTheCalmStop_retryTakesItUpAgain_andItCanEnd() =
         runTest {
             procedure.results +=

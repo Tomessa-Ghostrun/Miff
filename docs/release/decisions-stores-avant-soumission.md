@@ -382,3 +382,7 @@ Rappel (détail et numérotation d'origine dans ce dossier) : lire et trancher l
 - l'application réelle de ces règles par les relecteurs : mes probabilités de rejet sont des estimations qualitatives, pas des mesures.
 
 Ces règles changent : les relire avant chaque soumission.
+
+## Suppression de compte : écrans bloquants (risque assumé par le PM, 2026-11-07)
+
+**RISQUE ASSUMÉ par le PM le 2026-11-07 (ex-point ouvert de la revue de la PR #116) : un compte bloqué avant les Réglages ne peut pas se supprimer dans l'app.** Un compte arrêté sur l'écran de localisation bloquant (`PermissionGate`), sur le panneau de consentement ou sur une étape du profil n'a que « Se déconnecter » : il ne peut pas se supprimer dans l'app tant qu'il n'a pas passé ces écrans. **Décision du PM : la roue crantée reste UNIQUEMENT sur le Profil et sur les écrans sans Miff déjà décidés (écran de choix) ; pas de roue ni de lien de suppression sur les écrans bloquants.** Risque pour les stores : Google Play (suppression lançable dans l'app pour les comptes créés dans l'app) et Apple 5.1.1(v) peuvent le relever à la revue et refuser ou demander un correctif. Parade prévue : l'URL web de suppression de compte et l'adresse e-mail de demande (§5.12), déclarées dans les fiches des stores (Google Play : champ « URL de suppression de compte » du formulaire de sécurité des données ; App Store : texte de revue). Aucun changement de code.
