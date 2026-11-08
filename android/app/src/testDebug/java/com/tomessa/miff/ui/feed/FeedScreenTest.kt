@@ -283,7 +283,7 @@ class FeedScreenTest {
         val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))
         feed(ready(orange), actions = FeedActions(onMessage = { sent = it }))
         shoot("feed-orange")
-        composeRule.onNodeWithText("Thomas a quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Thomas a quitté la maison à 14 h 30".t()).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_bubble_message_action)).performClick()
         assertEquals("+33612345678", sent)
     }
@@ -292,7 +292,7 @@ class FeedScreenTest {
     fun bubble_redOfAge_usesAnAbsoluteTime() {
         feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 5 * hour)))))
         shoot("feed-red-age")
-        composeRule.onNodeWithText("Pas de nouvelles de Thomas depuis 14 h 00".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Pas de nouvelles de Thomas depuis 12 h 00".t()).assertIsDisplayed()
     }
 
     @Test
@@ -317,7 +317,7 @@ class FeedScreenTest {
     @Test
     fun bubble_forMe_orangeAndRedOfAge_speakToMe() {
         feed(ready(content(trio, mapOf(me to status(PresenceValue.OUT, "p1", 150 * minute), "t" to status()))))
-        composeRule.onNodeWithText("Tu as quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Tu as quitté la maison à 14 h 30".t()).assertIsDisplayed()
     }
 
     @Test
@@ -334,7 +334,7 @@ class FeedScreenTest {
         feed(ready(two))
         shoot("feed-carousel")
         // The red one (Amandine) comes first.
-        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 14 h 00".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 12 h 00".t()).assertIsDisplayed()
         val carousel =
             composeRule.onNode(
                 androidx.compose.ui.test.SemanticsMatcher
@@ -356,7 +356,7 @@ class FeedScreenTest {
                 .action()
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Thomas a quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Thomas a quitté la maison à 14 h 30".t()).assertIsDisplayed()
     }
 
     @Test
