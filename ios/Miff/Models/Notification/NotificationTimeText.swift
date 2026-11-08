@@ -19,6 +19,7 @@ enum NotificationTimeText {
 
     /// Ce que lit VoiceOver pour une ligne : « {titre}, {heure}, non lu » (ticket §7.2). L'état n'est jamais porté par la seule pastille.
     static func spokenLabel(title: String, time: String, unread: Bool) -> String {
-        unread ? L10n.format("notif_item_unread_a11y", title, time) : L10n.format("notif_item_read_a11y", title, time)
+        let parts = unread ? [title, time, L10n.string("notif_center_unread_a11y")] : [title, time]
+        return parts.joined(separator: ", ")
     }
 }

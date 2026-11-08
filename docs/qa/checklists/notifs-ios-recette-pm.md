@@ -30,7 +30,7 @@
 - [ ] Éteignez l'interrupteur général : les cinq interrupteurs et la nuit calme sont **grisés mais gardent leur valeur** ; rallumez : tout est revenu comme avant.
 - [ ] Coupez les notifications dans Réglages iOS puis revenez : « **Coupées dans ton téléphone** », interrupteur **grisé et éteint** (il ne prétend jamais autoriser), bouton « Ouvrir les réglages du téléphone » (ouvre Réglages iOS > Miff) et lien « Comment les réactiver ? » (page « Notifications coupées », trois étapes, ton calme).
 - [ ] Installation neuve avec « Plus tard » : « **Pas encore activées** », interrupteur éteint ; l'allumer ouvre **l'amorce** (puis la fenêtre du système si « Autoriser »).
-- [ ] Réglages > Confidentialité : le texte sur les notifications dit que **le téléphone programme les notifications, aucun serveur ne les envoie**, avec le même état.
+- [ ] Réglages > Confidentialité : le texte sur les notifications dit que **le téléphone prépare les notifications, Miff n'en envoie aucune à tes proches**, avec le même état.
 - [ ] Quittez et rouvrez l'app : vos choix sont **gardés**. Déconnectez-vous puis reconnectez-vous avec un autre compte : il repart des **valeurs par défaut** (tout actif).
 
 ## Partie C — Centre de notifications (PR A) — 8 min

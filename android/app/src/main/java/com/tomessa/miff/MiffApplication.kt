@@ -45,7 +45,11 @@ class MiffApplication : Application() {
             // the engine is created on the first call, and it does nothing unless the person agreed and gave "Toujours".
             registerActivityLifecycleCallbacks(
                 ForegroundObserver(
-                    onForeground = { container.trackingLooksAgain(TrackingEngine.Reason.OPENED) },
+                    onForeground = {
+                        container.trackingLooksAgain(TrackingEngine.Reason.OPENED)
+                        // NOTIF-1A: the names of the channels follow the language of the app (the system keeps the ones written at creation).
+                        container.ensureNotificationChannels()
+                    },
                     onBackground = { container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED) },
                 ),
             )

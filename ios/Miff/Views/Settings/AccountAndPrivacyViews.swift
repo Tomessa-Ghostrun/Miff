@@ -163,8 +163,8 @@ struct PrivacyView: View {
     @ViewBuilder
     private var notifications: some View {
         SettingsSectionTitle(key: "settings_privacy_notifications_title")
-        // NOTIF-P0 : les rappels existent (l'ancien texte « arrivent bientôt, rien n'est envoyé » est devenu faux). Texte propre à iOS.
-        SettingsBody(text: L10n.string("ios_notif_privacy_body"))
+        // NOTIF-P0 : les rappels existent (l'ancien texte « arrivent bientôt, rien n'est envoyé » est devenu faux). Texte commun avec Android.
+        SettingsBody(text: L10n.string("notif_privacy_body"))
         if let permission {
             SettingsBody(text: L10n.string(permission.notificationsStatusKey))
         }
