@@ -70,8 +70,10 @@ struct NotificationServices {
     func connect(directory: MiffDirectory, awaiting: AwaitingAgreement) {
         reconciler.configure { deps in
             deps.activeMiffId = {
+                // Annuaire lu : sans Miff active (plus aucune Miff), une valeur qui ne correspond à aucune Miff annule les rappels.
+                // Annuaire pas encore lu (réveil en arrière-plan) : nil, et l'instantané dit la Miff qu'il suivait.
                 if case .ready(let ready) = directory.state {
-                    return ready.activeId
+                    return ready.activeId ?? ""
                 }
                 return nil
             }
