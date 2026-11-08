@@ -573,7 +573,6 @@ class AppContainer(
                         awaitingAgreement,
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
-                        // The next account starts the review window from zero.
                         SessionTeardown { reviewStateStore.clear() },
                         placeNotices,
                         addressSearch,
