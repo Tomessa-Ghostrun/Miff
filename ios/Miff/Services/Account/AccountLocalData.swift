@@ -12,6 +12,9 @@ struct AccountLocalStores {
     let trackingLocal: TrackingLocalStore
     /// Le journal local de la détection (builds Debug et Internal seulement ; rien en publication) : même raison.
     let detectionJournal: DetectionJournal
+    /// Le carnet de l'Update (`update-ledger.json`) : la note de la photo envoyée par ce compte (`photoSentUid`, `photoSentAt`). La MÊME instance
+    /// que celle de l'Update (elle garde l'état en mémoire : une autre instance serait écrasée à la prochaine écriture).
+    let updateLedger: PublishLedger
 }
 
 /// Ce que la suppression d'un compte efface du téléphone POUR CE COMPTE (AUTH-5c, ticket §5.10), en plus de ce que la fin d'une session
@@ -40,7 +43,9 @@ enum AccountLocalData {
             { _ in await stores.notifications.removeAll() },
             // La copie locale du suivi et le journal de détection, directement.
             { _ in stores.trackingLocal.clear() },
-            { _ in stores.detectionJournal.clear() }
+            { _ in stores.detectionJournal.clear() },
+            // La note de la photo de l'Update de CE compte (la déconnexion simple, elle, la garde : la photo reste en base).
+            { uid in stores.updateLedger.eraseAccountData(uid: uid) }
         ]
     }
 }
