@@ -32,6 +32,7 @@ struct FeedTab: View {
     @ObservedObject private var awaiting: AwaitingAgreement
     @ObservedObject private var notificationCenter: NotificationCenterService
     @ObservedObject private var secondChance: NotificationSecondChanceViewModel
+    private let reconciler: NotificationReconciler
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @State private var noticeVisible = false
@@ -46,6 +47,7 @@ struct FeedTab: View {
         let network = environment.network
         let awaitingAgreement = environment.awaitingAgreement
         let secondChance = environment.notificationSecondChance
+        let reconciler = environment.notifications.reconciler
         _model = StateObject(
             wrappedValue: FeedViewModel(
                 dependencies: FeedDependencies(
@@ -60,6 +62,8 @@ struct FeedTab: View {
                         if event.myStatus?.hasPhoto == true {
                             secondChance.noteFirstUpdate()
                         }
+                        // NOTIF-P0 : l'instantané des faits de couleur est réécrit et les rappels N1 à N4 sont réconciliés.
+                        Task { await reconciler.feedStatusesLoaded(event) }
                     }
                 )
             )
@@ -67,6 +71,7 @@ struct FeedTab: View {
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
         _notificationCenter = ObservedObject(wrappedValue: environment.notifications.center)
         _secondChance = ObservedObject(wrappedValue: secondChance)
+        self.reconciler = reconciler
     }
 
     private var running: Bool {
@@ -94,6 +99,10 @@ struct FeedTab: View {
                 if key.running {
                     await model.observe(miffId: key.miffId)
                 }
+            }
+            // Une autre Miff devient la Miff active : les rappels de l'ancienne sont annulés aussitôt.
+            .task(id: key.miffId) {
+                await reconciler.reconcile()
             }
             // La carte « deuxième chance » relit l'état du téléphone à l'ouverture et au retour dans l'app (la personne a pu changer
             // l'autorisation dans les Réglages d'iOS).

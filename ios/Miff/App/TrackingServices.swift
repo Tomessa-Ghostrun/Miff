@@ -39,7 +39,8 @@ struct TrackingServices {
         gateway: AuthGateway,
         cache: CachePurger,
         network: NetworkMonitor,
-        device: DeviceSession
+        device: DeviceSession,
+        onPresence: @escaping (String, StatusFact) -> Void
     ) -> TrackingServices {
         let generation = GenerationCounter()
         let journal = DetectionJournals.make()
@@ -53,7 +54,8 @@ struct TrackingServices {
                 network: network
             ),
             store: FirestoreTrackingStore(base: miffStore, placeStore: FirestorePlaceStore(base: miffStore)),
-            local: TrackingLocalFileStore(),
+            // Les notifications écoutent les nouveaux statuts de MA présence (N1 et N2) sans rien changer au moteur.
+            local: PresenceNotifyingLocalStore(wrapping: TrackingLocalFileStore(), onPresence: onPresence),
             position: location,
             geofences: location,
             movement: location,
