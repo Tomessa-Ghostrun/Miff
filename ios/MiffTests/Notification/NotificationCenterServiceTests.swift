@@ -143,12 +143,17 @@ final class NotificationCenterServiceTests: XCTestCase {
 
     // MARK: - L'écran
 
-    private func makeScreen(
-        _ authorization: NotificationAuthorization
-    ) -> (NotificationCenterViewModel, NotificationCenterService, NotificationStubPermissions) {
+    private struct Screen {
+        let model: NotificationCenterViewModel
+        let service: NotificationCenterService
+        let permissions: NotificationStubPermissions
+    }
+
+    private func makeScreen(_ authorization: NotificationAuthorization) -> Screen {
         let permissions = NotificationStubPermissions(authorization)
         let service = makeService()
-        return (NotificationCenterViewModel(service: service, permissions: permissions), service, permissions)
+        let model = NotificationCenterViewModel(service: service, permissions: permissions)
+        return Screen(model: model, service: service, permissions: permissions)
     }
 
     func testTheBannerAppearsOnlyWhenNotificationsCannotArrive() async {
@@ -156,7 +161,7 @@ final class NotificationCenterServiceTests: XCTestCase {
             (.authorized, nil), (.denied, .off), (.notDetermined, .notAsked)
         ]
         for (authorization, expected) in cases {
-            let (screen, _, _) = makeScreen(authorization)
+            let screen = makeScreen(authorization).model
             XCTAssertNil(screen.banner, "rien tant que l'état n'est pas lu")
 
             await screen.onAppear()
@@ -166,14 +171,16 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testTheBannerButtonOpensTheHelpWhenTurnedOffAndThePrimeWhenNeverAsked() async {
-        let (off, _, _) = makeScreen(.denied)
+        let off = makeScreen(.denied).model
         await off.onAppear()
         var helpOpened = 0
         off.bannerAction { helpOpened += 1 }
         XCTAssertEqual(helpOpened, 1)
         XCTAssertFalse(off.primeVisible)
 
-        let (fresh, _, permissions) = makeScreen(.notDetermined)
+        let freshScreen = makeScreen(.notDetermined)
+        let fresh = freshScreen.model
+        let permissions = freshScreen.permissions
         await fresh.onAppear()
         fresh.bannerAction { helpOpened += 1 }
         XCTAssertEqual(helpOpened, 1)
@@ -187,7 +194,9 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testLaterOnThePrimeDoesNotConsumeTheSystemWindow() async {
-        let (screen, _, permissions) = makeScreen(.notDetermined)
+        let rig = makeScreen(.notDetermined)
+        let screen = rig.model
+        let permissions = rig.permissions
         await screen.onAppear()
         screen.bannerAction {}
 
@@ -199,7 +208,9 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testTouchingARowMarksItReadAndSaysWhereToGo() async {
-        let (screen, service, _) = makeScreen(.authorized)
+        let rig = makeScreen(.authorized)
+        let screen = rig.model
+        let service = rig.service
         service.record(NotificationFixtures.item("n1|a", type: .n1, at: current))
         service.record(NotificationFixtures.item("n3|b", type: .n3, at: current - 1))
         service.record(NotificationFixtures.item("n6|c", type: .n6, at: current - 2))
@@ -213,7 +224,9 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testLeavingTheScreenMarksWhatWasSeenAsRead() async {
-        let (screen, service, _) = makeScreen(.authorized)
+        let rig = makeScreen(.authorized)
+        let screen = rig.model
+        let service = rig.service
         service.record(NotificationFixtures.item("n2|a", type: .n2, at: current))
         service.record(NotificationFixtures.item("n4|b", type: .n4, at: current - 1))
         await screen.onAppear()
@@ -225,7 +238,9 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testClearingEverythingAsksFirst() async {
-        let (screen, service, _) = makeScreen(.authorized)
+        let rig = makeScreen(.authorized)
+        let screen = rig.model
+        let service = rig.service
         service.record(NotificationFixtures.item("n1|a", at: current))
 
         screen.askDeleteAll()
@@ -238,7 +253,9 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testDeletingOneRowKeepsTheOthers() {
-        let (screen, service, _) = makeScreen(.authorized)
+        let rig = makeScreen(.authorized)
+        let screen = rig.model
+        let service = rig.service
         service.record(NotificationFixtures.item("n1|a", at: current))
         service.record(NotificationFixtures.item("n2|b", type: .n2, at: current - 1))
 

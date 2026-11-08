@@ -933,4 +933,13 @@
     <string name="notif_help_step_2">Choisis « Notifications »</string>
     <string name="notif_help_step_3">Active-les pour Miff</string>
     <string name="notif_help_outro">Tu peux toujours donner de tes nouvelles depuis l\'app.</string>
+    <!-- NOTIF-P0 : textes des notifications N2, N3, N4 et N6 (variante A), mot pour mot (ticket §20.10). -->
+    <string name="notif_n2_title">Tu es passé rouge</string>
+    <string name="notif_n2_body">Indique à ta Miff que tout va bien.</string>
+    <string name="notif_n3_title">Ta Miff est passée en orange</string>
+    <string name="notif_n3_body">Prends des nouvelles de tes proches.</string>
+    <string name="notif_n4_title">Ta Miff est passée en rouge</string>
+    <string name="notif_n4_body">Prends des nouvelles de tes proches.</string>
+    <string name="notif_n6a_title">Tu es dans une zone de danger de ta Miff</string>
+    <string name="notif_n6a_body">Pendant que tu y es, tes proches voient un état différent.</string>
 </resources>

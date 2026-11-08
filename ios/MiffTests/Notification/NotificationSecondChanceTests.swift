@@ -27,18 +27,24 @@ final class NotificationSecondChanceTests: XCTestCase {
 
     // MARK: - Le comportement
 
+    private struct Rig {
+        let model: NotificationSecondChanceViewModel
+        let permissions: NotificationStubPermissions
+        let store: MemorySecondChanceStore
+    }
+
     private func makeModel(
         _ authorization: NotificationAuthorization,
         store: MemorySecondChanceStore = MemorySecondChanceStore(),
         uid: @escaping () -> String? = { "uid-1" }
-    ) -> (NotificationSecondChanceViewModel, NotificationStubPermissions, MemorySecondChanceStore) {
+    ) -> Rig {
         let permissions = NotificationStubPermissions(authorization)
         let model = NotificationSecondChanceViewModel(permissions: permissions, store: store, currentUid: uid)
-        return (model, permissions, store)
+        return Rig(model: model, permissions: permissions, store: store)
     }
 
     func testNothingShowsBeforeTheFirstUpdate() async {
-        let (model, _, _) = makeModel(.notDetermined)
+        let model = makeModel(.notDetermined).model
 
         await model.refresh()
 
@@ -46,7 +52,10 @@ final class NotificationSecondChanceTests: XCTestCase {
     }
 
     func testTheFirstUpdateMakesTheCardAppearOnceAndAskingNothingOfTheSystem() async {
-        let (model, permissions, store) = makeModel(.notDetermined)
+        let rig = makeModel(.notDetermined)
+        let model = rig.model
+        let permissions = rig.permissions
+        let store = rig.store
 
         model.noteFirstUpdate()
         await model.refresh()
@@ -57,7 +66,10 @@ final class NotificationSecondChanceTests: XCTestCase {
     }
 
     func testActivatingShowsTheSystemWindowAtOnceThenTheCardLeavesForGood() async {
-        let (model, permissions, store) = makeModel(.notDetermined)
+        let rig = makeModel(.notDetermined)
+        let model = rig.model
+        let permissions = rig.permissions
+        let store = rig.store
         model.noteFirstUpdate()
         await model.refresh()
 
@@ -71,7 +83,9 @@ final class NotificationSecondChanceTests: XCTestCase {
     }
 
     func testNotNowMakesTheCardLeaveForGoodWithoutAskingTheSystem() async {
-        let (model, permissions, _) = makeModel(.notDetermined)
+        let rig = makeModel(.notDetermined)
+        let model = rig.model
+        let permissions = rig.permissions
         model.noteFirstUpdate()
         await model.refresh()
 
@@ -84,7 +98,7 @@ final class NotificationSecondChanceTests: XCTestCase {
 
     func testTheCardNeverNagsAPersonWhoAlreadyRefusedOrAllowed() async {
         for authorization in [NotificationAuthorization.denied, .authorized] {
-            let (model, _, _) = makeModel(authorization)
+            let model = makeModel(authorization).model
 
             model.noteFirstUpdate()
             await model.refresh()
@@ -96,7 +110,7 @@ final class NotificationSecondChanceTests: XCTestCase {
     func testTheCardWaitsForTheFirstUpdateOfThisAccountOnly() async {
         let store = MemorySecondChanceStore()
         var uid: String? = "uid-1"
-        let (model, _, _) = makeModel(.notDetermined, store: store, uid: { uid })
+        let model = makeModel(.notDetermined, store: store, uid: { uid }).model
         model.noteFirstUpdate()
         await model.refresh()
         XCTAssertTrue(model.isDue)
@@ -113,7 +127,9 @@ final class NotificationSecondChanceTests: XCTestCase {
     }
 
     func testTheFirstUpdateIsNoticedOnceOnly() {
-        let (model, _, store) = makeModel(.notDetermined)
+        let rig = makeModel(.notDetermined)
+        let model = rig.model
+        let store = rig.store
 
         model.noteFirstUpdate()
         let first = store.state(uid: "uid-1")

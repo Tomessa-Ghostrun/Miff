@@ -954,4 +954,13 @@
     <string name="notif_help_step_2">Choose “Notifications”</string>
     <string name="notif_help_step_3">Turn them on for Miff</string>
     <string name="notif_help_outro">You can always share your news from the app.</string>
+    <!-- NOTIF-P0 : textes des notifications N2, N3, N4 et N6 (variante A), mot pour mot (ticket §20.10). -->
+    <string name="notif_n2_title">You\'ve turned red</string>
+    <string name="notif_n2_body">Let your Miff know everything\'s fine.</string>
+    <string name="notif_n3_title">Your Miff has turned orange</string>
+    <string name="notif_n3_body">Check in on your loved ones.</string>
+    <string name="notif_n4_title">Your Miff has turned red</string>
+    <string name="notif_n4_body">Check in on your loved ones.</string>
+    <string name="notif_n6a_title">You\'re in a danger zone of your Miff</string>
+    <string name="notif_n6a_body">While you\'re there, your circle sees a different status.</string>
 </resources>
