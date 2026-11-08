@@ -21,7 +21,8 @@ struct MiffDetails: Equatable, CustomStringConvertible {
     }
 }
 
-/// Une ligne de la liste des proches (copie du profil gardée dans `members/{uid}`). Pas de numéro : il n'est pas montré ici.
+/// Une ligne de la liste des proches (copie du profil gardée dans `members/{uid}`). Le numéro (FEED-5) ne sert qu'aux boutons
+/// « Écrire à » et « Appeler » du Feed : jamais affiché, jamais journalisé, vérifié (E.164) avant d'arriver ici.
 struct MiffMember: Equatable, CustomStringConvertible {
     let uid: String
     let firstName: String
@@ -29,6 +30,8 @@ struct MiffMember: Equatable, CustomStringConvertible {
     let avatarJpeg: Data?
     let role: MiffRole
     let sharingEnabled: Bool
+    /// E.164 (« +33612345678 »), ou nil : compte antérieur au numéro obligatoire, ou valeur qui n'a pas cette forme.
+    var phone: String?
 
     var displayName: String {
         "\(firstName) \(lastName)".trimmingCharacters(in: .whitespacesAndNewlines)
@@ -43,6 +46,16 @@ struct MiffMember: Equatable, CustomStringConvertible {
 
     var description: String {
         "MiffMember(redacted)"
+    }
+}
+
+/// Un numéro lu sur le réseau n'est gardé que s'il a la forme E.164 : rien d'autre n'arrive jamais à l'adresse d'un `sms:` ou d'un `tel:`.
+extension MiffMember {
+    static func phoneFromServer(_ value: Any?) -> String? {
+        guard let text = value as? String, ProfileDocument.isE164(text) else {
+            return nil
+        }
+        return text
     }
 }
 

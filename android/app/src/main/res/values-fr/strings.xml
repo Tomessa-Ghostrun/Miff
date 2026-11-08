@@ -460,7 +460,7 @@
     <string name="feed_bubble_me_danger">Tu es dans une zone de danger de ta Miff</string>
     <string name="feed_bubble_me_danger_note">Tes proches le voient aussi</string>
     <string name="feed_bubble_message_action">Envoyer un message</string>
-    <string name="feed_bubble_page_a11y">Alerte %1$d sur %2$d</string>
+    <string name="feed_bubble_page_a11y">Page %1$d sur %2$d</string>
     <string name="feed_bubble_previous_a11y">Alerte précédente</string>
     <string name="feed_bubble_next_a11y">Alerte suivante</string>
     <string name="feed_bubble_offline_alert">Informations %1$s : reconnecte-toi pour les mettre à jour.</string>
