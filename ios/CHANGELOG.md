@@ -2,6 +2,26 @@
 
 ## Non publié
 
+### NOTIF-1I, NOTIF-2I, NOTIF-6I - Notifications, PR A : autorisation, Réglages > Notifications, centre local (périmètre NOTIF-P0 sans serveur)
+
+Branche `ios/notifications-p0` ; ticket `docs/tickets/notifications.md` (§8, §9, §20), spec `docs/specs/notifications.md`, décisions du PM du 2026-11-08 (Q9, Q27, N4 « rouge », N5 abandonnée, limite iOS de N3 / N4 acceptée, Q28 LARGE, Q30, Q33, Q34). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Pas de maquettes : wireframes de la spec, écarts dans `ios/README.md` (section « Notifications »). Recette PM sur l'iPhone 11 Pro : `docs/qa/checklists/notifs-ios-recette-pm.md`. **Cette PR ne programme encore aucune notification** (les rappels N1 à N4 et N6 sont les PR suivantes) : elle pose l'autorisation, les Réglages et le centre dans lesquels ils s'inscriront.
+
+Ajouté :
+- **Amorce corrigée** (texte de la phase 0, tutoiement, exemple N1) avec **« Autoriser » / « Plus tard »** : « Plus tard » ne consomme pas la fenêtre du système. Fenêtre limitée à **bannière et son** (plus de pastille sur l'icône, ni provisoire, ni Time Sensitive).
+- **Deuxième chance non modale** : une carte du Feed (« Un rappel si tu oublies de donner de tes nouvelles ? »), une seule fois, après la première update vue publiée, seulement si la fenêtre n'a jamais été montrée.
+- **Réglages > Notifications** (absente des Réglages restreints) : état de l'autorisation, interrupteur général (jamais en conflit avec un refus du téléphone), N1, N2, N6 (« Pour toi »), N3, N4 (« Pour ta Miff »), nuit calme, page d'aide « Notifications coupées ». Préférences locales, par compte, effacées à la fin de la session.
+- **Centre de notifications local** : cloche dans l'en-tête du Feed (un point, jamais un chiffre), liste Aujourd'hui / Hier / Plus ancien, lu / non lu, suppression, « Tout marquer comme lu » / « Tout effacer » (confirmation), état vide, bandeau « coupées », toucher = Update (N1, N2) ou Feed (N3, N4, N6). 30 jours ou 100 entrées, **aucune position, adresse, nom de lieu ni photo**, fichier privé exclu des sauvegardes, purgé à la déconnexion, à la suppression du compte et à la perte de session (`AccountLocalData`, `NotificationServices.teardown`).
+- Clés `notif_*` (préfixe ajouté à `docs/contracts/i18n-keys.md` et au script de parité), mêmes noms et même texte ajoutés à `strings.xml` d'Android pour la parité de la CI.
+- Tests : `NotificationHistoryTests`, `NotificationStoresTests`, `NotificationCenterServiceTests`, `NotificationSettingsViewModelTests`, `NotificationSecondChanceTests`, `NotificationTypeTests`, `NotificationPrivacyTests`.
+
+Modifié :
+- `SettingsRoute` : `notifications`, `notificationCenter`, `notificationsHelp` ; `SettingsListRow.notifications`. `MainShellView` : paramètre `tabRequests`. `FeedDependencies.onStatusesLoaded`. `AccountLocalStores.notificationData`. `AppEnvironment.init` ramené sous la limite de SwiftLint (compactage du bloc `SessionDependencies`).
+- Confidentialité : le texte « Les notifications arrivent bientôt. Rien n'est envoyé » (devenu faux) est remplacé par un texte propre à iOS, et l'état de l'autorisation reprend les mots de Réglages > Notifications. Retirées (obsolètes) : `ios_privacy_notifications_status_on` et `_off`.
+- `Config/Miff.entitlements` : commentaire mis à jour (les notifications locales n'exigent aucune capacité ; `aps-environment` volontairement absent).
+
+Coût (Spark) : **0 lecture, 0 écriture, 0 appel réseau** de plus (tout est local) ; aucun contournement ; aucune nouvelle dépendance, permission ni capacité ; aucune clé APNs ; aucun événement Analytics (les compteurs à venir resteront locaux).
+
+
 ### FEED-5 à FEED-7 - Le Feed : cercle, statuts, Localiser (miroir d'Android FEED-1 à FEED-3, avec D42 à D45)
 
 Branche `ios/feed-5-7`, **PR en brouillon qui dépend de #102** (coquille ONB-7) ; ticket `docs/tickets/feed.md` (décisions D1 à D44), maquettes `design/exports/feed/` et `design/exports/feed/claude/`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM sur l'iPhone 11 Pro (TestFlight, le Feed est l'onglet de la coquille) : `docs/qa/checklists/feed-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md`, section « Le Feed ».

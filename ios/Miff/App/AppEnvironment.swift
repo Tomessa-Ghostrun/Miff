@@ -157,6 +157,14 @@ final class AppEnvironment {
     /// FEED-5 : les lectures du Feed (statuts en direct, position au toucher, actualisation). Elles ne lisent qu'à l'usage.
     let feedServices = FeedServices.live()
     let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
+    /// NOTIF-P0 : le centre de notifications local, les choix de Réglages > Notifications, les demandes d'onglet.
+    let notifications: NotificationServices
+    /// La carte « deuxième chance » du Feed : créée à la première demande, comme les autorisations qu'elle lit.
+    lazy var notificationSecondChance: NotificationSecondChanceViewModel = NotificationSecondChanceViewModel(
+        permissions: devicePermissions,
+        store: notifications.localData.secondChance,
+        currentUid: { [weak self] in self?.session.currentUid }
+    )
     /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
     /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
     let tracking: TrackingRuntime
@@ -210,17 +218,14 @@ final class AppEnvironment {
             onSharingChanged: trackingServices.sharingChanged
         )
         let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
+        // NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications et les demandes d'onglet.
+        let notifs = NotificationServices.make(currentUid: { gateway.currentUid })
         let manager = SessionManager(
             SessionDependencies(
-                gateway: gateway,
-                accounts: FirestoreAccountRepository(),
-                pending: pending,
-                flags: flagStore,
-                privacy: privacy,
-                tracker: tracker,
-                cache: cache,
+                gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
+                privacy: privacy, tracker: tracker, cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
-                // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
+                // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
                 teardown: [
                     { drafts.clear() },
                     // L'annuaire des Miffs, la suppression d'une Miff sans écran, et les Miffs qui attendent un accord.
@@ -228,11 +233,12 @@ final class AppEnvironment {
                     // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
                     { await places.stop() },
                     // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
-                    trackingServices.teardown
+                    trackingServices.teardown,
+                    // Le centre de notifications, les choix de Réglages > Notifications, les notifications affichées ou en attente.
+                    notifs.teardown
                 ],
-                device: device,
-                network: networkMonitor,
-                drafts: drafts, generationCounter: trackingServices.generation,
+                device: device, network: networkMonitor, drafts: drafts,
+                generationCounter: trackingServices.generation,
                 deletionMarker: AccountDeletionFileMarker(), localData: AccountDeletionServices.localData()
             )
         )
@@ -255,6 +261,7 @@ final class AppEnvironment {
         detectionJournal = trackingServices.journal
         profileDrafts = drafts
         pendingConsent = pending
+        notifications = notifs
     }
 
     /// Les dépendances des étapes du profil.

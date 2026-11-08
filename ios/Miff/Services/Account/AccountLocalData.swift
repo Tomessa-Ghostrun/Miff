@@ -12,6 +12,8 @@ struct AccountLocalStores {
     let trackingLocal: TrackingLocalStore
     /// Le journal local de la détection (builds Debug et Internal seulement ; rien en publication) : même raison.
     let detectionJournal: DetectionJournal
+    /// NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » de ce compte.
+    let notificationData: NotificationLocalData
 }
 
 /// Ce que la suppression d'un compte efface du téléphone POUR CE COMPTE (AUTH-5c, ticket §5.10), en plus de ce que la fin d'une session
@@ -40,13 +42,15 @@ enum AccountLocalData {
             { _ in await stores.notifications.removeAll() },
             // La copie locale du suivi et le journal de détection, directement.
             { _ in stores.trackingLocal.clear() },
-            { _ in stores.detectionJournal.clear() }
+            { _ in stores.detectionJournal.clear() },
+            // Le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » (NOTIF-P0).
+            { uid in stores.notificationData.eraseAccount(uid: uid) }
         ]
     }
 }
 
-/// Retire les notifications locales de l'app (planifiées et déjà affichées). Aujourd'hui l'app n'en planifie aucune : c'est le filet qui
-/// garantit qu'aucune n'arrive pour un compte supprimé le jour où elles existeront.
+/// Retire les notifications locales de l'app (planifiées et déjà affichées) : le filet qui garantit qu'aucune n'arrive pour un compte
+/// supprimé ou déconnecté.
 protocol LocalNotificationsCleaner {
     func removeAll() async
 }

@@ -20,7 +20,8 @@ struct AccountDeletionServices {
                 activeMiff: UserDefaultsActiveMiffStore(),
                 notifications: SystemLocalNotificationsCleaner(),
                 trackingLocal: TrackingLocalFileStore(),
-                detectionJournal: DetectionJournals.make()
+                detectionJournal: DetectionJournals.make(),
+                notificationData: NotificationLocalData.live()
             )
         )
     }

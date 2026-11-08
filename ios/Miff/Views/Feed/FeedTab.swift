@@ -14,6 +14,8 @@ struct FeedTabActions {
     let onSignOut: () -> Void
     /// L'entrée discrète des Réglages restreints (#113), montrée seulement dans l'état « Pas encore de Miff ».
     let onOpenSettings: () -> Void
+    /// La cloche de l'en-tête : le centre de notifications (NOTIF-6I).
+    let onOpenNotifications: () -> Void
 }
 
 /// Ce qui relance l'observation : la Miff affichée, l'onglet en usage / l'app au premier plan, « Réessayer ».
@@ -28,6 +30,8 @@ struct FeedTab: View {
     private let actions: FeedTabActions
     @StateObject private var model: FeedViewModel
     @ObservedObject private var awaiting: AwaitingAgreement
+    @ObservedObject private var notificationCenter: NotificationCenterService
+    @ObservedObject private var secondChance: NotificationSecondChanceViewModel
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @State private var noticeVisible = false
@@ -41,6 +45,7 @@ struct FeedTab: View {
         let repository = environment.miffRepository
         let network = environment.network
         let awaitingAgreement = environment.awaitingAgreement
+        let secondChance = environment.notificationSecondChance
         _model = StateObject(
             wrappedValue: FeedViewModel(
                 dependencies: FeedDependencies(
@@ -49,11 +54,19 @@ struct FeedTab: View {
                     services: services,
                     network: network,
                     awaiting: awaitingAgreement,
-                    currentUid: { session.currentUid }
+                    currentUid: { session.currentUid },
+                    // Une update de la personne vue publiée (sa photo existe) : la carte « deuxième chance » peut apparaître.
+                    onStatusesLoaded: { event in
+                        if event.myStatus?.hasPhoto == true {
+                            secondChance.noteFirstUpdate()
+                        }
+                    }
                 )
             )
         )
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
+        _notificationCenter = ObservedObject(wrappedValue: environment.notifications.center)
+        _secondChance = ObservedObject(wrappedValue: secondChance)
     }
 
     private var running: Bool {
@@ -69,10 +82,24 @@ struct FeedTab: View {
 
     var body: some View {
         let key = ObservationKey(miffId: activeMiffId, running: running, restarts: model.restarts)
-        FeedScreen(model: model, awaiting: awaiting, isActive: running, actions: screenActions)
+        FeedScreen(
+            model: model,
+            awaiting: awaiting,
+            isActive: running,
+            actions: screenActions,
+            notificationCenter: notificationCenter,
+            secondChance: secondChance
+        )
             .task(id: key) {
                 if key.running {
                     await model.observe(miffId: key.miffId)
+                }
+            }
+            // La carte « deuxième chance » relit l'état du téléphone à l'ouverture et au retour dans l'app (la personne a pu changer
+            // l'autorisation dans les Réglages d'iOS).
+            .task(id: running) {
+                if running {
+                    await secondChance.refresh()
                 }
             }
             .overlay(alignment: .bottom) {
@@ -108,7 +135,8 @@ struct FeedTab: View {
                 openURL(url) { accepted in done(accepted) }
             },
             onSignOut: actions.onSignOut,
-            onOpenSettings: actions.onOpenSettings
+            onOpenSettings: actions.onOpenSettings,
+            onOpenNotifications: actions.onOpenNotifications
         )
     }
 

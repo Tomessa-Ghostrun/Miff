@@ -90,6 +90,9 @@ struct FeedDependencies {
     var zone: () -> TimeZone = { TimeZone.current }
     var sleep: (Int) async -> Void = AppClock.live.pause
     var timings = FeedTimings()
+    /// NOTIF-P0 : appelé à chaque réponse DU SERVEUR sur les statuts de la Miff affichée (la carte « deuxième chance » des notifications
+    /// en vit ; le planificateur de rappels s'y branchera).
+    var onStatusesLoaded: @MainActor (FeedStatusesEvent) -> Void = { _ in }
 }
 
 @MainActor
