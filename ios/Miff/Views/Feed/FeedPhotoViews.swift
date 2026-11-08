@@ -70,7 +70,16 @@ private struct PhotoLoading: ViewModifier {
 
     func body(content: Content) -> some View {
         content.task(id: PhotoTaskKey(request: request, context: context)) {
-            guard context.active, let reader = photos, let wanted = request else {
+            guard let reader = photos else {
+                return
+            }
+            guard let wanted = request else {
+                // Plus de photo candidate (statut changé, partage arrêté, plus de photo) : plus rien d'ancien ne peut être redessiné.
+                reader.forget(miffId: context.miffId, uid: card.member.uid)
+                return
+            }
+            // Rien n'est lu hors du Feed en usage, ni pendant « Dernières informations de… » (la relance se fait au retour du réseau).
+            guard context.active, !context.offline else {
                 return
             }
             await reader.model(for: wanted).load(wanted)
@@ -121,12 +130,11 @@ private struct PhotoSlotContent: View {
     @ViewBuilder
     var body: some View {
         switch model.state {
-        case .loading:
-            PhotoPlaceholder()
+        case .loading, .nothing:
+            // Pendant la lecture comme sans photo : RIEN (aucune réserve d'espace, aucune apparition qui décale la liste avant l'arrivée de la photo).
+            EmptyView()
         case .needsOwnPosition:
             NeedsPositionTile()
-        case .nothing:
-            EmptyView()
         case .shown(let photo):
             let now = photos.nowMillis()
             // Une photo expirée n'est jamais montrée, même depuis la mémoire.
@@ -135,10 +143,18 @@ private struct PhotoSlotContent: View {
                     image: image,
                     caption: caption(photo, now: now),
                     opening: L10n.format("update_card_photo_open_a11y", firstName),
-                    onOpen: { onOpen(OpenedPhoto(firstName: firstName, photo: photo, image: image)) }
+                    onOpen: { open(photo) }
                 )
             }
         }
+    }
+
+    /// Le plein écran reçoit la photo ENTIÈRE (décodée à l'ouverture), jamais l'aperçu recadré.
+    private func open(_ photo: SharedPhoto) {
+        guard let full = model.fullImage() else {
+            return
+        }
+        onOpen(OpenedPhoto(firstName: firstName, photo: photo, image: full))
     }
 
     /// « Photo de 15 h 40 » : l'heure de publication de la photo.
@@ -182,18 +198,6 @@ private struct PhotoWindow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(opening). \(caption)"))
         .accessibilityAddTraits(.isButton)
-    }
-}
-
-/// Pendant la lecture : un cadre pâle de la même taille (la liste ne saute pas quand la photo arrive). Sans mouvement, rien pour le lecteur d'écran.
-private struct PhotoPlaceholder: View {
-    var body: some View {
-        Color.clear
-            .aspectRatio(1, contentMode: .fit)
-            .background(
-                RoundedRectangle(cornerRadius: radiusSm, style: .continuous).fill(colorActionPrimaryTint5.color)
-            )
-            .accessibilityHidden(true)
     }
 }
 

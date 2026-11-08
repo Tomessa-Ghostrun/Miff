@@ -73,9 +73,14 @@ final class PhotoLoader: PhotoReading {
 
     private func fetch(_ request: PhotoRequest) async -> PhotoLookup {
         let cache = dependencies.cache
+        let startedIn = cache.generation
         let outcome = await dependencies.source.fetch(
             miffId: request.miffId, uid: request.uid, nowMillis: dependencies.nowMillis()
         )
+        // La session a pris fin pendant la lecture (déconnexion) : la réponse n'est ni montrée ni gardée, une autre personne ne peut rien en tirer.
+        guard cache.generation == startedIn else {
+            return .missing
+        }
         switch outcome {
         case .photo(let photo):
             cache.putRead(

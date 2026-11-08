@@ -6,16 +6,30 @@ import UIKit
 
 /// Les octets d'une vraie petite image JPEG (le décodage est réel) et une photo de démonstration.
 enum PhotoFixtures {
-    static func jpeg(width: Int = 60, height: Int = 100) -> Data {
+    private static func image(width: Int, height: Int) -> UIImage {
         let size = CGSize(width: width, height: height)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
+        return UIGraphicsImageRenderer(size: size, format: format).image { context in
             UIColor.systemTeal.setFill()
             context.fill(CGRect(origin: .zero, size: size))
         }
-        return image.jpegData(compressionQuality: 0.8) ?? Data()
     }
+
+    static func jpeg(width: Int = 60, height: Int = 100) -> Data {
+        image(width: width, height: height).jpegData(compressionQuality: 0.8) ?? Data()
+    }
+
+    /// Une VRAIE image PNG, valide : lisible par le système, mais pas un JPEG (jamais décodée par le Feed).
+    static func png(width: Int = 60, height: Int = 100) -> Data {
+        image(width: width, height: height).pngData() ?? Data()
+    }
+
+    /// L'en-tête d'un GIF suivi d'octets quelconques.
+    static let gif = Data("GIF89a".utf8) + Data(repeating: 0, count: 64)
+
+    /// Des octets qui commencent comme un JPEG (`FF D8 FF`) mais n'en sont pas un.
+    static let forgedJpeg = Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 7, count: 200)
 
     static func photo(
         createdAgo: Int = feedMinutes(20),

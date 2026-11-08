@@ -104,6 +104,15 @@ final class PhotoCacheTests: XCTestCase {
         XCTAssertFalse(cache.isRefused(miffId: testMiffId, uid: "uidC", lastUpdateAtMillis: update))
     }
 
+    func testEveryClearMovesTheGenerationSoALateReadCanTellTheSessionEnded() {
+        let first = cache.generation
+
+        cache.clear()
+        cache.clear()
+
+        XCTAssertEqual(cache.generation, first + 2)
+    }
+
     func testRemoveForgetsOneMember() {
         cache.putRead(miffId: testMiffId, uid: "uidA", photo: PhotoFixtures.photo(), lastUpdateAtMillis: update)
         cache.putRead(miffId: testMiffId, uid: "uidB", photo: PhotoFixtures.photo(), lastUpdateAtMillis: update)

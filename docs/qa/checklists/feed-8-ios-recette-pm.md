@@ -22,7 +22,7 @@
 
 Sur l'OPPO (compte B) : onglet Update > prenez une photo > **Publier**. Sur l'iPhone (compte A) : ouvrez le Feed.
 - [ ] La carte de B montre, sous son état et sa ligne de temps, un **carré** aussi large que la carte, **centré sur le milieu de la photo**, **jamais étiré** (essayez une photo avec une personne ou un objet bien au centre, puis une autre avec le sujet sur un côté : seul le milieu est visible), avec la légende **« Photo de 15 h 40 »** en bas à gauche (l'heure de la publication). Les trois boutons restent **sous** la photo.
-- [ ] **Pendant la lecture** (ouvrez l'app, regardez tout de suite) : un cadre **bleu très pâle** de la même taille apparaît un instant ; la liste **ne saute pas** quand la photo arrive. Aucun message d'erreur.
+- [ ] **Pendant la lecture** (ouvrez l'app, regardez tout de suite) : **rien** n'est réservé ni affiché (comme sur Android) ; la photo **apparaît** quand elle est lue, en décalant ce qui est dessous. Aucun message d'erreur.
 - [ ] **Une carte sans photo** (un proche qui n'a rien publié) : **aucun cadre, aucun trou**.
 - [ ] **Ma carte** (la dernière) : après **votre** « Publier » sur l'iPhone, votre carte montre **votre photo** tout de suite, avec « Photo de … ». Elle est **sous** la ligne « Ce que tes proches voient de toi » (écart connu avec Android).
 - [ ] L'**ordre des cartes** ne change pas quand les photos arrivent ; **vous êtes toujours en dernier**.
@@ -62,11 +62,12 @@ Sur l'OPPO (compte B) : onglet Update > prenez une photo > **Publier**. Sur l'iP
 
 ## Partie F — Coût de lecture (facultatif, 5 min)
 
-Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectures** avant, puis **ouvrez le Feed une fois à froid** avec **2 proches qui ont une photo**, notez le nombre après (délai d'environ 4 minutes). Estimation : **+8 lectures** par rapport à un Feed sans photo (**4 par photo** d'un autre membre : 3 lectures de règles + 1 lecture du document ; **0 pour la vôtre** si vous l'avez publiée pendant la session, 3 sinon). **Revenir sur la carte** (défilement) ou rouvrir le Feed **dans la même session** : **0 lecture de photo** de plus. Voir `docs/dev/surveillance-quotas.md`. Reportez vos chiffres à l'assistant.
+Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectures** avant, puis **ouvrez le Feed une fois à froid** avec **2 proches qui ont une photo**, notez le nombre après (délai d'environ 4 minutes). Estimation : **+8 lectures** par rapport à un Feed sans photo (**4 par photo** d'un autre membre : 3 lectures de règles + 1 lecture du document ; **0 pour la vôtre** si vous l'avez publiée pendant la session, 3 sinon). **Revenir sur la carte** (défilement) ou rouvrir le Feed **dans la même session** : **0 lecture de photo** de plus. **Scénario à mesurer en plus** : laissez le Feed de l'iPhone **ouvert** pendant que B **arrive dans un lieu de confiance ou en repart** (ou modifiez `lastUpdateAt` de B dans la console) : la photo de B est **relue** (4 lectures facturées) à chaque changement de `lastUpdateAt`, chez chaque spectateur qui a le Feed ouvert, pendant les 23 h de la photo. Notez combien de lectures un tel changement coûte à l'iPhone ; **signal de bascule** : ratio > 150 lectures par utilisateur actif deux jours de suite (voir `docs/dev/surveillance-quotas.md`). Reportez vos chiffres à l'assistant.
 
 ## Points ouverts pour vous (à noter à la fin)
 
-- [ ] Le **cadre de chargement** (bleu très pâle) vous convient-il, ou préférez-vous rien (comme Android) ?
+- [ ] La photo qui **apparaît en décalant la liste** (sans cadre réservé, comme Android) vous convient-elle ?
+- [ ] **Plein écran en grand texte ou en paysage** : le pied (titre, lieu, bouton) défile-t-il bien sans masquer la photo ?
 - [ ] Le **glissement vers le bas** pour fermer le plein écran vous convient-il ?
 - [ ] Votre photo **sous** « Ce que tes proches voient de toi » (et non au-dessus) vous convient-elle ?
 - [ ] **Nouvelle phrase proposée** (aux deux plateformes) : une indication parlée « Ouvre la carte du système » sur « Voir où c'était » (maquette 09) ; non ajoutée pour garder la parité des textes.

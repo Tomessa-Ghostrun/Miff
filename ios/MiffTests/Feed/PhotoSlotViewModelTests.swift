@@ -150,4 +150,115 @@ final class PhotoSlotViewModelTests: XCTestCase {
         XCTAssertNil(decoder.image(from: Data(repeating: 7, count: 1_000)))
         XCTAssertNil(decoder.image(from: Data()))
     }
+
+    func testOnlyAJpegIsEverDecodedNotAValidPngNorAGifNorForgedBytes() {
+        let decoder = ImagePhotoDecoder()
+        let notJpegs: [(String, Data)] = [
+            ("png valide", PhotoFixtures.png()),
+            ("gif", PhotoFixtures.gif),
+            ("octets forgés", PhotoFixtures.forgedJpeg),
+            ("octets quelconques", Data((0..<300).map { UInt8($0 % 251) })),
+            ("vide", Data())
+        ]
+
+        for (name, bytes) in notJpegs {
+            XCTAssertNil(decoder.image(from: bytes), name)
+            XCTAssertNil(decoder.preview(from: bytes), name)
+        }
+        XCTAssertNotNil(decoder.image(from: PhotoFixtures.jpeg()))
+        XCTAssertNotNil(decoder.preview(from: PhotoFixtures.jpeg()))
+    }
+
+    func testTheSignatureOfAJpegIsRequiredBeforeAnything() {
+        XCTAssertTrue(ImagePhotoDecoder.hasJpegSignature(PhotoFixtures.jpeg()))
+        XCTAssertFalse(ImagePhotoDecoder.hasJpegSignature(PhotoFixtures.png()))
+        XCTAssertFalse(ImagePhotoDecoder.hasJpegSignature(Data([0xFF, 0xD8])))
+        XCTAssertFalse(ImagePhotoDecoder.hasJpegSignature(Data()))
+    }
+
+    func testAPngPhotoIsNeverDrawnItIsTheSameAsAnUnreadablePhoto() async {
+        reader.answer = .found(PhotoFixtures.photo(jpeg: PhotoFixtures.png()))
+        let slot = model()
+
+        await slot.load(PhotoFixtures.request())
+
+        XCTAssertEqual(slot.state, .nothing)
+        XCTAssertNil(slot.image)
+        XCTAssertNil(slot.fullImage())
+    }
+
+    func testThePreviewIsReducedTo1024PixelsAndTheFullScreenKeepsTheOriginal() async throws {
+        reader.answer = .found(PhotoFixtures.photo(jpeg: PhotoFixtures.jpeg(width: 2_000, height: 1_000)))
+        let slot = model()
+
+        await slot.load(PhotoFixtures.request())
+
+        let preview = try XCTUnwrap(slot.image?.cgImage)
+        XCTAssertLessThanOrEqual(max(preview.width, preview.height), 1_024)
+        let full = try XCTUnwrap(slot.fullImage())
+        XCTAssertEqual(Int(full.size.width), 2_000, "la photo ENTIÈRE, jamais l'aperçu")
+    }
+
+    // MARK: - La mémoire
+
+    func testAMemoryWarningFreesThePreviewAndItIsRemadeWhenDrawnAgain() async {
+        reader.answer = .found(PhotoFixtures.photo())
+        let slot = model()
+        await slot.load(PhotoFixtures.request())
+
+        slot.releaseImage()
+
+        XCTAssertNotNil(slot.image, "refait au besoin")
+        XCTAssertTrue(slot.state.isShown)
+    }
+
+    func testTheRegistryFreesEveryPreviewOnAMemoryWarningWithoutLosingThePhotos() async {
+        reader.answer = .found(PhotoFixtures.photo())
+        let photos = FeedPhotos(reader: reader)
+        let slot = photos.model(for: PhotoFixtures.request())
+        await slot.load(PhotoFixtures.request())
+
+        photos.releaseImages()
+
+        XCTAssertTrue(slot.state.isShown)
+        XCTAssertNotNil(slot.image)
+    }
+
+    func testTheRegistryForgetsTheModelOfACardThatHasNoCandidatePhotoAnymore() {
+        let photo = PhotoFixtures.photo()
+        reader.known = .found(photo)
+        let photos = FeedPhotos(reader: reader)
+        let before = photos.model(for: PhotoFixtures.request())
+        XCTAssertEqual(before.state, .shown(photo))
+
+        reader.known = nil
+        photos.forget(miffId: testMiffId, uid: "uidA")
+        let after = photos.model(for: PhotoFixtures.request())
+
+        XCTAssertFalse(before === after)
+        XCTAssertEqual(after.state, .loading, "plus rien d'ancien ne peut être redessiné")
+    }
+
+    func testTheRegistryIsEmptiedWhenAnotherMiffIsShown() {
+        let photos = FeedPhotos(reader: reader)
+        let first = photos.model(for: PhotoFixtures.request(uid: "uidA"))
+        _ = photos.model(for: PhotoFixtures.request(uid: "uidB"))
+        XCTAssertEqual(photos.modelCount, 2)
+
+        let otherRequest = PhotoRequest(miffId: "OtherMiffNumber0001", uid: "uidA", lastUpdateAtMillis: 1, isMe: false)
+        let other = photos.model(for: otherRequest)
+
+        XCTAssertEqual(photos.modelCount, 1)
+        XCTAssertFalse(first === other)
+    }
+
+    func testTheRegistryIsBounded() {
+        let photos = FeedPhotos(reader: reader)
+
+        for index in 0..<(FeedPhotos.maxModels + 5) {
+            _ = photos.model(for: PhotoFixtures.request(uid: "uid\(index)"))
+        }
+
+        XCTAssertEqual(photos.modelCount, FeedPhotos.maxModels)
+    }
 }

@@ -17,7 +17,7 @@ final class FeedPhotoPrivacyTests: XCTestCase {
 
     /// Tous les fichiers de la photo du Feed, avec leur chemin relatif à `Miff/`.
     private let photoFiles = [
-        "Models/Feed/SharedPhoto.swift", "Models/Feed/PhotoCache.swift",
+        "Models/Feed/SharedPhoto.swift", "Models/Feed/PhotoCache.swift", "Models/Feed/PhotoPan.swift",
         "Services/Contracts/FeedPhotoContracts.swift", "Services/Feed/PhotoLoader.swift", "Services/Feed/PhotoDecoder.swift",
         "Services/Firebase/FirestorePhotoSource.swift", "ViewModels/PhotoSlotViewModel.swift",
         "Views/Feed/FeedPhotoViews.swift", "Views/Feed/FeedPhotoFullScreen.swift", "App/AppEnvironment+FeedPhotos.swift"
@@ -128,7 +128,8 @@ final class FeedPhotoPrivacyTests: XCTestCase {
         let views = try code("Views/Feed/FeedPhotoViews.swift").joined(separator: "\n")
 
         XCTAssertTrue(views.contains(".task(id: PhotoTaskKey("))
-        XCTAssertTrue(views.contains("guard context.active"))
+        XCTAssertTrue(views.contains("guard context.active, !context.offline"), "rien hors du Feed en usage ni hors connexion")
+        XCTAssertTrue(views.contains("reader.forget(miffId: context.miffId, uid: card.member.uid)"))
         XCTAssertEqual(views.components(separatedBy: ".load(").count - 1, 1, "une seule porte vers la lecture")
         let card = try code("Views/Feed/FeedCardView.swift").joined(separator: "\n")
         XCTAssertTrue(card.contains(".loadsPhoto(of: card, in: photoContext)"))

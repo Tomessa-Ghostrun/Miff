@@ -24,6 +24,9 @@ final class PhotoCache {
     private var missingOrder: [String] = []
     private var refused: [String: Int] = [:]
     private var refusedOrder: [String] = []
+    /// Monte à chaque `clear()` (fin de session) : une lecture partie AVANT la déconnexion et qui répond APRÈS ne doit rien remettre en mémoire
+    /// (elle compare la génération du départ à la courante).
+    private(set) var generation = 0
 
     init(maxEntries: Int = PhotoCache.defaultMaxEntries) {
         self.maxEntries = max(1, maxEntries)
@@ -104,6 +107,7 @@ final class PhotoCache {
 
     /// Fin de session : plus rien des photos ne reste en mémoire pour la personne suivante.
     func clear() {
+        generation += 1
         entries = [:]
         missing = [:]
         refused = [:]

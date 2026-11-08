@@ -206,6 +206,41 @@ final class PhotoLoaderTests: XCTestCase {
         XCTAssertTrue(source.fetches.isEmpty, "le serveur n'est pas lu pour sa propre photo publiée")
     }
 
+    // MARK: - Fin de session pendant une lecture
+
+    func testAReadInFlightWhenTheSessionEndsLeavesNothingInMemoryAndAnotherAccountCannotPeek() async throws {
+        source.answers = [.photo(PhotoFixtures.photo())]
+        source.delayNanoseconds = 150_000_000
+        let loader = makeLoader()
+        let reading = Task { await loader.read(PhotoFixtures.request()) }
+        try await Task.sleep(nanoseconds: 40_000_000)
+        XCTAssertEqual(source.fetches.count, 1, "la lecture est partie")
+
+        cache.clear()
+        let result = await reading.value
+
+        XCTAssertEqual(result, .missing, "la réponse tardive n'est pas montrée")
+        XCTAssertEqual(cache.count, 0)
+        XCTAssertNil(loader.peek(PhotoFixtures.request()), "un autre compte ne peut rien en tirer")
+    }
+
+    func testALateAbsenceOrRefusalAfterTheSessionEndedIsNotRememberedEither() async throws {
+        for late in [PhotoFetch.absent, .refused] {
+            source.answers = [late]
+            source.delayNanoseconds = 100_000_000
+            let loader = makeLoader()
+            let reading = Task { await loader.read(PhotoFixtures.request()) }
+            try await Task.sleep(nanoseconds: 30_000_000)
+
+            cache.clear()
+            _ = await reading.value
+
+            let request = PhotoFixtures.request()
+            XCTAssertFalse(cache.isMissing(miffId: request.miffId, uid: request.uid, lastUpdateAtMillis: request.lastUpdateAtMillis))
+            XCTAssertFalse(cache.isRefused(miffId: request.miffId, uid: request.uid, lastUpdateAtMillis: request.lastUpdateAtMillis))
+        }
+    }
+
     // MARK: - Ma position publiée
 
     func testTheProbeSaysMyPositionIsPublishedOnlyForMyAccountAndThatMiff() {
