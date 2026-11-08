@@ -11,8 +11,8 @@ Filet de sécurité complémentaire au geofencing (voir [localisation-lieux-de-c
 
 *Seuils mis à jour le 2026-11-08 (décision du PM, retours de recette) : orange à 2 h, rouge à 4 h. Ils remplacent 1 h / 2 h (2026-11-01) ; les notes d'origine disaient aussi 2 h puis 4 h. Bornes : orange inclus jusqu'à 4 h 00, rouge à partir de 4 h 01 (comme avant, à la minute près).*
 
-*Règle de la zone de danger, **en attente de confirmation du PM** : il a écrit « si je suis dans une zone de danger et que ma dernière update date de moins d'une heure je passe rouge » (« moins » ou « plus » d'une heure ?). Non implémentée : une zone de danger reste rouge quelle que soit l'update. La valeur d'une heure est isolée dans `StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS` (Android et iOS).*
-3. Un membre **rouge** doit donner une update toutes les heures (tant qu'il reste rouge).
+3. **Zone de danger** (décision du PM du 2026-11-08 ; « moins d'une heure » écrit au départ était une faute de frappe) : si la personne est dans une zone de danger **et** que sa dernière update date de **plus d'une heure** (ou n'existe pas), elle passe **rouge**. Si sa dernière update date d'une heure ou moins, pas de rouge forcé : la couleur suit la règle normale. La zone de confiance l'emporte toujours. Constante : `StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS` (1 h, Android et iOS). Cela remplace « zone de danger = toujours rouge, l'update ne ramène pas au vert ».
+4. Un membre **rouge** doit donner une update toutes les heures (tant qu'il reste rouge).
 
 ## User stories
 - En tant que membre d'une Miff, je veux que mon statut s'aggrave automatiquement si je ne donne pas de nouvelles, sans avoir à déclencher une alerte moi-même.

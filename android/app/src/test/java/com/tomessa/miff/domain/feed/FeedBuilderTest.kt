@@ -317,11 +317,18 @@ class FeedBuilderTest {
     }
 
     @Test
-    fun labels_aDangerZone_isRed_withItsOwnLabel() {
-        val danger = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 20 * minute))), "t")
+    fun labels_aDangerZone_isRedWhenTheLastUpdateIsOverAnHour_withItsOwnLabel() {
+        val danger = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 2 * hour))), "t")
         assertEquals(StatusLevel.RED, danger.level)
         assertEquals(StateLabel.Danger, danger.label)
         assertEquals(TimeLine.InDangerSince(Moment(now - 20 * minute, Day.TODAY)), danger.time)
+        // A last update of less than an hour: not forced red (decision of the PM, 2026-11-08); the label stays factual.
+        val updated = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 5 * minute))), "t")
+        assertEquals(StatusLevel.GREEN, updated.level)
+        assertEquals(StateLabel.Danger, updated.label)
+        // No update at all: red.
+        val none = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, null))), "t")
+        assertEquals(StatusLevel.RED, none.level)
     }
 
     // --- Lines of time (C2) ----------------------------------------------------------------------------------------
@@ -511,7 +518,7 @@ class FeedBuilderTest {
                 mapOf(
                     "t" to status(PresenceValue.OUT, "p1", 130 * minute, 130 * minute),
                     "a" to status(PresenceValue.OUT, "p2", 5 * hour, 5 * hour),
-                    "n" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 20 * minute),
+                    "n" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 2 * hour),
                 ),
             )
         val pages = (content.bubble as Bubble.Alerts).pages.associateBy { it.member.uid }

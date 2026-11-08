@@ -27,43 +27,54 @@ class StatusColorTest {
         assertEquals(4 * hour, StatusThresholds.RED_AFTER_MILLIS)
     }
 
+    private fun danger(
+        presenceAgo: Long,
+        updateAgo: Long?,
+    ) = MemberStatusFacts(true, PresenceValue.IN_RISK, now - presenceAgo, updateAgo?.let { now - it })
+
     @Test
-    fun theDangerZoneRuleOfThePm_isNotImplementedYet_aDangerZoneStaysRed() {
-        // "Less or more than an hour" is waiting for confirmation: the constant exists, nothing reads it, the danger zone is red as before.
+    fun theDangerZoneRule_theConstantIsOneHour_decisionOfThePm_2026_11_08() {
         assertEquals(hour, StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS)
-        assertEquals(
-            StatusLevel.RED,
-            level(
-                MemberStatusFacts(
-                    true,
-                    PresenceValue.IN_RISK,
-                    now - 3 * hour,
-                    now - 5 * minute,
-                ),
-            ),
-        )
-        assertEquals(
-            StatusLevel.RED,
-            level(
-                MemberStatusFacts(
-                    true,
-                    PresenceValue.IN_RISK,
-                    now - 3 * hour,
-                    now - 3 * hour,
-                ),
-            ),
-        )
+    }
+
+    @Test
+    fun inADangerZone_aLastUpdateOfExactlyOneHour_isNotRed_59m59s_neither() {
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 3 * hour, updateAgo = hour - 1_000)))
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 3 * hour, updateAgo = hour)))
+    }
+
+    @Test
+    fun inADangerZone_aLastUpdateOlderThanOneHour_isRed_1h00m01s() {
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 3 * hour, updateAgo = hour + 1_000)))
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 10 * minute, updateAgo = 5 * hour)))
+    }
+
+    @Test
+    fun inADangerZone_noUpdateAtAll_isRed_evenJustArrived() {
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 0, updateAgo = null)))
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 3 * hour, updateAgo = null)))
+    }
+
+    @Test
+    fun inADangerZone_aRecentUpdate_followsTheNormalRuleOfTheAge() {
+        // Arrived 10 minutes ago, updated 5 minutes ago: not forced red; the most recent of the two is 5 minutes old = green.
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 10 * minute, updateAgo = 5 * minute)))
+        // A recent update after a long stay is just as recent: green.
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 9 * hour, updateAgo = 30 * minute)))
+        // A reference in the future (a wrong clock) counts as now: not forced red.
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = hour, updateAgo = -3 * hour)))
+    }
+
+    @Test
+    fun aTrustedZoneAlwaysWinsOverTheDangerZone_green() {
+        // The presence machine hands a single value: in both zones it is in_trusted, whatever the age of the update.
+        assertEquals(StatusLevel.GREEN, level(MemberStatusFacts(true, PresenceValue.IN_TRUSTED, now - 5 * hour, null)))
     }
 
     @Test
     fun aMemberInATrustedZone_isGreen_whateverTheTime() {
         val facts = MemberStatusFacts(true, PresenceValue.IN_TRUSTED, now - 30 * hour, now - 30 * hour)
         assertEquals(StatusLevel.GREEN, level(facts))
-    }
-
-    @Test
-    fun aMemberInADangerZone_isRed_evenJustArrived_evenWithAFreshUpdate() {
-        assertEquals(StatusLevel.RED, level(MemberStatusFacts(true, PresenceValue.IN_RISK, now, now)))
     }
 
     @Test

@@ -556,7 +556,7 @@ Un seul document, d'identifiant fixe `active` (tout autre identifiant sous `sess
 
 ## 3. Statuts : ce qui est stocké, ce qui est calculé
 
-**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : **décision du PM du 2026-11-08** : orange à **2 h**, rouge à **4 h** (comptés depuis le plus récent du départ et de la dernière update ; elle remplace 1 h / 2 h du 2026-11-01). Orange inclus jusqu'à 4 h 00, rouge à partir de 4 h 01. **Règle « zone de danger et dernière update d'il y a moins d'une heure » : non implémentée, en attente de confirmation du PM** (« moins » ou « plus » ?) ; une zone de danger reste rouge. La zone de confiance prime sur la zone de danger (ticket Lieux §6.9).
+**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : **décision du PM du 2026-11-08** : orange à **2 h**, rouge à **4 h** (comptés depuis le plus récent du départ et de la dernière update ; elle remplace 1 h / 2 h du 2026-11-01). Orange inclus jusqu'à 4 h 00, rouge à partir de 4 h 01. **Zone de danger (PM, 2026-11-08)** : rouge si la dernière update date de **plus d'1 h** (strictement) ou n'existe pas ; sinon la règle de l'âge ci-dessous (cela remplace « toujours rouge »). La zone de confiance prime sur la zone de danger (ticket Lieux §6.9). L'entrée en zone de danger n'écrit pas `lastUpdateAt`.
 **Calculé par chaque client à l'affichage** (algorithme identique iOS/Android, paramètres en constantes partagées) :
 
 ```
@@ -566,7 +566,8 @@ niveau(membre, statut, maintenant):
   si !membre.sharing.enabled           -> PARTAGE_DESACTIVE      (carte neutre, jamais alarmiste)
   si statut absent                     -> INCONNU
   selon statut.presence:
-    in_risk     -> ZONE_A_RISQUE
+    in_risk     -> si lastUpdateAt absent ou maintenant - lastUpdateAt > 1 h (DANGER_ZONE_UPDATE_AGE) -> ZONE_A_RISQUE (rouge)
+                   sinon -> même calcul que `out` ci-dessous
     in_trusted  -> VERT
     unknown     -> PAS_DE_NOUVELLES_NEUTRE  [Hypothèse : pas d'escalade sans départ connu, Q10]
     out         -> ref = max(presenceAt, lastUpdateAt)

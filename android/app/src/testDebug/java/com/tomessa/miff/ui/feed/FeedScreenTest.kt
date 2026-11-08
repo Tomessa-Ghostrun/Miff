@@ -135,7 +135,8 @@ class FeedScreenTest {
         battery: Int? = 85,
         access: MemberLocationAccess = MemberLocationAccess.BACKGROUND,
         updatedAgo: Long = minute,
-    ) = MemberStatus(presence, placeId, now - ago, now - ago, false, battery, access, now - updatedAgo)
+        lastUpdateAgo: Long = ago,
+    ) = MemberStatus(presence, placeId, now - ago, now - lastUpdateAgo, false, battery, access, now - updatedAgo)
 
     private val places =
         listOf(
@@ -297,7 +298,8 @@ class FeedScreenTest {
 
     @Test
     fun bubble_dangerZone_isFactualForTheLovedOnes_andNeverSaysZoneARisque() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.IN_RISK, "p3", 20 * minute)))))
+        val stale = status(PresenceValue.IN_RISK, "p3", 20 * minute, lastUpdateAgo = 2 * hour)
+        feed(ready(content(trio, mapOf(me to status(), "t" to stale))))
         shoot("feed-danger")
         composeRule.onNodeWithText("Thomas est à Zone chantier").assertIsDisplayed()
         // In the bubble and on the card of Thomas.
@@ -308,7 +310,8 @@ class FeedScreenTest {
 
     @Test
     fun bubble_dangerZone_forMe_isTheSentenceOfThePm_andHasNoMessageButton() {
-        feed(ready(content(trio, mapOf(me to status(PresenceValue.IN_RISK, "p3", 20 * minute), "t" to status()))))
+        val stale = status(PresenceValue.IN_RISK, "p3", 20 * minute, lastUpdateAgo = 2 * hour)
+        feed(ready(content(trio, mapOf(me to stale, "t" to status()))))
         composeRule.onNodeWithText("Tu es dans une zone de danger de ta Miff").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_bubble_me_danger_note)).assertIsDisplayed()
         composeRule.onAllNodesWithText(text(R.string.feed_bubble_message_action)).assertCountEquals(0)

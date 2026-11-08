@@ -18,9 +18,9 @@ object StatusThresholds {
     const val RED_AFTER_MILLIS = 4L * 60L * 60L * 1000L
 
     /**
-     * NOT USED YET, waiting for the PM. The PM wrote "if I am in a danger zone and my last update is less than an hour old, I turn red": "less" or
-     * "more" than an hour is ambiguous, so the rule is NOT implemented (a danger zone stays red whatever the update says, as before). When the
-     * coordinator confirms the direction, this is the only value to read in [StatusColor.level] for the `IN_RISK` case.
+     * The rule of the danger zone (decision of the PM, 2026-11-08): in a danger zone, a last update OLDER than this (strictly more than one hour, or no
+     * update at all) makes the person red. An update at most this old does not force red: the colour then follows the normal rule of the age.
+     * A trusted zone always wins over a danger zone (green).
      */
     const val DANGER_ZONE_UPDATE_AGE_MILLIS = 60L * 60L * 1000L
 }
@@ -37,10 +37,11 @@ class MemberStatusFacts(
 
 object StatusColor {
     /**
-     * The order of the ticket: sharing stopped or no status = neutral; a trusted zone = green; else a danger zone = red; `unknown` = neutral
-     * (a person who never went through a trusted zone, decision N4); else the age of the reference = the most recent of the departure and the last
-     * update (decision N2): under 2 h green, from 2 h to 4 h INCLUDED orange, over 4 h red. A reference in the future (a phone with a wrong
-     * clock) counts as "now": green.
+     * The order of the ticket: sharing stopped or no status = neutral; a trusted zone = green; else a danger zone = red when the last update is
+     * older than [StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS] (or missing), otherwise the normal rule below; `unknown` = neutral (a person who
+     * never went through a trusted zone, decision N4); else the age of the reference = the most recent of the departure and the last update
+     * (decision N2): under 2 h green, from 2 h to 4 h INCLUDED orange, over 4 h red. A reference in the future (a phone with a wrong clock) counts
+     * as "now": green.
      */
     fun level(
         facts: MemberStatusFacts?,
@@ -57,7 +58,12 @@ object StatusColor {
             }
 
             PresenceValue.IN_RISK -> {
-                StatusLevel.RED
+                val update = facts.lastUpdateAtMillis
+                if (update == null || nowMillis - update > StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS) {
+                    StatusLevel.RED
+                } else {
+                    byAge(facts, nowMillis)
+                }
             }
 
             PresenceValue.UNKNOWN -> {
@@ -65,16 +71,24 @@ object StatusColor {
             }
 
             PresenceValue.OUT -> {
-                val reference =
-                    listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()
-                        ?: return StatusLevel.NEUTRAL
-                val elapsed = nowMillis - reference
-                when {
-                    elapsed < StatusThresholds.ORANGE_AFTER_MILLIS -> StatusLevel.GREEN
-                    elapsed <= StatusThresholds.RED_AFTER_MILLIS -> StatusLevel.ORANGE
-                    else -> StatusLevel.RED
-                }
+                byAge(facts, nowMillis)
             }
+        }
+    }
+
+    /** The normal rule: the age of the most recent of the departure (or arrival) and the last update. */
+    private fun byAge(
+        facts: MemberStatusFacts,
+        nowMillis: Long,
+    ): StatusLevel {
+        val reference =
+            listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()
+                ?: return StatusLevel.NEUTRAL
+        val elapsed = nowMillis - reference
+        return when {
+            elapsed < StatusThresholds.ORANGE_AFTER_MILLIS -> StatusLevel.GREEN
+            elapsed <= StatusThresholds.RED_AFTER_MILLIS -> StatusLevel.ORANGE
+            else -> StatusLevel.RED
         }
     }
 }
