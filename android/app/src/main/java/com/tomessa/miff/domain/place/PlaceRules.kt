@@ -87,8 +87,11 @@ object PlaceAddressText {
     fun stored(label: String): String = MiffName.limit(label, PlaceLimits.ADDRESS_MAX).text.trim()
 }
 
-/** Which of the two limits asks for Miff+. The danger zone is Miff+ only (decision of the ticket 6.2); the 3rd place is the limit. */
-enum class PaywallReason { LIMIT, DANGER }
+/**
+ * Which limit asks for Miff+. The danger zone is Miff+ only (decision of the ticket 6.2); the 3rd place is the limit; MIFF is a 2nd Miff,
+ * asked from the selector of the Feed (decision of the PM, 2026-11-08).
+ */
+enum class PaywallReason { LIMIT, DANGER, MIFF }
 
 /**
  * What the person filled in, ready to be written. Built by the form only when [problem] is null. The Miffs are the ids of Miffs

@@ -42,6 +42,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.miff.MiffSelector
+import com.tomessa.miff.domain.miff.SelectorEntry
+import com.tomessa.miff.domain.miff.SelectorTap
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShadowSubtle
@@ -126,19 +129,31 @@ internal fun FeedHeader(
     }
 }
 
-/** The name of the active Miff; a selector only for a Premium account (a free account has one Miff, decision Q2). */
+/**
+ * The name of the active Miff, and the selector it opens: for EVERY account, even with a single Miff (decision of the PM, 2026-11-08, which replaces
+ * Q2 / D12). The list shows the Miff(s) and the two entries "Rejoindre une Miff" and "Créer une Miff"; what a touch on an entry does is decided by
+ * [MiffSelector.onTap]: a free account that already has a Miff gets the offer ([onOffer]), the others go on to the screen of the entry.
+ */
 @Composable
 internal fun MiffPill(
     state: DirectoryState.Ready,
     onSelect: (String) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
+    /** Opens the offer (paywall) for a 2nd Miff: only a free account that already has a Miff gets here. */
+    onOffer: () -> Unit = {},
     /** Told each time the list of Miffs opens or closes: while it is open the header cannot hide. */
     onOpenChanged: (Boolean) -> Unit = {},
 ) {
     val name = state.active?.name ?: return
-    // An UNKNOWN plan (subscription not read, or answer from the cache) keeps the selector usable: never "free" on a doubt.
-    val selectable = state.premiumOrNull != false
+
+    fun onEntry(entry: SelectorEntry) {
+        when (MiffSelector.onTap(entry, state.premiumOrNull, state.miffs.size)) {
+            SelectorTap.OpenOffer -> onOffer()
+            SelectorTap.OpenJoin -> onJoin()
+            SelectorTap.OpenCreate -> onCreate()
+        }
+    }
     var open by remember { mutableStateOf(false) }
     LaunchedEffect(open) { onOpenChanged(open) }
     // A header that leaves the composition while the list is open must not keep the lock.
@@ -146,8 +161,8 @@ internal fun MiffPill(
     Box {
         Pill(
             text = name,
-            selectable = selectable,
-            contentLabel = if (selectable) stringResource(R.string.feed_selector_a11y, name) else null,
+            selectable = true,
+            contentLabel = stringResource(R.string.feed_selector_a11y, name),
             onClick = { open = true },
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
@@ -189,7 +204,7 @@ internal fun MiffPill(
                 },
                 onClick = {
                     open = false
-                    onJoin()
+                    onEntry(SelectorEntry.JOIN)
                 },
                 modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
             )
@@ -203,7 +218,7 @@ internal fun MiffPill(
                 },
                 onClick = {
                     open = false
-                    onCreate()
+                    onEntry(SelectorEntry.CREATE)
                 },
                 modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
             )
@@ -212,8 +227,8 @@ internal fun MiffPill(
 }
 
 /**
- * The pastille of the Miff. With ONE Miff it is flat, without shadow or arrow, announced as text (not a button): it does nothing, and it
- * must not look as if it did. With several (Premium) it has the shadow and the blue arrow of the mockup and opens the list.
+ * The pastille of the Miff. The selector of the Feed has the shadow and the blue arrow of the mockup and opens the list, for everyone. The flat
+ * form (no shadow, no arrow, announced as text, not a button) is only for "Pas encore de Miff", which has nothing to open.
  */
 @Composable
 internal fun Pill(

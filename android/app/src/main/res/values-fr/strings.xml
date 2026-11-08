@@ -384,6 +384,9 @@
     <string name="feed_selector_a11y">Miff affichée : %1$s. Appuie pour changer de Miff ou en ajouter une.</string>
     <string name="feed_selector_join">+ Rejoindre une Miff</string>
     <string name="feed_selector_create">+ Créer une Miff</string>
+    <string name="feed_selector_paywall_title">Plusieurs Miffs avec Miff+</string>
+    <string name="feed_selector_paywall_body">La formule gratuite permet d\'être dans une Miff à la fois. Avec Miff+, crée et rejoins autant de Miffs que tu veux.</string>
+    <string name="feed_selector_paywall_soon_body">Cette option n\'est pas encore ouverte. Ta Miff actuelle reste en place.</string>
     <string name="feed_nomiff_body">Crée ta Miff ou rejoins celle d\'un proche pour commencer.</string>
     <string name="feed_create_action">Créer une Miff</string>
     <string name="feed_join_action">Rejoindre une Miff</string>
@@ -872,6 +875,11 @@
     <string name="update_photo_close_a11y">Fermer la photo</string>
     <string name="update_photo_position">Position mesurée %1$s.</string>
     <string name="update_photo_see_where">Voir où c\'était</string>
+    <string name="feed_photo_download">Enregistrer la photo</string>
+    <string name="feed_photo_download_a11y">Enregistrer cette photo sur ton téléphone</string>
+    <string name="feed_photo_download_saving">Enregistrement…</string>
+    <string name="feed_photo_download_done">Photo enregistrée sur ton téléphone.</string>
+    <string name="feed_photo_download_failed">On n\'a pas pu enregistrer la photo. Tu peux réessayer.</string>
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>

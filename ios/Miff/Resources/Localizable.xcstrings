@@ -2382,6 +2382,91 @@
         }
       }
     },
+    "feed_photo_download": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer la photo"
+          }
+        }
+      }
+    },
+    "feed_photo_download_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save this photo on your phone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer cette photo sur ton téléphone"
+          }
+        }
+      }
+    },
+    "feed_photo_download_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo saved on your phone."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo enregistrée sur ton téléphone."
+          }
+        }
+      }
+    },
+    "feed_photo_download_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn’t save the photo. You can try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n’a pas pu enregistrer la photo. Tu peux réessayer."
+          }
+        }
+      }
+    },
+    "feed_photo_download_saving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement…"
+          }
+        }
+      }
+    },
     "feed_selector_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -2446,6 +2531,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas encore de Miff"
+          }
+        }
+      }
+    },
+    "feed_selector_paywall_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The free plan lets you be in one Miff at a time. With Miff+, create and join as many Miffs as you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La formule gratuite permet d’être dans une Miff à la fois. Avec Miff+, crée et rejoins autant de Miffs que tu veux."
+          }
+        }
+      }
+    },
+    "feed_selector_paywall_soon_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This option isn’t open yet. Your current Miff stays as it is."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette option n’est pas encore ouverte. Ta Miff actuelle reste en place."
+          }
+        }
+      }
+    },
+    "feed_selector_paywall_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than one Miff with Miff+"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plusieurs Miffs avec Miff+"
           }
         }
       }

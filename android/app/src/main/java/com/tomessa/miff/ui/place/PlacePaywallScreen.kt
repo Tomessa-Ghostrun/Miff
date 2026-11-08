@@ -61,7 +61,8 @@ import com.tomessa.miff.ui.theme.textTitleBold20
 import com.tomessa.miff.ui.theme.textTitleBold24Gradient
 
 /**
- * The offer shown when a free account asks for a 3rd place or for a danger zone (design 14 and 15): the screen of the offer with a
+ * The offer shown when a free account asks for a 3rd place, for a danger zone (design 14 and 15) or for a 2nd Miff (from the selector of the
+ * Feed, decision of the PM, 2026-11-08; the same screen, a sentence of its own, no price, never the word "Premium"): the screen of the offer with a
  * calm sentence at the top that says WHY it appears. PROVISIONAL (decision QL15): no purchase exists yet, so the button of the
  * trial and the prices are not drawn (a price is never written by hand in the app, and a button that does nothing would be a
  * lie); "Miff+ arrive bientôt" says where things stand. Nothing is written by this screen: leaving it changes nothing.
@@ -130,7 +131,7 @@ fun PlacePaywallScreen(
                 R.drawable.ic_group,
                 R.string.place_paywall_feature_miffs,
                 R.string.place_paywall_feature_miffs_desc,
-                highlighted = false,
+                highlighted = reason == PaywallReason.MIFF,
             )
             Feature(
                 R.drawable.ic_loc_warning,
@@ -147,7 +148,15 @@ fun PlacePaywallScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                text = stringResource(R.string.place_paywall_soon_body),
+                // "Your places stay as they are" would be wrong for a Miff: each reason says what stays in place.
+                text =
+                    stringResource(
+                        if (reason == PaywallReason.MIFF) {
+                            R.string.feed_selector_paywall_soon_body
+                        } else {
+                            R.string.place_paywall_soon_body
+                        },
+                    ),
                 style = textBodyRegular,
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
@@ -178,7 +187,24 @@ private fun ContextCard(reason: PaywallReason) {
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (limit) {
+        if (reason == PaywallReason.MIFF) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(
+                            Spacing.xl + Spacing.xs,
+                        ).clip(CircleShape)
+                        .background(colorActionPrimaryTint20),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_group),
+                    contentDescription = null,
+                    tint = colorActionPrimary,
+                    modifier = Modifier.size(Spacing.l),
+                )
+            }
+        } else if (limit) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Dot(filled = true)
                 Dot(filled = true)
@@ -201,7 +227,11 @@ private fun ContextCard(reason: PaywallReason) {
             Text(
                 text =
                     stringResource(
-                        if (limit) R.string.place_paywall_limit_title else R.string.place_paywall_danger_title,
+                        when {
+                            reason == PaywallReason.MIFF -> R.string.feed_selector_paywall_title
+                            limit -> R.string.place_paywall_limit_title
+                            else -> R.string.place_paywall_danger_title
+                        },
                     ),
                 style = textBodyBold16,
                 color = colorTextPrimary,
@@ -210,7 +240,11 @@ private fun ContextCard(reason: PaywallReason) {
             Text(
                 text =
                     stringResource(
-                        if (limit) R.string.place_paywall_limit_body else R.string.place_paywall_danger_body,
+                        when {
+                            reason == PaywallReason.MIFF -> R.string.feed_selector_paywall_body
+                            limit -> R.string.place_paywall_limit_body
+                            else -> R.string.place_paywall_danger_body
+                        },
                     ),
                 style = textBodyRegular,
                 color = colorTextDescription,

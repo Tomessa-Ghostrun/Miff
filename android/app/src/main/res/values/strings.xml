@@ -408,6 +408,9 @@
     <string name="feed_selector_a11y">Miff shown: %1$s. Tap to switch Miff or add one.</string>
     <string name="feed_selector_join">+ Join a Miff</string>
     <string name="feed_selector_create">+ Create a Miff</string>
+    <string name="feed_selector_paywall_title">More than one Miff with Miff+</string>
+    <string name="feed_selector_paywall_body">The free plan lets you be in one Miff at a time. With Miff+, create and join as many Miffs as you like.</string>
+    <string name="feed_selector_paywall_soon_body">This option isn\'t open yet. Your current Miff stays as it is.</string>
     <string name="feed_nomiff_body">Create your Miff or join a loved one\'s to get started.</string>
     <string name="feed_create_action">Create a Miff</string>
     <string name="feed_join_action">Join a Miff</string>
@@ -894,6 +897,11 @@
     <string name="update_photo_close_a11y">Close the photo</string>
     <string name="update_photo_position">Position measured %1$s.</string>
     <string name="update_photo_see_where">See where it was</string>
+    <string name="feed_photo_download">Save photo</string>
+    <string name="feed_photo_download_a11y">Save this photo on your phone</string>
+    <string name="feed_photo_download_saving">Saving…</string>
+    <string name="feed_photo_download_done">Photo saved on your phone.</string>
+    <string name="feed_photo_download_failed">We couldn\'t save the photo. You can try again.</string>
     <string name="update_notice_unconfirmed">We couldn\'t confirm it. Check your Feed: if your photo is there, it went through.</string>
     <string name="update_action_open_feed">Open my Feed</string>
     <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff is no longer allowed to use it. You can turn it back on in the settings, then try again.</string>

@@ -4,7 +4,7 @@
 **Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 1 h et 2 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce plus bas). Une seule vraie sortie est facultative (partie G).
 **À savoir avant de commencer** :
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main (la connexion Google ne marcherait pas). Désinstallez l'ancienne version d'abord.
-- **La photo d'update n'est pas dans cette livraison** (ticket FEED-4) : aucune carte n'a de photo, c'est normal.
+- **La photo d'update** s'affiche depuis FEED-4 ; le bouton « Enregistrer la photo » du plein écran (décision du 2026-11-08) se recette en **Partie J**.
 - **Aucune notification** n'est envoyée et il n'y a plus de cloche : c'est voulu (plan gratuit).
 - Avant de commencer, vérifiez avec l'assistant que les règles Firestore des **statuts** et de la **position** sont bien déployées (sinon « Localiser » dira toujours « pas de position connue » et les statuts ne seront pas lisibles).
 
@@ -35,7 +35,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] L'en-tête **se masque quand on fait défiler vers le bas** (il glisse vers le haut avec le fil, sans saut) **et réapparaît dès qu'on remonte**, même au milieu de la liste, sans attendre d'être tout en haut ; aucune carte n'est cachée dessous ni ne laisse de bande blanche. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
-- [ ] Avec **une seule Miff** : le nom est dans une pastille **plate, sans flèche** (elle ne réagit pas au toucher). Avec **plusieurs Miffs** (compte Premium) : pastille avec flèche, liste avec **coche** sur la Miff affichée, « + Rejoindre / + Créer » (et seulement pour un Premium).
+- [ ] **Sélecteur de Miff (D47, 2026-11-08)** : pour **tout le monde**, même avec une seule Miff, la pastille a la flèche et l'ombre et s'ouvre ; la liste montre la ou les Miffs (coche sur celle affichée) puis « + Rejoindre une Miff » et « + Créer une Miff ». Un compte gratuit déjà dans une Miff arrive sur le paywall en les touchant : voir la **Partie I**.
 
 ## Partie A bis — Comportement de l'en-tête au défilement (4 min)
 
@@ -135,6 +135,31 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 
 Le Feed est le premier gros consommateur de lectures du plan gratuit (50 000 par jour pour tout le projet). Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectures** avant, puis **ouvrez le Feed une fois à froid** (app fermée puis ouverte), notez le nombre après (le graphique a un délai d'environ 4 minutes). Estimation de l'ouverture à froid pour 4 membres et 3 lieux : **environ 20 lectures** ; un rattachement à chaud : une dizaine ; « Localiser » : **6** (1 + 5 de règles). Reportez vos chiffres à l'assistant : ils servent à recalibrer `docs/dev/surveillance-quotas.md`.
 
+
+## Partie I — Sélecteur de Miff et paywall « 2e Miff » (5 min, retour du PM du 2026-11-08)
+
+Avec un compte **gratuit** (sans droit Miff+) déjà dans une Miff, puis, si possible, avec un compte **Miff+** (droit accordé à la main dans la console).
+- [ ] **Compte gratuit, une seule Miff** : la pastille du nom de la Miff **a une flèche bleue et une ombre** (elle n'est plus plate) et **s'ouvre** au toucher. La liste montre **votre Miff (avec la coche)**, puis **« + Rejoindre une Miff »** et **« + Créer une Miff »**.
+- [ ] Touchez **« + Rejoindre une Miff »** : l'écran **« Plusieurs Miffs avec Miff+ »** s'ouvre (pas l'écran de saisie du code). Il explique en une phrase que la formule gratuite permet d'être dans une Miff à la fois, **sans prix**, **sans le mot « Premium »**, sans bouton d'achat, avec « **Miff+ arrive bientôt** » et « Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place. » **« Plus tard »** (ou la croix, ou le geste retour) vous ramène au Feed **sans rien avoir changé**.
+- [ ] Refaites avec **« + Créer une Miff »** : même écran, même retour.
+- [ ] **Compte Miff+** : « + Rejoindre une Miff » ouvre l'écran de saisie du code, « + Créer une Miff » ouvre l'écran de création, comme avant. Aucun paywall.
+- [ ] **Hors connexion** (mode avion) puis rouvrez l'app, ouvrez la liste et touchez « + Créer une Miff » : l'écran de **création** s'ouvre (on ne vous prend pas pour un compte gratuit sur un doute) ; il vous dit calmement ce qui ne va pas si l'envoi est impossible.
+- [ ] **Compte sans aucune Miff** : « Pas encore de Miff » (inchangé : deux boutons Créer / Rejoindre, aucun paywall).
+- [ ] **TalkBack** (facultatif) : la pastille s'annonce « Miff affichée : … Appuie pour changer de Miff ou en ajouter une » ; les deux entrées se lisent « Rejoindre une Miff » / « Créer une Miff ».
+- [ ] Le serveur reste la vraie barrière : même un client modifié ne peut pas ajouter une 2e Miff à un compte gratuit (règles Firestore, tests C8, C9, C11, J10, J11 de `backend/tests/rules`) ; rien à vérifier à la main.
+
+## Partie J — « Enregistrer la photo » dans le plein écran (5 min, retour du PM du 2026-11-08)
+
+Il faut une carte avec une **photo d'update** (le compte B publie une photo depuis l'onglet Update).
+- [ ] **Sur la carte**, l'aperçu de la photo n'a **aucun bouton d'enregistrement**. Touchez la photo : le plein écran s'ouvre. En bas, au-dessus de « Voir où c'était », un bouton **« Enregistrer la photo »** (pictogramme flèche vers le bas, contour blanc, pas plus petit qu'un doigt).
+- [ ] **Rien n'est enregistré avant le toucher** : ouvrez et fermez la photo plusieurs fois, puis regardez la galerie : aucune photo « Miff » n'est apparue.
+- [ ] Touchez **« Enregistrer la photo »** : le bouton passe un instant à « Enregistrement… », puis la phrase calme **« Photo enregistrée sur ton téléphone. »** apparaît. Ouvrez la **Galerie / Google Photos** : un album **« Miff »** contient la photo, nommée **`Miff-AAAA-MM-JJ-HHMMSS.jpg`** (la date et l'heure de l'enregistrement : **ni prénom, ni lieu**). Dans les informations de la photo : **aucun lieu GPS**.
+- [ ] **Aucune demande d'autorisation** n'est apparue (ni stockage, ni photos). Dans les réglages Android > Applications > Miff > Autorisations : seulement Position, Appareil photo et Notifications, comme avant.
+- [ ] Touchez deux fois très vite : **un seul fichier** est créé pour ce toucher.
+- [ ] Mettez le téléphone en **mode avion** après avoir ouvert la photo : l'enregistrement marche encore (la photo est déjà sur le téléphone). Si le stockage est plein : la phrase calme **« On n'a pas pu enregistrer la photo. Tu peux réessayer. »** apparaît, sans alarme.
+- [ ] **Ailleurs : pas de bouton** : l'écran Update (aperçu avant publication) et l'aperçu de la carte n'ont pas de bouton d'enregistrement.
+- [ ] **TalkBack** (facultatif) : le bouton se lit « Enregistrer cette photo sur ton téléphone » ; la phrase de confirmation est annoncée.
+- [ ] **Posture vie privée** (à lire, pas un test) : une photo enregistrée sort de Miff (les 24 heures ne s'appliquent plus à la copie). Les textes légaux doivent être alignés avant publication : `docs/release/update-photo-declarations.md` §15 et `docs/legal/README.md` §7.
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
 La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.

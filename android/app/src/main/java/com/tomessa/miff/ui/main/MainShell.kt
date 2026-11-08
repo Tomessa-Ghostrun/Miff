@@ -50,6 +50,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
@@ -78,6 +79,7 @@ import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
+import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.ProfileTabScreen
@@ -284,6 +286,7 @@ private fun MainNavigation(
                 onSelectMiff = feedViewModel::onSelect,
                 onCreateMiff = { navController.open(CreateMiffRoute) },
                 onJoinMiff = { navController.open(JoinMiffRoute) },
+                onMiffOffer = { navController.open(PlacePaywallRoute.of(PaywallReason.MIFF)) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
                 agreement = AgreementUi(waiting, container.awaitingAgreement::requestReview),
                 feed =
@@ -523,6 +526,8 @@ fun MainTabs(
     onSelectMiff: (String) -> Unit,
     onCreateMiff: () -> Unit,
     onJoinMiff: () -> Unit,
+    /** A free account that already has a Miff asked for another one from the selector of the Feed: the offer opens (decision of the PM, 2026-11-08). */
+    onMiffOffer: () -> Unit = {},
     onOpenMiff: (String) -> Unit,
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
@@ -642,6 +647,7 @@ fun MainTabs(
                                     onSelect = onSelectMiff,
                                     onCreate = onCreateMiff,
                                     onJoin = onJoinMiff,
+                                    onMiffOffer = onMiffOffer,
                                     agreement = agreement,
                                     feed = feed.state,
                                     locate = feed.locate,

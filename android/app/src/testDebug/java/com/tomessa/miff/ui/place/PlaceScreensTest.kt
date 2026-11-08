@@ -581,6 +581,46 @@ class PlaceScreensTest {
         composeRule.onNodeWithContentDescription(text(R.string.place_paywall_close_a11y)).assertIsDisplayed()
     }
 
+    // A 2nd Miff, asked from the selector of the Feed (decision of the PM, 2026-11-08): its own sentence, no price, never "Premium".
+    @Test
+    fun offer_secondMiff_saysWhy_withTheSentenceOfAMiff_notOfPlaces() {
+        var closed = 0
+        show { PlacePaywallScreen(PaywallReason.MIFF, onClose = { closed++ }) }
+        shoot("feed-selecteur-offre-2e-miff")
+        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.place_paywall_soon)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_soon_body)).performScrollTo().assertIsDisplayed()
+        // "Your places stay as they are" would be wrong here; the sentences of the places are absent.
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_soon_body)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_limit_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_danger_title)).assertCountEquals(0)
+        // No purchase exists: no price, no trial, no percentage, never the word "Premium".
+        listOf("Premium", "€", "essai", "%", "Économis").forEach {
+            composeRule.onAllNodesWithText(it, substring = true, ignoreCase = true).assertCountEquals(0)
+        }
+        composeRule.onNodeWithText(text(R.string.place_paywall_later)).performClick()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun offer_theRouteCarriesAFixedWord_andTheSecondMiffHasItsAnalyticsTrigger() {
+        assertEquals("miff", PlacePaywallRoute.of(PaywallReason.MIFF).reason)
+        assertEquals(PaywallReason.MIFF, PlacePaywallRoute("miff").paywallReason())
+        assertEquals(PaywallReason.LIMIT, PlacePaywallRoute.of(PaywallReason.LIMIT).paywallReason())
+        assertEquals(PaywallReason.DANGER, PlacePaywallRoute.of(PaywallReason.DANGER).paywallReason())
+        assertEquals(PaywallReason.DANGER, PlacePaywallRoute("anything").paywallReason())
+        assertEquals(
+            com.tomessa.miff.domain.analytics.AnalyticsEvent.PaywallTrigger.EXTRA_MIFF,
+            paywallTrigger(PaywallReason.MIFF),
+        )
+        assertEquals(
+            com.tomessa.miff.domain.analytics.AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE,
+            paywallTrigger(PaywallReason.LIMIT),
+        )
+        assertEquals(null, paywallTrigger(PaywallReason.DANGER))
+    }
+
     // --- The largest font (criterion TRA2) ----------------------------------------------------------------------------------------
 
     @Test
