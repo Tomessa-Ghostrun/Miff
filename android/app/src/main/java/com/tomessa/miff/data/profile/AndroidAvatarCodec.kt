@@ -70,7 +70,8 @@ class AndroidAvatarCodec(
     override suspend fun decodeBytes(bytes: ByteArray): DecodedPhoto? =
         withContext(Dispatchers.IO) {
             try {
-                decodeFrom { ByteArrayInputStream(bytes) }?.let { BitmapPhoto(it) }
+                // A picture that came from the network: stricter than a file the person chose (type, size, working size).
+                decodeFrom(remote = true) { ByteArrayInputStream(bytes) }?.let { BitmapPhoto(it) }
             } catch (e: IOException) {
                 null
             } catch (e: OutOfMemoryError) {
@@ -102,8 +103,16 @@ class AndroidAvatarCodec(
         return decodeFrom { resolver.openInputStream(uri) }
     }
 
-    /** [open] gives a NEW stream at each call (the source is read three times: size, pixels, orientation). */
-    private fun decodeFrom(open: () -> InputStream?): Bitmap? {
+    /**
+     * [open] gives a NEW stream at each call (the source is read three times: size, pixels, orientation). [remote] = the
+     * bytes come from the network: before any real decoding, only the header is read (type and size), and the picture is
+     * refused unless it is a JPEG, PNG, WebP or HEIF/HEIC of at most 4 096 px on each side and 16 million pixels; it is then
+     * decoded reduced to about 1 024 px at most (never in full size).
+     */
+    private fun decodeFrom(
+        remote: Boolean = false,
+        open: () -> InputStream?,
+    ): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         // decodeStream returns NULL when only the bounds are asked: never use its result as "failed".
         val opened = open() ?: return null
@@ -111,8 +120,20 @@ class AndroidAvatarCodec(
         val sourceSide = max(bounds.outWidth, bounds.outHeight)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
         if (bounds.outWidth.toLong() * bounds.outHeight > MAX_SOURCE_PIXELS) return null
+        if (remote) {
+            if (bounds.outMimeType?.lowercase() !in REMOTE_MIME_TYPES) return null
+            if (sourceSide > REMOTE_MAX_SIDE ||
+                bounds.outWidth.toLong() * bounds.outHeight > REMOTE_MAX_PIXELS
+            ) {
+                return null
+            }
+        }
         var sample = 1
-        while (sourceSide / (sample * 2) >= WORKING_SIDE) sample *= 2
+        if (remote) {
+            while (sourceSide / sample > REMOTE_WORKING_SIDE) sample *= 2
+        } else {
+            while (sourceSide / (sample * 2) >= WORKING_SIDE) sample *= 2
+        }
         val options = BitmapFactory.Options().apply { inSampleSize = sample }
         val decoded =
             open()?.use { BitmapFactory.decodeStream(it, null, options) } ?: return null
@@ -223,6 +244,20 @@ class AndroidAvatarCodec(
 
         /** The photo is kept in memory at about this size (long side between 1 280 and 2 560 px) for the crop screen. */
         const val WORKING_SIDE = 1280
+
+        /**
+         * A picture downloaded from the network (the Google photo): only these types are decoded. GIF, BMP, TIFF, SVG and
+         * anything else are refused. HEIF/HEIC are listed but only decode where the system can (Android 9+): elsewhere the
+         * decoding simply gives nothing.
+         */
+        val REMOTE_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/heif", "image/heic")
+
+        /** A network picture is refused above 4 096 px on a side or 16 million pixels, read from its header, before decoding. */
+        const val REMOTE_MAX_SIDE = 4_096
+        const val REMOTE_MAX_PIXELS = 16_000_000L
+
+        /** A network picture is decoded reduced so that its long side is 1 024 px at most (never in full size). */
+        const val REMOTE_WORKING_SIDE = 1_024
     }
 }
 
