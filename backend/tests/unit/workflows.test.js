@@ -34,8 +34,18 @@ const SECRETS_ALLOWED = {
   'android.yml': ['DEBUG_KEYSTORE_B64', 'GOOGLE_SERVICES_JSON_B64'],
   // ios.yml : seulement la configuration Firebase (recréée pour la compilation, supprimée en fin de job).
   'ios.yml': ['GOOGLE_SERVICE_INFO_PLIST_B64'],
-  // ios-testflight.yml : les 4 secrets de signature + la configuration Firebase (mêmes règles que ios.yml).
-  'ios-testflight.yml': ['APPLE_TEAM_ID', 'ASC_ISSUER_ID', 'ASC_KEY_ID', 'ASC_KEY_P8_B64', 'GOOGLE_SERVICE_INFO_PLIST_B64'],
+  // ios-testflight.yml : les 4 secrets de la clé d'API + les 3 de la signature manuelle (certificat Apple Distribution en .p12, son
+  // mot de passe, profil App Store : docs/dev/apple-certificats-ci.md) + la configuration Firebase (mêmes règles que ios.yml).
+  'ios-testflight.yml': [
+    'APPLE_TEAM_ID',
+    'APPSTORE_PROFILE_B64',
+    'ASC_ISSUER_ID',
+    'ASC_KEY_ID',
+    'ASC_KEY_P8_B64',
+    'DIST_CERT_P12_B64',
+    'DIST_CERT_P12_PASSWORD',
+    'GOOGLE_SERVICE_INFO_PLIST_B64',
+  ],
 };
 
 test('WORKFLOWS - permissions minimales, annulation des exécutions obsolètes, jamais pull_request_target', () => {
