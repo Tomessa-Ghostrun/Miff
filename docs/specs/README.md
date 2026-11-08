@@ -13,7 +13,7 @@ Toutes basées sur le Figma original du PM (`Byi9NgQxkBPbmbhU403HSf`) et les not
 | [lieux-de-confiance.md](lieux-de-confiance.md) | Backlog discovery | — |
 | [paywall-premium.md](paywall-premium.md) | Backlog discovery | — |
 | [profil-et-reglages.md](profil-et-reglages.md) | Backlog discovery — incomplète | — |
-| [notifications.md](notifications.md) | Backlog discovery — incomplète | — |
+| [notifications.md](notifications.md) | Backlog discovery — proposition complète rédigée le 2026-11-08 ([ticket](../tickets/notifications.md)), en attente des décisions du PM | — |
 
 Toutes en attente de relecture/validation par le PM avant passage en "Backlog dev".
 
