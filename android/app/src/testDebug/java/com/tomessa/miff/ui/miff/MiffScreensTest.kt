@@ -11,10 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -134,7 +136,7 @@ class MiffScreensTest {
     fun choice_offersTheTwoWays_aQuietSignOut_andNoBackArrow() {
         var created = 0
         var joined = 0
-        show { MiffChoiceScreen(onCreate = { created++ }, onJoin = { joined++ }, onSignOut = {}, onDeleteAccount = {}) }
+        show { MiffChoiceScreen(onCreate = { created++ }, onJoin = { joined++ }, onSignOut = {}, onOpenSettings = {}) }
         shoot("miff-a-choice")
         composeRule.onNodeWithText(text(R.string.miff_choice_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_choice_create_title)).performClick()
@@ -143,6 +145,21 @@ class MiffScreensTest {
         assertEquals(1, joined)
         composeRule.onNodeWithText(text(R.string.auth_signout_action)).assertIsDisplayed()
         composeRule.onAllNodesWithContentDescription(text(R.string.auth_back_a11y)).assertCountEquals(0)
+    }
+
+    @Test
+    fun choice_hasADiscreetGearToTheRestrictedSettings_namedForTheScreenReader_atLeast48dp() {
+        var opened = 0
+        show { MiffChoiceScreen(onCreate = {}, onJoin = {}, onSignOut = {}, onOpenSettings = { opened++ }) }
+        composeRule
+            .onNodeWithContentDescription(text(R.string.profile_tab_settings_a11y))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .assertWidthIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, opened)
+        // The deletion itself is never offered here: it lives inside Settings > Mon compte.
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_entry)).assertCountEquals(0)
     }
 
     // --- B and C. Create ------------------------------------------------------------------------------------------

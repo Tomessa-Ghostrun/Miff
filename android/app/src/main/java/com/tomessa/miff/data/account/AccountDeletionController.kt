@@ -50,8 +50,11 @@ sealed interface AccountDeletionState {
 interface AccountDeletionControls {
     val state: StateFlow<AccountDeletionState>
 
-    /** The person has just proved who they are: the marker is written, the app stops what runs, and the deletion goes on. */
-    fun start()
+    /**
+     * The person has just proved who they are: the marker is written, the app stops what runs, and the deletion goes on. False when it
+     * could NOT start (no session, or the marker could not be written to the disk): nothing was touched and the person can try again.
+     */
+    fun start(): Boolean
 
     /** Launch with a marker and a valid session: the deletion is taken up again, with no new re-authentication. */
     fun resume()
@@ -116,12 +119,19 @@ class AccountDeletionController(
 
     private var job: Job? = null
 
-    override fun start() {
-        val uid = currentUid() ?: return
-        if (isRunning()) return
-        // On the disk BEFORE the first change: an app killed at once still resumes (SC26).
-        marker.write(AccountDeletionMark(uid, isAppleLinked()))
+    override fun start(): Boolean {
+        val uid = currentUid() ?: return false
+        if (isRunning()) return true
+        // On the disk BEFORE the first change: an app killed at once still resumes (SC26). If the write is not confirmed, NOTHING starts
+        // (no silent carry-on without a marker: a killed app would then find an account half deleted and no trace of it).
+        if (!marker.write(AccountDeletionMark(uid, isAppleLinked()))) {
+            // A SharedPreferences commit() that fails still leaves the new value IN MEMORY: remove it, so that read() never returns a marker that
+            // is not on the disk (a "Réessayer" or a resume would then run a deletion that nothing would take up again after a kill).
+            marker.clear()
+            return false
+        }
         launch(uid, resumed = false, retrying = false)
+        return true
     }
 
     override fun resume() {
@@ -134,13 +144,13 @@ class AccountDeletionController(
 
     override fun retry() {
         val uid = currentUid() ?: return
-        if (isRunning()) return
+        if (isRunning() || !hasMarkerOf(uid)) return
         launch(uid, resumed = false, retrying = true)
     }
 
     override fun reauthenticated() {
         val uid = currentUid() ?: return
-        if (isRunning()) return
+        if (isRunning() || !hasMarkerOf(uid)) return
         launch(uid, resumed = false, retrying = false)
     }
 
@@ -149,10 +159,19 @@ class AccountDeletionController(
     }
 
     override fun signInAgain() {
-        scope.launch { session.endSessionKeepingDeletionMarker() }
+        scope.launch {
+            session.endSessionKeepingDeletionMarker()
+            // The controller outlives the screens (one instance for the life of the process). Left on NeedsSignIn or Stuck, it would still
+            // say so after the person signed in again, and the host only takes the deletion up again from Idle: the screen would loop
+            // until the app is killed. Back to Idle (the marker is kept), the next sign-in with the same account resumes on THIS instance.
+            if (!isRunning()) mutableState.value = AccountDeletionState.Idle
+        }
     }
 
     private fun isRunning() = job?.isActive == true
+
+    /** Nothing is (re)launched without the marker of THIS account on the disk: it is what makes a killed app pick the deletion up again. */
+    private fun hasMarkerOf(uid: String) = marker.read()?.uid == uid
 
     private fun launch(
         uid: String,

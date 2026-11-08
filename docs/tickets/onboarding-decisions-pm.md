@@ -33,3 +33,7 @@ Réponses du PM aux 14 questions de `docs/tickets/onboarding.md` (ce fichier rem
 - **Nouveau livrable** : écran Paywall provisoire (ONB-4 et ONB-8), avec l'amorce de notifications.
 - **Textes légaux et stores** : la politique de confidentialité, les CGU et les déclarations des stores ne mentionnent pas encore le numéro de téléphone ; à compléter avant toute publication (risque juridique assumé par le PM, pas de relecture juridique).
 - **Interrupteur de compilation** (amorce de notifications et écran Paywall provisoire) pour pouvoir les retirer du build soumis aux stores si la relecture l'exige ; la décision de s'en servir te reviendra.
+
+## Décision du PM (2026-11-07) : Q13 révisée, Réglages restreints sans Miff
+
+**Décision du PM (2026-11-07), révise Q13 sur un point** : toujours **pas de barre d'onglets** sans Miff, mais la personne SANS Miff a accès à des **Réglages restreints** (liste limitée à « Mon compte » : e-mail, mot de passe, déconnexion, Supprimer mon compte ; et « Confidentialité » : textes légaux, autorisations, contact ; **pas** de Mes informations, Langue ni Notifications pour l'instant), par une **roue crantée discrète en haut à droite de l'écran de choix** (mêmes écrans Réglages que ceux de la barre, retour simple vers l'écran d'origine). Raison : la suppression de compte doit rester lançable dans l'app pour tout compte, y compris sans Miff (Google Play, Apple 5.1.1(v)), et elle n'est accessible que depuis les Réglages (décision du même jour, `suppression-compte.md`).

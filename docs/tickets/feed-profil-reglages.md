@@ -512,3 +512,9 @@ Réponse du PM aux 15 questions de §10 : **« OK pour tout »**. Chaque recomma
 **Conséquences pour les deux premières PR Android** : ONB-3a applique Q1, Q4, Q6, Q7, Q15 (et le périmètre de §7) ; ONB-3b applique Q5 et Q6. Les autres décisions guident les tickets FEED, PRO, ABO, Lieux, Miff, Premium et Notifications.
 
 *Le statut des tickets dans Notion n'est pas modifié par ce document ; le PM en garde la main.*
+
+## Décision du PM (2026-11-07) : Réglages restreints sans Miff
+
+**Décision du PM (2026-11-07), révise Q13 sur un point** : toujours **pas de barre d'onglets** sans Miff, mais la personne SANS Miff a accès à des **Réglages restreints** (liste limitée à « Mon compte » : e-mail, mot de passe, déconnexion, Supprimer mon compte ; et « Confidentialité » : textes légaux, autorisations, contact ; **pas** de Mes informations, Langue ni Notifications pour l'instant), par une **roue crantée discrète en haut à droite de l'écran de choix** (mêmes écrans Réglages que ceux de la barre, retour simple vers l'écran d'origine). Raison : la suppression de compte doit rester lançable dans l'app pour tout compte, y compris sans Miff (Google Play, Apple 5.1.1(v)), et elle n'est accessible que depuis les Réglages (décision du même jour, `suppression-compte.md`).
+
+Côté Android (0.17.0) : la roue crantée du Profil (`GearButton`) est réutilisée à l'identique sur l'écran de choix (nom parlé « Réglages », cible de 48 dp) ; `SettingsScreen` n'affiche que « Mon compte » et « Confidentialité » quand ses deux rappels « Mes informations » et « Langue » sont absents ; aucune nouvelle clé de texte, aucune nouvelle lecture Firestore.

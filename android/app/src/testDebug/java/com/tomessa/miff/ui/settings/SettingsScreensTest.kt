@@ -363,6 +363,38 @@ class SettingsScreensTest {
     }
 
     @Test
+    fun restrictedSettings_listsMyAccountAndPrivacyOnly_noMyInformationNoLanguage() {
+        val opened = mutableListOf<String>()
+        show {
+            SettingsScreen(
+                onBack = {},
+                onOpenMyInfo = null,
+                onOpenAccount = { opened += "account" },
+                onOpenLanguage = null,
+                onOpenPrivacy = { opened += "privacy" },
+            )
+        }
+        shoot("settings-list-restricted")
+        composeRule.onAllNodesWithText(text(R.string.settings_my_info_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_language_title)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(
+                text(R.string.settings_account_title),
+            ).assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule
+            .onNodeWithText(
+                text(R.string.settings_privacy_title),
+            ).assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(listOf("account", "privacy"), opened)
+        // The deletion is INSIDE "Mon compte", never a line of the list.
+        composeRule.onAllNodesWithText(text(R.string.settings_delete_entry)).assertCountEquals(0)
+    }
+
+    @Test
     fun settings_eachRowIsOneButton_ofAtLeast48dp_andOpensItsScreen() {
         val opened = mutableListOf<String>()
         show {

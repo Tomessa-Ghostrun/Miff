@@ -87,6 +87,17 @@ class SubscriptionScreensTest {
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
     }
 
+    @Test
+    fun restrictedSettingsList_ofAnAccountWithNoMiff_hasNoSubscriptionLine() {
+        // The restricted list: Mon compte and Confidentialité only, and the subscription callback is never given.
+        show { SettingsScreen({}, null, {}, null, {}) }
+        composeRule.onNodeWithText(text(R.string.settings_account_title)).assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_privacy_title)).assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_my_info_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_subscription_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Miff+", substring = true).assertCountEquals(0)
+    }
+
     // --- The screen (criteria F2, F4) ---------------------------------------------------------------------------------------------
 
     @Test
