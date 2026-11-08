@@ -6,11 +6,13 @@
 Filet de sécurité complémentaire au geofencing (voir [localisation-lieux-de-confiance.md](localisation-lieux-de-confiance.md)) : si un membre quitte un lieu de confiance et ne redonne pas de nouvelles, son statut s'aggrave progressivement pour alerter son cercle sans qu'il ait à faire quoi que ce soit de dramatique — juste ne rien faire.
 
 ## Règles métier actées (issues des notes du PM)
-1. Un membre qui quitte une "zone verte" (lieu de confiance) **et** ne publie pas d'update depuis plus de **1 h** → passe **orange**.
-2. Un membre qui ne publie toujours pas d'update **2 h** après son départ (soit 1 h après être passé orange) → passe **rouge**.
+1. Un membre qui a quitté une "zone verte" (lieu de confiance) passe **orange** si la sortie date de plus de **2 h** **et** que sa dernière update date de plus de **2 h** (l'âge pris en compte est le plus récent des deux).
+2. Il passe **rouge** si la sortie date de plus de **4 h** **et** que sa dernière update date de plus de **4 h**. Dans un lieu de confiance : vert.
 
-*Seuils mis à jour le 2026-11-01 (ticket Notion « Statut », décision du PM) : orange à 1 h, rouge à 2 h. Les notes d'origine disaient 2 h puis 2 h supplémentaires (rouge à 4 h).*
-3. Un membre **rouge** doit donner une update toutes les heures (tant qu'il reste rouge).
+*Seuils mis à jour le 2026-11-08 (décision du PM, retours de recette) : orange à 2 h, rouge à 4 h. Ils remplacent 1 h / 2 h (2026-11-01) ; les notes d'origine disaient aussi 2 h puis 4 h. Bornes « plus de » (strictes) : à 2 h 00 pile encore vert, orange de 2 h 01 à 4 h 00 pile, rouge à partir de 4 h 01 ; zone de danger : rouge à plus d'1 h 00 (1 h 00 pile pas encore rouge).*
+
+3. **Zone de danger** (décision du PM du 2026-11-08 ; « moins d'une heure » écrit au départ était une faute de frappe) : si la personne est dans une zone de danger **et** que sa dernière update date de **plus d'une heure** (ou n'existe pas), elle passe **rouge**. Si sa dernière update date d'une heure ou moins, pas de rouge forcé : la couleur suit la règle normale. La zone de confiance l'emporte toujours. Constante : `StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS` (1 h, Android et iOS). Cela remplace « zone de danger = toujours rouge, l'update ne ramène pas au vert ».
+4. Un membre **rouge** doit donner une update toutes les heures (tant qu'il reste rouge).
 
 ## User stories
 - En tant que membre d'une Miff, je veux que mon statut s'aggrave automatiquement si je ne donne pas de nouvelles, sans avoir à déclencher une alerte moi-même.

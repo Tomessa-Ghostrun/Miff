@@ -136,8 +136,8 @@ class FeedPhotoAndPromptTest {
     @Test
     fun theBubbleFollowsMyStatusInTheMiffShown_orange_red_orNothing() {
         assertEquals(PromptLevel.NONE, build(mapOf(me to status(presenceAgo = 30 * minute))).myPrompt)
-        assertEquals(PromptLevel.ORANGE, build(mapOf(me to status(presenceAgo = 90 * minute))).myPrompt)
-        assertEquals(PromptLevel.RED, build(mapOf(me to status(presenceAgo = 3 * hour))).myPrompt)
+        assertEquals(PromptLevel.ORANGE, build(mapOf(me to status(presenceAgo = 150 * minute))).myPrompt)
+        assertEquals(PromptLevel.RED, build(mapOf(me to status(presenceAgo = 5 * hour))).myPrompt)
     }
 
     @Test
@@ -148,7 +148,7 @@ class FeedPhotoAndPromptTest {
 
     @Test
     fun noBubbleWhenIDoNotShare_orMyAgreementIsWaited_orMyStatusIsNotPublished() {
-        val old = status(presenceAgo = 3 * hour)
+        val old = status(presenceAgo = 5 * hour)
         assertEquals(
             PromptLevel.NONE,
             build(mapOf(me to old), members = listOf(member(me, sharing = false), member("t"))).myPrompt,

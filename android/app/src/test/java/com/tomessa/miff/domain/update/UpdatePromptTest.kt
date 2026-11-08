@@ -41,10 +41,11 @@ class UpdatePromptTest {
     // --- Orange and red, at the limits of the thresholds --------------------------------------------------------------------------
 
     @Test
-    fun justUnderAnHour_nothing_atAnHour_orange_atTwoHoursIncluded_orange_justOver_red() {
+    fun upToTwoHoursIncluded_nothing_justOver_orange_atFourHoursIncluded_orange_justOver_red() {
         fun at(elapsed: Long) = prompt(status(PresenceValue.OUT, presenceAt = T0 - elapsed), now = T0)
         assertEquals(PromptLevel.NONE, at(StatusThresholds.ORANGE_AFTER_MILLIS - 1))
-        assertEquals(PromptLevel.ORANGE, at(StatusThresholds.ORANGE_AFTER_MILLIS))
+        assertEquals(PromptLevel.NONE, at(StatusThresholds.ORANGE_AFTER_MILLIS))
+        assertEquals(PromptLevel.ORANGE, at(StatusThresholds.ORANGE_AFTER_MILLIS + 1))
         assertEquals(PromptLevel.ORANGE, at(StatusThresholds.RED_AFTER_MILLIS))
         assertEquals(PromptLevel.RED, at(StatusThresholds.RED_AFTER_MILLIS + 1))
     }
@@ -52,7 +53,7 @@ class UpdatePromptTest {
     @Test
     fun theColourOfTheBubble_isTheColourOfTheCentralButton_oneCalculation() {
         // For every moment of a long day, the bubble says orange exactly when StatusColor says orange, red when red.
-        for (minutes in 0..300 step 5) {
+        for (minutes in 0..420 step 5) {
             val s = status(PresenceValue.OUT, presenceAt = T0 - minutes * 60_000L)
             val facts = MemberStatusFacts(true, s.presence, s.presenceAtMillis, s.lastUpdateAtMillis)
             val expected =
@@ -69,16 +70,16 @@ class UpdatePromptTest {
 
     @Test
     fun anUpdatePublished_bringsBackToGreen_theBubbleGoes() {
-        val before = status(PresenceValue.OUT, presenceAt = T0 - 3 * hour)
+        val before = status(PresenceValue.OUT, presenceAt = T0 - 5 * hour)
         assertEquals(PromptLevel.RED, prompt(before))
         // Publishing sets lastUpdateAt = now: the reference of the colour is the most recent of the departure and the update.
-        val after = status(PresenceValue.OUT, presenceAt = T0 - 3 * hour, lastUpdateAt = T0)
+        val after = status(PresenceValue.OUT, presenceAt = T0 - 5 * hour, lastUpdateAt = T0)
         assertEquals(PromptLevel.NONE, prompt(after))
     }
 
     @Test
     fun orangeThenArrivalAtHome_withoutPublishing_theBubbleGoes() {
-        val orange = status(PresenceValue.OUT, presenceAt = T0 - 90 * 60_000L)
+        val orange = status(PresenceValue.OUT, presenceAt = T0 - 150 * 60_000L)
         assertEquals(PromptLevel.ORANGE, prompt(orange))
         val home = status(PresenceValue.IN_TRUSTED, presenceAt = T0, lastUpdateAt = T0)
         assertEquals(PromptLevel.NONE, prompt(home))
@@ -86,27 +87,24 @@ class UpdatePromptTest {
 
     @Test
     fun theBubbleNeverGoesWithTime_onlyWithAChangeOfLevel() {
-        val s = status(PresenceValue.OUT, presenceAt = T0 - 3 * hour)
+        val s = status(PresenceValue.OUT, presenceAt = T0 - 5 * hour)
         listOf(0L, 10 * hour, 40 * hour).forEach { later -> assertEquals(PromptLevel.RED, prompt(s, now = T0 + later)) }
     }
 
-    // --- The danger zone: red stays red, the bubble goes once an update follows the arrival (C8, D8) -------------------------------
+    // --- The danger zone: red only while the last update is more than an hour old (PM, 2026-11-08) ------------------------------------
 
     @Test
-    fun inADangerZone_theBubbleIsRed_untilAnUpdateIsPublishedAfterTheArrival() {
+    fun inADangerZone_theBubbleIsRed_untilAnUpdateIsPublished_thenItGoes_andComesBackAnHourLater() {
         val entered = status(PresenceValue.IN_RISK, presenceAt = T0 - 10 * 60_000L, lastUpdateAt = T0 - 5 * hour)
         assertEquals(PromptLevel.RED, prompt(entered))
         val updated = status(PresenceValue.IN_RISK, presenceAt = T0 - 10 * 60_000L, lastUpdateAt = T0 - 60_000L)
         assertEquals(PromptLevel.NONE, prompt(updated))
-        // The colour itself stays red in a danger zone: an update does not bring back to green there.
+        // The colour and the bubble are the same calculation: the update brought the colour back from red.
         val facts = MemberStatusFacts(true, updated.presence, updated.presenceAtMillis, updated.lastUpdateAtMillis)
-        assertEquals(StatusLevel.RED, StatusColor.level(facts, T0))
-    }
-
-    @Test
-    fun inADangerZone_anUpdateExactlyAtTheArrival_countsAsAfterIt() {
-        val s = status(PresenceValue.IN_RISK, presenceAt = T0 - 1_000L, lastUpdateAt = T0 - 1_000L)
-        assertEquals(PromptLevel.NONE, prompt(s))
+        assertEquals(StatusLevel.GREEN, StatusColor.level(facts, T0))
+        // One hour (and one second) after the update, nothing new: red again, the bubble too.
+        assertEquals(PromptLevel.NONE, prompt(updated, now = T0 - 60_000L + hour))
+        assertEquals(PromptLevel.RED, prompt(updated, now = T0 - 60_000L + hour + 1_000L))
     }
 
     @Test
@@ -122,7 +120,7 @@ class UpdatePromptTest {
     @Test
     fun noStatus_sharingStopped_unknownPresence_neverAnyBubble() {
         assertEquals(PromptLevel.NONE, prompt(null))
-        assertEquals(PromptLevel.NONE, prompt(status(PresenceValue.OUT, presenceAt = T0 - 3 * hour), sharing = false))
+        assertEquals(PromptLevel.NONE, prompt(status(PresenceValue.OUT, presenceAt = T0 - 5 * hour), sharing = false))
         // A person who never went through a trusted zone is neutral (N4): no bubble, whatever the clock says.
         assertEquals(PromptLevel.NONE, prompt(status(PresenceValue.UNKNOWN, presenceAt = T0 - 30 * hour)))
         assertEquals(PromptLevel.NONE, prompt(status(null)))

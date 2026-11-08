@@ -13,8 +13,12 @@ import com.tomessa.miff.domain.update.PromptLevel
  * (a kind of place, a moment, a level), never a sentence: the sentences are texts `feed_*` (French and English, same keys on iOS).
  */
 
-/** The four categories whose NAME is replaced by the category in the sentences ("À la maison"): Maison, Travail, École, Sport (ticket 5.4). */
-enum class PlaceKind { HOME, WORK, SCHOOL, SPORT }
+/**
+ * The categories whose NAME is replaced by the category in the LABEL of a card ("À la maison"): Maison, Travail, École, Sport and Chez un proche
+ * (decision of the PM, 2026-11-08), also in the sentences ("A quitté le domicile d'un proche"). Loisir, Autre and a place with no category show the
+ * NAME of the place ([PlaceRef.Named]).
+ */
+enum class PlaceKind { HOME, WORK, SCHOOL, SPORT, RELATIVE }
 
 /** Where a status says somebody is, as far as this phone can tell (the list of places of THIS Miff is the only source). */
 sealed interface PlaceRef {

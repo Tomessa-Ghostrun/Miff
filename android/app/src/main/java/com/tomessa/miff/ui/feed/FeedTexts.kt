@@ -112,6 +112,7 @@ class FeedTexts(
                         PlaceKind.WORK -> R.string.feed_place_noun_work
                         PlaceKind.SCHOOL -> R.string.feed_place_noun_school
                         PlaceKind.SPORT -> R.string.feed_place_noun_sport
+                        PlaceKind.RELATIVE -> R.string.feed_place_noun_relative
                     },
                 )
             }
@@ -136,11 +137,13 @@ class FeedTexts(
                                 PlaceKind.WORK -> R.string.feed_label_at_work
                                 PlaceKind.SCHOOL -> R.string.feed_label_at_school
                                 PlaceKind.SPORT -> R.string.feed_label_at_sport
+                                PlaceKind.RELATIVE -> R.string.feed_label_at_relative
                             },
                         )
                     }
 
                     is PlaceRef.Named -> {
+                        // Loisir, Autre, no category: the NAME of the trusted place, nothing around it (decision of the PM, 2026-11-08).
                         s(R.string.feed_label_at_place, place.name)
                     }
 
