@@ -8,6 +8,7 @@ import com.tomessa.miff.data.miff.RenewalMiff
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.domain.miff.MiffFailure
+import com.tomessa.miff.domain.notification.SecondChance
 import com.tomessa.miff.domain.permission.GateScreen
 import com.tomessa.miff.domain.permission.LocationButton
 import com.tomessa.miff.domain.permission.PermissionSnapshot
@@ -44,11 +45,28 @@ class PermissionGateViewModelTest {
 
     private class Asks : NotificationAskStore {
         val shown = mutableSetOf<String>()
+        var systemWindowLaunched = false
+        val secondChances = mutableMapOf<String, SecondChance>()
 
         override fun wasShown(uid: String) = uid in shown
 
         override fun markShown(uid: String) {
             shown += uid
+        }
+
+        override fun systemAsked() = systemWindowLaunched
+
+        override fun markSystemAsked() {
+            systemWindowLaunched = true
+        }
+
+        override fun secondChance(uid: String) = secondChances[uid] ?: SecondChance.NONE
+
+        override fun setSecondChance(
+            uid: String,
+            value: SecondChance,
+        ) {
+            secondChances[uid] = value
         }
     }
 
@@ -137,6 +155,33 @@ class PermissionGateViewModelTest {
             val next = vm(Phone(snap()))
             advanceUntilIdle()
             assertEquals(GateScreen.LOCATION, next.uiState.value.screen)
+        }
+
+    @Test
+    fun notificationsPutOff_doesNotUseUpTheSystemWindow_neverComesBack_andPreparesTheSecondChance() =
+        runTest {
+            val model = vm(Phone(snap()))
+            advanceUntilIdle()
+            assertEquals(GateScreen.NOTIFICATIONS, model.uiState.value.screen)
+            model.onNotificationsPutOff()
+            // The pop-in is gone, the location screen follows, and the window of the system was NOT launched (it still can be, once).
+            assertEquals(GateScreen.LOCATION, model.uiState.value.screen)
+            assertFalse(asks.systemWindowLaunched)
+            assertEquals(SecondChance.DEFERRED, asks.secondChance("uid-1"))
+            // Next launch: not shown again.
+            val next = vm(Phone(snap()))
+            advanceUntilIdle()
+            assertEquals(GateScreen.LOCATION, next.uiState.value.screen)
+        }
+
+    @Test
+    fun notificationsAnswered_remembersThatTheSystemWindowWasShown_andNeverOffersTheSecondChance() =
+        runTest {
+            val model = vm(Phone(snap()))
+            advanceUntilIdle()
+            model.onNotificationsAnswered()
+            assertTrue(asks.systemWindowLaunched)
+            assertEquals(SecondChance.NONE, asks.secondChance("uid-1"))
         }
 
     @Test

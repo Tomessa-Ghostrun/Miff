@@ -58,7 +58,7 @@ extension SettingsListView {
             SettingsRow(
                 systemImage: "bell",
                 title: L10n.string("notif_settings_title"),
-                subtitle: L10n.string("notif_settings_row_subtitle"),
+                subtitle: L10n.string("notif_settings_subtitle"),
                 action: actions.onOpenNotifications
             )
         case .language:

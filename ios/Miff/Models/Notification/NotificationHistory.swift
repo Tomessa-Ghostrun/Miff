@@ -95,11 +95,11 @@ enum NotificationSection: Equatable, CaseIterable {
     var titleKey: String {
         switch self {
         case .today:
-            return "notif_section_today"
+            return "notif_center_section_today"
         case .yesterday:
-            return "notif_section_yesterday"
+            return "notif_center_section_yesterday"
         case .older:
-            return "notif_section_older"
+            return "notif_center_section_older"
         }
     }
 }

@@ -63,12 +63,14 @@ struct NotificationCenterView: View {
             )
         }
         .confirmationDialog(
-            Text("notif_center_delete_all_confirm_title"),
+            Text("notif_center_clear_confirm_title"),
             isPresented: $model.deleteAllAsked,
             titleVisibility: .visible
         ) {
-            Button("notif_center_delete_all", role: .destructive) { model.confirmDeleteAll() }
+            Button("notif_center_clear_confirm_action", role: .destructive) { model.confirmDeleteAll() }
             Button("common_cancel", role: .cancel) {}
+        } message: {
+            Text("notif_center_clear_confirm_body")
         }
     }
 
@@ -89,7 +91,7 @@ struct NotificationCenterView: View {
     private var menu: some View {
         Menu {
             Button("notif_center_mark_all_read") { model.markAllRead() }
-            Button("notif_center_delete_all", role: .destructive) { model.askDeleteAll() }
+            Button("notif_center_clear_all", role: .destructive) { model.askDeleteAll() }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 20, weight: .regular))
@@ -156,10 +158,10 @@ struct NotificationCenterView: View {
         .buttonStyle(.plain)
         .listRowBackground(colorBgCanvas.color)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button("notif_center_delete", role: .destructive) { model.delete(item) }
+            Button("ios_notif_delete", role: .destructive) { model.delete(item) }
         }
         .contextMenu {
-            Button("notif_center_delete", role: .destructive) { model.delete(item) }
+            Button("ios_notif_delete", role: .destructive) { model.delete(item) }
         }
     }
 }
@@ -186,7 +188,7 @@ private struct NotificationRowContent: View {
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
                 if let miffName {
-                    Text(verbatim: miffName)
+                    Text(verbatim: L10n.format("notif_center_in_miff", miffName))
                         .miffTextStyle(textBodyCaption)
                         .foregroundColor(colorTextSecondary.color)
                 }
@@ -219,8 +221,12 @@ private struct NotificationBannerCard: View {
         banner == .off ? "notif_center_off_title" : "notif_state_notasked"
     }
 
+    private var bodyKey: String {
+        banner == .off ? "notif_center_off_body" : "notif_center_notasked_body"
+    }
+
     private var actionKey: String {
-        banner == .off ? "notif_center_off_action" : "notif_action_activate"
+        banner == .off ? "notif_center_off_action" : "notif_center_notasked_action"
     }
 
     var body: some View {
@@ -229,7 +235,7 @@ private struct NotificationBannerCard: View {
                 .miffTextStyle(textBodyBold16)
                 .foregroundColor(colorTextPrimary.color)
                 .accessibilityAddTraits(.isHeader)
-            Text("notif_center_off_body")
+            Text(verbatim: L10n.string(bodyKey))
                 .miffTextStyle(textBodyRegular14)
                 .foregroundColor(colorTextDescription.color)
                 .fixedSize(horizontal: false, vertical: true)
