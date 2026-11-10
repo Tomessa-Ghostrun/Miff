@@ -61,9 +61,11 @@ struct MiffOnboardingHost: View {
                 onOpenSettings: { open(.settings(.settings)) }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .swipeBackEnabled()
             .navigationDestination(for: MiffRoute.self) { route in
                 destination(route)
                     .toolbar(.hidden, for: .navigationBar)
+                    .swipeBackEnabled()
             }
         }
     }
@@ -181,9 +183,11 @@ struct MiffHomeHost: View {
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
+                    .swipeBackEnabled()
                     .navigationDestination(for: MiffRoute.self) { route in
                         destination(route)
                             .toolbar(.hidden, for: .navigationBar)
+                            .swipeBackEnabled()
                     }
             }
             .accessibilityHidden(directory.notices.first != nil)
