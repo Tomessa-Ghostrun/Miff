@@ -184,9 +184,9 @@ private fun Unavailable(onRetry: () -> Unit) {
     }
 }
 
-/** The gear of the mockup: a white disc with a blue gear, 48 dp so that it is easy to reach. */
+/** The gear of the mockup: a white disc with a blue gear, 48 dp so that it is easy to reach. Also the entry of the restricted Settings (no Miff yet). */
 @Composable
-private fun GearButton(onClick: () -> Unit) {
+internal fun GearButton(onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         modifier =

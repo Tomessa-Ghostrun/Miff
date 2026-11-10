@@ -28,8 +28,11 @@ data class AccountDeletionMark(
 interface AccountDeletionMarker {
     fun read(): AccountDeletionMark?
 
-    /** Written to disk BEFORE returning: an app killed right after still resumes. */
-    fun write(mark: AccountDeletionMark)
+    /**
+     * Written to disk BEFORE returning: an app killed right after still resumes. True only when the system CONFIRMED the write: on false
+     * (disk full, storage failure) nothing is on the disk and the deletion must not start, otherwise a killed app would find no marker.
+     */
+    fun write(mark: AccountDeletionMark): Boolean
 
     fun clear()
 }
@@ -44,13 +47,14 @@ class SharedPreferencesAccountDeletionMarker(
         return AccountDeletionMark(uid, prefs.getBoolean(KEY_APPLE, false), prefs.getBoolean(KEY_DELETED, false))
     }
 
-    override fun write(mark: AccountDeletionMark) {
-        prefs.edit(commit = true) {
-            putString(KEY_UID, mark.uid)
-            putBoolean(KEY_APPLE, mark.appleLinked)
-            putBoolean(KEY_DELETED, mark.accountDeleted)
-        }
-    }
+    // commit() (synchronous) and its result: the `edit(commit = true)` helper throws that result away.
+    override fun write(mark: AccountDeletionMark): Boolean =
+        prefs
+            .edit()
+            .putString(KEY_UID, mark.uid)
+            .putBoolean(KEY_APPLE, mark.appleLinked)
+            .putBoolean(KEY_DELETED, mark.accountDeleted)
+            .commit()
 
     override fun clear() {
         prefs.edit(commit = true) { clear() }

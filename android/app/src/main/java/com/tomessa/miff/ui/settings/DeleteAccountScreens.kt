@@ -82,7 +82,6 @@ import com.tomessa.miff.ui.theme.colorActionPrimaryTint20
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderAction
 import com.tomessa.miff.ui.theme.colorTextDescription
-import com.tomessa.miff.ui.theme.colorTextError
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.miffShadow
@@ -145,30 +144,6 @@ private fun ContactSentence(
             )
         }
         Text(text = styled, style = textBodyRegular, color = colorTextDescription)
-    }
-}
-
-/**
- * "Supprimer mon compte": the same discreet red TEXT link everywhere the person can start the deletion (Mon compte, "Créer ou rejoindre",
- * the screen shown when the account cannot be read). Never a filled button, always next to or under "Se déconnecter". It only opens the
- * information screen (A): nothing is written from here. Apple 5.1.1(v): the deletion must be reachable inside the app.
- */
-@Composable
-fun DeleteAccountLink(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    TextButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.heightIn(min = Spacing.minTouchTarget),
-    ) {
-        Text(
-            text = stringResource(R.string.settings_delete_entry),
-            style = textBodyLarge,
-            color = colorTextError,
-        )
     }
 }
 

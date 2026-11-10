@@ -347,6 +347,7 @@ Les critères valent pour Android puis iOS sauf mention. Les critères existants
 - [ ] **F2** L'écran affiche « Premium actif jusqu'au {date en format long} » et, pour une source « manuelle », « Accordé par l'équipe Miff » ; **aucun** bouton d'achat, d'essai, de changement ni d'arrêt ; aucun prix.
 - [ ] **F3** Aucune écriture de `entitlements` (interdite au client) ; aucun appel à Google Play Billing ni à l'App Store.
 - [ ] **F4** Dates au format long de la langue de l'app (jamais « 02/18/12 »).
+- **Écart d'implémentation Android (ABO-1, 2026-11-07), F2 / Q7** : l'écran dit **« Miff+ »** (nom de l'offre, décision du PM) et non « Premium », avec « Actif jusqu'au {date} » ; il n'y a **aucune phrase promettant** la gestion par le store (promesse sans date, fausse pour un accès accordé à la main) : pour `source == "manual"` l'écran affiche seulement le fait « Cet accès ne passe pas par un store. », rien pour les autres sources. Le libellé neutre « Offre en cours » (source autre que `manual`) est à valider par le PM. Limite connue : l'affichage suit l'horloge du téléphone ; les droits réels restent décidés par le serveur (`request.time`).
 
 ### 7.2 Critères propres à iOS (ONB-7a/b, FEED-3/4, PRO-2, ABO-2)
 - [ ] **I1** Mêmes critères que l'équivalent Android, vérifiés par TestFlight sur l'iPhone 11 Pro (aucun test local possible).
@@ -511,3 +512,9 @@ Réponse du PM aux 15 questions de §10 : **« OK pour tout »**. Chaque recomma
 **Conséquences pour les deux premières PR Android** : ONB-3a applique Q1, Q4, Q6, Q7, Q15 (et le périmètre de §7) ; ONB-3b applique Q5 et Q6. Les autres décisions guident les tickets FEED, PRO, ABO, Lieux, Miff, Premium et Notifications.
 
 *Le statut des tickets dans Notion n'est pas modifié par ce document ; le PM en garde la main.*
+
+## Décision du PM (2026-11-07) : Réglages restreints sans Miff
+
+**Décision du PM (2026-11-07), révise Q13 sur un point** : toujours **pas de barre d'onglets** sans Miff, mais la personne SANS Miff a accès à des **Réglages restreints** (liste limitée à « Mon compte » : e-mail, mot de passe, déconnexion, Supprimer mon compte ; et « Confidentialité » : textes légaux, autorisations, contact ; **pas** de Mes informations, Langue ni Notifications pour l'instant), par une **roue crantée discrète en haut à droite de l'écran de choix** (mêmes écrans Réglages que ceux de la barre, retour simple vers l'écran d'origine). Raison : la suppression de compte doit rester lançable dans l'app pour tout compte, y compris sans Miff (Google Play, Apple 5.1.1(v)), et elle n'est accessible que depuis les Réglages (décision du même jour, `suppression-compte.md`).
+
+Côté Android (0.17.0) : la roue crantée du Profil (`GearButton`) est réutilisée à l'identique sur l'écran de choix (nom parlé « Réglages », cible de 48 dp) ; `SettingsScreen` n'affiche que « Mon compte » et « Confidentialité » quand ses deux rappels « Mes informations » et « Langue » sont absents ; aucune nouvelle clé de texte, aucune nouvelle lecture Firestore.

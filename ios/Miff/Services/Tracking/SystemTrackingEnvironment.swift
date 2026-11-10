@@ -4,8 +4,8 @@ import UIKit
 // CONFIDENTIALITÉ, pour ce fichier : il lit ce que le téléphone dit de LUI-MÊME (le compte connecté, l'état des autorisations, la
 // batterie, le réseau, deux réglages du système). Il ne lit AUCUNE position et n'écrit rien.
 
-/// Ce que le moteur demande au téléphone. La batterie est celle de l'appareil, écrite avec le statut (pas d'écriture périodique
-/// dédiée, pour limiter le coût) ; les deux réglages du système ne servent qu'au journal de la recette.
+/// Ce que le moteur demande au téléphone. La batterie est celle de l'appareil, écrite avec chaque statut et rafraîchie à l'ouverture et à la
+/// sortie de l'app (pas d'écriture périodique, pour limiter le coût) ; les deux réglages du système ne servent qu'au journal de la recette.
 struct SystemTrackingEnvironment: TrackingEnvironment {
     let currentUid: () -> String?
     /// L'état des autorisations (`SystemDevicePermissions.snapshot`, qui ne lit aucune position).

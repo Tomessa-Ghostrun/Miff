@@ -95,6 +95,8 @@ import com.tomessa.miff.data.session.SharedPreferencesDeviceIdStore
 import com.tomessa.miff.data.session.accountLocalDataErasers
 import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
+import com.tomessa.miff.data.subscription.FirestoreSubscriptionStore
+import com.tomessa.miff.data.subscription.SubscriptionRepository
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
 import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
 import com.tomessa.miff.data.tracking.DetectionJournals
@@ -537,6 +539,11 @@ class AppContainer(
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
         accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger)
+    }
+
+    /** The read-only "Abonnement" line of the Settings (ticket ABO-1): one read of `entitlements/{uid}` per opening of the Settings. */
+    val subscriptionRepository: SubscriptionRepository by lazy {
+        SubscriptionRepository(store = FirestoreSubscriptionStore(), currentUid = { authGateway.currentUid })
     }
 
     val sessionManager: SessionManager by lazy {
