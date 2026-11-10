@@ -173,7 +173,7 @@ Contenu, du haut vers le bas :
 ### 5.5 Ligne de temps (D8 : relatif pour le vert, absolu pour orange et rouge)
 | Cas | Texte |
 |---|---|
-| `in_trusted` | **L'HEURE d'arrivée, jamais une durée** (PM, 2026-11-10) : « Depuis 08 h 12 » (aujourd'hui), « Depuis hier à 08 h 12 », puis « Depuis le 3 nov. à 08 h 12 » ; heure dans le fuseau du téléphone, 24 h en français, « Since 8:12 AM » en anglais selon le téléphone |
+| `in_trusted` | **L'HEURE d'arrivée, jamais une durée** (D51, PM 2026-11-10) : « Depuis 08 h 12 » (aujourd'hui), « Depuis hier à 08 h 12 », puis « Depuis le 3 nov. à 08 h 12 » ; heure dans le fuseau du téléphone, 24 h en français, « Since 8:12 AM » en anglais selon le téléphone |
 | `out`, vert | **L'HEURE de sortie** (mêmes formes : « Depuis 08 h 12 », « Depuis hier à 08 h 12 », date courte) |
 | `out`, orange ou rouge | « Pas de nouvelles depuis 16 h 02 » pour le rouge ; « Dernière nouvelle à 16 h 02 » pour l'orange |
 | `in_risk` | « Depuis 16 h 02 » (heure d'entrée dans la zone, mêmes formes) |

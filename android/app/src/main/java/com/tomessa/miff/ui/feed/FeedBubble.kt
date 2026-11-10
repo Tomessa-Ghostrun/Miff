@@ -345,7 +345,7 @@ private fun BubbleBlob(
 }
 
 private val WATERMARK_SIZE = 96.dp
-private const val WATERMARK_ALPHA = 0.18f
+private const val WATERMARK_ALPHA = 0.20f
 
 private class Pictogram(
     val drawable: Int,
