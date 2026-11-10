@@ -52,6 +52,10 @@ protocol PositionSource {
     /// Une position récente (quelques secondes au plus), ou nil quand le système ne peut pas en donner. LIT la position : n'est
     /// appelée qu'une fois l'accord et « Toujours » vérifiés.
     func current() async -> Fix?
+
+    /// Comme `current()`, avec une attente choisie par l'appelant (l'Update attend plus longtemps que le moteur : une personne qui vient de
+    /// toucher « Publier » patiente de toute façon). Plusieurs attentes en même temps sont possibles : aucune n'annule les autres.
+    func current(within seconds: Double) async -> Fix?
 }
 
 /// La surveillance de régions du système (20 au plus).

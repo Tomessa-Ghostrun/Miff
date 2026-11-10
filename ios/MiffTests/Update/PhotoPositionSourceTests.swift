@@ -38,18 +38,75 @@ final class PhotoPositionSourceTests: XCTestCase {
         XCTAssertEqual(result, .notFound)
     }
 
-    func testAPermissionTakenBackOrALocationOffOrApproximateMeansOffAndNothingIsMeasured() async {
+    func testAPermissionTakenBackOrALocationOffMeansOffAndNothingIsMeasured() async {
         source.fix = UpdateFixtures.fix()
         var cases: [PhotoPosition] = []
         cases.append(await measure(.denied))
         cases.append(await measure(.restricted))
         cases.append(await measure(.notDetermined))
         cases.append(await measure(.always, services: false))
-        cases.append(await measure(.always, precise: false))
+        cases.append(await measure(.always, services: false, precise: false))
 
         XCTAssertEqual(cases.count, 5)
         XCTAssertTrue(cases.allSatisfy { $0 == .locationOff })
         XCTAssertEqual(source.calls, 0, "aucune position n'est demandée sans l'autorisation")
+    }
+
+    func testAnApproximateLocationIsSaidApartFromAnOffOneAndNothingIsMeasured() async {
+        source.fix = UpdateFixtures.fix()
+
+        for location in [LocationAuthorization.always, .whenInUse] {
+            let result = await measure(location, precise: false)
+
+            XCTAssertEqual(result, .approximate, "\(location)")
+        }
+        XCTAssertEqual(source.calls, 0, "aucune position n'est demandée avec une autorisation approximative")
+    }
+
+    func testTheMeasureWaitsLongerThanTheEngineAndFallsBackOnTheKeptPositionOfTheTracking() async {
+        source.fix = nil
+        let kept = UpdateFixtures.fix()
+        let snapshot = PermissionSnapshot(location: .always, notifications: .authorized)
+        let measuring = TrackingPhotoPositionSource(
+            position: source, permissions: { snapshot }, keptFix: { kept }
+        )
+
+        let result = await measuring.measure()
+
+        XCTAssertEqual(result, .found(kept), "la position gardée par le suivi (l'âge est jugé ensuite : 10 minutes au plus)")
+        XCTAssertEqual(source.waits, [TrackingLimits.photoPositionWaitSeconds])
+        XCTAssertGreaterThan(TrackingLimits.photoPositionWaitSeconds, TrackingLimits.positionWaitSeconds)
+    }
+
+    func testWithoutAnyPositionNorKeptOneItIsNotFound() async {
+        source.fix = nil
+
+        let result = await measure(.always)
+
+        XCTAssertEqual(result, .notFound)
+    }
+
+    func testTheBlockerOnlyReadsThePermissionsAndWhenInUseIsAnObstacleOnlyForAPublishedPosition() async {
+        func blocker(_ location: LocationAuthorization, precise: Bool = true, background: Bool) async -> PhotoPosition? {
+            let snapshot = PermissionSnapshot(
+                location: location, servicesEnabled: true, preciseLocation: precise, notifications: .authorized
+            )
+            return await TrackingPhotoPositionSource(position: source, permissions: { snapshot })
+                .blocker(needsBackground: background)
+        }
+
+        let whenInUseForMeasure = await blocker(.whenInUse, background: false)
+        let whenInUseForSuivi = await blocker(.whenInUse, background: true)
+        let alwaysOk = await blocker(.always, background: true)
+        let alwaysApproximate = await blocker(.always, precise: false, background: true)
+        let denied = await blocker(.denied, background: true)
+
+        XCTAssertNil(whenInUseForMeasure)
+        XCTAssertEqual(whenInUseForSuivi, .locationOff)
+        XCTAssertNil(alwaysOk)
+        XCTAssertEqual(alwaysApproximate, .approximate)
+        XCTAssertEqual(denied, .locationOff)
+        XCTAssertEqual(source.calls, 0, "aucune position n'est lue")
     }
 
     func testAPhotoPositionShowsNothingOfItself() {

@@ -167,10 +167,16 @@ final class MemoryTrackingLocalStore: TrackingLocalStore {
 final class FakePositionSource: PositionSource {
     var fix: Fix?
     private(set) var calls = 0
+    private(set) var waits: [Double] = []
 
     func current() async -> Fix? {
         calls += 1
         return fix
+    }
+
+    func current(within seconds: Double) async -> Fix? {
+        waits.append(seconds)
+        return await current()
     }
 }
 

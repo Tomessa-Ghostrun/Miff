@@ -12,8 +12,13 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     private let clock: () -> Int
     private let waitSeconds: Double
     private var sink: TrackingEventSink?
-    private var pendingFix: CheckedContinuation<Fix?, Never>?
-    private var pendingToken = 0
+    private let retrySeconds: Double
+    /// Ceux qui attendent une position (le moteur, l'Update...), chacun avec son propre délai : une nouvelle demande n'annule JAMAIS celle
+    /// d'un autre (avant, une seule place existait, et le moteur qui se réveillait à l'ouverture de l'app faisait répondre « introuvable »
+    /// à la publication d'une photo en cours).
+    private var waiters: [Int: CheckedContinuation<Fix?, Never>] = [:]
+    private var lastWaiter = 0
+    private var retryScheduled = false
     /// Les zones dont l'état a été DEMANDÉ et n'est pas encore arrivé. Le système répond aussi à chaque franchissement : une réponse
     /// qu'on n'a pas demandée est ignorée (la sortie ou l'entrée arrive par son propre rappel), sinon un « dehors » pourrait passer
     /// avant la sortie et s'écrire comme une sortie manquée.
@@ -23,11 +28,13 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     init(
         manager: LocationManaging,
         clock: @escaping () -> Int = { Int(Date().timeIntervalSince1970 * 1000) },
-        waitSeconds: Double = TrackingLimits.positionWaitSeconds - 0.5
+        waitSeconds: Double = TrackingLimits.positionWaitSeconds - 0.5,
+        retrySeconds: Double = TrackingLimits.positionRetrySeconds
     ) {
         self.manager = manager
         self.clock = clock
         self.waitSeconds = waitSeconds
+        self.retrySeconds = retrySeconds
         manager.onEvent = { [weak self] event in
             self?.handle(event)
         }
@@ -43,7 +50,9 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         case .fix(let fix):
             handleFix(fix)
         case .fixFailed:
-            resolvePending(with: recentSystemFix())
+            resolveWaiters(with: recentSystemFix())
+        case .fixUnavailable:
+            retryWhileWaiting()
         case .region(let kind, let key):
             if ZoneKey.isValid(key) {
                 sink?.zoneTransition(kind, zoneKey: key)
@@ -66,19 +75,50 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     /// Une position qui arrive : la réponse à `current()` si quelqu'un l'attend ENCORE, sinon un signalement de déplacement
     /// significatif (jamais perdue, jamais absorbée par une demande abandonnée).
     private func handleFix(_ fix: Fix) {
-        if pendingFix != nil {
-            resolvePending(with: fix)
-        } else {
+        if waiters.isEmpty {
             sink?.significantMove(fix)
+        } else if isUsable(fix) {
+            resolveWaiters(with: fix)
+        } else {
+            // Une position trop vieille (le système en rend parfois une gardée en mémoire) ne répond à personne : on en redemande une.
+            retryWhileWaiting()
         }
     }
 
-    private func resolvePending(with fix: Fix?) {
-        guard let waiting = pendingFix else {
+    /// Une position de moins de dix minutes (et pas dans le futur au-delà de la marge d'horloge).
+    private func isUsable(_ fix: Fix) -> Bool {
+        let age = clock() - fix.measuredAtMillis
+        return age <= TrackingLimits.fixMaxAgeMillis && -age <= TrackingLimits.clockSkewMillis
+    }
+
+    /// Tous ceux qui attendent reçoivent la même réponse.
+    private func resolveWaiters(with fix: Fix?) {
+        let waiting = waiters
+        waiters = [:]
+        for continuation in waiting.values {
+            continuation.resume(returning: fix)
+        }
+    }
+
+    /// Le système n'a pas (encore) de position : tant que quelqu'un attend, la demande est refaite après un court délai ; chaque attente
+    /// finit par son propre délai (alors la dernière position récente connue sert de repli).
+    private func retryWhileWaiting() {
+        guard !waiters.isEmpty, !retryScheduled else {
             return
         }
-        pendingFix = nil
-        waiting.resume(returning: fix)
+        retryScheduled = true
+        let seconds = retrySeconds
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            self?.retryNow()
+        }
+    }
+
+    private func retryNow() {
+        retryScheduled = false
+        if !waiters.isEmpty {
+            manager.askPosition()
+        }
     }
 
     /// La dernière position que le système connaît, seulement si elle a moins de deux minutes (un repli, jamais une vieille position).
@@ -90,28 +130,32 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         return age >= 0 && age <= TrackingLimits.systemFixMaxAgeMillis ? fix : nil
     }
 
-    private func expire(_ token: Int) {
-        if token == pendingToken {
-            resolvePending(with: nil)
+    /// Le délai de cette attente est passé : elle se termine sur la dernière position récente connue du système (moins de deux minutes),
+    /// sinon sans position. Les autres attentes continuent.
+    private func expire(_ id: Int) {
+        guard let continuation = waiters.removeValue(forKey: id) else {
+            return
         }
+        continuation.resume(returning: recentSystemFix())
     }
 
     // MARK: - PositionSource
 
     func current() async -> Fix? {
-        // Une demande restée sans réponse est libérée avant d'en faire une nouvelle.
-        resolvePending(with: nil)
-        pendingToken += 1
-        let token = pendingToken
-        let seconds = waitSeconds
+        await current(within: waitSeconds)
+    }
+
+    func current(within seconds: Double) async -> Fix? {
+        lastWaiter += 1
+        let id = lastWaiter
         // Le délai est tenu ICI : passé ce délai la demande est abandonnée, et une position qui arrive ensuite est un signalement
-        // de déplacement, pas la réponse de personne.
+        // de déplacement, pas la réponse de personne (s'il n'y a plus personne qui attend).
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-            self?.expire(token)
+            self?.expire(id)
         }
         return await withCheckedContinuation { (continuation: CheckedContinuation<Fix?, Never>) in
-            pendingFix = continuation
+            waiters[id] = continuation
             manager.askPosition()
         }
     }

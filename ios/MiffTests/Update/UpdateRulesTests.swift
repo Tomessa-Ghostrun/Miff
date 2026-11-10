@@ -228,8 +228,8 @@ final class UpdateRulesTests: XCTestCase {
 
     func testEveryNoticeHasACalmTextInBothLanguagesAndNeverTheWordError() {
         let notices: [PreviewNotice] = [
-            .offline, .positionNotFound, .tooMany, .tooSoon, .stale, .refused, .failed, .locationOff, .unconfirmed,
-            .needsAgreement, .sharingStopped, .partial(sharedIn: 1, total: 2)
+            .offline, .positionNotFound, .tooMany, .tooSoon, .stale, .refused, .failed, .locationOff, .locationApproximate,
+            .unconfirmed, .needsAgreement, .sharingStopped, .partial(sharedIn: 1, total: 2)
         ]
         for notice in notices {
             let text = L10n.string(notice.textKey)
@@ -245,7 +245,7 @@ final class UpdateRulesTests: XCTestCase {
         XCTAssertFalse(PreviewState(photo: photo, notice: .stale).canPublish)
         XCTAssertFalse(PreviewState(photo: photo, notice: .tooMany).canPublish)
         XCTAssertFalse(PreviewState(photo: photo, publishing: true).canPublish)
-        for notice in [PreviewNotice.offline, .positionNotFound, .failed, .unconfirmed, .tooSoon, .locationOff] {
+        for notice in [PreviewNotice.offline, .positionNotFound, .failed, .unconfirmed, .tooSoon, .locationOff, .locationApproximate] {
             XCTAssertTrue(PreviewState(photo: photo, notice: notice).canPublish, "\(notice)")
         }
     }
@@ -324,7 +324,7 @@ final class UpdateRulesTests: XCTestCase {
 
     func testEveryResultThatDidNotPublishHasACalmNoticeAndPublishedHasNone() {
         let results: [PublishResult] = [
-            .positionNotFound, .locationOff, .unconfirmed, .offline, .sharingStopped, .needsAgreement,
+            .positionNotFound, .locationOff, .locationApproximate, .unconfirmed, .offline, .sharingStopped, .needsAgreement,
             .tooMany, .tooSoon, .stale, .refused, .failed
         ]
         for result in results {

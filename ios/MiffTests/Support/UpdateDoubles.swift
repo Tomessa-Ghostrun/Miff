@@ -111,10 +111,18 @@ final class FakePhotoStore: PhotoStore {
 final class FakePhotoPosition: PhotoPositionSource {
     var result: PhotoPosition = .found(Fix(lat: 48.85661, lng: 2.35222, measuredAtMillis: 0))
     private(set) var calls = 0
+    /// Ce que les autorisations empêchent (nil = rien).
+    var blocker: PhotoPosition?
+    private(set) var blockerAsks: [Bool] = []
 
     func measure() async -> PhotoPosition {
         calls += 1
         return result
+    }
+
+    func blocker(needsBackground: Bool) async -> PhotoPosition? {
+        blockerAsks.append(needsBackground)
+        return blocker
     }
 }
 

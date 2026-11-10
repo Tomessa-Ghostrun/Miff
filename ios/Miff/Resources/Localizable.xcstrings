@@ -14862,6 +14862,23 @@
         }
       }
     },
+    "update_notice_location_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on precise location for this feature. You can do it in the settings, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer."
+          }
+        }
+      }
+    },
     "ios_update_restricted_title": {
       "extractionState": "manual",
       "localizations": {

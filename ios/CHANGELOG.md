@@ -2,6 +2,26 @@
 
 ## Non publié
 
+### Update : « Position introuvable » alors que la personne partage (recette TestFlight, build 24)
+
+Un testeur qui partageait bien sa position obtenait de façon répétée « Position introuvable pour le moment, réessaie dans un instant » au toucher de « Publier » ; sur un autre iPhone tout marchait. **Rien n'est compilé en local (la CI fait foi).** Causes trouvées dans le code, par ordre de probabilité :
+
+1. **Autorisation insuffisante dite comme un signal lent.** La publication exige que le suivi ait déjà écrit MA position dans la Miff (contrat du modèle de données) ; or le suivi n'écrit qu'avec « Toujours » + position précise. Avec « Pendant l'utilisation » ou « Position précise » éteinte, ce contrôle répondait « introuvable » sans rien mesurer, à chaque essai, et « Réessayer » ne pouvait jamais réussir.
+2. **Attente de 2,5 s seulement** pour une position fraîche (GPS à froid, intérieur) : au-delà, « introuvable », sans repli sur la dernière position connue.
+3. **Une demande en annulait une autre.** Le pont n'avait qu'une seule place d'attente : le moteur de suivi qui se réveille (ouverture de l'app, retour au premier plan) faisait répondre « introuvable » à la publication en cours.
+4. **`kCLErrorLocationUnknown` traité comme définitif.** Cet échec est passager (pas encore de signal) ; la demande se terminait aussitôt.
+5. Précision réduite avec une position déjà publiée : déjà refusée (« localisation éteinte ») mais avec une phrase qui ne disait pas quoi faire.
+
+Changé :
+- **Messages** : nouvelle réponse `locationApproximate` (« Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer. » + « Ouvrir les réglages »), distincte de la localisation éteinte ou refusée. Quand le suivi n'a pas encore écrit ma position, les AUTORISATIONS sont lues d'abord (jamais une position) : si elles sont en cause, la phrase juste mène aux Réglages au lieu de « réessaie dans un instant ».
+- **Attente portée à 10 s** pour la mesure de l'Update (`TrackingLimits.photoPositionWaitSeconds`; le moteur garde 3 s). **Écart avec D33 (« 3 s au plus ») à confirmer par le PM** : la personne attend de toute façon la fin de la publication (le bouton est occupé).
+- **Plusieurs attentes en même temps** dans `LocationTracking` (chacune avec son délai), une position répond à toutes ; une position de plus de 10 minutes rendue par le système ne répond à personne (une autre est demandée).
+- **Échec passager** (`LocationEvent.fixUnavailable`) : la demande est refaite après 1 s tant que quelqu'un attend. Les autres échecs restent définitifs.
+- **Replis** quand le délai est passé : la dernière position du système si elle a moins de 2 minutes (avant, seulement après un échec), puis la position gardée par le suivi pour ce compte (`UpdateServices.keptFix`). **Aucune position de plus de 10 minutes n'est publiée** (`PhotoPlace.from`, inchangé) ; aucune publication sans position ; mesure toujours déclenchée par « Publier » seulement.
+- Tests : `PhotoPositionSourceTests`, `UpdatePublisherTests` (approximative, non autorisée, mesure), `TrackingEngineRobustnessTests` (attentes multiples, échec passager, position ancienne, délai et repli).
+
+**Choix économiques** : aucun coût (pas de service, pas de dépendance). **Limites connues** : « Pendant l'utilisation » seul reste bloquant pour publier une photo (le suivi, donc la position partagée, exige « Toujours ») et la phrase générique « localisation éteinte ou plus autorisée » s'applique alors ; une phrase dédiée « Choisis Toujours » est une décision de texte pour le PM. Android (`UpdateViewModel.kt`) n'est pas touché ici : à vérifier s'il a les mêmes causes.
+
 ### Batterie rafraîchie à l'ouverture et à la sortie de l'app (décision du PM, 2026-11-07 ; miroir d'Android)
 
 La batterie était déjà écrite avec chaque statut d'arrivée ou de départ. Le Feed la masque au-delà de 6 h après `updatedAt` : sans autre écriture, quelqu'un qui reste chez lui n'a plus de batterie visible. Décision du PM : « actualise le niveau de batterie des utilisateurs lorsqu'ils ouvrent l'app ou la quittent ».

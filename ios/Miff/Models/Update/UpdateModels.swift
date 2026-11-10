@@ -15,6 +15,8 @@ enum PublishResult: Equatable {
     case positionNotFound
     /// L'autorisation de la position a été retirée, ou la localisation du téléphone est éteinte : seuls les Réglages y changent quelque chose.
     case locationOff
+    /// La position est autorisée mais seulement approximative (« Position précise » éteinte) : seuls les Réglages y changent quelque chose.
+    case locationApproximate
     /// Le serveur n'a pas répondu à temps : la photo a PEUT-ÊTRE été publiée. La phrase le dit honnêtement, et la date de l'envoi est gardée
     /// pour le nettoyage.
     case unconfirmed
@@ -44,6 +46,8 @@ enum PreviewNotice: Equatable {
     case failed
     /// L'autorisation de la position a été retirée, ou la localisation est éteinte : « Ouvrir les réglages ».
     case locationOff
+    /// La position n'est qu'approximative : « Active la position précise pour cette fonction » + « Ouvrir les réglages ».
+    case locationApproximate
     /// Pas de réponse à temps : « On n'a pas pu confirmer. Regarde dans ton Feed. »
     case unconfirmed
     case needsAgreement
@@ -59,6 +63,8 @@ enum PreviewNotice: Equatable {
             return "update_notice_position"
         case .locationOff:
             return "update_notice_location_off"
+        case .locationApproximate:
+            return "update_notice_location_precise"
         case .unconfirmed:
             return "update_notice_unconfirmed"
         case .tooMany:
@@ -102,6 +108,8 @@ extension PreviewNotice {
             self = .refused
         case .locationOff:
             self = .locationOff
+        case .locationApproximate:
+            self = .locationApproximate
         case .unconfirmed:
             self = .unconfirmed
         case .needsAgreement:

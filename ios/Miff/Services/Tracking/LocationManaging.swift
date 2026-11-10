@@ -15,7 +15,11 @@ struct AuthorizationState: Equatable {
 /// Ce que le système rend, une fois dépouillé de tout ce qui n'est pas nécessaire.
 enum LocationEvent: Equatable {
     case fix(Fix)
+    /// Le système ne peut pas répondre pour de bon (autorisation refusée, erreur de réseau...) : la demande se termine.
     case fixFailed
+    /// Le système n'a pas de position POUR L'INSTANT (`kCLErrorLocationUnknown` : GPS à froid, intérieur, signal faible) : l'échec est
+    /// passager, la demande peut être refaite tant que quelqu'un attend encore.
+    case fixUnavailable
     case region(TransitionKind, String)
     case regionState(String, Bool)
     case monitoringFailed

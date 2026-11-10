@@ -36,8 +36,16 @@ struct UpdateServices {
             battery: { await system.batteryPct() }
         )
         let local = TrackingLocalFileStore()
+        // Repli quand la mesure fraîche échoue : la dernière position que le suivi a gardée pour CE compte (jamais acceptée au-delà de
+        // 10 minutes : `PhotoPlace.from`).
+        let keptFix: () -> Fix? = {
+            guard let uid = gateway.currentUid, let state = local.load(), state.uid == uid else {
+                return nil
+            }
+            return state.fix
+        }
         let photoPosition = TrackingPhotoPositionSource(
-            position: tracking.location, permissions: { await permissions.snapshot() }
+            position: tracking.location, permissions: { await permissions.snapshot() }, keptFix: keptFix
         )
         var publisherDependencies = UpdatePublisherDependencies(
             store: photoStore,

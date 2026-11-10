@@ -29,7 +29,12 @@ private final class LocationBridge: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        handler?(.fixFailed)
+        // « Pas de position pour l'instant » (GPS à froid, intérieur) est passager : le système n'a pas encore de signal.
+        if let failure = error as? CLError, failure.code == .locationUnknown {
+            handler?(.fixUnavailable)
+        } else {
+            handler?(.fixFailed)
+        }
     }
 
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
