@@ -919,7 +919,7 @@
     <string name="notif_n6a_title">You\'re in a danger zone of your Miff</string>
     <string name="notif_n6a_body">While you\'re there, your circle sees a different status.</string>
     <string name="notif_prime_title">A reminder, only when it helps</string>
-    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you. You choose what you get in the settings. Alerts about your circle will come later.</string>
+    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
     <string name="notif_prime_allow">Allow</string>
     <string name="notif_prime_later">Not now</string>
     <string name="notif_prime_example_when">2 min ago</string>
