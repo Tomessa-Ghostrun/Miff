@@ -937,22 +937,22 @@
     <string name="review_feedback_later">Later</string>
     <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
     <string name="voyage_card_title">Travel mode</string>
-    <string name="voyage_card_off_body">Pause your tracking while you travel.</string>
+    <string name="voyage_card_off_body">Your card turns grey for your circle, without changing the Miff\'s colour.</string>
     <string name="voyage_card_on_status">Traveling until %1$s</string>
     <string name="voyage_card_end_label">End date</string>
     <string name="voyage_card_end_change_a11y">Change the end date</string>
-    <string name="voyage_card_explain">While you travel, your circle sees “Traveling until %1$s” and your card stays grey. Miff stops tracking your places and no longer sends your battery level. You can still check in with a photo: it keeps its location, as usual. Meanwhile, you can\'t see your loved ones\' positions or located photos either: they come back when your trip ends. Tracking resumes on its own at the end.</string>
+    <string name="voyage_card_explain">Your circle still sees your location. While you travel, your card turns grey with “Traveling until %1$s” and no longer affects the Miff\'s colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end.</string>
     <string name="voyage_card_state_on_a11y">On, until %1$s</string>
     <string name="voyage_card_state_off_a11y">Off</string>
     <string name="voyage_confirm_title">Turn on travel mode?</string>
-    <string name="voyage_confirm_body">Your circle will see “Traveling until %1$s” instead of your status. You can stop it whenever you like.</string>
+    <string name="voyage_confirm_body">Your card will turn grey with “Traveling until %1$s” and will no longer affect the Miff\'s colour. Your circle still sees your location. You can stop it whenever you like.</string>
     <string name="voyage_confirm_action">Turn on</string>
     <string name="voyage_confirm_cancel">Cancel</string>
     <string name="voyage_error_update_refused">Travel mode couldn\'t be updated. Your end date hasn\'t changed; you can try again later.</string>
     <string name="voyage_picker_validate">Confirm</string>
     <string name="voyage_picker_confirm">Continue</string>
-    <string name="voyage_off_done">Tracking is resuming.</string>
-    <string name="voyage_offline_note">Your circle will see your trip as soon as you\'re online. Your last position will be removed then.</string>
+    <string name="voyage_off_done">Your status is resuming.</string>
+    <string name="voyage_offline_note">Your circle will see your trip as soon as you\'re online.</string>
     <string name="voyage_error_refused">Travel mode couldn\'t be turned on. You can try again later.</string>
     <string name="voyage_feed_label">Traveling until %1$s</string>
     <string name="voyage_feed_label_ended">Trip ended</string>

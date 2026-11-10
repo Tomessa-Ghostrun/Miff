@@ -15221,13 +15221,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pause your tracking while you travel."
+            "value": "Your card turns grey for your circle, without changing the Miff's colour."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mets ton suivi en pause pendant un voyage."
+            "value": "Ta carte devient grise pour tes proches, sans changer la couleur de la Miff."
           }
         }
       }
@@ -15289,13 +15289,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "While you travel, your circle sees “Traveling until %1$@” and your card stays grey. Miff stops tracking your places and no longer sends your battery level. You can still check in with a photo: it keeps its location, as usual. Meanwhile, you can't see your loved ones' positions or located photos either: they come back when your trip ends. Tracking resumes on its own at the end."
+            "value": "Your circle still sees your location. While you travel, your card turns grey with “Traveling until %1$@” and no longer affects the Miff's colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pendant ton voyage, tes proches voient « En voyage jusqu'au %1$@ » et ta carte reste grise. Miff arrête de suivre tes lieux et n'envoie plus ta batterie. Tu peux toujours donner des nouvelles avec une photo : elle garde sa localisation, comme d'habitude. Pendant ce temps, tu ne vois pas non plus les positions ni les photos localisées de tes proches : elles reviennent à la fin du voyage. Le suivi reprend tout seul à la fin."
+            "value": "Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu'au %1$@ » et n'influence plus la couleur de la Miff. Miff n'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin."
           }
         }
       }
@@ -15357,13 +15357,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your circle will see “Traveling until %1$@” instead of your status. You can stop it whenever you like."
+            "value": "Your card will turn grey with “Traveling until %1$@” and will no longer affect the Miff's colour. Your circle still sees your location. You can stop it whenever you like."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tes proches verront « En voyage jusqu'au %1$@ » à la place de ton état. Tu peux l'arrêter quand tu veux."
+            "value": "Ta carte deviendra grise avec « En voyage jusqu'au %1$@ » et n'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l'arrêter quand tu veux."
           }
         }
       }
@@ -15425,13 +15425,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tracking is resuming."
+            "value": "Your status is resuming."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le suivi reprend."
+            "value": "Ton statut reprend."
           }
         }
       }
@@ -15442,13 +15442,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your circle will see your trip as soon as you're online. Your last position will be removed then."
+            "value": "Your circle will see your trip as soon as you're online."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tes proches verront ton voyage dès que tu seras en ligne. Ta dernière position sera retirée à ce moment-là."
+            "value": "Tes proches verront ton voyage dès que tu seras en ligne."
           }
         }
       }
