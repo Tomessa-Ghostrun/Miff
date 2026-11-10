@@ -20,13 +20,14 @@ final class UpdatePromptTests: XCTestCase {
 
     // MARK: - Orange et rouge, aux limites des seuils
 
-    func testJustUnderAnHourNothingAtAnHourOrangeAtTwoHoursIncludedOrangeJustOverRed() {
+    func testNothingUpToTwoHoursIncludedOrangeUpToFourHoursIncludedRedJustOver() {
         func at(_ elapsed: Int) -> PromptLevel {
             prompt(status(.out, presenceAt: now - elapsed))
         }
 
         XCTAssertEqual(at(StatusThresholds.orangeAfterMillis - 1), .hidden)
-        XCTAssertEqual(at(StatusThresholds.orangeAfterMillis), .orange)
+        XCTAssertEqual(at(StatusThresholds.orangeAfterMillis), .hidden)
+        XCTAssertEqual(at(StatusThresholds.orangeAfterMillis + 1), .orange)
         XCTAssertEqual(at(StatusThresholds.redAfterMillis), .orange)
         XCTAssertEqual(at(StatusThresholds.redAfterMillis + 1), .red)
     }
@@ -68,39 +69,50 @@ final class UpdatePromptTests: XCTestCase {
     // MARK: - Elle disparaît quand je ne suis plus orange ni rouge (D18)
 
     func testAnUpdatePublishedBringsBackToGreenTheBubbleGoes() {
-        let before = status(.out, presenceAt: now - 3 * hour)
+        let before = status(.out, presenceAt: now - 5 * hour)
         XCTAssertEqual(prompt(before), .red)
         // Publier fixe lastUpdateAt à maintenant : le repère de la couleur est le plus récent du départ et de l'update.
-        let after = status(.out, presenceAt: now - 3 * hour, lastUpdateAt: now)
+        let after = status(.out, presenceAt: now - 5 * hour, lastUpdateAt: now)
         XCTAssertEqual(prompt(after), .hidden)
     }
 
     func testOrangeThenArrivalAtHomeWithoutPublishingTheBubbleGoes() {
-        XCTAssertEqual(prompt(status(.out, presenceAt: now - 90 * 60_000)), .orange)
+        XCTAssertEqual(prompt(status(.out, presenceAt: now - 150 * 60_000)), .orange)
         XCTAssertEqual(prompt(status(.inTrusted, presenceAt: now, lastUpdateAt: now)), .hidden)
     }
 
     func testTheBubbleNeverGoesWithTimeOnlyWithAChangeOfLevel() {
-        let facts = status(.out, presenceAt: now - 3 * hour)
+        let facts = status(.out, presenceAt: now - 5 * hour)
 
         for later in [0, 10 * hour, 40 * hour] {
             XCTAssertEqual(prompt(facts, now: now + later), .red)
         }
     }
 
-    // MARK: - La zone de danger : le rouge reste rouge, la bulle part quand une update suit l'arrivée (C8, D8)
+    // MARK: - La zone de danger (décision du PM du 2026-11-08) : rouge dès l'entrée, vert 1 h après une update postérieure
 
-    func testInADangerZoneTheBubbleIsRedUntilAnUpdateIsPublishedAfterTheArrival() {
+    func testInADangerZoneTheBubbleIsRedFromTheEntryUntilAnUpdateIsPublishedAfterIt() {
+        // Update il y a 5 h, entrée il y a 10 min : l'update est antérieure à l'entrée, elle ne compte pas.
         let entered = status(.inRisk, presenceAt: now - 10 * 60_000, lastUpdateAt: now - 5 * hour)
         XCTAssertEqual(prompt(entered), .red)
         let updated = status(.inRisk, presenceAt: now - 10 * 60_000, lastUpdateAt: now - 60_000)
         XCTAssertEqual(prompt(updated), .hidden)
-        // La couleur elle-même reste rouge en zone de danger : une update ne ramène pas au vert là.
-        XCTAssertEqual(UpdatePrompt.level(updated, sharing: true, nowMillis: now), .red)
+        // La couleur du bouton central suit : verte 1 h après l'update postérieure.
+        XCTAssertEqual(UpdatePrompt.level(updated, sharing: true, nowMillis: now), .green)
     }
 
-    func testInADangerZoneAnUpdateExactlyAtTheArrivalCountsAsAfterIt() {
-        XCTAssertEqual(prompt(status(.inRisk, presenceAt: now - 1_000, lastUpdateAt: now - 1_000)), .hidden)
+    func testInADangerZoneTheBubbleComesBackAnHourAfterTheUpdateAndGoesAgainWithANewOne() {
+        let updatedAt = now - 10 * 60_000
+        let facts = status(.inRisk, presenceAt: now - hour, lastUpdateAt: updatedAt)
+
+        XCTAssertEqual(prompt(facts, now: updatedAt + hour), .hidden, "1 h 00 pile : encore vert")
+        XCTAssertEqual(prompt(facts, now: updatedAt + hour + 1), .red, "plus d'1 h : rouge, la bulle revient")
+        let again = status(.inRisk, presenceAt: now - hour, lastUpdateAt: updatedAt + 2 * hour)
+        XCTAssertEqual(prompt(again, now: updatedAt + 2 * hour + 1), .hidden)
+    }
+
+    func testInADangerZoneAnUpdateExactlyAtTheEntryIsNotAfterItSoTheBubbleShows() {
+        XCTAssertEqual(prompt(status(.inRisk, presenceAt: now - 1_000, lastUpdateAt: now - 1_000)), .red)
     }
 
     func testInADangerZoneWithNoUpdateAtAllTheBubbleShows() {

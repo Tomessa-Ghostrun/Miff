@@ -2,7 +2,7 @@ import Foundation
 
 // Toute la logique du Feed, en UNE fonction pure (ticket FEED, critères B1 à B6 et C1 à C7) : de ce que les écoutes ont dit et de
 // l'heure du moment, à ce que dessinent les écrans. Rien n'est lu, écrit ni journalisé ici. La couleur d'un membre n'est calculée
-// QUE par `StatusColor.level` : les constantes 1 h et 2 h vivent dans `StatusThresholds`, jamais réécrites ici. Miroir exact de
+// QUE par `StatusColor.level` : les constantes 2 h et 4 h vivent dans `StatusThresholds`, jamais réécrites ici. Miroir exact de
 // `FeedBuilder.kt` d'Android (les cas des tests sont le contrat).
 
 /// Ce que l'écoute des statuts dit, tel que le Feed le voit.
@@ -229,13 +229,18 @@ enum FeedBuilder {
         }
     }
 
-    /// Un lieu des catégories Maison, Travail, École, Sport se dit par sa catégorie ; les autres par leur nom ; introuvable : générique.
+    /// Un lieu des catégories Maison, Travail, École, Sport, Chez un proche se dit par sa catégorie ; Loisir, Autre et un lieu sans
+    /// catégorie (écrit avant que la catégorie existe) par leur nom ; introuvable : générique. La catégorie est lue dans la liste des
+    /// lieux que le Feed écoute déjà : aucune lecture de plus.
+    /// Dans une zone de danger (`trusted` faux) le nom du lieu est toujours dit.
     static func placeRef(_ placeId: String?, _ places: [String: Place], trusted: Bool) -> PlaceRef {
         guard let placeId, let place = places[placeId] else {
             return .unknown
         }
+        // Un nom vide ou fait d'espaces ne se dit jamais (« À  ») : espaces retirés, puis formule générique (comme Android).
+        let name = place.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trusted else {
-            return .named(place.name)
+            return name.isEmpty ? .unknown : .named(name)
         }
         switch place.category {
         case .home:
@@ -246,8 +251,10 @@ enum FeedBuilder {
             return .category(.school)
         case .sport:
             return .category(.sport)
-        default:
-            return .named(place.name)
+        case .relative:
+            return .category(.relative)
+        case .leisure, .other, nil:
+            return name.isEmpty ? .unknown : .named(name)
         }
     }
 

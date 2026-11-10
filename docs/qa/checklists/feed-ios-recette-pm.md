@@ -1,7 +1,7 @@
 # Recette iOS du Feed (FEED-5 à FEED-7 : en-tête, bulle, cartes, statuts, Localiser) — parcours pour le PM
 
 **Pour qui** : vous, sur l'**iPhone 11 Pro** (iOS 26.5.2), avec **deux comptes de test dans la même Miff** : le compte **A** sur l'iPhone, le compte **B** sur l'OPPO Find X5 Lite (APK du Feed Android) ou, à défaut, un second compte que l'on modifie à la main dans la console (voir l'astuce).
-**Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 1 h et 2 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce). La sortie réelle est facultative.
+**Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 2 h et 4 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce). La sortie réelle est facultative.
 **Ce qui est testé** : le Feed iOS reproduit le Feed Android déjà validé en recette, **avec les trois ajustements du 2026-11-07** (D42 : plus de « Toi » à côté du prénom ; D43 : votre carte est la **dernière** ; D44 : la batterie n'affiche **plus l'heure**), et la décision D45 sur la bulle (mouvement plus visible, qui déforme la forme).
 
 ## Installer (TestFlight)
@@ -15,9 +15,9 @@
 ## Astuce : fabriquer un orange, un rouge ou une zone de danger depuis la console
 
 Console Firebase > projet **Miff** (`miff-3d283`, jamais l'autre projet) > Firestore Database > `miffs/{id de la Miff}/status/{uid du compte}`. Modifiez **à la main** :
-- **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 1 h 10** (type « timestamp »).
-- **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 3 h**.
-- **Zone de danger** : `presence` = `in_risk`, `placeId` = l'identifiant d'un lieu de la Miff.
+- **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 2 h 10** (type « timestamp »).
+- **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 4 h 10**.
+- **Zone de danger** : `presence` = `in_risk`, `placeId` = l'identifiant d'un lieu de la Miff, `presenceAt` = **il y a 3 h**. **Rouge** : `lastUpdateAt` absent, ou **avant** `presenceAt`, ou **il y a 1 h 10** ; **vert** : `lastUpdateAt` = **il y a 20 min** (donc après l'entrée).
 - **Retour au vert** : `presence` = `in_trusted`, `presenceAt` = maintenant.
 Les champs restent dans le schéma (ne rajoutez rien). Si un téléphone bouge ou rouvre l'app, il peut réécrire son vrai statut : refaites la modification.
 
@@ -55,8 +55,8 @@ Les champs restent dans le schéma (ne rajoutez rien). Si un téléphone bouge o
 Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte **A** (il se met à jour tout seul).
 - [ ] **Vert** : B `in_trusted` : bulle **verte** « Tout va bien » + « Dernière nouvelle il y a … » (l'heure de B, **jamais la vôtre**) ; avec un troisième membre sans statut : « 2 sur 3 ont donné des nouvelles ».
 - [ ] **Neutre** : supprimez le statut de B ou mettez `presence` = `unknown` : bulle **grise** « Pas encore de nouvelles » (jamais « Tout va bien »).
-- [ ] **Orange** : B `out` il y a 1 h 10 : bulle **orange** « B a quitté la maison à 15 h 50 » (heure absolue), **sans** point d'exclamation, bouton « Envoyer un message » (ouvre Messages).
-- [ ] **Rouge d'ancienneté** : B `out` il y a 3 h : bulle **rouge** « Pas de nouvelles de B depuis 14 h 00 ». Aucun son, aucune animation d'alarme.
+- [ ] **Orange** : B `out` il y a 2 h 10 : bulle **orange** « B a quitté la maison à 15 h 50 » (heure absolue), **sans** point d'exclamation, bouton « Envoyer un message » (ouvre Messages).
+- [ ] **Rouge d'ancienneté** : B `out` il y a 4 h 10 : bulle **rouge** « Pas de nouvelles de B depuis 14 h 00 ». Aucun son, aucune animation d'alarme.
 - [ ] **Zone de danger** : B `in_risk` : bulle rouge « B est à {nom du lieu} » + « Depuis … » + « Une zone définie par ta Miff » ; carte « Dans une zone de danger ». **Nulle part** « zone à risque ».
 - [ ] **Vous seul(e) en orange ou en rouge** (modifiez votre statut) : la bulle vous parle (« Tu as quitté la maison à … », « Tes proches n'ont pas eu de tes nouvelles depuis … », « Tu es dans une zone de danger de ta Miff »), **sans** bouton « Envoyer un message ».
 - [ ] **Plusieurs alertes** : des **pastilles** sous la bulle (la page courante est **allongée**), le **rouge d'abord**, on change de page en **balayant** ; **rien ne défile tout seul**. Avec une seule alerte : pas de pastilles.
@@ -113,6 +113,15 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 
 Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectures** avant, puis **ouvrez le Feed une fois à froid** (app fermée puis ouverte), notez le nombre après (le graphique a un délai d'environ 4 minutes). Estimation pour 4 membres et 3 lieux : **environ 20 lectures** ; un retour d'onglet : une dizaine ; « Localiser » : **6** ; « Actualiser » : environ 20. **Changer d'onglet détache les écoutes** (c'est voulu : rien n'écoute sur le Profil) : y revenir coûte une dizaine de lectures de règles. **À savoir** : « Actualiser » relit tout (environ 20 lectures) sans garde côté serveur (seule la limite de 15 s de l'application la borne ; Firebase App Check est à prévoir avant la bêta externe) ; un retour d'onglet ne coûte qu'une dizaine de lectures **sous 30 minutes** (au-delà, c'est le coût d'une ouverture à froid, environ 20). Voir `docs/dev/surveillance-quotas.md`. Reportez vos chiffres à l'assistant (recalibrage de ce document).
 
+## Partie R — Retours du 2026-11-08 (étiquettes, bulle centrée, seuils)
+
+- [ ] **Étiquettes** : dans un lieu **Maison** « À la maison », **Travail** « Au travail », **École** « À l'école », **Sport** « Au sport », **Chez un proche** « Chez un proche » ; **Loisir** et **Autre** : le **nom du lieu seul** (sans « À » devant). Un nom long (40 signes) tient sur deux lignes au plus. En anglais : At home / At work / At school / At the gym / At a loved one's.
+- [ ] **Bulle centrée** : dans les **3 couleurs** (vert, orange, rouge) et sur **toutes les pages** du carrousel d'alertes, le texte et le bouton sont **au milieu de la tache**, à gauche comme à droite et en haut comme en bas, **pendant que la tache bouge**. Refaites-le avec une **grande taille de texte** (Réglages > Accessibilité > Affichage et luminosité > Taille du texte) : le texte reste centré et ne touche pas le disque du pictogramme en bas à droite.
+- [ ] **Bulle verte sans symbole** : la bulle verte « Tout va bien » n'a **aucun pictogramme** (pas d'étoile) et son texte reste centré ; les bulles orange (horloge) et rouge (point d'exclamation) gardent le leur.
+- [ ] **Bulle d'incitation (Update)** en zone de danger : visible tant que vous êtes rouge, masquée pendant l'heure de vert qui suit une update, puis elle revient.
+- [ ] **Seuils** : sorti d'un lieu depuis moins de 2 h : **vert** ; au-delà de 2 h : **orange** ; au-delà de 4 h : **rouge**. Une update plus récente repart du vert. **Zone de danger** : **rouge dès l'entrée** (même avec une update faite juste avant) ; si vous publiez une update **après** l'entrée, la couleur passe **verte pendant 1 h** puis redevient rouge ; une nouvelle update redonne 1 h de vert. Jamais d'orange en zone de danger.
+- [ ] **Détail d'un lieu de danger** (Lieux > un lieu de danger) : le texte d'information dit « …tu n'as pas donné de nouvelles depuis plus d'une heure, ta Miff voit ton statut en rouge. ».
+
 ## Points ouverts pour vous (à noter à la fin)
 
 - [ ] L'amplitude de la bulle (D45) vous convient-elle, comparée à celle de l'OPPO ?
@@ -121,4 +130,4 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
-La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, l'ordre (moi en dernier), les phrases FR et EN (lues dans le vrai catalogue), les six réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans une description, les liens `sms:` / `tel:` (numéro vérifié), la logique de l'en-tête, les constantes du mouvement de la bulle, la batterie masquée à 6 h, la parité des clés de texte avec Android.
+La couleur à 1 h 59 / 2 h 00 / 2 h 01 / 3 h 59 / 4 h 00 / 4 h 01 (et zone de danger à 59 min 59 s / 1 h 00 / 1 h 00 min 01 s), les étiquettes de chaque catégorie, la géométrie de la bulle, toutes les branches de la couleur de la Miff, l'ordre (moi en dernier), les phrases FR et EN (lues dans le vrai catalogue), les six réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans une description, les liens `sms:` / `tel:` (numéro vérifié), la logique de l'en-tête, les constantes du mouvement de la bulle, la batterie masquée à 6 h, la parité des clés de texte avec Android.

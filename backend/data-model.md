@@ -556,22 +556,24 @@ Un seul document, d'identifiant fixe `active` (tout autre identifiant sous `sess
 
 ## 3. Statuts : ce qui est stocké, ce qui est calculé
 
-**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Note* : les seuils ci-dessous (2 h / 4 h) et la priorité « zone de danger » sont ceux d'avant les décisions du 2026-11-01 (1 h / 2 h, zone de confiance prioritaire, ticket Lieux §6.9) ; ils seront réécrits avec le ticket Tracking, hors de cette PR.
+**Stocké** : `presence`, `placeId`, `presenceAt`, `lastUpdateAt`, `locationAccess`, `batteryPct`, `sharing.*` (**aucune coordonnée** dans le statut ; la dernière position connue est un document séparé, §2.12). *Mise à jour du 2026-11-08 (décision du PM, retour de recette TestFlight, confirmée le jour même)* : les seuils sont **orange à plus de 2 h, rouge à plus de 4 h** (ils remplacent 1 h / 2 h du 2026-11-01), et une personne en zone de danger est **rouge dès son entrée, puis verte 1 h après une update publiée APRÈS son entrée** (`lastUpdateAt > presenceAt`), puis rouge de nouveau (règle finale du PM du 2026-11-08) ; la zone de confiance l'emporte toujours (ticket Lieux §6.9). « Plus de » est strict.
 **Calculé par chaque client à l'affichage** (algorithme identique iOS/Android, paramètres en constantes partagées) :
 
 ```
-ORANGE_APRES = 2 h      ROUGE_APRES = 4 h      (spec : orange à +2 h, rouge à +2 h supplémentaires)
+ORANGE_APRES = 2 h      ROUGE_APRES = 4 h      DANGER_ZONE_RED_AFTER = 1 h   (strict : « plus de »)
 
 niveau(membre, statut, maintenant):
   si !membre.sharing.enabled           -> PARTAGE_DESACTIVE      (carte neutre, jamais alarmiste)
   si statut absent                     -> INCONNU
   selon statut.presence:
-    in_risk     -> ZONE_A_RISQUE
+    in_risk     -> VERT si presenceAt et lastUpdateAt existent, lastUpdateAt > presenceAt (update POSTÉRIEURE à l'entrée) et (maintenant - lastUpdateAt) <= DANGER_ZONE_RED_AFTER
+                   sinon -> ROUGE (entrée sans update, update antérieure ou simultanée à l'entrée, update de plus d'1 h) ; jamais ORANGE en zone de danger
     in_trusted  -> VERT
     unknown     -> PAS_DE_NOUVELLES_NEUTRE  [Hypothèse : pas d'escalade sans départ connu, Q10]
     out         -> ref = max(presenceAt, lastUpdateAt)
                    écoulé = maintenant - ref
-                   < 2 h -> VERT (parti, tout va bien)   < 4 h -> ORANGE   sinon -> ROUGE
+                   <= 2 h -> VERT (parti, tout va bien)   <= 4 h -> ORANGE   sinon -> ROUGE
+                   (un repère dans le futur compte comme « maintenant » : VERT)
   en plus : si locationAccess in (denied, foreground) -> badge "localisation limitée" (mises à jour manuelles encouragées)
 ```
 
@@ -587,7 +589,7 @@ niveau(membre, statut, maintenant):
 | Sortie zone de confiance | `presence=out`, `placeId` (lieu quitté), `presenceAt=t`, `escalationDueAt=t+2h` |
 | Entrée zone de danger | `presence=in_risk`, `placeId`, `presenceAt=t` (alerte immédiate = notification, Blaze) |
 | Sortie zone de danger | `presence=out`, `presenceAt=t`, `escalationDueAt=t+2h` |
-Si un lieu de confiance et une zone de danger se chevauchent, la zone de danger prime **[Hypothèse]**.
+Si un lieu de confiance et une zone de danger se chevauchent, la **zone de confiance prime** (décision du 2026-11-01, ticket Lieux §6.9 ; le client écrit alors `in_trusted`).
 
 ---
 
