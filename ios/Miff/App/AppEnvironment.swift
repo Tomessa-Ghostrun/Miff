@@ -170,6 +170,8 @@ final class AppEnvironment {
     let tracking: TrackingRuntime
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
+    /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
+    let update: UpdateServices
     /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
     /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
     lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
@@ -223,26 +225,21 @@ final class AppEnvironment {
         )
         let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
         notifs.connect(directory: miff.directory, awaiting: miff.awaiting)
+        let updateServices = UpdateServices.make(
+            gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
+        )
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
                 privacy: privacy, tracker: tracker, cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: [
-                    { drafts.clear() },
-                    // L'annuaire des Miffs, la suppression d'une Miff sans écran, et les Miffs qui attendent un accord.
-                    { await miff.stop() },
-                    // Le message d'un lieu et ce qui a été tapé dans la recherche d'adresse partent avec la session.
-                    { await places.stop() },
-                    // Le suivi des lieux : zones retirées, position, lieux et statuts en attente effacés (borné à 5 s).
-                    trackingServices.teardown,
-                    // Le centre de notifications, les choix de Réglages > Notifications, les notifications affichées ou en attente.
-                    notifs.teardown
-                ],
-                device: device, network: networkMonitor, drafts: drafts,
-                generationCounter: trackingServices.generation,
-                deletionMarker: AccountDeletionFileMarker(), localData: AccountDeletionServices.localData()
+                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices, notifs),
+                device: device,
+                network: networkMonitor,
+                drafts: drafts, generationCounter: trackingServices.generation,
+                deletionMarker: AccountDeletionFileMarker(),
+                localData: AccountDeletionServices.localData(updateLedger: updateServices.ledger)
             )
         )
         privacySettings = privacy
@@ -262,9 +259,34 @@ final class AppEnvironment {
         awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
+        update = updateServices
         profileDrafts = drafts
         pendingConsent = pending
         notifications = notifs
+    }
+
+    /// Ce que la fin de session arrête, dans l'ordre : le brouillon (noms, photo, numéro) et les Miffs en mémoire, les suppressions en
+    /// cours, le message d'un lieu et ce qui a été tapé dans la recherche d'adresse, le suivi des lieux (zones retirées, position, lieux
+    /// et statuts en attente effacés, borné à 5 s), puis l'Update : le garde-fou des publications et mon statut suivi partent ; la date de
+    /// la photo envoyée RESTE (elle est nettoyée par le même compte à sa reconnexion), elle ne part qu'avec la suppression du compte.
+    private static func teardowns(
+        _ drafts: ProfileDraftFileStore,
+        _ miff: MiffServices,
+        _ places: PlaceServices,
+        _ trackingServices: TrackingServices,
+        _ update: UpdateServices,
+        _ notifications: NotificationServices
+    ) -> [SessionTeardown] {
+        [
+            { drafts.clear() },
+            // L'annuaire des Miffs, la suppression d'une Miff sans écran, et les Miffs qui attendent un accord.
+            { await miff.stop() },
+            { await places.stop() },
+            trackingServices.teardown,
+            { update.stop() },
+            // Le centre de notifications, les choix de Réglages > Notifications, les notifications affichées ou en attente (NOTIF-P0).
+            notifications.teardown
+        ]
     }
 
     /// Les dépendances des étapes du profil.

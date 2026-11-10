@@ -48,8 +48,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -130,6 +132,21 @@ fun ProfileStepScreen(
         },
     ) {
         PhotoButton(state, onClick = { sheetOpen = true })
+        if (state.googlePhotoPrefilled && state.avatar != null) {
+            // Discreet and calm: says where the photo comes from and that it can be changed. Announced politely, since it
+            // appears a moment after the screen (the photo is fetched in the background).
+            Text(
+                text = stringResource(R.string.profile_google_photo_hint),
+                style = textBodyRegular14,
+                color = colorTextDescription,
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
         if (state.message == ProfileMessage.PHOTO_UNUSABLE || state.message == ProfileMessage.CAMERA_UNAVAILABLE) {
             MessageText(
                 text =

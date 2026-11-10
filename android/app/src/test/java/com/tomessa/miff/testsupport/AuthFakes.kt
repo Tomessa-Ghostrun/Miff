@@ -221,6 +221,10 @@ class FakeAuthGateway(
 
     override fun displayName(): String? = displayName
 
+    var photoUrl: String? = null
+
+    override fun photoUrl(): String? = photoUrl
+
     var email: String? = null
 
     override fun currentEmail(): String? = email

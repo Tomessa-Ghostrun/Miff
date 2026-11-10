@@ -31,4 +31,10 @@ enum MainShellRules {
     static func barVisible(keyboardVisible: Bool, pathIsEmpty: Bool, directory: DirectoryState) -> Bool {
         !keyboardVisible && pathIsEmpty && hasMiffs(directory)
     }
+
+    /// La bulle d'incitation (D21) est visible sur TOUS les onglets sauf l'Update (Feed et Profil inclus), quand la barre l'est (elle se
+    /// masque avec le clavier : une queue qui pointe vers un bouton absent n'a pas de sens), et seulement quand mon niveau est orange ou rouge.
+    static func bubbleVisible(prompt: PromptLevel, selected: MainTab, barVisible: Bool) -> Bool {
+        prompt != .hidden && selected != .update && barVisible
+    }
 }
