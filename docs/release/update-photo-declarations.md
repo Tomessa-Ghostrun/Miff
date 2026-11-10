@@ -388,6 +388,30 @@ Principe : on ne livre **rien** de plus tant qu'un store n'a pas refusé (décis
 
 ---
 
+## 13 bis. Changement de posture : « Enregistrer la photo » d'un proche (FEED-8, décision du PM du 2026-11-08)
+
+**Ce qui change.** Dans le **plein écran** de la photo d'un proche (Feed, **à cet endroit seulement** : ni l'aperçu de la carte, ni l'Update), un bouton **« Enregistrer la photo »** confie la photo à la **feuille de partage du système** (iPhone : `UIActivityViewController` avec une image, qui propose « Enregistrer l'image », « Copier », AirDrop… ; Android : à décider par `android-dev`, mêmes clés de texte `feed_photo_download*`). **Aucune permission, aucune clé `NSPhotoLibrary*`** (V11 et `check-binaries.sh` inchangés), aucune écriture de l'app dans un fichier ni dans la photothèque : c'est le système, sur choix de la personne, qui écrit. L'image donnée à la feuille est des pixels (aucune métadonnée, aucun lieu).
+
+**Posture avant / après.**
+| Avant | Après |
+|---|---|
+| La photo d'un proche « n'est jamais enregistrée sur ton téléphone » (en mémoire seulement) | **Elle ne l'est que si tu choisis de l'enregistrer.** Une copie enregistrée est dans la galerie de la personne, **hors de Miff** : « illisible après 24 h » ne vaut plus pour elle ; Miff ne peut ni la retrouver ni l'effacer |
+| Une capture d'écran était possible (limite assumée R5, CGU art. 8) | Toujours possible ; la copie est maintenant **un geste proposé par l'app**, ce qui change le sens de « on ne peut pas l'empêcher » en « on l'a rendu facile » |
+| Le lieu de la photo ne sortait pas de Miff que par « Voir où c'était » (Plans, coordonnées seules) | **Inchangé** : l'image enregistrée ne contient **pas** le lieu (ni EXIF, ni GPS) ; seul le visuel part |
+
+**Textes à aligner avant toute publication (rien n'est modifié ici : les textes légaux restent tels quels, décision du PM)** :
+1. **Politique de confidentialité (FR et EN)** : point 7 du résumé (« visible 24 heures, puis elle n'est plus lisible ») ; ligne « Photo « Donner des nouvelles » » de l'art. 3 (tableau des données) ; **art. 3 « Caméra et photo »** ; art. 4 : puce « **Une capture d'écran est possible** » et art. 5 « Qui voit quoi ? » : « Un membre peut faire une capture d'écran de ce qu'il voit » (ajouter : **ou enregistrer la photo avec le bouton prévu à cet effet**, copie que nous ne pouvons pas effacer) ; **tableau de conservation de l'art. 7** (ligne de la photo : « Illisibles après 24 h » ne vaut pas pour une copie enregistrée par un membre) ; **art. 11 « stockage sur ton téléphone »** (la photo n'est en mémoire que le temps de l'écran, sauf si tu l'enregistres) ; « Ce que Miff ne collecte pas : ta galerie de photos » (reste vrai : Miff ne **lit** pas la galerie ; préciser qu'il **n'y écrit jamais lui-même**).
+2. **CGU (FR et EN)** : art. 8 (« Un membre d'une Miff peut enregistrer ce qu'il voit (capture d'écran, par exemple) ») : ajouter l'enregistrement par le bouton ; rappeler l'**usage interdit** d'une photo enregistrée (la diffuser hors du cercle).
+3. **Écran d'explication de la caméra et ligne de visibilité de l'aperçu** (ticket Update §7) : « Ta photo est visible 24 h par ton cercle » devient « … et ton cercle peut l'enregistrer ».
+4. **Consentement à la localisation v3 / v4** (`consentement-localisation-v3.md`) : vérifier la mention « une copie est possible » (capture d'écran) ; l'image enregistrée ne contient pas le lieu.
+5. **§2 (faits) de ce document** : lignes « Limite assumée » et « Prise de vue » (« jamais dans un fichier ni dans la photothèque » vaut pour **la prise de vue de l'auteur**, pas pour le destinataire).
+6. **Fiches des stores et pages web** : ne jamais écrire « la photo disparaît », « personne ne peut la garder » (R15) ; `aso-marketing` à prévenir. **App Store Connect / Data safety** : aucune permission nouvelle ; les déclarations « Photos » ne changent pas (collectée : oui ; **pas de nouvelle collecte** : l'enregistrement est local à la personne).
+7. **Textes d'usage** (`InfoPlist.xcstrings`, `project.yml`) : **aucun changement** (pas de `NSPhotoLibraryAddUsageDescription`) ; le commentaire de `project.yml` et le message de `ios/ci/check-binaries.sh` (« la photo n'est jamais écrite dans la photothèque ») parlent de l'**app** : exacts, à préciser « par l'app » à la prochaine retouche.
+
+**Risque ajouté, écrit comme assumé (décision PM, pas de relecture juridique)** : une photo localisée de proche (visage, lieu) peut être copiée **plus facilement** et diffusée hors de Miff ; le mineur est le cas le plus sensible (§8). Parade existante : durée de 24 h côté app, cercle restreint, retrait d'un membre, quitter la Miff. **Nouveau contrôle V22** : le bouton n'existe qu'au plein écran de la photo d'un proche, la feuille de partage ne reçoit qu'une image, aucune clé `NSPhotoLibrary*` n'est déclarée (test `PhotoSaveTests`, `check-binaries.sh`).
+
+---
+
 ## 14. Sources consultées le 2026-11-06 (et limites)
 
 Ces règles changent : `release-manager` les relit avant chaque soumission. Les pages d'Apple n'affichent pas de date de mise à jour.
