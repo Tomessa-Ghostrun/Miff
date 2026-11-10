@@ -35,7 +35,30 @@ Ne change pas : aucune règle Firestore, aucun événement Analytics, aucun jour
 - **Fin non instantanée sur iPhone** : sans alarme ni zone, la fin est traitée au premier réveil de l'app (changement de position significatif, ou toute relance) ou à l'ouverture qui suit la date ; les proches voient « Voyage terminé » en attendant. À confirmer par le PM (Q5 du ticket).
 - **Zones non surveillées pendant le voyage** (comme Android, choix au plus simple et au plus économe, à confirmer par le PM) : la position est rafraîchie à l'ouverture, en arrière-plan et après un déplacement significatif, pas à l'arrivée dans un lieu.
 - **Fenêtre de fragilité** (comme Android) : si le processus s'arrête entre l'écriture du voyage sur le serveur et la sauvegarde locale, le téléphone ne se croit pas en voyage jusqu'à ce que le statut de présence suivant le remplace. Très courte, non corrigée.
-- Coût : 0 € ; signal de bascule : aucun nouveau.
+- **Choix « économique » : les écritures de voyage ne passent pas par le disjoncteur `WriteBreaker`** (début, nouvelle fin, fin, Miff rejointe) : elles n'ont pas de plafond explicite. Bornes réelles : une écriture par Miff et par geste ou par réveil, au plus un statut de fin par Miff, aucune boucle (un refus retire la Miff de la liste et elle n'est regardée de nouveau qu'au bout de 5 minutes). **Limite connue** : un client qui rejouerait le geste en boucle n'est pas freiné côté app (les règles bornent seulement chaque écriture à 91 jours). **Signal de bascule** : plus de 12 000 écritures par jour au total, ou plusieurs dizaines de statuts de voyage par jour pour un même compte ; la réponse serait d'ajouter un plafond du jour (compteur dédié, comme la batterie).
+- **Détection « nouvel appareil »** : `checkedAtMillis == 0` (aucune relecture vérifiée du serveur) ; une copie locale déjà vérifiée n'est jamais relue (testé : une seule lecture de MON statut par Miff, puis une de plus après une déconnexion).
+- **À suivre dans les PR de notifications** : #129 devra gérer `.travel` dans `StatusColor.changeInstants` (liste vide : un voyageur est neutre et n'a aucun instant de changement) quand elle sera fusionnée avec cette PR ; sans cela le `switch` exhaustif ne compile plus.
+- Coût : 0 € ; signal de bascule : voir ci-dessus.
+
+### Photo Google à l'inscription et retour par geste (retours du PM après TestFlight, 2026-11-08)
+
+Branche `ios/photo-google-geste-retour`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette : `docs/qa/checklists/ios-photo-google-retour-geste-recette-pm.md`. Textes à aligner plus tard : `docs/release/photo-profil-google-a-aligner.md` (aucun texte légal modifié).
+
+Ajouté :
+- **Photo Google reprise comme photo de profil** (inscription avec Google seulement) : `AuthGateway.providerPhotoURL()` (photo du fournisseur `google.com` de Firebase Auth, nil par défaut et pour e-mail/Apple), `GooglePhotoURL` (https et `googleusercontent.com` seulement, pas d'identifiant ni de port dans l'adresse, silhouette générique refusée, taille demandée 256 px), `GooglePhotoDownloader` (UNE requête HTTPS en session éphémère : ni cache, ni cookies ; délai 6 s / 8 s, 512 Ko au plus, réponse 200 de type image, au plus 2 redirections, toutes gardées dans Google), `GooglePhotoPrefill` (tâches structurées : le délai ou un changement de photo annule le téléchargement ; décode par le chemin strict des photos reçues du réseau `AvatarCodec.decodeRemote` : JPEG, PNG, HEIC, WebP seulement via `CGImageSourceGetType`, dimensions déclarées lues avant tout décodage (4 096 x 4 096 et 16 millions de pixels au plus), décodage en vignette de 512 px ; carré au centre, ré-encode SANS métadonnées en 20 000 octets au plus avec les mêmes outils que la photo choisie, délai global 8 s, nil au moindre échec).
+- `ProfileViewModel` : la photo arrive en arrière-plan et est écrite dans l'état de l'écran (jamais sur le disque avant la prochaine saisie du brouillon, chemin normal du profil) ; elle n'est appliquée que pour une création de profil SANS brouillon, si la personne n'a encore ni choisi ni retiré de photo et qu'elle est sur l'étape profil. La phrase discrète « On a repris ta photo Google, tu peux la changer. » (`profile_google_photo_hint`, FR et EN, **clé aussi ajoutée côté Android avec le même texte**) disparaît dès que la personne touche à la photo. Une connexion Google à un compte qui a déjà un profil n'ouvre jamais cet écran : sa photo n'est pas remplacée.
+- **Retour par geste sur tous les écrans empilés** : `SwipeBackGate` (UIKit) prend la place du délégué du geste de retour de chaque navigation, `SwipeBackPolicy` (logique pure : il faut au moins deux écrans, aucun verrou, pas de transition en cours) et `SwipeBackScreen` (la table des écrans : verrouillés pendant l'écriture du profil, la création d'une Miff et l'écran « prête », la confirmation « Rejoindre et partager », l'enregistrement ou la suppression d'un lieu, la vérification de la suppression du compte ; l'Update est un onglet de la coquille, jamais empilé : le geste n'y démarre pas, aucun verrou à poser).
+- Tests : `SwipeBackPolicyTests`, `SwipeBackGateTests` (vraie navigation UIKit, verrou d'un écran désalloué libéré), `GooglePhotoURLTests`, `GooglePhotoPrefillTests`, `GooglePhotoProfileTests`, `GooglePhotoDownloaderTests` (faux serveur `URLProtocol` : limite de 512 Ko, non-image, redirections), `RemotePhotoCodecTests` (vrai codec : GIF/TIFF refusés, plafond de dimensions, PNG minuscule aux dimensions déclarées énormes, contenu hostile).
+- **Revue indépendante de la PR #124** : `SwipeBackGate` retient les verrous faiblement (un écran désalloué ne bloque jamais le geste) ; la reprise de la photo Google est un prérequis de « Ready pour MEP » (`docs/release/photo-profil-google-a-aligner.md`) ; recette : brouillon partiel (A4b) et cartes au bord gauche (B14).
+
+Modifié :
+- **Cause du geste de retour qui ne marchait pas** : tous les écrans masquent la barre de navigation du système et dessinent leur propre flèche ; dans ce cas UIKit refuse le geste natif (son délégué par défaut ne l'autorise que barre visible). `SwipeBackLock` (déplacé dans `Views/Navigation`) installe maintenant le gardien et pose un verrou propre à chaque écran (valable seulement tant que l'écran est visible) ; `.swipeBackEnabled()` est posé sur la racine et les destinations de `SignedOutHost`, `MiffOnboardingHost` et `MiffHomeHost`. Le geste est celui d'iOS : du bord GAUCHE vers la droite.
+- `ProfileDependencies` : un champ facultatif `googlePhoto`. `SessionManager.suggestedPhotoURL()`.
+
+Coût et limites : une requête de quelques dizaines de Ko par inscription Google, aux serveurs d'images de Google (gratuit, aucun quota à notre charge). Signal de bascule : aucun. Limite : la photo n'est reprise qu'à la création du profil (jamais relue ensuite). Le diagnostic interne (`DiagnosticRootView`) garde sa pile sans geste (build interne seulement).
+
+Sécurité : l'adresse et les octets de la photo restent en mémoire, partent avec le profil comme toute photo de profil, aucun journal, aucun événement Analytics, aucune erreur détaillée ; HTTPS seulement, domaine contrôlé à chaque redirection.
+
 ### Feed : retours de recette TestFlight du 2026-11-08 (étiquettes par catégorie, bulle centrée, seuils orange / rouge)
 
 Branche `ios/feed-retours-recette` (PR en brouillon), décisions D47 à D49 de `docs/tickets/feed.md`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
@@ -53,6 +76,7 @@ Modifié :
 - **Bulle de la Miff centrée** : titre, lignes et bouton centrés dans la tache, marges égales (voir `BubbleLayout`) ; écart avec les maquettes (texte à gauche) assumé sur retour du PM.
 
 Ajouté : `BubbleLayoutTests` (géométrie), cas aux bornes de `StatusColorTests`, `FeedCardsTests`, `FeedTextsTests`.
+
 
 ### BATT-3 - Optimisation batterie sûre : réutiliser la position récente du système à l'ouverture et à la sortie (décision du PM, 2026-11-10)
 
