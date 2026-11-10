@@ -146,15 +146,15 @@ class PlaceFormViewModelTest {
     }
 
     @Test
-    fun opening_withTwoPlacesOnTheFreePlan_opensTheOfferInsteadOfTheForm() {
-        val places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID))
+    fun opening_withThreePlacesOnTheFreePlan_opensTheOfferInsteadOfTheForm() {
+        val places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID), testPlace("p3", "C", MIFF_ID))
         val vm = viewModel(context = context(places = places))
         assertEquals(PaywallReason.LIMIT, vm.state().paywall)
     }
 
     @Test
-    fun opening_aMiffPlusCreatorWithTwoPlaces_opensTheForm_notTheOffer() {
-        val places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID))
+    fun opening_aMiffPlusCreatorWithThreePlaces_opensTheForm_notTheOffer() {
+        val places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID), testPlace("p3", "C", MIFF_ID))
         val vm = viewModel(context = context(premium = true, places = places))
         assertNull(vm.state().paywall)
         assertNull(vm.state().loadFailed)
@@ -165,7 +165,17 @@ class PlaceFormViewModelTest {
     fun opening_whenThePlanCannotBeRead_isARetry_neverTheOffer() {
         repo.prepareFailure = MiffFailure.OFFLINE
         val vm =
-            viewModel(context = context(places = listOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID))))
+            viewModel(
+                context =
+                    context(
+                        places =
+                            listOf(
+                                testPlace("p1", "A", MIFF_ID),
+                                testPlace("p2", "B", MIFF_ID),
+                                testPlace("p3", "C", MIFF_ID),
+                            ),
+                    ),
+            )
         assertNull(vm.state().paywall)
         assertNotNull(vm.state().loadFailed)
     }

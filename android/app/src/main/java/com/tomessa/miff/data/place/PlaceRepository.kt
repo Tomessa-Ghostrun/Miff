@@ -67,7 +67,7 @@ sealed interface PlaceWriteResult {
         override fun toString(): String = "Done(redacted)"
     }
 
-    /** Nothing was sent: the free plan has 2 places and no danger zone (criteria LIM1, LIM3). */
+    /** Nothing was sent: the free plan has 3 places and no danger zone (criteria LIM1, LIM3). */
     data class NeedsPremium(
         val reason: PaywallReason,
     ) : PlaceWriteResult
