@@ -163,6 +163,9 @@ android {
         unitTests.isReturnDefaultValues = true
         // Screen tests (Robolectric) need the app resources: they run in testDebugUnitTest only.
         unitTests.isIncludeAndroidResources = true
+        // The Robolectric screen tests share one JVM and the default 512 MB heap of a Gradle test worker was reached (OutOfMemoryError in CI, then the
+        // job hung until its 30-minute limit, PR #160). 1 GB: the runners have several GB. Only the tests are concerned, never the app.
+        unitTests.all { it.maxHeapSize = "1g" }
     }
 }
 

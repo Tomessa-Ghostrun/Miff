@@ -939,7 +939,6 @@ class FeedScreenTest {
                 }
             }
         }
-        shoot("feed-bubble-small-screen-large-font")
         val box =
             composeRule
                 .onNodeWithText("Tout va bien")
