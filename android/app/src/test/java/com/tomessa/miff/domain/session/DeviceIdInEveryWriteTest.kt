@@ -90,10 +90,7 @@ class DeviceIdInEveryWriteTest {
 
     @Test
     fun theDeletionsOfAStatusAndOfAPosition_carryNoContent_andNoIdentifier() {
-        // MODE VOYAGE: the removal of my last position when a trip begins is a deletion too.
-        val leave =
-            MiffWrites.leave(miffId, uid, "free") + MiffWrites.stopSharing(miffId, uid) +
-                TrackingWrites.positionRemoval(miffId, uid)
+        val leave = MiffWrites.leave(miffId, uid, "free") + MiffWrites.stopSharing(miffId, uid)
         leave.filter { isStatusOrPosition(it) }.forEach {
             assertEquals(WriteKind.DELETE, it.kind)
             assertNull(it.data["deviceId"])

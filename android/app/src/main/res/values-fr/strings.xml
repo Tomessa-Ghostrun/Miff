@@ -493,6 +493,15 @@
     <string name="profile_tab_miffs_title">Mes Miffs</string>
     <string name="profile_tab_miff_hint">Proches, code et partage</string>
     <string name="profile_tab_miff_open_a11y">Ouvrir la Miff %1$s</string>
+    <plurals name="profile_tab_miff_members">
+        <item quantity="one">%1$d membre</item>
+        <item quantity="many">%1$d membres</item>
+        <item quantity="other">%1$d membres</item>
+    </plurals>
+    <string name="profile_tab_miff_create">Créer une Miff</string>
+    <string name="profile_tab_carousel_page_a11y">Carte %1$d sur %2$d</string>
+    <string name="profile_tab_carousel_previous_a11y">Carte précédente</string>
+    <string name="profile_tab_carousel_next_a11y">Carte suivante</string>
     <!-- Réglages : Mon compte (mot de passe) et Confidentialité (ONB-3b) -->
     <string name="settings_account_password_help">Nous t\'enverrons un e-mail avec un lien pour choisir un nouveau mot de passe.</string>
     <string name="settings_account_password_action">Changer mon mot de passe</string>
@@ -647,7 +656,7 @@
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
     <string name="place_detail_info_danger">Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
-    <string name="place_paywall_limit_title">Tu as atteint 2 lieux</string>
+    <string name="place_paywall_limit_title">Tu as atteint 3 lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
     <string name="place_paywall_danger_title">Les zones de danger font partie de Miff+</string>
     <string name="place_paywall_danger_body">Avec Miff+, tu peux définir des zones de danger autour des lieux à éviter.</string>
@@ -669,9 +678,9 @@
     <string name="place_list_row_nocategory_a11y">%1$s, %2$s</string>
     <string name="place_list_row_nocategory_noaddress_a11y">%1$s</string>
     <plurals name="place_list_counter_free">
-        <item quantity="one">%1$d lieu sur 2 avec la formule gratuite</item>
-        <item quantity="many">%1$d lieux sur 2 avec la formule gratuite</item>
-        <item quantity="other">%1$d lieux sur 2 avec la formule gratuite</item>
+        <item quantity="one">%1$d lieu sur 3 avec la formule gratuite</item>
+        <item quantity="many">%1$d lieux sur 3 avec la formule gratuite</item>
+        <item quantity="other">%1$d lieux sur 3 avec la formule gratuite</item>
     </plurals>
     <!-- LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement -->
     <string name="permission_notifications_title">Te prévenir, seulement quand c\'est utile !</string>
@@ -906,22 +915,22 @@
     <string name="review_feedback_later">Plus tard</string>
     <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
     <string name="voyage_card_title">Mode voyage</string>
-    <string name="voyage_card_off_body">Mets ton suivi en pause pendant un voyage.</string>
+    <string name="voyage_card_off_body">Ta carte devient grise pour tes proches, sans changer la couleur de la Miff.</string>
     <string name="voyage_card_on_status">En voyage jusqu\'au %1$s</string>
     <string name="voyage_card_end_label">Date de fin</string>
     <string name="voyage_card_end_change_a11y">Changer la date de fin</string>
-    <string name="voyage_card_explain">Pendant ton voyage, tes proches voient « En voyage jusqu\'au %1$s » et ta carte reste grise. Miff arrête de suivre tes lieux et n\'envoie plus ta batterie. Tu peux toujours donner des nouvelles avec une photo : elle garde sa localisation, comme d\'habitude. Pendant ce temps, tu ne vois pas non plus les positions ni les photos localisées de tes proches : elles reviennent à la fin du voyage. Le suivi reprend tout seul à la fin.</string>
+    <string name="voyage_card_explain">Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu\'au %1$s » et n\'influence plus la couleur de la Miff. Miff n\'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin.</string>
     <string name="voyage_card_state_on_a11y">Activé, jusqu\'au %1$s</string>
     <string name="voyage_card_state_off_a11y">Désactivé</string>
     <string name="voyage_confirm_title">Activer le mode voyage ?</string>
-    <string name="voyage_confirm_body">Tes proches verront « En voyage jusqu\'au %1$s » à la place de ton état. Tu peux l\'arrêter quand tu veux.</string>
+    <string name="voyage_confirm_body">Ta carte deviendra grise avec « En voyage jusqu\'au %1$s » et n\'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l\'arrêter quand tu veux.</string>
     <string name="voyage_confirm_action">Activer</string>
     <string name="voyage_confirm_cancel">Annuler</string>
     <string name="voyage_error_update_refused">Le mode voyage n\'a pas pu être mis à jour. Ta date de fin n\'a pas changé, tu peux réessayer plus tard.</string>
     <string name="voyage_picker_validate">Valider</string>
     <string name="voyage_picker_confirm">Continuer</string>
-    <string name="voyage_off_done">Le suivi reprend.</string>
-    <string name="voyage_offline_note">Tes proches verront ton voyage dès que tu seras en ligne. Ta dernière position sera retirée à ce moment-là.</string>
+    <string name="voyage_off_done">Ton statut reprend.</string>
+    <string name="voyage_offline_note">Tes proches verront ton voyage dès que tu seras en ligne.</string>
     <string name="voyage_error_refused">Le mode voyage n\'a pas pu être activé. Tu peux réessayer plus tard.</string>
     <string name="voyage_feed_label">En voyage jusqu\'au %1$s</string>
     <string name="voyage_feed_label_ended">Voyage terminé</string>

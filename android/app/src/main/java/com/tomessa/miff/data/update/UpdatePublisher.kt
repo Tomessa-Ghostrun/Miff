@@ -109,8 +109,8 @@ class UpdatePublisher(
     /** Called when no Miff of the lot has my position yet: the detection is asked to write it (the person retries in a moment). */
     private val onPositionMissing: () -> Unit = {},
     /**
-     * MODE VOYAGE: a trip is on. The tracking is paused, so no position of mine is published by it (and none is waited for: the photo carries its own measure, a volunteered
-     * gesture, which the screen says), and the status of the update carries NO battery level (the rules refuse a level next to a trip).
+     * MODE VOYAGE: a trip is on. The position of the person is still published by the tracking and the photo keeps its own measure, as outside a trip; only the status of the update
+     * differs: it carries NO battery level (the rules refuse a level next to a trip).
      */
     private val travelOn: () -> Boolean = { false },
 ) {
@@ -148,7 +148,7 @@ class UpdatePublisher(
         // Contract of the data model: a photo is only written where my own position is published. None yet: the detection is asked to write it, nothing is
         // measured, and the person is told to try again in a moment (the same calm sentence as a position that cannot be found).
         val traveling = travelOn()
-        val withPosition = if (traveling) targets else targets.filter { published.isPublished(it) }
+        val withPosition = targets.filter { published.isPublished(it) }
         if (withPosition.isEmpty()) {
             onPositionMissing()
             return PublishResult.PositionNotFound

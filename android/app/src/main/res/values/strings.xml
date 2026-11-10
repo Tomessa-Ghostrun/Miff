@@ -517,6 +517,14 @@
     <string name="profile_tab_miffs_title">My Miffs</string>
     <string name="profile_tab_miff_hint">Loved ones, code and sharing</string>
     <string name="profile_tab_miff_open_a11y">Open the Miff %1$s</string>
+    <plurals name="profile_tab_miff_members">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
+    <string name="profile_tab_miff_create">Create a Miff</string>
+    <string name="profile_tab_carousel_page_a11y">Card %1$d of %2$d</string>
+    <string name="profile_tab_carousel_previous_a11y">Previous card</string>
+    <string name="profile_tab_carousel_next_a11y">Next card</string>
     <!-- Settings: My account (password) and Privacy (ONB-3b) -->
     <string name="settings_account_password_help">We\'ll send you an email with a link to choose a new password.</string>
     <string name="settings_account_password_action">Change my password</string>
@@ -670,7 +678,7 @@
     <string name="place_detail_info_trusted">When you arrive at or leave this place, your Miff sees your status (for example “at home”), even when the app is closed.</string>
     <string name="place_detail_info_danger">When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour.</string>
     <string name="place_paywall_close_a11y">Close</string>
-    <string name="place_paywall_limit_title">You\'ve reached 2 places</string>
+    <string name="place_paywall_limit_title">You\'ve reached 3 places</string>
     <string name="place_paywall_limit_body">That\'s the limit of the free plan. With Miff+, add as many places as you like.</string>
     <string name="place_paywall_danger_title">Danger zones are part of Miff+</string>
     <string name="place_paywall_danger_body">With Miff+, you can set danger zones around places to avoid.</string>
@@ -692,8 +700,8 @@
     <string name="place_list_row_nocategory_a11y">%1$s, %2$s</string>
     <string name="place_list_row_nocategory_noaddress_a11y">%1$s</string>
     <plurals name="place_list_counter_free">
-        <item quantity="one">%1$d of 2 places on the free plan</item>
-        <item quantity="other">%1$d of 2 places on the free plan</item>
+        <item quantity="one">%1$d of 3 places on the free plan</item>
+        <item quantity="other">%1$d of 3 places on the free plan</item>
     </plurals>
     <!-- LOC-2a: permissions screens, consent version 2026-11-v03, renewal of the consent (tutoiement in French) -->
     <string name="permission_notifications_title">We\'ll only let you know when it\'s useful!</string>
@@ -929,22 +937,22 @@
     <string name="review_feedback_later">Later</string>
     <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
     <string name="voyage_card_title">Travel mode</string>
-    <string name="voyage_card_off_body">Pause your tracking while you travel.</string>
+    <string name="voyage_card_off_body">Your card turns grey for your circle, without changing the Miff\'s colour.</string>
     <string name="voyage_card_on_status">Traveling until %1$s</string>
     <string name="voyage_card_end_label">End date</string>
     <string name="voyage_card_end_change_a11y">Change the end date</string>
-    <string name="voyage_card_explain">While you travel, your circle sees “Traveling until %1$s” and your card stays grey. Miff stops tracking your places and no longer sends your battery level. You can still check in with a photo: it keeps its location, as usual. Meanwhile, you can\'t see your loved ones\' positions or located photos either: they come back when your trip ends. Tracking resumes on its own at the end.</string>
+    <string name="voyage_card_explain">Your circle still sees your location. While you travel, your card turns grey with “Traveling until %1$s” and no longer affects the Miff\'s colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end.</string>
     <string name="voyage_card_state_on_a11y">On, until %1$s</string>
     <string name="voyage_card_state_off_a11y">Off</string>
     <string name="voyage_confirm_title">Turn on travel mode?</string>
-    <string name="voyage_confirm_body">Your circle will see “Traveling until %1$s” instead of your status. You can stop it whenever you like.</string>
+    <string name="voyage_confirm_body">Your card will turn grey with “Traveling until %1$s” and will no longer affect the Miff\'s colour. Your circle still sees your location. You can stop it whenever you like.</string>
     <string name="voyage_confirm_action">Turn on</string>
     <string name="voyage_confirm_cancel">Cancel</string>
     <string name="voyage_error_update_refused">Travel mode couldn\'t be updated. Your end date hasn\'t changed; you can try again later.</string>
     <string name="voyage_picker_validate">Confirm</string>
     <string name="voyage_picker_confirm">Continue</string>
-    <string name="voyage_off_done">Tracking is resuming.</string>
-    <string name="voyage_offline_note">Your circle will see your trip as soon as you\'re online. Your last position will be removed then.</string>
+    <string name="voyage_off_done">Your status is resuming.</string>
+    <string name="voyage_offline_note">Your circle will see your trip as soon as you\'re online.</string>
     <string name="voyage_error_refused">Travel mode couldn\'t be turned on. You can try again later.</string>
     <string name="voyage_feed_label">Traveling until %1$s</string>
     <string name="voyage_feed_label_ended">Trip ended</string>
