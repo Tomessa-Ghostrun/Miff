@@ -65,6 +65,12 @@ rules_version = '2';
 //     Risques juridiques CONNUS et assumés par le PM (décision du 2026-10-23, aucune relecture juridique, aucune conformité affirmée) : RGPD
 //     (localisation = donnée sensible), mineurs, copie datée d'une position précise lisible jusqu'à 24 h (data-model.md §11).
 //
+// 12. Mode voyage (VOY-B, ticket docs/tickets/mode-voyage.md, décisions du PM du 2026-11-10) — PRÉPARÉ, NON DÉPLOYÉ : le statut accepte
+//     `presence = 'travel'` avec `travelUntil` (fin) et `travelUntilDay` (jour affiché), voir validTravel. DISPONIBLE POUR TOUS LES COMPTES
+//     (aucune barrière Miff+, aucune lecture de règles de plus). En voyage le statut ne porte ni lieu, ni batterie, ni échéance. LIMITE CONNUE :
+//     aucune règle n'interdit d'écrire une position ou un statut ordinaire pendant le voyage (la pause du suivi est un contrat du client,
+//     data-model.md) ; la dernière position serveur est supprimée par le client dans le lot d'activation (règle de suppression existante, inchangée).
+//
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
 // 10 appels par requête simple, 20 par batch/transaction. Les écritures
@@ -566,13 +572,15 @@ service cloud.firestore {
     }
 
     // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :
-    // uniquement l'état (dans un lieu / hors lieu / zone de danger) + horodatages.
-    // Toutes les clés sont toujours présentes (null si non applicable).
+    // uniquement l'état (dans un lieu / hors lieu / zone de danger / en voyage) + horodatages.
+    // Toutes les clés sont toujours présentes (null si non applicable), sauf `deviceId`, `travelUntil` et `travelUntilDay`, facultatives.
     function validStatus(miffId, uid) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId'])
+      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay'])
         && d.keys().hasAll(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
-        && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']
+        && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown', 'travel']
+        // Mode voyage (VOY-B, pour tous les comptes) : cohérence des clés de voyage et fenêtre de fin, voir validTravel.
+        && validTravel(d)
         // Un compte, un seul appareil (SESS-1) : clé facultative `deviceId` (temps 1), égale à celle de la session si présente.
         && fromActiveDevice(d, uid)
         && (d.placeId == null || isStr(d.placeId, 1, 40))
@@ -592,6 +600,37 @@ service cloud.firestore {
         // Consentement actif APRÈS le batch (le membre peut activer le partage
         // et créer son statut dans le même batch).
         && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+    }
+
+    // MODE VOYAGE (VOY-B, ticket docs/tickets/mode-voyage.md §4, décisions du PM du 2026-11-10) : `presence = 'travel'` avec deux clés
+    // FACULTATIVES, `travelUntil` (instant de fin, timestamp) et `travelUntilDay` (jour choisi 'AAAA-MM-JJ', affichage seul).
+    // DISPONIBLE POUR TOUS LES COMPTES (décision du PM du 2026-11-10, qui remplace la réserve Miff+ de la première version du ticket) :
+    // AUCUNE barrière premium, AUCUNE lecture de règles ajoutée (un statut de voyage coûte 2, comme un statut ordinaire). Deux cas :
+    //  - HORS voyage : une autre présence ET aucune clé de voyage (absentes ou nulles). Cas de TOUS les statuts actuels.
+    //  - EN voyage : aucun lieu, aucune batterie, aucune échéance d'escalade (rien n'est mesuré : le statut ne révèle plus ni où, ni combien) ;
+    //    fin strictement future et au plus 91 jours après l'heure du serveur (le client propose 90 jours, la règle garde 1 jour de marge pour
+    //    le fuseau et la dérive d'horloge) ; jour bien formé (mois 01-12, jour 01-31 ; la cohérence avec la fin n'est PAS vérifiée : aucune règle
+    //    ne lit le fuseau, un client modifié ne trompe que l'affichage de SA carte).
+    //    Désactiver (écrire une autre présence, clés de voyage absentes ou nulles) est toujours possible. Une update qui garde « travel » après
+    //    la date de fin est refusée (travelUntil > request.time) : le client termine le voyage d'abord. Une update qui garde « travel » et sa date
+    //    (texte, photo) passe : la fenêtre se juge à chaque écriture, sans comparaison avec l'ancien document.
+    function validTravel(d) {
+      return (
+          d.presence != 'travel'
+          && d.get('travelUntil', null) == null
+          && d.get('travelUntilDay', null) == null
+        )
+        || (
+          d.presence == 'travel'
+          && d.placeId == null
+          && d.batteryPct == null
+          && d.escalationDueAt == null
+          && d.get('travelUntil', null) is timestamp
+          && d.travelUntil > request.time
+          && d.travelUntil <= request.time + duration.value(91, 'd')
+          && d.get('travelUntilDay', null) is string
+          && d.travelUntilDay.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+        );
     }
 
     // Coordonnée valide : un nombre dans [-max, max] (NaN et l'infini échouent aux comparaisons).
