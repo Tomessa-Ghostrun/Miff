@@ -2547,7 +2547,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La formule gratuite permet d’être dans une Miff à la fois. Avec Miff+, crée et rejoins autant de Miffs que tu veux."
+            "value": "Avec Miff+, tu peux créer ou rejoindre autant de Miffs que tu veux."
           }
         }
       }
@@ -2558,13 +2558,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This option isn’t open yet. Your current Miff stays as it is."
+            "value": "This option isn't open yet. Your current Miff stays as it is."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cette option n’est pas encore ouverte. Ta Miff actuelle reste en place."
+            "value": "Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place."
           }
         }
       }

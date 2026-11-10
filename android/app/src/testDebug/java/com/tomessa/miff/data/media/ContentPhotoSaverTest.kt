@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.pm.ProviderInfo
 import android.database.Cursor
 import android.net.Uri
+import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.test.core.app.ApplicationProvider
@@ -41,6 +42,7 @@ class ContentPhotoSaverTest {
     private class FakeMedia(
         private val file: File,
         private val failOpen: Boolean = false,
+        private val updateCount: Int = 1,
     ) : ContentProvider() {
         val inserted = mutableListOf<ContentValues>()
         val updated = mutableListOf<ContentValues>()
@@ -71,7 +73,7 @@ class ContentPhotoSaverTest {
             selectionArgs: Array<out String>?,
         ): Int {
             updated += ContentValues(values)
-            return 1
+            return updateCount
         }
 
         override fun delete(
@@ -92,6 +94,17 @@ class ContentPhotoSaverTest {
         ): Cursor? = null
 
         override fun getType(uri: Uri): String? = null
+
+        val calls = mutableListOf<String>()
+
+        override fun call(
+            method: String,
+            arg: String?,
+            extras: Bundle?,
+        ): Bundle? {
+            calls += method
+            return Bundle.EMPTY
+        }
     }
 
     private val context: Context get() = ApplicationProvider.getApplicationContext()
@@ -180,5 +193,52 @@ class ContentPhotoSaverTest {
                     Dispatchers.Unconfined,
                 ).saveTo(Uri.parse("content://media/doc/1"), jpeg)
             assertFalse(saved)
+        }
+
+    @Test
+    fun saveToPictures_whenTheSystemUpdatesNoRow_isAFailure_andTheRowIsRemoved() =
+        runTest {
+            val media = FakeMedia(target, updateCount = 0)
+            register(media)
+            val saved =
+                ContentPhotoSaver(
+                    context.contentResolver,
+                    Dispatchers.Unconfined,
+                ).saveToPictures("Miff-x.jpg", jpeg)
+            assertFalse("a photo that never becomes visible is not a success", saved)
+            assertEquals("the invisible row is removed", 1, media.deleted)
+        }
+
+    @Test
+    fun saveTo_whenTheWriteFails_triesToRemoveTheEmptyDocumentTheSystemCreated() =
+        runTest {
+            val media = FakeMedia(target, failOpen = true)
+            register(media)
+            val saved =
+                ContentPhotoSaver(
+                    context.contentResolver,
+                    Dispatchers.Unconfined,
+                ).saveTo(Uri.parse("content://media/document/1"), jpeg)
+            assertFalse(saved)
+            assertTrue(
+                "deleteDocument was asked: ${media.calls}",
+                media.calls.any {
+                    it.contains("deleteDocument", ignoreCase = true)
+                },
+            )
+        }
+
+    @Test
+    fun saveTo_whenTheWriteSucceeds_removesNothing() =
+        runTest {
+            val media = FakeMedia(target)
+            register(media)
+            assertTrue(
+                ContentPhotoSaver(
+                    context.contentResolver,
+                    Dispatchers.Unconfined,
+                ).saveTo(Uri.parse("content://media/document/1"), jpeg),
+            )
+            assertTrue(media.calls.isEmpty())
         }
 }

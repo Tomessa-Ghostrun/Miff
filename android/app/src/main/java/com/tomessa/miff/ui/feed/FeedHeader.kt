@@ -141,7 +141,7 @@ internal fun MiffPill(
     onCreate: () -> Unit,
     onJoin: () -> Unit,
     /** Opens the offer (paywall) for a 2nd Miff: only a free account that already has a Miff gets here. */
-    onOffer: () -> Unit = {},
+    onOffer: () -> Unit,
     /** Told each time the list of Miffs opens or closes: while it is open the header cannot hide. */
     onOpenChanged: (Boolean) -> Unit = {},
 ) {

@@ -51,6 +51,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -249,6 +250,8 @@ internal fun PhotoFullScreen(
     val context = LocalContext.current
     val photo = opened.photo
     val bitmap = remember(photo) { decodeSharedPhoto(photo.jpeg) }
+    // Offered only when the bytes are a well-formed JPEG that can be cleaned of every metadata (see PhotoDownload.sanitize).
+    val canSave = remember(photo) { PhotoDownload.sanitize(photo.jpeg) != null }
     val zone = ZoneId.systemDefault()
     val title =
         stringResource(
@@ -368,7 +371,7 @@ internal fun PhotoFullScreen(
                 }
                 // "Enregistrer la photo" (decision of the PM, 2026-11-08): HERE only, and only on a touch. A photo that is not a real JPEG, or that
                 // could not be drawn, does not offer it.
-                if (bitmap != null && PhotoDownload.isJpeg(photo.jpeg)) {
+                if (bitmap != null && canSave) {
                     SavePhotoButton(
                         state = saveState,
                         onClick = {
@@ -391,12 +394,13 @@ internal fun PhotoFullScreen(
  * 52 dp high, white-outlined like "Voir où c'était" (readable on the black background), and does nothing while a save is under way.
  */
 @Composable
-private fun SavePhotoButton(
+internal fun SavePhotoButton(
     state: PhotoSaveState,
     onClick: () -> Unit,
 ) {
     val name = stringResource(R.string.feed_photo_download_a11y)
     val saving = state == PhotoSaveState.Saving
+    val savingText = stringResource(R.string.feed_photo_download_saving)
     Box(
         modifier =
             Modifier
@@ -405,7 +409,11 @@ private fun SavePhotoButton(
                 .clip(ShapeMd)
                 .border(StrokeHairline * 2, Color.White, ShapeMd)
                 .clickable(enabled = !saving, role = Role.Button, onClick = onClick)
-                .semantics { contentDescription = name },
+                .semantics {
+                    contentDescription = name
+                    // TalkBack says "Enregistrement…" while the button is disabled (the touch does nothing meanwhile).
+                    if (saving) stateDescription = savingText
+                },
         contentAlignment = Alignment.Center,
     ) {
         Row(

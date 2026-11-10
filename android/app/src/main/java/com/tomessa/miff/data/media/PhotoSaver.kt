@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import com.tomessa.miff.domain.feed.PhotoDownload
@@ -63,13 +64,18 @@ class ContentPhotoSaver(
                     it.write(jpeg)
                     true
                 } ?: false
-            if (written) {
-                val done = ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }
-                resolver.update(uri, done, null, null)
-            } else {
-                resolver.delete(uri, null, null)
-            }
-            written
+            // The file only shows once the flag is cleared: if the system says it updated NO row, the photo would stay invisible forever, so it is
+            // a failure and the row is removed (never an invisible leftover).
+            val visible =
+                written &&
+                    resolver.update(
+                        uri,
+                        ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) },
+                        null,
+                        null,
+                    ) > 0
+            if (!visible) resolver.delete(uri, null, null)
+            visible
         } catch (_: Exception) {
             // A half-written file is never left in the pictures of the person.
             runCatching { resolver.delete(uri, null, null) }
@@ -82,13 +88,18 @@ class ContentPhotoSaver(
         jpeg: ByteArray,
     ): Boolean =
         withContext(io) {
-            try {
-                resolver.openOutputStream(target, "w")?.use {
-                    it.write(jpeg)
-                    true
-                } ?: false
-            } catch (_: Exception) {
-                false
-            }
+            val written =
+                try {
+                    resolver.openOutputStream(target, "w")?.use {
+                        it.write(jpeg)
+                        true
+                    } ?: false
+                } catch (_: Exception) {
+                    false
+                }
+            // The picker (Android 9 and older) created an EMPTY document before we wrote: a failed write must not leave it behind.
+            // Best effort: some providers refuse to delete, and that is all right.
+            if (!written) runCatching { DocumentsContract.deleteDocument(resolver, target) }
+            written
         }
 }

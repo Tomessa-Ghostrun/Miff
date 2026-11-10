@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.domain.feed.PhotoDownload
 import com.tomessa.miff.domain.update.SharedPhoto
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
@@ -126,7 +127,7 @@ class PhotoFullScreenSaveTest {
         val name = saver.pictures.single().first
         assertTrue(name, Regex("Miff-\\d{4}-\\d{2}-\\d{2}-\\d{6}\\.jpg").matches(name))
         assertEquals(
-            jpeg.toList(),
+            PhotoDownload.sanitize(jpeg)!!.toList(),
             saver.pictures
                 .single()
                 .second

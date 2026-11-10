@@ -5,6 +5,7 @@ import android.net.Uri
 import com.tomessa.miff.data.media.PhotoSaver
 import com.tomessa.miff.domain.feed.PhotoSaveState
 import com.tomessa.miff.domain.feed.SaveRoute
+import com.tomessa.miff.testsupport.TestJpegs
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,7 +41,7 @@ class FakePhotoSaver(
     }
 }
 
-internal val TEST_JPEG = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 7, 7, 7)
+internal val TEST_JPEG = TestJpegs.clean()
 
 /** What the button does apart from the screen: the route, the neutral name, the states, the checks. */
 @RunWith(RobolectricTestRunner::class)
@@ -103,6 +104,43 @@ class PhotoSaveControllerTest {
         assertTrue(controller.begin())
         assertFalse(controller.begin())
     }
+
+    @Test
+    fun aPhotoWithMetadata_isWrittenClean_onBothRoutes() =
+        runTest {
+            val saver = FakePhotoSaver()
+            val controller = controller(saver)
+            controller.begin()
+            controller.saveToPictures(TestJpegs.dirty())
+            assertEquals(PhotoSaveState.Saved, controller.state.value)
+            assertEquals(
+                TestJpegs.clean().toList(),
+                saver.pictures
+                    .single()
+                    .second
+                    .toList(),
+            )
+            controller.begin()
+            controller.saveTo(Uri.parse("content://doc/2"), TestJpegs.dirty())
+            assertEquals(
+                TestJpegs.clean().toList(),
+                saver.documents
+                    .single()
+                    .second
+                    .toList(),
+            )
+        }
+
+    @Test
+    fun aTruncatedJpeg_isNeverWritten() =
+        runTest {
+            val saver = FakePhotoSaver()
+            val controller = controller(saver)
+            controller.begin()
+            controller.saveToPictures(TestJpegs.clean().copyOf(10))
+            assertEquals(PhotoSaveState.Failed, controller.state.value)
+            assertTrue(saver.pictures.isEmpty())
+        }
 
     @Test
     fun somethingThatIsNotAJpeg_isNeverWritten() =

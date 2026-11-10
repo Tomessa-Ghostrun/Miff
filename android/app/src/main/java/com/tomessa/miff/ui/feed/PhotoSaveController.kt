@@ -38,11 +38,12 @@ class PhotoSaveController(
         return true
     }
 
-    /** The photo is a real JPEG only. Android 10+ route. */
+    /** Android 10+ route. What is written is [PhotoDownload.sanitize] of the photo (no metadata, nothing after the image); a photo that is not a well-formed JPEG is refused. */
     suspend fun saveToPictures(jpeg: ByteArray) {
+        val clean = PhotoDownload.sanitize(jpeg)
         finish(
-            if (PhotoDownload.isJpeg(jpeg) &&
-                saver.saveToPictures(fileName(), jpeg)
+            if (clean != null &&
+                saver.saveToPictures(fileName(), clean)
             ) {
                 PhotoSaveOutcome.Saved
             } else {
@@ -51,7 +52,7 @@ class PhotoSaveController(
         )
     }
 
-    /** The answer of the document picker: [target] is null when the person closed it without choosing. */
+    /** The answer of the document picker: [target] is null when the person closed it without choosing. Same cleaning as [saveToPictures]. */
     suspend fun saveTo(
         target: Uri?,
         jpeg: ByteArray,
@@ -60,15 +61,8 @@ class PhotoSaveController(
             finish(PhotoSaveOutcome.Cancelled)
             return
         }
-        finish(
-            if (PhotoDownload.isJpeg(jpeg) &&
-                saver.saveTo(target, jpeg)
-            ) {
-                PhotoSaveOutcome.Saved
-            } else {
-                PhotoSaveOutcome.Failed
-            },
-        )
+        val clean = PhotoDownload.sanitize(jpeg)
+        finish(if (clean != null && saver.saveTo(target, clean)) PhotoSaveOutcome.Saved else PhotoSaveOutcome.Failed)
     }
 
     private fun finish(outcome: PhotoSaveOutcome) {

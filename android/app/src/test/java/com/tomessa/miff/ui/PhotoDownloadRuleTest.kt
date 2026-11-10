@@ -68,7 +68,7 @@ class PhotoDownloadRuleTest {
     @Test
     fun theButtonIsDrawnInTheFullScreenPhotoOnly() {
         val photo = code(named("FeedPhoto.kt"))
-        val fullScreen = photo.substringAfter("fun PhotoFullScreen(").substringBefore("private fun SavePhotoButton(")
+        val fullScreen = photo.substringAfter("fun PhotoFullScreen(").substringBefore("fun SavePhotoButton(")
         assertEquals("SavePhotoButton( is called once", 1, Regex("""\bSavePhotoButton\(""").findAll(fullScreen).count())
         // Not in the card (the window on the photo) nor in the tile of reciprocity.
         val card = photo.substringBefore("fun PhotoFullScreen(")
@@ -79,7 +79,7 @@ class PhotoDownloadRuleTest {
     @Test
     fun theWritingStartsFromATouch_neverFromAnEffect() {
         val photo = code(named("FeedPhoto.kt"))
-        val fullScreen = photo.substringAfter("fun PhotoFullScreen(").substringBefore("private fun SavePhotoButton(")
+        val fullScreen = photo.substringAfter("fun PhotoFullScreen(").substringBefore("fun SavePhotoButton(")
         assertEquals(1, Regex("""controller\.saveToPictures\(""").findAll(fullScreen).count())
         assertEquals(1, Regex("""controller\.saveTo\(""").findAll(fullScreen).count())
         assertFalse("no automatic save", fullScreen.contains("LaunchedEffect"))
