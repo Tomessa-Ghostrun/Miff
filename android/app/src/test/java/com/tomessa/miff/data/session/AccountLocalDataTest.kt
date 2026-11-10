@@ -1,6 +1,9 @@
 package com.tomessa.miff.data.session
 
 import com.tomessa.miff.data.permission.NotificationAskStore
+import com.tomessa.miff.data.review.ReviewStateStore
+import com.tomessa.miff.domain.review.ReviewOutcome
+import com.tomessa.miff.domain.review.ReviewState
 import com.tomessa.miff.testsupport.MemoryPendingDeletions
 import com.tomessa.miff.testsupport.MemoryPublishLedger
 import kotlinx.coroutines.test.runTest
@@ -25,12 +28,46 @@ class AccountLocalDataTest {
         }
     }
 
+    private class MemoryReviewState(
+        var state: ReviewState =
+            ReviewState(firstMiffSeenAtMillis = 5L, lastShownAtMillis = 9L, lastOutcome = ReviewOutcome.CAN_DO_BETTER),
+    ) : ReviewStateStore {
+        override fun read() = state
+
+        override fun write(state: ReviewState) {
+            this.state = state
+        }
+
+        override fun clear() {
+            state = ReviewState()
+        }
+
+        override fun forceNext() = false
+
+        override fun setForceNext(value: Boolean) = Unit
+    }
+
+    @Test
+    fun theStateOfTheReviewWindow_goesWithTheAccount() =
+        runTest {
+            val review = MemoryReviewState()
+            accountLocalDataErasers(Asks(), MemoryPendingDeletions(emptySet()), MemoryPublishLedger(), review).forEach {
+                it.erase("uid-1")
+            }
+            assertEquals(ReviewState(), review.state)
+        }
+
     @Test
     fun theErasersForgetTheAccount_theNotificationFlagAndTheMarkersOfDeletionOfItsMiffs() =
         runTest {
             val asks = Asks()
             val pending = MemoryPendingDeletions(setOf("uid-1" to "m1", "uid-1" to "m2", "uid-2" to "m3"))
-            accountLocalDataErasers(asks, pending, MemoryPublishLedger()).forEach { it.erase("uid-1") }
+            accountLocalDataErasers(
+                asks,
+                pending,
+                MemoryPublishLedger(),
+                MemoryReviewState(),
+            ).forEach { it.erase("uid-1") }
             assertFalse(asks.wasShown("uid-1"))
             assertTrue(pending.ids("uid-1").isEmpty())
         }
@@ -40,7 +77,12 @@ class AccountLocalDataTest {
         runTest {
             val asks = Asks()
             val pending = MemoryPendingDeletions(setOf("uid-1" to "m1", "uid-2" to "m3"))
-            accountLocalDataErasers(asks, pending, MemoryPublishLedger()).forEach { it.erase("uid-1") }
+            accountLocalDataErasers(
+                asks,
+                pending,
+                MemoryPublishLedger(),
+                MemoryReviewState(),
+            ).forEach { it.erase("uid-1") }
             assertTrue(asks.wasShown("uid-2"))
             assertEquals(setOf("m3"), pending.ids("uid-2"))
         }
@@ -49,7 +91,9 @@ class AccountLocalDataTest {
     fun theNoteOfThePhotoSentByTheDeletedAccount_goesWithIt() =
         runTest {
             val ledger = MemoryPublishLedger().apply { notePhotoSent("uid-1", 1_000L) }
-            accountLocalDataErasers(Asks(), MemoryPendingDeletions(emptySet()), ledger).forEach { it.erase("uid-1") }
+            accountLocalDataErasers(Asks(), MemoryPendingDeletions(emptySet()), ledger, MemoryReviewState()).forEach {
+                it.erase("uid-1")
+            }
             assertEquals(null, ledger.photoSentMillis("uid-1"))
             assertEquals(null, ledger.photoAt)
             assertEquals(null, ledger.photoUid)
@@ -59,7 +103,9 @@ class AccountLocalDataTest {
     fun theNoteOfAnotherAccount_isKept() =
         runTest {
             val ledger = MemoryPublishLedger().apply { notePhotoSent("uid-2", 2_000L) }
-            accountLocalDataErasers(Asks(), MemoryPendingDeletions(emptySet()), ledger).forEach { it.erase("uid-1") }
+            accountLocalDataErasers(Asks(), MemoryPendingDeletions(emptySet()), ledger, MemoryReviewState()).forEach {
+                it.erase("uid-1")
+            }
             assertEquals(2_000L, ledger.photoSentMillis("uid-2"))
         }
 

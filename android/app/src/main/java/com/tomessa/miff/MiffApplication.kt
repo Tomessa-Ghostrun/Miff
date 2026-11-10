@@ -49,6 +49,7 @@ class MiffApplication : Application() {
                     onForeground = {
                         AppVisibility.inForeground = true
                         container.trackingLooksAgain(TrackingEngine.Reason.OPENED)
+                        container.foregroundTicks.arrived()
                         // NOTIF-1A / 4A: the channels follow the language of the app, and the reminders are brought in line with the plan.
                         container.notificationsLookAgain()
                     },

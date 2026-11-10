@@ -101,11 +101,10 @@ class FeedTextsFrenchTest {
 
     @Test
     fun timeLines() {
-        assertEquals("Depuis 12 min", texts.timeLine(TimeLine.Since(Age.Minutes(12))))
-        assertEquals("Depuis 3 h", texts.timeLine(TimeLine.Since(Age.Hours(3))))
-        assertEquals("Depuis hier à 16 h 40".t(), texts.timeLine(TimeLine.Since(Age.Yesterday(AT_16_40))))
-        assertEquals("Depuis le 3 nov. à 16 h 02".t(), texts.timeLine(TimeLine.Since(Age.Date(AT_16_02))))
-        assertEquals("Départ il y a 12 min", texts.timeLine(TimeLine.DepartedAgo(Age.Minutes(12))))
+        // Always a TIME (decision of the PM, 2026-11-10): today, yesterday, the short date.
+        assertEquals("Depuis 16 h 40".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.TODAY))))
+        assertEquals("Depuis hier à 16 h 40".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.YESTERDAY))))
+        assertEquals("Depuis le 3 nov. à 16 h 02".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_02, Day.OTHER))))
         assertEquals(
             "Dernière nouvelle à 16 h 40".t(),
             texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))),
@@ -114,7 +113,6 @@ class FeedTextsFrenchTest {
             "Pas de nouvelles depuis 16 h 40".t(),
             texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_40, Day.TODAY))),
         )
-        assertEquals("Depuis 16 h 40".t(), texts.timeLine(TimeLine.InDangerSince(Moment(AT_16_40, Day.TODAY))))
         assertEquals(null, texts.timeLine(TimeLine.None))
     }
 
@@ -234,8 +232,8 @@ class FeedTextsEnglishTest {
         assertEquals("At home", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.HOME))))
         assertEquals("Left home", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME))))
         assertEquals("In a danger zone", texts.label(StateLabel.Danger))
-        assertEquals("For 12 min", texts.timeLine(TimeLine.Since(Age.Minutes(12))))
-        assertEquals("Left 12 min ago", texts.timeLine(TimeLine.DepartedAgo(Age.Minutes(12))))
+        assertEquals("Since 4:40 PM".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.TODAY))))
+        assertEquals("Since yesterday at 4:40 PM".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.YESTERDAY))))
         assertEquals("Latest news at 4:40 PM".t(), texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))))
         assertEquals("No news since 4:02 PM".t(), texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_02, Day.TODAY))))
         assertEquals("Latest news 2 min ago", texts.latestNews(Age.Minutes(2)))
