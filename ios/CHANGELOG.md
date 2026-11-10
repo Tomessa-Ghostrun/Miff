@@ -2,6 +2,10 @@
 
 ## Non publié
 
+### CI - `ios-testflight` : signature manuelle (un certificat Apple Distribution persistant)
+
+Décision du PM du 2026-11-08 (option (a) de `docs/dev/apple-certificats-ci.md`, après l'échec « maximum number of certificates » du run 42429656978). Si les 3 secrets `DIST_CERT_P12_B64`, `DIST_CERT_P12_PASSWORD` et `APPSTORE_PROFILE_B64` existent, le workflow installe le certificat dans un trousseau temporaire, contrôle et installe le profil (nom, équipe, identifiant, type App Store, certificat autorisé, expiration), archive **sans `-allowProvisioningUpdates` ni clé d'API** puis exporte en manuel ; la clé `.p8` ne sert plus qu'à l'envoi. **Sans les 3 secrets, comportement inchangé** (signature automatique, avertissement dans le journal) ; avec 1 ou 2, arrêt. Nouveaux fichiers : `ios/project-signing-manual.yml` (superposition XcodeGen, `project.yml` inchangé pour garder le repli), `ios/ci/ExportOptions.manual.plist.template`. `ios.yml` vérifie la superposition à chaque exécution lourde. Aucun code applicatif, aucun secret modifié. Coût : 0 €. **Action du PM avant tout run manuel : le guide pas à pas Windows de `docs/dev/apple-certificats-ci.md`.**
+
 ### Batterie rafraîchie à l'ouverture et à la sortie de l'app (décision du PM, 2026-11-07 ; miroir d'Android)
 
 La batterie était déjà écrite avec chaque statut d'arrivée ou de départ. Le Feed la masque au-delà de 6 h après `updatedAt` : sans autre écriture, quelqu'un qui reste chez lui n'a plus de batterie visible. Décision du PM : « actualise le niveau de batterie des utilisateurs lorsqu'ils ouvrent l'app ou la quittent ».

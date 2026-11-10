@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Modele de la SIGNATURE MANUELLE (docs/dev/apple-certificats-ci.md) : le workflow ios-testflight remplace
+	     __TEAM_ID__ par le secret APPLE_TEAM_ID. Le nom du profil doit rester « Miff CI App Store » (controle par le
+	     workflow a l'installation du profil). -->
+	<key>method</key>
+	<string>app-store-connect</string>
+	<!-- "upload" : xcodebuild -exportArchive envoie directement le build a App Store Connect (avec la cle d'API,
+	     qui ne sert qu'a cet envoi). -->
+	<key>destination</key>
+	<string>upload</string>
+	<key>teamID</key>
+	<string>__TEAM_ID__</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.tomessa.miff</key>
+		<string>Miff CI App Store</string>
+	</dict>
+	<key>uploadSymbols</key>
+	<true/>
+	<!-- Garde notre numero de build (= numero d'execution du workflow). -->
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<!-- Le build reste reserve aux testeurs internes TestFlight. -->
+	<key>testFlightInternalTestingOnly</key>
+	<true/>
+</dict>
+</plist>
