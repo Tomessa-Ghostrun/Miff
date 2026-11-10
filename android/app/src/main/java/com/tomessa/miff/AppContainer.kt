@@ -86,6 +86,9 @@ import com.tomessa.miff.data.profile.CurrentProfile
 import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
 import com.tomessa.miff.data.profile.HttpsGooglePhotoSource
 import com.tomessa.miff.data.profile.MyProfileRepository
+import com.tomessa.miff.data.review.ForegroundTicks
+import com.tomessa.miff.data.review.ReviewStateStore
+import com.tomessa.miff.data.review.SharedPreferencesReviewStateStore
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.FirestoreSessionDocuments
@@ -227,6 +230,12 @@ class AppContainer(
     }
 
     val onboardingFlags: OnboardingFlags by lazy { OnboardingFlags(sessionFlags) }
+
+    /** The returns of the app to the foreground, counted (read by the review window, which looks at its rules once per return). */
+    val foregroundTicks: ForegroundTicks by lazy { ForegroundTicks() }
+
+    /** What the review window remembers (three small values); erased at sign-out and with the account. Built on first use, even in a build without the window. */
+    val reviewStateStore: ReviewStateStore by lazy { SharedPreferencesReviewStateStore(context) }
 
     val accountRepository: AccountRepository by lazy { FirestoreAccountRepository() }
 
@@ -543,7 +552,7 @@ class AppContainer(
 
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
-        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger)
+        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger, reviewStateStore)
     }
 
     /** The read-only "Abonnement" line of the Settings (ticket ABO-1): one read of `entitlements/{uid}` per opening of the Settings. */
@@ -576,6 +585,7 @@ class AppContainer(
                         awaitingAgreement,
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
+                        SessionTeardown { reviewStateStore.clear() },
                         placeNotices,
                         addressSearch,
                         mapTileCache,
