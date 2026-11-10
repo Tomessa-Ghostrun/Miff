@@ -15221,13 +15221,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your card turns grey for your circle, without changing the Miff's colour."
+            "value": "Your card turns grey for your circle, without changing the Miff's colour. Your circle still sees your location."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta carte devient grise pour tes proches, sans changer la couleur de la Miff."
+            "value": "Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position."
           }
         }
       }

@@ -219,6 +219,32 @@ class TrackingEngineTravelTest {
         }
 
     @Test
+    fun theEnd_alwaysClearsTheKeysOfTheTrip_evenInAMiffThatIsNotRecordedAsTold() =
+        runTest {
+            share(miffA)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            // The write of the start failed in this phone's eyes (the answer was lost after the server took it): the Miff is not recorded as told.
+            store.alwaysFailing["miffs/miffA/status/uid1"] = unavailable()
+            assertEquals(TravelResult.DoneOffline, engine.setTravel(period))
+            assertTrue(
+                local.state!!
+                    .travel!!
+                    .startedIn
+                    .isEmpty(),
+            )
+            store.alwaysFailing.clear()
+            store.commits.clear()
+
+            assertTrue(engine.endTravel())
+
+            // The end carries the two keys as null whatever the record says: no trip is left on the server (no lasting "Voyage terminé").
+            val first = statusWrites().first()
+            assertEquals("unknown", first.data["presence"])
+            assertTrue("travelUntil" in first.data && first.data["travelUntil"] == null)
+            assertTrue("travelUntilDay" in first.data && first.data["travelUntilDay"] == null)
+        }
+
+    @Test
     fun aNetworkThatFailsDuringTheWrite_acceptsTheTripHere_andKeepsTheMiffToBeTold() =
         runTest {
             share(miffA)
