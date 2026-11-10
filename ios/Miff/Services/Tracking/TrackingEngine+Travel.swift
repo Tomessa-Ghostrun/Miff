@@ -41,9 +41,7 @@ extension TrackingEngine {
             return .unavailable
         }
         let now = env.nowMillis()
-        // Le serveur accepte une fin à 91 jours au plus ; le sélecteur s'arrête à aujourd'hui + 89 jours : ceci garde tout le reste (une
-        // horloge qui a bougé, un changement d'heure).
-        if period.isOver(nowMillis: now) || period.untilMillis > now + TravelLimits.maxEndAheadMillis {
+        guard isAcceptableEnd(period, now: now) else {
             return .refused
         }
         var state = stateFor(uid) ?? LocalState(uid: uid)
@@ -54,8 +52,9 @@ extension TrackingEngine {
             read = await readEligible(uid)
         }
         let targets = (read ?? Set(state.miffs.keys)).sorted()
-        let since = state.travel?.sinceMillis ?? now
-        let first = LocalTravel(untilMillis: period.untilMillis, untilDay: period.untilDay, sinceMillis: since)
+        let first = LocalTravel(
+            untilMillis: period.untilMillis, untilDay: period.untilDay, sinceMillis: state.travel?.sinceMillis ?? now
+        )
         var travel = (state.travel ?? first).moved(to: period)
         if online && !targets.isEmpty {
             // Rien n'a pu être écrit alors que le serveur a dit non : rien ne change, le suivi continue.
@@ -65,16 +64,40 @@ extension TrackingEngine {
             travel.startedIn.formUnion(told)
             travel.upToDateIn = told
         }
-        let listed = Dictionary(uniqueKeysWithValues: targets.map { ($0, state.miffs[$0] ?? LocalMiff()) })
-        state.miffs = (read != nil || state.miffs.isEmpty) ? listed : state.miffs.merging(listed) { _, new in new }
-        state.travel = travel
-        if read != nil {
-            state.checkedAtMillis = now
-        }
+        state = keeping(travel, targets: targets, read: read, in: state, now: now)
         // Le statut de présence ne s'arrête que MAINTENANT : le voyage est connu du serveur (ou gardé pour lui être dit). La position reste.
         state = await pauseStatuses(state)
         deps.local.save(state)
         return travelToTell(state) ? .doneOffline : .done
+    }
+
+    /// Le serveur accepte une fin à 91 jours au plus ; le sélecteur s'arrête à aujourd'hui + 89 jours : ceci garde tout le reste (une
+    /// horloge qui a bougé, un changement d'heure). Une fin déjà passée n'est jamais écrite.
+    private func isAcceptableEnd(_ period: TravelPeriod, now: Int) -> Bool {
+        !period.isOver(nowMillis: now) && period.untilMillis <= now + TravelLimits.maxEndAheadMillis
+    }
+
+    /// La copie locale avec le voyage : la liste des Miffs est celle que le serveur vient de dire (ou, sans réponse, la liste d'avant
+    /// complétée).
+    private func keeping(
+        _ travel: LocalTravel,
+        targets: [String],
+        read: Set<String>?,
+        in start: LocalState,
+        now: Int
+    ) -> LocalState {
+        var state = start
+        let listed = Dictionary(uniqueKeysWithValues: targets.map { ($0, start.miffs[$0] ?? LocalMiff()) })
+        if read != nil || start.miffs.isEmpty {
+            state.miffs = listed
+        } else {
+            state.miffs = start.miffs.merging(listed) { _, new in new }
+        }
+        state.travel = travel
+        if read != nil {
+            state.checkedAtMillis = now
+        }
+        return state
     }
 
     /// Écrit le voyage dans chaque Miff de `targets`, une écriture seule par Miff. Rend les Miffs qui l'ont reçu ; nil quand le serveur a
