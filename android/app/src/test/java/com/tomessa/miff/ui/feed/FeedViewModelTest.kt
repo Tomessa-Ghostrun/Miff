@@ -364,43 +364,6 @@ class FeedViewModelTest {
         }
 
     @Test
-    fun whileMyTripIsOn_localiser_readsNothing_andSaysThePositionsComeBackAtTheEnd() =
-        runTest(dispatcher) {
-            ready()
-            val feed = statuses.enqueue()
-            val vm = viewModel()
-            val job = observing(vm)
-            runCurrent()
-            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
-            val until = base + 5 * 24 * 60 * minute
-            val trip =
-                MemberStatus(
-                    PresenceValue.TRAVEL,
-                    null,
-                    base - minute,
-                    base - minute,
-                    false,
-                    null,
-                    MemberLocationAccess.BACKGROUND,
-                    base,
-                    until,
-                    "2026-11-09",
-                )
-            feed.trySend(StatusFeed.Data(mapOf("me" to trip, "t" to status()), fromCache = false))
-            runCurrent()
-            assertTrue(vm.content().myTripOn)
-            positions.answer = PositionLookup.Found(48.0, 2.0, base)
-
-            vm.onLocate("t")
-            runCurrent()
-
-            assertTrue("nothing is read from the server", positions.reads.isEmpty())
-            val shown = vm.locate.value as LocateUiState.Shown
-            assertEquals(LocateResult.PausedByTrip, shown.result)
-            job.cancel()
-        }
-
-    @Test
     fun leavingTheScreen_detachesEveryListener_andClosesTheSheet() =
         runTest(dispatcher) {
             ready()

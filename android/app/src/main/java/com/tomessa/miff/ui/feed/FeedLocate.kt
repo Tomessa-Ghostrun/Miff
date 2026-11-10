@@ -123,11 +123,6 @@ fun LocateSheet(
                     CloseButton(onDismiss)
                 }
 
-                LocateResult.PausedByTrip -> {
-                    Message(R.drawable.ic_travel_plane, stringResource(R.string.voyage_locate_paused))
-                    CloseButton(onDismiss)
-                }
-
                 LocateResult.Offline -> {
                     Message(R.drawable.ic_loc_cloud_off, stringResource(R.string.feed_locate_offline))
                     CloseButton(onDismiss)

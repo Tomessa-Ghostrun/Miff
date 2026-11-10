@@ -963,8 +963,6 @@
     <string name="voyage_bubble_one">%1$s is traveling until %2$s.</string>
     <string name="voyage_bubble_many">%1$d loved ones are traveling.</string>
     <string name="voyage_bubble_all">Your loved ones are traveling.</string>
-    <string name="voyage_locate_paused">Your loved ones\' positions come back when your trip ends.</string>
-    <string name="voyage_photo_paused">Located photos come back when your trip ends.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
     <string name="android_diag_review_title">Review window (test)</string>
     <string name="android_diag_review_force">Show the window at the next return to the app</string>

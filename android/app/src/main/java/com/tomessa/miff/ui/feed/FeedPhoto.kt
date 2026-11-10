@@ -116,8 +116,6 @@ internal fun MemberPhotoSlot(
     texts: FeedTexts,
     nowMillis: Long,
     onOpen: (OpenedPhoto) -> Unit,
-    /** MODE VOYAGE: MY trip is on: the located photos of the others come back when it ends (instead of "Partage ta position…"). */
-    myTripOn: Boolean = false,
 ) {
     val slot = card.photo as? PhotoSlot.Candidate ?: return
     val reader = LocalPhotoReader.current ?: return
@@ -133,7 +131,7 @@ internal fun MemberPhotoSlot(
         }
 
         PhotoLookup.NeedsOwnPosition -> {
-            NeedsPositionTile(myTripOn)
+            NeedsPositionTile()
         }
 
         PhotoLookup.Missing, PhotoLookup.Offline, null -> {}
@@ -191,7 +189,7 @@ private fun PhotoWindow(
 
 /** "Partage ta position pour voir cette photo." : a soft pale-blue tile with a lock, never "erreur" (design 09, C). */
 @Composable
-private fun NeedsPositionTile(tripPaused: Boolean) {
+private fun NeedsPositionTile() {
     Row(
         modifier =
             Modifier
@@ -212,9 +210,7 @@ private fun NeedsPositionTile(tripPaused: Boolean) {
         )
         Text(
             text =
-                stringResource(
-                    if (tripPaused) R.string.voyage_photo_paused else R.string.update_card_photo_needs_position,
-                ),
+                stringResource(R.string.update_card_photo_needs_position),
             style = textBodyRegular14,
             color = colorTextPrimary,
         )

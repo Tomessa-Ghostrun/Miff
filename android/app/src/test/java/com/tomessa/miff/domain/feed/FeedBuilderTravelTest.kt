@@ -240,14 +240,6 @@ class FeedBuilderTravelTest {
     }
 
     @Test
-    fun myTripOn_isTold_onlyWhenMyOwnTripIsOn() {
-        assertTrue(build(trio, mapOf(me to trip(), "t" to green())).myTripOn)
-        assertFalse(build(trio, mapOf(me to green(), "t" to trip())).myTripOn)
-        assertFalse(build(trio, mapOf(me to trip()), at = until + hour).myTripOn)
-        assertFalse(build(trio, mapOf("t" to green())).myTripOn)
-    }
-
-    @Test
     fun aTravellerAndSomebodyWithoutNews_isTheBubbleOfTheTravellers_not_NoNews() {
         val content = build(trio, mapOf("t" to trip()))
         assertTrue(content.bubble is Bubble.Travelers)

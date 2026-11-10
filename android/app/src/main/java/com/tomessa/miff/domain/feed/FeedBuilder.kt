@@ -136,7 +136,6 @@ object FeedBuilder {
                         mySharing && !input.waitingAgreement
                     }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
             travelNote = travelNote,
-            myTripOn = mine?.traveling == true,
         )
     }
 

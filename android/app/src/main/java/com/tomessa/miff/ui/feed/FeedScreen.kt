@@ -467,7 +467,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             onOpenPhoto = onOpenPhoto,
             // MODE VOYAGE: the link "Modifier" of MY card opens the Profile, where the trip is set.
             onEditTravel = actions.onOpenProfile,
-            myTripOn = content.myTripOn,
         )
     }
     item(key = "add") {

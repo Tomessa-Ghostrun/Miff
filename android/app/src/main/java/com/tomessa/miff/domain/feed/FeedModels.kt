@@ -294,11 +294,6 @@ data class FeedContent(
     val myPhoto: MyPhotoFacts? = null,
     /** MODE VOYAGE: the line added to the usual bubble when other members are on a trip (null: none, or the bubble already says it). */
     val travelNote: TravelNote? = null,
-    /**
-     * MODE VOYAGE: MY trip is on. The tracking is paused and my last position was removed, so the server does not let me read the positions nor the located photos of the
-     * others until it ends: "Localiser" and the photos say so calmly instead of asking to share.
-     */
-    val myTripOn: Boolean = false,
 ) {
     override fun toString(): String = "FeedContent(redacted)"
 }
