@@ -14845,6 +14845,40 @@
         }
       }
     },
+    "feed_photo_download": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer la photo"
+          }
+        }
+      }
+    },
+    "feed_photo_download_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo saved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo enregistrée."
+          }
+        }
+      }
+    },
     "update_photo_see_where": {
       "extractionState": "manual",
       "localizations": {
