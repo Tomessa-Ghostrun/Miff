@@ -247,15 +247,15 @@ const scenarios = [
   },
   {
     // Lieux, évolutions du 2026-11-01 (R-LIEU-5, -6) : coût PAR DOCUMENT ; un lot de N Miffs coûte au plus N fois le coût sans cache
-    // (comptage manuel dans data-model.md §12 : création premium 3, gratuite p1/p2 2, passage à risk 3, suppression 2 -> 5 Miffs = 15, 10, 15, 10 sur 20).
+    // (comptage manuel dans data-model.md §12 : création premium 3, gratuite p1/p2/p3 2, passage à risk 3, suppression 2 -> 5 Miffs = 15, 10, 15, 10 sur 20).
     // Les lectures factices (zz_pad) ont des chemins fixes que l'émulateur met en cache d'une écriture à l'autre du lot : un lot de N
     // écritures identiques ne se mesure donc pas par injection ; on mesure une écriture et on multiplie par le pire cas manuel.
     id: 'READS-place-create-free',
-    title: "création d'un lieu gratuit sous p2 (écriture simple)",
-    name: "Création d'un lieu gratuit p2 (écriture simple)",
+    title: "création d'un lieu gratuit sous p3 (écriture simple, dernier emplacement gratuit)",
+    name: "Création d'un lieu gratuit p3 (écriture simple)",
     limit: 10,
     hosts: [H.placesCreate],
-    run: (env) => db(env, 'alice').doc(`${M1}/places/p2`).set(placeInput('alice')),
+    run: (env) => db(env, 'alice').doc(`${M1}/places/p3`).set(placeInput('alice')),
   },
   {
     id: 'READS-place-update-risk',

@@ -19,7 +19,7 @@ rules_version = '2';
 //     partagent eux-mêmes ET ont publié leur propre statut (réciprocité), tant que
 //     la Miff existe. Révoquer = supprimer ces données.
 //  5. Limites freemium appliquées par des "slots" à identifiant fixe (voir
-//     data-model.md §6) : 1 Miff et 2 lieux (p1, p2) en gratuit, sans Cloud Function.
+//     data-model.md §6) : 1 Miff et 3 lieux (p1, p2, p3) en gratuit, sans Cloud Function.
 //  6. Téléphone (ONB-B) : donnée de contact obligatoire, sans vérification ni unicité. Il n'est visible de quelqu'un d'autre
 //     que par la copie dans la fiche de membre (lisible des seuls membres de la Miff, sans condition de partage : décision
 //     N1 du PM) ; la copie est contrainte à être celle du profil users/{uid} après le lot. Une fuite du code d'une Miff est
@@ -522,8 +522,8 @@ service cloud.firestore {
       return e.active == true && e.expiresAt > request.time;
     }
 
-    // Limite freemium "2 lieux" (R-LIEU-5, décision du PM du 2026-11-01) : en gratuit, SEULS les identifiants 'p1' et 'p2' et
-    // le type 'trusted' sont acceptés (recréer un identifiant existant est une mise à jour, soumise à validPlaceUpdate).
+    // Limite freemium "3 lieux" (R-LIEU-5, décision du PM du 2026-11-01, portée de 2 à 3 le 2026-11-10) : en gratuit, SEULS les
+    // identifiants 'p1', 'p2' et 'p3' et le type 'trusted' sont acceptés (recréer un identifiant existant est une mise à jour, soumise à validPlaceUpdate).
     // Premium : identifiants libres et zones de danger. Un lieu rattaché à plusieurs Miffs = UN document par Miff avec le MÊME
     // identifiant (généré une fois par le client) : chaque document est évalué séparément, aucune règle ne compare les copies.
     function validPlaceCreate(placeId) {
@@ -534,7 +534,7 @@ service cloud.firestore {
         && d.createdAt == request.time
         && d.updatedAt == request.time
         && (
-          (placeId in ['p1', 'p2'] && d.type == 'trusted')
+          (placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')
           || isPremiumOneRead(request.auth.uid)
         );
     }
