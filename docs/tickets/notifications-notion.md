@@ -307,6 +307,10 @@ N5 (« {Prénom} est dans une zone de danger » à tous les membres) exige un se
 
 **Maquettes à fournir** (sans bloquer le démarrage) : pré-autorisation corrigée ; centre (liste, vide, chargement, coupées, menu, cloche) ; Réglages > Notifications (états de l'autorisation, cinq interrupteurs, nuit calme) ; écrans d'aide ; formats de notification N1 à N4 et N6.
 
+### 16.7bis N7 « Mode voyage terminé » et gardes (décision du 2026-11-10)
+
+Le **mode voyage** (page « Mode voyage ») ajoute **N7**, notification **locale** sans serveur : « Ton mode voyage est terminé » / « Miff reprend le suivi de tes lieux. Bon retour ! » (iOS : « Ouvre Miff pour que le suivi reprenne. Bon retour ! »), à **08:00 heure locale du lendemain du jour de fin**, au toucher le Feed, annulée à la désactivation anticipée / déconnexion / suppression de compte / session perdue, reprogrammée au redémarrage, au changement de date, d'heure ou de fuseau ; hors plafonds ; interrupteur « Quand mon mode voyage se termine » (actif par défaut) ; entrée de centre. **Gardes du planificateur** : moi en voyage → N7 seul (N1, N2, N3, N4, N6 vides) ; un autre membre en voyage → niveau neutre, ignoré par la couleur de la Miff et par « je suis responsable » ; début de voyage → annulation immédiate de N1 à N4 et N6. **Le périmètre P0 devient : N1, N2, N3, N4, N6, N7.**
+
 ### 16.8 Questions restantes
 
 - **Q28 Responsable (N3 / N4)** : LARGE (reco : évite 4 notifications par jour en Miff de 2 avec un seul lieu gratuit) ou STRICT ?

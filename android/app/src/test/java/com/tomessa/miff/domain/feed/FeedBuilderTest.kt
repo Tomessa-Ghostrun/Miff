@@ -305,7 +305,7 @@ class FeedBuilderTest {
         val left = card(build(trio, mapOf("t" to status(PresenceValue.OUT, "p1", 30 * minute, 30 * minute))), "t")
         assertEquals(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME)), left.label)
         assertEquals(StatusLevel.GREEN, left.level)
-        assertEquals(TimeLine.DepartedAgo(Age.Minutes(30)), left.time)
+        assertEquals(TimeLine.Since(Moment(now - 30 * minute, Day.TODAY)), left.time)
     }
 
     @Test
@@ -321,7 +321,7 @@ class FeedBuilderTest {
         val danger = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 2 * hour))), "t")
         assertEquals(StatusLevel.RED, danger.level)
         assertEquals(StateLabel.Danger, danger.label)
-        assertEquals(TimeLine.InDangerSince(Moment(now - 20 * minute, Day.TODAY)), danger.time)
+        assertEquals(TimeLine.Since(Moment(now - 20 * minute, Day.TODAY)), danger.time)
         // An update published AFTER the entry, less than an hour old: green (decision of the PM, 2026-11-08, feed.md D47); the label stays factual.
         val updated = card(build(trio, mapOf("t" to status(PresenceValue.IN_RISK, "p3", 20 * minute, 5 * minute))), "t")
         assertEquals(StatusLevel.GREEN, updated.level)
@@ -376,11 +376,12 @@ class FeedBuilderTest {
     // --- Lines of time (C2) ----------------------------------------------------------------------------------------
 
     @Test
-    fun timeLines_relativeWhileGreen_absoluteFromOrange() {
+    fun timeLines_alwaysATime_neverADuration() {
+        // Decision of the PM, 2026-11-10: "Depuis 13 h 36" (the time of the arrival), not "Depuis 12 min" / "Depuis 3 h".
         val inside = card(build(trio, mapOf("t" to status(presenceAgo = 12 * minute))), "t")
-        assertEquals(TimeLine.Since(Age.Minutes(12)), inside.time)
+        assertEquals(TimeLine.Since(Moment(now - 12 * minute, Day.TODAY)), inside.time)
         val hours = card(build(trio, mapOf("t" to status(presenceAgo = 3 * hour))), "t")
-        assertEquals(TimeLine.Since(Age.Hours(3)), hours.time)
+        assertEquals(TimeLine.Since(Moment(now - 3 * hour, Day.TODAY)), hours.time)
         val orange = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 130 * minute))), "t")
         assertEquals(TimeLine.LatestNews(Moment(now - 130 * minute, Day.TODAY)), orange.time)
         val red = card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 5 * hour))), "t")
@@ -388,11 +389,22 @@ class FeedBuilderTest {
     }
 
     @Test
+    fun timeLine_followsTheZoneOfThePhone_theSameInstantIsYesterdayInOneZoneAndTodayInAnother() {
+        // 2026-11-05 17:00 UTC is now (2026-11-06 02:00 in Tokyo, UTC+9). The arrival: 2026-11-05 10:00 UTC: today in UTC, but 19:00 on the 5th = yesterday in Tokyo.
+        val statuses = mapOf("t" to status(presenceAgo = 7 * hour))
+        val utc = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now, ZoneOffset.UTC)
+        val tokyo = FeedBuilder.build(input(trio, StatusesView.Loaded(statuses)), now, ZoneOffset.ofHours(9))
+        val at = now - 7 * hour
+        assertEquals(TimeLine.Since(Moment(at, Day.TODAY)), card(utc, "t").time)
+        assertEquals(TimeLine.Since(Moment(at, Day.YESTERDAY)), card(tokyo, "t").time)
+    }
+
+    @Test
     fun timeLine_afterMidnight_saysYesterday() {
         val yesterday = card(build(trio, mapOf("t" to status(presenceAgo = 20 * hour))), "t")
-        assertEquals(TimeLine.Since(Age.Hours(20)), yesterday.time)
-        val older = card(build(trio, mapOf("t" to status(presenceAgo = 30 * hour))), "t")
-        assertEquals(TimeLine.Since(Age.Yesterday(now - 30 * hour)), older.time)
+        assertEquals(TimeLine.Since(Moment(now - 20 * hour, Day.YESTERDAY)), yesterday.time)
+        val older = card(build(trio, mapOf("t" to status(presenceAgo = 60 * hour))), "t")
+        assertEquals(TimeLine.Since(Moment(now - 60 * hour, Day.OTHER)), older.time)
         val redYesterday =
             card(build(trio, mapOf("t" to status(PresenceValue.OUT, presenceAgo = 18 * hour))), "t").time
         assertEquals(TimeLine.NoNewsSince(Moment(now - 18 * hour, Day.YESTERDAY)), redYesterday)
@@ -618,7 +630,7 @@ class FeedBuilderTest {
             )
         assertEquals(StatusLevel.GREEN, departed.level)
         assertEquals(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME)), departed.label)
-        assertEquals(TimeLine.DepartedAgo(Age.Hours(3)), departed.time)
+        assertEquals(TimeLine.Since(Moment(now - 3 * hour, Day.TODAY)), departed.time)
     }
 
     @Test

@@ -464,7 +464,7 @@ class FeedScreenTest {
         feed(ready(nominal))
         // Mine and Thomas's.
         composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
-        composeRule.onNodeWithText("Depuis 12 min").assertIsDisplayed()
+        composeRule.onNodeWithText("Depuis 16 h 48".t()).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_label_at_relative)).assertExists()
         // Mine, Thomas's and Amandine's.
         composeRule
@@ -608,7 +608,7 @@ class FeedScreenTest {
                 .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
                 .first { it.contains("Thomas") && it.size > 1 }
         val label = merged.indexOf("À la maison")
-        val time = merged.indexOf("Depuis 12 min")
+        val time = merged.indexOf("Depuis 16 h 48".t())
         val battery = merged.indexOfFirst { it.startsWith("Batterie") }
         assertTrue("order of $merged", label in 1 until time && time < battery)
     }
@@ -817,14 +817,14 @@ class FeedScreenTest {
                 .fetchSemanticsNode()
 
         // Really two lines at most. The layout result of the text is not read (the card measures its content twice, which makes it unreliable in
-        // a test); the heights are: a line of the same style without padding ("Depuis 12 min") gives the height of ONE line L, the chip of
+        // a test); the heights are: a line of the same style without padding ("Depuis 16 h 48") gives the height of ONE line L, the chip of
         // "Cinéma Gaumont" (one line) gives the vertical padding P, and the long chip must then be exactly 2 lines: height = 2 L + P.
         fun height(text: String) =
             composeRule
                 .onAllNodesWithText(text, useUnmergedTree = true)[0]
                 .fetchSemanticsNode()
                 .size.height
-        val line = height("Depuis 12 min")
+        val line = height("Depuis 16 h 48".t())
         val padding = height("Cinéma Gaumont") - line
         val lines = (node.size.height - padding).toFloat() / line
         assertEquals("lines of the long label: ${node.size.height} = n x $line + $padding", 2f, lines, 0.1f)

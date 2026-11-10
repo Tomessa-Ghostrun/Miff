@@ -277,25 +277,20 @@ object FeedBuilder {
         val presenceAt = status.presenceAtMillis
         return when (status.presence) {
             PresenceValue.IN_TRUSTED -> {
-                presenceAt?.let { TimeLine.Since(Age.of(it, now, zone)) } ?: TimeLine.None
+                // The TIME of the arrival ("Depuis 13 h 36"), never a duration (decision of the PM, 2026-11-10).
+                presenceAt?.let { TimeLine.Since(Moment.of(it, now, zone)) } ?: TimeLine.None
             }
 
             PresenceValue.IN_RISK -> {
-                presenceAt?.let { TimeLine.InDangerSince(Moment.of(it, now, zone)) } ?: TimeLine.None
+                presenceAt?.let { TimeLine.Since(Moment.of(it, now, zone)) } ?: TimeLine.None
             }
 
             PresenceValue.OUT -> {
                 val reference = status.referenceMillis ?: return TimeLine.None
                 when (level) {
                     StatusLevel.GREEN -> {
-                        val departure = presenceAt ?: reference
-                        val age = Age.of(departure, now, zone)
-                        // A departure of a day or more that is still green (a recent update): only the news is told.
-                        if (age is Age.Minutes || age is Age.Hours) {
-                            TimeLine.DepartedAgo(age)
-                        } else {
-                            TimeLine.LatestNews(Moment.of(reference, now, zone))
-                        }
+                        // The TIME of the departure ("Depuis 13 h 36"), today, yesterday or the short date, never a duration.
+                        TimeLine.Since(Moment.of(presenceAt ?: reference, now, zone))
                     }
 
                     StatusLevel.ORANGE -> {

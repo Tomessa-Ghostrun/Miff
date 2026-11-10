@@ -120,6 +120,9 @@ fun DiagnosticScreen(
         // (unoptimised code, many fields) used to freeze the screen for seconds under the animation, so that the "M" stayed
         // alone for about 4 s on the OPPO (PM recette 2026-10-31). The release build has no such screen.
         if (!LocalSplashCovering.current) {
+            // Review window (docs/tickets/pop-ins-avis.md): show it now / reset it, for the recette (debug build only).
+            ReviewDebugCard()
+
             SectionCard(stringResource(R.string.diag_test1_title)) {
                 Body(stringResource(R.string.diag_test1_description))
                 MiffButton(

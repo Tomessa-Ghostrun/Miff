@@ -186,19 +186,7 @@ class FeedTexts(
             }
 
             is TimeLine.Since -> {
-                when (val age = time.age) {
-                    is Age.Minutes -> s(R.string.feed_time_since_minutes, age.minutes)
-                    is Age.Hours -> s(R.string.feed_time_since_hours, age.hours)
-                    else -> momentOf(age)?.let { s(R.string.feed_time_since, since(it)) }
-                }
-            }
-
-            is TimeLine.DepartedAgo -> {
-                when (val age = time.age) {
-                    is Age.Minutes -> s(R.string.feed_time_departed_minutes, age.minutes)
-                    is Age.Hours -> s(R.string.feed_time_departed_hours, age.hours)
-                    else -> momentOf(age)?.let { s(R.string.feed_time_latest_news, at(it)) }
-                }
+                s(R.string.feed_time_since, since(time.since))
             }
 
             is TimeLine.LatestNews -> {
@@ -207,10 +195,6 @@ class FeedTexts(
 
             is TimeLine.NoNewsSince -> {
                 s(R.string.feed_time_no_news_since, since(time.since))
-            }
-
-            is TimeLine.InDangerSince -> {
-                s(R.string.feed_time_since, since(time.since))
             }
         }
 
