@@ -196,7 +196,14 @@ enum FeedBuilder {
             // Un autre membre qui partage, pendant que je partage aussi et que les statuts sont VRAIMENT lus (les règles demandent que
             // mon statut soit publié) : même sans statut connu, « pas de position » est l'une des réponses calmes de la feuille.
             canLocate: !isMe && context.mySharing && !context.hidden && member.sharingEnabled
-                && context.input.statuses.isLoaded
+                && context.input.statuses.isLoaded,
+            // FEED-8 : seulement quand le statut est montré (partage actif, rien de caché) ET dit qu'il y a une photo récente.
+            photo: PhotoSlot.of(
+                hasPhoto: status?.hasPhoto ?? false,
+                lastUpdateAtMillis: status?.lastUpdateAtMillis,
+                visible: status != nil,
+                nowMillis: context.now
+            )
         )
     }
 

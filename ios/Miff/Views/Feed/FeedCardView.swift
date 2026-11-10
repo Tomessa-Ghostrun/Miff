@@ -11,6 +11,8 @@ struct MemberCardActions {
     let onLocate: (String) -> Void
     let onMessage: (String) -> Void
     let onCall: (String) -> Void
+    /// FEED-8 : toucher l'aperçu de la photo l'ouvre en plein écran (la photo COMPLÈTE).
+    var onOpenPhoto: (OpenedPhoto) -> Void = { _ in }
 }
 
 struct MemberCardView: View {
@@ -18,6 +20,8 @@ struct MemberCardView: View {
     let texts: FeedTexts
     let locating: Bool
     let actions: MemberCardActions
+    /// FEED-8 : où et quand la photo de la carte se lit.
+    var photoContext = PhotoSlotContext()
 
     private static let stripWidth: CGFloat = 5
 
@@ -29,6 +33,8 @@ struct MemberCardView: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 information
+                // FEED-8 : la photo de la dernière update (un carré centré ; la photo entière en plein écran). Rien quand il n'y en a pas.
+                MemberPhotoSlot(card: card, context: photoContext, texts: texts, onOpen: actions.onOpenPhoto)
                 CardActionRow(card: card, locating: locating, actions: actions)
             }
             .padding(.leading, Spacing.md - Spacing.xs)
@@ -46,6 +52,8 @@ struct MemberCardView: View {
             RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
                 .stroke(colorBorderDefault.color, lineWidth: strokeHairline)
         )
+        // FEED-8 : la photo se lit quand la carte vient à l'écran, jamais avant, et s'arrête quand elle disparaît.
+        .loadsPhoto(of: card, in: photoContext)
     }
 
     /// UN bloc pour le lecteur d'écran, lu dans l'ordre du ticket (T2) : la personne, l'état, le temps, la batterie. Décision D42 :

@@ -117,6 +117,9 @@ Le français est la version de référence ; l'anglais en est la traduction fid�
 **Prérequis de la porte « Ready pour MEP »** : l'alignement de la politique de confidentialité (photo Google reprise, adresse IP exposée aux serveurs d'images de Google, photo publiée aux membres des Miffs) doit être fait, avec l'accord du PM, **avant** de passer cette fonction en « Ready pour MEP » ; tant que ce n'est pas fait, les textes décrivent une app qui ne reprend pas la photo Google.
 
 **Critère du ticket à aligner (non fait ici, `product-specs`)** : `docs/tickets/onboarding.md`, critère **PR8**, dit « aucune photo importée » ; la décision du PM du 2026-11-08 le remplace par « la photo Google est préremplie si elle existe, modifiable ou supprimable ». `android/README.md` (décision 13 d'ONB-2) est déjà mis à jour.
+### Mise à jour du 2026-11-08 : « Enregistrer la photo » d'un proche (FEED-8) : textes à aligner, **non modifiés**
+
+Décision du PM : le plein écran de la photo d'un proche propose **« Enregistrer la photo »** (feuille de partage du système, sans permission). **Changement de posture** : la photo « n'est jamais enregistrée sur ton téléphone » devient « **seulement si tu choisis de l'enregistrer** » ; une copie enregistrée est hors de Miff (non effaçable par nous), alors qu'une capture d'écran était déjà possible. **Rien n'est modifié dans les textes légaux de ce dossier** (décision du PM) ; la liste précise des passages à aligner (politique de confidentialité FR/EN : résumé point 7, art. 3 tableau et « Caméra et photo », art. 4 et 5 « capture d'écran », art. 7 conservation, art. 11 stockage sur le téléphone ; CGU art. 8 ; écran d'explication de la caméra ; consentement) est dans `docs/release/update-photo-declarations.md` §13 bis. À traiter **avant toute publication** des textes et des fiches des stores.
 
 ### Avant le déploiement : actions de console du PM (aucun agent ne les fait)
 
