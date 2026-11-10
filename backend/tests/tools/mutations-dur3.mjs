@@ -11,7 +11,7 @@ const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...
 
 const PLACE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt']";
 const PLACE_UPDATE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt']";
-const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId']";
+const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay']";
 const SHARING_KEYS = "['enabled', 'consentedAt', 'consentVersion', 'revokedAt']";
 const MEMBERS_UID_DELETE = `!existsAfter(${DB}/miffs/$(resource.data.miffId)/members/$(uid))`;
 const CODE_MIFF_ID = `get(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId`;
@@ -83,7 +83,7 @@ export const DUR3_MUTATIONS = [
     [edit(`return d.keys().hasOnly(${STATUS_KEYS})`, 'return true')],
     ['S11']),
   mut('S12-presence-libre', "le champ presence accepte n'importe quelle valeur",
-    [edit("&& d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']", '&& true')],
+    [edit("&& d.presence in ['in_trusted', 'out', 'in_risk', 'unknown', 'travel']", '&& true')],
     ['S12']),
   mut('S12-batterie-max', 'batteryPct peut dépasser 100',
     [edit('&& d.batteryPct <= 100', '&& true')],
