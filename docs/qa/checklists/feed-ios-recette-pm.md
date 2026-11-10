@@ -122,7 +122,7 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 - [ ] **Bulle verte sans symbole** : la bulle verte « Tout va bien » n'a **aucun pictogramme** (pas d'étoile) et son texte reste centré ; les bulles orange (horloge) et rouge (point d'exclamation) gardent le leur.
 - [ ] **Bulle d'incitation (Update)** en zone de danger : visible tant que vous êtes rouge, masquée pendant l'heure de vert qui suit une update, puis elle revient.
 - [ ] **Seuils** : sorti d'un lieu depuis moins de 2 h : **vert** ; au-delà de 2 h : **orange** ; au-delà de 4 h : **rouge**. Une update plus récente repart du vert. **Zone de danger** : **rouge dès l'entrée** (même avec une update faite juste avant) ; si vous publiez une update **après** l'entrée, la couleur passe **verte pendant 1 h** puis redevient rouge ; une nouvelle update redonne 1 h de vert. Jamais d'orange en zone de danger.
-- [ ] **Détail d'un lieu de danger** (Lieux > un lieu de danger) : le texte d'information dit « …tu n'as pas donné de nouvelles depuis plus d'une heure, ta Miff voit ton statut en rouge. ».
+- [ ] **Détail d'un lieu de danger** (Lieux > un lieu de danger) : le texte d'information dit « Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h. ».
 
 ## Points ouverts pour vous (à noter à la fin)
 
