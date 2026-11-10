@@ -118,11 +118,34 @@ class FakeAvatarCodec : AvatarCodec {
         return decoded
     }
 
+    /** Photos handed in memory (the Google photo). */
+    val decodedBytes = mutableListOf<ByteArray>()
+
+    override suspend fun decodeBytes(bytes: ByteArray): DecodedPhoto? {
+        decodedBytes += bytes
+        return decoded
+    }
+
     override suspend fun encode(
         photo: DecodedPhoto,
         crop: SquareCrop,
     ): ByteArray? {
         crops += crop
         return encoded
+    }
+}
+
+/** The download of the Google photo: what it answers, the addresses it was asked for, and an optional gate to make it slow. */
+class FakeGooglePhotoSource : com.tomessa.miff.domain.profile.GooglePhotoSource {
+    var bytes: ByteArray? = ByteArray(3_000) { 7 }
+    var failure: Exception? = null
+    var gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+    val requested = mutableListOf<String>()
+
+    override suspend fun fetch(url: String): ByteArray? {
+        requested += url
+        gate?.await()
+        failure?.let { throw it }
+        return bytes
     }
 }
