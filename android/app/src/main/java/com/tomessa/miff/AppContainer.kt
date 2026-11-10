@@ -341,8 +341,7 @@ class AppContainer(
     }
 
     /**
-     * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is measured, the rules refuse a level next to a trip) and the photo of an update does not wait
-     * for a position published by the tracking (it is paused; the photo carries its own measure).
+     * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is written about the battery during a trip, the rules refuse a level next to a trip).
      */
     private fun travelOn(): Boolean {
         // The local copy is read again at each use (a small private file): never a stale "no trip" after a new session, a restart of the process or an end by the alarm.

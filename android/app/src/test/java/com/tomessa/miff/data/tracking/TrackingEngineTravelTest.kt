@@ -24,6 +24,7 @@ import com.tomessa.miff.testsupport.FakeTrackingStore
 import com.tomessa.miff.testsupport.FakeTravelAlarm
 import com.tomessa.miff.testsupport.RecordingJournal
 import com.tomessa.miff.testsupport.T0
+import com.tomessa.miff.testsupport.whileInUseOnly
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,8 +34,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * MODE VOYAGE, the engine (VOY-1A, criteria V1 to V11 of docs/tickets/mode-voyage.md): the trip is written FIRST and the tracking paused AFTER (a refusal changes
- * nothing); during a trip nothing is read, armed or written for the tracking; the trip ends by the alarm, by hand, or at the opening; a NEW phone adopts a trip instead of
+ * MODE VOYAGE, the engine (VOY-1A, criteria V1 to V11 of docs/tickets/mode-voyage.md, decision of the PM of 2026-11-10): the trip is written FIRST and the status of the zones stops AFTER (a refusal changes
+ * nothing); during a trip the POSITION keeps being published but no presence, zone, battery or access is ever written to the status; the trip ends by the alarm, by hand, or at the opening; a NEW phone adopts a trip instead of
  * overwriting it; a Miff joined during a trip learns of it. Doubles for the phone, the system and Firestore: no real position, no network.
  */
 class TrackingEngineTravelTest {
@@ -103,13 +104,14 @@ class TrackingEngineTravelTest {
         assertEquals(TravelResult.Done, engine.setTravel(period))
     }
 
-    // --- V1: the trip is written first, the tracking is paused after ------------------------------------------------------------------
+    // --- V1: the trip is written first, the status of the zones stops after ------------------------------------------------------------------
 
     @Test
-    fun theTripIsWrittenToEveryMiff_beforeTheTrackingIsPaused() =
+    fun theTripIsWrittenToEveryMiff_beforeTheStatusOfTheZonesStops_andThePositionStaysShared() =
         runTest {
             share(miffA, miffB)
             engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(geofences.armed.isNotEmpty())
             val before = store.commits.size
             val removeBefore = geofences.removeAllCalls
             var removeAtFirstWrite = -1
@@ -122,12 +124,14 @@ class TrackingEngineTravelTest {
             assertEquals(removeBefore, removeAtFirstWrite)
             assertTrue(geofences.removeAllCalls > removeBefore)
             assertTrue(geofences.armed.isEmpty())
-            assertFalse(movement.started)
-            // One lot per Miff: the status of the trip AND the removal of my last position, together.
+            // The position stays shared: the reports of a move are kept, nothing of it is erased or deleted.
+            assertTrue(movement.started)
+            assertTrue(store.commits.flatten().none { it.kind == WriteKind.DELETE })
+            // One lot per Miff: the status of the trip alone.
             val lots = store.commits.drop(before)
             assertEquals(2, lots.size)
             lots.forEach { lot ->
-                assertEquals(2, lot.size)
+                assertEquals(1, lot.size)
                 val status = lot[0]
                 assertEquals(WriteKind.UPDATE, status.kind)
                 assertTrue(status.path.endsWith("/status/uid1"))
@@ -139,15 +143,13 @@ class TrackingEngineTravelTest {
                 assertEquals("2027-01-17", status.data["travelUntilDay"])
                 assertEquals(DEVICE_A, status.data["deviceId"])
                 assertTrue(status.data["presenceAt"] is Timestamp)
-                assertEquals(WriteKind.DELETE, lot[1].kind)
-                assertTrue(lot[1].path.endsWith("/positions/uid1"))
             }
-            // The copy of the position kept on the phone is erased, the trip is kept, the alarm is set, the Profile is told.
+            // The position and its guard are kept; what was derived from the zones is forgotten; the trip is kept, the alarm is set, the Profile is told.
             val kept = local.state!!
-            assertNull(kept.fix())
+            assertNotNull(kept.fix())
             assertTrue(kept.armed.isEmpty())
             kept.miffs.values.forEach {
-                assertNull(it.written())
+                assertNotNull(it.written())
                 assertNull(it.derived())
             }
             assertEquals(period, kept.travel!!.period())
@@ -157,7 +159,7 @@ class TrackingEngineTravelTest {
         }
 
     @Test
-    fun aRefusedTrip_changesNothing_theTrackingIsNotStopped() =
+    fun aRefusedTrip_changesNothing_theStatusOfTheZonesContinues() =
         runTest {
             share(miffA)
             engine.refresh(TrackingEngine.Reason.OPENED)
@@ -211,7 +213,7 @@ class TrackingEngineTravelTest {
             val status = statusWrites().single()
             assertEquals("travel", status.data["presence"])
             assertEquals(period.untilMillis, untilOf(status))
-            assertTrue(positionWrites().any { it.kind == WriteKind.DELETE })
+            assertTrue(positionWrites().none { it.kind == WriteKind.DELETE })
             assertFalse(wake.watching)
             assertEquals(setOf(miffA), local.state!!.travel!!.upToDateIn)
         }
@@ -250,20 +252,19 @@ class TrackingEngineTravelTest {
             assertNull(local.state!!.travel)
         }
 
-    // --- V2: during the trip, nothing is read, armed or written ---------------------------------------------------------------------
+    // --- V2: during the trip, the position stays shared, the status stays a trip ---------------------------------------------------
 
     @Test
-    fun duringATrip_noPositionIsRead_noZoneIsArmed_noStatusPositionOrBatteryIsWritten() =
+    fun duringATrip_noStatusZoneOrBatteryIsWritten_andNoZoneIsArmed() =
         runTest {
             startedTrip(miffA, miffB)
-            val reads = position.reads
-            val commits = store.commits.size
+            val statuses = statusWrites().size
             val updates = geofences.updates
-            val starts = movement.startCalls
             env.battery = 20
 
+            env.now += 20 * minute
             engine.refresh(TrackingEngine.Reason.OPENED)
-            env.now += 30 * minute
+            env.now += 20 * minute
             engine.refresh(TrackingEngine.Reason.BACKGROUNDED)
             engine.refresh(TrackingEngine.Reason.MOVED, Fix(lat + 0.01, lng, env.now))
             engine.refresh(TrackingEngine.Reason.ZONE_ENTERED)
@@ -276,18 +277,65 @@ class TrackingEngineTravelTest {
             engine.onTransition(TransitionKind.EXIT, home.key, env.now)
             engine.onNetworkBack()
 
-            assertEquals(reads, position.reads)
-            assertEquals(commits, store.commits.size)
+            // V2: the status of every Miff stays the trip: not one status write (no presence, no arrival, no battery, no access).
+            assertEquals(statuses, statusWrites().size)
             assertEquals(updates, geofences.updates)
-            assertEquals(starts, movement.startCalls)
             assertTrue(geofences.armed.isEmpty())
-            assertFalse(movement.started)
+            assertTrue(
+                local.state!!
+                    .miffs.values
+                    .all { it.derived() == null && it.pending == null },
+            )
             assertNotNull(local.state!!.travel)
-            assertNull(local.state!!.fix())
         }
 
     @Test
-    fun aRestart_duringATrip_armsNothing_andSetsTheAlarmAgain() =
+    fun duringATrip_thePositionKeepsBeingPublished_withTheGuardsOfAnyOtherTime() =
+        runTest {
+            startedTrip(miffA, miffB)
+            val before = positionWrites().size
+            val reads = position.reads
+
+            // 20 minutes later, at the opening: read and written to each Miff, one write each, alone.
+            env.now += 20 * minute
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(position.reads > reads)
+            assertEquals(before + 2, positionWrites().size)
+            store.commits.takeLast(2).forEach { lot ->
+                assertEquals(1, lot.size)
+                assertTrue(lot.single().path.matches(Regex("miffs/miff[AB]/positions/uid1")))
+            }
+            // The guard of frequency still holds: 5 minutes later, not moved, nothing more.
+            env.now += 5 * minute
+            engine.refresh(TrackingEngine.Reason.BACKGROUNDED)
+            assertEquals(before + 2, positionWrites().size)
+            // A move of about 330 m reported by the provider: written.
+            env.now += minute
+            engine.refresh(TrackingEngine.Reason.MOVED, Fix(lat + 0.003, lng, env.now))
+            assertEquals(before + 4, positionWrites().size)
+            // Still no status.
+            assertTrue(statusWrites().all { it.data["presence"] == "travel" })
+        }
+
+    @Test
+    fun duringATrip_withoutAlways_noPositionIsRead_orWritten() =
+        runTest {
+            startedTrip(miffA)
+            val reads = position.reads
+            val writes = positionWrites().size
+            env.snapshot = whileInUseOnly()
+            env.now += 20 * minute
+
+            engine.refresh(TrackingEngine.Reason.OPENED)
+
+            assertEquals(reads, position.reads)
+            assertEquals(writes, positionWrites().size)
+            assertFalse(movement.started)
+            assertNotNull(local.state!!.travel)
+        }
+
+    @Test
+    fun aRestart_duringATrip_armsNoZone_keepsTheReports_andSetsTheAlarmAgain() =
         runTest {
             startedTrip(miffA)
             val calls = alarm.scheduleCalls
@@ -296,7 +344,7 @@ class TrackingEngineTravelTest {
             engine.refresh(TrackingEngine.Reason.REARM)
 
             assertTrue(geofences.armed.isEmpty())
-            assertFalse(movement.started)
+            assertTrue(movement.started)
             assertEquals(period.untilMillis, alarm.at)
             assertTrue(alarm.scheduleCalls > calls)
         }
@@ -495,7 +543,7 @@ class TrackingEngineTravelTest {
     // --- V7: a new phone adopts the trip ------------------------------------------------------------------------------------------
 
     @Test
-    fun aNewPhone_adoptsAnOngoingTrip_beforeArmingAnything() =
+    fun aNewPhone_adoptsAnOngoingTrip_beforeAnythingIsWrittenOverIt() =
         runTest {
             share(miffA, miffB)
             env.now = T0
@@ -505,11 +553,10 @@ class TrackingEngineTravelTest {
 
             engine.refresh(TrackingEngine.Reason.OPENED)
 
-            assertEquals(0, position.reads)
             assertTrue(geofences.armed.isEmpty())
-            assertFalse(movement.started)
-            // The trip is adopted as it is: nothing is written over it.
-            assertTrue(store.commits.isEmpty())
+            // The trip is adopted as it is: no status is written over it (the position goes on being shared).
+            assertTrue(statusWrites().isEmpty())
+            assertTrue(position.reads > 0)
             val kept = local.state!!.travel!!
             assertEquals(period, kept.period())
             assertEquals(T0 - day, kept.sinceMillis)

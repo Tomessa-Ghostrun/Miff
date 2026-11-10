@@ -109,15 +109,6 @@ object TrackingWrites {
         )
     }
 
-    /**
-     * MODE VOYAGE, the last known position of the person is REMOVED from one Miff when a trip begins (the tracking stops; decision Q1 of the ticket, default "supprimer").
-     * Deleting one's own position is always allowed by the rules (`positions/{uid}`: delete if self).
-     */
-    fun positionRemoval(
-        miffId: String,
-        uid: String,
-    ): DocWrite = DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE)
-
     /** Only the battery and the access to the location (when the permission changed): the presence is not touched. */
     fun accessUpdate(
         miffId: String,
