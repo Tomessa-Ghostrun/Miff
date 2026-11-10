@@ -88,6 +88,8 @@ class PhotoFullScreenSaveTest {
             MiffTheme {
                 CompositionLocalProvider(
                     LocalPhotoSaver provides saver,
+                    // The calm note must not vanish under the assertions.
+                    LocalSaveNoteMillis provides 3_600_000L,
                     *(owner?.let { arrayOf(LocalActivityResultRegistryOwner provides it) } ?: emptyArray()),
                 ) {
                     PhotoFullScreen(
@@ -107,12 +109,23 @@ class PhotoFullScreenSaveTest {
         composeRule.onNodeWithContentDescription(context.getString(R.string.feed_photo_download_a11y))
 
     @Test
-    fun theButtonIsThere_withASpokenName_andATargetOfAtLeast48dp_andNothingIsSavedBeforeTheTouch() {
+    fun theButtonIsTheDownloadIconAlone_atTheTopRight_oppositeTheCross_andNothingIsSavedBeforeTheTouch() {
         val saver = FakePhotoSaver()
         show(opened(), saver)
         button().assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.feed_photo_download)).assertIsDisplayed()
-        assertTrue(button().getUnclippedBoundsInRoot().let { it.bottom - it.top }.value >= 48f)
+        // An icon alone: no visible text, no old button under "Voir où c'était".
+        composeRule.onAllNodesWithText(context.getString(R.string.feed_photo_download)).assertCountEquals(0)
+        val save = button().getUnclippedBoundsInRoot()
+        val close =
+            composeRule
+                .onNodeWithContentDescription(
+                    context.getString(R.string.update_photo_close_a11y),
+                ).getUnclippedBoundsInRoot()
+        assertTrue(save.right.value - save.left.value >= 48f)
+        assertTrue(save.bottom.value - save.top.value >= 48f)
+        // Same line as the cross, on the other side of the screen.
+        assertEquals(close.top.value, save.top.value, 1f)
+        assertTrue("save ${save.left} is right of the cross ${close.right}", save.left.value > close.right.value + 100f)
         assertTrue(saver.pictures.isEmpty() && saver.documents.isEmpty())
         composeRule.onAllNodesWithText(context.getString(R.string.feed_photo_download_done)).assertCountEquals(0)
     }

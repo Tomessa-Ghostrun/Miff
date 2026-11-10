@@ -151,18 +151,19 @@ Avec un compte **gratuit** (sans droit Miff+) déjà dans une Miff, puis, si pos
 - [ ] **TalkBack** (facultatif) : la pastille s'annonce « Miff affichée : … Appuie pour changer de Miff ou en ajouter une » ; les deux entrées se lisent « Rejoindre une Miff » / « Créer une Miff ».
 - [ ] Le serveur reste la vraie barrière : même un client modifié ne peut pas ajouter une 2e Miff à un compte gratuit (règles Firestore, tests C8, C9, C11, J10, J11 de `backend/tests/rules`) ; rien à vérifier à la main.
 
-## Partie J — « Enregistrer la photo » dans le plein écran (5 min, retour du PM du 2026-11-08)
+## Partie J — « Enregistrer la photo » dans le plein écran (5 min, retours du PM des 2026-11-08 et 2026-11-10)
 
 Il faut une carte avec une **photo d'update** (le compte B publie une photo depuis l'onglet Update).
-- [ ] **Sur la carte**, l'aperçu de la photo n'a **aucun bouton d'enregistrement**. Touchez la photo : le plein écran s'ouvre. En bas, au-dessus de « Voir où c'était », un bouton **« Enregistrer la photo »** (pictogramme flèche vers le bas, contour blanc, pas plus petit qu'un doigt).
+- [ ] **Sur la carte**, l'aperçu de la photo n'a **aucun bouton d'enregistrement**. Touchez la photo : le plein écran s'ouvre. **En haut à droite**, en face de la croix (en haut à gauche), une **icône « télécharger » seule** (flèche vers le bas, **aucun texte**) dans la même pastille grise semi-transparente que la croix, lisible sur une photo claire comme sur une photo sombre. **Plus aucun bouton « Enregistrer la photo » en bas**, sous « Voir où c'était ».
 - [ ] **Rien n'est enregistré avant le toucher** : ouvrez et fermez la photo plusieurs fois, puis regardez la galerie : aucune photo « Miff » n'est apparue.
-- [ ] Touchez **« Enregistrer la photo »** : le bouton passe un instant à « Enregistrement… », puis la phrase calme **« Photo enregistrée sur ton téléphone. »** apparaît. Ouvrez la **Galerie / Google Photos** : un album **« Miff »** contient la photo, nommée **`Miff-AAAA-MM-JJ-HHMMSS.jpg`** (la date et l'heure de l'enregistrement : **ni prénom, ni lieu**). Dans les informations de la photo : **aucun lieu GPS**.
+- [ ] Touchez l'icône : elle s'estompe un instant (« Enregistrement… » pour TalkBack), puis la note calme **« Photo enregistrée. »** apparaît en haut de la photo et **disparaît seule** après quelques secondes. Ouvrez la **Galerie / Google Photos** : un album **« Miff »** contient la photo, nommée **`Miff-AAAA-MM-JJ-HHMMSS.jpg`** (la date et l'heure de l'enregistrement : **ni prénom, ni lieu**). Dans les informations de la photo : **aucun lieu GPS**, aucun appareil, aucune date de prise de vue.
 - [ ] **Aucune demande d'autorisation** n'est apparue (ni stockage, ni photos). Dans les réglages Android > Applications > Miff > Autorisations : seulement Position, Appareil photo et Notifications, comme avant.
 - [ ] Touchez deux fois très vite : **un seul fichier** est créé pour ce toucher.
 - [ ] Mettez le téléphone en **mode avion** après avoir ouvert la photo : l'enregistrement marche encore (la photo est déjà sur le téléphone). Si le stockage est plein : la phrase calme **« On n'a pas pu enregistrer la photo. Tu peux réessayer. »** apparaît, sans alarme.
 - [ ] **Ailleurs : pas de bouton** : l'écran Update (aperçu avant publication) et l'aperçu de la carte n'ont pas de bouton d'enregistrement.
-- [ ] **TalkBack** (facultatif) : le bouton se lit « Enregistrer cette photo sur ton téléphone » ; la phrase de confirmation est annoncée.
+- [ ] **TalkBack** (facultatif) : l'icône se lit « Enregistrer cette photo sur ton téléphone » (action « Enregistrer la photo ») ; pendant l'enregistrement elle est annoncée « Enregistrement… » et désactivée ; la note de confirmation est annoncée.
 - [ ] **Posture vie privée** (à lire, pas un test) : une photo enregistrée sort de Miff (les 24 heures ne s'appliquent plus à la copie). Les textes légaux doivent être alignés avant publication : `docs/release/update-photo-declarations.md` §15 et `docs/legal/README.md` §7.
+
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
 La couleur à 1 h 59 / 2 h 00 / 2 h 01 / 3 h 59 / 4 h 00 / 4 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.

@@ -52,6 +52,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -83,6 +84,7 @@ import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textTitleBold20
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 
@@ -322,6 +324,31 @@ internal fun PhotoFullScreen(
                     )
                 }
             }
+            // "Enregistrer la photo" (decision of the PM, 2026-11-10): the download icon at the top right, HERE only, and only on a touch. A photo that
+            // is not a well-formed JPEG, or that could not be drawn, does not offer it.
+            if (bitmap != null && canSave) {
+                SavePhotoButton(
+                    state = saveState,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(Spacing.s),
+                    onClick = {
+                        if (controller.begin()) {
+                            when (controller.route) {
+                                SaveRoute.MEDIA_STORE -> scope.launch { controller.saveToPictures(photo.jpeg) }
+                                SaveRoute.DOCUMENT_PICKER -> picker.launch(controller.fileName())
+                            }
+                        }
+                    },
+                )
+                SaveResultNote(
+                    state = saveState,
+                    onSeen = controller::acknowledge,
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.TopCenter,
+                            ).padding(top = Spacing.minTouchTarget + Spacing.m, start = Spacing.m, end = Spacing.m),
+                )
+            }
             Column(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -369,46 +396,32 @@ internal fun PhotoFullScreen(
                         }
                     }
                 }
-                // "Enregistrer la photo" (decision of the PM, 2026-11-08): HERE only, and only on a touch. A photo that is not a real JPEG, or that
-                // could not be drawn, does not offer it.
-                if (bitmap != null && canSave) {
-                    SavePhotoButton(
-                        state = saveState,
-                        onClick = {
-                            if (controller.begin()) {
-                                when (controller.route) {
-                                    SaveRoute.MEDIA_STORE -> scope.launch { controller.saveToPictures(photo.jpeg) }
-                                    SaveRoute.DOCUMENT_PICKER -> picker.launch(controller.fileName())
-                                }
-                            }
-                        },
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * The button "Enregistrer la photo" and, under it, the calm sentence of the result (saved / could not be saved) announced politely. The button is
- * 52 dp high, white-outlined like "Voir où c'était" (readable on the black background), and does nothing while a save is under way.
+ * The button "Enregistrer la photo": ONLY the "download" icon (an arrow down onto a tray, no text), at the top right of the full-screen photo, opposite
+ * the cross, in the same translucent disc so that it stays readable over any photo (decision of the PM, 2026-11-10, after his test). The touch zone is
+ * 48 dp, its spoken name is "Enregistrer cette photo sur ton téléphone", and while a save is under way it is disabled and TalkBack says "Enregistrement…".
  */
 @Composable
 internal fun SavePhotoButton(
     state: PhotoSaveState,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val name = stringResource(R.string.feed_photo_download_a11y)
+    val actionLabel = stringResource(R.string.feed_photo_download)
     val saving = state == PhotoSaveState.Saving
     val savingText = stringResource(R.string.feed_photo_download_saving)
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(Spacing.minTouchTarget + Spacing.xs)
-                .clip(ShapeMd)
-                .border(StrokeHairline * 2, Color.White, ShapeMd)
-                .clickable(enabled = !saving, role = Role.Button, onClick = onClick)
+            modifier
+                .size(Spacing.minTouchTarget)
+                .clip(CircleShape)
+                .clickable(enabled = !saving, onClickLabel = actionLabel, role = Role.Button, onClick = onClick)
                 .semantics {
                     contentDescription = name
                     // TalkBack says "Enregistrement…" while the button is disabled (the touch does nothing meanwhile).
@@ -416,38 +429,57 @@ internal fun SavePhotoButton(
                 },
         contentAlignment = Alignment.Center,
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            Modifier.size(40.dp).background(colorUpdateScrim, CircleShape),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_photo_download),
                 contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (saving) R.string.feed_photo_download_saving else R.string.feed_photo_download,
-                    ),
-                style = textBodyBold14,
-                color = Color.White,
+                tint = Color.White.copy(alpha = if (saving) 0.5f else 1f),
+                modifier = Modifier.size(22.dp),
             )
         }
     }
+}
+
+/** How long the calm note of the result stays (the tests give a very long one so that it does not vanish under them). */
+val LocalSaveNoteMillis = compositionLocalOf { 3_500L }
+
+/**
+ * The calm note of the result, discreet, at the top of the photo, announced politely: "Photo enregistrée." or "On n'a pas pu enregistrer la photo. Tu
+ * peux réessayer." It goes away by itself ([onSeen] puts the button back at rest); nothing is alarming (no red, no icon).
+ */
+@Composable
+internal fun SaveResultNote(
+    state: PhotoSaveState,
+    onSeen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val result =
         when (state) {
             PhotoSaveState.Saved -> R.string.feed_photo_download_done
             PhotoSaveState.Failed -> R.string.feed_photo_download_failed
             else -> null
         }
+    val millis = LocalSaveNoteMillis.current
+    LaunchedEffect(state) {
+        if (result != null) {
+            delay(millis)
+            onSeen()
+        }
+    }
     if (result != null) {
         Text(
             text = stringResource(result),
             style = textBodyRegular14,
             color = Color.White,
-            modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+            textAlign = TextAlign.Center,
+            modifier =
+                modifier
+                    .background(colorUpdateScrim, ShapeMd)
+                    .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
         )
     }
 }

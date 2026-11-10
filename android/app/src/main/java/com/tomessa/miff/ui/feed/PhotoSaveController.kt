@@ -65,6 +65,11 @@ class PhotoSaveController(
         finish(if (clean != null && saver.saveTo(target, clean)) PhotoSaveOutcome.Saved else PhotoSaveOutcome.Failed)
     }
 
+    /** The note of the result went away: the button is back at rest. Never interrupts a save that is under way. */
+    fun acknowledge() {
+        if (mutableState.value != PhotoSaveState.Saving) mutableState.value = PhotoSaveState.Idle
+    }
+
     private fun finish(outcome: PhotoSaveOutcome) {
         mutableState.value = mutableState.value.after(outcome)
     }

@@ -179,4 +179,17 @@ class PhotoSaveControllerTest {
             assertEquals(PhotoSaveState.Idle, controller.state.value)
             assertTrue(saver.documents.isEmpty())
         }
+
+    @Test
+    fun acknowledge_putsTheButtonBackAtRest_butNeverInterruptsASave() =
+        runTest {
+            val controller = controller(FakePhotoSaver())
+            controller.begin()
+            controller.acknowledge()
+            assertEquals(PhotoSaveState.Saving, controller.state.value)
+            controller.saveToPictures(TEST_JPEG)
+            assertEquals(PhotoSaveState.Saved, controller.state.value)
+            controller.acknowledge()
+            assertEquals(PhotoSaveState.Idle, controller.state.value)
+        }
 }

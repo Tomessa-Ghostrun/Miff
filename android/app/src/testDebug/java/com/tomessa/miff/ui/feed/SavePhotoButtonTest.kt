@@ -6,11 +6,20 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.feed.PhotoDownload
@@ -82,5 +91,34 @@ class SavePhotoButtonTest {
         assertNotNull(decoded)
         assertEquals(48, decoded.width)
         assertEquals(32, decoded.height)
+    }
+
+    @Test
+    fun theButton_isAnIconOnly_of48dp() {
+        show(PhotoSaveState.Idle)
+        composeRule.onAllNodesWithText(context.getString(R.string.feed_photo_download)).assertCountEquals(0)
+        val bounds = button().getUnclippedBoundsInRoot()
+        assertTrue(bounds.right.value - bounds.left.value >= 48f)
+        assertTrue(bounds.bottom.value - bounds.top.value >= 48f)
+    }
+
+    @Test
+    fun theCalmNote_saysSavedOrCouldNotSave_thenGoesAwayByItself() {
+        var seen = 0
+        var state by mutableStateOf(PhotoSaveState.Saved)
+        composeRule.setContent {
+            MiffTheme {
+                CompositionLocalProvider(LocalSaveNoteMillis provides 1_000L) {
+                    SaveResultNote(state = state, onSeen = { seen++ })
+                }
+            }
+        }
+        composeRule.onNodeWithText(context.getString(R.string.feed_photo_download_done)).assertIsDisplayed()
+        composeRule.mainClock.advanceTimeBy(1_500)
+        assertEquals(1, seen)
+        state = PhotoSaveState.Failed
+        composeRule.onNodeWithText(context.getString(R.string.feed_photo_download_failed)).assertIsDisplayed()
+        state = PhotoSaveState.Idle
+        composeRule.onAllNodesWithText(context.getString(R.string.feed_photo_download_failed)).assertCountEquals(0)
     }
 }
