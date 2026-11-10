@@ -14966,13 +14966,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save the photo"
+            "value": "Save this photo"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enregistrer la photo"
+            "value": "Enregistrer cette photo"
           }
         }
       }

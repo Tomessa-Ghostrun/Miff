@@ -3,7 +3,7 @@
 import XCTest
 @testable import Miff
 
-/// « Enregistrer la photo » dans le plein écran de la photo d'un proche (décision du PM) : la photo est CONFIÉE à la feuille de partage du système, sans
+/// « Enregistrer cette photo » dans le plein écran de la photo d'un proche (décision du PM) : la photo est CONFIÉE à la feuille de partage du système, sans
 /// permission ni clé de photothèque ; la confirmation n'est dite que si « Enregistrer l'image » a été choisi ; les textes existent en FR et EN ; et,
 /// par lecture des sources, ce bouton n'existe qu'à cet endroit. Miroir côté Android à faire (mêmes clés `feed_photo_download*`).
 final class PhotoSaveTests: XCTestCase {
@@ -40,7 +40,7 @@ final class PhotoSaveTests: XCTestCase {
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
         let expected: [String: [String: String]] = [
-            "feed_photo_download": ["fr": "Enregistrer la photo", "en": "Save the photo"],
+            "feed_photo_download": ["fr": "Enregistrer cette photo", "en": "Save this photo"],
             "feed_photo_download_done": ["fr": "Photo enregistrée.", "en": "Photo saved."]
         ]
 
@@ -58,9 +58,9 @@ final class PhotoSaveTests: XCTestCase {
         let french = try String(contentsOf: android.appendingPathComponent("values-fr/strings.xml"), encoding: .utf8)
         let english = try String(contentsOf: android.appendingPathComponent("values/strings.xml"), encoding: .utf8)
 
-        XCTAssertTrue(french.contains("<string name=\"feed_photo_download\">Enregistrer la photo</string>"))
+        XCTAssertTrue(french.contains("<string name=\"feed_photo_download\">Enregistrer cette photo</string>"))
         XCTAssertTrue(french.contains("<string name=\"feed_photo_download_done\">Photo enregistrée.</string>"))
-        XCTAssertTrue(english.contains("<string name=\"feed_photo_download\">Save the photo</string>"))
+        XCTAssertTrue(english.contains("<string name=\"feed_photo_download\">Save this photo</string>"))
         XCTAssertTrue(english.contains("<string name=\"feed_photo_download_done\">Photo saved.</string>"))
     }
 
@@ -110,10 +110,26 @@ final class PhotoSaveTests: XCTestCase {
     func testTheButtonIsNamedForVoiceOverAndHasAComfortableTarget() throws {
         let button = try code("Miff/Views/Feed/PhotoSaveButton.swift")
 
-        XCTAssertTrue(button.contains("Text(\"feed_photo_download\")"), "le nom parlé est le texte visible : « Enregistrer la photo »")
-        XCTAssertTrue(button.contains("Spacing.minTouchTarget + Spacing.xs"), "au moins 44 pt")
+        // Une icône seule, comme la croix : le nom parlé « Enregistrer cette photo » est celui de la clé `feed_photo_download`.
+        XCTAssertTrue(button.contains("RoundOverlayButton(systemName: \"square.and.arrow.down\", labelKey: \"feed_photo_download\")"))
+        XCTAssertFalse(button.contains("Text(\"feed_photo_download\")"), "aucun texte visible sur le bouton")
+        XCTAssertGreaterThanOrEqual(UpdateLayout.roundButtonSize, 44, "zone de toucher d'au moins 44 pt, comme la croix")
+        XCTAssertFalse(button.contains("accessibilityValue"), "une seule annonce VoiceOver, pas de valeur en plus")
+        XCTAssertEqual(button.components(separatedBy: "UIAccessibility.post").count - 1, 1)
+        XCTAssertTrue(button.contains("isAccessibilitySize"), "en grand texte la confirmation passe sur plusieurs lignes")
         XCTAssertTrue(button.contains(".hidesInAppSwitcher()"), "la feuille est masquée dans le sélecteur d'applications")
         XCTAssertFalse(button.contains("print("))
+    }
+
+    func testTheIconIsInTheTopBarOppositeTheCloseButtonAndNotInTheFooter() throws {
+        let screen = try code("Miff/Views/Feed/FeedPhotoFullScreen.swift")
+        let closeAt = try XCTUnwrap(screen.range(of: "labelKey: \"update_photo_close_a11y\"")?.lowerBound)
+        let saveAt = try XCTUnwrap(screen.range(of: "PhotoSaveButton(image: opened.image)")?.lowerBound)
+        let footerAt = try XCTUnwrap(screen.range(of: "private var footer: some View")?.lowerBound)
+
+        XCTAssertLessThan(closeAt, saveAt, "après la croix, dans la même barre du haut")
+        XCTAssertLessThan(saveAt, footerAt, "plus dans le pied")
+        XCTAssertEqual(screen.components(separatedBy: "PhotoSaveButton(image:").count - 1, 1)
     }
 }
 // swiftlint:enable line_length

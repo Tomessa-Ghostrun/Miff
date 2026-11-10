@@ -917,7 +917,7 @@
     <string name="update_photo_close_a11y">Close the photo</string>
     <string name="update_photo_position">Position measured %1$s.</string>
     <string name="update_photo_see_where">See where it was</string>
-    <string name="feed_photo_download">Save the photo</string>
+    <string name="feed_photo_download">Save this photo</string>
     <string name="feed_photo_download_done">Photo saved.</string>
     <string name="update_notice_unconfirmed">We couldn\'t confirm it. Check your Feed: if your photo is there, it went through.</string>
     <string name="update_action_open_feed">Open my Feed</string>
