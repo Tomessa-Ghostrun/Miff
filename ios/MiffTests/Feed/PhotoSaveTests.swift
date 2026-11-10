@@ -3,7 +3,7 @@
 import XCTest
 @testable import Miff
 
-/// « Enregistrer la photo » dans le plein écran de la photo d'un proche (décision du PM) : la photo est CONFIÉE à la feuille de partage du système, sans
+/// « Enregistrer cette photo » dans le plein écran de la photo d'un proche (décision du PM) : la photo est CONFIÉE à la feuille de partage du système, sans
 /// permission ni clé de photothèque ; la confirmation n'est dite que si « Enregistrer l'image » a été choisi ; les textes existent en FR et EN ; et,
 /// par lecture des sources, ce bouton n'existe qu'à cet endroit. Miroir côté Android à faire (mêmes clés `feed_photo_download*`).
 final class PhotoSaveTests: XCTestCase {
@@ -114,7 +114,9 @@ final class PhotoSaveTests: XCTestCase {
         XCTAssertTrue(button.contains("RoundOverlayButton(systemName: \"square.and.arrow.down\", labelKey: \"feed_photo_download\")"))
         XCTAssertFalse(button.contains("Text(\"feed_photo_download\")"), "aucun texte visible sur le bouton")
         XCTAssertGreaterThanOrEqual(UpdateLayout.roundButtonSize, 44, "zone de toucher d'au moins 44 pt, comme la croix")
-        XCTAssertTrue(button.contains("accessibilityValue"), "la confirmation est aussi l'état dit à VoiceOver")
+        XCTAssertFalse(button.contains("accessibilityValue"), "une seule annonce VoiceOver, pas de valeur en plus")
+        XCTAssertEqual(button.components(separatedBy: "UIAccessibility.post").count - 1, 1)
+        XCTAssertTrue(button.contains("isAccessibilitySize"), "en grand texte la confirmation passe sur plusieurs lignes")
         XCTAssertTrue(button.contains(".hidesInAppSwitcher()"), "la feuille est masquée dans le sélecteur d'applications")
         XCTAssertFalse(button.contains("print("))
     }

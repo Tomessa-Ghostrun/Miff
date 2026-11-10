@@ -3,74 +3,59 @@
 import XCTest
 @testable import Miff
 
-// La mise en page du plein écran de la photo d'un proche (correctif de la recette TestFlight, iPhone 11 Pro) : la légende et les boutons sont TOUJOURS
-// entiers ; la photo prend l'espace qui reste sous la zone sûre ; quand le pied ne tient pas il défile dans une hauteur bornée.
+// La mise en page du plein écran de la photo d'un proche (correctif de la recette TestFlight, iPhone 11 Pro) : la barre du haut, la photo (à son minimum)
+// et le pied (à son maximum) tiennent TOUJOURS dans l'écran, sur tous les iPhone et en paysage ; la légende et le bouton passent d'abord ; la croix et
+// l'icône ne sont jamais rognées.
 final class PhotoFullScreenLayoutTests: XCTestCase {
-    private let normal = PhotoFullScreenLayout.footerEstimate
+    /// La hauteur sous la zone sûre de quelques iPhone (points), approximative : portrait puis paysage.
+    private let portrait: [(String, CGFloat)] = [("SE 1", 548), ("SE", 647), ("11 Pro", 734), ("16", 760)]
+    private let landscape: [(String, CGFloat)] = [("SE", 375 - 0), ("11 Pro", 375 - 21), ("16", 393 - 21)]
 
-    /// La hauteur sous la zone sûre de quelques iPhone en portrait (points), approximative.
-    private let iPhoneSE1: CGFloat = 548
-    private let iPhoneSE: CGFloat = 647
-    private let iPhone11Pro: CGFloat = 734
-    private let iPhone16: CGFloat = 760
-
-    private func isInline(_ footer: PhotoFullScreenLayout.Footer) -> Bool {
-        footer == .inline
+    private func total(_ screenHeight: CGFloat) -> CGFloat {
+        PhotoFullScreenLayout.topBarHeight
+            + PhotoFullScreenLayout.minPhotoHeight(screenHeight: screenHeight)
+            + PhotoFullScreenLayout.footerMaxHeight(screenHeight: screenHeight)
     }
 
-    func testTheFooterFitsBelowThePhotoOnEveryPortraitIPhoneWithNormalText() {
-        for height in [iPhoneSE1, iPhoneSE, iPhone11Pro, iPhone16] {
-            XCTAssertTrue(isInline(PhotoFullScreenLayout.footer(screenHeight: height, footerHeight: normal)), "\(height)")
+    func testTheBarThePhotoAtItsMinimumAndTheFooterAtItsMaximumAlwaysFitTheScreen() {
+        for (name, height) in portrait + landscape {
+            XCTAssertLessThanOrEqual(total(height), height, "\(name) \(height)")
         }
     }
 
-    func testThePhotoKeepsItsMinimumHeightWhenTheFooterIsInline() {
-        for height in [iPhoneSE1, iPhoneSE, iPhone11Pro, iPhone16] {
-            let left = height - PhotoFullScreenLayout.topBarHeight - normal
-
-            XCTAssertGreaterThanOrEqual(left, PhotoFullScreenLayout.minPhotoHeight, "\(height)")
+    func testInLandscapeTheSumFitsAndNothingIsCropped() {
+        for (name, height) in landscape {
+            XCTAssertLessThanOrEqual(total(height), height, "paysage \(name)")
+            XCTAssertGreaterThan(PhotoFullScreenLayout.minPhotoHeight(screenHeight: height), 100, "la photo reste visible en paysage \(name)")
+            XCTAssertGreaterThan(PhotoFullScreenLayout.footerMaxHeight(screenHeight: height), 100, "le pied reste lisible en paysage \(name)")
         }
     }
 
-    func testInLandscapeTheFooterScrollsInsideAFloorHeightAndNeverVanishes() {
-        let landscape: CGFloat = 375 - 21
-
-        guard case .scrolling(let maxHeight) = PhotoFullScreenLayout.footer(screenHeight: landscape, footerHeight: normal) else {
-            return XCTFail("le pied défile")
-        }
-
-        XCTAssertGreaterThanOrEqual(maxHeight, PhotoFullScreenLayout.minScrollingFooterHeight)
-    }
-
-    func testWithTheLargestTextTheFooterScrollsAndThePhotoKeepsItsPlace() {
-        let large = normal * 2.5
-
-        for height in [iPhoneSE, iPhone11Pro, iPhone16] {
-            guard case .scrolling(let maxHeight) = PhotoFullScreenLayout.footer(screenHeight: height, footerHeight: large) else {
-                return XCTFail("le pied défile à \(height)")
-            }
-            let photo = height - PhotoFullScreenLayout.topBarHeight - maxHeight
-
-            XCTAssertGreaterThanOrEqual(photo, PhotoFullScreenLayout.minPhotoHeight, "la photo garde sa place à \(height)")
-            XCTAssertLessThan(maxHeight, large, "borné : le pied n'avale pas l'écran")
+    func testOnATallScreenThePhotoKeepsItsFullMinimumAndTheFooterHasRoom() {
+        for (name, height) in portrait {
+            XCTAssertEqual(PhotoFullScreenLayout.minPhotoHeight(screenHeight: height), PhotoFullScreenLayout.tallPhotoHeight, name)
+            XCTAssertGreaterThanOrEqual(PhotoFullScreenLayout.footerMaxHeight(screenHeight: height), 290, "légende + bouton tiennent en portrait \(name)")
         }
     }
 
-    func testTheFooterIsInlineExactlyWhenItFitsInTheRoomLeftByTheBarAndThePhoto() {
-        let room = iPhone11Pro - PhotoFullScreenLayout.topBarHeight - PhotoFullScreenLayout.minPhotoHeight
+    func testOnAShortScreenThePhotoNeedsOnlyAShareOfTheSpace() {
+        let height: CGFloat = 354
+        let available = height - PhotoFullScreenLayout.topBarHeight
 
-        XCTAssertEqual(PhotoFullScreenLayout.footer(screenHeight: iPhone11Pro, footerHeight: room), .inline)
-        XCTAssertEqual(
-            PhotoFullScreenLayout.footer(screenHeight: iPhone11Pro, footerHeight: room + 1),
-            .scrolling(maxHeight: room)
-        )
+        XCTAssertEqual(PhotoFullScreenLayout.minPhotoHeight(screenHeight: height), available * PhotoFullScreenLayout.shortScreenPhotoShare, accuracy: 0.001)
+        XCTAssertLessThan(PhotoFullScreenLayout.minPhotoHeight(screenHeight: height), PhotoFullScreenLayout.tallPhotoHeight)
     }
 
-    func testTheEstimateIsGenerousForATwoLineTitleAndOneButton() {
-        // Deux lignes de titre (2 x 28), deux de lieu (2 x 20), deux du message « indisponible » (2 x 20), un bouton de 46 pt, quatre espaces de 8 pt, marges de 2 x 16.
-        let tallest: CGFloat = 2 * 28 + 2 * 20 + 2 * 20 + 46 + 4 * 8 + 2 * 16
-
-        XCTAssertGreaterThanOrEqual(PhotoFullScreenLayout.footerEstimate, tallest)
+    func testTheSumNeverExceedsTheScreenEvenOnAbsurdlySmallOrZeroHeights() {
+        for height in stride(from: CGFloat(0), through: 900, by: 12) {
+            XCTAssertLessThanOrEqual(PhotoFullScreenLayout.available(screenHeight: height), max(height, 0))
+            XCTAssertGreaterThanOrEqual(PhotoFullScreenLayout.footerMaxHeight(screenHeight: height), 0, "\(height)")
+            XCTAssertLessThanOrEqual(
+                PhotoFullScreenLayout.minPhotoHeight(screenHeight: height) + PhotoFullScreenLayout.footerMaxHeight(screenHeight: height),
+                PhotoFullScreenLayout.available(screenHeight: height) + 0.001,
+                "\(height)"
+            )
+        }
     }
 
     func testTheLayoutNoLongerDependsOnAMeasuredHeightThatCouldStayAtZero() throws {
@@ -82,8 +67,10 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         let code = UpdatePrivacyTests.codeLines(try String(contentsOf: url, encoding: .utf8)).joined(separator: "\n")
 
         XCTAssertFalse(code.contains("PreferenceKey"), "plus de hauteur mesurée : le pied ne peut plus rester à 1 pt")
-        XCTAssertTrue(code.contains("PhotoFullScreenLayout.footer(screenHeight:"))
-        XCTAssertTrue(code.contains(".layoutPriority(1)"), "la légende et les boutons passent d'abord")
+        XCTAssertTrue(code.contains("ViewThatFits(in: .vertical)"), "le pied entier si ça tient, sinon il défile : jamais de bande noire en trop")
+        XCTAssertTrue(code.contains("PhotoFullScreenLayout.footerMaxHeight(screenHeight:"))
+        XCTAssertTrue(code.contains("PhotoFullScreenLayout.minPhotoHeight(screenHeight:"))
+        XCTAssertTrue(code.contains(".layoutPriority(1)"), "la légende et le bouton passent d'abord")
         XCTAssertTrue(code.contains(".hidesInAppSwitcher()"), "le voile des applications récentes est conservé")
     }
 }

@@ -37,35 +37,25 @@ struct PhotoShareSheet: UIViewControllerRepresentable {
 
 /// Le bouton : UNE icône « télécharger », sans texte, en haut à droite du plein écran, en face de la croix (disque sombre translucide de 40 pt dans une
 /// zone de 48 pt, comme la croix ; « Réduire la transparence » le rend opaque). Nom parlé « Enregistrer cette photo », et sa confirmation calme
-/// « Photo enregistrée. » (3 s, sous l'icône, sans décaler la mise en page) est aussi sa valeur pour VoiceOver.
+/// « Photo enregistrée. » (3 s, sous l'icône, sans décaler la mise en page) est dite UNE fois à VoiceOver (une annonce, pas de valeur en plus).
 struct PhotoSaveButton: View {
     let image: UIImage
     @State private var sharing = false
     @State private var saved = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.dynamicTypeSize) private var textSize
 
     private static let confirmationSeconds: UInt64 = 3
+    /// En grand texte, la confirmation passe sur plusieurs lignes dans cette largeur : elle ne sort jamais de l'écran.
+    private static let largeTextWidth: CGFloat = 220
 
     var body: some View {
         RoundOverlayButton(systemName: "square.and.arrow.down", labelKey: "feed_photo_download") {
             sharing = true
         }
-        .accessibilityValue(Text(verbatim: saved ? L10n.string("feed_photo_download_done") : ""))
         .overlay(alignment: .topTrailing) {
             if saved {
-                // Posée sur la photo, sans rien décaler : le pied et la photo ne bougent pas.
-                Text("feed_photo_download_done")
-                    .miffTextStyle(textBodyRegular14)
-                    .foregroundColor(colorUpdateOnPhoto.color)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
-                    .background(
-                        RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
-                            .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
-                    )
-                    .fixedSize()
-                    .offset(y: UpdateLayout.roundButtonSize)
-                    .accessibilityHidden(true)
+                confirmation
             }
         }
         .sheet(isPresented: $sharing) {
@@ -86,5 +76,30 @@ struct PhotoSaveButton: View {
             try? await Task.sleep(nanoseconds: Self.confirmationSeconds * 1_000_000_000)
             saved = false
         }
+    }
+
+    /// Posée sur la photo, sans rien décaler : le pied et la photo ne bougent pas. Texte normal : sa largeur naturelle ; grand texte : plusieurs lignes.
+    private var confirmation: some View {
+        let text = Text("feed_photo_download_done")
+            .miffTextStyle(textBodyRegular14)
+            .foregroundColor(colorUpdateOnPhoto.color)
+            .multilineTextAlignment(.trailing)
+            .padding(.horizontal, Spacing.sm)
+            .padding(.vertical, Spacing.xs)
+            .background(
+                RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
+                    .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
+            )
+        return Group {
+            if textSize.isAccessibilitySize {
+                text
+                    .frame(width: Self.largeTextWidth, alignment: .trailing)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                text.fixedSize()
+            }
+        }
+        .offset(y: UpdateLayout.roundButtonSize)
+        .accessibilityHidden(true)
     }
 }

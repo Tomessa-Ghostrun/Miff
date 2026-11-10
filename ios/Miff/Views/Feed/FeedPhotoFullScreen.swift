@@ -25,8 +25,6 @@ struct PhotoFullScreen: View {
     @State private var offsetBase: CGSize = .zero
     @State private var mapUnavailable = false
     @State private var photoArea: CGSize = .zero
-    /// La hauteur du pied grandit avec la taille du texte (Dynamic Type) : elle décide s'il tient sous la photo ou s'il défile.
-    @ScaledMetric(relativeTo: .body) private var footerHeight = PhotoFullScreenLayout.footerEstimate
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let maxZoom: CGFloat = 4
@@ -54,7 +52,7 @@ struct PhotoFullScreen: View {
                     .zIndex(1)
                     // La photo prend l'espace QUI RESTE sous la zone sûre ; la légende et les boutons passent d'abord (jamais poussés dehors).
                     photo
-                        .frame(minHeight: PhotoFullScreenLayout.minPhotoHeight)
+                        .frame(minHeight: PhotoFullScreenLayout.minPhotoHeight(screenHeight: screen.size.height))
                         .layoutPriority(0)
                     footerArea(screenHeight: screen.size.height)
                         .layoutPriority(1)
@@ -178,19 +176,16 @@ struct PhotoFullScreen: View {
 
     // MARK: - Le pied : titre, lieu de la photo, « Voir où c'était »
 
-    /// Le pied, TOUJOURS entier : à sa hauteur naturelle quand il tient sous la photo (aucune mesure à attendre, rien à pousser), sinon (grand
-    /// texte, paysage, petit écran) dans une hauteur bornée où il DÉFILE, la photo gardant au moins `minPhotoHeight`.
-    @ViewBuilder
+    /// Le pied, TOUJOURS entier : à sa hauteur naturelle quand il tient dans `footerMaxHeight` (tout ce que la photo, à son minimum, laisse), sinon
+    /// (grand texte, paysage, petit écran) il DÉFILE et prend exactement cette hauteur : jamais de bande noire en trop, jamais de pied rogné.
     private func footerArea(screenHeight: CGFloat) -> some View {
-        switch PhotoFullScreenLayout.footer(screenHeight: screenHeight, footerHeight: footerHeight) {
-        case .inline:
-            footer.fixedSize(horizontal: false, vertical: true)
-        case .scrolling(let maxHeight):
+        ViewThatFits(in: .vertical) {
+            footer
             ScrollView {
                 footer
             }
-            .frame(height: maxHeight)
         }
+        .frame(maxHeight: PhotoFullScreenLayout.footerMaxHeight(screenHeight: screenHeight))
     }
 
     private var footer: some View {
