@@ -72,7 +72,9 @@ class PlacePrivacyTest {
                 // The offer is shown / closed with a FIXED trigger of the contract, chosen by paywallTrigger (3rd place, 2nd Miff): nothing else.
                 "PaywallShown(trigger)" in line ||
                     "PaywallDismissed(trigger)" in line ||
-                    Regex("""PaywallReason\.\w+ -> AnalyticsEvent\.PaywallTrigger\.(EXTRA_TRUSTED_PLACE|EXTRA_MIFF)""").containsMatchIn(line) ||
+                    Regex(
+                        """PaywallReason\.\w+ -> AnalyticsEvent\.PaywallTrigger\.(EXTRA_TRUSTED_PLACE|EXTRA_MIFF)""",
+                    ).containsMatchIn(line) ||
                     line.contains("fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger?") ||
                     line.startsWith("import "),
             )
