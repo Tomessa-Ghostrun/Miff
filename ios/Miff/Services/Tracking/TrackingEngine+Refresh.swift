@@ -96,7 +96,7 @@ extension TrackingEngine {
         state = await armZones(state, fix: state.fix, reregister: full.contains(reason))
         deps.local.save(state)
         // 2. La position (attente bornée), seulement si elle est récente.
-        let fix = await chooseFix(state, supplied: supplied, now: now)
+        let fix = await chooseFix(state, supplied: supplied, reason: reason, now: now)
         if let fix {
             state.fix = fix
             journal.record(.positionRead, batteryPct: pass.batteryPct)
@@ -150,18 +150,39 @@ extension TrackingEngine {
             && fix.measuredAtMillis - now <= TrackingLimits.clockSkewMillis
     }
 
+    /// BATT-3 : seules l'ouverture de l'app et sa sortie peuvent réutiliser la dernière position du système (moins de deux minutes).
+    /// JAMAIS l'entrée dans une zone ni le réarmement, le déplacement, le retour du réseau, un changement de partage ou d'accès : la
+    /// personne vient de bouger, ou c'est le moment de vérifier, et une position de deux minutes serait fausse.
+    static func mayReuseSystemFix(for reason: Reason) -> Bool {
+        switch reason {
+        case .opened, .backgrounded:
+            return true
+        case .moved, .zoneEntered, .rearm, .sharingChanged, .networkBack, .accessChanged:
+            return false
+        }
+    }
+
     /// Une position pour cette occasion : celle que le système vient de signaler, sinon une position fraîche (quelques secondes au
     /// plus), sinon la dernière gardée. AUCUNE de plus de dix minutes n'est utilisée, pour aucune occasion : une vieille position
     /// écrirait une fausse arrivée ou une fausse position.
-    func chooseFix(_ state: LocalState, supplied: Fix?, now: Int) async -> Fix? {
+    func chooseFix(_ state: LocalState, supplied: Fix?, reason: Reason, now: Int) async -> Fix? {
         if let supplied, usable(supplied, now) {
             return supplied
         }
         let position = deps.position
-        let fresh: Fix? = try? await timedOperation(seconds: TrackingLimits.positionWaitSeconds) {
-            await position.current()
+        let mayReuse = Self.mayReuseSystemFix(for: reason)
+        let wait = TrackingLimits.positionWaitSeconds
+        let reading: PositionReading? = try? await timedOperation(seconds: wait) { () async -> PositionReading in
+            if mayReuse {
+                return await position.currentReusingRecent()
+            }
+            return PositionReading(fix: await position.current(), reused: false)
         }
-        if let fresh, usable(fresh, now) {
+        if let fresh = reading?.fix, usable(fresh, now) {
+            if reading?.reused == true {
+                // Une demande au système évitée (BATT-3) : le journal de test le compte, pour la mesure du PM.
+                journal.record(.positionReused)
+            }
             return fresh
         }
         journal.record(.positionUnavailable)
