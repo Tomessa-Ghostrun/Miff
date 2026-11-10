@@ -70,6 +70,10 @@ class PlacePrivacyTest {
             assertTrue(
                 "unexpected event: $line",
                 "PaywallShown(AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE)" in line ||
+                    "PaywallShown(trigger)" in line ||
+                    "PaywallDismissed(trigger)" in line ||
+                    "-> AnalyticsEvent.PaywallTrigger.EXTRA_" in line ||
+                    "fun paywallTrigger(" in line ||
                     "PaywallDismissed(AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE)" in line ||
                     line.startsWith("import "),
             )
