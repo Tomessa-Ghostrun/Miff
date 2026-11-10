@@ -192,7 +192,8 @@ final class AccountLocalDataTests: XCTestCase {
                 notificationAsks: UserDefaultsNotificationAskStore(defaults: suite()),
                 pendingMiffDeletions: MemoryPendingDeletions(), activeMiff: MemoryActiveMiffStore(),
                 notifications: RecordingCleaner(), trackingLocal: RecordingTrackingStore(),
-                detectionJournal: RecordingJournal(), updateLedger: ledger
+                detectionJournal: RecordingJournal(), notificationData: NotificationMemory().localData,
+                updateLedger: ledger
             )
         )
 
