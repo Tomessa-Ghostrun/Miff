@@ -41,7 +41,21 @@ struct UpdatePublisherDependencies {
     var isPositionPublished: (String) -> Bool = { _ in true }
     /// Appelé quand aucune Miff du lot n'a encore ma position : la détection est invitée à l'écrire (la personne réessaie dans un instant).
     var onPositionMissing: () -> Void = {}
+    /// FEED-8 : une photo vient d'être publiée dans ces Miffs ; le Feed la montre sur MA carte sans la relire (en mémoire seulement).
+    var onPhotoPublished: (PublishedPhoto) -> Void = { _ in }
     var timeoutSeconds = UpdateLimits.timeoutSeconds
+}
+
+/// Ce que la publication dit à qui veut montrer ma photo sans la relire : la photo, son lieu, et les Miffs où elle est partie. Elle ne
+/// va nulle part ailleurs qu'en mémoire (jamais un fichier, un journal ou un événement) et ne montre rien dans `description`.
+struct PublishedPhoto: CustomStringConvertible {
+    let uid: String
+    let miffIds: [String]
+    let photo: SharedPhoto
+
+    var description: String {
+        "PublishedPhoto(redacted)"
+    }
 }
 
 /// Les mesures de la publication, hors de l'acteur principal pour pouvoir servir de valeur par défaut.
@@ -90,6 +104,7 @@ final class UpdatePublisher {
     private let environment: UpdateEnvironment
     private let isPositionPublished: (String) -> Bool
     private let onPositionMissing: () -> Void
+    private let onPhotoPublished: (PublishedPhoto) -> Void
     private let timeoutSeconds: Double
 
     init(_ dependencies: UpdatePublisherDependencies) {
@@ -101,6 +116,7 @@ final class UpdatePublisher {
         environment = dependencies.environment
         isPositionPublished = dependencies.isPositionPublished
         onPositionMissing = dependencies.onPositionMissing
+        onPhotoPublished = dependencies.onPhotoPublished
         timeoutSeconds = dependencies.timeoutSeconds
     }
 
@@ -227,8 +243,21 @@ final class UpdatePublisher {
         }
         if !outcome.written.isEmpty {
             recordPublication()
+            announcePublished(job, written: outcome.written)
         }
         return outcome.result(all: all)
+    }
+
+    /// Ma carte montre ma photo sans lecture du serveur : l'heure est celle du téléphone, à l'horloge près (elle s'affiche comme l'heure de la photo).
+    private func announcePublished(_ job: PublishJob, written: [String]) {
+        let now = environment.nowMillis()
+        let shared = SharedPhoto(
+            jpeg: job.photo.jpeg,
+            createdAtMillis: now,
+            expiresAtMillis: now + UpdateWrites.photoLifetimeMillis,
+            place: job.place
+        )
+        onPhotoPublished(PublishedPhoto(uid: job.uid, miffIds: written, photo: shared))
     }
 
     /// Une publication réussie (dans une partie du cercle au moins) est comptée pour le garde-fou.

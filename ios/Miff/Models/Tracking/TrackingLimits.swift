@@ -59,6 +59,16 @@ enum TrackingLimits {
     /// Le repli sur la dernière position connue du système n'est accepté que si elle a moins de ceci.
     static let systemFixMaxAgeMillis = 2 * 60 * 1000
 
+    /// BATT-3 : à l'OUVERTURE de l'app et à sa SORTIE (jamais à l'entrée dans une zone, ni pour la photo de l'Update), la dernière position
+    /// du système est réutilisée, sans en redemander une, si elle a moins de ceci (une ouverture suivie d'une sortie rapprochée ne coûte
+    /// qu'une mesure). Au-delà, une position est demandée comme avant. Une seule valeur à changer pour revenir en arrière (0 = toujours
+    /// redemander).
+    static let reusableFixMaxAgeMillis = 2 * 60 * 1000
+
+    /// BATT-3 : la position système réutilisée doit être aussi précise que celle qu'on demanderait (précision demandée : 100 m,
+    /// inchangée). Une mesure plus grossière (antenne, plusieurs centaines de mètres) n'est pas réutilisée : on en demande une autre.
+    static let reusableFixMaxAccuracyMeters = 100.0
+
     /// Le temps que le moteur attend une position fraîche (une fenêtre de relance a une dizaine de secondes en tout : les zones sont
     /// armées AVANT cette attente).
     static let positionWaitSeconds = 3.0

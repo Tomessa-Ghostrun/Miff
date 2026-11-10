@@ -23,6 +23,7 @@ import com.tomessa.miff.domain.feed.StatusesView
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.profile.ReadMembers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -155,6 +156,15 @@ class FeedViewModel(
     private val offline = MutableStateFlow(false)
     private val now = MutableStateFlow(nowMillis())
     private val restarts = MutableStateFlow(0)
+
+    /**
+     * The members of the Miff the Feed last read, for the carousel of the Profile tab: it draws the faces of THIS Miff from them, with no
+     * reading of its own (cost). The last one stays when the Feed changes Miff (it is still true for its own card); nothing until a Miff is read.
+     */
+    val readMembers: StateFlow<ReadMembers?> =
+        piece
+            .mapNotNull { (it as? MiffPiece.Data)?.let { data -> ReadMembers(data.miffId, data.snapshot.members) } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** The wait for the server's confirmation of a cached answer is over (see [cacheGraceMillis]). */
     private val cacheGraceOver = MutableStateFlow(false)

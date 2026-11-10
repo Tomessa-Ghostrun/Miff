@@ -24,7 +24,7 @@ import org.junit.Test
 
 /**
  * What the places do with Firestore (ticket LOC-1), against the CONTRACT of the rules of PR #54 (not deployed): two free slots
- * p1 / p2, a danger zone and any further place need Miff+, one document per Miff with the same identifier, 5 Miffs at most,
+ * p1 / p2 / p3, a danger zone and any further place need Miff+, one document per Miff with the same identifier, 5 Miffs at most,
  * the person must have created the Miff. The store is a double: the real rules are exercised by the PR of the rules.
  */
 class PlaceRepositoryTest {
@@ -134,7 +134,7 @@ class PlaceRepositoryTest {
     // --- Creating: free plan (LIM1, LIM3) ---------------------------------------------------------------------------------
 
     @Test
-    fun create_free_firstPlaceTakesP1_secondTakesP2_oneDocumentEach() =
+    fun create_free_placesTakeP1_P2_P3_oneDocumentEach() =
         runTest {
             setUpMiffs()
             val first = repository.create(uid, draft(), context())
@@ -143,13 +143,22 @@ class PlaceRepositoryTest {
             store.places[MIFF_ID] = mutableListOf(testPlace("p1", "Maison", MIFF_ID))
             val second = repository.create(uid, draft(name = "Travail"), context())
             assertEquals("p2", (second as PlaceWriteResult.Done).placeId)
+            store.places[MIFF_ID] =
+                mutableListOf(testPlace("p1", "Maison", MIFF_ID), testPlace("p2", "Travail", MIFF_ID))
+            val third = repository.create(uid, draft(name = "Foot"), context())
+            assertEquals("p3", (third as PlaceWriteResult.Done).placeId)
         }
 
     @Test
-    fun create_free_thirdPlace_isRefusedBeforeAnythingIsSent() =
+    fun create_free_fourthPlace_isRefusedBeforeAnythingIsSent() =
         runTest {
             setUpMiffs()
-            store.places[MIFF_ID] = mutableListOf(testPlace("p1", "A", MIFF_ID), testPlace("p2", "B", MIFF_ID))
+            store.places[MIFF_ID] =
+                mutableListOf(
+                    testPlace("p1", "A", MIFF_ID),
+                    testPlace("p2", "B", MIFF_ID),
+                    testPlace("p3", "C", MIFF_ID),
+                )
             val result = repository.create(uid, draft(), context())
             assertEquals(PaywallReason.LIMIT, (result as PlaceWriteResult.NeedsPremium).reason)
             assertTrue(store.commits.isEmpty())
@@ -484,7 +493,7 @@ class PlaceRepositoryTest {
         }
 
     @Test
-    fun scenario_aHasP1InMiffA_creatingInMiffB_takesP2_andTheNextOneIsTheLimit() =
+    fun scenario_aHasP1InMiffA_creatingInMiffB_takesP2_thenP3_andTheNextOneIsTheLimit() =
         runTest {
             // The review scenario (I4): two Miffs created by a free account whose Miff+ ended.
             setUpMiffs()
@@ -496,18 +505,22 @@ class PlaceRepositoryTest {
             val loaded = context()
             assertEquals(2, loaded.distinctPlaces)
             val third = repository.create(uid, draft(miffIds = listOf(MIFF_ID), name = "Troisième"), loaded)
-            assertEquals(PaywallReason.LIMIT, (third as PlaceWriteResult.NeedsPremium).reason)
+            assertEquals("p3", (third as PlaceWriteResult.Done).placeId)
+            store.places.getOrPut(MIFF_ID) { mutableListOf() }.add(testPlace("p3", "Troisième", MIFF_ID))
+            val fourth = repository.create(uid, draft(miffIds = listOf(MIFF_ID), name = "Quatrième"), context())
+            assertEquals(PaywallReason.LIMIT, (fourth as PlaceWriteResult.NeedsPremium).reason)
         }
 
     @Test
-    fun scenario_twoDifferentPlacesSharingAnIdentifier_areTwoPlacesForTheLimit() =
+    fun scenario_twoDifferentPlacesSharingAnIdentifier_stillCountTwo_threeInAllIsTheLimit() =
         runTest {
             setUpMiffs()
             seed("p1", MIFF_ID)
+            seed("p2", MIFF_ID)
             store.places.getOrPut(OTHER_MIFF_ID) { mutableListOf() }.add(testPlace("p1", "Le stade", OTHER_MIFF_ID))
             val loaded = context()
-            assertEquals(2, loaded.groups.size)
-            assertEquals(2, loaded.distinctPlaces)
+            assertEquals(3, loaded.groups.size)
+            assertEquals(3, loaded.distinctPlaces)
             val result = repository.create(uid, draft(), loaded)
             assertEquals(PaywallReason.LIMIT, (result as PlaceWriteResult.NeedsPremium).reason)
             assertTrue(store.commits.isEmpty())
