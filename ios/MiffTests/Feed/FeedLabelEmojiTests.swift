@@ -45,3 +45,4 @@ final class FeedLabelEmojiTests: XCTestCase {
         XCTAssertNil(content.card("b")?.labelCategory)
     }
 }
+// swiftlint:enable line_length
