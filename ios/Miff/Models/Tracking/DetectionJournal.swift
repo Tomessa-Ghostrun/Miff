@@ -35,6 +35,8 @@ enum JournalKind: String, CaseIterable {
     case monitoringFailed
     case batteryRefreshed
     case batteryRefreshSkipped
+    /// BATT-3 : la dernière position du système (moins de 2 min) a servi à l'ouverture ou à la sortie, sans nouvelle demande.
+    case positionReused
 }
 
 /// Une ligne du journal telle qu'elle est gardée et montrée.

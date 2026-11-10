@@ -9,7 +9,7 @@ import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, leaveWithPositionOps, removeMemberWithPositionOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
   serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, positionDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
-  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc,
+  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc, Timestamp,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -472,6 +472,7 @@ const scenarios = [
     title: 'SESS-1 : écrire son statut avec le deviceId de la session (écriture simple)',
     name: 'Statut avec deviceId (écriture simple)',
     limit: 10,
+    maxReads: 2, // VOY-B : le mode voyage ne doit pas ajouter de lecture à un statut ordinaire
     hosts: [H.statusUpdate],
     prepare: seedSessions('bob'),
     run: (env) => db(env, 'bob').doc(`${M1}/status/bob`).set(statusDoc({ deviceId: DEVICE_A })),
@@ -546,6 +547,39 @@ const scenarios = [
     },
     run: (env) => commit(db(env, 'bob'), [set(`${M1}/photos/bob`, photoDoc()), set(`${M1}/status/bob`, statusDoc({ hasPhoto: true, deviceId: DEVICE_A }))]),
   },
+  // --- MODE VOYAGE (VOY-B, disponible pour tous les comptes) : `maxReads` = borne exigée sur les lectures de règles utilisées. Un statut de voyage
+  // coûte 2 (consentement + session), comme un statut ordinaire (READS-sess-status, maxReads 2) : aucune lecture du premium. ---
+  {
+    id: 'READS-voyage-activate',
+    title: 'VOY-B : activer le voyage (statut existant) = consentement + session : 2 lectures de règles, comme un statut ordinaire',
+    name: 'Activation du voyage (écriture simple)',
+    limit: 10,
+    maxReads: 2,
+    hosts: [H.statusUpdate],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await seedSessions('dave')(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(`miffs/${ID.M3}/status/dave`).set(statusDoc({ updatedAt: T0 })));
+    },
+    run: (env) => db(env, 'dave').doc(`miffs/${ID.M3}/status/dave`).set(travelStatus()),
+  },
+  {
+    id: 'READS-voyage-activate-lot',
+    title: 'VOY-B : activation du voyage + suppression de MA dernière position dans le même lot (batch de 2, une Miff)',
+    name: 'Activation du voyage + suppression de la position (batch de 2)',
+    lot: true,
+    maxReads: 2,
+    hosts: [H.statusUpdate, H.positionsDelete],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await seedSessions('dave')(env);
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        await ctx.firestore().doc(`miffs/${ID.M3}/status/dave`).set(statusDoc({ updatedAt: T0 }));
+        await ctx.firestore().doc(`miffs/${ID.M3}/positions/dave`).set(positionSeed());
+      });
+    },
+    run: (env) => commit(db(env, 'dave'), [set(`miffs/${ID.M3}/status/dave`, travelStatus()), del(`miffs/${ID.M3}/positions/dave`)]),
+  },
   // R-PHOTO-LOC (localisation OBLIGATOIRE, décision du PM du 2026-11-06) : toute photo écrite est localisée. La lecture de la photo d'un autre coûte donc
   // 3 lectures de règles (4 facturées avec le document) au lieu de 2 ; l'écriture reste à 1 lecture.
   {
@@ -601,6 +635,14 @@ const scenarios = [
   },
 ];
 
+// Mode voyage (VOY-B) : statut de voyage tel qu'un client l'écrit (fin dans 7 jours, deviceId de la session de dave).
+const TRAVEL_UNTIL = Timestamp.fromMillis(Date.now() + 7 * 86_400_000);
+const travelStatus = (over = {}) =>
+  statusDoc({
+    presence: 'travel', placeId: null, batteryPct: null, escalationDueAt: null, deviceId: DEVICE_A,
+    travelUntil: TRAVEL_UNTIL, travelUntilDay: TRAVEL_UNTIL.toDate().toISOString().slice(0, 10), ...over,
+  });
+
 const results = [];
 
 test('READS-calibration - limites de lectures de règles appliquées par l\'émulateur (hypothèses de la mesure)', async () => {
@@ -622,6 +664,9 @@ for (const sc of scenarios) {
     const margin = documented - r.readsUpperBound;
     t.diagnostic(`${sc.name} : <= ${r.readsUpperBound} lectures de règles sur ${documented} (marge >= ${margin})`);
     assert.ok(margin >= MIN_MARGIN, `${sc.name} : marge de ${margin} lecture(s), moins de ${MIN_MARGIN} exigées`);
+    if (sc.maxReads !== undefined) {
+      assert.ok(r.readsUpperBound <= sc.maxReads, `${sc.name} : ${r.readsUpperBound} lecture(s) de règles, plus que les ${sc.maxReads} documentées`);
+    }
   });
 }
 

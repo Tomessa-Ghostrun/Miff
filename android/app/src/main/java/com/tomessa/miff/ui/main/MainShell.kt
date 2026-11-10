@@ -91,9 +91,12 @@ import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
+import com.tomessa.miff.ui.profile.MiffCarouselHost
+import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.profile.miffOfferRoute
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
 import com.tomessa.miff.ui.review.rememberReviewHost
@@ -311,6 +314,22 @@ private fun MainNavigation(
                             }
                         },
                 )
+            // The faces of the carousel of Miffs (Profile tab): the Miff the Feed read is reused, the others are read one time when their card appears.
+            val profileMiffsViewModel: ProfileMiffsViewModel =
+                viewModel(
+                    key = "profile-miffs-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                ProfileMiffsViewModel(
+                                    reader = container.memberFacesReader,
+                                    feedMembers = feedViewModel.readMembers,
+                                    myProfile = container.currentProfile.profile,
+                                    myUid = { container.authGateway.currentUid },
+                                )
+                            }
+                        },
+                )
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
@@ -323,6 +342,7 @@ private fun MainNavigation(
                     }
                 }
             }
+            val profileFaces by profileMiffsViewModel.faces.collectAsStateWithLifecycle()
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
@@ -388,6 +408,16 @@ private fun MainNavigation(
                         )
                     }
                 },
+                profileMiffs =
+                    MiffCarouselHost(
+                        faces = profileFaces,
+                        onCardShown = profileMiffsViewModel::onCardShown,
+                        onMiffsKnown = profileMiffsViewModel::retainOnly,
+                        onCreate = { navController.open(CreateMiffRoute) },
+                        // Same rule and same offer as the selector of the Feed (decision of the PM, 2026-11-08): a free account that already has a Miff.
+                        onOffer = { navController.open(miffOfferRoute()) },
+                    ),
+                onProfileMiffOpened = profileMiffsViewModel::onMiffOpened,
             )
         }
         composable<SettingsRoute> {
@@ -626,6 +656,10 @@ fun MainTabs(
     update: UpdateHost? = null,
     /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
     tabRequests: TabRequests? = null,
+    /** The carousel of Miffs of the Profile tab (decision of the PM, 2026-11-10). */
+    profileMiffs: MiffCarouselHost = MiffCarouselHost(),
+    /** The screen of a Miff is opened from its card of the Profile tab: its faces are read again at the next appearance of the card. */
+    onProfileMiffOpened: (String) -> Unit = {},
     review: ReviewHost? = null,
     /** The lost-access message is over everything (MainShell): the review window waits for it to be acknowledged. */
     lostAccessNoticeOpen: Boolean = false,
@@ -770,7 +804,11 @@ fun MainTabs(
                                     onOpenSettings = onOpenSettings,
                                     onRetry = onRetryProfile,
                                     miffs = miffs,
-                                    onOpenMiff = onOpenMiff,
+                                    onOpenMiff = { id ->
+                                        onProfileMiffOpened(id)
+                                        onOpenMiff(id)
+                                    },
+                                    carousel = profileMiffs,
                                     placesContent = placesContent,
                                 )
                             }

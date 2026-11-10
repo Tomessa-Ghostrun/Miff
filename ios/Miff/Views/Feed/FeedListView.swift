@@ -134,7 +134,13 @@ struct FeedListView: View {
             actions: actions.bubble
         )
         ForEach(content.cards, id: \.member.uid) { card in
-            MemberCardView(card: card, texts: texts, locating: isLocating(card.member.uid), actions: actions.card)
+            MemberCardView(
+                card: card,
+                texts: texts,
+                locating: isLocating(card.member.uid),
+                actions: actions.card,
+                photoContext: PhotoSlotContext(miffId: content.miffId, offline: content.isOffline, active: isActive)
+            )
         }
         addLovedOne(content)
     }
