@@ -235,6 +235,7 @@
     <string name="profile_photo_add">Add a photo (optional)</string>
     <string name="profile_photo_change">Change photo</string>
     <string name="profile_photo_visibility">Visible to the members of your Miffs</string>
+    <string name="profile_google_photo_hint">We used your Google photo. You can change it.</string>
     <string name="profile_photo_image_a11y">Your profile photo</string>
     <string name="profile_photo_sheet_title">Profile photo</string>
     <string name="profile_photo_take">Take a photo</string>
@@ -834,6 +835,14 @@
     <string name="settings_privacy_miff_waiting_pill">Waiting</string>
     <string name="settings_privacy_miff_waiting_body">Your agreement is waiting: Miff no longer updates your status with this Miff. You can stop sharing from the Miff screen.</string>
     <string name="settings_privacy_detection_help_link">If detections are slow</string>
+    <!-- ABO-1: Settings > Subscription, read only (Miff+ granted by hand). No price, no purchase button. -->
+    <string name="settings_subscription_plan_name" translatable="false">Miff+</string>
+    <string name="settings_subscription_title">Subscription</string>
+    <string name="settings_subscription_subtitle">See your subscription</string>
+    <string name="settings_subscription_active_until">Active until %1$s</string>
+    <string name="settings_subscription_source_manual">Granted by the Miff team</string>
+    <string name="settings_subscription_source_other">Current plan</string>
+    <string name="settings_subscription_no_store_note">This access doesn\'t go through a store.</string>
     <string name="settings_detection_help_title">If arrivals and departures are slow</string>
     <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them.</string>
     <string name="settings_detection_help_step_battery">1. In the Miff settings, open \"Battery\" (or \"Power consumption\") and choose \"No restrictions\" (or \"Don\'t optimize\").</string>

@@ -8,10 +8,10 @@ import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.domain.auth.SignInFailure
 import com.tomessa.miff.domain.auth.interpretSignInError
-import com.tomessa.miff.domain.diagnostic.OfferState
 import com.tomessa.miff.domain.diagnostic.RulesProbeOutcome
-import com.tomessa.miff.domain.diagnostic.interpretEntitlement
 import com.tomessa.miff.domain.diagnostic.interpretRulesProbeFailure
+import com.tomessa.miff.domain.entitlement.OfferState
+import com.tomessa.miff.domain.entitlement.interpretEntitlement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.tasks.await

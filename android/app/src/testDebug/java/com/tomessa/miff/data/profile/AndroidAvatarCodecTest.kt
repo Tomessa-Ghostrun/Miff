@@ -245,6 +245,193 @@ class AndroidAvatarCodecTest {
         assertTrue("blue expected, got ${Integer.toHexString(pixel)}", Color.blue(pixel) > 200 && Color.red(pixel) < 60)
     }
 
+    // --- A photo already in memory (the Google photo of the account) ---------------------------------------------------------
+
+    private fun decodeBytesAndEncode(bytes: ByteArray): ByteArray? =
+        runBlocking {
+            val photo = codec.decodeBytes(bytes) ?: return@runBlocking null
+            val crop = CropMath.toCrop(photo.width, photo.height, 1f, photo.width / 2f, photo.height / 2f)
+            codec.encode(photo, crop)
+        }
+
+    @Test
+    fun aPhotoInMemory_comesOutSquare_withinTheLimitOfTheAvatar_andWithNoMetadata() {
+        // What Google serves is about 256 px; a bigger or a noisier one must fit too.
+        for (bitmap in listOf(smooth(256, 256), noise(256, 256, seed = 5), noise(1200, 800, seed = 6))) {
+            val source =
+                jpeg(bitmap) {
+                    it.setLatLong(48.8566, 2.3522)
+                    it.setAttribute(ExifInterface.TAG_MODEL, "TestPhoneModel")
+                }
+            val out = decodeBytesAndEncode(source)!!
+            assertTrue("${out.size} bytes", out.size <= 20_000)
+            val decoded = BitmapFactory.decodeByteArray(out, 0, out.size)
+            assertEquals(decoded.width, decoded.height)
+            val text = String(out, Charsets.ISO_8859_1)
+            listOf("Exif", "TestPhone", "GPS").forEach { assertFalse("not \"$it\"", text.contains(it)) }
+        }
+    }
+
+    @Test
+    fun aPhotoInMemory_thatIsNotAnImage_givesNothing_andDoesNotCrash() {
+        assertNull(runBlocking { codec.decodeBytes("this is not an image".toByteArray()) })
+        assertNull(runBlocking { codec.decodeBytes(ByteArray(0)) })
+        assertNull(runBlocking { codec.decodeBytes(ByteArray(5000) { (it * 7).toByte() }) })
+    }
+
+    // --- A picture from the network is checked on its header BEFORE any decoding ----------------------------------------------
+
+    private fun encoded(
+        bitmap: Bitmap,
+        format: Bitmap.CompressFormat,
+    ): ByteArray = ByteArrayOutputStream().also { bitmap.compress(format, 100, it) }.toByteArray()
+
+    /** A real small PNG whose header (IHDR) claims [width] x [height], with the checksum of the header recomputed. */
+    private fun pngClaiming(
+        width: Int,
+        height: Int,
+    ): ByteArray {
+        val png = encoded(smooth(8, 8), Bitmap.CompressFormat.PNG)
+
+        fun put(
+            offset: Int,
+            value: Int,
+        ) {
+            for (i in 0..3) png[offset + i] = (value ushr (24 - 8 * i)).toByte()
+        }
+        put(16, width)
+        put(20, height)
+        val crc = CRC32().apply { update(png, 12, 17) }.value.toInt()
+        put(29, crc)
+        return png
+    }
+
+    @Test
+    fun aValidJpeg_isDecodedReduced_neverInFullSize() {
+        val photo = runBlocking { codec.decodeBytes(jpeg(smooth(3000, 2000))) }
+        assertNotNull(photo)
+        assertTrue("${photo!!.width}x${photo.height}", photo.width <= 1024 && photo.height <= 1024)
+        assertTrue("still big enough for a sharp avatar", photo.width >= 256)
+    }
+
+    @Test
+    fun aSmallPngAndAWebp_areAccepted() {
+        assertNotNull(runBlocking { codec.decodeBytes(encoded(smooth(300, 300), Bitmap.CompressFormat.PNG)) })
+        assertNotNull(runBlocking { codec.decodeBytes(encoded(smooth(300, 300), Bitmap.CompressFormat.WEBP_LOSSLESS)) })
+    }
+
+    @Test
+    fun aGif_isRefused_whateverItsSize() {
+        // A genuine 1 x 1 GIF (43 bytes).
+        val gif =
+            intArrayOf(
+                0x47,
+                0x49,
+                0x46,
+                0x38,
+                0x39,
+                0x61,
+                0x01,
+                0x00,
+                0x01,
+                0x00,
+                0x80,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0xFF,
+                0xFF,
+                0xFF,
+                0x21,
+                0xF9,
+                0x04,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x2C,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x01,
+                0x00,
+                0x01,
+                0x00,
+                0x00,
+                0x02,
+                0x02,
+                0x44,
+                0x01,
+                0x00,
+                0x3B,
+            ).map { it.toByte() }.toByteArray()
+        assertNull(runBlocking { codec.decodeBytes(gif) })
+    }
+
+    @Test
+    fun aBmp_isRefused() {
+        val bmp =
+            ByteArrayOutputStream()
+                .also {
+                    // 2 x 2, 24 bits: 14 bytes of file header + 40 bytes of info header + 2 rows of 8 bytes.
+                    val header =
+                        byteArrayOf(
+                            0x42,
+                            0x4D,
+                            70,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            54,
+                            0,
+                            0,
+                            0,
+                            40,
+                            0,
+                            0,
+                            0,
+                            2,
+                            0,
+                            0,
+                            0,
+                            2,
+                            0,
+                            0,
+                            0,
+                            1,
+                            0,
+                            24,
+                            0,
+                        ) +
+                            ByteArray(24)
+                    it.write(header)
+                    it.write(ByteArray(16))
+                }.toByteArray()
+        assertNull(runBlocking { codec.decodeBytes(bmp) })
+    }
+
+    @Test
+    fun aPngThatClaimsAnEnormousSize_isRefusedFromItsHeader() {
+        // 8 bytes of pixels in reality, 20 000 x 20 000 (400 million pixels) declared: never decoded, no crash.
+        assertNull(runBlocking { codec.decodeBytes(pngClaiming(20_000, 20_000)) })
+        // 4 096 x 4 096 = 16.8 million pixels: each side is allowed, the total is not.
+        assertNull(runBlocking { codec.decodeBytes(pngClaiming(4_096, 4_096)) })
+    }
+
+    @Test
+    fun aSideAbove4096_isRefused_evenWithFewPixels() {
+        assertNull(runBlocking { codec.decodeBytes(pngClaiming(4_097, 10)) })
+        assertNull(runBlocking { codec.decodeBytes(pngClaiming(10, 4_097)) })
+    }
+
     // --- What is refused -----------------------------------------------------------------------------------------------------
 
     @Test

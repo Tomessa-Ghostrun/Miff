@@ -201,7 +201,11 @@ private val RowMinHeight = Spacing.minTouchTarget + Spacing.l
  * compte" line (it lives INSIDE "Mon compte").
  *
  * RESTRICTED list (decision of the PM, 2026-11-07, for a person with no Miff yet): [onOpenMyInfo] and [onOpenLanguage] are null and their
- * rows are not drawn; only "Mon compte" and "Confidentialité" remain.
+ * rows are not drawn; only "Mon compte" and "Confidentialité" remain. [onOpenSubscription] is never given there.
+ *
+ * The "Abonnement" line (ticket ABO-1, mockup "reglages -2") is drawn ONLY when [onOpenSubscription] is given, that is for an ACTIVE
+ * Miff+ account whose status was read when the screen opened; for everyone else, and in the restricted list, it is null: no line,
+ * no banner, no price, nothing about a subscription.
  */
 @Composable
 fun SettingsScreen(
@@ -210,6 +214,7 @@ fun SettingsScreen(
     onOpenAccount: () -> Unit,
     onOpenLanguage: (() -> Unit)?,
     onOpenPrivacy: () -> Unit,
+    onOpenSubscription: (() -> Unit)? = null,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_title), onBack = onBack) {
         if (onOpenMyInfo != null) {
@@ -240,6 +245,14 @@ fun SettingsScreen(
             subtitle = stringResource(R.string.settings_privacy_subtitle),
             onClick = onOpenPrivacy,
         )
+        if (onOpenSubscription != null) {
+            SettingsRow(
+                icon = R.drawable.ic_add,
+                title = stringResource(R.string.settings_subscription_title),
+                subtitle = stringResource(R.string.settings_subscription_subtitle),
+                onClick = onOpenSubscription,
+            )
+        }
     }
 }
 

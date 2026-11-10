@@ -217,6 +217,16 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ---
 
+## 5 quater. Android : ligne « Abonnement » des Réglages (ABO-1, 2026-11-07)
+
+**Ce que fait l'application.** À l'ouverture de Profil > Réglages (et à ce moment seulement), elle lit **une fois** le document `entitlements/{uid}` du compte connecté pour savoir s'il faut afficher la ligne « Abonnement » (Miff+ actif et non expiré). Pas d'écouteur, pas de relecture en revenant d'un sous-écran ni en tournant le téléphone, pas de lecture à l'ouverture de l'écran Abonnement (la date lui est transmise). Lecture **depuis le serveur** (pas de copie locale périmée) ; hors connexion ou en erreur, la ligne reste simplement absente, sans message.
+
+**Coût : 1 lecture de document par ouverture des Réglages et par personne** (comptes gratuits compris : le document est absent, la lecture compte quand même). Aucune écriture. Ordre de grandeur : un utilisateur qui ouvre les Réglages 2 fois par jour ajoute 2 lectures aux ~75 estimées par utilisateur actif et par jour, soit moins de 3 %. Aucun seuil d'alerte n'est modifié.
+
+**Limite connue et signal de bascule.** Si le ratio de lectures de la section 1 dérive de façon inexpliquée, vérifier d'abord que les Réglages ne sont pas rouverts en boucle. Levier gratuit si besoin : mémoriser la réponse en mémoire pour la durée de la session (un seul chiffre à changer). Rien ne nécessite Blaze.
+
+---
+
 ## 6. Ce que les agents font de leur côté
 
 - `backend-data` garde ces seuils et la procédure à jour (`backend/data-model.md` §12) et prépare, si le signal se confirme, la condition d'e-mail vérifié (gratuite) ou le plan de fonction « rejoindre » (Blaze).
