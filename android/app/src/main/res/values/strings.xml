@@ -413,6 +413,10 @@
     <string name="feed_create_action">Create a Miff</string>
     <string name="feed_join_action">Join a Miff</string>
     <string name="feed_offline_note">No connection right now. What you see may not be up to date.</string>
+    <string name="feed_offline_popin_title">No connection</string>
+    <string name="feed_offline_popin_body">Check your connection, we will try again in a moment.</string>
+    <string name="feed_offline_popin_retry">Try again</string>
+    <string name="feed_offline_popin_countdown">Trying again in %1$d s</string>
     <string name="feed_unavailable">We can\'t read your Miffs right now. Please try again in a moment.</string>
     <string name="feed_header_avatar_a11y">Open my profile. Your status: %1$s</string>
     <string name="feed_header_avatar_plain_a11y">Open my profile</string>

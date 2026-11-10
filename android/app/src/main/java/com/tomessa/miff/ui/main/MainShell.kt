@@ -56,6 +56,8 @@ import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
+import com.tomessa.miff.ui.components.ConnectionGate
+import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
@@ -251,9 +253,18 @@ private fun MainNavigation(
             val profileViewModel: ProfileTabViewModel =
                 viewModel(
                     key = "profile-tab-$scopeKey",
-                    factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                ProfileTabViewModel(
+                                    container.currentProfile,
+                                    ConnectionGate(container.networkMonitor),
+                                )
+                            }
+                        },
                 )
             val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+            val profileConnection by profileViewModel.connection.collectAsStateWithLifecycle()
             val feedViewModel: FeedViewModel =
                 viewModel(
                     key = "feed-$scopeKey",
@@ -291,6 +302,7 @@ private fun MainNavigation(
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
             val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
+            val feedConnection by feedViewModel.connection.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             val lostNotices by container.miffDirectory.notice.collectAsStateWithLifecycle()
             MainTabs(
@@ -322,6 +334,12 @@ private fun MainNavigation(
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
                         photos = container.photoReader,
+                        connection =
+                            ConnectionHost(
+                                state = feedConnection,
+                                onRetry = feedViewModel::onConnectionRetry,
+                                onDismiss = feedViewModel::onConnectionDismissed,
+                            ),
                     ),
                 update =
                     UpdateHost(
@@ -332,6 +350,7 @@ private fun MainNavigation(
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
+                profileConnection = profileViewModel.connectionHost(profileConnection),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -579,6 +598,8 @@ fun MainTabs(
     review: ReviewHost? = null,
     /** The lost-access message is over everything (MainShell): the review window waits for it to be acknowledged. */
     lostAccessNoticeOpen: Boolean = false,
+    /** The pop-in "Pas de connexion" of the Profile tab (the Feed's one is in [feed]); its `observe` lives while the tab is on screen. */
+    profileConnection: ConnectionHost = ConnectionHost(),
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
@@ -697,12 +718,22 @@ fun MainTabs(
                                     feed = feed.state,
                                     locate = feed.locate,
                                     refreshing = feed.refreshing,
+                                    popIn = feed.connection,
+                                    popInSuppressed = lostAccessNoticeOpen,
                                     me = feed.me,
                                     actions = actions,
                                 )
                             }
 
                             MainTab.PROFILE -> {
+                                // The watch of the pop-in "Pas de connexion" lives only while this tab is the one in use AND the app is in the foreground.
+                                val lifecycleOwner = LocalLifecycleOwner.current
+                                val observeProfile by rememberUpdatedState(profileConnection.observe)
+                                LaunchedEffect(lifecycleOwner) {
+                                    lifecycleOwner.lifecycle.repeatOnLifecycle(
+                                        Lifecycle.State.STARTED,
+                                    ) { observeProfile?.invoke() }
+                                }
                                 ProfileTabScreen(
                                     state = profileState,
                                     scrollToTopSignal = scrollToTop,
@@ -712,6 +743,8 @@ fun MainTabs(
                                     miffs = miffs,
                                     onOpenMiff = onOpenMiff,
                                     placesContent = placesContent,
+                                    popIn = profileConnection,
+                                    popInSuppressed = lostAccessNoticeOpen,
                                 )
                             }
 

@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.ui.components.ConnectionHost
+import com.tomessa.miff.ui.components.ConnectionPopIn
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
@@ -74,6 +76,9 @@ fun ProfileTabScreen(
     onOpenMiff: (String) -> Unit = {},
     /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
     placesContent: @Composable () -> Unit = {},
+    /** The pop-in "Pas de connexion" (bug of 2026-11-10): the profile is not there and cannot be read. */
+    popIn: ConnectionHost = ConnectionHost(),
+    popInSuppressed: Boolean = false,
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -106,6 +111,8 @@ fun ProfileTabScreen(
                     ProfileTabStatus.LOADING -> LoadingIdentity()
                     ProfileTabStatus.UNAVAILABLE -> Unit
                 }
+                // The pop-in is a window: it takes no room in the row. Once it is closed, the page says it itself (the sentence and "Réessayer" below).
+                ConnectionPopIn(popIn, suppressed = popInSuppressed)
             }
             GearButton(onOpenSettings)
         }
