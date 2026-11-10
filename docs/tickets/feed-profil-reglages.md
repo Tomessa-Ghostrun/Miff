@@ -249,7 +249,7 @@ Ces règles reprennent ce qui est décidé et **proposent** le reste ; chaque po
 
 ### 6.5 Onglet Profil
 - En-tête [Décidé, `onboarding.md` §6.8] : photo ou initiales, « Prénom Nom », « C'est toi », engrenage ; **pas de « Famille » par défaut** (§4 #22 d'`onboarding.md`).
-- Carrousel « Mes Miffs » [Proposé, Question 2] : une carte par Miff (nom, nombre de membres, avatars) qui **ouvre l'écran de la Miff** (MIFF-1) ; carte « Créer une nouvelle Miff » **seulement pour un Premium**.
+- Carrousel « Mes Miffs » [Proposé, Question 2] : une carte par Miff (nom, nombre de membres, avatars) qui **ouvre l'écran de la Miff** (MIFF-1) ; carte « Créer une nouvelle Miff » **seulement pour un Premium**. **Mis à jour le 2026-11-10 (PM)** : la carte « Créer une Miff » est toujours la dernière, pour tout le monde (paywall pour un compte gratuit qui a déjà une Miff) ; les avatars sont de petites miniatures (4 + « +N » au-delà de 5 membres).
 - « Lieux de la Miff » : liste en lecture de la Miff affichée ; « Ajouter un lieu » visible **seulement pour le créateur** [Décidé, `onboarding.md` §6.8] ; adresse : Question 3.
 
 ### 6.6 Réglages
@@ -338,7 +338,7 @@ Les critères valent pour Android puis iOS sauf mention. Les critères existants
 
 #### PRO-1 (Android) : Profil complet
 - [ ] **E1** Une carte par Miff (nom, nombre de membres, avatars) ouvre l'écran de la Miff ; le nom de Miff n'est jamais « Famille » par défaut.
-- [ ] **E2** La carte « Créer une nouvelle Miff » n'est affichée qu'à un compte Premium (Question 2).
+- [ ] **E2** La carte « Créer une nouvelle Miff » n'est affichée qu'à un compte Premium (Question 2). **Remplacé par la décision du PM du 2026-11-10** : la carte « Créer une Miff » est la **dernière du carrousel pour tout le monde** ; un compte gratuit qui a déjà une Miff ouvre le **paywall** (même règle que le sélecteur du Feed, décision du 2026-11-08), Miff+ ou aucune Miff ouvre la création (`docs/contracts/place-categories.md` §2).
 - [ ] **E3** « Lieux de la Miff » : liste en lecture ; « Ajouter un lieu » visible **uniquement** du créateur et en un seul exemplaire ; l'affichage de l'adresse suit la Question 3 ; liste vide : « Pas encore de lieu pour cette Miff. »
 - [ ] **E4** Le nombre de membres et les avatars sont lus depuis la même source que le Feed (pas de seconde lecture de chaque Miff à chaque ouverture) ; lectures mesurées.
 

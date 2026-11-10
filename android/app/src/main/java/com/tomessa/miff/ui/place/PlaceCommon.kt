@@ -39,20 +39,6 @@ import com.tomessa.miff.ui.theme.colorTextError
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.textCaptionBold12
 
-/** The icon of a category (provisional drawings ported from design/screens/lieux/icones-categories.md, to be replaced by the Figma export). */
-@get:DrawableRes
-val PlaceCategory.iconRes: Int
-    get() =
-        when (this) {
-            PlaceCategory.HOME -> R.drawable.ic_loc_home
-            PlaceCategory.WORK -> R.drawable.ic_loc_work
-            PlaceCategory.SCHOOL -> R.drawable.ic_loc_school
-            PlaceCategory.SPORT -> R.drawable.ic_loc_sport
-            PlaceCategory.RELATIVE -> R.drawable.ic_loc_relative
-            PlaceCategory.LEISURE -> R.drawable.ic_loc_leisure
-            PlaceCategory.OTHER -> R.drawable.ic_loc_other
-        }
-
 @get:StringRes
 val PlaceCategory.labelRes: Int
     get() =
@@ -73,29 +59,6 @@ val PlaceType.labelRes: Int
 @get:DrawableRes
 val PlaceType.iconRes: Int
     get() = if (this == PlaceType.TRUSTED) R.drawable.ic_loc_shield else R.drawable.ic_loc_warning
-
-/** A pale blue square with the icon of a category: 28 dp in the form, 44 dp in the lists (fiche icones-categories). */
-@Composable
-fun CategoryIcon(
-    category: PlaceCategory?,
-    size: Dp,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.size(size).clip(ShapeMd).background(colorActionPrimaryTint20),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            // A place written before the categories existed has none: a plain pin, never "Autre" by default.
-            painter = painterResource(category?.iconRes ?: R.drawable.ic_loc_pin),
-            contentDescription = null,
-            tint = colorActionPrimary,
-            modifier = Modifier.size(size * ICON_RATIO),
-        )
-    }
-}
-
-private const val ICON_RATIO = 0.64f
 
 /** A dashed rounded outline (the "Ajouter un lieu" line of the mockups). */
 fun Modifier.dashedBorder(

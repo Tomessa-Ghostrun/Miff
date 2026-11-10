@@ -385,6 +385,9 @@
     <string name="feed_selector_a11y">Miff affichée : %1$s. Appuie pour changer de Miff ou en ajouter une.</string>
     <string name="feed_selector_join">+ Rejoindre une Miff</string>
     <string name="feed_selector_create">+ Créer une Miff</string>
+    <string name="feed_selector_paywall_title">Plusieurs Miffs avec Miff+</string>
+    <string name="feed_selector_paywall_body">La formule gratuite permet d\'être dans une Miff à la fois. Avec Miff+, crée et rejoins autant de Miffs que tu veux.</string>
+    <string name="feed_selector_paywall_soon_body">Cette option n\'est pas encore ouverte. Ta Miff actuelle reste en place.</string>
     <string name="feed_nomiff_body">Crée ta Miff ou rejoins celle d\'un proche pour commencer.</string>
     <string name="feed_create_action">Créer une Miff</string>
     <string name="feed_join_action">Rejoindre une Miff</string>
@@ -487,6 +490,15 @@
     <string name="profile_tab_miffs_title">Mes Miffs</string>
     <string name="profile_tab_miff_hint">Proches, code et partage</string>
     <string name="profile_tab_miff_open_a11y">Ouvrir la Miff %1$s</string>
+    <plurals name="profile_tab_miff_members">
+        <item quantity="one">%1$d membre</item>
+        <item quantity="many">%1$d membres</item>
+        <item quantity="other">%1$d membres</item>
+    </plurals>
+    <string name="profile_tab_miff_create">Créer une Miff</string>
+    <string name="profile_tab_carousel_page_a11y">Carte %1$d sur %2$d</string>
+    <string name="profile_tab_carousel_previous_a11y">Carte précédente</string>
+    <string name="profile_tab_carousel_next_a11y">Carte suivante</string>
     <!-- Réglages : Mon compte (mot de passe) et Confidentialité (ONB-3b) -->
     <string name="settings_account_password_help">Nous t\'enverrons un e-mail avec un lien pour choisir un nouveau mot de passe.</string>
     <string name="settings_account_password_action">Changer mon mot de passe</string>
@@ -641,7 +653,7 @@
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
     <string name="place_detail_info_danger">Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
-    <string name="place_paywall_limit_title">Tu as atteint 2 lieux</string>
+    <string name="place_paywall_limit_title">Tu as atteint 3 lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
     <string name="place_paywall_danger_title">Les zones de danger font partie de Miff+</string>
     <string name="place_paywall_danger_body">Avec Miff+, tu peux définir des zones de danger autour des lieux à éviter.</string>
@@ -663,9 +675,9 @@
     <string name="place_list_row_nocategory_a11y">%1$s, %2$s</string>
     <string name="place_list_row_nocategory_noaddress_a11y">%1$s</string>
     <plurals name="place_list_counter_free">
-        <item quantity="one">%1$d lieu sur 2 avec la formule gratuite</item>
-        <item quantity="many">%1$d lieux sur 2 avec la formule gratuite</item>
-        <item quantity="other">%1$d lieux sur 2 avec la formule gratuite</item>
+        <item quantity="one">%1$d lieu sur 3 avec la formule gratuite</item>
+        <item quantity="many">%1$d lieux sur 3 avec la formule gratuite</item>
+        <item quantity="other">%1$d lieux sur 3 avec la formule gratuite</item>
     </plurals>
     <!-- LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement -->
     <string name="permission_notifications_title">Te prévenir, seulement quand c\'est utile !</string>
