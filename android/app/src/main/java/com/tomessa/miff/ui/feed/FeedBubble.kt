@@ -304,49 +304,48 @@ private fun BubbleBlob(
                     }.clip(BubbleShape)
                     .background(level.tint()),
         )
+        // The pictogram (orange, red, neutral; none for green) is a soft WATERMARK laid straight on the blob, behind the text: no disc, no frame, no
+        // shape that looks like a button (decision of the PM, 2026-11-10). Large and faint, in the corner, it fills the space without shouting and
+        // without a feeling of emptiness. It breathes on its own, slightly different cycle: out of phase with the blob.
+        if (pictogram != null) {
+            Icon(
+                painter = painterResource(pictogram.drawable),
+                contentDescription = null,
+                tint = pictogram.tint(level).copy(alpha = WATERMARK_ALPHA),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 28.dp, bottom = 22.dp)
+                        .size(WATERMARK_SIZE)
+                        .graphicsLayer {
+                            if (phases != null) {
+                                val phase = phases.star.value
+                                val breath = BubbleMotion.starScale(phase)
+                                scaleX = breath
+                                scaleY = breath
+                                translationY = BubbleMotion.starDriftDp(phase) * density
+                            }
+                        },
+            )
+        }
         // CENTRED in the blob (decision of the PM, 2026-11-08, TestFlight build 22): the same margin on both sides, text and button centred, the
-        // block centred vertically. The pictogram badge keeps its corner, so the margins are wide enough never to touch it; without a badge (the
-        // green bubble) the margins are the plain ones.
+        // block centred vertically, in front of the watermark.
         Column(
             modifier =
                 Modifier
                     .align(Alignment.Center)
                     .fillMaxWidth()
-                    .padding(horizontal = if (pictogram != null) 56.dp else 40.dp, vertical = 42.dp),
+                    .padding(horizontal = 40.dp, vertical = 42.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             content()
         }
-        if (pictogram == null) return@Box
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 40.dp, bottom = 40.dp)
-                    .size(40.dp)
-                    // The star breathes on its own, slightly different cycle: out of phase with the blob.
-                    .graphicsLayer {
-                        if (phases != null) {
-                            val phase = phases.star.value
-                            val breath = BubbleMotion.starScale(phase)
-                            scaleX = breath
-                            scaleY = breath
-                            translationY = BubbleMotion.starDriftDp(phase) * density
-                        }
-                    }.clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.7f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(pictogram.drawable),
-                contentDescription = null,
-                tint = pictogram.tint(level),
-                modifier = Modifier.size(24.dp),
-            )
-        }
     }
 }
+
+private val WATERMARK_SIZE = 96.dp
+private const val WATERMARK_ALPHA = 0.18f
 
 private class Pictogram(
     val drawable: Int,
