@@ -124,6 +124,8 @@ struct FeedTexts {
                 return text("feed_place_noun_school")
             case .sport:
                 return text("feed_place_noun_sport")
+            case .relative:
+                return text("feed_place_noun_relative")
             }
         case .named(let name):
             return name
@@ -167,8 +169,11 @@ struct FeedTexts {
                 return text("feed_label_at_school")
             case .sport:
                 return text("feed_label_at_sport")
+            case .relative:
+                return text("feed_label_at_relative")
             }
         case .named(let name):
+            // Loisir, Autre : le NOM du lieu, tel quel (décision du PM) ; la valeur du catalogue est « %@ » seul.
             return text("feed_label_at_place", name)
         case .unknown:
             return text("feed_label_trusted_generic")
@@ -180,24 +185,8 @@ struct FeedTexts {
         switch time {
         case .nothing:
             return nil
-        case .since(let age):
-            switch age {
-            case .minutes(let minutes):
-                return text("feed_time_since_minutes", minutes)
-            case .hours(let hours):
-                return text("feed_time_since_hours", hours)
-            default:
-                return moment(of: age).map { text("feed_time_since", since($0)) }
-            }
-        case .departedAgo(let age):
-            switch age {
-            case .minutes(let minutes):
-                return text("feed_time_departed_minutes", minutes)
-            case .hours(let hours):
-                return text("feed_time_departed_hours", hours)
-            default:
-                return moment(of: age).map { text("feed_time_latest_news", at($0)) }
-            }
+        case .since(let moment):
+            return text("feed_time_since", since(moment))
         case .latestNews(let moment):
             return text("feed_time_latest_news", at(moment))
         case .noNewsSince(let moment):

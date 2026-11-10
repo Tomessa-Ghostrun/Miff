@@ -158,6 +158,8 @@ private struct StateChip: View {
     var showsPlane = false
 
     var body: some View {
+        // Un nom de lieu (Loisir, Autre) peut être long (jusqu'à 40 signes) : deux lignes au plus, la fin coupée ensuite ; le lecteur
+        // d'écran lit toujours la carte en entier (`cardSpoken`).
         HStack(spacing: Spacing.xs + Spacing.xs) {
             if showsPlane {
                 Image(systemName: "airplane")
@@ -166,6 +168,7 @@ private struct StateChip: View {
             }
             Text(verbatim: text)
                 .miffTextStyle(textBodyRegular14)
+                .lineLimit(2)
         }
         .foregroundColor(level.onTint)
         .padding(.horizontal, Spacing.sm)
