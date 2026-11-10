@@ -289,6 +289,10 @@ private struct TravelDatePickerSheet: View {
         return TravelDate(year: parts.year ?? picker.initialDay.year, month: parts.month ?? 1, day: parts.day ?? 1)
     }
 
+    private func choose() {
+        onChoose(chosenDay)
+    }
+
     private var chooseKey: String {
         picker.purpose == .start ? "voyage_picker_confirm" : "voyage_picker_validate"
     }
@@ -301,7 +305,7 @@ private struct TravelDatePickerSheet: View {
                 }
                 .datePickerStyle(.graphical)
                 .tint(colorActionPrimary.color)
-                Button(action: { onChoose(chosenDay) }) {
+                Button(action: choose) {
                     Text(verbatim: L10n.string(chooseKey))
                 }
                 .buttonStyle(.miffPrimaryFullWidth)
