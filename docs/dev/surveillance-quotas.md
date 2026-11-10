@@ -115,6 +115,24 @@ Le Feed est le premier gros consommateur de lectures : **environ 130 lectures pa
 - **Retour d'onglet ou d'arrière-plan** : l'écoute est détachée hors de l'onglet Feed (voulu, rien n'écoute sur le Profil) ; y revenir **dans les 30 minutes** ne coûte qu'environ 10 lectures (les lectures de règles ; les documents inchangés sont resservis par le cache). **Au-delà de 30 minutes**, Firestore refacture tous les documents : le retour coûte alors une ouverture à froid (~20 lectures).
 - **« Localiser »** : 6 lectures par toucher (1 + 5 de règles).
 
+### Le carrousel de Miffs du Profil (décision du PM du 2026-11-10) : ce qu'il coûte
+
+La carte de chaque Miff du Profil montre le nombre de membres et leurs photos en miniature : cela demande la **liste des fiches `members` de chaque Miff** (les règles l'autorisent à un membre d'une Miff qui existe : `allow get, list: if isMember(miffId) && miffAlive(miffId)`). Android : `FirestoreMemberFacesReader` (une lecture à la demande, **jamais d'écouteur**), règles de réutilisation dans `MiffFacesBook` (testées).
+
+| Cas | Lectures | Pourquoi |
+|---|---|---|
+| **Compte gratuit** (1 Miff) | **0 de plus** | la carte de la seule Miff est dessinée avec les membres que le Feed a déjà lus (la Miff active) |
+| **Miff+**, la Miff active du Feed | **0 de plus** | idem : réutilisée (les photos aussi), **telle que le Feed l'a lue à sa dernière visite** : l'écoute du Feed n'est attachée que sur l'onglet Feed, donc un membre arrivé ou parti pendant que la personne est ailleurs n'apparaît qu'à son retour sur le Feed (limite connue, acceptée pour ne rien lire de plus). Sa propre photo et son prénom suivent le profil du téléphone tout de suite (0 lecture) ; l'ouverture de l'écran de la Miff relit la carte une fois |
+| **Miff+**, une autre Miff, au moment où sa carte s'affiche (le carrousel s'arrête dessus) | **M + 2** (M fiches de membres, 15 au plus, + 2 lectures de règles) | une seule lecture, puis réutilisée **5 minutes** ; un voisin simplement préparé hors de l'écran (pour le lecteur d'écran) **ne lit rien** |
+| Retour sur le Profil ou sur une carte déjà lue, dans les 5 minutes | **0** | réutilisé |
+| Retour sur une carte après 5 minutes | **M + 2** | une relecture (jamais en boucle) |
+| Retour d'un écran de Miff ouvert depuis sa carte | **M + 2** (une fois) | des membres ont pu être retirés : la carte est relue à sa prochaine apparition |
+| Lecture qui échoue (hors ligne, lenteur) | 0 à M + 2, puis **attente de 30 s** avant un nouvel essai | la carte garde son nom, sans message ; jamais de boucle |
+
+**Estimation, pas une mesure** : un Miff+ avec 3 Miffs de 5 membres : 2 x 7 = **14 lectures** à la première ouverture du Profil de la journée, **0 à 14** ensuite (selon qu'il repasse après 5 minutes). Avec N Miffs, au pire N x (M + 2) si la personne les fait toutes défiler d'un coup (10 Miffs de 15 membres : 170), puis plus rien pendant 5 minutes. Les photos (20 Ko au plus chacune, bornées par les règles) comptent dans le transfert sortant, pas dans les lectures : 15 membres = 300 Ko au plus par Miff lue.
+
+**Limite connue** : le coût est proportionnel au nombre de Miffs d'un compte **Miff+** (aujourd'hui accordé à la main : quelques testeurs) et à leur défilement ; il n'y en a aucun pour un compte gratuit. **Signal** : celui du §2 (ratio > 150 deux jours de suite) ; si les comptes Miff+ font monter le ratio, **leviers gratuits** avant de parler de Blaze : allonger la réutilisation (5 minutes à 1 heure, constante `MiffFacesBook.TTL_MILLIS`), ou n'afficher que des initiales pour les Miffs autres que la Miff active.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
