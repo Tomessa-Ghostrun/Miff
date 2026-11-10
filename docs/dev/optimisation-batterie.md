@@ -2,6 +2,8 @@
 
 **Pour qui** : le PM (décisions et protocole de mesure), puis `android-dev` et `ios-dev` (tickets de la section 6). **Rien n'est modifié dans le code par ce document, rien n'est mesuré non plus.** C'est une analyse du code et de la documentation officielle, rédigée le 2026-11-10 à la demande du PM (« optimiser la consommation de batterie de Miff sans perdre en pertinence ni précision ; propose des optimisations »). Aucun texte ici n'est relu par un juriste (risque assumé par le PM, voir `CLAUDE.md`).
 
+**Mise à jour du 2026-11-10** : par décision du PM, **BATT-2 et BATT-4 sont implémentés côté Android** (section 9, PR brouillon `android/batterie-gains-surs`). Le reste du document est inchangé et reste une analyse : rien n'y est mesuré.
+
 **État du code lu** : `origin/main` au commit `f612768c` pour le suivi, le Feed, l'Update et la caméra. Les **notifications locales** (NOTIF-P0) ne sont pas encore fusionnées : elles sont lues sur les branches `android/notifications-p0-c` et `ios/notifications-p0-c` (têtes du 2026-11-10) et peuvent encore changer.
 
 **Règle de lecture des chiffres** : aucun gain de batterie n'est chiffré ici. Il n'existe pas de mesure. Chaque affirmation porte une étiquette : **[Doc]** (page officielle, lien en section 7), **[Code]** (lu dans le dépôt), **[Hypothèse]** (raisonnement, à mesurer). Les estimations de volume (écritures par jour) viennent de `docs/dev/surveillance-quotas.md` et sont des estimations, pas des mesures.
@@ -101,7 +103,7 @@ Barème de coût de développement (estimation de l'auteur, pas un engagement) :
 
 ### 3.1 Sûres maintenant (le comportement de détection ne change pas)
 
-**O1. Android : une « entrée » dans une zone où l'on est déjà ne relance pas la passe complète**
+**O1. Android : une « entrée » dans une zone où l'on est déjà ne relance pas la passe complète** — **BATT-2 : implémenté (2026-11-10)**, voir la section 9.
 - Plateforme : Android. iOS fait déjà `if enter && déjà dedans : return` (`doTransition`).
 - Constat [Code] : `TrackingEngine.doTransition` relance `doRefresh(ZONE_ENTERED)` pour **toute** entrée, même si la zone est déjà dans `state.inside` (aucun statut n'est alors écrit, mais la passe lit une position, sauvegarde l'état 5 à 6 fois et peut écrire une position). À l'ouverture de l'app, `armZones` ré-enregistre les 20 zones avec `INITIAL_TRIGGER_ENTER` ; si l'on est chez soi, le système peut renvoyer une entrée pour la zone ré-enregistrée (D4 : **[Hypothèse]** pour une zone de même identifiant remplacée, à confirmer par le journal, O-mesure BATT-1).
 - Gain : supprime une passe complète par ouverture dans un lieu (cas fréquent : ouvrir l'app à la maison). Taille inconnue, probablement faible par passe mais **répétée à chaque ouverture**.
@@ -117,7 +119,7 @@ Barème de coût de développement (estimation de l'auteur, pas un engagement) :
 - Risque : la dernière position partagée « Localiser » peut dater de 2 min au lieu de quelques secondes ; la règle de 15 min / 250 m et le plancher de 2 min font déjà que la position n'est écrite qu'au mieux toutes les 2 min. Négligeable.
 - Coût : **S**. Réversibilité : totale (constante). Mesure : lignes `positionRead` par jour (journal Internal) avant / après.
 
-**O3. Android : borner les relectures complètes au retour du réseau**
+**O3. Android : borner les relectures complètes au retour du réseau** — **BATT-4 : implémenté (2026-11-10), borne de 5 min seulement** ; la seconde moitié de la proposition (« ne pas relire quand le seul blocage est le disjoncteur du jour ») n'est **pas** faite (hors décision du PM du 2026-11-10). Voir la section 9.
 - Constat [Code] : `onNetworkBack` appelle `syncMiffs(…, NETWORK_BACK)` qui est **toujours due** (index + consentement + lieux, `Source.SERVER`). Tant qu'un statut attend (rappel de réseau actif) et que le disjoncteur de statuts est atteint, chaque réseau validé (par exemple un Wi-Fi qui saute) refait ces lectures. iOS a déjà une borne de 5 min pour son réarmement (`rearmMinIntervalMillis`).
 - Proposition : pas plus d'une relecture complète par 5 min au retour du réseau (la constante `RECHECK_AFTER_REFUSAL_MILLIS` existe déjà) ; ne pas relire quand le seul blocage est le disjoncteur du jour.
 - Gain : faible (cas rare) mais supprime une boucle potentielle radio + lectures. Risque : un statut en attente part au plus 5 min plus tard dans ce cas précis. Coût : **S**. Réversibilité : totale.
@@ -273,9 +275,9 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
 |---|---|---|---|---|
 | **BATT-1** | Instrumenter le journal (debug Android, Internal iOS) : réveils par type (zone, déplacement, réseau, redémarrage), ouverture, arrière-plan, zones enregistrées, relecture serveur, durée d'un passage, file en attente. Sans coordonnée ni nom ; build de publication muet (contrôle CI) | Android + iOS | S-M | rien |
 | **BATT-M** | Checklist de recette de mesure (`docs/qa/checklists/batterie-mesure-pm.md`) et modèle de relevé, avec les commandes `adb` | docs | S | BATT-1 |
-| **BATT-2** | O1 : entrée dans une zone déjà « dedans » ne relance pas la passe complète ; test unitaire | Android | S | rien (mieux après BATT-1) |
+| **BATT-2** | O1 : entrée dans une zone déjà « dedans » ne relance pas la passe complète ; test unitaire | Android | S | rien (mieux après BATT-1) — **implémenté** (PR brouillon `android/batterie-gains-surs`, section 9) |
 | **BATT-3** | O2 : réutiliser la position système de moins de 2 min à l'ouverture / sortie (pas à l'entrée de zone) | iOS | S | rien |
-| **BATT-4** | O3 : borne de 5 min des relectures au retour du réseau ; pas de relecture si seul le disjoncteur bloque | Android | S | rien |
+| **BATT-4** | O3 : borne de 5 min des relectures au retour du réseau ; pas de relecture si seul le disjoncteur bloque | Android | S | rien — **implémenté pour la borne de 5 min** (même PR, section 9) ; la partie « disjoncteur » n'est pas faite |
 | **BATT-5** | Variantes de mesure par constantes de compilation (distance de déplacement, réactivité des zones, délai de détachement de la session, rayon armé minimal en test) | Android (+ iOS pour 20 lieux) | M | BATT-1 |
 | **BATT-6** | O6 : détacher l'écouteur de session en arrière-plan prolongé (conditionnel à la mesure) | Android | M | BATT-5, décision PM Q5 |
 | **BATT-7** | O5 / O7 : valeurs retenues pour le déplacement et la réactivité (conditionnel) | Android | S | BATT-5, décisions PM Q2, Q7 |
@@ -318,3 +320,48 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
 6. **Q6. Batterie des proches (O11)** : la décision du 2026-11-07 (écrire à l'ouverture et à la sortie) reste-t-elle entière, ou veut-on regarder l'option « à la sortie seulement » après mesure ?
 7. **Q7. Retard acceptable des arrivées / départs (O7)** : combien de minutes de plus acceptez-vous (en arrière-plan Google documente déjà 2 à 3 minutes) ?
 8. **Q8. Journal** : OK pour ajouter des types de lignes (sans coordonnée ni nom) au journal des builds de test (BATT-1) ?
+
+---
+
+## 9. Gains livrés côté Android : BATT-2 et BATT-4 (décision du PM du 2026-11-10)
+
+**Statut : BATT-2 implémenté, BATT-4 implémenté (borne de 5 min).** Branche `android/batterie-gains-surs`, PR brouillon « Android : optimisations batterie sûres (BATT-2, BATT-4) ». **Aucun gain n'est chiffré : rien n'est encore mesuré** (règle de lecture du début du document). Ne sont **pas** touchés : l'écouteur de session SESS-2, la demande de déplacement de 250 m, les rayons, les disjoncteurs, App Check, les 20 zones. Côté iOS, BATT-3 est une autre PR.
+
+### 9.1 BATT-2 : ce qui change et ce qui ne change pas
+
+- **Avant** : toute « entrée » annoncée par le système relançait `doRefresh(ZONE_ENTERED)` (lecture de position, 5 à 6 sauvegardes locales, écriture possible de la position), même quand la zone était déjà dans `inside`.
+- **Après** : si la zone est **déjà** dans `inside` **et** que l'événement ne change le statut d'aucune Miff, `TrackingEngine.doTransition` s'arrête tôt, comme iOS : pas de lecture de position, pas de sauvegarde, pas d'écriture, pas de relecture serveur. Il reste : la ligne `TRANSITION_ENTER` du journal (pour pouvoir compter ces événements), l'envoi d'un statut **déjà en attente** s'il y en a un, et le redémarrage de la demande de déplacement si elle n'avait jamais démarré (ce que la passe complète refaisait).
+- **Aucune transition réelle n'est perdue** (vérifié par le code et par `TrackingEngineBatteryGainsTest`) :
+  - *Entrée après une sortie* : la sortie retire la clé de `inside`, l'entrée suivante n'est donc **pas** « déjà dedans » : passe complète et statut, comme avant.
+  - *Entrée après une sortie manquée* (téléphone éteint) : le statut dit déjà « dans le lieu », il n'y avait rien à écrire avant non plus ; la sortie réelle suivante est écrite.
+  - *Redémarrage* : `REARM` reconstruit `inside` depuis une position récente, **sans** écrire de statut quand aucun n'existait encore ; l'entrée du système qui suit **change** alors le statut (`derived` absent) : elle n'est **pas** ignorée, le statut part. Test dédié.
+  - *Zone d'une autre catégorie, ou statut différent* : même règle, la passe n'est ignorée que si **aucune** Miff ne change.
+  - *Ré-enregistrement des zones à l'ouverture* (`OPENED`, `REARM`, `SHARING_CHANGED`) : **inchangé** (BATT-8 reste conditionnel) ; test : des zones « oubliées » du système reviennent à l'ouverture.
+  - *Accès retiré* : l'événement est toujours traité avant (zones retirées, copie effacée).
+- **Ce que la passe ignorée faisait en plus** et qui est maintenant fait au réveil suivant (ouverture, déplacement de 250 m, redémarrage, retour du réseau, entrée réelle) : écrire la position partagée « Localiser » à cette occasion (la règle 15 min / 250 m s'applique de toute façon), relire le serveur si la copie a plus d'une heure, réarmer une zone manquante. **Limite connue** : après une sortie manquée, la position de « Localiser » n'est pas rafraîchie à l'entrée qui suit ; elle l'est au premier déplacement de 250 m ou à la prochaine ouverture.
+
+### 9.2 BATT-4 : ce qui change et ce qui ne change pas
+
+- **Avant** : chaque retour du réseau (réseau validé) tant qu'un statut attend relisait tout le serveur (index des Miffs, consentement, lieux ; de l'ordre de 9 lectures pour 1 Miff et 3 lieux).
+- **Après** : `TrackingEngine.onNetworkBack` ne relit **au plus qu'une fois par 5 minutes** (`TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS`, 5 min, borne **stricte** : à 4 min 59 s 999 on ne relit pas, à 5 min pile on relit). La référence est la date de la dernière relecture **complète** (`checkedAtMillis`), quelle que soit l'occasion qui l'a faite.
+- **Le statut en attente n'est pas retardé** : dans la fenêtre de 5 minutes, la dernière relecture complète est considérée comme à jour, le statut part **tout de suite**, la session SESS-2 est **revérifiée** avant l'écriture (inchangé), le retrait de l'accès « Toujours » est contrôlé avant tout (inchangé). Le consentement utilisé a au plus 5 minutes ; les règles Firestore le revérifient de toute façon à l'écriture.
+- **Une relecture incomplète (pas de réponse) ne compte pas** : le retour du réseau suivant réessaie aussitôt. Après un refus du serveur (`recheckSoon`), la relecture voulue n'est pas confondue avec une relecture récente. Une horloge reculée ne bloque jamais la relecture.
+- **Non fait** : « ne pas relire quand le seul blocage est le disjoncteur du jour » (deuxième moitié de O3), hors du périmètre décidé par le PM. La borne de 5 min limite déjà le pire cas à une relecture par 5 min.
+
+### 9.3 Méthode de mesure avant / après pour le PM (gratuite, sans Mac)
+
+À faire avec **deux builds debug** : A = `main` avant la fusion de cette PR, B = la branche (même type de build, voir section 5.1). Le journal de détection n'existe qu'en **debug** (absent du build de publication). Il est lu par `adb shell run-as com.tomessa.miff cat files/detection-journal.txt` (aucune coordonnée dedans). BATT-1 (nouveaux types de lignes) n'est **pas** fait : on se sert des lignes existantes.
+
+**BATT-2 (entrée « déjà dedans »)** :
+1. Être chez soi (un lieu de confiance armé), build A, vider le journal (se déconnecter / reconnecter l'efface) ou noter le nombre de lignes.
+2. Ouvrir puis fermer l'app 6 fois, à 3 min d'intervalle (chaque ouverture ré-enregistre les zones ; le système peut renvoyer une entrée).
+3. Lire le journal : compter les `TRANSITION_ENTER` **sans** `STATUS_WRITTEN` juste après, et les `POSITION_READ` qui les suivent. **Attendu en A** : un `POSITION_READ` après chacune de ces entrées. **Attendu en B** : la ligne `TRANSITION_ENTER` reste, mais **plus de `POSITION_READ`** après elle. Si aucune entrée ne revient à l'ouverture (hypothèse D4 non confirmée par le système), le gain est nul et le journal le dira : on garde le code, qui est inoffensif.
+4. Énergie : nuit de 8 h (section 5.3) avec le scénario ci-dessus répété le soir ; `adb shell dumpsys batterystats --reset` au débranchement, puis `adb shell dumpsys batterystats com.tomessa.miff` le matin (réveils, localisation, radio de `com.tomessa.miff`). Comparer à A' (le build A rejoué) pour connaître le bruit.
+
+**BATT-4 (retour du réseau)** :
+1. Créer un statut en attente : couper le Wi-Fi et les données, **sortir** d'un lieu (la sortie attend), rester hors réseau.
+2. Remettre le Wi-Fi puis le couper et le remettre **5 fois en 4 minutes** (le statut ne doit pas être écrit entre-temps : pour cela, faire le test avec un compte de test dont le disjoncteur de statuts est atteint, ou en mode avion sauf pour la dernière remise du réseau).
+3. Compter : lignes `WAKE_NETWORK` du journal (identiques en A et en B : chaque réveil est conservé) et **lectures Firestore** de la console Firebase (Firestore > Utilisation, compte de test seulement) : **attendu en A** environ 9 lectures par réveil ; **en B** une série de lectures au premier réveil puis aucune pendant 5 minutes.
+4. Vérifier que le statut arrive dans le Feed d'un proche **aussi vite** qu'en A (heure du statut = heure réelle de la sortie).
+
+**Critère de pertinence (section 4)** : 0 transition manquée, aucune fausse transition en plus, par rapport à A.

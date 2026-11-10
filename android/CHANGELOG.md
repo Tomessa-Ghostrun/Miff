@@ -2,6 +2,20 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.22.0] - 2026-11-10 : batterie, deux gains « sûrs » du suivi (BATT-2 et BATT-4, décision du PM du 2026-11-10)
+
+Source : `docs/dev/optimisation-batterie.md` (sections 3.1, 6 et 9). Branche `android/batterie-gains-surs`, PR brouillon. Numéro de version : `main` est à 0.21.0 ; d'autres PR Android en attente (#125, #128, #131, #133) prennent aussi des numéros, **à revérifier au merge**. Aucun changement visible dans l'interface, de permission, de règle Firestore, de donnée stockée ni de texte légal. **Aucun gain de batterie n'est chiffré : rien n'est mesuré** (méthode de mesure avant / après pour le PM : section 9.3 du document).
+
+### Changé
+- **BATT-2 : une « entrée » dans une zone où l'on est déjà ne relance plus une passe complète.** Le système peut annoncer de nouveau une entrée (zones ré-enregistrées à l'ouverture, demande d'état). `TrackingEngine.doTransition` s'arrête alors tôt, comme iOS : plus de lecture de position, plus de sauvegardes locales, plus d'écriture de position, plus de relecture serveur pour cet événement. La détection et l'heure des événements ne changent pas : une entrée réelle suit toujours une sortie (qui retire la zone de `inside`) et fait la passe complète ; un événement qui changerait un statut (par exemple après un redémarrage qui n'en avait pas encore écrit) n'est pas ignoré ; un statut déjà en attente part comme avant ; le ré-enregistrement des zones à l'ouverture, au redémarrage et au changement de partage est inchangé.
+- **BATT-4 : au retour du réseau, au plus une relecture complète du serveur par 5 minutes** tant qu'un statut attend (`TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS`, borne stricte). Dans la fenêtre, la dernière relecture complète est considérée à jour : **le statut en attente part tout de suite**, la session unique (SESS-2) est revérifiée avant l'écriture et le retrait de l'accès « Toujours » est contrôlé avant tout, comme avant. Une relecture sans réponse ne compte pas (le retour du réseau suivant réessaie) ; après un refus du serveur, la relecture voulue reste due ; une horloge reculée ne la bloque pas.
+
+### Choix et limites
+- **Limite connue (BATT-2)** : après une sortie manquée (téléphone éteint), la position de « Localiser » n'est plus rafraîchie à l'entrée qui suit ; elle l'est au premier déplacement de 250 m ou à la prochaine ouverture. Le statut, lui, était et reste inchangé dans ce cas.
+- **Non fait volontairement** (décision du PM) : écouteur de session SESS-2, demande de déplacement de 250 m, rayons, disjoncteurs, App Check, 20 zones ; et la moitié « ne pas relire quand seul le disjoncteur du jour bloque » de O3.
+- **Coût** : aucun (moins de lectures et de passes, rien d'ajouté). **Signal de bascule** : sans objet (aucun contournement de quota).
+- Tests : `TrackingEngineBatteryGainsTest` (entrée déjà dedans : aucune lecture de position, aucune écriture, aucun changement ; entrée réelle, après sortie, après sortie manquée, après redémarrage : rien de perdu ; ré-enregistrement des zones intact ; bornes de 5 min à la milliseconde ; statut en attente envoyé sans relecture avec session revérifiée ; relecture incomplète, refus, horloge reculée, accès retiré).
+
 ## [0.21.0] - 2026-11-08 : la photo Google devient la photo de profil à l'inscription (retour du PM)
 
 Retour du PM après ses tests (2026-11-08) : « Lorsqu'un utilisateur choisit de s'inscrire avec Google, on doit récupérer sa photo Google s'il en a une, et ça doit être sa photo de profil. » Branche `android/photo-google`, PR brouillon. Numéro de version : `main` est à 0.17.0 ; ordre de fusion annoncé par le coordinateur : #117 (ABO-1) 0.18.0, #118 (fenêtre d'avis) 0.19.0, #125 (Feed, étiquettes) 0.20.0, puis cette PR en **0.21.0** (à revérifier au merge). Aucun changement du modèle de données, des règles Firestore ni des textes légaux.

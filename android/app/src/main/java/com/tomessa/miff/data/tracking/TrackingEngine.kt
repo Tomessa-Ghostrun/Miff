@@ -155,7 +155,15 @@ class TrackingEngine(
                 networkWake.stop()
                 return@withLock
             }
-            val synced = syncMiffs(uid, state, Reason.NETWORK_BACK, env.nowMillis())
+            // BATT-4: a complete look made less than 5 minutes ago is trusted (nothing is read again, the waiting status is NOT held back); otherwise the
+            // look is made in full, as before. An incomplete look (no answer) is never counted: it is tried again at the next return of the network.
+            val now = env.nowMillis()
+            val synced =
+                if (verifiedRecently(state, now)) {
+                    Synced(state, verified = true)
+                } else {
+                    syncMiffs(uid, state, Reason.NETWORK_BACK, now)
+                }
             if (synced.state.miffs.isEmpty() && synced.verified) {
                 runCatchingCancellable { geofences.removeAll() }
                 runCatchingCancellable { movement.stop() }
@@ -349,6 +357,19 @@ class TrackingEngine(
         val state: LocalState,
         val verified: Boolean = false,
     )
+
+    /**
+     * True when the last COMPLETE look at the server is less than [TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS] old (BATT-4). Never true for a copy that
+     * was never read (0), for the artificial date left by [recheckSoon] (a refusal: the look WANTED is not recent), or for a date in the future (clock changed).
+     */
+    private fun verifiedRecently(
+        state: LocalState,
+        now: Long,
+    ): Boolean {
+        if (state.checkedAtMillis == 0L) return false
+        val age = now - state.checkedAtMillis
+        return age in 0 until TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS
+    }
 
     /**
      * The server is read again (the Miffs of the person, my consent in each, the places of each eligible Miff) when it is due: a change of sharing, a
@@ -626,6 +647,7 @@ class TrackingEngine(
             placeId,
             env.batteryPct(),
         )
+        val alreadyInside = kind == TransitionKind.ENTER && zoneKey in state.inside
         val inside =
             when (kind) {
                 TransitionKind.ENTER -> {
@@ -658,13 +680,34 @@ class TrackingEngine(
                 miffs[miffId] = miff.copyWith(derived = derived, pending = PendingStatus.of(fact))
             }
         }
+        // BATT-2 (as iOS does): an entry seen again for a zone the person is ALREADY in (the system reports it again when the zones are registered again at
+        // each opening, or answers a request of state) is nothing new: no position read, no position write, no full pass. A real return is never here: it
+        // follows a departure that took the key out of `inside`. An event that would change a status (the derived presence differs from the one kept: a
+        // restart that left no status yet, a zone of another kind) is NOT "nothing new" and goes on as before. What the skipped pass also did (reading the
+        // server again when due, arming what is missing) is done by the next opening, move, restart or return of the network.
+        val nothingNew = alreadyInside && miffs.all { (id, miff) -> miff === state.miffs[id] }
+        if (nothingNew && state.miffs.values.none { it.pending != null }) {
+            resumeMovementIfNeeded(state)
+            return
+        }
         var next = state.copyWith(miffs = miffs, inside = inside)
         local.save(next)
         next = flushPending(uid, next, WriteGate(recheck = false))
         local.save(next)
         updateNetworkWake(next)
+        if (nothingNew) {
+            // A status was still waiting: it was sent above as before; only the full pass is spared.
+            resumeMovementIfNeeded(next)
+            return
+        }
         // "À chaque entrée détectée dans une zone, la liste est recalculée" (ticket 6.5), and the position is read again.
         if (kind == TransitionKind.ENTER) doRefresh(Reason.ZONE_ENTERED, null)
+    }
+
+    /** The request of moves of more than 250 m that never started (refused by the system earlier) is made again: what the full pass of an entry used to retry. */
+    private suspend fun resumeMovementIfNeeded(state: LocalState) {
+        if (state.updatesArmed) return
+        local.save(state.copyWith(updatesArmed = movement.start()))
     }
 
     // --- Writes ----------------------------------------------------------------------------------------------------------------------------
