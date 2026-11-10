@@ -347,6 +347,7 @@ Les critères valent pour Android puis iOS sauf mention. Les critères existants
 - [ ] **F2** L'écran affiche « Premium actif jusqu'au {date en format long} » et, pour une source « manuelle », « Accordé par l'équipe Miff » ; **aucun** bouton d'achat, d'essai, de changement ni d'arrêt ; aucun prix.
 - [ ] **F3** Aucune écriture de `entitlements` (interdite au client) ; aucun appel à Google Play Billing ni à l'App Store.
 - [ ] **F4** Dates au format long de la langue de l'app (jamais « 02/18/12 »).
+- **Écart d'implémentation Android (ABO-1, 2026-11-07), F2 / Q7** : l'écran dit **« Miff+ »** (nom de l'offre, décision du PM) et non « Premium », avec « Actif jusqu'au {date} » ; il n'y a **aucune phrase promettant** la gestion par le store (promesse sans date, fausse pour un accès accordé à la main) : pour `source == "manual"` l'écran affiche seulement le fait « Cet accès ne passe pas par un store. », rien pour les autres sources. Le libellé neutre « Offre en cours » (source autre que `manual`) est à valider par le PM. Limite connue : l'affichage suit l'horloge du téléphone ; les droits réels restent décidés par le serveur (`request.time`).
 
 ### 7.2 Critères propres à iOS (ONB-7a/b, FEED-3/4, PRO-2, ABO-2)
 - [ ] **I1** Mêmes critères que l'équivalent Android, vérifiés par TestFlight sur l'iPhone 11 Pro (aucun test local possible).
