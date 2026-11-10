@@ -1,6 +1,7 @@
 # Ticket — Lieux de confiance et Tracking (détection par zones) : le cœur du produit
 
 **Statut** : **version 3 du challenge**, mise à jour le 2026-11-01 après les **réponses du PM aux questions du §16** (voir la section « Décisions du PM » ci-dessous) ; elle suit **à la lettre** les tickets Notion « Lieux de confiance » et « Tracking » (statut Notion : « Spec en attente de review IA ») et le ticket « Statut utilisateur (Vert, orange, rouge) ». À valider par le PM avant tout développement (aucun développement lancé, aucun statut Notion modifié).
+**Décision du PM du 2026-11-10 : R-LIEU-5 est MODIFIÉE, le gratuit passe de 2 à 3 lieux** (emplacements `p1`, `p2`, `p3` ; au-delà de 3 = Premium). Partout où ce ticket dit « 2 lieux » ou « le 3e lieu » pour la limite gratuite, lire **3 lieux** et **le 4e lieu** ; les passages concernés ci-dessous sont mis à jour (§1 tableau, §6, §9.4, R-LIEU-5, textes du paywall, critères LIM1, LIM2, PM2). Règles, tests et modèle de données : PR `backend/lieux-gratuits-3` ; valeurs à changer dans les applications : `docs/dev/lieux-gratuits-3-clients.md`. Les mentions « 2 lieux » des tickets d'autres chantiers, des CGU et de la page web sont listées dans ce dernier fichier (non modifiées ici).
 **Rédigé le** : 2026-10-31 (version 1), réécrit le 2026-11-01 (version 2), mis à jour le 2026-11-01 (version 3) (agent `product-specs`).
 **Règle de hiérarchie** (décision du PM) : **Notion + décisions du PM > ce ticket > reste du dépôt**. Quand une source du dépôt contredit Notion, elle est listée au §5 pour être alignée ; elle n'est pas modifiée ici.
 **Sources lues** : les deux tickets Notion (texte fourni par le PM le 2026-11-01, **non relus dans Notion**) ; les 7 maquettes `design/exports/lieux/` (README et PNG lus) ; `design/exports/onboarding-original/` écrans 19 à 22 (permissions) ; `CLAUDE.md` ; `docs/specs/` ; `docs/tickets/` (miff, onboarding, feed-profil-reglages, initialisation-technique) ; `docs/legal/` ; `docs/contracts/` ; `backend/data-model.md` et `backend/firestore.rules` (fonctions `validPlaceShape`, `validPlaceCreate`, `validPlaceUpdate`, `validStatus`, `validSharingChange`).
@@ -38,7 +39,7 @@
 | 3 | **Consentement v2** (QL3) | Nouveau texte versionné, re-consentement | **Abandonné** : « j'assume le risque ». Le texte de consentement actuel reste. **Incohérence constatée** avec l'écran d'autorisation du ticket Tracking : §5 #2, risque R3. |
 | 4 | **Permission « Toujours »** | Jamais bloquante, « Plus tard » toujours présent, amorce avant la fenêtre | **Obligatoire et bloquante** [Notion Tracking] : Android, l'écran ne se quitte qu'avec position précise + arrière-plan ; iOS, l'onboarding ne se termine pas sans « Toujours ». Écran réaffiché après connexion ou changement de choix. **Contredit** Onboarding Q2 / Q3 et Apple 5.1.2(i) (texte lu) : §5 #1, R1. QL10 devient sans objet. |
 | 5 | **Surveillance au-delà des limites** (QL9) | Plafond doux de 10 lieux par Miff, sélection par ordre de création | **Supprimé.** Mécanisme [Notion Tracking] : **les 20 lieux les plus proches** de la position, recalculés à l'ouverture, au passage en arrière-plan, sur déplacement (Android : plus de 250 m ; iOS : changement de position significatif) et à l'entrée dans une zone. **20 aussi sur Android** (Notion) alors que la limite d'Android est 100 : à confirmer (§16). |
-| 6 | **Limite gratuite** (QL9, QL15) | 1 lieu | **2 lieux** en gratuit, **illimité** en premium. « 1 lieu » est écrit dans `CLAUDE.md`, les règles, le modèle de données, les CGU, la page web… : liste complète au §9.4. |
+| 6 | **Limite gratuite** (QL9, QL15) | 1 lieu | **3 lieux** en gratuit (2 jusqu'au 2026-11-09), **illimité** en premium. « 1 lieu » est écrit dans `CLAUDE.md`, les règles, le modèle de données, les CGU, la page web… : liste complète au §9.4. |
 | 7 | **Position enregistrée** | « Aucune coordonnée de la personne ne quitte le téléphone » | Notion dit « **on enregistre sa localisation** ». **Tranché par le PM (2026-11-01, décision finale) : la dernière position connue est stockée côté serveur** (Firestore), pour « Localiser » et la localisation de la photo d'update (Feed, Update). Une décision intermédiaire du même jour (« téléphone seulement ») est **remplacée**. Conséquences (modèle, règles, consentement, textes légaux, stores, coût) au §7. |
 | 7 bis | **Propagation lente des lieux, faux départs, règles** | Questions ouvertes | **Décidé le 2026-11-01** : propagation lente **acceptée pendant la bêta** avec texte honnête dans l'app ; **aucune temporisation** des faux départs en v1 ; évolutions de règles « statut de plus de 24 h » (R-LIEU-1) et « renouvellement d'un consentement actif » (R-LIEU-3) **acceptées**, déploiement **seulement sur « oui » explicite** du PM le moment venu. |
 | 8 | **Formulaire du lieu** | Nom, adresse facultative, position, périmètre 100 à 1 000 m défaut 150 m | [Notion] **Adresse obligatoire** (QL6) ; nom 2 à 50 ; **périmètre 50 à 800 m par pas de 50, défaut 100 m** (QL7) ; **type** confiance / danger ; **catégorie** Maison, Travail, École, Sport, Chez un proche, Loisir, Autre (QL8) ; **Miffs associées (plusieurs)** ; suggestions d'adresse dès 3 caractères. |
@@ -60,7 +61,7 @@
 En une phrase : le créateur d'une Miff **pose ses lieux sur une carte** (nom, adresse choisie dans des suggestions, rayon, type, catégorie, Miffs concernées) ; le téléphone de chaque membre **surveille les 20 lieux les plus proches** de lui et **écrit un statut** (« dans le lieu X », « hors lieu », « dans une zone de danger ») chez les Miffs où il partage, **sans ouvrir l'app** ; la **couleur** (vert, orange, rouge) est **calculée à la lecture par le téléphone de chaque proche** (§6.9).
 
 Ce que les tickets Notion rendent nécessaire et que le dépôt ne permet pas encore (détail aux §5 et §9) :
-1. **Évolutions de règles Firestore obligatoires** : limite gratuite à 2 lieux, catégorie obligatoire, type modifiable (danger = Premium), session unique ; le client ne peut pas les contourner. Elles se déploient avec ton « oui » explicite.
+1. **Évolutions de règles Firestore obligatoires** : limite gratuite à 3 lieux (2 jusqu'au 2026-11-09), catégorie obligatoire, type modifiable (danger = Premium), session unique ; le client ne peut pas les contourner. Elles se déploient avec ton « oui » explicite.
 2. **Un lieu dans plusieurs Miffs** : un document par Miff avec le même identifiant, 5 Miffs au plus par création (**décidé**, §9.3).
 3. **« Toujours » obligatoire** (**décidé**, iOS compris) : Apple écrit qu'une app **ne peut pas exiger** la localisation ni les notifications pour être utilisée (guideline 5.1.2(i), lue le 2026-11-01) : risque de rejet iOS **élevé et assumé par le PM** (R1) ; un interrupteur de compilation permet de relâcher sans réécrire.
 4. **« On enregistre sa localisation »** : **décidé par le PM (2026-11-01) : la dernière position connue est stockée côté serveur**, pour « Localiser » (Feed) et la localisation de la photo d'update (Update). C'est **un changement majeur de vie privée** : modèle de données, règles, consentement, politique de confidentialité, CGU, page web, déclarations des stores et coût Spark sont à traiter (§7, §9.4, questions L1 à L9 du §16).
@@ -77,7 +78,7 @@ Ce que les tickets Notion rendent nécessaire et que le dépôt ne permet pas en
 ### Dans le périmètre
 - **Formulaire « Nouveau lieu / Modifier le lieu »** (maquettes `design/exports/lieux/`) : création, modification **de tous les champs, type compris**, suppression avec confirmation.
 - **Liste et détail des lieux** (lecture pour les membres), point d'entrée depuis l'écran de la Miff et l'onglet Profil.
-- **Limite gratuite : 2 lieux** ; premium illimité ; blocage du 3e avec message et écran provisoire (QL15).
+- **Limite gratuite : 3 lieux** (décision du 2026-11-10 ; 2 avant) ; premium illimité ; blocage du 4e avec message et écran provisoire (QL15).
 - **Association à plusieurs Miffs** créées par la personne.
 - **Tracking** [Notion] : écrans d'autorisation bloquants (notifications puis localisation), lecture et usage de la position, **sélection des 20 lieux les plus proches**, surveillance par zones, **écriture du statut**, état de la permission (`locationAccess`), nettoyage (partage arrêté, perte d'accès, déconnexion, session remplacée).
 - **Mécanisme du statut vert / orange / rouge** (§6.9) : ce que le téléphone écrit (faits, jamais la couleur) et la **règle de calcul de la couleur** à la lecture (fonction pure partagée avec le Feed, FEED-2, qui l'affiche).
@@ -154,7 +155,7 @@ Tous les membres (sans ouvrir l'app)
 | 7 | **Type modifiable** (QL16) | Règles : `type` immuable (`validPlaceUpdate`) ; limite : danger = premium | **Règle à modifier** (R-LIEU-6, **autorisée par le PM**) : autoriser le changement et exiger le premium si le nouveau type est « danger ». |
 | 8 | **Catégorie** (7 valeurs) | Schéma sans `category` ; règles refusent toute clé inconnue | **Règle à modifier** (R-LIEU-2, autorisée) ; **catégorie obligatoire** [Décidé Q6]. **Travail** absent des maquettes `03` à `06` (présent sur `01`, `02`, Notion) : à corriger ; « Ecole » (Notion) / « École » (maquette). |
 | 9 | **Sélecteur de Miff** : créateur seulement, plusieurs possibles, défaut « la dernière Miff rejointe » | Maquette : valeur unique, texte au singulier ; absent en modification (`03`) ; « dernière rejointe » peut ne pas être créée par la personne | **Tranché (Q4)** : défaut = dernière rejointe si créée par la personne, sinon première créée ; sélection multiple ; Miffs modifiables après création ; maquettes à corriger (§18.2). |
-| 10 | **Gratuit : 2 lieux** | Règles : `p1` seul ; **1 lieu** ailleurs | Liste exhaustive §9.4 ; règle **R-LIEU-5**. |
+| 10 | **Gratuit : 3 lieux** (2 jusqu'au 2026-11-09) | Règles : `p1` seul ; **1 lieu** ailleurs | Liste exhaustive §9.4 ; règle **R-LIEU-5**. |
 | 11 | **Adresse obligatoire** | Règles : `address` facultative (`null` accepté) ; politique art. 3 et 5 : « adresse éventuelle » | Imposé par le **client** seulement ; textes légaux à aligner. |
 | 12 | **« On enregistre sa localisation »** | `data-model.md` §1 (aucune coordonnée d'une personne) ; politique art. 1 pt 1, art. 3 (« Ce que Miff ne collecte pas : ta position GPS brute »), art. 4 (« Miff n'enregistre pas de suivi continu ») ; étiquettes des stores | **Écart tranché par le PM (2026-11-01) : dernière position connue stockée côté serveur** ; ces textes deviennent **faux** et sont à réécrire (§7, §9.4). |
 | 13 | **Ordre : notifications puis localisation** | `onboarding.md` §3.1 (localisation puis notifications) | Notion suivi ; `onboarding.md` à aligner. |
@@ -204,10 +205,10 @@ Tous les membres (sans ouvrir l'app)
 | Modification | **Tous les champs, type compris** [Décidé QL16] ; suppression par « Supprimer ce lieu » avec confirmation |
 
 ### 6.2 Limites gratuite et premium [Décidé QL9]
-- **Gratuit : 2 lieux**, **illimité en premium**. Le contournement des limites système n'est plus un plafond de lieux mais le mécanisme des **20 lieux les plus proches** (§6.5). Le texte « illimités » du Premium redevient exact.
-- Un compte gratuit n'a qu'une Miff : 2 lieux au total. Les règles imposent la limite par **emplacements fixes** (§9.2) : **le client vérifie avant d'écrire**, le refus des règles n'est que le filet.
+- **Gratuit : 3 lieux** (décision du 2026-11-10), **illimité en premium**. Le contournement des limites système n'est plus un plafond de lieux mais le mécanisme des **20 lieux les plus proches** (§6.5). Le texte « illimités » du Premium redevient exact.
+- Un compte gratuit n'a qu'une Miff : 3 lieux au total. Les règles imposent la limite par **emplacements fixes** (§9.2) : **le client vérifie avant d'écrire**, le refus des règles n'est que le filet.
 - **Zone de danger (« zone à risque » dans la maquette) : premium « Miff+ », créateur de la Miff seulement** [Décidé le 2026-10-16 ; confirmé par le ticket Notion Premium, transmis : « créer une zone de danger » déclenche le paywall ; gratuit = 2 lieux **de confiance**]. Un compte gratuit n'a donc **jamais** de zone de danger : la question « les deux lieux gratuits peuvent-ils être de danger ? » est **réglée (non)**.
-- Au 3e lieu en gratuit : message de limite puis écran provisoire « Miff+ arrive bientôt » [Décidé QL15] ; événement `paywall_shown` (`extra_trusted_place`) déjà au contrat, avec consentement Analytics. Au choix d'une zone de danger en gratuit : même écran provisoire (événement et déclencheur à confirmer avec le ticket Premium).
+- Au 4e lieu en gratuit (3e jusqu'au 2026-11-09) : message de limite puis écran provisoire « Miff+ arrive bientôt » [Décidé QL15] ; événement `paywall_shown` (`extra_trusted_place`) déjà au contrat, avec consentement Analytics. Au choix d'une zone de danger en gratuit : même écran provisoire (événement et déclencheur à confirmer avec le ticket Premium).
 - **Passage Premium vers gratuit** [Notion Premium, transmis : « suppression des derniers lieux de confiance, dernières Miffs rejointes, etc. » ; décision du 2026-10-24] : **ticket Premium**. **Points non précisés par ce que j'ai pu lire** : sort des zones de danger (toutes supprimées, puisque non gratuites ?), choix des 2 lieux de confiance conservés (les premiers créés ?), délai et préavis, qui exécute la suppression sans Cloud Function (le téléphone du créateur, au prochain lancement : §16 N7).
 
 ### 6.3 Un lieu dans plusieurs Miffs
@@ -376,7 +377,7 @@ Bornes prises **à la lettre de Notion** (« moins d'1 h » vert, « entre 1 h e
 
 | Code | Besoin | Proposition pour `backend-data` | Obligatoire ? |
 |---|---|---|---|
-| **R-LIEU-5** | **2 lieux gratuits** | Emplacements `p1` et `p2` (type `trusted` en gratuit) au lieu de `p1` seul ; mise à jour des tests (`06-places`, mutations, fixtures) | **Oui** (Notion) ; **préparation autorisée par le PM (Q6)** |
+| **R-LIEU-5** | **3 lieux gratuits** (décision du 2026-11-10 ; 2 du 2026-11-01 au 2026-11-09) | Emplacements `p1`, `p2` et `p3` (type `trusted` en gratuit) au lieu de `p1`, `p2` ; mise à jour des tests (`06-places`, mutations, fixtures) | **Oui** (Notion) ; **préparation autorisée par le PM (Q6)** |
 | **R-LIEU-2** | **Catégorie** | Clé `category` ajoutée à `validPlaceShape` (liste fermée : `home`, `work`, `school`, `sport`, `relative`, `leisure`, `other` [Proposé : valeurs techniques]) ; **clé obligatoire** [Décidé Q6] | **Oui** (Notion) ; **préparation autorisée (Q6)** |
 | **R-LIEU-6** | **Type modifiable ; danger = Premium** | Ajouter `type` aux clés modifiables ; exiger le premium si le nouveau type est `risk` (lectures de règles : `isPremium` jusqu'à 3 de plus) ; un compte gratuit ne peut pas passer un lieu en danger | **Oui** (QL16) ; **préparation autorisée (Q6)** |
 | **R-LIEU-POS** | **Dernière position connue stockée** (décision du 2026-11-01) | Champ(s) de position dans `status` ou document dédié ; validation (latitude −90 à 90, longitude −180 à 180, heure bornée) ; lecture réciproque ; effacement avec le statut ; mesure de lectures et d'écritures ; mise à jour de `data-model.md` §1, §2.7, §3, §8, §11 | **Oui, nouvelle** ; **forme, lecteurs et durée non décidés** (§7, L1 à L4) ; à livrer **avant** LOC-2 et le ticket Update ; **pas encore autorisée par le PM** (préparation à autoriser : L9) |
@@ -434,7 +435,7 @@ Aucun n'est modifié par ce ticket.
 12. **Rayon de 50 m** : détection peu fiable (R5).
 13. **Création hors connexion** : impossible, rien en file ; suggestions indisponibles : message, nouvelle tentative possible.
 14. **Lieu créé pour 3 Miffs dont l'une a été supprimée entre-temps** : lot refusé en entier ; message neutre.
-15. **Compte gratuit qui ouvre le 3e lieu** : message de limite, aucune écriture.
+15. **Compte gratuit qui ouvre le 4e lieu (3 lieux gratuits depuis le 2026-11-10)** : message de limite, aucune écriture.
 16. **Changement de type vers « danger » par un compte gratuit** : refusé par le client (et par R-LIEU-6) ; écran provisoire.
 17. **Compte connecté sur deux téléphones** : traité par le sous-ticket session.
 18. **Taille de texte maximale, droite-à-gauche** : formulaire lisible.
@@ -461,7 +462,7 @@ Aucun n'est modifié par ce ticket.
 | Boutons [Décidé : un seul bouton, comme dans Réglages] | « Enregistrer » ; « Supprimer ce lieu » (jamais « Valider ») | "Save"; "Delete this place" |
 | Suppression (maquette adaptée ; suppression dans **toutes** les Miffs [Décidé Q4]) | « Supprimer ce lieu ? Ce lieu sera définitivement supprimé pour toi et pour tous les membres des Miffs associées. » + « Supprimer ce lieu » / « Annuler » | "Delete this place? It will be permanently deleted for you and for all the members of the associated Miffs." |
 | Succès | « Le lieu « {nom} » est enregistré. Tes proches le prendront en compte dès qu'ils ouvriront Miff, ou dans les prochaines heures. » | "The place "{name}" is saved. Your loved ones will pick it up as soon as they open Miff, or within the next few hours." |
-| Limite gratuite (2) | « Avec la formule gratuite, tu peux avoir 2 lieux. Miff+ te permet d'en ajouter d'autres. » + « Découvrir Miff+ » / « Plus tard » | "With the free plan, you can have 2 places. Miff+ lets you add more." |
+| Limite gratuite (3) | « Avec la formule gratuite, tu peux avoir 3 lieux. Miff+ te permet d'en ajouter d'autres. » + « Découvrir Miff+ » / « Plus tard » | "With the free plan, you can have 3 places. Miff+ lets you add more." |
 | Zone de danger en gratuit | « Les zones de danger font partie de Miff+. » | "Danger zones are part of Miff+." |
 | Suggestions : aucune / indisponibles | « On ne trouve pas cette adresse. Essaie avec moins de détails. » / « La recherche d'adresse n'est pas disponible pour le moment. Réessaie dans un instant. » | "We can't find this address. Try fewer details." / "Address search isn't available right now. Please try again in a moment." |
 | Hors connexion, erreur | (textes du ticket Miff §5.10) | (same) |
@@ -603,8 +604,8 @@ Codes : **PL** lieu, **LIM** limites, **MIF** multi-Miffs, **ADR** adresse et ca
 - [ ] **PL10** La liste montre **nom + catégorie** ; le détail montre l'adresse, la carte et le rayon, avec « Voir sur la carte » (application de cartes du système).
 
 ### Limites
-- [ ] **LIM1** Compte gratuit : **2 lieux** ; au 3e : message de limite, **aucune écriture envoyée**, écran provisoire « Miff+ arrive bientôt ».
-- [ ] **LIM2** Premium (compte de test avec `entitlements`) : plus de 2 lieux, tous types.
+- [ ] **LIM1** Compte gratuit : **3 lieux** ; au 4e : message de limite, **aucune écriture envoyée**, écran provisoire « Miff+ arrive bientôt ».
+- [ ] **LIM2** Premium (compte de test avec `entitlements`) : plus de 3 lieux, tous types.
 - [ ] **LIM3** Compte gratuit : choisir ou passer à « zone de danger » est refusé côté client avec le message §11 et l'écran provisoire (zone de danger = Premium, décision du 2026-10-16 et ticket Notion Premium) ; seul le créateur de la Miff peut en créer.
 - [ ] **LIM4** Un membre gratuit d'une Miff dont le créateur est premium reçoit et surveille les lieux (héritage).
 - [ ] **LIM5** `paywall_shown` / `paywall_dismissed` (`extra_trusted_place`) : seulement si un écran s'affiche et si le consentement Analytics est donné ; aucun nom ni emplacement.
@@ -683,7 +684,7 @@ Codes : **PL** lieu, **LIM** limites, **MIF** multi-Miffs, **ADR** adresse et ca
 
 ### Ce que le PM peut vérifier lui-même
 - [ ] **PM1** Créer un lieu : nom, suggestions dès 3 caractères, rayon, type, catégorie, Miff ; voir la carte et le cercle.
-- [ ] **PM2** Créer 2 lieux, tenter un 3e : message de limite, rien d'écrit.
+- [ ] **PM2** Créer 3 lieux, tenter un 4e : message de limite, rien d'écrit.
 - [ ] **PM3** Associer un lieu à 2 Miffs créées ; le modifier, changer son type ; le supprimer.
 - [ ] **PM4** Premier lancement : écran notifications puis localisation ; refuser : message rouge sous le bouton ; Android 11+ : passage par les réglages.
 - [ ] **PM5** Marcher à 400 m et revenir ; lire le statut (second téléphone ou console) ; refaire avec l'app balayée, après redémarrage.
@@ -712,7 +713,7 @@ Codes : **PL** lieu, **LIM** limites, **MIF** multi-Miffs, **ADR** adresse et ca
 2. **Sélection de plusieurs Miffs** (la maquette montre une liste déroulante à valeur unique) ; état « une seule Miff créée ».
 3. **Écrans iOS d'autorisation** (« Toujours » obligatoire, évolution depuis « Lorsque l'app est active ») et état « autorisation retirée / réaffichage ».
 4. **Écran Android 11+** : confirmer que 21 est l'écran intermédiaire vers les réglages et 22 l'état d'erreur de la pop-in.
-5. **Limite gratuite atteinte** (3e lieu) et message « zone de danger : Miff+ ».
+5. **Limite gratuite atteinte** (4e lieu ; 3e avant le 2026-11-10) et message « zone de danger : Miff+ ».
 6. **Détail d'un lieu** en lecture (adresse, carte, rayon, type, catégorie, « Voir sur la carte ») et liste avec la catégorie.
 7. **États du formulaire** : erreurs (2 caractères minimum, limite de 50), enregistrement, hors connexion, carte indisponible.
 8. **Correction de la maquette** : catégorie **Travail** absente de `03` à `06` ; **coche « Valider » à retirer, seul « Enregistrer » reste** [Décidé] ; catégorie présélectionnée « Maison » ; note sous 100 m ; sélecteur de Miffs multiple (5 au plus) ; vouvoiement.
@@ -749,7 +750,7 @@ Aucun moyen de paiement n'est requis. Contact et éditeur provisoires inchangés
 | `backend-data` | R-LIEU-5, -2, -6 (-1), **R-LIEU-POS**, R-SESS ; mesures de lectures et d'écritures ; `data-model.md` (§1, §2.7, §3 à réécrire : position stockée, seuils 1 h / 2 h, confiance prioritaire) |
 | Update (à écrire) | Même document `status` ; dépend de R-LIEU-1 ; ordre : lieux, Update, Tracking (QL19) |
 | FEED-2 | Affichage des couleurs et libellés (§6.9) : « Localiser », zone de danger rouge (Q10 du Feed **levée**), seuils 1 h / 2 h ; questions N1 à N6 |
-| Premium | Paywall du 3e lieu et de la zone de danger, fin d'abonnement (N7), suppression sans écran |
+| Premium | Paywall du 4e lieu et de la zone de danger, fin d'abonnement (N7), suppression sans écran |
 | `design-system` | §18.2 |
 | `release-manager` | Politique, CGU, page web, stores, étiquettes : **tout ce qui dit « Miff ne stocke pas ta position »** (§7, §9.4, L6) |
 | `aso-marketing` | Limite gratuite à 2, aucune promesse de notification |

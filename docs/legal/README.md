@@ -100,6 +100,24 @@ Le français est la version de référence ; l'anglais en est la traduction fid�
 
 **À vérifier dans le code avant publication** : les affirmations de ces textes dépendent des contrôles V1 à V9 de `docs/release/README.md`. Les passages qui dépendent d'une décision non tranchée sont repérés dans `consentement-localisation-v3.md` §6 (O1 à O6) et dans `docs/release/README.md` (O7 à O11).
 
+### À aligner (2026-11-08) : la photo Google reprise à l'inscription (décision du PM, apps Android et iOS)
+
+**Textes légaux NON modifiés par cette PR** (la modification se fait dans les deux langues à la fois, par `release-manager`, avec l'accord du PM). Décision du PM du 2026-11-08 : quand une personne s'inscrit avec Google et que son compte a une photo, celle-ci est reprise comme photo de profil **préremplie**, qu'elle peut changer ou retirer avant d'enregistrer son profil. Ce que les textes doivent dire une fois la fonction publiée :
+
+| Texte | À aligner |
+|---|---|
+| Politique de confidentialité, art. 3 (ligne « Profil : prénom, nom, photo de profil ») | Ajouter que, si tu t'inscris avec Google, **ta photo Google est reprise comme photo de profil, parce que tu as choisi de t'inscrire avec Google** (elle est préremplie, tu peux la changer ou la retirer avant d'enregistrer ton profil). Nom déjà préchargé depuis Google : à mentionner dans la même phrase. Base légale : Contrat (comme le reste du profil). |
+| Politique, art. 6 (destinataires / sous-traitants) | Google fournit déjà la connexion : **la photo est téléchargée depuis un serveur d'images de Google (`googleusercontent.com`) par l'app, une seule fois**, puis redimensionnée (160 px) et enregistrée **sans métadonnées** avec le profil comme toute photo de profil. Pas de nouveau destinataire, mais **l'adresse IP de l'appareil est exposée aux serveurs d'images de Google** lors de ce téléchargement (comme pour toute image chargée depuis un serveur), à écrire dans le texte. |
+| Politique, art. 4 et 5 (visibilité) | **La photo reprise est publiée aux membres de chaque Miff de la personne**, comme toute photo de profil, **même si la personne n'avait jamais choisi de photo dans Miff** : le texte doit le dire et rappeler qu'elle peut la changer ou la retirer avant d'enregistrer son profil, puis à tout moment dans Réglages > Mes informations. |
+| Politique, art. 7 (durées) | Inchangé : la photo suit la durée du profil. Aucune copie de la photo Google n'est gardée ailleurs. |
+| CGU, art. 4 (le compte et le profil) | Facultatif : une phrase qui dit que la photo Google reprise est une photo de profil comme une autre, sous ta responsabilité si tu la gardes. |
+| Fiches des stores | **Google Play, Data safety** : la ligne « Photos » (photo de profil facultative) est déjà déclarée, aucun changement de déclaration (`docs/release/google-play-data-safety.md`). **App Store** : « Photos or Videos » déjà déclaré pour la photo de profil, aucun changement. |
+| Écran d'inscription | Aucune phrase de plus n'est ajoutée sur l'écran de connexion ; l'information est donnée **au moment de l'usage**, sur l'étape « Profil » (`profile_google_photo_hint`, FR et EN, mêmes mots sur iOS). |
+
+**Prérequis de la porte « Ready pour MEP »** : l'alignement de la politique de confidentialité (photo Google reprise, adresse IP exposée aux serveurs d'images de Google, photo publiée aux membres des Miffs) doit être fait, avec l'accord du PM, **avant** de passer cette fonction en « Ready pour MEP » ; tant que ce n'est pas fait, les textes décrivent une app qui ne reprend pas la photo Google.
+
+**Critère du ticket à aligner (non fait ici, `product-specs`)** : `docs/tickets/onboarding.md`, critère **PR8**, dit « aucune photo importée » ; la décision du PM du 2026-11-08 le remplace par « la photo Google est préremplie si elle existe, modifiable ou supprimable ». `android/README.md` (décision 13 d'ONB-2) est déjà mis à jour.
+
 ### Avant le déploiement : actions de console du PM (aucun agent ne les fait)
 
 1. **Google Analytics (propriété liée au projet Firebase `miff-3d283`, jamais celui de Ghostrun)** : analytics.google.com > Administrer (roue dentée en bas à gauche) > colonne « Propriété » > **Paramètres de données > Conservation des données**. Vérifier que « Conservation des données d'événements » est sur **2 mois** (et non 14), et mettre **« Réinitialiser les données utilisateur lors d'une nouvelle activité » sur désactivé** : s'il est activé, la durée repart à chaque événement et les données d'une personne active pourraient être gardées bien au-delà de 2 mois, ce que la politique contredirait. Enregistrer. Les libellés exacts peuvent varier, et il faut le rôle Éditeur. Depuis la console Firebase : Paramètres du projet > Intégrations > Google Analytics > Gérer, ou Analytics > « Voir dans Google Analytics ».

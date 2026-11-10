@@ -44,6 +44,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.auth.SignInProvider
@@ -52,6 +53,8 @@ import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.AvatarCodec
+import com.tomessa.miff.domain.review.ReviewSituation
+import com.tomessa.miff.domain.subscription.SubscriptionInfo
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
@@ -64,6 +67,7 @@ import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.feed.LocalPhotoReader
+import com.tomessa.miff.ui.feed.LocateUiState
 import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
@@ -85,6 +89,9 @@ import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.review.ReviewHost
+import com.tomessa.miff.ui.review.ReviewPromptHost
+import com.tomessa.miff.ui.review.rememberReviewHost
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountViewModel
 import com.tomessa.miff.ui.settings.DeleteAccountInfoScreen
@@ -100,6 +107,8 @@ import com.tomessa.miff.ui.settings.MyInfoViewModel
 import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
+import com.tomessa.miff.ui.settings.SubscriptionScreen
+import com.tomessa.miff.ui.settings.SubscriptionViewModel
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.update.UpdateActions
@@ -119,6 +128,16 @@ data object TabsRoute
 
 @Serializable
 data object SettingsRoute
+
+/**
+ * ABO-1: the read-only subscription screen. The two values come from the read made when the Settings opened (a date and a flag,
+ * nothing sensitive), so that this screen never reads again.
+ */
+@Serializable
+data class SubscriptionRoute(
+    val expiresAtMillis: Long,
+    val grantedByTeam: Boolean,
+)
 
 @Serializable
 data object MyInfoRoute
@@ -275,6 +294,7 @@ private fun MainNavigation(
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
             val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
+            val lostNotices by container.miffDirectory.notice.collectAsStateWithLifecycle()
             MainTabs(
                 tabBar = tabBar,
                 profileState = profileState,
@@ -312,6 +332,9 @@ private fun MainNavigation(
                         avatarCodec = container.avatarCodec,
                         onReviewAgreement = container.awaitingAgreement::requestReview,
                     ),
+                // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
+                review = rememberReviewHost(container, scopeKey),
+                lostAccessNoticeOpen = lostNotices.isNotEmpty(),
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -326,12 +349,37 @@ private fun MainNavigation(
             )
         }
         composable<SettingsRoute> {
+            // ABO-1: ONE read of entitlements/{uid} per opening of the Settings; the line exists only for an active Miff+.
+            val subscriptionViewModel: SubscriptionViewModel =
+                viewModel(
+                    key = "settings-subscription-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                SubscriptionViewModel(
+                                    container.subscriptionRepository,
+                                )
+                            }
+                        },
+                )
+            val subscription by subscriptionViewModel.subscription.collectAsStateWithLifecycle()
             SettingsScreen(
                 onBack = { navController.popBackStackIfSafe() },
                 onOpenMyInfo = { navController.open(MyInfoRoute) },
                 onOpenAccount = { navController.open(AccountRoute) },
                 onOpenLanguage = { navController.open(LanguageRoute) },
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
+                onOpenSubscription =
+                    subscription?.let { active ->
+                        { navController.open(SubscriptionRoute(active.expiresAtMillis, active.grantedByTeam)) }
+                    },
+            )
+        }
+        composable<SubscriptionRoute> { entry ->
+            val route = entry.toRoute<SubscriptionRoute>()
+            SubscriptionScreen(
+                subscription = SubscriptionInfo(route.expiresAtMillis, route.grantedByTeam),
+                onBack = { navController.popBackStackIfSafe() },
             )
         }
         composable<MyInfoRoute> {
@@ -533,6 +581,9 @@ fun MainTabs(
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
+    review: ReviewHost? = null,
+    /** The lost-access message is over everything (MainShell): the review window waits for it to be acknowledged. */
+    lostAccessNoticeOpen: Boolean = false,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
@@ -706,6 +757,26 @@ fun MainTabs(
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
+    }
+    // The review window sits over the tabs and their bar. The condition on the build flag is a constant: in a release build the whole call is removed.
+    if (BuildConfig.REVIEW_PROMPT && review != null) {
+        ReviewPromptHost(
+            host = review,
+            situation =
+                ReviewSituation(
+                    hasMiff = ready?.miffs?.isNotEmpty() == true,
+                    friendStatusSeen = ReviewSituation.friendStatusSeen(feedContent),
+                    updateScreenOpen = selected == MainTab.UPDATE,
+                    keyboardOpen = keyboardOpen,
+                    blockingMessageOpen =
+                        ReviewSituation.messageOpen(
+                            lostAccessNotice = lostAccessNoticeOpen,
+                            awaitingAgreement = agreement.waiting.isNotEmpty(),
+                            locateSheetOpen = feed.locate != LocateUiState.Idle,
+                            myLabel = feedContent?.myLabel,
+                        ),
+                ),
+        )
     }
 }
 
