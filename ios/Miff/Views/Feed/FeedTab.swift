@@ -9,6 +9,8 @@ import SwiftUI
 struct FeedTabActions {
     let onCreate: () -> Void
     let onJoin: () -> Void
+    /// L'offre pour une 2e Miff (compte gratuit, sélecteur du Feed).
+    let onOpenOffer: () -> Void
     /// « Reprendre le partage » : ouvre l'écran de cette Miff, qui tient le dialogue et le consentement.
     let onOpenMiff: (String) -> Void
     let onSignOut: () -> Void
@@ -101,6 +103,7 @@ struct FeedTab: View {
             onOpenProfile: context.openProfile,
             onCreate: actions.onCreate,
             onJoin: actions.onJoin,
+            onOpenOffer: actions.onOpenOffer,
             onResumeSharing: actions.onOpenMiff,
             onMessage: { phone in open(FeedLinks.message(phone: phone)) },
             onCall: { phone in open(FeedLinks.call(phone: phone)) },
