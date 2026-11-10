@@ -51,18 +51,23 @@ class ChangeInstantsTest {
     }
 
     @Test
-    fun inADangerZone_redAfterAnHourWithoutUpdate_theInstantIsTheEndOfTheHour() {
-        val f = facts(PresenceValue.IN_RISK, presenceAt = ref, update = ref)
-        assertEquals(listOf(ref + h + 1), StatusColor.changeInstants(f))
-        assertEquals(StatusLevel.GREEN, StatusColor.level(f, ref + h))
-        assertEquals(StatusLevel.RED, StatusColor.level(f, ref + h + 1))
+    fun inADangerZone_redAtTheEntry_anUpdateAfterTheEntryGivesAnHourOfGreen_theInstantIsTheEndOfThatHour() {
+        val entry = ref
+        val update = ref + 20 * min
+        val f = facts(PresenceValue.IN_RISK, presenceAt = entry, update = update)
+        assertEquals(listOf(update + h + 1), StatusColor.changeInstants(f))
+        assertEquals(StatusLevel.GREEN, StatusColor.level(f, update + h))
+        assertEquals(StatusLevel.RED, StatusColor.level(f, update + h + 1))
     }
 
     @Test
-    fun inADangerZoneWithNoUpdate_isRedFromTheStart_soNoInstant() {
-        val f = facts(PresenceValue.IN_RISK, presenceAt = ref, update = null)
-        assertTrue(StatusColor.changeInstants(f).isEmpty())
-        assertEquals(StatusLevel.RED, StatusColor.level(f, ref))
+    fun inADangerZone_anUpdateAtTheEntryOrBeforeIt_orNoUpdate_isRedFromTheStart_soNoInstant_ruleD47() {
+        listOf(null, ref, ref - 30 * min).forEach { update ->
+            val f = facts(PresenceValue.IN_RISK, presenceAt = ref, update = update)
+            assertTrue("update=$update", StatusColor.changeInstants(f).isEmpty())
+            assertEquals(StatusLevel.RED, StatusColor.level(f, ref))
+            assertEquals(StatusLevel.RED, StatusColor.level(f, ref + 10 * h))
+        }
     }
 
     @Test

@@ -124,25 +124,32 @@ class NotificationPlannerTest {
 
     @Test
     fun t6_iAmInADangerZone_noN1NoN2_andNoN3N4IfTheOthersAreGreen_decisionQ27() {
-        // In a danger zone for an hour and ten minutes without update: I am red, nothing is said TO ME (N6 spoke once, at the entry).
+        // In a danger zone since 14:00 (red at the entry, rule D47): I am red, nothing is said TO ME (N6 spoke once, at the entry).
         val members = mapOf(me to risk(at(14, 0), update = at(14, 0)), "x" to trusted())
         assertEquals(emptyMap<NotificationType, Long>(), plan(input(at(15, 10), members)))
     }
 
     @Test
-    fun t6b_xIsInADangerZone_theMiffTurnsRedAnHourAfterHisLastUpdate_n4ThirtyMinutesLater_noN3() {
+    fun t6b_xEntersADangerZone_theMiffTurnsRedAtOnce_n4ThirtyMinutesLater_noN3() {
         val members = mapOf(me to trusted(), "x" to risk(at(15, 0), update = at(15, 0)))
-        // Red from 16:00:00.001 (an hour after the update), so N4 at 16:30:00.001; the Miff is never orange: no N3.
-        assertEquals(mapOf(NotificationType.N4 to at(16, 30, 1)), plan(input(at(15, 10), members)))
+        // Red from the entry (15:00, rule D47: an update at the entry does not count), so N4 at 15:30; the Miff is never orange: no N3.
+        assertEquals(mapOf(NotificationType.N4 to at(15, 30)), plan(input(at(15, 10), members)))
     }
 
     @Test
-    fun t7_yTurnsRedBeforeN3IsDue_n3IsAbandoned_n4ComesThirtyMinutesAfter() {
-        // X out 13:40 (orange 15:40:00.001, so N3 would leave at 16:10:00.001); Y is in a danger zone with a last update at 15:05, so he turns red
-        // (never orange) at 16:05:00.001, before it. (A member out of a trusted zone cannot skip the orange: it would have started the episode earlier.)
-        val members = mapOf(me to trusted(), "x" to out(at(13, 40)), "y" to risk(at(15, 5), update = at(15, 5)))
-        listOf(at(16, 5), at(16, 6)).forEach { now ->
-            assertEquals("now=$now", mapOf(NotificationType.N4 to at(16, 35, 1)), plan(input(now, members)))
+    fun t6c_anUpdateAfterTheEntry_makesTheMemberGreenForAnHour_thenRedAgain_theNewRedEpisodeHasItsOwnN4() {
+        // Entered at 15:00, updated at 15:20: green until 16:20, red from 16:20:00.001: N4 at 16:50:00.001.
+        val members = mapOf(me to trusted(), "x" to risk(at(15, 0), update = at(15, 20)))
+        assertEquals(mapOf(NotificationType.N4 to at(16, 50, 1)), plan(input(at(15, 30), members)))
+    }
+
+    @Test
+    fun t7_yEntersADangerZoneBeforeN3IsDue_n3IsAbandoned_n4ComesThirtyMinutesAfter() {
+        // X out 13:40 (orange 15:40:00.001, so N3 would leave at 16:10:00.001); Y enters a danger zone at 15:05 and the Miff is red from then on: it is never
+        // orange (a member out of a trusted zone cannot skip the orange; a member in a danger zone is red at once). N4 at 15:35.
+        val members = mapOf(me to trusted(), "x" to out(at(13, 40)), "y" to risk(at(15, 5), update = null))
+        listOf(at(15, 5), at(15, 6)).forEach { now ->
+            assertEquals("now=$now", mapOf(NotificationType.N4 to at(15, 35)), plan(input(now, members)))
         }
     }
 
