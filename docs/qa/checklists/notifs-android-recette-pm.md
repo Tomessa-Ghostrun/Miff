@@ -101,7 +101,7 @@ N3 et N4 concernent **la Miff vue par B** quand **c'est A qui est sorti**. Compt
 | 5.5 | **Hors connexion** (mode avion) à l'heure prévue, puis réseau **avant** 10 minutes. | Une reprise **10 minutes plus tard** : la notification arrive si c'est toujours vrai. |
 | 5.6 | Hors connexion **pendant plus de 10 minutes**. | **Rien** n'est affiché (jamais de fausse alerte, jamais de « on n'a pas pu vérifier »). |
 | 5.7 | **Mesure sur l'OPPO** : balayez l'application des récents, écran éteint, mode **économie d'énergie** activé, 15 minutes d'attente. | **Notez** si les rappels (4.1) et N3 (5.1) arrivent, et avec quel retard. **Risque connu (ColorOS)** : une application balayée peut perdre ses alarmes ; l'aide « Si les rappels n'arrivent pas » est dans Réglages > Notifications. |
-| 5.8 | Vérifiez dans la **console Firestore** (Utilisation) que N3 / N4 ont fait **quelques lectures** (7 pour une Miff de 4) et **aucune écriture**. | Cohérent avec `docs/dev/surveillance-quotas.md`, §5 quater. |
+| 5.8 | Vérifiez dans la **console Firestore** (Utilisation) que N3 / N4 ont fait **quelques lectures** (7 pour une Miff de 4) et **aucune écriture**. | Cohérent avec `docs/dev/surveillance-quotas.md`, §5 quinquies. |
 | 5.9 | **À vérifier** : l'application **fermée**, la vérification de N3 obtient bien le jeton d'authentification et celui d'App Check en arrière-plan. | La notification de 5.1 arrive app fermée (sinon, signalez-le : c'est le point de la spec à confirmer sur appareil). |
 
 ## Partie 6 : N6 « Tu es dans une zone de danger de ta Miff » (PR C)
