@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.feed.Battery
@@ -191,6 +192,10 @@ private fun StateChip(
         text = texts.label(card.label),
         style = textBodyRegular14,
         color = card.level.onTint(),
+        // The label can be the NAME of a place (Loisir, Autre): two lines at most with an ellipsis, so a long name or a large text never pushes the
+        // card out of shape. The screen reader still reads the whole name.
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
         modifier =
             Modifier
                 .clip(ShapeSm)
