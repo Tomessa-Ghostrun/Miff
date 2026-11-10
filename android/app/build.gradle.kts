@@ -138,6 +138,8 @@ android {
         unitTests.isReturnDefaultValues = true
         // Screen tests (Robolectric) need the app resources: they run in testDebugUnitTest only.
         unitTests.isIncludeAndroidResources = true
+        // The screen tests (Robolectric) are many: the default heap of the test JVM (512 MB) ran out in CI (OutOfMemoryError in the test worker).
+        unitTests.all { it.maxHeapSize = "2g" }
     }
 }
 
