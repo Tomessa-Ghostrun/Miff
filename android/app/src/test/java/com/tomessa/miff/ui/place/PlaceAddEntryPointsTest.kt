@@ -29,16 +29,12 @@ class PlaceAddEntryPointsTest {
         val code = source("ui/main/MainShell.kt")
         assertTrue(code.contains("onAddPlace = { navController.open(PlaceFormRoute()) },"))
         // The only offer opened from the shell is the 2nd Miff, asked from the selector of the Feed (decision of the PM, 2026-11-08); never for a place.
-        assertEquals(
-            listOf(
-                "PlacePaywallRoute.of(PaywallReason.MIFF)",
-            ),
-            Regex("""PlacePaywallRoute[.]of[(][^)]*[)]""")
-                .findAll(code)
-                .map {
-                    it.value
-                }.toList(),
-        )
+        // (The last card of the carousel of the Profile asks for the same offer through `miffOfferRoute()`, in ui/profile.) Zero or one such route here,
+        // depending on whether the selector of the Feed already is in the shell: never anything else.
+        val offers = Regex("""PlacePaywallRoute[.]of[(][^)]*[)]""").findAll(code).map { it.value }.toList()
+        assertTrue("unexpected offer: $offers", offers.all { it == "PlacePaywallRoute.of(PaywallReason.MIFF)" })
+        assertFalse(code.contains("PaywallReason.LIMIT"))
+        assertFalse(code.contains("PaywallReason.DANGER"))
     }
 
     @Test
