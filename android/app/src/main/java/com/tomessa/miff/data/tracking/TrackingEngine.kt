@@ -1396,17 +1396,19 @@ class TrackingEngine(
         start: LocalState,
         now: Long,
     ) {
-        val travel = start.travel ?: return
+        if (start.travel == null) return
         travelAlarm.cancel()
         val fact = PresenceMachine.unknown(now)
         var state =
             start.copyWith(
                 miffs =
-                    start.miffs.mapValues { (miffId, miff) ->
+                    start.miffs.mapValues { (_, miff) ->
+                        // The two keys of the trip are ALWAYS sent as null with the end, for every Miff of the list, even one that is not recorded as told: the answer to a start
+                        // may have been lost after the server took it, and a trip left on the server would show "Voyage terminé" for good. Null keys are accepted next to `unknown`.
                         miff.copyWith(
                             derived = DerivedPresence(fact.presence, fact.placeId),
                             pending = PendingStatus.of(fact),
-                            clearTravel = miff.clearTravel || miffId in travel.startedIn,
+                            clearTravel = true,
                         )
                     },
                 travel = null,
