@@ -214,6 +214,7 @@
     <string name="profile_photo_add">Ajouter une photo (facultatif)</string>
     <string name="profile_photo_change">Modifier la photo</string>
     <string name="profile_photo_visibility">Visible par les membres de tes Miffs</string>
+    <string name="profile_google_photo_hint">On a repris ta photo Google, tu peux la changer.</string>
     <string name="profile_photo_image_a11y">Ta photo de profil</string>
     <string name="profile_photo_sheet_title">Photo de profil</string>
     <string name="profile_photo_take">Prendre une photo</string>
@@ -419,7 +420,9 @@
     <string name="feed_label_at_work">Au travail</string>
     <string name="feed_label_at_school">À l\'école</string>
     <string name="feed_label_at_sport">Au sport</string>
-    <string name="feed_label_at_place">À %1$s</string>
+    <!-- Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08). -->
+    <string name="feed_label_at_place">%1$s</string>
+    <string name="feed_label_at_relative">Chez un proche</string>
     <string name="feed_label_left">A quitté %1$s</string>
     <string name="feed_label_trusted_generic">Dans un lieu de confiance</string>
     <string name="feed_label_danger">Dans une zone de danger</string>
@@ -431,6 +434,7 @@
     <string name="feed_place_noun_work">le travail</string>
     <string name="feed_place_noun_school">l\'école</string>
     <string name="feed_place_noun_sport">le sport</string>
+    <string name="feed_place_noun_relative">le domicile d\'un proche</string>
     <string name="feed_place_noun_generic">un lieu de confiance</string>
     <string name="feed_time_since_minutes">Depuis %1$d min</string>
     <string name="feed_time_since_hours">Depuis %1$d h</string>
@@ -638,7 +642,7 @@
     <string name="place_detail_created_by">Créé par</string>
     <string name="place_detail_created_by_me">%1$s (toi)</string>
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
-    <string name="place_detail_info_danger">Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone.</string>
+    <string name="place_detail_info_danger">Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
     <string name="place_paywall_limit_title">Tu as atteint 2 lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
@@ -809,6 +813,13 @@
     <string name="settings_privacy_miff_waiting_pill">En attente</string>
     <string name="settings_privacy_miff_waiting_body">Ton accord est en attente : Miff ne met plus à jour ton statut avec cette Miff. Tu peux arrêter de partager depuis l\'écran de la Miff.</string>
     <string name="settings_privacy_detection_help_link">Si les détections tardent</string>
+    <!-- ABO-1: Réglages > Abonnement, en lecture seule (Miff+ accordé à la main). Aucun prix, aucun bouton d'achat. -->
+    <string name="settings_subscription_title">Abonnement</string>
+    <string name="settings_subscription_subtitle">Consulte ton abonnement</string>
+    <string name="settings_subscription_active_until">Actif jusqu\'au %1$s</string>
+    <string name="settings_subscription_source_manual">Accordé par l\'équipe Miff</string>
+    <string name="settings_subscription_source_other">Offre en cours</string>
+    <string name="settings_subscription_no_store_note">Cet accès ne passe pas par un store.</string>
     <string name="settings_detection_help_title">Si les arrivées et départs tardent</string>
     <string name="settings_detection_help_intro">Certains téléphones (Oppo, Xiaomi, Samsung, Huawei...) arrêtent les applications en arrière-plan pour économiser la batterie. Miff peut alors repérer une arrivée ou un départ avec du retard. Ces réglages sont facultatifs : ils peuvent aider, et Miff fonctionne sans.</string>
     <string name="settings_detection_help_step_battery">1. Dans les réglages de Miff, ouvre « Batterie » (ou « Consommation d\'énergie ») et choisis « Aucune restriction » (ou « Ne pas optimiser »).</string>
@@ -877,4 +888,23 @@
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>
+
+    <!-- Fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md). Tutoiement, ton calme. -->
+    <string name="review_title">Que penses-tu de Miff ?</string>
+    <string name="review_close_a11y">Fermer</string>
+    <string name="review_love_action">J\'adore !</string>
+    <string name="review_better_action">Peux faire mieux...</string>
+    <string name="review_thanks_title">Merci !</string>
+    <string name="review_thanks_body">Ça nous fait vraiment plaisir. Si tu en as envie, laisse-nous un avis et un commentaire dans la boutique d\'applications.</string>
+    <string name="review_feedback_title">Merci de nous le dire !</string>
+    <string name="review_feedback_body">On a envie de faire mieux. Si tu veux nous expliquer ce qui pourrait être mieux, écris-nous : ça nous aide à avancer.</string>
+    <string name="review_feedback_write">Nous écrire</string>
+    <string name="review_open_failed">Rien n\'a pu s\'ouvrir sur ton téléphone. Tu peux réessayer dans un instant.</string>
+    <string name="review_feedback_later">Plus tard</string>
+    <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
+    <string name="android_diag_review_title">Fenêtre d\'avis (essai)</string>
+    <string name="android_diag_review_force">Afficher la fenêtre au prochain retour dans l\'app</string>
+    <string name="android_diag_review_force_armed">Prête : mets l\'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l\'Update).</string>
+    <string name="android_diag_review_reset">Remettre à zéro l\'état de la fenêtre</string>
+    <string name="android_diag_review_reset_done">État remis à zéro : la fenêtre repart de zéro (7 jours, 30 jours, 90 jours).</string>
 </resources>

@@ -14,7 +14,7 @@ import java.time.ZoneId
 /*
  * The whole logic of the Feed, as ONE pure function (ticket FEED, criteria B1 to B6, C1 to C7): from what the listeners said and the time of
  * the moment, to what the screens draw. Nothing is read, written or logged here. The colour of a member is ONLY ever computed by
- * [StatusColor.level] (the 1 h and 2 h constants live in StatusThresholds, they are never written again here).
+ * [StatusColor.level] (the thresholds of the colours live in StatusThresholds, they are never written again here).
  */
 
 /** What the status listener says, as the Feed sees it. */
@@ -235,23 +235,37 @@ object FeedBuilder {
         }
     }
 
+    /**
+     * The place of a label ("À la maison") or of a sentence ("A quitté le domicile d'un proche"). Decision of the PM, 2026-11-08 (feed.md D48): Maison,
+     * Travail, École, Sport and Chez un proche are replaced by their category; Loisir, Autre and a place written before categories existed show the NAME
+     * (only the members of the Miff read it, no extra Firestore read). A place missing from the list (deleted) or with a blank name: the generic wording.
+     */
     private fun placeRef(
         placeId: String?,
         places: Map<String, Place>,
         trusted: Boolean,
     ): PlaceRef {
         val place = placeId?.let { places[it] } ?: return PlaceRef.Unknown
-        if (!trusted) return PlaceRef.Named(place.name)
-        val kind =
-            when (place.category) {
-                PlaceCategory.HOME -> PlaceKind.HOME
-                PlaceCategory.WORK -> PlaceKind.WORK
-                PlaceCategory.SCHOOL -> PlaceKind.SCHOOL
-                PlaceCategory.SPORT -> PlaceKind.SPORT
-                else -> null
-            }
-        return if (kind != null) PlaceRef.Category(kind) else PlaceRef.Named(place.name)
+        val kind = if (trusted) sentenceKind(place.category) else null
+        return when {
+            kind != null -> PlaceRef.Category(kind)
+
+            // A blank name is never written into a sentence ("A quitté ."): the generic wording instead.
+            place.name.isBlank() -> PlaceRef.Unknown
+
+            else -> PlaceRef.Named(place.name.trim())
+        }
     }
+
+    private fun sentenceKind(category: PlaceCategory?): PlaceKind? =
+        when (category) {
+            PlaceCategory.HOME -> PlaceKind.HOME
+            PlaceCategory.WORK -> PlaceKind.WORK
+            PlaceCategory.SCHOOL -> PlaceKind.SCHOOL
+            PlaceCategory.SPORT -> PlaceKind.SPORT
+            PlaceCategory.RELATIVE -> PlaceKind.RELATIVE
+            else -> null
+        }
 
     private fun timeLine(
         level: StatusLevel,
@@ -263,25 +277,20 @@ object FeedBuilder {
         val presenceAt = status.presenceAtMillis
         return when (status.presence) {
             PresenceValue.IN_TRUSTED -> {
-                presenceAt?.let { TimeLine.Since(Age.of(it, now, zone)) } ?: TimeLine.None
+                // The TIME of the arrival ("Depuis 13 h 36"), never a duration (decision of the PM, 2026-11-10).
+                presenceAt?.let { TimeLine.Since(Moment.of(it, now, zone)) } ?: TimeLine.None
             }
 
             PresenceValue.IN_RISK -> {
-                presenceAt?.let { TimeLine.InDangerSince(Moment.of(it, now, zone)) } ?: TimeLine.None
+                presenceAt?.let { TimeLine.Since(Moment.of(it, now, zone)) } ?: TimeLine.None
             }
 
             PresenceValue.OUT -> {
                 val reference = status.referenceMillis ?: return TimeLine.None
                 when (level) {
                     StatusLevel.GREEN -> {
-                        val departure = presenceAt ?: reference
-                        val age = Age.of(departure, now, zone)
-                        // A departure of a day or more that is still green (a recent update): only the news is told.
-                        if (age is Age.Minutes || age is Age.Hours) {
-                            TimeLine.DepartedAgo(age)
-                        } else {
-                            TimeLine.LatestNews(Moment.of(reference, now, zone))
-                        }
+                        // The TIME of the departure ("Depuis 13 h 36"), today, yesterday or the short date, never a duration.
+                        TimeLine.Since(Moment.of(presenceAt ?: reference, now, zone))
                     }
 
                     StatusLevel.ORANGE -> {

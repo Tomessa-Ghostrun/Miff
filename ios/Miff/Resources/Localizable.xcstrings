@@ -3198,6 +3198,23 @@
         }
       }
     },
+    "feed_label_at_relative": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At a loved one's"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chez un proche"
+          }
+        }
+      }
+    },
     "feed_label_at_school": {
       "extractionState": "manual",
       "localizations": {
@@ -3772,6 +3789,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "la maison"
+          }
+        }
+      }
+    },
+    "feed_place_noun_relative": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a loved one's place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le domicile d'un proche"
           }
         }
       }
@@ -7467,13 +7501,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "While you're in this zone, your Miff sees your status in red. Only the Miff's creator can add or edit this kind of zone."
+            "value": "When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone."
+            "value": "Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h."
           }
         }
       }
@@ -9106,6 +9140,23 @@
         }
       }
     },
+    "profile_google_photo_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We used your Google photo. You can change it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a repris ta photo Google, tu peux la changer."
+          }
+        }
+      }
+    },
     "profile_last_name_label": {
       "extractionState": "manual",
       "localizations": {
@@ -9731,6 +9782,193 @@
           "stringUnit": {
             "state": "translated",
             "value": "Permets à tes proches de t'identifier"
+          }
+        }
+      }
+    },
+    "review_better_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could do better..."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peux faire mieux..."
+          }
+        }
+      }
+    },
+    "review_close_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
+      }
+    },
+    "review_feedback_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We want to do better. If you'd like to tell us what could be improved, write to us: it helps us move forward."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a envie de faire mieux. Si tu veux nous expliquer ce qui pourrait être mieux, écris-nous : ça nous aide à avancer."
+          }
+        }
+      }
+    },
+    "review_feedback_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        }
+      }
+    },
+    "review_feedback_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanks for telling us!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci de nous le dire !"
+          }
+        }
+      }
+    },
+    "review_feedback_write": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write to us"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous écrire"
+          }
+        }
+      }
+    },
+    "review_love_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I love it!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J'adore !"
+          }
+        }
+      }
+    },
+    "review_open_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing could be opened on your phone. You can try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'a pu s'ouvrir sur ton téléphone. Tu peux réessayer dans un instant."
+          }
+        }
+      }
+    },
+    "review_thanks_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That really makes us happy. If you feel like it, leave us a review and a comment in the app store."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ça nous fait vraiment plaisir. Si tu en as envie, laisse-nous un avis et un commentaire dans la boutique d'applications."
+          }
+        }
+      }
+    },
+    "review_thanks_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thank you!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merci !"
+          }
+        }
+      }
+    },
+    "review_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do you think of Miff?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Que penses-tu de Miff ?"
           }
         }
       }
@@ -12968,6 +13206,128 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les noms exacts des réglages changent selon le téléphone et la version d'Android."
+          }
+        }
+      }
+    },
+    "settings_subscription_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        }
+      }
+    },
+    "settings_subscription_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consulte ton abonnement"
+          }
+        }
+      }
+    },
+    "settings_subscription_plan_name": {
+      "extractionState": "manual",
+      "comment": "Nom de l'offre, jamais traduit ni remplacé par « Premium ».",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+"
+          }
+        }
+      }
+    },
+    "settings_subscription_active_until": {
+      "extractionState": "manual",
+      "comment": "Argument : date de fin au format long de la langue, formatée par le système (ex. 12 janvier 2027).",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "settings_subscription_source_manual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted by the Miff team"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accordé par l'équipe Miff"
+          }
+        }
+      }
+    },
+    "settings_subscription_source_other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre en cours"
+          }
+        }
+      }
+    },
+    "settings_subscription_no_store_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This access doesn't go through a store."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet accès ne passe pas par un store."
           }
         }
       }

@@ -29,7 +29,7 @@
 
 ## 3. Voir l'effet dans l'app
 
-L'app n'affiche aucun badge « Miff+ » pour l'instant : l'effet se constate en créant, par exemple, un 3e lieu (en gratuit, l'écran « Débloque l'ensemble des fonctionnalités de Miff » s'affiche à la place). Dans un APK de test, l'écran de diagnostic (premier écran) indique aussi « Offre : Classic » ou « Offre : Premium jusqu'au … » dans le bloc « Test 2 ».
+Depuis Android 0.17.0 (ticket ABO-1), un compte Miff+ actif voit une ligne **Abonnement** tout en bas de Profil > Réglages : elle ouvre un écran en lecture seule (« Miff+ », « Actif jusqu'au <date> », « Accordé par l'équipe Miff » si `source` vaut `manual`, aucun prix ni bouton). Un compte gratuit, expiré ou sans document ne voit **aucune** trace d'abonnement. Pour le reste, l'effet se constate en créant, par exemple, un 3e lieu (en gratuit, l'écran « Débloque l'ensemble des fonctionnalités de Miff » s'affiche à la place). Dans un APK de test, l'écran de diagnostic (premier écran) indique aussi « Offre : Classic » ou « Offre : Premium jusqu'au … » dans le bloc « Test 2 ».
 
 Fermez complètement l'app puis rouvrez-la (la lecture du statut se fait à l'ouverture et avant chaque création de lieu ou de Miff). Le compte est alors Miff+ : lieux illimités, zones de danger, plusieurs Miffs.
 
