@@ -107,8 +107,8 @@ private struct CalmBubbleLines: View {
     }
 }
 
-/// La tache et son pictogramme (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
-/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le disque du
+/// La tache et son pictogramme en filigrane (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
+/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le symbole du
 /// pictogramme respire sur son propre cycle. Voir `BubbleMotion` (constantes nommées). Immobile avec « Réduire les animations ».
 private struct BubbleBlob<Content: View>: View {
     let level: StatusLevel
@@ -140,14 +140,16 @@ private struct BubbleBlob<Content: View>: View {
                     .rotationEffect(.degrees(motion ? BubbleMotion.tilt(blob) : 0))
                     .accessibilityHidden(true)
             )
-            .overlay(alignment: .bottomTrailing) {
-                // Pas de pictogramme sur une bulle verte (décision du PM, 2026-11-08) : seul le contenu, centré.
+            .background(alignment: .bottomTrailing) {
+                // Pas de pictogramme sur une bulle verte (décision du PM, 2026-11-08). Les autres : le symbole posé directement dans
+                // la tache, grand et en filigrane, derrière le texte (décision du PM, 2026-11-10 : plus de cercle, rien qui ressemble
+                // à un bouton).
                 if let symbol = BubbleLayout.pictogram(for: level) {
-                    PictogramDisc(symbol: symbol, level: level)
+                    BubbleWatermark(symbol: symbol, level: level)
                         .scaleEffect(motion ? BubbleMotion.starScale(star) : 1)
                         .offset(y: motion ? BubbleMotion.starDrift(star) : 0)
-                        .padding(.trailing, BubbleLayout.discTrailing)
-                        .padding(.bottom, BubbleLayout.discBottom)
+                        .padding(.trailing, BubbleLayout.symbolTrailing)
+                        .padding(.bottom, BubbleLayout.symbolBottom)
                 }
             }
             .offset(y: motion ? BubbleMotion.drift(blob) : 0)
@@ -155,16 +157,18 @@ private struct BubbleBlob<Content: View>: View {
     }
 }
 
-private struct PictogramDisc: View {
+/// Le pictogramme de la bulle : un symbole seul, sans cercle ni fond, de la teinte du niveau à faible opacité. Ni cliquable (aucun
+/// toucher ne lui est donné) ni lu par le lecteur d'écran (les mots disent la même chose).
+private struct BubbleWatermark: View {
     let symbol: String
     let level: StatusLevel
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: 20, weight: .semibold))
+            .font(.system(size: BubbleLayout.symbolSize, weight: .regular))
             .foregroundColor(level == .neutral ? colorTextDescription.color : level.onTint)
-            .frame(width: BubbleLayout.discSize, height: BubbleLayout.discSize)
-            .background(Circle().fill(Color.white.opacity(0.7)))
+            .opacity(BubbleLayout.symbolOpacity)
+            .allowsHitTesting(false)
             .accessibilityHidden(true)
     }
 }

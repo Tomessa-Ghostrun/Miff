@@ -123,10 +123,12 @@ final class FeedTextsTests: XCTestCase {
         let fr = try french()
         let clock = "15\u{00A0}h\u{00A0}02"
 
-        XCTAssertEqual(fr.timeLine(.since(.minutes(12))), "Depuis 12 min")
-        XCTAssertEqual(fr.timeLine(.since(.hours(3))), "Depuis 3 h")
-        XCTAssertEqual(fr.timeLine(.since(.yesterday(atMillis: feedNow - feedHours(30)))), "Depuis hier à 10\u{00A0}h\u{00A0}00")
-        XCTAssertEqual(fr.timeLine(.departedAgo(.minutes(12))), "Départ il y a 12 min")
+        XCTAssertEqual(fr.timeLine(.since(moment(12))), "Depuis 15\u{00A0}h\u{00A0}48")
+        XCTAssertEqual(fr.timeLine(.since(moment(30 * 60, day: .yesterday))), "Depuis hier à 10\u{00A0}h\u{00A0}00")
+        XCTAssertEqual(
+            fr.timeLine(.since(Moment(atMillis: feedNow - 4 * FeedMillis.day, day: .other))),
+            "Depuis le 3 nov. à 16\u{00A0}h\u{00A0}00"
+        )
         XCTAssertEqual(fr.timeLine(.latestNews(moment(58))), "Dernière nouvelle à \(clock)")
         XCTAssertEqual(fr.timeLine(.noNewsSince(moment(58))), "Pas de nouvelles depuis \(clock)")
         XCTAssertEqual(fr.timeLine(.inDangerSince(moment(58))), "Depuis \(clock)")
@@ -209,11 +211,11 @@ final class FeedTextsTests: XCTestCase {
 
         XCTAssertEqual(
             fr.cardSpoken(other),
-            "Thomas, À la maison, Depuis 12 min, Batterie à 85 %"
+            "Thomas, À la maison, Depuis 15\u{00A0}h\u{00A0}48, Batterie à 85 %"
         )
         XCTAssertEqual(
             fr.cardSpoken(mine),
-            "Camille, À la maison, Depuis 12 min, Batterie à 64 %, Ce que tes proches voient de toi"
+            "Camille, À la maison, Depuis 15\u{00A0}h\u{00A0}48, Batterie à 64 %, Ce que tes proches voient de toi"
         )
     }
 
@@ -242,7 +244,7 @@ final class FeedTextsTests: XCTestCase {
             isMe: isMe,
             level: .green,
             label: .at(.category(.home)),
-            time: .since(.minutes(12)),
+            time: .since(moment(12)),
             battery: Battery(pct: battery),
             limitedLocation: false,
             phone: isMe ? nil : "+33612345678",

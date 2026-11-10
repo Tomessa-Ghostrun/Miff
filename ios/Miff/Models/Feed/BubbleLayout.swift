@@ -7,9 +7,9 @@ import CoreGraphics
 // forme : l'échelle et l'inclinaison de la tache se font autour de son centre, la dérive verticale s'applique à toute la bulle.
 // Miroir d'Android (mêmes valeurs).
 enum BubbleLayout {
-    /// Le pictogramme d'une bulle selon sa couleur (la couleur n'est jamais seule pour l'orange, le rouge et le neutre). Décision du PM
+    /// Le pictogramme d'une bulle (filigrane) selon sa couleur (la couleur n'est jamais seule pour l'orange, le rouge et le neutre). Décision du PM
     /// (2026-11-08, build 22) : AUCUN pictogramme sur une bulle VERTE (« Tout va bien » parle de lui-même) ; l'orange garde l'horloge, le
-    /// rouge le point d'exclamation, le neutre le sablier. nil = pas de disque, et le contenu reste centré dans la tache.
+    /// rouge le point d'exclamation, le neutre le sablier. nil = pas de symbole, et le contenu reste centré dans la tache.
     static func pictogram(for level: StatusLevel) -> String? {
         switch level {
         case .orange:
@@ -32,11 +32,13 @@ enum BubbleLayout {
     /// Hauteur minimale de la zone du contenu (avant les marges) : une bulle courte reste ample, son texte au milieu.
     static let minContentHeight: CGFloat = 176
 
-    /// Le disque du pictogramme (coin bas droit) : sa taille, et sa distance au bord droit et au bord bas de la bulle. Posé pour rester
-    /// DANS la tache (dont le coin bas droit se referme) et hors de l'angle d'un bouton centré (le bas du contenu est à `verticalInset`).
-    static let discSize: CGFloat = 40
-    static let discTrailing: CGFloat = 36
-    static let discBottom: CGFloat = 44
+    /// Le pictogramme est posé DIRECTEMENT dans la tache, sans cercle (un disque fait penser à un bouton : décision du PM, 2026-11-10),
+    /// en grand et en filigrane doux : sa taille (corps du symbole), son opacité (teinte du niveau) et sa distance au bord droit et au
+    /// bord bas de la bulle. Rien de cliquable, rien pour le lecteur d'écran. Il passe DERRIÈRE le texte et le bouton.
+    static let symbolSize: CGFloat = 76
+    static let symbolOpacity: Double = 0.2
+    static let symbolTrailing: CGFloat = 40
+    static let symbolBottom: CGFloat = 40
 
     /// La boîte totale de la bulle pour un contenu de la taille donnée : les marges s'ajoutent de chaque côté.
     static func outerSize(content: CGSize) -> CGSize {

@@ -265,7 +265,7 @@ enum FeedBuilder {
         let presenceAt = status.presenceAtMillis
         switch status.presence {
         case .inTrusted:
-            return presenceAt.map { TimeLine.since(context.age($0)) } ?? .nothing
+            return presenceAt.map { TimeLine.since(context.moment($0)) } ?? .nothing
         case .inRisk:
             return presenceAt.map { TimeLine.inDangerSince(context.moment($0)) } ?? .nothing
         case .out:
@@ -286,11 +286,11 @@ enum FeedBuilder {
     ) -> TimeLine {
         switch level {
         case .green:
-            let age = context.age(presenceAt ?? reference)
-            // Un départ d'un jour ou plus encore vert (une update récente) : seule la nouvelle est dite.
-            switch age {
+            let departure = presenceAt ?? reference
+            // Un départ d'un jour ou plus encore vert (une update récente) : seule la nouvelle est dite. Sinon l'heure du départ.
+            switch context.age(departure) {
             case .minutes, .hours:
-                return .departedAgo(age)
+                return .since(context.moment(departure))
             default:
                 return .latestNews(context.moment(reference))
             }
