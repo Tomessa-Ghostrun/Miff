@@ -348,6 +348,33 @@ class TrackingEngineTravelTest {
             assertNull(local.state!!.travel)
         }
 
+    @Test
+    fun anEndMoreThan90DaysAhead_isNeverWritten() =
+        runTest {
+            share(miffA)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            val before = store.commits.size
+            assertEquals(TravelResult.Refused, engine.setTravel(TravelPeriod(T0 + 92 * day, "2027-04-17")))
+            assertEquals(before, store.commits.size)
+            assertNull(local.state!!.travel)
+        }
+
+    @Test
+    fun theNetworkIsWatchedBeforeTheEndIsWritten() =
+        runTest {
+            startedTrip(miffA)
+            store.commits.clear()
+            wake.watching = false
+            var watchingAtTheEndWrite: Boolean? = null
+            store.onCommit =
+                { if (watchingAtTheEndWrite == null && "/status/" in it) watchingAtTheEndWrite = wake.watching }
+            env.now = period.untilMillis + minute
+
+            engine.refresh(TrackingEngine.Reason.TRAVEL_ENDED)
+
+            assertEquals(true, watchingAtTheEndWrite)
+        }
+
     // --- V4, V5: the end ----------------------------------------------------------------------------------------------------------
 
     @Test

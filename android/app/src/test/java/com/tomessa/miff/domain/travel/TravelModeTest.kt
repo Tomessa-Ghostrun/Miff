@@ -24,9 +24,11 @@ class TravelModeTest {
     // --- The day chosen -----------------------------------------------------------------------------------------------------------
 
     @Test
-    fun today_isTheFirstDayThatCanBeChosen_andTodayPlus90TheLast() {
+    fun today_isTheFirstDayThatCanBeChosen_andTodayPlus89TheLast() {
         assertTrue(TravelPlan.choose(today, today, paris) is TravelChoice.Valid)
-        assertTrue(TravelPlan.choose(today.plusDays(90), today, paris) is TravelChoice.Valid)
+        assertTrue(TravelPlan.choose(today.plusDays(89), today, paris) is TravelChoice.Valid)
+        // Today + 90 would end more than 90 days ahead: refused, whatever the hour.
+        assertEquals(TravelChoice.TooLate, TravelPlan.choose(today.plusDays(90), today, paris))
         assertEquals(TravelChoice.TooEarly, TravelPlan.choose(today.minusDays(1), today, paris))
         assertEquals(TravelChoice.TooLate, TravelPlan.choose(today.plusDays(91), today, paris))
     }
@@ -34,7 +36,7 @@ class TravelModeTest {
     @Test
     fun theBoundsOfThePicker_areTheOnesOfTheRule_andTheDefaultIsInside() {
         assertEquals(today, TravelPlan.minDay(today))
-        assertEquals(today.plusDays(90), TravelPlan.maxDay(today))
+        assertEquals(today.plusDays(89), TravelPlan.maxDay(today))
         assertEquals(today.plusDays(7), TravelPlan.defaultDay(today))
         assertTrue(TravelPlan.choose(TravelPlan.defaultDay(today), today, paris) is TravelChoice.Valid)
     }

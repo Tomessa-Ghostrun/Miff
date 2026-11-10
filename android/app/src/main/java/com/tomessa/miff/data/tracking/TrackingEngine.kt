@@ -30,6 +30,7 @@ import com.tomessa.miff.domain.tracking.WrittenPosition
 import com.tomessa.miff.domain.tracking.ZoneKey
 import com.tomessa.miff.domain.tracking.ZoneRef
 import com.tomessa.miff.domain.tracking.ZoneSelection
+import com.tomessa.miff.domain.travel.TravelLimits
 import com.tomessa.miff.domain.travel.TravelPeriod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -1112,6 +1113,8 @@ class TrackingEngine(
         val uid = env.uid() ?: return TravelResult.Unavailable
         val now = env.nowMillis()
         if (period.isOver(now)) return TravelResult.Refused
+        // The server accepts an end at most 91 days ahead; the picker stops at today + 89 days, this is the guard for anything else (a clock that moved, a daylight-saving change).
+        if (period.untilMillis > now + TravelLimits.MAX_END_AHEAD_MILLIS) return TravelResult.Refused
         var state = stateFor(uid) ?: LocalState(uid)
         val online = env.isOnline()
         // Who to tell: the Miffs where I share, read from the server when possible (the local list otherwise).
@@ -1364,6 +1367,8 @@ class TrackingEngine(
                 travel = null,
             )
         local.save(state)
+        // The network is watched from the start: a flush that cannot leave (or a process that ends meanwhile) is still written when the network is back.
+        updateNetworkWake(state)
         publishTravel(null)
         state = flushPending(uid, state, WriteGate(recheck = true))
         local.save(state)
