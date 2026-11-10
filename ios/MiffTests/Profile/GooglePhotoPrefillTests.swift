@@ -6,7 +6,7 @@ private struct SizedPhoto: DecodedPhoto {
     let height: Int
 }
 
-private final class FakePhotoSource: ProviderPhotoSource {
+private final class FakeProviderPhotoSource: ProviderPhotoSource {
     var data: Data? = Data(count: 30_000)
     var delayNanoseconds: UInt64 = 0
     private(set) var fetched: [URL] = []
@@ -48,12 +48,12 @@ final class GooglePhotoPrefillTests: XCTestCase {
 
     private struct Setup {
         let prefill: GooglePhotoPrefill
-        let source: FakePhotoSource
+        let source: FakeProviderPhotoSource
         let codec: FakePhotoCodec
     }
 
     private func make(
-        source: FakePhotoSource = FakePhotoSource(),
+        source: FakeProviderPhotoSource = FakeProviderPhotoSource(),
         codec: FakePhotoCodec = FakePhotoCodec(),
         timeout: TimeInterval = 5
     ) -> Setup {
@@ -94,7 +94,7 @@ final class GooglePhotoPrefillTests: XCTestCase {
     }
 
     func testAFailedDownloadGivesNothing() async {
-        let source = FakePhotoSource()
+        let source = FakeProviderPhotoSource()
         source.data = nil
         let jpeg = await make(source: source).prefill.load(address)
         XCTAssertNil(jpeg)
@@ -129,7 +129,7 @@ final class GooglePhotoPrefillTests: XCTestCase {
     }
 
     func testASlowDownloadIsGivenUpAfterTheTimeout() async {
-        let source = FakePhotoSource()
+        let source = FakeProviderPhotoSource()
         source.delayNanoseconds = 3_000_000_000
         let started = Date()
         let jpeg = await make(source: source, timeout: 0.1).prefill.load(address)
@@ -140,7 +140,7 @@ final class GooglePhotoPrefillTests: XCTestCase {
     }
 
     func testCancellingTheCallerCancelsTheDownload() async {
-        let source = FakePhotoSource()
+        let source = FakeProviderPhotoSource()
         source.delayNanoseconds = 3_000_000_000
         let prefill = make(source: source).prefill
         let address = self.address
