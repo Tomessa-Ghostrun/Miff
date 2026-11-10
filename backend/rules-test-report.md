@@ -2,6 +2,15 @@
 
 Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `backend-data` et le PM. Les règles (`firestore.rules`) ne sont **jamais** modifiées pour faire passer un test : chaque échec est d'abord analysé (la règle est-elle fautive, ou le test, ou le plan ?) puis tranché par `backend-data` avec accord du PM.
 
+## Mode voyage (PR `backend/mode-voyage`, VOY-B, décisions du PM du 2026-11-10 : disponible pour tous)
+
+**Totaux (exécution locale du 2026-11-10, Java 21)** : fichiers de règles hors `09-rule-reads` : **428 tests, 427 réussis, 0 échoué, 1 ignoré** (A9) dont **VY1 à VY25** (`29-mode-voyage`, `30-mode-voyage-temps2`) ; tests rapides : **71 réussis** ; `09-rule-reads` : les 3 mesures concernées rejouées (`READS-sess-status`, `READS-voyage-activate`, `READS-voyage-activate-lot`) + calibration : réussies ; la suite complète de `09` (une quarantaine de minutes) est exécutée par la CI.
+
+- Règle : `validTravel` (appelée par `validStatus`), **aucune barrière Miff+, aucune lecture de règles de plus** (le PM a retiré la réserve Premium le 2026-11-10 ; la première version de cette PR, avec `isPremiumOneRead`, a été remplacée avant toute publication). Statut de voyage <= **2** lectures de règles sur 10 (mesuré, comme un statut ordinaire) ; activation + suppression de la dernière position (lot de 2) <= **2** sur 20.
+- Mutations : `tests/tools/mutations-voyage.mjs` (18 mutations `VY-*`) : **15 détectées, 3 équivalentes documentées (défense en profondeur), 0 survivante**. `npm run test:mutation:check` : **429 motifs valides**.
+- Aucun échec de test attribuable aux règles. Constats en route : (1) `matches()` de Firestore exige une correspondance complète de la chaîne : un motif non ancré reste équivalent (mutation `VY-jour-non-ancre` documentée équivalente) ; (2) l'émulateur met en cache les lectures d'un même document, le lot de 8 est un comptage sans cache (`tests/unit/budgets-voyage.test.js`).
+- Limites connues : voir `data-model.md` (bloc « Ce qui change : mode voyage »).
+
 ## 3 lieux gratuits (PR `backend/lieux-gratuits-3`, décision du PM du 2026-11-10)
 
 **Totaux (exécution locale du 2026-11-10, Java 21, `npm test`)** : **453 tests de règles dans l'émulateur, 452 réussis, 0 échoué, 1 ignoré** (A9) ; **69 tests rapides** réussis ; mutations rejouées sur les lieux : **7 sur 7 détectées, 0 survivante** (P2, P4, P12, P14 ×3, P19).

@@ -23,17 +23,24 @@ enum class PlaceType(
     }
 }
 
-/** The seven categories, a closed list (rule R-LIEU-2). The technical values are written in the document of the place. */
+/**
+ * The seven categories, a closed list (rule R-LIEU-2). The technical values are written in the document of the place.
+ *
+ * [emoji] is what the person sees for the category (decision of the PM, 2026-11-10: emoji, not drawings). The table is a CONTRACT shared with
+ * iOS (`docs/contracts/place-categories.md`): the same seven emoji on both platforms, changed together. It is display only: nothing of it is
+ * ever written to the server (the document holds [value]) and the name of the category, not the emoji, is what a screen reader says.
+ */
 enum class PlaceCategory(
     val value: String,
+    val emoji: String,
 ) {
-    HOME("home"),
-    WORK("work"),
-    SCHOOL("school"),
-    SPORT("sport"),
-    RELATIVE("relative"),
-    LEISURE("leisure"),
-    OTHER("other"),
+    HOME("home", "🏠"), // house
+    WORK("work", "💼"), // briefcase
+    SCHOOL("school", "🏫"), // school
+    SPORT("sport", "⚽"), // soccer ball (as in the mockup)
+    RELATIVE("relative", "👨‍👩‍👧"), // family: man, woman, girl (ZWJ sequence)
+    LEISURE("leisure", "🎉"), // party popper
+    OTHER("other", "📍"), // round pushpin
     ;
 
     companion object {

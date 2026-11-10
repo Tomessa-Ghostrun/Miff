@@ -2450,6 +2450,57 @@
         }
       }
     },
+    "feed_selector_paywall_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With Miff+, create or join as many Miffs as you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avec Miff+, tu peux créer ou rejoindre autant de Miffs que tu veux."
+          }
+        }
+      }
+    },
+    "feed_selector_paywall_soon_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This option isn't open yet. Your current Miff stays as it is."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place."
+          }
+        }
+      }
+    },
+    "feed_selector_paywall_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One Miff with the free plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une seule Miff avec la formule gratuite"
+          }
+        }
+      }
+    },
     "feed_unavailable": {
       "extractionState": "manual",
       "localizations": {
@@ -9633,6 +9684,74 @@
         }
       }
     },
+    "profile_tab_carousel_next_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next card"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carte suivante"
+          }
+        }
+      }
+    },
+    "profile_tab_carousel_page_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card %1$lld of %2$lld"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carte %1$lld sur %2$lld"
+          }
+        }
+      }
+    },
+    "profile_tab_carousel_previous_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous card"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carte précédente"
+          }
+        }
+      }
+    },
+    "profile_tab_miff_create": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Créer une Miff"
+          }
+        }
+      }
+    },
     "profile_tab_miff_hint": {
       "extractionState": "manual",
       "localizations": {
@@ -9646,6 +9765,53 @@
           "stringUnit": {
             "state": "translated",
             "value": "Proches, code et partage"
+          }
+        }
+      }
+    },
+    "profile_tab_miff_members": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld member"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld members"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld membre"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld membres"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld membres"
+                }
+              }
+            }
           }
         }
       }
@@ -14790,6 +14956,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Position mesurée %1$@."
+          }
+        }
+      }
+    },
+    "feed_photo_download": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer la photo"
+          }
+        }
+      }
+    },
+    "feed_photo_download_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo saved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo enregistrée."
           }
         }
       }

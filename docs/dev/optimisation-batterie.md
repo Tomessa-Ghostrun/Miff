@@ -116,6 +116,7 @@ Barème de coût de développement (estimation de l'auteur, pas un engagement) :
 - Gain : une ouverture suivie d'une sortie en moins de 2 min ne fait qu'une demande. Dépend de l'habitude d'usage (nombre d'ouvertures brèves).
 - Risque : la dernière position partagée « Localiser » peut dater de 2 min au lieu de quelques secondes ; la règle de 15 min / 250 m et le plancher de 2 min font déjà que la position n'est écrite qu'au mieux toutes les 2 min. Négligeable.
 - Coût : **S**. Réversibilité : totale (constante). Mesure : lignes `positionRead` par jour (journal Internal) avant / après.
+- **Statut : implémenté (BATT-3, iOS, décision du PM du 2026-11-10 ; PR « iOS : optimisation batterie sûre (BATT-3) », en brouillon, pas encore recettée sur l'iPhone).** Voir « Statut d'avancement » en section 6.
 
 **O3. Android : borner les relectures complètes au retour du réseau**
 - Constat [Code] : `onNetworkBack` appelle `syncMiffs(…, NETWORK_BACK)` qui est **toujours due** (index + consentement + lieux, `Source.SERVER`). Tant qu'un statut attend (rappel de réseau actif) et que le disjoncteur de statuts est atteint, chaque réseau validé (par exemple un Wi-Fi qui saute) refait ces lectures. iOS a déjà une borne de 5 min pour son réarmement (`rearmMinIntervalMillis`).
@@ -274,7 +275,7 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
 | **BATT-1** | Instrumenter le journal (debug Android, Internal iOS) : réveils par type (zone, déplacement, réseau, redémarrage), ouverture, arrière-plan, zones enregistrées, relecture serveur, durée d'un passage, file en attente. Sans coordonnée ni nom ; build de publication muet (contrôle CI) | Android + iOS | S-M | rien |
 | **BATT-M** | Checklist de recette de mesure (`docs/qa/checklists/batterie-mesure-pm.md`) et modèle de relevé, avec les commandes `adb` | docs | S | BATT-1 |
 | **BATT-2** | O1 : entrée dans une zone déjà « dedans » ne relance pas la passe complète ; test unitaire | Android | S | rien (mieux après BATT-1) |
-| **BATT-3** | O2 : réutiliser la position système de moins de 2 min à l'ouverture / sortie (pas à l'entrée de zone) | iOS | S | rien |
+| **BATT-3** | O2 : réutiliser la position système de moins de 2 min à l'ouverture / sortie (pas à l'entrée de zone). **Statut : implémenté (iOS, PR en brouillon)** | iOS | S | rien |
 | **BATT-4** | O3 : borne de 5 min des relectures au retour du réseau ; pas de relecture si seul le disjoncteur bloque | Android | S | rien |
 | **BATT-5** | Variantes de mesure par constantes de compilation (distance de déplacement, réactivité des zones, délai de détachement de la session, rayon armé minimal en test) | Android (+ iOS pour 20 lieux) | M | BATT-1 |
 | **BATT-6** | O6 : détacher l'écouteur de session en arrière-plan prolongé (conditionnel à la mesure) | Android | M | BATT-5, décision PM Q5 |
@@ -286,6 +287,19 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
 | **BATT-12** | O14 : réveil à froid allégé, sans régresser le démarrage (conditionnel) | Android | S-M | BATT-1, mesure du démarrage |
 | **BATT-13** | O15 : MetricKit dans les builds Internal (conditionnel) | iOS | M | mesure manuelle insuffisante |
 | **BATT-14** | O11 / O12 : seuils d'écriture de la batterie, regroupement des positions Miff+ (conditionnel, faible priorité) | Android + iOS | S / M | mesure ; décision PM du 2026-11-07 |
+
+### Statut d'avancement
+
+**Décision du PM (2026-11-10) : seuls les trois gains « sûrs » de la section 3.1 sont engagés** (O1 / BATT-2 et O3 / BATT-4 sur Android, O2 / BATT-3 sur iOS). Rien d'autre de ce document n'est décidé : ni les régions (20), ni le changement significatif, ni les disjoncteurs, ni SESS-3, ni App Check, ni les points « à mesurer d'abord ».
+
+**BATT-3 (iOS) : implémenté** (PR « iOS : optimisation batterie sûre (BATT-3) », brouillon ; compilé et testé par la CI macOS seulement, jamais sur l'iPhone à ce jour).
+
+- **Ce qui change** : à l'**ouverture** de l'app et au **passage en arrière-plan**, si le système connaît déjà une position de **moins de 2 minutes** (constante `TrackingLimits.reusableFixMaxAgeMillis`) et assez précise (**100 m ou mieux**, constante `reusableFixMaxAccuracyMeters` : la précision demandée au système reste 100 m), elle est utilisée **sans nouvelle demande** (`requestLocation`). Sinon, comportement d'avant.
+- **Ce qui ne change pas** : l'**entrée dans une zone** (et le réarmement, le déplacement significatif, le changement de partage ou d'accès) lit toujours une position fraîche. La **photo de l'Update** garde sa mesure fraîche à « Publier » (les règles exigent une position de moins de 10 minutes). Les régions, le changement significatif, les disjoncteurs, SESS-3 et App Check ne sont pas touchés.
+- **Compte** : une position mesurée **avant la dernière déconnexion** (ou arrêt du partage) n'est jamais réutilisée (elle peut être celle d'un autre compte sur le même téléphone).
+- **Retour en arrière** : mettre `reusableFixMaxAgeMillis` à `0` redemande une position à chaque fois, comme avant.
+- **Effet sur la dernière position partagée (« Localiser »)** : elle peut dater de 2 minutes au lieu de quelques secondes à l'ouverture ou à la sortie. La règle d'écriture (15 min / 250 m, plancher de 2 min) n'en est pas modifiée.
+- **Mesure pour le PM (sans Mac)** : (1) **Réglages > Batterie** de l'iPhone sur 48 h, build avant puis après, comme au protocole de la section 5 (un gain n'est retenu que s'il dépasse l'écart entre deux mesures identiques) ; (2) dans le build **Internal** (TestFlight), la carte « journal de détection » de l'écran de diagnostic compte une ligne **`positionReused`** chaque fois qu'une demande de position a été évitée (aucune coordonnée dans le journal). Le nombre de lignes `positionReused` par jour, comparé aux ouvertures et sorties, dit combien de demandes ont été économisées ; une journée sans aucune ligne signifie que le système n'avait pas de position assez récente (ou assez précise) : rien n'est cassé, le gain est alors nul pour cet usage.
 
 ---
 

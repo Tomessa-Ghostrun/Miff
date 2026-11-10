@@ -6,7 +6,7 @@
 
 ## Deux temps, parce que les règles de sécurité ne sont pas encore déployées
 
-Les règles qui autorisent la catégorie, les 2 lieux gratuits et le type modifiable sont dans la PR #54 (**non déployée**, il faut votre « oui » explicite : `docs/dev/deploiement-regles.md`).
+Les règles qui autorisent la catégorie, les 3 lieux gratuits (depuis le 2026-11-10, PR `backend/lieux-gratuits-3`, aussi à déployer) et le type modifiable sont dans la PR #54 (**non déployée**, il faut votre « oui » explicite : `docs/dev/deploiement-regles.md`).
 
 - **Temps 1, maintenant** (règles actuelles) : tout ce qui se lit et se saisit fonctionne ; **« Enregistrer » est refusé par le serveur** et l'app répond calmement « Ça n'a pas fonctionné. Réessaie dans un instant. » : **c'est normal et attendu**, ce n'est pas un défaut de l'app. Parties A, B et E.
 - **Temps 2, après le déploiement des règles** : parties C, D, F, G (créer pour de vrai, liste, détail, modifier, supprimer, limites).
@@ -50,9 +50,9 @@ Accès : Profil > « Lieux de la Miff » > **Ajouter un lieu** (ou la carte de l
 ## Partie C — Créer pour de vrai, la liste (Temps 2, 8 min)
 
 - [ ] Créez « Maison de Papa » (Maison, 150 m) puis « Foot de Thomas » (Sport) : après chaque enregistrement, **retour à la liste** avec « Le lieu « … » est enregistré. Tes proches le prendront en compte dès qu'ils ouvriront Miff, ou dans les prochaines heures. »
-- [ ] La liste montre, par ligne : l'icône de la catégorie, le nom, l'adresse, une flèche. Le compteur indique **« 2 lieux sur 2 avec la formule gratuite »**.
-- [ ] **« Ajouter un lieu » reste visible, avec la pastille Miff+**, et ouvre l'écran « Tu as atteint 2 lieux » (jamais un bouton caché ou grisé), **après** une courte lecture du serveur : le bouton ouvre toujours le formulaire, qui décide sur la réponse du serveur. Rien n'est écrit. Hors connexion : « Réessayer » (jamais l'offre).
-- [ ] **Compte Miff+ avec 2 lieux ou plus** : « Ajouter un lieu » ouvre le formulaire, sans compteur « formule gratuite » ni pastille ; si le plan n'a pas pu être lu (mode avion au lancement), la liste n'affiche ni compteur ni pastille.
+- [ ] La liste montre, par ligne : l'emoji de la catégorie, le nom, l'adresse, une flèche. Le compteur indique **« 3 lieux sur 3 avec la formule gratuite »**.
+- [ ] **« Ajouter un lieu » reste visible, avec la pastille Miff+**, et ouvre l'écran « Tu as atteint 3 lieux » (jamais un bouton caché ou grisé), **après** une courte lecture du serveur : le bouton ouvre toujours le formulaire, qui décide sur la réponse du serveur. Rien n'est écrit. Hors connexion : « Réessayer » (jamais l'offre).
+- [ ] **Compte Miff+ avec 3 lieux ou plus** : « Ajouter un lieu » ouvre le formulaire, sans compteur « formule gratuite » ni pastille ; si le plan n'a pas pu être lu (mode avion au lancement), la liste n'affiche ni compteur ni pastille.
 - [ ] Avec **B** (membre) : même liste, **sans** « Ajouter un lieu » ni compteur, avec « Les lieux de ta Miff, définis par son créateur. » ; toucher une ligne ouvre le détail **sans** « Modifier ».
 
 ## Partie D — Détail, modification, suppression (Temps 2, 10 min)
@@ -77,7 +77,7 @@ Accès : Profil > « Lieux de la Miff » > **Ajouter un lieu** (ou la carte de l
 - [ ] Le formulaire montre un champ de Miffs avec des pastilles (une par Miff cochée) ; **la Miff cochée au départ est la dernière rejointe si A+ l'a créée, sinon la première créée**. Toucher le champ ouvre une feuille avec des cases ; la pastille « Dernière rejointe » est sur la bonne ligne ; **la Miff seulement rejointe n'est pas dans la liste**.
 - [ ] Cochez 3 Miffs : « 3 Miffs sur 5 au maximum » ; décochez tout : « Choisis au moins une Miff. » et « Terminé » est grisé (et « Enregistrer » aussi).
 - [ ] Enregistrez : le lieu apparaît dans **chacune** des 3 Miffs. Dans la console, **les 3 documents ont le même identifiant**.
-- [ ] Zone de danger **autorisée** (pas de pastille Miff+) ; plus de 2 lieux possibles ; pas de compteur « sur 2 ».
+- [ ] Zone de danger **autorisée** (pas de pastille Miff+) ; plus de 3 lieux possibles ; pas de compteur « sur 3 ».
 - [ ] Modifiez le lieu : retirez une Miff, ajoutez-en une autre : les listes suivent. **Supprimer** : le lieu disparaît des 3 Miffs et la question liste ces Miffs.
 
 ## Partie G — Cas limites (Temps 2, 5 min)

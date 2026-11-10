@@ -136,14 +136,15 @@ class PlaceRulesTest {
 
     @Test
     fun free_takesTheFirstFreeFixedSlot() {
+        assertEquals("p3", (slot(existing = mapOf("m1" to setOf("p1", "p2"))) as PlaceSlot.Use).placeId)
         assertEquals("p1", (slot() as PlaceSlot.Use).placeId)
         assertEquals("p2", (slot(existing = mapOf("m1" to setOf("p1"))) as PlaceSlot.Use).placeId)
         assertEquals("p1", (slot(existing = mapOf("m1" to setOf("p2"))) as PlaceSlot.Use).placeId)
     }
 
     @Test
-    fun free_thirdPlace_needsMiffPlus_andNothingIsWritten() {
-        val decision = slot(existing = mapOf("m1" to setOf("p1", "p2")))
+    fun free_fourthPlace_needsMiffPlus_andNothingIsWritten() {
+        val decision = slot(existing = mapOf("m1" to setOf("p1", "p2", "p3")))
         assertEquals(PaywallReason.LIMIT, (decision as PlaceSlot.NeedsPremium).reason)
     }
 
@@ -162,19 +163,19 @@ class PlaceRulesTest {
     }
 
     @Test
-    fun free_onePlaceInTwoMiffs_countsOnce_andTwoDifferentPlacesCountTwice() {
+    fun free_onePlaceInTwoMiffs_countsOnce_andThreeDifferentPlacesAreTheLimit() {
         // p1 in A and B = ONE place (distinct = 1): the 2nd place takes p2.
         val one = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p1")), distinct = 1)
         assertEquals("p2", (one as PlaceSlot.Use).placeId)
-        // p1 in A and p2 in B = TWO places: the limit.
-        val two = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p2")), distinct = 2)
-        assertEquals(PaywallReason.LIMIT, (two as PlaceSlot.NeedsPremium).reason)
+        // p1 in A, p2 in B and p3 in C = THREE places: the limit.
+        val three = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p2"), "c" to setOf("p3")), distinct = 3)
+        assertEquals(PaywallReason.LIMIT, (three as PlaceSlot.NeedsPremium).reason)
     }
 
     @Test
-    fun free_twoDifferentPlacesThatShareAnIdentifier_stillCountTwo() {
-        // Written by an older version: p1 in A and p1 in B are two places (the model groups them apart): the limit.
-        val decision = slot(existing = mapOf("a" to setOf("p1"), "b" to setOf("p1")), distinct = 2)
+    fun free_differentPlacesThatShareAnIdentifier_stillCountSeparately() {
+        // Written by an older version: p1 in A and p1 in B are two places (the model groups them apart): with a third one, the limit.
+        val decision = slot(existing = mapOf("a" to setOf("p1", "p2"), "b" to setOf("p1")), distinct = 3)
         assertEquals(PaywallReason.LIMIT, (decision as PlaceSlot.NeedsPremium).reason)
     }
 
@@ -194,8 +195,9 @@ class PlaceRulesTest {
     }
 
     @Test
-    fun atFreeLimit_onlyForTheFreePlanWithTwoPlaces() {
-        assertTrue(PlaceQuota.isAtFreeLimit(false, 2))
+    fun atFreeLimit_onlyForTheFreePlanWithThreePlaces() {
+        assertTrue(PlaceQuota.isAtFreeLimit(false, 3))
+        assertFalse(PlaceQuota.isAtFreeLimit(false, 2))
         assertFalse(PlaceQuota.isAtFreeLimit(false, 1))
         assertFalse(PlaceQuota.isAtFreeLimit(true, 7))
     }

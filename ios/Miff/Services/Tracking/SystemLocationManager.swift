@@ -114,6 +114,17 @@ final class SystemLocationManager: LocationManaging {
         return Fix(lat: last.coordinate.latitude, lng: last.coordinate.longitude, measuredAtMillis: millis)
     }
 
+    func systemFix(maxAccuracyMeters: Double) -> Fix? {
+        guard let last = manager.location else {
+            return nil
+        }
+        guard last.horizontalAccuracy >= 0, last.horizontalAccuracy <= maxAccuracyMeters else {
+            return nil
+        }
+        let millis = Int(last.timestamp.timeIntervalSince1970 * 1000)
+        return Fix(lat: last.coordinate.latitude, lng: last.coordinate.longitude, measuredAtMillis: millis)
+    }
+
     var regionsAvailable: Bool {
         CLLocationManager.isMonitoringAvailable(for: CLCircularRegion.self)
     }
