@@ -2,6 +2,24 @@
 
 ## Non publié
 
+### Feed : retours de recette TestFlight du 2026-11-08 (étiquettes par catégorie, bulle centrée, seuils orange / rouge)
+
+Branche `ios/feed-retours-recette` (PR en brouillon), décisions D47 à D49 de `docs/tickets/feed.md`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Modifié :
+- **Seuils de couleur (décision du PM, remplace 1 h / 2 h)** : orange quand la sortie ET la dernière update datent de plus de **2 h**, rouge de plus de **4 h** (strict : 2 h 00 pile reste vert, 4 h 00 pile reste orange). **Zone de danger (règle finale du PM, 2026-11-08)** : rouge dès l'entrée, même après une update juste avant ; une update publiée APRÈS l'entrée donne **1 h de vert** (strict : 1 h 00 pile encore vert), puis rouge de nouveau, une nouvelle update redonne 1 h ; jamais orange ; la zone de confiance l'emporte. Constantes nommées `StatusThresholds.orangeAfterMillis`, `redAfterMillis`, `dangerZoneRedAfterMillis` (mêmes valeurs qu'Android). Aucun texte du catalogue ne citait 1 h ni 2 h.
+- **Étiquettes du Feed par catégorie du lieu** : Maison « À la maison », Travail « Au travail », École « À l'école », Sport « Au sport », **Chez un proche** « Chez un proche » (nouveau), Loisir et Autre : le nom du lieu seul (avant : « À {nom} »). EN : At home / At work / At school / **At the gym** (avant « At the sports club ») / At a loved one's. Clés ajoutées `feed_label_at_relative`, `feed_place_noun_relative` ; valeur de `feed_label_at_place` changée en « %@ ». Aucune lecture Firestore de plus.
+- **Nom de lieu vide** : un nom vide ou fait d'espaces (ou entouré d'espaces) est nettoyé, puis remplacé par « Dans un lieu de confiance » / « A quitté un lieu de confiance » (comme Android).
+- **Information du détail d'un lieu de danger** (`place_detail_info_danger`, règle finale du PM) : « Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h. » (EN : « When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour. ») ; la phrase sur le créateur seul est retirée de ce texte.
+- **Ligne de temps des cartes = une HEURE (décision du PM, 2026-11-10)** : « Depuis 13 h 36 » (arrivée, ou départ encore vert), « Depuis hier à 13 h 36 », puis la date courte ; fin des « Depuis 12 min » et « Départ il y a 12 min ». Heure dans la langue et le format 12 h / 24 h du téléphone, jour dans son fuseau. Aucune clé de texte ajoutée.
+- **Symbole de la bulle sans cercle** (2026-11-10) : posé directement dans la tache, grand et en filigrane doux, derrière le texte ; ni cliquable ni lu.
+- **Plus de pictogramme sur la bulle verte** (décision du PM, 2026-11-08, build 22) : la bulle verte n'a que ses textes, centrés ; orange, rouge et neutre gardent leur pictogramme.
+- **Bulle d'incitation de l'Update** : elle suit la couleur du bouton central, sans exception de zone de danger (en zone de danger : rouge dès l'entrée, bulle masquée pendant 1 h de vert après une update postérieure, puis elle revient).
+- **Fusion de `main`** (PR #106 et #111 fusionnées) : conflit de `CHANGELOG.md` résolu en gardant les deux blocs.
+- **Bulle de la Miff centrée** : titre, lignes et bouton centrés dans la tache, marges égales (voir `BubbleLayout`) ; écart avec les maquettes (texte à gauche) assumé sur retour du PM.
+
+Ajouté : `BubbleLayoutTests` (géométrie), cas aux bornes de `StatusColorTests`, `FeedCardsTests`, `FeedTextsTests`.
+
 ### BATT-3 - Optimisation batterie sûre : réutiliser la position récente du système à l'ouverture et à la sortie (décision du PM, 2026-11-10)
 
 Source : `docs/dev/optimisation-batterie.md` (O2 / BATT-3). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi ; aucun gain n'est chiffré, il se mesure sur l'iPhone (voir ci-dessous).**
@@ -19,6 +37,7 @@ Changé :
 **Choix économiques** : aucune dépendance, aucun service, aucune permission ; 0 €. **Mesure pour le PM** : Réglages > Batterie de l'iPhone sur 48 h avant / après (protocole de la section 5 du document), et le nombre de lignes `positionReused` dans la carte « journal de détection » de l'écran de diagnostic (build Internal). **Signal de bascule** : s'il n'y a presque aucune ligne `positionReused`, le gain est nul pour cet usage (aucune régression), rien à faire.
 
 **Limites connues** : le gain dépend du nombre d'ouvertures et de sorties rapprochées (et de la précision de la dernière position du système) ; non mesuré. Conflits probables avec les PR iOS en cours qui touchent `TrackingEngine` / `TrackingDoubles` (notifications #127 / #129 / #130, #123, #124, #132) : fichiers `TrackingEngine+Refresh.swift`, `DetectionJournal.swift`, `TrackingDoubles.swift`.
+
 
 ### FEED-8 - La photo d'update dans le Feed (miroir d'Android FEED-4, PR #93)
 
