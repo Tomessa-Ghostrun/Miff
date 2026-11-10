@@ -56,6 +56,8 @@ class NotificationScheduler(
         members: List<SnapshotMember>,
     ) {
         synchronized(lock) {
+            // A call queued before the sign-out (or the loss of the session) must not write the snapshot of a person who is gone.
+            if (!sessionValid(myUid)) return
             snapshots.save(PlanSnapshot(miffId, myUid, members, nowMillis()))
             reconcile()
         }
@@ -99,6 +101,29 @@ class NotificationScheduler(
         synchronized(lock) {
             val snapshot = snapshots.load() ?: return
             if (snapshot.miffId == miffId) return
+            snapshots.clear()
+            alarms.cancelAll()
+        }
+    }
+
+    /**
+     * The Miffs the person belongs to, as the directory just said (it changes when the person leaves, a Miff is deleted or the access is lost): the reminders of a
+     * Miff that is not in the list any more are cancelled and its snapshot is forgotten. Only called for a list the directory really READ (never while it loads or when it failed).
+     */
+    fun onMiffsKnown(miffIds: Set<String>) {
+        synchronized(lock) {
+            val snapshot = snapshots.load() ?: return
+            if (snapshot.miffId in miffIds) return
+            snapshots.clear()
+            alarms.cancelAll()
+        }
+    }
+
+    /** The Miff [miffId] was left or deleted on this phone: what waited for it is cancelled. */
+    fun onMiffGone(miffId: String) {
+        synchronized(lock) {
+            val snapshot = snapshots.load() ?: return
+            if (snapshot.miffId != miffId) return
             snapshots.clear()
             alarms.cancelAll()
         }
@@ -308,19 +333,43 @@ class NotificationScheduler(
                         return
                     }
             if (key in ledger.keys(now)) return
+            if (appInForeground()) {
+                // In front, the facts of the snapshot are the live ones of the Feed: no reading of the server is needed (and none is paid for); only a silent line.
+                if (NotificationPlanner.stillTrue(
+                        type,
+                        inputOf(snapshot, now),
+                    )
+                ) {
+                    dueNow(p, now)
+                } else {
+                    ledger.remember(key, now)
+                }
+                reconcile()
+                return
+            }
             // Counted BEFORE the read: a verification that gets killed halfway still counts, so an episode never costs more than two readings.
             ledger.addAttempt(key)
+            // The second try is asked BEFORE the read: if the process is killed during it (a receiver has seconds only), the retry is still waiting.
+            if (ledger.attempts(key) < MAX_VERIFICATIONS) {
+                alarms.schedule(type, ScheduledAlarm(key, p.miffId, now + RETRY_AFTER_MILLIS))
+            }
         }
         val read = reader.read(snapshot.miffId)
         synchronized(lock) {
             val now = nowMillis()
+            // The person may have signed out, left the Miff or chosen another one while the server was read: nothing is saved, nothing is shown, nothing is remembered.
+            val current = snapshots.load()
+            if (!sessionValid(snapshot.myUid) || current == null || current.miffId != snapshot.miffId ||
+                current.myUid != snapshot.myUid
+            ) {
+                return
+            }
             when (read) {
                 is CircleRead.Fresh -> {
                     // The sharing flags come from the Miff (the snapshot); the presence and the times from the server, which just spoke.
                     val fresh = freshMembers(snapshot, read, now)
                     snapshots.save(fresh)
-                    val input = inputOf(fresh, now)
-                    if (NotificationPlanner.stillTrue(type, input)) {
+                    if (NotificationPlanner.stillTrue(type, inputOf(fresh, now))) {
                         dueNow(p, now)
                     } else {
                         // Not true any more (somebody gave news, the Miff changed colour): nothing is shown, and this episode is settled.
@@ -335,12 +384,8 @@ class NotificationScheduler(
                 }
 
                 CircleRead.Unreachable -> {
-                    if (ledger.attempts(key) < MAX_VERIFICATIONS) {
-                        alarms.schedule(type, ScheduledAlarm(key, p.miffId, now + RETRY_AFTER_MILLIS))
-                    } else {
-                        // Decision Q33: nothing is shown after the second try; no false alert, no "we could not check".
-                        ledger.remember(key, now)
-                    }
+                    // The retry (10 minutes later) is already waiting after the first try. After the second: decision Q33, nothing is shown, no "we could not check".
+                    if (ledger.attempts(key) >= MAX_VERIFICATIONS) ledger.remember(key, now)
                 }
             }
         }

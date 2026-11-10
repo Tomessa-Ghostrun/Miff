@@ -18,11 +18,11 @@ object StatusThresholds {
     const val RED_AFTER_MILLIS = 4L * 60L * 60L * 1000L
 
     /**
-     * The rule of the danger zone (decision of the PM, 2026-11-08): in a danger zone, a last update OLDER than this (strictly more than one hour, or no
-     * update at all) makes the person red. An update at most this old does not force red: the colour then follows the normal rule of the age.
-     * A trusted zone always wins over a danger zone (green).
+     * The rule of the danger zone (decision of the PM, 2026-11-08, which replaces D8 and the rule "red only after an hour without update"): entering a
+     * danger zone makes the person red AT ONCE; an update published AFTER the entry makes her green for this long (up to one hour INCLUDED), then red
+     * again (strictly more than one hour after THAT update) unless she publishes another one. No orange there. A trusted zone always wins (green).
      */
-    const val DANGER_ZONE_UPDATE_AGE_MILLIS = 60L * 60L * 1000L
+    const val DANGER_ZONE_RED_AFTER_MILLIS = 60L * 60L * 1000L
 }
 
 /** What the colour needs from a member's document, nothing else. Times are epoch milliseconds; null when the field is missing. */
@@ -37,11 +37,12 @@ class MemberStatusFacts(
 
 object StatusColor {
     /**
-     * The order of the ticket: sharing stopped or no status = neutral; a trusted zone = green; else a danger zone = red when the last update is
-     * older than [StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS] (or missing), otherwise the normal rule below; `unknown` = neutral (a person who
+     * The order of the ticket: sharing stopped or no status = neutral; a trusted zone = green; else a danger zone = red, except green while an update
+     * POSTERIOR to the entry (`presenceAt`, strictly) is at most [StatusThresholds.DANGER_ZONE_RED_AFTER_MILLIS] old (an update at the very instant of the
+     * entry, an older one, a missing one or a missing entry time do not count); `unknown` = neutral (a person who
      * never went through a trusted zone, decision N4); else the age of the reference = the most recent of the departure and the last update
-     * (decision N2): up to 2 h INCLUDED green, over 2 h up to 4 h INCLUDED orange, over 4 h red ("plus de": at 2:00 sharp still green). A reference in the future (a phone with a wrong clock) counts
-     * as "now": green.
+     * (decision N2): up to 2 h INCLUDED green, over 2 h up to 4 h INCLUDED
+     * orange, over 4 h red ("plus de": at 2:00 sharp still green). A reference in the future (a phone with a wrong clock) counts as "now": green.
      */
     fun level(
         facts: MemberStatusFacts?,
@@ -58,11 +59,15 @@ object StatusColor {
             }
 
             PresenceValue.IN_RISK -> {
+                val entry = facts.presenceAtMillis
                 val update = facts.lastUpdateAtMillis
-                if (update == null || nowMillis - update > StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS) {
-                    StatusLevel.RED
+                // A last update still waiting for the server (null) counts as none; a wrong clock in the future counts as "now".
+                if (entry != null && update != null && update > entry &&
+                    nowMillis - update <= StatusThresholds.DANGER_ZONE_RED_AFTER_MILLIS
+                ) {
+                    StatusLevel.GREEN
                 } else {
-                    byAge(facts, nowMillis)
+                    StatusLevel.RED
                 }
             }
 
@@ -96,23 +101,28 @@ object StatusColor {
      * The instants at which the level of a member CAN change with the facts known now (NOTIF-3A, ticket notifications.md section 20.2): the planner of the
      * notifications asks "when will this person turn orange, when red?" without ever writing an hour count of its own (criterion STA9). Same file, same
      * constants as [level], to be written identically on iOS. Ascending, without doubles; empty when the level never changes (no sharing, no status, a trusted
-     * zone, `unknown`, or red from the start).
+     * zone, `unknown`, or red from the start, which is the danger zone without an update after the entry).
      *
      * CONTRACT (tested on every shape of facts): at each instant `t` returned, `level(t - 1 ms) != level(t)`, and the level is constant between two
      * consecutive instants (and before the first, and after the last). It holds by construction: the candidates (the thresholds of the age counted from the
-     * reference, and the end of the hour of grace of the danger zone) are kept only when the level really changes there.
+     * reference, and the end of the hour that follows an update made after the entry in a danger zone) are kept only when the level really changes there.
      */
     fun changeInstants(facts: MemberStatusFacts?): List<Long> {
         if (facts == null || !facts.sharingEnabled) return emptyList()
         if (facts.presence != PresenceValue.OUT && facts.presence != PresenceValue.IN_RISK) return emptyList()
         val candidates = mutableListOf<Long>()
-        listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()?.let { reference ->
-            safeAfter(reference, StatusThresholds.ORANGE_AFTER_MILLIS)?.let(candidates::add)
-            safeAfter(reference, StatusThresholds.RED_AFTER_MILLIS)?.let(candidates::add)
-        }
-        if (facts.presence == PresenceValue.IN_RISK) {
-            facts.lastUpdateAtMillis?.let { update ->
-                safeAfter(update, StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS)?.let(candidates::add)
+        if (facts.presence == PresenceValue.OUT) {
+            listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()?.let { reference ->
+                safeAfter(reference, StatusThresholds.ORANGE_AFTER_MILLIS)?.let(candidates::add)
+                safeAfter(reference, StatusThresholds.RED_AFTER_MILLIS)?.let(candidates::add)
+            }
+        } else {
+            // Danger zone (rule D47): red at the entry; an update POSTERIOR to the entry makes it green for an hour, then red again. The only instant is the end of
+            // that hour, and it exists only when such an update exists (otherwise the person is red from the start: no instant).
+            val entry = facts.presenceAtMillis
+            val update = facts.lastUpdateAtMillis
+            if (entry != null && update != null && update > entry) {
+                safeAfter(update, StatusThresholds.DANGER_ZONE_RED_AFTER_MILLIS)?.let(candidates::add)
             }
         }
         return candidates.distinct().sorted().filter { level(facts, it - 1) != level(facts, it) }

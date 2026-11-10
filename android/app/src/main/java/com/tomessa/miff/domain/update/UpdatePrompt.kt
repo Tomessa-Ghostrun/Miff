@@ -11,8 +11,8 @@ enum class PromptLevel { NONE, ORANGE, RED }
 /*
  * When the bubble of encouragement above the tab bar shows (ticket Update, D18, D19, D21, criteria A1, A2): a pure function of MY status in the Miff shown
  * by the Feed and of the clock. It is the colour, nothing else: [StatusColor.level] (ONE calculation of the colour for the whole app), orange or red.
- * Decision of the PM, 2026-11-08: in a danger zone the colour is red only while the last update is more than an hour old, so a published update ends
- * the red (and the bubble) there too, and the bubble comes back an hour later if nothing new is published.
+ * Decision of the PM, 2026-11-08: in a danger zone the colour is red from the entry; an update published AFTER the entry makes it green for one hour,
+ * so it ends the bubble too ("an update since the arrival, and a recent one"), and the bubble comes back an hour later if nothing new is published.
  */
 object UpdatePrompt {
     fun level(

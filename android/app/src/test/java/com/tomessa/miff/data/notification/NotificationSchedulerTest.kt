@@ -138,9 +138,13 @@ class NotificationSchedulerTest {
         var reads = 0
         var lastMiff: String? = null
 
+        /** Runs while the server is being read (the person signs out, the alarms are inspected...). */
+        var whileReading: () -> Unit = {}
+
         override suspend fun read(miffId: String): CircleRead {
             reads++
             lastMiff = miffId
+            whileReading()
             return answer
         }
     }
@@ -618,6 +622,107 @@ class NotificationSchedulerTest {
             scheduler.fireCircle(NotificationType.N4, n4.key)
             assertEquals(listOf(NotificationType.N4), presenter.shown.map { it.type })
             assertFalse(presenter.shown.single().quiet)
+        }
+
+    // --- Review fixes: session, Miff left, foreground, retry before the read ----------------------------------------------------------------------
+
+    @Test
+    fun aStatusCallQueuedBeforeTheSignOut_neverWritesTheSnapshotOfAPersonWhoIsGone_i3() {
+        session = false
+        feedSees(out(me, at(13, 40)), trusted("x"))
+        assertNull(snapshots.value)
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun aVerificationThatFinishesAfterTheSignOut_saves_shows_andRemembersNothing_i3() =
+        runTest {
+            val alarm = circleSetUp()
+            now = alarm.dueAtMillis
+            reader.answer =
+                serverSays(
+                    me to status(PresenceValue.IN_TRUSTED, at(9, 0), at(9, 0)),
+                    "x" to status(PresenceValue.OUT, at(13, 40)),
+                )
+            reader.whileReading = { scheduler.clearAll() }
+            scheduler.fireCircle(NotificationType.N3, alarm.key)
+            assertTrue(presenter.shown.isEmpty())
+            assertTrue(lines().isEmpty())
+            assertNull("the snapshot of the person who left is not written again", snapshots.value)
+            assertTrue(ledger.keys(now).isEmpty())
+        }
+
+    @Test
+    fun aVerificationThatFinishesAfterAnotherMiffWasChosen_savesNothing_i3() =
+        runTest {
+            val alarm = circleSetUp()
+            now = alarm.dueAtMillis
+            reader.answer =
+                serverSays(
+                    me to status(PresenceValue.IN_TRUSTED, at(9, 0), at(9, 0)),
+                    "x" to status(PresenceValue.OUT, at(13, 40)),
+                )
+            reader.whileReading = { scheduler.onActiveMiffChanged("miff-2") }
+            scheduler.fireCircle(NotificationType.N3, alarm.key)
+            assertTrue(presenter.shown.isEmpty())
+            assertNull(snapshots.value)
+        }
+
+    @Test
+    fun leavingAMiff_orLosingTheAccess_cancelsItsReminders_i4() {
+        feedSees(out(me, at(13, 40)), trusted("x"))
+        assertEquals(2, alarms.map.size)
+        // The directory lists other Miffs only: this one is gone (left, deleted, access lost).
+        scheduler.onMiffsKnown(setOf("miff-2"))
+        assertTrue(alarms.map.isEmpty())
+        assertNull(snapshots.value)
+        // Still listed: nothing changes.
+        feedSees(out(me, at(13, 40)), trusted("x"))
+        scheduler.onMiffsKnown(setOf(miff, "miff-2"))
+        assertEquals(2, alarms.map.size)
+        // Explicit departure of another Miff: nothing; of this one: everything goes.
+        scheduler.onMiffGone("miff-2")
+        assertEquals(2, alarms.map.size)
+        scheduler.onMiffGone(miff)
+        assertTrue(alarms.map.isEmpty())
+        assertNull(snapshots.value)
+    }
+
+    @Test
+    fun leavingMyOnlyMiff_theDirectoryAnswersAnEmptyList_everythingIsCancelled_i4() {
+        feedSees(out(me, at(13, 40)), trusted("x"))
+        scheduler.onMiffsKnown(emptySet())
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun n3_inFront_theServerIsNotRead_aSilentLine() =
+        runTest {
+            val alarm = circleSetUp()
+            now = alarm.dueAtMillis
+            foreground = true
+            scheduler.fireCircle(NotificationType.N3, alarm.key)
+            assertEquals(0, reader.reads)
+            assertTrue(presenter.shown.isEmpty())
+            assertEquals(ItemState.SILENT, lines().single().state)
+        }
+
+    @Test
+    fun n3_theRetryIsAskedBeforeTheRead_soAProcessKilledDuringItLosesNothing() =
+        runTest {
+            val alarm = circleSetUp()
+            now = alarm.dueAtMillis
+            var retryWhileReading: ScheduledAlarm? = null
+            reader.whileReading = { retryWhileReading = alarms.map[NotificationType.N3] }
+            reader.answer = CircleRead.Unreachable
+            scheduler.fireCircle(NotificationType.N3, alarm.key)
+            assertEquals(now + 10 * 60 * 1000, retryWhileReading?.dueAtMillis)
+            // The second try does not schedule a third one.
+            now += 10 * 60 * 1000
+            retryWhileReading = null
+            scheduler.fireCircle(NotificationType.N3, alarm.key)
+            assertNull(retryWhileReading)
+            assertEquals(2, reader.reads)
         }
 
     // --- N6: I entered a danger zone (vectors V1 to V10) ------------------------------------------------------------------------------------------

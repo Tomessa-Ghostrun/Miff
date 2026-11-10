@@ -21,7 +21,7 @@
 
 | # | Étape | Résultat attendu |
 |---|---|---|
-| 1.1 | Sur un **compte neuf** (ou après « Effacer les données » de l'appli dans les réglages du téléphone), terminez l'onboarding jusqu'à l'amorce. | Un écran « **Un rappel, seulement quand c'est utile** » avec **un seul exemple** (« Tu es passé orange / Indique à ta Miff que tout va bien. / Il y a 2 min »), le texte « Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement… Les alertes sur tes proches arriveront plus tard. », un bouton **Autoriser** et un lien **Plus tard**. Tutoiement. **Aucun** « n'est toujours pas rentrée ». |
+| 1.1 | Sur un **compte neuf** (ou après « Effacer les données » de l'appli dans les réglages du téléphone), terminez l'onboarding jusqu'à l'amorce. | Un écran « **Un rappel, seulement quand c'est utile** » avec **un seul exemple** (« Tu es passé orange / Indique à ta Miff que tout va bien. / Il y a 2 min »), le texte « Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d'état. Tu choisis ce que tu reçois dans les réglages. », un bouton **Autoriser** et un lien **Plus tard**. Tutoiement. **Aucun** « n'est toujours pas rentrée ». |
 | 1.2 | Touchez **Plus tard**. | L'écran se ferme **sans** fenêtre du système. L'amorce **ne revient jamais** (relancez l'appli). |
 | 1.3 | Publiez **une update** depuis le bouton central. | De retour dans le Feed, **une carte discrète** « Un rappel si tu oublies de donner de tes nouvelles ? » avec **Activer** et **Pas maintenant**. Aucune fenêtre, aucun son. |
 | 1.4 | Touchez **Pas maintenant**. | La carte disparaît et **ne revient plus** (publiez une autre update pour vérifier). |

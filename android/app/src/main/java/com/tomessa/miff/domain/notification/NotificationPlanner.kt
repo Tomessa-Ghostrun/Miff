@@ -152,10 +152,14 @@ object NotificationPlanner {
         out: MutableList<PlannedNotification>,
     ) {
         val now = input.nowMillis
+        // The instants where a member's level changes, AND the instant a member ENTERED a danger zone (rule D47: red at once, so it is the start of the red episode;
+        // `changeInstants` does not hold it because the level of the facts alone is red before it too: [levelAt] says the member counted for nothing before entering).
         val everyInstant =
             input.members.values
-                .flatMap { StatusColor.changeInstants(it) }
-                .distinct()
+                .flatMap { facts ->
+                    StatusColor.changeInstants(facts) +
+                        listOfNotNull(facts.presenceAtMillis.takeIf { facts.presence == PresenceValue.IN_RISK })
+                }.distinct()
                 .sorted()
         for ((type, color) in listOf(
             NotificationType.N3 to StatusLevel.ORANGE,
@@ -185,36 +189,29 @@ object NotificationPlanner {
     ): Long? {
         val entries = everyInstant.filter { miffLevelAt(input, it) == color && miffLevelAt(input, it - 1) != color }
         return if (miffLevelAt(input, now) == color) {
-            entries.lastOrNull { it <= now } ?: constantRedStart(input, color)
+            entries.lastOrNull { it <= now }
         } else {
             entries.firstOrNull { it > now }
         }
     }
 
     /**
-     * The Miff has been in that colour "since always" for these facts: only a member in a danger zone (red with no instant of change, the rule of the code
-     * delivered today) can do that. The episode then started when that member ENTERED the zone. (When the rule of the danger zone becomes "red after one
-     * hour", `changeInstants` returns an instant for it and this fallback is never used.)
+     * The level of a member at [atMillis] for the history of the Miff. In a danger zone the level of the facts is red whatever the instant (rule D47: red at the
+     * entry), so before the ENTRY the member counts for nothing (neutral): that makes the entry the instant the Miff turns red.
      */
-    private fun constantRedStart(
-        input: PlanInput,
-        color: StatusLevel,
-    ): Long? {
-        if (color != StatusLevel.RED) return null
-        return input.members.values
-            .filter {
-                StatusColor.level(
-                    it,
-                    input.nowMillis,
-                ) == StatusLevel.RED && it.presence == PresenceValue.IN_RISK
-            }.mapNotNull { it.presenceAtMillis }
-            .minOrNull()
+    private fun levelAt(
+        facts: MemberStatusFacts,
+        atMillis: Long,
+    ): StatusLevel {
+        val entry = facts.presenceAtMillis
+        if (facts.presence == PresenceValue.IN_RISK && entry != null && atMillis < entry) return StatusLevel.NEUTRAL
+        return StatusColor.level(facts, atMillis)
     }
 
     fun miffLevelAt(
         input: PlanInput,
         atMillis: Long,
-    ): StatusLevel = FeedBuilder.miffLevel(input.members.values.map { StatusColor.level(it, atMillis) })
+    ): StatusLevel = FeedBuilder.miffLevel(input.members.values.map { levelAt(it, atMillis) })
 
     /** Am I responsible for the colour the Miff has at [atMillis]? (Section 20.2, decision Q28.) Alone in the Miff: always. */
     fun responsibleAt(
@@ -223,7 +220,7 @@ object NotificationPlanner {
     ): Boolean {
         val mine = input.members[input.myUid] ?: return false
         val miff = miffLevelAt(input, atMillis)
-        val me = StatusColor.level(mine, atMillis)
+        val me = levelAt(mine, atMillis)
         if (me != miff) return false
         return when (input.mode) {
             ResponsibilityMode.LARGE -> {
@@ -233,10 +230,7 @@ object NotificationPlanner {
             ResponsibilityMode.STRICT -> {
                 val others =
                     input.members.filterKeys { it != input.myUid }.values.map {
-                        StatusColor.level(
-                            it,
-                            atMillis,
-                        )
+                        levelAt(it, atMillis)
                     }
                 FeedBuilder.miffLevel(others) != miff
             }

@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -149,7 +150,7 @@ private fun CalmBubble(
     texts: FeedTexts,
     onResumeSharing: () -> Unit,
 ) {
-    BubbleBlob(level = bubble.level, pictogram = pictogram(bubble.level, calm = bubble is Bubble.AllGood)) {
+    BubbleBlob(level = bubble.level, pictogram = pictogram(bubble.level)) {
         when (bubble) {
             is Bubble.AllGood -> {
                 Headline(stringResource(R.string.feed_bubble_all_good))
@@ -250,7 +251,7 @@ private fun AlertPageBubble(
     texts: FeedTexts,
     onMessage: (String) -> Unit,
 ) {
-    BubbleBlob(level = page.level, pictogram = pictogram(page.level, calm = false)) {
+    BubbleBlob(level = page.level, pictogram = pictogram(page.level)) {
         Headline(texts.alertTitle(page))
         texts.alertDetail(page)?.let { Line(it) }
         texts.alertNote(page)?.let { Caption(it) }
@@ -272,7 +273,7 @@ private val LocalBubblePhases = compositionLocalOf<BubblePhases?> { null }
 @Composable
 private fun BubbleBlob(
     level: StatusLevel,
-    pictogram: Pictogram,
+    pictogram: Pictogram?,
     content: @Composable () -> Unit,
 ) {
     val phases = LocalBubblePhases.current
@@ -303,12 +304,21 @@ private fun BubbleBlob(
                     }.clip(BubbleShape)
                     .background(level.tint()),
         )
+        // CENTRED in the blob (decision of the PM, 2026-11-08, TestFlight build 22): the same margin on both sides, text and button centred, the
+        // block centred vertically. The pictogram badge keeps its corner, so the margins are wide enough never to touch it; without a badge (the
+        // green bubble) the margins are the plain ones.
         Column(
-            modifier = Modifier.padding(start = 40.dp, end = 56.dp, top = 40.dp, bottom = 46.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = if (pictogram != null) 56.dp else 40.dp, vertical = 42.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             content()
         }
+        if (pictogram == null) return@Box
         Box(
             modifier =
                 Modifier
@@ -343,13 +353,13 @@ private class Pictogram(
     val tint: (StatusLevel) -> Color,
 )
 
-/** One pictogram per colour (the colour is never alone): the star for "tout va bien", a clock, a "!", an hourglass. */
-private fun pictogram(
-    level: StatusLevel,
-    calm: Boolean,
-): Pictogram =
+/**
+ * One pictogram per colour for orange, red and neutral (the colour is never alone): a clock, a "!", an hourglass. NONE for green (decision of the PM,
+ * 2026-11-08): the green bubble has no symbol, its words are enough.
+ */
+private fun pictogram(level: StatusLevel): Pictogram? =
     when {
-        calm -> Pictogram(R.drawable.ic_feed_spark) { it.onTint() }
+        level == StatusLevel.GREEN -> null
         level == StatusLevel.ORANGE -> Pictogram(R.drawable.ic_feed_clock) { it.onTint() }
         level == StatusLevel.RED -> Pictogram(R.drawable.ic_feed_alert) { it.onTint() }
         else -> Pictogram(R.drawable.ic_feed_hourglass) { colorTextDescription }
@@ -361,18 +371,19 @@ private fun Headline(text: String) {
         text = text,
         style = textDisplayHeadline,
         color = colorTextPrimary,
+        textAlign = TextAlign.Center,
         modifier = Modifier.semantics { heading() },
     )
 }
 
 @Composable
 private fun Line(text: String) {
-    Text(text = text, style = textBodyRegular14, color = colorTextPrimary)
+    Text(text = text, style = textBodyRegular14, color = colorTextPrimary, textAlign = TextAlign.Center)
 }
 
 @Composable
 private fun Caption(text: String) {
-    Text(text = text, style = textBodyCaption, color = colorTextDescription)
+    Text(text = text, style = textBodyCaption, color = colorTextDescription, textAlign = TextAlign.Center)
 }
 
 /** The soft action of a bubble: outlined, white inside, 48 dp high. Never a call, never a red button. */
@@ -400,7 +411,7 @@ private fun BubbleButton(
             tint = colorActionPrimary,
             modifier = Modifier.size(20.dp),
         )
-        Text(text = text, style = textBodyBold16, color = colorActionPrimary)
+        Text(text = text, style = textBodyBold16, color = colorActionPrimary, textAlign = TextAlign.Center)
     }
 }
 

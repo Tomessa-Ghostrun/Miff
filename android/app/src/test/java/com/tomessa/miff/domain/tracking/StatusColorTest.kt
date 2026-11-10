@@ -34,35 +34,63 @@ class StatusColorTest {
 
     @Test
     fun theDangerZoneRule_theConstantIsOneHour_decisionOfThePm_2026_11_08() {
-        assertEquals(hour, StatusThresholds.DANGER_ZONE_UPDATE_AGE_MILLIS)
+        assertEquals(hour, StatusThresholds.DANGER_ZONE_RED_AFTER_MILLIS)
     }
 
     @Test
-    fun inADangerZone_aLastUpdateOfExactlyOneHour_isNotRed_59m59s_neither() {
+    fun inADangerZone_justEntered_isRedAtOnce_whateverAnEarlierUpdateSays() {
+        // Entered now, updated 5 minutes BEFORE the entry: the update predates the entry and does not count.
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 0, updateAgo = 5 * minute)))
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 5 * minute, updateAgo = 10 * minute)))
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 20 * minute, updateAgo = 5 * hour)))
+    }
+
+    @Test
+    fun inADangerZone_anUpdateAtTheVeryInstantOfTheEntry_isNotPosterior_red() {
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 10 * minute, updateAgo = 10 * minute)))
+        // One millisecond later it is posterior.
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 10 * minute, updateAgo = 10 * minute - 1)))
+    }
+
+    @Test
+    fun inADangerZone_aPosteriorUpdate_isGreenForOneHourIncluded_thenRed() {
+        // Entered 3 h ago, updated: 59:59, 1:00:00 (included), 1:00:01 ago.
         assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 3 * hour, updateAgo = hour - 1_000)))
         assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 3 * hour, updateAgo = hour)))
-    }
-
-    @Test
-    fun inADangerZone_aLastUpdateOlderThanOneHour_isRed_1h00m01s() {
         assertEquals(StatusLevel.RED, level(danger(presenceAgo = 3 * hour, updateAgo = hour + 1_000)))
-        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 10 * minute, updateAgo = 5 * hour)))
+        // A recent update after a long stay: green. Never orange in a danger zone.
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 9 * hour, updateAgo = 30 * minute)))
     }
 
     @Test
-    fun inADangerZone_noUpdateAtAll_isRed_evenJustArrived() {
+    fun inADangerZone_aSecondUpdate_startsAnotherHourOfGreen() {
+        // The first update (1 h 30 ago) is too old, the second one (10 minutes ago) is the last update: the stored one is always the latest.
+        assertEquals(StatusLevel.RED, level(danger(presenceAgo = 3 * hour, updateAgo = 90 * minute)))
+        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 3 * hour, updateAgo = 10 * minute)))
+    }
+
+    @Test
+    fun inADangerZone_noUpdateAtAll_orOneStillWaitingForTheServer_isRed() {
         assertEquals(StatusLevel.RED, level(danger(presenceAgo = 0, updateAgo = null)))
         assertEquals(StatusLevel.RED, level(danger(presenceAgo = 3 * hour, updateAgo = null)))
     }
 
     @Test
-    fun inADangerZone_aRecentUpdate_followsTheNormalRuleOfTheAge() {
-        // Arrived 10 minutes ago, updated 5 minutes ago: not forced red; the most recent of the two is 5 minutes old = green.
-        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 10 * minute, updateAgo = 5 * minute)))
-        // A recent update after a long stay is just as recent: green.
-        assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = 9 * hour, updateAgo = 30 * minute)))
-        // A reference in the future (a wrong clock) counts as now: not forced red.
+    fun inADangerZone_noEntryTime_isRed_nothingCanBeProvedPosterior() {
+        assertEquals(StatusLevel.RED, level(MemberStatusFacts(true, PresenceValue.IN_RISK, null, now - minute)))
+    }
+
+    @Test
+    fun inADangerZone_aWrongClockInTheFuture_countsAsNow_greenIfPosterior() {
         assertEquals(StatusLevel.GREEN, level(danger(presenceAgo = hour, updateAgo = -3 * hour)))
+    }
+
+    @Test
+    fun leavingADangerZone_backToTheNormalRule_withTheDepartureAsReference() {
+        // Out after a stay in the danger zone: reference = most recent of the exit and the last update, thresholds 2 h / 4 h.
+        assertEquals(StatusLevel.GREEN, level(out(presenceAgo = 10 * minute, updateAgo = 5 * hour)))
+        assertEquals(StatusLevel.ORANGE, level(out(presenceAgo = 3 * hour, updateAgo = 5 * hour)))
+        assertEquals(StatusLevel.RED, level(out(presenceAgo = 5 * hour, updateAgo = 6 * hour)))
     }
 
     @Test

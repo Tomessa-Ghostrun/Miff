@@ -405,6 +405,16 @@ class AppContainer(
                 notificationScope.launch {
                     notificationSettings.preferences.drop(1).collect { notificationScheduler.reconcile() }
                 }
+                // Leaving a Miff, its deletion and the loss of the access all change the list the directory reads: the reminders of a Miff that is gone are cancelled.
+                notificationScope.launch {
+                    miffDirectory.state.collect { state ->
+                        if (state is DirectoryState.Ready) {
+                            notificationScheduler.onMiffsKnown(
+                                state.miffs.map { it.id }.toSet(),
+                            )
+                        }
+                    }
+                }
             }
             notificationScheduler.reconcile()
         }
@@ -585,6 +595,7 @@ class AppContainer(
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
+        notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
         cachePurger.markPurgePending()
         cachePurger.purge()
         miffDirectory.refresh()

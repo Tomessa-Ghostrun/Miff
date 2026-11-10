@@ -665,7 +665,7 @@
     <string name="place_detail_created_by">Created by</string>
     <string name="place_detail_created_by_me">%1$s (you)</string>
     <string name="place_detail_info_trusted">When you arrive at or leave this place, your Miff sees your status (for example “at home”), even when the app is closed.</string>
-    <string name="place_detail_info_danger">While you\'re in this zone, your Miff sees your status in red. Only the Miff\'s creator can add or edit this kind of zone.</string>
+    <string name="place_detail_info_danger">While you\'re in this zone, your Miff sees your status in red, except for the hour after you share an update. Only the Miff\'s creator can add or edit this kind of zone.</string>
     <string name="place_paywall_close_a11y">Close</string>
     <string name="place_paywall_limit_title">You\'ve reached 2 places</string>
     <string name="place_paywall_limit_body">That\'s the limit of the free plan. With Miff+, add as many places as you like.</string>
@@ -922,7 +922,7 @@
     <string name="notif_n6a_title">You\'re in a danger zone of your Miff</string>
     <string name="notif_n6a_body">While you\'re there, your circle sees a different status.</string>
     <string name="notif_prime_title">A reminder, only when it helps</string>
-    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you. You choose what you get in the settings. Alerts about your circle will come later.</string>
+    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
     <string name="notif_prime_allow">Allow</string>
     <string name="notif_prime_later">Not now</string>
     <string name="notif_prime_example_when">2 min ago</string>
