@@ -30,7 +30,12 @@ class FeedColourAloneRuleTest {
         assertTrue(start > 0)
         val end = cards.indexOf("@Composable", start)
         val chip = cards.substring(start, if (end > start) end else cards.length)
-        assertFalse("the label of the state draws an icon", chip.contains("Icon("))
+        // The ONE exception: the airplane of the MODE VOYAGE (a deliberate decision of the ticket, docs/tickets/mode-voyage.md section 6.2; the state is grey and the words
+        // say it). Every other state, green, orange, red, neutral, stays without a pictogram.
+        val icons = Regex("""Icon\(""").findAll(chip).count()
+        val planes = Regex("""ic_travel_plane""").findAll(chip).count()
+        assertTrue("the label of the state draws an icon that is not the airplane of the trip", icons == planes)
+        assertTrue("the airplane must only be drawn for a trip", planes == 0 || chip.contains("card.label is StateLabel.Traveling"))
         assertFalse("labelIcon is back", cards.contains("labelIcon"))
     }
 

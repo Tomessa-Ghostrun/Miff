@@ -59,7 +59,7 @@ class FeedBuilderTravelTest {
         PresenceValue.TRAVEL,
         null,
         now - 2 * hour,
-        now - 30 * hour,
+        now - 3 * hour,
         hasPhoto,
         battery,
         access,
