@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -191,17 +192,17 @@ class TravelViewModelTest {
             vm.onToggle()
             vm.onDayChosen(today.plusDays(2))
             vm.onConfirm()
-            advanceUntilIdle()
+            runCurrent()
             assertEquals(TravelMessage.OFFLINE, vm.uiState.value.message)
             advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS + 1)
-            advanceUntilIdle()
+            runCurrent()
             assertNull(vm.uiState.value.message)
 
             vm.onToggle()
-            advanceUntilIdle()
+            runCurrent()
             assertEquals(TravelMessage.RESUMED, vm.uiState.value.message)
             advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS + 1)
-            advanceUntilIdle()
+            runCurrent()
             assertNull(vm.uiState.value.message)
         }
 
@@ -210,9 +211,9 @@ class TravelViewModelTest {
         runTest(dispatcher) {
             control.state.value = TravelPeriod(1_900_000_000_000L, "2026-11-15")
             val vm = model()
-            advanceUntilIdle()
+            runCurrent()
             vm.onToggle()
-            advanceUntilIdle()
+            runCurrent()
             assertEquals(TravelMessage.RESUMED, vm.uiState.value.message)
             advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS - 1_000)
             control.result = TravelResult.Refused
@@ -220,7 +221,7 @@ class TravelViewModelTest {
             vm.onDayChosen(today.plusDays(2))
             vm.onConfirm()
             advanceTimeBy(2_000)
-            advanceUntilIdle()
+            runCurrent()
             assertEquals(TravelMessage.REFUSED, vm.uiState.value.message)
         }
 
@@ -232,7 +233,7 @@ class TravelViewModelTest {
             vm.onToggle()
             vm.onDayChosen(today.plusDays(2))
             vm.onConfirm()
-            advanceUntilIdle()
+            runCurrent()
             assertNotNull(vm.uiState.value.period)
             assertEquals(TravelMessage.OFFLINE, vm.uiState.value.message)
         }
@@ -242,10 +243,10 @@ class TravelViewModelTest {
         runTest(dispatcher) {
             control.state.value = TravelPeriod(1_900_000_000_000L, "2026-11-15")
             val vm = model()
-            advanceUntilIdle()
+            runCurrent()
             assertNotNull(vm.uiState.value.period)
             vm.onToggle()
-            advanceUntilIdle()
+            runCurrent()
             assertEquals(1, control.ends)
             assertNull(vm.uiState.value.picker)
             assertNull(vm.uiState.value.confirm)
