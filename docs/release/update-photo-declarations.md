@@ -388,7 +388,7 @@ Principe : on ne livre **rien** de plus tant qu'un store n'a pas refusé (décis
 
 ---
 
-## 13 bis. Changement de posture : « Enregistrer la photo » d'un proche (FEED-8, décision du PM du 2026-11-08)
+## 13 bis. Changement de posture : « Enregistrer cette photo » d'un proche (FEED-8, décision du PM du 2026-11-08)
 
 **Ce qui change.** Dans le **plein écran** de la photo d'un proche (Feed, **à cet endroit seulement** : ni l'aperçu de la carte, ni l'Update), un bouton **« Enregistrer la photo »** confie la photo à la **feuille de partage du système** (iPhone : `UIActivityViewController` avec une image, qui propose « Enregistrer l'image », « Copier », AirDrop… ; Android : à décider par `android-dev`, mêmes clés de texte `feed_photo_download*`). **Aucune permission, aucune clé `NSPhotoLibrary*`** (V11 et `check-binaries.sh` inchangés), aucune écriture de l'app dans un fichier ni dans la photothèque : c'est le système, sur choix de la personne, qui écrit. L'image donnée à la feuille est des pixels (aucune métadonnée, aucun lieu).
 

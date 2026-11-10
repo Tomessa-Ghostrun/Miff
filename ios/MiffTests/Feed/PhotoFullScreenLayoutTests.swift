@@ -66,9 +66,9 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         )
     }
 
-    func testTheEstimateIsGenerousForATwoLineTitleAndTwoButtons() {
-        // Deux lignes de titre (2 x 28), deux lignes de lieu (2 x 20), deux boutons de 46 pt, quatre espaces de 8 pt, marges de 2 x 16.
-        let tallest: CGFloat = 2 * 28 + 2 * 20 + 2 * 46 + 4 * 8 + 2 * 16
+    func testTheEstimateIsGenerousForATwoLineTitleAndOneButton() {
+        // Deux lignes de titre (2 x 28), deux de lieu (2 x 20), deux du message « indisponible » (2 x 20), un bouton de 46 pt, quatre espaces de 8 pt, marges de 2 x 16.
+        let tallest: CGFloat = 2 * 28 + 2 * 20 + 2 * 20 + 46 + 4 * 8 + 2 * 16
 
         XCTAssertGreaterThanOrEqual(PhotoFullScreenLayout.footerEstimate, tallest)
     }

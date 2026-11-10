@@ -5,7 +5,7 @@ import UIKit
 // {heure} », le bouton de fermeture, le zoom au pincement (1x à 4x) et au double toucher, et « Voir où c'était » (le lieu de la photo, donné à Plans,
 // COORDONNÉES SEULES, sans nom) avec l'heure PROPRE à la mesure du lieu. Fermeture : le bouton, le geste d'échappement de VoiceOver, ou un glissement
 // vers le bas (iOS ne le donne pas à un plein écran : il est refait ici).
-// « Enregistrer la photo » (ici SEULEMENT, décision du PM) confie la photo à la feuille de partage du système, sans permission (`PhotoSaveButton`).
+// « Enregistrer cette photo » (icône en haut à droite, ici SEULEMENT, décision du PM) confie la photo à la feuille de partage du système, sans permission (`PhotoSaveButton`).
 // CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement, jamais
 // d'écriture directe dans Photos (aucun appel à `UIImageWriteToSavedPhotosAlbum`) ; l'écran est masqué dans la vignette du sélecteur d'applications
 // (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
@@ -46,8 +46,12 @@ struct PhotoFullScreen: View {
                     HStack {
                         RoundOverlayButton(systemName: "xmark", labelKey: "update_photo_close_a11y", onTap: onDismiss)
                         Spacer()
+                        // « Enregistrer cette photo » : une icône, en face de la croix (feuille de partage du système, sans permission).
+                        PhotoSaveButton(image: opened.image)
                     }
                     .padding(.horizontal, Spacing.sm)
+                    // Au-dessus de la photo : la confirmation « Photo enregistrée. » se pose sur elle.
+                    .zIndex(1)
                     // La photo prend l'espace QUI RESTE sous la zone sûre ; la légende et les boutons passent d'abord (jamais poussés dehors).
                     photo
                         .frame(minHeight: PhotoFullScreenLayout.minPhotoHeight)
@@ -199,8 +203,6 @@ struct PhotoFullScreen: View {
             if let place = opened.photo.place {
                 placeSection(place)
             }
-            // La photo est confiée à la feuille de partage du système (« Enregistrer l'image »), sans permission.
-            PhotoSaveButton(image: opened.image)
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -1,7 +1,7 @@
 import CoreGraphics
 
 // La mise en page du plein écran de la photo d'un proche (FEED-8, correctif de la recette TestFlight : sur iPhone 11 Pro, le titre était coupé et les
-// boutons « Voir où c'était » et « Enregistrer la photo » sortaient de l'écran, poussés par la photo). Règle : la LÉGENDE ET LES BOUTONS passent
+// boutons « Voir où c'était » et « Enregistrer cette photo » sortaient de l'écran, poussés par la photo). Règle : la LÉGENDE ET LES BOUTONS passent
 // d'abord, la photo prend l'espace qui reste sous la zone sûre ; quand le pied ne tient pas (grand texte, paysage, petit écran), il défile dans une
 // hauteur bornée, et la photo garde au moins `minPhotoHeight`. Du Swift pur : aucune mesure de vue, aucune lecture, aucune écriture.
 
@@ -12,9 +12,9 @@ enum PhotoFullScreenLayout {
     static let minPhotoHeight: CGFloat = 200
     /// Un pied qui défile garde au moins cette hauteur (un titre et un bouton).
     static let minScrollingFooterHeight: CGFloat = 120
-    /// La hauteur du pied (titre sur deux lignes, lieu sur deux lignes, deux boutons de 46 pt, marges) en texte normal : volontairement large, pour
+    /// La hauteur du pied (titre sur deux lignes, lieu sur deux lignes, message « indisponible » sur deux lignes, un bouton de 46 pt, marges) en texte normal : volontairement large, pour
     /// que le pied ne soit jamais coupé ; elle grandit avec la taille du texte (`@ScaledMetric` côté écran).
-    static let footerEstimate: CGFloat = 280
+    static let footerEstimate: CGFloat = 260
 
     enum Footer: Equatable {
         /// Le pied tient entier sous la photo : sa hauteur naturelle, sans défilement.

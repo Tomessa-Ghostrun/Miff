@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-// « Enregistrer la photo », dans le plein écran de la photo d'un proche, À CET ENDROIT SEULEMENT (décision du PM : pas sur l'aperçu de la carte, pas dans
+// « Enregistrer cette photo », dans le plein écran de la photo d'un proche, À CET ENDROIT SEULEMENT (décision du PM : pas sur l'aperçu de la carte, pas dans
 // l'Update). CONFIDENTIALITÉ et SÉCURITÉ, pour ce fichier :
 // - la photo est CONFIÉE AU SYSTÈME par la feuille de partage (`UIActivityViewController`) : c'est le système qui propose « Enregistrer l'image »,
 //   « Copier », AirDrop, etc. et qui écrit, si la personne le choisit. AUCUNE permission, AUCUNE clé `NSPhotoLibrary*` (le contrôle du binaire
@@ -35,41 +35,37 @@ struct PhotoShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
-/// Le bouton (contour blanc, au moins 46 pt, nom parlé « Enregistrer la photo ») et la confirmation calme « Photo enregistrée. » (3 s).
+/// Le bouton : UNE icône « télécharger », sans texte, en haut à droite du plein écran, en face de la croix (disque sombre translucide de 40 pt dans une
+/// zone de 48 pt, comme la croix ; « Réduire la transparence » le rend opaque). Nom parlé « Enregistrer cette photo », et sa confirmation calme
+/// « Photo enregistrée. » (3 s, sous l'icône, sans décaler la mise en page) est aussi sa valeur pour VoiceOver.
 struct PhotoSaveButton: View {
     let image: UIImage
     @State private var sharing = false
     @State private var saved = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
-    private static let minimumHeight = Spacing.minTouchTarget + Spacing.xs
     private static let confirmationSeconds: UInt64 = 3
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Button {
-                sharing = true
-            } label: {
-                HStack(spacing: Spacing.sm) {
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.system(size: 18))
-                        .accessibilityHidden(true)
-                    Text("feed_photo_download")
-                        .miffTextStyle(textBodyBold14)
-                }
-                .foregroundColor(colorUpdateOnPhoto.color)
-                .frame(maxWidth: .infinity, minHeight: Self.minimumHeight)
-                .overlay(
-                    RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                        .stroke(colorUpdateOnPhoto.color, lineWidth: strokeHairline * 2)
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+        RoundOverlayButton(systemName: "square.and.arrow.down", labelKey: "feed_photo_download") {
+            sharing = true
+        }
+        .accessibilityValue(Text(verbatim: saved ? L10n.string("feed_photo_download_done") : ""))
+        .overlay(alignment: .topTrailing) {
             if saved {
+                // Posée sur la photo, sans rien décaler : le pied et la photo ne bougent pas.
                 Text("feed_photo_download_done")
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorUpdateOnPhoto.color)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, Spacing.sm)
+                    .padding(.vertical, Spacing.xs)
+                    .background(
+                        RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
+                            .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
+                    )
+                    .fixedSize()
+                    .offset(y: UpdateLayout.roundButtonSize)
+                    .accessibilityHidden(true)
             }
         }
         .sheet(isPresented: $sharing) {
