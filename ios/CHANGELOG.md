@@ -37,6 +37,23 @@ Modifié :
 Coût et limites : une requête de quelques dizaines de Ko par inscription Google, aux serveurs d'images de Google (gratuit, aucun quota à notre charge). Signal de bascule : aucun. Limite : la photo n'est reprise qu'à la création du profil (jamais relue ensuite). Le diagnostic interne (`DiagnosticRootView`) garde sa pile sans geste (build interne seulement).
 
 Sécurité : l'adresse et les octets de la photo restent en mémoire, partent avec le profil comme toute photo de profil, aucun journal, aucun événement Analytics, aucune erreur détaillée ; HTTPS seulement, domaine contrôlé à chaque redirection.
+### BATT-3 - Optimisation batterie sûre : réutiliser la position récente du système à l'ouverture et à la sortie (décision du PM, 2026-11-10)
+
+Source : `docs/dev/optimisation-batterie.md` (O2 / BATT-3). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi ; aucun gain n'est chiffré, il se mesure sur l'iPhone (voir ci-dessous).**
+
+Changé :
+- **Ouverture de l'app et passage en arrière-plan** (`TrackingEngine+Refresh.chooseFix`, `LocationTracking.currentReusingRecent`) : si le système connaît déjà une position de **moins de 2 minutes** (`TrackingLimits.reusableFixMaxAgeMillis`) et d'une précision de **100 m ou mieux** (`reusableFixMaxAccuracyMeters`), elle sert telle quelle au lieu d'un nouveau `requestLocation`. Sinon, la demande est faite comme avant. **La précision demandée au système reste 100 m.**
+- **Jamais réutilisée** : à l'**entrée dans une zone** (et au réarmement, au déplacement significatif, au retour du réseau, au changement de partage ou d'accès : `TrackingEngine.mayReuseSystemFix(for:)` n'accepte que `opened` et `backgrounded`) ; pour la **photo de l'Update** (`PhotoPositionSource` appelle toujours `current()`, mesure fraîche à « Publier » : les règles exigent une position de moins de 10 minutes) ; pour une position **mesurée avant la dernière déconnexion** (`LocationTracking.disarmAll()` fixe une borne : la dernière position du téléphone peut être celle d'un autre compte).
+- **Journal de détection** (builds Debug et Internal) : nouvelle ligne `positionReused` chaque fois qu'une demande de position est évitée. Sans coordonnée, sans nom.
+- **Non touchés** : les 20 régions, le changement de position significatif, les disjoncteurs, SESS-3, App Check, les règles Firestore.
+- Nouveaux éléments : `PositionSource.currentReusingRecent()` (+ `PositionReading`), `LocationManaging.systemFix(maxAccuracyMeters:)`.
+- **Tests** (`PositionReuseTests.swift`) : réutilisation à moins de 2 min (ouverture et sortie), relecture à 2 min pile, précision insuffisante, position du futur, jamais à l'entrée de zone / au réarmement / au changement d'accès, jamais pour la photo (comportement et analyse des sources), position d'un autre compte jamais réutilisée après la déconnexion (pont seul, puis moteur et pont ensemble), constantes.
+
+**Effet visible** : à l'ouverture ou à la sortie, la dernière position partagée peut dater de 2 minutes au lieu de quelques secondes ; les règles d'écriture (15 min / 250 m, plancher de 2 min) ne changent pas. **Retour en arrière** : `reusableFixMaxAgeMillis = 0`.
+
+**Choix économiques** : aucune dépendance, aucun service, aucune permission ; 0 €. **Mesure pour le PM** : Réglages > Batterie de l'iPhone sur 48 h avant / après (protocole de la section 5 du document), et le nombre de lignes `positionReused` dans la carte « journal de détection » de l'écran de diagnostic (build Internal). **Signal de bascule** : s'il n'y a presque aucune ligne `positionReused`, le gain est nul pour cet usage (aucune régression), rien à faire.
+
+**Limites connues** : le gain dépend du nombre d'ouvertures et de sorties rapprochées (et de la précision de la dernière position du système) ; non mesuré. Conflits probables avec les PR iOS en cours qui touchent `TrackingEngine` / `TrackingDoubles` (notifications #127 / #129 / #130, #123, #124, #132) : fichiers `TrackingEngine+Refresh.swift`, `DetectionJournal.swift`, `TrackingDoubles.swift`.
 
 ### Batterie rafraîchie à l'ouverture et à la sortie de l'app (décision du PM, 2026-11-07 ; miroir d'Android)
 

@@ -47,11 +47,29 @@ protocol ActiveDevice {
 
 extension DeviceSession: ActiveDevice {}
 
+/// Ce que rend `PositionSource.currentReusingRecent()` : la position, et si elle vient de la dernière position du système (réutilisée,
+/// aucune demande faite) plutôt que d'une mesure demandée. Sert au journal de test (BATT-3) ; `description` ne montre rien.
+struct PositionReading: Equatable, CustomStringConvertible {
+    let fix: Fix?
+    let reused: Bool
+
+    var description: String {
+        "PositionReading(fix: \(fix == nil ? "nil" : "redacted"), reused: \(reused))"
+    }
+}
+
 /// Où est la personne, quand le moteur le demande (un double dans les tests).
 protocol PositionSource {
-    /// Une position récente (quelques secondes au plus), ou nil quand le système ne peut pas en donner. LIT la position : n'est
-    /// appelée qu'une fois l'accord et « Toujours » vérifiés.
+    /// Une position récente (quelques secondes au plus), ou nil quand le système ne peut pas en donner. TOUJOURS une mesure demandée
+    /// au système (jamais la dernière position connue, sauf en repli si la demande échoue). LIT la position : n'est appelée qu'une fois
+    /// l'accord et « Toujours » vérifiés. C'est ce que demandent l'entrée dans une zone, le déplacement significatif et la photo de
+    /// l'Update (dont la position doit avoir moins de 10 minutes selon les règles : mesure fraîche à « Publier »).
     func current() async -> Fix?
+
+    /// BATT-3, pour l'OUVERTURE de l'app et sa SORTIE seulement : la dernière position du système si elle a moins de
+    /// `TrackingLimits.reusableFixMaxAgeMillis` et est assez précise, sans rien demander ; sinon une mesure demandée, comme `current()`.
+    /// Une position mesurée avant la dernière déconnexion n'est jamais réutilisée (elle peut être celle d'un autre compte).
+    func currentReusingRecent() async -> PositionReading
 }
 
 /// La surveillance de régions du système (20 au plus).

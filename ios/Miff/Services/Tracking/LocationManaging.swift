@@ -37,6 +37,10 @@ protocol LocationManaging: AnyObject {
     /// La dernière position que le système connaît (sans âge limite : l'appelant juge).
     var systemFix: Fix? { get }
 
+    /// La dernière position que le système connaît, seulement si sa précision horizontale est d'au plus `maxAccuracyMeters` (BATT-3 : une
+    /// mesure grossière n'est pas réutilisée à la place d'une demande). Sans âge limite : l'appelant juge.
+    func systemFix(maxAccuracyMeters: Double) -> Fix?
+
     var regionsAvailable: Bool { get }
     var significantChangesAvailable: Bool { get }
 
