@@ -204,7 +204,15 @@ class UpdatePublisher(
                         store.commit(uid, lot, requireConsent = true) { allowed ->
                             val moment = nowMillis()
                             allowed.flatMap { miffId ->
-                                UpdateWrites.publish(miffId, uid, photo, place, moment, if (traveling) null else battery(), deviceId)
+                                UpdateWrites.publish(
+                                    miffId,
+                                    uid,
+                                    photo,
+                                    place,
+                                    moment,
+                                    if (traveling) null else battery(),
+                                    deviceId,
+                                )
                             }
                         }
                     }

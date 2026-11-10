@@ -54,7 +54,19 @@ class TrackingEngineTravelTest {
     private val journal = RecordingJournal()
     private val alarm = FakeTravelAlarm()
     private val engine =
-        TrackingEngine(env, store, local, position, geofences, movement, wake, device, journal, timeoutMillis = 5_000, travelAlarm = alarm)
+        TrackingEngine(
+            env,
+            store,
+            local,
+            position,
+            geofences,
+            movement,
+            wake,
+            device,
+            journal,
+            timeoutMillis = 5_000,
+            travelAlarm = alarm,
+        )
 
     private val lat = 48.8566
     private val lng = 2.3522
@@ -101,7 +113,8 @@ class TrackingEngineTravelTest {
             val before = store.commits.size
             val removeBefore = geofences.removeAllCalls
             var removeAtFirstWrite = -1
-            store.onCommit = { if (removeAtFirstWrite < 0 && "/status/" in it) removeAtFirstWrite = geofences.removeAllCalls }
+            store.onCommit =
+                { if (removeAtFirstWrite < 0 && "/status/" in it) removeAtFirstWrite = geofences.removeAllCalls }
 
             assertEquals(TravelResult.Done, engine.setTravel(period))
 
@@ -213,7 +226,12 @@ class TrackingEngineTravelTest {
             assertEquals(TravelResult.DoneOffline, engine.setTravel(period))
 
             assertTrue(geofences.armed.isEmpty())
-            assertTrue(local.state!!.travel!!.upToDateIn.isEmpty())
+            assertTrue(
+                local.state!!
+                    .travel!!
+                    .upToDateIn
+                    .isEmpty(),
+            )
             assertTrue(wake.watching)
         }
 
@@ -339,7 +357,8 @@ class TrackingEngineTravelTest {
             store.commits.clear()
             val reads = position.reads
             var armedAtTheEndWrite: Set<String>? = null
-            store.onCommit = { if (armedAtTheEndWrite == null && "/status/" in it) armedAtTheEndWrite = geofences.armed.toSet() }
+            store.onCommit =
+                { if (armedAtTheEndWrite == null && "/status/" in it) armedAtTheEndWrite = geofences.armed.toSet() }
             // The alarm rings, a little after the end.
             env.now = period.untilMillis + 2 * minute
 
@@ -423,7 +442,12 @@ class TrackingEngineTravelTest {
             assertTrue(statusWrites().isEmpty())
             assertNull(local.state!!.travel)
             assertTrue(geofences.armed.isNotEmpty())
-            assertTrue(local.state!!.miffs.getValue(miffA).clearTravel)
+            assertTrue(
+                local.state!!
+                    .miffs
+                    .getValue(miffA)
+                    .clearTravel,
+            )
             assertTrue(wake.watching)
 
             env.online = true
@@ -433,7 +457,12 @@ class TrackingEngineTravelTest {
             val written = statusWrites()
             assertTrue(written.isNotEmpty())
             assertTrue("travelUntil" in written.first().data && written.first().data["travelUntil"] == null)
-            assertFalse(local.state!!.miffs.getValue(miffA).clearTravel)
+            assertFalse(
+                local.state!!
+                    .miffs
+                    .getValue(miffA)
+                    .clearTravel,
+            )
         }
 
     // --- V7: a new phone adopts the trip ------------------------------------------------------------------------------------------
@@ -565,5 +594,4 @@ class TrackingEngineTravelTest {
             engine.reloadTravel()
             assertEquals(period, engine.travel.value)
         }
-
 }

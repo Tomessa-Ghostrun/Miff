@@ -100,7 +100,11 @@ class TrackingEngine(
 
     private fun storedTravel(): TravelPeriod? {
         val uid = env.uid() ?: return null
-        return local.load()?.takeIf { it.uid == uid }?.travel?.period()
+        return local
+            .load()
+            ?.takeIf { it.uid == uid }
+            ?.travel
+            ?.period()
     }
 
     fun reloadTravel() {
@@ -794,7 +798,12 @@ class TrackingEngine(
                         state
                             .copyWith(breaker = WriteBreaker.recordStatus(state.breaker?.toState(), day))
                             .withMiff(miffId) {
-                                it.copyWith(pending = null, access = access.value, clearTravel = false).withBattery(battery, now)
+                                it
+                                    .copyWith(
+                                        pending = null,
+                                        access = access.value,
+                                        clearTravel = false,
+                                    ).withBattery(battery, now)
                             }
                     }
 
@@ -835,7 +844,9 @@ class TrackingEngine(
         // A status that does not exist any more (deleted meanwhile) is NOT recreated here: with the real rules an update of a missing status answers
         // PERMISSION_DENIED (probe on the emulator), i.e. the ordinary refusal below ("look at the Miff again soon"), as before SESS-2.
         guardedCall(timeoutMillis) {
-            store.commit(listOf(TrackingWrites.statusUpdate(miffId, uid, fact, at, battery, access, deviceId, clearTravel)))
+            store.commit(
+                listOf(TrackingWrites.statusUpdate(miffId, uid, fact, at, battery, access, deviceId, clearTravel)),
+            )
         }
 
     /**
@@ -1060,7 +1071,13 @@ class TrackingEngine(
     ): LocalMiff = if (pct == null) this else copyWith(batteryPct = pct, batteryAtMillis = atMillis)
 
     private fun updateNetworkWake(state: LocalState) {
-        if (state.miffs.values.any { it.pending != null } || travelToTell(state)) networkWake.watch() else networkWake.stop()
+        if (state.miffs.values.any { it.pending != null } ||
+            travelToTell(state)
+        ) {
+            networkWake.watch()
+        } else {
+            networkWake.stop()
+        }
     }
 
     private fun LocalState.withMiff(
@@ -1102,7 +1119,14 @@ class TrackingEngine(
         val targets = (read ?: state.miffs.keys).sorted()
         val previous = state.travel
         val since = previous?.sinceMillis ?: now
-        var travel = (previous ?: LocalTravel(period.untilMillis, period.untilDay, since)).copyWith(period = period, upToDateIn = emptySet())
+        var travel =
+            (
+                previous ?: LocalTravel(
+                    period.untilMillis,
+                    period.untilDay,
+                    since,
+                )
+            ).copyWith(period = period, upToDateIn = emptySet())
 
         if (online && targets.isNotEmpty()) {
             val gate = WriteGate(recheck = true)
@@ -1113,7 +1137,8 @@ class TrackingEngine(
             val written = mutableSetOf<String>()
             for (miffId in targets) {
                 if (gate.ended()) break
-                val outcome = guardedCall(timeoutMillis) { store.commit(travelWrites(miffId, uid, travel, presenceAt, deviceId)) }
+                val outcome =
+                    guardedCall(timeoutMillis) { store.commit(travelWrites(miffId, uid, travel, presenceAt, deviceId)) }
                 when {
                     outcome is Guarded.Value -> {
                         written += miffId
@@ -1135,7 +1160,18 @@ class TrackingEngine(
         }
 
         val listed = targets.associateWith { state.miffs[it] ?: LocalMiff() }
-        state = state.copyWith(miffs = if (read != null || state.miffs.isEmpty()) listed else state.miffs + listed, travel = travel)
+        state =
+            state.copyWith(
+                miffs =
+                    if (read != null ||
+                        state.miffs.isEmpty()
+                    ) {
+                        listed
+                    } else {
+                        state.miffs + listed
+                    },
+                travel = travel,
+            )
         if (read != null) state = state.copyWith(checkedAtMillis = now)
         // The tracking is paused only now: the trip is known to the server (or kept to be told).
         state = disarm(state)
@@ -1179,11 +1215,17 @@ class TrackingEngine(
             when (val consent = guardedCall(timeoutMillis) { store.consent(miffId, uid) }) {
                 is Guarded.Value -> {
                     val card = consent.value
-                    if (card != null && card.enabled && MiffSharingConsent.coversPosition(card.version)) eligible += miffId
+                    if (card != null && card.enabled &&
+                        MiffSharingConsent.coversPosition(card.version)
+                    ) {
+                        eligible += miffId
+                    }
                 }
 
                 // No longer a member: not a Miff to tell. Any other failure: nothing is concluded.
-                is Guarded.Failed -> if (!consent.lostAccess) return null
+                is Guarded.Failed -> {
+                    if (!consent.lostAccess) return null
+                }
             }
         }
         return eligible
@@ -1227,16 +1269,30 @@ class TrackingEngine(
         val travel = state.travel ?: return state
         val due =
             when (reason) {
-                Reason.SHARING_CHANGED, Reason.REARM, Reason.NETWORK_BACK -> true
-                Reason.OPENED -> state.checkedAtMillis == 0L || now - state.checkedAtMillis > TrackingLimits.PLACES_REREAD_MILLIS
-                else -> false
+                Reason.SHARING_CHANGED, Reason.REARM, Reason.NETWORK_BACK -> {
+                    true
+                }
+
+                Reason.OPENED -> {
+                    state.checkedAtMillis == 0L ||
+                        now - state.checkedAtMillis > TrackingLimits.PLACES_REREAD_MILLIS
+                }
+
+                else -> {
+                    false
+                }
             }
         if (!due || !env.isOnline()) return state
         val eligible = readEligible(uid) ?: return state
         return state.copyWith(
             miffs = eligible.associateWith { state.miffs[it] ?: LocalMiff() },
             checkedAtMillis = now,
-            travel = travel.copyWith(startedIn = travel.startedIn intersect eligible, upToDateIn = travel.upToDateIn intersect eligible),
+            travel =
+                travel.copyWith(
+                    startedIn = travel.startedIn intersect eligible,
+                    upToDateIn =
+                        travel.upToDateIn intersect eligible,
+                ),
         )
     }
 
@@ -1249,26 +1305,34 @@ class TrackingEngine(
     ): LocalState {
         var state = start
         var travel = state.travel ?: return state
-        val pending = state.miffs.keys.sorted().filter { it !in travel.upToDateIn }
+        val pending =
+            state.miffs.keys
+                .sorted()
+                .filter { it !in travel.upToDateIn }
         if (pending.isEmpty() || !env.isOnline()) return state
         val deviceId = gate.deviceId() ?: return state
         val presenceAt = EventTime.forWrite(travel.sinceMillis, now) ?: now
         for (miffId in pending) {
             if (gate.ended()) break
-            val outcome = guardedCall(timeoutMillis) { store.commit(travelWrites(miffId, uid, travel, presenceAt, deviceId)) }
+            val outcome =
+                guardedCall(timeoutMillis) { store.commit(travelWrites(miffId, uid, travel, presenceAt, deviceId)) }
             when {
                 outcome is Guarded.Value -> {
-                    travel = travel.copyWith(startedIn = travel.startedIn + miffId, upToDateIn = travel.upToDateIn + miffId)
+                    travel =
+                        travel.copyWith(startedIn = travel.startedIn + miffId, upToDateIn = travel.upToDateIn + miffId)
                 }
 
                 outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED -> {
                     gate.refused()
                     state = recheckSoon(state, now).copyWith(miffs = state.miffs - miffId)
-                    travel = travel.copyWith(startedIn = travel.startedIn - miffId, upToDateIn = travel.upToDateIn - miffId)
+                    travel =
+                        travel.copyWith(startedIn = travel.startedIn - miffId, upToDateIn = travel.upToDateIn - miffId)
                 }
 
                 // No network or no answer: what is left waits for the next wake-up.
-                else -> break
+                else -> {
+                    break
+                }
             }
         }
         return state.copyWith(travel = travel)
@@ -1327,7 +1391,9 @@ class TrackingEngine(
                     reads[miffId] = trip.period
                 }
 
-                is Guarded.Failed -> if (!read.lostAccess) return null
+                is Guarded.Failed -> {
+                    if (!read.lostAccess) return null
+                }
             }
         }
         val trip = found ?: return state

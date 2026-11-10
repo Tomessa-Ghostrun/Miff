@@ -113,7 +113,13 @@ data class TravelDay(
         ): TravelDay? {
             val date =
                 TravelPlan.parseDay(untilDay)
-                    ?: untilMillis?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate().minusDays(1) }
+                    ?: untilMillis?.let {
+                        Instant
+                            .ofEpochMilli(it)
+                            .atZone(zone)
+                            .toLocalDate()
+                            .minusDays(1)
+                    }
                     ?: return null
             return TravelDay(date, showYear = date.year != today.year)
         }

@@ -60,8 +60,18 @@ class TravelModeTest {
     @Test
     fun theEnd_followsTheDaylightSavingChange_itIsMidnightLocalNotTwentyFourHoursAfterNoon() {
         // 26 Oct 2026: the clocks go back in Paris (that day has 25 hours).
-        val choice = TravelPlan.choose(LocalDate.of(2026, 10, 26), LocalDate.of(2026, 10, 20), paris) as TravelChoice.Valid
-        val expected = LocalDate.of(2026, 10, 27).atStartOfDay(paris).toInstant().toEpochMilli()
+        val choice =
+            TravelPlan.choose(
+                LocalDate.of(2026, 10, 26),
+                LocalDate.of(2026, 10, 20),
+                paris,
+            ) as TravelChoice.Valid
+        val expected =
+            LocalDate
+                .of(2026, 10, 27)
+                .atStartOfDay(paris)
+                .toInstant()
+                .toEpochMilli()
         assertEquals(expected, choice.period.untilMillis)
     }
 
@@ -71,7 +81,18 @@ class TravelModeTest {
     fun theDayText_isTheIsoDate_andOnlyAnIsoDateIsRead() {
         assertEquals("2026-11-05", TravelPlan.dayText(LocalDate.of(2026, 11, 5)))
         assertEquals(LocalDate.of(2026, 11, 5), TravelPlan.parseDay("2026-11-05"))
-        listOf(null, "", "2026-1-5", "2026-13-01", "2026-02-30", "05/11/2026", "2026-11-05T00:00", " 2026-11-05", "2026-11-05\n", "abcd-ef-gh").forEach {
+        listOf(
+            null,
+            "",
+            "2026-1-5",
+            "2026-13-01",
+            "2026-02-30",
+            "05/11/2026",
+            "2026-11-05T00:00",
+            " 2026-11-05",
+            "2026-11-05\n",
+            "abcd-ef-gh",
+        ).forEach {
             assertNull("«$it» is not a day", TravelPlan.parseDay(it))
         }
     }
@@ -85,7 +106,12 @@ class TravelModeTest {
 
     @Test
     fun withoutAUsableDay_theDayBeforeTheEndIsUsed_inTheZoneOfTheReader_andNothingElseGivesNull() {
-        val until = LocalDate.of(2026, 11, 16).atStartOfDay(paris).toInstant().toEpochMilli()
+        val until =
+            LocalDate
+                .of(2026, 11, 16)
+                .atStartOfDay(paris)
+                .toInstant()
+                .toEpochMilli()
         assertEquals(LocalDate.of(2026, 11, 15), TravelDay.of("garbage", until, today, paris)!!.date)
         assertEquals(LocalDate.of(2026, 11, 15), TravelDay.of(null, until, today, paris)!!.date)
         assertNull(TravelDay.of("garbage", null, today, paris))
@@ -93,8 +119,19 @@ class TravelModeTest {
 
     // --- What a loved one sees ---------------------------------------------------------------------------------------------------
 
-    private val until = LocalDate.of(2026, 11, 16).atStartOfDay(paris).toInstant().toEpochMilli()
-    private val now = LocalDate.of(2026, 11, 10).atTime(12, 0).atZone(paris).toInstant().toEpochMilli()
+    private val until =
+        LocalDate
+            .of(2026, 11, 16)
+            .atStartOfDay(paris)
+            .toInstant()
+            .toEpochMilli()
+    private val now =
+        LocalDate
+            .of(2026, 11, 10)
+            .atTime(12, 0)
+            .atZone(paris)
+            .toInstant()
+            .toEpochMilli()
 
     private fun view(
         presence: PresenceValue? = PresenceValue.TRAVEL,
@@ -141,7 +178,10 @@ class TravelModeTest {
         assertEquals(StatusLevel.NEUTRAL, StatusColor.level(facts, until + 1))
         assertEquals(StatusLevel.NEUTRAL, StatusColor.level(facts, until + 30 * 24 * 3_600_000L))
         // And with no times at all.
-        assertEquals(StatusLevel.NEUTRAL, StatusColor.level(MemberStatusFacts(true, PresenceValue.TRAVEL, null, null), now))
+        assertEquals(
+            StatusLevel.NEUTRAL,
+            StatusColor.level(MemberStatusFacts(true, PresenceValue.TRAVEL, null, null), now),
+        )
     }
 
     @Test
@@ -154,7 +194,19 @@ class TravelModeTest {
 
     @Test
     fun aStatusKeepsTheEndOfTheTrip_onlyWhenItIsATrip() {
-        val trip = MemberStatus.fromServer("travel", null, now, now, false, null, "background", now, until, "2026-11-15")
+        val trip =
+            MemberStatus.fromServer(
+                "travel",
+                null,
+                now,
+                now,
+                false,
+                null,
+                "background",
+                now,
+                until,
+                "2026-11-15",
+            )
         assertEquals(until, trip.travelUntilMillis)
         assertEquals("2026-11-15", trip.travelUntilDay)
         // Somebody else wrote an end next to another presence: dropped.

@@ -50,7 +50,16 @@ class DeviceIdInEveryWriteTest {
                 // MODE VOYAGE: the start of a trip, the move of its end, and the status that ends a trip.
                 TrackingWrites.travelStart(miffId, uid, trip, now, DEVICE_A),
                 TrackingWrites.travelDate(miffId, uid, trip, DEVICE_A),
-                TrackingWrites.statusUpdate(miffId, uid, arrival, now, 80, LocationAccess.BACKGROUND, DEVICE_A, clearTravel = true),
+                TrackingWrites.statusUpdate(
+                    miffId,
+                    uid,
+                    arrival,
+                    now,
+                    80,
+                    LocationAccess.BACKGROUND,
+                    DEVICE_A,
+                    clearTravel = true,
+                ),
             ) +
                 MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
@@ -82,7 +91,9 @@ class DeviceIdInEveryWriteTest {
     @Test
     fun theDeletionsOfAStatusAndOfAPosition_carryNoContent_andNoIdentifier() {
         // MODE VOYAGE: the removal of my last position when a trip begins is a deletion too.
-        val leave = MiffWrites.leave(miffId, uid, "free") + MiffWrites.stopSharing(miffId, uid) + TrackingWrites.positionRemoval(miffId, uid)
+        val leave =
+            MiffWrites.leave(miffId, uid, "free") + MiffWrites.stopSharing(miffId, uid) +
+                TrackingWrites.positionRemoval(miffId, uid)
         leave.filter { isStatusOrPosition(it) }.forEach {
             assertEquals(WriteKind.DELETE, it.kind)
             assertNull(it.data["deviceId"])

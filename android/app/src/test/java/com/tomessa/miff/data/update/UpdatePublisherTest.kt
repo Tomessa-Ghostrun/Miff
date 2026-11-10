@@ -149,7 +149,10 @@ class UpdatePublisherTest {
             assertEquals(PublishResult.Published(1), result)
             assertEquals(0, positionMissingCalls)
             val writes = store.commits.single().writes
-            assertEquals(listOf("miffs/${miffIds[0]}/photos/$uid", "miffs/${miffIds[0]}/status/$uid"), writes.map { it.path })
+            assertEquals(
+                listOf("miffs/${miffIds[0]}/photos/$uid", "miffs/${miffIds[0]}/status/$uid"),
+                writes.map { it.path },
+            )
             val status = writes[1].data
             // The rules refuse a battery level next to a trip: it is null, and the status does not touch the presence or the keys of the trip.
             assertNull(status["batteryPct"])
