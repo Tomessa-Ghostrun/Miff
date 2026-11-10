@@ -141,3 +141,4 @@ final class TravelDayFormatTests: XCTestCase {
         XCTAssertEqual(TravelDayFormat.withYear(TravelDate(year: 2027, month: 1, day: 1), locale: english), "Jan 1, 2027")
     }
 }
+// swiftlint:enable line_length
