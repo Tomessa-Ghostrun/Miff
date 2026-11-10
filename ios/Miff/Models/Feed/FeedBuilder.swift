@@ -194,8 +194,8 @@ enum FeedBuilder {
             label: label(member: member, isMe: isMe, status: status, level: level, context),
             time: travel == nil ? timeLine(level: level, status: status, context) : travelTimeLine(travel, status),
             // Un voyageur ne mesure rien : ni niveau de batterie ni « Localisation limitée » (l'accès n'est pas dit non plus).
-            battery: travel == nil ? status.flatMap { battery($0, now: context.now) } : nil,
-            limitedLocation: travel == nil && (status?.locationAccess.map { limitedAccess.contains($0) } ?? false),
+            battery: shownBattery(status, travel: travel, context),
+            limitedLocation: shownLimitedLocation(status, travel: travel),
             phone: isMe ? nil : member.phone,
             // Un autre membre qui partage, pendant que je partage aussi et que les statuts sont VRAIMENT lus (les règles demandent que
             // mon statut soit publié) : même sans statut connu, « pas de position » est l'une des réponses calmes de la feuille.
@@ -208,8 +208,29 @@ enum FeedBuilder {
                 visible: status != nil,
                 nowMillis: context.now
             ),
-            traveling: travel.map { $0 != .ended } ?? false
+            traveling: isOngoing(travel)
         )
+    }
+
+    private static func isOngoing(_ travel: TravelView?) -> Bool {
+        if case .active? = travel {
+            return true
+        }
+        return false
+    }
+
+    private static func shownBattery(_ status: MemberStatus?, travel: TravelView?, _ context: Context) -> Battery? {
+        guard travel == nil, let status else {
+            return nil
+        }
+        return battery(status, now: context.now)
+    }
+
+    private static func shownLimitedLocation(_ status: MemberStatus?, travel: TravelView?) -> Bool {
+        guard travel == nil, let access = status?.locationAccess else {
+            return false
+        }
+        return limitedAccess.contains(access)
     }
 
     /// Le voyage d'un statut montré, ou nil. Ma carte pendant que mon accord est attendu ne montre rien (rien n'est partagé).
