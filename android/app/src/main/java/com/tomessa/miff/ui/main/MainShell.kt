@@ -51,7 +51,6 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
-import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
@@ -83,7 +82,6 @@ import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
-import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.MiffCarouselHost
@@ -91,6 +89,7 @@ import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.profile.miffOfferRoute
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
 import com.tomessa.miff.ui.review.rememberReviewHost
@@ -301,6 +300,8 @@ private fun MainNavigation(
                                 ProfileMiffsViewModel(
                                     reader = container.memberFacesReader,
                                     feedMembers = feedViewModel.readMembers,
+                                    myProfile = container.currentProfile.profile,
+                                    myUid = { container.authGateway.currentUid },
                                 )
                             }
                         },
@@ -369,7 +370,7 @@ private fun MainNavigation(
                         onMiffsKnown = profileMiffsViewModel::retainOnly,
                         onCreate = { navController.open(CreateMiffRoute) },
                         // Same rule and same offer as the selector of the Feed (decision of the PM, 2026-11-08): a free account that already has a Miff.
-                        onOffer = { navController.open(PlacePaywallRoute.of(PaywallReason.MIFF)) },
+                        onOffer = { navController.open(miffOfferRoute()) },
                     ),
                 onProfileMiffOpened = profileMiffsViewModel::onMiffOpened,
             )

@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.miff.FacesRead
 import com.tomessa.miff.data.miff.MemberFacesReader
 import com.tomessa.miff.domain.profile.CardFaces
+import com.tomessa.miff.domain.profile.MemberFace
 import com.tomessa.miff.domain.profile.MiffFacesBook
+import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.profile.ReadMembers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,9 +32,13 @@ import kotlinx.coroutines.launch
 class ProfileMiffsViewModel(
     private val reader: MemberFacesReader,
     feedMembers: Flow<ReadMembers?>,
+    /** My own profile, as the phone has it: my face on the cards follows it at once, with no reading (see [MiffFacesBook.replaceFace]). */
+    myProfile: Flow<MyProfile?>,
+    private val myUid: () -> String?,
     nowMillis: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val book = MiffFacesBook(nowMillis)
+    private var myFace: MemberFace? = null
     private val mutableFaces = MutableStateFlow<Map<String, CardFaces>>(emptyMap())
 
     /** What each card of the carousel shows, by id of Miff. A Miff that is not in the map has nothing yet: the card shows its placeholders. */
@@ -42,6 +48,20 @@ class ProfileMiffsViewModel(
         viewModelScope.launch {
             feedMembers.filterNotNull().collect { read ->
                 book.seedFromFeed(read)
+                publish()
+            }
+        }
+        viewModelScope.launch {
+            myProfile.collect { profile ->
+                val uid = myUid()
+                myFace =
+                    if (profile == null ||
+                        uid == null
+                    ) {
+                        null
+                    } else {
+                        MemberFace.of(uid, profile.firstName, profile.lastName, profile.avatarJpeg)
+                    }
                 publish()
             }
         }
@@ -71,6 +91,8 @@ class ProfileMiffsViewModel(
     }
 
     private fun publish() {
+        // What the Feed or the server last said about me may be older than what I just saved: my own face always wins.
+        myFace?.let(book::replaceFace)
         mutableFaces.value = book.view()
     }
 }

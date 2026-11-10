@@ -235,4 +235,42 @@ class MiffFacesTest {
         book.retainOnly(setOf("a"))
         assertEquals(setOf("a"), book.view().keys)
     }
+
+    // --- My own face follows my profile, with no reading -------------------------------------------------------------------
+
+    private fun faceOf(
+        book: MiffFacesBook,
+        miffId: String,
+        uid: String,
+    ) = (book.view().getValue(miffId) as CardFaces.Ready).faces.first { it.uid == uid }
+
+    @Test
+    fun book_myNewFace_replacesMineOnEveryCard_withoutAnyReading_evenForWhatTheFeedGave() {
+        book.seedFromFeed(ReadMembers("a", members(4)))
+        book.readingSucceeded("b", members(3))
+        val photo = ByteArray(50) { 7 }
+        book.replaceFace(MemberFace.of("u2", "Zoé", "Durand", photo))
+        listOf("a", "b").forEach { miff ->
+            val mine = faceOf(book, miff, "u2")
+            assertEquals("ZD", mine.initials)
+            assertSame(photo, mine.avatarJpeg)
+        }
+        // The others are left alone, the counts and the rules of the cost too.
+        assertEquals("LM", faceOf(book, "a", "u1").initials)
+        assertEquals(4, (book.view().getValue("a") as CardFaces.Ready).count)
+        assertFalse(book.needsReading("a"))
+        assertFalse(book.needsReading("b"))
+    }
+
+    @Test
+    fun book_myNewFace_isIgnoredWhereIAmNotDrawn_andForCardsWithoutFaces() {
+        book.seedFromFeed(ReadMembers("a", members(8)))
+        book.readingStarted("b")
+        book.readingFailed("c")
+        book.replaceFace(MemberFace.of("u7", "Zoé", "Durand", null))
+        // u7 is the 7th member: beyond the 5 faces kept, nothing to replace.
+        assertEquals(5, (book.view().getValue("a") as CardFaces.Ready).faces.size)
+        assertTrue((book.view().getValue("a") as CardFaces.Ready).faces.none { it.uid == "u7" })
+        assertEquals(CardFaces.Unavailable, book.view()["c"])
+    }
 }

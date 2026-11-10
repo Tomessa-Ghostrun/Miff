@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -56,12 +57,14 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.miff.SelectorTap
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.AvatarDecodePlan
 import com.tomessa.miff.domain.profile.CardFaces
 import com.tomessa.miff.domain.profile.CarouselItem
 import com.tomessa.miff.domain.profile.FacesLayout
 import com.tomessa.miff.domain.profile.MemberFace
 import com.tomessa.miff.domain.profile.MiffCarousel
+import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -76,7 +79,9 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textCaptionBold12
 import com.tomessa.miff.ui.theme.textDisplayTitle
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * What the carousel of Miffs needs from the outside: the faces already known, and what to do when a card appears, when the list of Miffs changes,
@@ -383,7 +388,10 @@ private val FACE_RING = 2.dp
 @Composable
 private fun FaceCircle(face: MemberFace) {
     val targetPx = with(LocalDensity.current) { FaceSize.roundToPx() }
-    val bitmap = remember(face.uid, face.avatarJpeg) { face.avatarJpeg?.let { decodeFace(it, targetPx) } }
+    // Decoded OFF the main thread (up to 5 photos per card, several cards): the initials are drawn meanwhile, and when the photo cannot be used.
+    val photo by produceState<ImageBitmap?>(null, face.uid, face.avatarJpeg, targetPx) {
+        value = face.avatarJpeg?.let { jpeg -> withContext(Dispatchers.Default) { decodeFace(jpeg, targetPx) } }
+    }
     Box(
         modifier =
             Modifier
@@ -393,9 +401,10 @@ private fun FaceCircle(face: MemberFace) {
                 .border(FACE_RING, colorBgSurface, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        if (bitmap != null) {
+        val decoded = photo
+        if (decoded != null) {
             Image(
-                bitmap = bitmap,
+                bitmap = decoded,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -440,16 +449,26 @@ private val FACE_TEXT = 11.dp
  * The photo of a member, small. It comes from ANOTHER account: it is decoded only if its announced size is one of an avatar of the app, and
  * subsampled to what the circle needs ([AvatarDecodePlan]). Null (initials are drawn) when it is not.
  */
-private fun decodeFace(
+internal fun decodeFace(
     jpeg: ByteArray,
     targetPx: Int,
-): ImageBitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, bounds)
-    val sample = AvatarDecodePlan.sampleSize(bounds.outWidth, bounds.outHeight, targetPx) ?: return null
-    val options = BitmapFactory.Options().apply { inSampleSize = sample }
-    return BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, options)?.asImageBitmap()
-}
+): ImageBitmap? =
+    try {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, bounds)
+        val sample = AvatarDecodePlan.sampleSize(bounds.outWidth, bounds.outHeight, targetPx)
+        if (sample == null) {
+            null
+        } else {
+            val options = BitmapFactory.Options().apply { inSampleSize = sample }
+            BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, options)?.asImageBitmap()
+        }
+    } catch (e: RuntimeException) {
+        // A photo that cannot be decoded is not worth a crash: the initials are drawn.
+        null
+    } catch (e: OutOfMemoryError) {
+        null
+    }
 
 /** The dots of the carousel: the current one is a LONGER dot (a shape, not only a colour). Decoration. */
 @Composable
@@ -473,3 +492,9 @@ private fun CarouselDots(
         }
     }
 }
+
+/**
+ * The route of the offer for a 2nd Miff, asked from the last card of the carousel (same offer as the selector of the Feed). Kept here, not in
+ * MainShell, so that the shell has a single place that names the offer routes (PlaceAddEntryPointsTest).
+ */
+internal fun miffOfferRoute() = PlacePaywallRoute.of(PaywallReason.MIFF)

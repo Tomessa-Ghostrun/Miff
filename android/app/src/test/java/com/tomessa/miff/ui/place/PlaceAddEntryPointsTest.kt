@@ -28,9 +28,17 @@ class PlaceAddEntryPointsTest {
     fun profileTab_opensTheForm_whateverThePlan() {
         val code = source("ui/main/MainShell.kt")
         assertTrue(code.contains("onAddPlace = { navController.open(PlaceFormRoute()) },"))
-        // The tab never opens the offer for PLACES (the form decides); it opens the offer for a 2nd MIFF (carousel, decision of the PM 2026-11-10).
-        assertFalse(code.contains("PaywallReason.LIMIT"))
-        assertFalse(code.contains("PaywallReason.DANGER"))
+        // The only offer opened from the shell is the 2nd Miff, asked from the selector of the Feed (decision of the PM, 2026-11-08); never for a place.
+        assertEquals(
+            listOf(
+                "PlacePaywallRoute.of(PaywallReason.MIFF)",
+            ),
+            Regex("""PlacePaywallRoute[.]of[(][^)]*[)]""")
+                .findAll(code)
+                .map {
+                    it.value
+                }.toList(),
+        )
     }
 
     @Test

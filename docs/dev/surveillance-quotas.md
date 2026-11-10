@@ -121,7 +121,7 @@ La carte de chaque Miff du Profil montre le nombre de membres et leurs photos en
 | Cas | Lectures | Pourquoi |
 |---|---|---|
 | **Compte gratuit** (1 Miff) | **0 de plus** | la carte de la seule Miff est dessinée avec les membres que le Feed a déjà lus (la Miff active) |
-| **Miff+**, la Miff active du Feed | **0 de plus** | idem : réutilisée (les photos aussi), même si le Profil est ouvert des heures après |
+| **Miff+**, la Miff active du Feed | **0 de plus** | idem : réutilisée (les photos aussi), **telle que le Feed l'a lue à sa dernière visite** : l'écoute du Feed n'est attachée que sur l'onglet Feed, donc un membre arrivé ou parti pendant que la personne est ailleurs n'apparaît qu'à son retour sur le Feed (limite connue, acceptée pour ne rien lire de plus). Sa propre photo et son prénom suivent le profil du téléphone tout de suite (0 lecture) ; l'ouverture de l'écran de la Miff relit la carte une fois |
 | **Miff+**, une autre Miff, au moment où sa carte s'affiche (le carrousel s'arrête dessus) | **M + 2** (M fiches de membres, 15 au plus, + 2 lectures de règles) | une seule lecture, puis réutilisée **5 minutes** ; un voisin simplement préparé hors de l'écran (pour le lecteur d'écran) **ne lit rien** |
 | Retour sur le Profil ou sur une carte déjà lue, dans les 5 minutes | **0** | réutilisé |
 | Retour sur une carte après 5 minutes | **M + 2** | une relecture (jamais en boucle) |

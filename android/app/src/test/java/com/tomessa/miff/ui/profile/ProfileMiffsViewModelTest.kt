@@ -6,6 +6,7 @@ import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.profile.CardFaces
 import com.tomessa.miff.domain.profile.MiffFacesBook
+import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.profile.ReadMembers
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -62,7 +63,9 @@ class ProfileMiffsViewModelTest {
     private val feed = MutableStateFlow<ReadMembers?>(null)
     private var now = 1_000_000L
 
-    private fun viewModel() = ProfileMiffsViewModel(reader, feed, nowMillis = { now })
+    private val me = MutableStateFlow<MyProfile?>(null)
+
+    private fun viewModel() = ProfileMiffsViewModel(reader, feed, me, myUid = { "u2" }, nowMillis = { now })
 
     private fun ProfileMiffsViewModel.counts() = faces.value.mapValues { (it.value as? CardFaces.Ready)?.count }
 
@@ -155,5 +158,27 @@ class ProfileMiffsViewModelTest {
         dispatcher.scheduler.runCurrent()
         vm.retainOnly(setOf("a"))
         assertTrue(vm.faces.value.isEmpty())
+    }
+
+    private fun ProfileMiffsViewModel.initialsOf(
+        miffId: String,
+        uid: String,
+    ) = (faces.value.getValue(miffId) as CardFaces.Ready).faces.first { it.uid == uid }.initials
+
+    @Test
+    fun myOwnFace_followsMyProfile_withoutAnyReading_andWinsOverALaterSeedOfTheFeed() {
+        val vm = viewModel()
+        feed.value = ReadMembers("a", members(4))
+        dispatcher.scheduler.runCurrent()
+        assertEquals("LM", vm.initialsOf("a", "u2"))
+        me.value = MyProfile("Zoé", "Durand", "+33612345678", null)
+        dispatcher.scheduler.runCurrent()
+        assertEquals("ZD", vm.initialsOf("a", "u2"))
+        // The Feed listens again and gives a copy that is still the old one: my own face wins.
+        feed.value = ReadMembers("a", members(4))
+        dispatcher.scheduler.runCurrent()
+        assertEquals("ZD", vm.initialsOf("a", "u2"))
+        assertEquals("LM", vm.initialsOf("a", "u1"))
+        assertTrue("no reading for any of it", reader.reads.isEmpty())
     }
 }

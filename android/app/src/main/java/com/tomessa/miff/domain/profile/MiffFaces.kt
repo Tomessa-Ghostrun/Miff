@@ -9,7 +9,7 @@ import com.tomessa.miff.domain.miff.MiffMember
  *   never in an analytics event; every class that carries one hides it in its toString();
  * - only what the card draws is kept (the uid, the initials, the stored photo of 20 000 bytes at most): no phone number, no name in full;
  * - COST: the faces of a Miff cost ONE reading of `miffs/{id}/members` (one Firestore reading per member card, so 15 at most). [MiffFacesBook]
- *   decides when a reading is needed: never for the Miff the Feed already read (reused), at most once per Miff and per 5 minutes for the
+ *   decides when a reading is needed: never for the Miff the Feed already read (reused as of the last visit to the Feed), at most once per Miff and per 5 minutes for the
  *   others, never in a loop after a failure. No listener is ever attached for the faces.
  */
 
@@ -23,14 +23,18 @@ class MemberFace(
 
     companion object {
         /** What the card keeps of a member. A photo larger than the rules allow is never trusted (it would not have been written by the app). */
-        fun of(member: MiffMember): MemberFace =
+        fun of(member: MiffMember): MemberFace = of(member.uid, member.firstName, member.lastName, member.avatarJpeg)
+
+        fun of(
+            uid: String,
+            firstName: String,
+            lastName: String,
+            avatarJpeg: ByteArray?,
+        ): MemberFace =
             MemberFace(
-                uid = member.uid,
-                initials = Initials.of(member.firstName, member.lastName),
-                avatarJpeg =
-                    member.avatarJpeg?.takeIf {
-                        it.isNotEmpty() && it.size <= ProfileDocument.MAX_AVATAR_BYTES
-                    },
+                uid = uid,
+                initials = Initials.of(firstName, lastName),
+                avatarJpeg = avatarJpeg?.takeIf { it.isNotEmpty() && it.size <= ProfileDocument.MAX_AVATAR_BYTES },
             )
     }
 }
@@ -110,8 +114,13 @@ class MiffFacesBook(
     fun view(): Map<String, CardFaces> = entries.mapValues { it.value.faces }
 
     /**
-     * The Feed has read these members: the card of this Miff draws them. FREE (no reading). It also clears a "stale" mark: the Feed's listener is
-     * live while the Feed is on screen, so what it holds is at least as recent as anything we would read.
+     * The Feed has read these members: the card of this Miff draws them. FREE (no reading). It also clears a "stale" mark: what the Feed has just
+     * heard (its listener is attached ONLY while the Feed is on screen) is at least as recent as anything we would read now.
+     *
+     * KNOWN LIMIT, accepted for the cost: once the Feed is left, nothing updates this entry, so the card shows the members AS THEY WERE at the last
+     * visit to the Feed (somebody who joined or left meanwhile appears when the person goes back to the Feed, which listens again and seeds again). Two
+     * cases are covered without any reading: the person's OWN face ([replaceFace], after "Mes informations") and the opening of the screen of the Miff
+     * ([invalidate], which costs one reading at the next appearance of the card).
      */
     fun seedFromFeed(read: ReadMembers) {
         val reading = entries[read.miffId]?.reading == true
@@ -121,7 +130,7 @@ class MiffFacesBook(
     /**
      * Does the card of [miffId], which has just appeared, need a reading of the server? Yes when nothing is known, when the Miff was opened since
      * (members may have changed: [invalidate]), when what we read is older than [TTL_MILLIS], or when the last attempt failed more than
-     * [RETRY_MILLIS] ago. No while a reading is under way, and no for what the Feed gave (it is live; see [seedFromFeed]).
+     * [RETRY_MILLIS] ago. No while a reading is under way, and no for what the Feed gave (as of the last visit to the Feed, never aged: see the known limit of [seedFromFeed]).
      */
     fun needsReading(miffId: String): Boolean {
         val entry = entries[miffId] ?: return true
@@ -164,6 +173,20 @@ class MiffFacesBook(
     fun invalidate(miffId: String) {
         val entry = entries[miffId] ?: return
         entries[miffId] = Entry(entry.faces, entry.source, entry.atMillis, stale = true, reading = entry.reading)
+    }
+
+    /**
+     * The person changed their own photo or name (Réglages > Mes informations): their face is replaced on every card that draws it. NO reading: the
+     * new face is already on the phone. The count never changes (a face that is not drawn, beyond the first five, is left alone).
+     */
+    fun replaceFace(face: MemberFace) {
+        for ((miffId, entry) in entries.toMap()) {
+            val ready = entry.faces as? CardFaces.Ready ?: continue
+            if (ready.faces.none { it.uid == face.uid }) continue
+            val faces = ready.faces.map { if (it.uid == face.uid) face else it }
+            entries[miffId] =
+                Entry(CardFaces.Ready(ready.count, faces), entry.source, entry.atMillis, entry.stale, entry.reading)
+        }
     }
 
     /** A Miff that is no longer in the list (left, deleted, access lost) takes its faces with it. */

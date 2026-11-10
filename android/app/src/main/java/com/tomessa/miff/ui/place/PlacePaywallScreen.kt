@@ -208,7 +208,7 @@ private fun ContextCard(reason: PaywallReason) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Dot(filled = true)
                 Dot(filled = true)
-                Dot(filled = false)
+                Dot(filled = true)
             }
         } else {
             Box(
