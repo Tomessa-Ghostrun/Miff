@@ -19,7 +19,10 @@ Ne change pas : aucune règle Firestore, aucun événement Analytics, aucun jour
 - **Fin non instantanée sur iPhone** : sans alarme ni zone, la fin est traitée au premier réveil de l'app (changement de position significatif, ou toute relance) ou à l'ouverture qui suit la date ; les proches voient « Voyage terminé » en attendant. À confirmer par le PM (Q5 du ticket).
 - **Zones non surveillées pendant le voyage** (comme Android, choix au plus simple et au plus économe, à confirmer par le PM) : la position est rafraîchie à l'ouverture, en arrière-plan et après un déplacement significatif, pas à l'arrivée dans un lieu.
 - **Fenêtre de fragilité** (comme Android) : si le processus s'arrête entre l'écriture du voyage sur le serveur et la sauvegarde locale, le téléphone ne se croit pas en voyage jusqu'à ce que le statut de présence suivant le remplace. Très courte, non corrigée.
-- Coût : 0 € ; signal de bascule : aucun nouveau.
+- **Choix « économique » : les écritures de voyage ne passent pas par le disjoncteur `WriteBreaker`** (début, nouvelle fin, fin, Miff rejointe) : elles n'ont pas de plafond explicite. Bornes réelles : une écriture par Miff et par geste ou par réveil, au plus un statut de fin par Miff, aucune boucle (un refus retire la Miff de la liste et elle n'est regardée de nouveau qu'au bout de 5 minutes). **Limite connue** : un client qui rejouerait le geste en boucle n'est pas freiné côté app (les règles bornent seulement chaque écriture à 91 jours). **Signal de bascule** : plus de 12 000 écritures par jour au total, ou plusieurs dizaines de statuts de voyage par jour pour un même compte ; la réponse serait d'ajouter un plafond du jour (compteur dédié, comme la batterie).
+- **Détection « nouvel appareil »** : `checkedAtMillis == 0` (aucune relecture vérifiée du serveur) ; une copie locale déjà vérifiée n'est jamais relue (testé : une seule lecture de MON statut par Miff, puis une de plus après une déconnexion).
+- **À suivre dans les PR de notifications** : #129 devra gérer `.travel` dans `StatusColor.changeInstants` (liste vide : un voyageur est neutre et n'a aucun instant de changement) quand elle sera fusionnée avec cette PR ; sans cela le `switch` exhaustif ne compile plus.
+- Coût : 0 € ; signal de bascule : voir ci-dessus.
 
 ### Photo Google à l'inscription et retour par geste (retours du PM après TestFlight, 2026-11-08)
 

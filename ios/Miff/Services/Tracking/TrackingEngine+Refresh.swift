@@ -46,7 +46,9 @@ extension TrackingEngine {
             await doTravelPass(uid, state, reason, supplied: supplied)
             return
         }
-        // Un NOUVEL appareil pour ce compte (aucune relecture vérifiée du serveur jusque-là) lit d'abord s'il y a un voyage, avant d'armer.
+        // Un NOUVEL appareil pour ce compte lit d'abord s'il y a un voyage, avant d'armer. Détection : aucune relecture VÉRIFIÉE du serveur
+        // n'a encore eu lieu (`checkedAtMillis == 0`) : pas de copie locale (première connexion, réinstallation, déconnexion qui l'a
+        // effacée) ou copie qui n'a jamais pu lire le serveur. Une copie qui a déjà été vérifiée n'est pas relue (une seule lecture par Miff).
         let newPhone = state.checkedAtMillis == 0
         if reason == .rearm {
             journal.record(.wakeRearm)

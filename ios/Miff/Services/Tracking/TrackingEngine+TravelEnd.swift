@@ -18,7 +18,7 @@ extension TrackingEngine {
     /// sont effacées dans la MÊME écriture), puis le statut reprend : zones, position et une présence si la personne est dans un lieu.
     /// Une écriture qui ne peut pas partir attend le réseau (l'état local est déjà libre : le suivi n'attend pas).
     func finishTravel(_ uid: String, _ start: LocalState, now: Int) async {
-        guard let travel = start.travel else {
+        guard start.travel != nil else {
             return
         }
         let fact = PresenceMachine.unknown(atMillis: now)
@@ -27,7 +27,10 @@ extension TrackingEngine {
             state.update(miffId) {
                 $0.derived = DerivedPresence(presence: fact.presence, placeId: fact.placeId)
                 $0.pending = PendingStatus(fact: fact)
-                $0.clearTravel = $0.clearTravel || travel.startedIn.contains(miffId)
+                // TOUJOURS, même pour une Miff que le téléphone ne croit pas avoir prévenue (`startedIn`) : si la réponse du début s'est
+                // perdue, le serveur porte quand même le voyage, et un statut de fin sans les clés laisserait un faux « Voyage terminé »
+                // durable chez les proches (les règles acceptent `null` sur un statut qui n'a pas ces clés).
+                $0.clearTravel = true
             }
         }
         state.travel = nil
