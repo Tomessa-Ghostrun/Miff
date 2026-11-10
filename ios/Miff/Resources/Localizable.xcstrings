@@ -3215,23 +3215,6 @@
         }
       }
     },
-    "feed_label_at_relative": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "At a loved one's"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chez un proche"
-          }
-        }
-      }
-    },
     "feed_label_at_school": {
       "extractionState": "manual",
       "localizations": {
