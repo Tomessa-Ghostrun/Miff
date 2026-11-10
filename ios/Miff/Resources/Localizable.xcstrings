@@ -3238,13 +3238,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "At %1$@"
+            "value": "%1$@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À %1$@"
+            "value": "%1$@"
           }
         }
       }
@@ -3289,7 +3289,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "At the sports club"
+            "value": "At the gym"
           }
         },
         "fr": {
@@ -3884,7 +3884,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "the sports club"
+            "value": "the gym"
           }
         },
         "fr": {

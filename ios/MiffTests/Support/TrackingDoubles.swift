@@ -166,11 +166,29 @@ final class MemoryTrackingLocalStore: TrackingLocalStore {
 
 final class FakePositionSource: PositionSource {
     var fix: Fix?
+    /// Ce que le système connaît déjà (BATT-3) : si présent, `currentReusingRecent()` le rend sans « demande » ; sinon elle mesure.
+    var recentSystemFix: Fix?
+    /// Toutes les demandes de position, de n'importe quelle sorte.
     private(set) var calls = 0
+    /// Les mesures DEMANDÉES au système.
+    private(set) var freshCalls = 0
+    /// Les demandes qui acceptaient une position récente déjà connue (`currentReusingRecent()`).
+    private(set) var reusingCalls = 0
 
     func current() async -> Fix? {
         calls += 1
+        freshCalls += 1
         return fix
+    }
+
+    func currentReusingRecent() async -> PositionReading {
+        calls += 1
+        reusingCalls += 1
+        if let recentSystemFix {
+            return PositionReading(fix: recentSystemFix, reused: true)
+        }
+        freshCalls += 1
+        return PositionReading(fix: fix, reused: false)
     }
 }
 
@@ -335,6 +353,8 @@ final class FakeLocationManager: LocationManaging {
     private(set) var droppedAsks: [String] = []
     var maximumRegionRadius = 100_000.0
     var systemFix: Fix?
+    /// La précision horizontale de `systemFix`, en mètres.
+    var systemFixAccuracy = 10.0
     var regionsAvailable = true
     var significantChangesAvailable = true
     private(set) var watched: [(key: String, radius: Double)] = []
@@ -347,6 +367,10 @@ final class FakeLocationManager: LocationManaging {
     var heldRegionKeys: Set<String> {
         created.prune(visible: held, now: Date(), maxAge: TrackingLimits.createdRegionSeconds)
         return held.union(created.keys)
+    }
+
+    func systemFix(maxAccuracyMeters: Double) -> Fix? {
+        systemFixAccuracy <= maxAccuracyMeters ? systemFix : nil
     }
 
     func watch(_ zone: TrackedZone, radius: Double) {
