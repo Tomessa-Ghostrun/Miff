@@ -53,7 +53,7 @@ struct PlaceRows: View {
         }
     }
 
-    /// Un membre : qui définit les lieux. Un créateur en formule gratuite : « 2 lieux sur 2 avec la formule gratuite ». Un créateur
+    /// Un membre : qui définit les lieux. Un créateur en formule gratuite : « 3 lieux sur 3 avec la formule gratuite ». Un créateur
     /// Miff+, ou dont la formule n'est pas encore connue : rien (rien n'est affirmé sur ce qu'on ne sait pas).
     private var caption: String? {
         if !ui.isCreator {

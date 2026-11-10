@@ -5,7 +5,7 @@ import Foundation
 // ou un rapport de plantage ne puisse jamais la laisser fuiter (critère VIE1). Miroir de `TrackingModels.kt` d'Android (LOC-2b).
 
 /// L'identité d'une ZONE sur le terrain : l'identifiant du lieu ET sa géométrie et son type. Un compte gratuit n'a que les
-/// identifiants fixes `p1` et `p2` (les règles) : deux lieux différents de deux créateurs peuvent donc porter le même identifiant,
+/// identifiants fixes `p1`, `p2` et `p3` (les règles) : deux lieux différents de deux créateurs peuvent donc porter le même identifiant,
 /// et l'identifiant seul ne doit jamais nommer une zone. Un même lieu attaché à plusieurs Miffs (même identifiant, même géométrie)
 /// a la même clé : une seule zone. La clé contient des coordonnées : elle ne quitte jamais le téléphone (copie locale et
 /// surveillance de régions du système) et n'est JAMAIS écrite dans un journal ; `placeId` est ce qui est montré ou écrit.

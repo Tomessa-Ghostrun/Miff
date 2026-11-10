@@ -174,6 +174,8 @@ final class AppEnvironment {
     /// compte), lus à la demande et gardés seulement par l'écran qui les montre.
     lazy var profileReader: ProfileReading = FirestoreProfileReader()
     lazy var accountInfo: AccountInfoSource = FirebaseAccountInfo()
+    /// Les photos des membres sur les cartes de Miff du Profil : UNE lecture ponctuelle par Miff (voir `MiffMemberPreviews`).
+    lazy var memberPreviewReader: MemberPreviewReader = FirestoreMemberPreviewReader()
 
     private let userProfiles: UserProfileRepository = FirestoreUserProfileRepository()
     /// Ce que la personne a saisi dans les étapes du profil : sur l'appareil seulement, effacé une fois le serveur ayant
