@@ -13,6 +13,12 @@ plugins {
 // instance if a store refuses the blocking). The default is "true" everywhere. Checked by PermissionPrivacyTest.
 val locationBlockingProperty: String = providers.gradleProperty("miff.locationBlocking").getOrElse("true")
 
+// REVIEW WINDOW (ticket docs/tickets/pop-ins-avis.md, decision of the PM of 2026-11-07: built as drawn, risk assumed). BuildConfig.REVIEW_PROMPT is true in the debug build
+// (internal tests) and FALSE in release and releaseLike: the window is ABSENT from every build that can be distributed. -Pmiff.reviewPrompt=true|false forces it either
+// way for a TEST; a RELEASE build (release, releaseLike) refuses "true" unless -Pmiff.allowReviewPromptInRelease=true is ALSO given, on purpose: only after the PM has
+// reconfirmed the window at the gate "prêt à soumettre". Checked by ReviewPromptReleaseTest, and on the real bundle by android.yml.
+val reviewPromptProperty: String? = providers.gradleProperty("miff.reviewPrompt").orNull
+
 android {
     namespace = "com.tomessa.miff"
     // compileSdk 37 (not 36): the current AndroidX releases (Compose 1.12, Navigation 2.10, Core 1.19) require it.
@@ -59,6 +65,22 @@ android {
             locationBlocking == "true" || locationBlocking == "false",
         ) { "miff.locationBlocking must be true or false" }
         buildConfigField("boolean", "LOCATION_BLOCKING", locationBlocking)
+        // Review window: off unless the flag says otherwise; the debug build turns it on (see buildTypes).
+        require(
+            reviewPromptProperty == null || reviewPromptProperty == "true" || reviewPromptProperty == "false",
+        ) { "miff.reviewPrompt must be true or false" }
+        buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "false")
+        // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
+        // "miff.feedbackFormUrl" just below (empty for now; or -Pmiff.feedbackFormUrl=... for a test). Empty = the window shows its "Merci de nous le dire !" screen with
+        // "Nous écrire" instead. HTTPS only (checked here, and again in the app); it is read from BuildConfig ONLY (never from a received link) and opened as it is:
+        // nothing about the person (name, e-mail, Miff, position, identifier) is ever added to it, so do not put any in the address.
+        val feedbackFormUrl = providers.gradleProperty("miff.feedbackFormUrl").getOrElse("").trim()
+        require(
+            feedbackFormUrl.isEmpty() || Regex("""https://[^\s"\\$]+""").matches(feedbackFormUrl),
+        ) {
+            "miff.feedbackFormUrl must be empty or an https:// address (no spaces, quotes, backslashes or dollar signs)"
+        }
+        buildConfigField("String", "FEEDBACK_FORM_URL", "\"$feedbackFormUrl\"")
         // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
         buildConfigField("boolean", "STARTUP_METRICS", "false")
     }
@@ -77,6 +99,7 @@ android {
     buildTypes {
         debug {
             buildConfigField("boolean", "STARTUP_METRICS", "true")
+            buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "true")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }
@@ -123,6 +146,8 @@ android {
         getByName("releaseLike") {
             java.directories.add("src/release/java")
             kotlin.directories.add("src/release/java")
+            // The manifest of release too (it removes the activity of the review window's library, absent from these builds; see that file).
+            manifest.srcFile("src/release/AndroidManifest.xml")
         }
     }
 
@@ -192,6 +217,9 @@ dependencies {
     // Geofencing and the fused provider of positions (LOC-2b): Google Play services, free, no key. Justification (PR): the geofencing
     // that keeps working with the app closed and the battery-friendly reports of a move are only offered by this library.
     implementation(libs.play.services.location)
+    // Review window (docs/tickets/pop-ins-avis.md): the official Play In-App Review API (library `review`, free, by Google). The code that uses it is behind BuildConfig.REVIEW_PROMPT
+    // (false in release): R8 removes it from a release build. Justification in the PR: see libs.versions.toml.
+    implementation(libs.play.review)
     // UPDATE-1: the viewfinder of the Update screen (see libs.versions.toml).
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
@@ -234,6 +262,22 @@ run {
                 throw GradleException(
                     "miff.locationBlocking=false is not allowed in a release build (the location screen must block). " +
                         "Add -Pmiff.allowRelaxedLocationInRelease=true only if the PM decided to relax it.",
+                )
+            }
+        }
+    }
+}
+
+run {
+    val reviewOnInRelease = reviewPromptProperty == "true"
+    val allowedInRelease = providers.gradleProperty("miff.allowReviewPromptInRelease").orNull == "true"
+    if (reviewOnInRelease && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.reviewPrompt=true is not allowed in a release build (the review window must be absent " +
+                        "from distributed builds). Add -Pmiff.allowReviewPromptInRelease=true only after the PM " +
+                        "reconfirmed the window at the gate \"prêt à soumettre\".",
                 )
             }
         }

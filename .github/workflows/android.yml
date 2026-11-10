@@ -189,6 +189,16 @@ jobs:
 
       - name: Check that the release bundle contains no debug-only code
         run: |
+          # `grep -c` reads everything and a second grep reads the count: with `grep -q` straight after unzip, an early match makes unzip die of SIGPIPE and, under
+          # pipefail, the test would wrongly say "not found" (a leak would go unnoticed).
+          # The review window (docs/tickets/pop-ins-avis.md, AV2) is IN the debug APK (so its marker cannot silently disappear and make the checks below pass for nothing)
+          # and ABSENT from every distributable build (release bundle and releaseLike, checked below).
+          debug=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$debug" || { echo "::error::APK debug introuvable : $debug"; exit 1; }
+          if ! unzip -p "$debug" 'classes*.dex' | grep -a -c 'REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
+            echo "::error title=Marqueur de la fenetre d'avis absent du debug::L'APK debug ne contient pas REVIEWPROMPTPROBE : la fenetre d'avis a disparu du debug ou son marqueur a change (ReviewPromptWindow.kt, ReviewPromptReleaseTest)."
+            exit 1
+          fi
           bundle=app/build/outputs/bundle/release/app-release.aab
           test -f "$bundle" || { echo "::error::Bundle release introuvable : $bundle"; exit 1; }
           dex_count=$(unzip -Z1 "$bundle" | grep -c '^base/dex/.*\.dex$' || true)
@@ -196,24 +206,45 @@ jobs:
             echo "::error::Aucun fichier dex dans le bundle release : verification impossible."
             exit 1
           fi
-          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL'; then
-            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck ou DETECTIONJOURNAL : l'ecran de diagnostic, le fournisseur App Check de debug ou le journal de detection (LOC-2b) a fuite dans le build release."
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
+            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck, DETECTIONJOURNAL ou REVIEWPROMPTPROBE : l'ecran de diagnostic, le fournisseur App Check de debug, le journal de detection (LOC-2b) ou la fenetre d'avis (docs/tickets/pop-ins-avis.md, AV2) a fuite dans le build release."
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
+          # The activity of the review window's library (src/release/AndroidManifest.xml removes it) must not be declared in the release manifest.
+          if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -c 'PlayCoreDialogWrapperActivity' | grep -q -v '^0$'; then
+            echo "::error title=Activite de la fenetre d'avis dans le release::Le manifeste du bundle release declare PlayCoreDialogWrapperActivity (bibliotheque d'avis du store) : verifier android/app/src/release/AndroidManifest.xml."
+            exit 1
+          fi
           # The launch-duration readout is for the debug and releaseLike builds only: the real release must not contain it.
-          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -q 'STARTUPMETRICSOVERLAY'; then
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c 'STARTUPMETRICSOVERLAY' | grep -q -v '^0$'; then
             echo "::error title=Mesure du demarrage dans le release::Le bundle release contient l'affichage de mesure du demarrage (STARTUPMETRICSOVERLAY) : il doit rester reserve aux builds debug et releaseLike."
             exit 1
           fi
           # releaseLike is built from the release sources: same proof for its APK.
           like=app/build/outputs/apk/releaseLike/app-releaseLike.apk
           test -f "$like" || { echo "::error::APK releaseLike introuvable : $like"; exit 1; }
-          if unzip -p "$like" 'classes*.dex' | grep -a -q -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL'; then
-            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug ou le journal de detection."
+          if unzip -p "$like" 'classes*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
+            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug, le journal de detection ou la fenetre d'avis (REVIEWPROMPTPROBE)."
             exit 1
           fi
           echo "APK releaseLike : aucune trace du diagnostic ni du fournisseur App Check de debug."
+
+      # AV2 (docs/tickets/pop-ins-avis.md): a release build must REFUSE the review window flag unless -Pmiff.allowReviewPromptInRelease=true is given too. The build is
+      # expected to FAIL (at preReleaseBuild, before anything is compiled), and to say why.
+      - name: Check that a release build refuses the review window flag
+        run: |
+          log="$RUNNER_TEMP/review-guard.log"
+          if ./gradlew bundleRelease -Pmiff.reviewPrompt=true --console=plain -Pmiff.uploadCrashlyticsMapping=false > "$log" 2>&1; then
+            echo "::error title=Garde de la fenetre d'avis absente::bundleRelease avec -Pmiff.reviewPrompt=true a REUSSI : un build de release ne doit pas accepter ce drapeau sans -Pmiff.allowReviewPromptInRelease=true."
+            exit 1
+          fi
+          if ! grep -c 'not allowed in a release build' "$log" | grep -q -v '^0$'; then
+            echo "::error title=Mauvaise raison d'echec::bundleRelease avec -Pmiff.reviewPrompt=true a echoue, mais pas par la garde de la fenetre d'avis. Voir $log."
+            tail -30 "$log"
+            exit 1
+          fi
+          echo "Garde verifiee : un build de release refuse -Pmiff.reviewPrompt=true."
 
       # The release resource shrinker removed "default_web_client_id" once (it is read by name): without it "Continuer avec
       # Google" never works in a release build. Same proof for the biometric permissions pulled in by androidx.credentials.
@@ -221,11 +252,11 @@ jobs:
         if: env.FAKE_FIREBASE_CONFIG != 'true'
         run: |
           bundle=app/build/outputs/bundle/release/app-release.aab
-          if ! unzip -p "$bundle" base/resources.pb | grep -a -q 'default_web_client_id'; then
+          if ! unzip -p "$bundle" base/resources.pb | grep -a -c 'default_web_client_id' | grep -q -v '^0$'; then
             echo "::error title=Client web Google supprime::default_web_client_id est absent du bundle release : la connexion Google ne marcherait pas. Verifier android/app/src/main/res/raw/keep.xml."
             exit 1
           fi
-          if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -q -E 'USE_BIOMETRIC|USE_FINGERPRINT'; then
+          if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -c -E 'USE_BIOMETRIC|USE_FINGERPRINT' | grep -q -v '^0$'; then
             echo "::error title=Permission biometrique::USE_BIOMETRIC ou USE_FINGERPRINT est revenu dans le manifeste release (voir AndroidManifest.xml et le README, section securite du manifeste)."
             exit 1
           fi
