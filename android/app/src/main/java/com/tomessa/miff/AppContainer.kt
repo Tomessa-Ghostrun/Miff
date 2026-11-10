@@ -41,9 +41,11 @@ import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewals
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.FirestoreConsentRenewals
+import com.tomessa.miff.data.miff.FirestoreMemberFacesReader
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
 import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.MemberFacesReader
 import com.tomessa.miff.data.miff.MiffDeletion
 import com.tomessa.miff.data.miff.MiffDeletionCoordinator
 import com.tomessa.miff.data.miff.MiffDirectory
@@ -344,8 +346,7 @@ class AppContainer(
     val travelControl: TravelControl by lazy { EngineTravelControl(trackingEngine) }
 
     /**
-     * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is measured, the rules refuse a level next to a trip) and the photo of an update does not wait
-     * for a position published by the tracking (it is paused; the photo carries its own measure).
+     * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is written about the battery during a trip, the rules refuse a level next to a trip).
      */
     private fun travelOn(): Boolean {
         // The local copy is read again at each use (a small private file): never a stale "no trip" after a new session, a restart of the process or an end by the alarm.
@@ -387,6 +388,9 @@ class AppContainer(
 
     /** FEED: the statuses of the Miff shown (read only, one listener) and the single reading of a position behind "Localiser". Nothing is written. */
     val statusObserver: StatusObserver by lazy { FirestoreStatusObserver() }
+
+    /** The faces of the carousel of Miffs of the Profile tab: ONE reading of the members of a Miff, when its card appears (docs/dev/surveillance-quotas.md). */
+    val memberFacesReader: MemberFacesReader by lazy { FirestoreMemberFacesReader() }
 
     val positionReader: PositionReader by lazy { FirestorePositionReader() }
 

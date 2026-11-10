@@ -140,11 +140,10 @@ class UpdatePublisherTest {
     // --- MODE VOYAGE -------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun duringATrip_thePhotoIsStillPublished_withItsOwnMeasure_andTheStatusCarriesNoBattery() =
+    fun duringATrip_thePhotoIsPublishedAsUsual_withItsOwnMeasure_andTheStatusCarriesNoBattery() =
         runTest {
             traveling = true
-            // The tracking is paused: no position of mine was published by it, and none is waited for (the photo carries its own measure).
-            published = { false }
+            // The position of the person keeps being published during a trip: the photo is written as outside a trip, with its own measure.
             val result = publisher().publish(photo)
             assertEquals(PublishResult.Published(1), result)
             assertEquals(0, positionMissingCalls)

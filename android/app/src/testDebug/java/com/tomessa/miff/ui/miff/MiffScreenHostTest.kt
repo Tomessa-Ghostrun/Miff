@@ -91,7 +91,12 @@ class MiffScreenHostTest {
                 )
             }
         }
-        val places = listOf(testPlace("p1", "Maison", MIFF_ID), testPlace("p2", "Foot", MIFF_ID))
+        val places =
+            listOf(
+                testPlace("p1", "Maison", MIFF_ID),
+                testPlace("p2", "Foot", MIFF_ID),
+                testPlace("p3", "Chez Léa", MIFF_ID),
+            )
         val snapshot =
             MiffSnapshot(miffDetails(owner = "me", name = "Famille Martin"), members(), places, fromCache = false)
         assertTrue(repo.observer.flowOf(MIFF_ID).tryEmit(MiffObservation.Data(snapshot)))
@@ -104,7 +109,7 @@ class MiffScreenHostTest {
     }
 
     @Test
-    fun addPlace_onAFreePlanAtTwoPlaces_stillOpensTheForm() = addPlaceOpensTheForm(premium = false)
+    fun addPlace_onAFreePlanAtThreePlaces_stillOpensTheForm() = addPlaceOpensTheForm(premium = false)
 
     @Test
     fun addPlace_onMiffPlus_opensTheForm() = addPlaceOpensTheForm(premium = true)

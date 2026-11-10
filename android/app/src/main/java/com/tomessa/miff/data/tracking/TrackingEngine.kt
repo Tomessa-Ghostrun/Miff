@@ -296,8 +296,8 @@ class TrackingEngine(
         val now = env.nowMillis()
         var state = stateFor(uid) ?: LocalState(uid)
         if (state.travel != null) {
-            // MODE VOYAGE: nothing is read, armed or written for the tracking while a trip is on.
-            doTravelPass(uid, state, reason)
+            // MODE VOYAGE: the status stays a trip, the position keeps being published.
+            doTravelPass(uid, state, reason, suppliedFix)
             return
         }
         // The alarm of a trip that is already over (ended by hand), or a change of the clock with no trip: nothing to do.
@@ -323,10 +323,10 @@ class TrackingEngine(
             // Could not tell (no answer): nothing is saved and nothing is armed this time; the next wake-up asks again (the trip must never be overwritten).
             val adopted = adoptTravel(uid, state, now) ?: return
             if (adopted.travel != null) {
-                val paused = disarm(adopted)
+                val paused = pauseStatuses(adopted)
                 local.save(paused)
                 publishTravel(paused.travel?.period())
-                doTravelPass(uid, paused, reason)
+                doTravelPass(uid, paused, reason, suppliedFix)
                 return
             }
         }
@@ -666,9 +666,8 @@ class TrackingEngine(
             }
         val state = stateFor(uid)
         if (state?.travel != null) {
-            // MODE VOYAGE: a zone still registered with the system speaks during a trip (it should not): it is removed and nothing is written.
+            // MODE VOYAGE: a zone still registered with the system speaks during a trip (it should not): it is removed and no status is written.
             runCatchingCancellable { geofences.removeAll() }
-            runCatchingCancellable { movement.stop() }
             return
         }
         if (state == null || state.miffs.isEmpty() || !env.permissions().locationComplete) {
@@ -1092,14 +1091,13 @@ class TrackingEngine(
     // --- MODE VOYAGE (VOY-1A) -------------------------------------------------------------------------------------------------------------
 
     /**
-     * Begins a trip (or moves its end when one is on): the trip is WRITTEN to every Miff where I share FIRST (and my last position there is removed, in the same write), the
-     * tracking is paused AFTER. A refusal of the server leaves everything as it was ([TravelResult.Refused]); no network, or a network that fails, accepts the trip here and tells
+     * Begins a trip (or moves its end when one is on): the trip is WRITTEN to every Miff where I share FIRST, the statuses of the zones are stopped AFTER (my position stays shared). A refusal of the server leaves everything as it was ([TravelResult.Refused]); no network, or a network that fails, accepts the trip here and tells
      * the Miffs as soon as the network is back ([TravelResult.DoneOffline]). The trip is open to EVERY account (decision of the PM, 2026-11-10): no plan is read or checked.
      */
     suspend fun setTravel(period: TravelPeriod): TravelResult =
         mutex.withLock { if (sessionEnded()) TravelResult.Unavailable else doSetTravel(period) }
 
-    /** Ends the trip NOW (the person turned it off): the loved ones are told (the neutral state), the tracking resumes at once. False when no trip was on. */
+    /** Ends the trip NOW (the person turned it off): the loved ones are told (the neutral state), the status of the zones resumes at once. False when no trip was on. */
     suspend fun endTravel(): Boolean =
         mutex.withLock {
             if (sessionEnded()) return@withLock false
@@ -1176,8 +1174,8 @@ class TrackingEngine(
                 travel = travel,
             )
         if (read != null) state = state.copyWith(checkedAtMillis = now)
-        // The tracking is paused only now: the trip is known to the server (or kept to be told).
-        state = disarm(state)
+        // The status of the zones stops only now: the trip is known to the server (or kept to be told). The position stays shared.
+        state = pauseStatuses(state)
         local.save(state)
         travelAlarm.schedule(travel.untilMillis)
         publishTravel(travel.period())
@@ -1185,7 +1183,7 @@ class TrackingEngine(
         return if (travelToTell(state)) TravelResult.DoneOffline else TravelResult.Done
     }
 
-    /** The write of a trip in one Miff: the end only when the Miff already knows the trip; else the whole trip, with my last position removed in the same transaction. */
+    /** The write of a trip in one Miff: the end only when the Miff already knows the trip; else the whole trip. My position is NOT touched. */
     private fun travelWrites(
         miffId: String,
         uid: String,
@@ -1196,10 +1194,7 @@ class TrackingEngine(
         if (miffId in travel.startedIn) {
             listOf(TrackingWrites.travelDate(miffId, uid, travel.period(), deviceId))
         } else {
-            listOf(
-                TrackingWrites.travelStart(miffId, uid, travel.period(), presenceAtMillis, deviceId),
-                TrackingWrites.positionRemoval(miffId, uid),
-            )
+            listOf(TrackingWrites.travelStart(miffId, uid, travel.period(), presenceAtMillis, deviceId))
         }
 
     /** A Miff of the list still has to be told the trip (or its new end). */
@@ -1235,13 +1230,14 @@ class TrackingEngine(
     }
 
     /**
-     * One wake-up during a trip. The trip is over: it ends (the tracking resumes). Otherwise: the alarm is set again (idempotent), the zones of a system that remembered them are
-     * removed, the Miffs that appeared since are looked for (a Miff joined during a trip learns of it at once), and what the Miffs have not been told yet is written.
+     * One wake-up during a trip. The trip is over: it ends (the status resumes). Otherwise: the alarm is set again (idempotent), the Miffs that appeared since are looked for (a Miff joined
+     * during a trip learns of it at once), what the Miffs have not been told yet is written, and the position keeps being published ([publishPositionDuringTravel]).
      */
     private suspend fun doTravelPass(
         uid: String,
         start: LocalState,
         reason: Reason,
+        suppliedFix: Fix? = null,
     ) {
         val travel = start.travel ?: return
         val now = env.nowMillis()
@@ -1251,15 +1247,64 @@ class TrackingEngine(
             return
         }
         travelAlarm.schedule(travel.untilMillis)
-        if (reason == Reason.OPENED || reason == Reason.REARM) {
-            runCatchingCancellable { geofences.removeAll() }
-            runCatchingCancellable { movement.stop() }
-        }
         var state = syncTravelTargets(uid, start, reason, now)
         val recheck = reason == Reason.OPENED || reason == Reason.REARM || reason == Reason.NETWORK_BACK
-        state = flushTravel(uid, state, WriteGate(recheck), now)
+        val gate = WriteGate(recheck)
+        state = flushTravel(uid, state, gate, now)
+        // The alarm, the clock and the return of the network measure nothing (as outside a trip).
+        if (reason != Reason.TRAVEL_ENDED && reason != Reason.NETWORK_BACK) {
+            state = publishPositionDuringTravel(uid, state, reason, suppliedFix, now, gate)
+        }
         local.save(state)
         updateNetworkWake(state)
+    }
+
+    /**
+     * The position keeps being measured and published during a trip, with the guards of a normal pass: nothing without "Toujours" + the precise location, without a Miff where I share
+     * under the consent of version 3, or without the session of this phone; one write per Miff, alone, with the guard of frequency and the breaker. Only the 250 m move reports are kept
+     * (they are what keeps the position fresh while the app is closed); the zones are removed: nothing follows an arrival or a departure during a trip, so watching them would only wake the
+     * phone for nothing.
+     */
+    private suspend fun publishPositionDuringTravel(
+        uid: String,
+        start: LocalState,
+        reason: Reason,
+        suppliedFix: Fix?,
+        now: Long,
+        gate: WriteGate,
+    ): LocalState {
+        var state = start
+        val full = reason == Reason.OPENED || reason == Reason.REARM || reason == Reason.SHARING_CHANGED
+        if (state.miffs.isEmpty() || !env.permissions().locationComplete) {
+            // Nothing to tell, or the access is gone (AUT7): no position is read, no report asked for, and the copy of the position is erased.
+            runCatchingCancellable { geofences.removeAll() }
+            runCatchingCancellable { movement.stop() }
+            return state.copyWith(armed = emptySet(), updatesArmed = false, fix = null)
+        }
+        if (full) {
+            runCatchingCancellable { geofences.removeAll() }
+            state = state.copyWith(armed = emptySet())
+        }
+        if (full || !state.updatesArmed) state = state.copyWith(updatesArmed = movement.start())
+        val fix = chooseFix(state, suppliedFix, now)
+        if (fix != null) {
+            state = state.copyWith(fix = fix)
+            journal.record(JournalKind.POSITION_READ, batteryPct = null)
+        }
+        return publishPosition(uid, state, fix, now, gate)
+    }
+
+    /**
+     * The statuses of the zones stop (a trip begins or is adopted): the zones are removed, what was derived from them and the statuses waiting are forgotten. The position, its guard of
+     * frequency and the reports of a move stay: the position keeps being shared.
+     */
+    private suspend fun pauseStatuses(state: LocalState): LocalState {
+        runCatchingCancellable { geofences.removeAll() }
+        return state.copyWith(
+            miffs = state.miffs.mapValues { (_, miff) -> miff.copyWith(derived = null, pending = null) },
+            inside = emptyMap(),
+            armed = emptySet(),
+        )
     }
 
     /** The Miffs where I share are read again when it is due (a change of sharing, a restart, the network back, an hour at the opening): 1 + n reads, no place. */
