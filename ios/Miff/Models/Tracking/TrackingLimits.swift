@@ -18,6 +18,22 @@ enum TrackingLimits {
     /// une journée normale très en dessous.
     static let maxPositionWritesPerDay = 150
 
+    /// Batterie rafraîchie à l'ouverture et à la sortie (décision du PM, 2026-11-07) : disjoncteur DÉDIÉ, écritures de rafraîchissement
+    /// de la batterie par jour et par téléphone, comptées par document (un par Miff). Compteur à part (et non les 60 statuts) pour
+    /// qu'un rafraîchissement ne prenne JAMAIS la place d'une arrivée ou d'un départ ; au pire 60 + 40 statuts par téléphone et par
+    /// jour. Signal pour le changer : un testeur qui l'atteint un jour normal, ou plus de 12 000 écritures par jour dans la console.
+    static let maxBatteryWritesPerDay = 40
+
+    /// Deux rafraîchissements (ou tentatives) de la batterie d'une même Miff ne se suivent jamais à moins de ceci...
+    static let batteryMinIntervalMillis = 15 * 60 * 1000
+
+    /// ... et rien n'est écrit si le niveau n'a pas bougé d'au moins ce nombre de points depuis la dernière valeur écrite...
+    static let batteryMinDeltaPoints = 5
+
+    /// ... SAUF si la dernière écriture a plus de ceci : le Feed masque la batterie au-delà de 6 h après `updatedAt`, un rafraîchissement
+    /// toutes les 3 h (aux occasions d'ouverture et de sortie) la garde visible pour quelqu'un qui n'a pas bougé.
+    static let batteryMaxAgeMillis = 3 * 60 * 60 * 1000
+
     /// Garde-fou de fréquence de la position (décision L4, à mesurer à la recette du PM) : au plus une écriture toutes les 15 min...
     static let positionMinIntervalMillis = 15 * 60 * 1000
 
@@ -86,6 +102,8 @@ struct BreakerState: Codable, Equatable {
     var dayKey: String
     var statusWrites: Int
     var positionWrites: Int
+    /// Rafraîchissements de la batterie (disjoncteur dédié). Facultatif : une copie locale écrite avant ce chantier n'a pas la clé.
+    var batteryWrites: Int?
 }
 
 enum WriteBreaker {
@@ -105,6 +123,16 @@ enum WriteBreaker {
 
     static func canWriteStatus(_ state: BreakerState?, dayKey: String) -> Bool {
         today(state, dayKey: dayKey).statusWrites < TrackingLimits.maxStatusWritesPerDay
+    }
+
+    static func canWriteBattery(_ state: BreakerState?, dayKey: String) -> Bool {
+        (today(state, dayKey: dayKey).batteryWrites ?? 0) < TrackingLimits.maxBatteryWritesPerDay
+    }
+
+    static func recordBattery(_ state: BreakerState?, dayKey: String) -> BreakerState {
+        var next = today(state, dayKey: dayKey)
+        next.batteryWrites = (next.batteryWrites ?? 0) + 1
+        return next
     }
 
     static func canWritePosition(_ state: BreakerState?, dayKey: String) -> Bool {
