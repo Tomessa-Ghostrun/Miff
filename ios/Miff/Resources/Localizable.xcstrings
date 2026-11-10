@@ -15004,13 +15004,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If you forget to check in, Miff gently reminds you. You choose what you get in the settings. Alerts about your circle will come later."
+            "value": "If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement. Tu choisis ce que tu reçois dans les réglages. Les alertes sur tes proches arriveront plus tard."
+            "value": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d'état. Tu choisis ce que tu reçois dans les réglages."
           }
         }
       }

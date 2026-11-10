@@ -899,7 +899,7 @@
     <string name="notif_n6a_title">Tu es dans une zone de danger de ta Miff</string>
     <string name="notif_n6a_body">Pendant que tu y es, tes proches voient un état différent.</string>
     <string name="notif_prime_title">Un rappel, seulement quand c\'est utile</string>
-    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement. Tu choisis ce que tu reçois dans les réglages. Les alertes sur tes proches arriveront plus tard.</string>
+    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d\'état. Tu choisis ce que tu reçois dans les réglages.</string>
     <string name="notif_prime_allow">Autoriser</string>
     <string name="notif_prime_later">Plus tard</string>
     <string name="notif_prime_example_when">Il y a 2 min</string>
