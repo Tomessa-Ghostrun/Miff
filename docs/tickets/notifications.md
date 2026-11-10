@@ -1067,9 +1067,10 @@ Convention : membres **moi**, **X**, **Y** ; tous partagent ; mêmes jour et fus
 | T3 | X `out` ref 13:40, moi `out` ref 13:50 | 14:00 | N1 **15:50**, N2 **17:50** ; LARGE : ni N3 ni N4 ; STRICT : N3 **16:10**, N4 **18:10** |
 | T4 | X `out` ref 13:40 ; Y `out` ref 14:30 ; moi vert | 14:45 | N3 **16:10** ; N4 **18:10** |
 | T5 | Comme T2 ; **X publie à 15:50** | 15:55 | N3 et N4 **annulées** ; nouvelles : N3 **18:20**, N4 **20:20** |
-| T6 | **Moi** `in_risk` (règle PM : rouge après 1 h sans update) | 15:10 | **Aucun N1, aucun N2** (Q27 = NON) ; si X est vert : pas de N3 / N4 (responsable) |
-| T6b | X `in_risk` repère 15:00 ; moi vert | 15:10 | Pas de N3 (pas d'orange) ; N4 **16:30** |
-| T7 | Comme T2 ; Y passe rouge à 16:05 | 16:05 | N3 **abandonnée** ; N4 **16:35** |
+| T6 | **Moi** `in_risk`, entré à 14:00 (règle D47 : rouge dès l'entrée) | 15:10 | **Aucun N1, aucun N2** (Q27 = NON) ; si X est vert : pas de N3 / N4 (responsable) |
+| T6b | X entre en zone de danger à 15:00 (rouge dès l'entrée, règle D47) ; moi vert | 15:10 | Pas de N3 (pas d'orange) ; N4 **15:30** |
+| T6c | X entre à 15:00, publie une update à 15:20 (vert jusqu'à 16:20, puis rouge) ; moi vert | 15:30 | N4 **16:50:00.001** (nouvel épisode rouge) |
+| T7 | Comme T2 (X sorti à 13:40) ; Y entre en zone de danger à 15:05 (la Miff est rouge dès cet instant : jamais orange) | 15:05 | N3 **abandonnée** ; N4 **15:35** |
 | T8 | Comme T2 ; vérification Android à 16:10 : X a publié à 16:00 | 16:10 | **Abandon silencieux** ; iOS (aucune vérification) : affichée si non réévaluée (fausse alerte) |
 | T9 | Troisième N1 de la journée | — | Pas de notification ; entrée de centre silencieuse (Android) |
 | T10 | Changement de Miff active à 16:05 | 16:05 | **Tout annulé** ; replanifié pour la nouvelle M |

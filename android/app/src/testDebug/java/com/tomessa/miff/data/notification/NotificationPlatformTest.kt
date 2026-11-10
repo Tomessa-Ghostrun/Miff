@@ -67,6 +67,24 @@ class NotificationPlatformTest {
     }
 
     @Test
+    fun anAlarmTheSystemLost_isNotListed_soTheNextReconcileAsksAgain_i2() {
+        val alarms = AndroidNotificationAlarms(context)
+        alarms.schedule(NotificationType.N1, ScheduledAlarm("k1", "m", t0))
+        alarms.schedule(NotificationType.N2, ScheduledAlarm("k2", "m", t0 + 1))
+        assertEquals(2, alarms.scheduled().size)
+        // A cleaner of the phone maker erases the alarm and its PendingIntent; the memory of the app still says "asked".
+        val intent =
+            Intent(context, NotificationAlarmReceiver::class.java)
+                .setAction(NotificationAlarmReceiver.ACTION_FIRE)
+                .setData(android.net.Uri.parse("miff-notification://alarm/n1"))
+        val flags = android.app.PendingIntent.FLAG_NO_CREATE or android.app.PendingIntent.FLAG_IMMUTABLE
+        android.app.PendingIntent
+            .getBroadcast(context, NotificationType.N1.ordinal, intent, flags)!!
+            .cancel()
+        assertEquals(setOf(NotificationType.N2), alarms.scheduled().keys)
+    }
+
+    @Test
     fun cancelRemovesOnlyThatType_andCancelAllRemovesEverything() {
         val alarms = AndroidNotificationAlarms(context)
         NotificationType.entries.filter { it != NotificationType.N6 }.forEachIndexed { i, type ->

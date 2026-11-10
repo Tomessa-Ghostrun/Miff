@@ -42,7 +42,7 @@ interface NotificationAlarms {
 
     fun cancelAll()
 
-    /** What Miff asked and did not cancel or consume yet. */
+    /** What Miff asked and did not cancel or consume yet, AND that the system still holds (an alarm it lost is not listed: the planner asks for it again). */
     fun scheduled(): Map<NotificationType, ScheduledAlarm>
 
     /** The alarm of [type] has rung: it is no longer waiting. */
@@ -118,12 +118,24 @@ class AndroidNotificationAlarms(
         synchronized(lock) {
             read()
                 .mapNotNull { (code, a) ->
-                    NotificationType.fromCode(code)?.let {
-                        it to
-                            ScheduledAlarm(a.key, a.miffId, a.dueAt)
-                    }
+                    NotificationType
+                        .fromCode(code)
+                        ?.takeIf { isHeldBySystem(it) }
+                        ?.let { it to ScheduledAlarm(a.key, a.miffId, a.dueAt) }
                 }.toMap()
         }
+
+    /**
+     * Does the system still hold the alarm of [type]? A phone maker's cleaner (ColorOS) or a forced stop erases alarms and their PendingIntent without telling the
+     * app: the PendingIntent is looked for WITHOUT creating it (FLAG_NO_CREATE); absent, the alarm is gone and the next reconcile (every return to the front) asks again.
+     */
+    private fun isHeldBySystem(type: NotificationType): Boolean =
+        PendingIntent.getBroadcast(
+            appContext,
+            type.ordinal,
+            intentFor(type),
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+        ) != null
 
     override fun consumed(type: NotificationType) =
         synchronized(lock) {
