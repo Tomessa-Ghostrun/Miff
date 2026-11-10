@@ -35,7 +35,10 @@ class FeedColourAloneRuleTest {
         val icons = Regex("""Icon\(""").findAll(chip).count()
         val planes = Regex("""ic_travel_plane""").findAll(chip).count()
         assertTrue("the label of the state draws an icon that is not the airplane of the trip", icons == planes)
-        assertTrue("the airplane must only be drawn for a trip", planes == 0 || chip.contains("card.label is StateLabel.Traveling"))
+        assertTrue(
+            "the airplane must only be drawn for a trip",
+            planes == 0 || chip.contains("card.label is StateLabel.Traveling"),
+        )
         assertFalse("labelIcon is back", cards.contains("labelIcon"))
     }
 
