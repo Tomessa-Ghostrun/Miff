@@ -148,6 +148,9 @@ struct MiffHomeHost: View {
     @State private var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
+    /// Les membres des cartes de Miff du Profil (photos, nombre) : ce que le Feed a lu pour la Miff affichée, plus une lecture ponctuelle
+    /// des autres, une fois par ouverture du Profil. Créé avec la session de l'hôte, il disparaît avec elle.
+    @StateObject private var memberPreviews: MiffMemberPreviews
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
@@ -161,6 +164,7 @@ struct MiffHomeHost: View {
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
+        _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
     }
 
@@ -170,6 +174,7 @@ struct MiffHomeHost: View {
                 MainShellView(
                     miffs: directory.state,
                     profile: profile,
+                    memberPreviews: memberPreviews,
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
@@ -179,6 +184,7 @@ struct MiffHomeHost: View {
                         }
                     ),
                     onOpenMiff: { open(.miff($0)) },
+                    onCreateMiff: { createMiffFromProfile() },
                     onOpenSettings: { open(.settings($0)) },
                     feed: { context in feedTab(context) }
                 )
@@ -203,6 +209,12 @@ struct MiffHomeHost: View {
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
                 path.removeAll { $0.isMyInfoScreen }
+            }
+        }
+        // Mon visage sur les cartes du Profil suit mon profil, SANS lecture : le profil est déjà lu pour l'en-tête (et relu après une modification).
+        .onChange(of: profile.state) { state in
+            if case .ready(let mine) = state, let uid = environment.session.currentUid {
+                memberPreviews.replaceFace(uid: uid, initials: mine.initials, jpeg: mine.avatarJpeg)
             }
         }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
@@ -247,6 +259,7 @@ struct MiffHomeHost: View {
         FeedTab(
             environment: environment,
             context: context,
+            memberPreviews: memberPreviews,
             actions: FeedTabActions(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
@@ -257,6 +270,17 @@ struct MiffHomeHost: View {
                 onOpenSettings: { open(.settings(.settings)) }
             )
         )
+    }
+
+    /// « Créer une Miff », dernière carte du carrousel du Profil : le même choix que le sélecteur du Feed (décision du PM, 2026-11-08), l'offre
+    /// pour un compte gratuit qui a déjà une Miff, le parcours normal sinon (Miff+, formule inconnue : c'est le serveur qui tranche).
+    private func createMiffFromProfile() {
+        switch ProfileCarouselRules.createOutcome(for: directory.state) {
+        case .openPaywall:
+            open(.placePaywall(.extraMiff))
+        case .openFlow:
+            open(.create)
+        }
     }
 
     @ViewBuilder
@@ -404,6 +428,10 @@ struct MiffHomeHost: View {
     }
 
     private func open(_ route: MiffRoute) {
+        // L'écran d'une Miff s'ouvre : ses membres ont pu changer, la carte du Profil la relira à sa prochaine apparition (voir `invalidate`).
+        if case .miff(let miffId) = route {
+            memberPreviews.invalidate(miffId: miffId)
+        }
         if path.last != route {
             path.append(route)
         }

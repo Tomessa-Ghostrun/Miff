@@ -184,11 +184,12 @@ enum FeedBuilder {
             )
         }
         let level = StatusColor.level(facts, nowMillis: context.now)
+        let stateLabel = label(member: member, isMe: isMe, status: status, level: level, context)
         return FeedMemberCard(
             member: member,
             isMe: isMe,
             level: level,
-            label: label(member: member, isMe: isMe, status: status, level: level, context),
+            label: stateLabel,
             time: timeLine(level: level, status: status, context),
             battery: status.flatMap { battery($0, now: context.now) },
             limitedLocation: status?.locationAccess.map { limitedAccess.contains($0) } ?? false,
@@ -203,8 +204,22 @@ enum FeedBuilder {
                 lastUpdateAtMillis: status?.lastUpdateAtMillis,
                 visible: status != nil,
                 nowMillis: context.now
-            )
+            ),
+            labelCategory: labelCategory(of: stateLabel, status: status, context)
         )
+    }
+
+    /// L'emoji de l'étiquette « dans un lieu de confiance » : seulement quand la personne EST dans un lieu de confiance (l'étiquette dit alors
+    /// le lieu) et que ce lieu est dans la liste que le Feed écoute déjà (aucune lecture de plus) avec une catégorie.
+    private static func labelCategory(
+        of label: StateLabel,
+        status: MemberStatus?,
+        _ context: Context
+    ) -> PlaceCategory? {
+        guard case .at = label, let placeId = status?.placeId else {
+            return nil
+        }
+        return context.places[placeId]?.category
     }
 
     private static func label(

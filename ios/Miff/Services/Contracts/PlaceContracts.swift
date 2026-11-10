@@ -81,7 +81,7 @@ enum PlaceContextLoad: Equatable {
 /// Comment s'est terminée une écriture de lieu. `done` seulement après que le SERVEUR a accepté le lot (critère PL9).
 enum PlaceWriteResult: Equatable {
     case done(placeId: String)
-    /// Rien n'a été envoyé : la formule gratuite a 2 lieux et pas de zone de danger (critères LIM1, LIM3).
+    /// Rien n'a été envoyé : la formule gratuite a 3 lieux et pas de zone de danger (critères LIM1, LIM3).
     case needsPremium(PaywallReason)
     /// Une des Miffs choisies n'existe plus, ou n'est plus celle de la personne (cas limite 14 du ticket) : tout le lot a été refusé.
     case miffUnavailable

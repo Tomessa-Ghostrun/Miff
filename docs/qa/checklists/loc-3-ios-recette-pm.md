@@ -47,8 +47,8 @@ Accès : écran de la Miff > section **Lieux de confiance** > **Ajouter un lieu*
 ## Partie C — Créer pour de vrai, la liste (8 min)
 
 - [ ] Créez « Maison de Papa » (Maison, 150 m) puis « Foot de Thomas » (Sport) : après chaque enregistrement, **retour à l'écran de la Miff** avec « Le lieu « … » est enregistré. Tes proches le prendront en compte dès qu'ils ouvriront Miff, ou dans les prochaines heures. »
-- [ ] La liste montre, par ligne : le pictogramme de la catégorie, le nom, l'adresse, une flèche. Le compteur indique **« 2 lieux sur 2 avec la formule gratuite »**.
-- [ ] **« Ajouter un lieu » reste visible, avec la pastille Miff+**, et mène à l'écran « Tu as atteint 2 lieux » (jamais un bouton caché ou grisé) : le formulaire s'ouvre un instant (il relit votre formule auprès du serveur) puis est remplacé par l'offre. Rien n'est écrit. Avec un compte **Miff+** ayant déjà 2 lieux ou plus : « Ajouter un lieu » ouvre bien le formulaire, sans compteur « sur 2 » ni pastille.
+- [ ] La liste montre, par ligne : l'emoji de la catégorie, le nom, l'adresse, une flèche. Le compteur indique **« 3 lieux sur 3 avec la formule gratuite »** (3 lieux gratuits depuis le 2026-11-10, voir `profil-carrousel-emoji-lieux3-ios-recette-pm.md`).
+- [ ] **« Ajouter un lieu » reste visible, avec la pastille Miff+**, et mène à l'écran « Tu as atteint 3 lieux » (jamais un bouton caché ou grisé) : le formulaire s'ouvre un instant (il relit votre formule auprès du serveur) puis est remplacé par l'offre. Rien n'est écrit. Avec un compte **Miff+** ayant déjà 3 lieux ou plus : « Ajouter un lieu » ouvre bien le formulaire, sans compteur « sur 3 » ni pastille.
 - [ ] Avec **B** (membre) : même liste, **sans** « Ajouter un lieu » ni compteur, avec « Les lieux de ta Miff, définis par son créateur. » ; toucher une ligne ouvre le détail **sans** « Modifier ». Si B a l'écran de la Miff ouvert pendant que A enregistre, le lieu apparaît chez B **en direct**.
 
 ## Partie D — Détail, modification, suppression (10 min)
@@ -74,7 +74,7 @@ Accès : écran de la Miff > section **Lieux de confiance** > **Ajouter un lieu*
 - [ ] Le formulaire montre un champ de Miffs avec des pastilles (une par Miff cochée) ; **la Miff cochée au départ est la dernière rejointe si A+ l'a créée, sinon la première créée**. Toucher la flèche du champ ouvre une feuille avec des cases ; la pastille « Dernière rejointe » est sur la bonne ligne ; **la Miff seulement rejointe n'est pas dans la liste**.
 - [ ] Cochez 3 Miffs : « 3 Miffs sur 5 au maximum » ; décochez tout : « Choisis au moins une Miff. » et « Terminé » est grisé (et « Enregistrer » aussi). La croix d'une pastille la retire.
 - [ ] Enregistrez : le lieu apparaît dans **chacune** des 3 Miffs. Dans la console, **les 3 documents ont le même identifiant**.
-- [ ] Zone de danger **autorisée** (pas de pastille Miff+) ; plus de 2 lieux possibles ; pas de compteur « sur 2 ».
+- [ ] Zone de danger **autorisée** (pas de pastille Miff+) ; plus de 2 lieux possibles ; pas de compteur « sur 3 ».
 - [ ] Modifiez le lieu : retirez une Miff, ajoutez-en une autre : les listes suivent. **Supprimer** : le lieu disparaît des 3 Miffs et la feuille liste ces Miffs.
 
 ## Partie G — Cas limites (5 min)

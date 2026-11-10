@@ -75,7 +75,7 @@ struct MemberCardView: View {
                     BatteryChip(text: texts.battery(battery))
                 }
             }
-            StateChip(text: texts.label(card.label), level: card.level)
+            StateChip(text: texts.label(card.label), emoji: card.labelCategory?.emoji, level: card.level)
             if card.limitedLocation {
                 LimitedLocationBadge()
             }
@@ -121,18 +121,28 @@ private struct BatteryChip: View {
 /// L'étiquette de l'état : ses mots sur la teinte du niveau. La couleur est le seul signal, aucun pictogramme.
 private struct StateChip: View {
     let text: String
+    /// L'emoji de la catégorie du lieu, avant les mots (étiquette « dans un lieu de confiance » seulement) ; décoratif.
+    var emoji: String?
     let level: StatusLevel
 
     var body: some View {
         // Un nom de lieu (Loisir, Autre) peut être long (jusqu'à 40 signes) : deux lignes au plus, la fin coupée ensuite ; le lecteur
-        // d'écran lit toujours la carte en entier (`cardSpoken`).
-        Text(verbatim: text)
-            .miffTextStyle(textBodyRegular14)
-            .lineLimit(2)
-            .foregroundColor(level.onTint)
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.xs)
-            .background(RoundedRectangle(cornerRadius: radiusSm, style: .continuous).fill(level.tint))
+        // d'écran lit toujours la carte en entier (`cardSpoken`, sans l'emoji).
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+            if let emoji {
+                // Même style que les mots : l'emoji suit la taille du texte de l'étiquette (pas de pastille de taille fixe ici).
+                Text(verbatim: emoji)
+                    .miffTextStyle(textBodyRegular14)
+                    .accessibilityHidden(true)
+            }
+            Text(verbatim: text)
+                .miffTextStyle(textBodyRegular14)
+                .lineLimit(2)
+        }
+        .foregroundColor(level.onTint)
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.xs)
+        .background(RoundedRectangle(cornerRadius: radiusSm, style: .continuous).fill(level.tint))
     }
 }
 

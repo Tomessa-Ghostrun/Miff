@@ -124,4 +124,28 @@ final class PlaceTextsTests: XCTestCase {
             XCTAssertNotNil(catalog[key], "Clé « \(key) » utilisée par les lieux mais absente du catalogue")
         }
     }
+
+    // MARK: - Les emoji des catégories (décision du PM, 2026-11-10)
+
+    /// La table COMMUNE avec Android : la changer ici sans la changer là-bas ferait voir deux catégories pour un même lieu.
+    func testEveryCategoryHasItsEmojiTheSameAsOnAndroid() {
+        let expected: [PlaceCategory: String] = [
+            .home: "🏠", .work: "💼", .school: "🏫", .sport: "⚽",
+            .relative: "👨‍👩‍👧", .leisure: "🎉", .other: "📍"
+        ]
+
+        XCTAssertEqual(Set(PlaceCategory.allCases), Set(expected.keys))
+        for category in PlaceCategory.allCases {
+            XCTAssertEqual(category.emoji, expected[category], "\(category)")
+        }
+    }
+
+    func testEachEmojiIsOneDistinctCharacterOnScreen() {
+        let emojis = PlaceCategory.allCases.map { $0.emoji }
+
+        XCTAssertEqual(Set(emojis).count, PlaceCategory.allCases.count, "deux catégories ne partagent jamais un emoji")
+        for emoji in emojis {
+            XCTAssertEqual(emoji.count, 1, "un seul caractère affiché (la famille est une séquence collée)")
+        }
+    }
 }
