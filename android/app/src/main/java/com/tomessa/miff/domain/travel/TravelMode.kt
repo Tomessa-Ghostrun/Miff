@@ -14,8 +14,14 @@ import java.time.ZoneId
  */
 
 object TravelLimits {
-    /** The furthest day that can be chosen: today + 90 days (the rules accept 91 days of margin). */
+    /**
+     * A trip lasts 90 days at most: the furthest day that can be chosen is today + 89, so that its end (00:00 of the NEXT day) is never more than 90 days ahead, a daylight-saving
+     * hour included. The rules of the server accept an end up to 91 days ahead.
+     */
     const val MAX_DAYS = 90L
+
+    /** The end written must not be further than this from now (90 days and 23 hours): under the 91 days of the rules, with a margin for the clock. */
+    const val MAX_END_AHEAD_MILLIS = 90L * 24L * 3_600_000L + 23L * 3_600_000L
 
     /** The day proposed when the date picker opens: today + 7 days. */
     const val DEFAULT_DAYS = 7L
@@ -40,7 +46,7 @@ sealed interface TravelChoice {
     /** Before today. */
     data object TooEarly : TravelChoice
 
-    /** After today + 90 days. */
+    /** After today + 89 days (a trip of 90 days at most). */
     data object TooLate : TravelChoice
 }
 
@@ -49,7 +55,7 @@ object TravelPlan {
 
     fun minDay(today: LocalDate): LocalDate = today
 
-    fun maxDay(today: LocalDate): LocalDate = today.plusDays(TravelLimits.MAX_DAYS)
+    fun maxDay(today: LocalDate): LocalDate = today.plusDays(TravelLimits.MAX_DAYS - 1)
 
     fun defaultDay(today: LocalDate): LocalDate = today.plusDays(TravelLimits.DEFAULT_DAYS)
 
