@@ -758,6 +758,7 @@ fun MainTabs(
                                     refreshing = feed.refreshing,
                                     me = feed.me,
                                     actions = actions,
+                                    notifications = feed.notifications,
                                 )
                             }
 

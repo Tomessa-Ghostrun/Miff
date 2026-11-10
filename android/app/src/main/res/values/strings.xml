@@ -1010,4 +1010,7 @@
     <string name="android_diag_review_force_armed">Ready: send the app to the background, then reopen it (the window never covers the Update).</string>
     <string name="android_diag_review_reset">Reset the state of the window</string>
     <string name="android_diag_review_reset_done">State reset: the window starts from zero (7 days, 30 days, 90 days).</string>
+
+    <!-- NOTIF-6A: centre verrouille (notifications refusees) -->
+    <string name="notif_center_enable_action">Turn on notifications</string>
 </resources>
