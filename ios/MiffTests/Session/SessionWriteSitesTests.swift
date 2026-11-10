@@ -83,11 +83,12 @@ final class SessionWriteSitesTests: XCTestCase {
         // Créer, rejoindre et reprendre le partage : trois statuts initiaux, tous estampillés par `initialStatus`. LOC-4b : la mise à
         // jour automatique du statut, la mise à jour de l'accès, le rafraîchissement de la batterie (ouverture / sortie de l'app) et la
         // dernière position (`TrackingWrites`), toutes estampillées par
-        // `SessionWriteGuard.stamped`. UPDATE-3 : le statut de la photo (`UpdateWrites.photoStatus`, estampillé lui aussi). Toute autre
-        // écriture de statut ou de position doit s'ajouter ICI après relecture.
+        // `SessionWriteGuard.stamped`. UPDATE-3 : le statut de la photo (`UpdateWrites.photoStatus`, estampillé lui aussi). MODE VOYAGE : le début
+        // d'un voyage et le changement de sa fin (`TrackingWrites.travelStart`, `travelDate`, estampillés eux aussi). Toute autre écriture de
+        // statut ou de position doit s'ajouter ICI après relecture.
         let expected = [
             "Models/Miff/MiffWrites.swift": 3,
-            "Models/Tracking/TrackingWrites.swift": 4,
+            "Models/Tracking/TrackingWrites.swift": 6,
             "Models/Update/UpdateWrites.swift": 1
         ]
         XCTAssertEqual(found, expected)

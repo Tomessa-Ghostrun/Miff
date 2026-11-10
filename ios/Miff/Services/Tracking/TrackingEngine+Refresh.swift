@@ -41,6 +41,13 @@ extension TrackingEngine {
         }
         let now = env.nowMillis()
         var state = stateFor(uid) ?? LocalState(uid: uid)
+        if state.travel != nil {
+            // MODE VOYAGE : le statut reste un voyage, la position continue d'être publiée (`TrackingEngine+Travel.swift`).
+            await doTravelPass(uid, state, reason, supplied: supplied)
+            return
+        }
+        // Un NOUVEL appareil pour ce compte (aucune relecture vérifiée du serveur jusque-là) lit d'abord s'il y a un voyage, avant d'armer.
+        let newPhone = state.checkedAtMillis == 0
         if reason == .rearm {
             journal.record(.wakeRearm)
             state.armed = []
@@ -48,7 +55,12 @@ extension TrackingEngine {
         }
         let pass = await makePass(uid: uid)
         await noteSystemConditions(reason)
-        state = await syncMiffs(uid, state, reason, now).state
+        let synced = await syncMiffs(uid, state, reason, now)
+        state = synced.state
+        if newPhone, synced.verified, !state.miffs.isEmpty,
+           await settleNewPhone(uid, state, reason, supplied: supplied) {
+            return
+        }
         guard !state.miffs.isEmpty else {
             await standDown(uid, state)
             return
