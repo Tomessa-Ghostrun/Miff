@@ -79,15 +79,85 @@ final class LocationTrackingWaitTests: XCTestCase {
         XCTAssertTrue(rig.sink.moves.isEmpty)
     }
 
-    func testWhenTheWaitEndsTheRecentLastKnownPositionIsTheFallbackAndAnOldOneIsNot() async {
+    func testWhenTheWaitOfTheUpdateEndsTheRecentLastKnownPositionIsTheFallbackAndAnOldOneIsNot() async {
         let rig = make(wait: 0.05)
         rig.manager.systemFix = TrackingFixtures.fixHome(at: TrackingFixtures.noon - TrackingFixtures.minute)
-        let recent = await rig.tracking.current()
+        let recent = await rig.tracking.current(within: 0.05)
         XCTAssertNotNil(recent, "le délai ne doit pas faire perdre une position de moins de deux minutes")
 
         rig.manager.systemFix = TrackingFixtures.fixHome(at: TrackingFixtures.noon - 5 * TrackingFixtures.minute)
-        let old = await rig.tracking.current()
+        let old = await rig.tracking.current(within: 0.05)
         XCTAssertNil(old)
+    }
+
+    func testWhenTheWaitOfTheEngineEndsThereIsNoFallbackBecauseAPositionIsNeverReusedAtAZoneEntry() async {
+        let rig = make(wait: 0.05)
+        rig.manager.systemFix = TrackingFixtures.fixHome(at: TrackingFixtures.noon - 10_000)
+
+        let answer = await rig.tracking.current()
+
+        XCTAssertNil(answer, "BATT-3 : à l'entrée dans une zone, jamais la position connue du système")
+    }
+
+    func testAPositionMeasuredBeforeTheLastDisconnectionIsNotTheFallbackOfAnExpiredWait() async {
+        let rig = make(wait: 0.05)
+        rig.manager.systemFix = TrackingFixtures.fixHome(at: TrackingFixtures.noon - 30_000)
+
+        await rig.tracking.disarmAll()
+        let answer = await rig.tracking.current(within: 0.05)
+
+        XCTAssertNil(answer, "elle peut être celle de l'autre compte")
+    }
+
+    func testAFailureOfTheSystemAnswersEveryWaitWithTheRecentKnownPositionIfAny() async {
+        let rig = make(wait: 5)
+        let known = TrackingFixtures.fixHome(at: TrackingFixtures.noon - TrackingFixtures.minute)
+        rig.manager.systemFix = known
+        let engine = Task { await rig.tracking.current() }
+        await waitUntil { rig.manager.positionAsks == 1 }
+        let update = Task { await rig.tracking.current(within: 5) }
+        await waitUntil { rig.manager.positionAsks == 2 }
+
+        rig.manager.emit(.fixFailed)
+
+        let engineAnswer = await engine.value
+        let updateAnswer = await update.value
+        XCTAssertEqual(engineAnswer, known)
+        XCTAssertEqual(updateAnswer, known)
+    }
+
+    func testATemporaryFailureAnswersTheEngineAtOnceAsBeforeWhileTheUpdateKeepsWaiting() async {
+        let rig = make(wait: 5)
+        let engine = Task { await rig.tracking.current() }
+        await waitUntil { rig.manager.positionAsks == 1 }
+        let update = Task { await rig.tracking.current(within: 5) }
+        await waitUntil { rig.manager.positionAsks == 2 }
+
+        rig.manager.emit(.fixUnavailable)
+        let engineAnswer = await engine.value
+        XCTAssertNil(engineAnswer, "aucune position connue du système : comme avant")
+        await waitUntil { rig.manager.positionAsks == 3 }
+        let fix = TrackingFixtures.fixHome(at: TrackingFixtures.noon)
+        rig.manager.emit(.fix(fix))
+
+        let updateAnswer = await update.value
+        XCTAssertEqual(updateAnswer, fix)
+    }
+
+    func testTheRetryStopsWhenTheWaitsHaveEnded() async {
+        let rig = make(wait: 0.05, retry: 0.01)
+        let waiting = Task { await rig.tracking.current(within: 0.05) }
+        await waitUntil { rig.manager.positionAsks == 1 }
+        rig.manager.emit(.fixUnavailable)
+        await waitUntil { rig.manager.positionAsks >= 2 }
+
+        let answer = await waiting.value
+        XCTAssertNil(answer)
+        let asks = rig.manager.positionAsks
+        rig.manager.emit(.fixUnavailable)
+        try? await Task.sleep(nanoseconds: 80_000_000)
+
+        XCTAssertEqual(rig.manager.positionAsks, asks, "plus personne n'attend : aucune nouvelle demande")
     }
 
     func testAWaitThatEndsDoesNotEndTheOthers() async {

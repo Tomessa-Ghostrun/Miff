@@ -38,13 +38,9 @@ struct UpdateServices {
             battery: { await system.batteryPct() }
         )
         let local = TrackingLocalFileStore()
-        // Repli quand la mesure fraîche échoue : la dernière position que le suivi a gardée pour CE compte (jamais acceptée au-delà de
-        // 10 minutes : `PhotoPlace.from`).
+        // Repli quand la mesure fraîche échoue : la dernière position que le suivi a gardée pour CE compte, de moins de 10 minutes.
         let keptFix: () -> Fix? = {
-            guard let uid = gateway.currentUid, let state = local.load(), state.uid == uid else {
-                return nil
-            }
-            return state.fix
+            Self.keptFix(uid: gateway.currentUid, local: local, nowMillis: Int(Date().timeIntervalSince1970 * 1000))
         }
         let photoPosition = TrackingPhotoPositionSource(
             position: tracking.location, permissions: { await permissions.snapshot() }, keptFix: keptFix
@@ -86,6 +82,16 @@ struct UpdateServices {
             sharingStopped: sharingStopped,
             photoCache: photoCache
         )
+    }
+
+    /// La dernière position que le suivi a gardée sur le téléphone, seulement si elle est celle de CE compte et a moins de 10 minutes (la
+    /// copie d'un autre compte ou une vieille position ne sert jamais de repli).
+    static func keptFix(uid: String?, local: TrackingLocalStore, nowMillis: Int) -> Fix? {
+        guard let uid, let state = local.load(), state.uid == uid, let fix = state.fix,
+              nowMillis - fix.measuredAtMillis <= TrackingLimits.fixMaxAgeMillis else {
+            return nil
+        }
+        return fix
     }
 
     /// Les identifiants des Miffs de la personne, tels que l'annuaire les connaît (vide tant qu'il ne les a pas lues).

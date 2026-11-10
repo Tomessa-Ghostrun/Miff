@@ -17,6 +17,9 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     /// d'un autre (avant, une seule place existait, et le moteur qui se réveillait à l'ouverture de l'app faisait répondre « introuvable »
     /// à la publication d'une photo en cours).
     private var waiters: [Int: CheckedContinuation<Fix?, Never>] = [:]
+    /// Les attentes qui, à l'expiration de leur délai, se rabattent sur la dernière position récente du système (celles de l'Update, via
+    /// `current(within:)`). Pas celles du moteur : à l'entrée dans une zone, une position n'est « jamais réutilisée » (BATT-3).
+    private var fallingBack = Set<Int>()
     private var lastWaiter = 0
     private var retryScheduled = false
     /// Les zones dont l'état a été DEMANDÉ et n'est pas encore arrivé. Le système répond aussi à chaque franchissement : une réponse
@@ -55,6 +58,8 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         case .fixFailed:
             resolveWaiters(with: recentSystemFix())
         case .fixUnavailable:
+            // Le moteur garde son comportement d'avant (repli immédiat sur la position récente du système) ; l'Update, lui, patiente et relance.
+            resolveEngineWaiters(with: recentSystemFix())
             retryWhileWaiting()
         case .region(let kind, let key):
             if ZoneKey.isValid(key) {
@@ -83,7 +88,9 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         } else if isUsable(fix) {
             resolveWaiters(with: fix)
         } else {
-            // Une position trop vieille (le système en rend parfois une gardée en mémoire) ne répond à personne : on en redemande une.
+            // Une position trop vieille (le système en rend parfois une gardée en mémoire) ne répond pas à l'Update : on en redemande une.
+            // Le moteur la reçoit comme avant et juge lui-même (`usable`).
+            resolveEngineWaiters(with: fix)
             retryWhileWaiting()
         }
     }
@@ -94,10 +101,18 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         return age <= TrackingLimits.fixMaxAgeMillis && -age <= TrackingLimits.clockSkewMillis
     }
 
+    /// Les attentes du moteur seulement (pas celles de l'Update).
+    private func resolveEngineWaiters(with fix: Fix?) {
+        for id in Array(waiters.keys) where !fallingBack.contains(id) {
+            waiters.removeValue(forKey: id)?.resume(returning: fix)
+        }
+    }
+
     /// Tous ceux qui attendent reçoivent la même réponse.
     private func resolveWaiters(with fix: Fix?) {
         let waiting = waiters
         waiters = [:]
+        fallingBack.removeAll()
         for continuation in waiting.values {
             continuation.resume(returning: fix)
         }
@@ -106,7 +121,7 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     /// Le système n'a pas (encore) de position : tant que quelqu'un attend, la demande est refaite après un court délai ; chaque attente
     /// finit par son propre délai (alors la dernière position récente connue sert de repli).
     private func retryWhileWaiting() {
-        guard !waiters.isEmpty, !retryScheduled else {
+        guard !fallingBack.isEmpty, !retryScheduled else {
             return
         }
         retryScheduled = true
@@ -119,7 +134,7 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
 
     private func retryNow() {
         retryScheduled = false
-        if !waiters.isEmpty {
+        if !fallingBack.isEmpty {
             manager.askPosition()
         }
     }
@@ -137,24 +152,35 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         return age >= 0 && age <= TrackingLimits.systemFixMaxAgeMillis ? fix : nil
     }
 
-    /// Le délai de cette attente est passé : elle se termine sur la dernière position récente connue du système (moins de deux minutes),
-    /// sinon sans position. Les autres attentes continuent.
+    /// Le délai de cette attente est passé : sans position, sauf pour une attente de l'Update (`current(within:)`) qui se termine sur la
+    /// dernière position récente connue du système (moins de deux minutes). Les autres attentes continuent.
     private func expire(_ id: Int) {
         guard let continuation = waiters.removeValue(forKey: id) else {
             return
         }
-        continuation.resume(returning: recentSystemFix())
+        let falls = fallingBack.remove(id) != nil
+        continuation.resume(returning: falls ? recentSystemFix() : nil)
     }
 
     // MARK: - PositionSource
 
+    /// L'attente du moteur : à l'expiration, aucune position (le moteur a ses propres replis ; BATT-3 : jamais de position réutilisée à
+    /// l'entrée dans une zone).
     func current() async -> Fix? {
-        await current(within: waitSeconds)
+        await wait(seconds: waitSeconds, fallingBack: false)
     }
 
+    /// L'attente de l'Update : à l'expiration, repli sur la dernière position du système si elle a moins de 2 minutes.
     func current(within seconds: Double) async -> Fix? {
+        await wait(seconds: seconds, fallingBack: true)
+    }
+
+    private func wait(seconds: Double, fallingBack falls: Bool) async -> Fix? {
         lastWaiter += 1
         let id = lastWaiter
+        if falls {
+            fallingBack.insert(id)
+        }
         // Le délai est tenu ICI : passé ce délai la demande est abandonnée, et une position qui arrive ensuite est un signalement
         // de déplacement, pas la réponse de personne (s'il n'y a plus personne qui attend).
         Task { [weak self] in

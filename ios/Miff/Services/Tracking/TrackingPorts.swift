@@ -61,13 +61,15 @@ struct PositionReading: Equatable, CustomStringConvertible {
 /// Où est la personne, quand le moteur le demande (un double dans les tests).
 protocol PositionSource {
     /// Une position récente (quelques secondes au plus), ou nil quand le système ne peut pas en donner. TOUJOURS une mesure demandée
-    /// au système (jamais la dernière position connue, sauf en repli si la demande échoue). LIT la position : n'est appelée qu'une fois
-    /// l'accord et « Toujours » vérifiés. C'est ce que demandent l'entrée dans une zone, le déplacement significatif et la photo de
-    /// l'Update (dont la position doit avoir moins de 10 minutes selon les règles : mesure fraîche à « Publier »).
+    /// au système (jamais la dernière position connue, sauf en repli si le système signale un échec). LIT la position : n'est appelée
+    /// qu'une fois l'accord et « Toujours » vérifiés. C'est ce que demandent l'entrée dans une zone et le déplacement significatif ;
+    /// l'Update, elle, appelle `current(within:)`.
     func current() async -> Fix?
 
-    /// Comme `current()`, avec une attente choisie par l'appelant (l'Update attend plus longtemps que le moteur : une personne qui vient de
-    /// toucher « Publier » patiente de toute façon). Plusieurs attentes en même temps sont possibles : aucune n'annule les autres.
+    /// La mesure de la photo de l'Update, au toucher de « Publier » : une mesure demandée avec une attente choisie par l'appelant (plus
+    /// longue que celle du moteur : la personne patiente de toute façon), relancée si le système n'a pas de position pour l'instant ;
+    /// à l'expiration, repli sur la dernière position du système si elle a moins de 2 minutes (et mesurée après la dernière déconnexion).
+    /// Plusieurs attentes en même temps sont possibles : aucune n'annule les autres. Le moteur n'a PAS ce repli (BATT-3).
     func current(within seconds: Double) async -> Fix?
 
     /// BATT-3, pour l'OUVERTURE de l'app et sa SORTIE seulement : la dernière position du système si elle a moins de

@@ -128,4 +128,30 @@ final class PhotoPositionSourceTests: XCTestCase {
         XCTAssertEqual(UpdateServices.miffIds(of: .loading), [])
         XCTAssertEqual(UpdateServices.miffIds(of: .unavailable), [])
     }
+
+    func testTheKeptPositionIsOnlyTheOneOfThisAccountAndOfLessThanTenMinutes() {
+        let now = TrackingFixtures.noon
+        let store = MemoryTrackingLocalStore()
+        var state = LocalState(uid: "me")
+        state.fix = TrackingFixtures.fixHome(at: now - 9 * TrackingFixtures.minute)
+        store.state = state
+
+        let own = UpdateServices.keptFix(uid: "me", local: store, nowMillis: now)
+        let other = UpdateServices.keptFix(uid: "someone-else", local: store, nowMillis: now)
+        let signedOut = UpdateServices.keptFix(uid: nil, local: store, nowMillis: now)
+        let tooOld = UpdateServices.keptFix(uid: "me", local: store, nowMillis: now + 2 * TrackingFixtures.minute)
+
+        XCTAssertEqual(own, TrackingFixtures.fixHome(at: now - 9 * TrackingFixtures.minute))
+        XCTAssertNil(other, "la copie d'un autre compte ne sert jamais")
+        XCTAssertNil(signedOut)
+        XCTAssertNil(tooOld, "plus de 10 minutes : refusée")
+    }
+
+    func testNoKeptPositionMeansNil() {
+        let store = MemoryTrackingLocalStore()
+
+        XCTAssertNil(UpdateServices.keptFix(uid: "me", local: store, nowMillis: TrackingFixtures.noon))
+        store.state = LocalState(uid: "me")
+        XCTAssertNil(UpdateServices.keptFix(uid: "me", local: store, nowMillis: TrackingFixtures.noon))
+    }
 }
