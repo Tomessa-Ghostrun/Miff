@@ -178,6 +178,7 @@ Décision du PM du 2026-11-07 : « actualise le niveau de batterie des utilisate
 - **« A quitté la maison » n'a pas d'emoji** : seul « être dans le lieu » en a un (un emoji de maison sur « A quitté la maison » dirait l'inverse). À reconsidérer si le PM le souhaite.
 - **Repli sans emoji** : sur un téléphone dont la police ne sait pas dessiner l'un des sept emoji, la **première lettre** du nom de la catégorie le remplace (règle du contrat), y compris dans l'étiquette.
 - **Rendu** : les emoji sont ceux du système Android (pas ceux d'Apple, propriétaires) ; la police ExtraBold se rend sur toutes les versions Android supportées (variation de police depuis l'API 26, notre minSdk).
+- **Parité iOS des styles de texte** : le test iOS `testTextStylesAreIdenticalToAndroid` compare tous les styles `style(...)` d'Android à la liste iOS. `textDisplayBubble` est donc déclaré en `TextStyle(...)` (hors du test) jusqu'à ce que la PR iOS ajoute le style correspondant (30 / 36, `wght` 800, `.title2`) ; il pourra alors passer en `style(...)` pour être couvert par le test.
 
 ## [0.15.1] - 2026-11-07 : FEED, ajustements demandés par le PM après la recette
 
