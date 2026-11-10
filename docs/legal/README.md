@@ -100,6 +100,10 @@ Le français est la version de référence ; l'anglais en est la traduction fid�
 
 **À vérifier dans le code avant publication** : les affirmations de ces textes dépendent des contrôles V1 à V9 de `docs/release/README.md`. Les passages qui dépendent d'une décision non tranchée sont repérés dans `consentement-localisation-v3.md` §6 (O1 à O6) et dans `docs/release/README.md` (O7 à O11).
 
+### Mise à jour du 2026-11-08 : « Enregistrer la photo » d'un proche (FEED-8) : textes à aligner, **non modifiés**
+
+Décision du PM : le plein écran de la photo d'un proche propose **« Enregistrer la photo »** (feuille de partage du système, sans permission). **Changement de posture** : la photo « n'est jamais enregistrée sur ton téléphone » devient « **seulement si tu choisis de l'enregistrer** » ; une copie enregistrée est hors de Miff (non effaçable par nous), alors qu'une capture d'écran était déjà possible. **Rien n'est modifié dans les textes légaux de ce dossier** (décision du PM) ; la liste précise des passages à aligner (politique de confidentialité FR/EN : résumé point 7, art. 3 tableau et « Caméra et photo », art. 4 et 5 « capture d'écran », art. 7 conservation, art. 11 stockage sur le téléphone ; CGU art. 8 ; écran d'explication de la caméra ; consentement) est dans `docs/release/update-photo-declarations.md` §13 bis. À traiter **avant toute publication** des textes et des fiches des stores.
+
 ### À aligner (2026-11-08) : la photo Google reprise à l'inscription (décision du PM, apps Android et iOS)
 
 **Textes légaux NON modifiés par cette PR** (la modification se fait dans les deux langues à la fois, par `release-manager`, avec l'accord du PM). Décision du PM du 2026-11-08 : quand une personne s'inscrit avec Google et que son compte a une photo, celle-ci est reprise comme photo de profil **préremplie**, qu'elle peut changer ou retirer avant d'enregistrer son profil. Ce que les textes doivent dire une fois la fonction publiée :

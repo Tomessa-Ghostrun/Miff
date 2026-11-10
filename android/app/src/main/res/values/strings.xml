@@ -409,6 +409,9 @@
     <string name="feed_selector_a11y">Miff shown: %1$s. Tap to switch Miff or add one.</string>
     <string name="feed_selector_join">+ Join a Miff</string>
     <string name="feed_selector_create">+ Create a Miff</string>
+    <string name="feed_selector_paywall_title">One Miff with the free plan</string>
+    <string name="feed_selector_paywall_body">With Miff+, create or join as many Miffs as you like.</string>
+    <string name="feed_selector_paywall_soon_body">This option isn\'t open yet. Your current Miff stays as it is.</string>
     <string name="feed_nomiff_body">Create your Miff or join a loved one\'s to get started.</string>
     <string name="feed_create_action">Create a Miff</string>
     <string name="feed_join_action">Join a Miff</string>
@@ -443,8 +446,10 @@
     <string name="feed_label_at_home">At home</string>
     <string name="feed_label_at_work">At work</string>
     <string name="feed_label_at_school">At school</string>
-    <string name="feed_label_at_sport">At the sports club</string>
-    <string name="feed_label_at_place">At %1$s</string>
+    <string name="feed_label_at_sport">At the gym</string>
+    <!-- Leisure, Other, no category: the name of the trusted place alone (PM decision, 2026-11-08). -->
+    <string name="feed_label_at_place">%1$s</string>
+    <string name="feed_label_at_relative">At a loved one\'s</string>
     <string name="feed_label_left">Left %1$s</string>
     <string name="feed_label_trusted_generic">In a trusted place</string>
     <string name="feed_label_danger">In a danger zone</string>
@@ -455,7 +460,8 @@
     <string name="feed_place_noun_home">home</string>
     <string name="feed_place_noun_work">work</string>
     <string name="feed_place_noun_school">school</string>
-    <string name="feed_place_noun_sport">the sports club</string>
+    <string name="feed_place_noun_sport">the gym</string>
+    <string name="feed_place_noun_relative">a loved one\'s place</string>
     <string name="feed_place_noun_generic">a trusted place</string>
     <string name="feed_time_since_minutes">For %1$d min</string>
     <string name="feed_time_since_hours">For %1$d h</string>
@@ -662,7 +668,7 @@
     <string name="place_detail_created_by">Created by</string>
     <string name="place_detail_created_by_me">%1$s (you)</string>
     <string name="place_detail_info_trusted">When you arrive at or leave this place, your Miff sees your status (for example “at home”), even when the app is closed.</string>
-    <string name="place_detail_info_danger">While you\'re in this zone, your Miff sees your status in red. Only the Miff\'s creator can add or edit this kind of zone.</string>
+    <string name="place_detail_info_danger">When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour.</string>
     <string name="place_paywall_close_a11y">Close</string>
     <string name="place_paywall_limit_title">You\'ve reached 2 places</string>
     <string name="place_paywall_limit_body">That\'s the limit of the free plan. With Miff+, add as many places as you like.</string>
@@ -903,6 +909,8 @@
     <string name="update_photo_close_a11y">Close the photo</string>
     <string name="update_photo_position">Position measured %1$s.</string>
     <string name="update_photo_see_where">See where it was</string>
+    <string name="feed_photo_download">Save the photo</string>
+    <string name="feed_photo_download_done">Photo saved.</string>
     <string name="update_notice_unconfirmed">We couldn\'t confirm it. Check your Feed: if your photo is there, it went through.</string>
     <string name="update_action_open_feed">Open my Feed</string>
     <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff is no longer allowed to use it. You can turn it back on in the settings, then try again.</string>

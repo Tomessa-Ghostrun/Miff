@@ -159,7 +159,7 @@ export const ONBB_MUTATIONS = [
     [edit('allow create, update: if isSelf(uid) && validStatus(miffId, uid);', 'allow create, update: if isSignedIn() && validStatus(miffId, uid);')],
     ['EN3']),
   mut('EN3-statut-cles-ouvertes', 'le statut initial accepte des clés inconnues (coordonnées)',
-    [edit("return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId'])", "return d.keys().hasAny(['presence'])")],
+    [edit("return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay'])", "return d.keys().hasAny(['presence'])")],
     ['EN3']),
   mut('EN3-adhesion-sans-index', 'l\'adhésion n\'exige plus l\'index d\'appartenance dans le lot',
     [edit('&& exists(/databases/$(database)/documents/miffs/$(miffId))\n        && indexAfterOk(uid, miffId);', '&& exists(/databases/$(database)/documents/miffs/$(miffId));')],
