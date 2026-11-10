@@ -79,6 +79,8 @@ struct FeedMemberCard: Equatable, CustomStringConvertible {
     let phone: String?
     /// « Localiser » : un autre membre qui partage, pendant que je partage aussi et que les statuts sont vraiment lus.
     let canLocate: Bool
+    /// FEED-8 : la photo de la dernière update, à lire quand la carte vient à l'écran (`none` : rien n'est dessiné, ni trou ni message).
+    var photo: PhotoSlot = .none
 
     var description: String {
         "FeedMemberCard(redacted)"
@@ -174,6 +176,16 @@ struct FeedContent: Equatable, CustomStringConvertible {
     /// MON statut tel que l'Update en a besoin (couleur du bouton central, bulle, nettoyage de ma photo) : nil quand je ne partage pas ou
     /// que mon accord est attendu. L'Update ne lit rien de plus : ce Feed est l'UNIQUE écouteur de ma fiche (D19).
     var myFacts: MyStatusFacts?
+
+    /// Le Feed dit « Dernières informations de… » : pas de réseau, ou seule une copie du cache répond. Les photos ne sont pas lues alors.
+    var isOffline: Bool {
+        banners.contains { banner in
+            if case .offline = banner {
+                return true
+            }
+            return false
+        }
+    }
 
     var description: String {
         "FeedContent(redacted)"

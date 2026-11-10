@@ -37,14 +37,13 @@ Toucher : le fil **remonte** tout en haut (animation courte ; instantané si « 
 ## Pastille de Miff
 | Cas | Aspect | Comportement |
 |---|---|---|
-| Une seule Miff (compte gratuit) | Fond plat `rgba(0,0,0,.05)`, **sans ombre, sans flèche**, nom en italique 16 pt | **Non cliquable**, annoncée comme du texte (pas « bouton ») |
-| Plusieurs Miffs (Miff+) | Fond `#eee`, ombre `shadow/default`, flèche bleue | Ouvre la liste |
-| Aucune Miff (filet) | Comme « une seule », texte « Pas encore de Miff » | Non cliquable |
+| Au moins une Miff, **pour tout le monde** (gratuit, Miff+, formule inconnue) [décision du PM, 2026-11-08, remplace « une seule Miff = pastille plate »] | Fond `#eee`, ombre `shadow/default`, flèche bleue | Ouvre la liste (même avec une seule Miff) |
+| Aucune Miff (filet) | Fond plat `rgba(0,0,0,.05)`, **sans ombre, sans flèche**, nom en italique 16 pt, texte « Pas encore de Miff » | **Non cliquable**, annoncée comme du texte (pas « bouton ») |
 - Nom long : une ligne, tronqué au milieu à 300 pt de large ; nom complet dans l'annonce.
 - Lecteur d'écran, sélecteur : « Miff affichée : {nom}. Touche pour changer de Miff ou en ajouter une » (`feed_selector_a11y`, existant).
 
-### Liste ouverte (Miff+ seulement, maquette 01 G)
-Panneau `#eee` de 250 pt, rayon `radius/md`, ombre. Lignes de **44 pt**, italique 16 pt : les Miffs (coche bleue + gras sur la Miff affichée : le gras seul ne suffit pas), puis un séparateur, puis **« + Rejoindre une Miff »** et **« + Créer une Miff »** en bleu (`feed_selector_join`, `feed_selector_create`, existants). Un compte **gratuit** n'a **jamais** ces deux entrées (FPR Q2). Fermeture : toucher en dehors, retour système. La Miff choisie est une préférence locale purgée à la déconnexion.
+### Liste ouverte (pour tout le monde, maquette 01 G ; décision du PM du 2026-11-08)
+Panneau `#eee` de 250 pt, rayon `radius/md`, ombre. Lignes de **44 pt**, italique 16 pt : les Miffs (coche bleue + gras sur la Miff affichée : le gras seul ne suffit pas), puis un séparateur, puis **« + Rejoindre une Miff »** et **« + Créer une Miff »** en bleu (`feed_selector_join`, `feed_selector_create`, existants). Ces deux entrées sont visibles **pour tout le monde** (le « jamais pour un compte gratuit » de FPR Q2 est remplacé). Au toucher : **compte Miff+** = le parcours normal ; **compte gratuit** (qui a déjà une Miff) = **l'offre** (`PlacePaywallContent`, raison « 2e Miff », sans achat ni prix) ; **formule inconnue / hors connexion** = le parcours normal, le serveur tranche. **iOS** : la liste est une feuille d'actions du système, qui n'affiche pas d'icône : la Miff affichée y est cochée par une coche écrite (« ✓ Famille ») ; l'en-tête reste visible tant qu'elle est ouverte (D41). Fermeture : toucher en dehors, retour système. La Miff choisie est une préférence locale purgée à la déconnexion.
 
 ## Textes
 | Élément | FR | EN |
@@ -53,9 +52,12 @@ Panneau `#eee` de 250 pt, rayon `radius/md`, ombre. Lignes de **44 pt**, italiqu
 | Logo (a11y) | Remonter en haut du fil | Scroll to top |
 | Aucune Miff | Pas encore de Miff [décidé, existant] | No Miff yet |
 | Entrées | + Rejoindre une Miff · + Créer une Miff [existants] | + Join a Miff · + Create a Miff |
+| Offre d'une 2e Miff, titre (`feed_selector_paywall_title`) | Une seule Miff avec la formule gratuite | One Miff with the free plan |
+| Offre d'une 2e Miff, texte (`feed_selector_paywall_body`) | Avec Miff+, tu peux créer ou rejoindre autant de Miffs que tu veux. | With Miff+, create or join as many Miffs as you like. |
+| Offre d'une 2e Miff, « bientôt » (`feed_selector_paywall_soon_body`) | Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place. | This option isn't open yet. Your current Miff stays as it is. |
 
 ## Écarts avec la maquette du PM
-Cloche retirée ; flèche absente quand la pastille n'est pas cliquable ; **anneau de couleur seule, sans pictogramme** (décision du PM, comme les maquettes) ; coche sur la Miff affichée dans la liste.
+Cloche retirée ; flèche absente seulement quand il n'y a aucune Miff ; **anneau de couleur seule, sans pictogramme** (décision du PM, comme les maquettes) ; coche sur la Miff affichée dans la liste.
 
 ## Contraste de l'anneau seul (calculé, WCAG 2.1)
 Anneau de 3 pt, sans pictogramme : critère 1.4.11 (éléments graphiques, 3:1) **non atteint pour le vert et l'orange**. Contre le fond d'en-tête (`bg/canvas` `#f9f9f7`) : vert **1,47:1**, orange **1,65:1**, rouge **2,97:1**, neutre **1,64:1** (contre le blanc : 1,55 / 1,74 / 3,13 / 1,73). Contre le disque de la photo ou des initiales `#cfc7bd` : 1,08 / 1,04 / 1,87 / 1,04.
