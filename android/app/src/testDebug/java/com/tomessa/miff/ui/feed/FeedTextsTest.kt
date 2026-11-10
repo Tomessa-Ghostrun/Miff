@@ -82,7 +82,13 @@ class FeedTextsFrenchTest {
         assertEquals("Au travail", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.WORK))))
         assertEquals("À l'école", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL))))
         assertEquals("Au sport", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
-        assertEquals("À Chez Léa", texts.label(StateLabel.At(PlaceRef.Named("Chez Léa"))))
+        // Chez un proche has its own words; Loisir and Autre show the NAME of the place alone (decision of the PM, 2026-11-08).
+        assertEquals("Chez un proche", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        assertEquals(
+            "A quitté le domicile d'un proche",
+            texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.RELATIVE))),
+        )
+        assertEquals("Cinéma Gaumont", texts.label(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"))))
         assertEquals("A quitté le travail", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.WORK))))
         assertEquals("A quitté Chez Léa", texts.label(StateLabel.Left(PlaceRef.Named("Chez Léa"))))
         assertEquals("Dans un lieu de confiance", texts.label(StateLabel.At(PlaceRef.Unknown)))
@@ -95,11 +101,10 @@ class FeedTextsFrenchTest {
 
     @Test
     fun timeLines() {
-        assertEquals("Depuis 12 min", texts.timeLine(TimeLine.Since(Age.Minutes(12))))
-        assertEquals("Depuis 3 h", texts.timeLine(TimeLine.Since(Age.Hours(3))))
-        assertEquals("Depuis hier à 16 h 40".t(), texts.timeLine(TimeLine.Since(Age.Yesterday(AT_16_40))))
-        assertEquals("Depuis le 3 nov. à 16 h 02".t(), texts.timeLine(TimeLine.Since(Age.Date(AT_16_02))))
-        assertEquals("Départ il y a 12 min", texts.timeLine(TimeLine.DepartedAgo(Age.Minutes(12))))
+        // Always a TIME (decision of the PM, 2026-11-10): today, yesterday, the short date.
+        assertEquals("Depuis 16 h 40".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.TODAY))))
+        assertEquals("Depuis hier à 16 h 40".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.YESTERDAY))))
+        assertEquals("Depuis le 3 nov. à 16 h 02".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_02, Day.OTHER))))
         assertEquals(
             "Dernière nouvelle à 16 h 40".t(),
             texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))),
@@ -108,7 +113,6 @@ class FeedTextsFrenchTest {
             "Pas de nouvelles depuis 16 h 40".t(),
             texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_40, Day.TODAY))),
         )
-        assertEquals("Depuis 16 h 40".t(), texts.timeLine(TimeLine.InDangerSince(Moment(AT_16_40, Day.TODAY))))
         assertEquals(null, texts.timeLine(TimeLine.None))
     }
 
@@ -191,8 +195,21 @@ class FeedTextsEnglishTest {
 
     @Test
     fun theSportPlaceReadsWellInASentence() {
-        assertEquals("At the sports club", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
-        assertEquals("Left the sports club", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("At the gym", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("Left the gym", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.SPORT))))
+    }
+
+    @Test
+    fun labelsFollowTheCategoryOfThePlace_decisionOfThePm_2026_11_08() {
+        assertEquals("At home", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.HOME))))
+        assertEquals("At work", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.WORK))))
+        assertEquals("At school", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL))))
+        assertEquals("At the gym", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT))))
+        assertEquals("At a loved one's", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE))))
+        assertEquals("Left a loved one's place", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.RELATIVE))))
+        // Leisure, Other, no category: the NAME of the place alone.
+        assertEquals("Cinéma Gaumont", texts.label(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"))))
+        assertEquals("In a trusted place", texts.label(StateLabel.At(PlaceRef.Unknown)))
     }
 
     @Test
@@ -215,8 +232,8 @@ class FeedTextsEnglishTest {
         assertEquals("At home", texts.label(StateLabel.At(PlaceRef.Category(PlaceKind.HOME))))
         assertEquals("Left home", texts.label(StateLabel.Left(PlaceRef.Category(PlaceKind.HOME))))
         assertEquals("In a danger zone", texts.label(StateLabel.Danger))
-        assertEquals("For 12 min", texts.timeLine(TimeLine.Since(Age.Minutes(12))))
-        assertEquals("Left 12 min ago", texts.timeLine(TimeLine.DepartedAgo(Age.Minutes(12))))
+        assertEquals("Since 4:40 PM".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.TODAY))))
+        assertEquals("Since yesterday at 4:40 PM".t(), texts.timeLine(TimeLine.Since(Moment(AT_16_40, Day.YESTERDAY))))
         assertEquals("Latest news at 4:40 PM".t(), texts.timeLine(TimeLine.LatestNews(Moment(AT_16_40, Day.TODAY))))
         assertEquals("No news since 4:02 PM".t(), texts.timeLine(TimeLine.NoNewsSince(Moment(AT_16_02, Day.TODAY))))
         assertEquals("Latest news 2 min ago", texts.latestNews(Age.Minutes(2)))
