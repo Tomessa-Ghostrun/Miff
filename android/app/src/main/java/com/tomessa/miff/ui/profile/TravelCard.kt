@@ -120,7 +120,13 @@ fun TravelCard(
                 )
             }
         }
-        state.message?.let { MiffNotice(text = messageText(it), isError = it == TravelMessage.REFUSED) }
+        state.message?.let {
+            MiffNotice(
+                text = messageText(it),
+                isError =
+                    it == TravelMessage.REFUSED || it == TravelMessage.UPDATE_REFUSED,
+            )
+        }
     }
     state.picker?.let { DayPicker(it, actions) }
     state.confirm?.let { confirm ->
@@ -144,6 +150,7 @@ private fun messageText(message: TravelMessage): String =
             TravelMessage.RESUMED -> R.string.voyage_off_done
             TravelMessage.OFFLINE -> R.string.voyage_offline_note
             TravelMessage.REFUSED -> R.string.voyage_error_refused
+            TravelMessage.UPDATE_REFUSED -> R.string.voyage_error_update_refused
         },
     )
 
@@ -203,6 +210,8 @@ private fun SwitchRow(
                     },
                 style = textBodyRegular14,
                 color = colorTextDescription,
+                // The date is read ONCE, by the state of the switch ("Activé, jusqu'au 15 novembre 2026"): the sentence under the title is only drawn.
+                modifier = if (on) Modifier.clearAndSetSemantics {} else Modifier,
             )
         }
         // The row carries the click and the semantics: the switch itself is only the picture of the state.
@@ -246,7 +255,13 @@ private fun EndDateRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = label, style = textBodyRegular14, color = colorTextDescription, modifier = Modifier.weight(1f))
-        Text(text = written, style = textBodyBold16, color = colorTextPrimary)
+        // The written date is only drawn: the date is read ONCE, in full words, by the state of the line.
+        Text(
+            text = written,
+            style = textBodyBold16,
+            color = colorTextPrimary,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
         Icon(
             painter = painterResource(R.drawable.ic_chevron_end),
             contentDescription = null,
@@ -286,7 +301,20 @@ private fun DayPicker(
             TextButton(
                 onClick = { pickerState.selectedDateMillis?.let { actions.onDayChosen(utcDay(it)) } },
                 enabled = pickerState.selectedDateMillis != null,
-            ) { Text(stringResource(R.string.voyage_picker_confirm)) }
+            ) {
+                // Beginning a trip goes on to the confirmation ("Continuer"); moving the end of a trip in progress is done by this very button ("Valider").
+                Text(
+                    stringResource(
+                        if (picker.purpose ==
+                            TravelPickerPurpose.START
+                        ) {
+                            R.string.voyage_picker_confirm
+                        } else {
+                            R.string.voyage_picker_validate
+                        },
+                    ),
+                )
+            }
         },
         dismissButton = {
             TextButton(onClick = actions.onPickerDismissed) { Text(stringResource(R.string.voyage_confirm_cancel)) }

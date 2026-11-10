@@ -15,7 +15,7 @@
 ## Partie 1 : activer (compte A, onglet Profil) (6 min)
 
 1. [ ] Profil : une carte **« Mode voyage »** (avion, « Mets ton suivi en pause pendant un voyage. », interrupteur éteint) sous votre nom, **avant** « Mes Miffs ». **Aucune mention de Miff+, de Premium ou d'offre**, même avec un compte gratuit.
-2. [ ] Touchez l'interrupteur : le **sélecteur de date du système** s'ouvre. Il propose **aujourd'hui + 7 jours**, ne permet pas de choisir **avant aujourd'hui** ni **après aujourd'hui + 90 jours**. Choisissez **demain**.
+2. [ ] Touchez l'interrupteur : le **sélecteur de date du système** s'ouvre. Il propose **aujourd'hui + 7 jours**, ne permet pas de choisir **avant aujourd'hui** ni **après aujourd'hui + 89 jours** (un voyage dure 90 jours au plus). Choisissez **demain**.
 3. [ ] (Seulement si les règles ne sont **pas** déployées) après la confirmation : message calme, interrupteur éteint, **le suivi continue** : sortez de la maison, B voit toujours votre état habituel (vert/orange). Passez ensuite aux étapes 10 à 13 en attendant le déploiement.
 4. [ ] Une feuille **« Activer le mode voyage ? »** : « Tes proches verront « En voyage jusqu'au … » à la place de ton état. Tu peux l'arrêter quand tu veux. », deux boutons de **même poids** : Activer / Annuler. **Annuler** : rien ne change.
 5. [ ] Refaites, puis **Activer** : l'interrupteur passe sur « Activé », la carte dit « **En voyage jusqu'au {demain}** », la ligne « **Date de fin** » ouvre le sélecteur, et l'explication dit honnêtement : ta carte reste grise, Miff arrête de suivre tes lieux et n'envoie plus ta batterie, tu peux toujours donner des nouvelles avec une photo (elle garde sa localisation), le suivi reprend tout seul à la fin.
@@ -52,4 +52,5 @@
 
 - Un téléphone dont le constructeur tue l'alarme (ColorOS) reprend le suivi **à la prochaine ouverture ou au prochain redémarrage** (pas à la minute près).
 - Tant que le voyage dure, le voyageur **ne lit pas** les positions ni les photos localisées des autres (le serveur exige d'avoir publié sa propre position pour les lire) : à confirmer par le PM, voir le rapport de la PR.
+- **Activer hors connexion** : le suivi s'arrête tout de suite, mais **la dernière position reste sur le serveur** (et le voyage reste invisible des proches) jusqu'au retour du réseau, qui écrit le voyage et supprime la position.
 - La fin hors connexion est écrite dès le retour du réseau ; si la localisation « Toujours » est retirée entre-temps, l'état « Voyage terminé » peut rester visible chez les proches jusqu'à la prochaine entrée dans un lieu.

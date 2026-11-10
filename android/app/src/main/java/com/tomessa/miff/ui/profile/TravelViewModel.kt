@@ -7,6 +7,8 @@ import com.tomessa.miff.data.tracking.TravelResult
 import com.tomessa.miff.domain.travel.TravelChoice
 import com.tomessa.miff.domain.travel.TravelPeriod
 import com.tomessa.miff.domain.travel.TravelPlan
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +42,9 @@ enum class TravelMessage {
 
     /** The server did not take it: nothing changed. */
     REFUSED,
+
+    /** The new end of a trip in progress was not taken: the end that was there stays. */
+    UPDATE_REFUSED,
 }
 
 data class TravelUiState(
@@ -61,6 +66,9 @@ class TravelViewModel(
     private val mutable = MutableStateFlow(TravelUiState())
     val uiState: StateFlow<TravelUiState> = mutable.asStateFlow()
 
+    /** The calm sentences that only inform go away by themselves; one that says something did not work stays until the next gesture. */
+    private var clearJob: Job? = null
+
     init {
         control.reload()
         mutable.update { it.copy(period = control.travel.value) }
@@ -71,6 +79,7 @@ class TravelViewModel(
     fun onToggle() {
         val state = mutable.value
         if (state.working) return
+        clearJob?.cancel()
         if (state.period == null) {
             openPicker(TravelPickerPurpose.START)
         } else {
@@ -78,6 +87,7 @@ class TravelViewModel(
             viewModelScope.launch {
                 control.end()
                 mutable.update { it.copy(working = false, message = TravelMessage.RESUMED) }
+                clearLater(TravelMessage.RESUMED)
             }
         }
     }
@@ -111,14 +121,14 @@ class TravelViewModel(
         mutable.update { it.copy(picker = null) }
         when (picker.purpose) {
             TravelPickerPurpose.START -> mutable.update { it.copy(confirm = period) }
-            TravelPickerPurpose.CHANGE -> apply(period)
+            TravelPickerPurpose.CHANGE -> apply(period, change = true)
         }
     }
 
     fun onConfirm() {
         val period = mutable.value.confirm ?: return
         mutable.update { it.copy(confirm = null) }
-        apply(period)
+        apply(period, change = false)
     }
 
     /** "Annuler" on the sheet: nothing was written, nothing changes. */
@@ -126,17 +136,45 @@ class TravelViewModel(
 
     fun onMessageShown() = mutable.update { it.copy(message = null) }
 
-    private fun apply(period: TravelPeriod) {
+    private fun apply(
+        period: TravelPeriod,
+        change: Boolean,
+    ) {
         if (mutable.value.working) return
         mutable.update { it.copy(working = true, message = null) }
+        clearJob?.cancel()
         viewModelScope.launch {
             val message =
                 when (control.set(period)) {
-                    TravelResult.Done -> null
-                    TravelResult.DoneOffline -> TravelMessage.OFFLINE
-                    TravelResult.Refused, TravelResult.Unavailable -> TravelMessage.REFUSED
+                    TravelResult.Done -> {
+                        null
+                    }
+
+                    TravelResult.DoneOffline -> {
+                        TravelMessage.OFFLINE
+                    }
+
+                    TravelResult.Refused, TravelResult.Unavailable -> {
+                        if (change) TravelMessage.UPDATE_REFUSED else TravelMessage.REFUSED
+                    }
                 }
             mutable.update { it.copy(working = false, message = message) }
+            if (message == TravelMessage.OFFLINE) clearLater(message)
         }
+    }
+
+    /** Removes [message] after a few seconds, if it is still the one shown (a newer gesture has already replaced or cleared it otherwise). */
+    private fun clearLater(message: TravelMessage) {
+        clearJob?.cancel()
+        clearJob =
+            viewModelScope.launch {
+                delay(MESSAGE_SHOWN_MILLIS)
+                mutable.update { if (it.message == message) it.copy(message = null) else it }
+            }
+    }
+
+    companion object {
+        /** How long a sentence that only informs stays under the card. */
+        const val MESSAGE_SHOWN_MILLIS = 6_000L
     }
 }

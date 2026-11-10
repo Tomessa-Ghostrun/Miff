@@ -15089,13 +15089,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "While you travel, your circle sees “Traveling until %1$@” and your card stays grey. Miff stops tracking your places and no longer sends your battery level. You can still check in with a photo: it keeps its location, as usual. Tracking resumes on its own at the end."
+            "value": "While you travel, your circle sees “Traveling until %1$@” and your card stays grey. Miff stops tracking your places and no longer sends your battery level. You can still check in with a photo: it keeps its location, as usual. Meanwhile, you can't see your loved ones' positions or located photos either: they come back when your trip ends. Tracking resumes on its own at the end."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pendant ton voyage, tes proches voient « En voyage jusqu'au %1$@ » et ta carte reste grise. Miff arrête de suivre tes lieux et n'envoie plus ta batterie. Tu peux toujours donner des nouvelles avec une photo : elle garde sa localisation, comme d'habitude. Le suivi reprend tout seul à la fin."
+            "value": "Pendant ton voyage, tes proches voient « En voyage jusqu'au %1$@ » et ta carte reste grise. Miff arrête de suivre tes lieux et n'envoie plus ta batterie. Tu peux toujours donner des nouvelles avec une photo : elle garde sa localisation, comme d'habitude. Pendant ce temps, tu ne vois pas non plus les positions ni les photos localisées de tes proches : elles reviennent à la fin du voyage. Le suivi reprend tout seul à la fin."
           }
         }
       }
@@ -15242,13 +15242,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your circle will see your trip as soon as you're online."
+            "value": "Your circle will see your trip as soon as you're online. Your last position will be removed then."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tes proches verront ton voyage dès que tu seras en ligne."
+            "value": "Tes proches verront ton voyage dès que tu seras en ligne. Ta dernière position sera retirée à ce moment-là."
           }
         }
       }
@@ -15419,6 +15419,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tes proches sont en voyage."
+          }
+        }
+      }
+    },
+    "voyage_error_update_refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel mode couldn't be updated. Your end date hasn't changed; you can try again later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode voyage n'a pas pu être mis à jour. Ta date de fin n'a pas changé, tu peux réessayer plus tard."
+          }
+        }
+      }
+    },
+    "voyage_picker_validate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valider"
           }
         }
       }

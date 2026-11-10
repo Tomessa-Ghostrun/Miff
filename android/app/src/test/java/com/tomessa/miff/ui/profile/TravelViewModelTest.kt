@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -79,7 +80,7 @@ class TravelViewModelTest {
             assertEquals(TravelPickerPurpose.START, picker.purpose)
             assertEquals(today.plusDays(7), picker.initialDay)
             assertEquals(today, picker.minDay)
-            assertEquals(today.plusDays(90), picker.maxDay)
+            assertEquals(today.plusDays(89), picker.maxDay)
             assertTrue(control.sets.isEmpty())
             assertEquals(1, control.reloads)
         }
@@ -139,6 +140,8 @@ class TravelViewModelTest {
             vm.onDayChosen(today.minusDays(1))
             assertNull(vm.uiState.value.confirm)
             assertNotNull("the picker stays open", vm.uiState.value.picker)
+            vm.onDayChosen(today.plusDays(90))
+            assertNull("today + 90 would end more than 90 days ahead", vm.uiState.value.confirm)
             vm.onDayChosen(today.plusDays(91))
             assertNull(vm.uiState.value.confirm)
         }
@@ -155,6 +158,70 @@ class TravelViewModelTest {
             assertNull(vm.uiState.value.period)
             assertEquals(TravelMessage.REFUSED, vm.uiState.value.message)
             assertFalse(vm.uiState.value.working)
+        }
+
+    @Test
+    fun aRefusedChangeOfTheEnd_hasItsOwnMessage_andTheEndThatWasThereStays() =
+        runTest(dispatcher) {
+            control.state.value = TravelPeriod(1_900_000_000_000L, "2026-11-15")
+            val vm = model()
+            advanceUntilIdle()
+            control.result = TravelResult.Refused
+            vm.onChangeDate()
+            vm.onDayChosen(LocalDate.of(2026, 11, 20))
+            advanceUntilIdle()
+            assertEquals(TravelMessage.UPDATE_REFUSED, vm.uiState.value.message)
+            assertEquals(
+                "2026-11-15",
+                vm.uiState.value.period!!
+                    .untilDay,
+            )
+            // It does not go away by itself (something did not work); the next gesture clears it.
+            advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS * 3)
+            assertEquals(TravelMessage.UPDATE_REFUSED, vm.uiState.value.message)
+            vm.onChangeDate()
+            assertNull(vm.uiState.value.message)
+        }
+
+    @Test
+    fun theSentencesThatOnlyInform_goAwayByThemselves() =
+        runTest(dispatcher) {
+            control.result = TravelResult.DoneOffline
+            val vm = model()
+            vm.onToggle()
+            vm.onDayChosen(today.plusDays(2))
+            vm.onConfirm()
+            advanceUntilIdle()
+            assertEquals(TravelMessage.OFFLINE, vm.uiState.value.message)
+            advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS + 1)
+            advanceUntilIdle()
+            assertNull(vm.uiState.value.message)
+
+            vm.onToggle()
+            advanceUntilIdle()
+            assertEquals(TravelMessage.RESUMED, vm.uiState.value.message)
+            advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS + 1)
+            advanceUntilIdle()
+            assertNull(vm.uiState.value.message)
+        }
+
+    @Test
+    fun aNewGesture_replacesTheSentence_andTheOldTimerDoesNotClearTheNewOne() =
+        runTest(dispatcher) {
+            control.state.value = TravelPeriod(1_900_000_000_000L, "2026-11-15")
+            val vm = model()
+            advanceUntilIdle()
+            vm.onToggle()
+            advanceUntilIdle()
+            assertEquals(TravelMessage.RESUMED, vm.uiState.value.message)
+            advanceTimeBy(TravelViewModel.MESSAGE_SHOWN_MILLIS - 1_000)
+            control.result = TravelResult.Refused
+            vm.onToggle()
+            vm.onDayChosen(today.plusDays(2))
+            vm.onConfirm()
+            advanceTimeBy(2_000)
+            advanceUntilIdle()
+            assertEquals(TravelMessage.REFUSED, vm.uiState.value.message)
         }
 
     @Test
