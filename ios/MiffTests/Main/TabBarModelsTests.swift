@@ -12,12 +12,11 @@ final class TabBarModelsTests: XCTestCase {
         XCTAssertEqual(config.tabs, [.feed, .update, .profile])
     }
 
-    func testAnExternalBuildHasTwoTabsAndNoCentralButton() {
-        // Décision Q1 : un bouton qui n'a pas encore de fonction n'atteint jamais un testeur extérieur.
+    func testAnExternalBuildHasTheCentralButtonToo() {
+        // UPDATE-3 : le bouton central est actif dans TOUS les builds (la décision Q1 du 2026-10-30 est levée par le ticket Update, D14).
         let config = TabBarConfig.forBuild(isInternalBuild: false)
 
-        XCTAssertEqual(config.tabs, [.feed, .profile])
-        XCTAssertFalse(config.tabs.contains(.update))
+        XCTAssertEqual(config.tabs, [.feed, .update, .profile])
     }
 
     func testEveryTabHasASpokenNameInBothLanguages() {
@@ -27,8 +26,16 @@ final class TabBarModelsTests: XCTestCase {
         }
     }
 
-    func testTheCentralButtonNameSaysItIsComingSoon() {
-        XCTAssertEqual(TabBarNames.key(for: .update), "ios_tabbar_update_soon_a11y")
+    func testTheCentralButtonNameSaysTheStateNeverTheColourAlone() {
+        XCTAssertEqual(TabBarNames.key(for: .update), "ios_tabbar_update_neutral_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update, central: .neutral), "ios_tabbar_update_neutral_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update, central: .safe), "tabbar_update_green_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update, central: .warning), "tabbar_update_orange_a11y")
+        XCTAssertEqual(TabBarNames.key(for: .update, central: .danger), "tabbar_update_red_a11y")
+        for state in CentralButtonState.allCases {
+            let key = state.accessibilityKey
+            XCTAssertNotEqual(L10n.string(key), key, "Le nom parlé \(state) n'a pas de texte")
+        }
     }
 
     // MARK: - Le niveau de verre

@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Les services du suivi des lieux (LOC-4b), construits d'un seul tenant au démarrage de l'app. Contrairement aux autres services, le
 /// gestionnaire de localisation est créé TOUT DE SUITE (et non au premier écran qui en a besoin) : quand le système relance l'app
@@ -41,6 +42,9 @@ struct TrackingServices {
         network: NetworkMonitor,
         device: DeviceSession
     ) -> TrackingServices {
+        // La batterie est lue à l'ouverture et à la sortie de l'app : le suivi du niveau est allumé dès le démarrage pour que la première
+        // lecture ne soit pas vide (le système met un instant à donner le niveau). Aucune donnée n'est lue ici.
+        UIDevice.current.isBatteryMonitoringEnabled = true
         let generation = GenerationCounter()
         let journal = DetectionJournals.make()
         let miffStore = FirestoreMiffStore()

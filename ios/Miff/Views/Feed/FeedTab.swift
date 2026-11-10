@@ -46,24 +46,24 @@ struct FeedTab: View {
         let network = environment.network
         let awaitingAgreement = environment.awaitingAgreement
         let secondChance = environment.notificationSecondChance
-        _model = StateObject(
-            wrappedValue: FeedViewModel(
-                dependencies: FeedDependencies(
-                    directory: directory,
-                    repository: repository,
-                    services: services,
-                    network: network,
-                    awaiting: awaitingAgreement,
-                    currentUid: { session.currentUid },
-                    // Une update de la personne vue publiée (sa photo existe) : la carte « deuxième chance » peut apparaître.
-                    onStatusesLoaded: { event in
-                        if event.myStatus?.hasPhoto == true {
-                            secondChance.noteFirstUpdate()
-                        }
-                    }
-                )
-            )
+        let myStatus = environment.update.myStatus
+        var dependencies = FeedDependencies(
+            directory: directory,
+            repository: repository,
+            services: services,
+            network: network,
+            awaiting: awaitingAgreement,
+            currentUid: { session.currentUid },
+            // Une update de la personne vue publiée (sa photo existe) : la carte « deuxième chance » peut apparaître.
+            onStatusesLoaded: { event in
+                if event.myStatus?.hasPhoto == true {
+                    secondChance.noteFirstUpdate()
+                }
+            }
         )
+        // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
+        dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
+        _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
         _notificationCenter = ObservedObject(wrappedValue: environment.notifications.center)
         _secondChance = ObservedObject(wrappedValue: secondChance)

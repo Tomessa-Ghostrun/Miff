@@ -21,6 +21,7 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Storage/LocalStores.swift": "consentement en attente : pending.clear ; drapeaux d'onboarding gardés",
         "Services/Storage/PendingDeletionFileStore.swift": "marqueurs de suppression de Miff : AccountLocalData",
         "Services/Storage/ProfileDraftFileStore.swift": "brouillon du profil : drafts.clear",
+        "Services/Update/PublishLedger.swift": "carnet de l'Update : AccountLocalData (updateLedger)",
         "Services/Tracking/FileDetectionJournal.swift": "journal : AccountLocalData (detectionJournal)",
         "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)"
     ]

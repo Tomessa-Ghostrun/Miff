@@ -151,27 +151,3 @@ private struct MiffCard: View {
         .accessibilityAddTraits(.isButton)
     }
 }
-
-/// Le bouton central, pour l'instant : un emplacement calme. « Donner des nouvelles » (ticket Update, UPDATE-3) viendra sur cette
-/// coquille ; en attendant, la pastille de la barre est grise et cet écran dit honnêtement que la fonction arrive.
-struct UpdateSoonView: View {
-    var body: some View {
-        ScrollView {
-            VStack(spacing: Spacing.md) {
-                Text("ios_update_soon_title")
-                    .miffTextStyle(textDisplayHeadline)
-                    .foregroundColor(colorTextForm.color)
-                    .multilineTextAlignment(.center)
-                    .accessibilityAddTraits(.isHeader)
-                Text("ios_update_soon_body")
-                    .miffTextStyle(textBodyRegular)
-                    .foregroundColor(colorTextDescription.color)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.xl)
-        }
-        .background(colorBgCanvas.color.ignoresSafeArea())
-    }
-}

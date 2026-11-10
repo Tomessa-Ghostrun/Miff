@@ -12,7 +12,7 @@ struct AccountDeletionServices {
     let revoker: AppleTokenRevoker
 
     /// Les réglages gardés pour un compte, effacés avec lui (voir `AccountLocalData`).
-    static func localData() -> [LocalDataEraser] {
+    static func localData(updateLedger: PublishLedger) -> [LocalDataEraser] {
         AccountLocalData.erasers(
             AccountLocalStores(
                 notificationAsks: UserDefaultsNotificationAskStore(),
@@ -21,7 +21,8 @@ struct AccountDeletionServices {
                 notifications: SystemLocalNotificationsCleaner(),
                 trackingLocal: TrackingLocalFileStore(),
                 detectionJournal: DetectionJournals.make(),
-                notificationData: NotificationLocalData.live()
+                notificationData: NotificationLocalData.live(),
+                updateLedger: updateLedger
             )
         )
     }
