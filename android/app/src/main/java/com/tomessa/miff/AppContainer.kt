@@ -101,6 +101,7 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.data.subscription.FirestoreSubscriptionStore
 import com.tomessa.miff.data.subscription.SubscriptionRepository
+import com.tomessa.miff.data.tracking.AlarmManagerTravelAlarm
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
 import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
 import com.tomessa.miff.data.tracking.DetectionJournals
@@ -332,8 +333,18 @@ class AppContainer(
             // AUTH-5b: while the deletion of THIS account is under way (its marker is on the disk) nothing is armed, read or written, even by a receiver of the
             // system that wakes a cold process (the memory of the engine's stop is gone there).
             suspended = { accountDeletionMarker.read()?.uid?.let { it == authGateway.currentUid } == true },
+            // MODE VOYAGE: the alarm of the end of a trip (inexact, no special permission).
+            travelAlarm = AlarmManagerTravelAlarm(context),
         )
     }
+
+    /**
+     * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is measured, the rules refuse a level next to a trip) and the photo of an update does not wait
+     * for a position published by the tracking (it is paused; the photo carries its own measure).
+     */
+    private fun travelOn(): Boolean = trackingEngine.travel.value != null
+
+    private fun batteryForStatus(): Int? = if (travelOn()) null else trackingEnvironment.batteryPct()
 
     // A failure of the detection never takes the app down (nothing is logged: it could hold a place).
     private val trackingScope by lazy {
@@ -403,9 +414,10 @@ class AppContainer(
             photos = photoCache,
             currentUid = { authGateway.currentUid },
             miffIds = ::miffIds,
-            battery = { trackingEnvironment.batteryPct() },
+            battery = ::batteryForStatus,
             // The photo is only written where my own position is published (contract of the data model); none yet: the detection is asked to write it.
             published = LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)),
+            travelOn = ::travelOn,
             onPositionMissing = { trackingLooksAgain(TrackingEngine.Reason.OPENED) },
         )
     }
@@ -419,7 +431,7 @@ class AppContainer(
             photos = photoCache,
             currentUid = { authGateway.currentUid },
             miffIds = ::miffIds,
-            battery = { trackingEnvironment.batteryPct() },
+            battery = ::batteryForStatus,
             reader = photoReader,
         )
     }

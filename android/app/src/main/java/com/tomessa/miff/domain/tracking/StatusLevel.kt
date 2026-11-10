@@ -20,6 +20,8 @@ class MemberStatusFacts(
     val presence: PresenceValue?,
     val presenceAtMillis: Long?,
     val lastUpdateAtMillis: Long?,
+    /** MODE VOYAGE: the end of the trip when [presence] is `travel` (the colour does not need it: a trip is always neutral; the Feed does). */
+    val travelUntilMillis: Long? = null,
 ) {
     override fun toString(): String = "MemberStatusFacts(redacted)"
 }
@@ -50,6 +52,12 @@ object StatusColor {
             }
 
             PresenceValue.UNKNOWN -> {
+                StatusLevel.NEUTRAL
+            }
+
+            // MODE VOYAGE: a traveller is ignored in the colour of the Miff, before AND after the end of the trip (after it, the card says "Voyage terminé"
+            // until the first real measure: never a colour drawn from a state that is no longer true).
+            PresenceValue.TRAVEL -> {
                 StatusLevel.NEUTRAL
             }
 
