@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.auth.AccountSignIn
-import com.tomessa.miff.domain.notification.NotificationPermissionState
 import com.tomessa.miff.ui.auth.AuthMessage
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
@@ -76,16 +75,7 @@ class PrivacyScreensTest {
         state: PrivacyUiState,
         onToggled: (Boolean) -> Unit = {},
         onRetry: () -> Unit = {},
-        notifications: NotificationPermissionState = NotificationPermissionState.ALLOWED,
-    ) = show {
-        PrivacyScreen(
-            state,
-            onBack = {},
-            onAnalyticsToggled = onToggled,
-            onRetryWithdrawal = onRetry,
-            notifications = notifications,
-        )
-    }
+    ) = show { PrivacyScreen(state, onBack = {}, onAnalyticsToggled = onToggled, onRetryWithdrawal = onRetry) }
 
     @Test
     fun privacy_hasTheSwitch_theLocationAndNotificationSentences_theLinksAndTheContact() {
@@ -94,32 +84,11 @@ class PrivacyScreensTest {
         composeRule.onNodeWithText(text(R.string.settings_privacy_analytics_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_privacy_analytics_body)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_privacy_location_body)).performScrollTo().assertExists()
-        // NOTIF-1A: the block says the REAL state of the notifications (the same words as Settings > Notifications), no longer "coming soon".
-        composeRule.onNodeWithText(text(R.string.notif_state_allowed)).performScrollTo().assertExists()
-        composeRule.onNodeWithText(text(R.string.notif_privacy_body)).performScrollTo().assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_privacy_notifications_body)).performScrollTo().assertExists()
         composeRule.onNodeWithText(text(R.string.auth_consent_terms_link)).performScrollTo().assertHasClickAction()
         composeRule.onNodeWithText(text(R.string.auth_consent_privacy_link)).performScrollTo().assertHasClickAction()
         composeRule.onNodeWithText(text(R.string.settings_privacy_contact)).performScrollTo().assertHasClickAction()
-        // Allowed: only the location offers the settings of the phone.
-        composeRule.onAllNodesWithText(text(R.string.settings_privacy_open_phone_settings)).assertCountEquals(1)
-        composeRule.onAllNodesWithText(text(R.string.notif_state_open_settings)).assertCountEquals(0)
-    }
-
-    @Test
-    fun privacy_whenTheNotificationsAreOffInThePhone_saysSoCalmly_andOffersTheSettingsOfThePhone() {
-        privacy(PrivacyUiState(), notifications = NotificationPermissionState.OFF)
-        composeRule.onNodeWithText(text(R.string.notif_state_off)).performScrollTo().assertExists()
-        composeRule.onNodeWithText(text(R.string.notif_state_off_note)).performScrollTo().assertExists()
-        composeRule
-            .onNodeWithText(text(R.string.notif_state_open_settings))
-            .performScrollTo()
-            .assertHasClickAction()
-    }
-
-    @Test
-    fun privacy_whenTheNotificationsWereNeverAsked_saysSo() {
-        privacy(PrivacyUiState(), notifications = NotificationPermissionState.NOT_ASKED)
-        composeRule.onNodeWithText(text(R.string.notif_state_notasked)).performScrollTo().assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_open_phone_settings)).assertCountEquals(2)
     }
 
     @Test

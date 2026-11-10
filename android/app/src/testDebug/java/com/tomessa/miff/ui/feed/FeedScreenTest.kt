@@ -52,7 +52,6 @@ import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.miff.AgreementUi
-import com.tomessa.miff.ui.notification.FeedNotifications
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -170,7 +169,6 @@ class FeedScreenTest {
         directoryState: DirectoryState = directory,
         agreement: AgreementUi = AgreementUi(),
         actions: FeedActions = FeedActions(),
-        notifications: FeedNotifications = FeedNotifications(),
     ) = show {
         FeedScreen(
             state = directoryState,
@@ -184,7 +182,6 @@ class FeedScreenTest {
             locate = locate,
             me = FeedMe("CM"),
             actions = actions,
-            notifications = notifications,
         )
     }
 
@@ -203,14 +200,9 @@ class FeedScreenTest {
     // --- header ---------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun header_hasMyAvatarWithMyStatus_theLogo_theName_andTheBellOfTheCentre() {
+    fun header_hasMyAvatarWithMyStatus_theLogo_theName_andNoBell() {
         var profile = 0
-        var center = 0
-        feed(
-            ready(nominal),
-            actions = FeedActions(onOpenProfile = { profile++ }),
-            notifications = FeedNotifications(onOpenCenter = { center++ }),
-        )
+        feed(ready(nominal), actions = FeedActions(onOpenProfile = { profile++ }))
         shoot("feed-nominal")
         composeRule
             .onNodeWithContentDescription(text(R.string.feed_header_avatar_a11y, "À la maison"))
@@ -219,46 +211,12 @@ class FeedScreenTest {
         assertEquals(1, profile)
         composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertIsDisplayed()
         composeRule.onNodeWithText("Famille Mfouka").assertIsDisplayed()
-        // NOTIF-6A: the bell is back (it revises the decision of 2026-10-30): 48 dp, without a dot when nothing is unread, and it opens the centre.
         composeRule
-            .onNodeWithContentDescription(text(R.string.notif_bell_a11y))
-            .assertWidthIsAtLeast(48.dp)
-            .assertHeightIsAtLeast(48.dp)
-            .performClick()
-        assertEquals(1, center)
-    }
-
-    @Test
-    fun header_theBellSaysHowManyAreUnread_withoutEverShowingANumber() {
-        feed(ready(nominal), notifications = FeedNotifications(unreadCount = 3))
-        composeRule.onNodeWithContentDescription("Notifications, 3 non lues").assertIsDisplayed()
-        composeRule.onAllNodesWithText("3").assertCountEquals(0)
-    }
-
-    @Test
-    fun theCardOfTheSecondChance_isInTheList_withTwoQuietAnswers_whenItIsDue() {
-        var enable = 0
-        var later = 0
-        feed(
-            ready(nominal),
-            notifications =
-                FeedNotifications(
-                    secondChanceVisible = true,
-                    onSecondChanceEnable = { enable++ },
-                    onSecondChanceLater = { later++ },
-                ),
-        )
-        composeRule.onNodeWithText(text(R.string.notif_second_chance_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.notif_second_chance_later)).performClick()
-        composeRule.onNodeWithText(text(R.string.notif_second_chance_action)).performClick()
-        assertEquals(1, later)
-        assertEquals(1, enable)
-    }
-
-    @Test
-    fun theCardOfTheSecondChance_isAbsent_whenItIsNotDue() {
-        feed(ready(nominal))
-        composeRule.onAllNodesWithText(text(R.string.notif_second_chance_title)).assertCountEquals(0)
+            .onAllNodesWithContentDescription(
+                "notification",
+                substring = true,
+                ignoreCase = true,
+            ).assertCountEquals(0)
     }
 
     @Test

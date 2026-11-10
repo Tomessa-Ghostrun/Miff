@@ -207,7 +207,7 @@ class SettingsScreensTest {
     // --- Provisional Feed ---------------------------------------------------------------------------------------------------------
 
     @Test
-    fun feed_whileItLoads_showsTheSkeleton_theBellOfTheCentre_noInventedPerson_noPromiseOfSafety() {
+    fun feed_whileItLoads_showsTheSkeleton_noBell_noInventedPerson_noPromiseOfSafety() {
         show {
             FeedScreen(
                 state =
@@ -227,11 +227,16 @@ class SettingsScreensTest {
         shoot("feed-loading")
         composeRule.onNodeWithContentDescription(text(R.string.feed_loading_a11y)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertExists()
-        // The words of the mockup that would promise something the app cannot know (decision Q12). The bell is back (NOTIF-6A revises Q15): it only names the centre.
+        // The words of the mockup that would promise something the app cannot know (decision Q12, no bell: Q15).
         composeRule.onAllNodesWithText("safe", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("sécurité", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("Tout va bien", substring = true, ignoreCase = true).assertCountEquals(0)
-        composeRule.onNodeWithContentDescription(text(R.string.notif_bell_a11y)).assertExists()
+        composeRule
+            .onAllNodesWithContentDescription(
+                "notification",
+                substring = true,
+                ignoreCase = true,
+            ).assertCountEquals(0)
     }
 
     // --- Profile tab (criterion A3) ----------------------------------------------------------------------------------------------

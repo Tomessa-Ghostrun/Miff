@@ -52,14 +52,6 @@ import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
-import com.tomessa.miff.data.notification.AndroidNotificationTray
-import com.tomessa.miff.data.notification.NotificationAuthorization
-import com.tomessa.miff.data.notification.NotificationCenter
-import com.tomessa.miff.data.notification.NotificationChannels
-import com.tomessa.miff.data.notification.NotificationSettings
-import com.tomessa.miff.data.notification.NotificationTray
-import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
-import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -94,6 +86,9 @@ import com.tomessa.miff.data.profile.CurrentProfile
 import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
 import com.tomessa.miff.data.profile.HttpsGooglePhotoSource
 import com.tomessa.miff.data.profile.MyProfileRepository
+import com.tomessa.miff.data.review.ForegroundTicks
+import com.tomessa.miff.data.review.ReviewStateStore
+import com.tomessa.miff.data.review.SharedPreferencesReviewStateStore
 import com.tomessa.miff.data.session.Clearance
 import com.tomessa.miff.data.session.DeviceSession
 import com.tomessa.miff.data.session.FirestoreSessionDocuments
@@ -132,7 +127,6 @@ import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.startup.StartupTrace
-import com.tomessa.miff.ui.main.TabRequests
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -237,6 +231,12 @@ class AppContainer(
 
     val onboardingFlags: OnboardingFlags by lazy { OnboardingFlags(sessionFlags) }
 
+    /** The returns of the app to the foreground, counted (read by the review window, which looks at its rules once per return). */
+    val foregroundTicks: ForegroundTicks by lazy { ForegroundTicks() }
+
+    /** What the review window remembers (three small values); erased at sign-out and with the account. Built on first use, even in a build without the window. */
+    val reviewStateStore: ReviewStateStore by lazy { SharedPreferencesReviewStateStore(context) }
+
     val accountRepository: AccountRepository by lazy { FirestoreAccountRepository() }
 
     /** Local Firestore cache purge (sign-out, refusal of the panel, and loss of access to a Miff). One instance for all. */
@@ -292,49 +292,6 @@ class AppContainer(
     val devicePermissions: DevicePermissions by lazy { AndroidDevicePermissions(context) }
 
     val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
-
-    /**
-     * NOTIF-P0 (ticket docs/tickets/notifications.md, section 20): notifications that need NO server. Everything here is LOCAL to the phone: the choices of
-     * Settings > Notifications, the centre (a list of types and times, never a position or a place), the tray of the system, the state of the permission,
-     * and the requests to show a tab. No read or write of Firestore, no event, no log.
-     */
-    val notificationSettings: NotificationSettings by lazy {
-        NotificationSettings(SharedPreferencesNotificationPreferencesStore(context))
-    }
-
-    val notificationTray: NotificationTray by lazy { AndroidNotificationTray(context) }
-
-    /** The centre of notifications; reading a line also takes its notification out of the tray. */
-    val notificationCenter: NotificationCenter by lazy {
-        NotificationCenter(
-            store = SharedPreferencesNotificationCenterStore(context),
-            onRead = { key -> notificationTray.cancel(key) },
-        )
-    }
-
-    val notificationAuthorization: NotificationAuthorization by lazy {
-        NotificationAuthorization(devicePermissions, notificationAsks)
-    }
-
-    /** NOTIF-P0: the centre, the choices and what is in the tray go with the session (contract of the purge, DUR-3). */
-    private val notificationTeardown: SessionTeardown by lazy {
-        SessionTeardown {
-            notificationCenter.purge()
-            notificationSettings.reset()
-            notificationTray.cancelAll()
-        }
-    }
-
-    /** A tap on a line of the centre (or, later, on a notification) asks the tabs to show the Feed or the Update. */
-    val tabRequests: TabRequests by lazy { TabRequests() }
-
-    /**
-     * Creates the four channels of the system (or refreshes their names, for a change of language). Cheap and idempotent, called at the start of the
-     * app and each time it comes to the front; never blocks the caller.
-     */
-    fun ensureNotificationChannels() {
-        trackingScope.launch { NotificationChannels.ensure(context) }
-    }
 
     /** LOC-2b (design 23): the Miffs that wait for the agreement of the person, in memory for the session. */
     val awaitingAgreement: AwaitingAgreement by lazy { AwaitingAgreement() }
@@ -595,7 +552,7 @@ class AppContainer(
 
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
-        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger)
+        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger, reviewStateStore)
     }
 
     /** The read-only "Abonnement" line of the Settings (ticket ABO-1): one read of `entitlements/{uid}` per opening of the Settings. */
@@ -626,9 +583,9 @@ class AppContainer(
                         miffDirectory,
                         trackingEngine,
                         awaitingAgreement,
-                        notificationTeardown,
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
+                        SessionTeardown { reviewStateStore.clear() },
                         placeNotices,
                         addressSearch,
                         mapTileCache,
@@ -665,7 +622,6 @@ class AppContainer(
             authGateway.currentUid
             onboardingFlags
             languageStore
-            NotificationChannels.ensure(context)
             analyticsTracker
             networkMonitor
         }

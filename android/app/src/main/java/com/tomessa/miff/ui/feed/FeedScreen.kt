@@ -73,8 +73,6 @@ import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.miff.MiffSharing
-import com.tomessa.miff.ui.notification.FeedNotifications
-import com.tomessa.miff.ui.notification.NotificationSecondChanceCard
 import com.tomessa.miff.ui.splash.ReduceMotion
 import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -132,8 +130,6 @@ class FeedHost(
     val observe: suspend () -> Unit = {},
     /** FEED-4: where the photos are read (null: no photo is drawn). */
     val photos: PhotoReader? = null,
-    /** NOTIF-1A and NOTIF-6A: the bell and the card of the second chance. */
-    val notifications: FeedNotifications = FeedNotifications(),
 )
 
 /** The hand-overs to the applications of the system, with the calm message of the ticket when none answers. */
@@ -184,7 +180,6 @@ fun FeedScreen(
     refreshing: Boolean = false,
     me: FeedMe = FeedMe(),
     actions: FeedActions = FeedActions(),
-    notifications: FeedNotifications = FeedNotifications(),
 ) {
     RecentsPrivacy()
     val texts = rememberFeedTexts()
@@ -278,7 +273,6 @@ fun FeedScreen(
                         onOpenPhoto = { opened = it },
                         topRoom = headerRoom,
                         refreshing = refreshing,
-                        notifications = notifications,
                     )
                 }
             }
@@ -289,7 +283,6 @@ fun FeedScreen(
             myStatusDescription = content?.let { texts.label(it.myLabel) },
             onOpenProfile = actions.onOpenProfile,
             onLogo = { scope.launch { toTopAndShow() } },
-            notifications = notifications,
             // Moved by a translation read in the draw phase only: no recomposition, no layout, no margin that moves.
             modifier =
                 Modifier
@@ -359,7 +352,6 @@ private fun FeedBody(
     /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
     topRoom: Dp,
     refreshing: Boolean,
-    notifications: FeedNotifications,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
     val pullState = rememberPullToRefreshState()
@@ -405,15 +397,6 @@ private fun FeedBody(
         ) {
             if (state.fromCache && content == null) {
                 item { MiffNotice(stringResource(R.string.feed_offline_note)) }
-            }
-            if (notifications.secondChanceVisible) {
-                // NOTIF-1A: ONE calm card, after the first update of someone who put the pop-in of the notifications off.
-                item(key = "notification-second-chance") {
-                    NotificationSecondChanceCard(
-                        onEnable = notifications.onSecondChanceEnable,
-                        onLater = notifications.onSecondChanceLater,
-                    )
-                }
             }
             if (agreement.isWaiting(state.activeId)) {
                 // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.

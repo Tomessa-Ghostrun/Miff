@@ -107,10 +107,7 @@ fun PermissionGate(
         }
 
         GateScreen.NOTIFICATIONS -> {
-            NotificationsPopIn(
-                onAllow = { notifications.launch(PermissionNames.POST_NOTIFICATIONS) },
-                onLater = viewModel::onNotificationsPutOff,
-            )
+            NotificationsPopIn(onAllow = { notifications.launch(PermissionNames.POST_NOTIFICATIONS) })
         }
 
         GateScreen.LOCATION -> {
