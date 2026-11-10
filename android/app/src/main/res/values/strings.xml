@@ -937,7 +937,7 @@
     <string name="review_feedback_later">Later</string>
     <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
     <string name="voyage_card_title">Travel mode</string>
-    <string name="voyage_card_off_body">Your card turns grey for your circle, without changing the Miff\'s colour.</string>
+    <string name="voyage_card_off_body">Your card turns grey for your circle, without changing the Miff\'s colour. Your circle still sees your location.</string>
     <string name="voyage_card_on_status">Traveling until %1$s</string>
     <string name="voyage_card_end_label">End date</string>
     <string name="voyage_card_end_change_a11y">Change the end date</string>
