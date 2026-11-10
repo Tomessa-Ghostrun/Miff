@@ -9,8 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertHasClickAction
-import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
@@ -22,7 +20,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.RenewalMiff
@@ -66,29 +63,15 @@ class PermissionScreensTest {
     private val settings = LocationScreenModel(LocationButton.OPEN_SETTINGS, steps = true, error = false)
 
     @Test
-    fun notifications_showTheTextOfThePhase0_oneRealExample_andTwoButtons_noPromiseAboutLovedOnes() {
+    fun notifications_showTheExamples_anHonestLine_andOneButton() {
         var allowed = 0
-        var later = 0
-        show { NotificationsPopIn(onAllow = { allowed++ }, onLater = { later++ }) }
-        shoot("notif-1a-prime")
-        composeRule.onNodeWithText(text(R.string.notif_prime_title)).assertIsDisplayed()
-        // The example is the reminder the person would really get (N1, in the words of the PM), not a promise about a loved one.
-        composeRule.onNodeWithText(text(R.string.notif_n1_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.notif_n1_body)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.notif_prime_body)).assertIsDisplayed()
-        // The old sentences ("n'est toujours pas rentrée", the vouvoiement, the examples about Thomas and Amandine) are nowhere.
-        composeRule.onAllNodesWithText("toujours pas", substring = true, ignoreCase = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Vous ", substring = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Thomas", substring = true).assertCountEquals(0)
-        composeRule
-            .onNodeWithText(
-                text(R.string.notif_prime_later),
-            ).assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
-            .performClick()
-        assertEquals(1, later)
-        assertEquals("\"Plus tard\" does not launch the system window", 0, allowed)
-        composeRule.onNodeWithText(text(R.string.notif_prime_allow)).performClick()
+        show { NotificationsPopIn(onAllow = { allowed++ }) }
+        shoot("loc2a-01-notifications")
+        composeRule.onNodeWithText(text(R.string.permission_notifications_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.onboarding_sample_msg_1)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.onboarding_sample_msg_2)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.permission_notifications_note)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.permission_notifications_action)).performClick()
         assertEquals(1, allowed)
     }
 

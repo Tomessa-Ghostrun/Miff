@@ -884,6 +884,24 @@
     <string name="update_action_open_feed">Voir mon Feed</string>
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>
 
+    <!-- Fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md). Tutoiement, ton calme. -->
+    <string name="review_title">Que penses-tu de Miff ?</string>
+    <string name="review_close_a11y">Fermer</string>
+    <string name="review_love_action">J\'adore !</string>
+    <string name="review_better_action">Peux faire mieux...</string>
+    <string name="review_thanks_title">Merci !</string>
+    <string name="review_thanks_body">Ça nous fait vraiment plaisir. Si tu en as envie, laisse-nous un avis et un commentaire dans la boutique d\'applications.</string>
+    <string name="review_feedback_title">Merci de nous le dire !</string>
+    <string name="review_feedback_body">On a envie de faire mieux. Si tu veux nous expliquer ce qui pourrait être mieux, écris-nous : ça nous aide à avancer.</string>
+    <string name="review_feedback_write">Nous écrire</string>
+    <string name="review_open_failed">Rien n\'a pu s\'ouvrir sur ton téléphone. Tu peux réessayer dans un instant.</string>
+    <string name="review_feedback_later">Plus tard</string>
+    <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
+    <string name="android_diag_review_title">Fenêtre d\'avis (essai)</string>
+    <string name="android_diag_review_force">Afficher la fenêtre au prochain retour dans l\'app</string>
+    <string name="android_diag_review_force_armed">Prête : mets l\'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l\'Update).</string>
+    <string name="android_diag_review_reset">Remettre à zéro l\'état de la fenêtre</string>
+    <string name="android_diag_review_reset_done">État remis à zéro : la fenêtre repart de zéro (7 jours, 30 jours, 90 jours).</string>
     <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
     <string name="notif_n1_title">Tu es passé orange</string>
     <string name="notif_n1_body">Indique à ta Miff que tout va bien.</string>
@@ -896,7 +914,7 @@
     <string name="notif_n6a_title">Tu es dans une zone de danger de ta Miff</string>
     <string name="notif_n6a_body">Pendant que tu y es, tes proches voient un état différent.</string>
     <string name="notif_prime_title">Un rappel, seulement quand c\'est utile</string>
-    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement. Tu choisis ce que tu reçois dans les réglages. Les alertes sur tes proches arriveront plus tard.</string>
+    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d\'état. Tu choisis ce que tu reçois dans les réglages.</string>
     <string name="notif_prime_allow">Autoriser</string>
     <string name="notif_prime_later">Plus tard</string>
     <string name="notif_prime_example_when">Il y a 2 min</string>
@@ -959,12 +977,4 @@
     <string name="notif_center_delete_a11y">Supprimer cette notification</string>
     <string name="notif_center_unread_a11y">non lu</string>
     <string name="notif_center_in_miff">Miff « %1$s »</string>
-    <string name="android_notif_channel_reminders">Rappels pour toi</string>
-    <string name="android_notif_channel_reminders_desc">Un petit rappel pour donner de tes nouvelles quand tu passes orange ou rouge.</string>
-    <string name="android_notif_channel_reminders_quiet">Rappels pour toi (nuit calme)</string>
-    <string name="android_notif_channel_circle">Nouvelles de ta Miff</string>
-    <string name="android_notif_channel_circle_desc">Quand ta Miff change d\'état, ou quand tu entres dans une zone de danger de ta Miff.</string>
-    <string name="android_notif_channel_circle_quiet">Nouvelles de ta Miff (nuit calme)</string>
-    <string name="android_notif_channel_quiet_desc">Les mêmes notifications, sans son ni vibration, pour la nuit.</string>
-    <string name="android_notif_channel_blocked">Ce type est coupé dans le téléphone</string>
 </resources>
