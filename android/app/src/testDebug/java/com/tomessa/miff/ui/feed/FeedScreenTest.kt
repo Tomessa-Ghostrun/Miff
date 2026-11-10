@@ -69,6 +69,9 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.util.TimeZone
 
+private const val LONG_LEISURE_NAME =
+    "Médiathèque municipale Jean-Jacques Rousseau du treizième arrondissement de Paris"
+
 /**
  * The Feed on the JVM (Robolectric, no phone), in French: what the header, the bubble, the cards and the sheet "Localiser" say and do, the
  * states (skeleton, offline, sharing stopped, waiting for the agreement, full Miff), the touch targets (48 dp), the largest font, and what is
@@ -132,13 +135,16 @@ class FeedScreenTest {
         battery: Int? = 85,
         access: MemberLocationAccess = MemberLocationAccess.BACKGROUND,
         updatedAgo: Long = minute,
-    ) = MemberStatus(presence, placeId, now - ago, now - ago, false, battery, access, now - updatedAgo)
+        lastUpdateAgo: Long = ago,
+    ) = MemberStatus(presence, placeId, now - ago, now - lastUpdateAgo, false, battery, access, now - updatedAgo)
 
     private val places =
         listOf(
             testPlace("p1", "Chez nous", category = PlaceCategory.HOME),
             testPlace("p2", "Chez Léa", category = PlaceCategory.RELATIVE),
             testPlace("p3", "Zone chantier", type = PlaceType.RISK, category = PlaceCategory.OTHER),
+            testPlace("p4", LONG_LEISURE_NAME, category = PlaceCategory.LEISURE),
+            testPlace("p5", "Cinéma Gaumont", category = PlaceCategory.LEISURE),
         )
 
     private fun content(
@@ -272,27 +278,71 @@ class FeedScreenTest {
         composeRule.onNodeWithText(text(R.string.feed_add_loved_one)).assertIsDisplayed()
     }
 
+    private fun centreOf(text: String): Float =
+        composeRule
+            .onNodeWithText(text)
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .boundsInRoot.center.x
+
+    @Test
+    fun bubble_textAndButton_areCentredInTheBlob_greenOrangeAndRed() {
+        // Decision of the PM, 2026-11-08 (TestFlight build 22): the text is centred in the coloured blob, whatever the colour (the blob fills the
+        // width of the screen with equal margins). Green first, then an orange page, then a red one with its button.
+        val rootCentre = {
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.center.x
+        }
+        feed(ready(nominal))
+        assertEquals(rootCentre(), centreOf("Tout va bien"), 6f)
+    }
+
+    @Test
+    fun bubble_orangeAndRedPages_areCentred_buttonIncluded() {
+        val both =
+            content(
+                trio,
+                mapOf(
+                    me to status(),
+                    "t" to status(PresenceValue.OUT, "p1", 150 * minute),
+                    "a" to status(PresenceValue.OUT, "p1", 5 * hour),
+                ),
+            )
+        feed(ready(both))
+        val rootCentre =
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.center.x
+        // The red page (Amandine) is the first one.
+        assertEquals(rootCentre, centreOf("Pas de nouvelles de Amandine depuis 12 h 00".t()), 6f)
+        assertEquals(rootCentre, centreOf(text(R.string.feed_bubble_message_action)), 6f)
+    }
+
     @Test
     fun bubble_orange_isFactual_withAnAbsoluteTime_andOffersAMessage() {
         var sent: String? = null
-        val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 80 * minute)))
+        val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))
         feed(ready(orange), actions = FeedActions(onMessage = { sent = it }))
         shoot("feed-orange")
-        composeRule.onNodeWithText("Thomas a quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Thomas a quitté la maison à 14 h 30".t()).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_bubble_message_action)).performClick()
         assertEquals("+33612345678", sent)
     }
 
     @Test
     fun bubble_redOfAge_usesAnAbsoluteTime() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 3 * hour)))))
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 5 * hour)))))
         shoot("feed-red-age")
-        composeRule.onNodeWithText("Pas de nouvelles de Thomas depuis 14 h 00".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Pas de nouvelles de Thomas depuis 12 h 00".t()).assertIsDisplayed()
     }
 
     @Test
     fun bubble_dangerZone_isFactualForTheLovedOnes_andNeverSaysZoneARisque() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.IN_RISK, "p3", 20 * minute)))))
+        val stale = status(PresenceValue.IN_RISK, "p3", 20 * minute, lastUpdateAgo = 2 * hour)
+        feed(ready(content(trio, mapOf(me to status(), "t" to stale))))
         shoot("feed-danger")
         composeRule.onNodeWithText("Thomas est à Zone chantier").assertIsDisplayed()
         // In the bubble and on the card of Thomas.
@@ -303,7 +353,8 @@ class FeedScreenTest {
 
     @Test
     fun bubble_dangerZone_forMe_isTheSentenceOfThePm_andHasNoMessageButton() {
-        feed(ready(content(trio, mapOf(me to status(PresenceValue.IN_RISK, "p3", 20 * minute), "t" to status()))))
+        val stale = status(PresenceValue.IN_RISK, "p3", 20 * minute, lastUpdateAgo = 2 * hour)
+        feed(ready(content(trio, mapOf(me to stale, "t" to status()))))
         composeRule.onNodeWithText("Tu es dans une zone de danger de ta Miff").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_bubble_me_danger_note)).assertIsDisplayed()
         composeRule.onAllNodesWithText(text(R.string.feed_bubble_message_action)).assertCountEquals(0)
@@ -311,8 +362,8 @@ class FeedScreenTest {
 
     @Test
     fun bubble_forMe_orangeAndRedOfAge_speakToMe() {
-        feed(ready(content(trio, mapOf(me to status(PresenceValue.OUT, "p1", 80 * minute), "t" to status()))))
-        composeRule.onNodeWithText("Tu as quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        feed(ready(content(trio, mapOf(me to status(PresenceValue.OUT, "p1", 150 * minute), "t" to status()))))
+        composeRule.onNodeWithText("Tu as quitté la maison à 14 h 30".t()).assertIsDisplayed()
     }
 
     @Test
@@ -322,14 +373,14 @@ class FeedScreenTest {
                 trio,
                 mapOf(
                     me to status(),
-                    "t" to status(PresenceValue.OUT, "p1", 80 * minute),
-                    "a" to status(PresenceValue.OUT, "p1", 3 * hour),
+                    "t" to status(PresenceValue.OUT, "p1", 150 * minute),
+                    "a" to status(PresenceValue.OUT, "p1", 5 * hour),
                 ),
             )
         feed(ready(two))
         shoot("feed-carousel")
         // The red one (Amandine) comes first.
-        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 14 h 00".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 12 h 00".t()).assertIsDisplayed()
         val carousel =
             composeRule.onNode(
                 androidx.compose.ui.test.SemanticsMatcher
@@ -351,12 +402,12 @@ class FeedScreenTest {
                 .action()
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Thomas a quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Thomas a quitté la maison à 14 h 30".t()).assertIsDisplayed()
     }
 
     @Test
     fun bubble_oneAlert_hasNoDotsAndNoPageActions() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 80 * minute)))))
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))))
         composeRule
             .onAllNodes(
                 androidx.compose.ui.test.SemanticsMatcher
@@ -371,8 +422,8 @@ class FeedScreenTest {
         feed(ready(nominal))
         // Mine and Thomas's.
         composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
-        composeRule.onNodeWithText("Depuis 12 min").assertIsDisplayed()
-        composeRule.onNodeWithText("À Chez Léa").assertExists()
+        composeRule.onNodeWithText("Depuis 16 h 48".t()).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_label_at_relative)).assertExists()
         // Mine, Thomas's and Amandine's.
         composeRule
             .onAllNodesWithText(text(R.string.feed_battery_a11y, 85), useUnmergedTree = true)
@@ -515,7 +566,7 @@ class FeedScreenTest {
                 .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
                 .first { it.contains("Thomas") && it.size > 1 }
         val label = merged.indexOf("À la maison")
-        val time = merged.indexOf("Depuis 12 min")
+        val time = merged.indexOf("Depuis 16 h 48".t())
         val battery = merged.indexOfFirst { it.startsWith("Batterie") }
         assertTrue("order of $merged", label in 1 until time && time < battery)
     }
@@ -563,7 +614,7 @@ class FeedScreenTest {
             ready(
                 content(
                     trio,
-                    mapOf(me to status(updatedAgo = 18 * minute), "t" to status(PresenceValue.OUT, "p1", 80 * minute)),
+                    mapOf(me to status(updatedAgo = 18 * minute), "t" to status(PresenceValue.OUT, "p1", 150 * minute)),
                     offline = true,
                 ),
             ),
@@ -680,6 +731,64 @@ class FeedScreenTest {
         shoot("feed-large-font")
         composeRule.onNodeWithText("Tout va bien").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Localiser Thomas").assertWidthIsAtLeast(48.dp)
+    }
+
+    @Test
+    fun aLeisureOrOtherPlace_showsItsNameAlone_andALongNameStaysInsideTheCard_atTheLargestFont() {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MiffTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        FeedScreen(
+                            state = directory,
+                            scrollToTopSignal = 0,
+                            onRetry = {},
+                            onSelect = {},
+                            onCreate = {},
+                            onJoin = {},
+                            feed =
+                                ready(
+                                    content(
+                                        trio,
+                                        mapOf(
+                                            me to status(placeId = "p5"),
+                                            "t" to status(placeId = "p4"),
+                                            "a" to status(),
+                                        ),
+                                    ),
+                                ),
+                            me = FeedMe("CM"),
+                        )
+                    }
+                }
+            }
+        }
+        // The NAME alone (no "À" in front), whole for the screen reader, drawn on two lines at most with an ellipsis.
+        composeRule.onNodeWithText("Cinéma Gaumont").assertExists()
+        val node =
+            composeRule
+                .onNodeWithText(
+                    LONG_LEISURE_NAME,
+                    useUnmergedTree = true,
+                ).assertIsDisplayed()
+                .fetchSemanticsNode()
+
+        // Really two lines at most. The layout result of the text is not read (the card measures its content twice, which makes it unreliable in
+        // a test); the heights are: a line of the same style without padding ("Depuis 16 h 48") gives the height of ONE line L, the chip of
+        // "Cinéma Gaumont" (one line) gives the vertical padding P, and the long chip must then be exactly 2 lines: height = 2 L + P.
+        fun height(text: String) =
+            composeRule
+                .onAllNodesWithText(text, useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .size.height
+        val line = height("Depuis 16 h 48".t())
+        val padding = height("Cinéma Gaumont") - line
+        val lines = (node.size.height - padding).toFloat() / line
+        assertEquals("lines of the long label: ${node.size.height} = n x $line + $padding", 2f, lines, 0.1f)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val box = node.boundsInRoot
+        assertTrue("inside the screen: $box in $root", box.left >= 0f && box.right <= root.right)
     }
 
     // --- sheet "Localiser" -----------------------------------------------------------------------------------------------------

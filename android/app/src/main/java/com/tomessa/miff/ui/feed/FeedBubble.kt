@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -149,7 +150,7 @@ private fun CalmBubble(
     texts: FeedTexts,
     onResumeSharing: () -> Unit,
 ) {
-    BubbleBlob(level = bubble.level, pictogram = pictogram(bubble.level, calm = bubble is Bubble.AllGood)) {
+    BubbleBlob(level = bubble.level, pictogram = pictogram(bubble.level)) {
         when (bubble) {
             is Bubble.AllGood -> {
                 Headline(stringResource(R.string.feed_bubble_all_good))
@@ -250,7 +251,7 @@ private fun AlertPageBubble(
     texts: FeedTexts,
     onMessage: (String) -> Unit,
 ) {
-    BubbleBlob(level = page.level, pictogram = pictogram(page.level, calm = false)) {
+    BubbleBlob(level = page.level, pictogram = pictogram(page.level)) {
         Headline(texts.alertTitle(page))
         texts.alertDetail(page)?.let { Line(it) }
         texts.alertNote(page)?.let { Caption(it) }
@@ -272,7 +273,7 @@ private val LocalBubblePhases = compositionLocalOf<BubblePhases?> { null }
 @Composable
 private fun BubbleBlob(
     level: StatusLevel,
-    pictogram: Pictogram,
+    pictogram: Pictogram?,
     content: @Composable () -> Unit,
 ) {
     val phases = LocalBubblePhases.current
@@ -303,53 +304,61 @@ private fun BubbleBlob(
                     }.clip(BubbleShape)
                     .background(level.tint()),
         )
+        // The pictogram (orange, red, neutral; none for green) is a soft WATERMARK laid straight on the blob, behind the text: no disc, no frame, no
+        // shape that looks like a button (decision of the PM, 2026-11-10). Large and faint, in the corner, it fills the space without shouting and
+        // without a feeling of emptiness. It breathes on its own, slightly different cycle: out of phase with the blob.
+        if (pictogram != null) {
+            Icon(
+                painter = painterResource(pictogram.drawable),
+                contentDescription = null,
+                tint = pictogram.tint(level).copy(alpha = WATERMARK_ALPHA),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 28.dp, bottom = 22.dp)
+                        .size(WATERMARK_SIZE)
+                        .graphicsLayer {
+                            if (phases != null) {
+                                val phase = phases.star.value
+                                val breath = BubbleMotion.starScale(phase)
+                                scaleX = breath
+                                scaleY = breath
+                                translationY = BubbleMotion.starDriftDp(phase) * density
+                            }
+                        },
+            )
+        }
+        // CENTRED in the blob (decision of the PM, 2026-11-08, TestFlight build 22): the same margin on both sides, text and button centred, the
+        // block centred vertically, in front of the watermark.
         Column(
-            modifier = Modifier.padding(start = 40.dp, end = 56.dp, top = 40.dp, bottom = 46.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 40.dp, vertical = 42.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             content()
         }
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 40.dp, bottom = 40.dp)
-                    .size(40.dp)
-                    // The star breathes on its own, slightly different cycle: out of phase with the blob.
-                    .graphicsLayer {
-                        if (phases != null) {
-                            val phase = phases.star.value
-                            val breath = BubbleMotion.starScale(phase)
-                            scaleX = breath
-                            scaleY = breath
-                            translationY = BubbleMotion.starDriftDp(phase) * density
-                        }
-                    }.clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.7f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(pictogram.drawable),
-                contentDescription = null,
-                tint = pictogram.tint(level),
-                modifier = Modifier.size(24.dp),
-            )
-        }
     }
 }
+
+private val WATERMARK_SIZE = 96.dp
+private const val WATERMARK_ALPHA = 0.20f
 
 private class Pictogram(
     val drawable: Int,
     val tint: (StatusLevel) -> Color,
 )
 
-/** One pictogram per colour (the colour is never alone): the star for "tout va bien", a clock, a "!", an hourglass. */
-private fun pictogram(
-    level: StatusLevel,
-    calm: Boolean,
-): Pictogram =
+/**
+ * One pictogram per colour for orange, red and neutral (the colour is never alone): a clock, a "!", an hourglass. NONE for green (decision of the PM,
+ * 2026-11-08): the green bubble has no symbol, its words are enough.
+ */
+private fun pictogram(level: StatusLevel): Pictogram? =
     when {
-        calm -> Pictogram(R.drawable.ic_feed_spark) { it.onTint() }
+        level == StatusLevel.GREEN -> null
         level == StatusLevel.ORANGE -> Pictogram(R.drawable.ic_feed_clock) { it.onTint() }
         level == StatusLevel.RED -> Pictogram(R.drawable.ic_feed_alert) { it.onTint() }
         else -> Pictogram(R.drawable.ic_feed_hourglass) { colorTextDescription }
@@ -361,18 +370,19 @@ private fun Headline(text: String) {
         text = text,
         style = textDisplayHeadline,
         color = colorTextPrimary,
+        textAlign = TextAlign.Center,
         modifier = Modifier.semantics { heading() },
     )
 }
 
 @Composable
 private fun Line(text: String) {
-    Text(text = text, style = textBodyRegular14, color = colorTextPrimary)
+    Text(text = text, style = textBodyRegular14, color = colorTextPrimary, textAlign = TextAlign.Center)
 }
 
 @Composable
 private fun Caption(text: String) {
-    Text(text = text, style = textBodyCaption, color = colorTextDescription)
+    Text(text = text, style = textBodyCaption, color = colorTextDescription, textAlign = TextAlign.Center)
 }
 
 /** The soft action of a bubble: outlined, white inside, 48 dp high. Never a call, never a red button. */
@@ -400,7 +410,7 @@ private fun BubbleButton(
             tint = colorActionPrimary,
             modifier = Modifier.size(20.dp),
         )
-        Text(text = text, style = textBodyBold16, color = colorActionPrimary)
+        Text(text = text, style = textBodyBold16, color = colorActionPrimary, textAlign = TextAlign.Center)
     }
 }
 
