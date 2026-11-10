@@ -198,6 +198,65 @@ final class MiffMemberPreviewsTests: XCTestCase {
         XCTAssertEqual(store.state(for: "B"), .known(preview(4)))
     }
 
+    // MARK: - Mon visage suit mon profil, une Miff ouverte
+
+    func testMyFaceFollowsMyProfileInEveryKnownCardWithoutAnyRead() async {
+        let fixture = Fixture()
+        fixture.reader.answers["B"] = preview(3)
+        let store = makeStore(fixture)
+        store.record(miffId: "A", members: [member("u1"), member("u2")])
+        store.beginOpening()
+        await store.loadIfNeeded(miffId: "B", isActive: false)
+        let reads = fixture.reader.reads
+
+        store.replaceFace(uid: "u2", initials: "ZZ", jpeg: Data([9, 9]))
+
+        let mine = MemberThumb(uid: "u2", initials: "ZZ", avatarJpeg: Data([9, 9]))
+        guard case .known(let cardA) = store.state(for: "A"), case .known(let cardB) = store.state(for: "B") else {
+            return XCTFail("cartes connues attendues")
+        }
+        XCTAssertEqual(cardA.thumbs.last, mine)
+        XCTAssertEqual(cardB.thumbs[1], mine)
+        XCTAssertEqual(cardA.count, 2, "le nombre de membres ne change pas")
+        XCTAssertEqual(fixture.reader.reads, reads, "aucune lecture")
+    }
+
+    func testMyFaceIsAlsoAppliedToWhatTheFeedAndLaterReadsGive() async {
+        let fixture = Fixture()
+        fixture.reader.answers["B"] = preview(2)
+        let store = makeStore(fixture)
+        store.replaceFace(uid: "u1", initials: "ZZ", jpeg: nil)
+
+        store.record(miffId: "A", members: [member("u1"), member("u2")])
+        store.beginOpening()
+        await store.loadIfNeeded(miffId: "B", isActive: false)
+
+        guard case .known(let cardA) = store.state(for: "A"), case .known(let cardB) = store.state(for: "B") else {
+            return XCTFail("cartes connues attendues")
+        }
+        XCTAssertEqual(cardA.thumbs.first?.initials, "ZZ")
+        XCTAssertEqual(cardB.thumbs.first?.initials, "ZZ")
+        XCTAssertEqual(cardA.thumbs.last?.initials, "AM")
+    }
+
+    func testOpeningAMiffScreenMakesItsProfileCopyReadAgainOnceButNeverTheFeedOne() async {
+        let fixture = Fixture()
+        fixture.reader.answers["B"] = preview(3)
+        let store = makeStore(fixture)
+        store.record(miffId: "A", members: [member("u1")])
+        store.beginOpening()
+        await store.loadIfNeeded(miffId: "B", isActive: false)
+
+        store.invalidate(miffId: "A")
+        store.invalidate(miffId: "B")
+        store.beginOpening()
+        await store.loadIfNeeded(miffId: "A", isActive: true)
+        await store.loadIfNeeded(miffId: "B", isActive: false)
+        await store.loadIfNeeded(miffId: "B", isActive: false)
+
+        XCTAssertEqual(fixture.reader.reads, ["B", "B"], "B relue une fois ; A (celle du Feed) jamais")
+    }
+
     // MARK: - Rien de gardé pour une Miff qui n'existe plus
 
     func testAMiffThatLeftTheDirectoryIsForgotten() async {

@@ -207,6 +207,12 @@ struct MiffHomeHost: View {
                 path.removeAll { $0.isMyInfoScreen }
             }
         }
+        // Mon visage sur les cartes du Profil suit mon profil, SANS lecture : le profil est déjà lu pour l'en-tête (et relu après une modification).
+        .onChange(of: profile.state) { state in
+            if case .ready(let mine) = state, let uid = environment.session.currentUid {
+                memberPreviews.replaceFace(uid: uid, initials: mine.initials, jpeg: mine.avatarJpeg)
+            }
+        }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
         // serveur que l'accès à chaque Miff existe encore, avant d'en montrer quoi que ce soit (ticket §5.7, critère D2).
         .task {
@@ -418,6 +424,10 @@ struct MiffHomeHost: View {
     }
 
     private func open(_ route: MiffRoute) {
+        // L'écran d'une Miff s'ouvre : ses membres ont pu changer, la carte du Profil la relira à sa prochaine apparition (voir `invalidate`).
+        if case .miff(let miffId) = route {
+            memberPreviews.invalidate(miffId: miffId)
+        }
         if path.last != route {
             path.append(route)
         }

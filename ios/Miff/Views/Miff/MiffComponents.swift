@@ -211,16 +211,14 @@ struct MiffAvatar: View {
     let initials: String
     var size: CGFloat = Spacing.memberAvatar
     @Environment(\.displayScale) private var displayScale
-
-    /// La photo réduite à la taille du rond (voir `AvatarDecoding` : une photo d'un autre téléphone n'est jamais décodée en pleine taille).
-    private var image: UIImage? {
-        AvatarDecoding.image(from: jpeg, pixelSize: size * displayScale)
-    }
+    /// La photo réduite à la taille du rond (voir `AvatarDecoding` : une photo d'un autre téléphone n'est jamais décodée en pleine taille),
+    /// décodée HORS du fil principal : les initiales s'affichent d'abord, la photo les remplace dès qu'elle est prête.
+    @State private var decoded: UIImage?
 
     var body: some View {
         ZStack {
-            if let image {
-                Image(uiImage: image)
+            if let decoded {
+                Image(uiImage: decoded)
                     .resizable()
                     .scaledToFill()
             } else {
@@ -233,6 +231,10 @@ struct MiffAvatar: View {
         .frame(width: size, height: size)
         .clipShape(Circle())
         .accessibilityHidden(true)
+        // Relancé seulement quand la photo change (la comparaison de deux photos identiques est immédiate) : jamais à chaque redessin.
+        .task(id: jpeg) {
+            decoded = await AvatarDecoding.loadImage(from: jpeg, pixelSize: size * displayScale)
+        }
     }
 }
 

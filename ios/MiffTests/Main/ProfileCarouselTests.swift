@@ -45,6 +45,21 @@ final class ProfileCarouselRulesTests: XCTestCase {
         XCTAssertEqual(CarouselPaging.pageCount(miffs: 3), 4)
     }
 
+    func testTheCarouselOpensOnTheMiffTheFeedShowsElseOnTheFirst() {
+        XCTAssertEqual(CarouselPaging.startPage(miffIds: ["a", "b", "c"], activeId: "b"), 1)
+        XCTAssertEqual(CarouselPaging.startPage(miffIds: ["a", "b", "c"], activeId: "c"), 2)
+        XCTAssertEqual(CarouselPaging.startPage(miffIds: ["a", "b", "c"], activeId: nil), 0)
+        XCTAssertEqual(CarouselPaging.startPage(miffIds: ["a", "b", "c"], activeId: "zzz"), 0)
+        XCTAssertEqual(CarouselPaging.startPage(miffIds: [], activeId: "a"), 0)
+    }
+
+    func testTheContentStartsOnTheActiveMiffUnlessAPageIsImposed() {
+        let miffs = [MiffSummary(id: "a", name: "A"), MiffSummary(id: "b", name: "B")]
+
+        XCTAssertEqual(ProfileCarouselContent(miffs: miffs, activeId: "b").startPage, 1)
+        XCTAssertEqual(ProfileCarouselContent(miffs: miffs, activeId: "b", initialPage: 2).startPage, 2)
+    }
+
     func testThePageIsKeptInsideTheCarousel() {
         XCTAssertEqual(CarouselPaging.clamp(-1, count: 3), 0)
         XCTAssertEqual(CarouselPaging.clamp(1, count: 3), 1)

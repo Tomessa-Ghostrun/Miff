@@ -93,6 +93,14 @@ enum CarouselPaging {
         max(miffs, 0) + 1
     }
 
+    /// La page où le carrousel s'ouvre : la Miff que le Feed affiche (comme Android), sinon la première.
+    static func startPage(miffIds: [String], activeId: String?) -> Int {
+        guard let activeId, let index = miffIds.firstIndex(of: activeId) else {
+            return 0
+        }
+        return index
+    }
+
     static func clamp(_ page: Int, count: Int) -> Int {
         min(max(page, 0), max(count - 1, 0))
     }

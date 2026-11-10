@@ -13,14 +13,14 @@ struct ProfileScreenPreview: View {
     private static let miffB = "ZyXwVuTsRqPoNmLkJiHg"
 
     /// Page de départ : « profile-carousel-2 » montre la 2e carte, « profile-carousel-create » la dernière.
-    private var initialPage: Int {
+    private var initialPage: Int? {
         switch name {
         case "profile-carousel-2":
             return 1
         case "profile-carousel-create":
             return 2
         default:
-            return 0
+            return nil
         }
     }
 

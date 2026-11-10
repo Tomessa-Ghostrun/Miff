@@ -107,7 +107,7 @@ enum PlaceAddressText {
     }
 }
 
-/// Laquelle des limites demande Miff+. La zone de danger est Miff+ seulement (décision du ticket §6.2) ; le 3e lieu est
+/// Laquelle des limites demande Miff+. La zone de danger est Miff+ seulement (décision du ticket §6.2) ; le 4e lieu est
 /// la limite ; une 2e Miff (Feed, sélecteur de Miff, décision du PM du 2026-11-08) a sa propre phrase.
 enum PaywallReason: Hashable {
     case limit

@@ -11,6 +11,9 @@ import Combine
 //   - UNE lecture ponctuelle (`getDocuments`) par Miff, jamais d'écouteur permanent : elle coûte autant de lectures que la Miff a de
 //     membres (15 au plus, plafond doux) ;
 //   - les photos sont déjà bornées à 20 000 octets (`ProfileDocument.maxAvatarBytes`) et on n'en garde que 5 par Miff.
+// LIMITE CONNUE : les visages de la Miff active sont ceux du DERNIER PASSAGE SUR LE FEED (le Feed est le seul à les tenir à jour, on ne les
+// relit pas pour ne pas payer deux fois) ; un proche qui change de photo pendant que la personne est sur le Profil n'y apparaît qu'au retour
+// sur le Feed. Le visage de la personne elle-même, lui, suit son profil sans lecture (`replaceFace`). Même principe qu'Android (MiffFaces).
 // Les noms (initiales) et les photos restent en mémoire pour la durée de la session (cet objet est créé avec la session de l'hôte et
 // disparaît avec elle) : jamais sur le disque, jamais journalisés, jamais dans un événement Analytics.
 
@@ -39,6 +42,8 @@ final class MiffMemberPreviews: ObservableObject {
     private let clock: () -> Int
     private var stamps: [String: Stamp] = [:]
     private var readThisOpening: Set<String> = []
+    /// MON visage tel que mon profil le dit : il l'emporte sur la copie lue dans une Miff (qui peut dater d'avant mon changement de photo).
+    private var myFace: MemberThumb?
 
     init(reader: MemberPreviewReader, clock: @escaping () -> Int = { Int(Date().timeIntervalSince1970 * 1000) }) {
         self.reader = reader
@@ -54,7 +59,7 @@ final class MiffMemberPreviews: ObservableObject {
 
     /// Le Feed a les membres de la Miff affichée : ils sont gardés pour la carte, sans rien relire.
     func record(miffId: String, members: [MiffMember]) {
-        let preview = MemberPreview(members: members)
+        let preview = withMyFace(MemberPreview(members: members))
         if known[miffId] != preview {
             known[miffId] = preview
         }
@@ -102,13 +107,46 @@ final class MiffMemberPreviews: ObservableObject {
         // Marquée AVANT l'attente : deux demandes presque en même temps (la carte apparaît, un glissement commence) ne lisent qu'une fois.
         readThisOpening.insert(miffId)
         let preview = await reader.read(miffId: miffId)
-        if let preview {
+        if let preview = preview.map({ withMyFace($0) }) {
             known[miffId] = preview
             stamps[miffId] = Stamp(at: clock(), fromFeed: false)
             unavailable.remove(miffId)
         } else if known[miffId] == nil {
             unavailable.insert(miffId)
         }
+    }
+
+    // MARK: - Mon visage, une Miff ouverte
+
+    /// Mon visage suit mon profil, SANS lecture : le profil de la personne (déjà lu pour l'en-tête du Profil) remplace sa pastille dans chaque
+    /// carte connue, et dans celles qui seront lues ensuite.
+    func replaceFace(uid: String, initials: String, jpeg: Data?) {
+        let face = MemberThumb(uid: uid, initials: initials, avatarJpeg: jpeg)
+        myFace = face
+        for (miffId, preview) in known {
+            let updated = withMyFace(preview)
+            if updated != preview {
+                known[miffId] = updated
+            }
+        }
+    }
+
+    /// L'écran d'une Miff vient d'être ouvert depuis sa carte : des membres ont pu y être retirés ou ajoutés. Sa copie du Profil n'est plus
+    /// tenue pour récente : elle est relue à la prochaine apparition de la carte (UNE fois). Celle de la Miff du Feed reste celle du Feed (qui
+    /// la tient à jour : voir la limite connue plus haut), pour qu'un compte gratuit ne lise jamais rien de plus.
+    func invalidate(miffId: String) {
+        if stamps[miffId]?.fromFeed == false {
+            stamps[miffId] = nil
+        }
+        readThisOpening.remove(miffId)
+    }
+
+    private func withMyFace(_ preview: MemberPreview) -> MemberPreview {
+        guard let myFace, preview.thumbs.contains(where: { $0.uid == myFace.uid }) else {
+            return preview
+        }
+        let thumbs = preview.thumbs.map { $0.uid == myFace.uid ? myFace : $0 }
+        return MemberPreview(count: preview.count, thumbs: thumbs)
     }
 
     /// Une Miff a disparu de l'annuaire (quittée, supprimée, accès perdu) : ses photos ne sont pas gardées.

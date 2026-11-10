@@ -40,6 +40,19 @@ final class AvatarDecodingTests: XCTestCase {
         XCTAssertNotNil(AvatarDecoding.image(from: data, pixelSize: 84))
     }
 
+    func testTheOffMainThreadLoaderGivesTheSameAnswers() async throws {
+        let data = try jpeg(width: 512, height: 512)
+
+        let loaded = await AvatarDecoding.loadImage(from: data, pixelSize: 84)
+        let absent = await AvatarDecoding.loadImage(from: nil, pixelSize: 84)
+        let immenseData = try jpeg(width: AvatarDecoding.maxSide + 1, height: 64)
+        let immense = await AvatarDecoding.loadImage(from: immenseData, pixelSize: 84)
+
+        XCTAssertNotNil(loaded)
+        XCTAssertNil(absent)
+        XCTAssertNil(immense)
+    }
+
     func testAbsentEmptyOversizedOrUnreadableDataGivesInitialsNotACrash() {
         XCTAssertNil(AvatarDecoding.image(from: nil, pixelSize: 84))
         XCTAssertNil(AvatarDecoding.image(from: Data(), pixelSize: 84))

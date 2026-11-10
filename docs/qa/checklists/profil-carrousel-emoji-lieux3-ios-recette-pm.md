@@ -14,6 +14,7 @@
 
 ## Partie A : le carrousel (Profil)
 
+- [ ] **Ouverture** : le carrousel s'ouvre sur la Miff affichée dans le Feed (changez de Miff dans le Feed, revenez au Profil : c'est la nouvelle).
 - [ ] Avec **P** : l'onglet Profil montre « Mes Miffs » et **une carte par Miff**, avec le **nom**, « 4 membres » en bleu et les **petits ronds** des membres (photo, sinon initiales). Les petits points sous la carte indiquent **combien de cartes** (Miffs + « Créer une Miff »).
 - [ ] **Glissez** la carte vers la gauche : la carte suivante arrive avec un léger ressort ; la dernière est **« Créer une Miff »**. Glisser vers la droite revient. Au bout, la carte résiste et revient (rien ne part dans le vide).
 - [ ] Glisser **vers le haut ou le bas** sur une carte fait toujours défiler la page (le carrousel ne gêne pas).
@@ -35,7 +36,7 @@
 - [ ] **Détail d'un lieu** : la ligne « Catégorie » affiche l'emoji devant le nom (« 🏠 Maison ») ; la carte a l'emoji dans son repère.
 - [ ] **VoiceOver** : seul le **nom** de la catégorie est lu (« Maison, sélectionné »), jamais « maison avec jardin » ou le nom de l'emoji.
 - [ ] **Grande taille de texte** : le carré et l'emoji grandissent un peu sans déformer les lignes. **Mode sombre** : les emoji restent lisibles.
-- [ ] Les **étiquettes du Feed** (« À la maison », « Chez Mamie »…) sont inchangées (phrases, sans emoji).
+- [ ] **Feed** : l'étiquette d'une personne **dans un lieu de confiance** commence par l'emoji de la catégorie (« 🏠 À la maison », « 💼 Au travail », « 🏫 À l'école », « ⚽ Au sport », « 👨‍👩‍👧 Chez un proche » ; un lieu Loisir ou Autre : « 🎉 Le club »). **Aucun emoji** sur « A quitté… », « Pas encore de nouvelles », une zone de danger, ni pour un lieu sans catégorie ou supprimé. VoiceOver lit le texte seul.
 
 ## Partie C : 3 lieux gratuits (après le déploiement des règles)
 

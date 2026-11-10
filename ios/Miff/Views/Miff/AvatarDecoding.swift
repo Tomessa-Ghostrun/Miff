@@ -36,6 +36,17 @@ enum AvatarDecoding {
         return image
     }
 
+    /// Comme `image(from:pixelSize:)`, mais HORS du fil principal (lecture de l'en-tête, décodage de la version réduite, clé du cache) : un
+    /// rond qui apparaît ne fait jamais saccader l'écran.
+    static func loadImage(from jpeg: Data?, pixelSize: CGFloat) async -> UIImage? {
+        guard let jpeg else {
+            return nil
+        }
+        return await Task.detached(priority: .userInitiated) {
+            image(from: jpeg, pixelSize: pixelSize)
+        }.value
+    }
+
     /// Oublie toutes les photos gardées : fin de session.
     static func removeAll() {
         cache.removeAllObjects()

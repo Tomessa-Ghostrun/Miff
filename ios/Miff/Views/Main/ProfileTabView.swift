@@ -22,8 +22,8 @@ struct ProfileTabView: View {
     @ObservedObject var previews: MiffMemberPreviews
     /// Vrai quand l'onglet Profil est celui en usage : aucune lecture de membres avant.
     let isActive: Bool
-    /// La carte montrée au départ (0 : la première ; les écrans de démonstration des captures en choisissent une autre).
-    var initialCarouselPage = 0
+    /// La carte montrée au départ (nil : la Miff du Feed ; les écrans de démonstration des captures en choisissent une autre).
+    var initialCarouselPage: Int?
     let actions: ProfileTabActions
 
     var body: some View {

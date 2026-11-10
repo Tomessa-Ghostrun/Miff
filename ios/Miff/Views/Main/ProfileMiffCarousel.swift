@@ -9,12 +9,24 @@ struct ProfileCarouselActions {
     let onCreate: () -> Void
 }
 
-/// Ce que le carrousel montre : les Miffs, celle que le Feed affiche, et la carte du départ (0 : la première ; les écrans de
-/// démonstration des captures en choisissent une autre).
+/// Ce que le carrousel montre : les Miffs, celle que le Feed affiche, et la carte du départ. Sans `initialPage`, le carrousel s'ouvre sur la
+/// Miff que le Feed affiche (la première si elle est inconnue), à chaque ouverture du Profil, comme sur Android ; les écrans de démonstration
+/// des captures en imposent une autre.
 struct ProfileCarouselContent {
     let miffs: [MiffSummary]
     let activeId: String?
-    var initialPage = 0
+    var initialPage: Int?
+
+    var startPage: Int {
+        initialPage ?? CarouselPaging.startPage(miffIds: miffs.map { $0.id }, activeId: activeId)
+    }
+}
+
+/// Le suivi d'un glissement : où est le doigt (déjà freiné au bout du carrousel) et l'axe décidé au premier mouvement. Un `@GestureState` :
+/// il revient SEUL à zéro quand le geste se termine OU est annulé (appel, notification, geste du système), la carte ne reste jamais décalée.
+private struct DragTrack {
+    var translation: CGFloat = 0
+    var horizontal: Bool?
 }
 
 /// Ce qui relance la lecture paresseuse : la page montrée, la liste des Miffs, et le Profil à l'écran ou non.
@@ -44,8 +56,7 @@ struct ProfileMiffCarousel: View {
     let actions: ProfileCarouselActions
 
     @State private var page: Int
-    @State private var drag: CGFloat = 0
-    @State private var isHorizontalDrag: Bool?
+    @GestureState private var track = DragTrack()
     @State private var prefetched: Int?
     @State private var opened = false
     @State private var cardHeight: CGFloat = 0
@@ -62,7 +73,7 @@ struct ProfileMiffCarousel: View {
         self.previews = previews
         self.isActive = isActive
         self.actions = actions
-        _page = State(initialValue: content.initialPage)
+        _page = State(initialValue: content.startPage)
     }
 
     private var miffs: [MiffSummary] {
@@ -111,7 +122,7 @@ struct ProfileMiffCarousel: View {
                         .accessibilityHidden(index != current)
                 }
             }
-            .offset(x: -CGFloat(current) * (width + gap) + drag)
+            .offset(x: -CGFloat(current) * (width + gap) + track.translation)
             .frame(width: width, alignment: .leading)
             .contentShape(Rectangle())
             .simultaneousGesture(dragGesture(pageWidth: width))
@@ -151,25 +162,26 @@ struct ProfileMiffCarousel: View {
     // MARK: - Le geste
 
     /// Un glissement horizontal change de carte. `simultaneousGesture` : le défilement vertical de l'écran continue de marcher ; le
-    /// geste n'est suivi que s'il est d'abord horizontal (l'axe est décidé une fois, au début).
+    /// geste n'est suivi que s'il est d'abord horizontal (l'axe est décidé une fois, au début, dans `track`).
     private func dragGesture(pageWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 12)
-            .onChanged { value in
-                if isHorizontalDrag == nil {
-                    isHorizontalDrag = abs(value.translation.width) > abs(value.translation.height)
+            .updating($track) { value, state, _ in
+                if state.horizontal == nil {
+                    state.horizontal = abs(value.translation.width) > abs(value.translation.height)
                 }
-                guard isHorizontalDrag == true else {
+                if state.horizontal == true {
+                    state.translation = resisted(value.translation.width)
+                }
+            }
+            .onChanged { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else {
                     return
                 }
-                drag = resisted(value.translation.width)
                 prefetchNeighbour(translation: value.translation.width)
             }
             .onEnded { value in
-                defer {
-                    isHorizontalDrag = nil
-                    prefetched = nil
-                }
-                guard isHorizontalDrag == true else {
+                prefetched = nil
+                guard abs(value.translation.width) > abs(value.translation.height) else {
                     return
                 }
                 let target = CarouselPaging.settle(
@@ -181,7 +193,6 @@ struct ProfileMiffCarousel: View {
                 )
                 animate {
                     page = target
-                    drag = 0
                 }
             }
     }
@@ -208,7 +219,6 @@ struct ProfileMiffCarousel: View {
     private func go(to target: Int) {
         animate {
             page = CarouselPaging.clamp(target, count: count)
-            drag = 0
         }
     }
 
@@ -231,6 +241,10 @@ struct ProfileMiffCarousel: View {
         if !opened {
             opened = true
             previews.beginOpening()
+            // Le Profil s'ouvre sur la Miff que le Feed affiche (elle a pu changer depuis la dernière ouverture).
+            if content.initialPage == nil {
+                page = content.startPage
+            }
         }
         previews.retain(only: Set(miffs.map { $0.id }))
         guard current < miffs.count else {
