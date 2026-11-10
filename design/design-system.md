@@ -1,3 +1,4 @@
+| `display/bubble` | **Baloo Thambi 2 ExtraBold (graisse 800)** | **30 / 36** | **Phrase principale de la bulle du Feed UNIQUEMENT** (« Tout va bien », « Pas encore de nouvelles ») : décision du PM du 2026-11-10 |
 # Design system Miff
 
 **Source de vérité visuelle** : les maquettes du fichier Figma original "Miff - App" (`Byi9NgQxkBPbmbhU403HSf`, lecture seule).
@@ -81,6 +82,17 @@ Deux familles : **Baloo Thambi 2** (titres et noms, ton chaleureux) et **Hanken 
 **Exceptions** : la maquette utilise la police **Ubuntu Bold** sur les boutons "Continuer avec Apple/Google". Elle n'est **pas** reprise : ces deux boutons doivent utiliser les composants officiels de chaque plateforme (règle Apple et Google). Les polices Abel (barre d'état) et celles des captures d'écran sont du décor de maquette, à ignorer.
 
 Polices à intégrer dans les apps : Baloo Thambi 2 et Hanken Grotesk (Google Fonts, licence libre).
+
+### 2.1 Phrase principale de la bulle du Feed (`display/bubble`, décision du PM du 2026-11-10)
+
+Le PM veut que la phrase principale de la bulle de la Miff (« Tout va bien », « Pas encore de nouvelles », le titre d'une alerte) soit **en gras, plus grosse, dans une écriture singulière proche de celle du logo**. Le mot-symbole « Miff » (voir `design/assets/logo/README.md` et l'aperçu `preview/miff-comparatif-source-vs-recreation.png`) est un dessin très gras, aux jambages épais, aux angles à peine adoucis, avec un « f » à crochet large et arrondi.
+- **Police retenue : Baloo Thambi 2, graisse ExtraBold (800)**, nom PostScript `BalooThambi2-ExtraBold` (instance 800 de la police variable, axe `wght`). C'est, des deux familles prévues par le design system, la plus proche du logo (grasse, ronde, chaleureuse, « f » à crochet) ; Hanken Grotesk est un sans-serif neutre, bien plus éloigné. **Aucune nouvelle police** : c'est le même fichier que `display/headline` (déjà embarqué, déjà sous licence), pris à sa graisse maximale.
+- **Licence** : **SIL Open Font License 1.1** (copyright 2019 The Baloo 2 Project Authors, https://github.com/EkType/Baloo2). L'OFL autorise l'embarquement dans une application, gratuitement, y compris commerciale ; la police n'est pas vendue seule. Texte : `android/third_party/fonts/OFL-BalooThambi2.txt` (et le même fichier côté iOS, `ios/third_party/fonts/`). Aucun téléchargement à l'exécution, aucune dépendance.
+- **Taille** : **30 pt / 36 (iOS) ; 30 sp / 36 (Android)**, contre 24 / 30 pour `display/headline`. Suit la taille de texte du système (sp sur Android, Dynamic Type sur iOS, même style relatif que `display/headline`, c'est-à-dire `.title2`, à une taille de base de 30) ; **pas de plafond** : la bulle grandit en hauteur, le texte passe à la ligne, jamais de débordement horizontal.
+- **Couleur et alignement** : inchangés (`text/primary`, centré). Lignes **équilibrées** quand la plateforme le permet (Android `LineBreak.Heading` ; iOS : rien à faire, le centrage suffit).
+- **Périmètre** : **uniquement cette phrase de la bulle**. Le reste du Feed (prénoms des cartes, lignes, étiquettes, boutons) ne change pas. Ne pas étendre à d'autres écrans sans décision du PM.
+- **iOS** : même fichier `BalooThambi2-Variable.ttf` (déjà embarqué), mêmes réglages que `MiffFontFace.balooBoldFont` mais avec la valeur **800** pour l'axe `wght` (`0x77676874`) au lieu de 700 ; repli sur Baloo Regular si le système n'applique pas la variation. Style à nommer `textDisplayBubble` : 30 / 36, `dynamicTypeStyle: .title2`.
+- Android : `textDisplayBubble` (`ui/theme/Type.kt`, famille `FontFamilyBalooExtraBold`), appliqué dans `Headline` de `ui/feed/FeedBubble.kt`.
 
 ---
 

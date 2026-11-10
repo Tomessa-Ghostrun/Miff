@@ -37,6 +37,7 @@ import com.tomessa.miff.domain.feed.PlaceKind
 import com.tomessa.miff.domain.feed.PlaceRef
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.profile.Initials
+import com.tomessa.miff.ui.place.CategoryGlyph
 import com.tomessa.miff.ui.theme.ShadowSubtle
 import com.tomessa.miff.ui.theme.ShapeSm
 import com.tomessa.miff.ui.theme.Spacing
@@ -182,26 +183,48 @@ private fun BatteryChip(
     }
 }
 
-/** The label of the state: its words on the tint of the level. The colour is the only signal, no pictogram (decision of the PM, 2026-11-06). */
+/**
+ * The label of the state: its words on the tint of the level. The colour is the only signal, no pictogram (decision of the PM, 2026-11-06). In a place
+ * with a category ("Au travail", "À la maison", the NAME of a Loisir or Autre place) the EMOJI of the category comes before the words (decision of the
+ * PM, 2026-11-10; same table and same fallback as the carousel of the Profile). The emoji is decoration: the screen reader reads the words only.
+ */
 @Composable
 private fun StateChip(
     card: MemberCard,
     texts: FeedTexts,
 ) {
-    Text(
-        text = texts.label(card.label),
-        style = textBodyRegular14,
-        color = card.level.onTint(),
-        // The label can be the NAME of a place (Loisir, Autre): two lines at most with an ellipsis, so a long name or a large text never pushes the
-        // card out of shape. The screen reader still reads the whole name.
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
+    val category = (card.label as? StateLabel.At)?.category
+    Row(
         modifier =
             Modifier
                 .clip(ShapeSm)
                 .background(card.level.tint())
                 .padding(horizontal = Spacing.s, vertical = Spacing.xs),
-    )
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (category != null) {
+            // In sp: the emoji follows the size of the words next to it (it is not in a box of a fixed size here).
+            Box(Modifier.clearAndSetSemantics {}) {
+                CategoryGlyph(
+                    category = category,
+                    fontSize = textBodyRegular14.fontSize,
+                    fallbackStyle = textBodyRegular14,
+                    fallbackColor = card.level.onTint(),
+                )
+            }
+        }
+        Text(
+            text = texts.label(card.label),
+            style = textBodyRegular14,
+            color = card.level.onTint(),
+            // The label can be the NAME of a place (Loisir, Autre): two lines at most with an ellipsis, so a long name or a large text never pushes
+            // the card out of shape. The screen reader still reads the whole name.
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+    }
 }
 
 @Composable

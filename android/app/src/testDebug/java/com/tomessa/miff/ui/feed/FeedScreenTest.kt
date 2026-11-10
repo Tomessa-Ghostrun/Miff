@@ -5,6 +5,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -52,6 +54,8 @@ import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.miff.AgreementUi
+import com.tomessa.miff.ui.place.EmojiSupport
+import com.tomessa.miff.ui.place.LocalEmojiSupport
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -145,6 +149,8 @@ class FeedScreenTest {
             testPlace("p3", "Zone chantier", type = PlaceType.RISK, category = PlaceCategory.OTHER),
             testPlace("p4", LONG_LEISURE_NAME, category = PlaceCategory.LEISURE),
             testPlace("p5", "Cinéma Gaumont", category = PlaceCategory.LEISURE),
+            testPlace("p6", "Chez le coiffeur", category = PlaceCategory.OTHER),
+            testPlace("p7", "Lieu ancien", category = null),
         )
 
     private fun content(
@@ -165,8 +171,16 @@ class FeedScreenTest {
     private val directory =
         DirectoryState.Ready(listOf(MiffSummary(miffId, "Famille Mfouka")), miffId, premium = false, fromCache = false)
 
-    private fun show(content: @Composable () -> Unit) {
-        composeRule.setContent { MiffTheme { Box(Modifier.fillMaxSize()) { content() } } }
+    /** The emoji of the categories are drawn as text by the font of the phone; here the font draws them all (a test below makes it fail). */
+    private fun show(
+        emojiSupport: EmojiSupport = EmojiSupport { true },
+        content: @Composable () -> Unit,
+    ) {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalEmojiSupport provides emojiSupport) {
+                MiffTheme { Box(Modifier.fillMaxSize()) { content() } }
+            }
+        }
     }
 
     private fun feed(
@@ -175,7 +189,8 @@ class FeedScreenTest {
         directoryState: DirectoryState = directory,
         agreement: AgreementUi = AgreementUi(),
         actions: FeedActions = FeedActions(),
-    ) = show {
+        emojiSupport: EmojiSupport = EmojiSupport { true },
+    ) = show(emojiSupport) {
         FeedScreen(
             state = directoryState,
             scrollToTopSignal = 0,
@@ -668,6 +683,8 @@ class FeedScreenTest {
             agreement = AgreementUi(setOf(miffId), onReview = { reviews++ }),
         )
         shoot("feed-awaiting")
+        // The bubble's big sentence takes two lines: my card, the last one, is below the fold and is only composed once scrolled to.
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(text(R.string.feed_card_you_sees)))
         // The card (its title) and my own label say the same truth: nothing is shared with that Miff.
         composeRule.onAllNodesWithText(text(R.string.miff_waiting_title)).assertCountEquals(2)
         composeRule.onNodeWithText(text(R.string.miff_waiting_feed_note)).assertIsDisplayed()
@@ -788,6 +805,148 @@ class FeedScreenTest {
         assertEquals("lines of the long label: ${node.size.height} = n x $line + $padding", 2f, lines, 0.1f)
         val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
         val box = node.boundsInRoot
+        assertTrue("inside the screen: $box in $root", box.left >= 0f && box.right <= root.right)
+    }
+
+    // --- emoji of the label of a place and font of the bubble (decisions of the PM, 2026-11-10) -------------------------------------
+
+    private fun emojiNodes(emoji: String) = composeRule.onAllNodesWithText(emoji, useUnmergedTree = true)
+
+    @Test
+    fun cards_theLabelOfAPlace_hasTheEmojiOfItsCategory_beforeTheWords() {
+        feed(ready(nominal))
+        // Mine and Thomas's: Maison; Amandine's: Chez un proche.
+        emojiNodes(PlaceCategory.HOME.emoji).assertCountEquals(2)
+        emojiNodes(PlaceCategory.RELATIVE.emoji).assertCountEquals(1)
+        // The words are unchanged.
+        composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
+        val emojiLeft = emojiNodes(PlaceCategory.HOME.emoji)[0].fetchSemanticsNode().boundsInRoot.left
+        val wordsLeft =
+            composeRule
+                .onAllNodesWithText(
+                    "À la maison",
+                    useUnmergedTree = true,
+                )[0]
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        assertTrue("the emoji comes before the words: $emojiLeft < $wordsLeft", emojiLeft < wordsLeft)
+    }
+
+    @Test
+    fun cards_theEmoji_isDecorative_theScreenReaderReadsTheWordsOnly() {
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(placeId = "p5")))))
+        // The merged block of each card holds the words, never the emoji.
+        val reads =
+            composeRule
+                .onAllNodes(hasText("Thomas"))
+                .fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
+        assertTrue(reads.isNotEmpty())
+        PlaceCategory.entries.forEach { category ->
+            reads.forEach { assertFalse("${category.emoji} read in $it", it.contains(category.emoji)) }
+            composeRule.onAllNodesWithText(category.emoji).assertCountEquals(0)
+        }
+        composeRule.onAllNodesWithText("Cinéma Gaumont").assertCountEquals(1)
+    }
+
+    @Test
+    fun cards_aLeisureOrOtherPlace_hasItsEmoji_andItsName() {
+        feed(ready(content(trio, mapOf(me to status(placeId = "p5"), "t" to status(placeId = "p6")))))
+        emojiNodes(PlaceCategory.LEISURE.emoji).assertCountEquals(1)
+        emojiNodes(PlaceCategory.OTHER.emoji).assertCountEquals(1)
+        composeRule.onNodeWithText("Cinéma Gaumont").assertIsDisplayed()
+        composeRule.onNodeWithText("Chez le coiffeur").assertIsDisplayed()
+    }
+
+    @Test
+    fun cards_noCategory_orNoPlace_orLeftAPlace_hasNoEmoji() {
+        feed(
+            ready(
+                content(
+                    trio,
+                    mapOf(
+                        me to status(placeId = "p7"),
+                        "t" to status(PresenceValue.OUT, "p1", ago = 30 * minute),
+                        "a" to status(placeId = "zzz"),
+                    ),
+                ),
+            ),
+        )
+        composeRule.onNodeWithText("Lieu ancien").assertIsDisplayed()
+        composeRule.onNodeWithText("Dans un lieu de confiance").assertExists()
+        PlaceCategory.entries.forEach { emojiNodes(it.emoji).assertCountEquals(0) }
+    }
+
+    @Test
+    fun cards_whenTheFontCannotDrawTheEmoji_theFirstLetterOfTheCategoryTakesItsPlace() {
+        feed(ready(nominal), emojiSupport = EmojiSupport { false })
+        emojiNodes(PlaceCategory.HOME.emoji).assertCountEquals(0)
+        emojiNodes(PlaceCategory.RELATIVE.emoji).assertCountEquals(0)
+        // "M" (Maison) on two cards, "C" (Chez un proche) on one; the words stay.
+        emojiNodes("M").assertCountEquals(2)
+        emojiNodes("C").assertCountEquals(1)
+        composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
+    }
+
+    private fun bubbleStyle(): androidx.compose.ui.text.TextStyle {
+        val node = composeRule.onNodeWithText("Tout va bien").assertIsDisplayed().fetchSemanticsNode()
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        return results.first().layoutInput.style
+    }
+
+    @Test
+    fun bubble_theMainSentence_isBold_bigger_andInTheHeaviestBaloo() {
+        feed(ready(nominal))
+        val style = bubbleStyle()
+        assertEquals(androidx.compose.ui.text.font.FontWeight.ExtraBold, style.fontWeight)
+        assertEquals(30f, style.fontSize.value, 0f)
+        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > 24f)
+        assertEquals(com.tomessa.miff.ui.theme.FontFamilyBalooExtraBold, style.fontFamily)
+        // The rest of the Feed keeps its fonts: the first name of a card is still the regular Baloo, the time line Hanken Grotesk.
+        val name =
+            composeRule
+                .onAllNodesWithText("Thomas", useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+        val nameResults = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        name.config[SemanticsActions.GetTextLayoutResult].action?.invoke(nameResults)
+        assertEquals(
+            com.tomessa.miff.ui.theme.FontFamilyBaloo,
+            nameResults
+                .first()
+                .layoutInput.style.fontFamily,
+        )
+    }
+
+    @Test
+    fun bubble_theMainSentence_staysInsideTheScreen_onASmallScreen_atTheLargestFont() {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MiffTheme {
+                    Box(Modifier.width(320.dp).height(640.dp)) {
+                        FeedScreen(
+                            state = directory,
+                            scrollToTopSignal = 0,
+                            onRetry = {},
+                            onSelect = {},
+                            onCreate = {},
+                            onJoin = {},
+                            feed = ready(content(trio, mapOf(me to status(), "t" to status(), "a" to status()))),
+                            me = FeedMe("CM"),
+                        )
+                    }
+                }
+            }
+        }
+        shoot("feed-bubble-small-screen-large-font")
+        val box =
+            composeRule
+                .onNodeWithText("Tout va bien")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
         assertTrue("inside the screen: $box in $root", box.left >= 0f && box.right <= root.right)
     }
 

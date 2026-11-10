@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -63,7 +64,7 @@ import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
-import com.tomessa.miff.ui.theme.textDisplayHeadline
+import com.tomessa.miff.ui.theme.textDisplayBubble
 import kotlinx.coroutines.launch
 
 /*
@@ -364,11 +365,18 @@ private fun pictogram(level: StatusLevel): Pictogram? =
         else -> Pictogram(R.drawable.ic_feed_hourglass) { colorTextDescription }
     }
 
+/**
+ * The MAIN sentence of the bubble ("Tout va bien"): bold, bigger, in the heaviest Baloo Thambi 2, the font closest to the word-mark "Miff" (decision of
+ * the PM, 2026-11-10). Only this sentence has it, not the rest of the Feed. Size in sp (follows the font size of the phone); the lines are balanced
+ * ([LineBreak.Heading]) and the bubble grows in height, so a small screen or a large text never pushes a word out of it.
+ */
+private val HEADLINE_STYLE = textDisplayBubble.copy(lineBreak = LineBreak.Heading)
+
 @Composable
 private fun Headline(text: String) {
     Text(
         text = text,
-        style = textDisplayHeadline,
+        style = HEADLINE_STYLE,
         color = colorTextPrimary,
         textAlign = TextAlign.Center,
         modifier = Modifier.semantics { heading() },
