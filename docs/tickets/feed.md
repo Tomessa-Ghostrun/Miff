@@ -285,7 +285,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 | Lieu générique | « Dans un lieu de confiance » / « A quitté un lieu de confiance » | « In a trusted place » / « Left a trusted place » |
 | Neutre | « Pas encore de nouvelles » / « Partage arrêté » | « No news yet » / « Sharing stopped » |
 | Localisation limitée | « Localisation limitée » | « Limited location » |
-| Temps | « Depuis 12 min » ; « Départ il y a 12 min » ; « Dernière nouvelle à 16 h 02 » ; « Pas de nouvelles depuis 16 h 02 » ; « Depuis 16 h 02 » | « For 12 min » ; « Left 12 min ago » ; « Latest news at 4:02 PM » ; « No news since 4:02 PM » ; « Since 4:02 PM » |
+| Temps | « Depuis 13 h 36 » (arrivée ou départ, D51) ; « Dernière nouvelle à 16 h 02 » ; « Pas de nouvelles depuis 16 h 02 » ; « Depuis 16 h 02 » | « For 12 min » ; « Left 12 min ago » ; « Latest news at 4:02 PM » ; « No news since 4:02 PM » ; « Since 4:02 PM » |
 | Photo | « Photo de 15 h 40 » | « Photo from 3:40 PM » |
 | Batterie | « 85 % » ; « 85 % · 16 h 02 » | idem |
 | Boutons (a11y) | « Localiser {Prénom} », « Écrire à {Prénom} », « Appeler {Prénom} » | « Locate {Name} », « Message {Name} », « Call {Name} » |
