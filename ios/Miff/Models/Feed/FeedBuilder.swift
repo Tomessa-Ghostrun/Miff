@@ -115,7 +115,8 @@ enum FeedBuilder {
             banners: banners(context, latestUpdate: latestUpdate),
             cards: cards,
             announceKey: announceKey(shownBubble),
-            myFacts: myFacts(input, mySharing: mySharing, statuses: statuses)
+            myFacts: myFacts(input, mySharing: mySharing, statuses: statuses),
+            travelNote: travelNote(under: shownBubble, cards: cards, hidden: context.hidden)
         )
     }
 
@@ -184,14 +185,17 @@ enum FeedBuilder {
             )
         }
         let level = StatusColor.level(facts, nowMillis: context.now)
+        // MODE VOYAGE : lu quand le statut est lu (une Miff dont les nouvelles sont cachées, ou une personne qui ne partage plus, ne montre pas de voyage).
+        let travel = travelView(status, isMe: isMe, context)
         return FeedMemberCard(
             member: member,
             isMe: isMe,
             level: level,
             label: label(member: member, isMe: isMe, status: status, level: level, context),
-            time: timeLine(level: level, status: status, context),
-            battery: status.flatMap { battery($0, now: context.now) },
-            limitedLocation: status?.locationAccess.map { limitedAccess.contains($0) } ?? false,
+            time: travel == nil ? timeLine(level: level, status: status, context) : travelTimeLine(travel, status),
+            // Un voyageur ne mesure rien : ni niveau de batterie ni « Localisation limitée » (l'accès n'est pas dit non plus).
+            battery: travel == nil ? status.flatMap { battery($0, now: context.now) } : nil,
+            limitedLocation: travel == nil && (status?.locationAccess.map { limitedAccess.contains($0) } ?? false),
             phone: isMe ? nil : member.phone,
             // Un autre membre qui partage, pendant que je partage aussi et que les statuts sont VRAIMENT lus (les règles demandent que
             // mon statut soit publié) : même sans statut connu, « pas de position » est l'une des réponses calmes de la feuille.
@@ -203,8 +207,31 @@ enum FeedBuilder {
                 lastUpdateAtMillis: status?.lastUpdateAtMillis,
                 visible: status != nil,
                 nowMillis: context.now
-            )
+            ),
+            traveling: travel.map { $0 != .ended } ?? false
         )
+    }
+
+    /// Le voyage d'un statut montré, ou nil. Ma carte pendant que mon accord est attendu ne montre rien (rien n'est partagé).
+    private static func travelView(_ status: MemberStatus?, isMe: Bool, _ context: Context) -> TravelView? {
+        guard let status, !(isMe && context.input.waitingAgreement) else {
+            return nil
+        }
+        return TravelView.of(
+            presence: status.presence,
+            untilMillis: status.travelUntilMillis,
+            untilDay: status.travelUntilDay,
+            nowMillis: context.now,
+            zone: context.zone
+        )
+    }
+
+    /// « Depuis le 8 nov. » tant que le voyage est en cours ; rien après la fin (la carte dit « Voyage terminé »).
+    private static func travelTimeLine(_ travel: TravelView?, _ status: MemberStatus?) -> TimeLine {
+        guard case .active? = travel, let since = status?.presenceAtMillis else {
+            return .nothing
+        }
+        return .travelSince(since)
     }
 
     private static func label(
@@ -222,6 +249,14 @@ enum FeedBuilder {
         }
         if context.hidden && !isMe {
             return .newsHidden
+        }
+        if let status, let travel = travelView(status, isMe: isMe, context) {
+            switch travel {
+            case .active(let until):
+                return .traveling(until, mine: isMe)
+            case .ended:
+                return .travelEnded
+            }
         }
         guard level != .neutral, let status else {
             return .noNews

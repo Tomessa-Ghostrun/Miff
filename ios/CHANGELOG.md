@@ -2,6 +2,25 @@
 
 ## Non publié
 
+### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
+
+Troisième des trois PR empilées (base : `ios/mode-voyage-profil`, VOY-2I). Ticket `docs/tickets/mode-voyage.md` §6 (décisions du PM du 2026-11-10 : ouvert à TOUS ; la position reste partagée ; le voyageur n'a **aucun impact** sur la couleur ni sur le « n sur m »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/voyage-ios-recette-pm.md`. Détail : `ios/README.md` (« Mode voyage »).
+
+Ajouté :
+- **Carte grise d'un voyageur** : anneau et liseré **gris**, icône d'**avion** (SF Symbol `airplane`, décorative) et « **En voyage jusqu'au 15 nov.** » (le **jour choisi** `travelUntilDay`, pas le jour de l'instant de fin : un proche d'un autre fuseau lit le bon jour ; année seulement si ce n'est pas l'année en cours), ligne « **Depuis le 7 nov.** » (le jour où le voyage a commencé), **batterie** et « **Localisation limitée** » **masquées** (rien n'est mesuré). **Localiser, Message, Appeler et la photo sont inchangés** (la position reste partagée : la feuille « Localiser » est celle de tout membre, sans libellé de voyage).
+- **« Voyage terminé »** (gris, sans avion) dès que `maintenant >= travelUntil`, **calculé à l'affichage** (le minuteur d'une minute du Feed suffit, aucune relecture du serveur) : jamais un faux « en voyage ».
+- **Le voyageur est ignoré** : dans la couleur de la Miff (`StatusColor` neutre, `miffLevel` inchangé : {voyageur, vert} = verte, {voyageur seul} = neutre) **et dans le « n sur m ont donné des nouvelles »** (ni dans n, ni dans m ; corrigé dans `FeedBuilder`, il comptait les voyageurs comme silencieux).
+- **Bulle** : elle garde son message et **ajoute une ligne** (« {Prénom} est en voyage jusqu'au 15 nov. » pour un voyageur, « {n} proches sont en voyage. » pour plusieurs), y compris sous un carrousel d'alertes ; quand **tous les autres membres connus** sont en voyage (ou sans nouvelles, avec au moins un voyageur), elle devient **neutre**, avec un avion, et dit « {Prénom} est en voyage… » / « Tes proches sont en voyage. » (**seulement si TOUS** les autres le sont ; avec un autre sans nouvelles : « {n} proches sont en voyage. »), jamais « Tout va bien », jamais « Pas encore de nouvelles ». Aucune page d'alerte pour un voyageur.
+- **Ma carte** : « Mode voyage jusqu'au 15 nov. » et le lien **« Modifier »** (44 pt, nommé « Modifier le mode voyage » pour VoiceOver) qui ouvre l'onglet Profil. L'anneau de mon avatar, le point du bouton central et la **bulle d'incitation** sont **neutres** : aucune invitation à publier pendant un voyage. Pendant que mon accord est attendu, ma carte ne montre pas de voyage.
+- **Photo d'update pendant un voyage** : possible (statut sans batterie, VOY-1I) ; la photo d'un voyageur s'affiche comme toute photo.
+- **Lecture** : `travelUntil` et `travelUntilDay` lus dans le statut (`FeedFirestoreMapping`), **gardés seulement quand la présence est `travel`** (ce que quelqu'un d'autre a écrit à côté d'une autre présence est écarté) ; un voyage sans fin utilisable (client modifié) est lu comme **neutre sans étiquette** ; une application sans cette version lit `travel` comme inconnu (carte neutre, sans erreur).
+- **Textes** : les clés `voyage_*` ajoutées en VOY-2I (aucune nouvelle clé ici).
+- **Tests** : `FeedBuilderTravelTests` (port de `FeedBuilderTravelTest.kt` : carte, jour choisi, année, fin sans relecture, voyage sans fin, partage arrêté, couleur de la Miff, « n sur m » sans les voyageurs, bulle ajoutée / des voyageurs / « Tes proches », alertes conservées, ma carte neutre et sans invitation, Localiser), `FeedTravelTextsTests` (phrases FR et EN du vrai catalogue, lecture du statut du réseau).
+
+Ne change pas : aucune règle Firestore, aucun événement Analytics, aucun journal, aucune permission, aucune dépendance, aucune écriture (le Feed ne fait que lire).
+
+**À signaler (conflits probables à la fusion)** : les PR iOS en cours qui touchent les mêmes fichiers (`FeedCardView`, `FeedBubbleView`, `FeedBuilder`, `FeedBubbleBuilder`, `FeedTexts`, `FeedScreen`, `ProfileTabView`, `MainShellView`, `MiffHosts`, `TrackingEngine*`, `TrackingDoubles`, `CHANGELOG.md`, `README.md`) : #123 (étiquettes par catégorie, bulle, seuils), #145 (carrousel du Profil), #127 / #129 / #130 (notifications), #148 (hors connexion), #158 (photo plein écran) ; fusion simple de `origin/main` à faire à chaque fusion.
+
 ### Mode voyage, carte du Profil (VOY-2I, miroir d'Android VOY-2A, PR #153)
 
 Deuxième des trois PR empilées (base : `ios/mode-voyage`, VOY-1I). Ticket `docs/tickets/mode-voyage.md` §7 (décisions du PM du 2026-11-10 : ouvert à TOUS les comptes ; la position reste partagée). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Détail et écarts : `ios/README.md` (« Mode voyage »).
