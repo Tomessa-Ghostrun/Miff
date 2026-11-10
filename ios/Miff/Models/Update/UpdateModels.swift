@@ -64,7 +64,7 @@ enum PreviewNotice: Equatable {
         case .locationOff:
             return "update_notice_location_off"
         case .locationApproximate:
-            return "update_notice_location_precise"
+            return "ios_update_notice_location_precise"
         case .unconfirmed:
             return "update_notice_unconfirmed"
         case .tooMany:

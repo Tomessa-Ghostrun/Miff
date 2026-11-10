@@ -14862,7 +14862,7 @@
         }
       }
     },
-    "update_notice_location_precise": {
+    "ios_update_notice_location_precise": {
       "extractionState": "manual",
       "localizations": {
         "en": {
