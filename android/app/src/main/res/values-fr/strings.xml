@@ -385,6 +385,9 @@
     <string name="feed_selector_a11y">Miff affichée : %1$s. Appuie pour changer de Miff ou en ajouter une.</string>
     <string name="feed_selector_join">+ Rejoindre une Miff</string>
     <string name="feed_selector_create">+ Créer une Miff</string>
+    <string name="feed_selector_paywall_title">Une seule Miff avec la formule gratuite</string>
+    <string name="feed_selector_paywall_body">Avec Miff+, tu peux créer ou rejoindre autant de Miffs que tu veux.</string>
+    <string name="feed_selector_paywall_soon_body">Cette option n\'est pas encore ouverte. Ta Miff actuelle reste en place.</string>
     <string name="feed_nomiff_body">Crée ta Miff ou rejoins celle d\'un proche pour commencer.</string>
     <string name="feed_create_action">Créer une Miff</string>
     <string name="feed_join_action">Rejoindre une Miff</string>

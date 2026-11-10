@@ -20,6 +20,8 @@ struct PlaceScreenPreview: View {
             PlacePaywallContent(reason: .limit, onClose: {})
         case "place-paywall-danger":
             PlacePaywallContent(reason: .danger, onClose: {})
+        case "place-paywall-miff":
+            PlacePaywallContent(reason: .extraMiff, onClose: {})
         case "place-list-free", "place-list-premium", "place-list-member", "place-list-saved":
             MiffScreenContent(state: miffState, actions: miffActions, places: listContext)
         default:
