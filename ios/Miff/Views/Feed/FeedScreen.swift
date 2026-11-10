@@ -100,6 +100,8 @@ struct FeedScreen: View {
                     .padding(.top, headerHeight + Spacing.sm)
                     .accessibilityHidden(true)
             }
+            // Rien à montrer et pas de réseau : la pop-in « Pas de connexion » (réessai à la main et toutes les 10 s).
+            OfflinePopinOverlay(model: model.offlineRetry)
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
         // Sans Miff, la roue crantée des Réglages restreints (Réglages > Mon compte : déconnexion, suppression) est la seule sortie.

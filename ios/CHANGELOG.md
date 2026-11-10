@@ -2,6 +2,26 @@
 
 ## Non publié
 
+### Feed sans connexion : pop-in « Pas de connexion » avec réessai automatique (bug du PM, 2026-11-10 ; miroir d'Android)
+
+Bug : « Lorsque j'ouvre l'app sans connexion, le Feed se charge à l'infini. » Recette PM : `docs/qa/checklists/feed-hors-connexion-ios-recette-pm.md`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+**Cause trouvée** (trois attentes sans issue visible, aucune ne disait « pas de connexion ») :
+1. `MiffStateReader.read` interrogeait le serveur sans regarder le réseau : l'abonnement, puis les index, chacun avec un délai de 20 s, **l'un après l'autre**, avant de se rabattre sur le cache. Le squelette du Feed restait donc de longues secondes.
+2. `FeedViewModel` : tant que la Miff n'était pas dans le cache du téléphone, l'écoute restait en `loading` **sans aucune sortie** (hors ligne, Firestore n'envoie rien) ; l'état hors connexion ne servait qu'à dater un contenu déjà affiché.
+3. Onglet Profil : indicateur pendant la lecture du profil (20 s au plus) sans explication.
+
+Ajouté :
+- **Composant partagé** `OfflineRetryModel` (`ViewModels/`) et `OfflinePopinOverlay` (`Views/Shared/`) : pop-in calme « Pas de connexion / Vérifie ta connexion, on réessaie dans un instant. » avec **Réessayer** (relance tout de suite si le réseau est là ; sinon seul un indicateur répond), voile léger, `isModal`, annonce VoiceOver, Dynamic Type (la carte défile si le texte ne tient pas), « Réduire les animations » = simple fondu.
+- **Quand elle vient** : rien à montrer (ni contenu, ni copie du cache) ET pas de réseau, après **2 s de grâce** (pas de clignotement si le cache répond vite) ; lecture en échec et pas de réseau : tout de suite ; réseau annoncé « en ligne » mais **aucune donnée après 8 s** : elle vient aussi. Avec du contenu en cache : **comportement inchangé** (« Dernières informations de… », bandeau hors connexion), jamais de pop-in.
+- **Réessai automatique toutes les 10 s**, seulement tant que la pop-in est visible et seulement si le système dit que le réseau est là (**jamais de boucle de lectures** contre un serveur injoignable ; l'essai automatique ne relance que les Miffs jamais lues ou une écoute en échec, les écoutes en cours se rattachent seules). Retour du réseau : la pop-in disparaît d'elle-même et l'écran relit une fois. Tout s'arrête en quittant l'onglet ou en passant en arrière-plan.
+- **Annuaire des Miffs** : sans réseau (dit par le système), `MiffStateReader` lit **directement le cache** (formule « inconnue », jamais « perdue » à partir du cache) au lieu d'enchaîner les délais ; au retour du réseau, le Feed relit UNE fois les Miffs servies par le cache.
+- **Onglet Profil** : même pop-in tant que le profil n'est pas lu.
+- Chaînes `feed_offline_popin_title`, `_message`, `_retry`, `_a11y`, `_retrying_a11y` (FR + EN).
+- **Tests** : `OfflineRetryModelTests` (grâce, délai 8 s, minuterie de 10 s avec attente commandée, retour du réseau, Réessayer, deux touchers, sortie de l'écran, pas de minuterie doublée), `FeedOfflinePopinTests`, `ProfileOfflinePopinTests`, `MiffRepositoryOfflineReadTests`.
+
+Limites connues : l'onboarding du profil et le démarrage de session ont déjà leurs délais bornés (15 s) et leur écran « Réessayer » : non modifiés. Les Réglages > Mes informations n'ont pas leur propre pop-in. Un Feed avec la Miff en cache mais sans statuts attend toujours au plus 15 s son squelette. **Choix économiques** : aucune dépendance, 0 €, moins de lectures (aucune lecture serveur sans réseau).
+
 ### Batterie rafraîchie à l'ouverture et à la sortie de l'app (décision du PM, 2026-11-07 ; miroir d'Android)
 
 La batterie était déjà écrite avec chaque statut d'arrivée ou de départ. Le Feed la masque au-delà de 6 h après `updatedAt` : sans autre écriture, quelqu'un qui reste chez lui n'a plus de batterie visible. Décision du PM : « actualise le niveau de batterie des utilisateurs lorsqu'ils ouvrent l'app ou la quittent ».
