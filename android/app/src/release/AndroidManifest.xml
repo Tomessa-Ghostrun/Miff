@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    RELEASE and RELEASELIKE only (the second one is pointed at this file in build.gradle.kts, like it is for the sources).
+
+    The Google Play In-App Review library (used by the review window, docs/tickets/pop-ins-avis.md) brings in, through its dependency core-common, a transparent
+    activity (not exported). The review window is ABSENT from these builds (BuildConfig.REVIEW_PROMPT is false), so nothing may
+    declare that activity here: it would be dead weight in the manifest of an app that goes to the stores.
+
+    THE DAY THE PM ALLOWS THE WINDOW IN A DISTRIBUTED BUILD (reconfirmation at the gate "prêt à soumettre", then -Pmiff.reviewPrompt=true
+    -Pmiff.allowReviewPromptInRelease=true), DELETE THIS FILE AND THE manifest.srcFile LINE OF "releaseLike" IN build.gradle.kts: the store card needs that activity.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <activity
+            android:name="com.google.android.play.core.common.PlayCoreDialogWrapperActivity"
+            tools:node="remove" />
+    </application>
+</manifest>

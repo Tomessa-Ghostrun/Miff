@@ -34,6 +34,7 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 | `place_` | Lieux de confiance | Android et iOS |
 | `permission_` | Écrans d'autorisation du système (notifications, localisation « Toujours ») et leur divulgation (LOC-2a) | Android et iOS |
 | `update_` | L'Update (UPDATE-1, UPDATE-2, FEED-4) : explication et refus de la caméra, viseur, aperçu, publication et ses messages calmes, bulle d'incitation (`update_bubble_*`, textes des maquettes du PM), photo dans le Feed (`update_card_photo_*`, `update_photo_*`). Les noms parlés du bouton central sont sous `tabbar_update_*_a11y` | Android et iOS |
+| `review_` | Fenêtre d'avis « Que penses-tu de Miff ? » (`docs/tickets/pop-ins-avis.md`) : question et deux boutons (`review_title`, `review_love_action` « J'adore ! », `review_better_action`, `review_close_a11y`), remerciement avant la demande du store (`review_thanks_*`), écran « Merci de nous le dire ! » avec « Nous écrire » et « Plus tard » tant qu'aucun formulaire externe n'est renseigné (`review_feedback_*`), phrase calme quand rien n'a pu s'ouvrir (`review_open_failed`). **Plus de clés d'étoiles** (décision du PM du 2026-11-08). Les clés `android_diag_review_*` (carte de l'écran de diagnostic, build debug) sont propres à Android | Android et iOS |
 | `common_` | Boutons et libellés réutilisés (annuler, valider, erreur réseau...) | Android et iOS |
 | `home_` | Écran d'accueil | Android et iOS |
 | `diag_` | Écran de diagnostic interne (builds debug / TestFlight, jamais en release) | Android et iOS |
