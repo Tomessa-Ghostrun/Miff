@@ -79,6 +79,8 @@ fun MemberCardView(
     onOpenPhoto: (OpenedPhoto) -> Unit = {},
     /** MODE VOYAGE: the link "Modifier" of MY card while a trip is on. */
     onEditTravel: () -> Unit = {},
+    /** MODE VOYAGE: MY trip is on (the located photos of the others are paused). */
+    myTripOn: Boolean = false,
 ) {
     Row(
         modifier =
@@ -130,7 +132,7 @@ fun MemberCardView(
                             card.time,
                         )?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
                     // FEED-4: the photo of the last update (a centred square, the whole photo in full screen); "no photo" draws nothing (no hole, no message).
-                    MemberPhotoSlot(card, miffId, texts, nowMillis, onOpenPhoto)
+                    MemberPhotoSlot(card, miffId, texts, nowMillis, onOpenPhoto, myTripOn)
                     if (card.isMe) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),

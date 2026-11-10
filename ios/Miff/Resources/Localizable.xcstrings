@@ -15456,6 +15456,40 @@
           }
         }
       }
+    },
+    "voyage_locate_paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your loved ones' positions come back when your trip ends."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les positions de tes proches reviennent à la fin de ton voyage."
+          }
+        }
+      }
+    },
+    "voyage_photo_paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Located photos come back when your trip ends."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les photos localisées reviennent à la fin de ton voyage."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

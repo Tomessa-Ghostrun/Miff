@@ -202,8 +202,19 @@ class FeedTexts(
     /** The headline of the neutral bubble when every other member who is known is on a trip. */
     fun travelersHeadline(note: TravelNote): String =
         when (note) {
-            is TravelNote.One -> travelNote(note)
-            is TravelNote.Many -> s(R.string.voyage_bubble_all)
+            is TravelNote.One -> {
+                travelNote(note)
+            }
+
+            is TravelNote.Many -> {
+                if (note.all) {
+                    s(
+                        R.string.voyage_bubble_all,
+                    )
+                } else {
+                    s(R.string.voyage_bubble_many, note.count)
+                }
+            }
         }
 
     /** The line under the label of a card; null when the card has none. */

@@ -46,11 +46,14 @@
 18. [ ] **Nouveau téléphone** : connectez A sur un autre téléphone pendant le voyage : le nouveau téléphone **conserve** le voyage (carte « Mode voyage jusqu'au … » dans le Profil, rien n'est suivi).
 19. [ ] **Déconnexion** de A pendant le voyage : B voit toujours « En voyage jusqu'au … » jusqu'à la date de fin.
 20. [ ] **Anglais** : « Travel mode », « Traveling until Nov 15 ». Les deux langues sont complètes, tutoiement, ton calme.
-21. [ ] **TalkBack** : l'interrupteur et sa ligne forment un seul élément (« Mode voyage, interrupteur, activé, jusqu'au … ») ; l'avion est décoratif (l'état est dit par le texte) ; cibles de 48 dp ; police au maximum : tout reste lisible.
+21. [ ] **Voyageur : positions et photos des autres en pause.** Pendant que le voyage de A est actif, touchez **Localiser** sur un proche : la feuille dit « **Les positions de tes proches reviennent à la fin de ton voyage.** » (et **jamais** « Elle apparaît quand vous partagez tous les deux »). Si ce proche a publié une photo localisée, la tuile dit « **Les photos localisées reviennent à la fin de ton voyage.** » (et **jamais** « Partage ta position pour voir cette photo »). Dans le Profil, l'explication de la carte le dit aussi. À la fin du voyage (étape 14 ou 15), Localiser et les photos refonctionnent comme avant dès que la position de A est de nouveau publiée.
+22. [ ] **Bulle avec plusieurs voyageurs** (Miff de 4 : B, C, D en plus de A côté proche) : deux voyageurs et un proche sans nouvelles : « **2 proches sont en voyage.** » ; « Tes proches sont en voyage. » n'apparaît que si **tous** les autres membres le sont.
+23. [ ] **Changer la date, sans réseau puis avec** : le bouton du sélecteur s'appelle **Valider** (et **Continuer** à l'activation) ; si le serveur refuse le changement, « Le mode voyage n'a pas pu être mis à jour. Ta date de fin n'a pas changé… » et l'ancienne date reste ; « Le suivi reprend. » et la phrase hors connexion disparaissent seules après quelques secondes.
+24. [ ] **TalkBack** : l'interrupteur et sa ligne forment un seul élément (« Mode voyage, interrupteur, activé, jusqu'au … ») ; l'avion est décoratif (l'état est dit par le texte) ; cibles de 48 dp ; police au maximum : tout reste lisible.
 
 ## Limites connues à connaître
 
 - Un téléphone dont le constructeur tue l'alarme (ColorOS) reprend le suivi **à la prochaine ouverture ou au prochain redémarrage** (pas à la minute près).
-- Tant que le voyage dure, le voyageur **ne lit pas** les positions ni les photos localisées des autres (le serveur exige d'avoir publié sa propre position pour les lire) : à confirmer par le PM, voir le rapport de la PR.
+- Tant que le voyage dure, le voyageur **ne lit pas** les positions ni les photos localisées des autres (le serveur exige d'avoir publié sa propre position pour les lire) : l'app le dit (étape 21). À confirmer par le PM.
 - **Activer hors connexion** : le suivi s'arrête tout de suite, mais **la dernière position reste sur le serveur** (et le voyage reste invisible des proches) jusqu'au retour du réseau, qui écrit le voyage et supprime la position.
 - La fin hors connexion est écrite dès le retour du réseau ; si la localisation « Toujours » est retirée entre-temps, l'état « Voyage terminé » peut rester visible chez les proches jusqu'à la prochaine entrée dans un lieu.

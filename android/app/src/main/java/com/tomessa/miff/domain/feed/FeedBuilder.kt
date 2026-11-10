@@ -136,6 +136,7 @@ object FeedBuilder {
                         mySharing && !input.waitingAgreement
                     }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
             travelNote = travelNote,
+            myTripOn = mine?.traveling == true,
         )
     }
 
@@ -146,8 +147,11 @@ object FeedBuilder {
         val label = only?.label as? StateLabel.Traveling
         return when {
             travellers.isEmpty() -> null
+
             only != null && label != null -> TravelNote.One(only.member.callName, label.until)
-            else -> TravelNote.Many(travellers.size)
+
+            // "Tes proches sont en voyage" only when EVERY other member is: with one who has no news, it is "{n} proches sont en voyage".
+            else -> TravelNote.Many(travellers.size, all = travellers.size == others.size)
         }
     }
 
@@ -409,7 +413,9 @@ object FeedBuilder {
         // MODE VOYAGE: nobody known, and somebody on a trip: the bubble says so (never "Pas encore de nouvelles" for a traveller).
         val travellers = others.filter { it.traveling }
         if (!hidden && knownOthers.isEmpty() && travellers.isNotEmpty()) {
-            return Bubble.Travelers(travelNote(others) ?: TravelNote.Many(travellers.size))
+            return Bubble.Travelers(
+                travelNote(others) ?: TravelNote.Many(travellers.size, all = travellers.size == others.size),
+            )
         }
         if (hidden || knownOthers.isEmpty()) return Bubble.NoNews
         // No alert, so every known member is green. The "latest news" is the most recent of the OTHERS (my own update never reassures).

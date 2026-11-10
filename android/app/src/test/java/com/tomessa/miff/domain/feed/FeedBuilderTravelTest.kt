@@ -227,7 +227,24 @@ class FeedBuilderTravelTest {
         assertNull(one.travelNote)
 
         val many = build(trio, mapOf("t" to trip(), "a" to trip()))
-        assertEquals(TravelNote.Many(2), (many.bubble as Bubble.Travelers).note)
+        // EVERY other member is on a trip: "Tes proches sont en voyage."
+        assertEquals(TravelNote.Many(2, all = true), (many.bubble as Bubble.Travelers).note)
+    }
+
+    @Test
+    fun severalTravellersAndOneWithoutNews_say_nLovedOnesAreTraveling_notThatAllOfThemAre() {
+        val members = listOf(member(me, "Camille"), member("t", "Thomas"), member("a", "Amandine"), member("l", "Léa"))
+        val content = build(members, mapOf("t" to trip(), "a" to trip()))
+        val note = (content.bubble as Bubble.Travelers).note
+        assertEquals(TravelNote.Many(2, all = false), note)
+    }
+
+    @Test
+    fun myTripOn_isTold_onlyWhenMyOwnTripIsOn() {
+        assertTrue(build(trio, mapOf(me to trip(), "t" to green())).myTripOn)
+        assertFalse(build(trio, mapOf(me to green(), "t" to trip())).myTripOn)
+        assertFalse(build(trio, mapOf(me to trip()), at = until + hour).myTripOn)
+        assertFalse(build(trio, mapOf("t" to green())).myTripOn)
     }
 
     @Test

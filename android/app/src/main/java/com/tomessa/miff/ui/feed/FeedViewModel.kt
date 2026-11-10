@@ -501,6 +501,11 @@ class FeedViewModel(
         val content = (uiState.value as? FeedUiState.Ready)?.content ?: return
         val card = content.cards.firstOrNull { it.member.uid == uid && it.canLocate } ?: return
         val firstName = card.member.callName
+        if (content.myTripOn) {
+            // MODE VOYAGE: my trip is on, the server would refuse the reading (I published no position): nothing is read, the sheet says it calmly.
+            mutableLocate.value = LocateUiState.Shown(uid, firstName, LocateResult.PausedByTrip)
+            return
+        }
         mutableLocate.value = LocateUiState.Loading(uid)
         locateJob =
             viewModelScope.launch {

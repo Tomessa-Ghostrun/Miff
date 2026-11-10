@@ -68,6 +68,9 @@ sealed interface LocateResult {
 
     /** The sixth calm answer: something unexpected happened; try again in a moment (distinct from "Pas de connexion"). */
     data object Unavailable : LocateResult
+
+    /** MODE VOYAGE: my trip is on, the positions of the others come back when it ends (nothing is read). */
+    data object PausedByTrip : LocateResult
 }
 
 object Locate {
