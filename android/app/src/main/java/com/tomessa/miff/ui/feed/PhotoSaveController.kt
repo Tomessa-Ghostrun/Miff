@@ -1,7 +1,7 @@
 package com.tomessa.miff.ui.feed
 
 import android.net.Uri
-import com.tomessa.miff.data.feed.PhotoSaver
+import com.tomessa.miff.data.media.PhotoSaver
 import com.tomessa.miff.domain.feed.PhotoDownload
 import com.tomessa.miff.domain.feed.PhotoSaveOutcome
 import com.tomessa.miff.domain.feed.PhotoSaveState

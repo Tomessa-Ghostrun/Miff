@@ -2,7 +2,7 @@ package com.tomessa.miff.ui.feed
 
 import android.app.Application
 import android.net.Uri
-import com.tomessa.miff.data.feed.PhotoSaver
+import com.tomessa.miff.data.media.PhotoSaver
 import com.tomessa.miff.domain.feed.PhotoSaveState
 import com.tomessa.miff.domain.feed.SaveRoute
 import kotlinx.coroutines.test.runTest

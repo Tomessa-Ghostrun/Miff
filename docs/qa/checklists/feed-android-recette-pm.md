@@ -36,6 +36,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
 - [ ] **Sélecteur de Miff (D47, 2026-11-08)** : pour **tout le monde**, même avec une seule Miff, la pastille a la flèche et l'ombre et s'ouvre ; la liste montre la ou les Miffs (coche sur celle affichée) puis « + Rejoindre une Miff » et « + Créer une Miff ». Un compte gratuit déjà dans une Miff arrive sur le paywall en les touchant : voir la **Partie I**.
+- [ ] **Icône de l'onglet Feed** (décision du 2026-11-08) : dans la barre du bas, le Feed est une **maison classique** (aucun cœur), **au trait** quand l'onglet n'est pas actif et **pleine** quand il l'est, comme sur l'iPhone.
 
 ## Partie A bis — Comportement de l'en-tête au défilement (4 min)
 
@@ -140,7 +141,7 @@ Le Feed est le premier gros consommateur de lectures du plan gratuit (50 000 par
 
 Avec un compte **gratuit** (sans droit Miff+) déjà dans une Miff, puis, si possible, avec un compte **Miff+** (droit accordé à la main dans la console).
 - [ ] **Compte gratuit, une seule Miff** : la pastille du nom de la Miff **a une flèche bleue et une ombre** (elle n'est plus plate) et **s'ouvre** au toucher. La liste montre **votre Miff (avec la coche)**, puis **« + Rejoindre une Miff »** et **« + Créer une Miff »**.
-- [ ] Touchez **« + Rejoindre une Miff »** : l'écran **« Plusieurs Miffs avec Miff+ »** s'ouvre (pas l'écran de saisie du code). Il explique en une phrase que la formule gratuite permet d'être dans une Miff à la fois, **sans prix**, **sans le mot « Premium »**, sans bouton d'achat, avec « **Miff+ arrive bientôt** » et « Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place. » **« Plus tard »** (ou la croix, ou le geste retour) vous ramène au Feed **sans rien avoir changé**.
+- [ ] Touchez **« + Rejoindre une Miff »** : l'écran **« Une seule Miff avec la formule gratuite »** s'ouvre (pas l'écran de saisie du code). Il dit qu'avec Miff+ on peut créer ou rejoindre autant de Miffs que l'on veut, **sans prix**, **sans le mot « Premium »**, sans bouton d'achat, avec « **Miff+ arrive bientôt** » et « Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place. » **« Plus tard »** (ou la croix, ou le geste retour) vous ramène au Feed **sans rien avoir changé**.
 - [ ] Refaites avec **« + Créer une Miff »** : même écran, même retour.
 - [ ] **Compte Miff+** : « + Rejoindre une Miff » ouvre l'écran de saisie du code, « + Créer une Miff » ouvre l'écran de création, comme avant. Aucun paywall.
 - [ ] **Hors connexion** (mode avion) puis rouvrez l'app, ouvrez la liste et touchez « + Créer une Miff » : l'écran de **création** s'ouvre (on ne vous prend pas pour un compte gratuit sur un doute) ; il vous dit calmement ce qui ne va pas si l'envoi est impossible.

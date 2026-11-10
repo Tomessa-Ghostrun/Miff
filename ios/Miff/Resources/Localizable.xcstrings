@@ -2541,7 +2541,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The free plan lets you be in one Miff at a time. With Miff+, create and join as many Miffs as you like."
+            "value": "With Miff+, create or join as many Miffs as you like."
           }
         },
         "fr": {
@@ -2575,13 +2575,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More than one Miff with Miff+"
+            "value": "One Miff with the free plan"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Plusieurs Miffs avec Miff+"
+            "value": "Une seule Miff avec la formule gratuite"
           }
         }
       }

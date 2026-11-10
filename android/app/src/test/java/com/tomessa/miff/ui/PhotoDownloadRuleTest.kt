@@ -9,7 +9,7 @@ import java.io.File
 /**
  * "Enregistrer la photo" (decision of the PM, 2026-11-08), guarded on the sources. The photo of the Feed now CAN leave the app, but only by a deliberate
  * touch on ONE button, in the full-screen photo of the Feed, and without any permission:
- * - the only file that writes into the pictures or a document of the phone is `data/feed/PhotoSaver.kt`;
+ * - the only file that writes into the pictures or a document of the phone is `data/media/PhotoSaver.kt`;
  * - only the full-screen photo (FeedPhoto.kt) reaches it: not the card, not the Update, not any other screen;
  * - the writing is called from the touch (or from the answer of the picker that touch opened), never from a LaunchedEffect;
  * - no storage permission appears in the manifest (the CI also checks the merged manifests);

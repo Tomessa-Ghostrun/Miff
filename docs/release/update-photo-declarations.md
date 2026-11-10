@@ -443,4 +443,4 @@ Ajouté le 2026-11-08 par `android-dev` (PR « Android : sélecteur de Miff avec
 
 ### 15.3 Contrôles dans le code (ajoutés par cette PR)
 
-`PhotoDownloadRuleTest` (Android) lit les sources : seul `data/feed/PhotoSaver.kt` écrit dans les images ou un document ; seul le plein écran du Feed y accède ; l'écriture part d'un toucher (jamais d'un `LaunchedEffect`) ; aucune permission de stockage dans le manifeste ; rien n'est envoyé à un journal, à Analytics ou au presse-papiers ; le nom du fichier ne reçoit qu'un instant et un fuseau. `UpdatePrivacyRuleTest` continue de garantir que **le viseur et la publication** n'écrivent aucun fichier.
+`PhotoDownloadRuleTest` (Android) lit les sources : seul `data/media/PhotoSaver.kt` écrit dans les images ou un document ; seul le plein écran du Feed y accède ; l'écriture part d'un toucher (jamais d'un `LaunchedEffect`) ; aucune permission de stockage dans le manifeste ; rien n'est envoyé à un journal, à Analytics ou au presse-papiers ; le nom du fichier ne reçoit qu'un instant et un fuseau. `UpdatePrivacyRuleTest` continue de garantir que **le viseur et la publication** n'écrivent aucun fichier.

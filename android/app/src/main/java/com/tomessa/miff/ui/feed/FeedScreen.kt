@@ -311,7 +311,14 @@ fun FeedScreen(
 
                     else -> {
                         val onSelectorOpen = { open: Boolean -> selectorOpen = open }
-                        MiffPill(ready, onSelect, onCreate, onJoin, onOffer = onMiffOffer, onOpenChanged = onSelectorOpen)
+                        MiffPill(
+                            ready,
+                            onSelect,
+                            onCreate,
+                            onJoin,
+                            onOffer = onMiffOffer,
+                            onOpenChanged = onSelectorOpen,
+                        )
                     }
                 }
             },

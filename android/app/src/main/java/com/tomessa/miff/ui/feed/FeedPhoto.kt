@@ -55,10 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tomessa.miff.R
-import com.tomessa.miff.data.feed.ContentPhotoSaver
+import com.tomessa.miff.data.media.ContentPhotoSaver
 import com.tomessa.miff.data.feed.PhotoLookup
 import com.tomessa.miff.data.feed.PhotoReader
-import com.tomessa.miff.data.feed.PhotoSaver
+import com.tomessa.miff.data.media.PhotoSaver
 import com.tomessa.miff.domain.feed.MemberCard
 import com.tomessa.miff.domain.feed.Moment
 import com.tomessa.miff.domain.feed.PhotoDownload

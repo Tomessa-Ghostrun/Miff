@@ -1,4 +1,4 @@
-package com.tomessa.miff.data.feed
+package com.tomessa.miff.data.media
 
 import android.content.ContentResolver
 import android.content.ContentValues

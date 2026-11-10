@@ -12,7 +12,7 @@ Modèle freemium : le Paywall est affiché "après 1 action" selon la note du PM
 
 ## Critères d'acceptation
 - Le Paywall se déclenche au moment précis où un utilisateur gratuit tente une action bloquée par sa limite (créer un 3e lieu de confiance ou une zone de danger, créer/rejoindre une 2e Miff).
-  - **Décision du PM du 2026-11-08 (Android, Feed)** : la tentative de « créer/rejoindre une 2e Miff » se fait depuis le sélecteur de Miff du Feed, visible de tous ; pour un compte gratuit déjà dans une Miff, le toucher ouvre le Paywall (écran « Miff+ arrive bientôt » tant qu'aucun achat n'existe, phrase « Plusieurs Miffs avec Miff+ », sans prix ni « Premium »). Voir `docs/tickets/feed.md` D47.
+  - **Décision du PM du 2026-11-08 (Android, Feed)** : la tentative de « créer/rejoindre une 2e Miff » se fait depuis le sélecteur de Miff du Feed, visible de tous ; pour un compte gratuit déjà dans une Miff, le toucher ouvre le Paywall (écran « Miff+ arrive bientôt » tant qu'aucun achat n'existe, phrase « Une seule Miff avec la formule gratuite », sans prix ni « Premium »). Voir `docs/tickets/feed.md` D47.
 - Le Paywall explique clairement la différence gratuit/Premium.
 
 ## Hors-scope
