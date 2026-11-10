@@ -24,7 +24,7 @@
 
 6. [ ] La carte de A est **grise** avec l'**icône d'avion** et « **En voyage jusqu'au {demain}** » (la **date choisie**, pas la veille ni le lendemain), la ligne « Depuis le {aujourd'hui} », **sans batterie** et **sans « Localisation limitée »**. Les boutons Localiser, Message et Appeler sont toujours là.
 7. [ ] **La couleur de la Miff** : si A était le seul membre connu, la bulle devient **neutre** et dit « {Prénom} est en voyage jusqu'au … » (jamais « Tout va bien », jamais « Pas encore de nouvelles »). Avec un troisième membre vert, la bulle reste verte, **ajoute** la ligne « {Prénom} est en voyage… » et le « n sur m ont donné des nouvelles » **ne compte pas** A.
-8. [ ] Touchez **Localiser** sur A : la feuille dit calmement qu'**il n'y a pas de position partagée** (votre dernière position a été supprimée du serveur à l'activation).
+8. [ ] Touchez **Localiser** sur A : la feuille dit calmement « {Prénom} n'a pas encore de position connue » (votre dernière position a été supprimée du serveur à l'activation).
 9. [ ] Chez A, onglet Feed : **ma carte** dit « Mode voyage jusqu'au … » avec le lien **Modifier** (ouvre le Profil). L'anneau de ma photo et le point du bouton central sont **neutres** ; **aucune bulle d'invitation à publier** n'apparaît, même après plus d'une heure.
 
 ## Partie 3 : pendant le voyage (compte A) (6 min)

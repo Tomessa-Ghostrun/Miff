@@ -74,6 +74,8 @@ fun ProfileTabScreen(
     onOpenMiff: (String) -> Unit = {},
     /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
     placesContent: @Composable () -> Unit = {},
+    /** MODE VOYAGE (VOY-2A): the card "Mode voyage", under the header and before "Mes Miffs"; nothing until the host gives it. */
+    travelContent: @Composable () -> Unit = {},
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -112,6 +114,7 @@ fun ProfileTabScreen(
         if (state.status == ProfileTabStatus.UNAVAILABLE) {
             Unavailable(onRetry)
         }
+        travelContent()
         MiffCards(miffs, onOpenMiff)
         placesContent()
     }

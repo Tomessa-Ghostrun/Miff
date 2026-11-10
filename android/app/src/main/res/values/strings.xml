@@ -922,6 +922,32 @@
     <string name="review_feedback_write">Write to us</string>
     <string name="review_open_failed">Nothing could be opened on your phone. You can try again in a moment.</string>
     <string name="review_feedback_later">Later</string>
+    <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
+    <string name="voyage_card_title">Travel mode</string>
+    <string name="voyage_card_off_body">Pause your tracking while you travel.</string>
+    <string name="voyage_card_on_status">Traveling until %1$s</string>
+    <string name="voyage_card_end_label">End date</string>
+    <string name="voyage_card_end_change_a11y">Change the end date</string>
+    <string name="voyage_card_explain">While you travel, your circle sees “Traveling until %1$s” and your card stays grey. Miff stops tracking your places and no longer sends your battery level. You can still check in with a photo: it keeps its location, as usual. Tracking resumes on its own at the end.</string>
+    <string name="voyage_card_state_on_a11y">On, until %1$s</string>
+    <string name="voyage_card_state_off_a11y">Off</string>
+    <string name="voyage_confirm_title">Turn on travel mode?</string>
+    <string name="voyage_confirm_body">Your circle will see “Traveling until %1$s” instead of your status. You can stop it whenever you like.</string>
+    <string name="voyage_confirm_action">Turn on</string>
+    <string name="voyage_confirm_cancel">Cancel</string>
+    <string name="voyage_picker_confirm">Continue</string>
+    <string name="voyage_off_done">Tracking is resuming.</string>
+    <string name="voyage_offline_note">Your circle will see your trip as soon as you\'re online.</string>
+    <string name="voyage_error_refused">Travel mode couldn\'t be turned on. You can try again later.</string>
+    <string name="voyage_feed_label">Traveling until %1$s</string>
+    <string name="voyage_feed_label_ended">Trip ended</string>
+    <string name="voyage_feed_since">Since %1$s</string>
+    <string name="voyage_feed_mine">Travel mode until %1$s</string>
+    <string name="voyage_feed_mine_edit">Edit</string>
+    <string name="voyage_feed_mine_edit_a11y">Edit travel mode</string>
+    <string name="voyage_bubble_one">%1$s is traveling until %2$s.</string>
+    <string name="voyage_bubble_many">%1$d loved ones are traveling.</string>
+    <string name="voyage_bubble_all">Your loved ones are traveling.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
     <string name="android_diag_review_title">Review window (test)</string>
     <string name="android_diag_review_force">Show the window at the next return to the app</string>

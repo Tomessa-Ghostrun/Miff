@@ -105,6 +105,7 @@ import com.tomessa.miff.data.tracking.AlarmManagerTravelAlarm
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
 import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
 import com.tomessa.miff.data.tracking.DetectionJournals
+import com.tomessa.miff.data.tracking.EngineTravelControl
 import com.tomessa.miff.data.tracking.FirestoreTrackingStore
 import com.tomessa.miff.data.tracking.FusedMovementUpdates
 import com.tomessa.miff.data.tracking.FusedPhotoPositionSource
@@ -114,6 +115,7 @@ import com.tomessa.miff.data.tracking.PlayGeofenceArming
 import com.tomessa.miff.data.tracking.SharedPreferencesTrackingLocalStore
 import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.data.tracking.TrackingEnvironment
+import com.tomessa.miff.data.tracking.TravelControl
 import com.tomessa.miff.data.update.FirestorePhotoStore
 import com.tomessa.miff.data.update.PhotoCleaner
 import com.tomessa.miff.data.update.PhotoStore
@@ -337,6 +339,9 @@ class AppContainer(
             travelAlarm = AlarmManagerTravelAlarm(context),
         )
     }
+
+    /** MODE VOYAGE (VOY-2A): what the Profile asks of the tracking (begin, move the end, end a trip). Open to every account. */
+    val travelControl: TravelControl by lazy { EngineTravelControl(trackingEngine) }
 
     /**
      * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is measured, the rules refuse a level next to a trip) and the photo of an update does not wait
