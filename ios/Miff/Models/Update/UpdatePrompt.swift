@@ -21,9 +21,9 @@ struct MyStatusFacts: Equatable, CustomStringConvertible {
 
 // Quand la bulle d'incitation au-dessus de la barre d'onglets s'affiche, et de quelle couleur est le bouton central (ticket Update, D18,
 // D19, D21, critères A1, A2, B1) : une fonction pure de MON statut dans la Miff affichée et de l'horloge. Elle réutilise
-// `StatusColor.level` (UN seul calcul de la couleur pour toute l'app) et ajoute la seule règle qui lui est propre : en zone de danger la
-// couleur reste rouge après une update (une update ne ramène jamais au vert là, D8), donc la bulle disparaît quand une update a été
-// publiée APRÈS l'arrivée (`lastUpdateAt >= presenceAt`, C8), pas quand la couleur change.
+// `StatusColor.level` (UN seul calcul de la couleur pour toute l'app) et n'ajoute rien : la bulle est visible quand la couleur est orange ou
+// rouge, y compris en zone de danger. Depuis la décision du PM du 2026-11-08, une update publiée APRÈS l'entrée en zone de danger donne
+// 1 h de vert (la bulle part), puis le rouge revient (la bulle aussi) : c'est `StatusColor.dangerZoneLevel` qui le dit, pas ce fichier.
 enum UpdatePrompt {
     /// Le niveau de mon statut (la couleur du bouton central, de l'anneau de ma photo) : `StatusColor.level` inchangé.
     static func level(_ status: MyStatusFacts?, sharing: Bool, nowMillis: Int) -> StatusLevel {
@@ -47,25 +47,11 @@ enum UpdatePrompt {
         case .orange:
             return .orange
         case .red:
-            // Zone de danger : la bulle disparaît quand une update suit l'arrivée.
-            if status.presence == .inRisk && updatedSinceArrival(status) {
-                return .hidden
-            }
             return .red
         case .green, .neutral:
             // Vert ou neutre : rien à encourager (arriver dans une zone de confiance sans publier met aussi fin à la bulle, D18).
             return .hidden
         }
-    }
-
-    private static func updatedSinceArrival(_ status: MyStatusFacts) -> Bool {
-        guard let update = status.lastUpdateAtMillis else {
-            return false
-        }
-        guard let arrival = status.presenceAtMillis else {
-            return true
-        }
-        return update >= arrival
     }
 
     /// La bulle est annoncée au lecteur d'écran une fois à son apparition et au passage de l'orange au rouge (D34), jamais à chaque minute.
