@@ -131,7 +131,7 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | # | Cas | Attendu |
 |---|---|---|
 | P1 | `alice` (gratuite) crée `places/p1` type `trusted` dans une Miff sans lieu | OK |
-| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1` et `p2`) | KO |
+| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1`, `p2` et `p3`) | KO |
 | P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type` vers `risk`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
 | P4 | `alice` (gratuite) crée un lieu `type="risk"` (ID `p1`) | KO |
 | P5 | `dave` (premium) crée 3 lieux (ID auto) dont 1 `risk` | OK |
@@ -143,21 +143,25 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | P11 | `alice` modifie `createdBy` d'un lieu | KO |
 | P12 | Lieu avec `createdAt` client | KO |
 | P13 | `eve` lit `places` de M1 | KO |
-| P14 | `alice` (gratuite, `p1` existe) crée `p2` `trusted` ; puis `p3`, un ID auto, `P2` | OK ; KO ×3 (R-LIEU-5 : 2 lieux gratuits) |
+| P14 | `alice` (gratuite, `p1` existe) crée `p2` puis `p3` en `trusted` ; puis `p4`, `p5`, un ID auto, `P2`, `P3` | OK ; OK ; KO ×5 (R-LIEU-5 : **3 lieux gratuits depuis le 2026-11-10**, avant : 2) |
+| P14c | `alice` (gratuite) : `p3` en `risk` ; `p3` en `trusted` puis modifié (nom, rayon, catégorie) ; `p3` vers `risk` ; `p3` `risk` hérité vers `trusted` ; `createdBy` modifié ; `set` complet déguisé en `risk` ; suppression puis recréation de `p3` ; `p4` | KO ; OK ; KO ; OK ; KO ; KO ; OK ; OK ; KO |
+| P14d | `alice` (gratuite, Miff sans lieu) crée `p1`, `p2`, `p3` dans UN lot (3 × 2 = 6 lectures de règles sur 20) ; lot de `p2` recréé + `p4` | OK ; KO en bloc, `p2` non écrit |
+| P14e | `eve` (sans Miff) : lot « création de la Miff + `p1`, `p2`, `p3` » ; puis la Miff seule, puis les 3 lieux en un second lot ; puis `p4` | KO en entier (les règles de lieu lisent la Miff d'AVANT le lot) ; OK ; OK ; KO |
 | P14b | `alice` (gratuite) crée `p2` en `risk` ; crée `p2` en `trusted` ; supprime `p1` puis le recrée | KO ; OK ; OK ; OK |
 | P15 | Création sans `category`, ou avec `""`, `maison`, `Home`, `HOME`, ` home`, `home `, `danger`, `null`, `3`, liste, objet ; puis avec `home` (R-LIEU-2) | KO ×11 + sans clé ; OK |
 | P15b | `dave` (premium) crée un lieu pour chacune des 7 catégories (`home`, `work`, `school`, `sport`, `relative`, `leisure`, `other`) | OK ×7 |
 | P16 | `alice` change la `category` (valide), puis invalide (`maison`, `""`, `null`, `7`) ; un lieu sans `category` (hérité) : nom seul, puis nom + catégorie | OK ; KO ×4 ; KO ; OK |
 | P17 | `dave` (premium) : `trusted` vers `risk` (+ catégorie), `risk` vers `trusted`, `type="banane"` (R-LIEU-6) | OK ; OK ; KO |
 | P18 | `alice` (gratuite) : `trusted` vers `risk` (seul, ou avec catégorie et nom) ; nom + rayon + catégorie | KO ×2 ; OK |
-| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`, `p2` en `trusted` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; KO ; OK ; KO |
+| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`/`p3`, `p2` puis `p3` en `trusted`, `p4` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; OK ; KO ; KO ; OK ; KO |
 | P20 | `dave` (premium, 5 Miffs) crée en UN lot 5 lieux de même identifiant, un par Miff | OK |
 | P20b | Même lot dont une Miff est celle d'`alice` | KO, rien n'est écrit dans les 4 autres |
+| P20d | `frank` (ancien premium, 2 Miffs) : lot `p3` dans sa Miff A + `p4` dans sa Miff B ; puis `p3` dans les 2 Miffs (même identifiant, un document par Miff) en UN lot ; puis suppression des 2 copies | KO en bloc, rien d'écrit ; OK ; OK |
 | P20c | Même lot avec une catégorie invalide dans une seule copie ; avec un identifiant invalide dans une seule copie | KO ; KO |
 | P21 | `dave` modifie (`type="risk"`, catégorie) puis supprime ce lieu dans 5 Miffs, un lot chacune | OK ; OK |
-| P22 | `bob` (membre) crée `p2`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×4 |
+| P22 | `bob` (membre) crée `p2`, crée `p3`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×5 |
 | P23 | `alice` modifie `createdBy` ou `createdAt` en même temps que le type ou la catégorie | KO ×2 |
-| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1` et `p2` dans CHACUNE ; un identifiant libre ou le passage à `risk` | OK ×4 (4 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO |
+| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1`, `p2` et `p3` dans CHACUNE ; `p4`, un identifiant libre ou le passage à `risk` | OK ×6 (6 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO ; KO ; KO |
 | P25 | Échange de Miffs d'un lieu : 2 suppressions + 2 créations en UN lot ; même lot avec une Miff d'un autre créateur | OK ; KO, rien n'est écrit (au-delà de 4 + 4 le changement se fait en deux lots NON atomiques : budget figé dans `tests/unit/budgets.test.js`) |
 | P26 | Abonnement dont `expiresAt` ou `active` n'a pas le bon type | KO (traité comme absent) |
 | P27 | `alice` (gratuite) fait un `set` complet de `p1` existant avec `type="risk"` | KO |
