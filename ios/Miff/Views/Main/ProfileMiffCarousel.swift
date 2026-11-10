@@ -265,8 +265,12 @@ private struct CardSurface: ViewModifier {
             .padding(.vertical, Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(minHeight: Spacing.minTouchTarget)
-            .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-            .miffShadow(shadowDefault)
+            // L'ombre est celle du FOND seulement : posée sur toute la carte, elle doublerait aussi le texte et les miniatures.
+            .background(
+                RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
+                    .fill(colorBgSurface.color)
+                    .miffShadow(shadowDefault)
+            )
             .contentShape(Rectangle())
     }
 }
