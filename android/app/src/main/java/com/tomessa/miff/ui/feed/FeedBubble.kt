@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.feed.AlertPage
 import com.tomessa.miff.domain.feed.Bubble
+import com.tomessa.miff.domain.feed.TravelNote
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -120,16 +121,22 @@ fun BubbleView(
     onMessage: (phone: String) -> Unit,
     onResumeSharing: () -> Unit,
     modifier: Modifier = Modifier,
+    /** MODE VOYAGE: the line "{Prénom} est en voyage…" under the usual bubble (null: none). */
+    travelNote: TravelNote? = null,
 ) {
     // What the screen reader says is fixed when the LEVEL (or the set of alerts) changes, not each minute when "il y a 2 min" changes.
-    val announcement = remember(announceKey) { texts.announcement(bubble) }
+    val announcement =
+        remember(announceKey, travelNote) {
+            texts.announcement(bubble) +
+                travelNote?.let { ". " + texts.travelNote(it) }.orEmpty()
+        }
     // The slow movement of the blob (null = still: animations removed by the person, or the screen not started). One for all the pages.
     val phases = rememberBubblePhases()
     Box(modifier = modifier.fillMaxWidth()) {
         CompositionLocalProvider(LocalBubblePhases provides phases) {
             when (bubble) {
-                is Bubble.Alerts -> AlertCarousel(bubble.pages, texts, onMessage)
-                else -> CalmBubble(bubble, texts, onResumeSharing)
+                is Bubble.Alerts -> AlertCarousel(bubble.pages, texts, onMessage, travelNote)
+                else -> CalmBubble(bubble, texts, onResumeSharing, travelNote)
             }
         }
         // Apart from the movement: nothing the screen reader says depends on it.
@@ -149,8 +156,18 @@ private fun CalmBubble(
     bubble: Bubble,
     texts: FeedTexts,
     onResumeSharing: () -> Unit,
+    travelNote: TravelNote?,
 ) {
-    BubbleBlob(level = bubble.level, pictogram = pictogram(bubble.level)) {
+    // MODE VOYAGE: the airplane is the pictogram of the bubble of the travellers (the colour is never alone).
+    val symbol =
+        if (bubble is Bubble.Travelers) {
+            Pictogram(R.drawable.ic_travel_plane) {
+                colorTextDescription
+            }
+        } else {
+            pictogram(bubble.level)
+        }
+    BubbleBlob(level = bubble.level, pictogram = symbol) {
         when (bubble) {
             is Bubble.AllGood -> {
                 Headline(stringResource(R.string.feed_bubble_all_good))
@@ -184,8 +201,14 @@ private fun CalmBubble(
                 )
             }
 
+            is Bubble.Travelers -> {
+                Headline(texts.travelersHeadline(bubble.note))
+            }
+
             is Bubble.Alerts -> {}
         }
+        // MODE VOYAGE: the other members on a trip, as one more line under the usual message.
+        travelNote?.let { Line(texts.travelNote(it)) }
     }
 }
 
@@ -194,6 +217,7 @@ private fun AlertCarousel(
     pages: List<AlertPage>,
     texts: FeedTexts,
     onMessage: (String) -> Unit,
+    travelNote: TravelNote?,
 ) {
     val pager = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
@@ -242,6 +266,16 @@ private fun AlertCarousel(
             AlertPageBubble(page, texts, onMessage)
         }
         if (several) PagerDots(count = pages.size, current = current, level = pages[current].level)
+        // MODE VOYAGE: the other members on a trip, under the alerts.
+        travelNote?.let {
+            Text(
+                text = texts.travelNote(it),
+                style = textBodyRegular14,
+                color = colorTextDescription,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
