@@ -45,7 +45,7 @@ enum BubbleMotion {
 
     // MARK: - Le pictogramme (« l'étoile ») de la bulle
 
-    /// Le pictogramme rond respire de ±5 % (un disque avec une icône : une échelle uniforme, rien à déformer).
+    /// Le pictogramme (un symbole seul, sans cercle) respire de ±5 % : une échelle uniforme, rien à déformer.
     static let starScaleAmplitude: Double = 0.05
 
     /// L'étoile dérive de 0,5 pt de plus ou de moins PAR-DESSUS la dérive de la bulle : son total reste à 4 pt.
