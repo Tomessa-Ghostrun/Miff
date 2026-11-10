@@ -114,7 +114,25 @@ enum FeedBuilder {
             bubble: shownBubble,
             banners: banners(context, latestUpdate: latestUpdate),
             cards: cards,
-            announceKey: announceKey(shownBubble)
+            announceKey: announceKey(shownBubble),
+            myFacts: myFacts(input, mySharing: mySharing, statuses: statuses)
+        )
+    }
+
+    /// MON statut pour l'Update : seulement quand je partage et que mon accord n'est pas attendu (sinon le bouton central est neutre).
+    private static func myFacts(
+        _ input: FeedInput,
+        mySharing: Bool,
+        statuses: [String: MemberStatus]
+    ) -> MyStatusFacts? {
+        guard mySharing, !input.waitingAgreement, let mine = statuses[input.myUid] else {
+            return nil
+        }
+        return MyStatusFacts(
+            presence: mine.presence,
+            presenceAtMillis: mine.presenceAtMillis,
+            lastUpdateAtMillis: mine.lastUpdateAtMillis,
+            hasPhoto: mine.hasPhoto
         )
     }
 

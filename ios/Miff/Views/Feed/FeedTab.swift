@@ -48,26 +48,26 @@ struct FeedTab: View {
         let awaitingAgreement = environment.awaitingAgreement
         let secondChance = environment.notificationSecondChance
         let reconciler = environment.notifications.reconciler
-        _model = StateObject(
-            wrappedValue: FeedViewModel(
-                dependencies: FeedDependencies(
-                    directory: directory,
-                    repository: repository,
-                    services: services,
-                    network: network,
-                    awaiting: awaitingAgreement,
-                    currentUid: { session.currentUid },
-                    // Une update de la personne vue publiée (sa photo existe) : la carte « deuxième chance » peut apparaître.
-                    onStatusesLoaded: { event in
-                        if event.myStatus?.hasPhoto == true {
-                            secondChance.noteFirstUpdate()
-                        }
-                        // NOTIF-P0 : l'instantané des faits de couleur est réécrit et les rappels N1 à N4 sont réconciliés.
-                        Task { await reconciler.feedStatusesLoaded(event) }
-                    }
-                )
-            )
+        let myStatus = environment.update.myStatus
+        var dependencies = FeedDependencies(
+            directory: directory,
+            repository: repository,
+            services: services,
+            network: network,
+            awaiting: awaitingAgreement,
+            currentUid: { session.currentUid },
+            // Une update de la personne vue publiée (sa photo existe) : la carte « deuxième chance » peut apparaître.
+            onStatusesLoaded: { event in
+                if event.myStatus?.hasPhoto == true {
+                    secondChance.noteFirstUpdate()
+                }
+                // NOTIF-P0 : l'instantané des faits de couleur est réécrit et les rappels N1 à N4 sont réconciliés.
+                Task { await reconciler.feedStatusesLoaded(event) }
+            }
         )
+        // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
+        dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
+        _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
         _notificationCenter = ObservedObject(wrappedValue: environment.notifications.center)
         _secondChance = ObservedObject(wrappedValue: secondChance)

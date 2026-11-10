@@ -126,6 +126,54 @@ Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une convers
 
 ---
 
+## 5 bis. iOS : coût de la batterie rafraîchie à l'ouverture et à la sortie (décision du PM, 2026-11-07)
+
+> Section propre à iOS (`ios/CHANGELOG.md`). Android a la sienne. **Estimations, pas des mesures** : à relever à la recette (`docs/qa/checklists/batterie-ios-recette-pm.md`).
+
+**Ce que fait l'app** : quand la personne ouvre ou quitte l'app, elle réécrit son niveau de batterie dans `miffs/{id}/status/{uid}` de chaque Miff où elle partage (un `update` de `batteryPct` + `updatedAt`, aucune règle Firestore modifiée). Pour que ça reste raisonnable :
+
+| Limite (constante `TrackingLimits`) | Valeur | Effet |
+|---|---|---|
+| `batteryMinIntervalMillis` | 15 min | jamais deux rafraîchissements (ou tentatives) d'une même Miff à moins de 15 min |
+| `batteryMinDeltaPoints` | 5 points | rien si la batterie a bougé de moins de 5 points depuis la dernière valeur écrite... |
+| `batteryMaxAgeMillis` | 3 h | ... sauf si cette dernière écriture a plus de 3 h (le Feed masque la batterie après 6 h) |
+| `maxBatteryWritesPerDay` | 40 par jour et par téléphone | compteur **dédié** (pas les 60 statuts : un rafraîchissement ne prend jamais la place d'une arrivée ou d'un départ) ; pire cas 60 + 40 = 100 statuts par téléphone et par jour |
+
+**Coût d'UN rafraîchissement dans UNE Miff** :
+
+| Poste | Quantité | Remarque |
+|---|---|---|
+| Écriture Firestore | 1 | compte dans les 20 000 écritures par jour de Spark |
+| Lectures de règles | 2 | `validStatus` : la session de l'appareil (1) + mon partage actif (1) |
+| Lecture de session côté app | 1 par passage qui écrit (pas par Miff) | `DeviceSession.clearance`, déjà faite avant toute première écriture d'un passage |
+| Lectures de snapshot chez les proches | jusqu'à N - 1 | une par proche dont le Feed écoute en ce moment (N = membres de la Miff) ; 0 si personne n'a l'app ouverte |
+
+Soit **≈ 3 lectures + 1 écriture pour une Miff, plus N - 1 lectures de snapshot** au plus. Un passage sans rafraîchissement (moins de 15 min, moins de 5 points, niveau inconnu, hors ligne) **ne lit ni n'écrit rien**.
+
+**Hypothèses (recalibrées après la revue indépendante)** : par utilisateur actif et par jour, **6 à 12 écritures de batterie par Miff** en usage normal (valeur centrale 9 : ouvertures et sorties espacées de 15 min, avec un niveau qui bouge de 5 points ou plus, plus le rafraîchissement de 3 h), 1 Miff de 4 membres (N - 1 = 3 proches à l'écoute : pire cas raisonnable, soit 3 + 3 = 6 lectures par écriture, 54 par utilisateur et par jour). Référence du reste de l'app, version prudente : 10 statuts + 50 à 60 positions = 60 à 70 écritures par utilisateur actif et par jour (haut des fourchettes du §3) et 210 à 355 lectures (§3).
+
+| Utilisateurs actifs par jour | Écritures de batterie / jour (centrale ; plage 6 à 12) | Lectures de batterie / jour (centrale ; plage) | Part de Spark pour la batterie seule (écritures 20 000 / lectures 50 000) | Pire cas : 40 documents par jour et par téléphone |
+|---|---|---|---|---|
+| 100 | ≈ 900 (600 à 1 200) | ≈ 5 400 (3 600 à 7 200) | 4,5 % / 11 % | 4 000 écritures (20 %), 24 000 lectures (48 %) |
+| 1 000 | ≈ 9 000 (6 000 à 12 000) | ≈ 54 000 (36 000 à 72 000) | 45 % / 108 % : les lectures dépassent déjà Spark | 40 000 écritures, 240 000 lectures |
+| 10 000 | ≈ 90 000 (60 000 à 120 000) | ≈ 540 000 (360 000 à 720 000) | 4,5 fois le quota d'écritures, 11 fois celui de lectures | 400 000 écritures, 2,4 millions de lectures |
+
+**Ce que ça change pour la limite de Spark** (estimation, à mesurer) : avec 60 à 70 écritures par utilisateur actif pour le reste de l'app, le plafond de 20 000 écritures par jour tient jusqu'à ~285 à 335 utilisateurs actifs par jour ; avec la batterie (+ 9 à 12), il est atteint vers **250 à 300 utilisateurs actifs par jour** (≈ 290 avec 10 statuts, 50 positions et 9 batteries ; ≈ 245 avec 60 positions et 12 batteries). Avec les fourchettes basses du §3 (6 statuts, 20 positions), on irait jusqu'à ~600, mais **le calcul prudent est celui à retenir**. Côté lectures, + 54 par utilisateur (+ 15 à 26 % des 210 à 355 du §3) : le plafond de 50 000 lectures passe de **~140 à 240** à **~120 à 190** utilisateurs actifs par jour. Autrement dit : **la batterie rapproche la bascule de 13 à 20 % environ ; elle ne la crée pas** (les positions pèsent plus), mais elle n'est pas négligeable.
+
+**Cas Miff+ avec N Miffs** (M6) : le compteur de 40 compte les **documents écrits** (un par Miff) par téléphone, pas les ouvertures. Une personne Miff+ dans N Miffs écrit **N documents par rafraîchissement** : le coût d'usage normal est environ **9 × N** écritures par jour, et le plafond de 40 est atteint en 40 / N passages complets (4 passages avec 10 Miffs). Passé le plafond, les Miffs sont servies à tour de rôle le lendemain (curseur de rotation) et certaines gardent un niveau plus ancien : c'est le comportement voulu, pas un bogue. Les lectures de règles suivent (2 par document) ; la lecture de session reste 1 par passage.
+
+**Horloge du téléphone** (M2) : le jour du disjoncteur et les durées de 15 min et de 3 h viennent de l'horloge du téléphone. Une horloge **reculée** rend la comparaison impossible : la règle laisse alors écrire (comme pour la position), et seuls le plafond de 40 et les règles de sécurité limitent. Une horloge en **avance** de plus de 5 minutes fait refuser l'écriture par les règles (`updatedAt` est l'heure du serveur, mais d'autres champs peuvent être jugés) ; le refus n'est pas rejoué avant 15 min. **Limite connue** : le disjoncteur est un garde-fou de l'app, pas une barrière de sécurité (un client modifié peut l'ignorer) ; la protection contre l'abus reste App Check et la surveillance de ce document.
+
+**Ordre de grandeur sous Blaze** (tarifs publics Google à vérifier avec leur calculateur, non confirmés ici ; les quotas gratuits quotidiens restent offerts) : à 10 000 utilisateurs actifs (valeur centrale), la batterie ajoute ~2,7 millions d'écritures et ~16 millions de lectures par mois, soit **de l'ordre de 7 à 9 EUR par mois** (plage haute : jusqu'à ~12 EUR). Supportable, mais plus du double de la première estimation.
+
+**Signal de bascule** (aucun agent n'active Blaze ; la décision est celle du PM) :
+- le signal général du §2 (ratio lectures / utilisateurs actifs > 150 deux jours de suite) ou plus de **12 000 écritures par jour** dans la console ;
+- spécifique à la batterie : un testeur dont le journal montre **plus de 15 `batteryRefreshed` par jour et par Miff** un jour normal (les limites ne jouent pas comme prévu), ou le disjoncteur de 40 atteint (`breakerStatus` dans le journal juste après un `batteryRefreshSkipped`).
+
+**Leviers gratuits avant Blaze** (dans l'ordre, par un petit changement de constante) : passer le seuil de 5 à 10 points ; passer l'intervalle de 15 à 30 min ; ne rafraîchir qu'à la sortie ; baisser le plafond de 40 à 20. Aucun ne demande de réécriture.
+
+---
+
 ## 5 ter. Android : batterie rafraîchie à l’ouverture et à la sortie de l’app (2026-11-07)
 
 **Ce que fait l'application.** À chaque passage au premier plan et à chaque passage à l'arrière-plan, si la personne est éligible (connectée, appareil actif, consentement de localisation v3, partage activé, statut existant), elle réécrit **le niveau de batterie seul** (et l'heure d'écriture `updatedAt`) dans le statut de chaque Miff où elle partage : un lot d'une seule écriture par Miff, aucune position, aucune lecture du serveur par le rafraîchissement lui-même. Les écritures de statut existantes (arrivée, départ, update, accès à la localisation) continuent d'écrire le niveau frais et **comptent comme un rafraîchissement** (pas de doublon).
@@ -182,6 +230,13 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 | N3, N4 (ma Miff change d'état) | relevées à l'heure prévue (voir la PR B) | **0** | une vérification sur le serveur avant d'afficher, bornée |
 
 **Limite connue et signal de bascule.** Les notifications locales ne coûtent rien quel que soit le nombre d'utilisateurs : il n'y a pas de seuil de bascule pour ce qui est local. Le seul poste qui pèse sur le quota de lectures est la vérification de N3 / N4 (PR B) ; il entre dans les relevés habituels (sections 1 à 3). **Ce que ces notifications ne font pas** : prévenir un **autre** téléphone au moment précis (arrivée, « pas de nouvelles de X », N5), qui exige un serveur (Blaze, décision du PM, phase 2).
+## 5 quater. Android : ligne « Abonnement » des Réglages (ABO-1, 2026-11-07)
+
+**Ce que fait l'application.** À l'ouverture de Profil > Réglages (et à ce moment seulement), elle lit **une fois** le document `entitlements/{uid}` du compte connecté pour savoir s'il faut afficher la ligne « Abonnement » (Miff+ actif et non expiré). Pas d'écouteur, pas de relecture en revenant d'un sous-écran ni en tournant le téléphone, pas de lecture à l'ouverture de l'écran Abonnement (la date lui est transmise). Lecture **depuis le serveur** (pas de copie locale périmée) ; hors connexion ou en erreur, la ligne reste simplement absente, sans message.
+
+**Coût : 1 lecture de document par ouverture des Réglages et par personne** (comptes gratuits compris : le document est absent, la lecture compte quand même). Aucune écriture. Ordre de grandeur : un utilisateur qui ouvre les Réglages 2 fois par jour ajoute 2 lectures aux ~75 estimées par utilisateur actif et par jour, soit moins de 3 %. Aucun seuil d'alerte n'est modifié.
+
+**Limite connue et signal de bascule.** Si le ratio de lectures de la section 1 dérive de façon inexpliquée, vérifier d'abord que les Réglages ne sont pas rouverts en boucle. Levier gratuit si besoin : mémoriser la réponse en mémoire pour la durée de la session (un seul chiffre à changer). Rien ne nécessite Blaze.
 
 ---
 

@@ -182,6 +182,9 @@ class SessionManager(
     /** Name suggested by the sign-in provider, to pre-fill the profile step. Never stored by the session. */
     fun suggestedDisplayName(): String? = gateway.displayName()
 
+    /** Address of the Google photo of the account (Google accounts only), to pre-fill the profile photo. Never stored by the session. */
+    fun suggestedPhotoUrl(): String? = gateway.photoUrl()
+
     /** True while we end the session ourselves: the "session lost" watcher must not react to our own sign-out. */
     private var ending = false
 

@@ -365,24 +365,24 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 
 | Chemin | Rôle |
 |---|---|
-| `Models/Main/MainTab.swift` | Onglets, configuration selon le build (bouton central absent en Release), couleurs du bouton central, noms parlés, mesures, politique de verre (`GlassPolicy`) |
+| `Models/Main/MainTab.swift` | Onglets (le bouton central est actif dans tous les builds depuis UPDATE-3), couleurs du bouton central et leur nom parlé, mesures, politique de verre (`GlassPolicy`) |
 | `Models/Main/ProfileSummary.swift`, `SettingsModels.swift` | Profil lu et validé, pays déduit de l'indicatif, routes des Réglages, nom de la langue, liens |
 | `DesignSystem/TabBarTokens.swift` | Jetons `tabbar/*` (deux variantes), ombre, dégradé du Profil |
-| `Views/Main/` | `MainTabBar` (verre, entrées, bouton central), `MainShellView` (coquille), `ProfileTabView`, `UpdateSoonView` |
+| `Views/Main/` | `MainTabBar` (verre, entrées, bouton central), `MainShellView` (coquille, bulle d'incitation, message de l'Update), `ProfileTabView` |
 | `Views/Settings/` | Liste des Réglages, Mes informations, Mon compte, Confidentialité, aide à la détection, entrée de suppression |
 | `ViewModels/ProfileTabViewModel.swift`, `AccountViewModel.swift` | En-tête du Profil (une lecture par session) ; déconnexion et mot de passe |
 | `Services/Firebase/FirestoreProfileReader.swift`, `FirebaseAccountInfo.swift` | Lecture de `users/{uid}` et de l'e-mail du compte (jamais gardés ailleurs qu'en mémoire) |
 
 ### Points d'accroche pour la suite
 - **Feed iOS (FEED-5 à 7, livrés ; FEED-8 photo avec l'Update)** : remplace le contenu passé en paramètre `feed` de `MainShellView` (`FeedTab`, voir « Le Feed » plus bas ; ce paramètre reçoit désormais un `FeedShellContext`). La **bulle d'incitation** (tous les onglets sauf Update) se posera dans la même `safeAreaInset` que la barre.
-- **Update iOS (UPDATE-3)** : remplace `UpdateSoonView` et alimente `central` (`CentralButtonState`) ; ajouter alors les noms parlés par niveau (« …, tu es en orange »). La variante `.onPhoto` de la barre est prête pour le viseur.
+- **Update iOS (UPDATE-3, livré)** : voir la section « L'Update » plus bas ; `UpdateSoonView` n'existe plus, `central` est alimenté par MON statut et la variante `.onPhoto` sert pour le viseur.
 - **Suppression de compte (AUTH-5c, faite)** : route `.deleteAccount` → `DeleteAccountFlowView` (voir « Suppression de compte » plus haut).
 - **Mes informations modifiable** : remplace `MyInfoView` (lecture seule) ; l'écriture est un lot `users/{uid}` + fiche de chaque Miff (voir `MyProfileRepository.kt` d'Android).
 
 ### Écarts avec Android et avec les maquettes (ONB-7)
 1. **Barre** : verre natif d'iOS 26 (`glassEffect`) au lieu du flou Haze d'Android ; repli matériau + voile avant iOS 26 ; « Réduire la transparence » et « Augmenter le contraste » donnent le fond opaque (Android n'a pas d'API pour le premier). Posée à 22 pt du bas de l'**écran** (elle déborde sur la zone de l'indicateur d'accueil), pas 22 pt au-dessus de la zone sûre.
 2. **Icônes** : maison + petit coeur dessinés avec deux symboles du système au trait (SF Symbols `house` et `heart`) et `person`, faute de l'export vectoriel du PM ; à remplacer.
-3. **Bouton central** : sélectionnable (il ouvre un emplacement « bientôt » dans les builds Debug et Internal) alors qu'Android le grise ; absent de Release comme sur Android.
+3. **Bouton central** : *(remplacé par UPDATE-3)* actif dans tous les builds, il ouvre l'écran Update.
 4. **Langue** : la ligne ouvre les réglages de l'iPhone (décision Q4) ; pas d'écran de choix comme sur Android.
 5. **Aide à la détection** : texte propre à iOS (localisation « Toujours » et position exacte, actualisation en arrière-plan, économie d'énergie, rouvrir Miff une fois si une détection tarde) au lieu de l'aide Oppo/Xiaomi d'Android. **À vérifier sur l'iPhone** : si balayer l'app dans le sélecteur retarde réellement la reprise des détections (le texte ne l'affirme plus).
 6. **Consentement et retrait** : le renouvellement du consentement à la localisation reste fait AVANT la coquille par l'écran existant (LOC-4a) ; le retrait de la localisation reste « Arrêter de partager » dans l'écran de la Miff. L'interrupteur « statistiques » n'est pas livré (voir le journal des changements).
@@ -499,7 +499,7 @@ Spec : `docs/tickets/notifications.md` §20.1 à §20.9 (vecteurs T1 à T15). **
 3. **Début d'un épisode « depuis toujours »** (un membre en zone de danger sans update : rouge sans instant de changement) : l'heure d'arrivée la plus récente des membres de cette couleur, pour une clé stable ; non écrit dans le ticket.
 4. **Rattrapage** : en arrière-plan et moins de 15 minutes après l'heure, la notification s'affiche aussitôt (demande à 1 s) ; au premier plan ou au-delà de 15 minutes, entrée de centre silencieuse. Au premier plan, une notification programmée qui arrive est retenue par le delegate (rien d'affiché) et inscrite en silence.
 5. **Le centre inscrit une notification iOS « affichée » à la réconciliation suivante** (une demande dont l'heure est passée et qui n'est plus en attente) : on ne sait pas si elle a été balayée (limite écrite au §20.4).
-6. **Annulation par une publication** : `NotificationReconciler.myUpdatePublished(atMillis:)` doit être appelée par l'écran Update quand la publication est confirmée (PR #111, non fusionnée). **Tant qu'elle ne l'est pas, N1 / N2 ne sont annulées qu'au prochain retour du Feed au premier plan** (le Feed relit alors mon statut). À brancher à la fusion de #111 (une ligne).
+6. **Annulation par une publication** : `UpdateViewModel` appelle `NotificationReconciler.myUpdatePublished(atMillis:)` à la confirmation d'une publication (`UpdateViewModelDependencies.onPublishedAt`, branché dans `MiffHomeHost`) : N1 à N4 sont annulées (et reprogrammées avec le nouveau repère) aussitôt.
 
 #### Tests (PR B)
 `NotificationPlannerTests` (T1 à T15 — contrat commun avec Android, donc **sans l'horizon de 3 h**, qui est un réglage propre à iOS et a ses propres tests, dont la borne inclusive à 3 h 00 —, plafonds, nuit, STRICT, bornes), `ChangeInstantsTests` (contrat avec la couleur), `NotificationReconcilerTests` et `NotificationReconcilerEventsTests` (programmer, idempotence, annuler, retrait à la reprise, rattrapage, premier plan, toucher, statuts du Feed, fausses alertes), `NotificationPlanModelsTests` (instantané, registre 48 h, identifiants, décorateur du suivi, fichier, demandes d'onglet).
@@ -555,6 +555,88 @@ Rien n'est compilé en local (poste Windows) : la CI fait foi. **À constater su
 1. **Actualisation en arrière-plan désactivée** (décision du PM à prendre, rien n'est décidé ici). Aujourd'hui le moteur écrit `locationAccess` selon l'autorisation et la position exacte seulement ; l'Actualisation en arrière-plan coupée n'est que **notée dans le journal de diagnostic**. Les proches ne voient donc rien alors que les détections peuvent tarder. Options : **(a) recommandée** un mot calme dans le futur Feed / les Réglages iOS (« Les détections peuvent tarder sur ce téléphone », sans alarme, jamais une faute attribuée) ; (b) une valeur distincte de `locationAccess` (changement de contrat avec Android et les règles : à éviter à ce stade) ; (c) ne rien montrer et ne le dire qu'en recette.
 2. **Coût d'une relance par le système** : estimé à **4 à 6 lectures** (Miffs, lieux) plus **2 à 3 lectures de règles par écriture**. À **mesurer** à la recette partie C (relever les lectures Firestore du jour avant et après) puis à noter dans `docs/dev/surveillance-quotas.md`.
 3. **Étiquettes d'App Store Connect** : la batterie et l'identifiant de session de l'appareil (`deviceId`, utilisé par les écritures) relèvent probablement de « Other Data Types » ; classement à **valider par le release-manager** (`docs/release/ios-loc-4b-comportement-reel.md`).
+
+## Batterie rafraîchie à l'ouverture et à la sortie (décision du PM, 2026-11-07)
+
+À l'ouverture et à la sortie de l'app, le moteur de suivi réécrit le niveau de batterie dans chaque Miff où la personne partage (le Feed masque la batterie au-delà de 6 h). Code : `Services/Tracking/TrackingEngine+Battery.swift` (écriture), `Models/Tracking/BatteryRefresh.swift` (règle pure), constantes dans `TrackingLimits`.
+
+- **Mêmes conditions que le moteur** : connecté, appareil actif (SESS-3), « Toujours » + position exacte, consentement v3, partage actif. Rien sinon.
+- **Une seule écriture par Miff** : `update` de `batteryPct` + `updatedAt` (+ `deviceId`). Tout le reste du statut est conservé tel que la base l'a ; un statut absent n'est jamais créé ; **règles Firestore inchangées** ; aucune position lue ni écrite.
+- **Limites** : 15 min entre deux rafraîchissements d'une Miff ; pas d'écriture sous 5 points d'écart avec la dernière valeur écrite, sauf si elle a plus de 3 h ; 40 par jour et par téléphone (compteur dédié, en plus des 60 statuts). Les arrivées et départs écrivent toujours la batterie fraîche et comptent comme dernière écriture.
+- **Journal** (builds de test) : `batteryRefreshed` / `batteryRefreshSkipped`. **Coût** : `docs/dev/surveillance-quotas.md`, section « 5 bis ». **Recette** : `docs/qa/checklists/batterie-ios-recette-pm.md`.
+
+## L'Update : la photo du moment, le bouton central coloré, la bulle d'incitation (UPDATE-3, miroir d'Android UPDATE-1 et UPDATE-2)
+
+Ticket `docs/tickets/update.md` (décisions D16 à D41), fiche `design/screens/update.md`, barre `design/tab-bar-liquid-glass.md`, maquettes `design/exports/update/` (7 PNG du PM + `claude/01` à `09`), déclarations des stores `docs/release/update-photo-declarations.md`. Recette PM sur l'iPhone 11 Pro : `docs/qa/checklists/update-ios-recette-pm.md`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi, et la caméra ne se teste que sur l'iPhone (TestFlight), le simulateur n'en a pas.** L'affichage de la photo dans le Feed est **FEED-8**, pas cette PR.
+
+| Chemin | Rôle |
+|---|---|
+| `Models/Update/UpdatePhotoFormat.swift` | Format de la photo (D24) : ratio borné 9:21 à 9:16, recadrage « cover », côté long 1 024 px, échelle de compression sous 150 000 octets, reflet de la frontale (D37). **Mêmes cas de test qu'Android** |
+| `Models/Update/PhotoPlace.swift`, `UpdateWrites.swift`, `PublishGuard.swift` | Lieu de la photo (5 décimales, mesure de moins de 10 min), écritures **exactement** celles des règles (`validPhoto`, `validPhotoLocation`, `validStatus`), garde-fou (20 par jour, 30 s) |
+| `Models/Update/UpdatePrompt.swift` | Couleur du bouton central (`StatusColor.level` inchangé) et règle de la bulle (D18, zone de danger C8) |
+| `Models/Update/CameraAccess.swift`, `UpdateModels.swift`, `JpegMetadata.swift` | Écrans de la permission, états de l'écran, réponses de publication, **retrait de toute métadonnée** d'un JPEG |
+| `Services/Update/PhotoEncoder.swift` | ImageIO / CoreGraphics : lecture redressée, recadrage, reflet, JPEG nu depuis les pixels |
+| `Services/Update/CameraController.swift` | AVFoundation : session, bascule, capture **en mémoire** (`fileDataRepresentation`), reflet explicite de l'aperçu |
+| `Services/Update/UpdatePublisher.swift`, `PhotoCleaner.swift`, `PhotoStore.swift`, `PublishLedger.swift`, `PhotoPositionSource.swift` | Publication (transaction par lot de 5 Miffs), nettoyage par l'auteur (D35), carnet local, mesure de la position |
+| `Services/Firebase/FirestorePhotoStore.swift` | Transaction de l'Update, lecture de MA photo (D35) |
+| `ViewModels/UpdateViewModel.swift`, `MyStatusStore.swift` | États de l'écran (la photo n'existe qu'ici, en mémoire), mon statut dans la Miff affichée |
+| `Views/Update/` | Viseur plein écran, aperçu, pop-ins, bulle d'incitation, message calme |
+| `App/UpdateServices.swift`, `DesignSystem/UpdateTokens.swift` | Assemblage au démarrage (rien n'ouvre la caméra, la position ni Firestore), jetons |
+
+### Ce qui est livré
+- **Bouton central actif dans tous les builds** (D14 levée, comme Android) : pastille de la couleur de **mon** statut dans la Miff affichée (vert / orange / rouge, gris au neutre), recalculée **chaque minute sans lecture du serveur**, nom parlé « Donner des nouvelles, tu es en orange » (jamais la couleur seule). Barre en verre **sombre** sur le viseur et l'aperçu, claire ailleurs (`UpdateStage.glassVariant`).
+- **Bulle d'incitation** (D21, D34) : couleur du niveau, au-dessus de la barre, queue vers le bouton central, ni titre ni bouton ni croix, textes des maquettes, **tous les onglets sauf l'Update**, masquée avec le clavier, absorbe les touchers, défile à l'intérieur au-delà de 40 % de l'écran, annoncée **une fois** à VoiceOver (apparition et orange vers rouge). Elle est posée dans la `safeAreaInset` de la barre : **la marge basse des onglets est la hauteur réelle de la barre et de la bulle**, sans constante.
+- **L'Update au-dessus de la barre** (correctif du bug TestFlight « obturateur sous la barre ») : la coquille MESURE le haut réel de la barre (`TabBarTopReader`, en coordonnées globales) et le donne à l'Update par l'environnement (`tabBarTopY`, nil quand la barre est masquée). Le viseur et l'aperçu appliquent `aboveTabBar()` : leur bas se retire de ce que la barre recouvre (`UpdateScreenGeometry.barOverlap`), que la vue descende jusqu'au bas de l'écran, jusqu'à la zone sûre ou soit déjà raccourcie. Aucune hauteur ni zone sûre en dur (iPhone SE à Pro Max, indicateur d'accueil, grand texte). Obturateur 48 pt au-dessus de la barre (jamais moins de 16 pt), « Recommencer » / « Publier » à 16 pt ; le viseur reste plein écran SOUS la barre. Test : `UpdateScreenGeometryTests`. Cause : l'écran se fiait à la zone sûre héritée sans vérifier la position réelle de la barre, ce qui n'a pu être confirmé que par la mesure (aucun Mac ni iPhone à portée de la CI).
+- **Viseur** (plein écran sous la barre) : caméra frontale à chaque ouverture, obturateur de 80 pt (anneau blanc et bleu), bouton de bascule visible, **double toucher** hors boutons (aller et retour), action VoiceOver « Changer de caméra » sur l'obturateur, aide « Un selfie, la vue, ton repas », astuce du double toucher **jusqu'au premier double toucher qui change la caméra, puis plus jamais** (carnet local, survit à tout, D38). Le viseur existe **seulement** quand l'écran est visible : la caméra est relâchée à la sortie, à l'arrière-plan et au verrouillage.
+- **Aperçu** : photo un peu plus petite que l'écran, entière, croix = « Recommencer » (D22, aucune question), « Publier », ligne de visibilité, ligne « Publiée avec ta position… », photo de plus de 5 minutes oubliée. Voile opaque quand l'app n'est plus active (aperçu des applications récentes).
+- **Publication** : photo **et** statut dans la **même transaction** par lot de 5 Miffs, mesure de la position **au toucher de « Publier »** (D33, une seule fois, jamais avant), `lat`/`lng`/`measuredAt` toujours ensemble, `expiresAt` = maintenant + 23 h, jamais sans position récente, jamais hors connexion (aucune écriture en file), jamais sur un autre téléphone que celui du compte. États calmes : hors connexion, position introuvable, localisation éteinte (« Ouvrir les réglages »), consentement à revoir, partage arrêté, trop de photos, non confirmé (« Regarde dans ton Feed »), succès partiel (« Réessayer » ne vise que les Miffs restantes).
+- **Nettoyage par l'auteur** (D35) au lancement et au retour au premier plan : date locale, **aucune lecture** tant qu'elle existe ; si elle est perdue, UN `get` de ma photo décide sur `expiresAt`, **jamais sur un refus**.
+- **Permission de la caméra** : pop-in d'explication **avant** la boîte du système, jamais au démarrage ; refus = « La caméra est désactivée » + « Ouvrir les réglages » ; restriction de l'appareil = message sans bouton Réglages. `NSCameraUsageDescription` FR + EN (une seule clé `NSCamera*`, **aucune** clé de photothèque, vérifiées par `InfoPlistStaticTests`, `AppConfigurationTests` et `ci/check-binaries.sh`).
+
+### Vérification D31 (repli « appareil photo du système » sur iPhone) : **aucun repli proposé**
+`UIImagePickerController` en mode caméra, et tout autre outil de prise de vue du système, exigent **la même autorisation de la caméra** (la documentation d'Apple demande `NSCameraUsageDescription` et l'autorisation pour ces classes) ; la seule autre source est la **photothèque**, que D16 exclut (jamais de photo ancienne). Un refus de la caméra veut donc dire « pas de publication » avec « Ouvrir les réglages », comme sur Android (D32). **Vérifié par la documentation, pas encore sur l'iPhone** : la recette PM refuse la caméra et constate qu'aucune alternative n'apparaît (critère C3).
+
+### Confidentialité
+- La photo vit **en mémoire** (`AVCapturePhoto.fileDataRepresentation`), **jamais dans un fichier ni dans la photothèque de l'app**. **Limite (revue)** : Après la publication, le cache local du SDK Firestore peut en garder une copie (chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte) ; l'app ne crée elle-même aucun fichier de la photo. La lecture de MA photo pour le nettoyage (D35) se fait auprès du **serveur** (`source: .server`, jamais une copie périmée) et ne lit que les dates, mais le SDK peut garder le résultat dans son cache : rien de plus n'est faisable sans désactiver le cache de toute l'app (hors périmètre). (`UpdatePrivacyTests` interdit `Photos`, `UIImagePickerController`, `UIImageWriteToSavedPhotosAlbum`, les dossiers temporaires et d'écriture de fichiers hors du carnet). JPEG ré-encodé **depuis les pixels** + `JpegMetadata.stripped` (ceinture et bretelles : aucun segment EXIF, GPS, XMP, commentaire), testé sur des octets.
+- La position n'est lue que par le pont du suivi (`PositionSource`, le seul fichier qui touche CoreLocation) et seulement après « Publier » ; elle n'est écrite que dans le document de la photo ; l'Update n'écrit **jamais** `positions/{moi}`.
+- Aucun journal, événement, rapport de plantage ni presse-papiers dans les fichiers de l'Update (test de lecture des sources). Aucun mot « modéré » (D30). Aucun bouton de signalement ni de blocage (D28, risque assumé par le PM).
+- **Carnet local** (`update-ledger.json`, Application Support, **exclu des sauvegardes**) : des nombres et des moments seulement. La date de la photo envoyée est liée au compte, **survit à une déconnexion**, et est **effacée à la suppression du compte** (`AccountLocalData`, effaceur `updateLedger` = `PublishLedger.eraseAccountData`, branché sur la suppression de compte de #113 ; `AccountLocalStorageGuardTests` connaît le carnet ; test `testDeletingAnAccountErasesItsPhotoNoteOfTheUpdateButASimpleSignOutKeepsIt`).
+- **Suppression de la photo avec le partage** : les lots existants d'arrêt du partage, de départ, de retrait et de suppression de la Miff suppriment déjà `photos/{moi}` (`UpdateRulesTests` le vérifie pour les quatre).
+
+### Lectures et écritures Firestore (estimées par lecture du code et des règles, non mesurées à l'émulateur)
+| Geste | Écritures | Lectures |
+|---|---|---|
+| Publier, 1 Miff | **2** (photo + statut, une transaction) ; jusqu'à 150 Ko envoyés | 1 (ma fiche, dans la transaction) + 1 (session, relue auprès du serveur) + ≤ 3 accès de règles |
+| Publier, 5 Miffs (un lot) | 10 | 5 fiches + 15 accès de règles (< 20, limite du lot) + 1 session |
+| Nettoyage (photo expirée) | ≤ 2 par Miff, une fois par photo | 0 avec la date locale ; sinon UN `get` de ma photo (1 lecture + 2 accès de règles) ; 1 fiche par Miff dans la transaction |
+| Ouvrir l'Update (avec une seule Miff) | 0 | 0 : « partage arrêté » vient du Feed (`MyStatusStore`), aucune lecture de plus |
+| Mon statut (couleur, bulle) | 0 | 0 : l'écouteur de ma fiche est celui du Feed (D19, un seul) ; l'Update n'ouvre aucun écouteur |
+La mesure de la position est locale (aucune lecture ni écriture serveur de plus). Les lectures des proches (4 par photo lue) relèvent de FEED-8.
+
+### Écarts avec Android (UPDATE-3)
+1. **Pas de repli « appareil photo du système »** ni de « On réessaie ? » : la boîte d'iOS ne s'affiche qu'une fois, puis les Réglages (D31, ci-dessus). Un état **restreint** (contrôle parental) a son propre message, sans bouton Réglages.
+2. **Mon statut vient du Feed** (D19, UN seul écouteur) : `FeedViewModel` donne `FeedContent.myFacts` et « partage arrêté » à `MyStatusStore.update(_:sharingStopped:)` à chaque calcul ; l'Update n'a aucun écouteur ni lecture. Comme sur Android, le Feed n'écoute que pendant qu'il est à l'écran : sur l'Update et le Profil, la couleur est celle du dernier calcul, recalculée chaque minute.
+3. **« Partage arrêté » (état J)** : comme sur Android, il vient du Feed (avec **une** seule Miff, D36) ; sans réponse du Feed, « pas arrêté » (la publication le dira).
+4. **Carte « moi » du Feed avec la photo** et le plein écran : **FEED-8**. Rien n'est mis en cache pour elle ici (Android copie la photo pour sa carte) ; `UpdatePublisher.send` est le point où le faire.
+5. **« Revoir et accepter »** : le mécanisme du Feed, `AwaitingAgreement.requestReview()`, que la porte des autorisations écoute (aucune notification interne).
+6. **Prise de vue** : la capture est **toujours non retournée** et verticale (réglée explicitement), l'aperçu de la frontale est retourné explicitement ; le reflet de la **photo** est fait par `PhotoEncoder` (testé pixel par pixel), pas par le capteur. Pas de CameraX : AVFoundation.
+7. **Masquage des applications récentes** : voile opaque posé dès que la scène n'est plus active (Android : `RecentsPrivacy`). **À vérifier sur l'iPhone** : que la capture du sélecteur d'apps est bien celle du voile.
+8. **Aperçu en carré de la carte du Feed (D39)** : FEED-8.
+9. **Icônes** : symboles du système (flèche, croix, avion, épingle, caméra, nuage barré) faute de l'export vectoriel du PM (à remplacer).
+
+### Écarts avec les maquettes (UPDATE-3)
+- **Ajouts hors maquette (justifiés)** : bouton de bascule visible, aide et astuce du viseur, ligne de visibilité et ligne de la position à l'aperçu, noms parlés des boutons sans texte (ticket §4.2).
+- **Aperçu** : D24 prévaut sur les maquettes du PM (photo un peu plus petite, boutons **dessous**).
+- **Obturateur** à double anneau (blanc + bleu) de 80 pt (le bleu seul disparaît sur fond sombre, fiche design E4).
+- **Pastille du bouton central pleine** (pas délavée) sur plaque blanche, sans pictogramme (D25, fiche design E1).
+- **Pop-ins** : fond calme de l'app et pictogrammes du système au lieu de ceux du PM (non fournis).
+- **Bulle** : opaque (jamais du verre), queue à 4 pt de la barre, ni son ni vibration.
+
+### Limites connues et à vérifier sur l'iPhone (UPDATE-3)
+- **Aucun essai de caméra possible hors iPhone** : orientation, reflet (aperçu et capture), double toucher, relâche de la caméra, temps de démarrage, **rendu du verre sombre sur le viseur** (signal de repli : `GlassPolicy.nativeGlassAllowed = false`, ou la variante « sans verre » sur le viseur), voile des applications récentes.
+- **Mémoire** : la capture (12 Mpx) est redimensionnée à 2 048 px dès la lecture ; la photo gardée pèse au plus 150 Ko.
+- **Position** : `LocationTracking.current()` attend au plus 2,5 s, avec un repli sur la dernière position du système si elle a moins de 2 minutes ; une demande du moteur de suivi en cours au même moment est libérée (le moteur la rejoue au prochain passage).
+- **Textes** : aucun texte légal ni de consentement n'est modifié par cette PR (le consentement qui cite la photo localisée est bloquant pour la LIVRAISON, D20, décision du PM).
 
 ## Confidentialité : Analytics et Crashlytics
 

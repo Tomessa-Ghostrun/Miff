@@ -14,6 +14,9 @@ struct AccountLocalStores {
     let detectionJournal: DetectionJournal
     /// NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » de ce compte.
     let notificationData: NotificationLocalData
+    /// Le carnet de l'Update (`update-ledger.json`) : la note de la photo envoyée par ce compte. La MÊME instance que celle de l'Update
+    /// (elle garde l'état en mémoire : une autre instance serait écrasée à la prochaine écriture).
+    let updateLedger: PublishLedger
 }
 
 /// Ce que la suppression d'un compte efface du téléphone POUR CE COMPTE (AUTH-5c, ticket §5.10), en plus de ce que la fin d'une session
@@ -44,7 +47,9 @@ enum AccountLocalData {
             { _ in stores.trackingLocal.clear() },
             { _ in stores.detectionJournal.clear() },
             // Le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » (NOTIF-P0).
-            { uid in stores.notificationData.eraseAccount(uid: uid) }
+            { uid in stores.notificationData.eraseAccount(uid: uid) },
+            // La note de la photo de l'Update de CE compte (la déconnexion simple, elle, la garde : la photo reste en base).
+            { uid in stores.updateLedger.eraseAccountData(uid: uid) }
         ]
     }
 }

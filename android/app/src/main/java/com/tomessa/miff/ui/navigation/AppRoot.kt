@@ -154,6 +154,7 @@ fun AppRoot(container: AppContainer) {
                                             drafts = container.profileDrafts,
                                             profiles = container.userProfiles,
                                             avatars = container.avatarCodec,
+                                            googlePhoto = container.googlePhotoPrefill,
                                             network = container.networkMonitor,
                                             deviceRegion = { Locale.getDefault().country.takeIf { it.isNotBlank() } },
                                         )

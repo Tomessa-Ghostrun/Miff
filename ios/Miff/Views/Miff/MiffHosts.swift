@@ -154,6 +154,8 @@ struct MiffHomeHost: View {
     @State private var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
+    /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
+    @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
     @State private var banner: DeletionBanner?
 
@@ -165,6 +167,13 @@ struct MiffHomeHost: View {
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
+        let reconciler = environment.notifications.reconciler
+        // NOTIF-P0 : une update publiée annule N1 à N4 aussitôt (sans attendre le retour du Feed).
+        _updateModel = StateObject(
+            wrappedValue: environment.update.makeViewModel(onPublishedAt: { at in
+                Task { await reconciler.myUpdatePublished(atMillis: at) }
+            })
+        )
     }
 
     var body: some View {
@@ -173,6 +182,14 @@ struct MiffHomeHost: View {
                 MainShellView(
                     miffs: directory.state,
                     profile: profile,
+                    update: UpdateShell(
+                        model: updateModel,
+                        status: environment.update.myStatus,
+                        onReviewAgreement: {
+                            // « Revoir et accepter » : le mécanisme du Feed (`AwaitingAgreement`), que la porte des autorisations écoute.
+                            environment.awaitingAgreement.requestReview()
+                        }
+                    ),
                     onOpenMiff: { open(.miff($0)) },
                     onOpenSettings: { open(.settings($0)) },
                     tabRequests: environment.notifications.tabRequests,

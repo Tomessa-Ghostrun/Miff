@@ -51,6 +51,7 @@ import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.profile.AvatarCodec
+import com.tomessa.miff.domain.subscription.SubscriptionInfo
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
@@ -105,6 +106,8 @@ import com.tomessa.miff.ui.settings.MyInfoViewModel
 import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
+import com.tomessa.miff.ui.settings.SubscriptionScreen
+import com.tomessa.miff.ui.settings.SubscriptionViewModel
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.update.UpdateActions
@@ -124,6 +127,16 @@ data object TabsRoute
 
 @Serializable
 data object SettingsRoute
+
+/**
+ * ABO-1: the read-only subscription screen. The two values come from the read made when the Settings opened (a date and a flag,
+ * nothing sensitive), so that this screen never reads again.
+ */
+@Serializable
+data class SubscriptionRoute(
+    val expiresAtMillis: Long,
+    val grantedByTeam: Boolean,
+)
 
 @Serializable
 data object MyInfoRoute
@@ -368,6 +381,20 @@ private fun MainNavigation(
             )
         }
         composable<SettingsRoute> {
+            // ABO-1: ONE read of entitlements/{uid} per opening of the Settings; the line exists only for an active Miff+.
+            val subscriptionViewModel: SubscriptionViewModel =
+                viewModel(
+                    key = "settings-subscription-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                SubscriptionViewModel(
+                                    container.subscriptionRepository,
+                                )
+                            }
+                        },
+                )
+            val subscription by subscriptionViewModel.subscription.collectAsStateWithLifecycle()
             SettingsScreen(
                 onBack = { navController.popBackStackIfSafe() },
                 onOpenMyInfo = { navController.open(MyInfoRoute) },
@@ -375,6 +402,17 @@ private fun MainNavigation(
                 onOpenLanguage = { navController.open(LanguageRoute) },
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
                 onOpenNotifications = { navController.openNotificationSettings() },
+                onOpenSubscription =
+                    subscription?.let { active ->
+                        { navController.open(SubscriptionRoute(active.expiresAtMillis, active.grantedByTeam)) }
+                    },
+            )
+        }
+        composable<SubscriptionRoute> { entry ->
+            val route = entry.toRoute<SubscriptionRoute>()
+            SubscriptionScreen(
+                subscription = SubscriptionInfo(route.expiresAtMillis, route.grantedByTeam),
+                onBack = { navController.popBackStackIfSafe() },
             )
         }
         composable<MyInfoRoute> {

@@ -9,8 +9,8 @@ import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.domain.analytics.AnalyticsSink
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.CredentialsInputProblem
-import com.tomessa.miff.domain.diagnostic.OfferState
 import com.tomessa.miff.domain.diagnostic.RulesProbeOutcome
+import com.tomessa.miff.domain.entitlement.OfferState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
