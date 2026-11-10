@@ -248,7 +248,7 @@ Activé :
 | Voyage actif : ON → OFF | **Immédiat**, sans confirmation ; N7 annulée |
 | Hors connexion | Activation acceptée localement ; message calme « Tes proches verront ton voyage dès que tu seras en ligne. » |
 
-### 7.4 Textes et clés (préfixe `travel_`, tutoiement, ton calme)
+### 7.4 Textes et clés (préfixe `travel_` dans la spec, `voyage_` dans l'application : voir le tableau livré ci-dessous ; tutoiement, ton calme)
 
 Les **noms de clés ne changent pas** (les agents Android / iOS en cours n'ont rien à renommer) ; seuls les **textes marqués « modifié »** changent. **Interdit dans tout texte du voyage** : « pause », « arrête », « suspend », « désactive », « masque », « privé », « invisible » appliqués à la **position** (la position reste partagée).
 
@@ -276,6 +276,38 @@ Les **noms de clés ne changent pas** (les agents Android / iOS en cours n'ont r
 | `travel_*_a11y` | « Mode voyage, interrupteur, activé, jusqu'au 15 novembre » ; avion décoratif | Screen-reader labels | inchangé |
 
 **Accessibilité** : l'interrupteur et sa ligne forment un seul élément ; cibles 48 dp / 44 pt ; sélecteur natif ; l'état n'est jamais porté par la couleur seule (avion + texte) ; pas d'animation si « réduire les animations ».
+
+**Clés et textes RÉELLEMENT livrés (Android #153 / #155, iOS #162 / #163 ; remplacent le tableau ci-dessus quand ils diffèrent).** Le préfixe retenu est **`voyage_`** (décision du coordinateur du 2026-11-10), pas `travel_` ; les noms ont aussi changé là où il a fallu (`voyage_picker_confirm` « Continuer » et `voyage_picker_validate` « Valider » pour les boutons du sélecteur, `voyage_card_state_on_a11y` / `voyage_card_state_off_a11y` / `voyage_card_end_change_a11y` / `voyage_feed_mine_edit_a11y` pour le lecteur d'écran, `voyage_error_update_refused` pour un changement de date refusé). `voyage_off_done` dit « Ton statut reprend. » (et non « Le mode voyage est arrêté. »). `voyage_card_off_body` dit aussi que la position reste partagée (critères P2 / P4 / P5). Aucune clé N7 dans ces PR (VOY-4). Les clés `voyage_locate_paused` et `voyage_photo_paused` n'existent plus.
+
+| Clé | FR | EN |
+|---|---|---|
+| `voyage_card_title` | Mode voyage | Travel mode |
+| `voyage_card_off_body` | Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position. | Your card turns grey for your circle, without changing the Miff's colour. Your circle still sees your location. |
+| `voyage_card_on_status` | En voyage jusqu'au {1} | Traveling until {1} |
+| `voyage_card_end_label` | Date de fin | End date |
+| `voyage_card_end_change_a11y` | Changer la date de fin | Change the end date |
+| `voyage_card_explain` | Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu'au {1} » et n'influence plus la couleur de la Miff. Miff n'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin. | Your circle still sees your location. While you travel, your card turns grey with “Traveling until {1}” and no longer affects the Miff's colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end. |
+| `voyage_card_state_on_a11y` | Activé, jusqu'au {1} | On, until {1} |
+| `voyage_card_state_off_a11y` | Désactivé | Off |
+| `voyage_confirm_title` | Activer le mode voyage ? | Turn on travel mode? |
+| `voyage_confirm_body` | Ta carte deviendra grise avec « En voyage jusqu'au {1} » et n'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l'arrêter quand tu veux. | Your card will turn grey with “Traveling until {1}” and will no longer affect the Miff's colour. Your circle still sees your location. You can stop it whenever you like. |
+| `voyage_confirm_action` | Activer | Turn on |
+| `voyage_confirm_cancel` | Annuler | Cancel |
+| `voyage_picker_confirm` | Continuer | Continue |
+| `voyage_off_done` | Ton statut reprend. | Your status is resuming. |
+| `voyage_offline_note` | Tes proches verront ton voyage dès que tu seras en ligne. | Your circle will see your trip as soon as you're online. |
+| `voyage_error_refused` | Le mode voyage n'a pas pu être activé. Tu peux réessayer plus tard. | Travel mode couldn't be turned on. You can try again later. |
+| `voyage_feed_label` | En voyage jusqu'au {1} | Traveling until {1} |
+| `voyage_feed_label_ended` | Voyage terminé | Trip ended |
+| `voyage_feed_since` | Depuis le {1} | Since {1} |
+| `voyage_feed_mine` | Mode voyage jusqu'au {1} | Travel mode until {1} |
+| `voyage_feed_mine_edit` | Modifier | Edit |
+| `voyage_feed_mine_edit_a11y` | Modifier le mode voyage | Edit travel mode |
+| `voyage_bubble_one` | {1} est en voyage jusqu'au {2}. | {1} is traveling until {2}. |
+| `voyage_bubble_many` | {n} proches sont en voyage. | {n} loved ones are traveling. |
+| `voyage_bubble_all` | Tes proches sont en voyage. | Your loved ones are traveling. |
+| `voyage_error_update_refused` | Le mode voyage n'a pas pu être mis à jour. Ta date de fin n'a pas changé, tu peux réessayer plus tard. | Travel mode couldn't be updated. Your end date hasn't changed; you can try again later. |
+| `voyage_picker_validate` | Valider | Confirm |
 
 ---
 

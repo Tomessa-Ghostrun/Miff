@@ -65,7 +65,7 @@ final class TravelTextsTests: XCTestCase {
     /// P5 : la confirmation et l'explication disent que la position reste partagée.
     func testTheConfirmationAndTheExplanationSayThatTheLocationStaysShared() throws {
         let strings = try catalog()
-        for key in ["voyage_confirm_body", "voyage_card_explain"] {
+        for key in ["voyage_confirm_body", "voyage_card_explain", "voyage_card_off_body"] {
             XCTAssertTrue(text(key, "fr", in: strings).contains("Tes proches continuent de voir ta position"), key)
             XCTAssertTrue(text(key, "en", in: strings).contains("Your circle still sees your location"), key)
         }
