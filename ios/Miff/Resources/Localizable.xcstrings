@@ -9106,6 +9106,23 @@
         }
       }
     },
+    "profile_google_photo_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We used your Google photo. You can change it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a repris ta photo Google, tu peux la changer."
+          }
+        }
+      }
+    },
     "profile_last_name_label": {
       "extractionState": "manual",
       "localizations": {
@@ -12968,6 +12985,128 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les noms exacts des réglages changent selon le téléphone et la version d'Android."
+          }
+        }
+      }
+    },
+    "settings_subscription_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abonnement"
+          }
+        }
+      }
+    },
+    "settings_subscription_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See your subscription"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consulte ton abonnement"
+          }
+        }
+      }
+    },
+    "settings_subscription_plan_name": {
+      "extractionState": "manual",
+      "comment": "Nom de l'offre, jamais traduit ni remplacé par « Premium ».",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+"
+          }
+        }
+      }
+    },
+    "settings_subscription_active_until": {
+      "extractionState": "manual",
+      "comment": "Argument : date de fin au format long de la langue, formatée par le système (ex. 12 janvier 2027).",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "settings_subscription_source_manual": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted by the Miff team"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accordé par l'équipe Miff"
+          }
+        }
+      }
+    },
+    "settings_subscription_source_other": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current plan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offre en cours"
+          }
+        }
+      }
+    },
+    "settings_subscription_no_store_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This access doesn't go through a store."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet accès ne passe pas par un store."
           }
         }
       }
