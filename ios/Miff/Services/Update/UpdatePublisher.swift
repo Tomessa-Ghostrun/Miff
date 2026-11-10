@@ -142,7 +142,8 @@ final class UpdatePublisher {
             // Si c'est une AUTORISATION qui empêche le suivi d'écrire ma position (« Pendant l'utilisation » au lieu de « Toujours », position
             // approximative, localisation éteinte), « réessaie dans un instant » serait faux et sans fin : la phrase juste mène aux Réglages.
             // Seules les autorisations sont lues ici, jamais une position.
-            if let blocker = await position.blocker(needsBackground: true), let refusal = PublishResultRefusal(blocker) {
+            let blocker = await position.blocker(needsBackground: true)
+            if let blocker, let refusal = PublishResultRefusal(blocker) {
                 return refusal.result
             }
             onPositionMissing()

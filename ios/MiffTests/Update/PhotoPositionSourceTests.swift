@@ -73,7 +73,8 @@ final class PhotoPositionSourceTests: XCTestCase {
 
         let result = await measuring.measure()
 
-        XCTAssertEqual(result, .found(kept), "la position gardée par le suivi (l'âge est jugé ensuite : 10 minutes au plus)")
+        // La position gardée par le suivi ; son âge est jugé ensuite (10 minutes au plus).
+        XCTAssertEqual(result, .found(kept))
         XCTAssertEqual(source.waits, [TrackingLimits.photoPositionWaitSeconds])
         XCTAssertGreaterThan(TrackingLimits.photoPositionWaitSeconds, TrackingLimits.positionWaitSeconds)
     }
@@ -87,7 +88,9 @@ final class PhotoPositionSourceTests: XCTestCase {
     }
 
     func testTheBlockerOnlyReadsThePermissionsAndWhenInUseIsAnObstacleOnlyForAPublishedPosition() async {
-        func blocker(_ location: LocationAuthorization, precise: Bool = true, background: Bool) async -> PhotoPosition? {
+        func blocker(
+            _ location: LocationAuthorization, precise: Bool = true, background: Bool
+        ) async -> PhotoPosition? {
             let snapshot = PermissionSnapshot(
                 location: location, servicesEnabled: true, preciseLocation: precise, notifications: .authorized
             )

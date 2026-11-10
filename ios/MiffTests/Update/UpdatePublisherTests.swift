@@ -150,8 +150,10 @@ final class UpdatePublisherTests: XCTestCase {
         XCTAssertEqual(result, .locationApproximate)
         XCTAssertTrue(rig.store.writes.isEmpty)
         XCTAssertEqual(rig.position.calls, 0, "rien n'est mesuré")
-        XCTAssertEqual(rig.position.blockerAsks, [true], "le suivi ne publie qu'avec « Toujours » : c'est ce qui est vérifié")
-        XCTAssertEqual(rig.positionMissingCalls, 0, "« réessaie dans un instant » serait faux : la détection n'y peut rien")
+        // Le suivi ne publie qu'avec « Toujours » : c'est ce qui est vérifié.
+        XCTAssertEqual(rig.position.blockerAsks, [true])
+        // « Réessaie dans un instant » serait faux : la détection n'y peut rien.
+        XCTAssertEqual(rig.positionMissingCalls, 0)
     }
 
     func testAPositionNotPublishedBecauseTheLocationIsNotAllowedSendsToTheSettingsNotToAnEndlessRetry() async {
