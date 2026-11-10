@@ -32,12 +32,16 @@ struct UpdateServices {
             readPermissions: { await permissions.snapshot() },
             network: network
         )
+        let local = TrackingLocalFileStore()
         let environment = UpdateEnvironment(
             currentUid: { gateway.currentUid },
             miffIds: { Self.miffIds(of: directory.state) },
-            battery: { await system.batteryPct() }
+            // MODE VOYAGE : aucun niveau de batterie à côté d'un voyage (les règles refusent `travel` avec une batterie) ; la copie locale
+            // est relue à chaque usage (un petit fichier privé) : jamais un « pas de voyage » périmé après une fin ou une nouvelle session.
+            battery: {
+                TravelStatusRules.battery(await system.batteryPct(), local: local.load(), uid: gateway.currentUid)
+            }
         )
-        let local = TrackingLocalFileStore()
         // Repli quand la mesure fraîche échoue : la dernière position que le suivi a gardée pour CE compte, de moins de 10 minutes.
         let keptFix: () -> Fix? = {
             Self.keptFix(uid: gateway.currentUid, local: local, nowMillis: Int(Date().timeIntervalSince1970 * 1000))

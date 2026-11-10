@@ -94,6 +94,9 @@ enum PresenceValue: String {
     case out
     case inRisk = "in_risk"
     case unknown
+    /// MODE VOYAGE : la personne est en voyage jusqu'à une date (`travelUntil`). Toujours une couleur neutre ; une ancienne version de l'app
+    /// lit cette valeur comme inconnue (neutre aussi).
+    case travel
 
     /// Une valeur inconnue ou absente est nil : la couleur d'un tel statut est neutre, jamais une supposition.
     static func fromWire(_ value: String?) -> PresenceValue? {

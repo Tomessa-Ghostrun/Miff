@@ -91,6 +91,10 @@ final class FakeTrackingStore: TrackingStore {
     private(set) var commitAttempts = 0
     /// Appelé AVANT chaque écriture (pour regarder ce que le téléphone avait déjà gardé à cet instant).
     var beforeCommit: ((DocWrite) -> Void)?
+    /// MODE VOYAGE : le voyage écrit dans MON statut de chaque Miff (ce que lit un nouvel appareil), et sa panne éventuelle.
+    var ownTravels: [String: TravelRead] = [:]
+    var ownTravelFailure: Error?
+    private(set) var ownTravelReads = 0
 
     func memberships(uid: String) async throws -> [MembershipRef] {
         readCount += 1
@@ -114,6 +118,14 @@ final class FakeTrackingStore: TrackingStore {
             throw placesFailure
         }
         return places[miffId] ?? []
+    }
+
+    func ownTravel(miffId: String, uid: String) async throws -> TravelRead? {
+        ownTravelReads += 1
+        if let ownTravelFailure {
+            throw ownTravelFailure
+        }
+        return ownTravels[miffId]
     }
 
     func commit(_ writes: [DocWrite]) async throws {

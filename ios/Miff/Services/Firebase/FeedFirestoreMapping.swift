@@ -33,7 +33,10 @@ enum FeedFirestoreMapping {
                 batteryPct: (fields["batteryPct"] as? NSNumber)?.doubleValue,
                 locationAccess: fields["locationAccess"] as? String,
                 // Une écriture encore en attente du serveur n'a pas son heure : `data(with: .estimate)` donne « maintenant ».
-                updatedAtMillis: millis(fields["updatedAt"])
+                updatedAtMillis: millis(fields["updatedAt"]),
+                // MODE VOYAGE : la fin du voyage et le jour choisi ; absents de tout autre statut.
+                travelUntilMillis: millis(fields["travelUntil"]),
+                travelUntilDay: fields["travelUntilDay"] as? String
             )
         )
     }

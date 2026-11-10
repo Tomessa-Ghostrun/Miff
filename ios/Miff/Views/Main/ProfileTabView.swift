@@ -24,6 +24,8 @@ struct ProfileTabView: View {
     let isActive: Bool
     /// La carte montrée au départ (nil : la Miff du Feed ; les écrans de démonstration des captures en choisissent une autre).
     var initialCarouselPage: Int?
+    /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », sous l'en-tête et avant « Mes Miffs », ouverte à tous les comptes.
+    @ObservedObject var travel: TravelViewModel
     let actions: ProfileTabActions
 
     var body: some View {
@@ -36,6 +38,8 @@ struct ProfileTabView: View {
                     }
                 }
                 .padding(.horizontal, Spacing.lg)
+                TravelCardView(model: travel)
+                    .padding(.horizontal, Spacing.lg)
                 miffCards
             }
             .padding(.vertical, Spacing.md)

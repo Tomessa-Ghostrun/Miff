@@ -151,6 +151,8 @@ struct MiffHomeHost: View {
     /// Les membres des cartes de Miff du Profil (photos, nombre) : ce que le Feed a lu pour la Miff affichée, plus une lecture ponctuelle
     /// des autres, une fois par ouverture du Profil. Créé avec la session de l'hôte, il disparaît avec elle.
     @StateObject private var memberPreviews: MiffMemberPreviews
+    /// MODE VOYAGE (VOY-2I) : la carte du Profil, créée pour la session ; le voyage est écrit par le moteur de suivi, nulle part ailleurs.
+    @StateObject private var travel: TravelViewModel
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
@@ -166,6 +168,8 @@ struct MiffHomeHost: View {
         )
         _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
+        let engine = environment.tracking.engine
+        _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
     }
 
     var body: some View {
@@ -175,6 +179,7 @@ struct MiffHomeHost: View {
                     miffs: directory.state,
                     profile: profile,
                     memberPreviews: memberPreviews,
+                    travel: travel,
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
