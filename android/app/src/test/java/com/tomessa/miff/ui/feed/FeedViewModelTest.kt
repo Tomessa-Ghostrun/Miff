@@ -231,7 +231,7 @@ class FeedViewModelTest {
             repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
             feed.trySend(
                 StatusFeed.Data(
-                    mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 50 * minute)),
+                    mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 110 * minute)),
                     fromCache = false,
                 ),
             )
@@ -420,7 +420,7 @@ class FeedViewModelTest {
             runCurrent()
             repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
             // The copy kept by the phone says "orange" (somebody who has since come home): no false alert is drawn from it.
-            val cached = mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 80 * minute))
+            val cached = mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 150 * minute))
             feed.trySend(StatusFeed.Data(cached, fromCache = true))
             runCurrent()
             assertEquals(FeedUiState.Loading, vm.uiState.value)
@@ -702,7 +702,7 @@ class FeedViewModelTest {
             withMember { vm ->
                 refresher.answer =
                     ServerRead.Fresh(
-                        mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 70 * minute)),
+                        mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = 130 * minute)),
                     )
                 vm.onRefresh()
                 runCurrent()
