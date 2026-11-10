@@ -10,15 +10,6 @@ import UIKit
 // d'écriture directe dans Photos (aucun appel à `UIImageWriteToSavedPhotosAlbum`) ; l'écran est masqué dans la vignette du sélecteur d'applications
 // (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
 
-/// La hauteur de ce que dit le pied (titre, lieu, bouton) : elle borne le pied quand le texte est grand ou l'écran en paysage.
-private struct FooterHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 struct PhotoFullScreen: View {
     let opened: OpenedPhoto
     let texts: FeedTexts
@@ -34,14 +25,13 @@ struct PhotoFullScreen: View {
     @State private var offsetBase: CGSize = .zero
     @State private var mapUnavailable = false
     @State private var photoArea: CGSize = .zero
-    @State private var footerHeight: CGFloat = 0
+    /// La hauteur du pied grandit avec la taille du texte (Dynamic Type) : elle décide s'il tient sous la photo ou s'il défile.
+    @ScaledMetric(relativeTo: .body) private var footerHeight = PhotoFullScreenLayout.footerEstimate
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
     private static let dismissDistance: CGFloat = 120
-    /// Le pied ne dépasse jamais 40 % de la hauteur : au-delà (grand texte, paysage), il défile et la photo garde sa place.
-    private static let footerMaxShare: CGFloat = 0.4
 
     private var title: String {
         let moment = Moment.of(atMillis: opened.photo.createdAtMillis, nowMillis: nowMillis, zone: zone)
@@ -58,8 +48,12 @@ struct PhotoFullScreen: View {
                         Spacer()
                     }
                     .padding(.horizontal, Spacing.sm)
+                    // La photo prend l'espace QUI RESTE sous la zone sûre ; la légende et les boutons passent d'abord (jamais poussés dehors).
                     photo
-                    scrollingFooter(maxHeight: screen.size.height * Self.footerMaxShare)
+                        .frame(minHeight: PhotoFullScreenLayout.minPhotoHeight)
+                        .layoutPriority(0)
+                    footerArea(screenHeight: screen.size.height)
+                        .layoutPriority(1)
                 }
             }
             .frame(width: screen.size.width, height: screen.size.height)
@@ -180,18 +174,19 @@ struct PhotoFullScreen: View {
 
     // MARK: - Le pied : titre, lieu de la photo, « Voir où c'était »
 
-    /// Le pied, défilant au-delà de `maxHeight` (grand texte, paysage) : la photo garde sa place et « Voir où c'était » reste atteignable.
-    private func scrollingFooter(maxHeight: CGFloat) -> some View {
-        ScrollView {
-            footer
-                .background(
-                    GeometryReader { proxy in
-                        Color.clear.preference(key: FooterHeightKey.self, value: proxy.size.height)
-                    }
-                )
+    /// Le pied, TOUJOURS entier : à sa hauteur naturelle quand il tient sous la photo (aucune mesure à attendre, rien à pousser), sinon (grand
+    /// texte, paysage, petit écran) dans une hauteur bornée où il DÉFILE, la photo gardant au moins `minPhotoHeight`.
+    @ViewBuilder
+    private func footerArea(screenHeight: CGFloat) -> some View {
+        switch PhotoFullScreenLayout.footer(screenHeight: screenHeight, footerHeight: footerHeight) {
+        case .inline:
+            footer.fixedSize(horizontal: false, vertical: true)
+        case .scrolling(let maxHeight):
+            ScrollView {
+                footer
+            }
+            .frame(height: maxHeight)
         }
-        .onPreferenceChange(FooterHeightKey.self) { footerHeight = $0 }
-        .frame(height: min(max(footerHeight, 1), maxHeight))
     }
 
     private var footer: some View {
