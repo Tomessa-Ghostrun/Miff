@@ -47,15 +47,38 @@ data class PlaceDetailRoute(
     val placeId: String,
 )
 
-/** The offer, with the reason it shows ([reason] is "limit" or "danger"). */
+/** The offer, with the reason it shows ([reason] is "limit", "danger" or "miff": a fixed word, nothing else travels). */
 @Serializable
 data class PlacePaywallRoute(
     val reason: String,
 ) {
+    /** An unknown word (never produced by the app) falls back to the danger zone, as before. */
+    fun paywallReason(): PaywallReason =
+        when (reason) {
+            "limit" -> PaywallReason.LIMIT
+            "miff" -> PaywallReason.MIFF
+            else -> PaywallReason.DANGER
+        }
+
     companion object {
-        fun of(reason: PaywallReason) = PlacePaywallRoute(if (reason == PaywallReason.LIMIT) "limit" else "danger")
+        fun of(reason: PaywallReason) =
+            PlacePaywallRoute(
+                when (reason) {
+                    PaywallReason.LIMIT -> "limit"
+                    PaywallReason.MIFF -> "miff"
+                    PaywallReason.DANGER -> "danger"
+                },
+            )
     }
 }
+
+/** The trigger of the analytics for an offer: a fixed value of the contract; none exists yet for the danger zone (open point of the places PR). */
+internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger? =
+    when (reason) {
+        PaywallReason.LIMIT -> AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE
+        PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
+        PaywallReason.DANGER -> null
+    }
 
 /** launchSingleTop: two quick taps open one screen, not two. */
 fun NavController.openPlaceRoute(route: Any) = navigate(route) { launchSingleTop = true }
@@ -198,28 +221,17 @@ fun NavGraphBuilder.placeRoutes(
         )
     }
     composable<PlacePaywallRoute> { entry ->
-        val reason =
-            if (entry.toRoute<PlacePaywallRoute>().reason ==
-                "limit"
-            ) {
-                PaywallReason.LIMIT
-            } else {
-                PaywallReason.DANGER
-            }
+        val reason = entry.toRoute<PlacePaywallRoute>().paywallReason()
         val tracker = container.analyticsTracker
-        // The only analytics of the places: the offer was shown / closed, with a fixed trigger and nothing else (criterion LIM5).
-        // The contract has a trigger for the 3rd place only; none exists yet for the danger zone (open point of the PR).
+        val trigger = paywallTrigger(reason)
+        // The only analytics of the offer: it was shown / closed, with a fixed trigger and nothing else (criterion LIM5).
         LaunchedEffect(reason) {
-            if (reason == PaywallReason.LIMIT) {
-                tracker.track(AnalyticsEvent.PaywallShown(AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE))
-            }
+            if (trigger != null) tracker.track(AnalyticsEvent.PaywallShown(trigger))
         }
         PlacePaywallScreen(
             reason = reason,
             onClose = {
-                if (reason == PaywallReason.LIMIT) {
-                    tracker.track(AnalyticsEvent.PaywallDismissed(AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE))
-                }
+                if (trigger != null) tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
                 navController.popBackStackIfSafe()
             },
         )
