@@ -200,7 +200,7 @@ private fun StateChip(
                 .clip(ShapeSm)
                 .background(card.level.tint())
                 .padding(horizontal = Spacing.s, vertical = Spacing.xs),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.xs + Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (category != null) {

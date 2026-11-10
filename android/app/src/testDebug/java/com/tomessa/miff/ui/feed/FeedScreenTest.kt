@@ -888,6 +888,81 @@ class FeedScreenTest {
         composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
     }
 
+    private fun largestFontFeed(content: FeedContent) {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalEmojiSupport provides EmojiSupport { true },
+                LocalDensity provides Density(density.density, fontScale = 2f),
+            ) {
+                MiffTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        FeedScreen(
+                            state = directory,
+                            scrollToTopSignal = 0,
+                            onRetry = {},
+                            onSelect = {},
+                            onCreate = {},
+                            onJoin = {},
+                            feed = ready(content),
+                            me = FeedMe("CM"),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun cards_theChipWithAnEmoji_atTheLargestFont_keepsTheEmojiBeforeTheWords_insideTheScreen() {
+        largestFontFeed(nominal)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val emoji = emojiNodes(PlaceCategory.HOME.emoji)[0].fetchSemanticsNode().boundsInRoot
+        val words =
+            composeRule
+                .onAllNodesWithText(
+                    "À la maison",
+                    useUnmergedTree = true,
+                )[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("the emoji is before the words: $emoji, $words", emoji.right <= words.left + 1f)
+        assertTrue("the chip is inside the screen: $words in $root", emoji.left >= 0f && words.right <= root.right)
+        // The emoji grows with the words (it is text of the size of the label, not a fixed box): about the height of a line of the label.
+        assertTrue(
+            "the emoji is as tall as the words: ${emoji.height} vs ${words.height}",
+            emoji.height >= words.height * 0.8f,
+        )
+    }
+
+    @Test
+    fun bubble_theBigSentence_atTheLargestFont_makesTheBubbleTaller_neverOverlapsTheCards() {
+        // Nobody else is known: "Pas encore de nouvelles", the longer sentence.
+        largestFontFeed(content(trio, mapOf(me to status())))
+        val title =
+            composeRule
+                .onAllNodesWithText("Pas encore de nouvelles", useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val body =
+            composeRule
+                .onNodeWithText(text(R.string.feed_bubble_no_news_body))
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        assertTrue("the sentence is inside the screen: $title in $root", title.left >= 0f && title.right <= root.right)
+        // It wraps on several lines (taller than a single line of 30 sp x 2 x 1.2), and the details stay under it, not over it.
+        val oneLine = 2f * 36f * context().resources.displayMetrics.density
+        assertTrue("wrapped on several lines: ${title.height}", title.height > oneLine)
+        assertTrue("the body is under the sentence: $title / $body", body.top >= title.bottom - 1f)
+        val firstCard =
+            composeRule
+                .onAllNodesWithText("Thomas", useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("the bubble does not overlap the first card: $body / $firstCard", body.bottom <= firstCard.top)
+    }
+
     private fun bubbleStyle(): androidx.compose.ui.text.TextStyle {
         val node = composeRule.onNodeWithText("Tout va bien").assertIsDisplayed().fetchSemanticsNode()
         val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
