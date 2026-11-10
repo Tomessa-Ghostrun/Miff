@@ -208,7 +208,7 @@ Chaque point donne : **le constat** (vérifié, avec sa source), **ma recommanda
 - **Apple 5.6.1** : « Use the provided API to prompt users to review your app… and we will disallow custom review prompts. » **5.6.3** : « Manipulating any element of the App Store customer experience such as charts, search, reviews, or referrals to your app erodes customer trust and is not permitted. »
 - **Google** (documentation de l'API d'avis dans l'app) : « Your app shouldn't ask the user any questions before or while presenting the rating button or card, including questions about their opinion (such as "Do you like the app?") » ; pas de bouton qui déclenche l'API.
 - **Non lu** : le texte de la politique Google « User Ratings, Reviews, and Installs » (la page ouverte était une autre politique).
-- L'écran **n'existe pas** dans le code (recherche faite dans `android/` et `ios/`).
+- *(Constat d'origine, **dépassé** le 2026-11-07)* l'écran n'existait pas dans le code. **Il existe maintenant côté Android** (PR `android/fenetre-avis`, absent des builds de diffusion, voir `docs/tickets/pop-ins-avis.md` §8) ; **iOS** : pas encore construit. **Le fichier `docs/qa/release-checklist.md`, où inscrire la reconfirmation du PM à la porte « prêt à soumettre », reste à créer.**
 
 **Recommandation (d'origine, non suivie : voir la décision du 2026-11-07 ci-dessus ; elle devient le plan de repli).** Ne pas construire l'écran tel que maquetté. Si tu veux des avis : l'API du système (une demande, sans question avant, après un moment réussi, par exemple après plusieurs jours d'usage d'une Miff complète). Si tu veux recueillir les mécontentements en privé, un lien « Nous écrire » dans les Réglages existe déjà (Android) : séparé de la demande d'avis, jamais en amont.
 
