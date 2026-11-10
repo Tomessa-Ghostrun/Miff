@@ -188,6 +188,14 @@ final class FirebaseAuthGateway: AuthGateway {
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
+    func providerPhotoURL() -> URL? {
+        guard FirebaseBootstrap.isConfigured, let user = Auth.auth().currentUser else {
+            return nil
+        }
+        // La photo du fournisseur Google seulement : celle d'un compte e-mail ou Apple n'est jamais reprise.
+        return user.providerData.first { $0.providerID == "google.com" }?.photoURL
+    }
+
     func signOut() {
         appleName.forget()
         // Le SDK Google garde aussi sa propre session : sans ceci, le choix du compte Google ne serait plus proposé.

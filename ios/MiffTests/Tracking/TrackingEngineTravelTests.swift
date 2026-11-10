@@ -166,6 +166,46 @@ final class TrackingEngineTravelTests: XCTestCase {
         XCTAssertNil(rig.local.state?.travel)
     }
 
+    func testTheEndClearsTheKeysEvenInAMiffThatTheTripWasNeverToldTo() async throws {
+        // Le début n'a pas pu être écrit (hors connexion) : le téléphone ne croit pas avoir prévenu la Miff. Si le serveur porte pourtant
+        // le voyage (réponse perdue), un statut de fin sans les clés laisserait un faux « Voyage terminé » durable.
+        await rig.engine.refresh(.opened)
+        rig.env.online = false
+        let started = await rig.engine.setTravel(period)
+        XCTAssertEqual(started, .doneOffline)
+        XCTAssertEqual(rig.local.state?.travel?.startedIn, Set<String>())
+        rig.env.online = true
+        let before = rig.store.statusWrites().count
+
+        let ended = await rig.engine.endTravel()
+
+        XCTAssertTrue(ended)
+        let first = try XCTUnwrap(rig.store.statusWrites().dropFirst(before).first)
+        XCTAssertEqual(first.data["presence"], .string("unknown"))
+        XCTAssertEqual(first.data["travelUntil"], .null)
+        XCTAssertEqual(first.data["travelUntilDay"], .null)
+    }
+
+    func testAPhoneReadsMyStatusOnlyUntilTheServerHasBeenVerifiedAndASignOutStartsOver() async {
+        // Détection d'un NOUVEL appareil : aucune relecture vérifiée du serveur (`checkedAtMillis == 0`).
+        await rig.engine.refresh(.opened)
+        XCTAssertEqual(rig.store.ownTravelReads, 1)
+        XCTAssertGreaterThan(rig.local.state?.checkedAtMillis ?? 0, 0)
+        rig.env.now += 2 * minute
+        rig.putPositionHome()
+        await rig.engine.refresh(.opened)
+        XCTAssertEqual(rig.store.ownTravelReads, 1, "une copie déjà vérifiée n'est pas relue")
+
+        // La déconnexion efface la copie : la session suivante est un nouvel appareil pour ce compte.
+        await rig.engine.stop()
+        XCTAssertNil(rig.local.state)
+        rig.generation += 1
+        rig.env.now += 2 * minute
+        rig.putPositionHome()
+        await rig.engine.refresh(.opened)
+        XCTAssertEqual(rig.store.ownTravelReads, 2)
+    }
+
     // MARK: - V2 : pendant le voyage, la position reste partagée, le statut reste un voyage
 
     func testDuringATripNoStatusZoneBatteryOrAccessIsWrittenAndNoZoneIsArmed() async {

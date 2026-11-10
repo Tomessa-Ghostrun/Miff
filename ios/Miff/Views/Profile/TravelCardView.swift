@@ -217,7 +217,18 @@ private struct TravelSwitchRow: View {
         // La date n'est lue QU'UNE fois : par l'état de l'interrupteur (« Activé, jusqu'au 15 novembre 2026 »), pas par la phrase dessinée.
         .accessibilityValue(Text(verbatim: stateText))
         .accessibilityHint(Text(verbatim: isOn ? "" : L10n.string("voyage_card_off_body")))
-        .accessibilityAddTraits(.isButton)
+        .modifier(SwitchTraits())
+    }
+}
+
+/// VoiceOver : la ligne est un INTERRUPTEUR (trait « interrupteur » dès iOS 17) ; avant, un bouton dont la valeur dit l'état.
+private struct SwitchTraits: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.accessibilityAddTraits(.isToggle)
+        } else {
+            content.accessibilityAddTraits(.isButton)
+        }
     }
 }
 
@@ -274,8 +285,14 @@ private struct TravelDatePickerSheet: View {
     }
 
     /// Midi, dans le calendrier du téléphone : jamais un jour décalé par une heure d'été.
+    private static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone.current
+        return calendar
+    }
+
     private static func date(of day: TravelDate) -> Date {
-        Calendar.current.date(from: DateComponents(year: day.year, month: day.month, day: day.day, hour: 12)) ?? Date()
+        calendar.date(from: DateComponents(year: day.year, month: day.month, day: day.day, hour: 12)) ?? Date()
     }
 
     private var range: ClosedRange<Date> {
@@ -285,7 +302,7 @@ private struct TravelDatePickerSheet: View {
     }
 
     private var chosenDay: TravelDate {
-        let parts = Calendar.current.dateComponents([.year, .month, .day], from: selection)
+        let parts = Self.calendar.dateComponents([.year, .month, .day], from: selection)
         return TravelDate(year: parts.year ?? picker.initialDay.year, month: parts.month ?? 1, day: parts.day ?? 1)
     }
 

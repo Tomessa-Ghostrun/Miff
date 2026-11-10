@@ -30,6 +30,8 @@ struct DeleteAccountFlowView: View {
 
     var body: some View {
         content
+            // Pendant la vérification, le balayage depuis le bord ne ramène pas en arrière (« Annuler » est alors grisé aussi).
+            .swipeBack(for: .deleteAccount(isBusy: verification.state.busy))
             .sheet(isPresented: $showingReset) {
                 // « Mot de passe oublié ? » : l'écran d'AUTH-4, dans une feuille. La suppression n'a pas commencé, rien n'est perdu.
                 PasswordResetView(
