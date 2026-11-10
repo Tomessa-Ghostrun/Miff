@@ -366,34 +366,83 @@ class NotificationScreensTest {
     }
 
     @Test
-    fun theBanner_isCalm_andItsButtonDoesWhatTheStateSays() {
+    fun refused_theCentreIsLocked_blurredBarsOnly_noRealLine_andOneButtonToTurnThemOn() {
         val taps = mutableListOf<CenterBanner>()
+        // Real lines exist, but while the notifications are off they stay out of sight: nothing real is shown behind the blur.
+        val rows =
+            listOf(
+                row("a", NotificationType.N1, ago = 60_000L),
+                row("b", NotificationType.N6, ago = 120_000L, miff = "Famille"),
+            )
         show {
             NotificationCenterScreen(
-                state = NotificationCenterUiState(banner = CenterBanner.OFF),
+                state = NotificationCenterUiState(rows, banner = CenterBanner.OFF),
                 actions = NotificationCenterActions(onBannerAction = { taps += it }),
                 nowMillis = now,
                 zone = zone,
             )
         }
-        shoot("notif-6a-off")
+        shoot("notif-6a-locked")
         composeRule.onNodeWithText(text(R.string.notif_center_off_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.notif_center_off_body)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.notif_center_off_action)).assertHasClickAction().performClick()
+        composeRule.onAllNodesWithText(text(R.string.notif_n1_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.notif_n6a_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Famille", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.notif_center_empty_title)).assertCountEquals(0)
+        composeRule
+            .onNodeWithText(text(R.string.notif_center_enable_action))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
         assertEquals(listOf(CenterBanner.OFF), taps)
+        // The menu has nothing to act on.
+        composeRule.onNodeWithContentDescription(text(R.string.notif_center_menu_a11y)).performClick()
+        composeRule.onNodeWithText(text(R.string.notif_center_clear_all)).assertIsNotEnabled()
     }
 
     @Test
-    fun theBanner_neverAsked_saysSo() {
+    fun neverAsked_theCentreIsLocked_too_withItsOwnWords() {
+        val taps = mutableListOf<CenterBanner>()
         show {
             NotificationCenterScreen(
                 state = NotificationCenterUiState(banner = CenterBanner.NOT_ASKED),
-                actions = NotificationCenterActions(),
+                actions = NotificationCenterActions(onBannerAction = { taps += it }),
                 nowMillis = now,
                 zone = zone,
             )
         }
         composeRule.onNodeWithText(text(R.string.notif_state_notasked)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.notif_center_notasked_action)).assertExists()
+        composeRule.onNodeWithText(text(R.string.notif_center_notasked_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_center_enable_action)).performClick()
+        assertEquals(listOf(CenterBanner.NOT_ASKED), taps)
+    }
+
+    @Test
+    fun allowed_noNotificationYet_theEmptyStateIsCalm_andNothingIsBlurred() {
+        show { NotificationCenterScreen(NotificationCenterUiState(), NotificationCenterActions(), now, zone) }
+        composeRule.onNodeWithText(text(R.string.notif_center_empty_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_center_empty_body)).assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.notif_center_enable_action)).assertCountEquals(0)
+    }
+
+    @Test
+    fun theGeneralSwitchOffInTheApp_isACalmBand_notALockedCentre() {
+        val taps = mutableListOf<CenterBanner>()
+        show {
+            NotificationCenterScreen(
+                state =
+                    NotificationCenterUiState(
+                        listOf(row("a", NotificationType.N1, ago = 1000L)),
+                        banner = CenterBanner.DISABLED,
+                    ),
+                actions = NotificationCenterActions(onBannerAction = { taps += it }),
+                nowMillis = now,
+                zone = zone,
+            )
+        }
+        composeRule.onNodeWithText(text(R.string.notif_center_off_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_n1_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_center_off_action)).performClick()
+        assertEquals(listOf(CenterBanner.DISABLED), taps)
     }
 }

@@ -16217,6 +16217,23 @@
           }
         }
       }
+    },
+    "notif_center_enable_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on notifications"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer les notifications"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -988,4 +988,7 @@
     <string name="android_diag_review_force_armed">Prête : mets l\'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l\'Update).</string>
     <string name="android_diag_review_reset">Remettre à zéro l\'état de la fenêtre</string>
     <string name="android_diag_review_reset_done">État remis à zéro : la fenêtre repart de zéro (7 jours, 30 jours, 90 jours).</string>
+
+    <!-- NOTIF-6A: centre verrouille (notifications refusees) -->
+    <string name="notif_center_enable_action">Activer les notifications</string>
 </resources>

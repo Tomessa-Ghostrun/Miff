@@ -1,11 +1,16 @@
 package com.tomessa.miff.ui.notification
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,7 +25,9 @@ import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.notification.NotificationChannels
 import com.tomessa.miff.domain.navigation.MainTab
+import com.tomessa.miff.domain.notification.EnableStep
 import com.tomessa.miff.domain.notification.NotificationDestination
+import com.tomessa.miff.domain.permission.PermissionNames
 import com.tomessa.miff.ui.main.DetectionHelpRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.permission.NotificationsPopIn
@@ -95,6 +102,7 @@ internal fun NavGraphBuilder.notificationRoutes(
         }
     }
     composable<NotificationCenterRoute> {
+        val context = LocalContext.current
         val viewModel: NotificationCenterViewModel =
             viewModel(
                 key = "notification-center-$scopeKey",
@@ -137,14 +145,29 @@ internal fun NavGraphBuilder.notificationRoutes(
                     onClearAll = viewModel::onClearAll,
                     onBannerAction = { banner ->
                         when (banner) {
-                            CenterBanner.NOT_ASKED -> {
-                                requestSystemWindow()
-                            }
+                            // Refused or never asked: the native window when Android can still show it, otherwise the calm help that opens the settings of the phone.
+                            CenterBanner.NOT_ASKED, CenterBanner.OFF -> {
+                                val state = container.notificationAuthorization.state()
+                                val activity = context.findActivity()
+                                val stillPossible =
+                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        activity != null &&
+                                        ActivityCompat.shouldShowRequestPermissionRationale(
+                                            activity,
+                                            PermissionNames.POST_NOTIFICATIONS,
+                                        )
+                                when (EnableStep.of(state, Build.VERSION.SDK_INT, stillPossible)) {
+                                    EnableStep.ASK_SYSTEM -> {
+                                        requestSystemWindow()
+                                    }
 
-                            CenterBanner.OFF -> {
-                                navController.navigate(
-                                    NotificationsHelpRoute,
-                                ) { launchSingleTop = true }
+                                    EnableStep.OPEN_HELP -> {
+                                        navController.navigate(NotificationsHelpRoute) {
+                                            launchSingleTop =
+                                                true
+                                        }
+                                    }
+                                }
                             }
 
                             CenterBanner.DISABLED -> {
@@ -173,3 +196,10 @@ private fun severalMiffNames(container: AppContainer): Map<String, String> {
     val ready = container.miffDirectory.state.value as? DirectoryState.Ready ?: return emptyMap()
     return if (ready.miffs.size > 1) ready.miffs.associate { it.id to it.name } else emptyMap()
 }
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
