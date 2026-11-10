@@ -78,6 +78,13 @@ interface AuthGateway {
     fun displayName(): String?
 
     /**
+     * The address of the Google photo of the account, ONLY for an account linked to Google (null for e-mail or Apple, or when Google
+     * has no photo). It only serves to PRE-FILL the profile photo, once, where the person can change or remove it: never stored by
+     * itself, never logged, never sent anywhere but to Google to download the picture.
+     */
+    fun photoUrl(): String?
+
+    /**
      * The e-mail address of the account (an Apple relay address is returned as it is), only to be SHOWN in Settings > Mon
      * compte. Never stored (not in Firestore, not in an event, not in a log). Null if nobody is signed in.
      */
@@ -174,6 +181,13 @@ class FirebaseAuthGateway(
     }
 
     override fun displayName(): String? = auth.currentUser?.displayName
+
+    override fun photoUrl(): String? =
+        auth.currentUser
+            ?.providerData
+            ?.firstOrNull { it.providerId == GoogleAuthProvider.PROVIDER_ID }
+            ?.photoUrl
+            ?.toString()
 
     override fun currentEmail(): String? = auth.currentUser?.email?.takeIf { it.isNotBlank() }
 

@@ -12,6 +12,7 @@ import { PHOTO_MUTATIONS } from './mutations-photo.mjs';
 import { POSITION_MUTATIONS } from './mutations-position.mjs';
 import { SESSION_MUTATIONS } from './mutations-session.mjs';
 import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
+import { VOYAGE_MUTATIONS } from './mutations-voyage.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -707,4 +708,6 @@ export const MUTATIONS = [
   ...PHOTO_MUTATIONS,
   // --- R-LIEU-1 (statut de plus de 24 h) et bornes d'horodatage du statut : voir mutations-statut.mjs ---
   ...STATUS_TIME_MUTATIONS,
+  // --- Mode voyage (VOY-B, validTravel) : voir mutations-voyage.mjs ---
+  ...VOYAGE_MUTATIONS,
 ];

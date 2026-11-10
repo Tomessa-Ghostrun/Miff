@@ -35,16 +35,58 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
     }
 }
 
-/// Les événements Analytics des lieux : seulement « l'offre s'est ouverte / fermée », avec un déclencheur fixe et rien d'autre
-/// (critère LIM5). Le contrat n'a un déclencheur que pour le 3e lieu ; il n'en existe pas encore pour la zone de danger (point
-/// ouvert de la PR : rien n'est envoyé dans ce cas).
+/// Les événements Analytics de l'offre : seulement « l'offre s'est ouverte / fermée », avec un déclencheur fixe et rien d'autre
+/// (critère LIM5). Le contrat a un déclencheur pour le 3e lieu et un pour la 2e Miff (`extra_miff`) ; il n'en existe pas encore
+/// pour la zone de danger (point ouvert de la PR : rien n'est envoyé dans ce cas).
 enum PlacePaywall {
+    static func trigger(for reason: PaywallReason) -> AnalyticsEvent.PaywallTrigger? {
+        switch reason {
+        case .limit:
+            return .extraTrustedPlace
+        case .extraMiff:
+            return .extraMiff
+        case .danger:
+            return nil
+        }
+    }
+
     static func shown(for reason: PaywallReason) -> AnalyticsEvent? {
-        reason == .limit ? .paywallShown(trigger: .extraTrustedPlace) : nil
+        trigger(for: reason).map { AnalyticsEvent.paywallShown(trigger: $0) }
     }
 
     static func dismissed(for reason: PaywallReason) -> AnalyticsEvent? {
-        reason == .limit ? .paywallDismissed(trigger: .extraTrustedPlace) : nil
+        trigger(for: reason).map { AnalyticsEvent.paywallDismissed(trigger: $0) }
+    }
+}
+
+/// Les textes de la phrase calme du haut de l'offre (la raison pour laquelle elle s'affiche) et de la mention « bientôt », par
+/// raison. Des clés du catalogue : le texte lui-même est dans les deux langues.
+extension PaywallReason {
+    var titleKey: String {
+        switch self {
+        case .limit:
+            return "place_paywall_limit_title"
+        case .danger:
+            return "place_paywall_danger_title"
+        case .extraMiff:
+            return "feed_selector_paywall_title"
+        }
+    }
+
+    var bodyKey: String {
+        switch self {
+        case .limit:
+            return "place_paywall_limit_body"
+        case .danger:
+            return "place_paywall_danger_body"
+        case .extraMiff:
+            return "feed_selector_paywall_body"
+        }
+    }
+
+    /// « Cette option n'est pas encore ouverte. » + ce qui reste en place (les lieux, ou la Miff actuelle).
+    var soonBodyKey: String {
+        self == .extraMiff ? "feed_selector_paywall_soon_body" : "place_paywall_soon_body"
     }
 }
 

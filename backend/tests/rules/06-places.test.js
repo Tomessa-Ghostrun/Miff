@@ -1,8 +1,8 @@
-// Plan de test, section 6 : lieux et limites freemium (P1 à P13, puis P14 à P28 : 2 lieux gratuits, catégorie, type modifiable,
-// lieu dans plusieurs Miffs ; décisions du PM du 2026-11-01)
+// Plan de test, section 6 : lieux et limites freemium (P1 à P13, puis P14 à P28 : 2 lieux gratuits (3 depuis le 2026-11-10), catégorie,
+// type modifiable, lieu dans plusieurs Miffs ; décisions du PM du 2026-11-01 et du 2026-11-10 : 3 lieux gratuits)
 import assert from 'node:assert/strict';
 import {
-  ID, CODE, DAY, inMs, suite, assertFails, assertSucceeds, placeInput, placeSeed, serverTs, Timestamp,
+  ID, CODE, DAY, inMs, suite, assertFails, assertSucceeds, placeInput, placeSeed, serverTs, Timestamp, commit, createMiffOps, set,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -18,7 +18,7 @@ s.tc('P1', 'gratuite : premier lieu "trusted" (identifiant p1) dans une Miff san
   await assertSucceeds(db('alice').doc(P1).set(placeInput('alice')));
 });
 
-s.tc('P2', 'gratuite : lieu sous un identifiant automatique (hors p1 et p2) : refusé', async ({ db }) => {
+s.tc('P2', 'gratuite : lieu sous un identifiant automatique (hors p1, p2 et p3) : refusé', async ({ db }) => {
   const ref = db('alice').collection(placesOf(ID.M1)).doc();
   await assertFails(ref.set(placeInput('alice')));
 });
@@ -116,6 +116,7 @@ s.tc('P13', 'non membre : ne lit pas les lieux', async ({ db }) => {
 // --- R-LIEU-5, R-LIEU-2, R-LIEU-6 et lieu dans plusieurs Miffs (décisions du PM du 2026-11-01) --------------------------------
 
 const P2 = `${M1}/places/p2`;
+const P3 = `${M1}/places/p3`;
 const CATEGORIES = ['home', 'work', 'school', 'sport', 'relative', 'leisure', 'other'];
 const seedDave = (seedMiff) =>
   seedMiff({ miffId: ID.M3, name: 'Premium', code: CODE.M3, ownerUid: 'dave', members: [{ uid: 'dave', role: 'owner', sharing: true }] });
@@ -138,13 +139,16 @@ const seedDaveMiffs = async (seedMiff) => {
 };
 const lieuDans = (miffId, placeId) => `miffs/${miffId}/places/${placeId}`;
 
-s.tc('P14', 'gratuite : deux lieux (p1 et p2, type trusted) acceptés ; un troisième (identifiant quelconque) refusé', async ({ db }) => {
+s.tc('P14', 'gratuite : trois lieux (p1, p2 et p3, type trusted) acceptés ; un quatrième (p4 ou identifiant quelconque) refusé', async ({ db }) => {
   const alice = db('alice');
-  // p1 existe déjà (jeu de données) : p2 est le second emplacement gratuit.
+  // p1 existe déjà (jeu de données) : p2 et p3 sont les deux autres emplacements gratuits (R-LIEU-5 : 3 lieux depuis le 2026-11-10).
   await assertSucceeds(alice.doc(P2).set(placeInput('alice', { name: 'Travail', category: 'work' })));
-  await assertFails(alice.doc(`${M1}/places/p3`).set(placeInput('alice')));
+  await assertSucceeds(alice.doc(P3).set(placeInput('alice', { name: 'Ecole', category: 'school' })));
+  await assertFails(alice.doc(`${M1}/places/p4`).set(placeInput('alice')));
+  await assertFails(alice.doc(`${M1}/places/p5`).set(placeInput('alice')));
   await assertFails(alice.collection(placesOf(ID.M1)).doc().set(placeInput('alice')));
   await assertFails(alice.doc(`${M1}/places/P2`).set(placeInput('alice')));
+  await assertFails(alice.doc(`${M1}/places/P3`).set(placeInput('alice')));
 });
 
 s.tc('P14b', 'gratuite : p2 en zone de danger (risk) refusé ; supprimer un lieu libère son emplacement', async ({ db }) => {
@@ -153,6 +157,51 @@ s.tc('P14b', 'gratuite : p2 en zone de danger (risk) refusé ; supprimer un lieu
   await assertSucceeds(alice.doc(P2).set(placeInput('alice')));
   await assertSucceeds(alice.doc(P1).delete());
   await assertSucceeds(alice.doc(P1).set(placeInput('alice', { name: 'Nouvelle maison', category: 'home' })));
+});
+
+s.tc('P14c', 'gratuite : p3 en zone de danger (risk) refusé ; p3 se modifie, repasse à trusted, se supprime et se recrée ; p4 reste refusé', async ({ db, admin }) => {
+  const alice = db('alice');
+  await assertFails(alice.doc(P3).set(placeInput('alice', { type: 'risk' })));
+  await assertSucceeds(alice.doc(P3).set(placeInput('alice', { name: 'Sport', category: 'sport' })));
+  await assertSucceeds(alice.doc(P3).update({ name: 'Salle de sport', radiusM: 250, category: 'leisure', updatedAt: serverTs() }));
+  await assertFails(alice.doc(P3).update({ type: 'risk', updatedAt: serverTs() }));
+  // Un lieu "risk" hérité d'un ancien abonnement repasse toujours à "trusted" (jamais bloqué).
+  await admin((f) => f.doc(P3).update({ type: 'risk' }));
+  await assertSucceeds(alice.doc(P3).update({ type: 'trusted', updatedAt: serverTs() }));
+  await assertFails(alice.doc(P3).update({ createdBy: 'bob', updatedAt: serverTs() }));
+  await assertFails(alice.doc(P3).set({ ...placeSeed(), type: 'risk', updatedAt: serverTs() })); // « set » complet déguisé en recréation
+  // Supprimer p3 libère l'emplacement ; p4 n'existe jamais en gratuit.
+  await assertSucceeds(alice.doc(P3).delete());
+  await assertSucceeds(alice.doc(P3).set(placeInput('alice', { name: 'Nouveau lieu' })));
+  await assertFails(alice.doc(`${M1}/places/p4`).set(placeInput('alice')));
+});
+
+s.tc('P14d', "gratuite : p1, p2 et p3 créés dans UN seul lot (3 écritures, 6 lectures de règles sur 20) ; avec p4 dans le lot, rien n'est écrit", async ({ db, admin }) => {
+  await removePlace(admin);
+  const alice = db('alice');
+  const lot = alice.batch();
+  for (const id of ['p1', 'p2', 'p3']) lot.set(alice.doc(`${M1}/places/${id}`), placeInput('alice', { name: `Lieu ${id}` }));
+  await assertSucceeds(lot.commit());
+  for (const id of ['p1', 'p2', 'p3']) await assertSucceeds(alice.doc(`${M1}/places/${id}`).get());
+  // Même lot avec un quatrième identifiant : refus en bloc (atomique), la copie de p2 du lot n'est pas écrite.
+  await admin((f) => f.doc(P2).delete());
+  const mauvais = alice.batch();
+  mauvais.set(alice.doc(P2), placeInput('alice', { name: 'Recree' }));
+  mauvais.set(alice.doc(`${M1}/places/p4`), placeInput('alice'));
+  await assertFails(mauvais.commit());
+  await admin(async (f) => assert.equal((await f.doc(P2).get()).exists, false));
+});
+
+s.tc('P14e', 'gratuite : la Miff et ses lieux ne tiennent pas dans le même lot (la Miff doit exister avant) ; en deux lots, p1, p2 et p3 passent', async ({ db }) => {
+  // eve (sans Miff, profil présent) : lot « Miff + 3 lieux » refusé en entier, car les règles de lieu lisent la Miff d'AVANT le lot.
+  const eve = db('eve');
+  const miff = createMiffOps({ uid: 'eve' });
+  const lieux = ['p1', 'p2', 'p3'].map((id) => set(`miffs/${ID.NEW}/places/${id}`, placeInput('eve', { name: `Lieu ${id}` })));
+  await assertFails(commit(eve, [...Object.values(miff), ...lieux]));
+  // Deux lots : la Miff d'abord, puis les trois lieux (3 × 2 = 6 lectures de règles).
+  await assertSucceeds(commit(eve, Object.values(miff)));
+  await assertSucceeds(commit(eve, lieux));
+  await assertFails(commit(eve, [set(`miffs/${ID.NEW}/places/p4`, placeInput('eve'))]));
 });
 
 s.tc('P15', 'catégorie obligatoire à la création : absente, vide, inconnue, mal écrite ou non textuelle : refusé', async ({ db, admin }) => {
@@ -205,7 +254,7 @@ s.tc('P18', 'gratuite : passer un lieu de trusted à risk refusé (nom, rayon et
   await assertSucceeds(ref.update({ name: 'Maison (bis)', radiusM: 300, category: 'relative', updatedAt: serverTs() }));
 });
 
-s.tc('P19', 'abonnement expiré, inactif ou absent : ni risk à la création, ni passage à risk, ni lieu hors p1 et p2', async ({ db, admin, seedMiff }) => {
+s.tc('P19', 'abonnement expiré, inactif ou absent : ni risk à la création, ni passage à risk, ni lieu hors p1, p2 et p3', async ({ db, admin, seedMiff }) => {
   // frank : abonnement expiré (jeu de données). Sa Miff M4 a déjà p1.
   await seedMiff({
     miffId: ID.M4, name: 'Expire', code: CODE.M4, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true }], place: true,
@@ -215,6 +264,8 @@ s.tc('P19', 'abonnement expiré, inactif ou absent : ni risk à la création, ni
   await assertFails(frank.doc(lieuDans(ID.M4, 'p1')).update({ type: 'risk', updatedAt: serverTs() }));
   await assertFails(frank.doc(lieuDans(ID.M4, 'zzz')).set(placeInput('frank')));
   await assertSucceeds(frank.doc(lieuDans(ID.M4, 'p2')).set(placeInput('frank')));
+  await assertSucceeds(frank.doc(lieuDans(ID.M4, 'p3')).set(placeInput('frank')));
+  await assertFails(frank.doc(lieuDans(ID.M4, 'p4')).set(placeInput('frank'))); // 4e lieu : premium requis
   // Abonnement non actif (active=false) alors que la date est dans le futur : même résultat que l'expiration.
   await admin((f) => f.doc('entitlements/frank').update({ active: false, expiresAt: inMs(30 * DAY) }));
   await assertFails(frank.doc(lieuDans(ID.M4, 'p1')).update({ type: 'risk', updatedAt: serverTs() }));
@@ -263,6 +314,24 @@ s.tc('P20c', 'plusieurs Miffs : une catégorie invalide ou un identifiant invali
   await assertFails(mauvaisId.commit());
 });
 
+s.tc('P20d', 'plusieurs Miffs : le lieu « p3 » (gratuit) rattaché à 2 Miffs d\'un ancien premium = un document par Miff, même identifiant, un lot ; « p4 » dans le même lot refuse tout', async ({ db, seedMiff, admin }) => {
+  const M5 = 'M5'.padEnd(20, 'x');
+  await seedMiff({ miffId: ID.M4, name: 'Expire 1', code: CODE.M4, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true, key: ID.M4 }] });
+  await seedMiff({ miffId: M5, name: 'Expire 2', code: CODE.NEW2, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true, key: M5 }] });
+  const frank = db('frank'); // abonnement expiré (jeu de données) : seuls p1, p2, p3 sont acceptés
+  const mauvais = frank.batch();
+  mauvais.set(frank.doc(lieuDans(ID.M4, 'p3')), placeInput('frank'));
+  mauvais.set(frank.doc(lieuDans(M5, 'p4')), placeInput('frank'));
+  await assertFails(mauvais.commit());
+  await admin(async (f) => assert.equal((await f.doc(lieuDans(ID.M4, 'p3')).get()).exists, false));
+  const lot = frank.batch();
+  for (const miffId of [ID.M4, M5]) lot.set(frank.doc(lieuDans(miffId, 'p3')), placeInput('frank', { name: 'Chez Nathan', category: 'relative' }));
+  await assertSucceeds(lot.commit());
+  const suppression = frank.batch();
+  for (const miffId of [ID.M4, M5]) suppression.delete(frank.doc(lieuDans(miffId, 'p3')));
+  await assertSucceeds(suppression.commit());
+});
+
 s.tc('P21', 'plusieurs Miffs : modification (type compris) et suppression d\'un lieu dans 5 Miffs, un lot chacune, par le créateur premium', async ({ db, seedMiff }) => {
   await seedDaveMiffs(seedMiff);
   const dave = db('dave');
@@ -279,9 +348,10 @@ s.tc('P21', 'plusieurs Miffs : modification (type compris) et suppression d\'un 
   await assertSucceeds(suppression.commit());
 });
 
-s.tc('P22', 'un simple membre ne crée p2, ne modifie le type ou la catégorie, ni ne supprime', async ({ db }) => {
+s.tc('P22', 'un simple membre ne crée p2 ni p3, ne modifie le type ou la catégorie, ni ne supprime', async ({ db }) => {
   const bob = db('bob');
   await assertFails(bob.doc(P2).set(placeInput('bob')));
+  await assertFails(bob.doc(P3).set(placeInput('bob')));
   await assertFails(bob.doc(P1).update({ type: 'risk', updatedAt: serverTs() }));
   await assertFails(bob.doc(P1).update({ category: 'work', updatedAt: serverTs() }));
   await assertFails(bob.doc(P1).delete());
@@ -294,13 +364,14 @@ s.tc('P23', 'createdBy et createdAt restent immuables même avec type et catégo
 });
 
 // --- Revue de sécurité des PR #54/#55 (sondes X5, X8, X9, Y2, Y3) : limites connues figées -------------------------------------------
-s.tc('P24', 'ancien premium créateur de 2 Miffs : p1 et p2 dans CHACUNE (4 lieux gratuits), pas d\'identifiant libre ni de risk (limite connue M5, ticket Premium)', async ({ db, seedMiff }) => {
+s.tc('P24', 'ancien premium créateur de 2 Miffs : p1, p2 et p3 dans CHACUNE (6 lieux gratuits), pas d\'identifiant libre ni de p4 ni de risk (limite connue M5, ticket Premium)', async ({ db, seedMiff }) => {
   const M5 = 'M5'.padEnd(20, 'x');
   await seedMiff({ miffId: ID.M4, name: 'Expire 1', code: CODE.M4, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true, key: ID.M4 }] });
   await seedMiff({ miffId: M5, name: 'Expire 2', code: CODE.NEW2, ownerUid: 'frank', members: [{ uid: 'frank', role: 'owner', sharing: true, key: M5 }] });
   const frank = db('frank'); // abonnement expiré (jeu de données)
   for (const miffId of [ID.M4, M5]) {
-    for (const placeId of ['p1', 'p2']) await assertSucceeds(frank.doc(lieuDans(miffId, placeId)).set(placeInput('frank')));
+    for (const placeId of ['p1', 'p2', 'p3']) await assertSucceeds(frank.doc(lieuDans(miffId, placeId)).set(placeInput('frank')));
+    await assertFails(frank.doc(lieuDans(miffId, 'p4')).set(placeInput('frank')));
     await assertFails(frank.doc(lieuDans(miffId, 'zzz')).set(placeInput('frank')));
     await assertFails(frank.doc(lieuDans(miffId, 'p1')).update({ type: 'risk', updatedAt: serverTs() }));
   }

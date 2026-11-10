@@ -11,7 +11,7 @@ const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...
 
 const PLACE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt']";
 const PLACE_UPDATE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt']";
-const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId']";
+const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay']";
 const SHARING_KEYS = "['enabled', 'consentedAt', 'consentVersion', 'revokedAt']";
 const MEMBERS_UID_DELETE = `!existsAfter(${DB}/miffs/$(resource.data.miffId)/members/$(uid))`;
 const CODE_MIFF_ID = `get(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId`;
@@ -83,7 +83,7 @@ export const DUR3_MUTATIONS = [
     [edit(`return d.keys().hasOnly(${STATUS_KEYS})`, 'return true')],
     ['S11']),
   mut('S12-presence-libre', "le champ presence accepte n'importe quelle valeur",
-    [edit("&& d.presence in ['in_trusted', 'out', 'in_risk', 'unknown']", '&& true')],
+    [edit("&& d.presence in ['in_trusted', 'out', 'in_risk', 'unknown', 'travel']", '&& true')],
     ['S12']),
   mut('S12-batterie-max', 'batteryPct peut dépasser 100',
     [edit('&& d.batteryPct <= 100', '&& true')],
@@ -172,19 +172,21 @@ export const DUR3_MUTATIONS = [
   mut('P12-createdAt-client', 'createdAt du lieu peut être une date client',
     [edit('&& d.createdAt == request.time', '&& true', 3, 4)], ['P12b']),
   mut('P12-updatedAt-creation-client', "updatedAt d'un lieu créé peut être une date client",
-    [edit("&& d.updatedAt == request.time\n        && (\n          (placeId in ['p1', 'p2']", "&& true\n        && (\n          (placeId in ['p1', 'p2']")], ['P12b']),
+    [edit("&& d.updatedAt == request.time\n        && (\n          (placeId in ['p1', 'p2', 'p3']", "&& true\n        && (\n          (placeId in ['p1', 'p2', 'p3']")], ['P12b']),
   mut('P12-updatedAt-maj-client', "updatedAt d'un lieu modifié peut être une date client",
     [edit("&& d.updatedAt == request.time\n        && (!affected().hasAny(['type'])", "&& true\n        && (!affected().hasAny(['type'])")], ['P12b']),
   mut('P11-createdBy-creation-autre', "createdBy d'un lieu créé peut désigner un autre utilisateur",
     [edit('&& d.createdBy == request.auth.uid', '&& true')], ['P11b']),
-  mut('P2-lieu-libre-gratuit', "un compte gratuit peut créer des lieux 'trusted' sous un identifiant libre (plus de 2 lieux)",
-    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(d.type == 'trusted')")], ['P2', 'P14']),
+  mut('P2-lieu-libre-gratuit', "un compte gratuit peut créer des lieux 'trusted' sous un identifiant libre (plus de 3 lieux)",
+    [edit("(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')", "(d.type == 'trusted')")], ['P2', 'P14']),
   mut('P4-lieu-risque-gratuit', "un compte gratuit peut créer un lieu 'risk' sous l'identifiant p1 ou p2",
-    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(placeId in ['p1', 'p2'])")], ['P4', 'P14b']),
-  mut('P14-troisieme-emplacement-gratuit', 'un compte gratuit dispose d\'un troisième emplacement (p3)',
-    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')")], ['P14']),
-  mut('P14-un-seul-emplacement-gratuit', "retour à l'ancienne limite : p2 n'est plus accepté en gratuit",
-    [edit("(placeId in ['p1', 'p2'] && d.type == 'trusted')", "(placeId == 'p1' && d.type == 'trusted')")], ['P14', 'P14b']),
+    [edit("(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')", "(placeId in ['p1', 'p2', 'p3'])")], ['P4', 'P14b']),
+  mut('P14-quatrieme-emplacement-gratuit', 'un compte gratuit dispose d\'un quatrième emplacement (p4)',
+    [edit("(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')", "(placeId in ['p1', 'p2', 'p3', 'p4'] && d.type == 'trusted')")], ['P14', 'P14c', 'P14d', 'P14e', 'P19', 'P20d']),
+  mut('P14-retour-a-deux-emplacements-gratuits', "retour à l'ancienne limite de 2 lieux : p3 n'est plus accepté en gratuit",
+    [edit("(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')", "(placeId in ['p1', 'p2'] && d.type == 'trusted')")], ['P14', 'P14c', 'P14d', 'P14e', 'P19', 'P20d', 'P24']),
+  mut('P14-un-seul-emplacement-gratuit', "retour à l'ancienne limite d'un seul lieu : p2 et p3 ne sont plus acceptés en gratuit",
+    [edit("(placeId in ['p1', 'p2', 'p3'] && d.type == 'trusted')", "(placeId == 'p1' && d.type == 'trusted')")], ['P14', 'P14b', 'P14c', 'P14d', 'P14e']),
   mut('P19-creation-sans-premium', "la création hors emplacements gratuits n'exige plus le premium",
     [edit('|| isPremiumOneRead(request.auth.uid)\n        );', '|| true\n        );')], ['P2', 'P14', 'P19']),
   mut('P19-premium-expiration', "l'expiration de l'abonnement n'est plus vérifiée pour les lieux",

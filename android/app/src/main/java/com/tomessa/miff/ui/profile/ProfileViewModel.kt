@@ -14,6 +14,7 @@ import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.AvatarCompression
 import com.tomessa.miff.domain.profile.CropMath
 import com.tomessa.miff.domain.profile.DecodedPhoto
+import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.profile.PhoneNumbers
 import com.tomessa.miff.domain.profile.PhoneResult
 import com.tomessa.miff.domain.profile.ProfileForm
@@ -80,6 +81,11 @@ data class ProfileUiState(
     val firstNameLimitHit: Boolean = false,
     val lastNameLimitHit: Boolean = false,
     val avatar: AvatarImage? = null,
+    /**
+     * The photo shown was taken from the Google account (not chosen by the person): a discreet sentence says so. Goes away as
+     * soon as the person changes or removes the photo. Not kept in the draft: after a restart the photo is just "the photo".
+     */
+    val googlePhotoPrefilled: Boolean = false,
     val crop: CropState? = null,
     val regionCode: String = PhoneNumbers.FALLBACK_REGION,
     val phoneText: String = "",
@@ -114,6 +120,8 @@ class ProfileViewModel(
     private val avatars: AvatarCodec,
     private val network: NetworkMonitor,
     deviceRegion: () -> String?,
+    /** Takes the Google photo of the account to pre-fill the profile photo; null = nothing to take (tests, older screens). */
+    private val googlePhoto: GooglePhotoPrefill? = null,
     private val worker: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val uid: String? = session.currentUid
@@ -151,6 +159,36 @@ class ProfileViewModel(
         uiState = mutableState.asStateFlow()
         // Loads the numbering plan of the country off the main thread, so that the phone step opens without a hitch.
         viewModelScope.launch(worker) { PhoneNumbers.exampleHint(region) }
+        // Only for a person who has not been through this step yet: a draft (names typed, photo chosen or removed) means they
+        // have, and their choice is not overwritten. An account that already has a profile never reaches this view model.
+        if (mode == OnboardingMode.FULL && draft == null) prefillFromGooglePhoto()
+    }
+
+    /**
+     * The Google photo of the account becomes the PRE-FILLED profile photo (decision of the PM, 2026-11-08), once, without ever
+     * holding the step back: the fields are usable at once, and any failure (no network, slow answer, no photo, a generic Google
+     * picture, an address that is not Google's) simply leaves the step as it was, with no message. The person can replace it
+     * or remove it like any photo; it is written with the profile and nowhere else (it goes to the draft, like any chosen photo).
+     * It is dropped if the person has already chosen a photo, is cropping one, or has moved on in the meantime.
+     */
+    private fun prefillFromGooglePhoto() {
+        val prefill = googlePhoto ?: return
+        val rawUrl = session.suggestedPhotoUrl() ?: return
+        viewModelScope.launch {
+            val jpeg = prefill.load(rawUrl) ?: return@launch
+            var applied = false
+            mutableState.update { state ->
+                if (state.avatar != null || state.crop != null || state.step != DraftStep.PROFILE ||
+                    state.isWriting || draftClosed
+                ) {
+                    state
+                } else {
+                    applied = true
+                    state.copy(avatar = AvatarImage(jpeg), googlePhotoPrefilled = true)
+                }
+            }
+            if (applied) saveDraft()
+        }
     }
 
     // --- Profile step ------------------------------------------------------------------------------------------
@@ -237,7 +275,7 @@ class ProfileViewModel(
                 if (bytes == null || bytes.size > AvatarCompression.MAX_BYTES) {
                     it.copy(crop = null, message = ProfileMessage.PHOTO_UNUSABLE)
                 } else {
-                    it.copy(crop = null, avatar = AvatarImage(bytes), message = null)
+                    it.copy(crop = null, avatar = AvatarImage(bytes), googlePhotoPrefilled = false, message = null)
                 }
             }
             saveDraft()
@@ -245,7 +283,7 @@ class ProfileViewModel(
     }
 
     fun onRemovePhoto() {
-        mutableState.update { it.copy(avatar = null) }
+        mutableState.update { it.copy(avatar = null, googlePhotoPrefilled = false) }
         saveDraft()
     }
 

@@ -409,6 +409,9 @@
     <string name="feed_selector_a11y">Miff shown: %1$s. Tap to switch Miff or add one.</string>
     <string name="feed_selector_join">+ Join a Miff</string>
     <string name="feed_selector_create">+ Create a Miff</string>
+    <string name="feed_selector_paywall_title">One Miff with the free plan</string>
+    <string name="feed_selector_paywall_body">With Miff+, create or join as many Miffs as you like.</string>
+    <string name="feed_selector_paywall_soon_body">This option isn\'t open yet. Your current Miff stays as it is.</string>
     <string name="feed_nomiff_body">Create your Miff or join a loved one\'s to get started.</string>
     <string name="feed_create_action">Create a Miff</string>
     <string name="feed_join_action">Join a Miff</string>
@@ -443,8 +446,10 @@
     <string name="feed_label_at_home">At home</string>
     <string name="feed_label_at_work">At work</string>
     <string name="feed_label_at_school">At school</string>
-    <string name="feed_label_at_sport">At the sports club</string>
-    <string name="feed_label_at_place">At %1$s</string>
+    <string name="feed_label_at_sport">At the gym</string>
+    <!-- Leisure, Other, no category: the name of the trusted place alone (PM decision, 2026-11-08). -->
+    <string name="feed_label_at_place">%1$s</string>
+    <string name="feed_label_at_relative">At a loved one\'s</string>
     <string name="feed_label_left">Left %1$s</string>
     <string name="feed_label_trusted_generic">In a trusted place</string>
     <string name="feed_label_danger">In a danger zone</string>
@@ -455,7 +460,8 @@
     <string name="feed_place_noun_home">home</string>
     <string name="feed_place_noun_work">work</string>
     <string name="feed_place_noun_school">school</string>
-    <string name="feed_place_noun_sport">the sports club</string>
+    <string name="feed_place_noun_sport">the gym</string>
+    <string name="feed_place_noun_relative">a loved one\'s place</string>
     <string name="feed_place_noun_generic">a trusted place</string>
     <string name="feed_time_since_minutes">For %1$d min</string>
     <string name="feed_time_since_hours">For %1$d h</string>
@@ -662,7 +668,7 @@
     <string name="place_detail_created_by">Created by</string>
     <string name="place_detail_created_by_me">%1$s (you)</string>
     <string name="place_detail_info_trusted">When you arrive at or leave this place, your Miff sees your status (for example “at home”), even when the app is closed.</string>
-    <string name="place_detail_info_danger">While you\'re in this zone, your Miff sees your status in red. Only the Miff\'s creator can add or edit this kind of zone.</string>
+    <string name="place_detail_info_danger">When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour.</string>
     <string name="place_paywall_close_a11y">Close</string>
     <string name="place_paywall_limit_title">You\'ve reached 2 places</string>
     <string name="place_paywall_limit_body">That\'s the limit of the free plan. With Miff+, add as many places as you like.</string>
@@ -832,6 +838,14 @@
     <string name="settings_privacy_miff_waiting_pill">Waiting</string>
     <string name="settings_privacy_miff_waiting_body">Your agreement is waiting: Miff no longer updates your status with this Miff. You can stop sharing from the Miff screen.</string>
     <string name="settings_privacy_detection_help_link">If detections are slow</string>
+    <!-- ABO-1: Settings > Subscription, read only (Miff+ granted by hand). No price, no purchase button. -->
+    <string name="settings_subscription_plan_name" translatable="false">Miff+</string>
+    <string name="settings_subscription_title">Subscription</string>
+    <string name="settings_subscription_subtitle">See your subscription</string>
+    <string name="settings_subscription_active_until">Active until %1$s</string>
+    <string name="settings_subscription_source_manual">Granted by the Miff team</string>
+    <string name="settings_subscription_source_other">Current plan</string>
+    <string name="settings_subscription_no_store_note">This access doesn\'t go through a store.</string>
     <string name="settings_detection_help_title">If arrivals and departures are slow</string>
     <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them.</string>
     <string name="settings_detection_help_step_battery">1. In the Miff settings, open \"Battery\" (or \"Power consumption\") and choose \"No restrictions\" (or \"Don\'t optimize\").</string>
@@ -895,7 +909,28 @@
     <string name="update_photo_close_a11y">Close the photo</string>
     <string name="update_photo_position">Position measured %1$s.</string>
     <string name="update_photo_see_where">See where it was</string>
+    <string name="feed_photo_download">Save the photo</string>
+    <string name="feed_photo_download_done">Photo saved.</string>
     <string name="update_notice_unconfirmed">We couldn\'t confirm it. Check your Feed: if your photo is there, it went through.</string>
     <string name="update_action_open_feed">Open my Feed</string>
     <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff is no longer allowed to use it. You can turn it back on in the settings, then try again.</string>
+
+    <!-- Review window "What do you think of Miff?" (docs/tickets/pop-ins-avis.md). Informal "you", calm tone. -->
+    <string name="review_title">What do you think of Miff?</string>
+    <string name="review_close_a11y">Close</string>
+    <string name="review_love_action">I love it!</string>
+    <string name="review_better_action">Could do better...</string>
+    <string name="review_thanks_title">Thank you!</string>
+    <string name="review_thanks_body">That really makes us happy. If you feel like it, leave us a review and a comment in the app store.</string>
+    <string name="review_feedback_title">Thanks for telling us!</string>
+    <string name="review_feedback_body">We want to do better. If you\'d like to tell us what could be improved, write to us: it helps us move forward.</string>
+    <string name="review_feedback_write">Write to us</string>
+    <string name="review_open_failed">Nothing could be opened on your phone. You can try again in a moment.</string>
+    <string name="review_feedback_later">Later</string>
+    <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
+    <string name="android_diag_review_title">Review window (test)</string>
+    <string name="android_diag_review_force">Show the window at the next return to the app</string>
+    <string name="android_diag_review_force_armed">Ready: send the app to the background, then reopen it (the window never covers the Update).</string>
+    <string name="android_diag_review_reset">Reset the state of the window</string>
+    <string name="android_diag_review_reset_done">State reset: the window starts from zero (7 days, 30 days, 90 days).</string>
 </resources>

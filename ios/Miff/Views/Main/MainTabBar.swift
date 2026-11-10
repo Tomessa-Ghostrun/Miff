@@ -113,25 +113,14 @@ struct MainTabBar: View {
     @ViewBuilder
     private func icon(for tab: MainTab, isSelected: Bool) -> some View {
         let color = (isSelected ? variant.palette.iconActive : variant.palette.iconInactive).color
-        switch tab {
-        case .feed:
-            // La maison avec un petit coeur des maquettes : dessinée avec deux symboles du système, au trait.
-            ZStack {
-                Image(systemName: "house")
-                    .font(.system(size: TabBarLayout.iconSize, weight: .regular))
-                Image(systemName: "heart")
-                    .font(.system(size: 9, weight: .bold))
-                    .offset(y: 3)
-            }
-            .foregroundColor(color)
-            .accessibilityHidden(true)
-        case .update:
-            CentralStatusButton(state: central)
-                .accessibilityHidden(true)
-        case .profile:
-            Image(systemName: "person")
+        if let symbol = TabBarSymbols.name(for: tab, isSelected: isSelected) {
+            // Le Feed est une maison classique (décision du PM, 2026-11-08), pleine quand l'onglet est actif ; le Profil de même.
+            Image(systemName: symbol)
                 .font(.system(size: TabBarLayout.iconSize, weight: .regular))
                 .foregroundColor(color)
+                .accessibilityHidden(true)
+        } else {
+            CentralStatusButton(state: central)
                 .accessibilityHidden(true)
         }
     }

@@ -27,10 +27,10 @@ struct PlacePaywallView: View {
     }
 }
 
-/// L'offre affichée quand un compte gratuit demande un 3e lieu ou une zone de danger (maquettes 14 et 15) : l'écran de l'offre avec
-/// une phrase calme en haut qui dit POURQUOI il s'affiche. PROVISOIRE (décision QL15) : aucun achat n'existe encore, donc le bouton
-/// d'essai et les prix ne sont pas dessinés (un prix n'est jamais écrit à la main, et un bouton qui ne fait rien serait un
-/// mensonge) ; « Miff+ arrive bientôt » dit où l'on en est. Rien n'est écrit ici : quitter l'écran ne change rien.
+/// L'offre affichée quand un compte gratuit demande un 3e lieu, une zone de danger (maquettes 14 et 15) ou une 2e Miff (sélecteur du
+/// Feed, décision du PM du 2026-11-08) : l'écran de l'offre avec une phrase calme en haut qui dit POURQUOI il s'affiche.
+/// PROVISOIRE (décision QL15) : aucun achat n'existe encore, donc le bouton d'essai et les prix ne sont pas dessinés
+/// (un prix n'est jamais écrit à la main, et un bouton qui ne fait rien serait un mensonge) ; « Miff+ arrive bientôt » dit où l'on en est. Rien n'est écrit ici : quitter l'écran ne change rien.
 ///
 /// « Notifications intelligentes » n'est PAS listée : aucune notification n'est envoyée pour l'instant (risque R13 : ne jamais
 /// promettre ce qui n'existe pas). Sans état propre.
@@ -60,7 +60,7 @@ struct PlacePaywallContent: View {
                         symbol: "person.2",
                         title: L10n.string("place_paywall_feature_miffs"),
                         detail: L10n.string("place_paywall_feature_miffs_desc"),
-                        highlighted: false
+                        highlighted: reason == .extraMiff
                     )
                     PlacePaywallFeature(
                         symbol: "exclamationmark.triangle",
@@ -73,7 +73,7 @@ struct PlacePaywallContent: View {
                         .foregroundColor(colorTextPrimary.color)
                         .multilineTextAlignment(.center)
                         .padding(.top, Spacing.sm)
-                    Text("place_paywall_soon_body")
+                    Text(verbatim: L10n.string(reason.soonBodyKey))
                         .miffTextStyle(textBodyRegular)
                         .foregroundColor(colorTextDescription.color)
                         .multilineTextAlignment(.center)
@@ -117,19 +117,15 @@ struct PlacePaywallContent: View {
 struct PlacePaywallContext: View {
     let reason: PaywallReason
 
-    private var limit: Bool {
-        reason == .limit
-    }
-
     var body: some View {
         HStack(spacing: Spacing.md) {
             leading
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(verbatim: L10n.string(limit ? "place_paywall_limit_title" : "place_paywall_danger_title"))
+                Text(verbatim: L10n.string(reason.titleKey))
                     .miffTextStyle(textBodyBold16)
                     .foregroundColor(colorTextPrimary.color)
                     .accessibilityAddTraits(.isHeader)
-                Text(verbatim: L10n.string(limit ? "place_paywall_limit_body" : "place_paywall_danger_body"))
+                Text(verbatim: L10n.string(reason.bodyKey))
                     .miffTextStyle(textBodyRegular)
                     .foregroundColor(colorTextDescription.color)
                     .fixedSize(horizontal: false, vertical: true)
@@ -152,19 +148,28 @@ struct PlacePaywallContext: View {
 
     @ViewBuilder
     private var leading: some View {
-        if limit {
+        switch reason {
+        case .limit:
             HStack(spacing: Spacing.xs) {
                 dot(filled: true)
                 dot(filled: true)
                 dot(filled: false)
             }
             .accessibilityHidden(true)
-        } else {
+        case .danger:
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 22, weight: .regular))
                 .foregroundColor(colorTextError.color)
                 .frame(width: 40, height: 40)
                 .background(Circle().fill(colorStatusDangerTint.color))
+                .accessibilityHidden(true)
+        case .extraMiff:
+            // Une 2e Miff n'est pas un danger : le même pictogramme que la ligne « Nombre de Miffs illimité », en bleu calme.
+            Image(systemName: "person.2")
+                .font(.system(size: 22, weight: .regular))
+                .foregroundColor(colorActionPrimary.color)
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(colorActionPrimaryTint20.color))
                 .accessibilityHidden(true)
         }
     }
