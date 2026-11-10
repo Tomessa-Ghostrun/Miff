@@ -279,3 +279,5 @@ final class FeedBuilderTravelTests: XCTestCase {
         XCTAssertEqual(content.card("t")?.canLocate, true)
     }
 }
+
+// swiftlint:enable line_length

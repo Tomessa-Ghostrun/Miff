@@ -195,3 +195,5 @@ final class FeedTravelTextsTests: XCTestCase {
         }
     }
 }
+
+// swiftlint:enable line_length
