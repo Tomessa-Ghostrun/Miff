@@ -170,6 +170,8 @@ final class FakePositionSource: PositionSource {
     var recentSystemFix: Fix?
     /// Toutes les demandes de position, de n'importe quelle sorte.
     private(set) var calls = 0
+    /// Les attentes demandées (`current(within:)`), en secondes.
+    private(set) var waits: [Double] = []
     /// Les mesures DEMANDÉES au système.
     private(set) var freshCalls = 0
     /// Les demandes qui acceptaient une position récente déjà connue (`currentReusingRecent()`).
@@ -179,6 +181,11 @@ final class FakePositionSource: PositionSource {
         calls += 1
         freshCalls += 1
         return fix
+    }
+
+    func current(within seconds: Double) async -> Fix? {
+        waits.append(seconds)
+        return await current()
     }
 
     func currentReusingRecent() async -> PositionReading {

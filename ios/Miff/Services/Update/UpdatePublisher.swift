@@ -155,6 +155,13 @@ final class UpdatePublisher {
         // invitée à l'écrire, rien n'est mesuré, et la personne est invitée à réessayer dans un instant (même phrase qu'une position introuvable).
         let withPosition = targets.filter { isPositionPublished($0) }
         if withPosition.isEmpty {
+            // Si c'est une AUTORISATION qui empêche le suivi d'écrire ma position (« Pendant l'utilisation » au lieu de « Toujours », position
+            // approximative, localisation éteinte), « réessaie dans un instant » serait faux et sans fin : la phrase juste mène aux Réglages.
+            // Seules les autorisations sont lues ici, jamais une position.
+            let blocker = await position.blocker(needsBackground: true)
+            if let blocker, let refusal = PublishResultRefusal(blocker) {
+                return refusal.result
+            }
             onPositionMissing()
             return .positionNotFound
         }
@@ -197,6 +204,8 @@ final class UpdatePublisher {
         switch await position.measure() {
         case .locationOff:
             return .failure(PublishResultRefusal(result: .locationOff))
+        case .approximate:
+            return .failure(PublishResultRefusal(result: .locationApproximate))
         case .notFound:
             return .failure(PublishResultRefusal(result: .positionNotFound))
         case .found(let fix):
@@ -315,4 +324,21 @@ final class UpdatePublisher {
 /// Une réponse de publication qui arrête tout avant l'écriture (position introuvable, localisation éteinte).
 struct PublishResultRefusal: Error {
     let result: PublishResult
+
+    init(result: PublishResult) {
+        self.result = result
+    }
+
+    /// La réponse qui dit POURQUOI les autorisations empêchent la mesure ; nil quand la mesure n'est pas empêchée (position trouvée, ou
+    /// simplement introuvable).
+    init?(_ blocker: PhotoPosition) {
+        switch blocker {
+        case .locationOff:
+            result = .locationOff
+        case .approximate:
+            result = .locationApproximate
+        case .found, .notFound:
+            return nil
+        }
+    }
 }
