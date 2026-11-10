@@ -202,13 +202,13 @@ final class FeedViewModelTests: XCTestCase {
         let task = observe(model)
         miffData([other, mine])
         await waitUntil { self.statuses.active == 1 }
-        statuses.emit(["a": feedStatus(.out, departedAgo: feedMinutes(50))])
+        statuses.emit(["a": feedStatus(.out, departedAgo: feedMinutes(110))])
         await waitUntil { self.content(model)?.card("a")?.level == .green }
 
         clock.value += feedMinutes(15)
         await waitUntil { self.content(model)?.card("a")?.level == .orange }
 
-        XCTAssertEqual(content(model)?.card("a")?.level, .orange, "65 min : orange, recalculé par l'horloge")
+        XCTAssertEqual(content(model)?.card("a")?.level, .orange, "125 min : orange, recalculé par l'horloge")
         XCTAssertEqual(statuses.total, 1, "aucune lecture de plus pour cela")
         await stop(task)
     }

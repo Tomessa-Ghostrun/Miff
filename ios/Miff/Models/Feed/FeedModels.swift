@@ -9,12 +9,14 @@ import Foundation
 // l'horloge. Ils portent des faits (une sorte de lieu, une heure, un niveau), jamais une phrase : les phrases sont les clés
 // `feed_*` (français et anglais, mêmes clés qu'Android).
 
-/// Les quatre catégories dont le NOM est remplacé par la catégorie dans les phrases (« À la maison ») : Maison, Travail, École, Sport.
+/// Les cinq catégories dont le NOM est remplacé par la catégorie dans les phrases (« À la maison ») : Maison, Travail, École, Sport,
+/// Chez un proche (décision du PM, 2026-11-08). Loisir, Autre et un lieu sans catégorie se disent par leur NOM (`PlaceRef.named`).
 enum PlaceKind: Equatable {
     case home
     case work
     case school
     case sport
+    case relative
 }
 
 /// Où dit-on qu'est quelqu'un, d'après la liste des lieux de CETTE Miff (la seule source).
@@ -47,10 +49,9 @@ enum StateLabel: Equatable {
 /// La ligne sous l'étiquette. UN seul repère de temps par carte.
 enum TimeLine: Equatable {
     case nothing
-    /// « Depuis 12 min », « Depuis 3 h », « Depuis hier à 08 h 12 », « Depuis le 3 nov. à 08 h 12 ».
-    case since(Age)
-    /// « Départ il y a 12 min » : vert, une zone de confiance quittée il y a moins d'une heure.
-    case departedAgo(Age)
+    /// L'HEURE d'arrivée (dans une zone de confiance) ou de départ (zone quittée, encore vert), jamais une durée (décision du PM,
+    /// 2026-11-10) : « Depuis 13 h 36 », « Depuis hier à 13 h 36 », « Depuis le 3 nov. à 13 h 36 ».
+    case since(Moment)
     /// Orange : « Dernière nouvelle à 16 h 02 » (une heure ABSOLUE).
     case latestNews(Moment)
     /// Rouge d'ancienneté : « Pas de nouvelles depuis 16 h 02 ».
