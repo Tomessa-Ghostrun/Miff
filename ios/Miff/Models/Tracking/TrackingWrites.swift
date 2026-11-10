@@ -92,7 +92,7 @@ enum TrackingWrites {
             "updatedAt": .serverTimestamp
         ]
         let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
-        return DocWrite(path: "miffs/(miffId)/status/(uid)", kind: .update, data: stamped)
+        return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
     }
 
     /// MODE VOYAGE, un CHANGEMENT de la fin d'un voyage déjà écrit dans cette Miff : seules les deux clés du voyage bougent (le début reste).
@@ -106,7 +106,7 @@ enum TrackingWrites {
             "updatedAt": .serverTimestamp
         ]
         let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
-        return DocWrite(path: "miffs/(miffId)/status/(uid)", kind: .update, data: stamped)
+        return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
     }
 
     /// Seulement la batterie et l'accès à la localisation (quand l'autorisation a changé) : la présence n'est pas touchée.

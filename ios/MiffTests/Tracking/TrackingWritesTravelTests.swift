@@ -41,6 +41,7 @@ final class TrackingWritesTravelTests: XCTestCase {
             miffId: testMiffId, uid: uid, period: period, deviceId: testDeviceId
         ))
 
+        XCTAssertEqual(write.path, "miffs/\(testMiffId)/status/\(uid)")
         XCTAssertEqual(write.kind, .update)
         XCTAssertEqual(Set(write.data.keys), ["travelUntil", "travelUntilDay", "updatedAt", "deviceId"])
         XCTAssertEqual(write.data["travelUntil"], .timestamp(millis: period.untilMillis))
