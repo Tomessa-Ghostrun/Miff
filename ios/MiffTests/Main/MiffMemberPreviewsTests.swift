@@ -27,7 +27,7 @@ final class MiffMemberPreviewsTests: XCTestCase {
     }
 
     private func preview(_ count: Int) -> MemberPreview {
-        MemberPreview(members: (0..<count).map { member("u\($0)") })
+        MemberPreview(members: (0..<count).map { member("u\($0 + 1)") })
     }
 
     private struct Fixture {
