@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,12 +28,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -46,15 +50,19 @@ import com.tomessa.miff.domain.notification.NotificationSections
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.settings.SettingsScaffold
+import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint10
+import com.tomessa.miff.ui.theme.colorActionPrimaryTint20
+import com.tomessa.miff.ui.theme.colorActionPrimaryTint30
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBrandPrimary
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.colorTextSecondary
+import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyCaption
@@ -89,6 +97,8 @@ fun NotificationCenterScreen(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+    // Notifications refused (or never asked): the centre is shown BLURRED, with generic bars where the lines would be (never real data), and ONE way to turn them on.
+    val locked = state.banner == CenterBanner.OFF || state.banner == CenterBanner.NOT_ASKED
     SettingsScaffold(
         title = stringResource(R.string.notif_center_title),
         onBack = actions.onBack,
@@ -96,17 +106,21 @@ fun NotificationCenterScreen(
             CenterMenu(
                 open = menuOpen,
                 onOpenChange = { menuOpen = it },
-                hasRows = state.rows.isNotEmpty(),
+                hasRows = state.rows.isNotEmpty() && !locked,
                 onMarkAllRead = actions.onMarkAllRead,
                 onClearAll = { confirmClear = true },
             )
         },
     ) {
-        if (state.banner != CenterBanner.NONE) {
+        if (locked) {
+            LockedPreview(state.banner) { actions.onBannerAction(state.banner) }
+        } else if (state.banner != CenterBanner.NONE) {
             Banner(state.banner) { actions.onBannerAction(state.banner) }
             Spacer(Modifier.size(Spacing.m))
         }
-        if (state.rows.isEmpty()) {
+        if (locked) {
+            // Nothing else: the real lines stay out of sight while the notifications are off.
+        } else if (state.rows.isEmpty()) {
             EmptyState()
         } else {
             NotificationSections.group(state.rows, { it.createdAtMillis }, nowMillis, zone).forEach { (section, rows) ->
@@ -202,30 +216,12 @@ private fun BoxScope.CenterMenu(
     }
 }
 
-/** "Les notifications sont coupées" (or "Pas encore activées"): calm, never red, one button. */
+/** The general switch of the app is off (the phone allows): a calm band with one button that turns it back on. */
 @Composable
 private fun Banner(
     banner: CenterBanner,
     onAction: () -> Unit,
 ) {
-    val (title, body, action) =
-        when (banner) {
-            CenterBanner.NOT_ASKED -> {
-                Triple(
-                    R.string.notif_state_notasked,
-                    R.string.notif_center_notasked_body,
-                    R.string.notif_center_notasked_action,
-                )
-            }
-
-            else -> {
-                Triple(
-                    R.string.notif_center_off_title,
-                    R.string.notif_center_off_body,
-                    R.string.notif_center_off_action,
-                )
-            }
-        }
     Column(
         modifier =
             Modifier
@@ -235,11 +231,144 @@ private fun Banner(
                 .padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Text(text = stringResource(title), style = textBodyBold16, color = colorTextForm)
-        Text(text = stringResource(body), style = textBodyRegular14, color = colorTextDescription)
-        MiffButton(text = stringResource(action), onClick = onAction, modifier = Modifier.fillMaxWidth())
+        Text(text = stringResource(R.string.notif_center_off_title), style = textBodyBold16, color = colorTextForm)
+        Text(
+            text = stringResource(R.string.notif_center_off_body),
+            style = textBodyRegular14,
+            color = colorTextDescription,
+        )
+        MiffButton(
+            text = stringResource(R.string.notif_center_off_action),
+            onClick = onAction,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
+
+/**
+ * The centre when the notifications are refused or never asked: the screen as it would look with lines behind it, BLURRED (bars only, nothing real, nothing readable,
+ * hidden from the screen reader), and over it a calm card: what is off, and ONE button "Activer les notifications". On Android before 12 the blur does nothing: the
+ * bars are pale enough to stay a decoration. The button asks the system window when Android can still show it, otherwise leads to the calm help that opens the phone settings.
+ */
+@Composable
+private fun LockedPreview(
+    banner: CenterBanner,
+    onEnable: () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .blur(10.dp)
+                    .alpha(0.7f)
+                    .clearAndSetSemantics {},
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            repeat(FAKE_ROWS) { index ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.Top) {
+                    Box(
+                        Modifier
+                            .padding(
+                                top = Spacing.xs,
+                            ).size(Spacing.s + Spacing.xs)
+                            .clip(CircleShape)
+                            .background(colorBrandPrimary),
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.weight(1f)) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(
+                                    if (index % 2 ==
+                                        0
+                                    ) {
+                                        0.7f
+                                    } else {
+                                        0.55f
+                                    },
+                                ).height(Spacing.m)
+                                .clip(ShapeMd)
+                                .background(colorActionPrimaryTint30),
+                        )
+                        Box(
+                            Modifier
+                                .fillMaxWidth(
+                                    0.95f,
+                                ).height(Spacing.s + Spacing.xs)
+                                .clip(ShapeMd)
+                                .background(colorActionPrimaryTint20),
+                        )
+                        Box(
+                            Modifier
+                                .fillMaxWidth(
+                                    0.25f,
+                                ).height(Spacing.s)
+                                .clip(ShapeMd)
+                                .background(colorActionPrimaryTint10),
+                        )
+                    }
+                }
+            }
+        }
+        Column(
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .miffShadow(ShadowDefault, ShapeMd)
+                    .clip(ShapeMd)
+                    .background(colorBgSurface)
+                    .padding(Spacing.m),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_bell),
+                contentDescription = null,
+                tint = colorActionPrimary,
+                modifier = Modifier.size(40.dp),
+            )
+            Text(
+                text =
+                    stringResource(
+                        if (banner ==
+                            CenterBanner.NOT_ASKED
+                        ) {
+                            R.string.notif_state_notasked
+                        } else {
+                            R.string.notif_center_off_title
+                        },
+                    ),
+                style = textBodyBold16,
+                color = colorTextForm,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                text =
+                    stringResource(
+                        if (banner ==
+                            CenterBanner.NOT_ASKED
+                        ) {
+                            R.string.notif_center_notasked_body
+                        } else {
+                            R.string.notif_center_off_body
+                        },
+                    ),
+                style = textBodyRegular14,
+                color = colorTextDescription,
+                textAlign = TextAlign.Center,
+            )
+            MiffButton(
+                text = stringResource(R.string.notif_center_enable_action),
+                onClick = onEnable,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+private const val FAKE_ROWS = 5
 
 @Composable
 private fun EmptyState() {

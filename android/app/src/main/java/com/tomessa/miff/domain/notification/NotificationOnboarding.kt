@@ -1,5 +1,7 @@
 package com.tomessa.miff.domain.notification
 
+import com.tomessa.miff.domain.permission.ApiLevel
+
 /*
  * The "second chance" of the notification permission (ticket section 8.1, step 3; criterion N-A3): when the person said "Plus tard" on the pop-in, ONE
  * calm card is offered in the Feed after the FIRST update they publish ("Un rappel si tu oublies de donner de tes nouvelles ?"). Never a window, never
@@ -69,6 +71,38 @@ enum class AuthorizationAction {
                 NotificationPermissionState.ALLOWED -> NONE
                 NotificationPermissionState.NOT_ASKED -> ASK_SYSTEM
                 NotificationPermissionState.OFF -> OPEN_PHONE_SETTINGS
+            }
+    }
+}
+
+/** What the button "Activer les notifications" of the centre does when the notifications are refused or never asked. */
+enum class EnableStep {
+    /** The native window of Android (it can still be shown). */
+    ASK_SYSTEM,
+
+    /** Android cannot show its window any more (refused for good, or turned off in the phone): the calm help that opens the notification settings of the app. */
+    OPEN_HELP,
+    ;
+
+    companion object {
+        /**
+         * [systemWindowStillPossible]: Android would still show the window (after ONE refusal it still
+         * does, once more; after a second one, or "don't ask again", it never does). Before Android 13
+         * there is no window at all.
+         */
+        fun of(
+            state: NotificationPermissionState,
+            sdk: Int,
+            systemWindowStillPossible: Boolean,
+        ): EnableStep =
+            when {
+                state == NotificationPermissionState.NOT_ASKED -> ASK_SYSTEM
+
+                state == NotificationPermissionState.OFF &&
+                    sdk >= ApiLevel.TIRAMISU &&
+                    systemWindowStillPossible -> ASK_SYSTEM
+
+                else -> OPEN_HELP
             }
     }
 }
