@@ -15,6 +15,8 @@ struct ProfileTabActions {
 struct ProfileTabView: View {
     let state: ProfileTabState
     let miffs: DirectoryState
+    /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », sous l'en-tête et avant « Mes Miffs », ouverte à tous les comptes.
+    @ObservedObject var travel: TravelViewModel
     let actions: ProfileTabActions
 
     var body: some View {
@@ -24,6 +26,7 @@ struct ProfileTabView: View {
                 if state == .unavailable {
                     unavailable
                 }
+                TravelCardView(model: travel)
                 miffCards
             }
             .padding(.horizontal, Spacing.lg)
