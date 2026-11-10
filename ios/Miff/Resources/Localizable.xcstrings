@@ -9106,6 +9106,23 @@
         }
       }
     },
+    "profile_google_photo_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We used your Google photo. You can change it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On a repris ta photo Google, tu peux la changer."
+          }
+        }
+      }
+    },
     "profile_last_name_label": {
       "extractionState": "manual",
       "localizations": {

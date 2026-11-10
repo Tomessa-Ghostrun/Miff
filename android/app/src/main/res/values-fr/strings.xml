@@ -214,6 +214,7 @@
     <string name="profile_photo_add">Ajouter une photo (facultatif)</string>
     <string name="profile_photo_change">Modifier la photo</string>
     <string name="profile_photo_visibility">Visible par les membres de tes Miffs</string>
+    <string name="profile_google_photo_hint">On a repris ta photo Google, tu peux la changer.</string>
     <string name="profile_photo_image_a11y">Ta photo de profil</string>
     <string name="profile_photo_sheet_title">Photo de profil</string>
     <string name="profile_photo_take">Prendre une photo</string>

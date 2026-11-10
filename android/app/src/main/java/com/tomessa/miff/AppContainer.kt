@@ -84,6 +84,7 @@ import com.tomessa.miff.data.profile.AndroidAvatarCodec
 import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.data.profile.CurrentProfile
 import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
+import com.tomessa.miff.data.profile.HttpsGooglePhotoSource
 import com.tomessa.miff.data.profile.MyProfileRepository
 import com.tomessa.miff.data.review.ForegroundTicks
 import com.tomessa.miff.data.review.ReviewStateStore
@@ -123,6 +124,7 @@ import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.profile.AvatarCodec
+import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.startup.StartupTrace
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -200,6 +202,9 @@ class AppContainer(
 
     /** Photo of the profile: Photo Picker / camera of the system, square crop, JPEG without any metadata. */
     val avatarCodec: AvatarCodec by lazy { AndroidAvatarCodec(context) }
+
+    /** The Google photo of the account, taken once at the profile step of a Google sign-up (HTTPS, Google hosts only, in memory). */
+    val googlePhotoPrefill: GooglePhotoPrefill by lazy { GooglePhotoPrefill(HttpsGooglePhotoSource(), avatarCodec) }
 
     /** Reading and changing the profile once it exists (Settings > Mes informations). */
     val myProfiles: MyProfileRepository by lazy { FirestoreMyProfileRepository() }
