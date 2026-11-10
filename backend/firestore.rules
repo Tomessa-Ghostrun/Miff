@@ -629,7 +629,7 @@ service cloud.firestore {
           && d.travelUntil > request.time
           && d.travelUntil <= request.time + duration.value(91, 'd')
           && d.get('travelUntilDay', null) is string
-          && d.travelUntilDay.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+          && d.travelUntilDay.matches('^20[2-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
         );
     }
 

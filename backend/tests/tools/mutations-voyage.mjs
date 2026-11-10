@@ -6,7 +6,7 @@
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
 const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...(equivalent ? { equivalent } : {}) });
 
-const DAY_PATTERN = "'^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'";
+const DAY_PATTERN = "'^20[2-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'";
 
 export const VOYAGE_MUTATIONS = [
   // --- Schéma ----------------------------------------------------------------------------------------------------------------------
@@ -33,8 +33,10 @@ export const VOYAGE_MUTATIONS = [
     [edit(`&& d.travelUntilDay.matches(${DAY_PATTERN})`, '&& true')], ['VY7']),
   mut('VY-jour-format-lache', 'le format du jour accepte un mois 13 ou un jour 32 (deux chiffres quelconques)',
     [edit(DAY_PATTERN, "'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'")], ['VY7']),
+  mut('VY-jour-annee-lache', "le format du jour accepte n'importe quelle année à 4 chiffres (1999, 0000, 2100)",
+    [edit(DAY_PATTERN, "'^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'")], ['VY7']),
   mut('VY-jour-non-ancre', "le format du jour n'est plus ancré (texte ajouté avant ou après)",
-    [edit(DAY_PATTERN, "'[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'")], ['VY7'],
+    [edit(DAY_PATTERN, "'20[2-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'")], ['VY7'],
     "équivalente si matches() de Firestore exige une correspondance complète de la chaîne (le motif non ancré reste refusé sur un texte entouré) ; VY7 le vérifie avec des textes ajoutés avant et après"),
   mut('VY-jour-type', "travelUntilDay n'est plus contrôlé comme texte",
     [edit("&& d.get('travelUntilDay', null) is string", '&& true')], ['VY6'],

@@ -36,7 +36,7 @@ Les deux clés de voyage sont **facultatives dans le schéma** (un statut ordina
 |---|---|---|
 | Fenêtre choisie par l'utilisateur | date minimale = **aujourd'hui** (le voyage se termine ce soir), maximale = **aujourd'hui + 90 jours** ; défaut proposé : aujourd'hui + 7 jours | **Client** |
 | Borne des règles | `travelUntil` doit être **strictement futur** (> heure serveur) et **<= heure serveur + 91 jours** (90 jours + 1 jour de marge pour le fuseau et la dérive d'horloge) | **Règles** (refus si dépassé) |
-| Format de `travelUntilDay` | `AAAA-MM-JJ` avec zéros de remplissage, mois 01 à 12, jour 01 à 31 (expression exacte : `firestore.rules`, `validTravel`) | **Règles** (forme) ; la cohérence avec `travelUntil` n'est **pas** vérifiée (aucune règle ne lit le fuseau ; un client modifié ne trompe que l'affichage de sa propre carte) |
+| Format de `travelUntilDay` | `AAAA-MM-JJ` avec zéros de remplissage, année 2020 à 2099, mois 01 à 12, jour 01 à 31 (expression exacte : `firestore.rules`, `validTravel`) | **Règles** (forme) ; la cohérence avec `travelUntil` n'est **pas** vérifiée (aucune règle ne lit le fuseau ; un client modifié ne trompe que l'affichage de sa propre carte) |
 | Qui peut activer, changer la date, désactiver | **Tout compte**, gratuit, premium ou premium expiré, sans condition : **aucune lecture de `entitlements/{moi}`, aucun écran Miff+ pour le voyage** | **Règles** (aucune barrière) |
 | Update manuelle (photo, texte) pendant le voyage | Autorisée : le statut réécrit `presence="travel"`, `travelUntil` et `travelUntilDay` (mêmes valeurs ou nouvelles, dans la fenêtre), `batteryPct=null` | **Règles** (la fenêtre se juge à chaque écriture) |
 | Lots multi-Miffs | **8 statuts de voyage au plus par lot** (2 lectures de règles chacun = 16 sur 20) ; avec la suppression de la dernière position de chaque Miff dans le même lot : 16 aussi | **Client** (sinon refus du lot entier) |
@@ -57,8 +57,8 @@ Les deux clés de voyage sont **facultatives dans le schéma** (un statut ordina
 
 ## Ce que les règles ne font PAS (contrats clients)
 
-- **Aucune règle n'empêche d'écrire une position, une batterie ou un statut automatique pendant le voyage.** La pause du suivi (aucune écriture automatique, aucune région armée, copie locale de la position effacée) est un **contrat du client**, vérifié par les tests des clients (critère V2 du ticket). Les règles garantissent seulement que le **statut** lui-même ne contient ni lieu, ni batterie, ni échéance en voyage.
-- **Aucune règle ne compare `travelUntilDay` à `travelUntil`** (limite connue, cosmétique), ni ne limite le total de jours cumulés (chaque écriture est bornée à 91 jours).
+- **Aucune règle n'empêche d'écrire une position, une batterie ou un statut automatique pendant le voyage.** La pause du suivi (aucune écriture automatique, aucune région armée, copie locale de la position effacée) est un **contrat du client**, vérifié par les tests des clients (critère V2 du ticket) : **« Miff arrête de suivre » repose donc entièrement sur le client**, les règles laissent passer positions et photos pendant un voyage (test de caractérisation VY27). Les tests clients V2 restent **bloquants**. Les règles garantissent seulement que le **statut** lui-même ne contient ni lieu, ni batterie, ni échéance en voyage.
+- **Aucune règle ne compare `travelUntilDay` à `travelUntil`** (limite connue, cosmétique), ni ne limite le total de jours cumulés : **chaque écriture est bornée à 91 jours côté serveur, mais un client peut renouveler sa date** (le plafond de 90 jours affiché à l'utilisateur est une limite d'interface, pas une garantie serveur).
 - **Le comptage de lectures de règles des lots n'est pas vérifiable dans l'émulateur** (cache) : les chiffres de `backend/data-model.md` sont les comptages sans cache, figés par `backend/tests/unit/budgets-voyage.test.js`.
 
 ## Ancienne application

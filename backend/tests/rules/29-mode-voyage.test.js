@@ -1,4 +1,4 @@
-// Plan de test, section 24 : MODE VOYAGE (VOY-B, ticket `docs/tickets/mode-voyage.md` §4, décisions du PM du 2026-11-10), cas VY1 à VY24.
+// Plan de test, section 24 : MODE VOYAGE (VOY-B, ticket `docs/tickets/mode-voyage.md` §4, décisions du PM du 2026-11-10), cas VY1 à VY24, VY26 et VY27 (VY25 : fichier `30`).
 // Règles PRÉPARÉES et NON déployées. Nouvelle valeur `presence = "travel"` du statut `miffs/{id}/status/{uid}`, deux clés facultatives
 // `travelUntil` (timestamp) et `travelUntilDay` (« AAAA-MM-JJ »). DISPONIBLE POUR TOUS LES COMPTES (décision du PM du 2026-11-10 : plus aucune
 // barrière Miff+, plus aucune lecture de règles de plus) : gratuit, premium actif et premium expiré écrivent, changent et désactivent leur voyage
@@ -6,7 +6,7 @@
 // `alice` (gratuite, créatrice de M1) : le résultat doit être le MÊME pour tous.
 import {
   ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, set, del, update, Timestamp, FieldValue,
-  statusDoc, inMs, serverTs, positionSeed, DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH,
+  statusDoc, inMs, serverTs, positionSeed, positionDoc, photoDoc, setConsentV3, DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -134,7 +134,10 @@ s.tc('VY7', 'travelUntilDay mal formé : refusé ; bien formé : accepté (cosm�
   await seedAccounts(h);
   const path = `${M3}/status/dave`;
   const bad = ['2026-11-1', '2026-1-15', '26-11-15', '15/11/2026', '2026/11/15', '2026-13-01', '2026-00-10', '2026-11-32', '2026-11-00', ' 2026-11-15',
-    '2026-11-15 ', '2026-11-15x', 'x2026-11-15', '2026-11-15T00:00:00Z', '20261115', '', 'demain', '2026-11-15\n', 'A'.repeat(1000)];
+    '2026-11-15 ', '2026-11-15x', 'x2026-11-15', '2026-11-15T00:00:00Z', '20261115', '', 'demain', '2026-11-15\n', 'A'.repeat(1000),
+    '1999-11-15', '0000-01-01', '2019-12-31', '2100-01-01', '9999-12-31']; // année hors 2020-2099 refusée
+  const good = ['2020-01-01', '2026-11-15', '2099-12-31'];
+  for (const day of good) await assertSucceeds(put(h, 'dave', path, travel(7, { travelUntilDay: day })));
   for (const day of bad) await assertFails(put(h, 'dave', path, travel(7, { travelUntilDay: day })));
   await assertSucceeds(put(h, 'dave', path, travel(7, { travelUntilDay: '2026-11-15' })));
   // Limite connue : le jour affiché n'est pas comparé à l'instant (aucune règle ne lit le fuseau). Un client modifié ne trompe que l'affichage de SA carte.
@@ -406,4 +409,34 @@ s.tc('VY24', 'régression : écritures ordinaires inchangées (statut sans clés
   await assertSucceeds(put(h, 'frank', `${M4}/status/frank`, statusDoc()));
   await assertFails(put(h, 'bob', `${M1}/status/bob`, statusDoc({ batteryPct: 101 }))); // les autres refus restent
   await assertFails(put(h, 'bob', `${M1}/status/bob`, statusDoc({ presence: 'banane' })));
+});
+
+s.tc('VY26', 'update PARTIELLE de « travel » vers out / unknown SANS supprimer travelUntil / travelUntilDay : refusée (le document résultant garderait des clés de voyage derrière une présence ordinaire) ; avec suppression des deux clés : acceptée', async (h) => {
+  await seedAccounts(h);
+  for (const [uid, path] of [['bob', `${M1}/status/bob`], ['dave', `${M3}/status/dave`]]) {
+    for (const presence of ['unknown', 'out']) {
+      const base = { presence, updatedAt: serverTs(), presenceAt: serverTs(), lastUpdateAt: serverTs() };
+      await seedTravel(h, path);
+      await assertFails(h.db(uid).doc(path).update(base)); // les deux clés de voyage resteraient dans le document
+      await assertFails(h.db(uid).doc(path).update({ ...base, travelUntil: FieldValue.delete() })); // il resterait le jour
+      await assertFails(h.db(uid).doc(path).update({ ...base, travelUntilDay: FieldValue.delete() })); // il resterait la fin
+      const d = await read(h, path);
+      if (d.presence !== 'travel') throw new Error('les refus ne devaient pas modifier le voyage');
+      if (presence === 'out') await assertFails(h.db(uid).doc(path).update({ ...base, placeId: 'p1', travelUntil: null }));
+      // Témoin : les deux clés supprimées (ou nulles) : la sortie du voyage passe.
+      await assertSucceeds(h.db(uid).doc(path).update({ ...base, ...(presence === 'out' ? { placeId: 'p1' } : {}), travelUntil: FieldValue.delete(), travelUntilDay: FieldValue.delete() }));
+      if ((await read(h, path)).presence !== presence) throw new Error('la sortie du voyage aurait dû passer');
+    }
+  }
+});
+
+s.tc('VY27', 'CARACTÉRISATION : pendant un voyage, les règles AUTORISENT encore l\'écriture de ma position et de ma photo (« Miff arrête de suivre » est un contrat du client, V2) ; si un resserrement futur les refuse, ce test doit être changé EN CONNAISSANCE DE CAUSE', async (h) => {
+  await seedAccounts(h);
+  await setConsentV3(h, 'bob'); // position et photo exigent le texte de version 03
+  const path = `${M1}/status/bob`;
+  await assertSucceeds(put(h, 'bob', path, travel(7)));
+  await assertSucceeds(h.db('bob').doc(`${M1}/positions/bob`).set(positionDoc()));
+  await assertSucceeds(h.db('bob').doc(`${M1}/photos/bob`).set(photoDoc()));
+  if ((await read(h, path)).presence !== 'travel') throw new Error('le voyage devrait être conservé');
+  if ((await read(h, `${M1}/positions/bob`)) === null) throw new Error('la position devrait avoir été écrite pendant le voyage');
 });

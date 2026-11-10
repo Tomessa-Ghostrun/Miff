@@ -94,7 +94,7 @@ function validTravel(d) {
       && d.travelUntil > request.time
       && d.travelUntil <= request.time + duration.value(91, 'd')     // fenêtre : 90 jours + marge
       && d.get('travelUntilDay', null) is string
-      && d.travelUntilDay.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+      && d.travelUntilDay.matches('^20[2-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
     );
 }
 // validStatus : ajouter « && validTravel(d) ».
@@ -102,14 +102,15 @@ function validTravel(d) {
 
 **Conséquences voulues** :
 - **Tous les comptes** (gratuit, Miff+, Miff+ expiré) écrivent, changent et désactivent leur voyage dans les **mêmes limites de validité** : aucune barrière Miff+ (décision du PM du 2026-11-10), aucune lecture de `entitlements`. Désactiver (écrire une autre présence) est toujours possible.
-- **`travelUntil` ne peut pas être dans le passé** ni dépasser 91 jours (borne **de la règle** ; le client propose 90 jours).
+- **`travelUntil` ne peut pas être dans le passé** ni dépasser 91 jours (borne **de la règle**, appliquée à **chaque écriture** ; le client propose 90 jours). **Ce n'est pas un plafond de durée totale** : aucune règle ne cumule les jours, un client peut renouveler sa date autant de fois qu'il veut (voulu : voyage visible et temporaire côté interface, limite connue côté serveur).
+- **« Miff arrête de suivre » repose sur le client** : les règles n'interdisent ni l'écriture de la position ni celle de la photo pendant un voyage (cas de caractérisation VY27). La pause du suivi est donc vérifiée par les tests des clients (critère **V2**), qui restent **bloquants** pour la fusion des PR Android et iOS.
 - Le voyage ne **contient jamais** de lieu, de batterie ni d'échéance d'escalade.
 - `statusInstant(presenceAt)` et `lastUpdateAt` : inchangés (la valeur conservée à l'identique reste acceptée).
 - **Aucune règle ne lit le fuseau** : l'instant est calculé par le client.
 
 **Budget de lectures de règles** : un statut de voyage coûte **2 appels** (`fromActiveDevice` 1 + `getAfter(members)` 1), **exactement comme un statut ordinaire** : le mode voyage n'ajoute aucune lecture. Contrat des lots : **8 statuts de voyage au plus par lot** (16 appels sur 20, marge 4), avec la suppression de la dernière position de chaque Miff dans le même lot (la suppression de sa propre position ne lit rien). Mesuré et figé par `backend-data` (VOY-B).
 
-**Tests de règles (`backend/rules-test-plan.md` §24, VY1 à VY25)** : création / mise à jour de `travel` par un compte **gratuit**, **premium** et **premium expiré** (accepté pour tous) ; sans `travelUntil` ou sans `travelUntilDay` (refus) ; `travelUntil` passé ou = maintenant, à 91 jours + 1 minute (refus), à 90 et 91 jours (accepté) ; `travelUntilDay` mal formé (refus) ; `placeId`, `batteryPct` ou `escalationDueAt` renseignés en voyage (refus) ; clés de voyage avec une présence ordinaire (refus) ; **désactivation** (accepté pour tous) ; un autre membre ne peut pas écrire mon voyage ; lot de **8** statuts de voyage (accepté) ; clé `deviceId` présente et différente (refus, inchangé) ; document sans les clés de voyage (écritures actuelles inchangées).
+**Tests de règles (`backend/rules-test-plan.md` §24, VY1 à VY27)** : création / mise à jour de `travel` par un compte **gratuit**, **premium** et **premium expiré** (accepté pour tous) ; sans `travelUntil` ou sans `travelUntilDay` (refus) ; `travelUntil` passé ou = maintenant, à 91 jours + 1 minute (refus), à 90 et 91 jours (accepté) ; `travelUntilDay` mal formé (refus) ; `placeId`, `batteryPct` ou `escalationDueAt` renseignés en voyage (refus) ; clés de voyage avec une présence ordinaire (refus) ; **désactivation** (accepté pour tous) ; un autre membre ne peut pas écrire mon voyage ; lot de **8** statuts de voyage (accepté) ; clé `deviceId` présente et différente (refus, inchangé) ; document sans les clés de voyage (écritures actuelles inchangées).
 
 **Déploiement** : règles **avant** les apps (sur le « oui » explicite du PM, comme les autres évolutions). Tant qu'elles ne sont pas déployées, une app qui écrit `travel` est refusée : elle l'affiche calmement (§7.4) et **ne désarme pas le suivi** (l'ordre de la machine d'états le garantit, §5.3).
 
@@ -365,7 +366,7 @@ Préfixe **`travel_`** à ajouter au tableau de `docs/contracts/i18n-keys.md` et
 - **Textes légaux à aligner par les agents concernés, sans les modifier ici** (et **sans prétendre à une relecture juridique**, décision du 2026-10-23) : politique de confidentialité (liste de ce qui est partagé : ajouter « un état de voyage et sa date de fin » ; durée : supprimé avec le statut) ; CGU (Premium : ajouter le mode voyage à la liste des options) ; **texte de consentement d'entrée dans une Miff** : **Q4** (bump de version ou confirmation en contexte).
 - **Stores** : aucune nouvelle collecte ; Play (Sécurité des données) et App Store (confidentialité) : **pas de changement** (l'état de voyage est un statut déjà partagé) ; à reconfirmer par `release-manager`.
 - **Mineurs** : aucun changement (risque assumé, `politique-confidentialite` §10).
-- **Risque d'usage** (R5) : le mode voyage permet de **disparaître de la couleur** de la Miff ; le PM l'a voulu ; atténuations : date visible, 90 jours au plus, retour automatique, message toujours possible.
+- **Risque d'usage** (R5) : le mode voyage permet de **disparaître de la couleur** de la Miff ; le PM l'a voulu ; atténuations : date visible, 90 jours proposés par l'interface (chaque écriture est bornée à 91 jours par les règles, mais un client peut renouveler la date : pas de plafond cumulé), retour automatique, message toujours possible.
 
 ---
 
@@ -409,7 +410,7 @@ Une branche et une PR par plateforme et par ticket ; maquettes avant développem
 
 **Moteur et machine d'états (VOY-1)**
 - [ ] **V1** À l'activation, **l'écriture du voyage précède la pause** ; si elle est refusée, **le suivi n'a pas été arrêté**.
-- [ ] **V2** Pendant le voyage : **aucune** position lue, **aucune** écriture automatique de présence, de position ou de batterie, **aucune région armée** (vérifié par la liste des régions du système et par un compteur d'écritures dans les tests) ; la batterie n'est pas rafraîchie à l'ouverture.
+- [ ] **V2 (BLOQUANT : seul garde-fou de « Miff arrête de suivre », les règles ne bloquent ni positions ni photos, VY27)** Pendant le voyage : **aucune** position lue, **aucune** écriture automatique de présence, de position ou de batterie, **aucune région armée** (vérifié par la liste des régions du système et par un compteur d'écritures dans les tests) ; la batterie n'est pas rafraîchie à l'ouverture.
 - [ ] **V3** Une update manuelle pendant le voyage **conserve** `presence = travel`, `travelUntil`, `travelUntilDay` et met `batteryPct` à `null`.
 - [ ] **V4** Fin automatique : Android reprend **sans ouvrir l'app** (alarme) ; iOS reprend **à l'ouverture** ; dans les deux cas le statut passe à `unknown` **avant** la première mesure et le suivi est réarmé.
 - [ ] **V5** Désactivation anticipée : reprise **immédiate** ; N7 annulée.
@@ -477,7 +478,7 @@ Une branche et une PR par plateforme et par ticket ; maquettes avant développem
 | # | Risque | Effet | Mitigation |
 |---|---|---|---|
 | **R1** | **iOS ne reprend pas tout seul** : aucune région armée, aucune relance par le système | Le voyageur reste « inconnu » (neutre) tant qu'il n'ouvre pas l'app | N7 à 08:00 qui demande d'ouvrir l'app ; tâche de fond opportuniste ; **limite à accepter (Q5)** ; la carte dit « Voyage terminé » (pas de faux « en voyage ») |
-| **R2** | **Oubli de désactiver / date trop longue** | Un proche perd de vue la personne | 90 jours au plus, retour automatique, date toujours visible |
+| **R2** | **Oubli de désactiver / date trop longue** | Un proche perd de vue la personne | 90 jours proposés par l'interface (91 jours maximum par écriture côté règles, renouvelable par un client), retour automatique, date toujours visible |
 | **R3** | **Masquer un danger réel** : un état gris à la place d'un rouge | Réassurance trompeuse | Voulu par le PM ; texte « En voyage » explicite ; Message / Appeler et photo inchangés ; **la fin automatique** |
 | **R4** | **Photo localisée en voyage** | Une position est écrite malgré la pause | Texte honnête (§7.4), Q2 |
 | **R5** | **Usage de contrôle ou de dissimulation** (se « cacher » d'un cercle) | Tension entre proches | Fonctionnalité **à soi seul** ; le voyage se voit ; un proche ne peut pas l'imposer à un autre |
@@ -508,7 +509,7 @@ Chaque question donne une **valeur par défaut** (recommandation) : le développ
 **Q5. Reprise sur iOS.** Accepter qu'**à la fin du voyage le suivi ne reprenne qu'à la prochaine ouverture de l'app** (ou au toucher de N7, ou par une tâche de fond accordée par le système), faute de région armée pour réveiller l'app ?
 - *Reco* : **accepter** : la carte dit « Voyage terminé » (jamais un faux « en voyage ») et N7 invite à ouvrir l'app. *Alternative* : garder actifs les « changements significatifs » pendant le voyage (contredit la décision 1 : aucun suivi).
 
-**Q6. Valeurs par défaut à confirmer** (une seule réponse « oui » suffit) : **90 jours** au plus ; fin = **00:00 du lendemain du jour choisi** (donc fin de journée incluse) ; **date minimale = aujourd'hui** ; **N7 à 08:00** le lendemain ; le voyage s'applique à **toutes** les Miffs où je partage (pas de choix par Miff) ; toucher de N7 = **Feed**.
+**Q6. Valeurs par défaut à confirmer** (une seule réponse « oui » suffit) : **90 jours** proposés au plus par l'interface (chaque écriture est bornée à 91 jours côté serveur, mais la date peut être renouvelée) ; fin = **00:00 du lendemain du jour choisi** (donc fin de journée incluse) ; **date minimale = aujourd'hui** ; **N7 à 08:00** le lendemain ; le voyage s'applique à **toutes** les Miffs où je partage (pas de choix par Miff) ; toucher de N7 = **Feed**.
 - *Reco* : oui à tout. *Impact* : constantes et textes.
 
 ---
