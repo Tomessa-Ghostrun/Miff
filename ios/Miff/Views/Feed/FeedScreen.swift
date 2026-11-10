@@ -10,6 +10,8 @@ struct FeedScreenActions {
     let onOpenProfile: () -> Void
     let onCreate: () -> Void
     let onJoin: () -> Void
+    /// L'offre (« Miff+ arrive bientôt ») : un compte gratuit qui a déjà une Miff a touché « Rejoindre » ou « Créer » dans le sélecteur.
+    let onOpenOffer: () -> Void
     /// « Reprendre le partage » : l'écran de la Miff tient le dialogue et le consentement (rien n'est écrit depuis le Feed).
     let onResumeSharing: (String) -> Void
     let onMessage: (String) -> Void
@@ -209,26 +211,28 @@ struct FeedScreen: View {
                     scrollToTop += 1
                 },
                 onSelect: { model.onSelect($0) },
-                onCreate: actions.onCreate,
-                onJoin: actions.onJoin,
+                onCreate: { selectorEntryTapped(open: actions.onCreate) },
+                onJoin: { selectorEntryTapped(open: actions.onJoin) },
                 selectorOpen: $selectorOpen
             )
         )
         .accessibilitySortPriority(1)
     }
 
+    /// Le sélecteur s'ouvre pour tout le monde dès qu'il y a une Miff (décision du PM, 2026-11-08).
     private var pillState: FeedPillState? {
-        guard let ready else {
-            return nil
+        FeedPillState.make(from: ready)
+    }
+
+    /// « Rejoindre » ou « Créer » dans le sélecteur : le parcours normal, ou l'offre pour un compte gratuit qui a déjà une Miff.
+    /// Une formule inconnue (hors connexion) ouvre le parcours : jamais « gratuit » sur un doute, le serveur tranche.
+    private func selectorEntryTapped(open flow: () -> Void) {
+        switch FeedSelectorRules.outcome(for: ready) {
+        case .openFlow:
+            flow()
+        case .openPaywall:
+            actions.onOpenOffer()
         }
-        guard let active = ready.active, !ready.miffs.isEmpty else {
-            return .noMiff
-        }
-        // Une formule INCONNUE (abonnement non lu, ou réponse du cache) garde le sélecteur utilisable : jamais « gratuit » sur un doute.
-        if !ready.premiumKnown || ready.premium {
-            return .selectable(name: active.name, miffs: ready.miffs, activeId: ready.activeId)
-        }
-        return .plain(name: active.name)
     }
 
     // MARK: - La feuille « Localiser » et les annonces

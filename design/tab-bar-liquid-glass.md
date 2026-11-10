@@ -29,7 +29,7 @@ Le fichier `design/design-system.md` pointe ici pour la Tabbar (la ligne « Tabb
 | Barre | 342 pt de large sur 390 (marges 24 pt), **64 pt** de haut, `radius` **20**, posée à 22 pt du bas (+ inset de sécurité) ; **ne change jamais de taille ni de position** (pas de réduction au défilement) |
 | Entrées | trois zones de **64 x 48 pt** (minimum 48), espacées régulièrement ; ordre début / centre / fin (inversé en droite-à-gauche, icônes non miroir) |
 | Onglet actif | pastille 64 x 48, `radius/md` 10, icône active ; nom parlé « sélectionné » |
-| Icônes | maison avec cœur et silhouette, 26 pt, trait 1,8 (asset du PM à exporter en vectoriel recolorable) |
+| Icônes | **maison classique** (symbole système `house`, décision du PM du 2026-11-08 : plus la maison avec un cœur) et silhouette (`person`) ; **au trait quand l'onglet est inactif, pleine (`house.fill`, `person.fill`) quand il est actif** (en plus de la pastille : jamais la couleur seule) ; nom parlé de l'onglet inchangé (« Feed » / « Profil ») |
 | Bouton central | plaque blanche 44 pt + anneau `action/primary` 3 pt + pastille de statut 24 pt, sans pictogramme (§7) |
 | Contenu sous la barre | le contenu **passe sous** la barre (c'est ce qui rend le verre visible) ; chaque onglet (Feed, Profil) garde une marge basse égale à la hauteur de la barre + marge (+ celle de la bulle d'incitation quand elle existe : visible sur tous les onglets sauf Update, `update.md` §4) |
 | Clavier | la barre disparaît quand le clavier est ouvert (comportement actuel) |
@@ -222,7 +222,7 @@ Fichiers lus : Android `android/app/src/main/java/com/tomessa/miff/ui/main/Glass
 | # | Écart | Où | Statut |
 |---|---|---|---|
 | 1 | **Taille des icônes** : 26 dans la spécification (§2) et sur Android (`IconSize` 26 dp) ; **24 pt sur iOS** (`TabBarLayout.iconSize`) | iOS | À aligner (24 ou 26) par `ios-dev` ; non tranché ici |
-| 2 | **Icônes de la maison et du profil** : les dessins du PM (maison avec cœur, silhouette) sont attendus en vectoriel ; Android utilise `ic_tab_feed` et `ic_person`, **iOS les approche avec deux symboles du système** (`house` + `heart`, `person`) | iOS, Android | Asset à exporter par le PM (voir `update.md` §12) |
+| 2 | **Icônes de la maison et du profil** : le PM a choisi le 2026-11-08 une **maison classique** (plus de cœur) ; **iOS** utilise les symboles du système `house` / `house.fill` et `person` / `person.fill` (actif / inactif). **Android : à aligner par l'agent Android** (`ic_tab_feed` est encore la maison avec un cœur) | iOS, Android | Asset à exporter par le PM (voir `update.md` §12) |
 | 3 | **Position verticale** : « 22 pt du bas (+ inset de sécurité) » dans la spécification ; Android = 22 dp **au-dessus** de la barre de navigation ; **iOS = 22 pt depuis le bas de l'écran** (la barre empiète sur la zone de l'indicateur d'accueil sur un iPhone à zone sûre, `bottomPadding(safeAreaBottom:)`) | iOS | Écart voulu et documenté dans le code iOS ; la différence visuelle entre les plateformes est de l'ordre de la hauteur de la zone sûre |
 | 4 | **Nom parlé du bouton central sur iOS** : `tabbar_update_soon_a11y` (« bientôt ») tant que l'Update iOS n'existe pas ; Android a les quatre noms (vert, orange, rouge, neutre) | iOS | Normal jusqu'à UPDATE-3 |
 | 5 | **Variante « sur photo »** : sur Android elle est utilisée par le viseur (`glassVariantFor`), jamais en flou ; sur iOS elle existe mais le viseur n'existe pas | iOS | Normal jusqu'à UPDATE-3 |
