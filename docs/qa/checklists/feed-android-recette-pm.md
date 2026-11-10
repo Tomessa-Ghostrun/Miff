@@ -1,7 +1,7 @@
 # Recette Android du Feed (FEED-1 à FEED-3 : en-tête, bulle, cartes, statuts, Localiser) — parcours pour le PM
 
 **Pour qui** : vous, sur votre OPPO Find X5 Lite (Android 13), avec **deux comptes de test dans la même Miff** : le compte **A** (créateur) sur l'OPPO et le compte **B** (membre) sur l'iPhone 11 Pro si possible (TestFlight), à défaut sur un second téléphone ou un second compte Google/e-mail sur l'OPPO (on se déconnecte et on se reconnecte entre les deux).
-**Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 1 h et 2 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce plus bas). Une seule vraie sortie est facultative (partie G).
+**Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 2 h et 4 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce plus bas). Une seule vraie sortie est facultative (partie G).
 **À savoir avant de commencer** :
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main (la connexion Google ne marcherait pas). Désinstallez l'ancienne version d'abord.
 - **La photo d'update n'est pas dans cette livraison** (ticket FEED-4) : aucune carte n'a de photo, c'est normal.
@@ -11,8 +11,8 @@
 ## Astuce : fabriquer un orange, un rouge ou une zone de danger depuis la console
 
 Console Firebase > projet **Miff** (`miff-3d283`, jamais l'autre projet) > Firestore Database > `miffs/{id de la Miff}/status/{uid du compte}`. Modifiez **à la main** :
-- **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 1 h 10** (cliquez sur le champ, type « timestamp »).
-- **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 3 h**.
+- **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 2 h 10** (cliquez sur le champ, type « timestamp »).
+- **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 5 h**.
 - **Zone de danger** : `presence` = `in_risk`, `placeId` = l'identifiant d'un lieu de la Miff (le nom de ce lieu s'affichera chez les proches).
 - **Retour au vert** : `presence` = `in_trusted`, `presenceAt` = maintenant.
 Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du compte bouge ou si vous rouvrez son app, il peut réécrire son vrai statut : refaites la modification.
@@ -21,7 +21,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 - **Notez toute phrase qui vous semble trop dure ou anxiogène** (ticket FEED, risque R1) : « zone de danger » est un mot fort, les phrases sont à relire à voix haute.
-- Les heures sont **absolues** à partir de l'orange (« à 16 h 40 ») ; avant, elles sont relatives (« il y a 12 min »).
+- Les heures sont **absolues** à partir de l'orange (« à 16 h 40 ») ; avant, la ligne d'une carte dit déjà l'heure d'arrivée ou de sortie (« Depuis 16 h 48 »), jamais une durée (PM, 2026-11-10) ; seules les bulles disent encore « Dernière nouvelle il y a 2 min ».
 
 ## Préparation (5 min)
 
@@ -65,7 +65,8 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 ## Partie B — Cartes (5 min)
 
 - [ ] **Votre carte est la DERNIÈRE** (D43), **sans** mention « Toi » à côté de votre prénom (D42), avec votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
-- [ ] La carte de B vient avant la vôtre : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] La carte de B vient avant la vôtre : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (**l'heure d'arrivée**, « Depuis 16 h 48 », jamais « Depuis 12 min » ; hier : « Depuis hier à … », puis la date courte), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] **Étiquette selon la catégorie du lieu** (décision du 2026-11-08) : B `in_trusted` dans un lieu de catégorie Maison : « À la maison » ; Travail : « Au travail » ; École : « À l'école » ; Sport : « Au sport » ; Chez un proche : « Chez un proche » ; Loisir ou Autre : **le nom du lieu seul** (un nom très long est coupé proprement par « … » sur deux lignes au plus, y compris en grande police). Le Feed n'envoie ce nom à aucune notification (voir NOTIF-P0, Q9 : les notifications afficheront le nom des lieux Loisir / Autre).
 - [ ] **Message** ouvre l'application SMS avec le numéro de B **préparé** (rien n'est envoyé) ; **Téléphone** ouvre le **composeur** avec le numéro (aucun appel lancé). Revenez avec « retour ».
 - [ ] Si un membre n'a pas de numéro (ancien compte) : seul le bouton position est visible.
 - [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise ; il a quand même un bouton position (voir la partie D : « n'a pas encore de position connue »).
@@ -78,13 +79,14 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte **A** (il se met à jour tout seul).
 - [ ] **Vert** : B `in_trusted`. Bulle **verte** « Tout va bien » + « Dernière nouvelle il y a … » (l'heure de B, **jamais la vôtre**). Si un troisième membre n'a pas encore de statut : « 2 sur 3 ont donné des nouvelles ».
 - [ ] **Neutre** : supprimez le statut de B ou mettez `presence` = `unknown` : bulle **grise** « Pas encore de nouvelles » (jamais « Tout va bien »).
-- [ ] **Orange** : B `out` il y a 1 h 10. Bulle **orange** : « B a quitté la maison à 15 h 50 » (heure absolue), **sans** point d'exclamation, bouton « Envoyer un message » (ouvre le SMS). La carte de B : « A quitté la maison », « Dernière nouvelle à … ».
-- [ ] **Rouge d'ancienneté** : B `out` il y a 3 h. Bulle **rouge** : « Pas de nouvelles de B depuis 14 h 00 ». Aucune animation, aucun son.
-- [ ] **Zone de danger** : B `in_risk` : bulle rouge **« B est à {nom du lieu} »** + « Depuis … » + « Une zone définie par ta Miff ». La carte de B : « Dans une zone de danger ». **Nulle part** le mot « zone à risque ».
+- [ ] **Bulle centrée, sans étoile en vert** (D49, PM 2026-11-08) : dans les bulles verte, orange et rouge, le titre, les lignes et le bouton « Envoyer un message » sont **centrés** dans la tache (marges égales à gauche et à droite), avec une police normale puis la plus grande ; **la bulle verte n'a plus aucun pictogramme** (plus d'étoile) ; orange (horloge), rouge (point d'exclamation) et neutre (sablier) gardent le leur, mais **sans cercle autour** (rien qui ressemble à un bouton, PM 2026-11-10) : un grand symbole **en filigrane doux** posé dans le coin bas droit de la tache, derrière le texte, qui occupe l'espace sans être voyant. Faites défiler les pages d'un carrousel : toutes sont centrées. TalkBack lit le même texte qu'avant (le pictogramme n'était pas lu).
+- [ ] **Orange** : B `out` il y a 2 h 10. Bulle **orange** : « B a quitté la maison à 14 h 50 » (heure absolue), **sans** point d'exclamation, bouton « Envoyer un message » (ouvre le SMS). La carte de B : « A quitté la maison », « Dernière nouvelle à … ».
+- [ ] **Rouge d'ancienneté** : B `out` il y a 5 h. Bulle **rouge** : « Pas de nouvelles de B depuis 12 h 00 ». Aucune animation, aucun son.
+- [ ] **Zone de danger (règle du 2026-11-08)** : B `in_risk` avec `presenceAt` il y a 20 min : rouge **dès l'entrée**, même avec un `lastUpdateAt` récent mais **antérieur** à `presenceAt` (il ne compte pas). Mettez ensuite `lastUpdateAt` à il y a 5 min (postérieur à l'entrée) : la carte passe au vert (l'étiquette reste « Dans une zone de danger ») et la bulle rouge disparaît ; remettez-le à il y a 1 h 05 : rouge de nouveau. Votre propre statut en zone de danger : rouge jusqu'à ce que l'update soit acquittée par le serveur (indéfiniment tant que le téléphone est hors ligne). Rouge : bulle rouge **« B est à {nom du lieu} »** + « Depuis … » + « Une zone définie par ta Miff ». La carte de B : « Dans une zone de danger ». **Nulle part** le mot « zone à risque ».
 - [ ] **Vous seul(e) en orange ou en rouge** (modifiez votre propre statut, B reste vert) : la bulle vous parle : « Tu as quitté la maison à … », « Tes proches n'ont pas eu de tes nouvelles depuis … », « Tu es dans une zone de danger de ta Miff » (+ « Tes proches le voient aussi »). **Pas** de bouton « Envoyer un message » sur votre propre page.
 - [ ] **Plusieurs alertes** (B rouge et un troisième membre orange, ou deux comptes) : des **pastilles** apparaissent sous la bulle (la page courante est **allongée**), le **rouge d'abord**, on change de page en **glissant**, **rien ne défile tout seul**. Avec une seule alerte : pas de pastilles.
 - [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (les autres dans l'ordre d'arrivée, puis vous en dernier).
-- [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
+- [ ] **Couleur qui avance seule** : mettez B `out` il y a **1 h 55** et **attendez 6 à 7 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
 - [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent dans la pastille, et la bulle garde son petit dessin décoratif (étoile, horloge, « ! », sablier) : points validés par le PM le 2026-11-06.
 
 ## Partie C bis — Mouvement très léger de la bulle (3 min)
@@ -137,4 +139,4 @@ Le Feed est le premier gros consommateur de lectures du plan gratuit (50 000 par
 
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
-La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.
+La couleur à 1 h 59 / 2 h 00 / 2 h 01 / 3 h 59 / 4 h 00 / 4 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.

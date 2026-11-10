@@ -3238,13 +3238,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "At %1$@"
+            "value": "%1$@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "À %1$@"
+            "value": "%1$@"
+          }
+        }
+      }
+    },
+    "feed_label_at_relative": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At a loved one's"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chez un proche"
           }
         }
       }
@@ -3272,7 +3289,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "At the sports club"
+            "value": "At the gym"
           }
         },
         "fr": {
@@ -3827,6 +3844,23 @@
         }
       }
     },
+    "feed_place_noun_relative": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a loved one's place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le domicile d'un proche"
+          }
+        }
+      }
+    },
     "feed_place_noun_school": {
       "extractionState": "manual",
       "localizations": {
@@ -3850,7 +3884,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "the sports club"
+            "value": "the gym"
           }
         },
         "fr": {
@@ -7518,13 +7552,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "While you're in this zone, your Miff sees your status in red. Only the Miff's creator can add or edit this kind of zone."
+            "value": "When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone."
+            "value": "Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h."
           }
         }
       }
@@ -14922,6 +14956,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Position mesurée %1$@."
+          }
+        }
+      }
+    },
+    "feed_photo_download": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer la photo"
+          }
+        }
+      }
+    },
+    "feed_photo_download_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo saved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo enregistrée."
           }
         }
       }

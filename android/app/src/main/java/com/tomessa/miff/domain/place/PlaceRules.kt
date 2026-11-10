@@ -24,9 +24,13 @@ object PlaceLimits {
     /** Under this radius the note "la détection peut manquer un passage" shows (decision Q12). */
     const val RADIUS_RECOMMENDED = 100
 
-    /** Free plan: 2 places (decision QL9), in the fixed slots of the rules. */
-    const val FREE_PLACES = 2
-    val FREE_IDS = listOf("p1", "p2")
+    /**
+     * Free plan: 3 places (decision of the PM, 2026-11-10, which replaces the 2 places of QL9), in the fixed slots `p1`, `p2` and `p3` of
+     * the rules (`backend/firestore.rules`, branch `backend/lieux-gratuits-3`). USABLE ONLY ONCE THE PM HAS DEPLOYED THOSE RULES: until then
+     * the server refuses `p3` for a free account (the person sees the calm "impossible d'enregistrer" message, nothing is lost).
+     */
+    const val FREE_PLACES = 3
+    val FREE_IDS = listOf("p1", "p2", "p3")
 
     /** A place is written in at most 5 Miffs at a time (decision Q4): the rules read at most 20 documents per lot. */
     const val MAX_MIFFS = 5
@@ -87,8 +91,11 @@ object PlaceAddressText {
     fun stored(label: String): String = MiffName.limit(label, PlaceLimits.ADDRESS_MAX).text.trim()
 }
 
-/** Which of the two limits asks for Miff+. The danger zone is Miff+ only (decision of the ticket 6.2); the 3rd place is the limit. */
-enum class PaywallReason { LIMIT, DANGER }
+/**
+ * Which limit asks for Miff+. The danger zone is Miff+ only (decision of the ticket 6.2); the 3rd place is the limit; MIFF is a 2nd Miff,
+ * asked from the selector of the Feed (decision of the PM, 2026-11-08).
+ */
+enum class PaywallReason { LIMIT, DANGER, MIFF }
 
 /**
  * What the person filled in, ready to be written. Built by the form only when [problem] is null. The Miffs are the ids of Miffs
@@ -124,7 +131,7 @@ enum class DraftProblem { NAME, MIFFS, ADDRESS, RADIUS }
 
 /** The answer of [PlaceQuota]: which identifier to write, or why Miff+ is needed. */
 sealed interface PlaceSlot {
-    /** Write with this identifier (`p1` / `p2` on the free plan, a fresh one with Miff+). */
+    /** Write with this identifier (`p1` / `p2` / `p3` on the free plan, a fresh one with Miff+). */
     class Use(
         val placeId: String,
     ) : PlaceSlot
@@ -137,7 +144,7 @@ sealed interface PlaceSlot {
 /**
  * The limits of the free plan, decided BEFORE anything is sent (the rules are only the safety net, ticket 6.2).
  *
- * Free: 2 places of trust in the fixed slots `p1` and `p2` of the rules; no danger zone. Miff+: any number, any type, a fresh
+ * Free: 3 places of trust in the fixed slots `p1`, `p2` and `p3` of the rules; no danger zone. Miff+: any number, any type, a fresh
  * identifier drawn once on the phone.
  */
 object PlaceQuota {
@@ -170,7 +177,7 @@ object PlaceQuota {
         to: PlaceType,
     ): PaywallReason? = if (!premium && to == PlaceType.RISK && from != PlaceType.RISK) PaywallReason.DANGER else null
 
-    /** Whether the "Ajouter un lieu" of a creator opens the limit screen instead of the form (free plan, 2 places already). */
+    /** Whether the "Ajouter un lieu" of a creator opens the limit screen instead of the form (free plan, 3 places already). */
     fun isAtFreeLimit(
         premium: Boolean,
         distinctPlaces: Int,

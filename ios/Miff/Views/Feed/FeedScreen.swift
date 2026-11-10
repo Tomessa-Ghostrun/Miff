@@ -40,6 +40,8 @@ struct FeedScreen: View {
     @State private var headerHeight: CGFloat = 0
     @State private var selectorOpen = false
     @State private var scrollToTop = 0
+    /// FEED-8 : la photo ouverte en plein écran. Rien n'en est gardé une fois fermée, ni quand le Feed quitte l'écran.
+    @State private var openedPhoto: OpenedPhoto?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(\.accessibilitySwitchControlEnabled) private var switchControl
 
@@ -116,6 +118,15 @@ struct FeedScreen: View {
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
         // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
         .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher() }
+        // La photo en plein écran (masquée elle aussi dans la vignette du sélecteur d'applications) ; elle se ferme quand l'onglet change,
+        // que l'app part en arrière-plan ou que la Miff affichée change : aucune photo ne reste ouverte hors de l'écran du Feed.
+        .fullScreenCover(item: $openedPhoto) { opened in photoFullScreen(opened) }
+        .onChange(of: isActive) { active in
+            if !active {
+                openedPhoto = nil
+            }
+        }
+        .onChange(of: content?.miffId) { _ in openedPhoto = nil }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("feed_pane_a11y"))
     }
@@ -177,7 +188,8 @@ struct FeedScreen: View {
             card: MemberCardActions(
                 onLocate: { model.onLocate(uid: $0) },
                 onMessage: actions.onMessage,
-                onCall: actions.onCall
+                onCall: actions.onCall,
+                onOpenPhoto: { openedPhoto = $0 }
             ),
             bubble: BubbleActions(
                 onMessage: actions.onMessage,
@@ -265,6 +277,17 @@ struct FeedScreen: View {
             )
             .presentationDetents([.medium, .large])
         }
+    }
+
+    private func photoFullScreen(_ opened: OpenedPhoto) -> some View {
+        PhotoFullScreen(
+            opened: opened,
+            texts: texts,
+            nowMillis: model.dependencies.clock(),
+            zone: model.dependencies.zone(),
+            onOpenMap: actions.onOpenMap,
+            onDismiss: { openedPhoto = nil }
+        )
     }
 
     /// « Actualisation en cours » au début et « Informations actualisées » à la fin (rien n'est dit à jour quand le Feed dit « Dernières
