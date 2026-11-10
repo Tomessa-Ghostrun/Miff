@@ -462,7 +462,7 @@ class UpdateScreensTest {
     fun theBubble_isOnTheFeed_andOnTheProfile_butNeverOnTheUpdate_withTheTextOfTheMockups() {
         val orange = text(R.string.update_bubble_orange)
         assertEquals("Tu es passé en orange, indique à la Miff que tout va bien en publiant une update", orange)
-        show { Tabs(feedWith(ago = 90 * minute)) }
+        show { Tabs(feedWith(ago = 150 * minute)) }
         shoot("update-bulle-orange-feed")
         composeRule.onNodeWithText(orange).assertExists().assertHasNoClickAction()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_orange_a11y)).assertExists()
@@ -481,7 +481,7 @@ class UpdateScreensTest {
 
     @Test
     fun theRedBubble_hasTheRedText_orNothingAtAllWhenAllIsWell() {
-        show { Tabs(feedWith(ago = 3 * 60 * minute)) }
+        show { Tabs(feedWith(ago = 5 * 60 * minute)) }
         composeRule.onNodeWithText(text(R.string.update_bubble_red)).assertExists()
         shoot("update-bulle-rouge-feed")
     }
@@ -498,13 +498,13 @@ class UpdateScreensTest {
     fun theBubbleKeepsEverythingReachable_inTheLargestFont() {
         show {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
-                Tabs(feedWith(ago = 3 * 60 * minute))
+                Tabs(feedWith(ago = 5 * 60 * minute))
             }
         }
         composeRule.onNodeWithText(text(R.string.update_bubble_red)).assertExists()
         composeRule.onNodeWithContentDescription(text(R.string.tabbar_update_red_a11y)).assertExists()
         shoot("update-bulle-rouge-grande-police")
-        assertEquals(PromptLevel.RED, (feedWith(ago = 3 * 60 * minute)).content.myPrompt)
+        assertEquals(PromptLevel.RED, (feedWith(ago = 5 * 60 * minute)).content.myPrompt)
     }
 
     // --- The notices of the review: location off (C3), no answer in time (C2) ------------------------------------------------------------------
@@ -548,7 +548,7 @@ class UpdateScreensTest {
 
     @Test
     fun theBubble_isAPoliteLiveRegion_announcedOnceAtItsAppearance() {
-        show { Tabs(feedWith(ago = 90 * minute)) }
+        show { Tabs(feedWith(ago = 150 * minute)) }
         val node = composeRule.onNodeWithText(text(R.string.update_bubble_orange)).fetchSemanticsNode()
         assertEquals(
             androidx.compose.ui.semantics.LiveRegionMode.Polite,
@@ -560,7 +560,7 @@ class UpdateScreensTest {
     fun theBubbleNeverTakesMoreThan40PercentOfTheScreen_atTheLargestFont_itsTextScrollsInside() {
         show {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
-                Tabs(feedWith(ago = 3 * 60 * minute))
+                Tabs(feedWith(ago = 5 * 60 * minute))
             }
         }
         val body = composeRule.onNodeWithText(text(R.string.update_bubble_red)).onParent().getUnclippedBoundsInRoot()

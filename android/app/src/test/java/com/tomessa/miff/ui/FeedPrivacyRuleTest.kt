@@ -108,7 +108,10 @@ class FeedPrivacyRuleTest {
 
     @Test
     fun theThresholdsOfTheColourAreNeverWrittenAgainInTheFeed() {
-        val found = offenders(Regex("""60L \* 60|2L \* 60|3_?600_?000|7_?200_?000|ORANGE_AFTER|RED_AFTER"""))
-        assertTrue("1 h and 2 h live in StatusThresholds only: $found", found.isEmpty())
+        val found =
+            offenders(
+                Regex("""60L \* 60|2L \* 60|4L \* 60|3_?600_?000|7_?200_?000|14_?400_?000|ORANGE_AFTER|RED_AFTER"""),
+            )
+        assertTrue("2 h and 4 h live in StatusThresholds only: $found", found.isEmpty())
     }
 }

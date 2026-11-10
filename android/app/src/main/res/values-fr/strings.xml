@@ -420,7 +420,9 @@
     <string name="feed_label_at_work">Au travail</string>
     <string name="feed_label_at_school">À l\'école</string>
     <string name="feed_label_at_sport">Au sport</string>
-    <string name="feed_label_at_place">À %1$s</string>
+    <!-- Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08). -->
+    <string name="feed_label_at_place">%1$s</string>
+    <string name="feed_label_at_relative">Chez un proche</string>
     <string name="feed_label_left">A quitté %1$s</string>
     <string name="feed_label_trusted_generic">Dans un lieu de confiance</string>
     <string name="feed_label_danger">Dans une zone de danger</string>
@@ -432,6 +434,7 @@
     <string name="feed_place_noun_work">le travail</string>
     <string name="feed_place_noun_school">l\'école</string>
     <string name="feed_place_noun_sport">le sport</string>
+    <string name="feed_place_noun_relative">le domicile d\'un proche</string>
     <string name="feed_place_noun_generic">un lieu de confiance</string>
     <string name="feed_time_since_minutes">Depuis %1$d min</string>
     <string name="feed_time_since_hours">Depuis %1$d h</string>
@@ -639,7 +642,7 @@
     <string name="place_detail_created_by">Créé par</string>
     <string name="place_detail_created_by_me">%1$s (toi)</string>
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
-    <string name="place_detail_info_danger">Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone.</string>
+    <string name="place_detail_info_danger">Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
     <string name="place_paywall_limit_title">Tu as atteint 2 lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
