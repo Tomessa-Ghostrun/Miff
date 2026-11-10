@@ -642,7 +642,7 @@
     <string name="place_detail_created_by">Créé par</string>
     <string name="place_detail_created_by_me">%1$s (toi)</string>
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
-    <string name="place_detail_info_danger">Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone.</string>
+    <string name="place_detail_info_danger">Quand tu es dans cette zone, ta Miff voit ton statut en rouge, sauf pendant l\'heure qui suit une update de ta part. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
     <string name="place_paywall_limit_title">Tu as atteint 2 lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
