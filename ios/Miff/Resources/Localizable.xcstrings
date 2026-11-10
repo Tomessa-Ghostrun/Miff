@@ -2382,23 +2382,6 @@
         }
       }
     },
-    "feed_photo_download": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save photo"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enregistrer la photo"
-          }
-        }
-      }
-    },
     "feed_photo_download_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -2412,23 +2395,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enregistrer cette photo sur ton téléphone"
-          }
-        }
-      }
-    },
-    "feed_photo_download_done": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Photo saved on your phone."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Photo enregistrée sur ton téléphone."
           }
         }
       }
@@ -14926,6 +14892,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Position mesurée %1$@."
+          }
+        }
+      }
+    },
+    "feed_photo_download": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer la photo"
+          }
+        }
+      }
+    },
+    "feed_photo_download_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo saved."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo enregistrée."
           }
         }
       }

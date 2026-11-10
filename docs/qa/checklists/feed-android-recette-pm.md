@@ -35,7 +35,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] L'en-tête **se masque quand on fait défiler vers le bas** (il glisse vers le haut avec le fil, sans saut) **et réapparaît dès qu'on remonte**, même au milieu de la liste, sans attendre d'être tout en haut ; aucune carte n'est cachée dessous ni ne laisse de bande blanche. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
-- [ ] **Sélecteur de Miff (D47, 2026-11-08)** : pour **tout le monde**, même avec une seule Miff, la pastille a la flèche et l'ombre et s'ouvre ; la liste montre la ou les Miffs (coche sur celle affichée) puis « + Rejoindre une Miff » et « + Créer une Miff ». Un compte gratuit déjà dans une Miff arrive sur le paywall en les touchant : voir la **Partie I**.
+- [ ] **Sélecteur de Miff (D51, 2026-11-08)** : pour **tout le monde**, même avec une seule Miff, la pastille a la flèche et l'ombre et s'ouvre ; la liste montre la ou les Miffs (coche sur celle affichée) puis « + Rejoindre une Miff » et « + Créer une Miff ». Un compte gratuit déjà dans une Miff arrive sur le paywall en les touchant : voir la **Partie I**.
 - [ ] **Icône de l'onglet Feed** (décision du 2026-11-08) : dans la barre du bas, le Feed est une **maison classique** (aucun cœur), **au trait** quand l'onglet n'est pas actif et **pleine** quand il l'est, comme sur l'iPhone.
 
 ## Partie A bis — Comportement de l'en-tête au défilement (4 min)
