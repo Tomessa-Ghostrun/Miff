@@ -7,7 +7,10 @@ import Foundation
 //   ne peut la déclencher à distance (critère P1) ;
 // - la photo est prise EN MÉMOIRE (`AVCapturePhoto.fileDataRepresentation`) : jamais dans un fichier ni dans la photothèque de l'app ; le cache du SDK Firestore peut en garder une copie, chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte ; aucun fichier n'est créé par ce
 //   fichier, rien ne va dans la photothèque, aucune autorisation de stockage ni de photothèque ;
-// - ni flash, ni zoom, ni filtre, ni minuterie : non demandés (V4). Rien ici ne journalise quoi que ce soit.
+// - ni zoom, ni filtre, ni minuterie : non demandés (V4). Le FLASH existe depuis la demande du PM du 2026-11-11 : un bouton, ÉTEINT par
+//   défaut à chaque ouverture, retour de l'arrière-plan et changement de caméra (l'état n'est jamais gardé), appliqué seulement à
+//   l'instant de la photo (`AVCapturePhotoSettings.flashMode`), jamais en torche continue, aucune autorisation de plus. Rien ici ne
+//   journalise quoi que ce soit.
 // - le REFLET (D37) : la capture et l'aperçu sont réglés EXPLICITEMENT (le système ne décide pas) : la capture n'est jamais retournée par la
 //   caméra, c'est `PhotoEncoder` qui retourne l'image de la caméra frontale (testé) ; l'aperçu de la caméra frontale est retourné (comme
 //   un miroir), celui de l'arrière jamais.
@@ -27,6 +30,8 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
     @Published private(set) var lens: CameraLens = .front
     /// Une caméra frontale ET une arrière existent : le bouton et le double toucher changent de caméra (sinon le bouton est masqué).
     @Published private(set) var canSwitch = false
+    /// Le flash du prochain cliché (éteint par défaut, jamais gardé) et s'il est possible avec la caméra en cours (`FlashState`).
+    @Published private(set) var flash = FlashState()
 
     let session = AVCaptureSession()
     /// Appelé (fil principal) quand aucune caméra ne peut servir : l'écran le dit calmement, jamais un message technique.
@@ -91,6 +96,8 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
     /// dit « caméra indisponible ».
     func start() {
         active = true
+        // Toujours éteint à l'ouverture et au retour de l'arrière-plan.
+        flash.reset()
         let wanted = lens
         queue.async { [weak self] in
             self?.configureAndRun(wanted)
@@ -100,6 +107,7 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
     /// Relâche la caméra (quitter l'écran, arrière-plan, verrouillage).
     func stop() {
         active = false
+        flash.reset()
         // Une prise de vue en cours est oubliée avec le viseur (sa réponse tardive ne sera livrée à personne).
         busy = false
         pending = nil
@@ -123,6 +131,8 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         }
         let wanted: CameraLens = lens == .front ? .back : .front
         lens = wanted
+        // Changer de caméra éteint le flash (il sera de nouveau proposé si la nouvelle caméra le permet).
+        flash.reset()
         queue.async { [weak self] in
             self?.configureAndRun(wanted)
         }
@@ -159,9 +169,11 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         if !session.isRunning {
             session.startRunning()
         }
+        let flashPossible = flashIsPossible()
         DispatchQueue.main.async { [weak self] in
             self?.canSwitch = hasFront && hasBack
             self?.lens = resolved
+            self?.flash.setAvailable(flashPossible)
             self?.applyPreviewMirror()
         }
     }
@@ -191,6 +203,24 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         }
         configureCaptureConnection()
         return true
+    }
+
+    // MARK: - Flash
+
+    /// Un toucher sur le bouton du flash (fil principal). Sans effet quand la caméra en cours ne peut pas le donner.
+    func toggleFlash() {
+        flash.toggle()
+    }
+
+    /// La caméra en cours peut-elle donner un flash ? (sur la file de la caméra, session configurée). Jamais une erreur : « non » masque
+    /// simplement le bouton.
+    private func flashIsPossible() -> Bool {
+        let device = input?.device
+        return FlashSupport.isAvailable(
+            outputSupportsOn: output.supportedFlashModes.contains(.on),
+            deviceHasFlash: device?.hasFlash ?? false,
+            deviceFlashAvailable: device?.isFlashAvailable ?? false
+        )
     }
 
     /// La capture est TOUJOURS non retournée et verticale (portrait) : le reflet de la caméra frontale est fait par `PhotoEncoder`.
@@ -233,6 +263,7 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         busy = true
         pending = completion
         pendingLens = lens
+        let fireFlash = flash.shouldFire
         queue.async { [weak self] in
             guard let self else {
                 return
@@ -242,6 +273,11 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
                 settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
             } else {
                 settings = AVCapturePhotoSettings()
+            }
+            // Le flash seulement à l'instant de la photo, et seulement si la caméra le permet encore à cet instant (sinon la photo part
+            // sans flash, sans erreur : régler un mode non pris en charge ferait planter l'app). Par défaut, `flashMode` est `.off`.
+            if fireFlash && self.flashIsPossible() {
+                settings.flashMode = .on
             }
             self.output.capturePhoto(with: settings, delegate: self)
         }
