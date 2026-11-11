@@ -26,6 +26,17 @@ Règles communes :
 - **Polices** : les emoji d'Apple sont propriétaires et **ne peuvent pas être embarqués dans l'app Android**. Android dessine ces emoji avec la **police du système** (Noto Color Emoji sur un Pixel, le jeu du fabricant sur certains téléphones) : le rendu est proche, pas identique à iOS. Les sept emoji existent tous depuis Android 8 (minSdk 26). Si une police ne sait pas dessiner l'un d'eux, Android affiche la première lettre du nom de la catégorie à sa place (jamais un carré vide).
 - **Taille** : l'emoji reste dans sa pastille (28 pt dans le formulaire, 44 pt dans les listes) quelle que soit la taille de texte choisie ; les mots autour grandissent.
 
+## 1 bis. Emoji dans les étiquettes du Feed (décision du PM, 2026-11-10)
+
+Dans le Feed, l'**étiquette d'état d'une carte** quand la personne est **dans un lieu de confiance** (« À la maison », « Au travail », « À l'école », « Au sport », « Chez un proche », ou le **nom** d'un lieu Loisir / Autre) commence par **l'emoji de la catégorie du lieu**, pris dans la table du §1 (même table, même repli).
+- **Quand** : seulement l'étiquette « dans le lieu » (`StateLabel.At`). Pas d'emoji sur « A quitté … », « Dans une zone de danger », « Pas encore de nouvelles », « Partage arrêté ». Pas d'emoji non plus pour un **lieu sans catégorie** ou un **lieu introuvable** (supprimé) : le texte seul, jamais « Autre » par défaut, jamais le repère dessiné dans l'étiquette.
+- **Où** : avant les mots, sur la même pastille de couleur, séparé par un petit espace (8 dp / 8 pt). Les mots restent identiques (clés `feed_label_at_*` inchangées).
+- **Taille** : celle du texte de l'étiquette (14, `body/regular-14`) : l'emoji **suit** la taille de texte du système (il n'est pas dans une pastille de taille fixe ici).
+- **Lecteur d'écran** : l'emoji est **décoratif**, seul le texte est lu.
+- **Repli** : si la police ne sait pas dessiner l'emoji, la première lettre du nom de la catégorie (Android ; sur iOS les sept emoji existent toujours).
+- **Rien n'est écrit sur le serveur.** La catégorie vient de la fiche du lieu déjà lue pour le Feed (aucune lecture de plus).
+- Android : `StateLabel.At(place, category)` (`domain/feed`), composant partagé `CategoryGlyph` (`ui/place/CategoryIcon.kt`), `StateChip` (`ui/feed/FeedCards.kt`). Tests : `FeedBuilderTest`, `FeedScreenTest` (emoji, décoratif, Loisir / Autre, sans catégorie, repli).
+
 ## 2. Carrousel « Mes Miffs » du Profil
 
 Mêmes règles sur iOS et Android (ticket `docs/tickets/feed-profil-reglages.md`, maquettes `design/exports/profil/`) :

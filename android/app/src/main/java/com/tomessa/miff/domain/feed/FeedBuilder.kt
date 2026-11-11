@@ -188,7 +188,8 @@ object FeedBuilder {
 
                 status.presence == PresenceValue.IN_TRUSTED -> {
                     StateLabel.At(
-                        placeRef(status.placeId, places, trusted = true),
+                        place = placeRef(status.placeId, places, trusted = true),
+                        category = status.placeId?.let { places[it] }?.category,
                     )
                 }
 
