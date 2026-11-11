@@ -36,6 +36,8 @@ struct FeedListView: View {
     let scrollToTop: Int
     let actions: FeedListActions
     let onContentMoved: (CGFloat) -> Void
+    /// La distance défilée lue directement sur la vue de défilement (voir `ScrollDistanceReader`).
+    let onScrolled: (CGFloat) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let topId = "feed-top"
@@ -57,6 +59,7 @@ struct FeedListView: View {
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, topInset + Spacing.md)
                 .padding(.bottom, Spacing.md)
+                .background(ScrollDistanceReader(onChange: onScrolled))
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
             .refreshable { await actions.onRefresh() }
