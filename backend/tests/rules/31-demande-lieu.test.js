@@ -211,6 +211,7 @@ s.tc('RQ13', 'S4 : `risk` : un membre gratuit est refusé, un Miff+ actif est ac
   await assertFails(create(h, 'carol', 1, { type: 'risk' }));
   await assertFails(create(h, 'frank', 1, { type: 'risk' })); // expiré hier
   await assertSucceeds(create(h, 'dave', 1, { type: 'risk' }));
+  for (const type of ['danger', 'Risk', 'RISK', null, 1, ['risk']]) await assertFails(create(h, 'dave', 2, { type })); // un Miff+ ne contourne pas la liste des types
   await assertSucceeds(create(h, 'frank', 1)); // trusted : aucun premium requis
   await assertSucceeds(create(h, 'bob', 1)); // trusted
   await h.admin((f) => f.doc('entitlements/dave').update({ active: false }));
