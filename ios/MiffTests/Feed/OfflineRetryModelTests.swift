@@ -229,3 +229,5 @@ final class OfflineRetryModelTests: OfflineRetryTestCase {
         XCTAssertTrue(model.isPopinVisible)
     }
 }
+
+// swiftlint:enable line_length

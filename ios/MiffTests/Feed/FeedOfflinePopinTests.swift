@@ -362,3 +362,5 @@ final class FeedOfflinePopinTests: XCTestCase {
         XCTAssertEqual(model.restarts, 0, "plus aucun essai après la sortie de l'écran")
     }
 }
+
+// swiftlint:enable line_length

@@ -37,7 +37,10 @@ final class MiffRepositoryOfflineReadTests: XCTestCase {
         }
         XCTAssertEqual(load.miffs.map(\.id), [testMiffId])
         XCTAssertTrue(load.fromCache)
-        XCTAssertFalse(load.premiumKnown, "la formule n'est pas connue sans le serveur : jamais « gratuit » sur un doute")
+        XCTAssertFalse(
+            load.premiumKnown,
+            "la formule n'est pas connue sans le serveur : jamais « gratuit » sur un doute"
+        )
         XCTAssertFalse(store.calls.contains("memberships:server"), "le serveur n'est pas interrogé")
         XCTAssertFalse(store.calls.contains("entitlement"), "l'abonnement non plus")
     }

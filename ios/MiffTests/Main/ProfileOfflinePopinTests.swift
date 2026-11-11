@@ -90,7 +90,10 @@ final class ProfileOfflinePopinTests: XCTestCase {
         model.offlineRetry.dismiss()
 
         XCTAssertFalse(model.offlineRetry.isPopinVisible, "la carte est fermée")
-        XCTAssertTrue(model.offlineRetry.isInlineVisible, "l'onglet dit « Pas de connexion » à la place de l'indicateur")
+        XCTAssertTrue(
+            model.offlineRetry.isInlineVisible,
+            "l'onglet dit « Pas de connexion » à la place de l'indicateur"
+        )
     }
 
     func testOfflineWithAnUnreadableProfileThePopinComesAndTheNetworkComingBackRereadsOnce() async {

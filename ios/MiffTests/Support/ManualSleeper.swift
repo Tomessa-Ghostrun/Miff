@@ -8,7 +8,13 @@ final class ManualSleeper {
     /// Les durées demandées, dans l'ordre.
     private(set) var requested: [Int] = []
     private var nextId = 0
-    private var waiters: [(id: Int, millis: Int, continuation: CheckedContinuation<Void, Never>)] = []
+    private struct Waiter {
+        let id: Int
+        let millis: Int
+        let continuation: CheckedContinuation<Void, Never>
+    }
+
+    private var waiters: [Waiter] = []
 
     /// Combien d'attentes sont en cours, au total ou pour une durée donnée.
     var pendingTotal: Int {
@@ -28,7 +34,7 @@ final class ManualSleeper {
                 if Task.isCancelled {
                     continuation.resume()
                 } else {
-                    waiters.append((id: id, millis: millis, continuation: continuation))
+                    waiters.append(Waiter(id: id, millis: millis, continuation: continuation))
                 }
             }
         } onCancel: {

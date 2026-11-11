@@ -200,3 +200,5 @@ final class OfflineRetryLoopTests: OfflineRetryTestCase {
         XCTAssertEqual(retries, [.networkBack])
     }
 }
+
+// swiftlint:enable line_length
