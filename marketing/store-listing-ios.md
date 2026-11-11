@@ -4,7 +4,7 @@
 Langue principale : français. Langue de repli : anglais (le PM a décidé FR + EN au départ, anglais en repli).
 
 **À lire avant d'utiliser ce fichier**
-- Les déclarations déjà arrêtées dans `docs/release/` (confidentialité App Store, revue, localisation en arrière-plan, déclarations de la mise à jour photo) **ne doivent jamais être contredites**. **Recoupé le 2026-11-07 par `release-manager`** avec `docs/release/*`, `docs/legal/*`, `web/src/landing.json`, `backend/data-model.md`, `docs/tickets/*.md` et le code Android et iOS de `main` (`8e87ebd`). Corrections faites dans ce fichier : la description ne dit plus que Miff « reste utilisable » sans la localisation « Toujours » (elle est **obligatoire**) ; elle dit ce que voit le cercle (dernière position connue, endroit de la photo) ; « petit mot » est retiré (la photo n'a **pas de texte** en v1) ; la formule gratuite est de **2 lieux** (et non 1) ; le blocage d'une capacité iOS non livrée est signalé (section 0).
+- Les déclarations déjà arrêtées dans `docs/release/` (confidentialité App Store, revue, localisation en arrière-plan, déclarations de la mise à jour photo) **ne doivent jamais être contredites**. **Recoupé le 2026-11-07 par `release-manager`** avec `docs/release/*`, `docs/legal/*`, `web/src/landing.json`, `backend/data-model.md`, `docs/tickets/*.md` et le code Android et iOS de `main` (`8e87ebd`). Corrections faites dans ce fichier : la description ne dit plus que Miff « reste utilisable » sans la localisation « Toujours » (elle est **obligatoire**) ; elle dit ce que voit le cercle (dernière position connue, endroit de la photo) ; « petit mot » est retiré (la photo n'a **pas de texte** en v1) ; la formule gratuite est de **3 lieux** (décision du PM du 2026-11-10 ; 2 depuis le 2026-11-01, et non 1) ; le blocage d'une capacité iOS non livrée est signalé (section 0).
 - Les notifications push et l'abonnement payant (Miff+) **ne sont pas actifs** : aucune mention dans cette fiche.
 - Aucune marque tierce, aucun avis juridique, aucune donnée personnelle autre que le contact public provisoire de `CLAUDE.md`.
 - **Rien n'est « prêt à soumettre »** : la checklist de sortie `docs/qa/release-checklist.md` n'existe pas encore. Les décisions et actions du PM avant toute soumission sont dans `docs/release/decisions-stores-avant-soumission.md`.
@@ -23,13 +23,13 @@ Chaque phrase de la description repose sur une fonctionnalité. **État relevé 
 | C4 | Un fil (Feed) avec une carte par membre et un statut simple | `feed-profil-reglages.md`, Android `ui/feed` | **Livré sur Android seulement**. Absent d'iOS : bloquant pour la soumission iOS et pour les captures iOS |
 | C5 | Mise à jour : **une photo prise avec la caméra de l'app, sans texte**, publiée avec l'**endroit** où elle a été prise, visible 24 h | `update-photo-declarations.md` §2, ticket Update D16 à D27, C4 | **Livré sur Android seulement** (PR #93). Absent d'iOS. **Pas de « petit mot »** : `updateText` vaut toujours `null` en v1 |
 | C6 | Boutons Message / Appeler qui ouvrent l'app du téléphone | `feed-profil-reglages.md` §5.1 | Livré sur Android (cartes du Feed) ; absent d'iOS (pas de Feed) |
-| C7 | Photos de mise à jour plus visibles après 24 h | Politique art. 4 et 7 | Conforme aux textes ; la capture d'écran d'un membre reste possible (CGU art. 8) : la fiche ne dit jamais « effacée partout » |
+| C7 | Photos de mise à jour plus visibles après 24 h | Politique art. 4 et 7 | Conforme aux textes ; la capture d'écran d'un membre ou l'enregistrement de la photo (« Enregistrer cette photo », seulement s'il le choisit) restent possibles (CGU art. 8) : la fiche ne dit jamais « effacée partout » |
 | C8 | Le partage peut être arrêté à tout moment, Miff par Miff | Politique art. 4, CGU art. 6 | Livré sur Android (écran de la Miff). iOS : écran de la Miff livré (`MiffScreenView`), à constater en recette |
 | C9 | Suppression de compte depuis l'app | Politique art. 8 ; Apple 5.1.1(v) | **Exigence Apple.** Android : livrée (Réglages). **iOS : aucun écran de Réglages dans `main`** (le service d'authentification sait supprimer, l'écran n'existe pas). Si non livrée sur iOS : **ne pas soumettre** |
 | C10 | Connexion e-mail, Google, Apple | CGU art. 4 | Livré sur iOS |
 | C11 | Disponible en FR et EN | Décision PM | Livré |
 | C12 | Aucune publicité, aucune revente de données | Politique art. 5 et 11 | Cohérent avec les textes légaux |
-| C13 | Une Miff à la fois, **2 lieux de confiance** dans la formule gratuite | Spec Premium, CGU art. 5 et 9, `PlaceRules.swift` (`freePlaces = 2`) | Vrai dans le code. **À retirer** le jour où Miff+ est activé. (Le brouillon disait « un lieu » : corrigé, c'était l'ancienne règle d'avant le 2026-11-01.) |
+| C13 | Une Miff à la fois, **3 lieux de confiance** dans la formule gratuite | Spec Premium, CGU art. 5 et 9, `PlaceRules.swift` (`freePlaces`), `PlaceRules.kt` (`FREE_PLACES = 3`) | **Décision du PM du 2026-11-10 (2 avant, 1 avant le 2026-11-01).** Android : 3 dans `main`. **iOS : `freePlaces = 2` dans `main` tant que la PR #145 n'est pas fusionnée : à constater avant la soumission iOS.** **À retirer** le jour où Miff+ est activé. |
 | C14 | **Non mentionnés volontairement** : escalade orange/rouge, zones de danger (Miff+), notifications, abonnement | Specs | Les notifications **ne sont pas actives** ; Miff+ non vendu. **Mentionnés maintenant** (exigence de cohérence avec `docs/release/*`) : la **dernière position connue** vue du cercle, l'**endroit de la photo** et la localisation « Toujours » obligatoire. Le bouton « Localiser » (Android) n'est pas nommé, mais ce qu'il montre est dit |
 | C15 | Ce que voit le cercle : statut, **dernière position connue avec l'heure** (jamais en direct, aucun historique), photo avec son endroit, **seulement entre membres qui partagent aussi** | CGU art. 6, politique art. 4 et 5, `app-store-confidentialite-et-revue.md` §4 | Texte repris des déclarations existantes. **Obligatoire dans la fiche** : Apple 5.1.1(ii) demande des descriptions complètes de l'usage des données |
 
@@ -80,7 +80,7 @@ TU GARDES LA MAIN
 - Le partage avec chaque Miff est ton choix : il ne démarre qu'avec ton accord, et tu peux l'arrêter à tout moment, sans te justifier. Ton statut, ta photo et ta dernière position sont alors effacés.
 - Ce que voit ton cercle : ton statut, ta dernière position connue avec l'heure de sa mesure, et ta photo avec l'endroit où elle a été prise. Ce n'est pas un suivi en direct, et Miff ne garde aucun historique de tes trajets.
 - Seuls les membres de ta Miff qui partagent aussi leur position voient la tienne et ta photo. On ne rejoint une Miff qu'avec son code secret.
-- Les photos ne sont plus visibles après 24 heures. Un proche peut toutefois en faire une capture d'écran.
+- Les photos ne sont plus visibles après 24 heures dans Miff. Un proche peut toutefois en garder une copie : par capture d'écran, ou en touchant « Enregistrer cette photo », seulement s'il choisit de l'enregistrer.
 - Aucune publicité, aucune revente de données.
 - Tu peux supprimer ton compte depuis l'app.
 
@@ -90,7 +90,7 @@ En famille, entre amis, en couple : le cercle que tu choisis, avec l'accord de c
 
 BON À SAVOIR
 
-- Dans cette version, tu peux être dans une Miff à la fois, avec 2 lieux de confiance.
+- Dans cette version, tu peux être dans une Miff à la fois, avec 3 lieux de confiance.
 - La détection des arrivées et des départs dépend de ton iPhone : elle peut être en retard ou ne pas se produire. Un statut en retard ne veut pas dire qu'il y a un problème.
 - Miff n'est pas un service d'urgence. En cas de danger ou de doute sérieux, appelle le 112.
 - Un compte ne fonctionne que sur un téléphone à la fois.
@@ -160,7 +160,7 @@ YOU STAY IN CONTROL
 - Sharing with each Miff is your choice: it only starts with your agreement, and you can stop at any time, without having to explain yourself. Your status, your photo and your last known location are then erased.
 - What your circle sees: your status, your last known location with the time it was measured, and your photo with the place where it was taken. This is not live tracking, and Miff keeps no history of your trips.
 - Only the members of your Miff who also share their location see yours and your photo. A Miff can only be joined with its secret code.
-- Photos are no longer visible after 24 hours. A loved one can still take a screenshot of one.
+- Photos are no longer visible in Miff after 24 hours. A loved one can still keep a copy: by taking a screenshot, or by tapping "Save this photo", only if they choose to save it.
 - No ads, no data resale.
 - You can delete your account from the app.
 
@@ -170,7 +170,7 @@ Families, friends, couples: the circle you choose, with everyone's agreement. Mi
 
 GOOD TO KNOW
 
-- In this version, you can be in one Miff at a time, with 2 trusted places.
+- In this version, you can be in one Miff at a time, with 3 trusted places.
 - Detection of arrivals and departures depends on your iPhone: it can be late or may not happen. A late status does not mean something is wrong.
 - Miff is not an emergency service. In case of danger or serious doubt, call your local emergency number.
 - An account only works on one phone at a time.
@@ -260,7 +260,7 @@ Good to know: Miff needs the "Always" location permission to work. It keeps your
 | Nom du vendeur affiché | Dépend du compte développeur existant (créé pour un autre projet, partagé avec Ghostrun). **À confirmer** : le nom affiché publiquement sur la fiche sera celui du compte, ce qui est un choix de confidentialité du PM. **Statut de « trader » (Digital Services Act)** : Apple demande à chaque développeur de déclarer s'il est « trader » ; s'il l'est, adresse (ou boîte postale), téléphone et e-mail s'affichent sur la fiche dans les 27 pays de l'UE ; sinon on choisit « This is not a trader account » (lu sur la page Apple le 2026-11-07). Voir `docs/release/decisions-stores-avant-soumission.md`, point 5 | À FOURNIR |
 | Coordonnées de l'équipe de revue (nom, e-mail, téléphone) | **À FOURNIR** : seul l'e-mail provisoire de `CLAUDE.md` est acté ; un téléphone n'est **pas** acté et ne doit pas être inventé | À FOURNIR |
 | Compte de démonstration pour la revue | **À FOURNIR** : **deux comptes** dans la même Miff, chacun avec sa position publiée (position simulée), sans double authentification, pour que le relecteur voie une photo et son endroit (`update-photo-declarations.md` §4 et §13). Plus la vidéo exigée par `app-store-confidentialite-et-revue.md` §7 | À FOURNIR |
-| Prix | Gratuit. **Aucun achat intégré à déclarer tant que Miff+ n'est pas actif.** Attention : l'app Android affiche déjà un écran « Miff+ arrive bientôt » quand on atteint la limite de 2 lieux ; l'état iOS équivalent (`PlacePaywallView`) est le même. Apple 2.1(b) ne vise que les achats configurés ; le PM décide s'il garde cet écran en v1 (voir `decisions-stores-avant-soumission.md`, point 16) | À confirmer |
+| Prix | Gratuit. **Aucun achat intégré à déclarer tant que Miff+ n'est pas actif.** Attention : l'app Android affiche déjà un écran « Miff+ arrive bientôt » quand on atteint la limite de 3 lieux (2 avant le 2026-11-10) ; l'état iOS équivalent (`PlacePaywallView`) est le même. Apple 2.1(b) ne vise que les achats configurés ; le PM décide s'il garde cet écran en v1 (voir `decisions-stores-avant-soumission.md`, point 16) | À confirmer |
 | Disponibilité | Pays à choisir par le PM. Proposition : France d'abord (textes légaux écrits en droit français) ; élargir ensuite | À FOURNIR |
 
 ---

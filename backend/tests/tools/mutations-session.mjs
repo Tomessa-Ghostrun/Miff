@@ -66,6 +66,6 @@ export const SESSION_MUTATIONS = [
     [edit('function deviceIdRequired() {\n      return false;\n    }', 'function deviceIdRequired() {\n      return true;\n    }')], ['SE6', 'SE17', 'SF1']),
   mut('SS3-cle-presente-acceptee-sans-session', 'une clé présente est acceptée même sans session (la lecture de la session est retirée)',
     [edit(`d.deviceId == ${SESSION_READ}`, 'd.deviceId is string')], ['SE7', 'SE10']),
-  mut('SS3-statut-cle-refusee', "le schéma du statut n'accepte plus la clé deviceId", [edit(", 'updatedAt', 'deviceId'])", ", 'updatedAt'])")], ['SE7', 'SE8', 'SE12']),
+  mut('SS3-statut-cle-refusee', "le schéma du statut n'accepte plus la clé deviceId", [edit(", 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay'])", ", 'updatedAt', 'travelUntil', 'travelUntilDay'])")], ['SE7', 'SE8', 'SE12']),
   mut('SS3-position-cle-refusee', "le schéma de la position n'accepte plus la clé deviceId", [edit("['lat', 'lng', 'measuredAt', 'deviceId']", "['lat', 'lng', 'measuredAt']")], ['SE11']),
 ];

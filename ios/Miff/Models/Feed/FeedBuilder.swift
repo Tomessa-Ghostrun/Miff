@@ -2,7 +2,7 @@ import Foundation
 
 // Toute la logique du Feed, en UNE fonction pure (ticket FEED, critères B1 à B6 et C1 à C7) : de ce que les écoutes ont dit et de
 // l'heure du moment, à ce que dessinent les écrans. Rien n'est lu, écrit ni journalisé ici. La couleur d'un membre n'est calculée
-// QUE par `StatusColor.level` : les constantes 1 h et 2 h vivent dans `StatusThresholds`, jamais réécrites ici. Miroir exact de
+// QUE par `StatusColor.level` : les constantes 2 h et 4 h vivent dans `StatusThresholds`, jamais réécrites ici. Miroir exact de
 // `FeedBuilder.kt` d'Android (les cas des tests sont le contrat).
 
 /// Ce que l'écoute des statuts dit, tel que le Feed le voit.
@@ -115,7 +115,8 @@ enum FeedBuilder {
             banners: banners(context, latestUpdate: latestUpdate),
             cards: cards,
             announceKey: announceKey(shownBubble),
-            myFacts: myFacts(input, mySharing: mySharing, statuses: statuses)
+            myFacts: myFacts(input, mySharing: mySharing, statuses: statuses),
+            travelNote: travelNote(under: shownBubble, cards: cards, hidden: context.hidden)
         )
     }
 
@@ -184,20 +185,74 @@ enum FeedBuilder {
             )
         }
         let level = StatusColor.level(facts, nowMillis: context.now)
+        // MODE VOYAGE : lu quand le statut est lu (une Miff dont les nouvelles sont cachées, ou une personne qui ne partage plus, ne montre pas de voyage).
+        let travel = travelView(status, isMe: isMe, context)
         return FeedMemberCard(
             member: member,
             isMe: isMe,
             level: level,
             label: label(member: member, isMe: isMe, status: status, level: level, context),
-            time: timeLine(level: level, status: status, context),
-            battery: status.flatMap { battery($0, now: context.now) },
-            limitedLocation: status?.locationAccess.map { limitedAccess.contains($0) } ?? false,
+            time: travel == nil ? timeLine(level: level, status: status, context) : travelTimeLine(travel, status),
+            // Un voyageur ne mesure rien : ni niveau de batterie ni « Localisation limitée » (l'accès n'est pas dit non plus).
+            battery: shownBattery(status, travel: travel, context),
+            limitedLocation: shownLimitedLocation(status, travel: travel),
             phone: isMe ? nil : member.phone,
             // Un autre membre qui partage, pendant que je partage aussi et que les statuts sont VRAIMENT lus (les règles demandent que
             // mon statut soit publié) : même sans statut connu, « pas de position » est l'une des réponses calmes de la feuille.
             canLocate: !isMe && context.mySharing && !context.hidden && member.sharingEnabled
-                && context.input.statuses.isLoaded
+                && context.input.statuses.isLoaded,
+            // FEED-8 : seulement quand le statut est montré (partage actif, rien de caché) ET dit qu'il y a une photo récente.
+            photo: PhotoSlot.of(
+                hasPhoto: status?.hasPhoto ?? false,
+                lastUpdateAtMillis: status?.lastUpdateAtMillis,
+                visible: status != nil,
+                nowMillis: context.now
+            ),
+            traveling: isOngoing(travel)
         )
+    }
+
+    private static func isOngoing(_ travel: TravelView?) -> Bool {
+        if case .active? = travel {
+            return true
+        }
+        return false
+    }
+
+    private static func shownBattery(_ status: MemberStatus?, travel: TravelView?, _ context: Context) -> Battery? {
+        guard travel == nil, let status else {
+            return nil
+        }
+        return battery(status, now: context.now)
+    }
+
+    private static func shownLimitedLocation(_ status: MemberStatus?, travel: TravelView?) -> Bool {
+        guard travel == nil, let access = status?.locationAccess else {
+            return false
+        }
+        return limitedAccess.contains(access)
+    }
+
+    /// Le voyage d'un statut montré, ou nil. Ma carte pendant que mon accord est attendu ne montre rien (rien n'est partagé).
+    private static func travelView(_ status: MemberStatus?, isMe: Bool, _ context: Context) -> TravelView? {
+        guard let status, !(isMe && context.input.waitingAgreement) else {
+            return nil
+        }
+        return TravelView.of(
+            presence: status.presence,
+            untilMillis: status.travelUntilMillis,
+            untilDay: status.travelUntilDay,
+            nowMillis: context.now,
+            zone: context.zone
+        )
+    }
+
+    /// « Depuis le 8 nov. » tant que le voyage est en cours ; rien après la fin (la carte dit « Voyage terminé »).
+    private static func travelTimeLine(_ travel: TravelView?, _ status: MemberStatus?) -> TimeLine {
+        guard case .active? = travel, let since = status?.presenceAtMillis else {
+            return .nothing
+        }
+        return .travelSince(since)
     }
 
     private static func label(
@@ -216,6 +271,14 @@ enum FeedBuilder {
         if context.hidden && !isMe {
             return .newsHidden
         }
+        if let status, let travel = travelView(status, isMe: isMe, context) {
+            switch travel {
+            case .active(let until):
+                return .traveling(until, mine: isMe)
+            case .ended:
+                return .travelEnded
+            }
+        }
         guard level != .neutral, let status else {
             return .noNews
         }
@@ -229,13 +292,18 @@ enum FeedBuilder {
         }
     }
 
-    /// Un lieu des catégories Maison, Travail, École, Sport se dit par sa catégorie ; les autres par leur nom ; introuvable : générique.
+    /// Un lieu des catégories Maison, Travail, École, Sport, Chez un proche se dit par sa catégorie ; Loisir, Autre et un lieu sans
+    /// catégorie (écrit avant que la catégorie existe) par leur nom ; introuvable : générique. La catégorie est lue dans la liste des
+    /// lieux que le Feed écoute déjà : aucune lecture de plus.
+    /// Dans une zone de danger (`trusted` faux) le nom du lieu est toujours dit.
     static func placeRef(_ placeId: String?, _ places: [String: Place], trusted: Bool) -> PlaceRef {
         guard let placeId, let place = places[placeId] else {
             return .unknown
         }
+        // Un nom vide ou fait d'espaces ne se dit jamais (« À  ») : espaces retirés, puis formule générique (comme Android).
+        let name = place.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trusted else {
-            return .named(place.name)
+            return name.isEmpty ? .unknown : .named(name)
         }
         switch place.category {
         case .home:
@@ -246,8 +314,10 @@ enum FeedBuilder {
             return .category(.school)
         case .sport:
             return .category(.sport)
-        default:
-            return .named(place.name)
+        case .relative:
+            return .category(.relative)
+        case .leisure, .other, nil:
+            return name.isEmpty ? .unknown : .named(name)
         }
     }
 
@@ -258,7 +328,7 @@ enum FeedBuilder {
         let presenceAt = status.presenceAtMillis
         switch status.presence {
         case .inTrusted:
-            return presenceAt.map { TimeLine.since(context.age($0)) } ?? .nothing
+            return presenceAt.map { TimeLine.since(context.moment($0)) } ?? .nothing
         case .inRisk:
             return presenceAt.map { TimeLine.inDangerSince(context.moment($0)) } ?? .nothing
         case .out:
@@ -279,11 +349,11 @@ enum FeedBuilder {
     ) -> TimeLine {
         switch level {
         case .green:
-            let age = context.age(presenceAt ?? reference)
-            // Un départ d'un jour ou plus encore vert (une update récente) : seule la nouvelle est dite.
-            switch age {
+            let departure = presenceAt ?? reference
+            // Un départ d'un jour ou plus encore vert (une update récente) : seule la nouvelle est dite. Sinon l'heure du départ.
+            switch context.age(departure) {
             case .minutes, .hours:
-                return .departedAgo(age)
+                return .since(context.moment(departure))
             default:
                 return .latestNews(context.moment(reference))
             }

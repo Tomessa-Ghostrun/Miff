@@ -57,9 +57,11 @@ struct SignedOutHost: View {
         NavigationStack(path: $path) {
             root
                 .toolbar(.hidden, for: .navigationBar)
+                .swipeBackEnabled()
                 .navigationDestination(for: SignedOutRoute.self) { route in
                     screen(for: route)
                         .toolbar(.hidden, for: .navigationBar)
+                        .swipeBackEnabled()
                 }
         }
         .overlay(alignment: .top) {

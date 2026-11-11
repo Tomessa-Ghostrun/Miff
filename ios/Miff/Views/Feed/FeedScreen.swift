@@ -10,6 +10,8 @@ struct FeedScreenActions {
     let onOpenProfile: () -> Void
     let onCreate: () -> Void
     let onJoin: () -> Void
+    /// L'offre (« Miff+ arrive bientôt ») : un compte gratuit qui a déjà une Miff a touché « Rejoindre » ou « Créer » dans le sélecteur.
+    let onOpenOffer: () -> Void
     /// « Reprendre le partage » : l'écran de la Miff tient le dialogue et le consentement (rien n'est écrit depuis le Feed).
     let onResumeSharing: (String) -> Void
     let onMessage: (String) -> Void
@@ -38,6 +40,8 @@ struct FeedScreen: View {
     @State private var headerHeight: CGFloat = 0
     @State private var selectorOpen = false
     @State private var scrollToTop = 0
+    /// FEED-8 : la photo ouverte en plein écran. Rien n'en est gardé une fois fermée, ni quand le Feed quitte l'écran.
+    @State private var openedPhoto: OpenedPhoto?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
     @Environment(\.accessibilitySwitchControlEnabled) private var switchControl
 
@@ -116,6 +120,15 @@ struct FeedScreen: View {
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
         // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
         .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher() }
+        // La photo en plein écran (masquée elle aussi dans la vignette du sélecteur d'applications) ; elle se ferme quand l'onglet change,
+        // que l'app part en arrière-plan ou que la Miff affichée change : aucune photo ne reste ouverte hors de l'écran du Feed.
+        .fullScreenCover(item: $openedPhoto) { opened in photoFullScreen(opened) }
+        .onChange(of: isActive) { active in
+            if !active {
+                openedPhoto = nil
+            }
+        }
+        .onChange(of: content?.miffId) { _ in openedPhoto = nil }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("feed_pane_a11y"))
     }
@@ -177,7 +190,10 @@ struct FeedScreen: View {
             card: MemberCardActions(
                 onLocate: { model.onLocate(uid: $0) },
                 onMessage: actions.onMessage,
-                onCall: actions.onCall
+                onCall: actions.onCall,
+                onOpenPhoto: { openedPhoto = $0 },
+                // MODE VOYAGE : « Modifier » sur MA carte ouvre le Profil, où la date de fin se règle.
+                onEditTravel: actions.onOpenProfile
             ),
             bubble: BubbleActions(
                 onMessage: actions.onMessage,
@@ -211,26 +227,28 @@ struct FeedScreen: View {
                     scrollToTop += 1
                 },
                 onSelect: { model.onSelect($0) },
-                onCreate: actions.onCreate,
-                onJoin: actions.onJoin,
+                onCreate: { selectorEntryTapped(open: actions.onCreate) },
+                onJoin: { selectorEntryTapped(open: actions.onJoin) },
                 selectorOpen: $selectorOpen
             )
         )
         .accessibilitySortPriority(1)
     }
 
+    /// Le sélecteur s'ouvre pour tout le monde dès qu'il y a une Miff (décision du PM, 2026-11-08).
     private var pillState: FeedPillState? {
-        guard let ready else {
-            return nil
+        FeedPillState.make(from: ready)
+    }
+
+    /// « Rejoindre » ou « Créer » dans le sélecteur : le parcours normal, ou l'offre pour un compte gratuit qui a déjà une Miff.
+    /// Une formule inconnue (hors connexion) ouvre le parcours : jamais « gratuit » sur un doute, le serveur tranche.
+    private func selectorEntryTapped(open flow: () -> Void) {
+        switch FeedSelectorRules.outcome(for: ready) {
+        case .openFlow:
+            flow()
+        case .openPaywall:
+            actions.onOpenOffer()
         }
-        guard let active = ready.active, !ready.miffs.isEmpty else {
-            return .noMiff
-        }
-        // Une formule INCONNUE (abonnement non lu, ou réponse du cache) garde le sélecteur utilisable : jamais « gratuit » sur un doute.
-        if !ready.premiumKnown || ready.premium {
-            return .selectable(name: active.name, miffs: ready.miffs, activeId: ready.activeId)
-        }
-        return .plain(name: active.name)
     }
 
     // MARK: - La feuille « Localiser » et les annonces
@@ -263,6 +281,17 @@ struct FeedScreen: View {
             )
             .presentationDetents([.medium, .large])
         }
+    }
+
+    private func photoFullScreen(_ opened: OpenedPhoto) -> some View {
+        PhotoFullScreen(
+            opened: opened,
+            texts: texts,
+            nowMillis: model.dependencies.clock(),
+            zone: model.dependencies.zone(),
+            onOpenMap: actions.onOpenMap,
+            onDismiss: { openedPhoto = nil }
+        )
     }
 
     /// « Actualisation en cours » au début et « Informations actualisées » à la fin (rien n'est dit à jour quand le Feed dit « Dernières

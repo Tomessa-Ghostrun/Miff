@@ -59,8 +59,8 @@ private val GearSize = Spacing.minTouchTarget
 
 /**
  * The Profile tab (mockup "profil", ticket ONB-3a, criterion A3): the photo (or the initials), "Prénom Nom", "C'est toi" and
- * the gear that opens Settings. A tap on the photo and the name opens "Mes informations". Nothing is drawn under the header
- * until the Miff and Places tickets exist: no "Famille", no invented place. [scrollToTopSignal] goes up when the person taps
+ * the gear that opens Settings. A tap on the photo and the name opens "Mes informations". Under the header come
+ * the carousel "Mes Miffs" ([MiffCarouselSection]), the places of the Miff, then (last) the card "Mode voyage". [scrollToTopSignal] goes up when the person taps
  * the tab they are already on.
  */
 @Composable
@@ -72,8 +72,12 @@ fun ProfileTabScreen(
     onRetry: () -> Unit,
     miffs: DirectoryState = DirectoryState.Loading,
     onOpenMiff: (String) -> Unit = {},
+    /** The carousel of Miffs (decision of the PM, 2026-11-10): the faces known, what to do when a card appears and when the last card is touched. */
+    carousel: MiffCarouselHost = MiffCarouselHost(),
     /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
     placesContent: @Composable () -> Unit = {},
+    /** MODE VOYAGE (VOY-2A): the card "Mode voyage", the LAST block of the tab (after "Mes Miffs" and the places); nothing until the host gives it. */
+    travelContent: @Composable () -> Unit = {},
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -112,8 +116,10 @@ fun ProfileTabScreen(
         if (state.status == ProfileTabStatus.UNAVAILABLE) {
             Unavailable(onRetry)
         }
-        MiffCards(miffs, onOpenMiff)
+        MiffCarouselSection(miffs, carousel, onOpenMiff)
         placesContent()
+        // MODE VOYAGE: the card is the LAST block of the Profile (decision of the PM, 2026-11-11), after the carousel of Miffs and the places.
+        travelContent()
     }
 }
 
@@ -200,58 +206,5 @@ internal fun GearButton(onClick: () -> Unit) {
             contentDescription = stringResource(R.string.profile_tab_settings_a11y),
             tint = colorActionPrimary,
         )
-    }
-}
-
-/**
- * "Mes Miffs": one card per Miff, which opens the screen of the Miff (decision Q2 of the feed ticket: the card of the Profile is
- * the way in for every account; the "Créer une nouvelle Miff" card is for Premium accounts and arrives with the Premium ticket).
- * Only the NAME is shown: no count, no photo, no status (the full Profile is the PRO-1 ticket).
- */
-@Composable
-private fun MiffCards(
-    miffs: DirectoryState,
-    onOpenMiff: (String) -> Unit,
-) {
-    val ready = miffs as? DirectoryState.Ready ?: return
-    if (ready.miffs.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text(
-            text = stringResource(R.string.profile_tab_miffs_title),
-            style = textDisplayTitle,
-            color = colorTextForm,
-            modifier = Modifier.semantics { heading() },
-        )
-        ready.miffs.forEach { miff ->
-            val openLabel = stringResource(R.string.profile_tab_miff_open_a11y, miff.name)
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .miffShadow(ShadowDefault, ShapeMd)
-                        .clip(ShapeMd)
-                        .background(colorBgSurface)
-                        .clickable(onClickLabel = openLabel, role = Role.Button) { onOpenMiff(miff.id) }
-                        .heightIn(min = Spacing.minTouchTarget)
-                        .padding(horizontal = Spacing.m, vertical = Spacing.s)
-                        .semantics(mergeDescendants = true) {},
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = miff.name, style = textBodyBold16, color = colorTextForm)
-                    Text(
-                        text = stringResource(R.string.profile_tab_miff_hint),
-                        style = textBodyRegular,
-                        color = colorTextDescription,
-                    )
-                }
-                Icon(
-                    painter = painterResource(R.drawable.ic_chevron_end),
-                    contentDescription = null,
-                    tint = colorActionPrimary,
-                )
-            }
-        }
     }
 }

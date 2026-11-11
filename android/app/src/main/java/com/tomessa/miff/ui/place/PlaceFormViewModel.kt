@@ -234,7 +234,7 @@ class PlaceFormViewModel(
         }
         if (placeId == null) {
             if (PlaceQuota.isAtFreeLimit(loaded.premium, loaded.distinctPlaces)) {
-                // The server says 2 places already (the list was behind): the offer, and nothing is written.
+                // The server says 3 places already (the list was behind): the offer, and nothing is written.
                 mutableState.update { it.copy(loading = false, premium = false, paywall = PaywallReason.LIMIT) }
                 return
             }

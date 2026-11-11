@@ -13,7 +13,7 @@ Références : `positioning.md` (ton, vocabulaire, consentement), `store-listing
 **Livré (recoupé le 2026-11-07 avec `docs/release/*`, `docs/legal/*` et le code de `main`, `8e87ebd`)** :
 - **Android** : compte (e-mail, Google), Miffs par code secret, lieux de confiance, détection automatique des arrivées et départs, Feed avec une carte par proche, photo « Donner des nouvelles » (sans texte, toujours avec son endroit, 24 h), Réglages (arrêt du partage, suppression de compte, contact), français et anglais.
 - **iOS** : compte (e-mail, Google, Apple), Miffs par code secret, lieux de confiance, autorisation de localisation, suivi LOC-4b (code livré, recette PM sur iPhone à constater). **Pas encore de Feed, d'Update ni de Réglages (donc pas de suppression de compte dans l'app)** : l'iOS n'est pas soumissible en l'état (Apple 5.1.1(v)).
-- **Règles produit** : localisation « Toujours » **obligatoire** (jamais « facultative »), dernière position connue stockée côté serveur (sans historique), gratuit = **une Miff à la fois et 2 lieux de confiance** (le brouillon disait un lieu : ancienne règle).
+- **Règles produit** : localisation « Toujours » **obligatoire** (jamais « facultative »), dernière position connue stockée côté serveur (sans historique), gratuit = **une Miff à la fois et 3 lieux de confiance** (décision du PM du 2026-11-10 ; 2 depuis le 2026-11-01, 1 avant : anciennes règles).
 
 **Non actif, donc jamais dans les fiches des stores ni dans les contenus publics** :
 - les **notifications push** (la politique de confidentialité dit explicitement qu'aucune n'est envoyée et qu'aucun jeton n'est enregistré ; elles exigent un serveur : plan Blaze non activé) ;

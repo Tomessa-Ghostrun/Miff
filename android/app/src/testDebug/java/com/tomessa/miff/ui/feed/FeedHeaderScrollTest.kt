@@ -287,7 +287,12 @@ class FeedHeaderScrollTest {
                 fromCache = false,
             )
         composeRule.setContent {
-            MiffTheme { MiffPill(premium, onSelect = {}, onCreate = {}, onJoin = {}, onOpenChanged = { events += it }) }
+            MiffTheme {
+                MiffPill(premium, onSelect = {}, onCreate = {}, onJoin = {}, onOffer = {}, onOpenChanged = {
+                    events +=
+                        it
+                })
+            }
         }
         composeRule.onNodeWithText("Famille Mfouka").performClick()
         composeRule.waitForIdle()

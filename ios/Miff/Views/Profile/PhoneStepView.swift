@@ -72,7 +72,7 @@ struct PhoneStepContent: View {
             }
         }
         // Pendant l'écriture, le balayage depuis le bord ne ramène pas à l'étape profil.
-        .background(SwipeBackLock(isLocked: state.isWriting))
+        .swipeBack(for: .profilePhone(isWriting: state.isWriting))
         .task(id: state.regionCode) {
             let region = state.regionCode
             let phoneTools = tools
