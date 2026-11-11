@@ -58,6 +58,7 @@ En une phrase : l'Update est **le geste volontaire qui complète la détection a
 | Texte du consentement et textes légaux | `release-manager` / `backend-data` | Ce ticket **note** ce qui est à aligner (§12, §15) ; il ne rédige aucun texte légal. |
 | Texte libre accompagnant la photo, filtres, galerie | Non demandés par Notion | **Absents** de la v1 (§5.9, V4). |
 | Flash | Demande du PM le 2026-11-11 (après la v1) | **Bouton ajouté** au viseur : éteint par défaut, jamais conservé, uniquement si la caméra active a un flash, déclenché seulement à la prise de photo (V4 amendé). Clés `update_flash_*`. |
+
 | Paywall | Ticket Premium | L'Update est **gratuit pour tous** (règles : « aucune règle de photo ne dépend de l'abonnement »). |
 
 ---
@@ -174,6 +175,8 @@ Maquettes de l'Update du PM (2026-11-06, `design/exports/update/`, 7 PNG) : **l'
 - **Double toucher** : **deux touchers rapides en dehors du rond central** (et des boutons de bascule, de la barre d'onglets) = bascule ; le même geste **revient** à la frontale [Proposé : Notion dit « met la caméra arrière », sans retour possible un utilisateur serait bloqué]. Deux touchers sur le rond **ne prennent qu'une photo** (la seconde prise de vue est ignorée tant que la première n'est pas terminée).
 - **Bouton de bascule visible** [Proposé, **absent des maquettes** : écart justifié] : le double toucher est invisible, difficile avec un tremblement ou un lecteur d'écran, et ne se découvre pas.
 - **Pas de zoom, de filtre, de minuterie, de texte, de dessin, de galerie** (non demandés). **Flash : seulement le bouton demandé par le PM le 2026-11-11** (éteint par défaut, jamais conservé, flash ponctuel à la prise de photo, pas de lampe continue). **Pas de choix d'une photo ancienne** : l'Update signifie « voilà où j'en suis maintenant » ; une photo de galerie donnerait une fausse réassurance (R2).
+
+- **Pas de zoom, de filtre, de minuterie, de texte, de dessin, de galerie** (non demandés). **Exception : le bouton « flash »**, éteint par défaut, ajouté à la demande du PM le 2026-11-11 (voir `ios/CHANGELOG.md`). **Pas de choix d'une photo ancienne** : l'Update signifie « voilà où j'en suis maintenant » ; une photo de galerie donnerait une fausse réassurance (R2).
 - **D37 (2026-11-06)** : l'aperçu **frontal est en miroir** (comme un miroir) et **la photo frontale est publiée « en reflet », comme le viseur** (~~la photo publiée n'est pas en miroir~~ : **remplacé**) ; **la caméra arrière n'est jamais retournée** ; l'**aperçu de validation montre l'image telle qu'elle sera publiée** (donc en reflet pour la caméra frontale). Conséquence assumée : un texte photographié avec la caméra frontale apparaît à l'envers pour tous, comme dans un miroir.
 - **La caméra n'est active que si l'écran est visible** : elle s'arrête dès que l'application passe en arrière-plan, que l'écran se verrouille ou qu'on le quitte. **Miff n'ouvre jamais la caméra de lui-même et ne peut pas être déclenché à distance** (point de confiance, critère PR1).
 - **`RecentsPrivacy`** appliqué à l'écran (ni le viseur ni la photo n'apparaissent dans les applications récentes).
@@ -232,6 +235,8 @@ Maquettes de l'Update du PM (2026-11-06, `design/exports/update/`, 7 PNG) : **l'
 | V2 | Caméra au départ | **Frontale** ; sinon arrière |
 | V3 | Bascule | Double toucher (aller et retour) **et** bouton visible ; astuce du double toucher à l'écran **jusqu'au premier double toucher qui change la caméra, puis plus jamais** (D38, état mémorisé par installation) |
 | V4 | Fonctions absentes | zoom, filtres, minuterie, texte, dessin, galerie (le flash est un bouton depuis le 2026-11-11) |
+
+| V4 | Fonctions absentes | zoom, filtres, minuterie, texte, dessin, galerie |
 | V5 | Garde-fou | **20 publications par jour et par téléphone** ; **30 s minimum** entre deux publications |
 | V6 | Fraîcheur | Photo en attente > **5 min** : oubliée (« Cette photo date un peu… ») |
 | V7 | Format | ~~Portrait 3:4, côté long ≤ 1 024 px~~ **remplacé par D24** : ratio stocké, résolution et recadrage **proposés par l'agent design (PR #83)** ; inchangés : JPEG, **≤ 150 000 octets** (plafond des règles), cible ≤ 100 Ko |

@@ -46,6 +46,23 @@ Défaut (iOS seulement, le PM ne le constate pas sur Android) : à l'ouverture d
 - **« Enregistrer cette photo » devient une icône** (retour du PM, « à la Snapchat ») : `square.and.arrow.down` **sans texte**, en haut à droite, **en face de la croix** (même disque sombre translucide, zone de 48 pt, opaque avec « Réduire la transparence »), au lieu d'un bouton sous « Voir où c'était » (ce qui libère aussi de la hauteur pour la légende). Depuis le 2026-11-11 l'enregistrement est DIRECT dans la galerie (voir plus haut ; la feuille de partage et « aucune permission » sont REMPLACÉS), geste explicite, VoiceOver « Enregistrer cette photo » (valeur « Photo enregistrée. » après l'enregistrement), confirmation posée sans décaler la mise en page. **Texte de `feed_photo_download` modifié** : « Enregistrer cette photo » / « Save this photo » (iOS et Android `strings.xml`, clé inchangée, parité intacte).
 - Inchangés : voile des applications récentes (`hidesInAppSwitcher`), fermeture (croix, glissement, échappement), zoom et déplacement bornés, aucune écriture, aucun journal. Tests : `PhotoFullScreenLayoutTests` (iPhone SE, 11 Pro, 16, paysage, texte maximal, lecture des sources), `PhotoSaveTests` (icône dans la barre du haut, plus dans le pied).
 
+### Update : bouton du flash dans le viseur (demande du PM, 2026-11-11)
+
+Branche `ios/update-flash`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi, et le flash ne se teste que sur l'iPhone (TestFlight).** Recette : `docs/qa/checklists/update-ios-recette-pm.md`, section « B bis ». Conflits probables avec les PR #157 et #158 : `ios/CHANGELOG.md`, `Localizable.xcstrings`, `ios/README.md`, `docs/tickets/update.md` (ajouts au même endroit : garder les deux côtés).
+
+Ajouté :
+- **Bouton du flash** à GAUCHE du bouton de bascule de caméra (même groupe, même pastille sombre de 48 pt, pictogrammes du système `bolt.slash.fill` = éteint et `bolt.fill` = activé : l'état se voit sans couleur). **Éteint par défaut**, à chaque ouverture du viseur, au retour de l'arrière-plan et à chaque changement de caméra (bouton, double toucher) ; l'état n'est jamais gardé (ni disque ni réglage).
+- **Comportement** : `AVCapturePhotoSettings.flashMode = .on` seulement à l'instant de la photo, jamais de torche continue ; réglé seulement si `AVCapturePhotoOutput.supportedFlashModes` contient `.on` (sinon l'app planterait) et, pour l'arrière, si `AVCaptureDevice.hasFlash` et `isFlashAvailable`. Caméra frontale : le Retina Flash (écran) sert quand l'appareil le prend en charge ; sinon, ou si la caméra ne peut pas donner de flash, le bouton est **masqué** et la photo part sans flash, sans aucune erreur. Aucune autorisation de plus.
+- **Accessibilité** : nom parlé « Flash » (`update_flash_a11y`) et état dit en mots, « Flash désactivé » / « Flash activé » (EN : « Flash off » / « Flash on »), en valeur du bouton, annoncé aussi à voix haute à chaque toucher ; jamais la couleur seule.
+- Textes `update_flash_a11y`, `update_flash_state_on` et `update_flash_state_off`, **identiques à Android** (demande envoyée aux deux plateformes).
+- Code : `Models/Update/FlashState.swift` (état et `FlashSupport`, logique pure), `CameraController` (`flash`, `toggleFlash()`), `ViewfinderView`. Tests : `FlashStateTests` (éteint par défaut, bascule, remise à éteint, caméra sans flash, matériel, textes fr et en).
+
+Modifié : `docs/tickets/update.md` (le flash n'est plus « absent » ; V4 mis à jour), `docs/qa/checklists/update-ios-recette-pm.md`, `ios/README.md`.
+
+Coût : aucun (AVFoundation, aucun service ni quota). Sécurité : aucune permission, aucun journal, aucun événement Analytics, rien n'est stocké.
+
+Écarts : aucun écran de maquette ne montre le flash (`design/exports/update/claude/03-viseur-et-apercu.png`) ; l'emplacement et le style suivent le bouton de bascule voisin ; pictogrammes du système faute d'export vectoriel du PM. Le bouton n'est pas grisé mais masqué quand il est impossible (choix calme : pas de bouton qui ne sert à rien). Limite à vérifier sur l'iPhone : l'apparition du bouton juste après le démarrage de la caméra (le matériel répond une fois la session lancée).
+
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 
 Troisième des trois PR empilées (base : `ios/mode-voyage-profil`, VOY-2I). Ticket `docs/tickets/mode-voyage.md` §6 (décisions du PM du 2026-11-10 : ouvert à TOUS ; la position reste partagée ; le voyageur n'a **aucun impact** sur la couleur ni sur le « n sur m »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/voyage-ios-recette-pm.md`. Détail : `ios/README.md` (« Mode voyage »).
