@@ -1,7 +1,7 @@
 package com.tomessa.miff.data
 
 import android.content.Context
-import com.google.firebase.FirebaseApp
+import com.google.firebase.appcheck.AppCheckProviderFactory
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 
@@ -19,22 +19,29 @@ object AppCheckInstaller {
     fun install(context: Context) {
         val off = SharedPreferencesDebugAppCheckSetting(context).isOffRequested()
         SharedPreferencesDebugAppCheckSetting.offInEffect = off
+        val appCheck = FirebaseAppCheck.getInstance()
         if (off) {
-            forgetStoredToken(context)
-            FirebaseAppCheck.getInstance().installAppCheckProviderFactory(DebugAppCheckNoTokenProviderFactory())
+            installWithoutToken(appCheck, DebugAppCheckNoTokenProviderFactory())
         } else {
-            FirebaseAppCheck.getInstance().installAppCheckProviderFactory(DebugAppCheckProviderFactory.getInstance())
+            appCheck.installAppCheckProviderFactory(DebugAppCheckProviderFactory.getInstance())
         }
     }
 
     /**
-     * The SDK keeps the last token (valid up to one hour) in its own private file and would hand it out again after the
-     * switch: without this, the proof "no token, request refused" could be wrong for the first hour. Removed BEFORE the SDK
-     * is asked for its instance (it reads the file at creation). Best effort and debug only: the file name is the SDK's own
-     * (firebase-appcheck 20.0.0, `StorageHelper`), a change of name would only bring the one-hour delay back.
+     * Forgets the token the SDK kept (best effort, see [StoredAppCheckToken]) and installs the provider that gives none. The forgetting is
+     * done again when the SDK has finished reading its stored token in the background, which can happen after the first one.
      */
-    private fun forgetStoredToken(context: Context) {
-        val key = FirebaseApp.getInstance().persistenceKey
-        context.applicationContext.deleteSharedPreferences("com.google.firebase.appcheck.store.$key")
+    private fun installWithoutToken(
+        appCheck: FirebaseAppCheck,
+        factory: AppCheckProviderFactory,
+    ) {
+        val forgotten = StoredAppCheckToken.forget(appCheck)
+        appCheck.installAppCheckProviderFactory(factory)
+        if (forgotten) {
+            StoredAppCheckToken.retrieval(appCheck)?.addOnCompleteListener {
+                StoredAppCheckToken.forget(appCheck)
+                appCheck.installAppCheckProviderFactory(factory)
+            }
+        }
     }
 }

@@ -72,7 +72,7 @@
     <string name="android_diag_appcheck_off_description">Test de l\'application stricte (build de debug seulement) : avec cet interrupteur, le prochain lancement de l\'app n\'envoie aucun jeton App Check. Une fois App Check appliqué dans la console, le serveur doit alors refuser les requêtes.</string>
     <string name="android_diag_appcheck_off_switch">Sans App Check (au prochain lancement)</string>
     <string name="android_diag_appcheck_off_pending">Enregistré. Ferme complètement l\'app puis rouvre-la : elle n\'enverra alors aucun jeton.</string>
-    <string name="android_diag_appcheck_off_active">Actif : ce lancement n\'envoie aucun jeton App Check. Désactive l\'interrupteur puis relance l\'app pour revenir à la normale.</string>
+    <string name="android_diag_appcheck_off_active">Actif : ce lancement n\'envoie aucun jeton App Check (au mieux : l\'app a essayé d\'oublier le dernier jeton gardé par le SDK ; en cas de doute, efface les données de l\'app ou attends plus d\'1 h). Pour la preuve, fie-toi à la console App Check (requêtes non vérifiées). Désactive l\'interrupteur puis relance l\'app pour revenir à la normale.</string>
     <string name="android_diag_appcheck_off_ending">Désactivé. Ce lancement n\'envoie encore aucun jeton : ferme complètement l\'app puis rouvre-la.</string>
 
     <!-- Analytics et rapports de plantage -->

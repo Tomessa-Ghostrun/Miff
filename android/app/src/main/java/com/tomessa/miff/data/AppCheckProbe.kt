@@ -1,5 +1,8 @@
 package com.tomessa.miff.data
 
+import com.google.android.gms.tasks.Task
+import com.google.firebase.FirebaseException
+import com.google.firebase.appcheck.AppCheckToken
 import com.google.firebase.appcheck.FirebaseAppCheck
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -12,8 +15,9 @@ import kotlinx.coroutines.withTimeout
  */
 fun interface AppCheckProbe {
     /**
-     * `true` ONLY when the SDK answered that it cannot give a token. On a doubt (no answer in time, anything unexpected) it answers
-     * `false`: the person then gets the answer of before, never a new sentence on a guess.
+     * `true` ONLY when the SDK answered with its own error "no token" (a [FirebaseException]: the provider could not attest the app, or
+     * none is installed). On any doubt (no answer in time, an error of another kind) it answers `false`: the person then gets the answer
+     * of before, never a new sentence on a guess.
      */
     suspend fun tokenIsMissing(): Boolean
 
@@ -29,17 +33,20 @@ fun interface AppCheckProbe {
  */
 class FirebaseAppCheckProbe(
     private val timeoutMillis: Long = TIMEOUT_MS,
+    private val askForToken: () -> Task<AppCheckToken> = { FirebaseAppCheck.getInstance().getAppCheckToken(false) },
 ) : AppCheckProbe {
     override suspend fun tokenIsMissing(): Boolean =
         try {
-            withTimeout(timeoutMillis) { FirebaseAppCheck.getInstance().getAppCheckToken(false).await() }
+            withTimeout(timeoutMillis) { askForToken().await() }
             false
         } catch (e: TimeoutCancellationException) {
             false
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: FirebaseException) {
             true
+        } catch (e: Exception) {
+            false
         }
 
     private companion object {

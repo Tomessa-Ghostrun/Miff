@@ -60,6 +60,9 @@ fun interpretMiffError(error: Throwable): MiffFailure {
  * AC-4: a refusal ([MiffFailure.REFUSED]) while the phone holds no App Check token ([tokenIsMissing]) is, most likely, the refusal
  * of App Check: "this device is not recognized". Anything else is returned as it is: with a token, or when the token could not be
  * checked, the answer of before stays (never a new sentence on a doubt), and a network problem is never a refusal.
+ *
+ * KNOWN LIMIT: [interpretMiffError] puts UNAUTHENTICATED in [MiffFailure.REFUSED] with PERMISSION_DENIED, so an expired session without a
+ * token can also be called "not recognized" (calm sentence, no harm; the loss of a session is handled elsewhere).
  */
 fun refineRefusal(
     failure: MiffFailure,

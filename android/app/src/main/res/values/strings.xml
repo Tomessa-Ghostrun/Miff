@@ -94,7 +94,7 @@
     <string name="android_diag_appcheck_off_description">Test of the enforcement (debug build only): with this switch on, the next launch of the app sends no App Check token at all. Once App Check is enforced in the console, the server must then refuse the requests.</string>
     <string name="android_diag_appcheck_off_switch">Without App Check (next launch)</string>
     <string name="android_diag_appcheck_off_pending">Saved. Close the app completely, then reopen it: it will then send no token.</string>
-    <string name="android_diag_appcheck_off_active">Active: this launch sends no App Check token. Turn the switch off and relaunch to get back to normal.</string>
+    <string name="android_diag_appcheck_off_active">Active: this launch sends no App Check token (best effort: the app tried to forget the last token the SDK kept; if in doubt, clear the app data or wait more than one hour). For the proof, rely on the App Check console (unverified requests). Turn the switch off and relaunch to get back to normal.</string>
     <string name="android_diag_appcheck_off_ending">Switched off. This launch still sends no token: close the app completely and reopen it.</string>
 
     <!-- Analytics and crash reports -->

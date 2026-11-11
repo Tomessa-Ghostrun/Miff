@@ -25,8 +25,9 @@
 ### Étape 3. Le lancement suivant n'envoie aucun jeton (3 min)
 
 - [ ] **Fermez complètement l'app** (écran des applications récentes, balayez-la), puis rouvrez-la.
-- [ ] Le message **« Actif : ce lancement n'envoie aucun jeton App Check. Désactive l'interrupteur puis relance l'app pour revenir à la normale. »** est affiché et l'interrupteur est allumé.
-- [ ] Touchez « Vérifier » : **« Pas de jeton pour le moment… »**, même si vous aviez « Jeton obtenu » à l'étape 2 (l'app a oublié le dernier jeton gardé).
+- [ ] Le message **« Actif : ce lancement n'envoie aucun jeton App Check (au mieux : l'app a essayé d'oublier le dernier jeton gardé par le SDK ; en cas de doute, efface les données de l'app ou attends plus d'1 h)… »** est affiché et l'interrupteur est allumé.
+- [ ] Touchez « Vérifier » : **« Pas de jeton pour le moment… »**, même si vous aviez « Jeton obtenu » à l'étape 2 (ce bouton redemande le jeton au fournisseur sans jeton).
+- [ ] **Pour la preuve réelle (AC-7), consigne fiable** : après avoir activé l'interrupteur, **effacez les données de l'app** (Réglages Android > Applications > Miff > Stockage > Effacer les données, puis reconnectez-vous) ou attendez plus d'1 h avant de rouvrir ; et regardez la **console App Check** (requêtes non vérifiées) plutôt que l'écran. L'oubli automatique du jeton gardé est « au mieux » et **non vérifié sur un téléphone** : dites-moi ce que vous constatez.
 - [ ] L'app **fonctionne encore** (App Check n'est pas appliqué) : saisissez le compte de test dans « Test 2 » (le mot de passe se tape uniquement sur le téléphone) : la connexion et la lecture réussissent.
 - [ ] Console Firebase > App Check > onglet « API » > Cloud Firestore : toujours **« Non appliqué »**. Vous n'y avez touché à rien.
 
