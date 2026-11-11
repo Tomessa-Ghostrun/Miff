@@ -73,7 +73,7 @@ class ConnectionGate(
 
     /** The pop-in was closed (back): the page of the screen takes over, the attempts go on. */
     fun dismiss() {
-        mutableState.update { if (it.active) it.copy(dismissed = true) else it }
+        mutableState.update { if (it.active) it.copy(dismissed = true, secondsLeft = null) else it }
     }
 
     /**
@@ -95,16 +95,18 @@ class ConnectionGate(
                     .distinctUntilChanged()
                     .collectLatest { (isLoading, isUnavailable, isOnline) ->
                         val stuck = isLoading || (isUnavailable && !isOnline)
+                        // Computed BEFORE the "not stuck" exit: with the network back and the screen "unavailable" (first installation, data cleared, then
+                        // airplane mode), `stuck` is already false, yet ONE reading is still owed (the review of PR #149: the pop-in left without retry()).
                         val networkCameBack = wasOffline && isOnline
                         wasOffline = !isOnline
+                        if (networkCameBack && (isLoading || isUnavailable)) {
+                            // The network is back: ONE reading at once, and the pop-in leaves (it comes back only if nothing arrives).
+                            clear()
+                            retry()
+                        }
                         if (!stuck) {
                             clear()
                             return@collectLatest
-                        }
-                        // The network is back: ONE reading at once, and the pop-in leaves (it comes back only if nothing arrives).
-                        if (networkCameBack) {
-                            clear()
-                            retry()
                         }
                         var firstCycle = true
                         restarts.collectLatest {
@@ -135,7 +137,7 @@ class ConnectionGate(
             }
             var left = secondsOf(retryEveryMillis)
             while (left > 0) {
-                mutableState.update { it.copy(active = true, secondsLeft = left) }
+                mutableState.update { it.copy(active = true, secondsLeft = if (it.dismissed) null else left) }
                 delay(ONE_SECOND_MILLIS)
                 left--
             }

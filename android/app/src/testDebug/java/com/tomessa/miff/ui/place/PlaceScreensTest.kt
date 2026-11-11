@@ -393,10 +393,11 @@ class PlaceScreensTest {
 
     // --- The list (17) -----------------------------------------------------------------------------------------------------------
 
-    private val two =
+    private val three =
         listOf(
             testPlace("p1", "Maison de Papa", address = "26 rue du Volnay, 21000 Dijon"),
             testPlace("p2", "Foot de Thomas", category = PlaceCategory.SPORT, address = "Stade des Poussots"),
+            testPlace("p3", "Chez Léa", category = PlaceCategory.RELATIVE, address = "3 rue des Lilas"),
         )
 
     private fun rows(
@@ -408,9 +409,9 @@ class PlaceScreensTest {
     @Test
     fun list_freeCreatorAtTheLimit_seesTheCounter_andAnAddButtonWithThePill_neverHiddenOrGrey() {
         var added = 0
-        rows(PlaceListUi(two, isCreator = true, premium = false), onAdd = { added++ })
+        rows(PlaceListUi(three, isCreator = true, premium = false), onAdd = { added++ })
         shoot("place-17a-liste-limite")
-        composeRule.onNodeWithText("2 lieux sur 2 avec la formule gratuite").assertIsDisplayed()
+        composeRule.onNodeWithText("3 lieux sur 3 avec la formule gratuite").assertIsDisplayed()
         composeRule
             .onNodeWithText(
                 text(R.string.place_list_add_action),
@@ -423,19 +424,19 @@ class PlaceScreensTest {
 
     @Test
     fun list_premiumCreator_hasNoCounterAndNoPill() {
-        rows(PlaceListUi(two, isCreator = true, premium = true))
+        rows(PlaceListUi(three, isCreator = true, premium = true))
         shoot("place-17b-liste-premium")
         composeRule.onNodeWithText(text(R.string.place_list_add_action)).assertIsDisplayed()
-        composeRule.onAllNodesWithText("lieux sur 2", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("lieux sur 3", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.place_premium_pill)).assertCountEquals(0)
     }
 
     @Test
     fun list_unknownPlan_claimsNothingAboutTheFreePlan() {
         var added = 0
-        rows(PlaceListUi(two, isCreator = true, premium = null), onAdd = { added++ })
+        rows(PlaceListUi(three, isCreator = true, premium = null), onAdd = { added++ })
         composeRule.onAllNodesWithText("formule gratuite", substring = true).assertCountEquals(0)
-        composeRule.onAllNodesWithText("lieux sur 2", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("lieux sur 3", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.place_premium_pill)).assertCountEquals(0)
         // The way in stays open: the form decides on the server's answer.
         composeRule.onNodeWithText(text(R.string.place_list_add_action)).assertIsEnabled().performClick()
@@ -445,7 +446,7 @@ class PlaceScreensTest {
     @Test
     fun list_member_readsOnly_andSeesWhoSetsThePlaces() {
         var opened: String? = null
-        rows(PlaceListUi(two, isCreator = false, premium = false), onOpen = { opened = it.id })
+        rows(PlaceListUi(three, isCreator = false, premium = false), onOpen = { opened = it.id })
         shoot("place-17c-liste-membre")
         composeRule.onAllNodesWithText(text(R.string.place_list_add_action)).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.place_list_member_hint)).assertIsDisplayed()
@@ -474,7 +475,7 @@ class PlaceScreensTest {
 
     @Test
     fun list_afterASave_showsTheHonestSentenceAboutThePropagation() {
-        rows(PlaceListUi(two, isCreator = true, premium = true, savedName = "Maison de Papa"))
+        rows(PlaceListUi(three, isCreator = true, premium = true, savedName = "Maison de Papa"))
         shoot("place-04l-lieu-enregistre")
         val sentence = text(R.string.place_saved_notice, "Maison de Papa")
         assertTrue(sentence.startsWith("Le lieu « Maison de Papa » est enregistré."))
@@ -484,7 +485,7 @@ class PlaceScreensTest {
 
     @Test
     fun list_rowsAreReadAsOneLine_andAreBigEnoughToTouch() {
-        rows(PlaceListUi(two, isCreator = true, premium = true))
+        rows(PlaceListUi(three, isCreator = true, premium = true))
         composeRule
             .onNodeWithContentDescription("Maison de Papa, catégorie Maison, 26 rue du Volnay, 21000 Dijon")
             .assertIsDisplayed()
@@ -579,6 +580,46 @@ class PlaceScreensTest {
         shoot("place-15-offre-danger")
         composeRule.onNodeWithText(text(R.string.place_paywall_danger_title)).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(text(R.string.place_paywall_close_a11y)).assertIsDisplayed()
+    }
+
+    // A 2nd Miff, asked from the selector of the Feed (decision of the PM, 2026-11-08): its own sentence, no price, never "Premium".
+    @Test
+    fun offer_secondMiff_saysWhy_withTheSentenceOfAMiff_notOfPlaces() {
+        var closed = 0
+        show { PlacePaywallScreen(PaywallReason.MIFF, onClose = { closed++ }) }
+        shoot("feed-selecteur-offre-2e-miff")
+        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.place_paywall_soon)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_soon_body)).performScrollTo().assertIsDisplayed()
+        // "Your places stay as they are" would be wrong here; the sentences of the places are absent.
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_soon_body)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_limit_title)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_danger_title)).assertCountEquals(0)
+        // No purchase exists: no price, no trial, no percentage, never the word "Premium".
+        listOf("Premium", "€", "essai", "%", "Économis").forEach {
+            composeRule.onAllNodesWithText(it, substring = true, ignoreCase = true).assertCountEquals(0)
+        }
+        composeRule.onNodeWithText(text(R.string.place_paywall_later)).performClick()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun offer_theRouteCarriesAFixedWord_andTheSecondMiffHasItsAnalyticsTrigger() {
+        assertEquals("miff", PlacePaywallRoute.of(PaywallReason.MIFF).reason)
+        assertEquals(PaywallReason.MIFF, PlacePaywallRoute("miff").paywallReason())
+        assertEquals(PaywallReason.LIMIT, PlacePaywallRoute.of(PaywallReason.LIMIT).paywallReason())
+        assertEquals(PaywallReason.DANGER, PlacePaywallRoute.of(PaywallReason.DANGER).paywallReason())
+        assertEquals(PaywallReason.DANGER, PlacePaywallRoute("anything").paywallReason())
+        assertEquals(
+            com.tomessa.miff.domain.analytics.AnalyticsEvent.PaywallTrigger.EXTRA_MIFF,
+            paywallTrigger(PaywallReason.MIFF),
+        )
+        assertEquals(
+            com.tomessa.miff.domain.analytics.AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE,
+            paywallTrigger(PaywallReason.LIMIT),
+        )
+        assertEquals(null, paywallTrigger(PaywallReason.DANGER))
     }
 
     // --- The largest font (criterion TRA2) ----------------------------------------------------------------------------------------

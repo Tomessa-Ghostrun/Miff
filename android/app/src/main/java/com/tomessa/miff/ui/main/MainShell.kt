@@ -51,6 +51,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
@@ -82,15 +83,30 @@ import com.tomessa.miff.ui.navigation.PasswordResetRoute
 import com.tomessa.miff.ui.navigation.googleSourceFor
 import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.FeedNotificationsViewModel
+import com.tomessa.miff.ui.notification.notificationRoutes
+import com.tomessa.miff.ui.notification.openNotificationCenter
+import com.tomessa.miff.ui.notification.openNotificationSettings
+import com.tomessa.miff.ui.notification.rememberNotificationPermissionRequest
+import com.tomessa.miff.ui.notification.rememberNotificationPermissionState
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
+import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
+import com.tomessa.miff.ui.profile.MiffCarouselHost
+import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.profile.TravelActions
+import com.tomessa.miff.ui.profile.TravelCard
+import com.tomessa.miff.ui.profile.TravelViewModel
+import com.tomessa.miff.ui.profile.miffOfferRoute
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
+import com.tomessa.miff.ui.review.ReviewStage
 import com.tomessa.miff.ui.review.rememberReviewHost
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountViewModel
@@ -265,6 +281,24 @@ private fun MainNavigation(
                 )
             val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
             val profileConnection by profileViewModel.connection.collectAsStateWithLifecycle()
+            // MODE VOYAGE: open to every account, written by the tracking engine only.
+            val travelViewModel: TravelViewModel =
+                viewModel(
+                    key = "travel-$scopeKey",
+                    factory = viewModelFactory { initializer { TravelViewModel(container.travelControl) } },
+                )
+            val travelState by travelViewModel.uiState.collectAsStateWithLifecycle()
+            val travelActions =
+                remember(travelViewModel) {
+                    TravelActions(
+                        onToggle = travelViewModel::onToggle,
+                        onChangeDate = travelViewModel::onChangeDate,
+                        onPickerDismissed = travelViewModel::onPickerDismissed,
+                        onDayChosen = travelViewModel::onDayChosen,
+                        onConfirm = travelViewModel::onConfirm,
+                        onConfirmDismissed = travelViewModel::onConfirmDismissed,
+                    )
+                }
             val feedViewModel: FeedViewModel =
                 viewModel(
                     key = "feed-$scopeKey",
@@ -280,6 +314,7 @@ private fun MainNavigation(
                                     network = container.networkMonitor,
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
+                                    notifications = container.feedNotificationLink,
                                 )
                             }
                         },
@@ -298,6 +333,52 @@ private fun MainNavigation(
                             }
                         },
                 )
+            // NOTIF-1A / NOTIF-6A: the dot of the bell and the card of the second chance (local only; nothing read from or written to the server).
+            val notificationsViewModel: FeedNotificationsViewModel =
+                viewModel(
+                    key = "feed-notifications-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                FeedNotificationsViewModel(
+                                    center = container.notificationCenter,
+                                    settings = container.notificationSettings,
+                                    authorization = container.notificationAuthorization,
+                                    asks = container.notificationAsks,
+                                    currentUid = { container.authGateway.currentUid },
+                                )
+                            }
+                        },
+                )
+            // The faces of the carousel of Miffs (Profile tab): the Miff the Feed read is reused, the others are read one time when their card appears.
+            val profileMiffsViewModel: ProfileMiffsViewModel =
+                viewModel(
+                    key = "profile-miffs-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                ProfileMiffsViewModel(
+                                    reader = container.memberFacesReader,
+                                    feedMembers = feedViewModel.readMembers,
+                                    myProfile = container.currentProfile.profile,
+                                    myUid = { container.authGateway.currentUid },
+                                )
+                            }
+                        },
+                )
+            val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            val requestNotificationWindow =
+                rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
+            LaunchedEffect(updateViewModel, notificationsViewModel) {
+                updateViewModel.events.collect {
+                    if (it is UpdateEvent.Published) {
+                        notificationsViewModel
+                            .onUpdatePublished()
+                    }
+                }
+            }
+            val profileFaces by profileMiffsViewModel.faces.collectAsStateWithLifecycle()
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
@@ -316,6 +397,7 @@ private fun MainNavigation(
                 onSelectMiff = feedViewModel::onSelect,
                 onCreateMiff = { navController.open(CreateMiffRoute) },
                 onJoinMiff = { navController.open(JoinMiffRoute) },
+                onMiffOffer = { navController.open(PlacePaywallRoute.of(PaywallReason.MIFF)) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
                 agreement = AgreementUi(waiting, container.awaitingAgreement::requestReview),
                 feed =
@@ -340,7 +422,16 @@ private fun MainNavigation(
                                 onRetry = feedViewModel::onConnectionRetry,
                                 onDismiss = feedViewModel::onConnectionDismissed,
                             ),
+                        notifications =
+                            FeedNotifications(
+                                unreadCount = notificationsState.unreadCount,
+                                secondChanceVisible = notificationsState.secondChanceVisible,
+                                onOpenCenter = { navController.openNotificationCenter() },
+                                onSecondChanceEnable = requestNotificationWindow,
+                                onSecondChanceLater = notificationsViewModel::onSecondChanceLater,
+                            ),
                     ),
+                tabRequests = container.tabRequests,
                 update =
                     UpdateHost(
                         viewModel = updateViewModel,
@@ -350,7 +441,9 @@ private fun MainNavigation(
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
+                travelWindowOpen = travelState.picker != null || travelState.confirm != null,
                 profileConnection = profileViewModel.connectionHost(profileConnection),
+                travelContent = { TravelCard(state = travelState, actions = travelActions) },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -362,6 +455,16 @@ private fun MainNavigation(
                         )
                     }
                 },
+                profileMiffs =
+                    MiffCarouselHost(
+                        faces = profileFaces,
+                        onCardShown = profileMiffsViewModel::onCardShown,
+                        onMiffsKnown = profileMiffsViewModel::retainOnly,
+                        onCreate = { navController.open(CreateMiffRoute) },
+                        // Same rule and same offer as the selector of the Feed (decision of the PM, 2026-11-08): a free account that already has a Miff.
+                        onOffer = { navController.open(miffOfferRoute()) },
+                    ),
+                onProfileMiffOpened = profileMiffsViewModel::onMiffOpened,
             )
         }
         composable<SettingsRoute> {
@@ -385,6 +488,7 @@ private fun MainNavigation(
                 onOpenAccount = { navController.open(AccountRoute) },
                 onOpenLanguage = { navController.open(LanguageRoute) },
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
+                onOpenNotifications = { navController.openNotificationSettings() },
                 onOpenSubscription =
                     subscription?.let { active ->
                         { navController.open(SubscriptionRoute(active.expiresAtMillis, active.grantedByTeam)) }
@@ -436,6 +540,8 @@ private fun MainNavigation(
             )
         }
         sharedSettingsRoutes(container, navController, scopeKey)
+        // NOTIF-2A / NOTIF-6A: only in the full Settings (a person with no Miff has nothing to be notified of).
+        notificationRoutes(container, navController, scopeKey)
         composable<LanguageRoute> {
             val viewModel: LanguageViewModel =
                 viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
@@ -590,18 +696,37 @@ fun MainTabs(
     onSelectMiff: (String) -> Unit,
     onCreateMiff: () -> Unit,
     onJoinMiff: () -> Unit,
+    /** A free account that already has a Miff asked for another one from the selector of the Feed: the offer opens (decision of the PM, 2026-11-08). */
+    onMiffOffer: () -> Unit = {},
     onOpenMiff: (String) -> Unit,
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
+    travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
+    /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
+    tabRequests: TabRequests? = null,
+    /** The carousel of Miffs of the Profile tab (decision of the PM, 2026-11-10). */
+    profileMiffs: MiffCarouselHost = MiffCarouselHost(),
+    /** The screen of a Miff is opened from its card of the Profile tab: its faces are read again at the next appearance of the card. */
+    onProfileMiffOpened: (String) -> Unit = {},
     review: ReviewHost? = null,
     /** The lost-access message is over everything (MainShell): the review window waits for it to be acknowledged. */
     lostAccessNoticeOpen: Boolean = false,
     /** The pop-in "Pas de connexion" of the Profile tab (the Feed's one is in [feed]); its `observe` lives while the tab is on screen. */
     profileConnection: ConnectionHost = ConnectionHost(),
+    /** A window of the Travel card (the day picker or its confirmation) is open on the Profile tab: the pop-in "Pas de connexion" waits (never two windows). */
+    travelWindowOpen: Boolean = false,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
+    // Never two windows at once (docs/tickets/pop-ins-avis.md, C5): the pop-in "Pas de connexion" waits for the lost-access message, the review window and the
+    // windows of the Travel card; the review window, for its part, waits for the pop-in (see ReviewSituation.messageOpen).
+    val reviewStage by (
+        review?.viewModel?.stage ?: remember {
+            MutableStateFlow<ReviewStage>(ReviewStage.Hidden)
+        }
+    ).collectAsStateWithLifecycle()
+    val popInSuppressed = lostAccessNoticeOpen || reviewStage != ReviewStage.Hidden || travelWindowOpen
     // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
     var previous by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
@@ -626,6 +751,15 @@ fun MainTabs(
     fun select(tab: MainTab) {
         if (tab != selected) previous = selected
         selected = tab
+    }
+    if (tabRequests != null) {
+        val requested by tabRequests.pending.collectAsStateWithLifecycle()
+        LaunchedEffect(requested) {
+            requested?.let {
+                select(it)
+                tabRequests.consume(it)
+            }
+        }
     }
     BackHandler(enabled = selected == MainTab.UPDATE) {
         selected =
@@ -714,14 +848,16 @@ fun MainTabs(
                                     onSelect = onSelectMiff,
                                     onCreate = onCreateMiff,
                                     onJoin = onJoinMiff,
+                                    onMiffOffer = onMiffOffer,
                                     agreement = agreement,
                                     feed = feed.state,
                                     locate = feed.locate,
                                     refreshing = feed.refreshing,
                                     popIn = feed.connection,
-                                    popInSuppressed = lostAccessNoticeOpen,
+                                    popInSuppressed = popInSuppressed,
                                     me = feed.me,
                                     actions = actions,
+                                    notifications = feed.notifications,
                                 )
                             }
 
@@ -741,10 +877,15 @@ fun MainTabs(
                                     onOpenSettings = onOpenSettings,
                                     onRetry = onRetryProfile,
                                     miffs = miffs,
-                                    onOpenMiff = onOpenMiff,
+                                    onOpenMiff = { id ->
+                                        onProfileMiffOpened(id)
+                                        onOpenMiff(id)
+                                    },
+                                    carousel = profileMiffs,
                                     placesContent = placesContent,
                                     popIn = profileConnection,
-                                    popInSuppressed = lostAccessNoticeOpen,
+                                    popInSuppressed = popInSuppressed,
+                                    travelContent = travelContent,
                                 )
                             }
 
@@ -798,6 +939,8 @@ fun MainTabs(
                     blockingMessageOpen =
                         ReviewSituation.messageOpen(
                             lostAccessNotice = lostAccessNoticeOpen,
+                            connectionPopInOpen =
+                                feed.connection.state.popInVisible || profileConnection.state.popInVisible,
                             awaitingAgreement = agreement.waiting.isNotEmpty(),
                             locateSheetOpen = feed.locate != LocateUiState.Idle,
                             myLabel = feedContent?.myLabel,
@@ -881,6 +1024,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
             location = location,
             onReviewAgreement = container.awaitingAgreement::requestReview,
             onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
+            notifications = rememberNotificationPermissionState(container),
         )
     }
     composable<DetectionHelpRoute> {

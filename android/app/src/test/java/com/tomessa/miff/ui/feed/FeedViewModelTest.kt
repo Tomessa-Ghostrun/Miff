@@ -5,6 +5,7 @@ import com.tomessa.miff.data.feed.PositionReader
 import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.LostMiff
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MyMiffsLoad
@@ -1046,6 +1047,51 @@ class FeedViewModelTest {
             assertTrue(vm.content().banners.isEmpty())
             advanceTimeBy(60_000)
             assertFalse(vm.connection.value.active)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_theDirectoryIsUnavailable_noNetwork_thenTheNetworkComesBack_oneReadingAtOnce_noMoreTapNeeded() =
+        runTest(dispatcher) {
+            // First installation (or data cleared), airplane mode: nothing to read, nothing in the cache: the directory says "unavailable".
+            repo.myMiffsResult = MyMiffsLoad.Unavailable
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            directory.refresh()
+            advanceTimeBy(10_000)
+            assertEquals(DirectoryState.Unavailable, directory.state.value)
+            assertTrue(vm.connection.value.popInVisible)
+            // The network comes back, the server answers: ONE reading starts by itself (review of PR #149: the pop-in used to leave without any reading).
+            repo.myMiffsResult =
+                MyMiffsLoad.Loaded(
+                    listOf(MiffSummary(MIFF_ID, "Chez nous")),
+                    emptyList(),
+                    premium = false,
+                    fromCache = false,
+                )
+            val before = readsOfTheMiffs()
+            network.online = true
+            runCurrent()
+            assertEquals(before + 1, readsOfTheMiffs())
+            assertFalse(vm.connection.value.active)
+            assertTrue(directory.state.value is DirectoryState.Ready)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_theDirectoryIsUnavailable_withANetworkAtTheStart_noPopIn_andNoReadingFromTheGate() =
+        runTest(dispatcher) {
+            repo.myMiffsResult = MyMiffsLoad.Unavailable
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            val before = readsOfTheMiffs()
+            advanceTimeBy(2 * minute)
+            // With a network the page has its own calm sentence and "Réessayer": no pop-in, no reading in a loop.
+            assertFalse(vm.connection.value.active)
+            assertEquals(before, readsOfTheMiffs())
             job.cancel()
         }
 

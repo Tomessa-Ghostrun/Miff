@@ -76,6 +76,8 @@ import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.miff.MiffSharing
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.NotificationSecondChanceCard
 import com.tomessa.miff.ui.splash.ReduceMotion
 import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -135,6 +137,8 @@ class FeedHost(
     val photos: PhotoReader? = null,
     /** The pop-in "Pas de connexion" (state and buttons): shown only while the Feed has nothing to show. */
     val connection: ConnectionHost = ConnectionHost(),
+    /** NOTIF-1A and NOTIF-6A: the bell and the card of the second chance. */
+    val notifications: FeedNotifications = FeedNotifications(),
 )
 
 /** The hand-overs to the applications of the system, with the calm message of the ticket when none answers. */
@@ -177,6 +181,8 @@ fun FeedScreen(
     onSelect: (String) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
+    /** The selector of the Miffs sends a free account that already has a Miff to the offer (decision of the PM, 2026-11-08). */
+    onMiffOffer: () -> Unit = {},
     /** LOC-2b, design 23A: the Miffs that wait for the agreement of the person (nothing is shared or detected for them). */
     agreement: AgreementUi = AgreementUi(),
     feed: FeedUiState = FeedUiState.Loading,
@@ -188,6 +194,7 @@ fun FeedScreen(
     /** The pop-in "Pas de connexion" (bug of 2026-11-10): shown only while there is nothing to show; once closed, the page says it itself. */
     popIn: ConnectionHost = ConnectionHost(),
     popInSuppressed: Boolean = false,
+    notifications: FeedNotifications = FeedNotifications(),
 ) {
     RecentsPrivacy()
     val texts = rememberFeedTexts()
@@ -291,6 +298,7 @@ fun FeedScreen(
                         topRoom = headerRoom,
                         refreshing = refreshing,
                         popIn = popIn,
+                        notifications = notifications,
                     )
                 }
             }
@@ -301,6 +309,7 @@ fun FeedScreen(
             myStatusDescription = content?.let { texts.label(it.myLabel) },
             onOpenProfile = actions.onOpenProfile,
             onLogo = { scope.launch { toTopAndShow() } },
+            notifications = notifications,
             // Moved by a translation read in the draw phase only: no recomposition, no layout, no margin that moves.
             modifier =
                 Modifier
@@ -326,7 +335,15 @@ fun FeedScreen(
                     }
 
                     else -> {
-                        MiffPill(ready, onSelect, onCreate, onJoin, onOpenChanged = { selectorOpen = it })
+                        val onSelectorOpen = { open: Boolean -> selectorOpen = open }
+                        MiffPill(
+                            ready,
+                            onSelect,
+                            onCreate,
+                            onJoin,
+                            onOffer = onMiffOffer,
+                            onOpenChanged = onSelectorOpen,
+                        )
                     }
                 }
             },
@@ -335,7 +352,9 @@ fun FeedScreen(
         RefreshAnnouncement(refreshing, offline)
     }
     // Nothing to show and no network (or no answer for a while): the calm pop-in, with "Réessayer" and the countdown of the next automatic attempt.
-    ConnectionPopIn(popIn, suppressed = popInSuppressed)
+    // Never two windows at once (ticket pop-ins-avis C5): the pop-in waits while the sheet "Localiser" is open or the Miff waits for the person's agreement.
+    val waitingAgreement = agreement.isWaiting((state as? DirectoryState.Ready)?.activeId)
+    ConnectionPopIn(popIn, suppressed = popInSuppressed || locate != LocateUiState.Idle || waitingAgreement)
     opened?.let { photo ->
         PhotoFullScreen(
             opened = photo,
@@ -373,6 +392,7 @@ private fun FeedBody(
     topRoom: Dp,
     refreshing: Boolean,
     popIn: ConnectionHost,
+    notifications: FeedNotifications,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
     val pullState = rememberPullToRefreshState()
@@ -418,6 +438,15 @@ private fun FeedBody(
         ) {
             if (state.fromCache && content == null) {
                 item { MiffNotice(stringResource(R.string.feed_offline_note)) }
+            }
+            if (notifications.secondChanceVisible) {
+                // NOTIF-1A: ONE calm card, after the first update of someone who put the pop-in of the notifications off.
+                item(key = "notification-second-chance") {
+                    NotificationSecondChanceCard(
+                        onEnable = notifications.onSecondChanceEnable,
+                        onLater = notifications.onSecondChanceLater,
+                    )
+                }
             }
             if (agreement.isWaiting(state.activeId)) {
                 // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.

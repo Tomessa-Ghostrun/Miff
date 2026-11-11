@@ -98,7 +98,10 @@ class FusedPhotoPositionSource(
     }
 
     companion object {
-        /** Short and bounded: the person is looking at the screen. One attempt; the screen offers "Réessayer". */
-        const val WAIT_MILLIS = 5_000L
+        /**
+         * Bounded, but long enough for a cold GPS or an indoor start (5 s was too short: "Position introuvable" although the person shares, as on iOS, recette build 24).
+         * The person waits anyway for the end of the publication (the button is busy). One attempt; the screen offers "Réessayer". Deviation from D33 ("3 s"), to be confirmed by the PM.
+         */
+        const val WAIT_MILLIS = 10_000L
     }
 }

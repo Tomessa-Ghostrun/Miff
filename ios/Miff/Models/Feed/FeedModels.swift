@@ -9,12 +9,14 @@ import Foundation
 // l'horloge. Ils portent des faits (une sorte de lieu, une heure, un niveau), jamais une phrase : les phrases sont les clés
 // `feed_*` (français et anglais, mêmes clés qu'Android).
 
-/// Les quatre catégories dont le NOM est remplacé par la catégorie dans les phrases (« À la maison ») : Maison, Travail, École, Sport.
+/// Les cinq catégories dont le NOM est remplacé par la catégorie dans les phrases (« À la maison ») : Maison, Travail, École, Sport,
+/// Chez un proche (décision du PM, 2026-11-08). Loisir, Autre et un lieu sans catégorie se disent par leur NOM (`PlaceRef.named`).
 enum PlaceKind: Equatable {
     case home
     case work
     case school
     case sport
+    case relative
 }
 
 /// Où dit-on qu'est quelqu'un, d'après la liste des lieux de CETTE Miff (la seule source).
@@ -42,21 +44,28 @@ enum StateLabel: Equatable {
     case newsHidden
     /// Ma carte pendant que le renouvellement de mon accord attend : rien n'est partagé avec cette Miff.
     case waitingAgreement
+    /// MODE VOYAGE : « En voyage jusqu'au 15 nov. » (grise, avec un avion) ; sur MA carte « Mode voyage jusqu'au 15 nov. » (`mine`) et un lien
+    /// « Modifier ». La couleur n'est jamais le signal : l'avion et les mots le sont.
+    case traveling(TravelDay, mine: Bool)
+    /// MODE VOYAGE : la fin du voyage est passée et la personne n'a pas donné de nouvelles depuis : « Voyage terminé » (grise), jamais un
+    /// faux « en voyage ».
+    case travelEnded
 }
 
 /// La ligne sous l'étiquette. UN seul repère de temps par carte.
 enum TimeLine: Equatable {
     case nothing
-    /// « Depuis 12 min », « Depuis 3 h », « Depuis hier à 08 h 12 », « Depuis le 3 nov. à 08 h 12 ».
-    case since(Age)
-    /// « Départ il y a 12 min » : vert, une zone de confiance quittée il y a moins d'une heure.
-    case departedAgo(Age)
+    /// L'HEURE d'arrivée (dans une zone de confiance) ou de départ (zone quittée, encore vert), jamais une durée (décision du PM,
+    /// 2026-11-10) : « Depuis 13 h 36 », « Depuis hier à 13 h 36 », « Depuis le 3 nov. à 13 h 36 ».
+    case since(Moment)
     /// Orange : « Dernière nouvelle à 16 h 02 » (une heure ABSOLUE).
     case latestNews(Moment)
     /// Rouge d'ancienneté : « Pas de nouvelles depuis 16 h 02 ».
     case noNewsSince(Moment)
     /// Rouge, zone de danger : « Depuis 16 h 02 ».
     case inDangerSince(Moment)
+    /// MODE VOYAGE : « Depuis le 8 nov. » (le JOUR où le voyage a commencé, dans le fuseau du lecteur).
+    case travelSince(Int)
 }
 
 /// La pastille de batterie : « 85 % » seul, jamais l'heure de la mesure (décision du PM, 2026-11-07, D44). Masquée au-delà de 6 h
@@ -79,6 +88,10 @@ struct FeedMemberCard: Equatable, CustomStringConvertible {
     let phone: String?
     /// « Localiser » : un autre membre qui partage, pendant que je partage aussi et que les statuts sont vraiment lus.
     let canLocate: Bool
+    /// FEED-8 : la photo de la dernière update, à lire quand la carte vient à l'écran (`none` : rien n'est dessiné, ni trou ni message).
+    var photo: PhotoSlot = .none
+    /// MODE VOYAGE : le voyage de cette personne est en cours (pas fini) : la carte est hors de la couleur de la Miff et du décompte « n sur m ».
+    var traveling = false
 
     var description: String {
         "FeedMemberCard(redacted)"
@@ -126,6 +139,9 @@ enum Bubble: Equatable, CustomStringConvertible {
     case sharingStopped
     /// Mon accord au nouveau texte est attendu.
     case awaitingAgreement
+    /// MODE VOYAGE : tous les AUTRES membres connus sont en voyage ou sans nouvelles, et au moins un est en voyage : une bulle neutre qui le dit
+    /// (jamais « Tout va bien », jamais « Pas encore de nouvelles »).
+    case travelers(TravelNote)
     /// Orange ou rouge : une page par membre concerné, les rouges d'abord (jamais de défilement automatique).
     case alerts(pages: [AlertPage], level: StatusLevel)
 
@@ -135,13 +151,25 @@ enum Bubble: Equatable, CustomStringConvertible {
             return .green
         case .alerts(_, let level):
             return level
-        case .noNews, .alone, .sharingStopped, .awaitingAgreement:
+        case .noNews, .alone, .sharingStopped, .awaitingAgreement, .travelers:
             return .neutral
         }
     }
 
     var description: String {
         "Bubble(redacted)"
+    }
+}
+
+/// MODE VOYAGE : qui est en voyage parmi les AUTRES membres : une personne (par son prénom, avec le jour) ou plusieurs (un nombre).
+enum TravelNote: Equatable, CustomStringConvertible {
+    case one(name: String, until: TravelDay)
+    /// `all` : TOUS les autres membres sont en voyage (« Tes proches sont en voyage. ») ; sinon seulement `count` d'entre eux (« 2 proches sont
+    /// en voyage. »).
+    case many(count: Int, all: Bool)
+
+    var description: String {
+        "TravelNote(redacted)"
     }
 }
 
@@ -174,6 +202,18 @@ struct FeedContent: Equatable, CustomStringConvertible {
     /// MON statut tel que l'Update en a besoin (couleur du bouton central, bulle, nettoyage de ma photo) : nil quand je ne partage pas ou
     /// que mon accord est attendu. L'Update ne lit rien de plus : ce Feed est l'UNIQUE écouteur de ma fiche (D19).
     var myFacts: MyStatusFacts?
+    /// MODE VOYAGE : la ligne ajoutée à la bulle habituelle quand d'autres membres sont en voyage (nil : aucun, ou la bulle le dit déjà).
+    var travelNote: TravelNote?
+
+    /// Le Feed dit « Dernières informations de… » : pas de réseau, ou seule une copie du cache répond. Les photos ne sont pas lues alors.
+    var isOffline: Bool {
+        banners.contains { banner in
+            if case .offline = banner {
+                return true
+            }
+            return false
+        }
+    }
 
     var description: String {
         "FeedContent(redacted)"

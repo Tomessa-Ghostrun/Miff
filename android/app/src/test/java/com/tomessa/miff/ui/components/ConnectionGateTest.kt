@@ -70,6 +70,41 @@ class ConnectionGateTest {
         }
 
     @Test
+    fun theNetworkComesBack_whileTheScreenIsUnavailableAndNotLoading_oneAttemptAtOnce_review149() =
+        runTest {
+            // First installation / data cleared, then airplane mode: the screen is "unavailable" and no longer "loading".
+            loading.value = false
+            unavailable.value = true
+            val job = watching()
+            advanceTimeBy(2_000)
+            assertTrue(gate.state.value.popInVisible)
+            assertEquals(0, retries)
+            network.online = true
+            runCurrent()
+            // Before the fix the pop-in was cleared and the gate left WITHOUT any attempt.
+            assertEquals(1, retries)
+            assertFalse(gate.state.value.active)
+            // With a network, an "unavailable" screen has its own sentence and "Réessayer": no loop of attempts from the gate.
+            advanceTimeBy(120_000)
+            assertEquals(1, retries)
+            job.cancel()
+        }
+
+    @Test
+    fun theNetworkComesBack_whileTheScreenHasItsContent_noAttempt() =
+        runTest {
+            loading.value = false
+            unavailable.value = false
+            val job = watching()
+            runCurrent()
+            network.online = true
+            runCurrent()
+            assertEquals(0, retries)
+            assertFalse(gate.state.value.active)
+            job.cancel()
+        }
+
+    @Test
     fun theNetworkComesBackAndTheContentArrives_nothingMoreHappens() =
         runTest {
             val job = watching()
@@ -163,6 +198,8 @@ class ConnectionGateTest {
             assertTrue(gate.state.value.inlineVisible)
             advanceTimeBy(10_000)
             assertEquals(1, retries)
+            // Closed: no countdown is published any more (nobody sees it; no useless recomposition every second).
+            assertNull(gate.state.value.secondsLeft)
             job.cancel()
         }
 

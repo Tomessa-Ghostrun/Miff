@@ -11,15 +11,19 @@ import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
+import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.domain.feed.FeedBuilder
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.FeedInput
 import com.tomessa.miff.domain.feed.Locate
 import com.tomessa.miff.domain.feed.LocateResult
+import com.tomessa.miff.domain.feed.MemberStatus
 import com.tomessa.miff.domain.feed.PositionLookup
 import com.tomessa.miff.domain.feed.StatusesView
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffSnapshot
+import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.profile.ReadMembers
 import com.tomessa.miff.ui.components.ConnectionGate
 import com.tomessa.miff.ui.components.ConnectionPopInState
 import kotlinx.coroutines.CancellationException
@@ -151,6 +155,8 @@ class FeedViewModel(
      * when a network is there, and stops with the screen (see [ConnectionGate]).
      */
     private val connectionGate: ConnectionGate = ConnectionGate(network),
+    /** NOTIF-4A: told what the Feed read (the snapshot the reminders are planned from) and the choice of another Miff. Local; nothing is read or written because of it. */
+    private val notifications: FeedNotificationLink = FeedNotificationLink.None,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -159,6 +165,15 @@ class FeedViewModel(
     private val offline = MutableStateFlow(false)
     private val now = MutableStateFlow(nowMillis())
     private val restarts = MutableStateFlow(0)
+
+    /**
+     * The members of the Miff the Feed last read, for the carousel of the Profile tab: it draws the faces of THIS Miff from them, with no
+     * reading of its own (cost). The last one stays when the Feed changes Miff (it is still true for its own card); nothing until a Miff is read.
+     */
+    val readMembers: StateFlow<ReadMembers?> =
+        piece
+            .mapNotNull { (it as? MiffPiece.Data)?.let { data -> ReadMembers(data.miffId, data.snapshot.members) } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** The wait for the server's confirmation of a cached answer is over (see [cacheGraceMillis]). */
     private val cacheGraceOver = MutableStateFlow(false)
@@ -252,7 +267,43 @@ class FeedViewModel(
     }
 
     /** Premium: another Miff was chosen in the selector. */
-    fun onSelect(miffId: String) = directory.select(miffId)
+    fun onSelect(miffId: String) {
+        try {
+            notifications.onActiveMiff(miffId)
+        } catch (e: Exception) {
+            // The reminders never get in the way of the selector.
+        }
+        directory.select(miffId)
+    }
+
+    /**
+     * The Feed knows the statuses of the Miff shown (or that I do not share, so that there is nothing to read): the notifications keep a snapshot of the facts
+     * (identifier, does he share, keyword of the presence, two times: nothing else) and plan from it. A failure there never reaches the Feed.
+     */
+    private fun tellNotifications(
+        miffId: String,
+        byUid: Map<String, MemberStatus>,
+    ) {
+        val data = piece.value as? MiffPiece.Data ?: return
+        if (data.miffId != miffId) return
+        val me = currentUid() ?: return
+        val members =
+            data.snapshot.members.map { member ->
+                val status = byUid[member.uid]
+                SnapshotMember(
+                    member.uid,
+                    member.sharingEnabled,
+                    status?.presence,
+                    status?.presenceAtMillis,
+                    status?.lastUpdateAtMillis,
+                )
+            }
+        try {
+            notifications.onStatuses(miffId, me, members)
+        } catch (e: Exception) {
+            // The reminders never get in the way of the Feed.
+        }
+    }
 
     private fun compute(
         dir: DirectoryState,
@@ -428,6 +479,8 @@ class FeedViewModel(
             .collectLatest { (shouldRead, _) ->
                 if (!shouldRead) {
                     statusView.value = StatusesView.Off
+                    // I do not share (or my agreement is waited for): no reminder concerns me, the snapshot says so and what waited is cancelled.
+                    tellNotifications(miffId, emptyMap())
                 } else {
                     // What is already shown stays (a refresh that attaches the listener again must not bring the skeleton back, nor hide
                     // "Partage de ton statut en cours…"): only a screen that showed nothing of the statuses waits.
@@ -470,6 +523,7 @@ class FeedViewModel(
                                 staleAfterRefresh.value = false
                             }
                             statusView.value = StatusesView.Loaded(feed.byUid, feed.fromCache)
+                            tellNotifications(miffId, feed.byUid)
                         }
 
                         StatusFeed.Ended -> {}
@@ -540,6 +594,7 @@ class FeedViewModel(
                 if (fresh != null) {
                     // What the server just said, confirmed: the mode "copie du cache" is left, the colours are recomputed from it.
                     statusView.value = StatusesView.Loaded(fresh, fromCache = false)
+                    tellNotifications(miffId, fresh)
                     if (!listening) {
                         cacheGraceOver.value = true
                         statusRestarts.value = statusRestarts.value + 1

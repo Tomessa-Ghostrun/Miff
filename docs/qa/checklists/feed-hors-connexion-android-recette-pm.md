@@ -15,7 +15,7 @@
 Pour n'avoir aucune copie : **Réglages Android > Applications > Miff > Stockage > Effacer les données**, puis reconnectez-vous **avec le réseau**, puis fermez l'app complètement.
 
 - [ ] Activez le **mode avion** (Wi-Fi coupé aussi), puis ouvrez Miff. Le Feed montre d'abord le squelette, puis **au bout de 2 à 10 secondes** une pop-in « **Pas de connexion** — Vérifie ta connexion, on réessaie dans un instant. » avec un bouton **« Réessayer »** et « Nouvel essai dans N s » qui descend. (Avant : squelette sans fin.) Temps constaté : ______
-- [ ] Le ton est calme (aucun mot d'alarme, tutoiement). En anglais (langue du téléphone) : « No connection », « Check your connection, we will try again in a moment. », « Try again ».
+- [ ] Le ton est calme (aucun mot d'alarme, tutoiement). En anglais (langue du téléphone) : « No connection », « Check your connection, we'll try again in a moment. », « Try again ».
 - [ ] Touchez **« Réessayer »** (toujours en mode avion) : rien de brutal, le compte à rebours repart de 10 s, la pop-in reste.
 - [ ] Laissez passer plusieurs fois 10 s : la pop-in reste, le compte à rebours recommence, **aucune erreur ni message en plus**.
 - [ ] **Désactivez le mode avion** (sans toucher à l'app) : la pop-in disparaît d'elle-même en quelques secondes et le Feed se charge (cercle, statuts).

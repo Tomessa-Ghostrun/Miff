@@ -409,12 +409,15 @@
     <string name="feed_selector_a11y">Miff shown: %1$s. Tap to switch Miff or add one.</string>
     <string name="feed_selector_join">+ Join a Miff</string>
     <string name="feed_selector_create">+ Create a Miff</string>
+    <string name="feed_selector_paywall_title">One Miff with the free plan</string>
+    <string name="feed_selector_paywall_body">With Miff+, create or join as many Miffs as you like.</string>
+    <string name="feed_selector_paywall_soon_body">This option isn\'t open yet. Your current Miff stays as it is.</string>
     <string name="feed_nomiff_body">Create your Miff or join a loved one\'s to get started.</string>
     <string name="feed_create_action">Create a Miff</string>
     <string name="feed_join_action">Join a Miff</string>
     <string name="feed_offline_note">No connection right now. What you see may not be up to date.</string>
     <string name="feed_offline_popin_title">No connection</string>
-    <string name="feed_offline_popin_body">Check your connection, we will try again in a moment.</string>
+    <string name="feed_offline_popin_body">Check your connection, we\'ll try again in a moment.</string>
     <string name="feed_offline_popin_retry">Try again</string>
     <string name="feed_offline_popin_countdown">Trying again in %1$d s</string>
     <string name="feed_unavailable">We can\'t read your Miffs right now. Please try again in a moment.</string>
@@ -491,7 +494,8 @@
     <string name="feed_bubble_me_red_stale">Your loved ones haven\'t heard from you since %1$s</string>
     <string name="feed_bubble_me_danger">You\'re in a danger zone of your Miff</string>
     <string name="feed_bubble_me_danger_note">Your loved ones can see it too</string>
-    <string name="feed_bubble_message_action">Send a message</string>
+    <string name="feed_bubble_message_action">Contact</string>
+    <string name="feed_bubble_contact_a11y">Contact %1$s</string>
     <string name="feed_bubble_page_a11y">Page %1$d of %2$d</string>
     <string name="feed_bubble_previous_a11y">Previous alert</string>
     <string name="feed_bubble_next_a11y">Next alert</string>
@@ -518,6 +522,14 @@
     <string name="profile_tab_miffs_title">My Miffs</string>
     <string name="profile_tab_miff_hint">Loved ones, code and sharing</string>
     <string name="profile_tab_miff_open_a11y">Open the Miff %1$s</string>
+    <plurals name="profile_tab_miff_members">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
+    <string name="profile_tab_miff_create">Create a Miff</string>
+    <string name="profile_tab_carousel_page_a11y">Card %1$d of %2$d</string>
+    <string name="profile_tab_carousel_previous_a11y">Previous card</string>
+    <string name="profile_tab_carousel_next_a11y">Next card</string>
     <!-- Settings: My account (password) and Privacy (ONB-3b) -->
     <string name="settings_account_password_help">We\'ll send you an email with a link to choose a new password.</string>
     <string name="settings_account_password_action">Change my password</string>
@@ -671,7 +683,7 @@
     <string name="place_detail_info_trusted">When you arrive at or leave this place, your Miff sees your status (for example “at home”), even when the app is closed.</string>
     <string name="place_detail_info_danger">When you enter this zone, your status turns red for your Miff. If you share news, it goes back to green for 1 hour.</string>
     <string name="place_paywall_close_a11y">Close</string>
-    <string name="place_paywall_limit_title">You\'ve reached 2 places</string>
+    <string name="place_paywall_limit_title">You\'ve reached 3 places</string>
     <string name="place_paywall_limit_body">That\'s the limit of the free plan. With Miff+, add as many places as you like.</string>
     <string name="place_paywall_danger_title">Danger zones are part of Miff+</string>
     <string name="place_paywall_danger_body">With Miff+, you can set danger zones around places to avoid.</string>
@@ -693,8 +705,8 @@
     <string name="place_list_row_nocategory_a11y">%1$s, %2$s</string>
     <string name="place_list_row_nocategory_noaddress_a11y">%1$s</string>
     <plurals name="place_list_counter_free">
-        <item quantity="one">%1$d of 2 places on the free plan</item>
-        <item quantity="other">%1$d of 2 places on the free plan</item>
+        <item quantity="one">%1$d of 3 places on the free plan</item>
+        <item quantity="other">%1$d of 3 places on the free plan</item>
     </plurals>
     <!-- LOC-2a: permissions screens, consent version 2026-11-v03, renewal of the consent (tutoiement in French) -->
     <string name="permission_notifications_title">We\'ll only let you know when it\'s useful!</string>
@@ -910,10 +922,97 @@
     <string name="update_photo_close_a11y">Close the photo</string>
     <string name="update_photo_position">Position measured %1$s.</string>
     <string name="update_photo_see_where">See where it was</string>
+    <string name="feed_photo_download_a11y">Save this photo on your phone</string>
+    <string name="feed_photo_download_saving">Saving…</string>
+    <string name="feed_photo_download_failed">We couldn\'t save the photo. You can try again.</string>
+    <string name="feed_photo_download">Save the photo</string>
+    <string name="feed_photo_download_done">Photo saved.</string>
     <string name="update_notice_unconfirmed">We couldn\'t confirm it. Check your Feed: if your photo is there, it went through.</string>
     <string name="update_action_open_feed">Open my Feed</string>
-    <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff is no longer allowed to use it. You can turn it back on in the settings, then try again.</string>
+    <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff doesn\'t have the \"Always\" access with precise location. You can fix it in the settings, then try again.</string>
 
+    <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
+    <string name="notif_n1_title">You\'ve turned orange</string>
+    <string name="notif_n1_body">Let your Miff know everything\'s fine.</string>
+    <string name="notif_n2_title">You\'ve turned red</string>
+    <string name="notif_n2_body">Let your Miff know everything\'s fine.</string>
+    <string name="notif_n3_title">Your Miff has turned orange</string>
+    <string name="notif_n3_body">Check in on your loved ones.</string>
+    <string name="notif_n4_title">Your Miff has turned red</string>
+    <string name="notif_n4_body">Check in on your loved ones.</string>
+    <string name="notif_n6a_title">You\'re in a danger zone of your Miff</string>
+    <string name="notif_n6a_body">While you\'re there, your circle sees a different status.</string>
+    <string name="notif_prime_title">A reminder, only when it helps</string>
+    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
+    <string name="notif_prime_allow">Allow</string>
+    <string name="notif_prime_later">Not now</string>
+    <string name="notif_prime_example_when">2 min ago</string>
+    <string name="notif_second_chance_title">A reminder if you forget to check in?</string>
+    <string name="notif_second_chance_action">Turn on</string>
+    <string name="notif_second_chance_later">Not now</string>
+    <string name="notif_state_allowed">Allowed by your phone</string>
+    <string name="notif_state_off">Turned off in your phone</string>
+    <string name="notif_state_off_note">You won\'t get reminders.</string>
+    <string name="notif_state_notasked">Not turned on yet</string>
+    <string name="notif_state_open_settings">Open your phone\'s settings</string>
+    <string name="notif_privacy_body">Notifications are prepared by your phone: Miff doesn\'t send any to your loved ones. You choose what you get in Settings > Notifications.</string>
+    <string name="notif_settings_title">Notifications</string>
+    <string name="notif_settings_subtitle">Reminders and news from your Miff</string>
+    <string name="notif_settings_authorization">Phone permission</string>
+    <string name="notif_settings_general">Receive notifications</string>
+    <string name="notif_settings_section_you">For you</string>
+    <string name="notif_settings_section_miff">For your Miff</string>
+    <string name="notif_settings_n1">When I turn orange</string>
+    <string name="notif_settings_n2">When I turn red</string>
+    <string name="notif_settings_n3">When my Miff turns orange</string>
+    <string name="notif_settings_n4">When my Miff turns red</string>
+    <string name="notif_settings_n6">When I enter a danger zone</string>
+    <string name="notif_settings_n6_hint">You turn off the notification, not what your Miff sees.</string>
+    <string name="notif_settings_night_title">Quiet night</string>
+    <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>
+    <string name="notif_settings_see_all">See my notifications</string>
+    <string name="notif_settings_help_link">If reminders don\'t arrive</string>
+    <string name="notif_help_title">Notifications turned off</string>
+    <string name="notif_help_intro">You turned notifications off in your phone.</string>
+    <string name="notif_help_choice">That\'s your choice, and it matters.</string>
+    <string name="notif_help_lead">To get a reminder when you forget to check in:</string>
+    <string name="notif_help_step_1">Open your phone\'s settings</string>
+    <string name="notif_help_step_2">Choose “Notifications”</string>
+    <string name="notif_help_step_3">Turn them on for Miff</string>
+    <string name="notif_help_footer">You can always check in from the app.</string>
+    <string name="notif_bell_a11y">Notifications</string>
+    <plurals name="notif_bell_unread_a11y">
+        <item quantity="one">Notifications, %d unread</item>
+        <item quantity="other">Notifications, %d unread</item>
+    </plurals>
+    <string name="notif_center_title">Notifications</string>
+    <string name="notif_center_empty_title">Nothing to report</string>
+    <string name="notif_center_empty_body">Here you\'ll find your reminders and news from your Miff.</string>
+    <string name="notif_center_off_title">Notifications are off</string>
+    <string name="notif_center_off_body">You won\'t get reminders.</string>
+    <string name="notif_center_off_action">Turn them on</string>
+    <string name="notif_center_notasked_body">Turn them on to get a reminder when it matters.</string>
+    <string name="notif_center_notasked_action">Turn on</string>
+    <string name="notif_center_section_today">Today</string>
+    <string name="notif_center_section_yesterday">Yesterday</string>
+    <string name="notif_center_section_older">Earlier</string>
+    <string name="notif_center_menu_a11y">More options</string>
+    <string name="notif_center_mark_all_read">Mark all as read</string>
+    <string name="notif_center_clear_all">Clear all</string>
+    <string name="notif_center_clear_confirm_title">Clear all notifications?</string>
+    <string name="notif_center_clear_confirm_body">This changes nothing for your Miff.</string>
+    <string name="notif_center_clear_confirm_action">Clear</string>
+    <string name="notif_center_delete_a11y">Delete this notification</string>
+    <string name="notif_center_unread_a11y">unread</string>
+    <string name="notif_center_in_miff">Miff “%1$s”</string>
+    <string name="android_notif_channel_reminders">Reminders for you</string>
+    <string name="android_notif_channel_reminders_desc">A gentle reminder to check in when you turn orange or red.</string>
+    <string name="android_notif_channel_reminders_quiet">Reminders for you (quiet night)</string>
+    <string name="android_notif_channel_circle">News from your Miff</string>
+    <string name="android_notif_channel_circle_desc">When your Miff changes status, or when you enter a danger zone of your Miff.</string>
+    <string name="android_notif_channel_circle_quiet">News from your Miff (quiet night)</string>
+    <string name="android_notif_channel_quiet_desc">The same notifications, without sound or vibration, for the night.</string>
+    <string name="android_notif_channel_blocked">This type is turned off in your phone</string>
     <!-- Review window "What do you think of Miff?" (docs/tickets/pop-ins-avis.md). Informal "you", calm tone. -->
     <string name="review_title">What do you think of Miff?</string>
     <string name="review_close_a11y">Close</string>
@@ -926,10 +1025,41 @@
     <string name="review_feedback_write">Write to us</string>
     <string name="review_open_failed">Nothing could be opened on your phone. You can try again in a moment.</string>
     <string name="review_feedback_later">Later</string>
+    <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
+    <string name="voyage_card_title">Travel mode</string>
+    <string name="voyage_card_off_body">Your card turns grey for your circle, without changing the Miff\'s colour. Your circle still sees your location.</string>
+    <string name="voyage_card_on_status">Traveling until %1$s</string>
+    <string name="voyage_card_end_label">End date</string>
+    <string name="voyage_card_end_change_a11y">Change the end date</string>
+    <string name="voyage_card_explain">Your circle still sees your location. While you travel, your card turns grey with “Traveling until %1$s” and no longer affects the Miff\'s colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end.</string>
+    <string name="voyage_card_state_on_a11y">On, until %1$s</string>
+    <string name="voyage_card_state_off_a11y">Off</string>
+    <string name="voyage_confirm_title">Turn on travel mode?</string>
+    <string name="voyage_confirm_body">Your card will turn grey with “Traveling until %1$s” and will no longer affect the Miff\'s colour. Your circle still sees your location. You can stop it whenever you like.</string>
+    <string name="voyage_confirm_action">Turn on</string>
+    <string name="voyage_confirm_cancel">Cancel</string>
+    <string name="voyage_error_update_refused">Travel mode couldn\'t be updated. Your end date hasn\'t changed; you can try again later.</string>
+    <string name="voyage_picker_validate">Confirm</string>
+    <string name="voyage_picker_confirm">Continue</string>
+    <string name="voyage_off_done">Your status is resuming.</string>
+    <string name="voyage_offline_note">Your circle will see your trip as soon as you\'re online.</string>
+    <string name="voyage_error_refused">Travel mode couldn\'t be turned on. You can try again later.</string>
+    <string name="voyage_feed_label">Traveling until %1$s</string>
+    <string name="voyage_feed_label_ended">Trip ended</string>
+    <string name="voyage_feed_since">Since %1$s</string>
+    <string name="voyage_feed_mine">Travel mode until %1$s</string>
+    <string name="voyage_feed_mine_edit">Edit</string>
+    <string name="voyage_feed_mine_edit_a11y">Edit travel mode</string>
+    <string name="voyage_bubble_one">%1$s is traveling until %2$s.</string>
+    <string name="voyage_bubble_many">%1$d loved ones are traveling.</string>
+    <string name="voyage_bubble_all">Your loved ones are traveling.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
     <string name="android_diag_review_title">Review window (test)</string>
     <string name="android_diag_review_force">Show the window at the next return to the app</string>
     <string name="android_diag_review_force_armed">Ready: send the app to the background, then reopen it (the window never covers the Update).</string>
     <string name="android_diag_review_reset">Reset the state of the window</string>
     <string name="android_diag_review_reset_done">State reset: the window starts from zero (7 days, 30 days, 90 days).</string>
+
+    <!-- NOTIF-6A: centre verrouille (notifications refusees) -->
+    <string name="notif_center_enable_action">Turn on notifications</string>
 </resources>

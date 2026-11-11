@@ -158,37 +158,7 @@ class FirestoreMiffObserver(
         return ObservedPiece(details, snapshot.metadata.isFromCache)
     }
 
-    private fun membersOf(snapshot: QuerySnapshot): List<MiffMember> =
-        snapshot.documents
-            .mapNotNull { doc ->
-                val first = MiffName.fromServer(doc.getString("firstName") ?: return@mapNotNull null).orEmpty()
-                val last = MiffName.fromServer(doc.getString("lastName") ?: return@mapNotNull null).orEmpty()
-                val role = if (doc.getString("role") == "owner") MiffRole.OWNER else MiffRole.MEMBER
-                val joinedAt = doc.getTimestamp("joinedAt")?.toDate()?.time ?: Long.MAX_VALUE
-                OrderedMember(
-                    MiffMember(
-                        uid = doc.id,
-                        firstName = first,
-                        lastName = last,
-                        avatarJpeg = doc.getBlob("avatar")?.toBytes(),
-                        role = role,
-                        sharingEnabled = doc.getBoolean("sharing.enabled") == true,
-                        phone = MiffMember.phoneFromServer(doc.getString("phone")),
-                    ),
-                    joinedAt,
-                )
-            }
-            // The creator first, then in the order of arrival (stable: a list that reorders itself moves things under a finger).
-            .sortedWith(
-                compareBy<OrderedMember> {
-                    it.member.role != MiffRole.OWNER
-                }.thenBy { it.joinedAt }.thenBy { it.member.uid },
-            ).map { it.member }
-
-    private class OrderedMember(
-        val member: MiffMember,
-        val joinedAt: Long,
-    )
+    private fun membersOf(snapshot: QuerySnapshot): List<MiffMember> = membersFromSnapshot(snapshot)
 
     private fun placesOf(
         miffId: String,
@@ -199,6 +169,41 @@ class FirestoreMiffObserver(
             .mapNotNull { doc -> Place.fromServer(doc.id, miffId, doc.data) }
             .sortedBy { it.name.lowercase() }
 }
+
+/**
+ * The members of a Miff as `members` holds them, cleaned like every text read from the server, the creator first and then in the order of
+ * arrival (stable: a list that reorders itself moves things under a finger). Shared by the listener of the Miff screen and the Feed, and by
+ * the one-shot reading of the faces of the Profile tab ([FirestoreMemberFacesReader]): the same Miff is never drawn in two orders.
+ */
+internal fun membersFromSnapshot(snapshot: QuerySnapshot): List<MiffMember> =
+    snapshot.documents
+        .mapNotNull { doc ->
+            val first = MiffName.fromServer(doc.getString("firstName") ?: return@mapNotNull null).orEmpty()
+            val last = MiffName.fromServer(doc.getString("lastName") ?: return@mapNotNull null).orEmpty()
+            val role = if (doc.getString("role") == "owner") MiffRole.OWNER else MiffRole.MEMBER
+            val joinedAt = doc.getTimestamp("joinedAt")?.toDate()?.time ?: Long.MAX_VALUE
+            OrderedMember(
+                MiffMember(
+                    uid = doc.id,
+                    firstName = first,
+                    lastName = last,
+                    avatarJpeg = doc.getBlob("avatar")?.toBytes(),
+                    role = role,
+                    sharingEnabled = doc.getBoolean("sharing.enabled") == true,
+                    phone = MiffMember.phoneFromServer(doc.getString("phone")),
+                ),
+                joinedAt,
+            )
+        }.sortedWith(
+            compareBy<OrderedMember> {
+                it.member.role != MiffRole.OWNER
+            }.thenBy { it.joinedAt }.thenBy { it.member.uid },
+        ).map { it.member }
+
+private class OrderedMember(
+    val member: MiffMember,
+    val joinedAt: Long,
+)
 
 /** What one of the three listeners last said. */
 internal class ObservedPiece<T>(

@@ -96,5 +96,15 @@ protocol DecodedPhoto {
 /// tenir. Rien n'est écrit dans la photothèque ni ailleurs.
 protocol AvatarCodec {
     func decode(_ source: Data) async -> (any DecodedPhoto)?
+    /// Comme `decode`, pour une photo venue du RÉSEAU (la photo du compte Google) : formats permis seulement (JPEG, PNG, HEIC, WebP),
+    /// dimensions déclarées plafonnées avant tout décodage, décodage en vignette. nil pour tout le reste.
+    func decodeRemote(_ source: Data) async -> (any DecodedPhoto)?
     func encode(_ photo: any DecodedPhoto, crop: SquareCrop) async -> Data?
+}
+
+extension AvatarCodec {
+    /// Sans règle plus stricte propre au codec : le décodage ordinaire.
+    func decodeRemote(_ source: Data) async -> (any DecodedPhoto)? {
+        await decode(source)
+    }
 }

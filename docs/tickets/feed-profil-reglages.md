@@ -249,7 +249,7 @@ Ces règles reprennent ce qui est décidé et **proposent** le reste ; chaque po
 
 ### 6.5 Onglet Profil
 - En-tête [Décidé, `onboarding.md` §6.8] : photo ou initiales, « Prénom Nom », « C'est toi », engrenage ; **pas de « Famille » par défaut** (§4 #22 d'`onboarding.md`).
-- Carrousel « Mes Miffs » [Proposé, Question 2] : une carte par Miff (nom, nombre de membres, avatars) qui **ouvre l'écran de la Miff** (MIFF-1) ; carte « Créer une nouvelle Miff » **seulement pour un Premium**.
+- Carrousel « Mes Miffs » [Proposé, Question 2] : une carte par Miff (nom, nombre de membres, avatars) qui **ouvre l'écran de la Miff** (MIFF-1) ; carte « Créer une nouvelle Miff » **seulement pour un Premium**. **Mis à jour le 2026-11-10 (PM)** : la carte « Créer une Miff » est toujours la dernière, pour tout le monde (paywall pour un compte gratuit qui a déjà une Miff) ; les avatars sont de petites miniatures (4 + « +N » au-delà de 5 membres).
 - « Lieux de la Miff » : liste en lecture de la Miff affichée ; « Ajouter un lieu » visible **seulement pour le créateur** [Décidé, `onboarding.md` §6.8] ; adresse : Question 3.
 
 ### 6.6 Réglages
@@ -338,7 +338,7 @@ Les critères valent pour Android puis iOS sauf mention. Les critères existants
 
 #### PRO-1 (Android) : Profil complet
 - [ ] **E1** Une carte par Miff (nom, nombre de membres, avatars) ouvre l'écran de la Miff ; le nom de Miff n'est jamais « Famille » par défaut.
-- [ ] **E2** La carte « Créer une nouvelle Miff » n'est affichée qu'à un compte Premium (Question 2).
+- [ ] **E2** La carte « Créer une nouvelle Miff » n'est affichée qu'à un compte Premium (Question 2). **Remplacé par la décision du PM du 2026-11-10** : la carte « Créer une Miff » est la **dernière du carrousel pour tout le monde** ; un compte gratuit qui a déjà une Miff ouvre le **paywall** (même règle que le sélecteur du Feed, décision du 2026-11-08), Miff+ ou aucune Miff ouvre la création (`docs/contracts/place-categories.md` §2).
 - [ ] **E3** « Lieux de la Miff » : liste en lecture ; « Ajouter un lieu » visible **uniquement** du créateur et en un seul exemplaire ; l'affichage de l'adresse suit la Question 3 ; liste vide : « Pas encore de lieu pour cette Miff. »
 - [ ] **E4** Le nombre de membres et les avatars sont lus depuis la même source que le Feed (pas de seconde lecture de chaque Miff à chaque ouverture) ; lectures mesurées.
 
@@ -494,7 +494,7 @@ Réponse du PM aux 15 questions de §10 : **« OK pour tout »**. Chaque recomma
 | # | Sujet | Décision (= recommandation de §10) | Où ça s'applique |
 |---|---|---|---|
 | Q1 | Bouton rond central | « Donner des nouvelles » (mise à jour manuelle) géré par un futur ticket **Update**. Tant qu'il n'existe pas : **masqué** dans les builds pour testeurs externes (la barre passe à deux onglets), **visible mais désactivé** dans les builds internes | ONB-3a |
-| Q2 | Écran d'une Miff, compte gratuit | La **carte de Miff du Profil** ouvre l'écran de la Miff (pas de « Mes Miffs » dans Réglages) ; dans le Feed, avec une seule Miff, le nom est une pastille **non cliquable** ; « Créer une nouvelle Miff » et « + Rejoindre / + Créer » **réservés au Premium** jusqu'au ticket Premium | PRO-1, FEED-1 (pas ONB-3a) |
+| Q2 | Écran d'une Miff, compte gratuit | La **carte de Miff du Profil** ouvre l'écran de la Miff (pas de « Mes Miffs » dans Réglages) ; dans le Feed, avec une seule Miff, le nom est une pastille **non cliquable** ; « Créer une nouvelle Miff » et « + Rejoindre / + Créer » **réservés au Premium** jusqu'au ticket Premium (**pour le sélecteur du Feed, remplacé le 2026-11-08 par la décision D51 de `feed.md`** : pastille cliquable pour tous, offre au toucher pour un compte gratuit ; la carte « Créer une nouvelle Miff » du Profil n'est pas touchée) | PRO-1, FEED-1 (pas ONB-3a) |
 | Q3 | Adresses des lieux | Liste = **nom + catégorie** ; l'adresse est sur un **écran de détail** en lecture ; dire clairement, avant d'entrer dans une Miff, que les lieux sont partagés | PRO-1, ticket Lieux, ticket Miff |
 | Q4 | Langues | **Français, English, « Langue du téléphone »**, chaque nom dans sa propre langue ; Android applique le choix **immédiatement** (sans bouton « Enregistrer ») ; iOS ouvre les réglages de l'iPhone | ONB-3a, iOS |
 | Q5 | Mon compte | **E-mail en lecture seule** ; **pas** de formulaire à 3 champs : un bouton « Changer mon mot de passe » qui envoie l'e-mail de réinitialisation (AUTH-2), **masqué** pour les comptes Google et Apple ; « Supprimer mon compte » **seulement quand AUTH-5 est livré** | ONB-3b |

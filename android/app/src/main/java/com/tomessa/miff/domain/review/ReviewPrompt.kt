@@ -74,7 +74,7 @@ data class ReviewSituation(
     val updateScreenOpen: Boolean,
     val keyboardOpen: Boolean,
     /**
-     * A message of the app is on screen or waits for the person (the lost-access message, "En attente de ton accord", the sheet "Localiser", "Tu as arrêté de partager"):
+     * A message of the app is on screen or waits for the person (the lost-access message, "En attente de ton accord", the sheet "Localiser", "Tu as arrêté de partager", the pop-in "Pas de connexion"):
      * the window never covers it and never hides it ([messageOpen]).
      */
     val blockingMessageOpen: Boolean = false,
@@ -86,8 +86,10 @@ data class ReviewSituation(
             awaitingAgreement: Boolean,
             locateSheetOpen: Boolean,
             myLabel: StateLabel?,
+            /** The pop-in "Pas de connexion" is on screen: a window as well, never two at once (C5). */
+            connectionPopInOpen: Boolean = false,
         ): Boolean =
-            lostAccessNotice || awaitingAgreement || locateSheetOpen ||
+            lostAccessNotice || awaitingAgreement || locateSheetOpen || connectionPopInOpen ||
                 myLabel == StateLabel.SharingStopped || myLabel == StateLabel.WaitingAgreement
 
         /** "Has seen the status of a loved one": a card of someone else says where they are, or that they left or are in a danger zone. */

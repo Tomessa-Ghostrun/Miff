@@ -147,6 +147,7 @@ final class FakeAuthGateway: AuthGateway {
     var deleteResults: [AuthFailure?] = []
     var reauthResult: AuthFailure?
     var name: String?
+    var photoURL: URL?
     /// Nombre de déconnexions qui échouent encore (la session reste ouverte), pour tester la reprise.
     var signOutFailures = 0
     private(set) var signInCalls = 0
@@ -272,6 +273,10 @@ final class FakeAuthGateway: AuthGateway {
 
     func displayName() -> String? {
         name
+    }
+
+    func providerPhotoURL() -> URL? {
+        photoURL
     }
 
     func signOut() {

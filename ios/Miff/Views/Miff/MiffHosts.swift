@@ -61,9 +61,11 @@ struct MiffOnboardingHost: View {
                 onOpenSettings: { open(.settings(.settings)) }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .swipeBackEnabled()
             .navigationDestination(for: MiffRoute.self) { route in
                 destination(route)
                     .toolbar(.hidden, for: .navigationBar)
+                    .swipeBackEnabled()
             }
         }
     }
@@ -146,6 +148,8 @@ struct MiffHomeHost: View {
     @State private var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
+    /// MODE VOYAGE (VOY-2I) : la carte du Profil, créée pour la session ; le voyage est écrit par le moteur de suivi, nulle part ailleurs.
+    @StateObject private var travel: TravelViewModel
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
@@ -160,6 +164,8 @@ struct MiffHomeHost: View {
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
+        let engine = environment.tracking.engine
+        _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
     }
 
     var body: some View {
@@ -168,6 +174,7 @@ struct MiffHomeHost: View {
                 MainShellView(
                     miffs: directory.state,
                     profile: profile,
+                    travel: travel,
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
@@ -181,9 +188,11 @@ struct MiffHomeHost: View {
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
+                    .swipeBackEnabled()
                     .navigationDestination(for: MiffRoute.self) { route in
                         destination(route)
                             .toolbar(.hidden, for: .navigationBar)
+                            .swipeBackEnabled()
                     }
             }
             .accessibilityHidden(directory.notices.first != nil)
@@ -246,6 +255,8 @@ struct MiffHomeHost: View {
             actions: FeedTabActions(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
+                // Sélecteur du Feed, compte gratuit qui a déjà une Miff (décision du PM, 2026-11-08) : l'offre, sans achat.
+                onOpenOffer: { open(.placePaywall(.extraMiff)) },
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
                 onOpenSettings: { open(.settings(.settings)) }

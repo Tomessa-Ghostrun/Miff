@@ -263,17 +263,17 @@ class FeedBuilderTest {
                 ),
                 "t",
             ).label
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.HOME)), labelAt("home"))
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.WORK)), labelAt("work"))
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL)), labelAt("school"))
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT)), labelAt("sport"))
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE)), labelAt("relative"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.HOME), PlaceCategory.HOME), labelAt("home"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.WORK), PlaceCategory.WORK), labelAt("work"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.SCHOOL), PlaceCategory.SCHOOL), labelAt("school"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.SPORT), PlaceCategory.SPORT), labelAt("sport"))
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE), PlaceCategory.RELATIVE), labelAt("relative"))
         // Loisir, Autre and a place with no category show the NAME of the place.
-        assertEquals(StateLabel.At(PlaceRef.Named("Cinéma Gaumont")), labelAt("leisure"))
-        assertEquals(StateLabel.At(PlaceRef.Named("Chez le coiffeur")), labelAt("other"))
+        assertEquals(StateLabel.At(PlaceRef.Named("Cinéma Gaumont"), PlaceCategory.LEISURE), labelAt("leisure"))
+        assertEquals(StateLabel.At(PlaceRef.Named("Chez le coiffeur"), PlaceCategory.OTHER), labelAt("other"))
         assertEquals(StateLabel.At(PlaceRef.Named("Lieu ancien")), labelAt("none"))
-        // A blank name is never shown as an empty label.
-        assertEquals(StateLabel.At(PlaceRef.Unknown), labelAt("blank"))
+        // A blank name is never shown as an empty label (the category, it, is still known).
+        assertEquals(StateLabel.At(PlaceRef.Unknown, PlaceCategory.OTHER), labelAt("blank"))
         // Same rule for MY card.
         val mine =
             FeedBuilder.build(
@@ -281,7 +281,7 @@ class FeedBuilderTest {
                 now,
                 zone,
             )
-        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE)), mine.myLabel)
+        assertEquals(StateLabel.At(PlaceRef.Category(PlaceKind.RELATIVE), PlaceCategory.RELATIVE), mine.myLabel)
     }
 
     @Test
@@ -311,7 +311,7 @@ class FeedBuilderTest {
     @Test
     fun labels_aDeletedPlace_isGeneric_neverAGuess() {
         val gone = card(build(trio, mapOf("t" to status(placeId = "zzz"))), "t")
-        assertEquals(StateLabel.At(PlaceRef.Unknown), gone.label)
+        assertEquals(StateLabel.At(PlaceRef.Unknown, null), gone.label)
         val goneLeft = card(build(trio, mapOf("t" to status(PresenceValue.OUT, "zzz", 90 * minute, 90 * minute))), "t")
         assertEquals(StateLabel.Left(PlaceRef.Unknown), goneLeft.label)
     }

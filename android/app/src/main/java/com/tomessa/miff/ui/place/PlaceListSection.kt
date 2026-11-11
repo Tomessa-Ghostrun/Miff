@@ -60,7 +60,7 @@ class PlaceListUi(
     val premium: Boolean? = null,
     val savedName: String? = null,
 ) {
-    /** A creator on the free plan who already has 2 places: "Ajouter un lieu" opens the offer instead of the form (criterion LIM1). */
+    /** A creator on the free plan who already has 3 places: "Ajouter un lieu" opens the offer instead of the form (criterion LIM1). */
     val atFreeLimit: Boolean
         get() = isCreator && premium == false && PlaceQuota.isAtFreeLimit(false, places.map { it.id }.toSet().size)
 

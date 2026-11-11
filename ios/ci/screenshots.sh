@@ -124,6 +124,7 @@ shot 92-fr-lieu-detail 6 "${fr_args[@]}" -MiffPreview place-detail
 shot 93-fr-lieu-detail-danger 6 "${fr_args[@]}" -MiffPreview place-detail-danger
 shot 94-fr-lieu-offre-limite 3 "${fr_args[@]}" -MiffPreview place-paywall-limit
 shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
+shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
