@@ -1,5 +1,5 @@
 // Plan de test, section 18 : dernière position connue (R-LIEU-POS, décision du PM du 2026-11-01), cas DP1 à DP15.
-// Règles PRÉPARÉES et NON déployées. La position est un document SÉPARÉ du statut : miffs/{id}/positions/{uid}
+// Règles DÉPLOYÉES (2026-11-04 d'après l'en-tête de firestore.rules ; fichier de main redéployé par le PM le 2026-11-10, information du PM non vérifiable par l'agent). La position est un document SÉPARÉ du statut : miffs/{id}/positions/{uid}
 // = { lat, lng, measuredAt }, rien d'autre, aucun historique.
 import {
   ID, CODE, T0, HOUR, DAY, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp, inMs,

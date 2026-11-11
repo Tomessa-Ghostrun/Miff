@@ -309,6 +309,8 @@ class AppContainer(
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
             // AC-4: "this device is not recognized" is told apart from a refusal of the rules, only after a refusal.
             appCheck = FirebaseAppCheckProbe(),
+            // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
+            online = { networkMonitor.isOnline() },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore

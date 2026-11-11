@@ -126,7 +126,7 @@ Le voyageur peut entrer ou sortir de ses lieux : **aucune carte, aucune couleur,
 Déclencheur : l'utilisateur confirme (interrupteur + date + « Activer »). **Ordre imposé** (pour qu'un refus du serveur ne laisse jamais le statut de présence figé) :
 1. **Valider localement** la date (≥ aujourd'hui, ≤ aujourd'hui + 89 jours) ; calculer la fin (00:00 local du lendemain) et le jour affiché.
 2. **Écrire d'abord le voyage** dans `status/{moi}` de **chaque Miff où je partage** (par lots de 8 au plus) : `presence = travel`, `placeId`, `batteryPct`, `escalationDueAt` nuls, `presenceAt` = maintenant, `travelUntil`, `travelUntilDay`.
-3. Dès que l'écriture est **acceptée ou conservée en attente hors connexion** : passer l'état local à `TRAVEL_ACTIVE` et **cesser** d'écrire des statuts de présence ordinaires (D10). **Si le serveur la refuse** (règles pas encore déployées) : **rien n'a changé**, message calme (§7.4).
+3. Dès que l'écriture est **acceptée ou conservée en attente hors connexion** : passer l'état local à `TRAVEL_ACTIVE` et **cesser** d'écrire des statuts de présence ordinaires (D10). **Si le serveur la refuse** (règles non déployées ; elles le sont depuis le 2026-11-10, information du PM non vérifiable par l'agent) : **rien n'a changé**, message calme (§7.4).
 4. **Annuler** les rappels N1 à N4 et N6 en attente (Q7) ; **programmer** N7 (§9) et, sur Android, l'alarme de fin.
 5. **Aucune suppression de position.** ~~(ancien point 4 « mise en pause du suivi » et ancien point 6 « suppression de `positions/{moi}` » : CADUCS)~~.
 
@@ -487,7 +487,7 @@ Une branche et une PR par plateforme et par ticket ; maquettes avant développem
 | **R4** | **Croire que le voyage arrête le partage de la position** (confiance + rejet des stores) | L'utilisateur se croit invisible alors qu'il est localisable | Textes honnêtes (§7.4), critère **P5 bloquant**, mots interdits, fiches des stores sans « privé » ; revue des textes avant recette |
 | **R5** | **Usage de contrôle ou de dissimulation** | Tension entre proches | Fonction à soi seul ; le voyage se voit |
 | **R6** | ~~Fonction de vie privée réservée au payant~~ | **Sans objet** (ouvert à tous) | — |
-| **R7** | **Règles non déployées avant les apps** | Activation refusée | Écrire d'abord (§5.3) ; message calme ; déploiement avant les apps sur « oui » du PM |
+| **R7** | **Règles non déployées avant les apps** (levé : règles déployées par le PM le 2026-11-10, information du PM non vérifiable par l'agent) | Activation refusée | Écrire d'abord (§5.3) ; message calme ; déploiement avant les apps sur « oui » du PM |
 | **R8** | **Lot de 8 statuts** | Plus de 8 Miffs en une écriture refusée | Lots de 8 |
 | **R9** | **Nouvel appareil ou réveil tardif qui écrit un statut ordinaire** | Le voyage est écrasé côté proches | Lecture de mon statut avant tout statut de présence (§5.7) ; V2 / V7 bloquants |
 | **R10** | **Alarme de fin tuée** (ColorOS) | Reprise tardive | Filets à l'ouverture / au redémarrage ; N7 |

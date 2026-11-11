@@ -4,14 +4,14 @@ Schéma de données Firestore, règles de sécurité et (plus tard) Cloud Functi
 
 - Projet Firebase : **`miff-3d283`** (région Firestore `europe-west9`, édition Standard, plan **Spark**).
 - Le projet `ghostrun-app` du même compte Google **ne doit jamais être ciblé**. Toute commande Firebase porte `--project miff-3d283` (ou `--project demo-miff-rules` pour l'émulateur) : `.firebaserc` **ne déclare volontairement aucun projet par défaut** (DUR-3), une commande qui oublie `--project` s'arrête au lieu de viser un projet au hasard. Les tests refusent tout script ou workflow qui ne respecte pas cette règle.
-- **Règles déployées** : DUR-1 et DUR-2 sont déployées sur `miff-3d283` (information du PM, à confirmer dans la console : Firestore > Règles). Aucun agent ne déploie ni ne touche la console : la procédure du PM est dans [`../docs/dev/deploiement-regles.md`](../docs/dev/deploiement-regles.md).
+- **Règles déployées** : DUR-1 et DUR-2 sont déployées sur `miff-3d283`, ainsi que le fichier de `main` du 2026-11-10 (3 lieux gratuits, mode voyage, photo localisée, dernière position, SESS-1 temps 1) : informations du PM, non vérifiables par l'agent, à confirmer dans la console (Firestore > Règles, date de publication). **Non déployé** : SESS-1 temps 2 (`deviceIdRequired() = true`). Aucun agent ne déploie ni ne touche la console : la procédure du PM est dans [`../docs/dev/deploiement-regles.md`](../docs/dev/deploiement-regles.md).
 
 ## Index des fichiers
 
 | Fichier | Rôle |
 |---|---|
 | [`data-model.md`](data-model.md) | Source de vérité pour iOS/Android : collections, champs, statuts, consentement, code secret, limites freemium, ce que chaque client implémente, données sensibles (RGPD), quotas et coûts, Blaze vs Spark, questions ouvertes pour le PM. |
-| [`firestore.rules`](firestore.rules) | Règles de sécurité (tout refusé par défaut). Testées à l'émulateur (CI) ; DUR-1 et DUR-2 déployées (procédure : `../docs/dev/deploiement-regles.md`). |
+| [`firestore.rules`](firestore.rules) | Règles de sécurité (tout refusé par défaut). Testées à l'émulateur (CI) ; fichier de `main` du 2026-11-10 déployé par le PM, hors SESS-1 temps 2 (procédure : `../docs/dev/deploiement-regles.md`). |
 | [`rules-test-plan.md`](rules-test-plan.md) | Cas de test autorisé/refusé (dont attaques) à automatiser avec l'émulateur. |
 | [`package.json`](package.json), [`tests/`](tests/) | Tests automatisés des règles (un test par identifiant du plan), garde-fou projet de démonstration, mesure des lectures de règles. Voir `../README.md` pour les lancer. |
 | [`rules-test-report.md`](rules-test-report.md) | Échecs constatés par les tests des règles (attendu, obtenu, hypothèse), à traiter par `backend-data` et le PM. |

@@ -43,11 +43,18 @@ final class SwipeBackPolicyTests: XCTestCase {
         XCTAssertFalse(SwipeBackScreen.deleteAccount(isBusy: true).allowsSwipeBack)
     }
 
+    func testMyInformationIsNotLeftBySwipeWhileItIsSavedOrHasUnsavedChanges() {
+        // Avec des changements non enregistrés, la flèche (qui demande confirmation) est la seule sortie.
+        XCTAssertTrue(SwipeBackScreen.myInfo(hasUnsavedWork: false).allowsSwipeBack)
+        XCTAssertFalse(SwipeBackScreen.myInfo(hasUnsavedWork: true).allowsSwipeBack)
+        XCTAssertTrue(SwipeBackScreen.myInfo(hasUnsavedWork: true).locksSwipeBack)
+    }
+
     func testLockingIsTheExactOppositeOfAllowing() {
         let all: [SwipeBackScreen] = [
             .signUp, .signIn, .passwordReset, .profilePhone(isWriting: true), .createMiffName(isSaving: true),
             .createMiffReady, .joinMiffCode, .joinMiffConfirm, .miff, .placeDetail, .placeForm(isBusy: false),
-            .placePaywall, .settings, .deleteAccount(isBusy: false)
+            .placePaywall, .settings, .deleteAccount(isBusy: false), .myInfo(hasUnsavedWork: true)
         ]
         for screen in all {
             XCTAssertNotEqual(screen.allowsSwipeBack, screen.locksSwipeBack, "\(screen)")

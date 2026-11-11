@@ -173,7 +173,7 @@ Légende du verdict : **OK** (conforme aux specs, à habiller) ; **À corriger**
 
 ## 5. Ce qui est faisable maintenant (sans serveur, sans Cloud Functions)
 
-**État du dépôt à la date de rédaction** : sur `main`, Android a le socle, l'authentification (AUTH-1), le splash et le carrousel ; **ONB-2 (profil, téléphone, routage), les tickets Miff, Lieux, Tracking, Update, Premium et Notifications ne sont pas livrés** ; `data-model.md` indique que les règles d'**ONB-B (téléphone)** et de **MIFF-0** sont écrites mais **non déployées** (à confirmer par le PM). Aucune Cloud Function (plan Spark).
+**État du dépôt à la date de rédaction** : sur `main`, Android a le socle, l'authentification (AUTH-1), le splash et le carrousel ; **ONB-2 (profil, téléphone, routage), les tickets Miff, Lieux, Tracking, Update, Premium et Notifications ne sont pas livrés** ; `data-model.md` indique que les règles d'**ONB-B (téléphone)** et de **MIFF-0** étaient écrites mais **non déployées** à la date de rédaction (déployées depuis le 2026-10-30 d'après l'en-tête de `backend/firestore.rules` ; information du PM, non vérifiable par l'agent). Aucune Cloud Function (plan Spark).
 
 ### 5.1 Matrice
 

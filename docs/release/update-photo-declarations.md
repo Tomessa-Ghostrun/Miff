@@ -1,6 +1,6 @@
 # Update (photo « Donner des nouvelles ») : ce qu'il faudra déclarer et justifier aux stores
 
-Préparé le 2026-11-06 par `release-manager`, à partir du ticket `docs/tickets/update.md` (décisions D16 à D26), de la règle R-PHOTO-LOC (fusionnée, **non déployée** : `backend/data-model.md`, en-tête, §2.8 et §11) et des dossiers de stores déjà préparés dans ce dossier. **Mis à jour le 2026-11-06 après les réponses du PM aux points P1 à P8** (§1.2, tous « décidés ») : les textes légaux de `docs/legal/` sont alignés (§9, PR `docs/legal-photo-localisee`).
+Préparé le 2026-11-06 par `release-manager`, à partir du ticket `docs/tickets/update.md` (décisions D16 à D26), de la règle R-PHOTO-LOC (fusionnée, **déployée** depuis le 2026-11-06, fichier de `main` redéployé par le PM le 2026-11-10 : information du PM, non vérifiable par l'agent ; `backend/data-model.md`, en-tête, §2.8 et §11) et des dossiers de stores déjà préparés dans ce dossier. **Mis à jour le 2026-11-06 après les réponses du PM aux points P1 à P8** (§1.2, tous « décidés ») : les textes légaux de `docs/legal/` sont alignés (§9, PR `docs/legal-photo-localisee`).
 
 **Rien n'est soumis, rien n'est rempli dans une console, rien n'est publié ni déployé** (aucun déploiement Firebase Hosting : les textes légaux sont modifiés dans le dépôt, pas en ligne). L'Update n'est **pas développée** : tout ce qui suit décrit l'app **telle qu'elle sera** si le ticket est livré tel quel, et doit être revérifié contre le code livré. Rien n'est « prêt à soumettre » : la checklist QA de sortie `docs/qa/release-checklist.md` n'existe pas encore. Ces textes n'ont **pas été relus par un juriste** (décision du PM du 2026-10-23, risque assumé) et ne doivent jamais être présentés comme tels.
 
@@ -383,7 +383,7 @@ Principe : on ne livre **rien** de plus tant qu'un store n'a pas refusé (décis
 | 5 | Préparer **deux comptes de démonstration** dans la même Miff (e-mail + mot de passe, sans double authentification), positions publiées (position simulée), pour la revue | à la soumission |
 | 6 | Enregistrer la **vidéo Apple** (≤ 60 s) et prendre les **captures** du §10 (sans signalement ni blocage) | quand l'Update (UPDATE-1, UPDATE-1b, FEED-4) est livrée et recettée |
 | 7 | Refaire / vérifier les **formulaires** à partir des §5 et §6 : Data safety, App Privacy, classification, public cible (réponses identiques partout) | à la soumission |
-| 8 | Après le déploiement de R-PHOTO-LOC (ton « oui », `docs/dev/deploiement-regles.md`) : ordre **règles d'abord, builds ensuite** | avant UPDATE-1b |
+| 8 | Après le déploiement de R-PHOTO-LOC (fait le 2026-11-06 puis fichier de `main` redéployé le 2026-11-10 : information du PM, non vérifiable par l'agent ; `docs/dev/deploiement-regles.md`) : ordre **règles d'abord, builds ensuite** | avant UPDATE-1b |
 | 9 | Si un store refuse en citant la guideline 1.2 / la politique UGC : **me prévenir**, on suit le plan de repli du §11 bis (étape 1 d'abord) | au rejet |
 
 ---
