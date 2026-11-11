@@ -179,6 +179,11 @@ androidComponents {
     }
 }
 
+// The ~2 600 unit tests (a good part of them Robolectric screens that draw and capture images) run in ONE worker JVM: the Gradle default of 512 MB
+// ran out of memory ("Java heap space" in a random screen test) once the tests of the Feed photo and the selector were added. 1 GB is enough, free,
+// and only the test worker is concerned (the Gradle daemon keeps its own limit in gradle.properties).
+tasks.withType<Test>().configureEach { maxHeapSize = "1g" }
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform(libs.firebase.bom))

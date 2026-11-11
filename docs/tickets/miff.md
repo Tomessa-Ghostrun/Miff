@@ -179,6 +179,8 @@ Le créateur n'a **aucun droit de lecture supplémentaire** sur la position ou l
 ### 5.5 Limites freemium (hors périmètre : ticket Premium, QM7)
 Le blocage d'une deuxième Miff pour un compte gratuit, ses déclencheurs, l'écran de limite, le paywall et ses textes **ne sont pas spécifiés ici** : ils relèvent du ticket Premium / Paywall (dépendance marquée en §6 et §17). Ce qui reste vrai techniquement : les règles déployées appliquent déjà la limite (un seul index gratuit ; clés par identifiant de Miff réservées au premium) et **refusent** une deuxième appartenance d'un compte gratuit ; le client lit l'abonnement pour choisir la clé de l'index (`data-model.md` §8) et **lit les index par leur champ `miffId`**. Utile ici : un « Quitter » ou une suppression libère immédiatement l'index (même lot). Le comportement visible d'un compte gratuit qui tente une deuxième Miff **avant** la livraison du ticket Premium est à fixer dans ce ticket-là (aucun comportement inventé ici).
 
+**Mise à jour du 2026-11-08 (décision du PM)** : le comportement visible d'un compte gratuit qui tente une deuxième Miff **depuis le Feed** est fixé : le sélecteur de Miff du Feed affiche « Rejoindre une Miff » et « Créer une Miff » à tout le monde, et un toucher d'un compte gratuit déjà dans une Miff ouvre le **paywall** (écran « Miff+ arrive bientôt », aucun achat). Voir `docs/tickets/feed.md` D51. Les autres entrées éventuelles (le message « une seule Miff à la fois » des écrans Créer et Rejoindre, filet de sécurité si la formule était inconnue au moment du toucher) sont inchangées.
+
 ### 5.6 Retirer, quitter, supprimer
 **Retirer un proche (créateur).** Confirmation nominative ; un membre par lot de 6 écritures dont **le renouvellement obligatoire du code** (ne **rien ajouter** à ce lot : marge de lectures de règles de 2 sur 20, `data-model.md` §12) ; ensuite, le nouveau code est affiché avec le partage. L'index de la personne retirée n'est pas touché (elle le nettoie à son prochain accès). Aucune notification.
 
@@ -290,7 +292,7 @@ Principes : phrases courtes (deux au plus, sauf le texte de partage), rien de mo
 | F5 | « Mis à jour il y a 2 min » : « la dernière fois où on a checké » | Notion Feed, Figma | Avec un écouteur temps réel ce n'est plus vrai ; hors connexion **le cache affiche l'ancien état en vert** : prévoir un état « hors connexion, dernières informations à {heure} ». |
 | F6 | La **carte « moi »** est dans la liste | Notion Feed | Elle doit afficher mon état de partage (arrêté, en cours de publication). |
 | F7 | Bulle **rouge** quand quelqu'un est dans une zone à risque ; carrousel | Notion Feed | Ton à adoucir et à ne pas répéter ; zone de danger (« zone à risque » dans la maquette) = premium « Miff+ », définie par le créateur. |
-| F8 | **Sélecteur de Miff** : seulement s'il y en a plusieurs (Premium) | Notion Feed | La Miff « active » est une préférence locale purgée à la déconnexion. |
+| F8 | ~~**Sélecteur de Miff** : seulement s'il y en a plusieurs (Premium)~~ **Remplacé le 2026-11-08 (décision du PM, `docs/tickets/feed.md` D51)** : le sélecteur est cliquable pour tous, même avec une seule Miff, avec « Rejoindre une Miff » et « Créer une Miff » ; un compte gratuit déjà dans une Miff y arrive sur le **paywall** (le blocage serveur du §5.5 est inchangé) | Notion Feed ; PM 2026-11-08 | La Miff « active » est une préférence locale purgée à la déconnexion. |
 | F9 | Le paywall s'affiche à la première visite du Feed après inscription ou connexion | Notion Premium | À reprendre dans le ticket Premium. |
 
 ---

@@ -497,8 +497,17 @@ class MiffScreensTest {
         state: DirectoryState,
         onCreate: () -> Unit = {},
         onJoin: () -> Unit = {},
+        onOffer: () -> Unit = {},
     ) = show {
-        FeedScreen(state, scrollToTopSignal = 0, onRetry = {}, onSelect = {}, onCreate = onCreate, onJoin = onJoin)
+        FeedScreen(
+            state,
+            scrollToTopSignal = 0,
+            onRetry = {},
+            onSelect = {},
+            onCreate = onCreate,
+            onJoin = onJoin,
+            onMiffOffer = onOffer,
+        )
     }
 
     @Test
@@ -521,21 +530,97 @@ class MiffScreensTest {
         }
     }
 
+    private fun freeWithOneMiff() =
+        DirectoryState.Ready(
+            listOf(MiffSummary(miffId, "Famille Martin")),
+            miffId,
+            premium = false,
+            fromCache = false,
+        )
+
+    // Decision of the PM, 2026-11-08 (replaces Feed D12 / Q2): everyone has the selector, even with a single Miff; a free account that already has a
+    // Miff is taken to the offer by "Rejoindre" and by "Créer".
     @Test
-    fun feed_freeAccount_showsTheNameOfTheMiff_withNoSelectorAndNoCreateOrJoin() {
-        showFeed(
+    fun feed_freeAccount_hasTheSelector_withTheMiff_andBothEntries() {
+        showFeed(freeWithOneMiff())
+        shoot("feed-free-pastille")
+        composeRule.onNodeWithText("Famille Martin").assertHasClickAction()
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onAllNodesWithText("Famille Martin").assertCountEquals(2)
+        composeRule.onNodeWithText(text(R.string.feed_selector_join)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_selector_create)).assertIsDisplayed()
+        shoot("feed-free-selector")
+    }
+
+    @Test
+    fun feed_freeAccount_join_opensTheOffer_notTheJoinScreen() {
+        var created = 0
+        var joined = 0
+        var offers = 0
+        showFeed(freeWithOneMiff(), { created++ }, { joined++ }, { offers++ })
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_join)).performClick()
+        assertEquals(listOf(0, 0, 1), listOf(created, joined, offers))
+    }
+
+    @Test
+    fun feed_freeAccount_create_opensTheOffer_notTheCreateScreen() {
+        var created = 0
+        var joined = 0
+        var offers = 0
+        showFeed(freeWithOneMiff(), { created++ }, { joined++ }, { offers++ })
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_create)).performClick()
+        assertEquals(listOf(0, 0, 1), listOf(created, joined, offers))
+    }
+
+    @Test
+    fun feed_premiumAccount_entriesGoToTheScreens_neverTheOffer() {
+        var created = 0
+        var joined = 0
+        var offers = 0
+        val premium =
+            DirectoryState.Ready(
+                listOf(MiffSummary(miffId, "Famille Martin")),
+                miffId,
+                premium = true,
+                fromCache = false,
+            )
+        showFeed(premium, { created++ }, { joined++ }, { offers++ })
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_join)).performClick()
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_create)).performClick()
+        assertEquals(listOf(1, 1, 0), listOf(created, joined, offers))
+    }
+
+    @Test
+    fun feed_unknownPlan_entriesGoToTheScreens_neverTheOffer() {
+        var created = 0
+        var joined = 0
+        var offers = 0
+        val unknown =
             DirectoryState.Ready(
                 listOf(MiffSummary(miffId, "Famille Martin")),
                 miffId,
                 premium = false,
-                fromCache = false,
-            ),
-        )
-        shoot("feed-free-pastille")
-        composeRule.onNodeWithText("Famille Martin").assertIsDisplayed()
-        composeRule.onAllNodesWithText(text(R.string.feed_create_action)).assertCountEquals(0)
-        composeRule.onAllNodesWithText(text(R.string.feed_join_action)).assertCountEquals(0)
-        composeRule.onAllNodesWithText(text(R.string.feed_selector_join)).assertCountEquals(0)
+                fromCache = true,
+                premiumKnown = false,
+            )
+        showFeed(unknown, { created++ }, { joined++ }, { offers++ })
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_join)).performClick()
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onNodeWithText(text(R.string.feed_selector_create)).performClick()
+        assertEquals(listOf(1, 1, 0), listOf(created, joined, offers))
+    }
+
+    @Test
+    fun feed_selector_hasNoPriceAndNeverSaysPremium() {
+        showFeed(freeWithOneMiff())
+        composeRule.onNodeWithText("Famille Martin").performClick()
+        composeRule.onAllNodesWithText("Premium", substring = true, ignoreCase = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
     }
 
     @Test

@@ -78,7 +78,7 @@ final class FeedTextsTests: XCTestCase {
 
         XCTAssertEqual(fr.label(.at(.category(.home))), "À la maison")
         XCTAssertEqual(fr.label(.at(.category(.school))), "À l'école")
-        XCTAssertEqual(fr.label(.at(.named("Chez Mamie"))), "À Chez Mamie")
+        XCTAssertEqual(fr.label(.at(.named("Chez Mamie"))), "Chez Mamie", "Loisir, Autre : le nom du lieu, seul")
         XCTAssertEqual(fr.label(.at(.unknown)), "Dans un lieu de confiance")
         XCTAssertEqual(fr.label(.left(.category(.work))), "A quitté le travail")
         XCTAssertEqual(fr.label(.left(.unknown)), "A quitté un lieu de confiance")
@@ -89,14 +89,46 @@ final class FeedTextsTests: XCTestCase {
         XCTAssertEqual(en.label(.left(.category(.home))), "Left home")
     }
 
+    /// Le mapping décidé par le PM (2026-11-08) : Maison, Travail, École, Sport, Chez un proche ont chacun leur étiquette ; Loisir et Autre
+    /// disent le nom du lieu.
+    func testTheLabelOfEachCategoryInFrenchAndEnglish() throws {
+        let fr = try french()
+        let en = try english()
+        let frLabels: [PlaceKind: String] = [
+            .home: "À la maison", .work: "Au travail", .school: "À l'école", .sport: "Au sport", .relative: "Chez un proche"
+        ]
+        let enLabels: [PlaceKind: String] = [
+            .home: "At home", .work: "At work", .school: "At school", .sport: "At the gym", .relative: "At a loved one's"
+        ]
+
+        for kind in [PlaceKind.home, .work, .school, .sport, .relative] {
+            XCTAssertEqual(fr.label(.at(.category(kind))), frLabels[kind])
+            XCTAssertEqual(en.label(.at(.category(kind))), enLabels[kind])
+        }
+        XCTAssertEqual(fr.label(.at(.named("Salle Rivoli"))), "Salle Rivoli")
+        XCTAssertEqual(en.label(.at(.named("Salle Rivoli"))), "Salle Rivoli")
+    }
+
+    func testLeavingAPlaceByCategorySaysItInAFullSentence() throws {
+        let fr = try french()
+        let en = try english()
+
+        XCTAssertEqual(fr.label(.left(.category(.relative))), "A quitté le domicile d'un proche")
+        XCTAssertEqual(en.label(.left(.category(.relative))), "Left a loved one's place")
+        XCTAssertEqual(fr.label(.left(.category(.sport))), "A quitté le sport")
+        XCTAssertEqual(en.label(.left(.category(.sport))), "Left the gym")
+    }
+
     func testTimeLines() throws {
         let fr = try french()
         let clock = "15\u{00A0}h\u{00A0}02"
 
-        XCTAssertEqual(fr.timeLine(.since(.minutes(12))), "Depuis 12 min")
-        XCTAssertEqual(fr.timeLine(.since(.hours(3))), "Depuis 3 h")
-        XCTAssertEqual(fr.timeLine(.since(.yesterday(atMillis: feedNow - feedHours(30)))), "Depuis hier à 10\u{00A0}h\u{00A0}00")
-        XCTAssertEqual(fr.timeLine(.departedAgo(.minutes(12))), "Départ il y a 12 min")
+        XCTAssertEqual(fr.timeLine(.since(moment(12))), "Depuis 15\u{00A0}h\u{00A0}48")
+        XCTAssertEqual(fr.timeLine(.since(moment(30 * 60, day: .yesterday))), "Depuis hier à 10\u{00A0}h\u{00A0}00")
+        XCTAssertEqual(
+            fr.timeLine(.since(Moment(atMillis: feedNow - 4 * FeedMillis.day, day: .other))),
+            "Depuis le 3 nov. à 16\u{00A0}h\u{00A0}00"
+        )
         XCTAssertEqual(fr.timeLine(.latestNews(moment(58))), "Dernière nouvelle à \(clock)")
         XCTAssertEqual(fr.timeLine(.noNewsSince(moment(58))), "Pas de nouvelles depuis \(clock)")
         XCTAssertEqual(fr.timeLine(.inDangerSince(moment(58))), "Depuis \(clock)")
@@ -179,11 +211,11 @@ final class FeedTextsTests: XCTestCase {
 
         XCTAssertEqual(
             fr.cardSpoken(other),
-            "Thomas, À la maison, Depuis 12 min, Batterie à 85 %"
+            "Thomas, À la maison, Depuis 15\u{00A0}h\u{00A0}48, Batterie à 85 %"
         )
         XCTAssertEqual(
             fr.cardSpoken(mine),
-            "Camille, À la maison, Depuis 12 min, Batterie à 64 %, Ce que tes proches voient de toi"
+            "Camille, À la maison, Depuis 15\u{00A0}h\u{00A0}48, Batterie à 64 %, Ce que tes proches voient de toi"
         )
     }
 
@@ -212,7 +244,7 @@ final class FeedTextsTests: XCTestCase {
             isMe: isMe,
             level: .green,
             label: .at(.category(.home)),
-            time: .since(.minutes(12)),
+            time: .since(moment(12)),
             battery: Battery(pct: battery),
             limitedLocation: false,
             phone: isMe ? nil : "+33612345678",
