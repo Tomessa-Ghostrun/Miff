@@ -7,7 +7,7 @@
 Reprend la section du PM. Changements :
 - Chaque ligne : **pictogramme de catégorie** (écran 19) à la place du pictogramme de lieu générique, nom, adresse en `text/secondary`, chevron. Une **zone de danger** porte l'étiquette « Zone de danger » (jamais la couleur seule).
 - **Un seul point d'entrée « + Ajouter un lieu »** (ligne en pointillés bleus du PM) ; le lien « Ajouter » en haut à droite de la maquette du PM est retiré (doublon).
-- **Créateur, formule gratuite** : ligne factuelle « 2 lieux sur 2 avec la formule gratuite » / "2 of 2 places on the free plan" sous le titre ; « Ajouter un lieu » porte la pastille « Miff+ » quand la limite est atteinte et ouvre l'écran 14 (jamais masqué ni grisé).
+- **Créateur, formule gratuite** : ligne factuelle « 3 lieux sur 3 avec la formule gratuite » / "3 of 3 places on the free plan" (maquette 17 encore à « 2 sur 2 » : à régénérer ; décision du PM du 2026-11-10) sous le titre ; « Ajouter un lieu » porte la pastille « Miff+ » quand la limite est atteinte et ouvre l'écran 14 (jamais masqué ni grisé).
 - **Créateur Miff+** : pas de compteur ni de pastille.
 - **Membre** : pas de « Ajouter » ; ligne « Les lieux de ta Miff, définis par son créateur. » / "Your Miff's places, set by its creator." ; toucher une ligne ouvre le détail en lecture.
 - Vide : « Pas encore de lieu pour cette Miff. » (texte de `miff-ecran-miff.md`) ; pour le créateur, la ligne « Ajouter un lieu » reste.
