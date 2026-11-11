@@ -57,27 +57,7 @@ struct UpdateServices {
             ledger: ledger,
             environment: environment
         )
-        // Contrat du modèle de données : une photo n'est écrite que là où MA position est publiée (lue sur la copie locale du suivi).
-        publisherDependencies.isPositionPublished = { miffId in
-            guard let uid = gateway.currentUid, let state = local.load(), state.uid == uid else {
-                return false
-            }
-            return state.miffs[miffId]?.positionAtMillis != nil
-        }
-        // Pour le journal de diagnostic seulement : le suivi connaît-il cette Miff (éligible dans sa copie locale) ?
-        publisherDependencies.trackingKnowsMiff = { miffId in
-            guard let uid = gateway.currentUid, let state = local.load(), state.uid == uid else {
-                return false
-            }
-            return state.miffs[miffId] != nil
-        }
-        publisherDependencies.journal = tracking.journal
-        // Le suivi n'a pas ma position dans une Miff : l'Update lui remet celle qu'il vient de mesurer (au toucher de « Publier ») et le suivi
-        // la publie lui-même, avec toutes ses garanties (l'Update n'écrit jamais `positions/{moi}`, critère U8).
-        let runtime = tracking.runtime
-        publisherDependencies.handOver = { fix in
-            await runtime.publishPosition(supplied: fix)
-        }
+        Self.connectPosition(&publisherDependencies, uid: { gateway.currentUid }, local: local, tracking: tracking)
         let photoCache = PhotoCache()
         publisherDependencies.onPhotoPublished = { photoCache.putOwn($0) }
         var cleanerDependencies = PhotoCleanerDependencies(
@@ -98,6 +78,36 @@ struct UpdateServices {
             sharingStopped: sharingStopped,
             photoCache: photoCache
         )
+    }
+
+    /// Le lien entre l'Update et le suivi pour MA position (la fonction `make` reste courte).
+    private static func connectPosition(
+        _ dependencies: inout UpdatePublisherDependencies,
+        uid: @escaping () -> String?,
+        local: TrackingLocalStore,
+        tracking: TrackingServices
+    ) {
+        // Contrat du modèle de données : une photo n'est écrite que là où MA position est publiée (lue sur la copie locale du suivi).
+        dependencies.isPositionPublished = { miffId in
+            guard let current = uid(), let state = local.load(), state.uid == current else {
+                return false
+            }
+            return state.miffs[miffId]?.positionAtMillis != nil
+        }
+        // Pour le journal de diagnostic seulement : le suivi connaît-il cette Miff (éligible dans sa copie locale) ?
+        dependencies.trackingKnowsMiff = { miffId in
+            guard let current = uid(), let state = local.load(), state.uid == current else {
+                return false
+            }
+            return state.miffs[miffId] != nil
+        }
+        dependencies.journal = tracking.journal
+        // Le suivi n'a pas ma position dans une Miff : l'Update lui remet celle qu'il vient de mesurer (au toucher de « Publier ») et le suivi
+        // la publie lui-même, avec toutes ses garanties (l'Update n'écrit jamais `positions/{moi}`, critère U8).
+        let runtime = tracking.runtime
+        dependencies.handOver = { fix in
+            await runtime.publishPosition(supplied: fix)
+        }
     }
 
     /// La dernière position que le suivi a gardée sur le téléphone, seulement si elle est celle de CE compte et a moins de 10 minutes (la
