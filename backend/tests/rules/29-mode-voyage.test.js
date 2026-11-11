@@ -1,5 +1,6 @@
 // Plan de test, section 24 : MODE VOYAGE (VOY-B, ticket `docs/tickets/mode-voyage.md` §4, décisions du PM du 2026-11-10), cas VY1 à VY24, VY26 et VY27 (VY25 : fichier `30`).
-// Règles PRÉPARÉES et NON déployées. Nouvelle valeur `presence = "travel"` du statut `miffs/{id}/status/{uid}`, deux clés facultatives
+// Règles DÉPLOYÉES par le PM le 2026-11-10. La position reste partagée pendant le voyage (décision du PM du 2026-11-10) : l'activation ne supprime
+// aucune position ; VY21 / VY22 gardent leurs assertions (propriété et atomicité de la suppression, coût d'un lot) sans que les clients s'en servent. Nouvelle valeur `presence = "travel"` du statut `miffs/{id}/status/{uid}`, deux clés facultatives
 // `travelUntil` (timestamp) et `travelUntilDay` (« AAAA-MM-JJ »). DISPONIBLE POUR TOUS LES COMPTES (décision du PM du 2026-11-10 : plus aucune
 // barrière Miff+, plus aucune lecture de règles de plus) : gratuit, premium actif et premium expiré écrivent, changent et désactivent leur voyage
 // dans les mêmes limites de validité. Comptes : `dave` (premium actif, Miff M3), `frank` (premium EXPIRÉ, Miff M4), `bob` (gratuit, Miff M1),
@@ -329,7 +330,7 @@ s.tc('VY20', 'SESS-1 : le voyage porte le deviceId de la session (OK) ; un ident
 });
 
 
-s.tc('VY21', 'activation : supprimer MA dernière position dans le même lot que le voyage (autorisé par les règles existantes) ; lot refusé : la position n\'est pas supprimée ; un autre membre ne la supprime pas', async (h) => {
+s.tc('VY21', 'atomicité et propriété de la suppression de position (règle générale, NON utilisée par l\'activation : la position reste partagée en voyage) : lot « voyage + suppression de MA position » accepté ; lot refusé : la position n\'est pas supprimée ; un autre membre ne la supprime pas', async (h) => {
   await seedAccounts(h);
   await h.admin(async (f) => {
     await f.doc(`${M3}/members/dave`).update({ 'sharing.consentVersion': '2026-11-v03' });
@@ -369,7 +370,7 @@ const lot = (count, withPositions = false) =>
   ]);
 
 
-s.tc('VY22', 'lot de 8 Miffs : 8 statuts de voyage avec deviceId (2 lectures chacun = 16 sur 20) acceptés en un lot ; avec la suppression des 8 positions aussi', async (h) => {
+s.tc('VY22', 'lot de 8 Miffs : 8 statuts de voyage avec deviceId (2 lectures chacun = 16 sur 20) acceptés en un lot (cas réel de l\'activation) ; variante de borne avec la suppression des 8 positions aussi (non utilisée par les clients : fige le coût)', async (h) => {
   await seedDaveMiffs(h, 8);
   await h.admin((f) => f.doc(SESSION_PATH('dave')).set(sessionSeed(DEVICE_A)));
   await assertSucceeds(commit(h.db('dave'), lot(8)));
@@ -430,7 +431,7 @@ s.tc('VY26', 'update PARTIELLE de « travel » vers out / unknown SANS supprimer
   }
 });
 
-s.tc('VY27', 'CARACTÉRISATION : pendant un voyage, les règles AUTORISENT encore l\'écriture de ma position et de ma photo (« Miff arrête de suivre » est un contrat du client, V2) ; si un resserrement futur les refuse, ce test doit être changé EN CONNAISSANCE DE CAUSE', async (h) => {
+s.tc('VY27', 'CARACTÉRISATION : pendant un voyage, les règles AUTORISENT l\'écriture de ma position et de ma photo (comportement VOULU : la position reste partagée, décision du PM du 2026-11-10) ; si une décision future du PM les refuse, ce test doit être changé EN CONNAISSANCE DE CAUSE', async (h) => {
   await seedAccounts(h);
   await setConsentV3(h, 'bob'); // position et photo exigent le texte de version 03
   const path = `${M1}/status/bob`;

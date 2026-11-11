@@ -4,7 +4,7 @@
 Langue principale : français. Langue de repli : anglais.
 
 **À lire avant d'utiliser ce fichier**
-- Les déclarations déjà arrêtées dans `docs/release/` (notamment `google-play-data-safety.md`, `google-play-localisation-arriere-plan.md` et `update-photo-declarations.md`) **ne doivent jamais être contredites**. **Recoupé le 2026-11-07 par `release-manager`** avec ces fichiers, `docs/legal/*`, `web/src/landing.json`, `backend/data-model.md`, `docs/tickets/*.md` et le code Android de `main` (`8e87ebd`). Corrections faites dans ce fichier : la localisation en arrière-plan n'est **plus décrite comme facultative** (« Toujours » est obligatoire, décision du PM du 2026-11-01) ; la description reprend la phrase exigée par `google-play-localisation-arriere-plan.md` §5 (arrière-plan, app fermée, statut **et dernière position connue** vus du cercle) ; « petit mot » est retiré (la photo n'a **pas de texte** en v1 et porte **toujours son endroit**) ; la formule gratuite est de **2 lieux** ; l'exigence de test fermé de Google est vérifiée (section 5).
+- Les déclarations déjà arrêtées dans `docs/release/` (notamment `google-play-data-safety.md`, `google-play-localisation-arriere-plan.md` et `update-photo-declarations.md`) **ne doivent jamais être contredites**. **Recoupé le 2026-11-07 par `release-manager`** avec ces fichiers, `docs/legal/*`, `web/src/landing.json`, `backend/data-model.md`, `docs/tickets/*.md` et le code Android de `main` (`8e87ebd`). Corrections faites dans ce fichier : la localisation en arrière-plan n'est **plus décrite comme facultative** (« Toujours » est obligatoire, décision du PM du 2026-11-01) ; la description reprend la phrase exigée par `google-play-localisation-arriere-plan.md` §5 (arrière-plan, app fermée, statut **et dernière position connue** vus du cercle) ; « petit mot » est retiré (la photo n'a **pas de texte** en v1 et porte **toujours son endroit**) ; la formule gratuite est de **3 lieux** (décision du PM du 2026-11-10 ; 2 depuis le 2026-11-01) ; l'exigence de test fermé de Google est vérifiée (section 5).
 - La section 0 de `store-listing-ios.md` (C1 à C15) vaut aussi pour Android, avec cette différence : **l'Android a le Feed, l'Update et les Réglages (dont la suppression de compte)** ; c'est l'iOS qui ne les a pas encore.
 - Notifications push et abonnement (Miff+) **non actifs** : aucune mention. Aucune marque tierce.
 - **Rien n'est « prêt à soumettre »** (`docs/qa/release-checklist.md` n'existe pas encore). Décisions et actions du PM : `docs/release/decisions-stores-avant-soumission.md`.
@@ -52,7 +52,7 @@ TU GARDES LA MAIN
 - Le partage avec chaque Miff est ton choix : il ne démarre qu'avec ton accord, et tu peux l'arrêter à tout moment, sans te justifier. Ton statut, ta photo et ta dernière position sont alors effacés.
 - Ce que voit ton cercle : ton statut, ta dernière position connue avec l'heure de sa mesure, et ta photo avec l'endroit où elle a été prise. Ce n'est pas un suivi en direct, et Miff ne garde aucun historique de tes trajets.
 - Seuls les membres de ta Miff qui partagent aussi leur position voient la tienne et ta photo. On ne rejoint une Miff qu'avec son code secret.
-- Les photos ne sont plus visibles après 24 heures. Un proche peut toutefois en faire une capture d'écran.
+- Les photos ne sont plus visibles après 24 heures dans Miff. Un proche peut toutefois en garder une copie : par capture d'écran, ou en touchant « Enregistrer cette photo », seulement s'il choisit de l'enregistrer.
 - Aucune publicité, aucune revente de données.
 - Tu peux supprimer ton compte depuis l'app.
 
@@ -62,7 +62,7 @@ En famille, entre amis, en couple : le cercle que tu choisis, avec l'accord de c
 
 BON À SAVOIR
 
-- Dans cette version, tu peux être dans une Miff à la fois, avec 2 lieux de confiance.
+- Dans cette version, tu peux être dans une Miff à la fois, avec 3 lieux de confiance.
 - La détection des arrivées et des départs dépend de ton téléphone et de ses réglages d'économie d'énergie : elle peut être en retard ou ne pas se produire. Un statut en retard ne veut pas dire qu'il y a un problème.
 - Miff n'est pas un service d'urgence. En cas de danger ou de doute sérieux, appelle le 112.
 - Un compte ne fonctionne que sur un téléphone à la fois.
@@ -127,7 +127,7 @@ YOU STAY IN CONTROL
 - Sharing with each Miff is your choice: it only starts with your agreement, and you can stop at any time, without having to explain yourself. Your status, your photo and your last known location are then erased.
 - What your circle sees: your status, your last known location with the time it was measured, and your photo with the place where it was taken. This is not live tracking, and Miff keeps no history of your trips.
 - Only the members of your Miff who also share their location see yours and your photo. A Miff can only be joined with its secret code.
-- Photos are no longer visible after 24 hours. A loved one can still take a screenshot of one.
+- Photos are no longer visible in Miff after 24 hours. A loved one can still keep a copy: by taking a screenshot, or by tapping "Save this photo", only if they choose to save it.
 - No ads, no data resale.
 - You can delete your account from the app.
 
@@ -137,7 +137,7 @@ Families, friends, couples: the circle you choose, with everyone's agreement. Mi
 
 GOOD TO KNOW
 
-- In this version, you can be in one Miff at a time, with 2 trusted places.
+- In this version, you can be in one Miff at a time, with 3 trusted places.
 - Detection of arrivals and departures depends on your phone and its battery-saving settings: it can be late or may not happen. A late status does not mean something is wrong.
 - Miff is not an emergency service. In case of danger or serious doubt, call your local emergency number.
 - An account only works on one phone at a time.

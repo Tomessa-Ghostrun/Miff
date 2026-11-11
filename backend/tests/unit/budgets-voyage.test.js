@@ -40,7 +40,7 @@ test('BUDGET VOY-B - lot de statuts de voyage : 8 Miffs au plus (2 x 8 = 16 sur 
   assert.ok(11 * perStatus > LIMIT);
 });
 
-test('BUDGET VOY-B - activation = voyage + suppression de MA dernière position : la suppression ne lit rien pour soi (isSelf avant isOwnerOneRead) ; 8 Miffs = 16', () => {
+test('BUDGET VOY-B - variante de borne « voyage + suppression de MA dernière position » (non utilisée par l\'activation, la position restant partagée) : la suppression ne lit rien pour soi (isSelf avant isOwnerOneRead) ; 8 Miffs = 16', () => {
   const deleteRule = model.allowRules(POSITIONS).delete.replace(/\s+/g, ' ').trim();
   assert.match(deleteRule, /^isSelf\(uid\) \|\| isOwnerOneRead\(miffId\)$/);
   assert.equal(model.costOfFn('isSelf'), 0);

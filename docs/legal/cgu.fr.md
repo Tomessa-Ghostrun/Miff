@@ -45,7 +45,7 @@ Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de to
 
 ## 4. Ton compte
 
-- Tu peux créer un compte avec une adresse e-mail et un mot de passe, avec Google, ou avec Apple (sur iOS).
+- Tu peux créer un compte avec une adresse e-mail et un mot de passe, avec Google, ou avec Apple (sur iOS). Si tu t'inscris avec Google, ta photo Google est reprise comme photo de profil préremplie : tu peux la changer ou la retirer avant d'enregistrer ton profil, puis à tout moment. Une fois enregistrée, c'est une photo de profil comme une autre, visible des membres de tes Miffs.
 - Donne des informations vraies (prénom, nom, numéro de téléphone) pour que tes proches te reconnaissent et puissent te joindre. N'utilise pas l'identité d'une autre personne.
 - Garde ton mot de passe confidentiel. Tu es responsable de ce qui se passe avec ton compte. Si tu penses qu'il a été utilisé sans ton accord, écris-nous.
 - Un compte est personnel : ne le partage pas.
@@ -57,7 +57,7 @@ Tu dois utiliser Miff en ayant la capacité de t'engager, ou avec l'accord de to
 - Le créateur d'une Miff gère les lieux : **lui seul les crée, les modifie et les supprime**, y compris les zones de danger (réservées à Miff+). Un même lieu peut être associé à plusieurs Miffs qu'il a créées ; le supprimer le supprime dans toutes ces Miffs. Il peut aussi renouveler le code ou retirer un membre. Quand un membre est retiré, le code est renouvelé : l'ancien code ne fonctionne plus.
 - **Les lieux d'une Miff sont visibles de tous ses membres, adresse comprise.** N'enregistre que des adresses que tu as le droit d'enregistrer : l'adresse d'une autre personne (son domicile, par exemple) ne s'enregistre pas sans son accord.
 - Tu peux quitter une Miff quand tu veux.
-- Avec la version gratuite, tu peux être dans **une seule Miff à la fois** et utiliser **2 lieux de confiance**. Miff+ lève ces limites (voir article 9).
+- Avec la version gratuite, tu peux être dans **une seule Miff à la fois** et utiliser **3 lieux de confiance**. Miff+ lève ces limites (voir article 9).
 
 ## 6. Le partage de ta localisation : ton choix
 
@@ -65,7 +65,7 @@ Le cœur de Miff est le partage de ton statut lié aux lieux de confiance. Voici
 
 - **Ce n'est jamais automatique à ton insu.** Le partage avec une Miff ne démarre qu'après ton accord explicite, donné Miff par Miff, distinct de ton clic sur « Rejoindre ». Personne ne peut l'activer à ta place.
 - **Tu peux l'arrêter à tout moment**, sans te justifier, dans les réglages de l'app. L'arrêt supprime ton statut, ta photo (avec son endroit) et ta dernière position connue pour cette Miff. Tes proches voient alors simplement « partage désactivé », sans message d'alerte.
-- **Ce que tes proches voient.** Si tu partages, les membres de ta Miff voient ton statut (par exemple « à la maison ») et **ta dernière position connue, avec l'heure**. **Miff garde seulement cette dernière position** (latitude, longitude, heure de la mesure), **sans historique de trajets** : chaque nouvelle position remplace la précédente. Ce n'est pas un suivi en direct.
+- **Ce que tes proches voient.** Si tu partages, les membres de ta Miff voient ton statut (par exemple « à la maison ») et **ta dernière position connue, avec l'heure**. **Miff ne garde que cette dernière position** (latitude, longitude, heure de la mesure) **et, si tu publies une photo, l'endroit où elle a été prise pendant 24 heures**, **sans historique de trajets** : chaque nouvelle position remplace la précédente. Ce n'est pas un suivi en direct.
 - **Ta photo et son endroit.** Si tu publies une photo, elle est **toujours publiée avec l'endroit où elle a été prise**, mesuré par ton téléphone à ce moment-là (avec l'heure de cette mesure). Cet endroit reste attaché à la photo pendant 24 heures, même si ta dernière position connue change entre-temps, et il ne dit pas où tu es maintenant.
 - **Qui la voit** : uniquement les membres de la même Miff dont le partage est actif, et seulement s'ils partagent aussi la leur. Cela vaut aussi pour l'endroit de ta photo : un membre qui ne partage pas sa position ne peut pas ouvrir ta photo. Le créateur de la Miff n'a aucun droit de plus.
 - **Effacement** : ta position, ta photo et son endroit sont effacés quand tu arrêtes de partager, quittes la Miff, es retiré(e) de la Miff, ou quand la Miff ou ton compte est supprimé. Au bout de 24 heures, ta position n'est plus affichée que masquée, avec sa date, et ta photo n'est plus lisible (elles restent stockées jusqu'à leur remplacement ou leur effacement). Les détails sont dans la Politique de confidentialité.
@@ -91,19 +91,19 @@ Tu t'engages à ne pas :
 - Tu restes propriétaire de tes contenus (photo de profil, photos que tu publies). Tu nous autorises seulement à les héberger et à les afficher aux membres de tes Miffs, pour faire fonctionner le service.
 - **Comment ça marche.** Une photo « Donner des nouvelles » est prise en direct avec la caméra de l'app (jamais depuis ta galerie), sans texte, et publiée avec l'endroit où elle a été prise. Elle n'est visible que des membres de tes Miffs. **Elle n'est plus visible après 24 heures** et est supprimée ensuite (voir la Politique de confidentialité).
 - **Respecte les autres** : ne publie pas de photo où figure une personne sans son accord, et ne publie pas de photo d'un enfant dont tu n'as pas l'autorité parentale. Tu es responsable des contenus que tu envoies.
-- Un membre d'une Miff peut enregistrer ce qu'il voit (capture d'écran, par exemple). Nous ne pouvons pas l'empêcher : n'envoie que ce que tu acceptes de montrer à ton cercle.
+- Un membre d'une Miff peut garder une copie de ce qu'il voit : par une capture d'écran, ou en touchant « Enregistrer cette photo » dans le plein écran d'une photo (il ne le fait que s'il le choisit). Une copie enregistrée est un fichier de son téléphone, hors de Miff. Nous ne pouvons pas l'empêcher, ni effacer ces copies : n'envoie que ce que tu acceptes de montrer à ton cercle.
 - **Signaler un contenu ou un comportement.** Écris-nous à **tomessa.mfouka@gmail.com** en indiquant la Miff et le prénom du membre concerné. Nous consultons cette adresse au moins une fois par semaine. Miff n'est pas un service d'urgence : si une photo montre quelqu'un en danger, appelle les secours (112).
 - **Ce que nous faisons, et ne faisons pas.** Nous n'analysons pas les photos automatiquement : nous ne les examinons que si quelqu'un nous les signale. Nous pouvons retirer un contenu qui ne respecte pas ces conditions, et suspendre ou supprimer le compte de son auteur (article 12).
 - **Si une personne te met mal à l'aise**, tu peux quitter la Miff à tout moment, et le créateur d'une Miff peut retirer un membre (article 5).
 
 ## 9. Miff gratuit et Miff+
 
-- **Gratuit** : une Miff à la fois et **2 lieux de confiance**.
+- **Gratuit** : une Miff à la fois et **3 lieux de confiance**.
 - **Miff+ (abonnement payant)** : plusieurs Miffs, des lieux de confiance en nombre illimité et les zones de danger, ainsi que les autres options présentées dans l'app au moment de l'achat (par exemple des notifications intelligentes, selon leur disponibilité). Le contenu exact, le prix, la durée et l'éventuelle période d'essai sont **affichés dans l'app et sur le store avant que tu t'abonnes**.
 - **L'achat se fait via l'App Store (Apple) ou Google Play**, pas directement chez nous. Le paiement, la facturation, le renouvellement automatique, la résiliation et les remboursements sont gérés par Apple ou Google, selon leurs conditions.
 - **Résilier** : dans les réglages de ton compte Apple (iPhone) ou dans Google Play (Android), avant la fin de la période en cours, pour éviter le prochain renouvellement. Supprimer l'app ou ton compte Miff **ne résilie pas** automatiquement l'abonnement : il faut le résilier auprès du store.
 - **Remboursement** : demande-le à Apple ou à Google, selon leurs règles. Si tu es consommateur, les droits que la loi te donne (par exemple le droit de rétractation, dans les conditions prévues par la loi et par les conditions du store) restent applicables.
-- **Fin de l'abonnement** : tu repasses à la version gratuite. Les éléments qui dépassent les limites de la formule gratuite (une Miff, 2 lieux de confiance et aucune zone de danger) sont alors supprimés, avec les données qui leur sont liées : ce sont les derniers ajoutés qui sont supprimés, tes premiers éléments restent. Si tu as plusieurs Miffs ou plusieurs lieux, pense à regarder ce que tu veux garder avant la fin de ton abonnement.
+- **Fin de l'abonnement** : tu repasses à la version gratuite. Les éléments qui dépassent les limites de la formule gratuite (une Miff, 3 lieux de confiance et aucune zone de danger) sont alors supprimés, avec les données qui leur sont liées : ce sont les derniers ajoutés qui sont supprimés, tes premiers éléments restent. Si tu as plusieurs Miffs ou plusieurs lieux, pense à regarder ce que tu veux garder avant la fin de ton abonnement.
 - **Pendant la phase de test (bêta)**, l'équipe Miff peut accorder gratuitement l'accès Miff+ à certains testeurs. Cet accès peut être retiré à la fin de la bêta.
 - Nous pouvons faire évoluer les offres et les prix pour l'avenir. Un changement de prix n'affecte pas ta période déjà payée et est annoncé dans le respect des règles du store.
 
