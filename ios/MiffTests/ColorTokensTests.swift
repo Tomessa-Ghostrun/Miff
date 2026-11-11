@@ -125,10 +125,13 @@ final class ColorTokensTests: XCTestCase {
         }
     }
 
-    private static let bubbleBlockPattern = "val textDisplayBubble =\\s*TextStyle\\(([^)]*)\\)"
+    /// Les formes possibles de la déclaration Android : `textDisplayHeadline.copy(fontSize = 30.sp, lineHeight = 36.sp)` (la forme retenue),
+    /// `TextStyle(...)` ou `style(famille, 30, 36)`.
+    private static let bubbleBlockPattern =
+        "val textDisplayBubble =\\s*(?:textDisplayHeadline\\.copy|TextStyle)\\(([^)]*)\\)"
 
     /// `textDisplayBubble` n'est pas dans `TextStyleTokens.all` : cette assertion dédiée lit sa déclaration Android, sous la forme `TextStyle(...)`
-    /// (fontSize / lineHeight) ou `style(famille, 30, 36)`. Tant qu'elle n'est pas dans le `Type.kt` de main, rien n'est comparé (le test ne
+    /// (fontSize / lineHeight, forme `copy(...)` retenue côté Android) ou `style(famille, 30, 36)`. Tant qu'elle n'est pas dans le `Type.kt` de main, rien n'est comparé (le test ne
     /// saute pas). À retirer, avec `expected.removeValue` ci-dessus, quand le style sera déclaré par `style(...)` côté Android et ajouté à `all`.
     func testTheBubbleStyleMatchesAndroid() throws {
         let source = try androidThemeFile("Type.kt")
