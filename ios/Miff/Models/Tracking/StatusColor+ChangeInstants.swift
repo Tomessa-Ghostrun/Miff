@@ -14,7 +14,7 @@ extension StatusColor {
     /// - `in_risk` (règle de `dangerZoneLevel`, décision du PM du 2026-11-08) : vert seulement avec une update STRICTEMENT postérieure à
     ///   l'entrée ; alors la dernière update + 1 h + 1 ms (rouge). Sans update, avec une update antérieure ou égale à l'entrée, ou sans
     ///   heure d'entrée, elle est rouge depuis toujours : aucun instant.
-    /// - les autres états (zone de confiance, inconnu, partage arrêté, statut absent) : aucun instant.
+    /// - les autres états (zone de confiance, inconnu, voyage, partage arrêté, statut absent) : aucun instant.
     static func changeInstants(_ facts: MemberStatusFacts?) -> [Int] {
         guard let facts, facts.sharingEnabled, let presence = facts.presence else {
             return []
@@ -35,7 +35,8 @@ extension StatusColor {
                 return []
             }
             return [lastUpdate + StatusThresholds.dangerZoneRedAfterMillis + 1]
-        case .inTrusted, .unknown:
+        case .inTrusted, .unknown, .travel:
+            // Un voyageur est toujours neutre (mode voyage) : sa couleur ne change jamais avec le temps, aucun rappel à programmer.
             return []
         }
     }

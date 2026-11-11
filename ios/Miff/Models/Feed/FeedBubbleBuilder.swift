@@ -26,22 +26,67 @@ extension FeedBuilder {
         if others.isEmpty {
             return .alone
         }
+        // MODE VOYAGE : personne de connu parmi les autres, et quelqu'un en voyage : la bulle le dit (jamais « Pas encore de nouvelles » pour un voyageur).
+        if let travelers = travelersBubble(others, hidden: context.hidden) {
+            return travelers
+        }
         let knownOthers = others.filter { $0.level != .neutral }
         if context.hidden || knownOthers.isEmpty {
             return .noNews
         }
-        // Pas d'alerte : tout membre connu est vert. La « dernière nouvelle » est la plus récente des AUTRES (ma propre update ne rassure jamais).
+        return allGood(context, cards: cards, knownOthers: knownOthers)
+    }
+
+    /// Pas d'alerte : tout membre connu est vert. La « dernière nouvelle » est la plus récente des AUTRES (ma propre update ne rassure jamais).
+    private static func allGood(_ context: Context, cards: [FeedMemberCard], knownOthers: [FeedMemberCard]) -> Bubble {
         let latest = knownOthers
             .compactMap { context.statuses[$0.member.uid]?.referenceMillis }
             .max()
             .map { context.age($0) }
-        let known = cards.filter { $0.level != .neutral }.count
-        let someSilent = known < cards.count
+        // MODE VOYAGE : un voyageur n'est pas « silencieux » : il est hors du décompte « n sur m » (ni dans n, ni dans m).
+        let counted = cards.filter { !$0.traveling }
+        let known = counted.filter { $0.level != .neutral }.count
+        let someSilent = known < counted.count
         return .allGood(
             latestNews: latest,
             answered: someSilent ? known : nil,
-            total: someSilent ? cards.count : nil
+            total: someSilent ? counted.count : nil
         )
+    }
+
+    // MARK: - Le voyage dans la bulle
+
+    /// Tous les AUTRES membres sont neutres et au moins un est en voyage : une bulle neutre qui le dit.
+    private static func travelersBubble(_ others: [FeedMemberCard], hidden: Bool) -> Bubble? {
+        let travellers = others.filter { $0.traveling }
+        guard !hidden, !travellers.isEmpty, others.allSatisfy({ $0.level == .neutral }) else {
+            return nil
+        }
+        return .travelers(travelNote(others) ?? .many(count: travellers.count, all: travellers.count == others.count))
+    }
+
+    /// Les membres des `others` dont le voyage est en cours : un par son prénom, plusieurs par leur nombre ; nil quand aucun.
+    static func travelNote(_ others: [FeedMemberCard]) -> TravelNote? {
+        let travellers = others.filter { $0.traveling }
+        guard let first = travellers.first else {
+            return nil
+        }
+        // « Tes proches sont en voyage » seulement quand TOUS les autres membres le sont : avec un autre sans nouvelles, c'est « {n} proches ».
+        if travellers.count == 1, case .traveling(let until, _) = first.label {
+            return .one(name: first.member.callName, until: until)
+        }
+        return .many(count: travellers.count, all: travellers.count == others.count)
+    }
+
+    /// La ligne ajoutée à la bulle habituelle (la bulle des voyageurs le dit déjà ; rien quand je ne partage pas ou que mon accord attend).
+    static func travelNote(under bubble: Bubble, cards: [FeedMemberCard], hidden: Bool) -> TravelNote? {
+        if hidden {
+            return nil
+        }
+        if case .travelers = bubble {
+            return nil
+        }
+        return travelNote(cards.filter { !$0.isMe })
     }
 
     private struct SortableAlert {
@@ -115,6 +160,8 @@ extension FeedBuilder {
             return "sharingStopped"
         case .awaitingAgreement:
             return "awaitingAgreement"
+        case .travelers:
+            return "travelers"
         }
     }
 

@@ -35,6 +35,8 @@ struct MemberStatusFacts: Equatable, CustomStringConvertible {
     let presence: PresenceValue?
     let presenceAtMillis: Int?
     let lastUpdateAtMillis: Int?
+    /// MODE VOYAGE : la fin du voyage quand `presence` est `travel` (la couleur n'en a pas besoin : un voyage est toujours neutre ; le Feed si).
+    var travelUntilMillis: Int?
 
     var description: String {
         "MemberStatusFacts(redacted)"
@@ -56,6 +58,10 @@ enum StatusColor {
         case .inRisk:
             return dangerZoneLevel(facts, nowMillis: nowMillis)
         case .unknown:
+            return .neutral
+        case .travel:
+            // MODE VOYAGE : un voyageur est ignoré dans la couleur de la Miff, avant ET après la fin du voyage (après, la carte dit « Voyage
+            // terminé » jusqu'à la première mesure : jamais une couleur tirée d'un état qui n'est plus vrai).
             return .neutral
         case .out:
             return levelByAge(facts, nowMillis: nowMillis)

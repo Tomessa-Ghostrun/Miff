@@ -35,6 +35,7 @@ final class ChangeInstantsTests: XCTestCase {
             ("zone de danger, jamais d'update", facts(.inRisk, presenceAt: ref)),
             ("zone de confiance", facts(.inTrusted, presenceAt: ref, update: ref)),
             ("inconnu", facts(.unknown, presenceAt: ref)),
+            ("en voyage", facts(.travel, presenceAt: ref - 5 * hour, update: ref - 4 * hour)),
             ("partage arrêté", facts(.out, presenceAt: ref, sharing: false)),
             ("sans repère", facts(.out)),
             ("sans présence", facts(nil, presenceAt: ref)),
@@ -101,6 +102,10 @@ final class ChangeInstantsTests: XCTestCase {
     func testNothingChangesInATrustedZoneOrWithoutSharingOrStatus() {
         XCTAssertEqual(StatusColor.changeInstants(facts(.inTrusted, presenceAt: ref, update: ref)), [])
         XCTAssertEqual(StatusColor.changeInstants(facts(.unknown, presenceAt: ref)), [])
+        // Mode voyage : toujours neutre, quelle que soit l'ancienneté des repères (aucun instant, aucun rappel).
+        let traveller = facts(.travel, presenceAt: ref - 20 * hour, update: ref - 10 * hour)
+        XCTAssertEqual(StatusColor.changeInstants(traveller), [])
+        XCTAssertEqual(StatusColor.level(facts(.travel, presenceAt: ref - 20 * hour), nowMillis: ref), .neutral)
         XCTAssertEqual(StatusColor.changeInstants(facts(.out, presenceAt: ref, sharing: false)), [])
         XCTAssertEqual(StatusColor.changeInstants(nil), [])
     }

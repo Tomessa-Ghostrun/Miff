@@ -138,6 +138,24 @@ final class NotificationPlannerTests: XCTestCase {
         XCTAssertEqual(fires(plan), ["n4@\(after(16, 35))"], "N3 abandonnée : à 16 h 10 la Miff est déjà rouge")
     }
 
+    // MARK: - Mode voyage : un voyageur est neutre, jamais un rappel ni un rouge
+
+    private func traveller(_ uid: String) -> PlanMember {
+        PlanMember(uid: uid, sharing: true, presence: "travel", presenceAtMillis: at(1, 0), lastUpdateAtMillis: nil)
+    }
+
+    func testIAmTravellingNoReminderAtAllHoweverLongSinceMyLastSignal() {
+        let plan = NotificationPlanner.plan(input([traveller("me"), green("x")], now: at(15, 10)))
+
+        XCTAssertTrue(plan.isEmpty)
+    }
+
+    func testAnotherMemberTravellingNeverTurnsTheMiffOrangeOrRed() {
+        let plan = NotificationPlanner.plan(input([green("me"), traveller("x")], now: at(15, 10)))
+
+        XCTAssertTrue(plan.isEmpty)
+    }
+
     // MARK: - T9 à T15
 
     func testT9TheThirdN1OfTheDayIsNotNotified() {

@@ -54,6 +54,7 @@
 - [ ] **N2** : « **Tu es passé rouge** / Indique à ta Miff que tout va bien. » arrive 2 h après N1 (ou, avec l'astuce, à la minute prévue), toucher ouvre l'écran Update. **Une seule N1 et une seule N2 par épisode** : rien ne se répète.
 - [ ] **Annulation** : juste après avoir programmé N1 (avant son heure), **publiez une update** (ou rentrez dans un lieu de confiance). Au retour au premier plan, la notification ne part pas ; si elle était déjà affichée, elle **disparaît du tiroir** à l'ouverture de l'app.
 - [ ] **Zone de danger** : un compte dans une zone de danger (créée par un créateur Premium) ne reçoit **ni N1 ni N2**.
+- [ ] **Mode voyage** : activez le mode voyage sur l'iPhone (Profil), puis laissez passer l'heure prévue de N1 (ou utilisez l'astuce : `presence` = `out` ancien, puis activez le voyage) : **ni N1 ni N2** n'arrive, et un rappel déjà programmé est retiré au plus tard au prochain retour de l'app au premier plan (à noter si ce n'est pas le cas). Un voyageur est toujours neutre.
 - [ ] **Nuit calme** (22 h à 7 h) : N1 arrive **sans son ni vibration** (dans le tiroir, sans bannière) ; N2 garde son niveau normal. Pour l'essayer sans attendre la nuit, ajustez le `presenceAt` pour que l'heure prévue tombe la nuit.
 - [ ] **Réglages > Notifications** : éteindre « Quand je passe orange » annule N1 **immédiatement** (rien n'arrive) ; éteindre « Recevoir des notifications » annule tout **et retire** les notifications Miff du tiroir.
 - [ ] **Plafond** : pas plus de 2 par type et 6 au total par jour ; au-delà, rien n'est affiché mais le centre garde une entrée discrète.
@@ -72,6 +73,7 @@
 - [ ] **Si B donne de ses nouvelles avant l'heure** et que vous rouvrez l'app (ou qu'elle était ouverte) : la notification est **annulée** ; si elle était déjà affichée elle **disparaît du tiroir** à l'ouverture.
 - [ ] **Si B donne de ses nouvelles pendant que l'app est fermée** : N3 s'affiche quand même (limite iOS acceptée) ; à l'ouverture le Feed dit la vérité et la notification est retirée. **Notez chaque fausse alerte** : en bas de Réglages > Notifications (builds Debug et Internal) un compteur dit « x fausse(s) alerte(s) sur y ».
 - [ ] **Compte seul dans la Miff** : jamais de N3 ni N4. **Miff de deux personnes dont vous êtes la cause** : pas de N3 / N4 non plus (vous avez N1 / N2).
+- [ ] **Un proche en voyage** (mode voyage actif chez B, qui était `out` depuis longtemps) : **ni N3 ni N4** à cause de lui (un voyageur est ignoré dans la couleur de la Miff). Quand son voyage se termine, il ne déclenche rien de lui-même.
 - [ ] **Autre Miff active** (Premium) : changer de Miff active annule les rappels de l'ancienne.
 - [ ] Les mêmes vérifications que la partie D pour : nuit calme (N3 sans son, N4 normale), interrupteurs (« Quand ma Miff passe orange / rouge »), plafonds, centre, premier plan.
 

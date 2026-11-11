@@ -91,6 +91,9 @@ import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.profile.TravelActions
+import com.tomessa.miff.ui.profile.TravelCard
+import com.tomessa.miff.ui.profile.TravelViewModel
 import com.tomessa.miff.ui.profile.miffOfferRoute
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
@@ -259,6 +262,24 @@ private fun MainNavigation(
                     factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
                 )
             val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+            // MODE VOYAGE: open to every account, written by the tracking engine only.
+            val travelViewModel: TravelViewModel =
+                viewModel(
+                    key = "travel-$scopeKey",
+                    factory = viewModelFactory { initializer { TravelViewModel(container.travelControl) } },
+                )
+            val travelState by travelViewModel.uiState.collectAsStateWithLifecycle()
+            val travelActions =
+                remember(travelViewModel) {
+                    TravelActions(
+                        onToggle = travelViewModel::onToggle,
+                        onChangeDate = travelViewModel::onChangeDate,
+                        onPickerDismissed = travelViewModel::onPickerDismissed,
+                        onDayChosen = travelViewModel::onDayChosen,
+                        onConfirm = travelViewModel::onConfirm,
+                        onConfirmDismissed = travelViewModel::onConfirmDismissed,
+                    )
+                }
             val feedViewModel: FeedViewModel =
                 viewModel(
                     key = "feed-$scopeKey",
@@ -355,6 +376,7 @@ private fun MainNavigation(
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
+                travelContent = { TravelCard(state = travelState, actions = travelActions) },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -610,6 +632,7 @@ fun MainTabs(
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
+    travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
     /** The carousel of Miffs of the Profile tab (decision of the PM, 2026-11-10). */
     profileMiffs: MiffCarouselHost = MiffCarouselHost(),
@@ -756,6 +779,7 @@ fun MainTabs(
                                     },
                                     carousel = profileMiffs,
                                     placesContent = placesContent,
+                                    travelContent = travelContent,
                                 )
                             }
 
