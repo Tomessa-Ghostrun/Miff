@@ -191,10 +191,10 @@ final class FeedViewModel: ObservableObject {
         Task {
             var again = true
             while again {
-                directoryReadStartedOffline = !dependencies.network.isOnline()
-                directoryReplayPending = false
+                self.directoryReadStartedOffline = !self.dependencies.network.isOnline()
+                self.directoryReplayPending = false
                 await directory.refresh()
-                again = directoryReplayPending
+                again = self.directoryReplayPending
             }
             self.directoryRefreshing = false
         }
