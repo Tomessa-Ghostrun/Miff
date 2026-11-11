@@ -57,11 +57,12 @@ final class TrackingRuntime: TrackingEventSink {
 
     /// Du temps de plus (le système l'accorde), le travail, puis le temps est rendu. Borné : jamais plus que la fenêtre de relance.
     /// Strictement ORDONNÉ : le travail commence quand le précédent est fini (ou a épuisé son temps).
-    private func run(_ work: @escaping () async -> Void) {
+    @discardableResult
+    private func run(_ work: @escaping () async -> Void) -> Task<Void, Never> {
         let token = background.begin()
         let prepare = beforeWork
         let previous = lastWork
-        lastWork = Task {
+        let task = Task {
             await previous?.value
             _ = try? await timedOperation(seconds: TrackingLimits.wakeBudgetSeconds) {
                 await prepare()
@@ -69,6 +70,8 @@ final class TrackingRuntime: TrackingEventSink {
             }
             self.background.end(token)
         }
+        lastWork = task
+        return task
     }
 
     // MARK: - Ce que l'app signale
@@ -94,6 +97,16 @@ final class TrackingRuntime: TrackingEventSink {
     func sharingChanged() {
         let engine = self.engine
         run { await engine.refresh(.sharingChanged) }
+    }
+
+    /// L'Update vient de mesurer ma position au toucher de « Publier » (moins de 10 minutes) et la remet au suivi, qui la publie LUI-MÊME avec
+    /// ses garanties habituelles (« Toujours » + position exacte, partage actif et consentement de version 3, session SESS-3, garde-fou et
+    /// disjoncteur, règles Firestore) : l'Update n'écrit jamais `positions/{moi}` (critère U8). Rend la main à la fin du passage du suivi
+    /// (borné comme tout travail du suivi) ; l'appelant relit ensuite l'état de la copie locale.
+    func publishPosition(supplied fix: Fix) async {
+        let engine = self.engine
+        let task = run { await engine.refresh(.sharingChanged, supplied: fix) }
+        await task.value
     }
 
     private func networkBack() {
