@@ -181,24 +181,8 @@ struct FeedTexts {
         switch time {
         case .nothing:
             return nil
-        case .since(let age):
-            switch age {
-            case .minutes(let minutes):
-                return text("feed_time_since_minutes", minutes)
-            case .hours(let hours):
-                return text("feed_time_since_hours", hours)
-            default:
-                return moment(of: age).map { text("feed_time_since", since($0)) }
-            }
-        case .departedAgo(let age):
-            switch age {
-            case .minutes(let minutes):
-                return text("feed_time_departed_minutes", minutes)
-            case .hours(let hours):
-                return text("feed_time_departed_hours", hours)
-            default:
-                return moment(of: age).map { text("feed_time_latest_news", at($0)) }
-            }
+        case .since(let moment):
+            return text("feed_time_since", since(moment))
         case .latestNews(let moment):
             return text("feed_time_latest_news", at(moment))
         case .noNewsSince(let moment):

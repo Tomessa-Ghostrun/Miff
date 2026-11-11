@@ -78,7 +78,7 @@ test('BUDGET - coût figé de chaque règle « allow » (borne haute sans court-
 
 // --- Lots de lieux : le coût par document est EXACT (aucun court-circuit possible : le créateur est vérifié d'abord) -------------
 const PLACE = {
-  createFree: allow('match /places/{placeId} {', 'create') - model.costOfFn('isPremiumOneRead'), // p1 / p2 : pas de lecture du premium
+  createFree: allow('match /places/{placeId} {', 'create') - model.costOfFn('isPremiumOneRead'), // p1 / p2 / p3 : pas de lecture du premium
   createPremium: allow('match /places/{placeId} {', 'create'),
   updateToRisk: allow('match /places/{placeId} {', 'update'),
   remove: allow('match /places/{placeId} {', 'delete'),
@@ -317,4 +317,25 @@ test("BUDGET - R-PHOTO-LOC : la localisation est OBLIGATOIRE à l'écriture (six
   // La tolérance est LIMITÉE à la lecture d'un ancien document.
   const read = stripComments(text.slice(text.indexOf('function photoLocationReadable('), text.indexOf('function validPhoto(')));
   assert.ok(read.includes('!photoHasLocation(d)'));
+});
+
+// --- 3 lieux gratuits (décision du PM du 2026-11-10) : p3 ne change AUCUN coût ni aucun lot ------------------------------------------
+// Un lieu gratuit (p1, p2 ou p3) coûte toujours 2 lectures de règles (isOwner) : le court-circuit de « placeId in [...] » évite la lecture
+// du premium. Un compte gratuit n'a qu'une Miff : ses 3 lieux en UN lot = 3 × 2 = 6 sur 20. Le contrat « 5 Miffs au plus par lot » vaut
+// pour UN lieu rattaché à N Miffs ; plusieurs lieux ET plusieurs Miffs dans le même lot se découpent en un lot par lieu.
+test('BUDGET - 3 lieux gratuits : 3 lieux dans UNE Miff = 6 sur 20 ; 1 lieu dans 5 Miffs = 10 ; ancien premium, 3 lieux dans 3 Miffs = 18 (marge 2)', () => {
+  assert.equal(PLACE.createFree, 2);
+  assert.equal(3 * PLACE.createFree, 6);
+  assert.equal(5 * PLACE.createFree, 10);
+  assert.equal(3 * 3 * PLACE.createFree, 18); // plafond d'un lot « 3 lieux × 3 Miffs » : au-delà (3 × 4 = 24), un lot par lieu
+  assert.ok(LIMIT - 3 * 3 * PLACE.createFree >= 2);
+  assert.ok(3 * 4 * PLACE.createFree > LIMIT);
+  // Pire cas premium inchangé : 5 Miffs × 1 lieu = 15.
+  assert.equal(5 * PLACE.createPremium, 15);
+});
+
+test('BUDGET - 3 lieux gratuits : la liste des identifiants gratuits des règles est exactement p1, p2, p3 (une ligne à changer, ce test à relire)', () => {
+  const rules = stripComments(readFileSync(RULES_FILE, 'utf8'));
+  const found = [...rules.matchAll(/placeId in \[([^\]]*)\]/g)].map((m) => m[1].replace(/\s/g, ''));
+  assert.deepEqual(found, ["'p1','p2','p3'"]);
 });

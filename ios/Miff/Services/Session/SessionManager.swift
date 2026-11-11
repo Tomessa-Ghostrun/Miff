@@ -234,6 +234,11 @@ final class SessionManager {
         gateway.displayName()
     }
 
+    /// Adresse de la photo du compte Google, pour proposer cette photo à l'étape profil. Jamais conservée par la session.
+    func suggestedPhotoURL() -> URL? {
+        gateway.providerPhotoURL()
+    }
+
     /// Un message attend-il d'être montré sur l'écran de connexion ?
     var hasNotice: Bool {
         notice != nil

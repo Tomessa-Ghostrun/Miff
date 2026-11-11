@@ -2,6 +2,25 @@
 
 Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `backend-data` et le PM. Les règles (`firestore.rules`) ne sont **jamais** modifiées pour faire passer un test : chaque échec est d'abord analysé (la règle est-elle fautive, ou le test, ou le plan ?) puis tranché par `backend-data` avec accord du PM.
 
+## Mode voyage (PR `backend/mode-voyage`, VOY-B, décisions du PM du 2026-11-10 : disponible pour tous)
+
+**Totaux (exécution locale du 2026-11-10, Java 21)** : fichiers de règles hors `09-rule-reads` : **428 tests, 427 réussis, 0 échoué, 1 ignoré** (A9) dont **VY1 à VY25** (`29-mode-voyage`, `30-mode-voyage-temps2`) ; tests rapides : **71 réussis** ; `09-rule-reads` : les 3 mesures concernées rejouées (`READS-sess-status`, `READS-voyage-activate`, `READS-voyage-activate-lot`) + calibration : réussies ; la suite complète de `09` (une quarantaine de minutes) est exécutée par la CI.
+
+- Règle : `validTravel` (appelée par `validStatus`), **aucune barrière Miff+, aucune lecture de règles de plus** (le PM a retiré la réserve Premium le 2026-11-10 ; la première version de cette PR, avec `isPremiumOneRead`, a été remplacée avant toute publication). Statut de voyage <= **2** lectures de règles sur 10 (mesuré, comme un statut ordinaire) ; activation + suppression de la dernière position (lot de 2) <= **2** sur 20.
+- Mutations : `tests/tools/mutations-voyage.mjs` (18 mutations `VY-*`) : **15 détectées, 3 équivalentes documentées (défense en profondeur), 0 survivante**. `npm run test:mutation:check` : **429 motifs valides**.
+- Aucun échec de test attribuable aux règles. Constats en route : (1) `matches()` de Firestore exige une correspondance complète de la chaîne : un motif non ancré reste équivalent (mutation `VY-jour-non-ancre` documentée équivalente) ; (2) l'émulateur met en cache les lectures d'un même document, le lot de 8 est un comptage sans cache (`tests/unit/budgets-voyage.test.js`).
+- Limites connues : voir `data-model.md` (bloc « Ce qui change : mode voyage »).
+
+## 3 lieux gratuits (PR `backend/lieux-gratuits-3`, décision du PM du 2026-11-10)
+
+**Totaux (exécution locale du 2026-11-10, Java 21, `npm test`)** : **453 tests de règles dans l'émulateur, 452 réussis, 0 échoué, 1 ignoré** (A9) ; **69 tests rapides** réussis ; mutations rejouées sur les lieux : **7 sur 7 détectées, 0 survivante** (P2, P4, P12, P14 ×3, P19).
+
+- Règle : `validPlaceCreate` accepte `p1`, `p2`, `p3` (une ligne). Aucune autre règle ne change ; lectures de règles inchangées (2 par lieu gratuit ; `READS-place-create-free` mesure maintenant l'écriture de `p3`, ≤ 2 sur 10).
+- Tests : P2, P14, P19, P22, P24 adaptés ; **P14c** (`p3` : risk refusé, modification, retour à trusted, suppression, recréation, `p4` refusé), **P14d** (3 lieux en un lot ; `p4` dans le lot refuse tout), **P14e** (la Miff et ses lieux ne tiennent pas dans le même lot : refus en entier ; en deux lots OK), **P20d** (un lieu = un document par Miff avec le même identifiant, ancien premium, 2 Miffs) ajoutés. `tests/unit/budgets.test.js` : deux tests (budgets 3 lieux ; liste d'identifiants gratuits figée à `p1`, `p2`, `p3`).
+- Mutations : `P14-troisieme-emplacement-gratuit` remplacée par `P14-quatrieme-emplacement-gratuit` (p4), `P14-retour-a-deux-emplacements-gratuits` ajoutée (p3 refusé), `P14-un-seul-emplacement-gratuit`, P2, P4 et P12 mises à jour pour le nouveau motif.
+- **Constat en route** : un lot « création de la Miff + lieux » est refusé en entier (les règles de lieu lisent la Miff d'avant le lot) : le client écrit la Miff, puis les lieux. Déjà vrai avant ce changement, maintenant testé (P14e).
+- Limite connue élargie : un ancien premium créateur de K Miffs peut avoir 3K lieux gratuits (P24).
+
 ## État actuel (après DUR-3)
 
 - **Les tests tournent** (émulateur Firestore, Java 21, projet de démonstration `demo-miff-rules`) : en local (Temurin 21) et dans le workflow `firestore-rules` de la pull request. Dernière exécution locale (2026-10-24, règles inchangées depuis DUR-2) : **189 tests de règles dans l'émulateur, 188 réussis, 0 échoué, 1 ignoré** (A9, non automatisable, voir plus bas), plus **48 tests rapides sans émulateur** (`npm run test:unit`, tous réussis). DUR-3 ajoute 20 cas de règles (section 12 du plan, `tests/rules/13-complements-dur3.test.js`), une calibration des limites de lectures de l'émulateur et 20 tests rapides (garde-fou de projet, outil de mutation, dichotomie de la mesure). Historique : 138 tests avant DUR-1, 146 après DUR-1, 169 après DUR-2.

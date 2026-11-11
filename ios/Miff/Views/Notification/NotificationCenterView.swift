@@ -8,7 +8,7 @@ struct NotificationCenterActions {
     let onBack: () -> Void
     /// Toucher une ligne : l'écran à montrer (le centre se referme).
     let onOpen: (NotificationDestination) -> Void
-    /// « Les réactiver » quand le téléphone les a coupées : l'aide, puis les Réglages d'iOS.
+    /// Refus définitif du téléphone : l'explication calme, puis les Réglages d'iOS.
     let onOpenHelp: () -> Void
 }
 
@@ -35,17 +35,20 @@ struct NotificationCenterView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            if let banner = model.banner {
-                NotificationBannerCard(banner: banner) {
-                    model.bannerAction(openHelp: actions.onOpenHelp)
+            if let lock = model.lock {
+                // Refusées ou jamais demandées : le centre flou, jamais une vraie ligne (la personne les voit dès qu'elle les active).
+                NotificationCenterLockedView(lock: lock) {
+                    Task { await model.enable(openHelp: actions.onOpenHelp) }
                 }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.bottom, Spacing.sm)
-            }
-            if service.history.isEmpty {
-                emptyState
+            } else if model.showsContent {
+                if service.history.isEmpty {
+                    emptyState
+                } else {
+                    list
+                }
             } else {
-                list
+                // L'état de l'autorisation n'est pas encore lu : rien, le temps d'un instant.
+                Color.clear.frame(maxHeight: .infinity)
             }
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
@@ -55,12 +58,6 @@ struct NotificationCenterView: View {
             if phase == .active {
                 Task { await model.onAppear() }
             }
-        }
-        .sheet(isPresented: $model.primeVisible) {
-            NotificationsPopIn(
-                onAllow: { Task { await model.primeAllowed() } },
-                onLater: { model.primeDeferred() }
-            )
         }
         .confirmationDialog(
             Text("notif_center_clear_confirm_title"),
@@ -79,7 +76,7 @@ struct NotificationCenterView: View {
             MiffHeader(title: L10n.string("notif_center_title"), onBack: actions.onBack)
             HStack {
                 Spacer()
-                if !service.history.isEmpty {
+                if model.showsContent && !service.history.isEmpty {
                     menu
                 }
             }
@@ -209,47 +206,5 @@ private struct NotificationRowContent: View {
             ))
         )
         .accessibilityAddTraits(.isButton)
-    }
-}
-
-/// Le bandeau du haut : calme, sans rouge, sans faute attribuée. Le bouton mène à l'amorce (jamais demandées) ou à l'aide (coupées).
-private struct NotificationBannerCard: View {
-    let banner: NotificationCenterBanner
-    let onAction: () -> Void
-
-    private var titleKey: String {
-        banner == .off ? "notif_center_off_title" : "notif_state_notasked"
-    }
-
-    private var bodyKey: String {
-        banner == .off ? "notif_center_off_body" : "notif_center_notasked_body"
-    }
-
-    private var actionKey: String {
-        banner == .off ? "notif_center_off_action" : "notif_center_notasked_action"
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(verbatim: L10n.string(titleKey))
-                .miffTextStyle(textBodyBold16)
-                .foregroundColor(colorTextPrimary.color)
-                .accessibilityAddTraits(.isHeader)
-            Text(verbatim: L10n.string(bodyKey))
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorTextDescription.color)
-                .fixedSize(horizontal: false, vertical: true)
-            Button(action: onAction) {
-                Text(verbatim: L10n.string(actionKey))
-            }
-            .buttonStyle(.miffSecondaryFullWidth)
-        }
-        .padding(Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-        .overlay(
-            RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                .stroke(colorBorderDefault.color, lineWidth: strokeHairline)
-        )
     }
 }

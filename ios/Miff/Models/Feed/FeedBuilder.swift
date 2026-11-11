@@ -196,7 +196,14 @@ enum FeedBuilder {
             // Un autre membre qui partage, pendant que je partage aussi et que les statuts sont VRAIMENT lus (les règles demandent que
             // mon statut soit publié) : même sans statut connu, « pas de position » est l'une des réponses calmes de la feuille.
             canLocate: !isMe && context.mySharing && !context.hidden && member.sharingEnabled
-                && context.input.statuses.isLoaded
+                && context.input.statuses.isLoaded,
+            // FEED-8 : seulement quand le statut est montré (partage actif, rien de caché) ET dit qu'il y a une photo récente.
+            photo: PhotoSlot.of(
+                hasPhoto: status?.hasPhoto ?? false,
+                lastUpdateAtMillis: status?.lastUpdateAtMillis,
+                visible: status != nil,
+                nowMillis: context.now
+            )
         )
     }
 
@@ -237,8 +244,10 @@ enum FeedBuilder {
         guard let placeId, let place = places[placeId] else {
             return .unknown
         }
+        // Un nom vide ou fait d'espaces ne se dit jamais (« À  ») : espaces retirés, puis formule générique (comme Android).
+        let name = place.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trusted else {
-            return .named(place.name)
+            return name.isEmpty ? .unknown : .named(name)
         }
         switch place.category {
         case .home:
@@ -252,7 +261,7 @@ enum FeedBuilder {
         case .relative:
             return .category(.relative)
         case .leisure, .other, nil:
-            return .named(place.name)
+            return name.isEmpty ? .unknown : .named(name)
         }
     }
 
@@ -263,7 +272,7 @@ enum FeedBuilder {
         let presenceAt = status.presenceAtMillis
         switch status.presence {
         case .inTrusted:
-            return presenceAt.map { TimeLine.since(context.age($0)) } ?? .nothing
+            return presenceAt.map { TimeLine.since(context.moment($0)) } ?? .nothing
         case .inRisk:
             return presenceAt.map { TimeLine.inDangerSince(context.moment($0)) } ?? .nothing
         case .out:
@@ -284,11 +293,11 @@ enum FeedBuilder {
     ) -> TimeLine {
         switch level {
         case .green:
-            let age = context.age(presenceAt ?? reference)
-            // Un départ d'un jour ou plus encore vert (une update récente) : seule la nouvelle est dite.
-            switch age {
+            let departure = presenceAt ?? reference
+            // Un départ d'un jour ou plus encore vert (une update récente) : seule la nouvelle est dite. Sinon l'heure du départ.
+            switch context.age(departure) {
             case .minutes, .hours:
-                return .departedAgo(age)
+                return .since(context.moment(departure))
             default:
                 return .latestNews(context.moment(reference))
             }

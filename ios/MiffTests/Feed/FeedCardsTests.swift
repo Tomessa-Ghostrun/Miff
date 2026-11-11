@@ -119,6 +119,27 @@ final class FeedCardsTests: XCTestCase {
         XCTAssertEqual(content.card("r")?.label, .at(.category(.relative)), "Chez un proche : la catégorie, pas le nom")
     }
 
+    func testAnEmptyOrBlankPlaceNameFallsBackToTheGenericPhraseAndAPaddedNameIsTrimmed() {
+        let places = [
+            feedPlace("p1", name: "   ", category: .leisure), feedPlace("p2", name: "", category: .other),
+            feedPlace("p3", name: "  Club de judo \n", category: .leisure), feedPlace("p4", name: " \t ", category: nil)
+        ]
+        let members = [feedMember("a"), feedMember("b"), feedMember("c"), feedMember("d"), feedMember("e"), feedMember("me")]
+        let statuses = [
+            "a": feedStatus(.inTrusted, placeId: "p1"), "b": feedStatus(.inTrusted, placeId: "p2"),
+            "c": feedStatus(.inTrusted, placeId: "p3"), "d": feedStatus(.out, placeId: "p4", departedAgo: feedMinutes(10)),
+            "e": feedStatus(.inRisk, placeId: "p1", departedAgo: feedMinutes(5))
+        ]
+
+        let content = buildFeed(feedInput(members: members, statuses: statuses, places: places))
+
+        XCTAssertEqual(content.card("a")?.label, .at(.unknown))
+        XCTAssertEqual(content.card("b")?.label, .at(.unknown))
+        XCTAssertEqual(content.card("c")?.label, .at(.named("Club de judo")))
+        XCTAssertEqual(content.card("d")?.label, .left(.unknown))
+        XCTAssertEqual(FeedBuilder.placeRef("p1", ["p1": places[0]], trusted: false), .unknown)
+    }
+
     func testLeisureAndOtherAreSaidByTheNameOfThePlace() {
         let places = [feedPlace("p1", name: "Club de judo", category: .leisure), feedPlace("p2", name: "Chez Léa", category: .other)]
         let members = [feedMember("a"), feedMember("b"), feedMember("c"), feedMember("me")]
@@ -147,19 +168,32 @@ final class FeedCardsTests: XCTestCase {
         XCTAssertEqual(card?.level, .red)
     }
 
-    func testADangerZoneIsRedOnlyWhenTheLastUpdateIsMoreThanOneHourOld() {
-        func level(updatedAgo: Int) -> StatusLevel {
+    func testADangerZoneIsGreenForOneHourAfterAnUpdatePostedAfterTheEntryThenRed() {
+        func level(enteredAgo: Int, updatedAgo: Int?) -> StatusLevel {
             let input = feedInput(
                 members: [feedMember("a"), feedMember("me")],
-                statuses: ["a": feedStatus(.inRisk, departedAgo: feedMinutes(5), updatedAgo: updatedAgo)]
+                statuses: ["a": feedStatus(.inRisk, departedAgo: enteredAgo, updatedAgo: updatedAgo)]
             )
             return buildFeed(input).card("a")?.level ?? .neutral
         }
 
-        XCTAssertEqual(level(updatedAgo: feedMinutes(59)), .green)
-        XCTAssertEqual(level(updatedAgo: feedHours(1)), .green)
-        XCTAssertEqual(level(updatedAgo: feedHours(1) + 1000), .red)
+        XCTAssertEqual(level(enteredAgo: feedHours(3), updatedAgo: feedMinutes(59)), .green)
+        XCTAssertEqual(level(enteredAgo: feedHours(3), updatedAgo: feedHours(1)), .green)
+        XCTAssertEqual(level(enteredAgo: feedHours(3), updatedAgo: feedHours(1) + 1000), .red)
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: feedMinutes(30)), .red, "update avant l'entrée : rouge")
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: feedMinutes(5)), .red, "même instant : pas postérieure")
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: feedMinutes(2)), .green)
+        XCTAssertEqual(level(enteredAgo: feedMinutes(5), updatedAgo: nil), .red)
         XCTAssertEqual(StatusThresholds.dangerZoneRedAfterMillis, FeedMillis.hour)
+    }
+
+    func testTheBubbleIsRedAsSoonAsSomeoneEntersADangerZoneAndGreenAgainAfterALaterUpdate() {
+        let members = [feedMember("a"), feedMember("me")]
+        let entered = ["a": feedStatus(.inRisk, departedAgo: feedMinutes(5), updatedAgo: feedMinutes(20))]
+        let updated = ["a": feedStatus(.inRisk, departedAgo: feedMinutes(5), updatedAgo: feedMinutes(1))]
+
+        XCTAssertEqual(buildFeed(feedInput(members: members, statuses: entered)).miffLevel, .red)
+        XCTAssertEqual(buildFeed(feedInput(members: members, statuses: updated)).miffLevel, .green)
     }
 
     // MARK: - Les lignes de temps
@@ -176,11 +210,43 @@ final class FeedCardsTests: XCTestCase {
 
         let content = buildFeed(feedInput(members: members, statuses: statuses))
 
-        XCTAssertEqual(content.card("a")?.time, .since(.minutes(12)))
-        XCTAssertEqual(content.card("b")?.time, .departedAgo(.minutes(12)))
+        XCTAssertEqual(content.card("a")?.time, .since(Moment(atMillis: feedNow - feedMinutes(12), day: .today)))
+        XCTAssertEqual(content.card("b")?.time, .since(Moment(atMillis: feedNow - feedMinutes(12), day: .today)))
         XCTAssertEqual(content.card("c")?.time, .latestNews(Moment(atMillis: feedNow - feedMinutes(150), day: .today)))
         XCTAssertEqual(content.card("d")?.time, .noNewsSince(Moment(atMillis: feedNow - feedHours(5), day: .today)))
         XCTAssertEqual(content.card("e")?.time, .inDangerSince(Moment(atMillis: feedNow - feedMinutes(30), day: .today)))
+    }
+
+    /// Décision du PM (2026-11-10) : l'HEURE d'arrivée, pas une durée ; « hier » et la date suivent le fuseau du téléphone.
+    func testTheSinceLineIsTheArrivalTimeAndFollowsTheDayInThePhonesTimeZone() throws {
+        // 2026-11-07 23:30 UTC (00 h 30 le 8 à Paris) ; maintenant : 2026-11-08 00:10 UTC (01 h 10 le 8 à Paris).
+        let arrival = feedNow + feedMinutes(8 * 60 + 30)
+        let now = feedNow + feedMinutes(9 * 60 + 10)
+        let statuses = ["a": feedStatus(.inTrusted, departedAgo: feedNow - arrival)]
+        let input = feedInput(members: [feedMember("a"), feedMember("me")], statuses: statuses)
+        let utc = try XCTUnwrap(TimeZone(identifier: "UTC"))
+
+        let inParis = FeedBuilder.build(input: input, nowMillis: now, zone: feedZone).card("a")?.time
+        let inUtc = FeedBuilder.build(input: input, nowMillis: now, zone: utc).card("a")?.time
+
+        XCTAssertEqual(inParis, .since(Moment(atMillis: arrival, day: .today)))
+        XCTAssertEqual(inUtc, .since(Moment(atMillis: arrival, day: .yesterday)))
+    }
+
+    func testAnArrivalAFewDaysAgoIsSaidByItsDate() {
+        let statuses = ["a": feedStatus(.inTrusted, departedAgo: 4 * FeedMillis.day)]
+
+        let time = buildFeed(feedInput(members: [feedMember("a"), feedMember("me")], statuses: statuses)).card("a")?.time
+
+        XCTAssertEqual(time, .since(Moment(atMillis: feedNow - 4 * FeedMillis.day, day: .other)))
+    }
+
+    func testAGreenDepartureIsSaidByItsDepartureTimeNotByItsAge() {
+        let statuses = ["a": feedStatus(.out, departedAgo: feedMinutes(100))]
+
+        let time = buildFeed(feedInput(members: [feedMember("a"), feedMember("me")], statuses: statuses)).card("a")?.time
+
+        XCTAssertEqual(time, .since(Moment(atMillis: feedNow - feedMinutes(100), day: .today)))
     }
 
     func testANeutralCardHasNoTimeLine() {

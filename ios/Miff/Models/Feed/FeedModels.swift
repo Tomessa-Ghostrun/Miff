@@ -49,10 +49,9 @@ enum StateLabel: Equatable {
 /// La ligne sous l'étiquette. UN seul repère de temps par carte.
 enum TimeLine: Equatable {
     case nothing
-    /// « Depuis 12 min », « Depuis 3 h », « Depuis hier à 08 h 12 », « Depuis le 3 nov. à 08 h 12 ».
-    case since(Age)
-    /// « Départ il y a 12 min » : vert, une zone de confiance quittée il y a moins de 2 h (au-delà : orange, puis rouge après 4 h).
-    case departedAgo(Age)
+    /// L'HEURE d'arrivée (dans une zone de confiance) ou de départ (zone quittée, encore vert), jamais une durée (décision du PM,
+    /// 2026-11-10) : « Depuis 13 h 36 », « Depuis hier à 13 h 36 », « Depuis le 3 nov. à 13 h 36 ».
+    case since(Moment)
     /// Orange : « Dernière nouvelle à 16 h 02 » (une heure ABSOLUE).
     case latestNews(Moment)
     /// Rouge d'ancienneté : « Pas de nouvelles depuis 16 h 02 ».
@@ -81,6 +80,8 @@ struct FeedMemberCard: Equatable, CustomStringConvertible {
     let phone: String?
     /// « Localiser » : un autre membre qui partage, pendant que je partage aussi et que les statuts sont vraiment lus.
     let canLocate: Bool
+    /// FEED-8 : la photo de la dernière update, à lire quand la carte vient à l'écran (`none` : rien n'est dessiné, ni trou ni message).
+    var photo: PhotoSlot = .none
 
     var description: String {
         "FeedMemberCard(redacted)"
@@ -176,6 +177,16 @@ struct FeedContent: Equatable, CustomStringConvertible {
     /// MON statut tel que l'Update en a besoin (couleur du bouton central, bulle, nettoyage de ma photo) : nil quand je ne partage pas ou
     /// que mon accord est attendu. L'Update ne lit rien de plus : ce Feed est l'UNIQUE écouteur de ma fiche (D19).
     var myFacts: MyStatusFacts?
+
+    /// Le Feed dit « Dernières informations de… » : pas de réseau, ou seule une copie du cache répond. Les photos ne sont pas lues alors.
+    var isOffline: Bool {
+        banners.contains { banner in
+            if case .offline = banner {
+                return true
+            }
+            return false
+        }
+    }
 
     var description: String {
         "FeedContent(redacted)"

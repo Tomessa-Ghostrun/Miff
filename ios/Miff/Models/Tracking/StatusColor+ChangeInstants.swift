@@ -11,7 +11,9 @@ extension StatusColor {
     /// Les instants (millisecondes depuis 1970), triés, où le niveau du membre change.
     /// - `out` : le repère (le plus récent du départ et de la dernière update) + 2 h + 1 ms (orange), puis + 4 h + 1 ms (rouge). Le
     ///   « + 1 ms » vient du « plus de » : à 2 h 00 pile la personne est encore verte.
-    /// - `in_risk` : la dernière update + 1 h + 1 ms (rouge). Sans update, elle est rouge depuis toujours : aucun instant.
+    /// - `in_risk` (règle de `dangerZoneLevel`, décision du PM du 2026-11-08) : vert seulement avec une update STRICTEMENT postérieure à
+    ///   l'entrée ; alors la dernière update + 1 h + 1 ms (rouge). Sans update, avec une update antérieure ou égale à l'entrée, ou sans
+    ///   heure d'entrée, elle est rouge depuis toujours : aucun instant.
     /// - les autres états (zone de confiance, inconnu, partage arrêté, statut absent) : aucun instant.
     static func changeInstants(_ facts: MemberStatusFacts?) -> [Int] {
         guard let facts, facts.sharingEnabled, let presence = facts.presence else {
@@ -28,7 +30,8 @@ extension StatusColor {
                 reference + StatusThresholds.redAfterMillis + 1
             ]
         case .inRisk:
-            guard let lastUpdate = facts.lastUpdateAtMillis else {
+            guard let entry = facts.presenceAtMillis, let lastUpdate = facts.lastUpdateAtMillis,
+                  lastUpdate > entry else {
                 return []
             }
             return [lastUpdate + StatusThresholds.dangerZoneRedAfterMillis + 1]

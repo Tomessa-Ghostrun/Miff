@@ -2,7 +2,7 @@ import XCTest
 @testable import Miff
 
 /// Le centre tel que l'app le tient en mémoire : lecture par compte, inscription sans doublon, conservation, purge (déconnexion,
-/// suppression du compte), et l'écran du centre (bandeau, lu / non lu, destinations).
+/// suppression du compte), et l'écran du centre (centre verrouillé, lu / non lu, destinations).
 @MainActor
 final class NotificationCenterServiceTests: XCTestCase {
     private var current = 1_800_000_000_000
@@ -156,55 +156,87 @@ final class NotificationCenterServiceTests: XCTestCase {
         return Screen(model: model, service: service, permissions: permissions)
     }
 
-    func testTheBannerAppearsOnlyWhenNotificationsCannotArrive() async {
-        let cases: [(NotificationAuthorization, NotificationCenterBanner?)] = [
-            (.authorized, nil), (.denied, .off), (.notDetermined, .notAsked)
+    func testTheCentreIsLockedOnlyWhenNotificationsCannotArrive() async {
+        let cases: [(NotificationAuthorization, NotificationCenterLock?, Bool)] = [
+            (.authorized, nil, true), (.denied, .off, false), (.notDetermined, .notAsked, false)
         ]
-        for (authorization, expected) in cases {
+        for (authorization, expected, showsContent) in cases {
             let screen = makeScreen(authorization).model
-            XCTAssertNil(screen.banner, "rien tant que l'état n'est pas lu")
+            XCTAssertNil(screen.lock, "rien tant que l'état n'est pas lu")
+            XCTAssertFalse(screen.showsContent, "tant que l'état n'est pas lu, aucune vraie ligne")
 
             await screen.onAppear()
 
-            XCTAssertEqual(screen.banner, expected, "\(authorization)")
+            XCTAssertEqual(screen.lock, expected, "\(authorization)")
+            XCTAssertEqual(screen.showsContent, showsContent, "\(authorization)")
         }
     }
 
-    func testTheBannerButtonOpensTheHelpWhenTurnedOffAndThePrimeWhenNeverAsked() async {
-        let off = makeScreen(.denied).model
-        await off.onAppear()
+    func testTheEnableButtonAsksTheNativeWindowRightAwayWhenNeverAsked() async {
+        let rig = makeScreen(.notDetermined)
         var helpOpened = 0
-        off.bannerAction { helpOpened += 1 }
-        XCTAssertEqual(helpOpened, 1)
-        XCTAssertFalse(off.primeVisible)
+        await rig.model.onAppear()
 
-        let freshScreen = makeScreen(.notDetermined)
-        let fresh = freshScreen.model
-        let permissions = freshScreen.permissions
-        await fresh.onAppear()
-        fresh.bannerAction { helpOpened += 1 }
-        XCTAssertEqual(helpOpened, 1)
-        XCTAssertTrue(fresh.primeVisible)
-        XCTAssertEqual(permissions.notificationRequests, 0, "l'amorce explique AVANT la fenêtre du système")
+        await rig.model.enable { helpOpened += 1 }
 
-        await fresh.primeAllowed()
-        XCTAssertFalse(fresh.primeVisible)
-        XCTAssertEqual(permissions.notificationRequests, 1)
-        XCTAssertNil(fresh.banner)
+        XCTAssertEqual(rig.permissions.notificationRequests, 1, "la fenêtre native d'iOS, sans fenêtre maison avant")
+        XCTAssertEqual(helpOpened, 0)
+        XCTAssertNil(rig.model.lock, "accordées : le centre se déverrouille")
+        XCTAssertTrue(rig.model.showsContent)
     }
 
-    func testLaterOnThePrimeDoesNotConsumeTheSystemWindow() async {
+    func testIfThePersonRefusesTheNativeWindowTheCentreStaysLockedAndCalm() async {
         let rig = makeScreen(.notDetermined)
-        let screen = rig.model
-        let permissions = rig.permissions
-        await screen.onAppear()
-        screen.bannerAction {}
+        rig.permissions.afterWindow = .denied
+        var helpOpened = 0
+        await rig.model.onAppear()
 
-        screen.primeDeferred()
+        await rig.model.enable { helpOpened += 1 }
 
-        XCTAssertFalse(screen.primeVisible)
-        XCTAssertEqual(permissions.notificationRequests, 0)
-        XCTAssertEqual(screen.banner, .notAsked)
+        XCTAssertEqual(rig.permissions.notificationRequests, 1)
+        XCTAssertEqual(helpOpened, 0, "pas d'explication tout de suite : la personne vient de répondre")
+        XCTAssertEqual(rig.model.lock, .off)
+    }
+
+    func testTheEnableButtonLeadsToTheCalmHelpWhenTheSystemRefusedForGood() async {
+        let rig = makeScreen(.denied)
+        var helpOpened = 0
+        await rig.model.onAppear()
+
+        await rig.model.enable { helpOpened += 1 }
+
+        XCTAssertEqual(helpOpened, 1)
+        XCTAssertEqual(rig.permissions.notificationRequests, 0, "iOS n'affichera plus sa fenêtre : on explique")
+        XCTAssertEqual(rig.model.lock, .off)
+    }
+
+    func testTheEnableButtonDoesNothingWhenAuthorized() async {
+        let rig = makeScreen(.authorized)
+        var helpOpened = 0
+        await rig.model.onAppear()
+
+        await rig.model.enable { helpOpened += 1 }
+
+        XCTAssertEqual(helpOpened, 0)
+        XCTAssertEqual(rig.permissions.notificationRequests, 0)
+    }
+
+    func testLeavingTheLockedCentreMarksNothingAsReadButLeavingTheOpenOneDoes() async {
+        let locked = makeScreen(.denied)
+        await locked.model.onAppear()
+        locked.service.record(NotificationFixtures.item("n1|a", type: .n1, at: current))
+
+        locked.model.onDisappear()
+
+        XCTAssertEqual(locked.service.unreadCount, 1, "rien n'a été vu derrière le flou")
+
+        let open = makeScreen(.authorized)
+        await open.model.onAppear()
+        open.service.record(NotificationFixtures.item("n1|a", type: .n1, at: current))
+
+        open.model.onDisappear()
+
+        XCTAssertEqual(open.service.unreadCount, 0)
     }
 
     func testTouchingARowMarksItReadAndSaysWhereToGo() async {

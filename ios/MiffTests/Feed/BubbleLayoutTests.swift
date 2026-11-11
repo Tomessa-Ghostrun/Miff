@@ -36,19 +36,14 @@ final class BubbleLayoutTests: XCTestCase {
         XCTAssertEqual(outer.height, BubbleLayout.minContentHeight + 2 * BubbleLayout.verticalInset, accuracy: 0.001)
     }
 
-    func testThePictogramDiscStaysClearOfACentredButtonCorner() {
-        // Largeur d'un iPhone 11 Pro moins les marges de la liste : le bouton le plus large (« Envoyer un message », 210 pt) est centré
-        // dans la zone de lecture ; son angle bas droit ne doit pas toucher le disque.
-        let bubbleWidth: CGFloat = 343
-        let content = bubbleWidth - 2 * BubbleLayout.horizontalInset
-        let buttonRight = BubbleLayout.horizontalInset + content / 2 + 105
-        let corner = CGPoint(x: bubbleWidth - buttonRight, y: BubbleLayout.verticalInset)
-        let radius = BubbleLayout.discSize / 2
-        let center = CGPoint(x: BubbleLayout.discTrailing + radius, y: BubbleLayout.discBottom + radius)
-
-        let distance = hypot(center.x - corner.x, center.y - corner.y)
-
-        XCTAssertGreaterThanOrEqual(distance, radius)
+    func testThePictogramIsASoftWatermarkNotACircleAndStaysInsideTheBubble() {
+        // Un filigrane : grand, très transparent (jamais voyant, jamais un bouton) ; il tient dans la plus petite bulle courante.
+        XCTAssertGreaterThanOrEqual(BubbleLayout.symbolSize, 56)
+        XCTAssertGreaterThan(BubbleLayout.symbolOpacity, 0.1)
+        XCTAssertLessThanOrEqual(BubbleLayout.symbolOpacity, 0.3)
+        let smallest = BubbleLayout.outerSize(content: CGSize(width: 190, height: 0))
+        XCTAssertLessThanOrEqual(BubbleLayout.symbolSize + BubbleLayout.symbolTrailing, smallest.width)
+        XCTAssertLessThanOrEqual(BubbleLayout.symbolSize + BubbleLayout.symbolBottom, smallest.height)
     }
 
     func testTheBlobIsCentredOnItsBox() {
@@ -71,6 +66,20 @@ final class BubbleLayoutTests: XCTestCase {
             XCTAssertGreaterThan(BubbleMotion.scaleX(phase), 1 - 2 * BubbleMotion.squashX - 0.0001)
             XCTAssertGreaterThan(BubbleMotion.scaleY(phase), 1 - 2 * BubbleMotion.squashY - 0.0001)
         }
+    }
+
+    func testNoPictogramOnAGreenBubbleTheOthersKeepTheirs() {
+        XCTAssertNil(BubbleLayout.pictogram(for: .green), "pas de symbole sur la bulle verte")
+        XCTAssertEqual(BubbleLayout.pictogram(for: .orange), "clock")
+        XCTAssertEqual(BubbleLayout.pictogram(for: .red), "exclamationmark")
+        XCTAssertEqual(BubbleLayout.pictogram(for: .neutral), "hourglass")
+    }
+
+    func testEveryAllGoodBubbleIsGreenSoItHasNoPictogram() {
+        let allGood = Bubble.allGood(latestNews: nil, answered: nil, total: nil)
+
+        XCTAssertEqual(allGood.level, .green)
+        XCTAssertNil(BubbleLayout.pictogram(for: allGood.level))
     }
 
     func testWithReducedMotionNothingMoves() {

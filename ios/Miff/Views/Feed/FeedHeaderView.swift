@@ -73,19 +73,11 @@ struct FeedHeaderContent: View {
     }
 }
 
-/// Ce que dit la pastille de la Miff.
-enum FeedPillState: Equatable {
-    /// Aucune Miff : « Pas encore de Miff », ne fait rien.
-    case noMiff
-    /// Une Miff (compte gratuit) : le nom, à plat, non touchable.
-    case plain(name: String)
-    /// Plusieurs Miffs possibles (Premium, ou formule inconnue) : le nom, une flèche, une liste.
-    case selectable(name: String, miffs: [MiffSummary], activeId: String?)
-}
-
-/// La pastille de la Miff. Avec UNE Miff elle est plate, sans ombre ni flèche, annoncée comme du texte (pas un bouton) : elle ne fait
-/// rien et ne doit pas faire croire qu'elle le fait. Avec plusieurs (Premium) elle a l'ombre et la flèche bleue de la maquette et
-/// ouvre la liste (une feuille d'actions du système : « Rejoindre » et « Créer » y sont réservés au Premium).
+/// La pastille de la Miff (`FeedPillState`, dans `FeedSelectorRules.swift`). Sans Miff elle est plate, sans ombre ni flèche, annoncée
+/// comme du texte (pas un bouton) : elle ne fait rien et ne doit pas faire croire qu'elle le fait. Dès qu'il y a une Miff, POUR TOUT
+/// LE MONDE (décision du PM, 2026-11-08), elle a l'ombre et la flèche bleue de la maquette et ouvre la liste (une feuille d'actions du
+/// système) : les Miffs de la personne, la Miff affichée cochée, puis « Rejoindre » et « Créer ». Pour un compte gratuit qui a déjà
+/// une Miff, toucher l'une des deux ouvre l'offre (c'est l'écran du Feed qui décide, `FeedSelectorRules.outcome`).
 struct FeedPill: View {
     let state: FeedPillState
     @Binding var selectorOpen: Bool
@@ -97,9 +89,7 @@ struct FeedPill: View {
         switch state {
         case .noMiff:
             flat(text: L10n.string("feed_selector_none"))
-        case .plain(let name):
-            flat(text: name)
-        case .selectable(let name, let miffs, _):
+        case .selectable(let name, let miffs, let activeId):
             Button {
                 selectorOpen = true
             } label: {
@@ -124,7 +114,7 @@ struct FeedPill: View {
                     Button {
                         onSelect(miff.id)
                     } label: {
-                        Text(verbatim: miff.name)
+                        Text(verbatim: FeedSelectorRules.rowTitle(name: miff.name, isActive: miff.id == activeId))
                     }
                 }
                 Button("feed_selector_join", action: onJoin)

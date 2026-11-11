@@ -119,11 +119,15 @@ class UpdatePublisherTest {
             timeoutMillis = 1_000L,
             published = { published(it) },
             onPositionMissing = { positionMissingCalls++ },
+            travelOn = { traveling },
         )
 
     // Contract of backend/data-model.md: a photo is only written where my own position is published (by default it is, everywhere).
     private var published: (String) -> Boolean = { true }
     private var positionMissingCalls = 0
+
+    // MODE VOYAGE: a trip is on.
+    private var traveling = false
 
     private fun assertNothingLeft() {
         assertTrue("something was written: ${store.commits.size} commit(s)", store.commits.isEmpty())
@@ -132,6 +136,39 @@ class UpdatePublisherTest {
     }
 
     private fun photoWrites() = store.commits.flatMap { it.writes }.filter { "/photos/" in it.path }
+
+    // --- MODE VOYAGE -------------------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun duringATrip_thePhotoIsPublishedAsUsual_withItsOwnMeasure_andTheStatusCarriesNoBattery() =
+        runTest {
+            traveling = true
+            // The position of the person keeps being published during a trip: the photo is written as outside a trip, with its own measure.
+            val result = publisher().publish(photo)
+            assertEquals(PublishResult.Published(1), result)
+            assertEquals(0, positionMissingCalls)
+            val writes = store.commits.single().writes
+            assertEquals(
+                listOf("miffs/${miffIds[0]}/photos/$uid", "miffs/${miffIds[0]}/status/$uid"),
+                writes.map { it.path },
+            )
+            val status = writes[1].data
+            // The rules refuse a battery level next to a trip: it is null, and the status does not touch the presence or the keys of the trip.
+            assertNull(status["batteryPct"])
+            assertTrue("batteryPct" in status)
+            assertFalse("presence" in status)
+            assertFalse("travelUntil" in status)
+            assertFalse("travelUntilDay" in status)
+        }
+
+    @Test
+    fun outsideATrip_aPhotoStillWaitsForAPublishedPosition_andCarriesTheBattery() =
+        runTest {
+            published = { false }
+            assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
+            assertEquals(1, positionMissingCalls)
+            assertTrue(store.commits.isEmpty())
+        }
 
     // --- The nominal publication ---------------------------------------------------------------------------------------------------
 
