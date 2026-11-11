@@ -173,16 +173,18 @@ class TrackingPrivacyTest {
     }
 
     @Test
-    fun theManifest_declaresOneNonExportedReceiver_andNoService() {
+    fun theManifest_declaresOneNonExportedReceiverForTheDetection_andOneForTheReminders_andNoService() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
-        val receiver =
+        val receivers =
             Regex(
                 """<receiver[^>]*?>""",
                 RegexOption.DOT_MATCHES_ALL,
             ).findAll(manifest).map { it.value }.toList()
-        assertEquals("one receiver for the whole detection", 1, receiver.size)
-        assertTrue(receiver.single().contains("""android:exported="false""""))
-        assertTrue(receiver.single().contains("data.tracking.TrackingReceiver"))
+        // The detection has ONE receiver (LOC-2b); the reminders of the notifications (NOTIF-4A) have their own, also not exported, and nothing else.
+        assertEquals("one receiver for the whole detection, one for the reminders", 2, receivers.size)
+        assertTrue(receivers.all { it.contains("""android:exported="false"""") })
+        assertEquals(1, receivers.count { it.contains("data.tracking.TrackingReceiver") })
+        assertEquals(1, receivers.count { it.contains("data.notification.NotificationAlarmReceiver") })
         assertFalse(manifest.contains("<service"))
         // Only the system broadcasts of the restart and of the update are filtered on: the other actions are those of our own PendingIntents.
         assertTrue(manifest.contains("android.intent.action.BOOT_COMPLETED"))

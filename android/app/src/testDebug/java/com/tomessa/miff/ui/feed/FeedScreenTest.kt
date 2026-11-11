@@ -54,6 +54,7 @@ import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.miff.AgreementUi
+import com.tomessa.miff.ui.notification.FeedNotifications
 import com.tomessa.miff.ui.place.EmojiSupport
 import com.tomessa.miff.ui.place.LocalEmojiSupport
 import com.tomessa.miff.ui.theme.MiffTheme
@@ -190,6 +191,7 @@ class FeedScreenTest {
         agreement: AgreementUi = AgreementUi(),
         actions: FeedActions = FeedActions(),
         emojiSupport: EmojiSupport = EmojiSupport { true },
+        notifications: FeedNotifications = FeedNotifications(),
     ) = show(emojiSupport) {
         FeedScreen(
             state = directoryState,
@@ -203,6 +205,7 @@ class FeedScreenTest {
             locate = locate,
             me = FeedMe("CM"),
             actions = actions,
+            notifications = notifications,
         )
     }
 
@@ -221,9 +224,14 @@ class FeedScreenTest {
     // --- header ---------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun header_hasMyAvatarWithMyStatus_theLogo_theName_andNoBell() {
+    fun header_hasMyAvatarWithMyStatus_theLogo_theName_andTheBellOfTheCentre() {
         var profile = 0
-        feed(ready(nominal), actions = FeedActions(onOpenProfile = { profile++ }))
+        var center = 0
+        feed(
+            ready(nominal),
+            actions = FeedActions(onOpenProfile = { profile++ }),
+            notifications = FeedNotifications(onOpenCenter = { center++ }),
+        )
         shoot("feed-nominal")
         composeRule
             .onNodeWithContentDescription(text(R.string.feed_header_avatar_a11y, "À la maison"))
@@ -232,12 +240,46 @@ class FeedScreenTest {
         assertEquals(1, profile)
         composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertIsDisplayed()
         composeRule.onNodeWithText("Famille Mfouka").assertIsDisplayed()
+        // NOTIF-6A: the bell is back (it revises the decision of 2026-10-30): 48 dp, without a dot when nothing is unread, and it opens the centre.
         composeRule
-            .onAllNodesWithContentDescription(
-                "notification",
-                substring = true,
-                ignoreCase = true,
-            ).assertCountEquals(0)
+            .onNodeWithContentDescription(text(R.string.notif_bell_a11y))
+            .assertWidthIsAtLeast(48.dp)
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, center)
+    }
+
+    @Test
+    fun header_theBellSaysHowManyAreUnread_withoutEverShowingANumber() {
+        feed(ready(nominal), notifications = FeedNotifications(unreadCount = 3))
+        composeRule.onNodeWithContentDescription("Notifications, 3 non lues").assertIsDisplayed()
+        composeRule.onAllNodesWithText("3").assertCountEquals(0)
+    }
+
+    @Test
+    fun theCardOfTheSecondChance_isInTheList_withTwoQuietAnswers_whenItIsDue() {
+        var enable = 0
+        var later = 0
+        feed(
+            ready(nominal),
+            notifications =
+                FeedNotifications(
+                    secondChanceVisible = true,
+                    onSecondChanceEnable = { enable++ },
+                    onSecondChanceLater = { later++ },
+                ),
+        )
+        composeRule.onNodeWithText(text(R.string.notif_second_chance_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_second_chance_later)).performClick()
+        composeRule.onNodeWithText(text(R.string.notif_second_chance_action)).performClick()
+        assertEquals(1, later)
+        assertEquals(1, enable)
+    }
+
+    @Test
+    fun theCardOfTheSecondChance_isAbsent_whenItIsNotDue() {
+        feed(ready(nominal))
+        composeRule.onAllNodesWithText(text(R.string.notif_second_chance_title)).assertCountEquals(0)
     }
 
     @Test
@@ -999,26 +1041,17 @@ class FeedScreenTest {
     }
 
     @Test
-    fun bubble_theMainSentence_isBold_bigger_andInTheHeaviestBaloo() {
+    fun bubble_theMainSentence_hasTheFontAndWeightOfDisplayHeadline_atThirtySp() {
         feed(ready(nominal))
         val style = bubbleStyle()
-        assertEquals(androidx.compose.ui.text.font.FontWeight.ExtraBold, style.fontWeight)
+        // Homogeneous with the other titles of the app (decision of the PM, 2026-11-11): same family and weight as display/headline, only bigger.
+        val headline = com.tomessa.miff.ui.theme.textDisplayHeadline
+        assertEquals(headline.fontFamily, style.fontFamily)
+        assertEquals(headline.fontWeight, style.fontWeight)
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Normal, style.fontWeight)
         assertEquals(30f, style.fontSize.value, 0f)
-        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > 24f)
-        assertEquals(com.tomessa.miff.ui.theme.FontFamilyBalooExtraBold, style.fontFamily)
-        // The rest of the Feed keeps its fonts: the first name of a card is still the regular Baloo, the time line Hanken Grotesk.
-        val name =
-            composeRule
-                .onAllNodesWithText("Thomas", useUnmergedTree = true)[0]
-                .fetchSemanticsNode()
-        val nameResults = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-        name.config[SemanticsActions.GetTextLayoutResult].action?.invoke(nameResults)
-        assertEquals(
-            com.tomessa.miff.ui.theme.FontFamilyBaloo,
-            nameResults
-                .first()
-                .layoutInput.style.fontFamily,
-        )
+        assertEquals(36f, style.lineHeight.value, 0f)
+        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > headline.fontSize.value)
     }
 
     @Test
