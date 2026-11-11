@@ -40,7 +40,7 @@ class FirestorePlacesReader(
     override suspend fun read(miffId: String): PlacesRead =
         try {
             // The id is checked before it becomes part of a path (same shape as the rules).
-            if (!FirestoreMiffRepository.isMiffId(miffId)) {
+            if (!FirestoreMiffStore.isMiffId(miffId)) {
                 PlacesRead.Failed
             } else {
                 val snapshot =
