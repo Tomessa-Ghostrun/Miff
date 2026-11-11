@@ -466,7 +466,8 @@
     <string name="feed_bubble_me_red_stale">Tes proches n\'ont pas eu de tes nouvelles depuis %1$s</string>
     <string name="feed_bubble_me_danger">Tu es dans une zone de danger de ta Miff</string>
     <string name="feed_bubble_me_danger_note">Tes proches le voient aussi</string>
-    <string name="feed_bubble_message_action">Envoyer un message</string>
+    <string name="feed_bubble_message_action">Contacter</string>
+    <string name="feed_bubble_contact_a11y">Contacter %1$s</string>
     <string name="feed_bubble_page_a11y">Page %1$d sur %2$d</string>
     <string name="feed_bubble_previous_a11y">Alerte précédente</string>
     <string name="feed_bubble_next_a11y">Alerte suivante</string>
@@ -902,7 +903,7 @@
     <string name="feed_photo_download_done">Photo enregistrée.</string>
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
-    <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>
+    <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a pas l\'accès « Toujours » avec la position précise. Tu peux le régler dans les réglages, puis réessayer.</string>
 
     <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
     <string name="notif_n1_title">Tu es passé orange</string>

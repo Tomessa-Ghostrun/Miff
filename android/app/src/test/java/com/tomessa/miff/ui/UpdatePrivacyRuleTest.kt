@@ -236,6 +236,28 @@ class UpdatePrivacyRuleTest {
         val container = File(main, "AppContainer.kt").readText()
         val publisher = container.substringAfter("val updatePublisher").substringBefore("val photoCleaner")
         assertTrue(publisher.contains("published = LocalPublishedPositions("))
-        assertTrue(publisher.contains("onPositionMissing ="))
+        assertTrue(publisher.contains("handOver = ::handOverPosition"))
+    }
+
+    @Test
+    fun theUpdateNeverCallsTheBuilderOfThePosition_itOnlyHandsItsMeasureToTheDetection() {
+        // U8: the only writer of `positions/{moi}` is the detection (TrackingWrites.position, called by TrackingEngine); no file of the Update calls it.
+        val callers = offenders(Regex("""TrackingWrites\s*\.\s*position\s*\("""))
+        assertTrue("the Update writes the position itself: $callers", callers.isEmpty())
+        val publisher = code(named("UpdatePublisher.kt"))
+        assertTrue(publisher.contains("handOver(fix)"))
+    }
+
+    @Test
+    fun theHandOverRunsInTheScopeOfTheDetection_soThatAGivenUpWaitNeverCutsTheEngineBeforeItsLocalSave() {
+        val container = File(main, "AppContainer.kt").readText()
+        val handOver =
+            container
+                .substringAfter(
+                    "private suspend fun handOverPosition",
+                ).substringBefore("val updatePublisher")
+        assertTrue(handOver.contains("trackingScope"))
+        assertTrue(handOver.contains(".async"))
+        assertTrue(handOver.contains(".await()"))
     }
 }

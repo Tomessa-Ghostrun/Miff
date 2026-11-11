@@ -490,7 +490,8 @@
     <string name="feed_bubble_me_red_stale">Your loved ones haven\'t heard from you since %1$s</string>
     <string name="feed_bubble_me_danger">You\'re in a danger zone of your Miff</string>
     <string name="feed_bubble_me_danger_note">Your loved ones can see it too</string>
-    <string name="feed_bubble_message_action">Send a message</string>
+    <string name="feed_bubble_message_action">Contact</string>
+    <string name="feed_bubble_contact_a11y">Contact %1$s</string>
     <string name="feed_bubble_page_a11y">Page %1$d of %2$d</string>
     <string name="feed_bubble_previous_a11y">Previous alert</string>
     <string name="feed_bubble_next_a11y">Next alert</string>
@@ -924,7 +925,7 @@
     <string name="feed_photo_download_done">Photo saved.</string>
     <string name="update_notice_unconfirmed">We couldn\'t confirm it. Check your Feed: if your photo is there, it went through.</string>
     <string name="update_action_open_feed">Open my Feed</string>
-    <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff is no longer allowed to use it. You can turn it back on in the settings, then try again.</string>
+    <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff doesn\'t have the \"Always\" access with precise location. You can fix it in the settings, then try again.</string>
 
     <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
     <string name="notif_n1_title">You\'ve turned orange</string>

@@ -34,6 +34,15 @@ class FeedColourAloneRuleTest {
         assertFalse("labelIcon is back", cards.contains("labelIcon"))
     }
 
+    /** Decision of the PM of 2026-11-11: no symbol of any kind in the bubble of the Miff (watermark, button icon), whatever the colour. */
+    @Test
+    fun theBubble_hasNoPictogram_whateverTheColour() {
+        val bubble = source("FeedBubble.kt")
+        listOf("Icon(", "painterResource", "ic_feed_", "ic_loc_", "ic_travel", "Pictogram", "WATERMARK").forEach {
+            assertFalse("FeedBubble.kt must not draw \"$it\" (no symbol in the bubble)", bubble.contains(it))
+        }
+    }
+
     @Test
     fun theWordsOfTheStateStay_forTheScreenReader() {
         // The label is still a Text inside the merged block of the card, and the header still says the state of the person.
