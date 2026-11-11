@@ -27,6 +27,9 @@ struct RawStatus {
     var batteryPct: Double?
     var locationAccess: String?
     var updatedAtMillis: Int?
+    /// MODE VOYAGE : la fin du voyage (un instant) et le jour choisi (`AAAA-MM-JJ`, affichage seul), quand la présence est `travel`.
+    var travelUntilMillis: Int?
+    var travelUntilDay: String?
 }
 
 /// Le document `miffs/{id}/status/{uid}` d'un membre, tel que le Feed le lit (backend/data-model.md §2.7). Heures en
@@ -40,6 +43,9 @@ struct MemberStatus: Equatable, CustomStringConvertible {
     let batteryPct: Int?
     let locationAccess: MemberLocationAccess?
     let updatedAtMillis: Int?
+    /// MODE VOYAGE : la fin du voyage et le jour choisi, quand `presence` est `travel` ; nil sinon.
+    var travelUntilMillis: Int?
+    var travelUntilDay: String?
 
     var description: String {
         "MemberStatus(redacted)"
@@ -54,8 +60,11 @@ struct MemberStatus: Equatable, CustomStringConvertible {
     /// est nil (neutre, jamais une supposition), un identifiant de lieu qui n'a pas la forme des nôtres est écarté, une batterie
     /// hors de 0 à 100 est écartée, un accès inconnu est nil.
     static func fromServer(_ raw: RawStatus) -> MemberStatus {
-        MemberStatus(
-            presence: PresenceValue.fromWire(raw.presence),
+        let presence = PresenceValue.fromWire(raw.presence)
+        // Seul un voyage porte une fin : ce que quelqu'un d'autre a écrit à côté d'une autre présence est écarté.
+        let isTravel = presence == .travel
+        return MemberStatus(
+            presence: presence,
             placeId: raw.placeId.flatMap { Place.isPlaceId($0) ? $0 : nil },
             presenceAtMillis: raw.presenceAtMillis,
             lastUpdateAtMillis: raw.lastUpdateAtMillis,
@@ -64,7 +73,9 @@ struct MemberStatus: Equatable, CustomStringConvertible {
                 value.isFinite && value >= 0 && value <= 100 ? Int(value) : nil
             },
             locationAccess: MemberLocationAccess.fromWire(raw.locationAccess),
-            updatedAtMillis: raw.updatedAtMillis
+            updatedAtMillis: raw.updatedAtMillis,
+            travelUntilMillis: isTravel ? raw.travelUntilMillis : nil,
+            travelUntilDay: isTravel ? raw.travelUntilDay : nil
         )
     }
 }
