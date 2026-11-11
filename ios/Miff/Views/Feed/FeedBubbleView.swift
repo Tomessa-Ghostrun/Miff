@@ -3,7 +3,7 @@ import UIKit
 
 // La bulle de la Miff (maquettes 02 à 05) : UNE tache, de la couleur de la Miff, sous l'en-tête. Elle INFORME, elle n'alarme pas :
 // heures absolues pour l'orange et le rouge, aucun son, aucun défilement automatique, aucun point d'exclamation, jamais « en
-// sécurité ». AUCUN pictogramme dans la bulle, quelle que soit sa couleur (décision du PM, 2026-11-11) : les mots et la couleur suffisent. La phrase principale est en 30 / 36, même famille et même graisse que les titres (`textDisplayBubble`). Plusieurs alertes forment un carrousel (les rouges
+// sécurité ». AUCUN pictogramme dans la bulle, quelle que soit sa couleur (décision du PM, 2026-11-11) : les mots et la couleur suffisent. La phrase principale a EXACTEMENT le style des titres des autres écrans (`textDisplayHeadline`, 24 / 30, décision du PM du 2026-11-11). Plusieurs alertes forment un carrousel (les rouges
 // d'abord), avec des pastilles seulement quand il y a plusieurs pages, et « Alerte précédente / suivante » pour VoiceOver.
 
 /// Une tache douce et organique (une courbe fermée lisse par dix points), comme la tache des maquettes du PM. Symétrique en
@@ -271,7 +271,7 @@ private struct Headline: View {
 
     var body: some View {
         text
-            .miffTextStyle(textDisplayBubble)
+            .miffTextStyle(textDisplayHeadline)
             .foregroundColor(colorTextPrimary.color)
             .multilineTextAlignment(.center)
             .lineLimit(BubbleLayout.headlineMaxLines)

@@ -72,12 +72,6 @@ let textDisplayHero = TextStyleToken(
     name: "textDisplayHero", face: .baloo, size: 64, lineHeight: 72, dynamicTypeStyle: .largeTitle)
 let textDisplayHeadline = TextStyleToken(
     name: "textDisplayHeadline", face: .baloo, size: 24, lineHeight: 30, dynamicTypeStyle: .title2)
-/// La phrase principale de la bulle du Feed UNIQUEMENT (décision du PM, 2026-11-10, révisée le 2026-11-11 ; même style qu'Android
-/// `textDisplayBubble`) : 30 / 36 dans la MÊME famille et la MÊME graisse que `textDisplayHeadline` (Baloo Thambi 2 Regular, homogène avec
-/// le reste de l'app : plus de variation ExtraBold), Dynamic Type comme `textDisplayHeadline` (.title2). Pas dans `TextStyleTokens.all` :
-/// Android le déclare à part (voir `testTheBubbleStyleMatchesAndroid`).
-let textDisplayBubble = TextStyleToken(
-    name: "textDisplayBubble", face: .baloo, size: 30, lineHeight: 36, dynamicTypeStyle: .title2)
 let textDisplayTitle = TextStyleToken(
     name: "textDisplayTitle", face: .baloo, size: 20, lineHeight: 26, dynamicTypeStyle: .title3)
 let textDisplayLabel = TextStyleToken(

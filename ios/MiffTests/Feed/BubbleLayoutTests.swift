@@ -66,11 +66,11 @@ final class BubbleLayoutTests: XCTestCase {
         XCTAssertFalse(source.contains("Image("), "une image dans la bulle")
     }
 
-    func testTheBubbleHeadlineUsesTheBubbleStyleAndTheButtonKeepsATouchTarget() throws {
+    func testTheBubbleHeadlineUsesTheHeadlineStyleAndTheButtonKeepsATouchTarget() throws {
         let source = try String(contentsOf: bubbleSource, encoding: .utf8)
 
-        XCTAssertTrue(source.contains(".miffTextStyle(textDisplayBubble)"))
-        XCTAssertFalse(source.contains(".miffTextStyle(textDisplayHeadline)"))
+        XCTAssertTrue(source.contains(".miffTextStyle(textDisplayHeadline)"), "le titre des autres écrans")
+        XCTAssertFalse(source.contains("textDisplayBubble"))
         XCTAssertTrue(source.contains("minHeight: Spacing.minTouchTarget"), "zone de toucher d'au moins 44 pt")
         XCTAssertTrue(source.contains(".minimumScaleFactor(BubbleLayout.headlineMinimumScale)"))
         XCTAssertGreaterThanOrEqual(Spacing.minTouchTarget, 44)
@@ -107,8 +107,8 @@ final class BubbleLayoutTests: XCTestCase {
         }
         let largest = UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge)
         let metrics = UIFontMetrics(forTextStyle: .title2)
-        let size = metrics.scaledValue(for: textDisplayBubble.size, compatibleWith: largest)
-        let font = textDisplayBubble.face.uiFont(size: size)
+        let size = metrics.scaledValue(for: textDisplayHeadline.size, compatibleWith: largest)
+        let font = textDisplayHeadline.face.uiFont(size: size)
         let widest = words.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
         let available: CGFloat = 320 - 2 * Spacing.md - 2 * BubbleLayout.accessibilityHorizontalInset
 

@@ -45,16 +45,14 @@ final class TypographyTokensTests: XCTestCase {
         }
     }
 
-    /// Décision du PM (2026-11-11) : la phrase principale de la bulle du Feed garde la taille 30 / 36 (.title2) mais dans la même famille et la
-    /// même graisse que `display/headline` (homogène avec l'app : plus de variation ExtraBold).
-    func testTheBubbleStyleIs30Over36InTheFamilyOfTheHeadline() {
-        XCTAssertEqual(textDisplayBubble.size, 30)
-        XCTAssertEqual(textDisplayBubble.lineHeight, 36)
-        XCTAssertEqual(textDisplayBubble.face, textDisplayHeadline.face)
-        XCTAssertEqual(textDisplayBubble.dynamicTypeStyle, textDisplayHeadline.dynamicTypeStyle)
-        XCTAssertEqual(textDisplayBubble.dynamicTypeStyle, .title2)
-        XCTAssertFalse(TextStyleTokens.all.contains { $0.name == "textDisplayBubble" }, "hors de la liste d'Android")
-        XCTAssertEqual(textDisplayBubble.face.uiFont(size: 30).familyName, "Baloo Thambi 2")
+    /// Décision du PM (2026-11-11) : la phrase principale de la bulle du Feed a EXACTEMENT la taille et la police du titre `display/headline`
+    /// des autres écrans (24 / 30) : pas de style propre à la bulle.
+    func testTheBubbleHeadlineIsTheDisplayHeadlineStyle() {
+        XCTAssertEqual(textDisplayHeadline.size, 24)
+        XCTAssertEqual(textDisplayHeadline.lineHeight, 30)
+        XCTAssertEqual(textDisplayHeadline.face, .baloo)
+        XCTAssertEqual(textDisplayHeadline.dynamicTypeStyle, .title2)
+        XCTAssertFalse(TextStyleTokens.all.contains { $0.name == "textDisplayBubble" }, "pas de style propre")
     }
 
     func testDisplayStylesUseBalooAndTextStylesUseHanken() {

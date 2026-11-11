@@ -113,8 +113,6 @@ final class ColorTokensTests: XCTestCase {
         for groups in try matches("val (text\\w+) = style\\(\\w+, (\\d+), (\\d+)", in: source) {
             expected[groups[0]] = (try XCTUnwrap(Double(groups[1])), try XCTUnwrap(Double(groups[2])))
         }
-        // `textDisplayBubble` est vérifié à part (testTheBubbleStyleMatchesAndroid) : Android le déclare en `TextStyle(...)` ou en `style(...)`.
-        expected.removeValue(forKey: "textDisplayBubble")
 
         let names = Set(TextStyleTokens.all.map(\.name))
         XCTAssertEqual(names, Set(expected.keys), "Les noms de styles diffèrent d'Android")
@@ -123,32 +121,6 @@ final class ColorTokensTests: XCTestCase {
             XCTAssertEqual(Double(token.size), android.size, "\(token.name) : taille")
             XCTAssertEqual(Double(token.lineHeight), android.line, "\(token.name) : interligne")
         }
-    }
-
-    /// Les formes possibles de la déclaration Android : `textDisplayHeadline.copy(fontSize = 30.sp, lineHeight = 36.sp)` (la forme retenue),
-    /// `TextStyle(...)` ou `style(famille, 30, 36)`.
-    private static let bubbleBlockPattern =
-        "val textDisplayBubble =\\s*(?:textDisplayHeadline\\.copy|TextStyle)\\(([^)]*)\\)"
-
-    /// `textDisplayBubble` n'est pas dans `TextStyleTokens.all` : cette assertion dédiée lit sa déclaration Android, sous la forme `TextStyle(...)`
-    /// (fontSize / lineHeight, forme `copy(...)` retenue côté Android) ou `style(famille, 30, 36)`. Tant qu'elle n'est pas dans le `Type.kt` de main, rien n'est comparé (le test ne
-    /// saute pas). À retirer, avec `expected.removeValue` ci-dessus, quand le style sera déclaré par `style(...)` côté Android et ajouté à `all`.
-    func testTheBubbleStyleMatchesAndroid() throws {
-        let source = try androidThemeFile("Type.kt")
-        var android: (size: Double, line: Double)?
-        if let groups = try matches("val textDisplayBubble = style\\(\\w+, (\\d+), (\\d+)", in: source).first {
-            android = (try XCTUnwrap(Double(groups[0])), try XCTUnwrap(Double(groups[1])))
-        } else if let block = try matches(Self.bubbleBlockPattern, in: source).first?.first {
-            let size = try matches("fontSize = (\\d+)\\.sp", in: block).first?.first
-            let line = try matches("lineHeight = (\\d+)\\.sp", in: block).first?.first
-            android = (try XCTUnwrap(size.flatMap(Double.init)), try XCTUnwrap(line.flatMap(Double.init)))
-        }
-        guard let android else {
-            return
-        }
-
-        XCTAssertEqual(Double(textDisplayBubble.size), android.size, "textDisplayBubble : taille")
-        XCTAssertEqual(Double(textDisplayBubble.lineHeight), android.line, "interligne")
     }
 
     func testRadiiAndShadowsAreIdenticalToAndroid() {
