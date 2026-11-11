@@ -23,6 +23,7 @@ import com.tomessa.miff.domain.feed.StatusesView
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.place.ReadPlaces
 import com.tomessa.miff.domain.profile.ReadMembers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -165,6 +166,20 @@ class FeedViewModel(
         piece
             .mapNotNull { (it as? MiffPiece.Data)?.let { data -> ReadMembers(data.miffId, data.snapshot.members) } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * The places of the Miff the Feed last read, for the list of the Profile tab (decision of the PM, 2026-11-11): it draws the places of THIS Miff from
+     * them, with no reading of its own (cost). Same life as [readMembers].
+     */
+    val readPlaces: StateFlow<ReadPlaces?> =
+        piece
+            // A copy of the phone's cache that the server has not confirmed is not handed over: a list that is empty only because nothing was
+            // cached yet must never be drawn as "no place" (the Profile then reads the Miff once itself).
+            .mapNotNull {
+                (it as? MiffPiece.Data)?.takeIf { data -> !data.snapshot.fromCache }?.let { data ->
+                    ReadPlaces(data.miffId, data.snapshot.places)
+                }
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** The wait for the server's confirmation of a cached answer is over (see [cacheGraceMillis]). */
     private val cacheGraceOver = MutableStateFlow(false)
