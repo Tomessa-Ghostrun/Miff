@@ -31,7 +31,12 @@ Emplacement : GitHub > dépôt Miff > Settings > Secrets and variables > Actions
 | `ASC_ISSUER_ID` | Identifiant d'émetteur (Issuer ID) | `ios-testflight` | INIT-3 |
 | `ASC_KEY_P8_B64` | Fichier `.p8` de la clé API, encodé en base64 | `ios-testflight` | INIT-3 |
 | `APPLE_TEAM_ID` | Team ID Apple (identifiant, pas un mot de passe, mais gardé avec les autres) | `ios-testflight` | INIT-3 |
-| Secrets de signature Android (clé d'upload, mots de passe) | À définir avec la clé d'upload | publication Play | Avant la première distribution |
+| `ANDROID_UPLOAD_KEYSTORE_B64` | Fichier de clé d'envoi (`.jks`) encodé en base64 | `android-release` | Avant la première distribution Play |
+| `ANDROID_UPLOAD_STORE_PASSWORD` | Mot de passe du fichier de clé | `android-release` | idem |
+| `ANDROID_UPLOAD_KEY_ALIAS` | Nom (alias) de la clé dans le fichier (pas un mot de passe, gardé avec les autres) | `android-release` | idem |
+| `ANDROID_UPLOAD_KEY_PASSWORD` | Mot de passe de la clé | `android-release` | idem |
+
+Les quatre secrets `ANDROID_UPLOAD_*` se créent avec `gh secret set NOM --repo Tomessa-Ghostrun/Miff` (la valeur se tape à l'invite, elle ne s'affiche pas) ; pas à pas dans `docs/release/checklist-android.md`. Sans eux, le workflow `android-release` s'arrête avec « Release Android non configurée » et ne construit rien. Le workflow ne les passe qu'aux étapes qui en ont besoin, par variables d'environnement ; Gradle les lit par variables d'environnement seulement (jamais une propriété ni un fichier).
 
 Pas de clé de compte de service Google dans la CI : le déploiement des règles Firestore se fait en local, après accord du PM (`firebase deploy --only firestore:rules --project miff-3d283`).
 

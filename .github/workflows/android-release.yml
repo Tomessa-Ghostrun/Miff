@@ -1,0 +1,304 @@
+name: android-release
+
+# MANUEL UNIQUEMENT : bundle Android (AAB) SIGNE avec la cle d'envoi, a envoyer ensuite a la main dans la Play Console.
+# Jamais declenche par une pull request, un push ou un calendrier : seulement « Run workflow » depuis la branche main.
+# Mode d'emploi pas a pas pour le PM : docs/release/checklist-android.md
+#
+# ACTIF SEULEMENT SI LES SECRETS D'ENVOI EXISTENT. Sans eux, l'execution se termine en bonne et due forme avec le message
+# « Release Android non configuree » (resume de l'execution) et aucun bundle n'est produit.
+#
+# Principe de signature (gratuit, aucune cle dans le depot) : le fichier de cle d'envoi (.jks) est stocke en base64 dans un secret GitHub, decode dans
+# un fichier temporaire du runner (jetable) uniquement pendant cette execution, jamais affiche, jamais envoye en artefact, supprime a la fin. Gradle le
+# lit par variables d'environnement (android/app/build.gradle.kts, section « UPLOAD KEY »). Avec « Play App Signing », Google re-signe ensuite le bundle
+# avec sa propre cle : la cle d'envoi ne sert qu'a prouver que le fichier vient bien de nous.
+#
+# Aucun envoi automatique vers Google Play : cela demanderait une cle de compte de service Google, que ce projet s'interdit (docs/dev/secrets.md).
+# Le PM telecharge le bundle (artefact « miff-release-aab », 14 jours) et le depose dans la Play Console.
+#
+# Secrets attendus (Settings > Secrets and variables > Actions, ou dans l'environnement « android-release », voir plus bas) :
+#   ANDROID_UPLOAD_KEYSTORE_B64   fichier de cle d'envoi (.jks) encode en base64
+#   ANDROID_UPLOAD_STORE_PASSWORD mot de passe du fichier de cle
+#   ANDROID_UPLOAD_KEY_ALIAS      nom (alias) de la cle dans le fichier
+#   ANDROID_UPLOAD_KEY_PASSWORD   mot de passe de la cle
+#   GOOGLE_SERVICES_JSON_B64      deja utilise par le workflow android (configuration Firebase)
+#
+# ENVIRONNEMENT PROTEGE : le depot etant public (2026-11-04), les « environments » GitHub (relecteur obligatoire, branches autorisees) sont disponibles
+# sans frais, contrairement a ios-testflight (ecrit quand le depot etait prive). Le travail declare l'environnement « android-release » : GitHub le cree
+# a la premiere execution, sans protection. Pour le proteger (facultatif, recommande) : Settings > Environments > android-release > « Required reviewers »
+# (le PM) et « Deployment branches » = main uniquement, puis deplacer les 4 secrets d'envoi dans cet environnement.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code_offset:
+        description: >-
+          Nombre ajoute au numero d'execution pour former le numero de version interne (versionCode). Laisser 0. A augmenter seulement si Google Play
+          refuse le fichier parce qu'un numero egal ou superieur a deja ete recu (par exemple si ce workflow a ete recree et que son compteur est reparti de 1).
+        type: string
+        default: "0"
+      upload_crashlytics_mapping:
+        description: >-
+          Envoyer le fichier de correspondance R8 a Crashlytics (rapports de plantage lisibles). true par defaut. Mettre false si cette etape echoue
+          et que le bundle doit quand meme etre produit (le fichier de correspondance est de toute facon dans le bundle, pour Google Play).
+        type: choice
+        options:
+          - "true"
+          - "false"
+        default: "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    name: Bundle signé (AAB) pour Google Play
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: android-release
+    defaults:
+      run:
+        shell: bash
+        working-directory: android
+    steps:
+      - name: Contrôler le déclenchement, la branche et la configuration (secrets non affichés)
+        # Avant le checkout, `android/` n'existe pas encore : on s'exécute à la racine de l'espace de travail.
+        working-directory: .
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+          OFFSET: ${{ inputs.version_code_offset }}
+          ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          set +x
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          if [ "$EVENT_NAME" != "workflow_dispatch" ]; then
+            echo "::error::Ce workflow ne se lance qu'à la main (workflow_dispatch), jamais par une pull request ou un push."
+            exit 1
+          fi
+          if [ "$REF_NAME" != "refs/heads/main" ]; then
+            echo "::error title=Branche refusée::Un bundle de release ne se construit qu'à partir de la branche main (reçu : ${REF_NAME}). Fusionner d'abord, puis relancer depuis main."
+            exit 1
+          fi
+          if ! printf '%s' "$OFFSET" | grep -Eq '^[0-9]{1,7}$'; then
+            echo "::error title=Décalage invalide::version_code_offset doit être un nombre entier (0 à 9999999)."
+            exit 1
+          fi
+          missing=""
+          [ -n "$ANDROID_UPLOAD_KEYSTORE_B64" ] || missing="$missing ANDROID_UPLOAD_KEYSTORE_B64"
+          [ -n "$ANDROID_UPLOAD_STORE_PASSWORD" ] || missing="$missing ANDROID_UPLOAD_STORE_PASSWORD"
+          [ -n "$ANDROID_UPLOAD_KEY_ALIAS" ] || missing="$missing ANDROID_UPLOAD_KEY_ALIAS"
+          [ -n "$ANDROID_UPLOAD_KEY_PASSWORD" ] || missing="$missing ANDROID_UPLOAD_KEY_PASSWORD"
+          [ -n "$GOOGLE_SERVICES_JSON_B64" ] || missing="$missing GOOGLE_SERVICES_JSON_B64"
+          if [ -n "$missing" ]; then
+            echo "MIFF_RELEASE_CONFIGURED=false" >> "$GITHUB_ENV"
+            echo "::notice title=Release Android non configurée::Secrets absents :${missing}. Aucun bundle n'est produit. Voir docs/release/checklist-android.md (étape « Clé d'envoi »)."
+            {
+              echo "## Release Android non configurée"
+              echo
+              echo "**Aucun bundle n'a été produit** : il manque des secrets GitHub (leurs valeurs ne sont jamais affichées) :${missing}."
+              echo
+              echo "Marche à suivre : \`docs/release/checklist-android.md\`, étape « Clé d'envoi », puis relancer ce workflow depuis \`main\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "MIFF_RELEASE_CONFIGURED=true" >> "$GITHUB_ENV"
+          echo "Configuration complète (5 secrets présents, valeurs non affichées)."
+
+      # actions/checkout v7.0.1
+      - name: Récupérer le code
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      # gradle/actions wrapper-validation v6.4.0 : un wrapper altéré s'exécuterait avec accès à la clé d'envoi décodée plus bas.
+      - name: Valider le wrapper Gradle
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c
+
+      # actions/setup-java v6.1.0. JDK 17 : minimum de Android Gradle Plugin 9.4.
+      - name: JDK 17
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Décoder la configuration Firebase (secret, jamais affichée)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          set +x
+          chmod +x gradlew
+          umask 077
+          if ! printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 -d > app/google-services.json 2>/dev/null; then
+            rm -f app/google-services.json
+            echo "::error title=Secret invalide::GOOGLE_SERVICES_JSON_B64 n'est pas du base64 valide."
+            exit 1
+          fi
+          if ! grep -q '"project_id": *"miff-3d283"' app/google-services.json; then
+            rm -f app/google-services.json
+            echo "::error title=Mauvais projet Firebase::Le fichier décodé ne correspond pas au projet miff-3d283 (le compte Google contient aussi un autre projet : arrêt avant toute signature)."
+            exit 1
+          fi
+          if ! grep -q '"package_name": *"com.tomessa.miff"' app/google-services.json; then
+            rm -f app/google-services.json
+            echo "::error title=Mauvaise application::Le fichier décodé ne déclare pas l'application com.tomessa.miff."
+            exit 1
+          fi
+          if ! grep -q '"client_type": *3' app/google-services.json; then
+            rm -f app/google-services.json
+            echo "::error title=Client OAuth web absent::Aucun client OAuth web (client_type 3) : « Continuer avec Google » ne marcherait pas dans ce bundle."
+            exit 1
+          fi
+          echo "Configuration Firebase décodée (projet et application vérifiés)."
+
+      - name: Décoder et contrôler la clé d'envoi (secrets, jamais affichés)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        env:
+          ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          MIFF_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          MIFF_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+        run: |
+          set +x
+          umask 077
+          keystore="$RUNNER_TEMP/miff-upload.jks"
+          if ! printf '%s' "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 -d > "$keystore" 2>/dev/null || [ ! -s "$keystore" ]; then
+            rm -f "$keystore"
+            echo "::error title=Secret invalide::ANDROID_UPLOAD_KEYSTORE_B64 n'est pas un fichier encodé en base64 valide. Le PM doit le recréer (docs/release/checklist-android.md)."
+            exit 1
+          fi
+          # Les mots de passe passent par l'environnement (-storepass:env), jamais par la ligne de commande.
+          if ! keytool -list -keystore "$keystore" -storepass:env MIFF_UPLOAD_STORE_PASSWORD -alias "$MIFF_UPLOAD_KEY_ALIAS" > "$RUNNER_TEMP/keytool-list.txt" 2>&1; then
+            rm -f "$keystore" "$RUNNER_TEMP/keytool-list.txt"
+            echo "::error title=Clé d'envoi illisible::Le fichier de clé ne s'ouvre pas avec le mot de passe ou l'alias donnés (ANDROID_UPLOAD_STORE_PASSWORD, ANDROID_UPLOAD_KEY_ALIAS). Vérifier les deux secrets."
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/keytool-list.txt"
+          echo "MIFF_UPLOAD_STORE_FILE=$keystore" >> "$GITHUB_ENV"
+          echo "Clé d'envoi décodée et ouverte avec succès."
+
+      - name: Numéro de version
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          OFFSET: ${{ inputs.version_code_offset }}
+        run: |
+          set -euo pipefail
+          # Google Play refuse un numéro déjà reçu ou plus petit : le numéro d'exécution de CE workflow ne fait que croître.
+          code=$(( RUN_NUMBER + OFFSET ))
+          name=$(sed -n 's/^## \[\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\].*/\1/p' CHANGELOG.md | head -1)
+          if [ -z "$name" ]; then
+            echo "::error::Aucun titre « ## [x.y.z] » dans android/CHANGELOG.md : version impossible à déterminer."
+            exit 1
+          fi
+          echo "VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$name" >> "$GITHUB_ENV"
+          echo "Version $name, numéro interne (versionCode) $code."
+
+      # --no-configuration-cache : les mots de passe lus par Gradle ne sont jamais recopiés dans un cache de configuration sur disque.
+      # --no-build-cache : un bundle signé n'est jamais stocké ni réutilisé depuis un cache de compilation.
+      - name: Construire le bundle signé (R8, non débogable)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        env:
+          MIFF_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          MIFF_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          MIFF_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          UPLOAD_MAPPING: ${{ inputs.upload_crashlytics_mapping }}
+        run: |
+          set +x
+          start=$(date +%s)
+          ./gradlew bundleRelease --console=plain --no-configuration-cache --no-build-cache \
+            -Pmiff.versionCode="$VERSION_CODE" \
+            -Pmiff.uploadCrashlyticsMapping="$UPLOAD_MAPPING"
+          echo "BUILD_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: Vérifier la signature (clé d'envoi, jamais la clé de debug)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        env:
+          MIFF_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          MIFF_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          set +x
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          test -f "$bundle" || { echo "::error::Bundle introuvable : $bundle"; exit 1; }
+          jarsigner -verify "$bundle" > "$RUNNER_TEMP/jarsigner.txt" 2>&1 || {
+            echo "::error title=Bundle non signé ou altéré::jarsigner ne valide pas la signature du bundle."
+            exit 1
+          }
+          # keytool est lancé en anglais : ses libellés (« SHA256: ») changent avec la langue du système.
+          signer=$(keytool -J-Duser.language=en -J-Duser.country=US -printcert -jarfile "$bundle")
+          # Chaines de caracteres lues par « <<< » et non par un tube : sous pipefail, un tube dont le lecteur s'arrete tot peut faire un faux negatif (voir android.yml).
+          if grep -qi 'Android Debug' <<< "$signer"; then
+            echo "::error title=Clé de debug::Le bundle est signé avec la clé de DEBUG : jamais pour Google Play."
+            exit 1
+          fi
+          keystore_info=$(keytool -J-Duser.language=en -J-Duser.country=US -list -v -keystore "$MIFF_UPLOAD_STORE_FILE" -storepass:env MIFF_UPLOAD_STORE_PASSWORD -alias "$MIFF_UPLOAD_KEY_ALIAS")
+          bundle_sha256=$(sed -n -E '/SHA ?256:/{s/^.*SHA ?256: *//p;q}' <<< "$signer")
+          store_sha256=$(sed -n -E '/SHA ?256:/{s/^.*SHA ?256: *//p;q}' <<< "$keystore_info")
+          store_sha1=$(sed -n -E '/SHA ?1:/{s/^.*SHA ?1: *//p;q}' <<< "$keystore_info")
+          if [ -z "$bundle_sha256" ] || [ "$bundle_sha256" != "$store_sha256" ]; then
+            echo "::error title=Mauvaise signature::L'empreinte de signature du bundle ne correspond pas à la clé d'envoi."
+            exit 1
+          fi
+          # Les empreintes d'un certificat sont publiques par nature (elles figurent dans tout fichier signé) : on peut les afficher.
+          echo "UPLOAD_SHA1=$store_sha1" >> "$GITHUB_ENV"
+          echo "UPLOAD_SHA256=$store_sha256" >> "$GITHUB_ENV"
+          echo "Bundle signé avec la clé d'envoi (SHA-256 $store_sha256)."
+
+      - name: Contrôler le contenu du bundle (debug absent, permissions, pages de 16 Ko)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        run: bash ci/check-release-bundle.sh app/build/outputs/bundle/release/app-release.aab
+
+      # actions/upload-artifact v7.0.2. Le bundle ne contient aucun secret (la clé privée n'y est jamais) ; dans un dépôt public, tout compte GitHub
+      # connecté peut télécharger un artefact : durée courte.
+      - name: Publier le bundle (14 jours)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: miff-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Résumé
+        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        run: |
+          set -euo pipefail
+          sha=$(sha256sum app/build/outputs/bundle/release/app-release.aab | cut -d' ' -f1)
+          size=$(stat -c %s app/build/outputs/bundle/release/app-release.aab)
+          {
+            echo "## Bundle Android signé"
+            echo
+            echo "- Version : **${VERSION_NAME}** (numéro interne **${VERSION_CODE}**)"
+            echo "- Fichier : \`miff-release-aab\` > \`app-release.aab\` (${size} octets, SHA-256 \`${sha}\`)"
+            echo "- Signé avec la **clé d'envoi** (SHA-1 \`${UPLOAD_SHA1}\`, SHA-256 \`${UPLOAD_SHA256}\`) : ce sont des empreintes publiques."
+            echo "- Contrôles passés : aucun code de debug, permissions exactes, bibliothèques natives alignées sur 16 Ko."
+            echo "- Durée de la construction : ${BUILD_SECONDS} s"
+            echo
+            echo "**Suite (à la main, aucun envoi automatique)** : télécharger l'artefact, puis Play Console > piste de test interne > Créer une release > déposer le fichier. Voir \`docs/release/checklist-android.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Supprimer la configuration Firebase et la clé d'envoi du runner
+        if: always()
+        # À la racine : sans secrets, le code n'a pas été récupéré et le dossier android/ n'existe pas.
+        working-directory: .
+        run: |
+          rm -f android/app/google-services.json
+          rm -f "$RUNNER_TEMP/miff-upload.jks"
+
+      - name: Durée du job
+        if: always()
+        working-directory: .
+        run: echo "Durée du job = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"
