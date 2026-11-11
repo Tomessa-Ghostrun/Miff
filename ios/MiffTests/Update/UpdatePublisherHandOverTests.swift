@@ -74,4 +74,35 @@ final class UpdatePublisherHandOverTests: XCTestCase {
         XCTAssertTrue(rig.handedOver.isEmpty)
         XCTAssertTrue(rig.journal.kinds.contains(.updateMeasureFailed))
     }
+
+    func testAHandOverThatExceedsItsDelayWithNothingPublishedIsJournalledApartNotAsAFailureOfTheTracking() async {
+        rig.published = { _ in false }
+        rig.handOverBusySeconds = 0.4
+        rig.handOverTimeout = 0.05
+
+        let result = await rig.makePublisher().publish(UpdateFixtures.photo())
+
+        XCTAssertEqual(result, .positionNotFound)
+        XCTAssertTrue(rig.store.writes.isEmpty)
+        XCTAssertTrue(rig.journal.kinds.contains(.updateHandOverTimedOut))
+        XCTAssertFalse(rig.journal.kinds.contains(.updateHandOverFailed))
+    }
+
+    func testAHandOverThatExceedsItsDelayButPublishedInTimeStillLetsThePhotoGo() async {
+        let flag = PublishedFlag()
+        rig.published = { _ in flag.on }
+        rig.onHandOver = { _ in flag.on = true }
+        rig.handOverBusySeconds = 0.4
+        rig.handOverTimeout = 0.05
+
+        let result = await rig.makePublisher().publish(UpdateFixtures.photo())
+
+        XCTAssertEqual(result, .published(sharedIn: 1))
+        XCTAssertTrue(rig.journal.kinds.contains(.updateHandOverWorked))
+    }
+
+    func testTheDelayOfTheHandOverCoversTheTrackingBusyWithItsPreviousWork() {
+        XCTAssertGreaterThan(UpdateLimits.handOverTimeoutSeconds, TrackingLimits.wakeBudgetSeconds + 5)
+        XCTAssertGreaterThan(UpdateLimits.handOverTimeoutSeconds, UpdateLimits.timeoutSeconds)
+    }
 }

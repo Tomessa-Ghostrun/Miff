@@ -49,6 +49,8 @@ struct UpdatePublisherDependencies {
     /// FEED-8 : une photo vient d'être publiée dans ces Miffs ; le Feed la montre sur MA carte sans la relire (en mémoire seulement).
     var onPhotoPublished: (PublishedPhoto) -> Void = { _ in }
     var timeoutSeconds = UpdateLimits.timeoutSeconds
+    /// Le délai de la remise de la position au suivi (voir `UpdateLimits.handOverTimeoutSeconds`).
+    var handOverTimeoutSeconds = UpdateLimits.handOverTimeoutSeconds
 }
 
 /// Ce que la publication dit à qui veut montrer ma photo sans la relire : la photo, son lieu, et les Miffs où elle est partie. Elle ne
@@ -68,6 +70,9 @@ enum UpdateLimits {
     /// 5 Miffs par lot : 3 lectures de règles chacune = 15 des 20 permises (backend/data-model.md, §8).
     static let lotSize = 5
     static let timeoutSeconds = 20.0
+    /// La remise de la position au suivi attend le travail précédent du suivi (au plus `TrackingLimits.wakeBudgetSeconds`, 25 s) puis fait le
+    /// sien : plus long qu'une écriture, pour ne pas dire « introuvable » à tort quand le suivi est simplement occupé.
+    static let handOverTimeoutSeconds = 40.0
 }
 
 /// Ce que les lots ont donné, Miff par Miff, et ce qui a arrêté la suite (un lot qui échoue arrête les suivants).
@@ -113,6 +118,7 @@ final class UpdatePublisher {
     private let handOver: (Fix) async -> Void
     private let onPhotoPublished: (PublishedPhoto) -> Void
     private let timeoutSeconds: Double
+    fileprivate let handOverTimeoutSeconds: Double
 
     init(_ dependencies: UpdatePublisherDependencies) {
         store = dependencies.store
@@ -127,6 +133,7 @@ final class UpdatePublisher {
         handOver = dependencies.handOver
         onPhotoPublished = dependencies.onPhotoPublished
         timeoutSeconds = dependencies.timeoutSeconds
+        handOverTimeoutSeconds = dependencies.handOverTimeoutSeconds
     }
 
     /// Publie `photo`. `only` : les Miffs qu'un essai précédent n'a pas atteintes (nil = toutes). Ne lève jamais.
@@ -379,11 +386,23 @@ extension UpdatePublisher {
         }
         let fix = Fix(lat: place.lat, lng: place.lng, measuredAtMillis: place.measuredAtMillis)
         let handOver = self.handOver
-        _ = try? await timedOperation(seconds: timeoutSeconds) {
-            await handOver(fix)
+        // Le passage du suivi attend le travail précédent du suivi (jusqu'à `wakeBudgetSeconds`) avant le sien : le délai de la remise est donc
+        // plus long que celui d'une écriture (`handOverTimeoutSeconds`). Un dépassement n'est pas un échec du suivi : la copie locale est relue
+        // quand même (le passage a pu finir juste après), et un code distinct le dit dans le journal.
+        var timedOut = false
+        do {
+            try await timedOperation(seconds: handOverTimeoutSeconds) {
+                await handOver(fix)
+            }
+        } catch {
+            timedOut = true
         }
         let published = targets.filter { isPositionPublished($0) }
-        journal.record(published.isEmpty ? .updateHandOverFailed : .updateHandOverWorked)
+        if !published.isEmpty {
+            journal.record(.updateHandOverWorked)
+        } else {
+            journal.record(timedOut ? .updateHandOverTimedOut : .updateHandOverFailed)
+        }
         return published
     }
 }

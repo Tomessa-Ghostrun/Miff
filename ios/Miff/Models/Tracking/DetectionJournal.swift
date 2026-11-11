@@ -56,6 +56,8 @@ enum JournalKind: String, CaseIterable {
     case updateHandOverWorked
     /// ... ou n'a pu la publier nulle part : voir les lignes du suivi juste avant (`notEligible`, `positionRefused`, `positionSkipped...`).
     case updateHandOverFailed
+    /// ... ou la remise a dépassé son délai (le suivi était occupé) et rien n'était publié à la relecture : réessayer plus tard suffit.
+    case updateHandOverTimedOut
 }
 
 /// Une ligne du journal telle qu'elle est gardée et montrée.
