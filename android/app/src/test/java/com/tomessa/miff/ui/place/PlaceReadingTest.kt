@@ -97,6 +97,23 @@ class PlaceReadingTest {
     }
 
     @Test
+    fun detail_canEdit_isNeverTrueWhenBothUidsAreEmpty() {
+        val viewModel = detail("")
+        startDetail(viewModel)
+        val snapshot =
+            MiffSnapshot(
+                miffDetails(owner = "", name = "Famille Martin"),
+                listOf(creator),
+                listOf(testPlace("p1", "Maison")),
+                false,
+            )
+        repo.observer.flowOf(MIFF_ID).tryEmit(MiffObservation.Data(snapshot))
+        dispatcher.scheduler.runCurrent()
+        assertEquals(PlaceDetailStatus.READY, viewModel.uiState.value.status)
+        assertFalse(viewModel.uiState.value.canEdit)
+    }
+
+    @Test
     fun detail_aPlaceThatIsGoneForTheServer_isNoticed_butNotWhenTheCacheSimplyLacksIt() {
         val viewModel = detail("u2")
         startDetail(viewModel)

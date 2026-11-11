@@ -142,11 +142,39 @@ class ProfileRequestsSectionTest {
     }
 
     @Test
-    fun member_aRequestCardIsOneBlockForTheScreenReader() {
+    fun member_aRequestCardIsOneBlockForTheScreenReader_nameThenAddress() {
         section(myUid = "u2", requests = requestsOf(1))
-        composeRule
-            .onNodeWithContentDescription(context().getString(R.string.place_request_a11y_pending_mine, "Demande 1"))
-            .assertIsDisplayed()
+        val named = context().getString(R.string.place_request_a11y_pending_mine, "Demande 1")
+        val spoken =
+            context().getString(
+                R.string.place_list_row_type_a11y,
+                named,
+                "12 rue des Lilas, 75020 Paris, France",
+            )
+        composeRule.onNodeWithContentDescription(spoken).assertIsDisplayed()
+    }
+
+    @Test
+    fun member_aDangerZoneRequestIsReadWithItsTag() {
+        val risk = testRequest(slot = 1, name = "Chantier", type = PlaceType.RISK, createdAtMillis = 1L)
+        section(
+            myUid = "u2",
+            requests = ProfileRequestsState("miff-a", mapOf("miff-a" to RequestsView.Ready(listOf(risk)))),
+        )
+        val named = context().getString(R.string.place_request_a11y_pending_mine, "Chantier")
+        val withAddress =
+            context().getString(
+                R.string.place_list_row_type_a11y,
+                named,
+                "12 rue des Lilas, 75020 Paris, France",
+            )
+        val spoken =
+            context().getString(
+                R.string.place_list_row_type_a11y,
+                withAddress,
+                text(R.string.place_type_danger),
+            )
+        composeRule.onNodeWithContentDescription(spoken).assertIsDisplayed()
     }
 
     @Test

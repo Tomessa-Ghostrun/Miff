@@ -731,7 +731,11 @@ class AppContainer(
      * limit come from the server; writes are transactions (one batch handed to the phone only when the network drops after the address was chosen).
      */
     val placeRequestRepository: PlaceRequestRepository by lazy {
-        FirestorePlaceRequestRepository(store = FirestorePlaceRequestStore(miffStore), places = placeStore)
+        FirestorePlaceRequestRepository(
+            store = FirestorePlaceRequestStore(miffStore),
+            places = placeStore,
+            online = { networkMonitor.isOnline() },
+        )
     }
 
     /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */
@@ -774,6 +778,8 @@ class AppContainer(
         StoreAccountMiffs(
             store = miffStore,
             deleter = MiffDeletion(store = miffStore, repository = miffRepository),
+            // RGPD (contract of the backend 2.7.3): the pending requests of the account (address, coordinates) are taken back BEFORE each "Quitter", best effort.
+            beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
         )
     }
 

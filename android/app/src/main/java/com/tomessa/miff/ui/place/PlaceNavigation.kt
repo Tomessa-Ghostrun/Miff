@@ -41,7 +41,7 @@ import java.util.Locale
 @Serializable
 data class PlaceFormRoute(
     val placeId: String? = null,
-    /** The Miff the place is opened from: two different places can share an identifier in two Miffs. For a request: the Miff it is for. */
+    /** The Miff the place is opened from: two different places can share an identifier in two Miffs; for a NEW place, the Miff ticked first (if the person created it). For a request: the Miff it is for. */
     val miffId: String? = null,
     val request: Boolean = false,
 )

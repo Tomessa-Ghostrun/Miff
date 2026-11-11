@@ -52,7 +52,24 @@ fun PlaceRequestCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val spoken = stringResource(R.string.place_request_a11y_pending_mine, request.name)
+    // The card is read like the rows of the places: the name, then the address, then "Zone de danger" when it is one (the visible tag must be in the block).
+    val named = stringResource(R.string.place_request_a11y_pending_mine, request.name)
+    val withAddress =
+        if (request.address.isNullOrEmpty()) {
+            named
+        } else {
+            stringResource(
+                R.string.place_list_row_type_a11y,
+                named,
+                request.address,
+            )
+        }
+    val spoken =
+        if (request.type == PlaceType.RISK) {
+            stringResource(R.string.place_list_row_type_a11y, withAddress, stringResource(request.type.labelRes))
+        } else {
+            withAddress
+        }
     Row(
         modifier =
             modifier

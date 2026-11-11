@@ -484,9 +484,9 @@ private fun MainNavigation(
                                 if (PlaceViewerRole.isCreator(owner, myUid)) profilePlacesViewModel.onPlacesMayChange()
                                 navController.open(PlaceDetailRoute(miffId, placeId))
                             },
-                            onAddPlace = {
+                            onAddPlace = { miffId ->
                                 profilePlacesViewModel.onPlacesMayChange()
-                                navController.open(PlaceFormRoute())
+                                navController.open(PlaceFormRoute(miffId = miffId))
                             },
                             onRetry = profilePlacesViewModel::onRetry,
                             requests = profileRequests,

@@ -31,6 +31,7 @@
 2. [ ] Sur une Miff **dont vous n'êtes pas le créateur**, aucun « Ajouter un lieu » ni compteur ni « Miff+ » ; sur une Miff **dont vous êtes le créateur**, ils sont là.
 3. [ ] Sur la carte « Créer une Miff » (la dernière), la liste reste celle de la dernière Miff regardée (son nom est dans le titre).
 4. [ ] Repasser d'une carte à l'autre plusieurs fois de suite ne fait **pas** clignoter la liste (réutilisée pendant 5 minutes).
+5. [ ] Compte Miff+ créateur de 2 Miffs : sur la liste de la Miff B, « Ajouter un lieu » ouvre un formulaire où **la Miff B est cochée** (pas la dernière rejointe). Même chose depuis l'écran de la Miff B.
 
 ## Partie D : lecteur d'écran, texte, thèmes
 

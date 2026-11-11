@@ -330,4 +330,84 @@ class PlaceRequestRepositoryTest {
             )
             assertEquals("sport", requests.commits.single()[0].data["category"])
         }
+
+    // --- The causes of a refusal (contract of the backend, section 4) -----------------------------------------------------------------------
+
+    @Test
+    fun submit_aDangerZoneRefused_becauseThePlanEndedSinceTheFormOpened_isTheOffer_notTheLimit() =
+        runTest {
+            premium()
+            val loaded = context()
+            places.entitlement = null
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
+            assertEquals(PaywallReason.DANGER, (result as RequestSubmitResult.NeedsPremium).reason)
+        }
+
+    @Test
+    fun submit_refusedByARaceOnTheSlot_readsAgain_andSendsOnceMoreInAFreeSlot() =
+        runTest {
+            val loaded = context()
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            // Another phone took u2_1 meanwhile.
+            requests.mine = listOf(testRequest(uid = uid, slot = 1, createdAtMillis = now))
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = true)
+            assertEquals("u2_2", (result as RequestSubmitResult.Done).request.id)
+            assertEquals("miffs/$MIFF_ID/placeRequests/u2_2", requests.commits.single()[0].path)
+        }
+
+    @Test
+    fun submit_refusedByARace_withThreeSlotsNowTaken_isTheLimitOfThree() =
+        runTest {
+            val loaded = context()
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            requests.mine = (1..3).map { testRequest(uid = uid, slot = it, createdAtMillis = now) }
+            assertTrue(
+                repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = true) is RequestSubmitResult.MemberLimit,
+            )
+        }
+
+    // --- Several requests made offline ---------------------------------------------------------------------------------------------------
+
+    @Test
+    fun twoRequestsMadeOffline_inARow_neverTakeTheSameSlot() =
+        runTest {
+            val loaded = context()
+            repo.submit(uid, MIFF_ID, testRequestDraft(name = "Premier"), loaded, online = false)
+            repo.submit(uid, MIFF_ID, testRequestDraft(name = "Second"), loaded, online = false)
+            assertEquals(
+                listOf("miffs/$MIFF_ID/placeRequests/u2_1", "miffs/$MIFF_ID/placeRequests/u2_2"),
+                requests.enqueued.map { it[0].path },
+            )
+        }
+
+    @Test
+    fun theQueueCountsForTheLimitOfThree_andItsMarksExpireAfterTenMinutes() =
+        runTest {
+            val loaded = context()
+            repeat(3) { repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = false) }
+            val fourth = repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = false)
+            assertTrue(fourth is RequestSubmitResult.MemberLimit)
+            var clock = now
+            val later =
+                FirestorePlaceRequestRepository(requests, places, nowMillis = { clock })
+            later.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = false)
+            clock += 11 * 60_000L
+            later.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = false)
+            // The mark of the first one expired: its slot is offered again.
+            assertEquals("miffs/$MIFF_ID/placeRequests/u2_1", requests.enqueued.last()[0].path)
+        }
+
+    // --- Leaving (no network) ------------------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun withdrawAllMine_withNoNetwork_readsAndWritesNothing() =
+        runTest {
+            val offline =
+                FirestorePlaceRequestRepository(requests, places, nowMillis = { now }, online = { false })
+            requests.mine = listOf(testRequest(uid = uid, slot = 1, createdAtMillis = now))
+            offline.withdrawAllMine(uid, MIFF_ID)
+            assertTrue(requests.reads.isEmpty())
+            assertTrue(requests.commits.isEmpty())
+        }
 }
