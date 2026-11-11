@@ -18,6 +18,7 @@ Branche `android/release-signature-versions`, PR brouillon. **Rien n'est soumis,
 ### Modifié
 - `android/app/build.gradle.kts` : `versionCode` / `versionName` ne sont plus des littéraux ; `signingConfigs` créé seulement si les 4 variables sont là ; commentaire « signature absente » remplacé.
 - `android.yml` : le résumé dit où se construit le bundle signé.
+- `backend/tests/unit/workflows.test.js` (garde des workflows) : `android-release.yml` rejoint `ios-testflight.yml` parmi les workflows qui ne s'annulent pas en cours de route (un bundle signé n'est jamais interrompu), et sa liste de secrets est ajoutée à la liste fermée (4 secrets d'envoi + la configuration Firebase) : l'ajout d'un secret reste une décision visible en revue.
 
 ### Choix « économiques »
 - **Aucun coût ajouté** : GitHub Actions (minutes Linux gratuites d'un dépôt public), environnement GitHub gratuit sur dépôt public, Play App Signing gratuit. Pas d'envoi automatique à Google Play (une clé de compte de service serait nécessaire) : le PM dépose le fichier à la main dans la Play Console. **Signal de bascule** : si les envois deviennent fréquents (plusieurs par semaine), le dépôt à la main devient pénible ; l'automatisation serait une décision PM séparée (clé de service, à stocker et à protéger).
