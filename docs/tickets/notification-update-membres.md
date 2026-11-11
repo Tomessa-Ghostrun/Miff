@@ -212,7 +212,7 @@ Sert à l'**idempotence** et au **plafond horaire** (§7, §10) : une lecture et
 | Sujet | Règle [Proposé à `android-dev`] |
 |---|---|
 | **Messagerie** | Firebase Cloud Messaging ; messages **de type « données » à priorité haute**, l'app compose et affiche la notification (langue de l'appareil, pas d'affichage au premier plan, plafond quotidien, canal discret/nuit, ligne de centre) |
-| **Canal** | « Nouvelles de ta Miff » (discret, sans son ni vibration), déjà prévu comme canal du catalogue ; version « calme » pour la nuit. Importance fixée à la création (`notifications.md` §8.1) |
+| **Canal** | « Nouvelles de ta Miff » : **son et vibration selon la configuration du téléphone de la personne** (décision du PM du 2026-11-12 : si le téléphone est en mode sonore, son + vibration) ; importance « par défaut » avec son et vibration du canal ; version « calme » (sans son ni vibration) pour la nuit. Importance fixée à la création (`notifications.md` §8.1) : la personne peut la changer dans les réglages Android du canal |
 | **Autorisation** | `POST_NOTIFICATIONS` (Android 13+), déjà demandée par l'écran d'explication des notifications ; Android 8 à 12 : pas de fenêtre |
 | **OPPO Find X5 Lite (ColorOS, Android 13)** | Livraison **app balayée** et après « forcer l'arrêt » : **à mesurer** au prototype SRV-2 (non vérifié, l'étude le note). L'aide « Si les rappels n'arrivent pas » (batterie générique, **sans** demande directe d'exemption) couvre aussi ces notifications. Repli si les messages « données » sont retardés : message avec notification affichée par le système (à décider au vu de la mesure) |
 | **App force-arrêtée** | Rien n'est livré tant que l'app n'est pas rouverte (comportement Android, étude §4) : dit sobrement dans l'aide, sans culpabiliser |
@@ -440,7 +440,8 @@ Membres A (auteur), B, C, D ; tous partagent sauf mention ; interrupteurs activ�
 - *Reco* : **activé par défaut**. C'est ce que tu demandes ; l'autorisation du téléphone reste le vrai accord ; le plafond horaire limite le bruit.
 
 **Q2. Son et nuit.** La notification doit-elle être **toujours discrète** (ni son ni vibration) ou **sonore le jour** ? Heures calmes **22 h – 7 h** (livrée sans réveiller l'écran la nuit) ?
-- *Reco* : **toujours sans son ni vibration**, nuit livrée en mode passif. Cohérent avec la grille de priorité (B5 = discret) et « sans déranger ».
+- *Reco initiale* : toujours sans son ni vibration, nuit en mode passif.
+- **Décision du PM (2026-11-12)** : **son et vibration selon la configuration du téléphone de la personne** ; si le téléphone est en mode sonore, **son + vibration**. Les heures calmes 22 h – 7 h restent en mode passif (sans son ni vibration, sans allumer l'écran). Les autres recommandations (Q1, Q3 à Q8) sont validées. Les passages du ticket qui disent « sans son ni vibration » (§ canal, § iOS, P4 hors nuit) sont à lire à la lumière de cette décision : le jour, ni silencieux forcé ni canal discret ; la nuit, mode passif.
 
 **Q3. Plafond anti-spam.** **Une notification par auteur, par Miff et par heure** (les updates suivantes restent dans le Feed) ?
 - *Reco* : **oui, 1 par heure** (valeur modifiable sans nouvelle version de l'app ; on la règle avec les premières mesures de la bêta).
