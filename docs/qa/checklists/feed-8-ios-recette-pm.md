@@ -52,17 +52,28 @@ Sur l'OPPO (compte B) : onglet Update > prenez une photo > **Publier**. Sur l'iP
 - [ ] **Hors connexion** : mode avion avec une photo déjà vue dans la session : elle **reste affichée** ; une photo **jamais vue** ne s'affiche pas, **sans message** (le bandeau « Dernières informations de … » le dit déjà). Remettez le réseau : la photo **apparaît d'elle-même** (une lecture).
 - [ ] **Expiration (23 h)** : dans la console, mettez `lastUpdateAt` de B à **il y a 24 h** (ou attendez) : la photo **disparaît de la carte**, **sans message**. Le Feed **ne supprime rien** : la photo est toujours dans la console (le nettoyage est celui de l'auteur).
 - [ ] **Photo de B remplacée** : B publie une seconde photo : la carte montre la **nouvelle** (une seule nouvelle lecture).
-- [ ] **Aucune photo n'est enregistrée** dans l'app **Photos** de l'iPhone **de vous-même** : seul le bouton « Enregistrer la photo » (partie D bis), et seulement si vous choisissez « Enregistrer l'image », en écrit une.
+- [ ] **Aucune photo n'est enregistrée** dans l'app **Photos** de l'iPhone **à votre insu** : seul le toucher de l'icône « Enregistrer cette photo » (partie D bis) en écrit une.
 
-## Partie D bis — « Enregistrer la photo » (4 min)
+## Partie D bis — « Enregistrer cette photo » : directement dans la galerie (5 min)
 
-- [ ] **Au plein écran seulement** : le bouton « Enregistrer la photo » (contour blanc, icône flèche vers le bas) est **dans le pied du plein écran**, **visible sans défiler** avec un texte normal. Il n'y en a **pas** sur l'aperçu de la carte, ni dans l'Update.
-- [ ] Touchez-le : la **feuille de partage de l'iPhone** s'ouvre au-dessus de la photo, avec l'image et **« Enregistrer l'image »** parmi les actions. **Aucune demande d'autorisation** n'apparaît (ni « Miff souhaite accéder à vos photos » ni autre). **Si une autorisation est demandée ou si « Enregistrer l'image » n'apparaît pas : notez-le, c'est un blocage à signaler** (rien ne sera écrit directement dans Photos sans votre décision).
-- [ ] Choisissez **« Enregistrer l'image »** : la feuille se ferme, la photo apparaît dans l'app **Photos** (**dernier élément**) ; **notez son format** (JPEG, PNG ou HEIC) et regardez ses informations (i) : **aucun lieu, aucune date de prise de vue, aucun appareil**. Au plein écran : **« Photo enregistrée. »** s'affiche quelques secondes (et VoiceOver l'annonce), puis disparaît.
-- [ ] **Annuler** (glisser la feuille vers le bas) ou choisir **« Copier »** : **aucune** confirmation « Photo enregistrée. ». Le plein écran reste ouvert et se ferme comme avant (croix, glissement vers le bas).
-- [ ] **Sélecteur d'applications** : feuille de partage ouverte, faites le geste du sélecteur : la vignette n'affiche **pas** la photo.
-- [ ] **VoiceOver** : le bouton est lu **« Enregistrer la photo, bouton »** ; **taille de texte au maximum** : le bouton reste atteignable (le pied défile).
-- [ ] **English** : « Save the photo », « Photo saved. ».
+- [ ] **Au plein écran seulement** : une **icône « télécharger »** (flèche vers le bas dans un carré ouvert), **sans texte**, dans un disque sombre translucide **en haut à droite, en face de la croix** (en haut à gauche), posée **sur** la photo. Il n'y a **plus** de bouton sous « Voir où c'était », et **aucun** sur l'aperçu de la carte ni dans l'Update. **La légende « Photo de … · 11 h 45 » et « Voir où c'était » sont entièrement visibles** (et défilent si le texte est très grand ou en paysage).
+- [ ] **Premier toucher** : **la boîte du système** demande l'**ajout** de photos à la galerie, avec le texte « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. » (et son équivalent anglais). **Aucune feuille de partage.** Choisissez **« Autoriser »** (ou « Autoriser l'accès en ajout seulement » selon la version d'iOS) : la photo est **enregistrée tout de suite** et **« Photo enregistrée. »** s'affiche quelques secondes sous l'icône (VoiceOver l'annonce une fois).
+- [ ] Ouvrez l'app **Photos** : la photo est le **dernier élément**. Regardez ses informations (i) : **aucun lieu, aucun appareil, aucune date de prise de vue** (Photos affiche seulement la **date d'enregistrement**, c'est normal). Notez le **format** et la **qualité** (la photo reçue est petite : ≤ 150 Ko).
+- [ ] **Touchers suivants** : la photo est enregistrée **à chaque toucher** (une copie de plus), **sans reposer la question**. **Rien n'est enregistré sans toucher** : ouvrir la photo, la zoomer, la fermer ne crée rien dans Photos.
+- [ ] **Refus** : Réglages de l'iPhone > Miff > Photos > **Jamais** (ou refusez la boîte au premier toucher), puis touchez l'icône : un message **calme** « Pour enregistrer cette photo, autorise Miff à ajouter des photos à ta galerie dans les Réglages. » avec **« Ouvrir les réglages »** (il ouvre les réglages de Miff). Rien n'est enregistré. Aucun mot « erreur » ni reproche. (Après un refus, iOS ne repose plus la boîte : les Réglages seuls y changent quelque chose.)
+- [ ] **English** : texte de la boîte, « Photo saved. », message de refus et « Open Settings ».
+- [ ] **Sélecteur d'applications** : pendant la boîte du système ou le message, faites le geste du sélecteur : la vignette n'affiche **pas** la photo.
+- [ ] **VoiceOver** : l'icône est lue **« Enregistrer cette photo sur ton téléphone, bouton »** ; **texte au maximum** : le message reste dans l'écran (plusieurs lignes), la légende et « Voir où c'était » restent atteignables, l'icône reste en haut à droite.
+- [ ] **Application Photos / confidentialité** : Réglages > Confidentialité et sécurité > Photos > Miff dit **« Ajout de photos seulement »** (jamais « Toutes les photos »).
+
+## Partie D ter — VRAI plein écran, légende par-dessus la photo (3 min)
+
+- [ ] À l'ouverture, la photo occupe **tout l'écran** (de haut en bas, zones sûres comprises, fond noir) : elle est entière, jamais recadrée, **nette** (agrandie avec l'interpolation par défaut). Une photo au format de l'écran touche les quatre bords.
+- [ ] **En bas, par-dessus la photo** : « Photo de … · 11 h 45 », « Position mesurée à … » et « Voir où c'était » sont en **texte blanc sur un dégradé sombre** (la photo se fond dans un voile noir) ; essayez avec une photo **très claire** (ciel, mur blanc) : le texte reste **parfaitement lisible**. Le texte reste **au-dessus de la barre d'accueil** de l'iPhone (zone sûre du bas), le voile, lui, va jusqu'au bord.
+- [ ] **En haut** : la croix (gauche) et l'icône « télécharger » (droite) sont toujours là, sur la photo.
+- [ ] **Texte au maximum** (Réglages > Accessibilité > Taille du texte) : la légende **reste entière** (elle défile dans une zone limitée au bas de l'écran, **moins de la moitié**) ; la photo n'est jamais masquée en entier. **Paysage** : même chose.
+- [ ] **Réduire la transparence** (Réglages > Accessibilité > Affichage) : le voile du bas devient **opaque**.
+- [ ] Pincement, double toucher, déplacement et glissement vers le bas fonctionnent comme avant (le glissement ne se déclenche pas depuis la légende). **Dites si la photo vous convient maintenant** (taille) et si le voile du bas cache trop de la photo.
 
 ## Partie E — Langue, taille de texte, animations (3 min)
 
@@ -77,7 +88,7 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 ## Points ouverts pour vous (à noter à la fin)
 
 - [ ] La photo qui **apparaît en décalant la liste** (sans cadre réservé, comme Android) vous convient-elle ?
-- [ ] **Plein écran en grand texte ou en paysage** : le pied (titre, lieu, bouton) défile-t-il bien sans masquer la photo ?
+- [ ] **Plein écran en grand texte ou en paysage** : la légende par-dessus la photo défile-t-elle bien sans masquer la photo ?
 - [ ] Le **glissement vers le bas** pour fermer le plein écran vous convient-il ?
 - [ ] Votre photo **sous** « Ce que tes proches voient de toi » (et non au-dessus) vous convient-elle ?
 - [ ] **Nouvelle phrase proposée** (aux deux plateformes) : une indication parlée « Ouvre la carte du système » sur « Voir où c'était » (maquette 09) ; non ajoutée pour garder la parité des textes.

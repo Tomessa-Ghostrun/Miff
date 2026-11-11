@@ -5,19 +5,10 @@ import UIKit
 // {heure} », le bouton de fermeture, le zoom au pincement (1x à 4x) et au double toucher, et « Voir où c'était » (le lieu de la photo, donné à Plans,
 // COORDONNÉES SEULES, sans nom) avec l'heure PROPRE à la mesure du lieu. Fermeture : le bouton, le geste d'échappement de VoiceOver, ou un glissement
 // vers le bas (iOS ne le donne pas à un plein écran : il est refait ici).
-// « Enregistrer la photo » (ici SEULEMENT, décision du PM) confie la photo à la feuille de partage du système, sans permission (`PhotoSaveButton`).
-// CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement, jamais
-// d'écriture directe dans Photos (aucun appel à `UIImageWriteToSavedPhotosAlbum`) ; l'écran est masqué dans la vignette du sélecteur d'applications
-// (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
-
-/// La hauteur de ce que dit le pied (titre, lieu, bouton) : elle borne le pied quand le texte est grand ou l'écran en paysage.
-private struct FooterHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
+// « Enregistrer cette photo » (icône en haut à droite, ici SEULEMENT, décision du PM) enregistre la photo DIRECTEMENT dans la galerie, au toucher (`PhotoSaveButton`).
+// CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement ; la SEULE
+// écriture dans Photos est celle du toucher de l'icône (ajout seul, sans lieu, `PhotosLibrarySaver`) ; l'écran est masqué dans la vignette du
+// sélecteur d'applications (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
 
 struct PhotoFullScreen: View {
     let opened: OpenedPhoto
@@ -34,14 +25,12 @@ struct PhotoFullScreen: View {
     @State private var offsetBase: CGSize = .zero
     @State private var mapUnavailable = false
     @State private var photoArea: CGSize = .zero
-    @State private var footerHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
     private static let dismissDistance: CGFloat = 120
-    /// Le pied ne dépasse jamais 40 % de la hauteur : au-delà (grand texte, paysage), il défile et la photo garde sa place.
-    private static let footerMaxShare: CGFloat = 0.4
 
     private var title: String {
         let moment = Moment.of(atMillis: opened.photo.createdAtMillis, nowMillis: nowMillis, zone: zone)
@@ -52,15 +41,27 @@ struct PhotoFullScreen: View {
         GeometryReader { screen in
             ZStack {
                 Color.black.ignoresSafeArea()
+                // VRAI plein écran : la photo (scaledToFit : entière, jamais recadrée, agrandie proprement par l'interpolation par défaut) occupe TOUT
+                // l'écran, zones sûres comprises, fond noir.
+                photo
+                // La légende, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS la photo, en bas, sur un voile sombre (texte blanc, contraste
+                // d'au moins 4,5:1 sur le pire cas), dans la zone sûre du bas ; bornées à 45 % de la hauteur (grand texte : elles défilent).
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    footerOverlay(screenHeight: screen.size.height)
+                }
+                // La croix et l'icône « Enregistrer cette photo » restent EN HAUT, face à face, dans la zone sûre du haut ; lues en premier par VoiceOver.
                 VStack(spacing: 0) {
                     HStack {
                         RoundOverlayButton(systemName: "xmark", labelKey: "update_photo_close_a11y", onTap: onDismiss)
                         Spacer()
+                        PhotoSaveButton(image: opened.image)
                     }
                     .padding(.horizontal, Spacing.sm)
-                    photo
-                    scrollingFooter(maxHeight: screen.size.height * Self.footerMaxShare)
+                    Spacer(minLength: 0)
                 }
+                .accessibilitySortPriority(1)
+                .zIndex(1)
             }
             .frame(width: screen.size.width, height: screen.size.height)
         }
@@ -84,6 +85,8 @@ struct PhotoFullScreen: View {
                 .onAppear { photoArea = area.size }
                 .onChange(of: area.size) { photoArea = $0 }
         }
+        // Tout l'écran, zones sûres comprises : la zone de la photo est l'écran entier.
+        .ignoresSafeArea()
         .onTapGesture(count: 2) { toggleZoom() }
         .gesture(pinch)
         .gesture(drag)
@@ -180,18 +183,24 @@ struct PhotoFullScreen: View {
 
     // MARK: - Le pied : titre, lieu de la photo, « Voir où c'était »
 
-    /// Le pied, défilant au-delà de `maxHeight` (grand texte, paysage) : la photo garde sa place et « Voir où c'était » reste atteignable.
-    private func scrollingFooter(maxHeight: CGFloat) -> some View {
-        ScrollView {
-            footer
-                .background(
-                    GeometryReader { proxy in
-                        Color.clear.preference(key: FooterHeightKey.self, value: proxy.size.height)
-                    }
-                )
+    /// La légende POSÉE PAR-DESSUS la photo, en bas : un dégradé qui fond la photo dans un voile sombre, puis le voile derrière le texte blanc (contraste
+    /// d'au moins 4,5:1 même sur une photo toute blanche), jusque sous la zone sûre du bas ; le texte, lui, reste dans la zone sûre. Toujours ENTIÈRE : à
+    /// sa hauteur naturelle quand elle tient dans `footerMaxHeight` (45 % de la hauteur), sinon (grand texte, paysage) elle DÉFILE dans cette hauteur.
+    private func footerOverlay(screenHeight: CGFloat) -> some View {
+        let scrim = (reduceTransparency ? colorPhotoCaptionScrim.withAlpha(1) : colorPhotoCaptionScrim).color
+        return VStack(spacing: 0) {
+            LinearGradient(colors: [scrim.opacity(0), scrim], startPoint: .top, endPoint: .bottom)
+                .frame(height: PhotoFullScreenLayout.fadeHeight)
+                .accessibilityHidden(true)
+            ViewThatFits(in: .vertical) {
+                footer
+                ScrollView {
+                    footer
+                }
+            }
+            .frame(maxHeight: PhotoFullScreenLayout.footerMaxHeight(screenHeight: screenHeight))
+            .background(scrim.ignoresSafeArea(edges: .bottom))
         }
-        .onPreferenceChange(FooterHeightKey.self) { footerHeight = $0 }
-        .frame(height: min(max(footerHeight, 1), maxHeight))
     }
 
     private var footer: some View {
@@ -204,10 +213,9 @@ struct PhotoFullScreen: View {
             if let place = opened.photo.place {
                 placeSection(place)
             }
-            // La photo est confiée à la feuille de partage du système (« Enregistrer l'image »), sans permission.
-            PhotoSaveButton(image: opened.image)
         }
-        .padding(Spacing.md)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
