@@ -46,6 +46,7 @@ import com.tomessa.miff.data.miff.FirestoreMemberFacesReader
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
 import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.FirestorePlacesReader
 import com.tomessa.miff.data.miff.MemberFacesReader
 import com.tomessa.miff.data.miff.MiffDeletion
 import com.tomessa.miff.data.miff.MiffDeletionCoordinator
@@ -53,6 +54,7 @@ import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
+import com.tomessa.miff.data.miff.PlacesReader
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
 import com.tomessa.miff.data.notification.AndroidNotificationAlarms
@@ -576,6 +578,9 @@ class AppContainer(
 
     /** The faces of the carousel of Miffs of the Profile tab: ONE reading of the members of a Miff, when its card appears (docs/dev/surveillance-quotas.md). */
     val memberFacesReader: MemberFacesReader by lazy { FirestoreMemberFacesReader() }
+
+    /** The places under the carousel of Miffs of the Profile tab (visible to every member): ONE reading of the places of a Miff, when its card appears. */
+    val placesReader: PlacesReader by lazy { FirestorePlacesReader() }
 
     val positionReader: PositionReader by lazy { FirestorePositionReader() }
 

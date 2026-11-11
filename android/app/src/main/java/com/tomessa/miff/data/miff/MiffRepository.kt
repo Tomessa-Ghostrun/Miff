@@ -675,7 +675,7 @@ class FirestoreMiffRepository(
                     when (val miff = read.value) {
                         is MiffRead.Exists -> {
                             valid += ref
-                            summaries += MiffSummary(ref.miffId, miff.details.name)
+                            summaries += MiffSummary(ref.miffId, miff.details.name, miff.details.ownerUid)
                         }
 
                         MiffRead.Missing -> {

@@ -7967,6 +7967,23 @@
         }
       }
     },
+    "place_list_empty_member": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No trusted place yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun lieu de confiance pour l'instant."
+          }
+        }
+      }
+    },
     "place_list_member_hint": {
       "extractionState": "manual",
       "localizations": {
@@ -8048,6 +8065,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@"
+          }
+        }
+      }
+    },
+    "place_list_row_type_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@"
           }
         }
       }
@@ -8813,6 +8847,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Miff+"
+          }
+        }
+      }
+    },
+    "place_profile_title_named": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trusted places of %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lieux de confiance de %@"
+          }
+        }
+      }
+    },
+    "place_profile_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The places aren't available right now."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lieux ne sont pas disponibles pour le moment."
           }
         }
       }
