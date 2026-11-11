@@ -51,6 +51,9 @@ protocol MiffStore {
     /// auprès du SERVEUR ; nil s'il n'y a pas de fiche. Une lecture de règles par document (`isMember`, `miffAlive`), un document.
     func readSharingConsent(miffId: String, uid: String) async throws -> SharingConsentRead?
 
+    /// MODE VOYAGE : le voyage écrit dans MON statut de cette Miff, lu auprès du SERVEUR (nil : pas de statut, ou pas un voyage).
+    func readOwnTravel(miffId: String, uid: String) async throws -> TravelRead?
+
     /// UNE transaction (LOC-4a, renouvellement du consentement) : ma fiche est LUE dans chacune des Miffs de `miffIds` DANS la
     /// transaction, et `build` fait le lot pour celles où je partage ENCORE (`sharing.enabled` vrai) ET où le texte accepté est ENCORE
     /// un ancien (`MiffSharingConsent.isRenewalDue`) seulement : rien n'est écrit pour les autres (un partage arrêté entre-temps, ou
@@ -87,6 +90,13 @@ protocol MiffStore {
     /// téléphone n'est jamais remplacé à partir d'une copie périmée). Une Miff qui n'existe pas lève `MiffGoneError`. Un lot
     /// vide est refusé avant envoi.
     func commitWithMiff(miffId: String, build: @escaping (MiffTxView) -> [DocWrite]) async throws
+}
+
+extension MiffStore {
+    /// Par défaut : « pas de voyage » (un double qui ne connaît pas les voyages).
+    func readOwnTravel(miffId: String, uid: String) async throws -> TravelRead? {
+        nil
+    }
 }
 
 /// Ce qu'une transaction a lu d'une Miff : la Miff elle-même (son nom tel que le serveur l'a écrit, pour que le document du

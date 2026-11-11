@@ -10,7 +10,7 @@ Une "Miff" est le groupe/cercle de confiance central de l'app. On la rejoint via
 ## Règles métier actées (issues des notes du PM)
 - 1 Miff = 1 code secret ; pour rejoindre une Miff, il faut entrer son code secret.
 - Seul le créateur d'une Miff définit les lieux de confiance de cette Miff ; les membres qui la rejoignent héritent de ces lieux de confiance.
-- **Gratuit** : **2 lieux de confiance** (décision du PM, 2026-11-01 ; avant : 1 seul), appartenance à 1 seule Miff à la fois.
+- **Gratuit** : **3 lieux de confiance** (décision du PM, 2026-11-10 ; 2 depuis le 2026-11-01, 1 seul avant), appartenance à 1 seule Miff à la fois.
 - **Premium (« Miff+ »)** : lieux de confiance illimités et zones de danger, appartenance à autant de Miffs que voulu.
 - L'utilisateur ne peut pas terminer l'onboarding tant qu'il n'a pas créé ou rejoint une Miff.
 

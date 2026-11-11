@@ -23,7 +23,7 @@ Les specs ci-dessus sont les notes d'origine ; là où elles contredisent cette 
 
 | Sujet | Décision | Date | Specs touchées |
 |---|---|---|---|
-| Limites du gratuit | **2 lieux de confiance** (avant : 1), 1 seule Miff à la fois | 2026-11-01 | `lieux-de-confiance`, `miff-groupes`, `paywall-premium` |
+| Limites du gratuit | **3 lieux de confiance** (porté à 3 le 2026-11-10 ; 2 depuis le 2026-11-01, 1 avant), 1 seule Miff à la fois | 2026-11-10 | `lieux-de-confiance`, `miff-groupes`, `paywall-premium` |
 | Offre premium | « **Miff+** » : lieux et Miffs illimités, zones de danger ; essai 7 j sur l'annuel seulement ; annuel 4,99 €/mois (59,88 €/an, reconduit au même tarif) ; mensuel 6,99 € | 2026-10-31 | `paywall-premium` |
 | Zone de danger | Nom affiché (au lieu de « zone à risque »), valeur technique `risk` inchangée ; **réservée au premium** | 2026-11-01 | `lieux-de-confiance`, `feed-cercle-de-confiance`, `notifications`, `localisation-lieux-de-confiance` |
 | Qui gère les lieux | Seul le créateur de la Miff crée, modifie, supprime ; un lieu est rattaché à 1 à 5 Miffs | 2026-11-01 | `lieux-de-confiance` |
