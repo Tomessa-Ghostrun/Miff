@@ -496,9 +496,9 @@ private fun MainNavigation(
                                 if (PlaceViewerRole.isCreator(owner, myUid)) profilePlacesViewModel.onPlacesMayChange()
                                 navController.open(PlaceDetailRoute(miffId, placeId))
                             },
-                            onAddPlace = {
+                            onAddPlace = { miffId ->
                                 profilePlacesViewModel.onPlacesMayChange()
-                                navController.open(PlaceFormRoute())
+                                navController.open(PlaceFormRoute(miffId = miffId))
                             },
                             onRetry = profilePlacesViewModel::onRetry,
                             requests = profileRequests,
@@ -1148,6 +1148,9 @@ internal fun NavGraphBuilder.restrictedSettingsListRoute(navController: NavHostC
 /** The same launch-once navigation as the other hosts, for the entry of the restricted Settings. */
 internal fun NavController.openSettings() = open(SettingsRoute)
 
+/** The wait before the listener of the creator follows a new tracked Miff (the carousel is being swiped). */
+private const val TRACK_DEBOUNCE_MILLIS = 400L
+
 /**
  * The creator's side of the requests to add a place, wired to the tabs (ticket LIEU-REQ-C): tells the view model which Miff the Feed shows, keeps ONE listener
  * on the Miff the creator is told about while the app is in front, and says what happened after an answer. Draws nothing.
@@ -1171,6 +1174,8 @@ private fun RequestsHost(
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(tracked) {
         val miffId = tracked ?: return@LaunchedEffect
+        // Swiping through the carousel changes the tracked Miff at every card: the listener is attached only once the carousel has settled (a new value cancels this wait).
+        delay(TRACK_DEBOUNCE_MILLIS)
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.watch(miffId) }
     }
     val context = LocalContext.current

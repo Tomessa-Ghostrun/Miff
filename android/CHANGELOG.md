@@ -27,6 +27,11 @@ Décisions du PM du 2026-11-11 (sans maquette ni Notion) ; ticket `docs/tickets/
 - `MainTabBar` accepte un point sur l'onglet Profil ; `PlacePaywallRoute` / `PlacePaywallScreen` acceptent l'indicateur « vient d'une demande » ; `MiffStore` gagne `readPlaceRequestLeftovers` (valeur par défaut vide : les autres implémentations n'ont rien à faire).
 - `ProfileRequestsViewModel` (B) gagne le côté créateur ; `PlaceRequestStore` / `PlaceRequestRepository` gagnent l'écoute, la lecture d'un demandeur, `accept`, `decline`, `purge`.
 
+### Revue indépendante (corrections)
+- **Accepter refusé par la règle du lieu** (abonnement terminé entre-temps, emplacements gratuits pris ailleurs) : la formule et les lieux sont relus et l'offre s'ouvre, la demande reste (contrat du backend 2.3.3) ; jamais d'erreur brute.
+- **Carrousel** : l'écouteur ne suit une nouvelle Miff qu'après 400 ms de calme (plus de rattachement à chaque carte glissée).
+- **Horloge du téléphone** : une demande n'est **supprimée** pour son âge que si elle a plus de 30 jours **de plus que la plus récente** (dont la date est celle du serveur) ; un téléphone dont l'horloge avance masque les demandes (réversible) sans rien supprimer à tort. Côté demandeur, inchangé (la suppression de ses propres demandes expirées libère son emplacement).
+
 ### Choix « économiques »
 - **UN écouteur, sur UNE Miff** : la Miff de la carte affichée du Profil si le créateur l'a créée, sinon la Miff active du Feed ; **détaché en arrière-plan** (rattaché au retour). Au plus 10 documents. **Une lecture par personne qui demande et par session** (sa fiche pour le prénom et la photo), jamais en boucle (nouvel essai après une minute au plus tôt).
 - Détail chiffré et signaux de bascule : `docs/dev/surveillance-quotas.md` (section « Les demandes d'ajout d'un lieu »).
@@ -60,6 +65,14 @@ Décisions du PM du 2026-11-11 (sans maquette ni Notion) ; ticket `docs/tickets/
 - `WriteKind` gagne `MERGE` (un `set` qui garde les autres champs), indispensable pour `increment` sur un compteur qui n'existe peut-être pas encore ; les deux appliqueurs de lots (`MiffStore`, `PhotoStore`) le gèrent.
 - `FirestoreMiffRepository.leave` appelle d'abord `beforeLeave` (retrait des demandes de la personne, jamais bloquant).
 - Le formulaire de lieu gagne un mode `REQUEST` ; `PlaceDetailScreen` accepte le détail d'une demande ; `PlaceRows` accepte les demandes d'un membre.
+
+### Revue indépendante (corrections)
+- **Suppression de compte** : avant chaque « Quitter » d'une Miff rejointe, les demandes d'ajout de lieu du compte (adresse, coordonnées) sont retirées, au mieux, sans jamais arrêter la suppression (`StoreAccountMiffs.beforeLeave`, contrat du backend 2.7.3).
+- **Fusion** de la branche `android/profil-lieux-membres` à jour (« Ajouter un lieu » présélectionne la Miff de la liste ; le formulaire de demande a déjà sa Miff fixe).
+- **Refus du serveur à l'envoi** : on distingue la zone de danger dont l'abonnement a pris fin entre-temps (offre), la course sur l'emplacement (relecture puis un nouvel envoi dans un emplacement libre) et seulement ensuite la limite de la Miff.
+- **Départ hors connexion** : le retrait des demandes est sauté sans réseau, et limité à une minute au total.
+- **Accessibilité** : la carte de demande lit aussi l'adresse et « Zone de danger », comme les lignes de lieux.
+- **Deux envois hors connexion d'affilée** ne choisissent plus le même emplacement : les emplacements confiés à la file du téléphone comptent (repère gardé 10 minutes ou jusqu'à ce que le serveur montre la demande).
 
 ### Choix « économiques »
 - **Un membre ne lit que SES demandes** (requête filtrée sur `requestedBy`, exigée par les règles), **3 documents au plus**, une seule fois par Miff et par 5 minutes (`PlaceRequestBook`), jamais d'écouteur, jamais de lecture pour les autres membres. Ouverture du formulaire : 3 lectures (formule, Miff, ses demandes) puis rien tant qu'il est ouvert.
@@ -166,7 +179,8 @@ Décision du PM du 2026-11-11 (sans maquette ni spec Notion) ; ticket `docs/tick
 
 ### À savoir
 - **Règles Firestore : aucun changement.** `match /places/{placeId}` autorise déjà `get, list` à `isMember(miffId) && miffAlive(miffId)` ; la création, la modification et la suppression restent au créateur (`isOwner`).
-- « Ajouter un lieu » ouvre le formulaire avec son choix de Miff habituel (dernière Miff rejointe créée par la personne), pas forcément la Miff du carrousel : inchangé, le formulaire permet de choisir.
+- **« Ajouter un lieu » présélectionne la Miff dont on regarde la liste** (Profil, et écran de la Miff) quand la personne en est la créatrice, pour qu'un lieu ne soit jamais partagé avec le mauvais cercle par surprise ; sinon, le choix habituel du formulaire (dernière Miff rejointe créée par la personne) s'applique (`DefaultMiffChoice.of(..., openedFromId)`).
+- Revue : `PlaceDetailViewModel.canEdit` suit `PlaceViewerRole.isCreator` (jamais vrai si les deux uid sont vides) ; une lecture des lieux lancée avant une invalidation et terminée après n'efface plus la marque « à relire ».
 - Ce que cette PR ne fait pas : l'écran iOS (miroir à faire d'après le contrat).
 
 ## [0.31.0] - 2026-11-11 : la phrase principale de la bulle du Feed reprend exactement le titre `display/headline` (retour du PM)

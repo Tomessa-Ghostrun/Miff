@@ -118,6 +118,34 @@ class PlaceFormViewModelTest {
     }
 
     @Test
+    fun opening_aNewPlaceFromTheListOfAMiffTheyCreated_ticksThatMiff_notTheUsualChoice() {
+        // The usual choice would be the last joined one (famille); the person was looking at the list of "Les tuches".
+        val vm =
+            viewModel(
+                context = context(owned = listOf(famille, tuches), lastJoined = MIFF_ID),
+                fromMiff = OTHER_MIFF_ID,
+            )
+        assertEquals(listOf(OTHER_MIFF_ID), vm.state().selectedMiffIds)
+    }
+
+    @Test
+    fun opening_aNewPlaceFromAMiffTheyDidNotCreate_fallsBackOnTheUsualChoice() {
+        val vm =
+            viewModel(
+                context = context(owned = listOf(famille, tuches), lastJoined = OTHER_MIFF_ID),
+                fromMiff = "someone-elses-miff",
+            )
+        assertEquals(listOf(OTHER_MIFF_ID), vm.state().selectedMiffIds)
+    }
+
+    @Test
+    fun opening_aNewPlaceWithNoMiffGiven_keepsTheUsualChoice() {
+        val vm =
+            viewModel(context = context(owned = listOf(famille, tuches), lastJoined = OTHER_MIFF_ID), fromMiff = null)
+        assertEquals(listOf(OTHER_MIFF_ID), vm.state().selectedMiffIds)
+    }
+
+    @Test
     fun opening_withASingleMiff_hasNoPicker() {
         val vm = viewModel()
         assertTrue(vm.state().singleMiff)

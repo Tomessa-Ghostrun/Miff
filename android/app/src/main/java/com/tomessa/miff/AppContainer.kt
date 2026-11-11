@@ -737,6 +737,7 @@ class AppContainer(
             // The acceptance of a request applies the limits of a creation: the same reads of the plan, the Miffs and the places.
             placeRepository = placeRepository,
             newPlaceId = newPlaceId,
+            online = { networkMonitor.isOnline() },
         )
     }
 
@@ -783,6 +784,8 @@ class AppContainer(
         StoreAccountMiffs(
             store = miffStore,
             deleter = MiffDeletion(store = miffStore, repository = miffRepository),
+            // RGPD (contract of the backend 2.7.3): the pending requests of the account (address, coordinates) are taken back BEFORE each "Quitter", best effort.
+            beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
         )
     }
 

@@ -475,4 +475,28 @@ class ProfileRequestsCreatorViewModelTest {
         dispatcher.scheduler.runCurrent()
         assertEquals(listOf("u2"), repo.requesterReads)
     }
+
+    @Test
+    fun aPhoneWhoseClockRunsAhead_hidesTheRequests_butDeletesNothingThatTheServerDatedRecently() {
+        val vm = viewModel()
+        vm.asCreatorOf()
+        val job = listener(vm)
+        // The server dated this one 'now'; the phone's clock is then 60 days ahead.
+        val recent = testRequest(uid = "u2", slot = 1, createdAtMillis = now)
+        now += 60L * 24 * 60 * 60 * 1000
+        push(recent)
+        assertEquals(emptyList<String>(), vm.ids())
+        assertTrue(repo.purged.isEmpty())
+        // A request 40 days older than the newest one is really old by the server's own dates: it goes.
+        val old =
+            testRequest(
+                uid = "u3",
+                slot = 1,
+                createdAtMillis =
+                    recent.createdAtMillis!! - 40L * 24 * 60 * 60 * 1000,
+            )
+        push(recent, old)
+        assertEquals(listOf(listOf("u3_1")), repo.purged.map { it.second })
+        job.cancel()
+    }
 }

@@ -151,7 +151,11 @@ class ProfileReceivedRequestsSectionTest {
         section("u1", requestsState(asked()))
         composeRule
             .onNodeWithContentDescription(
-                context().getString(R.string.place_request_a11y_pending_card, "Chez Mamie", "Léa"),
+                context().getString(
+                    R.string.place_list_row_type_a11y,
+                    context().getString(R.string.place_request_a11y_pending_card, "Chez Mamie", "Léa"),
+                    "12 rue des Lilas, 75020 Paris, France",
+                ),
             ).assertIsDisplayed()
         composeRule
             .onNodeWithContentDescription(context().getString(R.string.place_request_accept_a11y, "Chez Mamie"))

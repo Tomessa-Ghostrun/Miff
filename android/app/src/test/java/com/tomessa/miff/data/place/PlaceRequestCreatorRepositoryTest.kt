@@ -339,4 +339,29 @@ class PlaceRequestCreatorRepositoryTest {
             requests.readAllFailure = firestoreError(FirebaseFirestoreException.Code.UNAVAILABLE)
             assertEquals(MiffFailure.OFFLINE, (repo.readAll(MIFF_ID) as MineRead.Failed).failure)
         }
+
+    @Test
+    fun accept_refusedByTheRuleOfThePlace_becauseThePlanEndedMeanwhile_opensTheOffer_theRequestStays() =
+        runTest {
+            // The plan looked Miff+ at the first read ...
+            creatorContext(premium = true, places = threePlaces())
+            requests.all = listOf(pending)
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            // ... and is free when read again after the refusal.
+            requests.onCommit = { creatorContext(premium = false, places = threePlaces()) }
+            val result = repo.accept(me, pending, knownCount = 1)
+            assertEquals(PaywallReason.LIMIT, (result as RequestAcceptResult.NeedsPremium).reason)
+            assertEquals(2, placeRepository.prepareCalls)
+            assertTrue(requests.commits.isEmpty())
+        }
+
+    @Test
+    fun accept_refusedForAnotherReason_isAFailure_neverARawError() =
+        runTest {
+            creatorContext(premium = true)
+            requests.all = listOf(pending)
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            val result = repo.accept(me, pending, knownCount = 1)
+            assertEquals(MiffFailure.REFUSED, (result as RequestAcceptResult.Failed).failure)
+        }
 }

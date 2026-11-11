@@ -64,3 +64,7 @@ En-tête (photo, nom, roue) → carrousel « Mes Miffs » → **lieux de la Miff
 3. Un membre : liste + détail **sans** « Modifier », jamais « Ajouter un lieu », jamais de compteur ni de « Miff+ ».
 4. Un seul `get` par Miff, réutilisation 5 minutes, 0 lecture pour la Miff du Feed, relecture après passage du créateur par un lieu ou le formulaire.
 5. « Zone de danger » dite aussi à VoiceOver (`accessibilityLabel` de la ligne).
+
+## 8. Formulaire « Ajouter un lieu » (revue de la PR, 2026-11-11)
+
+Quand le créateur touche « Ajouter un lieu » sous la liste d'une Miff (Profil, ou écran de la Miff), le formulaire de **nouveau lieu coche en premier cette Miff** (si la personne en est la créatrice), au lieu de la dernière Miff rejointe : un lieu ne doit pas être partagé avec le mauvais cercle par surprise. Une Miff dont la personne n'est pas créatrice, ou aucune Miff transmise : choix habituel (Q4). Android : `PlaceFormRoute(miffId = …)` et `DefaultMiffChoice.of(owned, lastJoinedId, openedFromId)`.

@@ -40,6 +40,9 @@
 23. [ ] **Un membre retiré** de la Miff par le créateur : ses demandes disparaissent de la liste du créateur.
 24. [ ] **Supprimer la Miff** (créateur) avec des demandes en attente : la suppression va au bout (les demandes et le compteur partent avec).
 
+24 bis. [ ] **Supprimer son compte** (membre avec une demande en attente) : la demande disparaît de la liste du créateur ; **quitter une Miff sans réseau** ne se bloque pas à attendre le retrait des demandes.
+24 ter. [ ] **Deux demandes envoyées hors connexion d'affilée**, puis réseau rétabli : **les deux** apparaissent côté créateur (pas la même place).
+
 ## Partie C : lecteur d'écran, texte, thèmes
 
 25. [ ] **TalkBack** : la carte d'une demande est lue d'un bloc (« Demande en attente : <lieu>, demandée par <Prénom> » côté créateur ; « Ta demande en attente : <lieu> » côté membre) ; les boutons Accepter / Refuser / Retirer ma demande sont annoncés comme des boutons ; le titre « À valider » comme un titre ; le point de l'onglet Profil est annoncé (« nouvelle demande de lieu »).

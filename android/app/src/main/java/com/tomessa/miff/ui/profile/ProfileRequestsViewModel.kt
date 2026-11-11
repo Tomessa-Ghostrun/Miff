@@ -21,6 +21,7 @@ import com.tomessa.miff.domain.notification.PlaceRequestLines
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceRequest
 import com.tomessa.miff.domain.place.PlaceRequestBook
+import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.RequesterState
 import com.tomessa.miff.domain.place.RequestsView
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -302,9 +303,16 @@ class ProfileRequestsViewModel(
         if (miffId !in creatorMiffs) return
         val known = book.known(miffId) ?: return
         val now = nowMillis()
+        // Deleting is irreversible: a request is deleted for its age only if it is more than 30 days older than the NEWEST request, whose date is the server's. A
+        // phone whose clock runs ahead hides everything (reversible) but never deletes a request that the server dated recently.
+        val newest = known.mapNotNull { it.createdAtMillis }.maxOrNull()
+        val tooOld = { r: PlaceRequest ->
+            val at = r.createdAtMillis
+            r.isExpired(now) && at != null && newest != null && newest - at > PlaceRequestLimits.EXPIRY_MILLIS
+        }
         val targets =
             known.filter {
-                (it.isExpired(now) || requesterState(it) == RequesterState.NotMember) && it.id !in purging
+                (tooOld(it) || requesterState(it) == RequesterState.NotMember) && it.id !in purging
             }
         if (targets.isEmpty()) return
         val ids = targets.map { it.id }

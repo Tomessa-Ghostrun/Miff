@@ -25,6 +25,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withTimeoutOrNull
 
 /*
  * SECURITY, for this file: the requests (name, address, coordinates) are sensitive. They are never logged, never in an analytics event, never in an
@@ -243,7 +244,27 @@ class FirestorePlaceRequestRepository(
     private val newPlaceId: () -> String,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val timeoutMillis: Long = TIMEOUT_MS,
+    /** Is there a network? Leaving a Miff skips the withdrawal of the requests when there is none (the departure itself needs the network anyway). */
+    private val online: () -> Boolean = { true },
 ) : PlaceRequestRepository {
+    /**
+     * The slots handed to the phone's queue while offline (key `miffId|requestId`, time of the hand-over): a SECOND request made offline right after must not take
+     * the same slot (the first would be overwritten by a refused write and lost without a word). A mark lives 10 minutes, or until the server shows the request.
+     */
+    private val queued = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    private fun queuedIds(
+        miffId: String,
+        uid: String,
+    ): Set<String> {
+        val now = nowMillis()
+        queued.entries.removeIf { now - it.value > QUEUED_MARK_MILLIS }
+        return queued.keys
+            .filter { it.startsWith("$miffId|$uid" + "_") }
+            .map { it.substringAfter('|') }
+            .toSet()
+    }
+
     // --- Reading ------------------------------------------------------------------------------------------------
 
     override suspend fun prepare(
@@ -279,6 +300,7 @@ class FirestorePlaceRequestRepository(
                 is Guarded.Failed -> return RequestContextLoad.Failed(read.failure)
             }
         // An expired request still occupies its slot until it is deleted: the author deletes it here, so that the slot is free again (ticket 5.3).
+        mine.forEach { queued.remove("$miffId|${it.id}") }
         val (expired, alive) = mine.partition { it.isExpired(nowMillis()) }
         val stillThere = expired.filter { withdraw(it) !is RequestWithdrawResult.Done }
         return RequestContextLoad.Loaded(RequestContext(details.name, premium, alive + stillThere))
@@ -315,26 +337,18 @@ class FirestorePlaceRequestRepository(
         ) {
             return RequestSubmitResult.NeedsPremium(PaywallReason.DANGER)
         }
-        // 3 pending requests at most (M5): no write is tried at the 4th.
-        if (context.mine.size >= PlaceRequestLimits.PER_MEMBER) return RequestSubmitResult.MemberLimit
-        val slot = PlaceRequestSlots.firstFree(uid, context.mine) ?: return RequestSubmitResult.MemberLimit
+        // 3 pending requests at most (M5): no write is tried at the 4th. The slots waiting in the phone's queue count too.
+        val waiting = queuedIds(miffId, uid)
+        val taken = context.mine.map { it.id }.toSet() + waiting
+        if (taken.size >= PlaceRequestLimits.PER_MEMBER) return RequestSubmitResult.MemberLimit
+        val slot =
+            PlaceRequestLimits.SLOTS.firstOrNull { PlaceRequestLimits.idOf(uid, it) !in taken }
+                ?: return RequestSubmitResult.MemberLimit
         val lot = PlaceRequestWrites.create(uid, miffId, slot, draft)
-        val sent =
-            PlaceRequest(
-                id = PlaceRequestLimits.idOf(uid, slot),
-                miffId = miffId,
-                requestedBy = uid,
-                name = draft.name.trim(),
-                type = draft.type,
-                address = draft.address,
-                lat = draft.lat,
-                lng = draft.lng,
-                radiusM = draft.radiusM,
-                category = draft.category,
-                createdAtMillis = null,
-            )
+        val sent = sentRequest(uid, miffId, slot, draft)
         if (!online) {
             store.enqueue(lot)
+            queued["$miffId|${sent.id}"] = nowMillis()
             return RequestSubmitResult.Queued
         }
         val failure =
@@ -342,8 +356,27 @@ class FirestorePlaceRequestRepository(
                 is Guarded.Value -> return RequestSubmitResult.Done(sent)
                 is Guarded.Failed -> outcome.failure
             }
-        return afterFailedSubmit(uid, miffId, sent, failure)
+        return afterFailedSubmit(uid, miffId, sent, draft, failure)
     }
+
+    private fun sentRequest(
+        uid: String,
+        miffId: String,
+        slot: Int,
+        draft: PlaceRequestDraft,
+    ) = PlaceRequest(
+        id = PlaceRequestLimits.idOf(uid, slot),
+        miffId = miffId,
+        requestedBy = uid,
+        name = draft.name.trim(),
+        type = draft.type,
+        address = draft.address,
+        lat = draft.lat,
+        lng = draft.lng,
+        radiusM = draft.radiusM,
+        category = draft.category,
+        createdAtMillis = null,
+    )
 
     /**
      * A write that was not confirmed is looked at before the person is told it failed: (1) did it land after all (the answer was lost)? then it is done;
@@ -353,6 +386,7 @@ class FirestorePlaceRequestRepository(
         uid: String,
         miffId: String,
         sent: PlaceRequest,
+        draft: PlaceRequestDraft,
         failure: MiffFailure,
     ): RequestSubmitResult {
         if (failure == MiffFailure.OFFLINE || failure == MiffFailure.UNKNOWN) {
@@ -367,13 +401,27 @@ class FirestorePlaceRequestRepository(
                 }
             if (gone) return RequestSubmitResult.MiffUnavailable
         }
-        return if (failure ==
-            MiffFailure.REFUSED
-        ) {
-            RequestSubmitResult.MiffLimit
-        } else {
-            RequestSubmitResult.Failed(failure)
+        if (failure != MiffFailure.REFUSED) return RequestSubmitResult.Failed(failure)
+        // A refusal on a Miff that is still there (contract of the backend, section 4): three causes are told apart, the last one is the limit of the Miff.
+        // (a) a danger zone and the plan ended since the form opened: the offer, nothing else to do.
+        if (draft.type == PlaceType.RISK) {
+            val read = guarded { places.readEntitlement(uid) }
+            if (read is Guarded.Value &&
+                !isActive(read.value)
+            ) {
+                return RequestSubmitResult.NeedsPremium(PaywallReason.DANGER)
+            }
         }
+        // (b) a race on the slot (another phone took it): the requests are read again and, if a slot is free, the lot is sent once more.
+        val fresh = (guarded { store.readMine(miffId, uid, fromServer = true) } as? Guarded.Value)?.value
+        if (fresh != null && fresh.any { it.id == sent.id }) {
+            val slot = PlaceRequestSlots.firstFree(uid, fresh) ?: return RequestSubmitResult.MemberLimit
+            val again = sentRequest(uid, miffId, slot, draft)
+            val outcome = guarded { store.commit(PlaceRequestWrites.create(uid, miffId, slot, draft)) }
+            return if (outcome is Guarded.Value) RequestSubmitResult.Done(again) else RequestSubmitResult.MiffLimit
+        }
+        // (c) all the slots were free: the Miff holds all the requests it takes (10), or the counter drifted too high.
+        return RequestSubmitResult.MiffLimit
     }
 
     override suspend fun withdraw(request: PlaceRequest): RequestWithdrawResult {
@@ -409,8 +457,15 @@ class FirestorePlaceRequestRepository(
         uid: String,
         miffId: String,
     ) {
-        val mine = (guarded { store.readMine(miffId, uid, fromServer = true) } as? Guarded.Value)?.value ?: return
-        for (request in mine) withdraw(request)
+        // No network: the departure will fail on its own; nothing is waited for here (the creator hides and deletes what stays).
+        if (!online()) return
+        // At most a minute in all, whatever the network does: never a long wait before "Quitter".
+        withTimeoutOrNull(LEAVE_BUDGET_MILLIS) {
+            val mine =
+                (guarded { store.readMine(miffId, uid, fromServer = true) } as? Guarded.Value)?.value
+                    ?: return@withTimeoutOrNull
+            for (request in mine) withdraw(request)
+        }
     }
 
     // --- The creator ------------------------------------------------------------------------------------------------------
@@ -524,6 +579,16 @@ class FirestorePlaceRequestRepository(
             val left = guarded { store.readOne(request.miffId, request.id) }
             if (left is Guarded.Value && left.value == null) return RequestAcceptResult.Done(placeId)
         }
+        // Refused by the rule of the place although the plan looked fine (it ended meanwhile, or another phone filled the free slots; contract 2.3.3): the plan and the
+        // places are read again and the offer opens, the request stays pending. Never a raw error.
+        if (failure == MiffFailure.REFUSED) {
+            val again = placeRepository.prepare(uid)
+            if (again is PlaceContextLoad.Loaded) {
+                val c = again.context
+                val retry = PlaceQuota.forCreate(c.premium, request.type, c.idsByMiff, c.distinctPlaces, newPlaceId)
+                if (retry is PlaceSlot.NeedsPremium) return RequestAcceptResult.NeedsPremium(retry.reason)
+            }
+        }
         return RequestAcceptResult.Failed(failure)
     }
 
@@ -572,5 +637,7 @@ class FirestorePlaceRequestRepository(
 
     companion object {
         const val TIMEOUT_MS = 20_000L
+        const val LEAVE_BUDGET_MILLIS = 60_000L
+        const val QUEUED_MARK_MILLIS = 10 * 60_000L
     }
 }
