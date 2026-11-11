@@ -75,7 +75,7 @@ final class AppConfigurationTests: XCTestCase {
         // FEED-8 : EXACTEMENT la clé d'AJOUT à la galerie (« Enregistrer cette photo », au toucher), jamais une clé de lecture.
         XCTAssertEqual(Set(info.keys.filter { $0.hasPrefix("NSPhotoLibrary") }), ["NSPhotoLibraryAddUsageDescription"])
         XCTAssertFalse(
-            (info["NSPhotoLibraryAddUsageDescription"] as? String ?? "").isEmpty, "texte d'usage de l'ajout à la galerie vide"
+            (info["NSPhotoLibraryAddUsageDescription"] as? String ?? "").isEmpty, "texte d'usage vide"
         )
     }
 

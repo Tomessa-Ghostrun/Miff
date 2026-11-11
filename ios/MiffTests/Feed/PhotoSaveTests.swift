@@ -289,7 +289,7 @@ final class PhotoSaveTests: XCTestCase {
     }
 
     func testOnlyOneFileOfTheAppImportsPhotosAndItOnlyAddsNeverReads() throws {
-        XCTAssertEqual(try filesContaining("import Photos\n"), ["PhotoLibrarySaver.swift"],"PhotosUI (le sélecteur du profil) est un autre module")
+        XCTAssertEqual(try filesContaining("import Photos\n"), ["PhotoLibrarySaver.swift"], "PhotosUI (le sélecteur du profil) est un autre module")
         let saver = try code("Miff/Services/Feed/PhotoLibrarySaver.swift")
 
         XCTAssertEqual(saver.components(separatedBy: "for: .addOnly").count - 1, 2, "statut et demande : en ajout seul")
