@@ -30,6 +30,30 @@ enum class JournalKind {
     BATTERY_WRITTEN,
     BATTERY_REFUSED,
     BREAKER_BATTERY,
+
+    /** The detection did not write my position: offline at the time of the write. */
+    POSITION_SKIPPED_OFFLINE,
+
+    /** The detection did not write my position: the session of the device was not confirmed (SESS-2). */
+    POSITION_SKIPPED_SESSION,
+
+    /** The server refused the write of my position (consent, sharing, rules, App Check). */
+    POSITION_REFUSED,
+
+    /** The Update found that my position is not published in at least one Miff. */
+    UPDATE_POSITION_NOT_PUBLISHED,
+
+    /** The Update stopped on a permission ("Toujours" + precise location, or the location of the phone is off). */
+    UPDATE_PERMISSION_BLOCKED,
+
+    /** The measure taken at "Publier" gave nothing usable (no signal in time, or older than 10 minutes). */
+    UPDATE_MEASURE_FAILED,
+
+    /** The Update handed its measure over and the detection published my position (the photo can leave). */
+    UPDATE_HAND_OVER_WORKED,
+
+    /** The detection could not publish my position anywhere: see the lines of the detection just before. */
+    UPDATE_HAND_OVER_FAILED,
 }
 
 /** A line of the journal as it is kept and shown. */

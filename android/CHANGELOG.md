@@ -2,6 +2,22 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.29.0] - 2026-11-11 : Update, « Position introuvable » en boucle quand le suivi n'a pas encore publié ma position
+
+Miroir de la correction iOS (PR #157, recette TestFlight build 24). Ticket `docs/tickets/update.md` §6.5 (D27, D33, critère U8). Branche `android/update-position-publiable`. À renuméroter au merge si l'ordre change.
+
+**Constat** : Android avait le même défaut. `UpdatePublisher` exigeait que la détection ait déjà écrit MA position dans la Miff (`LocalPublishedPositions`) et, sinon, répondait « Position introuvable » **sans rien mesurer**, en demandant seulement à la détection de « regarder à nouveau » (en tâche de fond, 3 s d'attente) : avec un GPS lent la détection n'écrivait rien et « Réessayer » ne pouvait jamais réussir. Les autres causes iOS ne concernent pas Android : pas de place d'attente unique (chaque demande a son propre jeton `getCurrentLocation`), et le client fusionné attend lui-même un signal passager et se replie sur la dernière position de moins de 10 minutes.
+
+### Changé
+- **L'Update mesure toujours** au toucher de « Publier » (une seule mesure), même quand la détection n'a pas ma position. Attente portée de **5 s à 10 s** (`FusedPhotoPositionSource.WAIT_MILLIS`) : **écart avec D33 (« 3 s ») à confirmer par le PM**, la personne attend de toute façon la fin de la publication.
+- **Remise au suivi** : là où ma position n'est pas publiée, la mesure (moins de 10 minutes) est remise à `TrackingEngine.refresh(SHARING_CHANGED, mesure)`, qui la publie **lui-même** avec toutes ses garanties (« Toujours » + précise, partage actif, consentement v3, session SESS-2, garde-fou, disjoncteur, règles). **L'Update n'écrit jamais `positions/{moi}`** (U8, testé). La photo ne part que là où la position est ensuite publiée (relue dans la copie locale) ; sinon « Position introuvable » avec cause au journal.
+- **Autorisations insuffisantes** (pas « Toujours » + précise) : la phrase des réglages tout de suite, au lieu d'un « réessaie dans un instant » sans fin.
+- **Journal de diagnostic** (build debug seulement, **codes sans coordonnée ni nom**) : `POSITION_SKIPPED_OFFLINE`, `POSITION_SKIPPED_SESSION`, `POSITION_REFUSED` (côté suivi), `UPDATE_POSITION_NOT_PUBLISHED`, `UPDATE_PERMISSION_BLOCKED`, `UPDATE_MEASURE_FAILED`, `UPDATE_HAND_OVER_WORKED`, `UPDATE_HAND_OVER_FAILED`.
+- **Revue indépendante (retouches)** : la remise a son **propre plafond de 10 s** (`UpdatePublisher.HANDOVER_TIMEOUT_MS`, au lieu des 20 s du serveur) ; le passage du suivi tourne dans **`trackingScope`** (comme `trackingLooksAgain`), donc un plafond atteint ou un écran quitté ne coupe que l'ATTENTE, jamais le moteur avant sa sauvegarde locale ; **plusieurs Miffs dont une seule sans position publiée alors que « Toujours » + précise manquent** : la photo part là où la position est déjà publiée (« Partielle » pour les autres), rien n'est remis ; le texte `update_notice_location_off` (fr/en) cite l'accès « Toujours » avec la position précise ; test source : l'Update n'appelle jamais `TrackingWrites.position`.
+- Tests : `UpdatePublisherTest` (mesure toujours, remise, réussite dans le même essai, aucune écriture de `positions`, autorisations, signal lent, mesure de plus de 10 min jamais remise, suivi qui échoue ou ne répond pas, deux Miffs), `TrackingEngineTest` (mesure remise publiée sans nouvelle lecture, refusée sans « Toujours » / avec ancien consentement / trop ancienne, journal du refus).
+
+**Choix économiques** : aucun coût. Une remise relit le serveur une fois (Miffs, consentement, lieux : passage `SHARING_CHANGED`), seulement quand ma position n'est pas encore publiée. **Limite connue** : le suivi garde ses 3 s d'attente pour ses propres passes ; recette PM : `docs/qa/checklists/update-android-recette-pm.md`.
+
 ## Non publié : phrase principale de la bulle du Feed plus grosse, emoji dans les étiquettes de lieu (retours du PM, 2026-11-10)
 
 Retours du PM après la recette de l'APK de la PR #154. Branche `android/feed-bulle-police-emoji`, PR brouillon #160. Pas de numéro de version (plusieurs PR Android ouvertes ; à numéroter à la fusion).
