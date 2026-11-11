@@ -2,17 +2,17 @@
 
 ## Non publié
 
-### Feed : bulle sans symbole, phrase en ExtraBold, bouton « Contacter » (décisions du PM, 2026-11-10 et 2026-11-11 ; miroir d'Android PR #160)
+### Feed : bulle sans symbole, phrase en 30 / 36, bouton « Contacter » (décisions du PM, 2026-11-10 et 2026-11-11 ; miroir d'Android PR #160)
 
 Branche `ios/feed-bulle-police-contacter` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
 
 Modifié :
-- **Phrase principale de la bulle** (« Tout va bien », « Pas encore de nouvelles », titre d'une alerte) : Baloo Thambi 2 **ExtraBold** (axe `wght` 800), **30 / 36**, Dynamic Type `.title2`, `text/primary`, centrée ; nouveau style `textDisplayBubble` (`TextStyleToken.variationWeight`), repli sur Baloo Regular si la variation n'est pas appliquée ; aucune nouvelle police. Le reste du Feed ne change pas. La bulle grandit en hauteur avec un grand texte.
+- **Phrase principale de la bulle** (« Tout va bien », « Pas encore de nouvelles », titre d'une alerte) : **30 / 36**, Dynamic Type `.title2`, `text/primary`, centrée, dans la **même famille et la même graisse que `display/headline`** (Baloo Thambi 2 Regular : la police ExtraBold 800 prévue d'abord est abandonnée, décision du PM du 2026-11-11) ; nouveau style `textDisplayBubble`, aucune nouvelle police. Le reste du Feed ne change pas. La bulle grandit en hauteur avec un grand texte.
 - **Plus aucun symbole dans la bulle**, quelle que soit sa couleur : le filigrane (horloge, point d'exclamation, sablier) et le pictogramme de bouton disparaissent. Code retiré : `BubbleLayout.pictogram` et `symbol*`, `BubbleWatermark`, constantes de mouvement `star*`.
 - **Bouton de la bulle** : libellé **« Contacter »** (EN « Contact ») au lieu de « Envoyer un message » (clé `feed_bubble_message_action` conservée, valeur changée ; à aligner si l'agent Android renomme la clé) ; texte seul, un peu plus petit (14 pt, marges réduites), zone de toucher d'au moins 44 pt ; VoiceOver lit « Contacter {prénom} » (clé `feed_bubble_contact_a11y`, la même qu'Android).
 - **Grand texte** : à très grand texte les marges latérales de la bulle diminuent et la phrase peut rétrécir jusqu'à 50 % (6 lignes au plus) : aucun mot n'est coupé.
 
-Ajouté : tests de typographie (`testTheBubbleStyleIsBalooExtraBold30Over36`), parité avec Android (`testTheBubbleStyleMatchesAndroid`, rien n'est comparé tant que le style n'est pas dans `Type.kt` de main), absence de symbole et zone de toucher (`BubbleLayoutTests`). Les emoji des étiquettes iOS sont dans #145 (pas ici).
+Ajouté : tests de typographie (`testTheBubbleStyleIs30Over36InTheFamilyOfTheHeadline`), parité avec Android (`testTheBubbleStyleMatchesAndroid`, rien n'est comparé tant que le style n'est pas dans `Type.kt` de main), absence de symbole et zone de toucher (`BubbleLayoutTests`). Les emoji des étiquettes iOS sont dans #145 (pas ici).
 
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 

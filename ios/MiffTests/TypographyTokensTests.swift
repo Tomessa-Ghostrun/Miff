@@ -45,35 +45,16 @@ final class TypographyTokensTests: XCTestCase {
         }
     }
 
-    /// Décision du PM (2026-11-10) : la phrase principale de la bulle du Feed, Baloo Thambi 2 ExtraBold 30 / 36, suit Dynamic Type (.title2).
-    func testTheBubbleStyleIsBalooExtraBold30Over36() throws {
+    /// Décision du PM (2026-11-11) : la phrase principale de la bulle du Feed garde la taille 30 / 36 (.title2) mais dans la même famille et la
+    /// même graisse que `display/headline` (homogène avec l'app : plus de variation ExtraBold).
+    func testTheBubbleStyleIs30Over36InTheFamilyOfTheHeadline() {
         XCTAssertEqual(textDisplayBubble.size, 30)
         XCTAssertEqual(textDisplayBubble.lineHeight, 36)
-        XCTAssertEqual(textDisplayBubble.variationWeight, 800)
-        XCTAssertEqual(textDisplayBubble.face, .baloo)
+        XCTAssertEqual(textDisplayBubble.face, textDisplayHeadline.face)
+        XCTAssertEqual(textDisplayBubble.dynamicTypeStyle, textDisplayHeadline.dynamicTypeStyle)
         XCTAssertEqual(textDisplayBubble.dynamicTypeStyle, .title2)
         XCTAssertFalse(TextStyleTokens.all.contains { $0.name == "textDisplayBubble" }, "hors de la liste d'Android")
-        XCTAssertNil(textDisplayHeadline.variationWeight, "le reste du Feed ne change pas")
-        let font = textDisplayBubble.uiFont(size: 30)
-        XCTAssertEqual(font.familyName, "Baloo Thambi 2")
-        XCTAssertEqual(font.pointSize, 30)
-    }
-
-    /// La variation de graisse est VRAIMENT appliquée par le système (et pas seulement demandée) : la même phrase est plus large à 800
-    /// qu'à 400, et à 800 qu'à 700.
-    func testTheWeightVariationIsAppliedSoTheBubbleFontIsWiderThanRegular() {
-        let text = "Tout va bien" as NSString
-        func width(_ font: UIFont) -> CGFloat {
-            text.size(withAttributes: [.font: font]).width
-        }
-
-        let regular = width(MiffFontFace.baloo.uiFont(size: 30))
-        let bold = width(MiffFontFace.balooUIFont(weight: 700, size: 30))
-        let extraBold = width(textDisplayBubble.uiFont(size: 30))
-
-        XCTAssertGreaterThan(bold, regular, "wght 700 non appliqué")
-        XCTAssertGreaterThan(extraBold, bold, "wght 800 non appliqué")
-        XCTAssertGreaterThan(extraBold, regular)
+        XCTAssertEqual(textDisplayBubble.face.uiFont(size: 30).familyName, "Baloo Thambi 2")
     }
 
     func testDisplayStylesUseBalooAndTextStylesUseHanken() {

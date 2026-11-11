@@ -108,7 +108,7 @@ final class BubbleLayoutTests: XCTestCase {
         let largest = UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge)
         let metrics = UIFontMetrics(forTextStyle: .title2)
         let size = metrics.scaledValue(for: textDisplayBubble.size, compatibleWith: largest)
-        let font = textDisplayBubble.uiFont(size: size)
+        let font = textDisplayBubble.face.uiFont(size: size)
         let widest = words.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
         let available: CGFloat = 320 - 2 * Spacing.md - 2 * BubbleLayout.accessibilityHorizontalInset
 
