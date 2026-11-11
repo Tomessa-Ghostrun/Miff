@@ -926,6 +926,88 @@
     <string name="update_action_open_feed">Open my Feed</string>
     <string name="update_notice_location_off">Your position isn\'t available: your phone\'s location is off, or Miff is no longer allowed to use it. You can turn it back on in the settings, then try again.</string>
 
+    <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
+    <string name="notif_n1_title">You\'ve turned orange</string>
+    <string name="notif_n1_body">Let your Miff know everything\'s fine.</string>
+    <string name="notif_n2_title">You\'ve turned red</string>
+    <string name="notif_n2_body">Let your Miff know everything\'s fine.</string>
+    <string name="notif_n3_title">Your Miff has turned orange</string>
+    <string name="notif_n3_body">Check in on your loved ones.</string>
+    <string name="notif_n4_title">Your Miff has turned red</string>
+    <string name="notif_n4_body">Check in on your loved ones.</string>
+    <string name="notif_n6a_title">You\'re in a danger zone of your Miff</string>
+    <string name="notif_n6a_body">While you\'re there, your circle sees a different status.</string>
+    <string name="notif_prime_title">A reminder, only when it helps</string>
+    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
+    <string name="notif_prime_allow">Allow</string>
+    <string name="notif_prime_later">Not now</string>
+    <string name="notif_prime_example_when">2 min ago</string>
+    <string name="notif_second_chance_title">A reminder if you forget to check in?</string>
+    <string name="notif_second_chance_action">Turn on</string>
+    <string name="notif_second_chance_later">Not now</string>
+    <string name="notif_state_allowed">Allowed by your phone</string>
+    <string name="notif_state_off">Turned off in your phone</string>
+    <string name="notif_state_off_note">You won\'t get reminders.</string>
+    <string name="notif_state_notasked">Not turned on yet</string>
+    <string name="notif_state_open_settings">Open your phone\'s settings</string>
+    <string name="notif_privacy_body">Notifications are prepared by your phone: Miff doesn\'t send any to your loved ones. You choose what you get in Settings > Notifications.</string>
+    <string name="notif_settings_title">Notifications</string>
+    <string name="notif_settings_subtitle">Reminders and news from your Miff</string>
+    <string name="notif_settings_authorization">Phone permission</string>
+    <string name="notif_settings_general">Receive notifications</string>
+    <string name="notif_settings_section_you">For you</string>
+    <string name="notif_settings_section_miff">For your Miff</string>
+    <string name="notif_settings_n1">When I turn orange</string>
+    <string name="notif_settings_n2">When I turn red</string>
+    <string name="notif_settings_n3">When my Miff turns orange</string>
+    <string name="notif_settings_n4">When my Miff turns red</string>
+    <string name="notif_settings_n6">When I enter a danger zone</string>
+    <string name="notif_settings_n6_hint">You turn off the notification, not what your Miff sees.</string>
+    <string name="notif_settings_night_title">Quiet night</string>
+    <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>
+    <string name="notif_settings_see_all">See my notifications</string>
+    <string name="notif_settings_help_link">If reminders don\'t arrive</string>
+    <string name="notif_help_title">Notifications turned off</string>
+    <string name="notif_help_intro">You turned notifications off in your phone.</string>
+    <string name="notif_help_choice">That\'s your choice, and it matters.</string>
+    <string name="notif_help_lead">To get a reminder when you forget to check in:</string>
+    <string name="notif_help_step_1">Open your phone\'s settings</string>
+    <string name="notif_help_step_2">Choose “Notifications”</string>
+    <string name="notif_help_step_3">Turn them on for Miff</string>
+    <string name="notif_help_footer">You can always check in from the app.</string>
+    <string name="notif_bell_a11y">Notifications</string>
+    <plurals name="notif_bell_unread_a11y">
+        <item quantity="one">Notifications, %d unread</item>
+        <item quantity="other">Notifications, %d unread</item>
+    </plurals>
+    <string name="notif_center_title">Notifications</string>
+    <string name="notif_center_empty_title">Nothing to report</string>
+    <string name="notif_center_empty_body">Here you\'ll find your reminders and news from your Miff.</string>
+    <string name="notif_center_off_title">Notifications are off</string>
+    <string name="notif_center_off_body">You won\'t get reminders.</string>
+    <string name="notif_center_off_action">Turn them on</string>
+    <string name="notif_center_notasked_body">Turn them on to get a reminder when it matters.</string>
+    <string name="notif_center_notasked_action">Turn on</string>
+    <string name="notif_center_section_today">Today</string>
+    <string name="notif_center_section_yesterday">Yesterday</string>
+    <string name="notif_center_section_older">Earlier</string>
+    <string name="notif_center_menu_a11y">More options</string>
+    <string name="notif_center_mark_all_read">Mark all as read</string>
+    <string name="notif_center_clear_all">Clear all</string>
+    <string name="notif_center_clear_confirm_title">Clear all notifications?</string>
+    <string name="notif_center_clear_confirm_body">This changes nothing for your Miff.</string>
+    <string name="notif_center_clear_confirm_action">Clear</string>
+    <string name="notif_center_delete_a11y">Delete this notification</string>
+    <string name="notif_center_unread_a11y">unread</string>
+    <string name="notif_center_in_miff">Miff “%1$s”</string>
+    <string name="android_notif_channel_reminders">Reminders for you</string>
+    <string name="android_notif_channel_reminders_desc">A gentle reminder to check in when you turn orange or red.</string>
+    <string name="android_notif_channel_reminders_quiet">Reminders for you (quiet night)</string>
+    <string name="android_notif_channel_circle">News from your Miff</string>
+    <string name="android_notif_channel_circle_desc">When your Miff changes status, or when you enter a danger zone of your Miff.</string>
+    <string name="android_notif_channel_circle_quiet">News from your Miff (quiet night)</string>
+    <string name="android_notif_channel_quiet_desc">The same notifications, without sound or vibration, for the night.</string>
+    <string name="android_notif_channel_blocked">This type is turned off in your phone</string>
     <!-- Review window "What do you think of Miff?" (docs/tickets/pop-ins-avis.md). Informal "you", calm tone. -->
     <string name="review_title">What do you think of Miff?</string>
     <string name="review_close_a11y">Close</string>
@@ -972,4 +1054,7 @@
     <string name="android_diag_review_force_armed">Ready: send the app to the background, then reopen it (the window never covers the Update).</string>
     <string name="android_diag_review_reset">Reset the state of the window</string>
     <string name="android_diag_review_reset_done">State reset: the window starts from zero (7 days, 30 days, 90 days).</string>
+
+    <!-- NOTIF-6A: centre verrouille (notifications refusees) -->
+    <string name="notif_center_enable_action">Turn on notifications</string>
 </resources>

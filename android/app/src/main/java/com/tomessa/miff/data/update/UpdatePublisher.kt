@@ -108,6 +108,8 @@ class UpdatePublisher(
     private val published: PublishedPositions = PublishedPositions { true },
     /** Called when no Miff of the lot has my position yet: the detection is asked to write it (the person retries in a moment). */
     private val onPositionMissing: () -> Unit = {},
+    /** NOTIF-4A: told, locally, when an update left for [miffIds] at [atMillis] (it moves my last update: the reminders waiting for me are cancelled and planned again). */
+    private val onUpdatePublished: (miffIds: List<String>, atMillis: Long) -> Unit = { _, _ -> },
     /**
      * MODE VOYAGE: a trip is on. The position of the person is still published by the tracking and the photo keeps its own measure, as outside a trip; only the status of the update
      * differs: it carries NO battery level (the rules refuse a level next to a trip).
@@ -297,6 +299,11 @@ class UpdatePublisher(
                 location = PhotoLocation(place.lat, place.lng, place.measuredAtMillis),
             )
         written.forEach { photos.putOwn(it, uid, shared) }
+        try {
+            onUpdatePublished(written, now)
+        } catch (e: Exception) {
+            // A reminder that cannot be brought up to date must never fail a publication that went through.
+        }
     }
 
     companion object {
