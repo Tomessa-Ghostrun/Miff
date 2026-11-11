@@ -1,6 +1,7 @@
 package com.tomessa.miff.domain.notification
 
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 /*
@@ -16,7 +17,7 @@ object TravelEndNotice {
     const val CATCH_UP_WINDOW_MILLIS = 24L * 60L * 60L * 1000L
 
     /**
-     * 08:00 of the local day of the end, and never before the end itself (a time zone changed during the trip must not bring N7 before the trip ends: then the
+     * 08:00 of the local day of the end, and never before the end itself (the end itself is allowed) (a time zone changed during the trip must not bring N7 before the trip ends: then the
      * next 08:00 is taken). With the usual end (00:00 local) this is `end + 8 h`, daylight-saving days included.
      */
     fun dueAt(
@@ -24,25 +25,20 @@ object TravelEndNotice {
         zone: ZoneId,
     ): Long {
         val day = Instant.ofEpochMilli(untilMillis).atZone(zone).toLocalDate()
-        val first =
-            day
-                .atTime(HOUR, 0)
-                .atZone(zone)
-                .toInstant()
-                .toEpochMilli()
-        return if (first >
-            untilMillis
-        ) {
-            first
-        } else {
-            day
-                .plusDays(1)
-                .atTime(HOUR, 0)
-                .atZone(zone)
-                .toInstant()
-                .toEpochMilli()
-        }
+        val first = eightOf(day, zone)
+        // ">=": when 08:00 local IS the end itself (end at 00:00 Paris, phone in Tokyo: 08:00 Tokyo = 00:00 Paris) N7 leaves at once, not a day late.
+        return if (first >= untilMillis) first else eightOf(day.plusDays(1), zone)
     }
+
+    private fun eightOf(
+        day: LocalDate,
+        zone: ZoneId,
+    ): Long =
+        day
+            .atTime(HOUR, 0)
+            .atZone(zone)
+            .toInstant()
+            .toEpochMilli()
 
     /** The key of deduplication (ticket 9.1): one trip ending at [untilMillis] is notified once; a moved end is another key. */
     fun key(

@@ -160,8 +160,12 @@ class NotificationScheduler(
         synchronized(lock) {
             if (!sessionValid(uid)) return
             val known = travelEnds.load()
-            if (known != null && known.uid == uid && known.untilMillis == untilMillis) return
-            travelEnds.save(TravelEndMemo(uid, untilMillis))
+            if (known != null && known.uid == uid && known.untilMillis == untilMillis) {
+                // The same trip again: nothing to do, unless the alarm of N7 was lost (a phone maker's cleaner, a forced stop): then it is asked again.
+                if (alarms.scheduled()[NotificationType.N7]?.key == TravelEndNotice.key(uid, untilMillis)) return
+            } else {
+                travelEnds.save(TravelEndMemo(uid, untilMillis))
+            }
             reconcile()
         }
     }
@@ -217,13 +221,17 @@ class NotificationScheduler(
      * same). Null when there is nothing. A memo of a trip long over is forgotten here.
      */
     private fun currentInput(now: Long): PlanInput? {
+        // A memo of a trip long over is forgotten, with or without a snapshot of a Miff.
+        var memo = travelEnds.load()
+        if (memo != null &&
+            now - TravelEndNotice.dueAt(memo.untilMillis, zone()) > TravelEndNotice.CATCH_UP_WINDOW_MILLIS
+        ) {
+            travelEnds.clear()
+            memo = null
+        }
         val snapshot = snapshots.load()
         if (snapshot != null) return inputOf(snapshot, now)
-        val memo = travelEnds.load() ?: return null
-        if (now - TravelEndNotice.dueAt(memo.untilMillis, zone()) > TravelEndNotice.CATCH_UP_WINDOW_MILLIS) {
-            travelEnds.clear()
-            return null
-        }
+        if (memo == null) return null
         return PlanInput(
             nowMillis = now,
             miffId = null,

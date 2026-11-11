@@ -92,6 +92,15 @@ class TravelNotificationPlannerTest {
     }
 
     @Test
+    fun n7_whenEightLocalIsTheEndItself_itLeavesAtOnce_notADayLate() {
+        // The end is 00:00 Paris of the 10th = 08:00 Tokyo of the 10th: a phone in Tokyo has 08:00 = the end itself.
+        val tokyo = ZoneId.of("Asia/Tokyo")
+        val eightTokyo = ZonedDateTime.of(2026, 11, 10, 8, 0, 0, 0, tokyo).toInstant().toEpochMilli()
+        assertEquals(eightTokyo, tripEnd)
+        assertEquals(tripEnd, TravelEndNotice.dueAt(tripEnd, tokyo))
+    }
+
+    @Test
     fun n7_theKeyHoldsTheAccountAndTheEnd_aMovedEndIsAnotherKey() {
         assertEquals("n7|me|$tripEnd", TravelEndNotice.key(me, tripEnd))
         assertFalse(TravelEndNotice.key(me, tripEnd) == TravelEndNotice.key(me, tripEnd + 24L * 3_600_000L))

@@ -1067,6 +1067,25 @@ class NotificationSchedulerTest {
     }
 
     @Test
+    fun theSameTripAgain_whenTheAlarmWasLost_asksForItAgain() {
+        scheduler.onTravelSet(me, tripEnd)
+        // A phone maker's cleaner erased the alarm without telling the app.
+        alarms.map.clear()
+        scheduler.onTravelSet(me, tripEnd)
+        assertEquals(n7Due, alarms.map.getValue(NotificationType.N7).dueAtMillis)
+    }
+
+    @Test
+    fun aMemoOfATripLongOver_isForgotten_evenWhenAMiffSnapshotExists() {
+        feedSees(trusted(me), trusted("x"))
+        travelEnds.value = TravelEndMemo(me, tripEnd)
+        now = day(12, 9, 0)
+        scheduler.reconcile()
+        assertNull(travelEnds.value)
+        assertNull(alarms.map[NotificationType.N7])
+    }
+
+    @Test
     fun theSwitchOfN7_cancelsAtOnce_andTurnedBackOnPlansAgain_theOthersKeepTheirs() {
         scheduler.onTravelSet(me, tripEnd)
         settings.setType(NotificationType.N7, false)
