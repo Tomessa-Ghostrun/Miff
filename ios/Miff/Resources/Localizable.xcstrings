@@ -15827,6 +15827,40 @@
         }
       }
     },
+    "ios_feed_photo_download_denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save this photo, allow Miff to add photos to your library in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour enregistrer cette photo, autorise Miff à ajouter des photos à ta galerie dans les Réglages."
+          }
+        }
+      }
+    },
+    "ios_feed_photo_download_restricted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device doesn’t allow saving photos to the library."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet appareil n’autorise pas l’enregistrement dans la galerie."
+          }
+        }
+      }
+    },
     "feed_photo_download": {
       "extractionState": "manual",
       "localizations": {
