@@ -366,4 +366,26 @@ class MiffWritesTest {
         assertFalse(isAccessLostError(error(FirebaseFirestoreException.Code.DEADLINE_EXCEEDED)))
         assertFalse(isAccessLostError(IllegalStateException("x")))
     }
+
+    @Test
+    fun aRefusalWithoutAnAppCheckToken_isTheDeviceNotRecognized_andNothingElseIsChanged() {
+        // AC-4: only a refusal, only without a token.
+        assertEquals(MiffFailure.DEVICE_NOT_RECOGNIZED, refineRefusal(MiffFailure.REFUSED, tokenIsMissing = true))
+        assertEquals(MiffFailure.REFUSED, refineRefusal(MiffFailure.REFUSED, tokenIsMissing = false))
+        // Never a new sentence for something that is not a refusal, token or not: a network cut stays a network cut.
+        for (other in listOf(
+            MiffFailure.OFFLINE,
+            MiffFailure.NO_PROFILE,
+            MiffFailure.UNKNOWN,
+            MiffFailure.DEVICE_NOT_RECOGNIZED,
+        )) {
+            assertEquals(other, refineRefusal(other, tokenIsMissing = true))
+            assertEquals(other, refineRefusal(other, tokenIsMissing = false))
+        }
+        // The reading of the Firestore error itself is unchanged: the same code stays REFUSED (the token is a separate fact).
+        assertEquals(
+            MiffFailure.REFUSED,
+            interpretMiffError(FirebaseFirestoreException("x", FirebaseFirestoreException.Code.PERMISSION_DENIED)),
+        )
+    }
 }
