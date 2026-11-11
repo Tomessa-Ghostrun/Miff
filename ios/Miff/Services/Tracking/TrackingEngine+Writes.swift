@@ -257,7 +257,12 @@ extension TrackingEngine {
             return false
         }
         // SESS-3 : une position ne part jamais d'un téléphone qui ne tient pas la session (elle dirait aux proches où est l'ANCIEN).
-        guard env.isOnline(), let deviceId = await pass.permission.deviceId(), !pass.permission.ended() else {
+        guard env.isOnline() else {
+            journal.record(.positionSkippedOffline)
+            return false
+        }
+        guard let deviceId = await pass.permission.deviceId(), !pass.permission.ended() else {
+            journal.record(.positionSkippedSession)
             return false
         }
         let point = WrittenPosition(lat: offer.fix.lat, lng: offer.fix.lng, atMillis: offer.measuredAt)
@@ -275,6 +280,7 @@ extension TrackingEngine {
             // Refusée : le consentement ou le partage n'est pas ce que le téléphone croyait (ou l'horloge est trop en avance) : la Miff
             // est regardée de nouveau bientôt.
             if failure == .refused {
+                journal.record(.positionRefused)
                 await pass.permission.refused()
                 state.recheckSoon(now: offer.now)
             }

@@ -37,10 +37,15 @@ struct UpdatePublisherDependencies {
     let ledger: PublishLedger
     let environment: UpdateEnvironment
     /// Ma position a-t-elle été publiée dans cette Miff ? (contrat du modèle de données : pas de photo là où elle ne l'a pas été ; la lecture
-    /// des photos des autres en dépend.)
+    /// des photos des autres en dépend.) Sinon l'Update remet au suivi la position qu'il vient de mesurer (`handOver`).
     var isPositionPublished: (String) -> Bool = { _ in true }
-    /// Appelé quand aucune Miff du lot n'a encore ma position : la détection est invitée à l'écrire (la personne réessaie dans un instant).
-    var onPositionMissing: () -> Void = {}
+    /// Le suivi connaît-il cette Miff (éligible : partage actif, consentement de version 3) ? Sert seulement au journal de diagnostic.
+    var trackingKnowsMiff: (String) -> Bool = { _ in true }
+    /// Remet au suivi la position mesurée au toucher de « Publier » ; il la publie LUI-MÊME (l'Update n'écrit jamais `positions/{moi}`,
+    /// critère U8) et rend la main à la fin de son passage.
+    var handOver: (Fix) async -> Void = { _ in }
+    /// Le journal local de diagnostic (builds Debug et Internal seulement) : des CODES de cause, jamais une coordonnée.
+    var journal: DetectionJournal = NoDetectionJournal()
     /// FEED-8 : une photo vient d'être publiée dans ces Miffs ; le Feed la montre sur MA carte sans la relire (en mémoire seulement).
     var onPhotoPublished: (PublishedPhoto) -> Void = { _ in }
     var timeoutSeconds = UpdateLimits.timeoutSeconds
@@ -103,7 +108,9 @@ final class UpdatePublisher {
     private let ledger: PublishLedger
     private let environment: UpdateEnvironment
     private let isPositionPublished: (String) -> Bool
-    private let onPositionMissing: () -> Void
+    private let trackingKnowsMiff: (String) -> Bool
+    private let journal: DetectionJournal
+    private let handOver: (Fix) async -> Void
     private let onPhotoPublished: (PublishedPhoto) -> Void
     private let timeoutSeconds: Double
 
@@ -115,7 +122,9 @@ final class UpdatePublisher {
         ledger = dependencies.ledger
         environment = dependencies.environment
         isPositionPublished = dependencies.isPositionPublished
-        onPositionMissing = dependencies.onPositionMissing
+        trackingKnowsMiff = dependencies.trackingKnowsMiff
+        journal = dependencies.journal
+        handOver = dependencies.handOver
         onPhotoPublished = dependencies.onPhotoPublished
         timeoutSeconds = dependencies.timeoutSeconds
     }
@@ -151,30 +160,67 @@ final class UpdatePublisher {
             }
             deviceId = identifier
         }
-        // Contrat du modèle de données : une photo n'est écrite que là où MA position est publiée. Aucune pour l'instant : la détection est
-        // invitée à l'écrire, rien n'est mesuré, et la personne est invitée à réessayer dans un instant (même phrase qu'une position introuvable).
-        let withPosition = targets.filter { isPositionPublished($0) }
-        if withPosition.isEmpty {
-            // Si c'est une AUTORISATION qui empêche le suivi d'écrire ma position (« Pendant l'utilisation » au lieu de « Toujours », position
+        // Contrat du modèle de données : une photo n'est écrite que là où MA position est publiée. Là où le suivi ne l'a pas (encore) écrite
+        // (sa copie locale n'en a pas la trace), l'Update lui REMET la position qu'il vient de mesurer au toucher de « Publier » et le suivi
+        // la publie lui-même (l'Update n'écrit jamais `positions/{moi}`, critère U8) : voir `handOverPosition`. Avant, ce cas finissait en
+        // « position introuvable » sans rien mesurer, à chaque essai, et sans issue : le suivi, avec sa seule attente de 3 s, pouvait ne
+        // jamais obtenir de position.
+        let missing = targets.filter { !isPositionPublished($0) }
+        if !missing.isEmpty {
+            noteMissingPosition(missing)
+            // Si c'est une AUTORISATION qui empêche d'écrire ma position (« Pendant l'utilisation » au lieu de « Toujours », position
             // approximative, localisation éteinte), « réessaie dans un instant » serait faux et sans fin : la phrase juste mène aux Réglages.
             // Seules les autorisations sont lues ici, jamais une position.
             let blocker = await position.blocker(needsBackground: true)
             if let blocker, let refusal = PublishResultRefusal(blocker) {
+                journal.record(.updatePermissionBlocked)
                 return refusal.result
             }
-            onPositionMissing()
-            return .positionNotFound
         }
         let place: PhotoPlace
         switch await measurePlace() {
         case .success(let measured):
             place = measured
         case .failure(let refusal):
+            journal.record(.updateMeasureFailed)
             return refusal.result
+        }
+        var publishable = targets.filter { !missing.contains($0) }
+        if !missing.isEmpty {
+            await handOverPosition(place)
+            // La copie locale du suivi dit maintenant où ma position est publiée (relue, jamais supposée).
+            publishable = targets.filter { isPositionPublished($0) }
+            if publishable.isEmpty {
+                // Le suivi n'a pas pu la publier (la Miff n'est pas éligible pour lui, refus, hors ligne, session) : son propre journal et
+                // celui-ci en donnent la cause ; la personne est invitée à réessayer dans un instant.
+                journal.record(.updateHandOverFailed)
+                return .positionNotFound
+            }
+            journal.record(.updateHandOverWorked)
         }
         let battery = await environment.battery()
         let job = PublishJob(uid: uid, photo: photo, place: place, deviceId: deviceId, batteryPct: battery)
-        return await send(job, targets: withPosition, all: targets)
+        return await send(job, targets: publishable, all: targets)
+    }
+
+    /// Le journal de diagnostic dit POURQUOI le suivi n'avait pas ma position (codes seulement) : la Miff est-elle inconnue du suivi
+    /// (partage ou consentement de version 3 absents de sa copie locale), ou connue mais sans position écrite ?
+    private func noteMissingPosition(_ missing: [String]) {
+        journal.record(.updatePositionNotPublished)
+        if missing.contains(where: { !trackingKnowsMiff($0) }) {
+            journal.record(.updateTrackingUnawareOfMiff)
+        }
+    }
+
+    /// Remet au suivi la position mesurée au toucher de « Publier » et attend la fin de son passage (borné). Une position déjà mesurée par la
+    /// personne, de moins de 10 minutes : le suivi n'en demande pas une autre, ne publie rien de plus que ce qu'il aurait publié lui-même, et
+    /// garde toutes ses garanties.
+    private func handOverPosition(_ place: PhotoPlace) async {
+        let fix = Fix(lat: place.lat, lng: place.lng, measuredAtMillis: place.measuredAtMillis)
+        let handOver = self.handOver
+        _ = try? await timedOperation(seconds: timeoutSeconds) {
+            await handOver(fix)
+        }
     }
 
     private func guardRefusal(_ photo: UpdatePhoto) -> PublishResult? {

@@ -184,7 +184,13 @@ final class UpdateRig {
     var uid: String? = updateUid
     var miffIds = [testMiffId]
     var published: (String) -> Bool = { _ in true }
-    private(set) var positionMissingCalls = 0
+    /// Les positions remises au « suivi » par l'Update (au toucher de « Publier »).
+    private(set) var handedOver: [Fix] = []
+    /// Ce que fait le « suivi » quand on lui remet une position : par défaut rien (il ne publie pas).
+    var onHandOver: (Fix) -> Void = { _ in }
+    /// Le « suivi » connaît-il la Miff ? (journal de diagnostic seulement)
+    var trackingKnows: (String) -> Bool = { _ in true }
+    let journal = RecordingJournal()
 
     init() {
         position.result = .found(UpdateFixtures.fix())
@@ -210,7 +216,12 @@ final class UpdateRig {
             environment: environment
         )
         dependencies.isPositionPublished = { [unowned self] in self.published($0) }
-        dependencies.onPositionMissing = { [unowned self] in self.positionMissingCalls += 1 }
+        dependencies.trackingKnowsMiff = { [unowned self] in self.trackingKnows($0) }
+        dependencies.journal = journal
+        dependencies.handOver = { [unowned self] fix in
+            self.handedOver.append(fix)
+            self.onHandOver(fix)
+        }
         return UpdatePublisher(dependencies)
     }
 

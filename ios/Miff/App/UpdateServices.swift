@@ -60,8 +60,20 @@ struct UpdateServices {
             }
             return state.miffs[miffId]?.positionAtMillis != nil
         }
-        // Aucune Miff n'a encore ma position : la détection est invitée à l'écrire.
-        publisherDependencies.onPositionMissing = tracking.sharingChanged
+        // Pour le journal de diagnostic seulement : le suivi connaît-il cette Miff (éligible dans sa copie locale) ?
+        publisherDependencies.trackingKnowsMiff = { miffId in
+            guard let uid = gateway.currentUid, let state = local.load(), state.uid == uid else {
+                return false
+            }
+            return state.miffs[miffId] != nil
+        }
+        publisherDependencies.journal = tracking.journal
+        // Le suivi n'a pas ma position dans une Miff : l'Update lui remet celle qu'il vient de mesurer (au toucher de « Publier ») et le suivi
+        // la publie lui-même, avec toutes ses garanties (l'Update n'écrit jamais `positions/{moi}`, critère U8).
+        let runtime = tracking.runtime
+        publisherDependencies.handOver = { fix in
+            await runtime.publishPosition(supplied: fix)
+        }
         let photoCache = PhotoCache()
         publisherDependencies.onPhotoPublished = { photoCache.putOwn($0) }
         var cleanerDependencies = PhotoCleanerDependencies(
