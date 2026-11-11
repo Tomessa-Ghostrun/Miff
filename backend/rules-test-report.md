@@ -4,6 +4,8 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 
 ## Mode voyage (PR `backend/mode-voyage`, VOY-B, décisions du PM du 2026-11-10 : disponible pour tous)
 
+**État de déploiement** : DÉPLOYÉ par le PM le 2026-11-10 (information du PM, non vérifiable par l'agent ; `backend/data-model.md`).
+
 **Totaux (exécution locale du 2026-11-10, Java 21)** : fichiers de règles hors `09-rule-reads` : **428 tests, 427 réussis, 0 échoué, 1 ignoré** (A9) dont **VY1 à VY25** (`29-mode-voyage`, `30-mode-voyage-temps2`) ; tests rapides : **71 réussis** ; `09-rule-reads` : les 3 mesures concernées rejouées (`READS-sess-status`, `READS-voyage-activate`, `READS-voyage-activate-lot`) + calibration : réussies ; la suite complète de `09` (une quarantaine de minutes) est exécutée par la CI.
 
 - Règle : `validTravel` (appelée par `validStatus`), **aucune barrière Miff+, aucune lecture de règles de plus** (le PM a retiré la réserve Premium le 2026-11-10 ; la première version de cette PR, avec `isPremiumOneRead`, a été remplacée avant toute publication). Statut de voyage <= **2** lectures de règles sur 10 (mesuré, comme un statut ordinaire) ; activation + suppression de la dernière position (lot de 2) <= **2** sur 20.
@@ -12,6 +14,8 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 - Limites connues : voir `data-model.md` (bloc « Ce qui change : mode voyage »).
 
 ## 3 lieux gratuits (PR `backend/lieux-gratuits-3`, décision du PM du 2026-11-10)
+
+**État de déploiement** : DÉPLOYÉ par le PM le 2026-11-10 (information du PM, non vérifiable par l'agent ; `backend/data-model.md`).
 
 **Totaux (exécution locale du 2026-11-10, Java 21, `npm test`)** : **453 tests de règles dans l'émulateur, 452 réussis, 0 échoué, 1 ignoré** (A9) ; **69 tests rapides** réussis ; mutations rejouées sur les lieux : **7 sur 7 détectées, 0 survivante** (P2, P4, P12, P14 ×3, P19).
 
@@ -28,7 +32,7 @@ Ce fichier consigne les **échecs** des tests de `backend/tests/rules/` pour `ba
 - **Solidité des tests (test par mutation).** `npm run test:mutation` affaiblit une à une **189** protections de `firestore.rules` (copie temporaire : le fichier n'est jamais modifié) et exige qu'au moins un test passe au rouge : **182 mutations sont détectées, 7 mutants sont documentés comme équivalents** (4 d'avant DUR-3 + 3 de DUR-3, raison écrite dans `tests/tools/mutations.mjs` et `mutations-dur3.mjs`), **0 survivant**. Durée d'une exécution complète : environ 15 minutes en local (non lancée par la CI, pour rester dans les minutes gratuites). Voir la section DUR-3 ci-dessous.
 - Aucun test n'a dû être mis en `skip` à cause d'une règle manquante.
 
-## Dernière position connue (R-LIEU-POS) et renouvellement du consentement (R-LIEU-3) — PRÉPARÉS, NON DÉPLOYÉS (PR `backend/regles-position`, 2026-11-01)
+## Dernière position connue (R-LIEU-POS) et renouvellement du consentement (R-LIEU-3) — DÉPLOYÉS (2026-11-04 d'après l'en-tête de `firestore.rules` ; fichier de `main` redéployé par le PM le 2026-11-10 : information du PM, non vérifiable par l'agent) (PR `backend/regles-position`, 2026-11-01)
 
 **Totaux (exécution locale du 2026-11-01, Java 21, Node 24)** : **351 tests de règles dans l'émulateur, 350 réussis, 0 échoué, 1 ignoré** (A9) ; **57 tests rapides** réussis ; **341 mutations, 320 détectées, 21 équivalentes documentées, 0 survivante** (résultat fusionné avec `main` MIFF-2/3 et la PR #54, 2026-11-04) (exécutions complètes du 2026-11-01 après la revue de sécurité ; avant elle : 313 tests, 336 mutations ; avant R-LIEU-3 : 302 tests, 328 mutations).
 
@@ -151,7 +155,7 @@ Les 17 tests ont d'abord été lancés sur les règles de `main` : **14 rouges, 
 
 AB14 (non-régression) n'a pas de mutation : c'est un cas positif.
 
-### Changements de comportement par rapport aux règles de `main` (non déployées de ce fait)
+### Changements de comportement par rapport aux règles de `main` (changements AUTH-B : déployés le 2026-10-30 d'après l'en-tête de `firestore.rules`)
 
 - `termsAcceptedAt` et `termsVersion` ne sont **plus modifiables** après la création (décision PM : (a) non modifiable). Les règles précédentes l'autorisaient ; aucun test existant ne s'appuyait dessus. Un futur parcours « nouvelle version des CGU » devra rouvrir cette règle.
 - La comparaison alphabétique des versions (`>=` sur des chaînes) est validée dans l'émulateur (AB11, AB12) mais non confirmée par la documentation officielle consultée.
@@ -328,7 +332,7 @@ La méthode (lectures factices `!exists()` ajoutées en mémoire devant la condi
 - **Aucune règle modifiée.** Suite complète relancée sur `main` (31e4361) avant le développement : **249 tests de règles dans l'émulateur, 248 réussis, 0 échoué, 1 ignoré** ; 49 tests rapides. Mesures de lectures de règles confirmées : « Rejoindre et partager » <= 3 sur 20, « Créer et partager » gratuit <= 3, **premium <= 7** (19 appels au pire sans cache, marge de 1, voir `data-model.md` §12), arrêt du partage <= 0, reprise du partage <= 0. Le client Android n'ajoute **aucun** appel de règle à ces lots (le contenu des lots est testé clé par clé contre les règles côté client : `MiffWritesTest`).
 - **Nouveau fichier** `tests/rules/17-nom-miff-longueur.test.js` (section 16 du plan : ND1, ND1b, ND2, ND2b, ND3) : les règles comptent la longueur d'un nom en **unités UTF-16**. ND3 est une mesure d'information (elle ne peut pas échouer) : 30 emojis (60 unités) sont refusés.
 
-## SESS-1 : un compte, un seul appareil (2026-11-05) — PRÉPARÉ, NON DÉPLOYÉ (PR `backend/sess-1-session-appareil`)
+## SESS-1 : un compte, un seul appareil (2026-11-05) — temps 1 DÉPLOYÉ (2026-11-05 d'après l'en-tête de `firestore.rules` ; fichier de `main` redéployé par le PM le 2026-11-10 : information du PM, non vérifiable par l'agent), temps 2 NON DÉPLOYÉ (PR `backend/sess-1-session-appareil`)
 
 - **Règles** : document `users/{uid}/session/active` (`deviceId`, `startedAt`, propriétaire seul, schéma fermé, chemin fixe) ; clé `deviceId` facultative (temps 1) dans le statut et la dernière position, égale à celle de la session si présente ; obligatoire au temps 2 (une seule ligne : `deviceIdRequired()`). `isPremium` (3 appels) est remplacée par `isPremiumOneRead` (1 appel) dans la règle de création d'un index premium. Plan : section 21 (SE1 à SE17, SF1 à SF9, SV1 à SV3) ; tests : `tests/rules/22-session-appareil.test.js`, `23-session-appareil-temps2.test.js`, `24-session-voie1-sonde.test.js`.
 - **Résultats (Java 21, émulateur, `npm ci && npm test`), après fusion de `main` avec R-LIEU-1 (#70)** : 62 tests rapides réussis ; **406 tests de règles réussis, 0 échoué, 1 ignoré**. Cas ajoutés par SESS-1 : 42 (SE1 à SE20, SF1 à SF12, SV1 à SV3 : 35 de session ; 7 mesures de lectures). Après la revue de sécurité : SE19 (retrait de la clé au temps 1), SE20 (ancienne application après une application SESS), SF11 (retrait de la clé et recréation au temps 2), SF12 (lot mixte au temps 2). SE18 et SF10 jouent ensemble R-LIEU-1 (`statusInstant`) et le contrôle `deviceId` : un statut de plus de 24 h mis à jour partiellement passe avec le bon `deviceId`, est refusé avec un mauvais ou sans la clé (temps 2), et une nouvelle heure ancienne reste refusée.
@@ -338,7 +342,7 @@ La méthode (lectures factices `!exists()` ajoutées en mémoire devant la condi
 - **Limites connues, figées par des tests** : suppressions, lieux, fiches et photo seule non contrôlés (SE14, SE15) ; mise à jour partielle sans `deviceId` jugée sur le document résultant (SF9) ; `deviceId` lisible des membres autorisés (SE16) ; au temps 1 une application qui n'envoie pas la clé n'est pas contrôlée (SE6).
 - **Fusion avec la PR #70 (R-LIEU-1), faite** : unions des fins de fichiers, `validStatus: [1, 2]` dans `budgets.test.js` (`statusInstant` reste à 0 lecture).
 
-## R-LIEU-1 : statut dont les horodatages ont plus de 24 h (2026-11-05) — PRÉPARÉ, NON DÉPLOYÉ (PR `backend/regle-lieu-1`)
+## R-LIEU-1 : statut dont les horodatages ont plus de 24 h (2026-11-05) — DÉPLOYÉ par le PM le 2026-11-10 au plus tard (fichier de `main` de ce jour ; information du PM, non vérifiable par l'agent) (PR `backend/regle-lieu-1`)
 
 - **Règle** : `presenceAt` et `lastUpdateAt` restent bornés (-24 h / +5 min) **ou** identiques, à la microseconde (précision de stockage de Firestore), à la valeur déjà en base dans le même champ du même statut (fonction `statusInstant`). Plan : section 20 (RL1 à RL9) ; tests : `tests/rules/21-statut-ancien.test.js`.
 - **Résultats (Java 21, émulateur, `npm test`)** : 58 tests rapides réussis ; **364 tests de règles réussis, 0 échoué, 1 ignoré** (avant : 350 réussis, +14 nouveaux : RL1 à RL9 plus RL3b et RL6b ajoutés après la revue de sécurité). Reprise complète après fusion de `origin/main` (changements de commentaires seulement) : voir la PR.
@@ -346,7 +350,7 @@ La méthode (lectures factices `!exists()` ajoutées en mémoire devant la condi
 - **Lectures de règles** : `validStatus` reste à **1** (le `getAfter` du consentement) ; `resource` n'est pas une lecture ; `tests/unit/budgets.test.js` fige `statusInstant` à 0 et `validStatus` à 1. **Pire cas des lots inchangé** (retrait d'un membre 18 sur 20, création de Miff premium 19 sur 20).
 - **Limites connues** : `escalationDueAt` n'est pas concerné (borne ±24 h gardée) ; aucune règle n'interdit de reculer un horodatage dans la fenêtre de 24 h (comportement d'avant) ; les heures restent déclarées par l'appareil (data-model.md, §15 questions 28 et 29).
 
-## R-PHOTO-LOC : localisation de la photo d'update (2026-11-05, rendue OBLIGATOIRE le 2026-11-06) — version facultative DÉPLOYÉE le 2026-11-06, version obligatoire PRÉPARÉE, NON DÉPLOYÉE (PR `backend/photo-localisation-obligatoire`)
+## R-PHOTO-LOC : localisation de la photo d'update (2026-11-05, rendue OBLIGATOIRE le 2026-11-06) — version facultative DÉPLOYÉE le 2026-11-06, version obligatoire DÉPLOYÉE le 2026-11-06 (fichier de `main` redéployé par le PM le 2026-11-10 : information du PM, non vérifiable par l'agent) (PR `backend/photo-localisation-obligatoire`)
 
 - **Règles** : le document `miffs/{id}/photos/{uid}` porte **toujours** `lat`, `lng` et `measuredAt` (les six clés sont dans `hasAll`), jamais nulles : `lat` et `lng` sont des nombres dans leurs plages, `measuredAt` un horodatage de -24 h à +5 min par rapport à l'heure de la photo. **Toute** photo exige le consentement de version 03 ou plus (fonction dédiée `isPhotoLocationConsentVersion`, 0 lecture), vérifié après le lot. Une photo sans localisation, une ou deux clés sur trois, une mise à jour qui supprimerait une clé (document fusionné incomplet) sont **refusées**. **Lecture inchangée** : auteur, ou membre ayant publié sa position ; pas de contrôle « l'auteur partage encore » (décision du PM du 2026-11-06) ; un éventuel ancien document sans localisation reste lisible comme avant. Aucun lot ne change.
 - **Vérification des clients** : aucune écriture dans `photos/` dans `android/` ni `ios/` sur `main` (seulement des suppressions). Au 2026-11-06, seul le client Update Android en préparation (branche `android/update-1-2`, PR #93, `UpdateWrites.kt`, conforme au contrat) écrit des photos ; aucun client publié n'en écrit : le resserrement ne refuse aucune écriture d'un client publié (détail dans `data-model.md`).
