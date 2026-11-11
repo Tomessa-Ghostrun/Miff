@@ -720,3 +720,5 @@ final class CurrentProfileHoldingTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .ready(after))
     }
 }
+
+// swiftlint:enable file_length type_body_length

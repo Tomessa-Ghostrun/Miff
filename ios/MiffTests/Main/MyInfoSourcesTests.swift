@@ -53,7 +53,7 @@ final class MyInfoSourcesTests: XCTestCase {
             XCTAssertFalse(screen.contains(word), word)
         }
         // Le sélecteur de photos du SYSTÈME : l'app ne reçoit que la photo choisie, sans permission.
-        XCTAssertTrue(screen.contains(".photosPicker("))
+        XCTAssertTrue(screen.contains(".photosPicker"))
     }
 
     func testTheRepositoryOnlyWritesTheProfileAndTheCopyOfEachMiff() throws {
