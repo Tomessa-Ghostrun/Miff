@@ -9,7 +9,7 @@ Le PM n'avait pas les maquettes manquantes du §18.2 de `docs/tickets/lieux-de-c
 | `modifier-lieu.md` | 06 modifier · 07 confirmation de suppression (4 états) |
 | `permission-localisation-ios.md` | 08 « Toujours autoriser » (+ variante « Plus tard ») · 09 passer sur « Toujours » dans Réglages · 10 refusée / service coupé |
 | `permission-localisation-android.md` | 11 « Toujours autoriser » · 12 message sous le bouton · 13 arrière-plan Android 11+ (2 états) |
-| `paywall-contextuel-lieux.md` | 14 limite de 2 lieux · 15 zone de danger |
+| `paywall-contextuel-lieux.md` | 14 limite de 3 lieux (2 avant le 2026-11-10 ; maquette à régénérer) · 15 zone de danger |
 | `detail-et-liste-lieux.md` | 16 détail (membre / créateur) · 17 liste (gratuit, Miff+, membre) |
 | `appareil-remplace.md` | 18 appareil remplacé |
 | `icones-categories.md` | 19 icônes des 7 catégories |
@@ -39,7 +39,7 @@ Rien de ce qui suit n'est dans un ticket ou dans une réponse du PM : ce sont de
 10. **Sélecteur de Miffs** : feuille du bas à cases à cocher, chips dans le champ, pastille « Dernière rejointe » sur la Miff par défaut, **au moins 1** Miff, **5 au plus** ; **pas de sélecteur si une seule Miff** (tout compte gratuit).
 11. **« Zone de danger » visible comme Miff+ pour un compte gratuit** : pastille « Miff+ » avec cadenas sur la carte de type avant même de la toucher (pas de surprise) ; la toucher ouvre le paywall, le type reste « confiance ».
 12. **Lieu enregistré** : pas d'écran de succès, retour à la liste avec une notice contenant le texte honnête du ticket (« …dès qu'ils ouvriront Miff, ou dans les prochaines heures »).
-13. **Liste** : un seul point d'entrée « Ajouter un lieu » (le lien « Ajouter » du haut est retiré), compteur « 2 lieux sur 2 avec la formule gratuite », « Ajouter un lieu » avec pastille Miff+ au lieu d'être masqué à la limite.
+13. **Liste** : un seul point d'entrée « Ajouter un lieu » (le lien « Ajouter » du haut est retiré), compteur « 3 lieux sur 3 avec la formule gratuite » (2 sur 2 avant le 2026-11-10 : la maquette 17 est à régénérer), « Ajouter un lieu » avec pastille Miff+ au lieu d'être masqué à la limite.
 14. **Détail** : lignes « Visible par les membres de… », « Créé par… » et encart « ce que ça change pour toi » ; en zone de danger la phrase « …ta Miff voit ton statut en rouge » est volontairement explicite (transparence pour les stores et la confiance).
 15. **Paywall** : « Puis 59,88 € par an (soit 4,99 €/mois) » au lieu de « Puis 4,99 €/mois pendant 1 an » ; « Déclare des zones de danger pour **voir** quand tes proches s'y trouvent » au lieu de « …être prévenu… » (aucune notification n'est envoyée sans Blaze, risque R13). « Notifications intelligentes » conservée : promesse à tenir ou à retirer.
 16. **Permissions** : encart de trois lignes ajouté à la pop-in du PM (« Même quand l'app est fermée » ; « Ce que voient tes proches » ; « Tu gardes la main »). **La deuxième ligne dépend des questions L1, L2, L3, L5 non tranchées (dernière position visible, lecteurs, durée) : à relire quand elles le seront.** La ligne « pas d'historique de trajets » n'est volontairement **pas** écrite (dépend de L1).

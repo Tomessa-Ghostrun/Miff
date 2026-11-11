@@ -26,7 +26,7 @@ L'écran "Nouveau lieu" propose un champ **Type** avec deux options : **"Zone de
 ## Critères d'acceptation
 - Création d'un lieu avec les 4 champs ci-dessus, périmètre ajustable visuellement sur une carte.
 - Confirmation explicite avant suppression d'un lieu (écran vu dans les maquettes).
-- Blocage de la création d'un 3e lieu de confiance, ou d'une zone de danger, pour un compte gratuit, redirection vers le Paywall.
+- Blocage de la création d'un 4e lieu de confiance, ou d'une zone de danger, pour un compte gratuit, redirection vers le Paywall.
 
 ## Hors-scope
 - (Retiré le 2026-11-01 : le rattachement d'un lieu à plusieurs Miffs, 1 à 5, est désormais dans le périmètre, voir les règles métier ci-dessus.)
