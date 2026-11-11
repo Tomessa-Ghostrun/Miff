@@ -76,7 +76,7 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         let screen = CGSize(width: 375, height: 812)
 
         let wide = PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 1_000, height: 500), in: screen)
-        let tall = PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 500, height: 1_000), in: screen)
+        let tall = PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 400, height: 1_000), in: screen)
 
         XCTAssertEqual(wide.width, screen.width, accuracy: 0.001)
         XCTAssertEqual(tall.height, screen.height, accuracy: 0.001)
