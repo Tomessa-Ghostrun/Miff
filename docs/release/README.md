@@ -18,11 +18,12 @@ La checklist QA de sortie `docs/qa/release-checklist.md` **n'existe pas encore**
 | `changements-testeurs-externes.md` | Ce qui change pour les testeurs externes (court) |
 | `alignement-decisions-2026-11-11.md` | **Alignement du 2026-11-11** : 3 lieux gratuits, « Enregistrer cette photo », photo Google, mode voyage, notifications locales : ce qui a été corrigé, **ce qui reste à faire à la publication** (avec les fichiers) et les points ambigus |
 | `update-photo-declarations.md` | **Update (photo « Donner des nouvelles »)** : permission caméra (Android, iOS FR/EN), photo et lieu de la photo (toujours attaché), écarts Data safety et App Privacy, contenu généré par les utilisateurs (Apple 1.2, Google UGC), mineurs, passages légaux adaptés, pages web à mettre à jour, captures, risques de rejet et **plan de repli** (2026-11-06, décisions P1 à P8) |
+| `checklist-android.md` | **Soumission Google Play, pas à pas** (2026-11-11) : clé d'envoi et secrets GitHub, workflow `android-release`, Play App Signing, piste interne, 12 testeurs / 14 jours, SHA-1 / SHA-256 dans Firebase et App Check, Data safety, localisation en arrière-plan avec vidéo ; ce qui reste bloqué côté PM |
 | `decisions-stores-avant-soumission.md` | **20 décisions et actions du PM avant toute soumission** (2026-11-07) : classification d'âge, catégorie, contenu généré par les utilisateurs, identité publique de l'éditeur, règle des 12 testeurs de Google, déploiement du site, nom « Miff », partage du code, avis, analytics, vidéos, Miff+, ordre iOS / Android. Recoupe les brouillons de `marketing/` avec ce dossier ; règles des stores relues le même jour |
 | `../legal/consentement-localisation-v3.md` | Texte de consentement version 3 et règle `AAAA-MM-vNN` |
 | `../legal/*.md`, `../../web/` | Politique de confidentialité, CGU, page web (FR et EN), mis à jour dans la même PR |
 
-Les checklists `checklist-ios.md` et `checklist-android.md` (étapes de soumission complètes : comptes, signature, versions, fiches) **ne sont pas encore écrites** : elles ne faisaient pas partie de cette tâche.
+**`checklist-android.md`** (2026-11-11) : étapes de soumission Google Play pas à pas pour le PM (création de l'app, clé d'envoi, Play App Signing, piste de test interne, règle des 12 testeurs, empreintes dans Firebase, déclarations) et ce qui reste bloqué côté PM ; annexe technique (version, signature, pages de 16 Ko). La checklist `checklist-ios.md` **n'est pas encore écrite**.
 
 ## À faire par le PM, à la main (aucun agent ne le fait)
 
