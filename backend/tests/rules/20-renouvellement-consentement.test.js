@@ -1,5 +1,5 @@
 // Plan de test, section 19 : renouvellement d'un consentement de partage ACTIF (R-LIEU-3, accepté par le PM, confirmé le
-// 2026-11-01 « avant le Tracking »), cas RC1 à RC9. Règles PRÉPARÉES et NON déployées.
+// 2026-11-01 « avant le Tracking »), cas RC1 à RC9. Règles DÉPLOYÉES (2026-11-04 d'après l'en-tête de firestore.rules ; fichier de main redéployé par le PM le 2026-11-10, information du PM non vérifiable par l'agent).
 // Un membre dont le partage est actif accepte un nouveau texte (version strictement supérieure) sans arrêter son partage :
 // statut, photo et dernière position ne sont ni supprimés ni exigés dans le lot.
 // Revue de sécurité (I1, sondes X1, X1b, X1c, Y6) : la version doit être de LARGEUR FIXE (AAAA-MM-vNN), et on ne sort jamais de la

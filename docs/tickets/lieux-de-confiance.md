@@ -385,7 +385,7 @@ Bornes prises **à la lettre de Notion** (« moins d'1 h » vert, « entre 1 h e
 | **R-LIEU-3** | **Renouveler un consentement actif** (nouvelle version du texte) sans arrêter le partage | Accepter la transition « activé, activé » si la nouvelle version est supérieure et `consentedAt` = heure serveur | **Acceptée par le PM (2026-11-01)** comme évolution de règle ; **sans usage immédiat** (pas de consentement v2, QL3) ; la politique promet la redemande du consentement en cas de changement (art. 12) |
 | **R-SESS** | Appareil unique | Voir `session-appareil-unique.md` | Oui, sous-ticket séparé |
 
-Chaque déploiement : tests, mesure des lectures, revue de sécurité, **« oui » explicite du PM le moment venu** (`docs/dev/deploiement-regles.md`). Aucun n'est fait ici.
+Chaque déploiement : tests, mesure des lectures, revue de sécurité, **« oui » explicite du PM le moment venu** (`docs/dev/deploiement-regles.md`). Aucun n'est fait ici. **État au 2026-11-11 (informations du PM, non vérifiables par l'agent)** : R-LIEU-5 (2 puis 3 lieux), -2, -6, R-LIEU-POS et R-LIEU-3 déployées (2026-11-04 d'après l'en-tête de `backend/firestore.rules`, fichier de `main` redéployé le 2026-11-10) ; R-LIEU-1 déployée au plus tard le 2026-11-10.
 
 ### 9.3 Un lieu dans plusieurs Miffs : options pour `backend-data`
 - **Option A (retenue par le PM, Q4)** : **un document par Miff**, même identifiant (créé côté client une seule fois). Aucune règle de lecture à changer ; création, modification, suppression = lot de N documents (**N ≤ 5** à la création [Décidé] ; la limite à appliquer quand on ajoute des Miffs en modification est **à mesurer et fixer par `backend-data`**). Inconvénient : cohérence entre copies (un lot unique est atomique).

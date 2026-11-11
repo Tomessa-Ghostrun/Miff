@@ -416,6 +416,10 @@
     <string name="feed_create_action">Create a Miff</string>
     <string name="feed_join_action">Join a Miff</string>
     <string name="feed_offline_note">No connection right now. What you see may not be up to date.</string>
+    <string name="feed_offline_popin_title">No connection</string>
+    <string name="feed_offline_popin_body">Check your connection, we\'ll try again in a moment.</string>
+    <string name="feed_offline_popin_retry">Try again</string>
+    <string name="feed_offline_popin_countdown">Trying again in %1$d s</string>
     <string name="feed_unavailable">We can\'t read your Miffs right now. Please try again in a moment.</string>
     <string name="feed_header_avatar_a11y">Open my profile. Your status: %1$s</string>
     <string name="feed_header_avatar_plain_a11y">Open my profile</string>
@@ -941,6 +945,8 @@
     <string name="notif_n4_body">Check in on your loved ones.</string>
     <string name="notif_n6a_title">You\'re in a danger zone of your Miff</string>
     <string name="notif_n6a_body">While you\'re there, your circle sees a different status.</string>
+    <string name="notif_n7_title">Your travel mode has ended</string>
+    <string name="notif_n7_body">Your card gets its usual colours back for your circle. Welcome back!</string>
     <string name="notif_prime_title">A reminder, only when it helps</string>
     <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
     <string name="notif_prime_allow">Allow</string>
@@ -966,6 +972,7 @@
     <string name="notif_settings_n3">When my Miff turns orange</string>
     <string name="notif_settings_n4">When my Miff turns red</string>
     <string name="notif_settings_n6">When I enter a danger zone</string>
+    <string name="notif_settings_n7">When my travel mode ends</string>
     <string name="notif_settings_n6_hint">You turn off the notification, not what your Miff sees.</string>
     <string name="notif_settings_night_title">Quiet night</string>
     <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>

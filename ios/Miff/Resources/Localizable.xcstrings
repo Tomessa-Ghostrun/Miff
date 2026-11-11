@@ -2365,6 +2365,74 @@
         }
       }
     },
+    "feed_offline_popin_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection, we'll try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifie ta connexion, on réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "feed_offline_popin_countdown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying again in %lld s"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvel essai dans %lld s"
+          }
+        }
+      }
+    },
+    "feed_offline_popin_retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        }
+      }
+    },
+    "feed_offline_popin_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion"
+          }
+        }
+      }
+    },
     "feed_pane_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -13957,19 +14025,19 @@
         }
       }
     },
-    "ios_myinfo_edit_soon": {
+    "ios_myinfo_save_failed_later": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You will be able to edit your details in an upcoming update."
+            "value": "It still isn't going through. Your information stays here: try again a little later."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
+            "value": "Ça ne passe toujours pas. Tes informations restent ici : réessaie un peu plus tard."
           }
         }
       }
@@ -15177,6 +15245,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta position n'est pas accessible : la localisation du téléphone est éteinte, ou Miff n'a plus le droit de l'utiliser. Tu peux la rallumer dans les réglages, puis réessayer."
+          }
+        }
+      }
+    },
+    "ios_update_notice_location_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on precise location for this feature. You can do it in the settings, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer."
           }
         }
       }
@@ -17009,6 +17094,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Activer les notifications"
+          }
+        }
+      }
+    },
+    "notif_n7_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your travel mode has ended"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton mode voyage est terminé"
+          }
+        }
+      }
+    },
+    "notif_n7_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Miff so your card gets its usual colours back. Welcome back!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"
+          }
+        }
+      }
+    },
+    "notif_settings_n7": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When my travel mode ends"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand mon mode voyage se termine"
           }
         }
       }

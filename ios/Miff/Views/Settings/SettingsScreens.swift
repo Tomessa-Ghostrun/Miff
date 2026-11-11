@@ -72,53 +72,6 @@ extension SettingsListView {
     }
 }
 
-/// Réglages > Mes informations (ticket Profil / Réglages, critères A5 à A8). PREMIÈRE VERSION : en lecture seule. L'écran montre la photo,
-/// le prénom, le nom, le pays et le numéro, et dit honnêtement que les modifier viendra dans une prochaine mise à jour. L'écriture
-/// (un lot `users/{uid}` + fiche de chaque Miff, comme sur Android) est le chantier suivant.
-struct MyInfoView: View {
-    let state: ProfileTabState
-    let tools: PhoneNumberTools
-    let onBack: () -> Void
-    let onRetry: () -> Void
-
-    var body: some View {
-        MiffFrame(title: L10n.string("settings_my_info_title"), onBack: onBack, usesCanvas: true) {
-            switch state {
-            case .loading:
-                LoadingIndicator()
-            case .unavailable:
-                MiffNotice(text: L10n.string("settings_my_info_load_failed"))
-                Button(action: onRetry) {
-                    Text("auth_retry_action")
-                }
-                .buttonStyle(.miffSecondaryFullWidth)
-            case .ready(let profile):
-                content(profile)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func content(_ profile: ProfileSummary) -> some View {
-        MiffAvatar(jpeg: profile.avatarJpeg, initials: profile.initials, size: 96)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.sm)
-        SettingsValueRow(label: L10n.string("profile_first_name_label"), value: profile.firstName)
-        SettingsValueRow(label: L10n.string("profile_last_name_label"), value: profile.lastName)
-        if let phone = PhoneDisplay.of(phone: profile.phone, tools: tools, locale: .current) {
-            let country = "\(phone.country.flag) \(phone.country.name) \(phone.country.dialCode)"
-            SettingsValueRow(
-                label: L10n.string("profile_phone_country_label"),
-                value: country,
-                spokenValue: "\(phone.country.name) \(phone.country.dialCode)"
-            )
-            SettingsValueRow(label: L10n.string("settings_my_info_phone_label"), value: phone.national)
-            SettingsBody(text: L10n.string("profile_phone_visibility"))
-        }
-        MiffNotice(text: L10n.string("ios_myinfo_edit_soon"))
-    }
-}
-
 /// « Si les détections tardent » : ce qui peut retarder une arrivée ou un départ sur un iPhone. Texte calme, sans rien promettre.
 struct DetectionHelpView: View {
     let onBack: () -> Void

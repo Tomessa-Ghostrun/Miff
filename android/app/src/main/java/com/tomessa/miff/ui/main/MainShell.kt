@@ -57,6 +57,8 @@ import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
+import com.tomessa.miff.ui.components.ConnectionGate
+import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
@@ -104,6 +106,7 @@ import com.tomessa.miff.ui.profile.TravelViewModel
 import com.tomessa.miff.ui.profile.miffOfferRoute
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
+import com.tomessa.miff.ui.review.ReviewStage
 import com.tomessa.miff.ui.review.rememberReviewHost
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountViewModel
@@ -266,9 +269,18 @@ private fun MainNavigation(
             val profileViewModel: ProfileTabViewModel =
                 viewModel(
                     key = "profile-tab-$scopeKey",
-                    factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                ProfileTabViewModel(
+                                    container.currentProfile,
+                                    ConnectionGate(container.networkMonitor),
+                                )
+                            }
+                        },
                 )
             val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+            val profileConnection by profileViewModel.connection.collectAsStateWithLifecycle()
             // MODE VOYAGE: open to every account, written by the tracking engine only.
             val travelViewModel: TravelViewModel =
                 viewModel(
@@ -371,6 +383,7 @@ private fun MainNavigation(
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
             val locateState by feedViewModel.locate.collectAsStateWithLifecycle()
             val refreshing by feedViewModel.refreshing.collectAsStateWithLifecycle()
+            val feedConnection by feedViewModel.connection.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             val lostNotices by container.miffDirectory.notice.collectAsStateWithLifecycle()
             MainTabs(
@@ -403,6 +416,12 @@ private fun MainNavigation(
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
                         photos = container.photoReader,
+                        connection =
+                            ConnectionHost(
+                                state = feedConnection,
+                                onRetry = feedViewModel::onConnectionRetry,
+                                onDismiss = feedViewModel::onConnectionDismissed,
+                            ),
                         notifications =
                             FeedNotifications(
                                 unreadCount = notificationsState.unreadCount,
@@ -422,6 +441,8 @@ private fun MainNavigation(
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
+                travelWindowOpen = travelState.picker != null || travelState.confirm != null,
+                profileConnection = profileViewModel.connectionHost(profileConnection),
                 travelContent = { TravelCard(state = travelState, actions = travelActions) },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
@@ -692,8 +713,20 @@ fun MainTabs(
     review: ReviewHost? = null,
     /** The lost-access message is over everything (MainShell): the review window waits for it to be acknowledged. */
     lostAccessNoticeOpen: Boolean = false,
+    /** The pop-in "Pas de connexion" of the Profile tab (the Feed's one is in [feed]); its `observe` lives while the tab is on screen. */
+    profileConnection: ConnectionHost = ConnectionHost(),
+    /** A window of the Travel card (the day picker or its confirmation) is open on the Profile tab: the pop-in "Pas de connexion" waits (never two windows). */
+    travelWindowOpen: Boolean = false,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
+    // Never two windows at once (docs/tickets/pop-ins-avis.md, C5): the pop-in "Pas de connexion" waits for the lost-access message, the review window and the
+    // windows of the Travel card; the review window, for its part, waits for the pop-in (see ReviewSituation.messageOpen).
+    val reviewStage by (
+        review?.viewModel?.stage ?: remember {
+            MutableStateFlow<ReviewStage>(ReviewStage.Hidden)
+        }
+    ).collectAsStateWithLifecycle()
+    val popInSuppressed = lostAccessNoticeOpen || reviewStage != ReviewStage.Hidden || travelWindowOpen
     // The tab the person came from: the back gesture leaves the Update for it (design 9: "retour système = onglet précédent").
     var previous by rememberSaveable { mutableStateOf(MainTab.FEED) }
     var scrollToTop by rememberSaveable { mutableIntStateOf(0) }
@@ -820,6 +853,8 @@ fun MainTabs(
                                     feed = feed.state,
                                     locate = feed.locate,
                                     refreshing = feed.refreshing,
+                                    popIn = feed.connection,
+                                    popInSuppressed = popInSuppressed,
                                     me = feed.me,
                                     actions = actions,
                                     notifications = feed.notifications,
@@ -827,6 +862,14 @@ fun MainTabs(
                             }
 
                             MainTab.PROFILE -> {
+                                // The watch of the pop-in "Pas de connexion" lives only while this tab is the one in use AND the app is in the foreground.
+                                val lifecycleOwner = LocalLifecycleOwner.current
+                                val observeProfile by rememberUpdatedState(profileConnection.observe)
+                                LaunchedEffect(lifecycleOwner) {
+                                    lifecycleOwner.lifecycle.repeatOnLifecycle(
+                                        Lifecycle.State.STARTED,
+                                    ) { observeProfile?.invoke() }
+                                }
                                 ProfileTabScreen(
                                     state = profileState,
                                     scrollToTopSignal = scrollToTop,
@@ -840,6 +883,8 @@ fun MainTabs(
                                     },
                                     carousel = profileMiffs,
                                     placesContent = placesContent,
+                                    popIn = profileConnection,
+                                    popInSuppressed = popInSuppressed,
                                     travelContent = travelContent,
                                 )
                             }
@@ -894,6 +939,8 @@ fun MainTabs(
                     blockingMessageOpen =
                         ReviewSituation.messageOpen(
                             lostAccessNotice = lostAccessNoticeOpen,
+                            connectionPopInOpen =
+                                feed.connection.state.popInVisible || profileConnection.state.popInVisible,
                             awaitingAgreement = agreement.waiting.isNotEmpty(),
                             locateSheetOpen = feed.locate != LocateUiState.Idle,
                             myLabel = feedContent?.myLabel,

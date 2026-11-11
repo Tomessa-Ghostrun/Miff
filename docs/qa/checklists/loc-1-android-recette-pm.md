@@ -4,9 +4,9 @@
 **Durée** : environ 45 minutes.
 **Ce qui n'est PAS dans cette recette** : la détection automatique des arrivées et départs, les permissions de localisation et de notifications (ticket LOC-2), l'achat de Miff+ (ticket Premium), l'iPhone.
 
-## Deux temps, parce que les règles de sécurité ne sont pas encore déployées
+## Deux temps, parce que les règles de sécurité n'étaient pas encore déployées (depuis : déployées par le PM le 2026-11-10, voir ci-dessous)
 
-Les règles qui autorisent la catégorie, les 3 lieux gratuits (depuis le 2026-11-10, PR `backend/lieux-gratuits-3`, aussi à déployer) et le type modifiable sont dans la PR #54 (**non déployée**, il faut votre « oui » explicite : `docs/dev/deploiement-regles.md`).
+Les règles qui autorisent la catégorie, les 3 lieux gratuits (depuis le 2026-11-10, PR `backend/lieux-gratuits-3`) et le type modifiable sont dans la PR #54. **État : DÉPLOYÉES par le PM le 2026-11-10** (information du PM, non vérifiable par l'agent : le fichier de `main` de ce jour contenait ces règles) ; le « Temps 1 » ci-dessous (« Enregistrer » refusé) ne devrait donc plus se produire, sauf règles revenues en arrière (`docs/dev/deploiement-regles.md`).
 
 - **Temps 1, maintenant** (règles actuelles) : tout ce qui se lit et se saisit fonctionne ; **« Enregistrer » est refusé par le serveur** et l'app répond calmement « Ça n'a pas fonctionné. Réessaie dans un instant. » : **c'est normal et attendu**, ce n'est pas un défaut de l'app. Parties A, B et E.
 - **Temps 2, après le déploiement des règles** : parties C, D, F, G (créer pour de vrai, liste, détail, modifier, supprimer, limites).

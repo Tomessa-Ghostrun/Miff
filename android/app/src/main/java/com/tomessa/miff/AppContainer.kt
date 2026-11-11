@@ -70,6 +70,7 @@ import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterSto
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
 import com.tomessa.miff.data.notification.SharedPreferencesPlanSnapshotStore
+import com.tomessa.miff.data.notification.SharedPreferencesTravelEndStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -305,6 +306,8 @@ class AppContainer(
             device = deviceSession,
             cache = cachePurger,
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
+            // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
+            online = { networkMonitor.isOnline() },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -354,6 +357,7 @@ class AppContainer(
     val notificationScheduler: NotificationScheduler by lazy {
         NotificationScheduler(
             snapshots = SharedPreferencesPlanSnapshotStore(context),
+            travelEnds = SharedPreferencesTravelEndStore(context),
             settings = notificationSettings,
             permissionAllowed = { notificationAuthorization.allowed() },
             sessionValid = ::notificationSessionValid,
@@ -506,6 +510,17 @@ class AppContainer(
                         placeId: String,
                         atMillis: Long,
                     ) = notificationScheduler.onEnteredDanger(myUid, miffId, placeId, atMillis)
+
+                    // MODE VOYAGE (VOY-4A): N7 waits for the end of my trip, the reminders are cut while it lasts; local, nothing is read or written.
+                    override fun onTravelSet(
+                        uid: String,
+                        untilMillis: Long,
+                    ) = notificationScheduler.onTravelSet(uid, untilMillis)
+
+                    override fun onTravelEnded(
+                        uid: String,
+                        early: Boolean,
+                    ) = notificationScheduler.onTravelEnded(uid, early)
                 },
             // MODE VOYAGE: the alarm of the end of a trip (inexact, no special permission).
             travelAlarm = AlarmManagerTravelAlarm(context),
