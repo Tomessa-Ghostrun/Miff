@@ -66,10 +66,14 @@ Sur l'OPPO (compte B) : onglet Update > prenez une photo > **Publier**. Sur l'iP
 - [ ] **VoiceOver** : l'icône est lue **« Enregistrer cette photo sur ton téléphone, bouton »** ; **texte au maximum** : le message reste dans l'écran (plusieurs lignes), la légende et « Voir où c'était » restent atteignables, l'icône reste en haut à droite.
 - [ ] **Application Photos / confidentialité** : Réglages > Confidentialité et sécurité > Photos > Miff dit **« Ajout de photos seulement »** (jamais « Toutes les photos »).
 
-## Partie D ter — La photo remplit l'écran (2 min)
+## Partie D ter — VRAI plein écran, légende par-dessus la photo (3 min)
 
-- [ ] À l'ouverture, la photo **occupe toute la zone au-dessus de la légende** (hauteur maximale) : beaucoup plus grande qu'avant (**environ 280 pt de large** sur un 11 Pro au lieu de ~220). **Dites si cela vous convient** : une photo au format de l'écran ne peut pas remplir la largeur sans être recadrée (la photo reste entière).
-- [ ] Elle reste **nette** (agrandie avec l'interpolation par défaut) ; pincement, double toucher, déplacement et glissement vers le bas fonctionnent comme avant. La croix et l'icône sont **sur** la photo, en haut.
+- [ ] À l'ouverture, la photo occupe **tout l'écran** (de haut en bas, zones sûres comprises, fond noir) : elle est entière, jamais recadrée, **nette** (agrandie avec l'interpolation par défaut). Une photo au format de l'écran touche les quatre bords.
+- [ ] **En bas, par-dessus la photo** : « Photo de … · 11 h 45 », « Position mesurée à … » et « Voir où c'était » sont en **texte blanc sur un dégradé sombre** (la photo se fond dans un voile noir) ; essayez avec une photo **très claire** (ciel, mur blanc) : le texte reste **parfaitement lisible**. Le texte reste **au-dessus de la barre d'accueil** de l'iPhone (zone sûre du bas), le voile, lui, va jusqu'au bord.
+- [ ] **En haut** : la croix (gauche) et l'icône « télécharger » (droite) sont toujours là, sur la photo.
+- [ ] **Texte au maximum** (Réglages > Accessibilité > Taille du texte) : la légende **reste entière** (elle défile dans une zone limitée au bas de l'écran, **moins de la moitié**) ; la photo n'est jamais masquée en entier. **Paysage** : même chose.
+- [ ] **Réduire la transparence** (Réglages > Accessibilité > Affichage) : le voile du bas devient **opaque**.
+- [ ] Pincement, double toucher, déplacement et glissement vers le bas fonctionnent comme avant (le glissement ne se déclenche pas depuis la légende). **Dites si la photo vous convient maintenant** (taille) et si le voile du bas cache trop de la photo.
 
 ## Partie E — Langue, taille de texte, animations (3 min)
 
@@ -84,7 +88,7 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 ## Points ouverts pour vous (à noter à la fin)
 
 - [ ] La photo qui **apparaît en décalant la liste** (sans cadre réservé, comme Android) vous convient-elle ?
-- [ ] **Plein écran en grand texte ou en paysage** : le pied (titre, lieu, bouton) défile-t-il bien sans masquer la photo ?
+- [ ] **Plein écran en grand texte ou en paysage** : la légende par-dessus la photo défile-t-elle bien sans masquer la photo ?
 - [ ] Le **glissement vers le bas** pour fermer le plein écran vous convient-il ?
 - [ ] Votre photo **sous** « Ce que tes proches voient de toi » (et non au-dessus) vous convient-elle ?
 - [ ] **Nouvelle phrase proposée** (aux deux plateformes) : une indication parlée « Ouvre la carte du système » sur « Voir où c'était » (maquette 09) ; non ajoutée pour garder la parité des textes.

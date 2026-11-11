@@ -26,6 +26,7 @@ struct PhotoFullScreen: View {
     @State private var mapUnavailable = false
     @State private var photoArea: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
@@ -40,16 +41,16 @@ struct PhotoFullScreen: View {
         GeometryReader { screen in
             ZStack {
                 Color.black.ignoresSafeArea()
-                // La photo REMPLIT toute la largeur et toute la hauteur qui restent au-dessus du pied (scaledToFit : entière, jamais recadrée, jamais
-                // plus grande que cette zone, agrandie proprement par l'interpolation par défaut) ; la légende et « Voir où c'était » passent d'abord.
+                // VRAI plein écran : la photo (scaledToFit : entière, jamais recadrée, agrandie proprement par l'interpolation par défaut) occupe TOUT
+                // l'écran, zones sûres comprises, fond noir.
+                photo
+                // La légende, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS la photo, en bas, sur un voile sombre (texte blanc, contraste
+                // d'au moins 4,5:1 sur le pire cas), dans la zone sûre du bas ; bornées à 45 % de la hauteur (grand texte : elles défilent).
                 VStack(spacing: 0) {
-                    photo
-                        .frame(minHeight: PhotoFullScreenLayout.minPhotoHeight(screenHeight: screen.size.height))
-                        .layoutPriority(0)
-                    footerArea(screenHeight: screen.size.height)
-                        .layoutPriority(1)
+                    Spacer(minLength: 0)
+                    footerOverlay(screenHeight: screen.size.height)
                 }
-                // La croix et l'icône « Enregistrer cette photo » sont POSÉES sur la photo (en haut, face à face) : elles ne lui prennent aucune hauteur.
+                // La croix et l'icône « Enregistrer cette photo » restent EN HAUT, face à face, dans la zone sûre du haut ; lues en premier par VoiceOver.
                 VStack(spacing: 0) {
                     HStack {
                         RoundOverlayButton(systemName: "xmark", labelKey: "update_photo_close_a11y", onTap: onDismiss)
@@ -59,6 +60,7 @@ struct PhotoFullScreen: View {
                     .padding(.horizontal, Spacing.sm)
                     Spacer(minLength: 0)
                 }
+                .accessibilitySortPriority(1)
                 .zIndex(1)
             }
             .frame(width: screen.size.width, height: screen.size.height)
@@ -83,6 +85,8 @@ struct PhotoFullScreen: View {
                 .onAppear { photoArea = area.size }
                 .onChange(of: area.size) { photoArea = $0 }
         }
+        // Tout l'écran, zones sûres comprises : la zone de la photo est l'écran entier.
+        .ignoresSafeArea()
         .onTapGesture(count: 2) { toggleZoom() }
         .gesture(pinch)
         .gesture(drag)
@@ -179,16 +183,24 @@ struct PhotoFullScreen: View {
 
     // MARK: - Le pied : titre, lieu de la photo, « Voir où c'était »
 
-    /// Le pied, TOUJOURS entier : à sa hauteur naturelle quand il tient dans `footerMaxHeight` (tout ce que la photo, à son minimum, laisse), sinon
-    /// (grand texte, paysage, petit écran) il DÉFILE et prend exactement cette hauteur : jamais de bande noire en trop, jamais de pied rogné.
-    private func footerArea(screenHeight: CGFloat) -> some View {
-        ViewThatFits(in: .vertical) {
-            footer
-            ScrollView {
+    /// La légende POSÉE PAR-DESSUS la photo, en bas : un dégradé qui fond la photo dans un voile sombre, puis le voile derrière le texte blanc (contraste
+    /// d'au moins 4,5:1 même sur une photo toute blanche), jusque sous la zone sûre du bas ; le texte, lui, reste dans la zone sûre. Toujours ENTIÈRE : à
+    /// sa hauteur naturelle quand elle tient dans `footerMaxHeight` (45 % de la hauteur), sinon (grand texte, paysage) elle DÉFILE dans cette hauteur.
+    private func footerOverlay(screenHeight: CGFloat) -> some View {
+        let scrim = (reduceTransparency ? colorPhotoCaptionScrim.withAlpha(1) : colorPhotoCaptionScrim).color
+        return VStack(spacing: 0) {
+            LinearGradient(colors: [scrim.opacity(0), scrim], startPoint: .top, endPoint: .bottom)
+                .frame(height: PhotoFullScreenLayout.fadeHeight)
+                .accessibilityHidden(true)
+            ViewThatFits(in: .vertical) {
                 footer
+                ScrollView {
+                    footer
+                }
             }
+            .frame(maxHeight: PhotoFullScreenLayout.footerMaxHeight(screenHeight: screenHeight))
+            .background(scrim.ignoresSafeArea(edges: .bottom))
         }
-        .frame(maxHeight: PhotoFullScreenLayout.footerMaxHeight(screenHeight: screenHeight))
     }
 
     private var footer: some View {
