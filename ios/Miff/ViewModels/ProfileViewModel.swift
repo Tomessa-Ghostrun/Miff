@@ -55,6 +55,9 @@ struct ProfileUiState {
     var phoneTypeRefused = false
     var isWriting = false
     var message: ProfileMessage?
+    /// La photo montrée vient du compte Google (reprise à l'inscription) et la personne n'y a pas encore touché : une phrase discrète
+    /// le dit. Jamais gardé dans le brouillon.
+    var googlePhotoHint = false
 
     var canContinueFromProfile: Bool {
         ProfileForm.isNameComplete(firstName) && ProfileForm.isNameComplete(lastName)
@@ -76,6 +79,8 @@ struct ProfileDependencies {
     let network: NetworkMonitor
     let phoneTools: PhoneNumberTools
     let deviceRegion: () -> String?
+    /// La photo du compte Google proposée comme photo de profil préremplie ; nil = jamais proposée.
+    var googlePhoto: GooglePhotoPrefill?
 }
 
 /// Les deux étapes de la création du profil (ticket Onboarding §6.3 et §6.4) et l'étape téléphone seule pour un ancien
@@ -101,6 +106,9 @@ final class ProfileViewModel: ObservableObject {
     var serverRefusals = 0
     /// Une fois le profil confirmé ou le brouillon effacé, plus rien n'est écrit dans le brouillon.
     var draftClosed = false
+    /// La personne a choisi, recadré ou retiré une photo : la photo Google, si elle arrive après, n'est plus appliquée.
+    var photoTouched = false
+    var googlePhotoTask: Task<Void, Never>?
 
     init(mode: OnboardingMode, dependencies: ProfileDependencies) {
         self.mode = mode
@@ -129,6 +137,11 @@ final class ProfileViewModel: ObservableObject {
         // Charge le plan de numérotation du pays hors du fil principal, pour que l'étape téléphone s'ouvre sans accroc.
         Task.detached {
             _ = tools.exampleHint(region: region)
+        }
+        // La photo du compte Google, seulement pour une création de profil sans brouillon (un brouillon dit que la personne est déjà
+        // passée par là : sa photo, ou son choix de n'en avoir aucune, est respecté).
+        if full, draft == nil, let prefill = dependencies.googlePhoto {
+            startGooglePhotoPrefill(prefill, address: dependencies.session.suggestedPhotoURL())
         }
     }
 
@@ -185,6 +198,7 @@ final class ProfileViewModel: ObservableObject {
             return
         }
         state.message = nil
+        markPhotoTouched()
         Task {
             if let photo = await self.deps.avatars.decode(data) {
                 self.state.crop = CropState(
@@ -259,6 +273,7 @@ final class ProfileViewModel: ObservableObject {
     }
 
     func onRemovePhoto() {
+        markPhotoTouched()
         state.avatar = nil
         saveDraft()
     }
@@ -288,6 +303,7 @@ final class ProfileViewModel: ObservableObject {
 
     func eraseDraft() {
         draftClosed = true
+        googlePhotoTask?.cancel()
         deps.drafts.clear()
     }
 }

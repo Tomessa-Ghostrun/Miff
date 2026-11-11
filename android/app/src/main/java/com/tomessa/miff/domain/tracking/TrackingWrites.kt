@@ -6,6 +6,7 @@ import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.session.DeviceIds
+import com.tomessa.miff.domain.travel.TravelPeriod
 import java.util.Date
 
 /*
@@ -35,6 +36,8 @@ object TrackingWrites {
         batteryPct: Int?,
         access: LocationAccess,
         deviceId: String,
+        /** MODE VOYAGE: this status ends a trip, so the two keys of the trip are cleared in the same write (the rules refuse them next to another presence). */
+        clearTravel: Boolean = false,
     ): DocWrite {
         requireDeviceId(deviceId)
         val data =
@@ -49,7 +52,61 @@ object TrackingWrites {
                 "deviceId" to deviceId,
             )
         if (fact.setLastUpdate) data["lastUpdateAt"] = Timestamp(Date(presenceAtMillis))
+        if (clearTravel) {
+            data["travelUntil"] = null
+            data["travelUntilDay"] = null
+        }
         return DocWrite("miffs/$miffId/status/$uid", WriteKind.UPDATE, data)
+    }
+
+    /**
+     * MODE VOYAGE, the START of a trip in ONE Miff (VOY-1A, backend/firestore.rules `validTravel`): `presence = travel`, no place, no battery, no escalation, the end of the
+     * trip (an instant) and the day chosen (a text, display only). `presenceAt` is the moment the trip began ("En voyage depuis…"). An UPDATE of the status (it never creates one).
+     * `lastUpdateAt`, `updateText`, `hasPhoto` and `locationAccess` are not sent: they stay as they are. [presenceAtMillis] has been through [EventTime.forWrite] already.
+     */
+    fun travelStart(
+        miffId: String,
+        uid: String,
+        period: TravelPeriod,
+        presenceAtMillis: Long,
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        return DocWrite(
+            "miffs/$miffId/status/$uid",
+            WriteKind.UPDATE,
+            mapOf(
+                "presence" to PresenceValue.TRAVEL.wire,
+                "placeId" to null,
+                "presenceAt" to Timestamp(Date(presenceAtMillis)),
+                "batteryPct" to null,
+                "escalationDueAt" to null,
+                "travelUntil" to Timestamp(Date(period.untilMillis)),
+                "travelUntilDay" to period.untilDay,
+                "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
+            ),
+        )
+    }
+
+    /** MODE VOYAGE, a CHANGE of the end of a trip already written in this Miff: only the two keys of the trip move (the start of the trip stays). */
+    fun travelDate(
+        miffId: String,
+        uid: String,
+        period: TravelPeriod,
+        deviceId: String,
+    ): DocWrite {
+        requireDeviceId(deviceId)
+        return DocWrite(
+            "miffs/$miffId/status/$uid",
+            WriteKind.UPDATE,
+            mapOf(
+                "travelUntil" to Timestamp(Date(period.untilMillis)),
+                "travelUntilDay" to period.untilDay,
+                "updatedAt" to FieldValue.serverTimestamp(),
+                "deviceId" to deviceId,
+            ),
+        )
     }
 
     /** Only the battery and the access to the location (when the permission changed): the presence is not touched. */
