@@ -7,3 +7,5 @@
 | `hanken_grotesk_italic.ttf` | Hanken Grotesk Italic (variable) | same commit, `ofl/hankengrotesk/HankenGrotesk-Italic[wght].ttf` | SIL OFL 1.1 (`OFL-HankenGrotesk.txt`) |
 
 The files are unmodified copies. The OFL allows embedding in an application; the fonts are not sold on their own.
+
+Graisse utilisée de Baloo Thambi 2 : 400 (Regular) pour tous les styles `display/*`, y compris la phrase principale de la bulle du Feed (`textDisplayBubble`, 30 / 36). Un essai en ExtraBold 800 (2026-11-10) a été abandonné par décision du PM (2026-11-11) ; l'axe 800 du fichier n'est plus utilisé.
