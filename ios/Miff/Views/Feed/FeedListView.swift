@@ -28,7 +28,7 @@ struct FeedListView: View {
     let ready: DirectoryReady
     let locate: LocateUiState
     let texts: FeedTexts
-    /// L'en-tête est dessiné par-dessus la liste : sa hauteur est la marge haute du contenu, pour que la première carte commence dessous.
+    /// L'en-tête est dessiné par-dessus la liste : la marge haute du contenu, MESURÉE (`FeedTopInset`), pour que la première carte commence dessous.
     let topInset: CGFloat
     /// Le mouvement de la bulle n'existe que si l'onglet est en usage et l'app au premier plan.
     let isActive: Bool
@@ -38,6 +38,8 @@ struct FeedListView: View {
     let onContentMoved: (CGFloat) -> Void
     /// La distance défilée lue directement sur la vue de défilement (voir `ScrollDistanceReader`).
     let onScrolled: (CGFloat) -> Void
+    /// L'origine du contenu de la vue de défilement dans la fenêtre (voir `FeedTopInset`).
+    let onOrigin: (CGFloat) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let topId = "feed-top"
@@ -59,7 +61,7 @@ struct FeedListView: View {
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, topInset + Spacing.md)
                 .padding(.bottom, Spacing.md)
-                .background(ScrollDistanceReader(onChange: onScrolled))
+                .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin))
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
             .refreshable { await actions.onRefresh() }

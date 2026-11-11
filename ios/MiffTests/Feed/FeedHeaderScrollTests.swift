@@ -124,6 +124,34 @@ final class FeedHeaderScrollTests: XCTestCase {
         XCTAssertEqual(model.state.offset, 0, "la lecture de repli ne contredit pas la lecture directe")
     }
 
+    // MARK: - La marge haute de la liste (cause réelle du bug des captures de la CI)
+
+    func testTheListStartsExactlyAtTheBottomOfTheHeaderWhenTheScrollViewIgnoresTheTopSafeArea() {
+        // Le cas des captures : la vue de défilement commence en haut de l'ÉCRAN (origine 0) ; l'en-tête est posé dans la zone sûre
+        // (59 pt) et mesure 106 pt : son bas est à 165 pt. Avant, la marge valait 106 pt et le contenu démarrait 59 pt trop haut.
+        let inset = FeedTopInset.listInset(headerBottom: 165, contentOrigin: 0, fallback: 106)
+
+        XCTAssertEqual(inset, 165)
+        XCTAssertEqual(0 + inset, 165, "le haut du contenu tombe au bas de l'en-tête (puis la marge Spacing.md)")
+    }
+
+    func testTheListInsetIsNotDoubledWhenTheScrollViewAlreadyAddsTheSafeArea() {
+        // Une vue de défilement qui ajoute elle-même la zone sûre (origine 59) : la marge n'est que la hauteur de l'en-tête.
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: 165, contentOrigin: 59, fallback: 106), 106)
+    }
+
+    func testWithoutMeasuresTheHeaderHeightIsUsedAndTheInsetIsNeverNegative() {
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: nil, contentOrigin: 0, fallback: 106), 106)
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: 165, contentOrigin: nil, fallback: 106), 106)
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: 50, contentOrigin: 80, fallback: 106), 0)
+    }
+
+    func testAMeasureThatMovesByAFractionOfAPointIsNotNew() {
+        XCTAssertTrue(FeedTopInset.isNewMeasure(10, old: nil))
+        XCTAssertFalse(FeedTopInset.isNewMeasure(10.3, old: 10))
+        XCTAssertTrue(FeedTopInset.isNewMeasure(10.5, old: 10))
+    }
+
     func testTheShowAnimationIsShortAndSystemAnimationsAreRespectedByTheScreen() throws {
         XCTAssertLessThanOrEqual(FeedHeaderMotion.showSeconds, 0.3, "animation courte")
         let url = URL(fileURLWithPath: #filePath)

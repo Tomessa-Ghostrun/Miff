@@ -2,6 +2,17 @@
 
 ## Non publié
 
+### Feed : le haut de la bulle n'est plus coupé par l'en-tête (cause réelle trouvée avec les captures de la CI, v2)
+
+Branche `ios/feed-header-v2` (PR #193 en brouillon, reprend #176). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi** ; les captures `90` à `93` de la CI montrent le Feed réel (aperçu `-MiffPreview feed-green|feed-orange|feed-red`).
+
+Corrigé :
+- **Cause réelle** : la vue de défilement du Feed commence tout en haut de l'ÉCRAN (sous la barre d'état) alors que l'en-tête est posé DANS la zone sûre ; la marge haute de la liste ne valait que la hauteur de l'en-tête, sans la zone sûre (une cinquantaine de points) : le contenu démarrait trop haut, sous l'en-tête, et le haut de la bulle était coupé en ligne droite. La lecture du défilement de #176 n'y pouvait rien.
+- **Correctif** : la marge haute est tirée de MESURES (`FeedTopInset`) : le bas de l'en-tête au repos (mesuré par un conteneur fixe, dans la fenêtre) moins l'endroit où la vue de défilement place son contenu (`ScrollDistanceReader`, haut de la vue + marge automatique). Le haut de la liste tombe exactement au bas de l'en-tête, avec ou sans marge automatique de la vue de défilement (pas de double compte).
+- Mise en page extraite dans `FeedCollapsingLayout` (l'écran réel et l'aperçu de la CI passent par le même code).
+
+Ajouté : `FeedTopInset` (+ tests : cas des captures, pas de double compte, repli, jamais négatif), aperçu `FeedScreenPreview` et captures CI `90` à `93`.
+
 ### Corrigé et changé : photo de proche en plein écran, enregistrement DIRECT dans la galerie, photo qui remplit la zone (retours du PM sur le build 25, 2026-11-11)
 
 - **Enregistrement direct dans la galerie** (décision du PM, **remplace** « sans permission / feuille de partage » : la feuille ne proposait pas « Enregistrer l'image ») : le toucher de l'icône en haut à droite enregistre la photo dans Photos, **sans feuille de partage**. `PHPhotoLibrary` en autorisation **`.addOnly`** (jamais de lecture de la galerie), demandée **au premier toucher** (clé **`NSPhotoLibraryAddUsageDescription`**, FR + EN : « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. »), puis `PHAssetCreationRequest.forAsset()` avec un JPEG **ré-encodé depuis les pixels** (`PhotoExport` : aucun EXIF, aucun GPS, aucune donnée de lieu ; testé avec une source qui porte un GPS). **Aucune écriture automatique** : seulement au toucher. Refus : message calme + « Ouvrir les réglages » (jamais culpabilisant) ; appareil restreint et échec : messages calmes ; confirmation « Photo enregistrée. ». Voile des applications récentes conservé.

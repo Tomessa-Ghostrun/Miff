@@ -6,17 +6,30 @@ import SwiftUI
 
 /// Ce que la mise en page donne au contenu.
 struct FeedLayoutContext {
-    /// La hauteur MESURÉE de l'en-tête : la marge haute du contenu.
+    /// La hauteur MESURÉE de l'en-tête.
     let headerHeight: CGFloat
+    /// La marge haute à donner au contenu d'une vue de défilement : son haut tombe exactement au bas de l'en-tête (`FeedTopInset`).
+    let listInset: CGFloat
     /// Monte d'un cran quand le logo est touché : la liste remonte tout en haut.
     let scrollToTop: Int
     let onContentMoved: (CGFloat) -> Void
     let onScrolled: (CGFloat) -> Void
+    /// L'origine du contenu de la vue de défilement, dans la fenêtre (lue par `ScrollDistanceReader`).
+    let onOrigin: (CGFloat) -> Void
 }
 
 /// La durée du retour animé de l'en-tête (un toucher sur le logo, un verrouillage) : courte.
 enum FeedHeaderMotion {
     static let showSeconds: Double = 0.2
+}
+
+/// Le bas de l'en-tête AU REPOS (sans son déplacement), dans la fenêtre.
+struct HeaderRestBottomKey: PreferenceKey {
+    static var defaultValue: CGFloat?
+
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        value = nextValue() ?? value
+    }
 }
 
 struct HeaderHeightKey: PreferenceKey {
@@ -39,6 +52,8 @@ struct FeedCollapsingLayout<Content: View>: View {
 
     @State private var headerModel = FeedHeaderModel()
     @State private var headerHeight: CGFloat = 0
+    @State private var headerRestBottom: CGFloat?
+    @State private var contentOrigin: CGFloat?
     @State private var scrollToTop = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -47,9 +62,19 @@ struct FeedCollapsingLayout<Content: View>: View {
             content(
                 FeedLayoutContext(
                     headerHeight: headerHeight,
+                    listInset: FeedTopInset.listInset(
+                        headerBottom: headerRestBottom,
+                        contentOrigin: contentOrigin,
+                        fallback: headerHeight
+                    ),
                     scrollToTop: scrollToTop,
                     onContentMoved: { headerModel.contentMoved(to: $0) },
-                    onScrolled: { headerModel.scrolled(to: $0) }
+                    onScrolled: { headerModel.scrolled(to: $0) },
+                    onOrigin: { origin in
+                        if FeedTopInset.isNewMeasure(origin, old: contentOrigin) {
+                            contentOrigin = origin
+                        }
+                    }
                 )
             )
             // Le contenu ne passe JAMAIS sous la barre d'état : une bande fixe de la couleur du fond couvre la zone sûre du haut, même quand
@@ -68,6 +93,11 @@ struct FeedCollapsingLayout<Content: View>: View {
         .onPreferenceChange(HeaderHeightKey.self) { height in
             headerHeight = height
             headerModel.measured(height)
+        }
+        .onPreferenceChange(HeaderRestBottomKey.self) { bottom in
+            if let bottom, FeedTopInset.isNewMeasure(bottom, old: headerRestBottom) {
+                headerRestBottom = bottom
+            }
         }
         .onAppear { headerModel.lock(locked) }
         // Verrouillé : l'en-tête revient avec une courte animation, immédiate avec « Réduire les animations ».
@@ -100,22 +130,30 @@ struct FeedCollapsingLayout<Content: View>: View {
 }
 
 /// L'en-tête par-dessus la liste : déplacé par une translation (aucune mise en page ne bouge), mesuré pour que la liste lui laisse sa place.
+/// Le conteneur extérieur ne bouge JAMAIS : c'est lui qui mesure le bas de l'en-tête au repos (dans la fenêtre) ; seul le contenu glisse.
 private struct FeedHeaderOverlay: View {
     @ObservedObject var model: FeedHeaderModel
     let content: FeedHeaderContent
 
     var body: some View {
-        content
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(key: HeaderHeightKey.self, value: proxy.size.height)
-                }
-            )
-            .background(
-                colorBgCanvas.color
-                    .ignoresSafeArea(edges: .top)
-                    .miffShadow(shadowSubtle)
-            )
-            .offset(y: model.state.offset)
+        ZStack(alignment: .top) {
+            content
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: HeaderHeightKey.self, value: proxy.size.height)
+                    }
+                )
+                .background(
+                    colorBgCanvas.color
+                        .ignoresSafeArea(edges: .top)
+                        .miffShadow(shadowSubtle)
+                )
+                .offset(y: model.state.offset)
+        }
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: HeaderRestBottomKey.self, value: proxy.frame(in: .global).maxY)
+            }
+        )
     }
 }

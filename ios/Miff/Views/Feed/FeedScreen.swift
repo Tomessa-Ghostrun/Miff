@@ -117,7 +117,8 @@ struct FeedScreen: View {
             ScrollView {
                 FeedSkeleton()
                     .padding(.horizontal, Spacing.md)
-                    .padding(.top, layout.headerHeight + Spacing.md)
+                    .padding(.top, layout.listInset + Spacing.md)
+                    .background(ScrollDistanceReader(onChange: layout.onScrolled, onOrigin: layout.onOrigin))
             }
         case .unavailable:
             VStack(spacing: Spacing.sm) {
@@ -149,13 +150,14 @@ struct FeedScreen: View {
             ready: ready,
             locate: model.locate,
             texts: texts,
-            topInset: layout.headerHeight,
+            topInset: layout.listInset,
             isActive: isActive,
             agreementWaiting: ready.activeId.map { awaiting.waiting.contains($0) } ?? false,
             scrollToTop: layout.scrollToTop,
             actions: listActions,
             onContentMoved: layout.onContentMoved,
-            onScrolled: layout.onScrolled
+            onScrolled: layout.onScrolled,
+            onOrigin: layout.onOrigin
         )
     }
 

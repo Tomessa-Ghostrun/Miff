@@ -96,16 +96,17 @@ struct FeedScreenPreview: View {
                 ready: ready,
                 locate: .idle,
                 texts: FeedTexts(),
-                topInset: layout.headerHeight,
+                topInset: layout.listInset,
                 isActive: false,
                 agreementWaiting: false,
                 scrollToTop: layout.scrollToTop,
                 actions: listActions,
                 onContentMoved: layout.onContentMoved,
-                onScrolled: layout.onScrolled
+                onScrolled: layout.onScrolled,
+                onOrigin: layout.onOrigin
             )
             .overlay(alignment: .top) {
-                Rectangle().fill(Color.pink).frame(height: 1).padding(.top, layout.headerHeight)
+                Rectangle().fill(Color.pink).frame(height: 1).padding(.top, layout.listInset)
             }
         }
     }
