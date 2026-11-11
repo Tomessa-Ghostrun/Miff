@@ -2382,6 +2382,57 @@
         }
       }
     },
+    "feed_photo_download_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save this photo on your phone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer cette photo sur ton téléphone"
+          }
+        }
+      }
+    },
+    "feed_photo_download_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn’t save the photo. You can try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n’a pas pu enregistrer la photo. Tu peux réessayer."
+          }
+        }
+      }
+    },
+    "feed_photo_download_saving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement…"
+          }
+        }
+      }
+    },
     "feed_selector_a11y": {
       "extractionState": "manual",
       "localizations": {
