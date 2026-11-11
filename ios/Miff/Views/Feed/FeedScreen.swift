@@ -189,7 +189,9 @@ struct FeedScreen: View {
                 onLocate: { model.onLocate(uid: $0) },
                 onMessage: actions.onMessage,
                 onCall: actions.onCall,
-                onOpenPhoto: { openedPhoto = $0 }
+                onOpenPhoto: { openedPhoto = $0 },
+                // MODE VOYAGE : « Modifier » sur MA carte ouvre le Profil, où la date de fin se règle.
+                onEditTravel: actions.onOpenProfile
             ),
             bubble: BubbleActions(
                 onMessage: actions.onMessage,

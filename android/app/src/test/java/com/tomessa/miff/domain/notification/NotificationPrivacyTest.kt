@@ -173,15 +173,16 @@ class NotificationPrivacyTest {
             File("build.gradle.kts").readText().contains("androidx.work") ||
                 File("build.gradle.kts").readText().contains("libs.androidx.work"),
         )
-        // The alarm of a reminder is an inexact one: the API is named once, in one place.
+        // The alarms of the app are inexact ones: the API is named in two places only (the reminders, and the end of a MODE VOYAGE trip).
         val users =
             File(main, ".")
                 .walkTopDown()
                 .filter { it.isFile && it.extension == "kt" }
                 .filter { f -> codeLines(f).any { it.contains("setAndAllowWhileIdle") } }
                 .map { it.name }
+                .sorted()
                 .toList()
-        assertEquals(listOf("NotificationAlarms.kt"), users)
+        assertEquals(listOf("AndroidTracking.kt", "NotificationAlarms.kt"), users)
     }
 
     @Test

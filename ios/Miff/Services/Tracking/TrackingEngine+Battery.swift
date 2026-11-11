@@ -55,7 +55,8 @@ extension TrackingEngine {
         pass: PassContext
     ) async -> BatteryOutcome {
         // Un statut qui attend d'être écrit passe d'abord : ses proches ne doivent pas voir une heure récente sur un état périmé.
-        guard let miff = state.miffs[miffId], miff.pending == nil, let level = pass.batteryPct else {
+        // MODE VOYAGE : aucune batterie à côté des clés d'un voyage terminé non encore effacées (une mise à jour partielle serait refusée).
+        guard let miff = state.miffs[miffId], miff.pending == nil, !miff.clearTravel, let level = pass.batteryPct else {
             return .skipped
         }
         let now = env.nowMillis()
