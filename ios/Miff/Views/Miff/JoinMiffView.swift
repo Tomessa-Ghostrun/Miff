@@ -233,6 +233,6 @@ struct JoinConfirmStep: View {
             }
             .disabled(state.joining)
         }
-        .background(SwipeBackLock(isLocked: true))
+        .swipeBack(for: .joinMiffConfirm)
     }
 }
