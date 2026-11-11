@@ -14671,57 +14671,6 @@
         }
       }
     },
-    "update_flash_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash"
-          }
-        }
-      }
-    },
-    "update_flash_state_on": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash on"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash activé"
-          }
-        }
-      }
-    },
-    "update_flash_state_off": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash off"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash désactivé"
-          }
-        }
-      }
-    },
     "update_prepare_failed": {
       "extractionState": "manual",
       "localizations": {
@@ -15211,6 +15160,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Position mesurée %1$@."
+          }
+        }
+      }
+    },
+    "ios_feed_photo_download_denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save this photo, allow Miff to add photos to your library in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour enregistrer cette photo, autorise Miff à ajouter des photos à ta galerie dans les Réglages."
+          }
+        }
+      }
+    },
+    "ios_feed_photo_download_restricted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device doesn’t allow saving photos to the library."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet appareil n’autorise pas l’enregistrement dans la galerie."
           }
         }
       }

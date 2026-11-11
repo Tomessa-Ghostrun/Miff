@@ -63,7 +63,7 @@ L'APK de test fait environ 20 Mo (non réduit, avec les outils de débogage) ; l
 | Code du diagnostic | présent (`src/debug`) | **absent** (preuve : aucune chaîne `Diagnostic`, `DIAGNOSTICPROBE` ni `DebugAppCheck` dans le dex de l'APK release) |
 | App Check | fournisseur "debug" | Play Integrity (mode non appliqué) |
 | Réduction du code (R8) | non | oui, avec réduction des ressources |
-| Signature | clé de débogage : celle du poste, ou celle du secret `DEBUG_KEYSTORE_B64` en CI (voir « Authentification ») | **non signée** : aucune clé de signature n'existe encore (ne jamais en commiter) |
+| Signature | clé de débogage : celle du poste, ou celle du secret `DEBUG_KEYSTORE_B64` en CI (voir « Authentification ») | **non signée** par défaut (poste, CI de chaque PR) ; **signée avec la clé d'envoi** seulement par le workflow manuel `android-release` (voir « Préparer la release Google Play ») ; jamais la clé de debug, jamais une clé dans le dépôt |
 | Pseudo-langues `en-XA`, `ar-XB` | oui | non |
 
 **Troisième variante, `releaseLike`** (démarrage mesuré à armes égales, PM 2026-10-31) : le **code du release** (mêmes sources `src/release`, R8 et réduction des ressources, non « debuggable », pas d'écran de diagnostic, App Check Play Integrity) **signé avec la clé de débogage**, donc installable sur le téléphone du PM et avec la même empreinte SHA-1 que l'APK debug de la CI (la connexion Google fonctionne). Elle ajoute seulement l'affichage de mesure du démarrage (voir « Démarrage à froid »). Construit par `.\gradlew assembleReleaseLike` → `app\build\outputs\apk\releaseLike\app-releaseLike.apk`, et publié par la CI (artefact `miff-releaselike-apk`, 3 jours). **Jamais publié** sur un store ; le vrai release reste non signé et ne contient ni cet affichage ni la mesure (preuve par la CI : la chaîne `STARTUPMETRICSOVERLAY` est absente du dex du bundle release). Un APK debug et un APK releaseLike de la CI se remplacent l'un l'autre sans désinstaller (même signature) ; un APK construit sur le poste, signé avec une autre clé, impose de désinstaller d'abord.
@@ -765,6 +765,16 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 
 Dependabot (ticket INIT-1) proposera les mises à jour par PR. Comme Dependabot n'a pas accès aux secrets GitHub, le workflow `android.yml` génère pour lui, et pour lui seul, un `google-services.json` factice (projet `fake-ci-config-do-not-use`, clé évidemment fausse) afin de compiler ; l'APK de ces exécutions n'est pas publié.
 
+## Préparer la release Google Play (lot « préparation de la release Android », version 0.32.0)
+
+Mode d'emploi complet pour le PM : `docs/release/checklist-android.md`. Côté code :
+
+- **Version** : `versionName` = premier titre `## [x.y.z]` de `CHANGELOG.md` (ou `-Pmiff.versionName`) ; `versionCode` = `-Pmiff.versionCode` si donné, sinon `major * 1 000 000 + minor * 1 000 + patch` (0.32.0 donne 32000). **Un build signé refuse de démarrer sans `-Pmiff.versionCode`** (Google Play exige un numéro qui ne fait que croître) ; le workflow `android-release` donne son numéro d'exécution. La CI relit la version réelle de l'APK (`aapt2`).
+- **Signature** : quatre variables d'environnement, lues seulement par Gradle : `MIFF_UPLOAD_STORE_FILE` (chemin d'un fichier `.jks` **hors du dépôt**), `MIFF_UPLOAD_STORE_PASSWORD`, `MIFF_UPLOAD_KEY_ALIAS`, `MIFF_UPLOAD_KEY_PASSWORD`. Aucune : release non signée. Une partie : échec. **Pas de propriété Gradle, pas de `key.properties`** : une valeur dans un fichier finirait un jour dans un commit. Sur un poste, **ne signe jamais pour Google Play** : le seul chemin est le workflow (clé d'envoi dans des secrets GitHub, jamais sur un disque partagé). Un essai local de câblage se fait avec une clé jetable (`keytool -genkeypair ... -validity 2`) puis `.gradlew :app:signingReport`.
+- **Workflow `android-release.yml`** : manuel, branche `main`, environnement GitHub protégé `android-release` (relecteur requis, `main` seule, secrets d'envoi créés dans cet environnement), aucun secret = « non configurée » (exécution verte, rien construit), secrets partiels = échec rouge. Détails et ce qu'il vérifie : checklist, annexe technique.
+- **Pages de 16 Ko** : `ci/check-elf-16kb.mjs` (`node ci/check-elf-16kb.mjs <dossier extrait du bundle>`), testé par `node --test ci/check-elf-16kb.test.mjs`. Mesuré : les 10 bibliothèques 64 bits du bundle (MapLibre 13.7.1 compris) sont alignées.
+- **Gardes de release conservées** : pas de fournisseur App Check de debug, de diagnostic, de journal de détection ni de fenêtre d'avis dans le bundle, permissions exactes, client web Google (`android.yml`, rejoué sur le bundle signé par `ci/check-release-bundle.sh`) ; `ReleaseSigningGuardTest` garde les deux workflows d'accord.
+
 ## Documentation liée
 
-`CHANGELOG.md` (historique), `docs/tickets/initialisation-technique.md` (ticket et critères A1 à A14), `design/design-system.md`, `backend/data-model.md`.
+`CHANGELOG.md` (historique), `docs/release/checklist-android.md` (soumission Google Play), `docs/tickets/initialisation-technique.md` (ticket et critères A1 à A14), `design/design-system.md`, `backend/data-model.md`.
