@@ -246,8 +246,8 @@ private fun Body(
         }
         RadiusSection(state, actions)
         TypeSection(state, actions)
-        // A request carries no category (ticket LIEU-REQ, section 5.1): the creator may choose one when they change the place afterwards.
-        if (state.mode != PlaceFormMode.REQUEST) CategorySection(state, actions)
+        // The category is asked as for a place: a request carries it (contract of the backend), and the creator's acceptance copies it.
+        CategorySection(state, actions)
         Spacer(Modifier.size(Spacing.s))
     }
 }

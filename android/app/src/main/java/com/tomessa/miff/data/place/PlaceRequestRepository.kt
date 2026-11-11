@@ -223,6 +223,7 @@ class FirestorePlaceRequestRepository(
                 lat = draft.lat,
                 lng = draft.lng,
                 radiusM = draft.radiusM,
+                category = draft.category,
                 createdAtMillis = null,
             )
         if (!online) {
@@ -274,6 +275,12 @@ class FirestorePlaceRequestRepository(
                 is Guarded.Value -> return RequestWithdrawResult.Done
                 is Guarded.Failed -> outcome.failure
             }
+        // The counter was reset to 0 by the creator while requests exist: -1 is out of bounds and the rules refuse. Once more with the absolute value 0 (contract 2.2).
+        if (failure == MiffFailure.REFUSED) {
+            val again =
+                guarded { store.commit(PlaceRequestWrites.withdrawWithCounterAtZero(request.miffId, request.id)) }
+            if (again is Guarded.Value) return RequestWithdrawResult.Done
+        }
         // A lot whose answer was lost, or a request already deleted (by the creator, on another phone): it is gone, which is what was asked.
         if (failure != MiffFailure.NO_PROFILE) {
             val left =

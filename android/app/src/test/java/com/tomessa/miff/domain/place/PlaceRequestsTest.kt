@@ -139,7 +139,7 @@ class PlaceRequestsTest {
     fun create_writesEveryKeyOfTheRequest_andOnlyThose_withTheCoordinatesOnFiveDecimals() {
         val doc = PlaceRequestWrites.requestDocument("u2", testRequestDraft(name = "  Chez Mamie "))
         assertEquals(
-            setOf("requestedBy", "name", "type", "address", "lat", "lng", "radiusM", "createdAt"),
+            setOf("requestedBy", "name", "type", "category", "address", "lat", "lng", "radiusM", "createdAt"),
             doc.keys,
         )
         assertEquals("u2", doc["requestedBy"])
@@ -152,9 +152,10 @@ class PlaceRequestsTest {
     }
 
     @Test
-    fun create_aRequestHasNoCategory_noPriority_noCreatedBy() {
-        val keys = PlaceRequestWrites.requestDocument("u2", testRequestDraft()).keys
-        assertFalse("category" in keys)
+    fun create_aRequestCarriesTheCategoryChosen_noPriority_noCreatedBy() {
+        val doc = PlaceRequestWrites.requestDocument("u2", testRequestDraft(category = PlaceCategory.SCHOOL))
+        assertEquals("school", doc["category"])
+        val keys = doc.keys
         assertFalse("priority" in keys)
         assertFalse("createdBy" in keys)
         assertFalse("status" in keys)
@@ -198,7 +199,7 @@ class PlaceRequestsTest {
         assertEquals(DraftProblem.RADIUS, testRequestDraft(radiusM = 75).problem)
         assertEquals(
             DraftProblem.ADDRESS,
-            PlaceRequestDraft("Maison", "  ", 48.0, 2.0, 100, PlaceType.TRUSTED).problem,
+            PlaceRequestDraft("Maison", "  ", 48.0, 2.0, 100, PlaceType.TRUSTED, PlaceCategory.HOME).problem,
         )
     }
 

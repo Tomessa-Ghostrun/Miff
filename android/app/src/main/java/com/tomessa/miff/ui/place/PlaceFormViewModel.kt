@@ -596,6 +596,7 @@ class PlaceFormViewModel(
                 lng = chosen.lng,
                 radiusM = state.radiusM,
                 type = state.type,
+                category = state.category ?: return,
             )
         if (draft.problem != null) {
             mutableState.update { it.copy(message = PlaceMessage.GENERIC) }

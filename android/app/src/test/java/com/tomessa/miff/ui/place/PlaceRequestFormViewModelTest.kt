@@ -250,4 +250,15 @@ class PlaceRequestFormViewModelTest {
         dispatcher.scheduler.runCurrent()
         assertEquals(PlaceMessage.MIFF_GONE, vm.uiState.value.message)
     }
+
+    @Test
+    fun theCategory_isAskedLikeForAPlace_homeByDefault_andSentWithTheRequest() {
+        val vm = viewModel()
+        assertEquals(com.tomessa.miff.domain.place.PlaceCategory.HOME, vm.uiState.value.category)
+        vm.onCategorySelected(com.tomessa.miff.domain.place.PlaceCategory.SCHOOL)
+        vm.fill()
+        vm.onSave()
+        dispatcher.scheduler.runCurrent()
+        assertEquals(com.tomessa.miff.domain.place.PlaceCategory.SCHOOL, requests.submitted.single().category)
+    }
 }

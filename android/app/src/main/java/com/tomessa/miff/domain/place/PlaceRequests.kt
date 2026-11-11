@@ -51,6 +51,8 @@ class PlaceRequest(
     val lat: Double,
     val lng: Double,
     val radiusM: Int,
+    /** The category the person chose (same values as a place, contract of the backend: the 9th key of a request); null for a document that has none. */
+    val category: PlaceCategory?,
     /** When the server wrote it; null while the write is still on its way (a request just made on this phone). */
     val createdAtMillis: Long?,
 ) {
@@ -100,13 +102,14 @@ class PlaceRequest(
                 lat = lat,
                 lng = lng,
                 radiusM = radius,
+                category = PlaceCategory.fromValue(fields["category"] as? String),
                 createdAtMillis = (fields["createdAt"] as? Timestamp)?.toDate()?.time,
             )
         }
     }
 }
 
-/** What the person filled in to ask for a place: what the form builds (same fields and same checks as a place, without the category). */
+/** What the person filled in to ask for a place: what the form builds (same fields and same checks as a place, category included). */
 class PlaceRequestDraft(
     val name: String,
     val address: String,
@@ -114,6 +117,7 @@ class PlaceRequestDraft(
     val lng: Double,
     val radiusM: Int,
     val type: PlaceType,
+    val category: PlaceCategory,
 ) {
     override fun toString(): String = "PlaceRequestDraft(redacted)"
 
@@ -170,6 +174,7 @@ object PlaceRequestWrites {
             "requestedBy" to uid,
             "name" to PlaceName.stored(draft.name),
             "type" to draft.type.value,
+            "category" to draft.category.value,
             "address" to PlaceAddressText.stored(draft.address),
             "lat" to PlaceCoordinates.round5(draft.lat),
             "lng" to PlaceCoordinates.round5(draft.lng),
@@ -222,11 +227,28 @@ object PlaceRequestWrites {
             DocWrite(requestPath(miffId, requestId), WriteKind.DELETE),
             DocWrite(counterPath(miffId), WriteKind.MERGE, memberCounter(requestId, -1)),
         )
+
+    /**
+     * The FALLBACK of a withdrawal that the rules refused (contract of the backend, 2.2): a counter that a creator reset to 0 while requests exist would go to -1,
+     * which is out of bounds. The same lot with the counter set to the ABSOLUTE value 0 is accepted.
+     */
+    fun withdrawWithCounterAtZero(
+        miffId: String,
+        requestId: String,
+    ): List<DocWrite> =
+        listOf(
+            DocWrite(requestPath(miffId, requestId), WriteKind.DELETE),
+            DocWrite(
+                counterPath(miffId),
+                WriteKind.MERGE,
+                mapOf("pending" to 0, "lastReqId" to requestId, "updatedAt" to FieldValue.serverTimestamp()),
+            ),
+        )
 }
 
 /**
  * The request as the place it would become, for the screens that already know how to draw a place (the detail: map, circle, address, radius, type). It is
- * NOT a place of the Miff: it has no category and its identifier is the one of the request.
+ * NOT a place of the Miff: its identifier is the one of the request.
  */
 fun PlaceRequest.asPlace(): Place =
     Place(
@@ -234,7 +256,7 @@ fun PlaceRequest.asPlace(): Place =
         miffId = miffId,
         name = name,
         type = type,
-        category = null,
+        category = category,
         address = address,
         lat = lat,
         lng = lng,

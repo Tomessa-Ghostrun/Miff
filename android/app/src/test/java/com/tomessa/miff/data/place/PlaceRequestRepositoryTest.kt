@@ -291,4 +291,43 @@ class PlaceRequestRepositoryTest {
             val read = repo.readMine(uid, MIFF_ID)
             assertEquals(MiffFailure.REFUSED, (read as MineRead.Failed).failure)
         }
+
+    @Test
+    fun withdraw_refusedByTheRules_isTriedOnceMoreWithTheCounterAtZero() =
+        runTest {
+            val mine = testRequest(uid = uid, slot = 1, createdAtMillis = now)
+            requests.mine = listOf(mine)
+            // The counter was reset to 0 by the creator: -1 is refused, the absolute 0 is accepted (contract of the backend, 2.2).
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            assertTrue(repo.withdraw(mine) is RequestWithdrawResult.Done)
+            val lot = requests.commits.single()
+            assertEquals(WriteKind.DELETE, lot[0].kind)
+            assertEquals(0, lot[1].data["pending"])
+            assertEquals("u2_1", lot[1].data["lastReqId"])
+        }
+
+    @Test
+    fun withdraw_refusedTwice_isAFailure_andTheRequestStaysUntilItExpires() =
+        runTest {
+            val mine = testRequest(uid = uid, slot = 1, createdAtMillis = now)
+            requests.mine = listOf(mine)
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            assertEquals(MiffFailure.REFUSED, (repo.withdraw(mine) as RequestWithdrawResult.Failed).failure)
+            assertTrue(requests.commits.isEmpty())
+        }
+
+    @Test
+    fun submit_sendsTheCategoryChosen() =
+        runTest {
+            val loaded = context()
+            repo.submit(
+                uid,
+                MIFF_ID,
+                testRequestDraft(category = com.tomessa.miff.domain.place.PlaceCategory.SPORT),
+                loaded,
+                online = true,
+            )
+            assertEquals("sport", requests.commits.single()[0].data["category"])
+        }
 }
