@@ -13957,19 +13957,19 @@
         }
       }
     },
-    "ios_myinfo_edit_soon": {
+    "ios_myinfo_save_failed_later": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You will be able to edit your details in an upcoming update."
+            "value": "It still isn't going through. Your information stays here: try again a little later."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
+            "value": "Ça ne passe toujours pas. Tes informations restent ici : réessaie un peu plus tard."
           }
         }
       }
@@ -15177,6 +15177,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta position n'est pas accessible : la localisation du téléphone est éteinte, ou Miff n'a plus le droit de l'utiliser. Tu peux la rallumer dans les réglages, puis réessayer."
+          }
+        }
+      }
+    },
+    "ios_update_notice_location_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on precise location for this feature. You can do it in the settings, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer."
           }
         }
       }

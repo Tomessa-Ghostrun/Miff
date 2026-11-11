@@ -8,4 +8,4 @@
 
 The files are unmodified copies. The OFL allows embedding in an application; the fonts are not sold on their own.
 
-Graisse utilisée de Baloo Thambi 2 : 400 (Regular) pour tous les styles `display/*`, y compris la phrase principale de la bulle du Feed (`textDisplayBubble`, 30 / 36). Un essai en ExtraBold 800 (2026-11-10) a été abandonné par décision du PM (2026-11-11) ; l'axe 800 du fichier n'est plus utilisé.
+Graisse utilisée de Baloo Thambi 2 : 400 (Regular) pour tous les styles `display/*`, y compris la phrase principale de la bulle du Feed (`textDisplayHeadline`). Les essais en ExtraBold 800 puis en 30 / 36 (2026-11-10 et 2026-11-11) ont été abandonnés par décision du PM ; l'axe 800 du fichier n'est pas utilisé.
