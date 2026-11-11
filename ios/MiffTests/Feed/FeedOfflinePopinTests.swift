@@ -66,9 +66,9 @@ final class FeedOfflinePopinTests: XCTestCase {
         return task
     }
 
-    /// Sans réseau et rien à montrer : la petite grâce de 2 s passe, puis la pop-in est là.
+    /// Sans réseau et rien à montrer : la petite grâce de 1,5 s passe, puis la pop-in est là.
     private func popinAppears(_ model: FeedViewModel) async {
-        await sleeper.elapse(2_000)
+        await sleeper.elapse(1_500)
         await waitUntil { model.offlineRetry.isShown }
     }
 
@@ -88,7 +88,7 @@ final class FeedOfflinePopinTests: XCTestCase {
         XCTAssertEqual(model.uiState, .loading)
 
         _ = show(model)
-        await waitUntil { self.sleeper.pendingFor(2_000) == 1 }
+        await waitUntil { self.sleeper.pendingFor(1_500) == 1 }
         XCTAssertFalse(model.offlineRetry.isShown, "pas de clignotement : une courte grâce d'abord")
         await popinAppears(model)
 
@@ -153,7 +153,7 @@ final class FeedOfflinePopinTests: XCTestCase {
         model.statusView = .loaded(byUid: [:], fromCache: true)
 
         _ = show(model)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await sleeper.settle()
 
         XCTAssertFalse(model.offlineRetry.isShown)
         guard case .ready(let content) = model.uiState else {
@@ -174,7 +174,7 @@ final class FeedOfflinePopinTests: XCTestCase {
         XCTAssertEqual(model.statusView, .waiting)
 
         _ = show(model)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await sleeper.settle()
 
         XCTAssertFalse(model.offlineRetry.isShown, "la Miff est connue : le squelette attend les statuts (15 s au plus), sans pop-in qui disparaîtrait aussitôt")
     }
@@ -206,7 +206,7 @@ final class FeedOfflinePopinTests: XCTestCase {
         let before = myMiffsCalls()
 
         model.offlineRetry.retryNow()
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await sleeper.settle()
 
         XCTAssertEqual(model.restarts, 0)
         XCTAssertEqual(myMiffsCalls(), before, "pas de réseau : aucune lecture")
@@ -217,39 +217,120 @@ final class FeedOfflinePopinTests: XCTestCase {
         model.piece = .loading(testMiffId)
         _ = show(model)
         await popinAppears(model)
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
+        await waitUntil { self.sleeper.pendingFor(1_000) == 1 }
         let before = myMiffsCalls()
 
-        for round in 1...3 {
-            sleeper.fire(10_000)
-            await waitUntil { self.sleeper.requested.filter { $0 == 10_000 }.count == round + 1 }
-        }
+        // Quatre tours de dix secondes : sans réseau, la minuterie tourne sans rien lire.
+        await sleeper.elapse(1_000, times: 40)
+        await sleeper.settle()
 
         XCTAssertEqual(model.restarts, 0)
         XCTAssertEqual(myMiffsCalls(), before)
         XCTAssertTrue(model.offlineRetry.isShown)
     }
 
-    func testTheAutomaticTryOnlineKeepsTheListenersAndOnlyReadsTheMiffsThatWereNeverRead() async {
+    func testAnUnreadableMiffsListOnlineShowsNeitherPopinNorTimer() async {
         network.online = true
         let model = await makeModel(directory: .unavailable)
-        // Rien n'est lisible : l'état « échec » ne montre la pop-in que sans réseau, donc ni pop-in ni essai ici.
+        // Rien n'est lisible : l'état « échec » ne montre la pop-in que sans réseau (il garde son message et son « Réessayer »).
         _ = show(model)
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertFalse(model.offlineRetry.isShown)
-        XCTAssertEqual(sleeper.pendingFor(10_000), 0)
+        await sleeper.settle()
 
+        XCTAssertFalse(model.offlineRetry.isShown)
+        XCTAssertEqual(sleeper.pendingFor(1_000), 0)
+    }
+
+    func testTheAutomaticTryOnlineLeavesTheListenersAloneForAMiffThatIsKnown() async {
+        network.online = true
         // Une Miff connue dont l'écoute n'a rien dit : l'essai automatique ne relance pas les écoutes (elles se rattachent seules).
-        let other = await makeModel()
-        other.piece = .loading(testMiffId)
-        _ = show(other)
+        let model = await makeModel()
+        model.piece = .loading(testMiffId)
+        _ = show(model)
         await waitUntil { self.sleeper.pendingFor(8_000) == 1 }
         sleeper.fire(8_000)
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
-        sleeper.fire(10_000)
-        await waitUntil { self.sleeper.requested.filter { $0 == 10_000 }.count == 2 }
+        await waitUntil { model.offlineRetry.isShown }
+        let before = myMiffsCalls()
 
-        XCTAssertEqual(other.restarts, 0)
+        await sleeper.elapse(1_000, times: 10)
+        await waitUntil { self.sleeper.pendingFor(1_000) == 1 }
+        await sleeper.settle()
+
+        XCTAssertEqual(model.restarts, 0)
+        XCTAssertEqual(myMiffsCalls(), before, "les écoutes se rattachent seules : aucune lecture de plus")
+    }
+
+    func testTheAutomaticTryOnlineRereadsTheMiffsThatWereNeverRead() async {
+        network.online = true
+        let model = await makeModel(refresh: false)
+        XCTAssertEqual(model.directoryState, .loading)
+        _ = show(model)
+        await waitUntil { self.sleeper.pendingFor(8_000) == 1 }
+        sleeper.fire(8_000)
+        await waitUntil { model.offlineRetry.isShown }
+        let before = myMiffsCalls()
+
+        await sleeper.elapse(1_000, times: 10)
+        await waitUntil { self.myMiffsCalls() == before + 1 }
+
+        XCTAssertEqual(myMiffsCalls(), before + 1)
+    }
+
+    func testTheNetworkComingBackDuringAReadStartedOfflineReplaysItOnce() async {
+        let gate = ManualSleeper()
+        let model = await makeModel()
+        model.piece = .loading(testMiffId)
+        _ = show(model)
+        await popinAppears(model)
+        let before = myMiffsCalls()
+        repo.myMiffsGate = { await gate.sleep(-1) }
+
+        // Une lecture commence sans réseau et attend ; le réseau revient pendant ce temps.
+        model.retry()
+        await waitUntil { self.myMiffsCalls() == before + 1 }
+        network.online = true
+        await waitUntil { !model.offlineRetry.isShown }
+        repo.myMiffsGate = nil
+        gate.fire()
+
+        await waitUntil { self.myMiffsCalls() == before + 2 }
+        await sleeper.settle()
+        XCTAssertEqual(myMiffsCalls(), before + 2, "rejouée UNE fois, pas davantage")
+    }
+
+    func testAReadStartedOnlineIsNeverReplayedByASecondRequest() async {
+        network.online = true
+        let gate = ManualSleeper()
+        let model = await makeModel()
+        model.piece = .loading(testMiffId)
+        let before = myMiffsCalls()
+        repo.myMiffsGate = { await gate.sleep(-1) }
+
+        model.retry()
+        await waitUntil { self.myMiffsCalls() == before + 1 }
+        model.retry()
+        repo.myMiffsGate = nil
+        gate.fire()
+        await sleeper.settle()
+
+        XCTAssertEqual(myMiffsCalls(), before + 1, "une lecture à la fois, et pas de rejeu quand elle a commencé avec du réseau")
+    }
+
+    func testClosingThePopinKeepsTheTriesGoingAndTheFeedSaysItInItsPage() async {
+        network.online = true
+        let model = await makeModel(refresh: false)
+        _ = show(model)
+        await waitUntil { self.sleeper.pendingFor(8_000) == 1 }
+        sleeper.fire(8_000)
+        await waitUntil { model.offlineRetry.isShown }
+        let before = myMiffsCalls()
+
+        model.offlineRetry.dismiss()
+        await sleeper.elapse(1_000, times: 10)
+        await waitUntil { self.myMiffsCalls() == before + 1 }
+
+        XCTAssertTrue(model.offlineRetry.isInlineVisible)
+        XCTAssertFalse(model.offlineRetry.isPopinVisible)
+        XCTAssertEqual(myMiffsCalls(), before + 1, "l'essai automatique continue derrière la page")
     }
 
     func testTheNetworkComingBackRelaunchesEverythingOnce() async {
@@ -277,7 +358,7 @@ final class FeedOfflinePopinTests: XCTestCase {
         XCTAssertFalse(model.offlineRetry.isShown, "onglet quitté ou app en arrière-plan : plus de pop-in")
         network.online = true
         sleeper.fire()
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await sleeper.settle()
         XCTAssertEqual(model.restarts, 0, "plus aucun essai après la sortie de l'écran")
     }
 }

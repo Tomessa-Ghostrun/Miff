@@ -134,6 +134,8 @@ final class FeedViewModel: ObservableObject {
     var locateTask: Task<Void, Never>?
     private var subscriptions: [AnyCancellable] = []
     private var directoryRefreshing = false
+    private var directoryReadStartedOffline = false
+    private var directoryReplayPending = false
 
     struct StatusDecision: Equatable {
         let shouldRead: Bool
@@ -175,14 +177,25 @@ final class FeedViewModel: ObservableObject {
     }
 
     /// Relit les Miffs, une lecture à la fois : un geste ou un essai automatique pendant qu'une lecture est en cours n'en empile pas une autre.
+    /// Une seule exception : la lecture en cours a COMMENCÉ hors connexion (elle ne répondra que par la copie du téléphone) et le réseau est
+    /// revenu depuis. Elle est alors rejouée UNE fois à sa fin (drapeau « rejouer »), sans quoi l'écran resterait sur la copie.
     private func refreshDirectory() {
         guard !directoryRefreshing else {
+            if directoryReadStartedOffline, dependencies.network.isOnline() {
+                directoryReplayPending = true
+            }
             return
         }
         directoryRefreshing = true
         let directory = self.directory
         Task {
-            await directory.refresh()
+            var again = true
+            while again {
+                directoryReadStartedOffline = !dependencies.network.isOnline()
+                directoryReplayPending = false
+                await directory.refresh()
+                again = directoryReplayPending
+            }
             self.directoryRefreshing = false
         }
     }
@@ -362,9 +375,10 @@ final class FeedViewModel: ObservableObject {
         switch directoryState {
         case .ready(let ready) where ready.fromCache:
             refreshDirectory()
-        case .unavailable:
+        case .unavailable, .loading:
+            // « loading » : la lecture en cours a commencé hors connexion ; elle est rejouée à sa fin (drapeau « rejouer »).
             refreshDirectory()
-        case .loading, .ready:
+        case .ready:
             break
         }
     }

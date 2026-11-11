@@ -139,24 +139,30 @@ struct FeedScreen: View {
     private var stateContent: some View {
         switch model.directoryState {
         case .loading:
-            ScrollView {
-                FeedSkeleton()
-                    .padding(.horizontal, Spacing.md)
-                    .padding(.top, headerHeight + Spacing.md)
+            // La pop-in « Pas de connexion » a été fermée : la page dit la même chose à sa place (la barre d'onglets est masquée tant que
+            // rien n'est lu, la personne ne doit jamais rester devant un squelette sans issue).
+            OfflineInlineSwitch(model: model.offlineRetry, topInset: headerHeight) {
+                ScrollView {
+                    FeedSkeleton()
+                        .padding(.horizontal, Spacing.md)
+                        .padding(.top, headerHeight + Spacing.md)
+                }
             }
         case .unavailable:
-            VStack(spacing: Spacing.sm) {
-                MiffNotice(text: L10n.string("feed_unavailable"))
-                Button {
-                    model.retry()
-                } label: {
-                    Text("auth_retry_action")
+            OfflineInlineSwitch(model: model.offlineRetry, topInset: headerHeight) {
+                VStack(spacing: Spacing.sm) {
+                    MiffNotice(text: L10n.string("feed_unavailable"))
+                    Button {
+                        model.retry()
+                    } label: {
+                        Text("auth_retry_action")
+                    }
+                    .buttonStyle(.miffSecondaryFullWidth)
                 }
-                .buttonStyle(.miffSecondaryFullWidth)
+                .padding(Spacing.md)
+                .padding(.top, headerHeight)
+                .frame(maxHeight: .infinity, alignment: .top)
             }
-            .padding(Spacing.md)
-            .padding(.top, headerHeight)
-            .frame(maxHeight: .infinity, alignment: .top)
         case .ready(let ready):
             if ready.miffs.isEmpty {
                 FeedNoMiff(onCreate: actions.onCreate, onJoin: actions.onJoin, onSignOut: actions.onSignOut)
@@ -172,6 +178,7 @@ struct FeedScreen: View {
         FeedListView(
             feed: model.uiState,
             ready: ready,
+            offlineRetry: model.offlineRetry,
             locate: model.locate,
             texts: texts,
             topInset: headerHeight,

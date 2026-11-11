@@ -26,6 +26,8 @@ private struct ContentTopKey: PreferenceKey {
 struct FeedListView: View {
     let feed: FeedUiState
     let ready: DirectoryReady
+    /// La pop-in « Pas de connexion » du Feed : fermée par la personne, la page dit la même chose à la place du squelette.
+    @ObservedObject var offlineRetry: OfflineRetryModel
     let locate: LocateUiState
     let texts: FeedTexts
     /// L'en-tête est dessiné par-dessus la liste : sa hauteur est la marge haute du contenu, pour que la première carte commence dessous.
@@ -101,11 +103,17 @@ struct FeedListView: View {
         }
         switch feed {
         case .loading:
-            if !agreementWaiting {
+            if offlineRetry.isInlineVisible {
+                OfflineInlineNote(model: offlineRetry)
+            } else if !agreementWaiting {
                 FeedSkeleton()
             }
         case .unavailable:
-            unavailable
+            if offlineRetry.isInlineVisible {
+                OfflineInlineNote(model: offlineRetry)
+            } else {
+                unavailable
+            }
         case .ready(let content):
             readyItems(content)
         }

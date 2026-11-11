@@ -2365,24 +2365,7 @@
         }
       }
     },
-    "feed_offline_popin_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No connection. Check your connection, we'll try again in a moment."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas de connexion. Vérifie ta connexion, on réessaie dans un instant."
-          }
-        }
-      }
-    },
-    "feed_offline_popin_message": {
+    "feed_offline_popin_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -2395,6 +2378,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vérifie ta connexion, on réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "feed_offline_popin_countdown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying again in %lld s"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvel essai dans %lld s"
           }
         }
       }
@@ -2412,23 +2412,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Réessayer"
-          }
-        }
-      }
-    },
-    "feed_offline_popin_retrying_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trying again"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nouvel essai en cours"
           }
         }
       }
@@ -4435,6 +4418,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Journal de détection"
+          }
+        }
+      }
+    },
+    "ios_feed_offline_popin_close_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        }
+      }
+    },
+    "ios_feed_offline_popin_retrying_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvel essai en cours"
           }
         }
       }

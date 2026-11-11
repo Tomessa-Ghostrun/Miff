@@ -3,98 +3,38 @@
 import XCTest
 @testable import Miff
 
-// La pop-in « Pas de connexion » et sa reconnexion automatique, sans réseau ni horloge réels : le réseau est un double, et les attentes
-// (2 s de grâce hors connexion, 8 s « aucune donnée », 10 s entre deux essais, 0,8 s de « Réessayer ») sont commandées par le test
-// (`ManualSleeper`).
+// La pop-in « Pas de connexion » : quand elle vient, le retour du réseau, « Réessayer » et la sortie de l'écran, sans réseau ni horloge
+// réels. Les attentes (1,5 s de grâce hors connexion, 8 s « aucune donnée », 0,8 s de « Réessayer ») sont commandées par le test
+// (`ManualSleeper`, via `OfflineRetryTestCase`) : aucun temps réel n'est attendu. Le compte à rebours, le plafond et la fermeture sont
+// dans `OfflineRetryLoopTests`.
 @MainActor
-final class OfflineRetryModelTests: XCTestCase {
-    private let network = FakeNetwork(online: false)
-    private let sleeper = ManualSleeper()
-    private var retries: [OfflineRetryKind] = []
-    private var tasks: [Task<Void, Never>] = []
-
-    override func tearDown() async throws {
-        // Rien ne doit rester en cours d'un test à l'autre : l'écran est quitté, puis les attentes en suspens sont libérées.
-        tasks.forEach { $0.cancel() }
-        sleeper.fire()
-        for task in tasks {
-            await task.value
-        }
-        tasks = []
-        try await super.tearDown()
-    }
-
-    private func makeModel() -> OfflineRetryModel {
-        let sleeper = self.sleeper
-        let model = OfflineRetryModel(
-            network: network,
-            sleep: { millis in await sleeper.sleep(millis) },
-            timings: OfflinePopinTimings()
-        )
-        model.onRetry = { [weak self] kind in
-            self?.retries.append(kind)
-        }
-        return model
-    }
-
-    /// L'écran est visible : le suivi du réseau tourne.
-    private func show(_ model: OfflineRetryModel) -> Task<Void, Never> {
-        let task = Task {
-            await model.watch()
-        }
-        tasks.append(task)
-        return task
-    }
-
-    /// Laisse passer un peu de temps réel pour prouver qu'il ne se passe RIEN.
-    private func settle() async {
-        try? await Task.sleep(nanoseconds: 50_000_000)
-    }
-
-    /// Un écran sans réseau et sans rien à montrer, après sa petite grâce de 2 s : la pop-in est là.
-    private func offlineAndShown(_ model: OfflineRetryModel) async -> Task<Void, Never> {
-        model.setNeed(.loading)
-        let task = show(model)
-        await sleeper.elapse(2_000)
-        await waitUntil { model.isShown }
-        return task
-    }
-
-    /// Un écran avec réseau, rien ne vient, après les 8 s : la pop-in est là.
-    private func onlineAndShown(_ model: OfflineRetryModel) async -> Task<Void, Never> {
-        network.online = true
-        model.setNeed(.loading)
-        let task = show(model)
-        await sleeper.elapse(8_000)
-        await waitUntil { model.isShown }
-        return task
-    }
-
+final class OfflineRetryModelTests: OfflineRetryTestCase {
     // MARK: - Quand la pop-in vient
 
     func testWithoutNetworkAndNothingToShowThePopinComesAfterAShortGraceNotBefore() async {
         let model = makeModel()
         model.setNeed(.loading)
         _ = show(model)
-        await waitUntil { self.sleeper.pendingFor(2_000) == 1 }
+        await waitUntil { self.sleeper.pendingFor(1_500) == 1 }
         XCTAssertFalse(model.isShown, "un lancement hors connexion qui trouve vite ses informations ne voit jamais la pop-in")
         XCTAssertEqual(sleeper.pendingFor(8_000), 0)
 
-        sleeper.fire(2_000)
+        sleeper.fire(1_500)
         await waitUntil { model.isShown }
 
         XCTAssertTrue(model.isShown)
+        XCTAssertTrue(model.isPopinVisible)
     }
 
     func testInformationFoundDuringTheGraceMeansNoPopinAtAll() async {
         let model = makeModel()
         model.setNeed(.loading)
         _ = show(model)
-        await waitUntil { self.sleeper.pendingFor(2_000) == 1 }
+        await waitUntil { self.sleeper.pendingFor(1_500) == 1 }
 
         model.setNeed(.none)
-        sleeper.fire(2_000)
-        await settle()
+        sleeper.fire(1_500)
+        await sleeper.settle()
 
         XCTAssertFalse(model.isShown)
     }
@@ -103,7 +43,7 @@ final class OfflineRetryModelTests: XCTestCase {
         let model = makeModel()
         model.setNeed(.none)
         _ = show(model)
-        await settle()
+        await sleeper.settle()
 
         XCTAssertFalse(model.isShown)
         XCTAssertEqual(sleeper.pendingTotal, 0, "aucune minuterie quand il y a quelque chose à montrer")
@@ -144,7 +84,7 @@ final class OfflineRetryModelTests: XCTestCase {
 
         model.setNeed(.none)
         sleeper.fire(8_000)
-        await settle()
+        await sleeper.settle()
 
         XCTAssertFalse(model.isShown)
     }
@@ -156,53 +96,7 @@ final class OfflineRetryModelTests: XCTestCase {
         model.setNeed(.none)
 
         XCTAssertFalse(model.isShown)
-    }
-
-    // MARK: - L'essai automatique
-
-    func testOfflineTheTenSecondTryNeverReadsAnything() async {
-        let model = makeModel()
-        _ = await offlineAndShown(model)
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
-
-        for round in 1...3 {
-            sleeper.fire(10_000)
-            // La boucle reprend sa pause de 10 s une fois l'essai fait (et non fait : pas de réseau).
-            await waitUntil { self.sleeper.requested.filter { $0 == 10_000 }.count == round + 1 }
-        }
-
-        XCTAssertEqual(retries, [], "pas de réseau : aucune lecture, jamais de boucle contre un serveur injoignable")
-        XCTAssertTrue(model.isShown)
-    }
-
-    func testOnlineWithoutDataTheTryHappensEveryTenSecondsWhileThePopinIsShown() async {
-        let model = makeModel()
-        _ = await onlineAndShown(model)
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
-        XCTAssertEqual(sleeper.requested.last, 10_000, "le premier essai est dans 10 s")
-
-        sleeper.fire(10_000)
-        await waitUntil { self.retries.count == 1 }
-        XCTAssertEqual(retries, [.automatic])
-
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
-        sleeper.fire(10_000)
-        await waitUntil { self.retries.count == 2 }
-        XCTAssertEqual(retries, [.automatic, .automatic])
-    }
-
-    func testThePopinNeverStacksOrDuplicatesItsTimer() async {
-        let model = makeModel()
-        _ = await offlineAndShown(model)
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
-
-        model.setNeed(.failed)
-        model.setNeed(.loading)
-        model.setNeed(.failed)
-        await settle()
-
-        XCTAssertTrue(model.isShown)
-        XCTAssertEqual(sleeper.pendingFor(10_000), 1, "une seule minuterie d'essai, même si l'écran change plusieurs fois d'état")
+        XCTAssertNil(model.secondsLeft)
     }
 
     // MARK: - Le retour du réseau
@@ -217,9 +111,10 @@ final class OfflineRetryModelTests: XCTestCase {
         XCTAssertFalse(model.isShown, "elle disparaît d'elle-même")
         XCTAssertEqual(retries, [.networkBack], "une seule relecture, tout de suite, sans attendre les 10 s")
         // Les 10 s ne comptent plus : l'essai automatique est arrêté.
-        sleeper.fire(10_000)
-        await settle()
+        sleeper.fire(1_000)
+        await sleeper.settle()
         XCTAssertEqual(retries, [.networkBack])
+        XCTAssertNil(model.secondsLeft)
     }
 
     func testIfNothingArrivesAfterTheNetworkCameBackTheDelayStartsAgain() async {
@@ -242,9 +137,9 @@ final class OfflineRetryModelTests: XCTestCase {
         await waitUntil { self.sleeper.pendingFor(8_000) == 1 }
 
         network.online = false
-        await waitUntil { self.sleeper.pendingFor(2_000) == 1 }
+        await waitUntil { self.sleeper.pendingFor(1_500) == 1 }
         XCTAssertFalse(model.isShown)
-        sleeper.fire(2_000)
+        sleeper.fire(1_500)
         await waitUntil { model.isShown }
 
         XCTAssertTrue(model.isShown)
@@ -256,7 +151,7 @@ final class OfflineRetryModelTests: XCTestCase {
         _ = await onlineAndShown(model)
 
         network.online = false
-        await settle()
+        await sleeper.settle()
 
         XCTAssertTrue(model.isShown, "pas de clignotement : elle ne s'efface pas pour revenir deux secondes plus tard")
     }
@@ -305,14 +200,15 @@ final class OfflineRetryModelTests: XCTestCase {
     func testLeavingTheScreenRemovesThePopinAndStopsTheTries() async {
         let model = makeModel()
         let task = await onlineAndShown(model)
-        await waitUntil { self.sleeper.pendingFor(10_000) == 1 }
+        await waitUntil { self.sleeper.pendingFor(1_000) == 1 }
         XCTAssertTrue(model.isShown)
 
         task.cancel()
         await task.value
         XCTAssertFalse(model.isShown, "l'onglet change ou l'app part : plus de pop-in")
+        XCTAssertNil(model.secondsLeft)
         sleeper.fire()
-        await settle()
+        await sleeper.settle()
 
         XCTAssertEqual(retries, [], "plus aucun essai après la sortie de l'écran")
     }
@@ -320,14 +216,16 @@ final class OfflineRetryModelTests: XCTestCase {
     func testComingBackToTheScreenStartsFresh() async {
         let model = makeModel()
         let first = await offlineAndShown(model)
+        model.dismiss()
         first.cancel()
         await first.value
         XCTAssertFalse(model.isShown)
+        XCTAssertFalse(model.isDismissed)
 
         _ = show(model)
-        await sleeper.elapse(2_000)
+        await sleeper.elapse(1_500)
         await waitUntil { model.isShown }
 
-        XCTAssertTrue(model.isShown)
+        XCTAssertTrue(model.isPopinVisible)
     }
 }

@@ -180,6 +180,7 @@ struct MainShellView<Feed: View>: View {
                         state: profile.state,
                         miffs: miffs,
                         travel: travel,
+                        offlineRetry: profile.offlineRetry,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },

@@ -75,10 +75,22 @@ final class ProfileOfflinePopinTests: XCTestCase {
         XCTAssertEqual(model.state, .loading)
 
         _ = show(model)
-        await sleeper.elapse(2_000)
+        await sleeper.elapse(1_500)
         await waitUntil { model.offlineRetry.isShown }
 
         XCTAssertTrue(model.offlineRetry.isShown)
+    }
+
+    func testClosingThePopinLeavesThePageToSayItAndTheTabStaysUsable() async {
+        let model = makeModel(HangingProfileReader(sleeper))
+        _ = show(model)
+        await sleeper.elapse(1_500)
+        await waitUntil { model.offlineRetry.isShown }
+
+        model.offlineRetry.dismiss()
+
+        XCTAssertFalse(model.offlineRetry.isPopinVisible, "la carte est fermée")
+        XCTAssertTrue(model.offlineRetry.isInlineVisible, "l'onglet dit « Pas de connexion » à la place de l'indicateur")
     }
 
     func testOfflineWithAnUnreadableProfileThePopinComesAndTheNetworkComingBackRereadsOnce() async {
@@ -100,7 +112,7 @@ final class ProfileOfflinePopinTests: XCTestCase {
         let model = makeModel(CountingProfileReader(alex))
         await waitUntil { model.state.isReady }
         _ = show(model)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await sleeper.settle()
 
         XCTAssertFalse(model.offlineRetry.isShown)
     }
@@ -120,7 +132,7 @@ final class ProfileOfflinePopinTests: XCTestCase {
         XCTAssertFalse(model.offlineRetry.isShown)
         network.online = true
         sleeper.fire()
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        await sleeper.settle()
         XCTAssertEqual(reader.calls, 1, "plus aucun essai après la sortie de l'onglet")
     }
 }
