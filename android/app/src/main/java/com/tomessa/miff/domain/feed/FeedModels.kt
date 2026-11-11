@@ -1,6 +1,7 @@
 package com.tomessa.miff.domain.feed
 
 import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
 
@@ -38,9 +39,13 @@ sealed interface PlaceRef {
 
 /** The label of a card: the state of a person in a few words (a pictogram goes with it; the colour is never alone). */
 sealed interface StateLabel {
-    /** In a trusted zone ("À la maison"). */
+    /**
+     * In a trusted zone ("À la maison"). [category] is the category of the place, for the EMOJI drawn before the words (decision of the PM, 2026-11-10;
+     * display only, the words stay the label); null for a place with no category or a place the list does not hold (no emoji then).
+     */
     data class At(
         val place: PlaceRef,
+        val category: PlaceCategory? = null,
     ) : StateLabel
 
     /** Left a trusted zone ("A quitté la maison"), in the colour of the level. */
