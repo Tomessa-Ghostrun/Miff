@@ -26,6 +26,7 @@ Branche `android/release-signature-versions`, PR brouillon. **Rien n'est soumis,
 - **Jamais exécuté de bout en bout** : `android-release` ne peut pas être lancé avant la fusion dans `main` ni sans les secrets. Premier essai à surveiller ; l'envoi du fichier de correspondance R8 à Crashlytics (`upload_crashlytics_mapping`, vrai par défaut) n'a jamais été joué en CI : l'option existe pour le couper sans bloquer le bundle (le fichier est de toute façon dans le bundle pour Google Play).
 - **Ne pas renommer ni recréer `android-release.yml`** : le numéro d'exécution (donc le numéro de version envoyé à Google) repartirait de 1 ; le décalage d'entrée existe pour ce cas.
 - Un build signé ne se fait que par le workflow : ne jamais envoyer à Google Play un fichier construit autrement.
+
 ## [0.31.0] - 2026-11-11 : batterie, deux gains « sûrs » du suivi (BATT-2 et BATT-4, décision du PM du 2026-11-10)
 
 Source : `docs/dev/optimisation-batterie.md` (sections 3.1, 6 et 9). Branche `android/batterie-gains-surs`, PR brouillon. Numéro de version : 0.31.0, prochain numéro libre au 2026-11-11 (`main` est à 0.30.0 ; des entrées 0.29.0 en doublon existent sur `main`, non touchées ici) ; **à revérifier au merge** si une autre PR Android prend ce numéro. Aucun changement visible dans l'interface, de permission, de règle Firestore, de donnée stockée ni de texte légal. **Aucun gain de batterie n'est chiffré : rien n'est mesuré** (méthode de mesure avant / après pour le PM : section 9.3 du document).
