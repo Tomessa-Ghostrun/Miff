@@ -48,6 +48,8 @@ class MiffApplication : Application() {
                     onForeground = {
                         container.trackingLooksAgain(TrackingEngine.Reason.OPENED)
                         container.foregroundTicks.arrived()
+                        // NOTIF-1A: the names of the channels follow the language of the app (the system keeps the ones written at creation).
+                        container.ensureNotificationChannels()
                     },
                     onBackground = { container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED) },
                 ),
