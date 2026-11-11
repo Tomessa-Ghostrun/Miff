@@ -172,3 +172,38 @@ class FirestoreTrackingStore(
         return TravelRead(TravelPeriod(until, day), doc.getTimestamp("presenceAt")?.toDate()?.time)
     }
 }
+
+/**
+ * What the engine tells the notifications, locally and at once (nothing is read or written by the callee for N1, N2 and N6; a failure of the callee never reaches the
+ * detection: [TrackingEngine] swallows it). It carries keywords, identifiers and times, never a position or the name of a place.
+ * - [onMyPresence] (NOTIF-4A): MY presence just changed in a Miff (a departure, an arrival): the reminders N1 and N2 follow without waiting for the Feed.
+ * - [onEnteredDanger] (NOTIF-7A): the engine validated that I ENTERED a danger zone of a Miff (a presence in_risk different from the previous one): N6 tells me, once.
+ */
+interface PresenceListener {
+    fun onMyPresence(
+        miffId: String,
+        presence: PresenceValue,
+        atMillis: Long,
+        setLastUpdate: Boolean,
+    )
+
+    /** [placeId] is the identifier of the place in that Miff (never its name or its position). */
+    fun onEnteredDanger(
+        myUid: String,
+        miffId: String,
+        placeId: String,
+        atMillis: Long,
+    ) = Unit
+
+    companion object {
+        val None =
+            object : PresenceListener {
+                override fun onMyPresence(
+                    miffId: String,
+                    presence: PresenceValue,
+                    atMillis: Long,
+                    setLastUpdate: Boolean,
+                ) = Unit
+            }
+    }
+}

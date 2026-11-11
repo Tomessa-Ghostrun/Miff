@@ -88,34 +88,46 @@ class TabBarGlassContrastTest {
         )
     }
 
-    // 2026-11-11 (the PM asked for a more translucent bar): veil 55 % instead of 80 %, inactive icons #404040 instead of #595959, and an OPAQUE pad
-    // behind the tab in use. The blue icon of the tab in use is therefore 5.73:1 whatever is behind the glass; the inactive icons are the ones
-    // that depend on the background (3.09:1 on pure black, the worst case).
+    // 2026-11-11 (the PM asked TWICE for a more translucent bar; the transparency comes first): veil 32 % instead of 80 %, inactive icons almost black
+    // (#1A1A1A) and an OPAQUE pad behind the tab in use. The blue icon of the tab in use is 5.73:1
+    // whatever is behind the glass. The inactive icon depends on the background, and on a PURE BLACK one it is UNDER 3:1 (2.21:1): a risk the PM
+    // accepted, documented in the CHANGELOG and in design/tab-bar-liquid-glass.md section 6 bis. It stays >= 4.2:1 from a dark grey up.
     @Test
-    fun lightBarWithBlur_theNewFigures_onPureBlackGreyAndWhite() {
+    fun lightBarWithBlur_theNewFigures_onBlackDarkGreyGreyAndWhite() {
         val onBlack = ratios(GlassPaletteLight, GlassPaletteLight.tint, black)
         assertRatio("light/blur/black active on pill", 5.73, onBlack.activeOnPill)
-        assertRatio("light/blur/black inactive", 3.09, onBlack.inactive)
+        assertRatio("light/blur/black inactive (KNOWN RISK, under 3:1)", 2.21, onBlack.inactive)
+        val onDarkGrey = ratios(GlassPaletteLight, GlassPaletteLight.tint, Color(0xFF404040))
+        assertRatio("light/blur/dark grey inactive", 4.24, onDarkGrey.inactive)
         val onGrey = ratios(GlassPaletteLight, GlassPaletteLight.tint, Color(0xFF808080))
         assertRatio("light/blur/grey active on pill", 5.73, onGrey.activeOnPill)
-        assertRatio("light/blur/grey inactive", 6.06, onGrey.inactive)
+        assertRatio("light/blur/grey inactive", 7.37, onGrey.inactive)
         val onWhite = ratios(GlassPaletteLight, GlassPaletteLight.tint, white)
         assertRatio("light/blur/white active on pill", 5.73, onWhite.activeOnPill)
-        assertRatio("light/blur/white inactive", 10.37, onWhite.inactive)
+        assertRatio("light/blur/white inactive", 17.40, onWhite.inactive)
+    }
+
+    @Test
+    fun theKnownRisk_isTheOnlyPairUnder3to1_andTheActiveStateIsNeverAtRisk() {
+        assertTrue(ratios(GlassPaletteLight, GlassPaletteLight.tint, black).inactive < 3.0)
+        // 3:1 is kept for every other pair (see the loop below), and the tab in use is >= 5.7:1 on every background.
+        listOf(black, Color(0xFF404040), Color(0xFF808080), white).forEach {
+            assertTrue(ratios(GlassPaletteLight, GlassPaletteLight.tint, it).activeOnPill >= 5.7)
+        }
     }
 
     @Test
     fun lightBarWithoutBlur_matchesTheNewFigures_onPureBlack() {
         val r = ratios(GlassPaletteLight, GlassPaletteLight.tintNoBlur, black)
         assertRatio("light/noblur/black active on pill", 5.73, r.activeOnPill)
-        assertRatio("light/noblur/black inactive", 8.67, r.inactive)
+        assertRatio("light/noblur/black inactive", 14.55, r.inactive)
     }
 
     @Test
     fun lightOpaqueBar_matchesTheNewFigures() {
         val r = ratios(GlassPaletteLight, GlassPaletteLight.surfaceOpaque, black)
         assertRatio("light/opaque active on pill", 5.73, r.activeOnPill)
-        assertRatio("light/opaque inactive", 10.37, r.inactive)
+        assertRatio("light/opaque inactive", 17.40, r.inactive)
     }
 
     @Test
@@ -163,7 +175,9 @@ class TabBarGlassContrastTest {
                 listOf(black, white, Color(0xFF808080)).forEach { background ->
                     val r = ratios(palette, veil, background)
                     val where = "$variant, veil alpha ${veil.alpha}, background ${background.toArgb()}"
-                    assertTrue("inactive icon below 3:1 ($where): ${r.inactive}", r.inactive >= 3.0)
+                    // The ONE accepted exception (decision of the PM, 2026-11-11): the light glass over pure black, see theKnownRisk_... above.
+                    val knownRisk = variant == GlassVariant.LIGHT && veil == palette.tint && background == black
+                    assertTrue("inactive icon below 3:1 ($where): ${r.inactive}", knownRisk || r.inactive >= 3.0)
                     assertTrue("active icon on the pad below 3:1 ($where): ${r.activeOnPill}", r.activeOnPill >= 3.0)
                 }
             }
@@ -171,19 +185,22 @@ class TabBarGlassContrastTest {
     }
 
     @Test
-    fun inactiveGreyOfTheLightBar_isTheDarkerOneOfTheNewVeil_notTheOldOnes() {
-        assertEquals(0xFF404040.toInt(), GlassPaletteLight.iconInactive.toArgb())
+    fun inactiveIconOfTheLightBar_isAlmostBlack_notTheOldGreys() {
+        assertEquals(0xFF1A1A1A.toInt(), GlassPaletteLight.iconInactive.toArgb())
         // The old greys fall under 3:1 on the worst background with the lighter veil: that is why this one is darker.
         val surface = over(GlassPaletteLight.tint, black)
         listOf(colorTextSecondary, Color(0xFF595959)).forEach {
-            assertTrue("$it would not be enough on the worst background", contrast(over(it, surface), surface) < 3.0)
+            assertTrue(
+                "$it would be worse on the worst background",
+                contrast(over(it, surface), surface) < contrast(GlassPaletteLight.iconInactive, surface),
+            )
         }
     }
 
     @Test
     fun spec_tokensAreTheValidatedOnes() {
-        // 2026-11-11: 55 % (it was 80 %), asked by the PM.
-        assertEquals(0.55f, GlassPaletteLight.tint.alpha, 0.005f)
+        // 2026-11-11: 32 % (it was 80 %, then 55 %), asked by the PM.
+        assertEquals(0.32f, GlassPaletteLight.tint.alpha, 0.005f)
         assertEquals(0.92f, GlassPaletteLight.tintNoBlur.alpha, 0.005f)
         assertEquals(0.60f, GlassPaletteOnPhoto.tint.alpha, 0.005f)
         assertEquals(0.72f, GlassPaletteOnPhoto.tintNoBlur.alpha, 0.005f)
@@ -225,7 +242,7 @@ class TabBarGlassContrastTest {
         assertEquals(0xFF595959.toInt(), neutral.ring.toArgb())
         assertEquals(0xFF595959.toInt(), neutral.dot.toArgb())
         assertRatio("neutral on plate", 7.00, contrast(neutral.dot, plate))
-        // The PM's grey of 2026-11-06 stays; the inactive icons of the bar are a little darker since the lighter veil of 2026-11-11 (#404040).
+        // The PM's grey of 2026-11-06 stays; the inactive icons of the bar are almost black since the lighter veil of 2026-11-11 (#1A1A1A).
         assertTrue(contrast(neutral.dot, plate) >= 7.0 - 0.05)
     }
 

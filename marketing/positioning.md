@@ -109,7 +109,7 @@ Reprend `CLAUDE.md` (« bienveillant, non anxiogène ») et le tutoiement décid
 | « Miff reste utilisable sans la localisation en arrière-plan », « tu envoies tes mises à jour à la main si tu refuses », « facultatif » | **Faux** : « Toujours » est obligatoire (CGU art. 6, politique art. 4). L'ancienne promesse a été retirée des textes le 2026-11-04 | « Miff a besoin de la localisation « Toujours » pour fonctionner » |
 | « petit mot », « message avec ta photo » | **Faux en v1** : la photo n'a pas de texte | « une photo du moment » |
 | « modéré », « filtré », « vérifié », « signale / bloque » | **Faux** : aucun filtrage, aucun signalement ni blocage dans l'app (décisions du PM P1, P2, P4 ; D30) | (rien) |
-| « ta photo disparaît », « effacée partout » | La photo est illisible dans l'app après 24 h ; une capture d'écran d'un proche reste possible (CGU art. 8) | « visible 24 heures » |
+| « ta photo disparaît », « effacée partout » | La photo est illisible dans l'app après 24 h ; un proche peut en garder une copie (capture d'écran, ou « Enregistrer cette photo », seulement s'il le choisit : CGU art. 8) | « visible 24 heures » |
 | noms de marques tierces (autres apps, réseaux, constructeurs) | Règle du PM pour ce chantier | termes génériques |
 
 ---

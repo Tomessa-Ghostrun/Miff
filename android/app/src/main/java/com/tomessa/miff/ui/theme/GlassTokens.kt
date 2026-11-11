@@ -33,19 +33,21 @@ class GlassPalette(
 )
 
 /**
- * Light glass: a LIGHT white veil (55 %, it was 80 % until the PM asked for a more translucent bar on 2026-11-11), dark and blue icons.
- * What makes this veil safe is NOT its density but the icons: the inactive grey is `#404040` (3.09:1 on a pure black background, 6.06:1 on
- * mid grey, 10.37:1 on white; `#595959` fell under 3:1 below about 70 %), and the tab in use sits on an OPAQUE pad (the blue 20 % of the
- * actions drawn on white, `#CDD8F6`), so that its blue icon is 5.73:1 whatever is behind the glass.
+ * Light glass: a very LIGHT white veil (32 %: it was 80 % until the PM asked, on 2026-11-11, for a more and more translucent bar, twice), dark and
+ * blue icons. Readability is NOT carried by the density of the veil any more but by the icons: the inactive ones are almost black (`#1A1A1A`), and the
+ * tab in use sits on an OPAQUE pad (the blue 20 % of the actions drawn on white, `#CDD8F6`),
+ * so that its blue icon is 5.73:1 whatever is behind the glass.
+ * KNOWN RISK, accepted by the PM (the transparency comes first): on a PURE BLACK background the inactive icon is 2.21:1 (< 3:1);
+ * it is 4.24:1 on a dark grey (25 % white), 7.37:1 on mid grey and 17.4:1 on white. Pinned by TabBarGlassContrastTest.
  */
 val GlassPaletteLight =
     GlassPalette(
-        tint = Color.White.copy(alpha = 0.55f),
+        tint = Color.White.copy(alpha = 0.32f),
         tintNoBlur = Color.White.copy(alpha = 0.92f),
         surfaceOpaque = Color(0xFFFFFFFF),
         border = Color.White.copy(alpha = 0.55f),
         iconActive = colorActionPrimary,
-        iconInactive = Color(0xFF404040),
+        iconInactive = Color(0xFF1A1A1A),
         pillActive = colorActionPrimaryTint20.compositeOver(Color.White),
     )
 

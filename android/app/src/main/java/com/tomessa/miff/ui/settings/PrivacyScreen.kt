@@ -24,9 +24,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.tomessa.miff.R
+import com.tomessa.miff.domain.notification.NotificationPermissionState
 import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.notification.PermissionStateBlock
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -55,6 +57,8 @@ fun PrivacyScreen(
     location: LocationPrivacyUi = LocationPrivacyUi(),
     onReviewAgreement: () -> Unit = {},
     onOpenDetectionHelp: () -> Unit = {},
+    /** NOTIF-1A: the state of the notifications, with the SAME words as Settings > Notifications and the centre (criterion N-A4). */
+    notifications: NotificationPermissionState = NotificationPermissionState.ALLOWED,
 ) {
     val context = LocalContext.current
     SettingsScaffold(title = stringResource(R.string.settings_privacy_title), onBack = onBack) {
@@ -84,12 +88,12 @@ fun PrivacyScreen(
         )
 
         Section(R.string.settings_privacy_notifications_title)
+        PermissionStateBlock(notifications, onOpenPhoneSettings = { ExternalLinks.openNotificationSettings(context) })
         Text(
-            text = stringResource(R.string.settings_privacy_notifications_body),
+            text = stringResource(R.string.notif_privacy_body),
             style = textBodyRegular14,
             color = colorTextDescription,
         )
-        OpenPhoneSettings { ExternalLinks.openNotificationSettings(context) }
 
         Section(R.string.settings_privacy_texts_title)
         val browser = stringResource(R.string.settings_privacy_open_browser_a11y)
@@ -182,15 +186,6 @@ private fun PrivacyMessageText(message: PrivacyMessage) {
             ),
         isError = true,
         modifier = Modifier.padding(bottom = Spacing.s),
-    )
-}
-
-@Composable
-private fun OpenPhoneSettings(onClick: () -> Unit) {
-    MiffSecondaryButton(
-        text = stringResource(R.string.settings_privacy_open_phone_settings),
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
     )
 }
 

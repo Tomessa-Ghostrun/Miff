@@ -57,14 +57,15 @@ Dans la PR, sur l'OPPO : images perdues pendant 10 s de défilement du Feed, ave
 
 **Résultat** : ____ points sur 18 validés. Remarques : ______________________
 
-## 6. Barre plus translucide (retour du PM du 2026-11-11) : 5 minutes
+## 6. Barre très translucide (retours du PM du 2026-11-11) : 5 minutes
 
-La barre est **nettement plus transparente** qu'avant (voile blanc 55 % au lieu de 80 %, flou plus fort) ; les icônes restent lisibles.
+La barre est **très transparente** (voile blanc 32 % au lieu de 80 %, flou renforcé) : le contenu dessous se voit nettement, flouté. Les icônes restent lisibles grâce à une icône inactive quasi noire et une pastille active pleine.
 | # | Vérifier | OK |
 |---|---|---|
-| 1 | Sur le Feed, faites défiler lentement : on **devine bien les cartes qui passent sous la barre**, **floutées** (plus qu'avant), sans que la barre paraisse sale | [ ] |
-| 2 | Les **icônes inactives** (Profil) sont **gris foncé** et se lisent sans effort, **y compris** quand une carte colorée (rouge, orange) ou une photo sombre passe dessous | [ ] |
-| 3 | L'**onglet actif** a une pastille bleu pâle **pleine** (elle ne devient pas transparente) avec l'icône bleue bien visible, quel que soit le fond | [ ] |
-| 4 | Le **bouton central** n'a pas changé (plaque blanche, anneau, pastille de couleur) | [ ] |
-| 5 | Activez l'**économiseur de batterie** : la barre redevient **pleine** (blanche, opaque) ; désactivez-le : elle redevient translucide | [ ] |
-| 6 | Le défilement reste **fluide** (pas de saccade plus qu'avant avec le flou renforcé) : si ça saccade sur l'OPPO, le dire (on repasse à 20 dp ou on coupe le flou : interrupteur `GlassPolicy.BLUR_ALLOWED`) | [ ] |
+| 1 | Sur le Feed, faites défiler lentement : les **cartes passent sous la barre, bien visibles mais floutées**, sans que la barre paraisse sale ou illisible | [ ] |
+| 2 | L'icône **inactive** (Profil) est **noire** et se repère sans effort sur une carte claire, une carte rouge/orange et une photo de jour | [ ] |
+| 3 | **Risque connu, accepté** : sous une photo **presque noire**, l'icône du Profil se repère **moins bien**. Dites-moi si c'est gênant : on remontera le voile vers 40 % | [ ] |
+| 4 | L'**onglet actif** a une pastille bleu pâle **pleine** avec l'icône bleue bien visible, quel que soit le fond | [ ] |
+| 5 | Le **bouton central** n'a pas changé (plaque blanche, anneau, pastille de couleur) | [ ] |
+| 6 | Activez l'**économiseur de batterie** : la barre redevient **pleine** (blanche, opaque) ; désactivez-le : elle redevient translucide | [ ] |
+| 7 | Le défilement reste **fluide** (pas de saccade plus qu'avant avec le flou renforcé) : si ça saccade sur l'OPPO, le dire (on repasse à 20 dp ou on coupe le flou : `GlassPolicy.BLUR_ALLOWED`) | [ ] |

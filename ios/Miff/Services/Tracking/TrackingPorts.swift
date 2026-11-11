@@ -109,6 +109,17 @@ protocol TrackingStore {
     func places(miffId: String) async throws -> [PlaceFact]
 
     func commit(_ writes: [DocWrite]) async throws
+
+    /// MODE VOYAGE : le voyage écrit dans MON statut d'une Miff, lu auprès du SERVEUR (nil : pas de statut, ou pas un voyage). Une lecture
+    /// d'un document à moi. Sert à un NOUVEL appareil, qui lit le voyage avant d'armer quoi que ce soit pour l'adopter au lieu de l'écraser.
+    func ownTravel(miffId: String, uid: String) async throws -> TravelRead?
+}
+
+extension TrackingStore {
+    /// Par défaut : « pas de voyage » (un double qui ne connaît pas les voyages).
+    func ownTravel(miffId: String, uid: String) async throws -> TravelRead? {
+        nil
+    }
 }
 
 /// Ce que le système signale à l'app et que le moteur doit traiter. Rien de ce qui arrive ici ne porte l'heure ou la position d'un
