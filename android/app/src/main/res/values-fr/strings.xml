@@ -649,6 +649,23 @@
     <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Ajouter un lieu</string>
     <string name="place_list_add_premium_a11y">Ajouter un lieu, fait partie de Miff+</string>
+
+    <!-- LIEU-REQ-B : un membre non créateur demande l'ajout d'un lieu (demande en attente, visible du seul créateur) -->
+    <string name="place_request_cta_member">Demander l\'ajout d\'un lieu</string>
+    <string name="place_request_form_title">Proposer un lieu</string>
+    <string name="place_request_form_submit">Soumettre la demande</string>
+    <string name="place_request_sending">On envoie ta demande…</string>
+    <string name="place_request_form_hint">Le créateur de la Miff verra ta demande et décidera de l\'ajouter ou non.</string>
+    <string name="place_request_sent">Demande envoyée. Elle est en attente dans la liste.</string>
+    <string name="place_request_sent_offline">Ta demande partira dès que tu seras connecté.</string>
+    <string name="place_request_badge_pending">En attente</string>
+    <string name="place_request_detail_banner_member">En attente de réponse.</string>
+    <string name="place_request_withdraw">Retirer ma demande</string>
+    <string name="place_request_withdrawn">Demande retirée.</string>
+    <string name="place_request_limit_member">Tu as déjà 3 demandes en attente. Tu pourras en proposer d\'autres quand elles auront été traitées.</string>
+    <string name="place_request_limit_miff">Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard.</string>
+    <string name="place_request_gone">Cette demande n\'est plus en attente.</string>
+    <string name="place_request_a11y_pending_mine">Ta demande en attente : %1$s</string>
     <string name="place_list_row_a11y">%1$s, catégorie %2$s, %3$s</string>
     <string name="place_list_row_noaddress_a11y">%1$s, catégorie %2$s</string>
     <string name="place_detail_title_loading">Lieu</string>

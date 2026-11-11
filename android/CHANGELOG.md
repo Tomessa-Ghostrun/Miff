@@ -2,6 +2,37 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.33.0] - 2026-11-11 : un membre demande l'ajout d'un lieu au créateur de la Miff (LIEU-REQ-B)
+
+Décisions du PM du 2026-11-11 (sans maquette ni Notion) ; ticket `docs/tickets/demande-ajout-lieu.md` (critères M1 à M11, L1) ; branche `android/lieu-demande-membre`, PR brouillon, **première des deux PR empilées** (la seconde, `android/lieu-demande-createur`, ajoute le côté du créateur). Cette PR **contient la branche `android/profil-lieux-membres`** (liste des lieux visible par tous les membres, PR en cours d'un autre agent) fusionnée telle quelle : elle disparaît du diff quand cette PR sera fusionnée.
+
+### Ajouté
+- **« Demander l'ajout d'un lieu »** à la place de « Ajouter un lieu » pour un membre qui n'est pas le créateur, sur le Profil, dans la liste des lieux de la Miff du carrousel (même emplacement, même design, un seul bouton). Le créateur garde « Ajouter un lieu » et ne voit jamais le bouton de demande.
+- **Formulaire de demande** : c'est l'écran de création d'un lieu (nom, adresse, périmètre sur la carte, type) avec le titre « Proposer un lieu » et le bouton « Soumettre la demande ». La Miff est fixe (une seule puce, pas de sélecteur), pas de choix de catégorie (la demande n'en porte pas : le créateur en choisit une en modifiant le lieu), pas de phrase « les membres verront ce lieu » (faux tant que le créateur n'a pas accepté) mais « Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non. ».
+- **Demande en attente** dans SA liste, **avant** les lieux : carte à fond atténué et **contour en pointillés** (jamais de rouge ni d'orange), épingle neutre, pastille « En attente » (en mots), « Zone de danger » en mots pour ce type. Un lecteur d'écran lit un seul bloc : « Ta demande en attente : {lieu} ». On l'ouvre : détail (carte, rayon, type, bandeau « En attente de réponse. ») et **« Retirer ma demande »**.
+- **Plafond de 3 demandes en attente par membre** (emplacements fixes `{uid}_1`, `{uid}_2`, `{uid}_3`) : à la 4e, le bouton affiche « Tu as déjà 3 demandes en attente… » sans ouvrir le formulaire ; le formulaire le dit aussi s'il s'ouvre quand même, sans rien envoyer. **Plafond de 10 par Miff** : tenu par le compteur `meta/placeRequests` (écrit dans le même lot que la demande) ; s'il est atteint le message est « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. » (jamais un mot d'erreur).
+- **Type de lieu** : zone de confiance par défaut ; **zone de danger seulement si le demandeur est Miff+** (même comportement que la création : l'option est marquée Miff+ et ouvre l'offre). Contrôlé avant l'envoi ; les règles le répèteront.
+- **Hors connexion** : si le réseau tombe après le choix de l'adresse, la demande est confiée à la file du téléphone (un lot d'écritures) et part au retour du réseau, même après fermeture de l'app ; message « Ta demande partira dès que tu seras connecté. ». Si les règles la refusent à ce moment-là, elle disparaît simplement de la liste, sans message (décision D3).
+- **Expiration à 30 jours** (côté demandeur) : une demande de plus de 30 jours n'est plus affichée et est supprimée au passage (à l'ouverture du formulaire), ce qui libère son emplacement.
+- **Départ d'un membre** (critère L1) : avant « Quitter la Miff », ses demandes en attente sont retirées une par une (un lot de 2 par demande, 3 au plus). Un échec n'empêche jamais de quitter.
+- Aucun message, notification ni ligne n'est jamais envoyé au demandeur (acceptation, refus, expiration : décisions D3 et D8).
+- **Textes** (fr / en, 15 clés `place_request_*` **partagées avec iOS**, catalogue iOS mis à jour sans écran iOS) : `place_request_cta_member`, `place_request_form_title`, `place_request_form_submit`, `place_request_sending`, `place_request_form_hint`, `place_request_sent`, `place_request_sent_offline`, `place_request_badge_pending`, `place_request_detail_banner_member`, `place_request_withdraw`, `place_request_withdrawn`, `place_request_limit_member`, `place_request_limit_miff`, `place_request_gone`, `place_request_a11y_pending_mine`.
+- Tests : `PlaceRequestsTest` (lecture d'un document, 30 jours exacts, ordre, emplacements, lots d'écriture et clés exactes), `PlaceRequestBookTest` (quand lire, TTL, échec, expiration), `PlaceRequestRepositoryTest` (plafonds avant envoi, zone de danger, hors connexion, refus, réponse perdue, départ), `ProfileRequestsViewModelTest`, `PlaceRequestFormViewModelTest`, `ProfileRequestsSectionTest` (bouton, demandes avant les lieux, plafond, accessibilité).
+
+### Modifié
+- `WriteKind` gagne `MERGE` (un `set` qui garde les autres champs), indispensable pour `increment` sur un compteur qui n'existe peut-être pas encore ; les deux appliqueurs de lots (`MiffStore`, `PhotoStore`) le gèrent.
+- `FirestoreMiffRepository.leave` appelle d'abord `beforeLeave` (retrait des demandes de la personne, jamais bloquant).
+- Le formulaire de lieu gagne un mode `REQUEST` ; `PlaceDetailScreen` accepte le détail d'une demande ; `PlaceRows` accepte les demandes d'un membre.
+
+### Choix « économiques »
+- **Un membre ne lit que SES demandes** (requête filtrée sur `requestedBy`, exigée par les règles), **3 documents au plus**, une seule fois par Miff et par 5 minutes (`PlaceRequestBook`), jamais d'écouteur, jamais de lecture pour les autres membres. Ouverture du formulaire : 3 lectures (formule, Miff, ses demandes) puis rien tant qu'il est ouvert.
+- Signal de bascule vers une solution payante : inchangé (`docs/dev/surveillance-quotas.md`). Aucun coût payant : pas de push (il faudrait Blaze), le créateur sera prévenu dans l'app (PR suivante).
+
+### À savoir
+- **Cette fonctionnalité ne marche pas de bout en bout tant que les règles Firestore de la branche `backend/lieu-demande` ne sont pas déployées par le PM** : sans elles, toute écriture dans `placeRequests` est refusée (le membre voit le message calme « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. », à tort). Aucune règle n'est modifiée dans cette PR.
+- **Contrat avec les règles, à vérifier avec l'agent backend** : le document de demande porte exactement les 8 clés du ticket (`requestedBy`, `name`, `type`, `address`, `lat`, `lng`, `radiusM`, `createdAt`), **sans `category`** ; le compteur est écrit avec `increment(±1)` en fusion (`pending`, `lastReqId` = l'identifiant de la demande, `updatedAt`). Si les règles retiennent un autre contrat (par exemple une `category` dans la demande), c'est une ligne à changer dans `PlaceRequestWrites`.
+- Ce que cette PR ne fait pas : le côté du créateur (réception, acceptation, refus, paywall, centre de notifications, point non lu), l'écran iOS.
+
 ## [0.30.0] - 2026-11-11 : pop-in « Pas de connexion » avec réessai automatique toutes les 10 s (bug remonté par le PM)
 
 Bug du PM (2026-11-10) : « Lorsque j'ouvre l'app sans connexion, le Feed se charge à l'infini. Quand il n'y a pas de connexion, il faut une pop-in pour prévenir l'utilisateur avec un CTA « Réessayer » et une tentative automatique de reconnexion au bout de 10 secondes. » Branche `android/feed-hors-connexion`, PR brouillon. Numéro de version : `main` est à 0.29.0 (des doublons existent plus bas, nettoyage prévu à part) ; à revérifier au merge. Aucun changement du modèle de données, des règles Firestore ni des textes légaux.

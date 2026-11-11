@@ -157,12 +157,10 @@ fun PlaceFormScreen(
     RecentsPrivacy()
     val title =
         stringResource(
-            if (state.mode ==
-                PlaceFormMode.CREATE
-            ) {
-                R.string.place_form_title_new
-            } else {
-                R.string.place_form_title_edit
+            when (state.mode) {
+                PlaceFormMode.CREATE -> R.string.place_form_title_new
+                PlaceFormMode.EDIT -> R.string.place_form_title_edit
+                PlaceFormMode.REQUEST -> R.string.place_request_form_title
             },
         )
     Column(
@@ -248,7 +246,8 @@ private fun Body(
         }
         RadiusSection(state, actions)
         TypeSection(state, actions)
-        CategorySection(state, actions)
+        // A request carries no category (ticket LIEU-REQ, section 5.1): the creator may choose one when they change the place afterwards.
+        if (state.mode != PlaceFormMode.REQUEST) CategorySection(state, actions)
         Spacer(Modifier.size(Spacing.s))
     }
 }
@@ -363,7 +362,12 @@ private fun MiffsSection(
                 )
             }
         }
-        VisibilityLine(stringResource(if (single) R.string.place_miff_visibility else R.string.place_miffs_visibility))
+        // A request is seen by the creator alone until it is accepted: the sentence of a place ("les membres verront ce lieu") would be false.
+        if (state.mode != PlaceFormMode.REQUEST) {
+            VisibilityLine(
+                stringResource(if (single) R.string.place_miff_visibility else R.string.place_miffs_visibility),
+            )
+        }
     }
 }
 
@@ -1082,7 +1086,7 @@ private fun Foot(
             // "Enregistrer" is grey and the person must know why (a place written before the categories existed).
             InfoLine(stringResource(R.string.place_save_hint_category))
         }
-        state.message?.let { message ->
+        state.displayedMessage?.let { message ->
             MiffNotice(
                 text =
                     stringResource(
@@ -1090,13 +1094,28 @@ private fun Foot(
                             PlaceMessage.OFFLINE -> R.string.miff_message_offline
                             PlaceMessage.GENERIC -> R.string.miff_message_generic
                             PlaceMessage.MIFF_GONE -> R.string.place_message_miff_gone
+                            PlaceMessage.REQUEST_LIMIT_MEMBER -> R.string.place_request_limit_member
+                            PlaceMessage.REQUEST_LIMIT_MIFF -> R.string.place_request_limit_miff
                         },
                     ),
-                isError = message != PlaceMessage.OFFLINE,
+                // The limits of a request are said calmly, as information: never in the colour of an error.
+                isError =
+                    message != PlaceMessage.OFFLINE &&
+                        message != PlaceMessage.REQUEST_LIMIT_MEMBER &&
+                        message != PlaceMessage.REQUEST_LIMIT_MIFF,
             )
         }
+        if (state.mode == PlaceFormMode.REQUEST) InfoLine(stringResource(R.string.place_request_form_hint))
         MiffButton(
-            text = stringResource(if (state.saving) R.string.place_saving else R.string.place_save_action),
+            text =
+                stringResource(
+                    when {
+                        state.mode == PlaceFormMode.REQUEST && state.saving -> R.string.place_request_sending
+                        state.mode == PlaceFormMode.REQUEST -> R.string.place_request_form_submit
+                        state.saving -> R.string.place_saving
+                        else -> R.string.place_save_action
+                    },
+                ),
             onClick = actions.onSave,
             enabled = state.canSave,
             modifier = Modifier.fillMaxWidth(),

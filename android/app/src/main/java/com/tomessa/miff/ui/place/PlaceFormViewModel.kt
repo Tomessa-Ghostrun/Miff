@@ -7,7 +7,11 @@ import com.tomessa.miff.data.place.PlaceContext
 import com.tomessa.miff.data.place.PlaceContextLoad
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.data.place.PlaceRepository
+import com.tomessa.miff.data.place.PlaceRequestRepository
 import com.tomessa.miff.data.place.PlaceWriteResult
+import com.tomessa.miff.data.place.RequestContext
+import com.tomessa.miff.data.place.RequestContextLoad
+import com.tomessa.miff.data.place.RequestSubmitResult
 import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.place.AddressSearch
 import com.tomessa.miff.domain.place.AddressSearchResult
@@ -22,6 +26,8 @@ import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.domain.place.PlaceName
 import com.tomessa.miff.domain.place.PlaceQuota
 import com.tomessa.miff.domain.place.PlaceRadius
+import com.tomessa.miff.domain.place.PlaceRequestDraft
+import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.ui.miff.ActionMessage
 import com.tomessa.miff.ui.miff.messageFor
@@ -41,7 +47,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * else (see AddressSearchClients). Every toString() shows nothing.
  */
 
-enum class PlaceFormMode { CREATE, EDIT }
+/** [REQUEST]: a member who is not the creator proposes a place (ticket LIEU-REQ-B): same form, the button says "Soumettre la demande". */
+enum class PlaceFormMode { CREATE, EDIT, REQUEST }
 
 /** The list under the address field. */
 sealed interface SuggestionsState {
@@ -61,7 +68,7 @@ sealed interface SuggestionsState {
 }
 
 /** What the form says under the button (calm sentences, never a code). */
-enum class PlaceMessage { OFFLINE, GENERIC, MIFF_GONE }
+enum class PlaceMessage { OFFLINE, GENERIC, MIFF_GONE, REQUEST_LIMIT_MEMBER, REQUEST_LIMIT_MIFF }
 
 /** How the form ends: the host leaves the screen (and shows what must be shown). */
 enum class PlaceFormEnd { SAVED, DELETED, PLACE_GONE }
@@ -98,6 +105,8 @@ data class PlaceFormState(
     val paywall: PaywallReason? = null,
     /** Edit mode: what the form was opened with, to know whether anything changed. */
     val initial: Snapshot? = null,
+    /** Request mode: the person already has 3 pending requests in this Miff (the form says so and sends nothing). */
+    val requestBlocked: Boolean = false,
 ) {
     /** The values compared to know whether an edit changed something. */
     data class Snapshot(
@@ -130,11 +139,15 @@ data class PlaceFormState(
 
     val busy: Boolean get() = saving || deleting
 
+    /** What the foot says: the last message, or (request mode) the limit of 3 as long as it holds: typing in a field clears a message, never this one. */
+    val displayedMessage: PlaceMessage?
+        get() = message ?: if (requestBlocked) PlaceMessage.REQUEST_LIMIT_MEMBER else null
+
     /** "Enregistrer" is active from ONE character of name AND a suggestion chosen (decision Q10), and (edit) something changed. */
     val canSave: Boolean
         get() =
             !loading && loadFailed == null && !busy && PlaceName.hasSomething(name) && chosen != null &&
-                selectedMiffIds.isNotEmpty() && category != null && changed
+                selectedMiffIds.isNotEmpty() && category != null && changed && !requestBlocked
 
     /** The Miffs the place is attached to NOW (what a deletion removes it from), in the order of the list, whatever is ticked. */
     val attachedMiffs: List<OwnedMiff>
@@ -163,7 +176,7 @@ data class PlaceFormState(
 class PlaceFormViewModel(
     /** Null: a new place. Else the identifier of the place to edit. */
     private val placeId: String?,
-    /** The Miff the place was opened from (two different places can share an identifier in two Miffs: this one says which). */
+    /** The Miff the place was opened from (two different places can share an identifier in two Miffs: this one says which). Request mode: the Miff the request is for. */
     private val miffId: String?,
     private val repository: PlaceRepository,
     private val search: AddressSearch,
@@ -172,15 +185,28 @@ class PlaceFormViewModel(
     private val notices: PlaceNotices,
     /** "fr" or "en": the language of the labels asked of the search service. */
     private val language: () -> String,
+    /** Request mode (a member who is not the creator proposes a place): true, with the repository of the requests. */
+    private val request: Boolean = false,
+    private val requests: PlaceRequestRepository? = null,
     private val debounceMillis: Long = PlaceLimits.SUGGESTION_DEBOUNCE_MS,
     /** The whole search, fallback included: no screen waits for ever for a service. */
     private val searchTimeoutMillis: Long = SEARCH_TIMEOUT_MS,
 ) : ViewModel() {
     private val mutableState =
-        MutableStateFlow(PlaceFormState(mode = if (placeId == null) PlaceFormMode.CREATE else PlaceFormMode.EDIT))
+        MutableStateFlow(
+            PlaceFormState(
+                mode =
+                    when {
+                        request -> PlaceFormMode.REQUEST
+                        placeId == null -> PlaceFormMode.CREATE
+                        else -> PlaceFormMode.EDIT
+                    },
+            ),
+        )
     val uiState: StateFlow<PlaceFormState> = mutableState.asStateFlow()
 
     private var context: PlaceContext? = null
+    private var requestContext: RequestContext? = null
     private var original: PlaceGroup? = null
     private var searchJob: Job? = null
     private var loadJob: Job? = null
@@ -208,6 +234,10 @@ class PlaceFormViewModel(
                     mutableState.update { it.copy(loading = false, loadFailed = message) }
                     return@launch
                 }
+                if (request) {
+                    loadRequest(uid)
+                    return@launch
+                }
                 when (val load = repository.prepare(uid)) {
                     is PlaceContextLoad.Failed -> {
                         mutableState.update {
@@ -224,6 +254,44 @@ class PlaceFormViewModel(
                     }
                 }
             }
+    }
+
+    /** Request mode: who the person is (Miff+ or not), the Miff, the requests they already have. Never opens for the creator of the Miff. */
+    private suspend fun loadRequest(uid: String) {
+        val repo = requests
+        val target = miffId
+        if (repo == null || target == null) {
+            mutableState.update { it.copy(loading = false, loadFailed = PlaceMessage.GENERIC) }
+            return
+        }
+        when (val load = repo.prepare(uid, target)) {
+            RequestContextLoad.Unavailable -> {
+                mutableState.update { it.copy(loading = false, loadFailed = PlaceMessage.GENERIC) }
+            }
+
+            is RequestContextLoad.Failed -> {
+                mutableState.update {
+                    it.copy(loading = false, loadFailed = messageFor(load.failure).toPlaceMessage())
+                }
+            }
+
+            is RequestContextLoad.Loaded -> {
+                val loaded = load.context
+                requestContext = loaded
+                val blocked = loaded.mine.size >= PlaceRequestLimits.PER_MEMBER
+                mutableState.update {
+                    it.copy(
+                        loading = false,
+                        premium = loaded.premium,
+                        // The Miff is fixed: ONE chip, no picker (the same component as a creator with a single Miff).
+                        owned = listOf(OwnedMiff(target, loaded.miffName, 0L)),
+                        selectedMiffIds = listOf(target),
+                        requestBlocked = blocked,
+                        message = if (blocked) PlaceMessage.REQUEST_LIMIT_MEMBER else null,
+                    )
+                }
+            }
+        }
     }
 
     private fun open(loaded: PlaceContext) {
@@ -440,6 +508,10 @@ class PlaceFormViewModel(
             mutableState.update { it.copy(nameTooShort = true) }
             return
         }
+        if (request) {
+            submitRequest(state)
+            return
+        }
         // Nothing to try without a network: the answer is immediate and nothing is left waiting (PL9).
         if (!network.isOnline()) {
             mutableState.update { it.copy(message = PlaceMessage.OFFLINE) }
@@ -496,6 +568,73 @@ class PlaceFormViewModel(
                             saving = false,
                             message = messageFor(result.failure).toPlaceMessage(),
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * "Soumettre la demande" (criteria M3, M4, M5, M7, M11): the limits of the member are applied BEFORE writing (the rules are only the safety net); nothing is
+     * shown as sent before the server confirmed; with no network the phone keeps the request and sends it when it is back (the message says so).
+     */
+    private fun submitRequest(state: PlaceFormState) {
+        val chosen = state.chosen ?: return
+        val uid = currentUid()
+        val loaded = requestContext
+        val target = miffId
+        val repo = requests
+        if (uid == null || loaded == null || target == null || repo == null) {
+            mutableState.update { it.copy(message = PlaceMessage.GENERIC) }
+            return
+        }
+        val draft =
+            PlaceRequestDraft(
+                name = state.name,
+                address = chosen.label,
+                lat = chosen.lat,
+                lng = chosen.lng,
+                radiusM = state.radiusM,
+                type = state.type,
+            )
+        if (draft.problem != null) {
+            mutableState.update { it.copy(message = PlaceMessage.GENERIC) }
+            return
+        }
+        mutableState.update { it.copy(saving = true, message = null) }
+        viewModelScope.launch {
+            when (val result = repo.submit(uid, target, draft, loaded, online = network.isOnline())) {
+                is RequestSubmitResult.Done -> {
+                    notices.requestSent(queued = false)
+                    mutableState.update { it.copy(saving = false, end = PlaceFormEnd.SAVED) }
+                }
+
+                RequestSubmitResult.Queued -> {
+                    notices.requestSent(queued = true)
+                    mutableState.update { it.copy(saving = false, end = PlaceFormEnd.SAVED) }
+                }
+
+                is RequestSubmitResult.NeedsPremium -> {
+                    mutableState.update { it.copy(saving = false, paywall = result.reason) }
+                }
+
+                RequestSubmitResult.MemberLimit -> {
+                    mutableState.update {
+                        it.copy(saving = false, requestBlocked = true, message = PlaceMessage.REQUEST_LIMIT_MEMBER)
+                    }
+                }
+
+                RequestSubmitResult.MiffLimit -> {
+                    mutableState.update { it.copy(saving = false, message = PlaceMessage.REQUEST_LIMIT_MIFF) }
+                }
+
+                RequestSubmitResult.MiffUnavailable -> {
+                    mutableState.update { it.copy(saving = false, message = PlaceMessage.MIFF_GONE) }
+                }
+
+                is RequestSubmitResult.Failed -> {
+                    mutableState.update {
+                        it.copy(saving = false, message = messageFor(result.failure).toPlaceMessage())
                     }
                 }
             }

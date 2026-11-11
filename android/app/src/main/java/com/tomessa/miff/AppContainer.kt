@@ -84,12 +84,16 @@ import com.tomessa.miff.data.permission.SharedPreferencesNotificationAskStore
 import com.tomessa.miff.data.place.CachedAddressSearch
 import com.tomessa.miff.data.place.FallbackAddressSearch
 import com.tomessa.miff.data.place.FirestorePlaceRepository
+import com.tomessa.miff.data.place.FirestorePlaceRequestRepository
+import com.tomessa.miff.data.place.FirestorePlaceRequestStore
 import com.tomessa.miff.data.place.FirestorePlaceStore
 import com.tomessa.miff.data.place.GeoapifyAddressSearch
 import com.tomessa.miff.data.place.MapTileCachePurger
 import com.tomessa.miff.data.place.PhotonAddressSearch
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.data.place.PlaceRepository
+import com.tomessa.miff.data.place.PlaceRequestRepository
+import com.tomessa.miff.data.place.PlaceStore
 import com.tomessa.miff.data.place.UrlConnectionFetcher
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
@@ -310,6 +314,8 @@ class AppContainer(
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
             // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
             online = { networkMonitor.isOnline() },
+            // LIEU-REQ: leaving a Miff takes back the pending requests to add a place that the person made there (before the lot, never blocking it).
+            beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -702,9 +708,11 @@ class AppContainer(
      * The places (ticket LOC-1): create, edit, delete, in the Miffs the person created. Reads that decide a limit come from the
      * server; every write is a transaction (nothing is queued offline). Built on first use, like the rest of the Miff data.
      */
+    private val placeStore: PlaceStore by lazy { FirestorePlaceStore(miffStore) }
+
     val placeRepository: PlaceRepository by lazy {
         FirestorePlaceRepository(
-            store = FirestorePlaceStore(miffStore),
+            store = placeStore,
             // An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place.
             newId = {
                 FirebaseFirestore
@@ -716,6 +724,14 @@ class AppContainer(
                     .id
             },
         )
+    }
+
+    /**
+     * The requests to add a place (ticket LIEU-REQ): a member who is not the creator proposes a place, the creator accepts or not. Reads that decide a
+     * limit come from the server; writes are transactions (one batch handed to the phone only when the network drops after the address was chosen).
+     */
+    val placeRequestRepository: PlaceRequestRepository by lazy {
+        FirestorePlaceRequestRepository(store = FirestorePlaceRequestStore(miffStore), places = placeStore)
     }
 
     /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */

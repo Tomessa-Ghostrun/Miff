@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
@@ -351,6 +352,7 @@ class FirestoreMiffStore(
                 WriteKind.SET -> transaction.set(ref, write.data)
                 WriteKind.UPDATE -> transaction.update(ref, write.data)
                 WriteKind.DELETE -> transaction.delete(ref)
+                WriteKind.MERGE -> transaction.set(ref, write.data, SetOptions.merge())
             }
         }
     }

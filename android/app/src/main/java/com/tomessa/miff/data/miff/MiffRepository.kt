@@ -252,6 +252,11 @@ class FirestoreMiffRepository(
      */
     private val online: () -> Boolean = { true },
     private val offlineReadTimeoutMillis: Long = OFFLINE_READ_TIMEOUT_MS,
+    /**
+     * Called at the start of "Quitter la Miff", before the lot (ticket LIEU-REQ, criterion L1): the pending requests to add a place that the person made in
+     * this Miff are taken back. It never blocks the departure (a failure is its own business).
+     */
+    private val beforeLeave: suspend (uid: String, miffId: String) -> Unit = { _, _ -> },
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -560,6 +565,8 @@ class FirestoreMiffRepository(
         uid: String,
         miffId: String,
     ): MiffWriteResult {
+        // The requests to add a place go BEFORE the person stops being a member (afterwards the rules would refuse their deletion).
+        beforeLeave(uid, miffId)
         // The key of the index is read from the server (it is "free", or the id of the Miff): it is found by its FIELD miffId.
         val key =
             when (val read = guarded { store.readMemberships(uid, fromServer = true) }) {
