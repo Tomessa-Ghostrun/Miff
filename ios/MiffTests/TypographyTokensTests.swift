@@ -59,6 +59,23 @@ final class TypographyTokensTests: XCTestCase {
         XCTAssertEqual(font.pointSize, 30)
     }
 
+    /// La variation de graisse est VRAIMENT appliquée par le système (et pas seulement demandée) : la même phrase est plus large à 800
+    /// qu'à 400, et à 800 qu'à 700.
+    func testTheWeightVariationIsAppliedSoTheBubbleFontIsWiderThanRegular() {
+        let text = "Tout va bien" as NSString
+        func width(_ font: UIFont) -> CGFloat {
+            text.size(withAttributes: [.font: font]).width
+        }
+
+        let regular = width(MiffFontFace.baloo.uiFont(size: 30))
+        let bold = width(MiffFontFace.balooUIFont(weight: 700, size: 30))
+        let extraBold = width(textDisplayBubble.uiFont(size: 30))
+
+        XCTAssertGreaterThan(bold, regular, "wght 700 non appliqué")
+        XCTAssertGreaterThan(extraBold, bold, "wght 800 non appliqué")
+        XCTAssertGreaterThan(extraBold, regular)
+    }
+
     func testDisplayStylesUseBalooAndTextStylesUseHanken() {
         XCTAssertEqual(textDisplayHero.face, .baloo)
         XCTAssertEqual(textBodyRegular.face, .hankenRegular)

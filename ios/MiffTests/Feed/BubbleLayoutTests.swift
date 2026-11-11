@@ -72,7 +72,47 @@ final class BubbleLayoutTests: XCTestCase {
         XCTAssertTrue(source.contains(".miffTextStyle(textDisplayBubble)"))
         XCTAssertFalse(source.contains(".miffTextStyle(textDisplayHeadline)"))
         XCTAssertTrue(source.contains("minHeight: Spacing.minTouchTarget"), "zone de toucher d'au moins 44 pt")
+        XCTAssertTrue(source.contains(".minimumScaleFactor(BubbleLayout.headlineMinimumScale)"))
         XCTAssertGreaterThanOrEqual(Spacing.minTouchTarget, 44)
+    }
+
+    func testTheSideMarginsShrinkAtAccessibilityTextSizesButStayEqualOnBothSides() {
+        XCTAssertEqual(BubbleLayout.horizontalInset(accessibilitySize: false), BubbleLayout.horizontalInset)
+        XCTAssertLessThan(BubbleLayout.horizontalInset(accessibilitySize: true), BubbleLayout.horizontalInset)
+        let size = BubbleLayout.outerSize(content: CGSize(width: 200, height: 100), horizontalInset: 28)
+        let frame = BubbleLayout.contentFrame(content: CGSize(width: 200, height: 100), horizontalInset: 28)
+
+        XCTAssertEqual(frame.minX, size.width - frame.maxX, accuracy: 0.001)
+    }
+
+    /// Le plus long mot des phrases principales de la bulle (FR et EN) tient sur une ligne à la plus grande taille de texte, une fois la
+    /// réduction autorisée appliquée, dans la plus petite largeur d'iPhone (320 pt moins les marges de la liste et de la bulle).
+    func testTheLongestHeadlineWordFitsAtTheLargestTextSize() throws {
+        let catalogURL = bubbleSource
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Resources/Localizable.xcstrings")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: catalogURL)) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
+        var words: [String] = []
+        let keys = [
+            "feed_bubble_all_good", "feed_bubble_no_news_title", "feed_bubble_alone", "feed_bubble_sharing_stopped_title"
+        ]
+        for key in keys {
+            let localizations = try XCTUnwrap(strings[key]?["localizations"] as? [String: [String: Any]])
+            for language in ["fr", "en"] {
+                let unit = localizations[language]?["stringUnit"] as? [String: Any]
+                words += (unit?["value"] as? String ?? "").split(separator: " ").map(String.init)
+            }
+        }
+        let largest = UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge)
+        let metrics = UIFontMetrics(forTextStyle: .title2)
+        let size = metrics.scaledValue(for: textDisplayBubble.size, compatibleWith: largest)
+        let font = textDisplayBubble.uiFont(size: size)
+        let widest = words.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
+        let available: CGFloat = 320 - 2 * Spacing.md - 2 * BubbleLayout.accessibilityHorizontalInset
+
+        XCTAssertFalse(words.isEmpty)
+        XCTAssertLessThanOrEqual(widest * BubbleLayout.headlineMinimumScale, available, "un mot serait coupé")
     }
 
     private var bubbleSource: URL {

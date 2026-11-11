@@ -10,6 +10,19 @@ enum BubbleLayout {
     /// Marge de chaque côté du contenu (identique à gauche et à droite).
     static let horizontalInset: CGFloat = 52
 
+    /// Aux plus grandes tailles de texte (tailles d'accessibilité) la marge de chaque côté est réduite : un mot comme « nouvelles » doit
+    /// pouvoir tenir sur une ligne (retour de revue, 2026-11-11). Toujours identique à gauche et à droite.
+    static let accessibilityHorizontalInset: CGFloat = 28
+
+    static func horizontalInset(accessibilitySize: Bool) -> CGFloat {
+        accessibilitySize ? accessibilityHorizontalInset : horizontalInset
+    }
+
+    /// La phrase principale ne dépasse pas ce nombre de lignes et peut rétrécir jusqu'à cette échelle plutôt que de couper un mot (Dynamic
+    /// Type maximal) ; aux tailles courantes rien ne rétrécit (le texte passe à la ligne avant).
+    static let headlineMaxLines = 6
+    static let headlineMinimumScale: CGFloat = 0.5
+
     /// Marge en haut et en bas du contenu (identique).
     static let verticalInset: CGFloat = 44
 
@@ -17,7 +30,7 @@ enum BubbleLayout {
     static let minContentHeight: CGFloat = 176
 
     /// La boîte totale de la bulle pour un contenu de la taille donnée : les marges s'ajoutent de chaque côté.
-    static func outerSize(content: CGSize) -> CGSize {
+    static func outerSize(content: CGSize, horizontalInset: CGFloat = BubbleLayout.horizontalInset) -> CGSize {
         CGSize(
             width: content.width + 2 * horizontalInset,
             height: max(content.height, minContentHeight) + 2 * verticalInset
@@ -26,7 +39,7 @@ enum BubbleLayout {
 
     /// Où se pose le contenu (de la taille donnée) dans la boîte de la bulle : au milieu, en largeur comme en hauteur, quelle que soit la
     /// taille du texte (Dynamic Type) ; dans une zone plus haute que lui (hauteur minimale), il est centré verticalement.
-    static func contentFrame(content: CGSize) -> CGRect {
+    static func contentFrame(content: CGSize, horizontalInset: CGFloat = BubbleLayout.horizontalInset) -> CGRect {
         let zoneHeight = max(content.height, minContentHeight)
         return CGRect(
             x: horizontalInset,

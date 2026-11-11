@@ -491,6 +491,7 @@
     <string name="feed_bubble_me_danger">You\'re in a danger zone of your Miff</string>
     <string name="feed_bubble_me_danger_note">Your loved ones can see it too</string>
     <string name="feed_bubble_message_action">Send a message</string>
+    <string name="feed_bubble_contact_a11y">Contact %1$s</string>
     <string name="feed_bubble_page_a11y">Page %1$d of %2$d</string>
     <string name="feed_bubble_previous_a11y">Previous alert</string>
     <string name="feed_bubble_next_a11y">Next alert</string>

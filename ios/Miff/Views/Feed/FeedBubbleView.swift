@@ -143,6 +143,7 @@ private struct BubbleBlob<Content: View>: View {
     let level: StatusLevel
     let motion: Bool
     @ViewBuilder let content: () -> Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         // En pause (animations réduites, bulle hors écran ou app en arrière-plan) la vue est dessinée UNE fois : aucun rendu continu.
@@ -156,7 +157,7 @@ private struct BubbleBlob<Content: View>: View {
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: BubbleLayout.minContentHeight, alignment: .center)
-            .padding(.horizontal, BubbleLayout.horizontalInset)
+            .padding(.horizontal, BubbleLayout.horizontalInset(accessibilitySize: dynamicTypeSize.isAccessibilitySize))
             .padding(.vertical, BubbleLayout.verticalInset)
             .background(
                 FeedBubbleShape()
@@ -249,7 +250,7 @@ private struct AlertLines: View {
         if page.canMessage, let phone = page.member.phone {
             BubbleButton(
                 key: "feed_bubble_message_action",
-                spokenLabel: "\(L10n.string("feed_bubble_message_action")) \(page.member.callName)"
+                spokenLabel: texts.contactA11y(page.member.callName)
             ) { onMessage(phone) }
         }
     }
@@ -273,6 +274,8 @@ private struct Headline: View {
             .miffTextStyle(textDisplayBubble)
             .foregroundColor(colorTextPrimary.color)
             .multilineTextAlignment(.center)
+            .lineLimit(BubbleLayout.headlineMaxLines)
+            .minimumScaleFactor(BubbleLayout.headlineMinimumScale)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
     }
