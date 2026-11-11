@@ -870,6 +870,9 @@
     <string name="update_viewfinder_tip">Touche deux fois l\'écran pour changer de caméra.</string>
     <string name="update_shutter_a11y">Prendre la photo</string>
     <string name="update_flip_a11y">Changer de caméra</string>
+    <string name="update_flash_a11y">Flash</string>
+    <string name="update_flash_state_on">Flash activé</string>
+    <string name="update_flash_state_off">Flash désactivé</string>
     <string name="update_prepare_failed">On n\'a pas pu préparer cette photo. Réessaie.</string>
     <string name="update_preview_taken_a11y">Photo prise. Tu peux la publier ou recommencer.</string>
     <string name="update_close_a11y">Fermer</string>
