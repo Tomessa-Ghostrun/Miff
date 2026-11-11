@@ -9,6 +9,7 @@ import com.tomessa.miff.domain.tracking.PlaceFact
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusFact
 import com.tomessa.miff.domain.tracking.WrittenPosition
+import com.tomessa.miff.domain.travel.TravelPeriod
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -77,6 +78,8 @@ class LocalMiff(
     /** The last battery level written to this Miff by this phone (any status write counts) and when: the refresh on opening / leaving writes only a real change. Not a location. */
     val batteryPct: Int? = null,
     val batteryAtMillis: Long? = null,
+    /** MODE VOYAGE: the status of this Miff still carries the keys of a trip that ended: the next write of the status clears them (then this goes back to false). */
+    val clearTravel: Boolean = false,
 ) {
     fun derived(): DerivedPresence? = PresenceValue.fromWire(presence)?.let { DerivedPresence(it, presencePlaceId) }
 
@@ -96,6 +99,7 @@ class LocalMiff(
         pending: PendingStatus? = this.pending,
         batteryPct: Int? = this.batteryPct,
         batteryAtMillis: Long? = this.batteryAtMillis,
+        clearTravel: Boolean = this.clearTravel,
     ) = LocalMiff(
         places = places,
         readAtMillis = readAtMillis,
@@ -108,9 +112,35 @@ class LocalMiff(
         pending = pending,
         batteryPct = batteryPct,
         batteryAtMillis = batteryAtMillis,
+        clearTravel = clearTravel,
     )
 
     override fun toString(): String = "LocalMiff(redacted)"
+}
+
+/**
+ * MODE VOYAGE (VOY-1A): the trip in progress on this phone. While it exists NOTHING is watched, read or written by the tracking (no zone, no position, no presence, no
+ * battery); it only tells the loved ones about the trip. [startedIn] = the Miffs whose status says `travel` on the server (any end), [upToDateIn] = those whose end is the
+ * current one. A Miff of the local list that is not in [startedIn] still has to be told (offline, shared later); one that is in [startedIn] but not in [upToDateIn] has to
+ * be told the new end. [sinceMillis] = when the trip began ("En voyage depuis…"). Holds no coordinate.
+ */
+@Serializable
+class LocalTravel(
+    val untilMillis: Long,
+    val untilDay: String,
+    val sinceMillis: Long,
+    val startedIn: Set<String> = emptySet(),
+    val upToDateIn: Set<String> = emptySet(),
+) {
+    fun period() = TravelPeriod(untilMillis, untilDay)
+
+    fun copyWith(
+        period: TravelPeriod = period(),
+        startedIn: Set<String> = this.startedIn,
+        upToDateIn: Set<String> = this.upToDateIn,
+    ) = LocalTravel(period.untilMillis, period.untilDay, sinceMillis, startedIn, upToDateIn)
+
+    override fun toString(): String = "LocalTravel(redacted)"
 }
 
 @Serializable
@@ -150,6 +180,8 @@ class LocalState(
     val positionCursor: String? = null,
     /** When a battery refresh (opening / leaving the app) was last TRIED, whatever its outcome (0 = never): at most one attempt every 15 minutes. */
     val batteryTriedAtMillis: Long = 0L,
+    /** MODE VOYAGE: the trip in progress, or null. Kept by every copy of this state; erased with it (sign-out, deletion of the account, session lost). */
+    val travel: LocalTravel? = null,
 ) {
     fun fix(): Fix? =
         if (fixLat != null && fixLng != null &&
@@ -171,6 +203,7 @@ class LocalState(
         statusCursor: String? = this.statusCursor,
         positionCursor: String? = this.positionCursor,
         batteryTriedAtMillis: Long = this.batteryTriedAtMillis,
+        travel: LocalTravel? = this.travel,
     ) = LocalState(
         uid = uid,
         miffs = miffs,
@@ -185,6 +218,7 @@ class LocalState(
         statusCursor = statusCursor,
         positionCursor = positionCursor,
         batteryTriedAtMillis = batteryTriedAtMillis,
+        travel = travel,
     )
 
     override fun toString(): String = "LocalState(redacted)"
