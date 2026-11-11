@@ -47,13 +47,17 @@ struct BubbleView: View {
     /// Le mouvement n'existe que si la bulle est à l'écran ET l'app au premier plan ET l'onglet en usage.
     let isActive: Bool
     let actions: BubbleActions
+    /// MODE VOYAGE : la ligne « {Prénom} est en voyage jusqu'au 15 nov. » sous la bulle habituelle (nil : aucune, ou la bulle le dit déjà).
+    var travelNote: TravelNote?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         content
             .onChange(of: announceKey) { _ in
                 // La bulle est une région annoncée SEULEMENT quand le niveau (ou l'ensemble des alertes) change, jamais à chaque minute.
-                UIAccessibility.post(notification: .announcement, argument: texts.announcement(bubble))
+                UIAccessibility.post(
+                    notification: .announcement, argument: texts.announcement(bubble, travelNote: travelNote)
+                )
             }
     }
 
@@ -64,10 +68,23 @@ struct BubbleView: View {
     @ViewBuilder
     private var content: some View {
         if case .alerts(let pages, _) = bubble {
-            AlertCarousel(pages: pages, texts: texts, motion: motion, onMessage: actions.onMessage)
+            VStack(spacing: Spacing.sm) {
+                AlertCarousel(pages: pages, texts: texts, motion: motion, onMessage: actions.onMessage)
+                // MODE VOYAGE : les autres membres en voyage, sous les alertes.
+                if let travelNote {
+                    Text(verbatim: texts.travelNote(travelNote))
+                        .miffTextStyle(textBodyRegular14)
+                        .foregroundColor(colorTextDescription.color)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                }
+            }
         } else {
             BubbleBlob(level: bubble.level, motion: motion) {
-                CalmBubbleLines(bubble: bubble, texts: texts, onResumeSharing: actions.onResumeSharing)
+                CalmBubbleLines(
+                    bubble: bubble, texts: texts, travelNote: travelNote, onResumeSharing: actions.onResumeSharing
+                )
             }
         }
     }
@@ -77,9 +94,19 @@ struct BubbleView: View {
 private struct CalmBubbleLines: View {
     let bubble: Bubble
     let texts: FeedTexts
+    var travelNote: TravelNote?
     let onResumeSharing: () -> Void
 
     var body: some View {
+        lines
+        // MODE VOYAGE : les autres membres en voyage, une ligne de plus sous le message habituel.
+        if let travelNote {
+            Line(text: texts.travelNote(travelNote))
+        }
+    }
+
+    @ViewBuilder
+    private var lines: some View {
         switch bubble {
         case .allGood(let latestNews, let answered, let total):
             Headline(key: "feed_bubble_all_good")
@@ -101,6 +128,8 @@ private struct CalmBubbleLines: View {
             Headline(key: "feed_bubble_sharing_stopped_title")
             Line(text: L10n.string("feed_bubble_sharing_stopped_body"))
             BubbleButton(key: "feed_bubble_resume_action", action: onResumeSharing)
+        case .travelers(let note):
+            Headline(text: texts.travelersHeadline(note))
         case .alerts:
             EmptyView()
         }
