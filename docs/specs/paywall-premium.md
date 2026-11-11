@@ -3,15 +3,15 @@
 **Statut** : Backlog discovery — à valider par le PM
 
 ## Contexte
-Modèle freemium : le Paywall est affiché "après 1 action" selon la note du PM — probablement la 1ère tentative d'un utilisateur gratuit de dépasser une limite (3e lieu de confiance, zone de danger, 2e Miff).
+Modèle freemium : le Paywall est affiché "après 1 action" selon la note du PM — probablement la 1ère tentative d'un utilisateur gratuit de dépasser une limite (4e lieu de confiance, zone de danger, 2e Miff).
 
 ## Règles métier actées
-- **Gratuit** : **2 lieux de confiance** (décision du PM, 2026-11-01 ; avant : 1), 1 seule Miff à la fois.
+- **Gratuit** : **3 lieux de confiance** (décision du PM, 2026-11-10 ; 2 depuis le 2026-11-01, 1 avant), 1 seule Miff à la fois.
 - **Premium, offre « Miff+ »** : lieux de confiance illimités, Miffs illimitées, **zones de danger** (déclarer des zones de danger, être prévenu quand un proche s'y trouve ; **réservées au premium**, décision du 2026-11-01), **notifications intelligentes** (être notifié lors d'une situation anormale).
 - **Prix** : voir « Décision du PM — offre Premium » plus bas, qui remplace le prix lu dans la maquette (essai 7 jours sur l'annuel seulement, annuel 4,99 €/mois soit 59,88 €, mensuel 6,99 €).
 
 ## Critères d'acceptation
-- Le Paywall se déclenche au moment précis où un utilisateur gratuit tente une action bloquée par sa limite (créer un 3e lieu de confiance ou une zone de danger, créer/rejoindre une 2e Miff).
+- Le Paywall se déclenche au moment précis où un utilisateur gratuit tente une action bloquée par sa limite (créer un 4e lieu de confiance ou une zone de danger, créer/rejoindre une 2e Miff).
   - **Décision du PM du 2026-11-08 (Android, Feed)** : la tentative de « créer/rejoindre une 2e Miff » se fait depuis le sélecteur de Miff du Feed, visible de tous ; pour un compte gratuit déjà dans une Miff, le toucher ouvre le Paywall (écran « Miff+ arrive bientôt » tant qu'aucun achat n'existe, phrase « Une seule Miff avec la formule gratuite », sans prix ni « Premium »). Voir `docs/tickets/feed.md` D51.
 - Le Paywall explique clairement la différence gratuit/Premium.
 

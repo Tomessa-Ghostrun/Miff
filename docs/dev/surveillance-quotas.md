@@ -236,6 +236,33 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ---
 
+## 5 quinquies. Android : notifications locales (NOTIF-P0, 2026-11-08)
+
+**Ce que fait l'application (PR A : autorisation, Réglages, centre).** Rien ne touche Firestore : les choix de Réglages > Notifications, le centre de notifications (30 jours ou 100 lignes), l'état de l'autorisation et la carte de « deuxième chance » vivent dans des fichiers privés du téléphone (hors sauvegarde), effacés à la déconnexion. **0 lecture, 0 écriture, 0 appel réseau, 0 service payant, 0 dépendance nouvelle.** Le centre n'écrit **jamais** sur le serveur : l'historique en base coûterait ≈ 15 écritures par utilisateur et par jour (≈ +7 $ par mois à 10 000 utilisateurs, ticket §4.5), c'est le choix écarté.
+
+**Coût par notification** :
+
+| Notification | Lectures Firestore | Écritures Firestore | Remarque |
+|---|---|---|---|
+| N1, N2 (rappels « à toi ») | **0** | **0** | décision locale à partir du dernier statut déjà connu du téléphone (l'instantané écrit par le Feed, qui lit déjà ces statuts) |
+| N6 (j'entre dans une zone de danger) | **0** | **0** | locale et immédiate, déclenchée par le suivi des lieux déjà livré |
+| N3, N4 (ma Miff change d'état) | **N + 3 par vérification** (N = membres de la Miff), relevées **à l'heure prévue** seulement | **0** | UNE lecture du serveur (`miffs/{id}/status`, `Source.SERVER`) juste avant d'afficher ; **au plus 2 vérifications par épisode** (la seconde seulement si la première n'a pas pu joindre le serveur) ; aucune vérification si le type est coupé, si la session n'est pas valide ou si la clé a déjà été notifiée |
+
+**N3 / N4 en chiffres** (estimations, pas des mesures ; Miff de 4 membres : 4 lectures de statuts + 3 lectures de règles = **7 lectures** par vérification ; 15 membres : **18**). Un épisode (la Miff passe orange, puis rouge) coûte une vérification **par observateur et par couleur** : **7 à 14 lectures par jour et par utilisateur actif** (cas courant : 1 à 2 épisodes par jour, par exemple une journée de travail hors du seul lieu gratuit, le rouge ne venant que si personne ne donne de nouvelles). À comparer aux ~60 lectures par jour que le Feed coûte déjà.
+
+| Utilisateurs actifs par jour | Lectures N3 / N4 (7 / 14 par jour) | Part des 50 000 lectures gratuites |
+|---|---|---|
+| **100** | 700 / 1 400 | 1,4 % / 2,8 % |
+| **1 000** | 7 000 / 14 000 | 14 % / 28 % |
+| **10 000** | 70 000 / 140 000 | 140 % / 280 % |
+
+**Limite connue et signal de bascule.** Les notifications locales ne coûtent rien quel que soit le nombre d'utilisateurs : il n'y a pas de seuil de bascule pour ce qui est local. Le seul poste qui pèse sur le quota de lectures est la vérification de N3 / N4 ; il entre dans les relevés habituels (sections 1 à 3) : **si le ratio de lectures par utilisateur actif dépasse 150 deux jours de suite** (signal des sections 2 et 3), regarder la part de N3 / N4 (+7 à +14 lectures par jour) parmi les causes. **Leviers gratuits, un seul chiffre à changer chacun** : passer `MAX_VERIFICATIONS` de 2 à 1 (la seconde lecture, 10 minutes après une première tentative hors connexion, disparaît), ne vérifier N4 que si N3 a été vérifiée, ou retirer la vérification (alors N3 / N4 ne seraient plus fiables : à ne faire que sur décision du PM). **Ce que ces notifications ne font pas** : prévenir un **autre** téléphone au moment précis (arrivée, « pas de nouvelles de X », N5), qui exige un serveur (Blaze, décision du PM, phase 2).
+
+**Sécurité de cette lecture.** Elle passe par les **règles Firestore existantes** (le membre qui lit est celui connecté, avec le jeton Firebase et App Check du téléphone) : aucune clé, aucun compte de service, aucune règle ouverte. Un refus des règles (« je ne partage plus », « on m'a retiré ») annule la notification en silence. **À vérifier en recette sur l'OPPO** : l'obtention du jeton d'authentification et d'App Check en arrière-plan, app fermée (`docs/qa/checklists/notifs-android-recette-pm.md`, partie 5).
+
+
+---
+
 ## 5 quater. Android : ligne « Abonnement » des Réglages (ABO-1, 2026-11-07)
 
 **Ce que fait l'application.** À l'ouverture de Profil > Réglages (et à ce moment seulement), elle lit **une fois** le document `entitlements/{uid}` du compte connecté pour savoir s'il faut afficher la ligne « Abonnement » (Miff+ actif et non expiré). Pas d'écouteur, pas de relecture en revenant d'un sous-écran ni en tournant le téléphone, pas de lecture à l'ouverture de l'écran Abonnement (la date lui est transmise). Lecture **depuis le serveur** (pas de copie locale périmée) ; hors connexion ou en erreur, la ligne reste simplement absente, sans message.

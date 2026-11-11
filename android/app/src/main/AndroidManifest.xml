@@ -16,7 +16,9 @@
         - ACCESS_FINE_LOCATION: the precise position, needed by the geofencing of the places.
         - ACCESS_COARSE_LOCATION: Android 12+ requires it to be declared (and asked) together with the precise one.
         - ACCESS_BACKGROUND_LOCATION: "all the time", so that arrivals and departures are noticed while the app is closed.
-        - POST_NOTIFICATIONS: Android 13+, for the notifications (none is sent yet: plan Spark, no Cloud Function).
+        - POST_NOTIFICATIONS: Android 13+, for the LOCAL notifications of NOTIF-P0 (reminders to the person and news of the Miff, prepared by the phone itself:
+          plan Spark, no Cloud Function, nothing is sent to anyone). It is only ASKED after the pop-in of the end of the onboarding says what the person gets.
+          NO exact alarm is declared (no SCHEDULE_EXACT_ALARM, no USE_EXACT_ALARM, criterion N-M8): the reminders use inexact alarms, a few minutes late at worst.
     -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -162,6 +164,22 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <!-- MODE VOYAGE: the end of a trip is an absolute instant, but the alarm is looked at again when the clock or the time zone changes. -->
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            NOTIF-4A / NOTIF-5A: the ONE receiver of the reminders. Not exported: the alarms are explicit intents built by the app, and the four actions below come from the
+            system only. RECEIVE_BOOT_COMPLETED (declared for the detection, LOC-2b) is also what lets the alarms be planned again after a restart: the system erases them.
+            TIME_SET and TIMEZONE_CHANGED are the system's own broadcasts for a change of the clock or of the zone. No exact alarm, no foreground service.
+        -->
+        <receiver
+            android:name=".data.notification.NotificationAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>

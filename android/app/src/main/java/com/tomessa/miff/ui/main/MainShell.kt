@@ -81,6 +81,13 @@ import com.tomessa.miff.ui.navigation.PasswordResetRoute
 import com.tomessa.miff.ui.navigation.googleSourceFor
 import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.FeedNotificationsViewModel
+import com.tomessa.miff.ui.notification.notificationRoutes
+import com.tomessa.miff.ui.notification.openNotificationCenter
+import com.tomessa.miff.ui.notification.openNotificationSettings
+import com.tomessa.miff.ui.notification.rememberNotificationPermissionRequest
+import com.tomessa.miff.ui.notification.rememberNotificationPermissionState
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
 import com.tomessa.miff.ui.place.PlacePaywallRoute
@@ -295,6 +302,7 @@ private fun MainNavigation(
                                     network = container.networkMonitor,
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
+                                    notifications = container.feedNotificationLink,
                                 )
                             }
                         },
@@ -309,6 +317,23 @@ private fun MainNavigation(
                                     container.updatePublisher,
                                     container.photoCleaner,
                                     container.publishLedger,
+                                )
+                            }
+                        },
+                )
+            // NOTIF-1A / NOTIF-6A: the dot of the bell and the card of the second chance (local only; nothing read from or written to the server).
+            val notificationsViewModel: FeedNotificationsViewModel =
+                viewModel(
+                    key = "feed-notifications-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                FeedNotificationsViewModel(
+                                    center = container.notificationCenter,
+                                    settings = container.notificationSettings,
+                                    authorization = container.notificationAuthorization,
+                                    asks = container.notificationAsks,
+                                    currentUid = { container.authGateway.currentUid },
                                 )
                             }
                         },
@@ -329,6 +354,18 @@ private fun MainNavigation(
                             }
                         },
                 )
+            val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            val requestNotificationWindow =
+                rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
+            LaunchedEffect(updateViewModel, notificationsViewModel) {
+                updateViewModel.events.collect {
+                    if (it is UpdateEvent.Published) {
+                        notificationsViewModel
+                            .onUpdatePublished()
+                    }
+                }
+            }
             val profileFaces by profileMiffsViewModel.faces.collectAsStateWithLifecycle()
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
@@ -366,7 +403,16 @@ private fun MainNavigation(
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
                         photos = container.photoReader,
+                        notifications =
+                            FeedNotifications(
+                                unreadCount = notificationsState.unreadCount,
+                                secondChanceVisible = notificationsState.secondChanceVisible,
+                                onOpenCenter = { navController.openNotificationCenter() },
+                                onSecondChanceEnable = requestNotificationWindow,
+                                onSecondChanceLater = notificationsViewModel::onSecondChanceLater,
+                            ),
                     ),
+                tabRequests = container.tabRequests,
                 update =
                     UpdateHost(
                         viewModel = updateViewModel,
@@ -421,6 +467,7 @@ private fun MainNavigation(
                 onOpenAccount = { navController.open(AccountRoute) },
                 onOpenLanguage = { navController.open(LanguageRoute) },
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
+                onOpenNotifications = { navController.openNotificationSettings() },
                 onOpenSubscription =
                     subscription?.let { active ->
                         { navController.open(SubscriptionRoute(active.expiresAtMillis, active.grantedByTeam)) }
@@ -472,6 +519,8 @@ private fun MainNavigation(
             )
         }
         sharedSettingsRoutes(container, navController, scopeKey)
+        // NOTIF-2A / NOTIF-6A: only in the full Settings (a person with no Miff has nothing to be notified of).
+        notificationRoutes(container, navController, scopeKey)
         composable<LanguageRoute> {
             val viewModel: LanguageViewModel =
                 viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
@@ -634,6 +683,8 @@ fun MainTabs(
     placesContent: @Composable () -> Unit = {},
     travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
+    /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
+    tabRequests: TabRequests? = null,
     /** The carousel of Miffs of the Profile tab (decision of the PM, 2026-11-10). */
     profileMiffs: MiffCarouselHost = MiffCarouselHost(),
     /** The screen of a Miff is opened from its card of the Profile tab: its faces are read again at the next appearance of the card. */
@@ -667,6 +718,15 @@ fun MainTabs(
     fun select(tab: MainTab) {
         if (tab != selected) previous = selected
         selected = tab
+    }
+    if (tabRequests != null) {
+        val requested by tabRequests.pending.collectAsStateWithLifecycle()
+        LaunchedEffect(requested) {
+            requested?.let {
+                select(it)
+                tabRequests.consume(it)
+            }
+        }
     }
     BackHandler(enabled = selected == MainTab.UPDATE) {
         selected =
@@ -762,6 +822,7 @@ fun MainTabs(
                                     refreshing = feed.refreshing,
                                     me = feed.me,
                                     actions = actions,
+                                    notifications = feed.notifications,
                                 )
                             }
 
@@ -916,6 +977,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
             location = location,
             onReviewAgreement = container.awaitingAgreement::requestReview,
             onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
+            notifications = rememberNotificationPermissionState(container),
         )
     }
     composable<DetectionHelpRoute> {
