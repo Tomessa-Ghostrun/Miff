@@ -205,12 +205,15 @@ export const userWithConsent = (uid, analyticsConsent, phone = PHONE) =>
 export const set = (path, data) => ({ type: 'set', path, data });
 export const update = (path, data) => ({ type: 'update', path, data });
 export const del = (path) => ({ type: 'delete', path });
+/** `set` avec fusion (SetOptions.merge) : le client écrit ainsi le compteur des demandes de lieu (increment + création éventuelle, LIEU-REQ). */
+export const setMerge = (path, data) => ({ type: 'setMerge', path, data });
 
 export function commit(db, ops) {
   const batch = db.batch();
   for (const op of ops) {
     const ref = db.doc(op.path);
     if (op.type === 'set') batch.set(ref, op.data);
+    else if (op.type === 'setMerge') batch.set(ref, op.data, { merge: true });
     else if (op.type === 'update') batch.update(ref, op.data);
     else batch.delete(ref);
   }
