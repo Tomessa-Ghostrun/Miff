@@ -6,16 +6,27 @@ import Combine
 // SÉCURITÉ, pour ce fichier : le nom et la photo sont des données personnelles. Ils restent dans l'état de l'écran, pour la durée de
 // la session, et ne sont ni journalisés ni envoyés dans un événement Analytics (l'onglet Profil n'en envoie aucun).
 
+/// Là où le profil de la personne connectée est gardé en mémoire pour la session : « Mes informations » y remet la nouvelle version dès
+/// que le serveur a confirmé l'enregistrement, pour que l'en-tête du Profil, la carte du Feed et mon visage dans le carrousel changent
+/// tout de suite, sans seconde lecture (comme `CurrentProfile` sur Android).
+@MainActor
+protocol CurrentProfileHolding: AnyObject {
+    /// Un enregistrement de `uid` vient d'être confirmé : voici son profil. Ignoré si cette personne n'est plus connectée.
+    func onSaved(uid: String, profile: ProfileSummary)
+}
+
 /// L'en-tête de l'onglet Profil (ticket Onboarding §6.8) : la photo (ou les initiales), « Prénom Nom », « C'est toi », l'engrenage.
 /// Un view model par compte et par session (l'hôte de la session est recréé à chaque connexion) : la personne suivante ne retrouve
 /// jamais le profil de la précédente.
 @MainActor
-final class ProfileTabViewModel: ObservableObject {
+final class ProfileTabViewModel: ObservableObject, CurrentProfileHolding {
     @Published private(set) var state: ProfileTabState = .loading
 
     private let reader: ProfileReading
     private let currentUid: () -> String?
     private var isLoading = false
+    /// Monte à chaque enregistrement confirmé : une lecture partie AVANT lui rendrait l'ancienne version et la remettrait par-dessus.
+    private var saves = 0
 
     init(reader: ProfileReading, currentUid: @escaping () -> String?) {
         self.reader = reader
@@ -31,6 +42,14 @@ final class ProfileTabViewModel: ObservableObject {
         load()
     }
 
+    func onSaved(uid: String, profile: ProfileSummary) {
+        guard currentUid() == uid else {
+            return
+        }
+        saves += 1
+        state = .ready(profile)
+    }
+
     private func load() {
         guard let uid = currentUid() else {
             state = .unavailable
@@ -41,6 +60,7 @@ final class ProfileTabViewModel: ObservableObject {
         if !state.isReady {
             state = .loading
         }
+        let savesAtStart = saves
         Task { [weak self] in
             guard let self else {
                 return
@@ -48,7 +68,8 @@ final class ProfileTabViewModel: ObservableObject {
             let summary = await reader.read(uid: uid)
             isLoading = false
             // La session a pu se terminer, ou changer de compte, pendant l'attente : cette réponse serait celle de la personne d'avant.
-            guard currentUid() == uid else {
+            // Un enregistrement confirmé pendant l'attente rend aussi cette réponse périmée.
+            guard currentUid() == uid, saves == savesAtStart else {
                 return
             }
             if let summary {

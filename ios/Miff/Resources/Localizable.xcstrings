@@ -13940,23 +13940,6 @@
         }
       }
     },
-    "ios_myinfo_edit_soon": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You will be able to edit your details in an upcoming update."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
-          }
-        }
-      }
-    },
     "ios_account_apple": {
       "extractionState": "manual",
       "localizations": {

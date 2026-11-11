@@ -30,6 +30,8 @@ enum FirestoreFieldConversion {
             return Timestamp(date: Date(timeIntervalSince1970: Double(millis) / 1000))
         case .null:
             return NSNull()
+        case .deleteField:
+            return FieldValue.delete()
         case .map(let nested):
             return convert(nested)
         }

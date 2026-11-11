@@ -377,7 +377,7 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 - **Feed iOS (FEED-5 à 7, livrés ; FEED-8 photo avec l'Update)** : remplace le contenu passé en paramètre `feed` de `MainShellView` (`FeedTab`, voir « Le Feed » plus bas ; ce paramètre reçoit désormais un `FeedShellContext`). La **bulle d'incitation** (tous les onglets sauf Update) se posera dans la même `safeAreaInset` que la barre.
 - **Update iOS (UPDATE-3, livré)** : voir la section « L'Update » plus bas ; `UpdateSoonView` n'existe plus, `central` est alimenté par MON statut et la variante `.onPhoto` sert pour le viseur.
 - **Suppression de compte (AUTH-5c, faite)** : route `.deleteAccount` → `DeleteAccountFlowView` (voir « Suppression de compte » plus haut).
-- **Mes informations modifiable** : remplace `MyInfoView` (lecture seule) ; l'écriture est un lot `users/{uid}` + fiche de chaque Miff (voir `MyProfileRepository.kt` d'Android).
+- **Mes informations modifiable** : livré (`MyInfoView`, `MyInfoViewModel`, `StoreMyProfileRepository`), voir la section « Mes informations modifiable » plus bas.
 
 ### Écarts avec Android et avec les maquettes (ONB-7)
 1. **Barre** : verre natif d'iOS 26 (`glassEffect`) au lieu du flou Haze d'Android ; repli matériau + voile avant iOS 26 ; « Réduire la transparence » et « Augmenter le contraste » donnent le fond opaque (Android n'a pas d'API pour le premier). Posée à 22 pt du bas de l'**écran** (elle déborde sur la zone de l'indicateur d'accueil), pas 22 pt au-dessus de la zone sûre.
@@ -386,7 +386,7 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 4. **Langue** : la ligne ouvre les réglages de l'iPhone (décision Q4) ; pas d'écran de choix comme sur Android.
 5. **Aide à la détection** : texte propre à iOS (localisation « Toujours » et position exacte, actualisation en arrière-plan, économie d'énergie, rouvrir Miff une fois si une détection tarde) au lieu de l'aide Oppo/Xiaomi d'Android. **À vérifier sur l'iPhone** : si balayer l'app dans le sélecteur retarde réellement la reprise des détections (le texte ne l'affirme plus).
 6. **Consentement et retrait** : le renouvellement du consentement à la localisation reste fait AVANT la coquille par l'écran existant (LOC-4a) ; le retrait de la localisation reste « Arrêter de partager » dans l'écran de la Miff. L'interrupteur « statistiques » n'est pas livré (voir le journal des changements).
-7. **Mes informations** : lecture seule dans cette PR (critères A5 à A8 du ticket à venir).
+7. **Mes informations** : *(remplacé : modifiable, voir la section « Mes informations modifiable »)*.
 8. **Pas de retour en haut** en touchant l'onglet déjà actif.
 9. **Profil** : le Profil de la maquette montre aussi les lieux de la Miff et un carrousel avec nombre de membres : non livrés (les lieux sont dans l'écran de la Miff, ticket Lieux iOS ; le Profil complet est PRO-2).
 10. **Feed embarqué** : « Se déconnecter » (et la carte « Mes Miffs ») n'apparaissent plus dans l'onglet Feed (ils sont dans Réglages et Profil) ; le lien de déconnexion ne reste que dans les états sans barre (« Pas encore de Miff », état illisible hors connexion).
@@ -636,6 +636,42 @@ La mesure de la position est locale (aucune lecture ni écriture serveur de plus
 - **Mémoire** : la capture (12 Mpx) est redimensionnée à 2 048 px dès la lecture ; la photo gardée pèse au plus 150 Ko.
 - **Position** : `LocationTracking.current()` attend au plus 2,5 s, avec un repli sur la dernière position du système si elle a moins de 2 minutes ; une demande du moteur de suivi en cours au même moment est libérée (le moteur la rejoue au prochain passage).
 - **Textes** : aucun texte légal ni de consentement n'est modifié par cette PR (le consentement qui cite la photo localisée est bloquant pour la LIVRAISON, D20, décision du PM).
+
+## Mes informations modifiable (miroir d'Android ONB-3a, ticket `docs/tickets/modifier-infos-perso.md`)
+
+Réglages > Mes informations n'est plus en lecture seule. Décision du PM du 2026-11-11, **pour ce sujet seulement** : pas de maquette, pas de fiche Notion, pas de GO préalable ; l'écran garde la mise en page de la version en lecture seule (photo en haut, puis les champs) avec les champs saisissables et « Enregistrer » en bas. **Aucune règle Firestore ne change** (le diff de `backend/` est vide), aucun déploiement.
+
+- **Champs** : prénom et nom (1 à 50 unités UTF-16, mêmes filtres qu'à l'inscription : `ProfileForm`, compteur à partir de 45), photo (sélecteur du système, recadrage carré `PhotoCropView`, 20 000 octets au plus, retrait possible), pays et numéro (obligatoire, jamais vidé, E.164, `PhoneNumberTools`, mention de visibilité sous le champ). L'e-mail reste en lecture seule dans Mon compte ; le mot de passe passe par l'e-mail de réinitialisation (Mon compte).
+- **Code** : `ViewModels/MyInfoViewModel.swift` (état, validations tardives, « Enregistrer » grisé tant que rien n'a changé, un seul envoi à la fois, 3 refus de suite = conseil de revenir plus tard), `Models/Profile/MyInfoState.swift`, `Views/Settings/MyInfoView.swift` (le formulaire et la confirmation de sortie), `Services/Profile/StoreMyProfileRepository.swift` (`MyProfileRepository`, miroir de `FirestoreMyProfileRepository.kt`), `Services/Contracts/MyProfileContracts.swift`.
+- **Écriture** : `users/{uid}` ET `miffs/{id}/members/{uid}` de chaque Miff, par le `MiffStore` existant (transactions, garde d'écriture `SessionWriteGuard`, aucun nouveau fichier qui écrit dans Firestore). Les quatre clés (prénom, nom, numéro, photo) sont TOUJOURS réécrites sur chaque fiche : une copie restée en retard est réparée par n'importe quel enregistrement. Sans photo, la clé `avatar` est **retirée** (`FieldValueSpec.deleteField` = `FieldValue.delete()`), comme sur Android. Un seul lot de 15 fiches au plus (+ le profil) ; au-delà (Miff+), le profil d'abord puis des groupes de 15 (limite de 20 lectures de règles par requête). L'index des Miffs est relu auprès du SERVEUR. Si le lot est refusé alors qu'il y a des fiches (une Miff disparue), le profil est écrit seul puis chaque fiche seule ; une fiche refusée est ignorée.
+- **Hors connexion** : le réseau est vérifié avant d'écrire ; rien n'est écrit ni mis en file (transaction) ; les champs sont gardés. Une fiche non écrite faute de réseau donne « Tes informations sont enregistrées… » et « Enregistrer » reste actif.
+- **En-tête du Profil** : `ProfileTabViewModel.onSaved` (protocole `CurrentProfileHolding`) remplace le profil en mémoire dès que le serveur a confirmé : l'en-tête, la carte du Feed et les initiales changent sans seconde lecture. **Carrousel du Profil (PR #145, ouverte au moment de cette PR)** : sa branche observe déjà `profile.state` dans `MiffHomeHost` et appelle `MiffMemberPreviews.replaceFace(uid:initials:jpeg:)` à chaque changement ; comme `onSaved` change `profile.state`, **mon visage passe avant ce que dit le Feed ou le serveur dès la fusion de #145, sans code de plus**, quel que soit l'ordre des deux fusions.
+- **Retour** : confirmation « Quitter sans enregistrer ? » (deux boutons de même poids) quand des changements ne sont pas enregistrés ; le geste de retour depuis le bord est verrouillé pendant l'envoi et tant que des changements ne sont pas enregistrés (`SwipeBackScreen.myInfo`), la flèche demande alors confirmation.
+- **Accessibilité** : la photo est UN bouton « Modifier la photo de profil » ; champs libellés par `LabeledTextField` (compteur lu « 45 caractères sur 50 ») ; messages annoncés ; cibles de 44 pt ; texte du design system (Dynamic Type), le formulaire défile.
+- **Compte ancien sans `termsVersion`** : les règles refusent toute mise à jour du profil ; l'app répond « Ça n'a pas fonctionné cette fois… » (jamais un texte technique), puis « Ça ne passe toujours pas… » au 3e refus. Rien n'est tenté de plus (aucune règle changée, décision Q11 du ticket) ; à signaler au PM si un compte réel est concerné.
+
+### Écarts avec Android (listés dans la PR)
+
+1. **Pas de « Prendre une photo »** : le texte d'usage `NSCameraUsageDescription` (ajouté avec l'Update) dit que l'appareil photo n'est utilisé « seulement quand tu ouvres l'écran « Donner des nouvelles » ». La photo de profil ne peut pas l'utiliser sans rendre ce texte faux (rejet App Store, honnêteté du consentement). Lever cet écart demande de réécrire le texte d'usage et l'écran d'explication, les déclarations des stores et la politique de confidentialité : **décision du PM**. La photothèque (sélecteur du système, sans permission) reste proposée. Les clés `profile_photo_take` et `profile_photo_camera_unavailable` restent inutilisées (comme à l'inscription).
+2. **Sous la photo** : « Visible par les membres de tes Miffs » (ticket §3.1) ; Android ne l'affiche pas à cet endroit.
+3. **Pavé numérique** : « OK » au-dessus du clavier range le clavier et contrôle le numéro ; Android enregistre avec la touche « OK » du clavier.
+4. **Réseau coupé en cours d'enregistrement** : les groupes ou fiches suivants ne sont pas tentés un à un (Android le fait, jusqu'à 15 attentes de 20 s pour rien) ; ils restent « en attente », comme ils l'auraient été.
+5. **Comparaison des noms** : un nom que le serveur garde avec des espaces répétés n'est pas un changement tant qu'on n'y touche pas (Android compare à la valeur brute).
+6. **Photo** : toucher la photo sans photo ouvre directement le sélecteur ; avec une photo : « Choisir dans la galerie / Supprimer la photo » (Android montre toujours la feuille de choix).
+7. **Geste de retour** : verrouillé pendant l'envoi et avec des changements non enregistrés (Android : le bouton retour du système suit la même règle).
+
+### Coût (plan gratuit, Spark ; estimé par lecture du code et des règles, **non mesuré à l'émulateur**)
+
+- **Écritures par enregistrement : 1 + N** (N = nombre de Miffs : gratuit, 1 Miff = 2 écritures ; Miff+ à 5 Miffs = 6 ; 15 Miffs = 16 ; 20 Miffs = 21 en 2 requêtes). Les quatre clés sont réécrites même si une seule a changé (une écriture par document de toute façon).
+- **Lectures** : l'index des Miffs lu auprès du serveur = **1 lecture facturée par Miff** (une requête qui rend N documents en facture N, au moins 1 ; le ticket écrit « 1 », c'est N) ; **0 lecture de règles** pour un changement de nom ou de photo ; **1 lecture de règles par fiche** (`getAfter` du profil) quand le numéro change, 15 au plus par requête (sur 20 permises). Aucune lecture de plus pour l'en-tête du Profil (le profil en mémoire est remplacé).
+- **Lectures « induites »** : un proche dont l'écran est ouvert reçoit la fiche modifiée (1 lecture par proche connecté et par Miff) ; rare (un enregistrement est un événement rare).
+- **Aucune interrogation périodique**, aucune nouvelle tentative automatique ; un seul enregistrement à la fois. Signal de bascule : celui de `docs/dev/surveillance-quotas.md` (rien de nouveau).
+
+### Limites connues et à vérifier sur l'iPhone
+
+- Une transaction qui dépasse les 20 s peut quand même aboutir plus tard (limite connue des appels Firebase non interruptibles, voir `timedOperation`) ; l'écran dit alors « pas de connexion » et un nouvel « Enregistrer » réécrit les mêmes valeurs sans dommage.
+- Un client modifié peut réécrire sa fiche sans fin (coût porté par lui, borné par App Check) ; les règles ne comparent pas prénom et nom de la fiche à ceux du profil (seul le numéro l'est).
+- **À vérifier sur l'iPhone** : le crayon et le recadrage sur un vrai appareil, l'enregistrement avec 2 Miffs (compte Miff+ ou premium accordé), VoiceOver, la plus grande taille de texte, le verrouillage du geste de bord. Recette : `docs/qa/checklists/myinfo-ios-recette-pm.md`.
 
 ## Confidentialité : Analytics et Crashlytics
 
