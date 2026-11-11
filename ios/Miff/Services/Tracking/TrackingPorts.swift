@@ -61,10 +61,16 @@ struct PositionReading: Equatable, CustomStringConvertible {
 /// Où est la personne, quand le moteur le demande (un double dans les tests).
 protocol PositionSource {
     /// Une position récente (quelques secondes au plus), ou nil quand le système ne peut pas en donner. TOUJOURS une mesure demandée
-    /// au système (jamais la dernière position connue, sauf en repli si la demande échoue). LIT la position : n'est appelée qu'une fois
-    /// l'accord et « Toujours » vérifiés. C'est ce que demandent l'entrée dans une zone, le déplacement significatif et la photo de
-    /// l'Update (dont la position doit avoir moins de 10 minutes selon les règles : mesure fraîche à « Publier »).
+    /// au système (jamais la dernière position connue, sauf en repli si le système signale un échec). LIT la position : n'est appelée
+    /// qu'une fois l'accord et « Toujours » vérifiés. C'est ce que demandent l'entrée dans une zone et le déplacement significatif ;
+    /// l'Update, elle, appelle `current(within:)`.
     func current() async -> Fix?
+
+    /// La mesure de la photo de l'Update, au toucher de « Publier » : une mesure demandée avec une attente choisie par l'appelant (plus
+    /// longue que celle du moteur : la personne patiente de toute façon), relancée si le système n'a pas de position pour l'instant ;
+    /// à l'expiration, repli sur la dernière position du système si elle a moins de 2 minutes (et mesurée après la dernière déconnexion).
+    /// Plusieurs attentes en même temps sont possibles : aucune n'annule les autres. Le moteur n'a PAS ce repli (BATT-3).
+    func current(within seconds: Double) async -> Fix?
 
     /// BATT-3, pour l'OUVERTURE de l'app et sa SORTIE seulement : la dernière position du système si elle a moins de
     /// `TrackingLimits.reusableFixMaxAgeMillis` et est assez précise, sans rien demander ; sinon une mesure demandée, comme `current()`.
@@ -109,6 +115,17 @@ protocol TrackingStore {
     func places(miffId: String) async throws -> [PlaceFact]
 
     func commit(_ writes: [DocWrite]) async throws
+
+    /// MODE VOYAGE : le voyage écrit dans MON statut d'une Miff, lu auprès du SERVEUR (nil : pas de statut, ou pas un voyage). Une lecture
+    /// d'un document à moi. Sert à un NOUVEL appareil, qui lit le voyage avant d'armer quoi que ce soit pour l'adopter au lieu de l'écraser.
+    func ownTravel(miffId: String, uid: String) async throws -> TravelRead?
+}
+
+extension TrackingStore {
+    /// Par défaut : « pas de voyage » (un double qui ne connaît pas les voyages).
+    func ownTravel(miffId: String, uid: String) async throws -> TravelRead? {
+        nil
+    }
 }
 
 /// Ce que le système signale à l'app et que le moteur doit traiter. Rien de ce qui arrive ici ne porte l'heure ou la position d'un

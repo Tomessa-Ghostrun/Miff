@@ -13,6 +13,8 @@ struct MemberCardActions {
     let onCall: (String) -> Void
     /// FEED-8 : toucher l'aperçu de la photo l'ouvre en plein écran (la photo COMPLÈTE).
     var onOpenPhoto: (OpenedPhoto) -> Void = { _ in }
+    /// MODE VOYAGE : le lien « Modifier » de MA carte pendant un voyage ouvre le Profil, où la date se règle.
+    var onEditTravel: () -> Void = {}
 }
 
 struct MemberCardView: View {
@@ -35,6 +37,9 @@ struct MemberCardView: View {
                 information
                 // FEED-8 : la photo de la dernière update (un carré centré ; la photo entière en plein écran). Rien quand il n'y en a pas.
                 MemberPhotoSlot(card: card, context: photoContext, texts: texts, onOpen: actions.onOpenPhoto)
+                if card.isMe && card.label.isTraveling {
+                    TravelEditLink(action: actions.onEditTravel)
+                }
                 CardActionRow(card: card, locating: locating, actions: actions)
             }
             .padding(.leading, Spacing.md - Spacing.xs)
@@ -75,7 +80,12 @@ struct MemberCardView: View {
                     BatteryChip(text: texts.battery(battery))
                 }
             }
-            StateChip(text: texts.label(card.label), emoji: card.labelCategory?.emoji, level: card.level)
+            StateChip(
+                text: texts.label(card.label),
+                emoji: card.labelCategory?.emoji,
+                level: card.level,
+                showsPlane: card.label.isTraveling
+            )
             if card.limitedLocation {
                 LimitedLocationBadge()
             }
@@ -100,6 +110,33 @@ struct MemberCardView: View {
     }
 }
 
+extension StateLabel {
+    /// MODE VOYAGE : l'étiquette d'un voyage en cours (avec l'avion ; « Voyage terminé » n'a pas d'avion).
+    var isTraveling: Bool {
+        if case .traveling = self {
+            return true
+        }
+        return false
+    }
+}
+
+/// MODE VOYAGE : « Modifier », sous MA carte pendant un voyage (44 pt au moins, nommé pour le lecteur d'écran) : ouvre le Profil.
+private struct TravelEditLink: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("voyage_feed_mine_edit")
+                .miffTextStyle(textBodyBold16)
+                .foregroundColor(colorActionPrimary.color)
+                .frame(minHeight: Spacing.minTouchTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("voyage_feed_mine_edit_a11y"))
+    }
+}
+
 /// La batterie : « 85 % » seul, jamais l'heure de la mesure (D44).
 private struct BatteryChip: View {
     let text: String
@@ -118,17 +155,25 @@ private struct BatteryChip: View {
     }
 }
 
-/// L'étiquette de l'état : ses mots sur la teinte du niveau. La couleur est le seul signal, aucun pictogramme.
+/// L'étiquette de l'état : ses mots sur la teinte du niveau. La couleur est le seul signal, aucun pictogramme, SAUF l'avion d'un voyage
+/// en cours (décoratif : les mots disent l'état).
 private struct StateChip: View {
     let text: String
     /// L'emoji de la catégorie du lieu, avant les mots (étiquette « dans un lieu de confiance » seulement) ; décoratif.
     var emoji: String?
     let level: StatusLevel
+    var showsPlane = false
 
     var body: some View {
         // Un nom de lieu (Loisir, Autre) peut être long (jusqu'à 40 signes) : deux lignes au plus, la fin coupée ensuite ; le lecteur
-        // d'écran lit toujours la carte en entier (`cardSpoken`, sans l'emoji).
+        // d'écran lit toujours la carte en entier (`cardSpoken`, sans l'emoji ni l'avion). L'avion du voyageur et l'emoji d'un lieu ne se
+        // rencontrent jamais (un voyageur n'est dans aucun lieu), mais ils ont la même place : avant les mots, décoratifs.
         HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
+            if showsPlane {
+                Image(systemName: "airplane")
+                    .font(.system(size: 14))
+                    .accessibilityHidden(true)
+            }
             if let emoji {
                 // Même style que les mots : l'emoji suit la taille du texte de l'étiquette (pas de pastille de taille fixe ici).
                 Text(verbatim: emoji)

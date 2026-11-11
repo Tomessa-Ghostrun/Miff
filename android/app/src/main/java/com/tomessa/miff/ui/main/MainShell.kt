@@ -51,6 +51,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
@@ -80,8 +81,16 @@ import com.tomessa.miff.ui.navigation.PasswordResetRoute
 import com.tomessa.miff.ui.navigation.googleSourceFor
 import com.tomessa.miff.ui.navigation.passwordResetRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.FeedNotificationsViewModel
+import com.tomessa.miff.ui.notification.notificationRoutes
+import com.tomessa.miff.ui.notification.openNotificationCenter
+import com.tomessa.miff.ui.notification.openNotificationSettings
+import com.tomessa.miff.ui.notification.rememberNotificationPermissionRequest
+import com.tomessa.miff.ui.notification.rememberNotificationPermissionState
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
+import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.MiffCarouselHost
@@ -89,6 +98,9 @@ import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.profile.TravelActions
+import com.tomessa.miff.ui.profile.TravelCard
+import com.tomessa.miff.ui.profile.TravelViewModel
 import com.tomessa.miff.ui.profile.miffOfferRoute
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
@@ -257,6 +269,24 @@ private fun MainNavigation(
                     factory = viewModelFactory { initializer { ProfileTabViewModel(container.currentProfile) } },
                 )
             val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+            // MODE VOYAGE: open to every account, written by the tracking engine only.
+            val travelViewModel: TravelViewModel =
+                viewModel(
+                    key = "travel-$scopeKey",
+                    factory = viewModelFactory { initializer { TravelViewModel(container.travelControl) } },
+                )
+            val travelState by travelViewModel.uiState.collectAsStateWithLifecycle()
+            val travelActions =
+                remember(travelViewModel) {
+                    TravelActions(
+                        onToggle = travelViewModel::onToggle,
+                        onChangeDate = travelViewModel::onChangeDate,
+                        onPickerDismissed = travelViewModel::onPickerDismissed,
+                        onDayChosen = travelViewModel::onDayChosen,
+                        onConfirm = travelViewModel::onConfirm,
+                        onConfirmDismissed = travelViewModel::onConfirmDismissed,
+                    )
+                }
             val feedViewModel: FeedViewModel =
                 viewModel(
                     key = "feed-$scopeKey",
@@ -272,6 +302,7 @@ private fun MainNavigation(
                                     network = container.networkMonitor,
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
+                                    notifications = container.feedNotificationLink,
                                 )
                             }
                         },
@@ -286,6 +317,23 @@ private fun MainNavigation(
                                     container.updatePublisher,
                                     container.photoCleaner,
                                     container.publishLedger,
+                                )
+                            }
+                        },
+                )
+            // NOTIF-1A / NOTIF-6A: the dot of the bell and the card of the second chance (local only; nothing read from or written to the server).
+            val notificationsViewModel: FeedNotificationsViewModel =
+                viewModel(
+                    key = "feed-notifications-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                FeedNotificationsViewModel(
+                                    center = container.notificationCenter,
+                                    settings = container.notificationSettings,
+                                    authorization = container.notificationAuthorization,
+                                    asks = container.notificationAsks,
+                                    currentUid = { container.authGateway.currentUid },
                                 )
                             }
                         },
@@ -306,6 +354,18 @@ private fun MainNavigation(
                             }
                         },
                 )
+            val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            val requestNotificationWindow =
+                rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
+            LaunchedEffect(updateViewModel, notificationsViewModel) {
+                updateViewModel.events.collect {
+                    if (it is UpdateEvent.Published) {
+                        notificationsViewModel
+                            .onUpdatePublished()
+                    }
+                }
+            }
             val profileFaces by profileMiffsViewModel.faces.collectAsStateWithLifecycle()
             val directoryState by feedViewModel.directoryState.collectAsStateWithLifecycle()
             val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
@@ -324,6 +384,7 @@ private fun MainNavigation(
                 onSelectMiff = feedViewModel::onSelect,
                 onCreateMiff = { navController.open(CreateMiffRoute) },
                 onJoinMiff = { navController.open(JoinMiffRoute) },
+                onMiffOffer = { navController.open(PlacePaywallRoute.of(PaywallReason.MIFF)) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
                 agreement = AgreementUi(waiting, container.awaitingAgreement::requestReview),
                 feed =
@@ -342,7 +403,16 @@ private fun MainNavigation(
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
                         photos = container.photoReader,
+                        notifications =
+                            FeedNotifications(
+                                unreadCount = notificationsState.unreadCount,
+                                secondChanceVisible = notificationsState.secondChanceVisible,
+                                onOpenCenter = { navController.openNotificationCenter() },
+                                onSecondChanceEnable = requestNotificationWindow,
+                                onSecondChanceLater = notificationsViewModel::onSecondChanceLater,
+                            ),
                     ),
+                tabRequests = container.tabRequests,
                 update =
                     UpdateHost(
                         viewModel = updateViewModel,
@@ -352,6 +422,7 @@ private fun MainNavigation(
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
+                travelContent = { TravelCard(state = travelState, actions = travelActions) },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         ProfilePlacesSection(
@@ -396,6 +467,7 @@ private fun MainNavigation(
                 onOpenAccount = { navController.open(AccountRoute) },
                 onOpenLanguage = { navController.open(LanguageRoute) },
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
+                onOpenNotifications = { navController.openNotificationSettings() },
                 onOpenSubscription =
                     subscription?.let { active ->
                         { navController.open(SubscriptionRoute(active.expiresAtMillis, active.grantedByTeam)) }
@@ -447,6 +519,8 @@ private fun MainNavigation(
             )
         }
         sharedSettingsRoutes(container, navController, scopeKey)
+        // NOTIF-2A / NOTIF-6A: only in the full Settings (a person with no Miff has nothing to be notified of).
+        notificationRoutes(container, navController, scopeKey)
         composable<LanguageRoute> {
             val viewModel: LanguageViewModel =
                 viewModel(factory = viewModelFactory { initializer { LanguageViewModel(container.languageStore) } })
@@ -601,11 +675,16 @@ fun MainTabs(
     onSelectMiff: (String) -> Unit,
     onCreateMiff: () -> Unit,
     onJoinMiff: () -> Unit,
+    /** A free account that already has a Miff asked for another one from the selector of the Feed: the offer opens (decision of the PM, 2026-11-08). */
+    onMiffOffer: () -> Unit = {},
     onOpenMiff: (String) -> Unit,
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
+    travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
+    /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
+    tabRequests: TabRequests? = null,
     /** The carousel of Miffs of the Profile tab (decision of the PM, 2026-11-10). */
     profileMiffs: MiffCarouselHost = MiffCarouselHost(),
     /** The screen of a Miff is opened from its card of the Profile tab: its faces are read again at the next appearance of the card. */
@@ -639,6 +718,15 @@ fun MainTabs(
     fun select(tab: MainTab) {
         if (tab != selected) previous = selected
         selected = tab
+    }
+    if (tabRequests != null) {
+        val requested by tabRequests.pending.collectAsStateWithLifecycle()
+        LaunchedEffect(requested) {
+            requested?.let {
+                select(it)
+                tabRequests.consume(it)
+            }
+        }
     }
     BackHandler(enabled = selected == MainTab.UPDATE) {
         selected =
@@ -727,12 +815,14 @@ fun MainTabs(
                                     onSelect = onSelectMiff,
                                     onCreate = onCreateMiff,
                                     onJoin = onJoinMiff,
+                                    onMiffOffer = onMiffOffer,
                                     agreement = agreement,
                                     feed = feed.state,
                                     locate = feed.locate,
                                     refreshing = feed.refreshing,
                                     me = feed.me,
                                     actions = actions,
+                                    notifications = feed.notifications,
                                 )
                             }
 
@@ -750,6 +840,7 @@ fun MainTabs(
                                     },
                                     carousel = profileMiffs,
                                     placesContent = placesContent,
+                                    travelContent = travelContent,
                                 )
                             }
 
@@ -886,6 +977,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
             location = location,
             onReviewAgreement = container.awaitingAgreement::requestReview,
             onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
+            notifications = rememberNotificationPermissionState(container),
         )
     }
     composable<DetectionHelpRoute> {

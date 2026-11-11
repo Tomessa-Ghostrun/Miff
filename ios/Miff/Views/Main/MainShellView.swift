@@ -65,6 +65,7 @@ struct MainShellView<Feed: View>: View {
     @ObservedObject private var profile: ProfileTabViewModel
     /// Les membres des cartes du Profil : le Profil les observe lui-même (la coquille n'a pas à se redessiner pour eux).
     private let memberPreviews: MiffMemberPreviews
+    private let travel: TravelViewModel
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
@@ -86,6 +87,7 @@ struct MainShellView<Feed: View>: View {
         miffs: DirectoryState,
         profile: ProfileTabViewModel,
         memberPreviews: MiffMemberPreviews,
+        travel: TravelViewModel,
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onCreateMiff: @escaping () -> Void,
@@ -95,6 +97,7 @@ struct MainShellView<Feed: View>: View {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
         self.memberPreviews = memberPreviews
+        self.travel = travel
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
@@ -180,6 +183,7 @@ struct MainShellView<Feed: View>: View {
                         miffs: miffs,
                         previews: memberPreviews,
                         isActive: shownTab == .profile,
+                        travel: travel,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },

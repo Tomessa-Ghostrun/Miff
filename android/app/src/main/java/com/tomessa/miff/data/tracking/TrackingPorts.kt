@@ -10,7 +10,10 @@ import com.tomessa.miff.domain.permission.PermissionSnapshot
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PlaceFact
+import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.TrackedZone
+import com.tomessa.miff.domain.travel.TravelPeriod
+import com.tomessa.miff.domain.travel.TravelPlan
 import kotlinx.coroutines.tasks.await
 
 /*
@@ -69,6 +72,31 @@ interface NetworkWake {
     fun stop()
 }
 
+/**
+ * MODE VOYAGE: the alarm that ends a trip while the app is closed (an INEXACT alarm: no special permission, a few minutes of drift are fine). [schedule] replaces the previous
+ * one; [cancel] removes it. Idempotent and cheap: the engine calls it at every wake-up of a trip.
+ */
+interface TravelAlarm {
+    fun schedule(atMillis: Long)
+
+    fun cancel()
+}
+
+/** No alarm (tests, and the places where none is wanted). */
+object NoTravelAlarm : TravelAlarm {
+    override fun schedule(atMillis: Long) = Unit
+
+    override fun cancel() = Unit
+}
+
+/** The trip that my own status of one Miff says I am on (read once when a NEW phone starts, so that it adopts the trip instead of overwriting it). */
+class TravelRead(
+    val period: TravelPeriod,
+    val sinceMillis: Long?,
+) {
+    override fun toString(): String = "TravelRead(redacted)"
+}
+
 /** What the engine reads and writes in Firestore. Writes are TRANSACTIONS (never queued offline, see MiffStore): "no answer" means "nothing written". */
 interface TrackingStore {
     suspend fun memberships(uid: String): List<MembershipRef>
@@ -83,6 +111,15 @@ interface TrackingStore {
     suspend fun places(miffId: String): List<PlaceFact>
 
     suspend fun commit(writes: List<DocWrite>)
+
+    /**
+     * MODE VOYAGE: the trip written in MY OWN status of one Miff, from the SERVER (null: no status, or not a trip). One read of a document of mine. The default says
+     * "no trip" (a double that does not know the trips).
+     */
+    suspend fun ownTravel(
+        miffId: String,
+        uid: String,
+    ): TravelRead? = null
 }
 
 class FirestoreTrackingStore(
@@ -115,4 +152,75 @@ class FirestoreTrackingStore(
             }
 
     override suspend fun commit(writes: List<DocWrite>) = base.commit(writes)
+
+    override suspend fun ownTravel(
+        miffId: String,
+        uid: String,
+    ): TravelRead? {
+        val doc =
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("status")
+                .document(uid)
+                .get(Source.SERVER)
+                .await()
+        if (!doc.exists() || doc.getString("presence") != PresenceValue.TRAVEL.wire) return null
+        val until = doc.getTimestamp("travelUntil")?.toDate()?.time ?: return null
+        // The day is only for the display: a status whose day is not an `AAAA-MM-JJ` text is not a trip we can keep (a modified client).
+        val day = doc.getString("travelUntilDay")?.takeIf { TravelPlan.parseDay(it) != null } ?: return null
+        return TravelRead(TravelPeriod(until, day), doc.getTimestamp("presenceAt")?.toDate()?.time)
+    }
+}
+
+/**
+ * What the engine tells the notifications, locally and at once (nothing is read or written by the callee for N1, N2 and N6; a failure of the callee never reaches the
+ * detection: [TrackingEngine] swallows it). It carries keywords, identifiers and times, never a position or the name of a place.
+ * - [onMyPresence] (NOTIF-4A): MY presence just changed in a Miff (a departure, an arrival): the reminders N1 and N2 follow without waiting for the Feed.
+ * - [onEnteredDanger] (NOTIF-7A): the engine validated that I ENTERED a danger zone of a Miff (a presence in_risk different from the previous one): N6 tells me, once.
+ */
+interface PresenceListener {
+    fun onMyPresence(
+        miffId: String,
+        presence: PresenceValue,
+        atMillis: Long,
+        setLastUpdate: Boolean,
+    )
+
+    /** [placeId] is the identifier of the place in that Miff (never its name or its position). */
+    fun onEnteredDanger(
+        myUid: String,
+        miffId: String,
+        placeId: String,
+        atMillis: Long,
+    ) = Unit
+
+    /**
+     * MODE VOYAGE (VOY-4A): a trip of MINE is on and ends at [untilMillis] (it began, its date moved, the phone adopted it, or a wake-up found it again: idempotent). N7 and the
+     * cut of the reminders follow, locally.
+     */
+    fun onTravelSet(
+        uid: String,
+        untilMillis: Long,
+    ) = Unit
+
+    /**
+     * My trip is over. [early]: I turned it off before its end (N7 is cancelled); otherwise its end came (N7 still waits for 08:00, the whole point of "Bon retour !").
+     */
+    fun onTravelEnded(
+        uid: String,
+        early: Boolean,
+    ) = Unit
+
+    companion object {
+        val None =
+            object : PresenceListener {
+                override fun onMyPresence(
+                    miffId: String,
+                    presence: PresenceValue,
+                    atMillis: Long,
+                    setLastUpdate: Boolean,
+                ) = Unit
+            }
+    }
 }

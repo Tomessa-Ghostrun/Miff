@@ -1,7 +1,10 @@
 package com.tomessa.miff.ui.feed
 
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,11 +26,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,19 +46,28 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tomessa.miff.R
 import com.tomessa.miff.data.feed.PhotoLookup
 import com.tomessa.miff.data.feed.PhotoReader
+import com.tomessa.miff.data.media.ContentPhotoSaver
+import com.tomessa.miff.data.media.PhotoSaver
 import com.tomessa.miff.domain.feed.MemberCard
 import com.tomessa.miff.domain.feed.Moment
+import com.tomessa.miff.domain.feed.PhotoDownload
+import com.tomessa.miff.domain.feed.PhotoSaveState
 import com.tomessa.miff.domain.feed.PhotoSlot
 import com.tomessa.miff.domain.feed.PositionFix
+import com.tomessa.miff.domain.feed.SaveRoute
 import com.tomessa.miff.domain.update.SharedPhoto
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -70,6 +84,8 @@ import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textTitleBold20
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.ZoneId
 
 /*
@@ -86,6 +102,9 @@ import java.time.ZoneId
 
 /** The reader of the photos, provided by the Feed tab. Null (tests, previews) draws no photo at all. */
 val LocalPhotoReader = compositionLocalOf<PhotoReader?> { null }
+
+/** Where "Enregistrer la photo" writes. Null (the app) = the pictures and documents of the phone; tests provide their own. */
+val LocalPhotoSaver = compositionLocalOf<PhotoSaver?> { null }
 
 /** The photo opened in full screen. Keeps nothing but what is on screen; `toString()` shows nothing. */
 class OpenedPhoto(
@@ -209,7 +228,8 @@ private fun NeedsPositionTile() {
             modifier = Modifier.size(20.dp),
         )
         Text(
-            text = stringResource(R.string.update_card_photo_needs_position),
+            text =
+                stringResource(R.string.update_card_photo_needs_position),
             style = textBodyRegular14,
             color = colorTextPrimary,
         )
@@ -227,10 +247,14 @@ internal fun PhotoFullScreen(
     nowMillis: Long,
     onOpenMap: (PositionFix) -> Boolean,
     onDismiss: () -> Unit,
+    /** The version of Android, given by the tests only: it chooses MediaStore (10+) or the document picker of the system. */
+    sdkInt: Int = Build.VERSION.SDK_INT,
 ) {
     val context = LocalContext.current
     val photo = opened.photo
     val bitmap = remember(photo) { decodeSharedPhoto(photo.jpeg) }
+    // Offered only when the bytes are a well-formed JPEG that can be cleaned of every metadata (see PhotoDownload.sanitize).
+    val canSave = remember(photo) { PhotoDownload.sanitize(photo.jpeg) != null }
     val zone = ZoneId.systemDefault()
     val title =
         stringResource(
@@ -247,6 +271,15 @@ internal fun PhotoFullScreen(
         }
     val unavailable = stringResource(R.string.feed_action_unavailable)
     val closeName = stringResource(R.string.update_photo_close_a11y)
+    // "Enregistrer la photo": nothing is written before the touch. The picker (Android 9 and older only) is the system's own, no permission.
+    val saver = LocalPhotoSaver.current ?: remember(context) { ContentPhotoSaver(context.contentResolver) }
+    val controller = remember(saver, photo, sdkInt) { PhotoSaveController(saver, sdkInt) }
+    val saveState by controller.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PhotoDownload.MIME_TYPE)) { target ->
+            scope.launch { controller.saveTo(target, photo.jpeg) }
+        }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -291,6 +324,31 @@ internal fun PhotoFullScreen(
                         modifier = Modifier.size(22.dp),
                     )
                 }
+            }
+            // "Enregistrer la photo" (decision of the PM, 2026-11-10): the download icon at the top right, HERE only, and only on a touch. A photo that
+            // is not a well-formed JPEG, or that could not be drawn, does not offer it.
+            if (bitmap != null && canSave) {
+                SavePhotoButton(
+                    state = saveState,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(Spacing.s),
+                    onClick = {
+                        if (controller.begin()) {
+                            when (controller.route) {
+                                SaveRoute.MEDIA_STORE -> scope.launch { controller.saveToPictures(photo.jpeg) }
+                                SaveRoute.DOCUMENT_PICKER -> picker.launch(controller.fileName())
+                            }
+                        }
+                    },
+                )
+                SaveResultNote(
+                    state = saveState,
+                    onSeen = controller::acknowledge,
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.TopCenter,
+                            ).padding(top = Spacing.minTouchTarget + Spacing.m, start = Spacing.m, end = Spacing.m),
+                )
             }
             Column(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(Spacing.m),
@@ -341,6 +399,89 @@ internal fun PhotoFullScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * The button "Enregistrer la photo": ONLY the "download" icon (an arrow down onto a tray, no text), at the top right of the full-screen photo, opposite
+ * the cross, in the same translucent disc so that it stays readable over any photo (decision of the PM, 2026-11-10, after his test). The touch zone is
+ * 48 dp, its spoken name is "Enregistrer cette photo sur ton téléphone", and while a save is under way it is disabled and TalkBack says "Enregistrement…".
+ */
+@Composable
+internal fun SavePhotoButton(
+    state: PhotoSaveState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val name = stringResource(R.string.feed_photo_download_a11y)
+    val actionLabel = stringResource(R.string.feed_photo_download)
+    val saving = state == PhotoSaveState.Saving
+    val savingText = stringResource(R.string.feed_photo_download_saving)
+    Box(
+        modifier =
+            modifier
+                .size(Spacing.minTouchTarget)
+                .clip(CircleShape)
+                .clickable(enabled = !saving, onClickLabel = actionLabel, role = Role.Button, onClick = onClick)
+                .semantics {
+                    contentDescription = name
+                    // TalkBack says "Enregistrement…" while the button is disabled (the touch does nothing meanwhile).
+                    if (saving) stateDescription = savingText
+                },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(40.dp).background(colorUpdateScrim, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_photo_download),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = if (saving) 0.5f else 1f),
+                modifier = Modifier.size(22.dp),
+            )
+        }
+    }
+}
+
+/** How long the calm note of the result stays (the tests give a very long one so that it does not vanish under them). */
+val LocalSaveNoteMillis = compositionLocalOf { 3_500L }
+
+/**
+ * The calm note of the result, discreet, at the top of the photo, announced politely: "Photo enregistrée." or "On n'a pas pu enregistrer la photo. Tu
+ * peux réessayer." It goes away by itself ([onSeen] puts the button back at rest); nothing is alarming (no red, no icon).
+ */
+@Composable
+internal fun SaveResultNote(
+    state: PhotoSaveState,
+    onSeen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val result =
+        when (state) {
+            PhotoSaveState.Saved -> R.string.feed_photo_download_done
+            PhotoSaveState.Failed -> R.string.feed_photo_download_failed
+            else -> null
+        }
+    val millis = LocalSaveNoteMillis.current
+    LaunchedEffect(state) {
+        if (result != null) {
+            delay(millis)
+            onSeen()
+        }
+    }
+    if (result != null) {
+        Text(
+            text = stringResource(result),
+            style = textBodyRegular14,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            modifier =
+                modifier
+                    .background(colorUpdateScrim, ShapeMd)
+                    .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+        )
     }
 }
 

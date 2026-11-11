@@ -163,6 +163,8 @@ android {
         unitTests.isReturnDefaultValues = true
         // Screen tests (Robolectric) need the app resources: they run in testDebugUnitTest only.
         unitTests.isIncludeAndroidResources = true
+        // The screen tests (Robolectric) are many: the default heap of the test JVM (512 MB) ran out in CI (OutOfMemoryError in the test worker).
+        unitTests.all { it.maxHeapSize = "2g" }
     }
 }
 
@@ -175,6 +177,11 @@ androidComponents {
         }
     }
 }
+
+// The ~2 600 unit tests (a good part of them Robolectric screens that draw and capture images) run in ONE worker JVM: the Gradle default of 512 MB
+// ran out of memory ("Java heap space" in a random screen test) once the tests of the Feed photo and the selector were added. 1 GB is enough, free,
+// and only the test worker is concerned (the Gradle daemon keeps its own limit in gradle.properties).
+tasks.withType<Test>().configureEach { maxHeapSize = "1g" }
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))

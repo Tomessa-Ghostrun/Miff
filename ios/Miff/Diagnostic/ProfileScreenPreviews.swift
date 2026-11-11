@@ -8,6 +8,8 @@ import SwiftUI
 struct ProfileScreenPreview: View {
     let name: String
     @StateObject private var previews = ProfileScreenPreview.demoPreviews()
+    /// La carte « Mode voyage » (dernière de l'écran), sans voyage en cours : un contrôle qui ne fait rien.
+    @StateObject private var travel = TravelViewModel(control: DemoTravelControl())
 
     private static let miffA = "AbCdEfGhIjKlMnOpQrSt"
     private static let miffB = "ZyXwVuTsRqPoNmLkJiHg"
@@ -43,6 +45,7 @@ struct ProfileScreenPreview: View {
             previews: previews,
             isActive: false,
             initialCarouselPage: initialPage,
+            travel: travel,
             actions: ProfileTabActions(
                 onOpenMyInfo: {},
                 onOpenSettings: {},
@@ -69,6 +72,20 @@ struct ProfileScreenPreview: View {
         store.record(miffId: miffA, members: Array(members.prefix(4)))
         store.record(miffId: miffB, members: members)
         return store
+    }
+
+    private struct DemoTravelControl: TravelControl {
+        func current() -> TravelPeriod? {
+            nil
+        }
+
+        func set(_ period: TravelPeriod) async -> TravelResult {
+            .unavailable
+        }
+
+        func end() async -> Bool {
+            false
+        }
     }
 
     private struct DemoReader: MemberPreviewReader {

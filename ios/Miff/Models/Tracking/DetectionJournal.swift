@@ -37,6 +37,27 @@ enum JournalKind: String, CaseIterable {
     case batteryRefreshSkipped
     /// BATT-3 : la dernière position du système (moins de 2 min) a servi à l'ouverture ou à la sortie, sans nouvelle demande.
     case positionReused
+    /// Diagnostic de « Position introuvable » à la publication d'une photo (recette build 24) : CODES de cause seulement.
+    /// Le suivi n'a pas écrit ma position : hors ligne, au moment de l'écriture.
+    case positionSkippedOffline
+    /// Le suivi n'a pas écrit ma position : la session de l'appareil (SESS-3) n'était pas confirmée.
+    case positionSkippedSession
+    /// Le serveur a refusé l'écriture de ma position (consentement, partage, règles, App Check).
+    case positionRefused
+    /// L'Update a constaté que ma position n'est pas publiée dans au moins une Miff (copie locale du suivi sans trace d'écriture).
+    case updatePositionNotPublished
+    /// ... et le suivi ne connaît même pas cette Miff (partage ou consentement de version 3 absents de sa copie locale).
+    case updateTrackingUnawareOfMiff
+    /// L'Update s'est arrêté sur l'autorisation de la position (pas « Toujours », position approximative, localisation éteinte).
+    case updatePermissionBlocked
+    /// La mesure du toucher de « Publier » n'a rien donné d'utilisable (pas de signal, ou position de plus de 10 minutes).
+    case updateMeasureFailed
+    /// L'Update a remis sa mesure au suivi et celui-ci a publié ma position (ma photo peut alors partir).
+    case updateHandOverWorked
+    /// ... ou n'a pu la publier nulle part : voir les lignes du suivi juste avant (`notEligible`, `positionRefused`, `positionSkipped...`).
+    case updateHandOverFailed
+    /// ... ou la remise a dépassé son délai (le suivi était occupé) et rien n'était publié à la relecture : réessayer plus tard suffit.
+    case updateHandOverTimedOut
 }
 
 /// Une ligne du journal telle qu'elle est gardée et montrée.

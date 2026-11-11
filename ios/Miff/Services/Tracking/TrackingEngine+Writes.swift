@@ -93,7 +93,11 @@ extension TrackingEngine {
         }
         // R-LIEU-1 (déployée) : la mise à jour laisse `presenceAt` / `lastUpdateAt` tranquilles sauf si l'événement les change ; un
         // refus n'est donc jamais « réglé » en écrivant l'heure de l'événement dans `lastUpdateAt`.
-        let payload = StatusPayload(fact: fact, presenceAtMillis: at, batteryPct: pass.batteryPct, access: pass.access)
+        // MODE VOYAGE : un statut qui garde encore les clés d'un voyage terminé les efface dans cette écriture.
+        let clearing = state.miffs[miffId]?.clearTravel ?? false
+        let payload = StatusPayload(
+            fact: fact, presenceAtMillis: at, batteryPct: pass.batteryPct, access: pass.access, clearTravel: clearing
+        )
         let built = TrackingWrites.statusUpdate(miffId: miffId, uid: pass.uid, payload: payload, deviceId: deviceId)
         guard let write = built else {
             giveUp(miffId, pending, state: &state)
@@ -123,6 +127,7 @@ extension TrackingEngine {
             state.breaker = WriteBreaker.recordStatus(state.breaker, dayKey: WriteBreaker.dayKey(millis: now))
             state.update(miffId) {
                 $0.pending = nil
+                $0.clearTravel = false
                 $0.access = pass.access.rawValue
                 // La batterie fraîche part avec chaque statut : le rafraîchissement d'ouverture / de sortie s'en souvient.
                 $0.noteBatteryWritten(pass.batteryPct, at: now)
@@ -154,6 +159,10 @@ extension TrackingEngine {
         var state = start
         let access = pass.access
         for miffId in rotated(Array(start.miffs.keys), after: start.statusCursor) {
+            // MODE VOYAGE : un statut qui garde les clés d'un voyage terminé refuserait une mise à jour partielle : son prochain statut les efface.
+            if state.miffs[miffId]?.clearTravel == true {
+                continue
+            }
             guard let known = state.miffs[miffId]?.access else {
                 state.update(miffId) { $0.access = access.rawValue }
                 continue
@@ -257,7 +266,12 @@ extension TrackingEngine {
             return false
         }
         // SESS-3 : une position ne part jamais d'un téléphone qui ne tient pas la session (elle dirait aux proches où est l'ANCIEN).
-        guard env.isOnline(), let deviceId = await pass.permission.deviceId(), !pass.permission.ended() else {
+        guard env.isOnline() else {
+            journal.record(.positionSkippedOffline)
+            return false
+        }
+        guard let deviceId = await pass.permission.deviceId(), !pass.permission.ended() else {
+            journal.record(.positionSkippedSession)
             return false
         }
         let point = WrittenPosition(lat: offer.fix.lat, lng: offer.fix.lng, atMillis: offer.measuredAt)
@@ -275,6 +289,7 @@ extension TrackingEngine {
             // Refusée : le consentement ou le partage n'est pas ce que le téléphone croyait (ou l'horloge est trop en avance) : la Miff
             // est regardée de nouveau bientôt.
             if failure == .refused {
+                journal.record(.positionRefused)
                 await pass.permission.refused()
                 state.recheckSoon(now: offer.now)
             }

@@ -24,6 +24,8 @@ struct ProfileTabView: View {
     let isActive: Bool
     /// La carte montrée au départ (nil : la Miff du Feed ; les écrans de démonstration des captures en choisissent une autre).
     var initialCarouselPage: Int?
+    /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », en DERNIÈRE position de l'écran (après tous les autres blocs), ouverte à tous les comptes.
+    @ObservedObject var travel: TravelViewModel
     let actions: ProfileTabActions
 
     var body: some View {
@@ -37,6 +39,8 @@ struct ProfileTabView: View {
                 }
                 .padding(.horizontal, Spacing.lg)
                 miffCards
+                // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).
+                TravelCardView(model: travel)
             }
             .padding(.vertical, Spacing.md)
         }
