@@ -1,5 +1,5 @@
 // Plan de test, section 21 : « un compte, un seul appareil » (SESS-1, mécanisme validé par le PM le 2026-11-01), cas SE1 à SE17.
-// Règles PRÉPARÉES et NON déployées. Ce fichier rejoue les règles TELLES QUE LIVRÉES, c'est-à-dire au TEMPS 1 du déploiement :
+// Règles : temps 1 DÉPLOYÉ (2026-11-05 d'après l'en-tête de firestore.rules ; fichier de main redéployé par le PM le 2026-11-10, information du PM non vérifiable par l'agent), temps 2 NON déployé. Ce fichier rejoue les règles TELLES QUE LIVRÉES, c'est-à-dire au TEMPS 1 du déploiement :
 // `deviceId` est FACULTATIF dans le statut et la dernière position (les applications actuelles ne l'écrivent pas). Le TEMPS 2
 // (clé obligatoire) est rejoué par 23-session-appareil-temps2.test.js.
 //   - le document de session users/{uid}/session/active : propriétaire seul, schéma fermé, chemin fixe ;

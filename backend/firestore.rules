@@ -6,7 +6,10 @@ rules_version = '2';
 // STATUT : testées dans l'émulateur Firestore (`backend/rules-test-plan.md`,
 // `npm test` dans backend/). Déployées sur miff-3d283 depuis le poste du PM : le 2026-10-30 (règles de `main` du
 // 2026-10-27, AUTH-B et ONB-B comprises), puis le 2026-11-04 (commit 42031c0 : lieux R-LIEU-5, -2, -6 ; dernière position
-// connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3). Tout déploiement suit la procédure
+// connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
+// (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
+// à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
+// SESS-1 temps 2 (deviceIdRequired() = true). Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :

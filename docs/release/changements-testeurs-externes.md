@@ -18,5 +18,5 @@ Court résumé, rédigé le 2026-11-04 par `release-manager`. À reprendre tel q
 ## Pour l'équipe (PM, agents)
 
 - Les textes publics (politique, CGU, page web) sont mis à jour dans la même PR ; **rien n'est publié** tant que le PM n'a pas dit « oui, déploie » et fait les actions de console de `docs/legal/README.md` §3.
-- Les règles Firestore de la position (`backend/regles-position`) sont préparées et **non déployées** : tant qu'elles ne le sont pas (« oui » explicite du PM), la production n'accepte aucune position, et les apps ne doivent pas en écrire.
+- Les règles Firestore de la position (`backend/regles-position`) sont **déployées** (2026-11-04 d'après l'en-tête de `backend/firestore.rules`, fichier de `main` redéployé par le PM le 2026-11-10 : information du PM, non vérifiable par l'agent) : la production accepte les positions d'un membre au consentement de version 3 ou plus ; les apps ne doivent pas en écrire sans ce consentement.
 - **Bêta externe** : les testeurs ne doivent recevoir ni le nouveau consentement ni la nouvelle politique avant que les apps correspondantes soient prêtes (cohérence texte / app), et il faut avoir tranché O1 à O6 (`docs/legal/consentement-localisation-v3.md` §6).

@@ -1,5 +1,5 @@
 // Plan de test, section 22 : localisation de la photo d'update (R-PHOTO-LOC), cas PL1 à PL23.
-// Version OBLIGATOIRE (décision du PM du 2026-11-06 : « une photo d'update doit être attachée à une position, forcément »), PRÉPARÉE et NON déployée.
+// Version OBLIGATOIRE (décision du PM du 2026-11-06 : « une photo d'update doit être attachée à une position, forcément »), DÉPLOYÉE le 2026-11-06 (fichier de main redéployé par le PM le 2026-11-10, information du PM non vérifiable par l'agent).
 // Le document photo porte TOUJOURS `lat`, `lng` et `measuredAt` (la position figée au moment de la photo et l'heure de sa mesure), jamais nulles ;
 // elles sont effacées avec la photo ; une photo n'est lisible que par son auteur ou par un membre qui a publié sa propre position (un éventuel ANCIEN
 // document sans localisation, écrit avant le resserrage, reste lisible comme avant). Une photo sans localisation est REFUSÉE à l'écriture.
