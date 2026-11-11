@@ -1021,8 +1021,8 @@ class FeedScreenTest {
                 .boundsInRoot
         val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
         assertTrue("the sentence is inside the screen: $title in $root", title.left >= 0f && title.right <= root.right)
-        // It wraps on several lines (taller than a single line of 30 sp x 2 x 1.2), and the details stay under it, not over it.
-        val oneLine = 2f * 36f * context().resources.displayMetrics.density
+        // It wraps on several lines (taller than a single line of 30 sp x 2), and the details stay under it, not over it.
+        val oneLine = 2f * 30f * context().resources.displayMetrics.density
         assertTrue("wrapped on several lines: ${title.height}", title.height > oneLine)
         assertTrue("the body is under the sentence: $title / $body", body.top >= title.bottom - 1f)
         val firstCard =
@@ -1041,17 +1041,17 @@ class FeedScreenTest {
     }
 
     @Test
-    fun bubble_theMainSentence_hasTheFontAndWeightOfDisplayHeadline_atThirtySp() {
+    fun bubble_theMainSentence_isExactlyDisplayHeadline_likeTheTitlesOfTheOtherScreens() {
         feed(ready(nominal))
         val style = bubbleStyle()
-        // Homogeneous with the other titles of the app (decision of the PM, 2026-11-11): same family and weight as display/headline, only bigger.
+        // Decision of the PM, 2026-11-11: the very style of the titles (Baloo Thambi 2 Regular, 24 sp / 30), no enlargement.
         val headline = com.tomessa.miff.ui.theme.textDisplayHeadline
         assertEquals(headline.fontFamily, style.fontFamily)
         assertEquals(headline.fontWeight, style.fontWeight)
-        assertEquals(androidx.compose.ui.text.font.FontWeight.Normal, style.fontWeight)
-        assertEquals(30f, style.fontSize.value, 0f)
-        assertEquals(36f, style.lineHeight.value, 0f)
-        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > headline.fontSize.value)
+        assertEquals(headline.fontSize, style.fontSize)
+        assertEquals(headline.lineHeight, style.lineHeight)
+        assertEquals(24f, style.fontSize.value, 0f)
+        assertEquals(30f, style.lineHeight.value, 0f)
     }
 
     @Test

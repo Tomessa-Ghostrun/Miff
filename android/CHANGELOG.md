@@ -25,6 +25,18 @@ Décision du PM du 2026-11-11 (sans maquette ni spec Notion) ; ticket `docs/tick
 - **Règles Firestore : aucun changement.** `match /places/{placeId}` autorise déjà `get, list` à `isMember(miffId) && miffAlive(miffId)` ; la création, la modification et la suppression restent au créateur (`isOwner`).
 - « Ajouter un lieu » ouvre le formulaire avec son choix de Miff habituel (dernière Miff rejointe créée par la personne), pas forcément la Miff du carrousel : inchangé, le formulaire permet de choisir.
 - Ce que cette PR ne fait pas : l'écran iOS (miroir à faire d'après le contrat).
+## [0.31.0] - 2026-11-11 : la phrase principale de la bulle du Feed reprend exactement le titre `display/headline` (retour du PM)
+
+Dernier retour du PM sur la bulle (après la fusion de la PR #160) : la police validée reste, mais la **taille revient exactement à celle du titre `display/headline` des autres écrans (24 sp / 30)**. Branche `android/bulle-taille-headline`, PR brouillon. Numéro de version : plusieurs PR Android ouvertes se disputent 0.29.0 et 0.30.0 ; celle-ci prend 0.31.0, à renuméroter à la fusion si besoin.
+
+### Modifié
+- **Plus d'agrandissement 30 / 36** : `textDisplayBubble` est supprimé, `Headline` (`ui/feed/FeedBubble.kt`) utilise `textDisplayHeadline` tel quel (Baloo Thambi 2 Regular, 24 sp / 30), avec les lignes équilibrées (`LineBreak.Heading`), la couleur `text/primary`, le centrage et la taille de police du système (sp) comme avant. **Aucun style spécifique à la bulle**, donc plus de suivi de parité iOS (l'écart n°9 de `design/design-system.md` est supprimé). La bulle grandit toujours en hauteur avec la plus grande police.
+- **Garde le reste de la PR #160** : aucun symbole dans la bulle, bouton « Contacter », emoji de la catégorie dans les étiquettes de lieu.
+- **Tests** : le style de la phrase est comparé à `textDisplayHeadline` (famille, graisse, taille 24, interligne 30) ; non-débordement vérifié à 320 dp et police x2 (retours à la ligne, détails sous la phrase, aucun chevauchement de la première carte).
+- **Pour iOS** : **`textDisplayHeadline` inchangé** (Baloo Thambi 2 Regular, 24 / 30, `.title2`) ; rien de spécifique à la bulle (`design/design-system.md` §2.1). Les clés de texte ne changent pas.
+- Les entrées de la PR #160 ci-dessous qui parlent de 30 / 36 ou d'ExtraBold sont **dépassées** par cette entrée.
+
+
 
 ## [0.31.0] - 2026-11-11 : mode voyage, notifications : N7 « Ton mode voyage est terminé » et gardes du planificateur (VOY-4A)
 
