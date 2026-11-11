@@ -44,6 +44,9 @@ enum FieldValueSpec: Equatable {
     /// (LOC-4b), que les règles bornent entre 24 h dans le passé et 5 minutes dans le futur. Jamais utilisée pour un consentement.
     case timestamp(millis: Int)
     case null
+    /// Retire la clé du document (`FieldValue.delete()`) : seulement dans une MISE À JOUR (`.update`), jamais dans une création. Sert à retirer
+    /// la photo de profil (« Supprimer la photo », Mes informations) : la clé disparaît, comme sur Android, au lieu de devenir « null ».
+    case deleteField
     case map([String: FieldValueSpec])
 }
 
