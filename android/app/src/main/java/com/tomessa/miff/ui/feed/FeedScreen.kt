@@ -63,6 +63,9 @@ import com.tomessa.miff.domain.feed.FeedBanner
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.components.ConnectionHost
+import com.tomessa.miff.ui.components.ConnectionInline
+import com.tomessa.miff.ui.components.ConnectionPopIn
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
@@ -132,6 +135,8 @@ class FeedHost(
     val observe: suspend () -> Unit = {},
     /** FEED-4: where the photos are read (null: no photo is drawn). */
     val photos: PhotoReader? = null,
+    /** The pop-in "Pas de connexion" (state and buttons): shown only while the Feed has nothing to show. */
+    val connection: ConnectionHost = ConnectionHost(),
     /** NOTIF-1A and NOTIF-6A: the bell and the card of the second chance. */
     val notifications: FeedNotifications = FeedNotifications(),
 )
@@ -186,6 +191,9 @@ fun FeedScreen(
     refreshing: Boolean = false,
     me: FeedMe = FeedMe(),
     actions: FeedActions = FeedActions(),
+    /** The pop-in "Pas de connexion" (bug of 2026-11-10): shown only while there is nothing to show; once closed, the page says it itself. */
+    popIn: ConnectionHost = ConnectionHost(),
+    popInSuppressed: Boolean = false,
     notifications: FeedNotifications = FeedNotifications(),
 ) {
     RecentsPrivacy()
@@ -247,7 +255,16 @@ fun FeedScreen(
     ) {
         when (state) {
             DirectoryState.Loading -> {
-                Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { FeedSkeleton() }
+                Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) {
+                    if (popIn.state.inlineVisible) {
+                        ConnectionInline(
+                            popIn,
+                            Modifier.padding(Spacing.m),
+                        )
+                    } else {
+                        FeedSkeleton()
+                    }
+                }
             }
 
             DirectoryState.Unavailable -> {
@@ -280,6 +297,7 @@ fun FeedScreen(
                         onOpenPhoto = { opened = it },
                         topRoom = headerRoom,
                         refreshing = refreshing,
+                        popIn = popIn,
                         notifications = notifications,
                     )
                 }
@@ -333,6 +351,10 @@ fun FeedScreen(
         // Polite announcement of "Actualiser" (a node of one dp INSIDE the safe area, drawn nowhere).
         RefreshAnnouncement(refreshing, offline)
     }
+    // Nothing to show and no network (or no answer for a while): the calm pop-in, with "Réessayer" and the countdown of the next automatic attempt.
+    // Never two windows at once (ticket pop-ins-avis C5): the pop-in waits while the sheet "Localiser" is open or the Miff waits for the person's agreement.
+    val waitingAgreement = agreement.isWaiting((state as? DirectoryState.Ready)?.activeId)
+    ConnectionPopIn(popIn, suppressed = popInSuppressed || locate != LocateUiState.Idle || waitingAgreement)
     opened?.let { photo ->
         PhotoFullScreen(
             opened = photo,
@@ -369,6 +391,7 @@ private fun FeedBody(
     /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
     topRoom: Dp,
     refreshing: Boolean,
+    popIn: ConnectionHost,
     notifications: FeedNotifications,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
@@ -436,7 +459,9 @@ private fun FeedBody(
             }
             when (feed) {
                 FeedUiState.Loading -> {
-                    if (!agreement.isWaiting(state.activeId)) item { SkeletonBlocks() }
+                    if (!agreement.isWaiting(state.activeId)) {
+                        item { if (popIn.state.inlineVisible) ConnectionInline(popIn) else SkeletonBlocks() }
+                    }
                 }
 
                 FeedUiState.Unavailable -> {

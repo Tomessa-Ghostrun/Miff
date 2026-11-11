@@ -98,6 +98,12 @@ class ReviewPromptRulesTest {
         assertTrue(open(label = StateLabel.WaitingAgreement))
     }
 
+    @Test
+    fun theConnectionPopIn_isAWindowToo_theReviewWindowNeverAppearsOverIt() {
+        assertFalse(ReviewSituation.messageOpen(false, false, false, null))
+        assertTrue(ReviewSituation.messageOpen(false, false, false, null, connectionPopInOpen = true))
+    }
+
     // --- after "J'adore !": never again --------------------------------------------------------------------------------------------------------------
 
     @Test

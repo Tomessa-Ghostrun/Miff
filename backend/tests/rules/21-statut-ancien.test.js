@@ -1,5 +1,5 @@
 // Plan de test, section 20 : statut dont les horodatages ont plus de 24 h (R-LIEU-1, acceptée par le PM le 2026-11-01,
-// demandée par le client Android LOC-2b). Règles PRÉPARÉES et NON déployées.
+// demandée par le client Android LOC-2b). Règles DÉPLOYÉES au plus tard le 2026-11-10 (fichier de main de ce jour ; information du PM non vérifiable par l'agent).
 // Règle : presenceAt et lastUpdateAt restent bornés (-24 h / +5 min) SAUF s'ils sont ÉGAUX à la valeur déjà en base
 // (conservés tels quels). Une nouvelle valeur ancienne, un recul ou une avance restent refusés.
 import {

@@ -46,6 +46,9 @@ class FakeMiffStore : MiffStore {
     var membershipsFailure: Exception? = null
     var cachedMembershipsFailure: Exception? = null
 
+    /** A server that never answers (no network, the SDK waits): the reads that check the server hang until the time limit. */
+    var hangsOnServerReads = false
+
     /** What `get miffs/{id}` answers by id: a value, or an exception (a refusal of the rules, a network error). */
     val miffs = mutableMapOf<String, Any>()
     var entitlement: EntitlementRead? = null
@@ -72,6 +75,7 @@ class FakeMiffStore : MiffStore {
         fromServer: Boolean,
     ): List<MembershipRef> {
         calls += if (fromServer) "memberships:server" else "memberships:cache"
+        if (fromServer && hangsOnServerReads) kotlinx.coroutines.awaitCancellation()
         if (fromServer) membershipsFailure?.let { throw it }
         if (!fromServer) cachedMembershipsFailure?.let { throw it }
         return memberships
@@ -92,6 +96,7 @@ class FakeMiffStore : MiffStore {
 
     override suspend fun readEntitlement(uid: String): EntitlementRead? {
         calls += "entitlement"
+        if (hangsOnServerReads) kotlinx.coroutines.awaitCancellation()
         entitlementFailure?.let { throw it }
         return entitlement
     }
