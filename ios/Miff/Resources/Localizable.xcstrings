@@ -14518,6 +14518,57 @@
         }
       }
     },
+    "update_flash_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        }
+      }
+    },
+    "update_flash_state_on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash activé"
+          }
+        }
+      }
+    },
+    "update_flash_state_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash off"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash désactivé"
+          }
+        }
+      }
+    },
     "update_flip_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -16992,6 +17043,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Activer les notifications"
+          }
+        }
+      }
+    },
+    "notif_n7_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your travel mode has ended"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton mode voyage est terminé"
+          }
+        }
+      }
+    },
+    "notif_n7_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Miff so your card gets its usual colours back. Welcome back!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"
+          }
+        }
+      }
+    },
+    "notif_settings_n7": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When my travel mode ends"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand mon mode voyage se termine"
           }
         }
       }

@@ -70,6 +70,7 @@ import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterSto
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
 import com.tomessa.miff.data.notification.SharedPreferencesPlanSnapshotStore
+import com.tomessa.miff.data.notification.SharedPreferencesTravelEndStore
 import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
@@ -149,6 +150,7 @@ import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.tracking.DetectionJournal
+import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.startup.StartupTrace
 import com.tomessa.miff.ui.main.TabRequests
@@ -156,6 +158,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
@@ -352,6 +355,7 @@ class AppContainer(
     val notificationScheduler: NotificationScheduler by lazy {
         NotificationScheduler(
             snapshots = SharedPreferencesPlanSnapshotStore(context),
+            travelEnds = SharedPreferencesTravelEndStore(context),
             settings = notificationSettings,
             permissionAllowed = { notificationAuthorization.allowed() },
             sessionValid = ::notificationSessionValid,
@@ -504,6 +508,17 @@ class AppContainer(
                         placeId: String,
                         atMillis: Long,
                     ) = notificationScheduler.onEnteredDanger(myUid, miffId, placeId, atMillis)
+
+                    // MODE VOYAGE (VOY-4A): N7 waits for the end of my trip, the reminders are cut while it lasts; local, nothing is read or written.
+                    override fun onTravelSet(
+                        uid: String,
+                        untilMillis: Long,
+                    ) = notificationScheduler.onTravelSet(uid, untilMillis)
+
+                    override fun onTravelEnded(
+                        uid: String,
+                        early: Boolean,
+                    ) = notificationScheduler.onTravelEnded(uid, early)
                 },
             // MODE VOYAGE: the alarm of the end of a trip (inexact, no special permission).
             travelAlarm = AlarmManagerTravelAlarm(context),
@@ -585,6 +600,20 @@ class AppContainer(
             it.id
         }
 
+    /**
+     * The Update measured my position at "Publier" and the detection has not published it yet: the detection publishes it ITSELF, with all its guarantees (criterion U8:
+     * the Update never writes `positions/{moi}`). Returns at the end of its pass.
+     * The pass runs in [trackingScope], like every other look of the detection: if the Update gives up waiting (its own cap) or the screen is left, only the WAIT is cut, never
+     * the engine in the middle of a write (it always reaches its local save).
+     */
+    private suspend fun handOverPosition(fix: Fix) {
+        trackingScope
+            .async {
+                cachePurger.purgeIfPending()
+                trackingEngine.refresh(TrackingEngine.Reason.SHARING_CHANGED, fix)
+            }.await()
+    }
+
     val updatePublisher: UpdatePublisher by lazy {
         UpdatePublisher(
             store = photoStore,
@@ -599,7 +628,10 @@ class AppContainer(
             // The photo is only written where my own position is published (contract of the data model); none yet: the detection is asked to write it.
             published = LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)),
             travelOn = ::travelOn,
-            onPositionMissing = { trackingLooksAgain(TrackingEngine.Reason.OPENED) },
+            // Where it is not, the Update hands the measure taken at "Publier" to the detection, which publishes it ITSELF (criterion U8).
+            handOver = ::handOverPosition,
+            trackingAllowed = { devicePermissions.snapshot().locationComplete },
+            journal = detectionJournal,
             onUpdatePublished = {
                 miffIds,
                 at,
