@@ -23,7 +23,8 @@ Décision du PM du 2026-11-11 (sans maquette ni spec Notion) ; ticket `docs/tick
 
 ### À savoir
 - **Règles Firestore : aucun changement.** `match /places/{placeId}` autorise déjà `get, list` à `isMember(miffId) && miffAlive(miffId)` ; la création, la modification et la suppression restent au créateur (`isOwner`).
-- « Ajouter un lieu » ouvre le formulaire avec son choix de Miff habituel (dernière Miff rejointe créée par la personne), pas forcément la Miff du carrousel : inchangé, le formulaire permet de choisir.
+- **« Ajouter un lieu » présélectionne la Miff dont on regarde la liste** (Profil, et écran de la Miff) quand la personne en est la créatrice, pour qu'un lieu ne soit jamais partagé avec le mauvais cercle par surprise ; sinon, le choix habituel du formulaire (dernière Miff rejointe créée par la personne) s'applique (`DefaultMiffChoice.of(..., openedFromId)`).
+- Revue : `PlaceDetailViewModel.canEdit` suit `PlaceViewerRole.isCreator` (jamais vrai si les deux uid sont vides) ; une lecture des lieux lancée avant une invalidation et terminée après n'efface plus la marque « à relire ».
 - Ce que cette PR ne fait pas : l'écran iOS (miroir à faire d'après le contrat).
 
 ## [0.31.0] - 2026-11-11 : batterie, deux gains « sûrs » du suivi (BATT-2 et BATT-4, décision du PM du 2026-11-10)

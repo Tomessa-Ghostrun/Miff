@@ -207,6 +207,21 @@ class ProfilePlacesViewModelTest {
     }
 
     @Test
+    fun aReadingStillUnderWay_whenTheCreatorChangesAPlace_isReadAgainAtTheNextAppearance() {
+        reader.gate = CompletableDeferred()
+        val vm = viewModel()
+        vm.onCardShown("b")
+        dispatcher.scheduler.runCurrent()
+        vm.onPlacesMayChange()
+        reader.gate?.complete(Unit)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(1, reader.reads.size)
+        vm.onCardShown("b")
+        dispatcher.scheduler.runCurrent()
+        assertEquals("the first answer may predate the change", 2, reader.reads.size)
+    }
+
+    @Test
     fun aMemberWhoOpensAPlace_costsNoReading() {
         val vm = viewModel()
         vm.onCardShown("b")

@@ -65,6 +65,35 @@ class MiffPlacesBookTest {
     }
 
     @Test
+    fun aReadingStartedBeforeAnInvalidation_andEndedAfter_doesNotClearTheMark() {
+        book.readingStarted("a")
+        book.invalidateAll()
+        book.readingSucceeded("a", two)
+        assertTrue("what it brought may predate the change", book.needsReading("a"))
+        // The next reading, started after the invalidation, does clear it.
+        book.readingStarted("a")
+        book.readingSucceeded("a", two)
+        assertFalse(book.needsReading("a"))
+    }
+
+    @Test
+    fun aFailedReadingStartedBeforeAnInvalidation_keepsTheMarkToo() {
+        book.readingStarted("a")
+        book.invalidateAll()
+        book.readingFailed("a")
+        assertTrue(book.needsReading("a"))
+    }
+
+    @Test
+    fun aReadingStartedAfterTheInvalidation_clearsTheMark() {
+        book.readingSucceeded("a", two)
+        book.invalidateAll()
+        book.readingStarted("a")
+        book.readingSucceeded("a", two)
+        assertFalse(book.needsReading("a"))
+    }
+
+    @Test
     fun retainOnly_forgetsTheMiffsThatAreGone() {
         book.readingSucceeded("a", two)
         book.readingSucceeded("b", two)

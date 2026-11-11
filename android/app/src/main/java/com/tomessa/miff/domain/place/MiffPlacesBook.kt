@@ -46,11 +46,16 @@ class MiffPlacesBook(
         val atMillis: Long,
         val stale: Boolean = false,
         val reading: Boolean = false,
+        /** The [generation] at which the reading under way started: a reading that ends after an invalidation does not clear the mark. */
+        val startedAt: Int = 0,
     )
 
     private enum class Source { FEED, READ, FAILED }
 
     private val entries = mutableMapOf<String, Entry>()
+
+    /** Goes up at each invalidation: lets a reading that was started BEFORE one know that what it brings may already be out of date. */
+    private var generation = 0
 
     /** What the list of [miffId] shows now. */
     fun view(miffId: String): MiffPlacesView = entries[miffId]?.view ?: MiffPlacesView.Loading
@@ -63,8 +68,15 @@ class MiffPlacesBook(
      * to the Feed. The creator, who is the only one who changes places, is covered by [invalidateAll] (one reading when the list comes back on screen).
      */
     fun seedFromFeed(read: ReadPlaces) {
-        val reading = entries[read.miffId]?.reading == true
-        entries[read.miffId] = Entry(MiffPlacesView.Ready(read.places), Source.FEED, nowMillis(), reading = reading)
+        val previous = entries[read.miffId]
+        entries[read.miffId] =
+            Entry(
+                MiffPlacesView.Ready(read.places),
+                Source.FEED,
+                nowMillis(),
+                reading = previous?.reading == true,
+                startedAt = previous?.startedAt ?: generation,
+            )
     }
 
     /**
@@ -89,9 +101,9 @@ class MiffPlacesBook(
         val entry = entries[miffId]
         entries[miffId] =
             if (entry == null) {
-                Entry(MiffPlacesView.Loading, Source.READ, nowMillis(), reading = true)
+                Entry(MiffPlacesView.Loading, Source.READ, nowMillis(), reading = true, startedAt = generation)
             } else {
-                Entry(entry.view, entry.source, entry.atMillis, entry.stale, reading = true)
+                Entry(entry.view, entry.source, entry.atMillis, entry.stale, reading = true, startedAt = generation)
             }
     }
 
@@ -99,14 +111,19 @@ class MiffPlacesBook(
         miffId: String,
         places: List<Place>,
     ) {
-        entries[miffId] = Entry(MiffPlacesView.Ready(places), Source.READ, nowMillis())
+        entries[miffId] =
+            Entry(MiffPlacesView.Ready(places), Source.READ, nowMillis(), stale = startedBeforeInvalidation(miffId))
     }
+
+    /** The reading of [miffId] began before the last invalidation: what it brings may predate a change, so the next appearance reads again. */
+    private fun startedBeforeInvalidation(miffId: String): Boolean =
+        (entries[miffId]?.startedAt ?: generation) != generation
 
     /** What was drawn stays drawn (a list that was there does not vanish because the network blinked); only a list with nothing becomes "Unavailable". */
     fun readingFailed(miffId: String) {
         val previous = entries[miffId]
         val keep = previous?.view?.takeIf { it is MiffPlacesView.Ready } ?: MiffPlacesView.Unavailable
-        entries[miffId] = Entry(keep, Source.FAILED, nowMillis())
+        entries[miffId] = Entry(keep, Source.FAILED, nowMillis(), stale = startedBeforeInvalidation(miffId))
     }
 
     /**
@@ -114,15 +131,33 @@ class MiffPlacesBook(
      * belongs to), so the next appearance of each list reads again. Costs nothing now.
      */
     fun invalidateAll() {
+        generation++
         for ((miffId, entry) in entries.toMap()) {
-            entries[miffId] = Entry(entry.view, entry.source, entry.atMillis, stale = true, reading = entry.reading)
+            entries[miffId] =
+                Entry(
+                    entry.view,
+                    entry.source,
+                    entry.atMillis,
+                    stale = true,
+                    reading = entry.reading,
+                    startedAt = entry.startedAt,
+                )
         }
     }
 
     /** "Réessayer" on a list that could not be read: the next appearance reads at once (no wait for the 30 seconds). */
     fun invalidate(miffId: String) {
         val entry = entries[miffId] ?: return
-        entries[miffId] = Entry(entry.view, entry.source, entry.atMillis, stale = true, reading = entry.reading)
+        generation++
+        entries[miffId] =
+            Entry(
+                entry.view,
+                entry.source,
+                entry.atMillis,
+                stale = true,
+                reading = entry.reading,
+                startedAt = entry.startedAt,
+            )
     }
 
     /** A Miff that is no longer in the list (left, deleted, access lost) takes its places with it. */

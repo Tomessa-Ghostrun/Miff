@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.place.Place
+import com.tomessa.miff.domain.place.PlaceViewerRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -105,7 +106,7 @@ class PlaceDetailViewModel(
                 miffName = snapshot.miff.name,
                 creatorName = creator?.displayName.orEmpty(),
                 creatorIsMe = place.createdBy == uid,
-                canEdit = snapshot.miff.ownerUid == uid,
+                canEdit = PlaceViewerRole.isCreator(ownerUid = snapshot.miff.ownerUid, myUid = currentUid()),
                 fromCache = snapshot.fromCache,
             )
     }
