@@ -51,6 +51,11 @@ class TrackingReceiver : BroadcastReceiver() {
                     ({ engine.onNetworkBack() })
                 }
 
+                TrackingIntents.ACTION_TRAVEL_END, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED -> {
+                    // MODE VOYAGE: the alarm of the end of a trip, or the clock / the time zone changed: the trip is looked at again (nothing happens when there is none).
+                    ({ engine.refresh(TrackingEngine.Reason.TRAVEL_ENDED) })
+                }
+
                 Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
                     // The geofences of the system are gone after a restart of the phone or an update of the app: they are armed again (criterion AND2).
                     ({ engine.refresh(TrackingEngine.Reason.REARM) })

@@ -63,6 +63,7 @@ struct FeedShellContext {
 struct MainShellView<Feed: View>: View {
     private let miffs: DirectoryState
     @ObservedObject private var profile: ProfileTabViewModel
+    private let travel: TravelViewModel
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
@@ -82,6 +83,7 @@ struct MainShellView<Feed: View>: View {
     init(
         miffs: DirectoryState,
         profile: ProfileTabViewModel,
+        travel: TravelViewModel,
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
@@ -89,6 +91,7 @@ struct MainShellView<Feed: View>: View {
     ) {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
+        self.travel = travel
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
@@ -171,6 +174,7 @@ struct MainShellView<Feed: View>: View {
                     ProfileTabView(
                         state: profile.state,
                         miffs: miffs,
+                        travel: travel,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },

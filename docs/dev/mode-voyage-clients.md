@@ -54,7 +54,7 @@ Les deux clés de voyage sont **facultatives dans le schéma** (un statut ordina
 | **Position pendant le voyage** | **Inchangé** : mesure et écriture de `positions/{moi}` avec les mêmes garde-fous et consentements qu'hors voyage (session, consentement en vigueur, permission « Toujours », appareil actif, partage actif, plafonds habituels) | Aucune permission ni consentement redemandé, ni contourné. |
 | **Statut de présence ordinaire pendant le voyage** | **Interdit côté client** : ne jamais écrire `in_trusted`, `out`, `in_risk` ni `unknown` pendant le voyage (décision D10 du PM) | Les règles **acceptent** cette écriture (c'est le geste « désactiver ») : elle **écraserait le voyage** côté proches. Garde du moteur à tous les points d'entrée (événement de zone, ouverture, retour du réseau…). |
 | **Rafraîchissement partiel de la batterie** | **Interdit en voyage** : `update({ batteryPct: n })` est refusé par les règles (le document résultant aurait `travel` + batterie non nulle). Le moteur ne doit **pas** l'envoyer | `batteryPct: null` reste accepté (inoffensif). |
-| **Désactiver / fin du voyage** | `status/{moi}` **set** avec `presence="unknown"`, `placeId=null`, `presenceAt=maintenant`, **sans** `travelUntil` ni `travelUntilDay` (ou les deux à `null`, ou `FieldValue.delete()` avec `update`) | À faire **avant** de reprendre l'écriture de statuts de présence ordinaires (ticket §5.6). |
+| **Désactiver / fin du voyage** | `status/{moi}` **set** avec `presence="unknown"`, `placeId=null`, `presenceAt=maintenant`, **sans** `travelUntil` ni `travelUntilDay` (ou les deux à `null`, ou `FieldValue.delete()` avec `update`) | À faire **avant** de reprendre l'écriture de statuts de présence ordinaires (ticket §5.6). **Envoyer toujours les deux clés à `null` dans chaque Miff de la liste, même celle qui n'est pas notée comme informée du début** : la réponse d'une écriture de début peut se perdre après que le serveur l'a prise, et sans cela le voyage resterait en base (carte « Voyage terminé » durable). |
 | **Nouvelle Miff pendant le voyage** | Lot d'entrée habituel (statut initial `unknown`), **puis** un second lot qui écrit le voyage dans cette Miff | Le statut d'entrée n'est pas un voyage : les règles n'ont pas de raccourci. |
 | **Appareil remplacé** | Lire **mon** `status/{moi}` (1 lecture) **avant d'écrire un statut de présence** ; si `presence == "travel"` et `travelUntil` futur, adopter le voyage | Voir ticket §5.7. |
 | **Après la fin sans reprise** | Les proches calculent `maintenant >= travelUntil` : carte grise « Voyage terminé ». **Une update qui garde `presence="travel"` après `travelUntil` est refusée** (la règle exige `travelUntil` futur) : terminer le voyage (écrire `unknown`) **avant** toute update | Cas d'un voyageur qui rouvre l'app et publie une photo avant que la fin ait été traitée. |
@@ -68,6 +68,40 @@ Les deux clés de voyage sont **facultatives dans le schéma** (un statut ordina
 ## Honnêteté des textes (contrat de confiance)
 
 Le mode voyage **ne réduit pas le partage de position**. Aucun texte de l'application (carte du Profil, confirmation, Feed, notification de fin) ne doit dire ni laisser croire qu'il met la position en pause, l'arrête, la suspend ou la masque. Textes proposés : `docs/tickets/mode-voyage.md` §7.4 (les clés `travel_*` gardent leur nom ; six textes changent).
+
+## Textes et clés livrés (Android #153 / #155, iOS #162 / #163)
+
+Préfixe **`voyage_`** (pas `travel_` : décision du coordinateur du 2026-11-10), mêmes clés et mêmes textes sur les deux plateformes (parité vérifiée par la CI). Les dates arrivent déjà écrites par le formateur du système (`{1}`, `{2}` ci-dessous ; `{n}` est un entier). Aucun texte ne doit dire ou laisser croire que le voyage arrête, suspend ou masque la position (critère P5 ; testé côté iOS par `TravelTextsTests`). Le détail des intitulés et des clés d'accessibilité est dans `docs/tickets/mode-voyage.md` §7.4.
+
+| Clé | FR | EN |
+|---|---|---|
+| `voyage_card_title` | Mode voyage | Travel mode |
+| `voyage_card_off_body` | Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position. | Your card turns grey for your circle, without changing the Miff's colour. Your circle still sees your location. |
+| `voyage_card_on_status` | En voyage jusqu'au {1} | Traveling until {1} |
+| `voyage_card_end_label` | Date de fin | End date |
+| `voyage_card_end_change_a11y` | Changer la date de fin | Change the end date |
+| `voyage_card_explain` | Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu'au {1} » et n'influence plus la couleur de la Miff. Miff n'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin. | Your circle still sees your location. While you travel, your card turns grey with “Traveling until {1}” and no longer affects the Miff's colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end. |
+| `voyage_card_state_on_a11y` | Activé, jusqu'au {1} | On, until {1} |
+| `voyage_card_state_off_a11y` | Désactivé | Off |
+| `voyage_confirm_title` | Activer le mode voyage ? | Turn on travel mode? |
+| `voyage_confirm_body` | Ta carte deviendra grise avec « En voyage jusqu'au {1} » et n'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l'arrêter quand tu veux. | Your card will turn grey with “Traveling until {1}” and will no longer affect the Miff's colour. Your circle still sees your location. You can stop it whenever you like. |
+| `voyage_confirm_action` | Activer | Turn on |
+| `voyage_confirm_cancel` | Annuler | Cancel |
+| `voyage_picker_confirm` | Continuer | Continue |
+| `voyage_off_done` | Ton statut reprend. | Your status is resuming. |
+| `voyage_offline_note` | Tes proches verront ton voyage dès que tu seras en ligne. | Your circle will see your trip as soon as you're online. |
+| `voyage_error_refused` | Le mode voyage n'a pas pu être activé. Tu peux réessayer plus tard. | Travel mode couldn't be turned on. You can try again later. |
+| `voyage_feed_label` | En voyage jusqu'au {1} | Traveling until {1} |
+| `voyage_feed_label_ended` | Voyage terminé | Trip ended |
+| `voyage_feed_since` | Depuis le {1} | Since {1} |
+| `voyage_feed_mine` | Mode voyage jusqu'au {1} | Travel mode until {1} |
+| `voyage_feed_mine_edit` | Modifier | Edit |
+| `voyage_feed_mine_edit_a11y` | Modifier le mode voyage | Edit travel mode |
+| `voyage_bubble_one` | {1} est en voyage jusqu'au {2}. | {1} is traveling until {2}. |
+| `voyage_bubble_many` | {n} proches sont en voyage. | {n} loved ones are traveling. |
+| `voyage_bubble_all` | Tes proches sont en voyage. | Your loved ones are traveling. |
+| `voyage_error_update_refused` | Le mode voyage n'a pas pu être mis à jour. Ta date de fin n'a pas changé, tu peux réessayer plus tard. | Travel mode couldn't be updated. Your end date hasn't changed; you can try again later. |
+| `voyage_picker_validate` | Valider | Confirm |
 
 ## Ancienne application
 

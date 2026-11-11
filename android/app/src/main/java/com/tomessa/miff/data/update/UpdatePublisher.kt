@@ -108,6 +108,11 @@ class UpdatePublisher(
     private val published: PublishedPositions = PublishedPositions { true },
     /** Called when no Miff of the lot has my position yet: the detection is asked to write it (the person retries in a moment). */
     private val onPositionMissing: () -> Unit = {},
+    /**
+     * MODE VOYAGE: a trip is on. The position of the person is still published by the tracking and the photo keeps its own measure, as outside a trip; only the status of the update
+     * differs: it carries NO battery level (the rules refuse a level next to a trip).
+     */
+    private val travelOn: () -> Boolean = { false },
 ) {
     /**
      * Publishes [photo]. [only]: the Miffs a previous try did not reach (null = all). Never throws except for the cancellation of the caller.
@@ -142,6 +147,7 @@ class UpdatePublisher(
             }
         // Contract of the data model: a photo is only written where my own position is published. None yet: the detection is asked to write it, nothing is
         // measured, and the person is told to try again in a moment (the same calm sentence as a position that cannot be found).
+        val traveling = travelOn()
         val withPosition = targets.filter { published.isPublished(it) }
         if (withPosition.isEmpty()) {
             onPositionMissing()
@@ -166,7 +172,7 @@ class UpdatePublisher(
         // The date of the sending is written BEFORE it starts (review C2): a transaction that leaves after the screen gave up is still cleaned up 24 h later.
         val previousNote = ledger.photoSentMillis(uid)
         ledger.notePhotoSent(uid, nowMillis())
-        val result = writeLots(uid, photo, place, withPosition, targets, deviceId)
+        val result = writeLots(uid, photo, place, withPosition, targets, deviceId, traveling)
         // The sending is KNOWN not to have left (a refusal, no connection, nothing shared): the previous note comes back. Unconfirmed keeps the new one.
         val leftNothing =
             result == PublishResult.Offline || result == PublishResult.Refused || result == PublishResult.Failed ||
@@ -184,6 +190,7 @@ class UpdatePublisher(
         targets: List<String>,
         all: List<String>,
         deviceId: String,
+        traveling: Boolean,
     ): PublishResult {
         val written = mutableListOf<String>()
         val notSharing = mutableListOf<String>()
@@ -197,7 +204,15 @@ class UpdatePublisher(
                         store.commit(uid, lot, requireConsent = true) { allowed ->
                             val moment = nowMillis()
                             allowed.flatMap { miffId ->
-                                UpdateWrites.publish(miffId, uid, photo, place, moment, battery(), deviceId)
+                                UpdateWrites.publish(
+                                    miffId,
+                                    uid,
+                                    photo,
+                                    place,
+                                    moment,
+                                    if (traveling) null else battery(),
+                                    deviceId,
+                                )
                             }
                         }
                     }

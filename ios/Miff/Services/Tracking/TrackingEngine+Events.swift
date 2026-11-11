@@ -14,6 +14,12 @@ extension TrackingEngine {
         }
         let pass = await makePass(uid: uid)
         let loaded = stateFor(uid)
+        if loaded?.travel != nil {
+            // MODE VOYAGE : une zone encore enregistrée auprès du système parle pendant un voyage (elle ne devrait pas) : elle est retirée et
+            // aucun statut n'est écrit.
+            await deps.geofences.disarmAll()
+            return
+        }
         guard var state = loaded, !state.miffs.isEmpty, pass.snapshot.locationComplete else {
             // L'accord ou l'accès a disparu : les zones sont retirées maintenant et la copie (position, statuts en attente) effacée ;
             // rien n'est écrit.
@@ -120,7 +126,7 @@ extension TrackingEngine {
             await doStop()
             return
         }
-        guard let state = stateFor(uid), !state.miffs.isEmpty,
+        guard let state = stateFor(uid), state.travel == nil, !state.miffs.isEmpty,
               allZones(state).contains(where: { $0.key == zoneKey }) else {
             return
         }
@@ -178,7 +184,15 @@ extension TrackingEngine {
             await doStop()
             return
         }
-        guard let state = stateFor(uid), state.miffs.values.contains(where: { $0.pending != nil }) else {
+        guard let state = stateFor(uid) else {
+            return
+        }
+        if state.travel != nil {
+            // MODE VOYAGE : ce que les Miffs n'ont pas encore appris (le voyage, sa nouvelle fin) est écrit ; rien d'autre.
+            await doTravelPass(uid, state, .networkBack, supplied: nil)
+            return
+        }
+        guard state.miffs.values.contains(where: { $0.pending != nil }) else {
             return
         }
         journal.record(.wakeNetwork)
