@@ -65,6 +65,34 @@ Risque assumé (parité Android) : une fiche de Miff que le serveur refuse SEULE
 
 Limite connue : un ancien compte sans `termsVersion` voit toute modification refusée par les règles (« Ça n'a pas fonctionné cette fois… ») ; aucune règle n'est changée (ticket, Q11) ; à signaler au PM si un compte réel est concerné.
 
+### Carrousel de Miffs au Profil, emoji des catégories de lieux, 3 lieux gratuits (retours du PM, 2026-11-10 ; miroir d'Android)
+
+Recette : `docs/qa/checklists/profil-carrousel-emoji-lieux3-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md` (« Catégories en emoji, carrousel de Miffs, 3 lieux gratuits »), contrat partagé `docs/contracts/place-categories.md`. **Rien n'est compilé en local** (la CI fait foi). **Les 3 lieux gratuits ne sont utilisables qu'après le déploiement des règles par le PM** (PR `backend/lieux-gratuits-3`).
+
+Ajouté :
+- **Carrousel « Mes Miffs »** (`Views/Main/ProfileMiffCarousel.swift`, maquette `design/exports/profil/`) : une carte par Miff (nom, « N membres », miniatures des membres : photo ou initiales, 5 au plus, « +N » au-delà, toucher = écran de la Miff), puis TOUJOURS la carte « Créer une Miff » ; pager à la main (ressort, pastilles, hauteur de la plus haute carte, juste à toute taille de texte). **« Créer une Miff »** = l'offre pour un compte gratuit qui a déjà une Miff (même règle que le sélecteur du Feed : `FeedSelectorRules`, `PaywallReason.extraMiff`), le parcours normal sinon (`ProfileCarouselRules`). VoiceOver : carte décrite (nom, membres, « Carte 2 sur 3 »), pastilles ajustables, actions « Carte précédente / suivante ».
+- **`MiffMemberPreviews`** et **`FirestoreMemberPreviewReader`** : les membres des cartes. La Miff du Feed n'est jamais relue (le Feed donne ses membres, `FeedDependencies.onMembers`) ; les autres : UNE lecture ponctuelle quand leur carte est montrée, une fois par ouverture du Profil, pas du tout si une lecture de moins de 5 minutes existe ; jamais d'écouteur. **Choix économique** : 0 lecture pour un compte gratuit, M + 2 par Miff+ et par lecture (M = membres, 15 au plus) ; **signal de bascule** et leviers gratuits dans `docs/dev/surveillance-quotas.md` (5 quinquies).
+- **`AvatarDecoding`** (correctif de sécurité, pour tous les ronds de l'app) : une photo d'un autre téléphone n'est plus décodée en pleine taille (les règles bornent le poids, pas les dimensions : un petit fichier pouvait décrire une image immense). Dimensions lues dans l'en-tête, refus au-delà de 2048 px (initiales), version réduite à la taille du rond, cache mémoire effacé avec la session.
+- **Étiquettes du Feed avec l'emoji de la catégorie** (décision du PM, 2026-11-10, `docs/contracts/place-categories.md` §1 bis ; miroir d'Android PR #160) : « 🏠 À la maison », « 💼 Au travail », « 🏫 À l'école », « ⚽ Au sport », « 👨‍👩‍👧 Chez un proche » ; lieu Loisir ou Autre : l'emoji avant le nom du lieu. Seulement l'étiquette « dans un lieu de confiance » avec une catégorie connue (`FeedMemberCard.labelCategory`) : rien sans catégorie, lieu supprimé, « A quitté… », danger, « Pas encore de nouvelles ». 8 pt, taille du texte de l'étiquette, décoratif pour VoiceOver. Tests : `FeedCardsTests`.
+- **Correctifs de revue** : carrousel ouvert sur la Miff du Feed ; mon visage suit mon profil sans lecture et l'ouverture d'une Miff la fait relire (`replaceFace`, `invalidate`, limite connue : visages de la Miff active = dernier passage sur le Feed) ; photos décodées hors du fil principal, sans recalcul à chaque redessin ; liste de membres vide = échec et délai de 15 s ; glissement en `@GestureState` ; offre « Tu as atteint 3 lieux » = 3 pastilles pleines (comme Android).
+- Aperçus de CI `profile-carousel`, `profile-carousel-2`, `profile-carousel-create` (captures 99, 99b, 99c, 98b).
+- Textes (FR + EN, mêmes clés et mêmes textes qu'Android, ajoutés aussi à ses `strings.xml` pour la parité) : `profile_tab_miff_members` (pluriel), `profile_tab_miff_create`, `profile_tab_carousel_page_a11y`, `profile_tab_carousel_previous_a11y`, `profile_tab_carousel_next_a11y`.
+
+Changé :
+- **Catégories de lieux en emoji** (`PlaceCategory.emoji`, table identique à Android) : 🏠 Maison, 💼 Travail, 🏫 École, ⚽ Sport, 👨‍👩‍👧 Chez un proche, 🎉 Loisir, 📍 Autre. Formulaire, liste, détail (ligne « Catégorie » et repère de la carte) ; remplace les symboles du système (`PlaceCategory.symbol` supprimé). VoiceOver lit le nom, l'emoji est caché ; Dynamic Type (jusqu'à 1,5 fois) ; clair et sombre ; aucune ressource ajoutée.
+- **3 lieux gratuits** (au lieu de 2) : `PlaceLimits.freePlaces = 3`, `freeIds = [p1, p2, p3]`, « N lieux sur 3 avec la formule gratuite », « Tu as atteint 3 lieux » (FR + EN), tests et recette mis à jour (`PlaceRulesTests`, `PlaceRepositoryTests`, `PlacePresentationTests`, `PlaceFormViewModelTests`).
+- Onglet Profil : le carrousel remplace la liste des cartes de Miff ; `ProfileTabView`, `MainShellView` et `MiffHomeHost` reçoivent le magasin des membres et le geste « Créer une Miff ».
+
+Supprimé : `PlaceCategory.symbol` (symboles du système des catégories).
+
+**Écarts** (détail dans le README) : « Créer une Miff » et non « Créer une nouvelle Miff » (mot du PM) ; titre « Mes Miffs » gardé ; pastilles ajustables pour VoiceOver ; 3 pastilles de membres aux grandes tailles d'accessibilité ; la phrase d'aide reste tant que les membres ne sont pas lus.
+
+**Limites connues** : une photo piégée mais plausible (2048 px, 20 Ko) est décodée en version réduite, jamais en pleine taille ; le carrousel n'est pas testé à l'écran en local (captures de la CI) ; sur un compte sans Miff l'onglet Profil n'est pas atteignable (inchangé), la carte « Créer une Miff » seule n'y est donc jamais vue.
+
+
+
+
+
 ### Update : « Position introuvable » alors que la personne partage (recette TestFlight, build 24)
 
 Un testeur qui partageait bien sa position obtenait de façon répétée « Position introuvable pour le moment, réessaie dans un instant » au toucher de « Publier » ; sur un autre iPhone tout marchait. **Rien n'est compilé en local (la CI fait foi).**

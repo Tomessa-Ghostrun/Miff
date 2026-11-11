@@ -120,7 +120,7 @@ final class FirestoreMiffObserver: MiffObserver {
 
     /// Les membres : le créateur d'abord, puis par ordre d'arrivée (stable : une liste qui se réordonne bouge sous un doigt).
     /// Prénoms et noms viennent d'autres téléphones : nettoyés.
-    private static func members(of snapshot: QuerySnapshot) -> [MiffMember] {
+    static func members(of snapshot: QuerySnapshot) -> [MiffMember] {
         let dated = snapshot.documents.compactMap { document -> DatedMember? in
             let data = document.data()
             guard let first = data["firstName"] as? String, let last = data["lastName"] as? String else {

@@ -178,6 +178,9 @@ final class AppEnvironment {
     /// (mêmes transactions, même garde d'écriture). Sans état : le SDK Firestore est résolu à chaque usage.
     lazy var myProfileRepository: MyProfileRepository = StoreMyProfileRepository(store: FirestoreMiffStore())
 
+    /// Les photos des membres sur les cartes de Miff du Profil : UNE lecture ponctuelle par Miff (voir `MiffMemberPreviews`).
+    lazy var memberPreviewReader: MemberPreviewReader = FirestoreMemberPreviewReader()
+
     private let userProfiles: UserProfileRepository = FirestoreUserProfileRepository()
     /// Ce que la personne a saisi dans les étapes du profil : sur l'appareil seulement, effacé une fois le serveur ayant
     /// confirmé (ticket §6.2) et à chaque fin de session.

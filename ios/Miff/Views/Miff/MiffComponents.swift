@@ -204,23 +204,21 @@ struct MiffRolePill: View {
 }
 
 /// La photo ronde d'un proche, ou ses initiales. Aucun anneau de couleur : cet écran ne montre aucun statut (critère G7). La
-/// photo vient d'un autre téléphone : elle n'est décodée que si elle respecte la taille que les règles imposent.
+/// photo vient d'un autre téléphone : elle n'est décodée que si elle respecte la taille (en octets) que les règles imposent ET des
+/// dimensions plausibles.
 struct MiffAvatar: View {
     let jpeg: Data?
     let initials: String
     var size: CGFloat = Spacing.memberAvatar
-
-    private var image: UIImage? {
-        guard let jpeg, !jpeg.isEmpty, jpeg.count <= ProfileDocument.maxAvatarBytes else {
-            return nil
-        }
-        return UIImage(data: jpeg)
-    }
+    @Environment(\.displayScale) private var displayScale
+    /// La photo réduite à la taille du rond (voir `AvatarDecoding` : une photo d'un autre téléphone n'est jamais décodée en pleine taille),
+    /// décodée HORS du fil principal : les initiales s'affichent d'abord, la photo les remplace dès qu'elle est prête.
+    @State private var decoded: UIImage?
 
     var body: some View {
         ZStack {
-            if let image {
-                Image(uiImage: image)
+            if let decoded {
+                Image(uiImage: decoded)
                     .resizable()
                     .scaledToFill()
             } else {
@@ -233,6 +231,10 @@ struct MiffAvatar: View {
         .frame(width: size, height: size)
         .clipShape(Circle())
         .accessibilityHidden(true)
+        // Relancé seulement quand la photo change (la comparaison de deux photos identiques est immédiate) : jamais à chaque redessin.
+        .task(id: jpeg) {
+            decoded = await AvatarDecoding.loadImage(from: jpeg, pixelSize: size * displayScale)
+        }
     }
 }
 
