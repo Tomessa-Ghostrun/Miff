@@ -15,17 +15,21 @@ name: android-release
 # Aucun envoi automatique vers Google Play : cela demanderait une cle de compte de service Google, que ce projet s'interdit (docs/dev/secrets.md).
 # Le PM telecharge le bundle (artefact « miff-release-aab », 14 jours) et le depose dans la Play Console.
 #
-# Secrets attendus (Settings > Secrets and variables > Actions, ou dans l'environnement « android-release », voir plus bas) :
+# Secrets attendus (les 4 d'envoi : secrets de l'ENVIRONNEMENT « android-release », voir plus bas ; le dernier : secret du depot) :
 #   ANDROID_UPLOAD_KEYSTORE_B64   fichier de cle d'envoi (.jks) encode en base64
 #   ANDROID_UPLOAD_STORE_PASSWORD mot de passe du fichier de cle
 #   ANDROID_UPLOAD_KEY_ALIAS      nom (alias) de la cle dans le fichier
 #   ANDROID_UPLOAD_KEY_PASSWORD   mot de passe de la cle
 #   GOOGLE_SERVICES_JSON_B64      deja utilise par le workflow android (configuration Firebase)
 #
-# ENVIRONNEMENT PROTEGE : le depot etant public (2026-11-04), les « environments » GitHub (relecteur obligatoire, branches autorisees) sont disponibles
-# sans frais, contrairement a ios-testflight (ecrit quand le depot etait prive). Le travail declare l'environnement « android-release » : GitHub le cree
-# a la premiere execution, sans protection. Pour le proteger (facultatif, recommande) : Settings > Environments > android-release > « Required reviewers »
-# (le PM) et « Deployment branches » = main uniquement, puis deplacer les 4 secrets d'envoi dans cet environnement.
+# ENVIRONNEMENT PROTEGE OBLIGATOIRE : le depot etant public (2026-11-04), les « environments » GitHub (relecteur obligatoire, branches autorisees) sont
+# disponibles sans frais, contrairement a ios-testflight (ecrit quand le depot etait prive). Le travail declare l'environnement « android-release ».
+# AVANT de creer les 4 secrets d'envoi, le PM cree cet environnement (Settings > Environments > New environment > android-release) avec « Required reviewers »
+# (le PM) et « Deployment branches » = main uniquement, puis cree les 4 secrets d'envoi COMME SECRETS DE L'ENVIRONNEMENT (gh secret set ... --env android-release),
+# pas comme secrets du depot. Pourquoi : le controle « main seulement » de la premiere etape est un controle du workflow ; quiconque peut pousser une
+# branche pourrait modifier cette etape. La regle de l'environnement, elle, est appliquee par GitHub avant que le moindre secret soit donne au travail.
+# Seule GOOGLE_SERVICES_JSON_B64 reste un secret du depot (elle sert aussi au workflow android).
+# Configuration partielle (1 a 4 secrets sur 5) : echec rouge. Aucun secret : « non configuree » (vert).
 
 on:
   workflow_dispatch:
@@ -87,7 +91,8 @@ jobs:
             echo "::error title=Branche refusée::Un bundle de release ne se construit qu'à partir de la branche main (reçu : ${REF_NAME}). Fusionner d'abord, puis relancer depuis main."
             exit 1
           fi
-          if ! printf '%s' "$OFFSET" | grep -Eq '^[0-9]{1,7}$'; then
+          # Valeur validee sur TOUTE la chaine (« [[ =~ ]] », pas un tube vers grep qui lit ligne par ligne).
+          if ! [[ "$OFFSET" =~ ^[0-9]{1,7}$ ]]; then
             echo "::error title=Décalage invalide::version_code_offset doit être un nombre entier (0 à 9999999)."
             exit 1
           fi
@@ -97,6 +102,17 @@ jobs:
           [ -n "$ANDROID_UPLOAD_KEY_ALIAS" ] || missing="$missing ANDROID_UPLOAD_KEY_ALIAS"
           [ -n "$ANDROID_UPLOAD_KEY_PASSWORD" ] || missing="$missing ANDROID_UPLOAD_KEY_PASSWORD"
           [ -n "$GOOGLE_SERVICES_JSON_B64" ] || missing="$missing GOOGLE_SERVICES_JSON_B64"
+          missing_count=$(wc -w <<< "$missing")
+          # Configuration PARTIELLE (1 à 4 secrets sur 5) : échec rouge, jamais un « non configurée » vert qui cacherait une erreur de saisie.
+          if [ "$missing_count" -gt 0 ] && [ "$missing_count" -lt 5 ]; then
+            echo "::error title=Configuration incomplète::Il manque ${missing_count} secret(s) sur 5 :${missing}. Les ajouter (valeurs jamais affichées), voir docs/release/checklist-android.md (étape 2), puis relancer."
+            {
+              echo "## Configuration incomplète"
+              echo
+              echo "**Aucun bundle n'a été produit** : ${missing_count} secret(s) sur 5 manquent :${missing}. Ils doivent être tous présents (ou tous absents)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
           if [ -n "$missing" ]; then
             echo "MIFF_RELEASE_CONFIGURED=false" >> "$GITHUB_ENV"
             echo "::notice title=Release Android non configurée::Secrets absents :${missing}. Aucun bundle n'est produit. Voir docs/release/checklist-android.md (étape « Clé d'envoi »)."
@@ -196,7 +212,9 @@ jobs:
         run: |
           set -euo pipefail
           # Google Play refuse un numéro déjà reçu ou plus petit : le numéro d'exécution de CE workflow ne fait que croître.
-          code=$(( RUN_NUMBER + OFFSET ))
+          # « 10# » : le décalage est lu en base 10 (« 010 » ne doit jamais être lu en octal) ; il a déjà été validé (chiffres seulement) par la première étape.
+          [[ "$OFFSET" =~ ^[0-9]{1,7}$ ]] || { echo "::error::version_code_offset invalide."; exit 1; }
+          code=$(( RUN_NUMBER + 10#$OFFSET ))
           name=$(sed -n 's/^## \[\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\].*/\1/p' CHANGELOG.md | head -1)
           if [ -z "$name" ]; then
             echo "::error::Aucun titre « ## [x.y.z] » dans android/CHANGELOG.md : version impossible à déterminer."

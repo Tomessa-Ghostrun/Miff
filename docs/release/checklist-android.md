@@ -13,7 +13,7 @@ Préparée le 2026-11-11 par `android-dev` (lot « préparation de la release An
 | Sujet | État |
 |---|---|
 | Numéro de version | **Prêt.** Le nom de version (par exemple `0.32.0`) vient du titre le plus récent de `android/CHANGELOG.md`. Le numéro interne (`versionCode`) vient du numéro d'exécution du workflow de release : il ne fait que croître, c'est ce que Google exige. Plus rien n'est figé à `1` / `0.1.0`. |
-| Signature | **Prêt côté code, bloqué côté PM** : il faut créer la **clé d'envoi** et 4 secrets GitHub (étape 2). Sans eux, aucun bundle signé n'est produit (le workflow le dit clairement). |
+| Signature | **Prêt côté code, bloqué côté PM** : il faut créer la **clé d'envoi**, l'**environnement GitHub protégé** `android-release`, puis 4 secrets dans cet environnement (étape 2). Sans eux, aucun bundle signé n'est produit (le workflow le dit clairement) ; avec une partie seulement, il s'arrête en rouge en listant ce qui manque. |
 | Bundle signé | **Prêt côté code** : workflow manuel `android-release` (jamais déclenché par une PR). **Jamais exécuté de bout en bout** : il ne peut pas l'être avant la fusion dans `main` ni sans tes secrets. Premier essai à surveiller. |
 | Pages mémoire de 16 Ko (Android 15+) | **Contrôlé automatiquement** (voir « Annexe technique »). |
 | Contrôles « pas de code de debug dans le bundle » | **Prêts**, joués à chaque PR et de nouveau sur le bundle signé. |
@@ -42,18 +42,22 @@ Préparée le 2026-11-11 par `android-dev` (lot « préparation de la release An
    ```
 
    `keytool` te demande **deux mots de passe** (celui du fichier, puis celui de la clé : tu peux mettre le même). **Tape-les à l'écran, ils ne s'affichent pas.** Choisis des mots de passe longs, **enregistre-les tout de suite dans ton gestionnaire de mots de passe** avec le nom d'alias (`miff-upload`). Validité 10 000 jours (environ 27 ans) : au-delà de 2033, comme Google le demande.
-3. **Sauvegarde** `miff-upload.jks` et les mots de passe en **deux endroits**. Si tu perds la clé d'envoi, ce n'est pas la fin de l'app (Google sait la remplacer sur demande, voir `docs/dev/secrets.md`, « En cas de fuite ») mais c'est une démarche de plusieurs jours.
-4. Crée les 4 secrets GitHub (Settings > Secrets and variables > Actions > New repository secret, ou en ligne de commande). **Les valeurs se tapent à l'invite, elles ne s'affichent pas** :
+3. **Sauvegarde** `miff-upload.jks` et les mots de passe en **deux endroits**. Si tu perds la clé d'envoi, Google sait la remplacer sur demande (voir `docs/dev/secrets.md`, « En cas de fuite »), mais c'est une démarche de plusieurs jours : mieux vaut deux copies.
+4. **Obligatoire, avant tout secret : crée l'environnement GitHub `android-release`** (gratuit sur un dépôt public, le dépôt l'est depuis le 2026-11-04). GitHub > dépôt Miff > Settings > **Environments** > **New environment** > nom exact `android-release` > **Configure environment**, puis :
+   - coche **Required reviewers** et ajoute-toi (chaque lancement te demandera de l'approuver, ce qui prend un clic) ;
+   - dans **Deployment branches and tags**, choisis **Selected branches and tags** et ajoute **`main`** seulement.
+
+   *Pourquoi c'est obligatoire* : le workflow refuse déjà de tourner hors de `main`, mais cette vérification est écrite dans le workflow lui-même ; quiconque peut pousser une branche pourrait la modifier. La règle de l'environnement, elle, est appliquée par GitHub **avant** que le moindre secret soit remis au travail. C'est ce qui protège réellement la clé d'envoi. Si ces réglages n'apparaissent pas dans ton interface, **arrête-toi ici et préviens l'équipe technique** : ne crée pas les secrets sans cette protection.
+5. Crée maintenant les 4 secrets d'envoi **comme secrets de cet environnement** (et non comme secrets du dépôt). **Les valeurs se tapent à l'invite, elles ne s'affichent pas** :
 
    ```powershell
-   [Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\miff-secrets\miff-upload.jks")) | gh secret set ANDROID_UPLOAD_KEYSTORE_B64 --repo Tomessa-Ghostrun/Miff
-   gh secret set ANDROID_UPLOAD_STORE_PASSWORD --repo Tomessa-Ghostrun/Miff
-   gh secret set ANDROID_UPLOAD_KEY_ALIAS --repo Tomessa-Ghostrun/Miff
-   gh secret set ANDROID_UPLOAD_KEY_PASSWORD --repo Tomessa-Ghostrun/Miff
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("$HOME\miff-secrets\miff-upload.jks")) | gh secret set ANDROID_UPLOAD_KEYSTORE_B64 --env android-release --repo Tomessa-Ghostrun/Miff
+   gh secret set ANDROID_UPLOAD_STORE_PASSWORD --env android-release --repo Tomessa-Ghostrun/Miff
+   gh secret set ANDROID_UPLOAD_KEY_ALIAS --env android-release --repo Tomessa-Ghostrun/Miff
+   gh secret set ANDROID_UPLOAD_KEY_PASSWORD --env android-release --repo Tomessa-Ghostrun/Miff
    ```
 
-   Aux trois dernières invites : le mot de passe du fichier, `miff-upload`, le mot de passe de la clé. Le secret `GOOGLE_SERVICES_JSON_B64` existe déjà (il sert au workflow `android`).
-5. **(Recommandé, gratuit)** Protéger l'envoi : GitHub > Settings > **Environments** > `android-release` (créé automatiquement au premier lancement du workflow) > coche **Required reviewers** (toi) et, dans **Deployment branches**, **Selected branches : `main`**. Tu peux alors déplacer les 4 secrets d'envoi dans cet environnement (Environment secrets) : seul un lancement validé par toi pourra les lire. D'après la documentation GitHub (non revérifiée dans cette session), les environnements sont gratuits sur un dépôt public (le dépôt l'est depuis le 2026-11-04) ; si ces réglages n'apparaissent pas, saute cette étape, le workflow marche sans ; la contrainte qui bloquait `ios-testflight` ne s'applique plus, mais ce dernier n'a pas encore été mis à jour.
+   Aux trois dernières invites : le mot de passe du fichier, `miff-upload`, le mot de passe de la clé. Le secret `GOOGLE_SERVICES_JSON_B64` reste un secret du dépôt : il existe déjà (il sert aussi au workflow `android`). Si tu as créé par erreur un des 4 secrets au niveau du dépôt, supprime-le (Settings > Secrets and variables > Actions) : seuls les secrets de l'environnement sont protégés. Les 5 secrets doivent être **tous présents**, sinon le workflow s'arrête en rouge en les listant (et seulement si aucun n'existe, il affiche calmement « non configurée »).
 6. Vide ton presse-papiers (copie un mot quelconque) et ferme PowerShell.
 
 ## 3. Créer l'app dans la Play Console
@@ -69,7 +73,7 @@ Préparée le 2026-11-11 par `android-dev` (lot « préparation de la release An
 
 Prérequis : l'étape 2 faite, et la PR de cette préparation **fusionnée dans `main`** (un workflow ne peut se lancer à la main qu'une fois présent sur `main`).
 
-1. GitHub > dépôt Miff > onglet **Actions** > workflow **android-release** > **Run workflow** > branche **main** > laisse « 0 » pour le décalage du numéro de version et « true » pour Crashlytics > **Run workflow**. (Si tu as activé le relecteur de l'étape 2.5, valide le lancement.)
+1. GitHub > dépôt Miff > onglet **Actions** > workflow **android-release** > **Run workflow** > branche **main** > laisse « 0 » pour le décalage du numéro de version et « true » pour Crashlytics > **Run workflow**. (Tu reçois une demande d'approbation, étape 2.4 : ouvre-la et approuve le lancement.)
 2. Attends la fin (quelques minutes). Deux issues possibles :
    - **« Release Android non configurée »** (résumé de l'exécution, exécution verte) : il manque un ou plusieurs secrets (liste donnée, sans valeurs). Reprends l'étape 2.
    - **« Bundle Android signé »** : le résumé donne la version, le numéro interne, les **empreintes de la clé d'envoi** (SHA-1 et SHA-256, publiques) et la liste des contrôles passés.
@@ -122,7 +126,7 @@ Play Console > **Contenu de l'application** (ou « Politique > Contenu de l'appl
 |---|---|---|
 | **Politique de confidentialité** (adresse web) | `web/` (pages `confidentialite`), `decisions-stores-avant-soumission.md` §7 | **Bloqué** : le site n'est pas déployé. Il faut ton « oui, déploie » (hébergement Firebase `miff-3d283.web.app`) **avant** cette étape, et les actions de la console Analytics du `docs/legal/README.md` §3 d'abord. |
 | **Sécurité des données** (Data safety) | `google-play-data-safety.md` | Lis l'aide affichée à côté de chaque question ; point ouvert O9 (les autres membres d'une Miff comptent-ils comme un « partage » ? en cas de doute, déclare le partage). L'adresse de **suppression de compte** est demandée : `web/` (page suppression). |
-| **Autorisations de localisation** (en arrière-plan) | `google-play-localisation-arriere-plan.md` §3 (libellé), §4 (justification), §8 (**vidéo de 30 s**) | La vidéo se tourne sur l'OPPO, se met sur YouTube en « non répertoriée » et son lien se colle dans le formulaire. C'est le motif de rejet n°1 pour une app comme Miff : **ne bâcle pas**. |
+| **Autorisations de localisation** (en arrière-plan) | `google-play-localisation-arriere-plan.md` §3 (libellé), §4 (justification), §8 (**vidéo de 30 s**) | La vidéo se tourne sur l'OPPO, se met sur YouTube en « non répertoriée » et son lien se colle dans le formulaire. C'est la déclaration que Google regarde le plus attentivement pour une app comme Miff : prends ton temps et relis le texte de justification. |
 | **Accès à l'application** | `docs/release/README.md`, action 7 | Compte de test (e-mail + mot de passe, Miff déjà créée, **sans** authentification à deux facteurs) pour les relecteurs de Google ; deux comptes dans la même Miff pour voir une photo localisée (action 16). |
 | **Classification du contenu** | `decisions-stores-avant-soumission.md` §2 (décision du 2026-11-07 : classification la plus basse possible, pas un ciblage des enfants) | Réponds aux questions du jour, honnêtement. |
 | **Public cible** | idem, point O7 | **Ne déclare pas** l'app comme destinée aux enfants (recommandation). |
@@ -144,7 +148,7 @@ Ensuite : **fiche principale** (textes FR et EN, icône, captures, visuel de pr�
 | # | À faire | Bloque quoi |
 |---|---|---|
 | 1 | Relever type et date du compte Play, décider quand ouvrir le test fermé (14 jours) | Le calendrier de lancement Android |
-| 2 | Créer la clé d'envoi et les 4 secrets GitHub (étape 2) | Tout bundle signé |
+| 2 | Créer la clé d'envoi, l'environnement `android-release` (relecteur : toi, branche `main` seule), puis les 4 secrets dans cet environnement (étape 2) | Tout bundle signé |
 | 3 | Fusionner la PR de préparation dans `main`, lancer `android-release` (étape 4) | Le premier bundle |
 | 4 | Créer l'app, accepter Play App Signing, ouvrir la piste interne (étapes 3 et 5) | L'installation depuis Google Play, donc Play Integrity |
 | 5 | Ajouter les empreintes dans Firebase, régénérer `GOOGLE_SERVICES_JSON_B64` (étape 6) | « Continuer avec Google » dans le build du Play Store |

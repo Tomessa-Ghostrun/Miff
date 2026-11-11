@@ -55,7 +55,43 @@ class ReleaseSigningGuardTest {
         assertTrue(gradle.contains("uploadSigningConfigured && explicitVersionCode == null"))
         assertTrue(releaseWorkflow.contains("""-Pmiff.versionCode="${'$'}VERSION_CODE""""))
         // The number comes from the run number of the workflow: always growing (Google Play refuses a number it has already seen).
-        assertTrue(releaseWorkflow.contains("code=${'$'}(( RUN_NUMBER + OFFSET ))"))
+        // The offset is read in base 10 (never octal) and was validated on the WHOLE string with [[ =~ ]] (no pipe to grep, which reads line by line).
+        assertTrue(releaseWorkflow.contains("code=${'$'}(( RUN_NUMBER + 10#${'$'}OFFSET ))"))
+        assertFalse(releaseWorkflow.contains("RUN_NUMBER + OFFSET"))
+        val validation = """[[ "${'$'}OFFSET" =~ ^[0-9]{1,7}${'$'} ]]"""
+        assertEquals(
+            "the offset must be validated twice (gate and version step)",
+            2,
+            releaseWorkflow.split(validation).size - 1,
+        )
+        assertFalse(releaseWorkflow.contains("grep -Eq '^[0-9]"))
+    }
+
+    @Test
+    fun theUploadSecretsLiveInTheProtectedEnvironment_andThePartialConfigurationFailsInRed() {
+        // The job declares the environment: its rules (reviewer, main only) are applied by GitHub BEFORE any secret reaches the job.
+        assertTrue(releaseWorkflow.contains("    environment: android-release\n"))
+        val checklist = File("../../docs/release/checklist-android.md").readText()
+        listOf(
+            "ANDROID_UPLOAD_KEYSTORE_B64",
+            "ANDROID_UPLOAD_STORE_PASSWORD",
+            "ANDROID_UPLOAD_KEY_ALIAS",
+            "ANDROID_UPLOAD_KEY_PASSWORD",
+        ).forEach { name ->
+            val commands = checklist.lines().filter { it.contains("gh secret set $name") }
+            assertEquals("$name must be created once in the checklist", 1, commands.size)
+            assertTrue("$name must be an environment secret", commands.single().contains("--env android-release"))
+        }
+        assertTrue(checklist.contains("Required reviewers") && checklist.contains("Selected branches"))
+        // 1 to 4 secrets out of 5: red; none: green "not configured".
+        assertTrue(releaseWorkflow.contains("Configuration incomplète"))
+        assertTrue(releaseWorkflow.contains("""[ "${'$'}missing_count" -gt 0 ] && [ "${'$'}missing_count" -lt 5 ]"""))
+        val partial =
+            releaseWorkflow
+                .substringAfter(
+                    "Configuration PARTIELLE",
+                ).substringBefore("""if [ -n "${'$'}missing" ]""")
+        assertTrue(partial.contains("exit 1"))
     }
 
     // --- signature ---------------------------------------------------------------------------------------------------------------------------------
