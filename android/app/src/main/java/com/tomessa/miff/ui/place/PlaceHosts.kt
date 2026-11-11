@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -16,6 +17,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.domain.place.MiffPlacesView
+import com.tomessa.miff.domain.place.PlaceRequest
 import com.tomessa.miff.domain.place.PlaceViewerRole
 import com.tomessa.miff.domain.place.RequestsView
 import com.tomessa.miff.ui.components.MiffSecondaryButton
@@ -55,6 +57,10 @@ fun ProfilePlacesSection(
     requests: ProfileRequestsState = ProfileRequestsState(),
     onOpenRequest: (miffId: String, requestId: String) -> Unit = { _, _ -> },
     onRequestPlace: (miffId: String) -> Unit = {},
+    /** The CREATOR (ticket LIEU-REQ-C): the requests it received are in the list; it opens one, accepts it, declines it; and tells that the list was seen. */
+    onAcceptRequest: (PlaceRequest) -> Unit = {},
+    onDeclineRequest: (PlaceRequest) -> Unit = {},
+    onRequestsSeen: (miffId: String) -> Unit = {},
 ) {
     val notice by notices.notice.collectAsStateWithLifecycle()
     val requestNotice by notices.requestNotice.collectAsStateWithLifecycle()
@@ -82,6 +88,19 @@ fun ProfilePlacesSection(
 
             is MiffPlacesView.Ready -> {
                 PlacesTitle(miff.name)
+                // The creator's requests: those of people still in the Miff, oldest first, with who asked.
+                val received =
+                    if (isCreator) {
+                        (requests.views[miff.id] as? RequestsView.Ready)
+                            ?.requests
+                            .orEmpty()
+                            .map { ReceivedRequest(it, requests.requester(it)) }
+                    } else {
+                        emptyList()
+                    }
+                // The list is drawn with its requests: they are seen (the dot of the Profile tab and the lines of the centre go).
+                val receivedIds = received.map { it.request.id }
+                LaunchedEffect(miff.id, receivedIds) { if (receivedIds.isNotEmpty()) onRequestsSeen(miff.id) }
                 PlaceRows(
                     ui =
                         PlaceListUi(
@@ -98,7 +117,12 @@ fun ProfilePlacesSection(
                                     (requests.views[miff.id] as? RequestsView.Ready)?.requests.orEmpty()
                                 },
                             requestNotice = if (isCreator) null else requestNotice,
+                            received = received,
+                            busyRequestId = requests.busyRequestId,
                         ),
+                    onOpenReceived = { request -> onOpenRequest(miff.id, request.id) },
+                    onAcceptRequest = onAcceptRequest,
+                    onDeclineRequest = onDeclineRequest,
                     onOpen = { place -> onOpenPlace(miff.id, place.id) },
                     onOpenRequest = { request -> onOpenRequest(miff.id, request.id) },
                     onRequestPlace = { onRequestPlace(miff.id) },

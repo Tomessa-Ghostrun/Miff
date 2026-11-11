@@ -63,6 +63,8 @@ data class PlaceDetailRoute(
 @Serializable
 data class PlacePaywallRoute(
     val reason: String,
+    /** The offer opened by "Accepter" on a request received (ticket LIEU-REQ-C): the context card says the request stays pending. A flag, nothing else travels. */
+    val request: Boolean = false,
 ) {
     /** An unknown word (never produced by the app) falls back to the danger zone, as before. */
     fun paywallReason(): PaywallReason =
@@ -73,14 +75,17 @@ data class PlacePaywallRoute(
         }
 
     companion object {
-        fun of(reason: PaywallReason) =
-            PlacePaywallRoute(
-                when (reason) {
-                    PaywallReason.LIMIT -> "limit"
-                    PaywallReason.MIFF -> "miff"
-                    PaywallReason.DANGER -> "danger"
-                },
-            )
+        fun of(
+            reason: PaywallReason,
+            request: Boolean = false,
+        ) = PlacePaywallRoute(
+            when (reason) {
+                PaywallReason.LIMIT -> "limit"
+                PaywallReason.MIFF -> "miff"
+                PaywallReason.DANGER -> "danger"
+            },
+            request,
+        )
     }
 }
 
@@ -91,6 +96,13 @@ internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigge
         PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
         PaywallReason.DANGER -> null
     }
+
+/**
+ * The offer opened by "Accepter" on a request received (ticket LIEU-REQ-C): ONLY after the repository has read the plan on the SERVER and said so ("limit" or
+ * "danger"); the screens that call it never decide from their own copy of the plan. The request is left as it is.
+ */
+fun NavController.openRequestOffer(reason: PaywallReason) =
+    navigate(PlacePaywallRoute.of(reason, request = true)) { launchSingleTop = true }
 
 /** launchSingleTop: two quick taps open one screen, not two. */
 fun NavController.openPlaceRoute(route: Any) = navigate(route) { launchSingleTop = true }
@@ -244,10 +256,18 @@ fun NavGraphBuilder.placeRoutes(
                 key = profileRequestsKey("${session.currentUid}-${session.generation}"),
                 factory = profileRequestsFactory(container),
             )
-        PlaceRequestDetailHost(route = route, viewModel = viewModel, onClose = { navController.popBackStackIfSafe() })
+        PlaceRequestDetailHost(
+            route = route,
+            myUid = session.currentUid,
+            viewModel = viewModel,
+            onClose = { navController.popBackStackIfSafe() },
+            // "Accepter" at the limit of the free plan: the offer, with the sentence that says the request stays pending; the request is left as it is.
+            onPaywall = navController::openRequestOffer,
+        )
     }
     composable<PlacePaywallRoute> { entry ->
-        val reason = entry.toRoute<PlacePaywallRoute>().paywallReason()
+        val paywall = entry.toRoute<PlacePaywallRoute>()
+        val reason = paywall.paywallReason()
         val tracker = container.analyticsTracker
         val trigger = paywallTrigger(reason)
         // The only analytics of the offer: it was shown / closed, with a fixed trigger and nothing else (criterion LIM5).
@@ -256,6 +276,7 @@ fun NavGraphBuilder.placeRoutes(
         }
         PlacePaywallScreen(
             reason = reason,
+            request = paywall.request,
             onClose = {
                 if (trigger != null) tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
                 navController.popBackStackIfSafe()

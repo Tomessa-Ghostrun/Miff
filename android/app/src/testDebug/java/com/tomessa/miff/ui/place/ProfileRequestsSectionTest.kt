@@ -213,11 +213,10 @@ class ProfileRequestsSectionTest {
     }
 
     @Test
-    fun creator_neverSeesTheConfirmationOfARequest_norTheRequestsOfAMember() {
+    fun creator_neverSeesTheConfirmationOfARequestItDidNotMake() {
         val notices = PlaceNotices()
         notices.requestSent(queued = false)
-        section(myUid = "u1", requests = requestsOf(2), notices = notices)
+        section(myUid = "u1", notices = notices)
         composeRule.onAllNodesWithText(text(R.string.place_request_sent)).assertCountEquals(0)
-        composeRule.onAllNodesWithText("Demande 1").assertCountEquals(0)
     }
 }

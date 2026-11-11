@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
+import com.tomessa.miff.testsupport.FakePlaceRepository
 import com.tomessa.miff.testsupport.FakePlaceRequestStore
 import com.tomessa.miff.testsupport.FakePlaceStore
 import com.tomessa.miff.testsupport.MIFF_ID
@@ -30,7 +31,11 @@ class PlaceRequestRepositoryTest {
     private val now = 10_000_000_000L
     private val requests = FakePlaceRequestStore()
     private val places = FakePlaceStore()
-    private val repo = FirestorePlaceRequestRepository(requests, places, nowMillis = { now })
+    private val placeRepository = FakePlaceRepository()
+    private val repo =
+        FirestorePlaceRequestRepository(requests, places, placeRepository, newPlaceId = {
+            "NEWPLACE0000000001"
+        }, nowMillis = { now })
     private val uid = "u2"
 
     init {
