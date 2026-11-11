@@ -702,6 +702,9 @@ class FeedScreenTest {
         composeRule.onAllNodesWithContentDescription("Localiser Thomas").assertCountEquals(0)
     }
 
+    // A taller screen: the selector pastille is now always 48 dp high (decision of the PM, 2026-11-08), which pushed my own card (the last one) just
+    // out of the 900 dp window, and a lazy list only composes what it shows.
+    @Config(qualifiers = "fr-w360dp-h1100dp-port-xxhdpi")
     @Test
     fun waitingForTheAgreement_keepsTheCard_andTheBubbleIsNeutral() {
         var reviews = 0

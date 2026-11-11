@@ -142,7 +142,7 @@ private fun TabItem(
         when (tab) {
             MainTab.FEED -> {
                 Icon(
-                    painter = painterResource(R.drawable.ic_tab_feed),
+                    painter = painterResource(if (selected) R.drawable.ic_tab_feed_filled else R.drawable.ic_tab_feed),
                     contentDescription = null,
                     tint = tint,
                     modifier = Modifier.size(IconSize),
