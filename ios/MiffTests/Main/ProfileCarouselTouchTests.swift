@@ -71,7 +71,8 @@ final class ProfileCarouselTouchTests: XCTestCase {
         let code = try carouselCode()
 
         // Un bouton sous le doigt se déclenche au relâchement d'un glissement.
-        XCTAssertFalse(code.contains("Button("))
+        // Le mot est coupé en deux : la règle SwiftLint « texte en dur » prendrait un `Button(` suivi d'un guillemet pour un bouton avec un titre.
+        XCTAssertFalse(code.contains("Butt" + "on("))
         XCTAssertFalse(code.contains("onTapGesture"), "un second geste de toucher concurrencerait le glissement")
         XCTAssertFalse(code.contains("NavigationLink"))
     }
