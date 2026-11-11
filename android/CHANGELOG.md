@@ -2,6 +2,19 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.29.0] - 2026-11-11 : barre d'onglets encore plus translucide (retours du PM)
+
+Retours du PM sur l'APK de la PR #166 : « la barre d'onglets est trop opaque », puis « encore plus transparente (55 % ne suffit pas) ». Branche `android/tabbar-moins-opaque`, PR brouillon. Android seulement ; aucun changement de données, de permission, de dépendance (Haze déjà en place) ni de texte. Numéro de version : `main` est à 0.28.0 ; à renuméroter au merge si l'ordre change.
+
+### Modifié
+- **Voile du verre clair : blanc 80 % -> 55 % -> 32 %** (`GlassPaletteLight.tint`). Le flou reste à **28 dp** (il était à 20 dp avant cette PR). On voit très nettement le contenu qui défile sous la barre, flouté.
+- **Lisibilité compensée autrement que par l'opacité** : icône inactive **`#595959` -> `#1A1A1A`** (quasi noire) ; **pastille de l'onglet actif opaque** (`#CDD8F6`, le bleu 20 % des actions sur blanc) : l'icône bleue de l'onglet actif est à **5,73:1 quel que soit le fond**.
+- **Choix du PM (la transparence prime) et RISQUE CONNU** : l'icône **inactive** (le Profil quand on est sur le Feed) tombe **sous 3:1** quand ce qui passe sous la barre est **noir pur** : **2,21:1**. Elle reste >= 4,2:1 sur un fond gris foncé (25 % de blanc), **7,4:1** sur gris moyen et **17,4:1** sur blanc. Une photo presque noire sous la barre est le seul cas concerné ; l'état actif reste lisible dans tous les cas. Un halo blanc léger derrière l'icône a été essayé puis abandonné (sur la capture, il faisait un « fantôme »). Signal de reprise : si la recette montre une icône du Profil difficile à repérer sur une photo sombre, remonter le voile vers 40 % (les chiffres sont dans `TabBarGlassContrastTest`).
+- **Inchangés** : replis opaques (économiseur de batterie, animations supprimées, contraste renforcé sous Android 14+), repli sans flou (Android < 12, appareil à peu de mémoire, viseur : voile 92 % / 72 %), variante « sur photo », bouton central (plaque blanche opaque ; son gris neutre reste `#595959`, constante propre `NeutralStatusGrey`). Il n'existe pas de réglage système « réduire la transparence » lisible par une app sous Android : l'économiseur de batterie, la suppression des animations et le contraste renforcé le remplacent.
+- Limite connue : un flou plus fort coûte un peu plus de calcul ; si la recette montre des saccades sur l'OPPO, repasser à 20 dp ou couper le flou (`GlassPolicy.BLUR_ALLOWED = false`).
+- Tests : `TabBarGlassContrastTest` recalculé (nouveaux chiffres, pastille opaque, seuil de 3:1 conservé partout SAUF l'icône inactive sur noir pur, documenté), `GlassTabBarTest` (voile 32 %).
+- Documents : `design/tab-bar-liquid-glass.md` §6 bis (Android seulement, iOS non modifié), recette `docs/qa/checklists/tabbar-glass-android-recette-pm.md` §6.
+
 ## [0.29.0] - 2026-11-11 : Update, « Position introuvable » en boucle quand le suivi n'a pas encore publié ma position
 
 Miroir de la correction iOS (PR #157, recette TestFlight build 24). Ticket `docs/tickets/update.md` §6.5 (D27, D33, critère U8). Branche `android/update-position-publiable`. À renuméroter au merge si l'ordre change.
