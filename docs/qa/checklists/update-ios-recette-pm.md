@@ -84,6 +84,7 @@ Première ouverture : Réglages > Miff > **Appareil photo : désactivé** si la 
 
 - [ ] **Vert** : pastille **verte**, aucune bulle. **Orange** (console) : pastille **orange** ; **rouge** : **rouge**. **Aucun dessin** dans la pastille. **Gris** si le partage est arrêté.
 - [ ] **Orange** : une **bulle orange** au-dessus de la barre, la pointe vers le bouton du milieu : « Tu es passé en orange, indique à la Miff que tout va bien en publiant une update ». **Ni titre, ni bouton, ni croix.** Aucun son, aucune vibration, aucune animation. **Rouge** : bulle rouge.
+- [ ] **Taille de la bulle** (retour du PM sur iPhone : elle était beaucoup trop grosse) : elle est **compacte, de la hauteur de son texte** (3 à 4 lignes, marges de 16 pt en haut et en bas, texte en italique), comme sur Android, **jamais un grand rectangle**. Avec une **très grande taille de texte** (Réglages > Accessibilité > Taille du texte), elle grandit jusqu'à **40 % de l'écran** au plus puis le texte **défile à l'intérieur** ; **aucun symbole** dedans ; VoiceOver lit le texte une fois à l'apparition.
 - [ ] La bulle est aussi sur l'onglet **Profil**, et **absente** sur l'onglet **Update** ; elle **revient** quand vous quittez l'Update.
 - [ ] **Rien n'est caché dessous** : faites défiler le Feed et le Profil jusqu'en bas, le dernier élément se voit **au-dessus** de la bulle. Le **bas de la bulle touche le haut de la barre** (la pointe à 4 pt).
 - [ ] Touchez la **bulle** : il ne se passe rien. Touchez la **pastille** : l'Update s'ouvre.

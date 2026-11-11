@@ -21,10 +21,20 @@ struct BubbleTail: Shape {
     }
 }
 
+/// La hauteur du texte de la bulle (marges comprises), mesurée.
+private struct MessageHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 struct IncentiveBubble: View {
     let level: PromptLevel
     /// Le plus que le corps de la bulle peut prendre : au-delà, le texte défile dans la bulle et ne masque jamais le Feed.
     let maxBodyHeight: CGFloat
+    @State private var messageHeight: CGFloat = 0
 
     private var fill: Color {
         (level == .red ? colorStatusDangerBubble : colorStatusWarningBubble).color
@@ -41,18 +51,33 @@ struct IncentiveBubble: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, UpdateLayout.bubbleTextInsetX)
             .padding(.vertical, Spacing.md)
+            // Sa hauteur est MESURÉE : la bulle est de la hauteur de son texte, jamais plus (design d'Android).
+            .fixedSize(horizontal: false, vertical: true)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: MessageHeightKey.self, value: proxy.size.height)
+                }
+            )
+    }
+
+    /// Compacte : le texte seul, à sa hauteur. Défilante (grand texte) : une zone de la hauteur maximale, le texte défile dedans.
+    @ViewBuilder
+    private var bodyContent: some View {
+        if IncentiveBubbleLayout.scrolls(content: messageHeight, maxBodyHeight: maxBodyHeight) {
+            ScrollView(.vertical) {
+                message
+            }
+            .frame(height: IncentiveBubbleLayout.bodyHeight(content: messageHeight, maxBodyHeight: maxBodyHeight))
+        } else {
+            message
+        }
     }
 
     var body: some View {
         if level != .hidden {
             VStack(spacing: 0) {
-                ViewThatFits(in: .vertical) {
-                    message
-                    ScrollView {
-                        message
-                    }
-                }
-                .frame(maxHeight: maxBodyHeight)
+                bodyContent
+                .onPreferenceChange(MessageHeightKey.self) { messageHeight = $0 }
                 .background(RoundedRectangle(cornerRadius: UpdateLayout.bubbleCorner, style: .continuous).fill(fill))
                 // Le centre de l'écran : là où est le bouton central (les trois entrées de la barre sont symétriques, dans les deux sens
                 // d'écriture).
