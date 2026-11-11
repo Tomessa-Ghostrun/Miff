@@ -3,6 +3,7 @@ package com.tomessa.miff
 import android.content.Context
 import android.os.SystemClock
 import com.google.firebase.firestore.FirebaseFirestore
+import com.tomessa.miff.data.FirebaseAppCheckProbe
 import com.tomessa.miff.data.account.AccountDataStore
 import com.tomessa.miff.data.account.AccountDeletion
 import com.tomessa.miff.data.account.AccountDeletionController
@@ -312,6 +313,8 @@ class AppContainer(
             device = deviceSession,
             cache = cachePurger,
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
+            // AC-4: "this device is not recognized" is told apart from a refusal of the rules, only after a refusal.
+            appCheck = FirebaseAppCheckProbe(),
             // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
             online = { networkMonitor.isOnline() },
             // LIEU-REQ: leaving a Miff takes back the pending requests to add a place that the person made there (before the lot, never blocking it).

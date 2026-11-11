@@ -5727,6 +5727,23 @@
         }
       }
     },
+    "miff_message_device_not_recognized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device isn't recognized for now. Update Miff from the store, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet appareil n'est pas reconnu pour le moment. Mets Miff à jour depuis le store, puis réessaie."
+          }
+        }
+      }
+    },
     "miff_message_generic": {
       "extractionState": "manual",
       "localizations": {

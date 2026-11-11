@@ -203,6 +203,32 @@ fun DiagnosticScreen(
                         }
                     }
                 }
+                // AC-4, debug builds only: proves that a request without a token is refused once App Check is enforced.
+                Body(stringResource(R.string.android_diag_appcheck_off_description))
+                SwitchRow(
+                    label = stringResource(R.string.android_diag_appcheck_off_switch),
+                    checked = state.appCheckOffRequested,
+                    onCheckedChange = viewModel::setAppCheckOff,
+                )
+                LiveResult {
+                    when {
+                        state.appCheckOffInEffect && state.appCheckOffRequested -> {
+                            Warning(stringResource(R.string.android_diag_appcheck_off_active))
+                        }
+
+                        state.appCheckOffInEffect -> {
+                            Warning(stringResource(R.string.android_diag_appcheck_off_ending))
+                        }
+
+                        state.appCheckOffRequested -> {
+                            Body(stringResource(R.string.android_diag_appcheck_off_pending))
+                        }
+
+                        else -> {
+                            Unit
+                        }
+                    }
+                }
             }
 
             SectionCard(stringResource(R.string.diag_privacy_title)) {
