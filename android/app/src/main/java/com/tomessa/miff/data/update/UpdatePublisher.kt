@@ -13,6 +13,10 @@ import com.tomessa.miff.data.tracking.PublishedPositions
 import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.interpretMiffError
+import com.tomessa.miff.domain.tracking.DetectionJournal
+import com.tomessa.miff.domain.tracking.Fix
+import com.tomessa.miff.domain.tracking.JournalKind
+import com.tomessa.miff.domain.tracking.NoDetectionJournal
 import com.tomessa.miff.domain.update.PhotoLocation
 import com.tomessa.miff.domain.update.PhotoPlace
 import com.tomessa.miff.domain.update.PublishGuard
@@ -22,6 +26,7 @@ import com.tomessa.miff.domain.update.UpdateWrites
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.ZoneId
 
 /*
@@ -35,7 +40,10 @@ import java.time.ZoneId
  * - the photo AND the status are in the SAME transaction per lot of 5 Miffs at most (a status that says `hasPhoto` without a photo never exists), through the
  *   builders that carry the `deviceId` of the session ([UpdateWrites], TrackingWrites.photoStatus);
  * - the position is measured ONCE, at the press of "Publier" (never in a loop, never in the background), kept in memory until the lot is sent, and written only in
- *   the document of the photo. It is never logged nor sent as an event: nothing here logs anything.
+ *   the document of the photo. It is never logged nor sent as an event: the only trace is the local journal of the debug build (codes, no coordinate).
+ * - the Update NEVER writes `positions/{moi}` (criterion U8). Where the detection has not published my position yet, the measure taken at "Publier" is HANDED OVER to the
+ *   detection, which publishes it itself with all its guarantees ("Toujours" + precise location, sharing under the consent of version 3, session, frequency guard,
+ *   breaker, rules); the photo then only leaves where the position is published afterwards.
  */
 
 /** What "Publier" gave, reduced to what the screen can say (never a technical message). */
@@ -106,8 +114,18 @@ class UpdatePublisher(
     private val timeoutMillis: Long = TIMEOUT_MS,
     /** Has my position been published in this Miff? (contract of data-model.md: no photo where it was not; the reading of the photos of the others depends on it.) */
     private val published: PublishedPositions = PublishedPositions { true },
-    /** Called when no Miff of the lot has my position yet: the detection is asked to write it (the person retries in a moment). */
-    private val onPositionMissing: () -> Unit = {},
+    /**
+     * Where my position is not published yet: hands the measure taken at "Publier" (less than 10 minutes old) to the detection, which publishes it ITSELF (criterion U8:
+     * the Update never writes `positions/{moi}`) and returns when its pass is over (the wait is bounded here by [handOverTimeoutMillis]; the pass itself is NOT cut by it:
+     * the implementation runs it outside the screen, so that the engine always finishes its write and its local copy).
+     */
+    private val handOver: suspend (Fix) -> Unit = {},
+    /** The wait for the pass of the detection (own cap, shorter than [timeoutMillis]: the person has already waited for the measure; a detection busy elsewhere is not waited for long). */
+    private val handOverTimeoutMillis: Long = HANDOVER_TIMEOUT_MS,
+    /** Are the permissions the detection needs ("Toujours" + precise location) there? Read from the system, never a position. Without them it can never publish mine. */
+    private val trackingAllowed: () -> Boolean = { true },
+    /** The local journal of the debug build: CODES of cause, never a coordinate. */
+    private val journal: DetectionJournal = NoDetectionJournal,
     /** NOTIF-4A: told, locally, when an update left for [miffIds] at [atMillis] (it moves my last update: the reminders waiting for me are cancelled and planned again). */
     private val onUpdatePublished: (miffIds: List<String>, atMillis: Long) -> Unit = { _, _ -> },
     /**
@@ -147,30 +165,56 @@ class UpdatePublisher(
                 Clearance.Replaced -> return PublishResult.Refused
                 Clearance.Unverified -> return PublishResult.Offline
             }
-        // Contract of the data model: a photo is only written where my own position is published. None yet: the detection is asked to write it, nothing is
-        // measured, and the person is told to try again in a moment (the same calm sentence as a position that cannot be found).
+        // Contract of the data model: a photo is only written where my own position is published. Where the detection has not published it yet (its local copy has no
+        // trace of a write), the Update does NOT give up: it measures, then hands the measure to the detection, which publishes it itself (see below).
+        // Before, this case ended in "position introuvable" without anything being measured, at every try, and the detection alone (3 s of waiting) could never fix it.
         val traveling = travelOn()
-        val withPosition = targets.filter { published.isPublished(it) }
-        if (withPosition.isEmpty()) {
-            onPositionMissing()
-            return PublishResult.PositionNotFound
+        val missing = targets.filter { !published.isPublished(it) }
+        // Without "Toujours" + the precise location the detection never publishes: "réessaie dans un instant" would be false and endless, the right sentence leads to the settings.
+        val canHandOver = missing.isEmpty() || trackingAllowed()
+        if (missing.isNotEmpty()) {
+            journal.record(JournalKind.UPDATE_POSITION_NOT_PUBLISHED)
+            if (!canHandOver) {
+                journal.record(JournalKind.UPDATE_PERMISSION_BLOCKED)
+                // Nowhere to go: the settings. In some Miffs only: the photo goes where my position is already published, the others are "Partielle" (nothing is handed over).
+                if (missing.size == targets.size) return PublishResult.LocationOff
+            }
         }
         // ONE measure of the position, here and not before: nobody is located for a photo that is never published.
+        var measuredFix: Fix? = null
         val place =
             when (val measured = position.measure()) {
                 PhotoPosition.LocationOff -> {
+                    journal.record(JournalKind.UPDATE_PERMISSION_BLOCKED)
                     return PublishResult.LocationOff
                 }
 
                 PhotoPosition.NotFound -> {
+                    journal.record(JournalKind.UPDATE_MEASURE_FAILED)
                     return PublishResult.PositionNotFound
                 }
 
                 is PhotoPosition.Found -> {
+                    measuredFix = measured.fix
                     PhotoPlace.from(measured.fix, nowMillis())
-                        ?: return PublishResult.PositionNotFound
+                        ?: run {
+                            journal.record(JournalKind.UPDATE_MEASURE_FAILED)
+                            return PublishResult.PositionNotFound
+                        }
                 }
             }
+        var withPosition = targets.filter { it !in missing }
+        if (missing.isNotEmpty() && canHandOver) {
+            handOverPosition(measuredFix)
+            // The local copy of the detection now says where my position is published (read again, never assumed).
+            withPosition = targets.filter { published.isPublished(it) }
+            if (withPosition.isEmpty()) {
+                // The detection could not publish it (the Miff is not eligible for it, a refusal, offline, session): its own journal lines say which.
+                journal.record(JournalKind.UPDATE_HAND_OVER_FAILED)
+                return PublishResult.PositionNotFound
+            }
+            journal.record(JournalKind.UPDATE_HAND_OVER_WORKED)
+        }
         // The date of the sending is written BEFORE it starts (review C2): a transaction that leaves after the screen gave up is still cleaned up 24 h later.
         val previousNote = ledger.photoSentMillis(uid)
         ledger.notePhotoSent(uid, nowMillis())
@@ -183,6 +227,21 @@ class UpdatePublisher(
             if (previousNote != null) ledger.notePhotoSent(uid, previousNote) else ledger.clearPhotoSent()
         }
         return result
+    }
+
+    /**
+     * Gives the measure taken at "Publier" to the detection and waits for the end of its pass (bounded). The measure is less than 10 minutes old, so the detection
+     * does not ask for another one and publishes nothing more than it would have published itself. Never throws except for the cancellation of the caller.
+     */
+    private suspend fun handOverPosition(fix: Fix?) {
+        if (fix == null) return
+        try {
+            withTimeoutOrNull(handOverTimeoutMillis) { handOver(fix) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // The detection failed: the local copy tells whether the position got published, which is all that matters here.
+        }
     }
 
     private suspend fun writeLots(
@@ -310,6 +369,9 @@ class UpdatePublisher(
         /** 5 Miffs a lot: 3 reads of the rules each = 15 of the 20 allowed (backend/data-model.md, section 8). */
         const val LOT_SIZE = 5
         const val TIMEOUT_MS = 20_000L
+
+        /** The wait for the detection's pass after a hand-over: about the time the measure itself may take (a pass is a few reads and one write). */
+        const val HANDOVER_TIMEOUT_MS = 10_000L
     }
 }
 

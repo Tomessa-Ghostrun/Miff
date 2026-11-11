@@ -903,7 +903,7 @@
     <string name="feed_photo_download_done">Photo enregistrée.</string>
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
-    <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>
+    <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a pas l\'accès « Toujours » avec la position précise. Tu peux le régler dans les réglages, puis réessayer.</string>
 
     <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
     <string name="notif_n1_title">Tu es passé orange</string>
