@@ -2,6 +2,7 @@ package com.tomessa.miff.domain.notification
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -91,13 +92,11 @@ class NotificationPrivacyTest {
 
     @Test
     fun theCentreTheChoicesAndTheScreensTouchNoServer_criterionNC3() {
-        // The only files of the notifications that may reach the server are the verification of N3 and N4 (a later part of the work, listed here by name).
-        val mayReachTheServer = setOf("MiffStatusReader.kt")
+        // The notifications never touch Firestore from their own packages: the ONE reading of N3 and N4 lives in data/feed/CircleStatusReader.kt (tested below).
         val offenders =
             notificationDirs
                 .filter { it != "domain/notification" }
                 .flatMap { dir -> kotlinFiles(dir) }
-                .filter { it.name !in mayReachTheServer }
                 .flatMap { f ->
                     codeLines(f)
                         .filter {
@@ -111,6 +110,79 @@ class NotificationPrivacyTest {
             emptyList<String>(),
             offenders,
         )
+    }
+
+    @Test
+    fun theOnlyReadingOfTheServerIsTheVerificationOfN3AndN4_aSingleCollectionFromTheServer_andNeverAWrite() {
+        val reader = File(main, "data/feed/CircleStatusReader.kt")
+        assertTrue(reader.exists())
+        val code = codeLines(reader).joinToString("\n")
+        assertTrue(code.contains(".collection(\"status\")") && code.contains("Source.SERVER"))
+        assertEquals(
+            "one reading, no write",
+            emptyList<String>(),
+            listOf(
+                ".set(",
+                ".update(",
+                ".delete(",
+                "runTransaction",
+                "batch()",
+                "addSnapshotListener",
+            ).filter {
+                code.contains(it)
+            },
+        )
+        // Nothing else of the notifications reads the server (they all go through the interface).
+        val users =
+            File(main, ".")
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "kt" && it.name != "CircleStatusReader.kt" }
+                .filter { f -> codeLines(f).any { it.contains("FirestoreCircleStatusReader") } }
+                .map { it.name }
+                .toList()
+        assertEquals(listOf("AppContainer.kt"), users)
+    }
+
+    @Test
+    fun theReceiverIsNotExported_listensToFourSystemActionsOnly_andNoForegroundServiceOrWorkManagerIsNeeded() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val receiver =
+            Regex(
+                """<receiver\s+android:name="\.data\.notification\.NotificationAlarmReceiver"\s+android:exported="false">(.*?)</receiver>""",
+                RegexOption.DOT_MATCHES_ALL,
+            ).find(manifest)
+        assertNotNull("NotificationAlarmReceiver must be declared, not exported", receiver)
+        val actions =
+            Regex("<action android:name=\"([^\"]+)\"")
+                .findAll(receiver!!.groupValues[1])
+                .map {
+                    it.groupValues[1]
+                }.toSet()
+        assertEquals(
+            setOf(
+                "android.intent.action.BOOT_COMPLETED",
+                "android.intent.action.MY_PACKAGE_REPLACED",
+                "android.intent.action.TIME_SET",
+                "android.intent.action.TIMEZONE_CHANGED",
+            ),
+            actions,
+        )
+        assertFalse(manifest.contains("FOREGROUND_SERVICE"))
+        assertFalse(
+            "no new library for the reminders",
+            File("build.gradle.kts").readText().contains("androidx.work") ||
+                File("build.gradle.kts").readText().contains("libs.androidx.work"),
+        )
+        // The alarms of the app are inexact ones: the API is named in two places only (the reminders, and the end of a MODE VOYAGE trip).
+        val users =
+            File(main, ".")
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .filter { f -> codeLines(f).any { it.contains("setAndAllowWhileIdle") } }
+                .map { it.name }
+                .sorted()
+                .toList()
+        assertEquals(listOf("AndroidTracking.kt", "NotificationAlarms.kt"), users)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.tomessa.miff
 
 import android.app.Application
 import com.tomessa.miff.data.AppCheckInstaller
+import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.tracking.ForegroundObserver
 import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.domain.startup.StartupMark
@@ -46,12 +47,16 @@ class MiffApplication : Application() {
             registerActivityLifecycleCallbacks(
                 ForegroundObserver(
                     onForeground = {
+                        AppVisibility.inForeground = true
                         container.trackingLooksAgain(TrackingEngine.Reason.OPENED)
                         container.foregroundTicks.arrived()
-                        // NOTIF-1A: the names of the channels follow the language of the app (the system keeps the ones written at creation).
-                        container.ensureNotificationChannels()
+                        // NOTIF-1A / 4A: the channels follow the language of the app, and the reminders are brought in line with the plan.
+                        container.notificationsLookAgain()
                     },
-                    onBackground = { container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED) },
+                    onBackground = {
+                        AppVisibility.inForeground = false
+                        container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED)
+                    },
                 ),
             )
         }

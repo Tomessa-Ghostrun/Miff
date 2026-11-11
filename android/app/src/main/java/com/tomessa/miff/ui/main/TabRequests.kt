@@ -19,6 +19,11 @@ class TabRequests {
         state.value = tab
     }
 
+    /** The sign-out: a request made for the previous person must never be taken by the next one. */
+    fun clear() {
+        state.value = null
+    }
+
     /** The tabs took the request for [tab]; a newer request for another tab is kept. */
     fun consume(tab: MainTab) {
         state.compareAndSet(tab, null)

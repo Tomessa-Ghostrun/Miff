@@ -169,6 +169,22 @@
             </intent-filter>
         </receiver>
 
+        <!--
+            NOTIF-4A / NOTIF-5A: the ONE receiver of the reminders. Not exported: the alarms are explicit intents built by the app, and the four actions below come from the
+            system only. RECEIVE_BOOT_COMPLETED (declared for the detection, LOC-2b) is also what lets the alarms be planned again after a restart: the system erases them.
+            TIME_SET and TIMEZONE_CHANGED are the system's own broadcasts for a change of the clock or of the zone. No exact alarm, no foreground service.
+        -->
+        <receiver
+            android:name=".data.notification.NotificationAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
