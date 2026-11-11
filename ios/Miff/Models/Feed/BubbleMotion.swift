@@ -43,21 +43,10 @@ enum BubbleMotion {
     /// Où dans son cycle la dérive commence, pour qu'elle soit déphasée de l'écrasement (un quart de cycle).
     static let driftPhaseShift: Double = 0.25
 
-    // MARK: - Le pictogramme (« l'étoile ») de la bulle
-
-    /// Le pictogramme (un symbole seul, sans cercle) respire de ±5 % : une échelle uniforme, rien à déformer.
-    static let starScaleAmplitude: Double = 0.05
-
-    /// L'étoile dérive de 0,5 pt de plus ou de moins PAR-DESSUS la dérive de la bulle : son total reste à 4 pt.
-    static let starDriftPoints: Double = 0.5
-
     // MARK: - Les cycles
 
     /// Un cycle lent de la tache (6 s : entre les 5 et 8 s de D40, que D45 garde).
     static let blobPeriodSeconds: Double = 6
-
-    /// L'étoile suit un cycle un peu différent, aussi lent : les deux ne bougent jamais en cadence.
-    static let starPeriodSeconds: Double = 7
 
     /// Aucune animation quand la personne n'en veut pas, ni quand l'écran n'est pas visible.
     static func enabled(reduceMotion: Bool, active: Bool) -> Bool {
@@ -97,13 +86,5 @@ enum BubbleMotion {
 
     static func drift(_ phase: Double) -> Double {
         driftPoints * wave(phase + driftPhaseShift)
-    }
-
-    static func starScale(_ phase: Double) -> Double {
-        1 + starScaleAmplitude * wave(phase)
-    }
-
-    static func starDrift(_ phase: Double) -> Double {
-        starDriftPoints * wave(phase + driftPhaseShift)
     }
 }

@@ -264,6 +264,11 @@ struct FeedTexts {
         return text(page.isMe ? "feed_bubble_me_danger_note" : "feed_bubble_danger_note")
     }
 
+    /// Le nom parlé du bouton d'une bulle d'alerte : « Contacter Thomas » (même clé qu'Android, `feed_bubble_contact_a11y`).
+    func contactA11y(_ name: String) -> String {
+        text("feed_bubble_contact_a11y", name)
+    }
+
     func offlineAlert(_ page: AlertPage) -> String? {
         page.offlineSince.map { text("feed_bubble_offline_alert", from($0)) }
     }
