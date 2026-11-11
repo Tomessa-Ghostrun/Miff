@@ -23,6 +23,9 @@ struct StatusPayload {
     let presenceAtMillis: Int
     let batteryPct: Int?
     let access: LocationAccess
+    /// MODE VOYAGE : ce statut met fin à un voyage, donc les deux clés du voyage sont effacées dans la MÊME écriture (les règles les refusent à
+    /// côté d'une autre présence).
+    var clearTravel = false
 }
 
 enum TrackingWrites {
@@ -56,6 +59,52 @@ enum TrackingWrites {
         if payload.fact.setLastUpdate {
             fields["lastUpdateAt"] = .timestamp(millis: payload.presenceAtMillis)
         }
+        if payload.clearTravel {
+            fields["travelUntil"] = .null
+            fields["travelUntilDay"] = .null
+        }
+        let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
+        return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
+    }
+
+    /// MODE VOYAGE, le DÉBUT d'un voyage dans UNE Miff (backend/firestore.rules `validTravel`) : `presence = travel`, aucun lieu, aucune batterie,
+    /// aucune échéance, la fin du voyage (un instant) et le jour choisi (un texte, affichage seul). `presenceAt` est le moment où le voyage a
+    /// commencé (« En voyage depuis… »), déjà passé par `EventTime.forWrite`. Un UPDATE (il ne crée jamais un statut) : `lastUpdateAt`,
+    /// `updateText`, `hasPhoto` et `locationAccess` ne sont pas envoyés, ils restent ce qu'ils sont.
+    static func travelStart(
+        miffId: String,
+        uid: String,
+        period: TravelPeriod,
+        presenceAtMillis: Int,
+        deviceId: String
+    ) -> DocWrite? {
+        guard isWritable(miffId: miffId, uid: uid, deviceId: deviceId), TravelDate.parse(period.untilDay) != nil else {
+            return nil
+        }
+        let fields: [String: FieldValueSpec] = [
+            "presence": .string(PresenceValue.travel.rawValue),
+            "placeId": .null,
+            "presenceAt": .timestamp(millis: presenceAtMillis),
+            "batteryPct": .null,
+            "escalationDueAt": .null,
+            "travelUntil": .timestamp(millis: period.untilMillis),
+            "travelUntilDay": .string(period.untilDay),
+            "updatedAt": .serverTimestamp
+        ]
+        let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
+        return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
+    }
+
+    /// MODE VOYAGE, un CHANGEMENT de la fin d'un voyage déjà écrit dans cette Miff : seules les deux clés du voyage bougent (le début reste).
+    static func travelDate(miffId: String, uid: String, period: TravelPeriod, deviceId: String) -> DocWrite? {
+        guard isWritable(miffId: miffId, uid: uid, deviceId: deviceId), TravelDate.parse(period.untilDay) != nil else {
+            return nil
+        }
+        let fields: [String: FieldValueSpec] = [
+            "travelUntil": .timestamp(millis: period.untilMillis),
+            "travelUntilDay": .string(period.untilDay),
+            "updatedAt": .serverTimestamp
+        ]
         let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
         return DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .update, data: stamped)
     }
