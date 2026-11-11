@@ -35,7 +35,7 @@ class MiffApplication : Application() {
         super.onCreate()
         StartupTrace.section("Miff.Application.onCreate") {
             // Firebase is already initialized by its content provider at this point.
-            StartupTrace.section("Miff.AppCheck.install") { AppCheckInstaller.install() }
+            StartupTrace.section("Miff.AppCheck.install") { AppCheckInstaller.install(this) }
             // Nothing is built yet: every member of the container is created on first use.
             container = AppContainer(this)
             // The manifest starts with "collect nothing" and the stored device choice is deliberately NOT re-applied here:

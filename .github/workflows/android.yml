@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     defaults:
       run:
         shell: bash
@@ -155,6 +155,32 @@ jobs:
           ./gradlew assembleDebug --console=plain -Pmiff.uploadCrashlyticsMapping=false
           printf '| assembleDebug | %s |\n' "$(( $(date +%s) - start ))" >> "$RUNNER_TEMP/timings.md"
 
+      # Release preparation (docs/release/checklist-android.md): the version is never frozen. Without -Pmiff.versionCode / -Pmiff.versionName (as here), the APK
+      # carries the version of the first "## [x.y.z]" heading of android/CHANGELOG.md and the code major * 1 000 000 + minor * 1 000 + patch. Read back from the
+      # real APK with aapt2, so that a change of the build file cannot silently bring back 1 / 0.1.0.
+      - name: Check the version carried by the APK (changelog, not 1 / 0.1.0)
+        run: |
+          aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          package_line=$("$aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -m1 '^package:')
+          apk_name=$(printf '%s' "$package_line" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
+          apk_code=$(printf '%s' "$package_line" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+          log_name=$(sed -n 's/^## \[\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)\].*/\1/p' CHANGELOG.md | head -1)
+          if [ -z "$log_name" ]; then
+            echo "::error title=Changelog sans version::Aucun titre « ## [x.y.z] » dans android/CHANGELOG.md : la version de l'APK ne peut plus en etre derivee."
+            exit 1
+          fi
+          IFS=. read -r major minor patch <<< "$log_name"
+          expected_code=$(( major * 1000000 + minor * 1000 + patch ))
+          if [ "$apk_name" != "$log_name" ] || [ "$apk_code" != "$expected_code" ]; then
+            echo "::error title=Version de l'APK::L'APK porte la version $apk_name (code $apk_code) au lieu de $log_name (code $expected_code) : voir versionName et versionCode dans android/app/build.gradle.kts."
+            exit 1
+          fi
+          if [ "$apk_code" = "1" ] || [ "$apk_name" = "0.1.0" ]; then
+            echo "::error title=Version figee::L'APK porte la version figee 1 / 0.1.0."
+            exit 1
+          fi
+          echo "L'APK porte la version $apk_name (code $apk_code), celle du changelog."
+
       # Proof that the APK carries the debug fingerprint registered in Firebase (a SHA-1 is public information).
       - name: Check the SHA-1 of the debug APK against the Firebase configuration
         if: env.DEBUG_KEYSTORE_USED == 'true' && env.FAKE_FIREBASE_CONFIG != 'true'
@@ -206,8 +232,8 @@ jobs:
             echo "::error::Aucun fichier dex dans le bundle release : verification impossible."
             exit 1
           fi
-          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
-            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck, DETECTIONJOURNAL ou REVIEWPROMPTPROBE : l'ecran de diagnostic, le fournisseur App Check de debug, le journal de detection (LOC-2b) ou la fenetre d'avis (docs/tickets/pop-ins-avis.md, AV2) a fuite dans le build release."
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DEBUGAPPCHECKOFF|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
+            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck, DEBUGAPPCHECKOFF (interrupteur « sans App Check », AC-4), DETECTIONJOURNAL ou REVIEWPROMPTPROBE : l'ecran de diagnostic, le fournisseur App Check de debug ou son interrupteur « sans App Check » (AC-4), le journal de detection (LOC-2b) ou la fenetre d'avis (docs/tickets/pop-ins-avis.md, AV2) a fuite dans le build release."
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
@@ -224,8 +250,8 @@ jobs:
           # releaseLike is built from the release sources: same proof for its APK.
           like=app/build/outputs/apk/releaseLike/app-releaseLike.apk
           test -f "$like" || { echo "::error::APK releaseLike introuvable : $like"; exit 1; }
-          if unzip -p "$like" 'classes*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
-            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug, le journal de detection ou la fenetre d'avis (REVIEWPROMPTPROBE)."
+          if unzip -p "$like" 'classes*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DEBUGAPPCHECKOFF|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
+            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug, l'interrupteur « sans App Check » (AC-4), le journal de detection ou la fenetre d'avis (REVIEWPROMPTPROBE)."
             exit 1
           fi
           echo "APK releaseLike : aucune trace du diagnostic ni du fournisseur App Check de debug."
@@ -245,6 +271,71 @@ jobs:
             exit 1
           fi
           echo "Garde verifiee : un build de release refuse -Pmiff.reviewPrompt=true."
+
+      # Release preparation: the signature of the release comes from ENVIRONMENT VARIABLES ONLY (build.gradle.kts, section "UPLOAD KEY"). Proof with a THROW-AWAY
+      # key made on this disposable runner (random password, valid 2 days, never a real key, deleted with the runner): (1) all four variables: the release
+      # variant uses the "release" signing config, and the debug and releaseLike variants keep the debug one; (2) only some of them: the build FAILS (a half
+      # configured signature must never produce an unsigned bundle without a word); (3) all four but no -Pmiff.versionCode: a signed release is refused (Google
+      # Play needs a code that grows). With none of them the release stays unsigned: that is the bundle built above. Nothing here is a secret.
+      - name: Check the wiring of the release signature (throw-away key, nothing real)
+        run: |
+          set +x
+          tmp="$RUNNER_TEMP/throwaway"
+          mkdir -p "$tmp"
+          export MIFF_UPLOAD_STORE_PASSWORD="$(openssl rand -hex 16)"
+          export MIFF_UPLOAD_KEY_PASSWORD="$MIFF_UPLOAD_STORE_PASSWORD"
+          export MIFF_UPLOAD_KEY_ALIAS=throwaway
+          export MIFF_UPLOAD_STORE_FILE="$tmp/throwaway.jks"
+          keytool -genkeypair -keystore "$MIFF_UPLOAD_STORE_FILE" -alias throwaway -storepass:env MIFF_UPLOAD_STORE_PASSWORD -keypass:env MIFF_UPLOAD_KEY_PASSWORD -keyalg RSA -keysize 2048 -validity 2 -dname "CN=Miff CI throw-away" > /dev/null
+          common="--console=plain --no-configuration-cache -Pmiff.uploadCrashlyticsMapping=false"
+          report="$RUNNER_TEMP/signing-report.txt"
+          ./gradlew :app:signingReport $common > "$report" 2>&1 || { tail -30 "$report"; echo "::error title=Signature de release::signingReport a echoue avec les quatre variables MIFF_UPLOAD_*."; exit 1; }
+          config_of() { awk -v variant="Variant: $1" '$0 == variant { found = 1 } found && /^Config:/ { print $2; exit }' "$report"; }
+          if [ "$(config_of release)" != "release" ]; then
+            echo "::error title=Signature de release::La variante release n'utilise pas la configuration de signature « release » alors que les quatre variables MIFF_UPLOAD_* sont donnees."
+            exit 1
+          fi
+          if [ "$(config_of releaseLike)" != "debug" ] || [ "$(config_of debug)" != "debug" ]; then
+            echo "::error title=Signature de release::Les variantes debug et releaseLike doivent rester signees avec la cle de debug."
+            exit 1
+          fi
+          log="$RUNNER_TEMP/signing-guard.log"
+          if env -u MIFF_UPLOAD_KEY_PASSWORD ./gradlew :app:signingReport $common > "$log" 2>&1; then
+            echo "::error title=Signature a moitie configuree::Le build a reussi avec trois variables MIFF_UPLOAD_* sur quatre : il doit echouer."
+            exit 1
+          fi
+          if ! grep -c 'half configured' "$log" | grep -q -v '^0$'; then
+            echo "::error title=Mauvaise raison d'echec::Le build a echoue, mais pas par la garde de la signature a moitie configuree."
+            tail -30 "$log"
+            exit 1
+          fi
+          if ./gradlew bundleRelease $common > "$log" 2>&1; then
+            echo "::error title=Garde du numero de version absente::Un bundle de release signe a ete construit sans -Pmiff.versionCode : il doit etre refuse."
+            exit 1
+          fi
+          if ! grep -c 'explicit version code' "$log" | grep -q -v '^0$'; then
+            echo "::error title=Mauvaise raison d'echec::Le bundle signe a ete refuse, mais pas par la garde du numero de version."
+            tail -30 "$log"
+            exit 1
+          fi
+          rm -rf "$tmp"
+          echo "Signature verifiee : variante release signee par la cle d'envoi (cle jetable), debug et releaseLike inchangees, signature a moitie configuree refusee, numero de version obligatoire."
+
+      # Release preparation: Google Play requires 16 KB memory pages (Android 15+) for the 64-bit native libraries (arm64-v8a, x86_64) of an app that targets
+      # Android 15 or later. The ELF headers of every .so of the unsigned release bundle must align their segments on at least 16 384 bytes. The check script has
+      # its own tests (hand-made ELF files); the real libraries (MapLibre, ...) are read from the bundle built above.
+      - name: Native libraries aligned for 16 KB memory pages (release bundle)
+        run: |
+          node --test ci/check-elf-16kb.test.mjs
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          test -f "$bundle" || { echo "::error::Bundle release introuvable : $bundle"; exit 1; }
+          work="$RUNNER_TEMP/aab-libs"
+          mkdir -p "$work"
+          # One ABI folder at a time: how "*" treats "/" differs between unzip builds. A missing ABI is not an error; an empty extraction is (the script refuses it).
+          for abi in arm64-v8a x86_64; do
+            unzip -q -o "$bundle" "base/lib/$abi/*" -d "$work" || true
+          done
+          node ci/check-elf-16kb.mjs "$work"
 
       # The release resource shrinker removed "default_web_client_id" once (it is read by name): without it "Continuer avec
       # Google" never works in a release build. Same proof for the biometric permissions pulled in by androidx.credentials.
@@ -317,7 +408,7 @@ jobs:
             if [ -f "$RUNNER_TEMP/timings.md" ]; then cat "$RUNNER_TEMP/timings.md"; fi
             echo
             echo "> The debug APK artifact (kept 3 days) contains the public Firebase configuration of project miff-3d283 (google-services.json values: project and app identifiers, public API key). It is not a secret credential, but share the file only with testers."
-            echo "> Release bundle is unsigned: no signing key exists yet."
+            echo "> Release bundle is unsigned here on purpose: the SIGNED bundle for Google Play is built by the manual workflow android-release (needs the upload-key secrets, see docs/release/checklist-android.md)."
             if [ "$FAKE_FIREBASE_CONFIG" = "true" ]; then
               echo "> Dependabot run: built with an obviously fake Firebase configuration (the secret is not available to Dependabot). The APK was not published."
             fi

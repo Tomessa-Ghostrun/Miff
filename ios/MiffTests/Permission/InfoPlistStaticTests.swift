@@ -51,14 +51,17 @@ final class InfoPlistStaticTests: XCTestCase {
         XCTAssertEqual(locationKeys.count, 2, "chaque clé une seule fois")
     }
 
-    func testProjectDeclaresExactlyTheCameraUsageKeyAndNoPhotoLibraryKey() throws {
+    func testProjectDeclaresExactlyTheCameraUsageKeyAndOnlyTheAddOnlyPhotoLibraryKey() throws {
         // UPDATE-3 : la caméra du viseur, rien d'autre. La photo est prise EN MÉMOIRE et n'est jamais écrite dans la photothèque : aucune clé
         // NSPhotoLibrary*, aucune clé de micro ni de reconnaissance.
         let lines = try yamlLines().map { $0.trimmingCharacters(in: .whitespaces) }
         let cameraKeys = lines.filter { $0.hasPrefix("NSCamera") }.map { String($0.prefix { $0 != ":" }) }
 
         XCTAssertEqual(cameraKeys, ["NSCameraUsageDescription"])
-        for forbidden in ["NSPhotoLibrary", "NSMicrophone", "NSContacts", "NSFaceID", "NSSpeechRecognition"] {
+        // FEED-8 : « Enregistrer cette photo » : AJOUT SEUL à la galerie, jamais de lecture.
+        let photoKeys = lines.filter { $0.hasPrefix("NSPhotoLibrary") }.map { String($0.prefix { $0 != ":" }) }
+        XCTAssertEqual(photoKeys, ["NSPhotoLibraryAddUsageDescription"])
+        for forbidden in ["NSMicrophone", "NSContacts", "NSFaceID", "NSSpeechRecognition"] {
             XCTAssertFalse(lines.contains { $0.hasPrefix(forbidden) }, forbidden)
         }
     }
@@ -139,7 +142,7 @@ final class InfoPlistStaticTests: XCTestCase {
         XCTAssertTrue(binaries.contains(expectedKeys))
         // UPDATE-3 : la caméra (une seule clé NSCamera*) et aucune clé de photothèque sont contrôlées sur le binaire.
         XCTAssertTrue(binaries.contains("NSCameraUsageDescription"))
-        XCTAssertTrue(binaries.contains("NSPhotoLibrary"))
+        XCTAssertTrue(binaries.contains("NSPhotoLibraryAddUsageDescription"))
         XCTAssertTrue(binaries.contains("UIBackgroundModes"))
         XCTAssertTrue(binaries.contains("MiffLocationBlocking"))
         // Un build de PUBLICATION qui relâche le blocage est refusé, sauf demande expresse.

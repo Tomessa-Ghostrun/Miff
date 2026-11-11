@@ -63,7 +63,7 @@ import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
-import com.tomessa.miff.ui.theme.textDisplayBubble
+import com.tomessa.miff.ui.theme.textDisplayHeadline
 import kotlinx.coroutines.launch
 
 /*
@@ -345,12 +345,11 @@ private fun BubbleBlob(
 }
 
 /**
- * The MAIN sentence of the bubble ("Tout va bien"): the font and weight of display/headline (Baloo Thambi 2, like the other titles of the app) at 30 / 36,
- * bigger than the 24 / 30 of a title (decision of the PM, 2026-11-11; the bold singular font tried before was dropped). Only this sentence is bigger. Size in
- * sp (follows the font size of the phone); the lines are balanced ([LineBreak.Heading]) and the bubble grows in height, so a small screen or a large text
- * never pushes a word out of it.
+ * The MAIN sentence of the bubble ("Tout va bien"): EXACTLY display/headline (Baloo Thambi 2 Regular, 24 sp / 30), the title of the other screens
+ * (decision of the PM, 2026-11-11: same font, same size, no enlargement). Size in sp (follows the font size of the phone); the lines are balanced
+ * ([LineBreak.Heading]) and the bubble grows in height, so a small screen or a large text never pushes a word out of it.
  */
-private val HEADLINE_STYLE = textDisplayBubble.copy(lineBreak = LineBreak.Heading)
+private val HEADLINE_STYLE = textDisplayHeadline.copy(lineBreak = LineBreak.Heading)
 
 @Composable
 private fun Headline(text: String) {

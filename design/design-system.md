@@ -63,7 +63,6 @@ Deux familles : **Baloo Thambi 2** (titres et noms, ton chaleureux) et **Hanken 
 |---|---|---|---|
 | `display/hero` | Baloo Thambi 2 | 64 / 72 | Grand texte décoratif (états vides), usage rare |
 | `display/headline` | Baloo Thambi 2 | 24 / 30 | Message principal du Feed ("Tout le monde est en sécurité") |
-| `display/bubble` | Baloo Thambi 2 (comme `display/headline`) | **30 / 36** | **Phrase principale de la bulle du Feed UNIQUEMENT** (« Tout va bien », « Pas encore de nouvelles ») : même police et même graisse que `display/headline`, seule la taille change (décision du PM du 2026-11-11) |
 | `display/title` | Baloo Thambi 2 | 20 / 26 | Titres d'écran (Réglages, notifications) |
 | `display/label` | Baloo Thambi 2 | 16 / 22 | Prénoms dans les cartes |
 | `title/bold-24` | Hanken Grotesk Bold | 24 / 30 | Accroche en dégradé (Bienvenue, Paywall) |
@@ -83,15 +82,12 @@ Deux familles : **Baloo Thambi 2** (titres et noms, ton chaleureux) et **Hanken 
 
 Polices à intégrer dans les apps : Baloo Thambi 2 et Hanken Grotesk (Google Fonts, licence libre).
 
-### 2.1 Phrase principale de la bulle du Feed (`display/bubble`, décisions du PM des 2026-11-10 et 2026-11-11)
+### 2.1 Phrase principale de la bulle du Feed (décisions du PM des 2026-11-10 et 2026-11-11)
 
-Le PM voulait d'abord (2026-11-10) la phrase principale de la bulle en gras et dans une écriture proche du logo (Baloo Thambi 2 ExtraBold, 800). Après la recette de l'APK (2026-11-11), il a **renoncé à la police en gras** : la phrase **garde la taille agrandie** mais **la police redevient homogène avec le reste de l'app**.
-- **Police : celle de `display/headline`**, c'est-à-dire **Baloo Thambi 2, graisse Regular (400)**, nom PostScript `BalooThambi2-Regular` (instance par défaut de la police variable). Aucune police ni graisse supplémentaire ; licence SIL OFL 1.1 déjà documentée (`android/third_party/fonts/OFL-BalooThambi2.txt`, `ios/third_party/fonts/`).
-- **Taille : 30 pt / 36 (iOS) ; 30 sp / 36 (Android)**, contre 24 / 30 pour `display/headline`. Suit la taille de texte du système (sp sur Android, Dynamic Type sur iOS avec `dynamicTypeStyle: .title2`, comme `display/headline`) ; **pas de plafond** : la bulle grandit en hauteur, le texte passe à la ligne, jamais de débordement horizontal.
-- **Couleur et alignement** : `text/primary`, centré. Lignes **équilibrées** quand la plateforme le permet (Android `LineBreak.Heading` ; iOS : rien à faire, le centrage suffit).
-- **Périmètre** : **uniquement cette phrase de la bulle**. Le reste du Feed (prénoms des cartes, lignes, étiquettes, boutons) ne change pas.
-- **iOS** : **le style `textDisplayHeadline` (Baloo Thambi 2, `BalooThambi2-Regular`, poids 400) à la taille 30 / 36**, `dynamicTypeStyle: .title2` ; aucun réglage de variation de police (surtout pas `balooBoldFont`).
-- **Android** : `textDisplayBubble = textDisplayHeadline.copy(fontSize = 30.sp, lineHeight = 36.sp)` (`ui/theme/Type.kt`), appliqué dans `Headline` de `ui/feed/FeedBubble.kt`.
+La phrase principale de la bulle de la Miff (« Tout va bien », « Pas encore de nouvelles », le titre d'une alerte) est en **`display/headline` tel quel : Baloo Thambi 2 Regular, 24 / 30**, comme le titre des autres écrans. Historique : le PM a d'abord essayé une version plus grosse et en gras (Baloo ExtraBold 800, puis 30 / 36, 2026-11-10 et 2026-11-11), puis a demandé le retour à la taille et à la police homogènes des titres ; **aucun style spécifique à la bulle n'existe plus**.
+- **iOS** : `textDisplayHeadline` inchangé (Baloo Thambi 2, `BalooThambi2-Regular`, poids 400, taille 24, interligne 30, `dynamicTypeStyle: .title2`), couleur `text/primary`, centré. Pas de taille ni de graisse particulières (surtout pas `balooBoldFont`, ni 30 / 36).
+- **Android** : `textDisplayHeadline` (avec `LineBreak.Heading` pour équilibrer les lignes), dans `Headline` de `ui/feed/FeedBubble.kt`.
+- Taille de texte du système respectée (sp sur Android, Dynamic Type sur iOS) ; la bulle grandit en hauteur, jamais de débordement horizontal.
 
 ---
 
@@ -158,12 +154,11 @@ Champ à soulignement, champ encadré, carte de choix (créer/rejoindre une Miff
 | 1 | **Espacements** : le §6 dit « non tokenisés » ; Android a un objet `Spacing` (4 / 8 / 16 / 24 / 32, cible tactile 48, largeur du logo 200, avatar de membre 46) qui « évite d'éparpiller les nombres bruts » et déclare lui-même n'être pas un jeton Figma | `ui/theme/Spacing.kt` | Pas de jeton Figma ; iOS : aucun équivalent recensé |
 | 2 | **Jetons du Feed absents d'iOS** : `status/*-text`, gris neutre, jetons de l'Update vivent dans des fichiers Android à part (`FeedColor.kt`, `UpdateColor.kt`) pour ne pas casser le test de parité des couleurs ; **aucun n'existe dans `ios/Miff/DesignSystem/ColorTokens.swift` sur `main`** (pas de Feed iOS) | Android / iOS | À ajouter côté iOS avec le Feed iOS, mêmes noms et mêmes valeurs |
 | 3 | **`bg/overlay-header` (`#f9f9f7` à 60 %, flou)** : défini ici, **non utilisé par l'en-tête du Feed livré** (fond `bg/canvas` opaque, ombre `shadow/subtle`) | `ui/feed/FeedHeader.kt` | Voir `screens/feed/entete-et-selecteur.md` |
-| 4 | **`display/headline` 24 / 30** ici ; les fiches du Feed disent 24 / 32 (bulle) et 17 / 24 (prénom) alors que le code suit le jeton (24 / 30 et `display/label` 16 / 22) ; **depuis le 2026-11-10, la phrase principale de la bulle est `display/bubble` (même police, 30 / 36)** (§2.1), `display/headline` ne sert plus à la bulle | `ui/feed/FeedBubble.kt`, `FeedCards.kt` | Le jeton fait foi |
+| 4 | **`display/headline` 24 / 30** ici ; les fiches du Feed disent 24 / 32 (bulle) et 17 / 24 (prénom) alors que le code suit le jeton (24 / 30 et `display/label` 16 / 22) | `ui/feed/FeedBubble.kt`, `FeedCards.kt` | Le jeton fait foi |
 | 5 | **Seuil de masquage de la batterie** : 6 h (décision du PM, 2026-11-07) contre 24 h dans le ticket et le code de la PR #105 | `docs/tickets/feed.md`, `domain/feed/FeedBuilder.kt` | Incohérence non tranchée (voir `screens/feed/cartes-membres.md`) |
 | 6 | **Mouvement de la bulle** : précision du PM (étirement / écrasement déphasés) absente du code de `main` | `ui/feed/BubbleMotion.kt` | Voir `screens/feed/bulles.md` |
 | 7 | **Ombre de la barre d'onglets** : Android `shadow/default`, iOS noir 18 %, rayon 10, décalage 6 | `ui/main/GlassTabBar.kt`, `ios/.../TabBarTokens.swift` (PR #102) | Voir `tab-bar-liquid-glass.md` §14 |
 | 8 | **Tailles d'icônes de la barre** : 26 (Android, spécification) contre 24 (iOS, PR #102) | idem | Voir `tab-bar-liquid-glass.md` §14 |
-| 9 | **`display/bubble` = `display/headline` en 30 / 36** : Android le déclare avec `copy(fontSize, lineHeight)` (pas `style(...)`), donc hors du test de parité `testTextStylesAreIdenticalToAndroid` ; **suivi** : la PR iOS ajoute `textDisplayBubble` (même style que `display/headline`, 30 / 36, `.title2`), puis une mini-PR Android pourra le repasser en `style(FontFamilyBaloo, 30, 36)` pour que le test le couvre | `ui/theme/Type.kt` | À faire avec la PR iOS de la bulle |
 
 ---
 
@@ -209,7 +204,7 @@ Le choix de la variante est fait **par l'écran** (claire : Feed, Profil ; sur p
 | **Avatar de statut** | Disque de 46 dp, anneau 3 dp (`StrokeAvatarRing`) de la couleur du niveau, fond `status/neutral`, initiales `body/bold-14` ; **couleur seule, aucun pictogramme** ; décoratif pour le lecteur d'écran | `ui/feed/FeedStyle.kt` (`FeedAvatar`) |
 | **Pastille de statut (étiquette d'état)** | Texte `body/regular-14` en `status/*-text` sur la teinte 30 % du niveau, arrondi `radius/sm`, marges 8 / 4 ; **texte seul, sans pictogramme** ; seule l'étiquette « dans un lieu » est précédée de **l'emoji de la catégorie du lieu** (taille du texte, décoratif ; `docs/contracts/place-categories.md` §1 bis) | `ui/feed/FeedCards.kt` (`StateChip`), `FeedStyle.kt` (`tint()`, `onTint()`) |
 | **Carte membre** | Fond `bg/surface`, arrondi `radius/sm`, ombre `shadow/subtle`, contour 1 dp `border/default`, liseré de 5 dp de la couleur du niveau ; avatar, prénom `display/label`, pastille de batterie (« 85 % » seul), étiquette d'état, ligne de temps, aperçu carré de la photo, boutons Localiser / Message / Appeler de 48 dp (aucun sur ma carte, qui est la dernière et porte la ligne « Ce que tes proches voient de toi ») | `ui/feed/FeedCards.kt`, `FeedPhoto.kt` |
-| **Bulle de la Miff** | Tache organique (10 points), teinte 30 % du niveau, hauteur minimale 176 dp, marges 40 / 56 / 40 / 46 dp ; phrase principale `display/bubble` (`display/headline` en 30 / 36, §2.1)  ; **aucun pictogramme** (PM, 2026-11-11) ; bouton « Contacter » plus petit (36 dp dessinés, 48 dp de toucher, sans icône) ; mouvement lent continu (`BubbleMotion.kt`), immobile sans animations ; carrousel avec pastilles 8 dp (page courante 22 x 8 dp) | `ui/feed/FeedBubble.kt`, `BubbleMotion.kt` |
+| **Bulle de la Miff** | Tache organique (10 points), teinte 30 % du niveau, hauteur minimale 176 dp, marges 40 / 56 / 40 / 46 dp ; phrase principale `display/headline` (24 / 30, §2.1)  ; **aucun pictogramme** (PM, 2026-11-11) ; bouton « Contacter » plus petit (36 dp dessinés, 48 dp de toucher, sans icône) ; mouvement lent continu (`BubbleMotion.kt`), immobile sans animations ; carrousel avec pastilles 8 dp (page courante 22 x 8 dp) | `ui/feed/FeedBubble.kt`, `BubbleMotion.kt` |
 | **En-tête rétractable du Feed** | Avatar (zone 48 dp, anneau du statut) · logo 100 dp de large · pastille de Miff ; fond `bg/canvas` opaque, ombre `shadow/subtle`, marges 16 dp ; **se masque au défilement vers le bas, réapparaît dès qu'on remonte** ; toujours visible : chargement, erreur, hors connexion, lecteur d'écran actif, sélecteur ouvert | `ui/feed/FeedHeader.kt`, `CollapsingHeader.kt` |
 | **Pastille de Miff** | Une seule Miff : fond noir 5 %, 40 dp de haut, non cliquable, sans ombre ni flèche ; Miff+ : fond `bg/surface`, ombre `shadow/default`, 48 dp, flèche bleue, liste de lignes de 48 dp | `ui/feed/FeedHeader.kt` (`Pill`, `MiffPill`) |
 | **Bulle d'incitation (Update)** | Rectangle arrondi 20 dp aux couleurs `status/*-bubble`, texte `body/italic`, marges 18 dp (côtés) et 16 dp (haut, bas), queue de 22 x 11 dp à 4 dp au-dessus de la barre, opaque, annoncée comme région polie | `ui/update/UpdateBubble.kt` |
