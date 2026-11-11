@@ -9,6 +9,7 @@ Demande du PM du 2026-11-11. Branche `android/update-flash`, PR brouillon. Numé
 ### Ajouté
 - **Bouton « flash » sur le viseur** : en haut **à gauche** de l'écran, sur la même ligne que le bouton de changement de caméra (même pastille ronde de 48 dp). **Éteint par défaut**, toujours : à chaque ouverture du viseur, après un changement de caméra et au retour de l'arrière-plan (ou du verrouillage), le flash est éteint tant qu'on ne l'active pas ; **le choix n'est jamais conservé**. Le flash ne se déclenche **qu'au moment de la photo** (pas de lampe allumée en continu). La caméra frontale n'a en général pas de flash : le bouton est alors **masqué**, sans message.
 - **État lisible sans la couleur** : éclair plein sur pastille claire = activé, éclair barré sur pastille sombre = désactivé ; TalkBack annonce « Flash » puis « Flash activé / désactivé » (`update_flash_a11y`, `update_flash_state_on`, `update_flash_state_off`, mêmes clés qu'iOS).
+- **Parité iOS** : les trois clés `update_flash_*` sont ajoutées au catalogue iOS (`Localizable.xcstrings`, mêmes noms et mêmes textes) pour que le contrôle de parité de la CI passe ; la PR iOS du flash doit garder exactement ces entrées.
 - **Aucune permission de plus** (le flash ponctuel de CameraX n'en demande aucune). Aucune dépendance de plus.
 - **Tests** : `FlashStateTest` (règles pures : éteint par défaut, caméra sans flash, bascule, changement de caméra, retour de l'arrière-plan), `FlashButtonTest` (Robolectric : texte, état, zone de toucher 48 dp, un toucher = une bascule, textes français).
 
