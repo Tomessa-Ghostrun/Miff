@@ -40,6 +40,8 @@ struct MiffServices {
         )
         // LOC-4b : un partage qui change (entrer, arrêter, reprendre, quitter, perdre l'accès) fait relire les Miffs au suivi des lieux.
         rules.onSharingChanged = onSharingChanged
+        // Sans réseau, l'annuaire des Miffs se lit dans le cache du téléphone tout de suite (pas de délais de 20 s mis bout à bout).
+        rules.isOnline = { network.isOnline() }
         let repository = FirestoreMiffRepository(
             store: store,
             observer: FirestoreMiffObserver(),

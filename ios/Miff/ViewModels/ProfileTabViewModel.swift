@@ -20,19 +20,40 @@ protocol CurrentProfileHolding: AnyObject {
 /// Un view model par compte et par session (l'hôte de la session est recréé à chaque connexion) : la personne suivante ne retrouve
 /// jamais le profil de la précédente.
 @MainActor
+<<<<<<< HEAD
 final class ProfileTabViewModel: ObservableObject, CurrentProfileHolding {
     @Published private(set) var state: ProfileTabState = .loading
+=======
+final class ProfileTabViewModel: ObservableObject {
+    @Published private(set) var state: ProfileTabState = .loading {
+        didSet { updateOfflineNeed() }
+    }
+>>>>>>> origin/ios/feed-hors-connexion
 
+    /// La pop-in « Pas de connexion » de l'onglet Profil tant que rien n'est lu (même composant que le Feed).
+    let offlineRetry: OfflineRetryModel
     private let reader: ProfileReading
     private let currentUid: () -> String?
     private var isLoading = false
     /// Monte à chaque enregistrement confirmé : une lecture partie AVANT lui rendrait l'ancienne version et la remettrait par-dessus.
     private var saves = 0
 
-    init(reader: ProfileReading, currentUid: @escaping () -> String?) {
+    init(
+        reader: ProfileReading,
+        currentUid: @escaping () -> String?,
+        network: NetworkMonitor = AlwaysOnlineMonitor(),
+        sleep: @escaping (Int) async -> Void = AppClock.live.pause,
+        popinTimings: OfflinePopinTimings = OfflinePopinTimings()
+    ) {
         self.reader = reader
         self.currentUid = currentUid
+        offlineRetry = OfflineRetryModel(network: network, sleep: sleep, timings: popinTimings)
+        offlineRetry.onRetry = { [weak self] _ in
+            // Une seule lecture du profil à la fois, et seulement quand le réseau est là : rien de plus léger à proposer.
+            self?.retry()
+        }
         load()
+        updateOfflineNeed()
     }
 
     /// « Réessayer » : sans effet pendant une lecture en cours (deux touchers ne lancent pas deux lectures).
@@ -43,12 +64,29 @@ final class ProfileTabViewModel: ObservableObject, CurrentProfileHolding {
         load()
     }
 
+<<<<<<< HEAD
     func onSaved(uid: String, profile: ProfileSummary) {
         guard currentUid() == uid else {
             return
         }
         saves += 1
         state = .ready(profile)
+=======
+    /// Suit le réseau pour la pop-in tant que l'onglet est à l'écran (annulé en le quittant ou en quittant l'app).
+    func watchConnectivity() async {
+        await offlineRetry.watch()
+    }
+
+    private func updateOfflineNeed() {
+        switch state {
+        case .loading:
+            offlineRetry.setNeed(.loading)
+        case .unavailable:
+            offlineRetry.setNeed(.failed)
+        case .ready:
+            offlineRetry.setNeed(.none)
+        }
+>>>>>>> origin/ios/feed-hors-connexion
     }
 
     private func load() {
