@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
 
 /*
@@ -31,16 +32,21 @@ class GlassPalette(
     val pillActive: Color,
 )
 
-/** Light glass: white veil, dark and blue icons. The inactive grey is `#595959` (not `#7d7c7c`, 2.59:1 on the worst background). */
+/**
+ * Light glass: a LIGHT white veil (55 %, it was 80 % until the PM asked for a more translucent bar on 2026-11-11), dark and blue icons.
+ * What makes this veil safe is NOT its density but the icons: the inactive grey is `#404040` (3.09:1 on a pure black background, 6.06:1 on
+ * mid grey, 10.37:1 on white; `#595959` fell under 3:1 below about 70 %), and the tab in use sits on an OPAQUE pad (the blue 20 % of the
+ * actions drawn on white, `#CDD8F6`), so that its blue icon is 5.73:1 whatever is behind the glass.
+ */
 val GlassPaletteLight =
     GlassPalette(
-        tint = Color.White.copy(alpha = 0.80f),
+        tint = Color.White.copy(alpha = 0.55f),
         tintNoBlur = Color.White.copy(alpha = 0.92f),
         surfaceOpaque = Color(0xFFFFFFFF),
         border = Color.White.copy(alpha = 0.55f),
         iconActive = colorActionPrimary,
-        iconInactive = Color(0xFF595959),
-        pillActive = colorActionPrimaryTint20,
+        iconInactive = Color(0xFF404040),
+        pillActive = colorActionPrimaryTint20.compositeOver(Color.White),
     )
 
 /** Glass on a photo (viewfinder, preview): black veil, white icons. It is the dark set, ready for a future dark mode. */
@@ -61,8 +67,8 @@ fun glassPalette(variant: GlassVariant): GlassPalette =
         GlassVariant.ON_PHOTO -> GlassPaletteOnPhoto
     }
 
-/** `tabbar/blur-radius`. */
-val GlassBlurRadius = 20.dp
+/** `tabbar/blur-radius`: 28 dp (it was 20 dp: with a lighter veil, the blur is what keeps the text behind from competing with the icons). */
+val GlassBlurRadius = 28.dp
 
 /** The hairline of the glass. */
 val GlassBorderWidth = 1.dp

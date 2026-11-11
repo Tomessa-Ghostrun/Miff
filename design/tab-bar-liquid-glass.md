@@ -128,6 +128,21 @@ Critères : icônes et éléments graphiques **≥ 3:1** (WCAG 1.4.11) ; texte *
 **Comparaison avec la maquette du PM** : barre grise `#b1bbbd` sur le viseur : icône inactive `#7d7c7c` **2,12:1**, icône active bleue sur pastille `#8b9cbb` **2,94:1** (sous 3:1). **Tous les pires cas ci-dessus sont ≥ 3,4:1.**
 **iOS 26 natif** : **non calculable** (verre adaptatif) ; protocole de recette en §8.
 
+## 6 bis. Android : barre plus translucide (décision du PM, 2026-11-11) **[Android seulement]**
+
+Le PM trouve la barre du bas trop opaque (voile blanc 80 %). **Android** passe à un verre nettement plus translucide ; **iOS n'est pas modifié** (valeurs du §5 inchangées : à aligner plus tard si le PM le veut). Ce qui garantit le contraste n'est plus la densité du voile mais **les icônes** :
+
+| Élément (variante claire, Android) | Avant | Après |
+|---|---|---|
+| `tabbar/glass-tint` (voile, avec flou) | blanc 80 % | **blanc 55 %** |
+| `tabbar/blur-radius` | 20 dp | **28 dp** (le flou fait le travail que le voile faisait) |
+| `tabbar/icon-inactive` | `#595959` | **`#404040`** (`#595959` tombait sous 3:1 sur fond noir dès ~70 % de voile) |
+| `tabbar/pill-active` | bleu 20 % **translucide** | **bleu 20 % sur blanc, opaque : `#CDD8F6`** (l'onglet actif ne dépend plus du fond) |
+| `tabbar/glass-tint-noblur` (Android < 12, repli) | blanc 92 % | inchangé (sans flou, le contenu net derrière gênerait la lecture) |
+| Variante « sur photo » | noir 60 % | inchangée (viseur sans flou) |
+
+Contrastes recalculés (WCAG, `TabBarGlassContrastTest`), pires fonds : icône **active** sur sa pastille **5,73:1** quel que soit le fond ; icône **inactive** **3,09:1** sur noir pur (pire cas), **6,06:1** sur gris 50 %, **10,37:1** sur blanc. **Tous ≥ 3:1.** Le bouton central (plaque blanche opaque) ne change pas ; son gris neutre reste `#595959` (décision du 2026-11-06). Les replis opaques existants (économiseur de batterie, animations supprimées, contraste renforcé sous Android 14+) et sans flou (Android < 12, appareil à peu de mémoire, viseur) sont inchangés ; il n'existe pas, sous Android, de réglage système « réduire la transparence » lisible par une app : ces trois signaux le remplacent.
+
 ## 7. Le bouton central se détache du verre
 
 Le verre est translucide, la couleur de statut doit rester lisible : le bouton central est donc **opaque et séparé du verre** :
@@ -207,8 +222,8 @@ Fichiers lus : Android `android/app/src/main/java/com/tomessa/miff/ui/main/Glass
 | Barre | 64 pt de haut, arrondi 20, marges latérales 24, entrées 64 x 48 | `GlassBarHeight` 64 dp, `BarShape` 20 dp, `BarSideMargin` 24 dp (`Spacing.l`), `ItemWidth`/`ItemHeight` 64 x 48 dp | `TabBarLayout` : 64, 20, 24, 64 x 48 |
 | Posée à 22 pt du bas | oui | `BarBottomMargin` 22 dp + barre de navigation (`miffBottomInsets`) | `bottomMargin` 22 |
 | Bouton central | plaque blanche 44, anneau 3, pastille 24, sans pictogramme | `PlateSize` 44, `RingSize` 36 (anneau de 3), `DotSize` 24 | `plateSize` 44, `ringSize` 36, `ringWidth` 3, `dotSize` 24 |
-| Neutre = gris `#595959` | oui | `centralButtonColors(NEUTRAL)` = `GlassPaletteLight.iconInactive` | `tabBarIconInactiveLight` `0x595959` |
-| Clair : voile blanc 80 %, liseré blanc 55 %, opaque `#ffffff`, icône inactive `#595959`, pastille `action/primary-tint-20` | oui | `GlassPaletteLight` | `TabBarVariant.light` |
+| Neutre = gris `#595959` | oui | `centralButtonColors(NEUTRAL)` = `NeutralStatusGrey` (`#595959`, constante propre depuis le 2026-11-11 : les icônes inactives sont `#404040`) | `tabBarIconInactiveLight` `0x595959` |
+| Clair : voile blanc 80 %, liseré blanc 55 %, opaque `#ffffff`, icône inactive `#595959`, pastille `action/primary-tint-20` | iOS oui ; **Android : voile 55 %, icône inactive `#404040`, pastille opaque `#CDD8F6` (§6 bis, 2026-11-11)** | `GlassPaletteLight` | `TabBarVariant.light` |
 | Sur photo : voile noir 60 %, liseré blanc 18 %, opaque `#222222`, icônes blanches / blanc 78 %, pastille blanc 24 % | oui | `GlassPaletteOnPhoto` | `TabBarVariant.onPhoto` (prête, aucun écran ne l'utilise encore) |
 | Rayon de flou 20 | oui | `GlassBlurRadius` 20 dp (Haze **2.0.1** épinglée, modules `haze` et `haze-blur`, pas le module Glass) | sans objet (matériau système) |
 | Plaque du bouton central toujours opaque | oui | `GlassCentralPlate` `#ffffff` | `colorBgSurface` |

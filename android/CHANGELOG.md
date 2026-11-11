@@ -2,6 +2,18 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.26.0] - 2026-11-11 : barre d'onglets plus translucide (retour du PM)
+
+Retour du PM : « la barre d'onglets est trop opaque ». Branche `android/tabbar-moins-opaque`, PR brouillon. Android seulement ; aucun changement de données, de permission, de dépendance (Haze déjà en place) ni de texte. Numéro de version : `main` est à 0.25.0 ; plusieurs PR Android ouvertes visent des numéros voisins (à renuméroter au merge si l'ordre change).
+
+### Modifié
+- **Voile du verre clair : blanc 80 % -> 55 %** (`GlassPaletteLight.tint`), flou **20 dp -> 28 dp** (`GlassBlurRadius`) : le contenu qui défile sous la barre se devine beaucoup mieux, flouté.
+- **Le contraste ne dépend plus de la densité du voile mais des icônes** : icône inactive **`#595959` -> `#404040`** (3,09:1 sur noir pur, le pire cas, 6,06:1 sur gris, 10,37:1 sur blanc ; `#595959` tombait sous 3:1 dès ~70 % de voile) ; **pastille de l'onglet actif opaque** (`#CDD8F6`, le bleu 20 % des actions sur blanc) : l'icône bleue est à **5,73:1 quel que soit le fond**. Tous les contrastes restent >= 3:1 (`TabBarGlassContrastTest`, recalculé).
+- **Inchangés** : replis opaques (économiseur de batterie, animations supprimées, contraste renforcé sous Android 14+), repli sans flou (Android < 12, appareil à peu de mémoire, viseur : voile 92 % / 72 %), variante « sur photo », bouton central (plaque blanche opaque ; son gris neutre reste `#595959`, constante propre `NeutralStatusGrey`). Il n'existe pas de réglage système « réduire la transparence » lisible par une app sous Android : l'économiseur de batterie, la suppression des animations et le contraste renforcé le remplacent.
+- **Choix à valider par le PM (opacité avant -> après)** : 80 % -> **55 %**. Plus bas (45 % ou moins) exigerait des icônes quasi noires pour rester >= 3:1 sur un fond noir ; si le PM veut encore plus transparent, c'est possible en acceptant de descendre sous 3:1 dans le seul cas d'une photo noire pure sous la barre.
+- Limite connue : un flou plus fort coûte un peu plus de calcul ; si la recette montre des saccades sur l'OPPO, repasser à 20 dp ou couper le flou (`GlassPolicy.BLUR_ALLOWED = false`).
+- Documents : `design/tab-bar-liquid-glass.md` §6 bis (Android seulement, iOS non modifié), recette `docs/qa/checklists/tabbar-glass-android-recette-pm.md` §6.
+
 ## [0.25.0] - 2026-11-10 : carrousel de Miffs au Profil, emoji pour les catégories de lieux, 3 lieux gratuits (retours du PM)
 
 Trois retours du PM du 2026-11-10. Branche `android/profil-carrousel-emoji-lieux3`, PR brouillon. Numéro de version : plusieurs PR Android ouvertes se disputent 0.19.0 à 0.24.0 (notifications A/B/C = 0.22 à 0.24, sélecteur = 0.22, avis = 0.19, étiquettes = 0.20) ; celui-ci prend 0.25.0, à renuméroter au moment de fusionner si l'ordre change. Maquettes : `design/exports/profil/`, contrat commun avec iOS : `docs/contracts/place-categories.md`.
