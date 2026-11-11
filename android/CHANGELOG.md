@@ -2,6 +2,25 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.29.0] - 2026-11-11 : bouton flash sur le viseur de l'Update (demande du PM)
+
+Demande du PM du 2026-11-11. Branche `android/update-flash`, PR brouillon. Numéro de version : 0.28.0 est le dernier numéro pris (notifications fusionnées) ; celui-ci prend 0.29.0 sans toucher aux autres, à renuméroter au moment de fusionner si l'ordre change.
+
+### Ajouté
+- **Bouton « flash » sur le viseur** : en haut **à gauche** de l'écran, sur la même ligne que le bouton de changement de caméra (même pastille ronde de 48 dp). **Éteint par défaut**, toujours : à chaque ouverture du viseur, après un changement de caméra et au retour de l'arrière-plan (ou du verrouillage), le flash est éteint tant qu'on ne l'active pas ; **le choix n'est jamais conservé**. Le flash ne se déclenche **qu'au moment de la photo** (pas de lampe allumée en continu). La caméra frontale n'a en général pas de flash : le bouton est alors **masqué**, sans message.
+- **État lisible sans la couleur** : éclair plein sur pastille claire = activé, éclair barré sur pastille sombre = désactivé ; TalkBack annonce « Flash » puis « Flash activé / désactivé » (`update_flash_a11y`, `update_flash_state_on`, `update_flash_state_off`, mêmes clés qu'iOS).
+- **Parité iOS** : les trois clés `update_flash_*` sont ajoutées au catalogue iOS (`Localizable.xcstrings`, mêmes noms et mêmes textes) pour que le contrôle de parité de la CI passe ; la PR iOS du flash doit garder exactement ces entrées.
+- **Aucune permission de plus** (le flash ponctuel de CameraX n'en demande aucune). Aucune dépendance de plus.
+- **Tests** : `FlashStateTest` (règles pures : éteint par défaut, caméra sans flash, bascule, changement de caméra, retour de l'arrière-plan), `FlashButtonTest` (Robolectric : texte, état, zone de toucher 48 dp, un toucher = une bascule, textes français).
+
+### Changé
+- Le ticket Update (`docs/tickets/update.md`, V4 : « pas de flash ») est **amendé par cette demande du PM** pour le seul flash ; zoom, filtres, minuterie restent absents.
+
+### Choix et limites
+- **Position du bouton** : « à gauche de l'écran, là où se trouve le bouton de bascule » est lu comme **en haut à gauche** (symétrique du bouton de bascule en haut à droite) ; ainsi l'astuce du double toucher, centrée, garde sa largeur. À corriger si le PM voulait le flash juste à côté du bouton de bascule.
+- **Erreur de flash** : si CameraX refuse le mode flash, la photo est prise sans flash, sans message (le viseur ne dit jamais « erreur »).
+- **Icônes provisoires** dessinées dans le style de l'icône de bascule (`ic_update_flash`, `ic_update_flash_off`), à remplacer par l'export Figma si le design en fournit.
+
 ## [0.29.0] - 2026-11-11 : barre d'onglets encore plus translucide (retours du PM)
 
 Retours du PM sur l'APK de la PR #166 : « la barre d'onglets est trop opaque », puis « encore plus transparente (55 % ne suffit pas) ». Branche `android/tabbar-moins-opaque`, PR brouillon. Android seulement ; aucun changement de données, de permission, de dépendance (Haze déjà en place) ni de texte. Numéro de version : `main` est à 0.28.0 ; à renuméroter au merge si l'ordre change.
