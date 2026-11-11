@@ -73,6 +73,15 @@ enum TrackingLimits {
     /// armées AVANT cette attente).
     static let positionWaitSeconds = 3.0
 
+    /// Le temps que l'Update attend une position fraîche au toucher de « Publier » (D33 disait 3 s ; recette TestFlight build 24 : trop
+    /// court pour un GPS à froid ou à l'intérieur, la personne voyait « Position introuvable » alors qu'elle partageait). La personne
+    /// attend de toute façon la fin de la publication (le bouton est occupé) ; la position acceptée reste celle de moins de 10 minutes.
+    static let photoPositionWaitSeconds = 10.0
+
+    /// Après un échec passager du système (`kCLErrorLocationUnknown` : pas de signal pour l'instant), la demande est refaite après ce délai
+    /// tant que quelqu'un attend encore.
+    static let positionRetrySeconds = 1.0
+
     /// Les règles acceptent une heure jusqu'à 5 minutes en avance sur celle du serveur : la même marge pour une position qui semble
     /// être dans le futur.
     static let clockSkewMillis = 5 * 60 * 1000
