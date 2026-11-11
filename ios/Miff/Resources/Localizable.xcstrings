@@ -15181,6 +15181,23 @@
         }
       }
     },
+    "ios_update_notice_location_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on precise location for this feature. You can do it in the settings, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer."
+          }
+        }
+      }
+    },
     "ios_update_restricted_title": {
       "extractionState": "manual",
       "localizations": {
@@ -17009,6 +17026,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Activer les notifications"
+          }
+        }
+      }
+    },
+    "notif_n7_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your travel mode has ended"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton mode voyage est terminé"
+          }
+        }
+      }
+    },
+    "notif_n7_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Miff so your card gets its usual colours back. Welcome back!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"
+          }
+        }
+      }
+    },
+    "notif_settings_n7": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When my travel mode ends"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand mon mode voyage se termine"
           }
         }
       }
