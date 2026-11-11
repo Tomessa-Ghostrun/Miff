@@ -100,6 +100,22 @@ enum TabBarNames {
     }
 }
 
+/// Les pictogrammes de la barre : des symboles du système, au trait quand l'onglet est inactif, pleins quand il est actif (en plus de
+/// la pastille et de la couleur, jamais la couleur seule). Le Feed est une MAISON CLASSIQUE (`house`), plus la maison avec un coeur
+/// (décision du PM, 2026-11-08). Le bouton central n'a pas de pictogramme : il porte la couleur du statut.
+enum TabBarSymbols {
+    static func name(for tab: MainTab, isSelected: Bool) -> String? {
+        switch tab {
+        case .feed:
+            return isSelected ? "house.fill" : "house"
+        case .update:
+            return nil
+        case .profile:
+            return isSelected ? "person.fill" : "person"
+        }
+    }
+}
+
 /// Les mesures de la barre (design/tab-bar-liquid-glass.md §2) : les mêmes que celles d'Android, en points.
 enum TabBarLayout {
     static let barHeight: CGFloat = 64

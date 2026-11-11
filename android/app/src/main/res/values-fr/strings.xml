@@ -385,6 +385,9 @@
     <string name="feed_selector_a11y">Miff affichée : %1$s. Appuie pour changer de Miff ou en ajouter une.</string>
     <string name="feed_selector_join">+ Rejoindre une Miff</string>
     <string name="feed_selector_create">+ Créer une Miff</string>
+    <string name="feed_selector_paywall_title">Une seule Miff avec la formule gratuite</string>
+    <string name="feed_selector_paywall_body">Avec Miff+, tu peux créer ou rejoindre autant de Miffs que tu veux.</string>
+    <string name="feed_selector_paywall_soon_body">Cette option n\'est pas encore ouverte. Ta Miff actuelle reste en place.</string>
     <string name="feed_nomiff_body">Crée ta Miff ou rejoins celle d\'un proche pour commencer.</string>
     <string name="feed_create_action">Créer une Miff</string>
     <string name="feed_join_action">Rejoindre une Miff</string>
@@ -420,7 +423,8 @@
     <string name="feed_label_at_work">Au travail</string>
     <string name="feed_label_at_school">À l\'école</string>
     <string name="feed_label_at_sport">Au sport</string>
-    <string name="feed_label_at_place">À %1$s</string>
+    <!-- Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08). -->
+    <string name="feed_label_at_place">%1$s</string>
     <string name="feed_label_at_relative">Chez un proche</string>
     <string name="feed_label_left">A quitté %1$s</string>
     <string name="feed_label_trusted_generic">Dans un lieu de confiance</string>
@@ -489,6 +493,15 @@
     <string name="profile_tab_miffs_title">Mes Miffs</string>
     <string name="profile_tab_miff_hint">Proches, code et partage</string>
     <string name="profile_tab_miff_open_a11y">Ouvrir la Miff %1$s</string>
+    <plurals name="profile_tab_miff_members">
+        <item quantity="one">%1$d membre</item>
+        <item quantity="many">%1$d membres</item>
+        <item quantity="other">%1$d membres</item>
+    </plurals>
+    <string name="profile_tab_miff_create">Créer une Miff</string>
+    <string name="profile_tab_carousel_page_a11y">Carte %1$d sur %2$d</string>
+    <string name="profile_tab_carousel_previous_a11y">Carte précédente</string>
+    <string name="profile_tab_carousel_next_a11y">Carte suivante</string>
     <!-- Réglages : Mon compte (mot de passe) et Confidentialité (ONB-3b) -->
     <string name="settings_account_password_help">Nous t\'enverrons un e-mail avec un lien pour choisir un nouveau mot de passe.</string>
     <string name="settings_account_password_action">Changer mon mot de passe</string>
@@ -641,9 +654,9 @@
     <string name="place_detail_created_by">Créé par</string>
     <string name="place_detail_created_by_me">%1$s (toi)</string>
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
-    <string name="place_detail_info_danger">Quand tu es dans cette zone, ta Miff voit ton statut en rouge. Seul le créateur de la Miff peut ajouter ou modifier ce type de zone.</string>
+    <string name="place_detail_info_danger">Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
-    <string name="place_paywall_limit_title">Tu as atteint 2 lieux</string>
+    <string name="place_paywall_limit_title">Tu as atteint 3 lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
     <string name="place_paywall_danger_title">Les zones de danger font partie de Miff+</string>
     <string name="place_paywall_danger_body">Avec Miff+, tu peux définir des zones de danger autour des lieux à éviter.</string>
@@ -665,9 +678,9 @@
     <string name="place_list_row_nocategory_a11y">%1$s, %2$s</string>
     <string name="place_list_row_nocategory_noaddress_a11y">%1$s</string>
     <plurals name="place_list_counter_free">
-        <item quantity="one">%1$d lieu sur 2 avec la formule gratuite</item>
-        <item quantity="many">%1$d lieux sur 2 avec la formule gratuite</item>
-        <item quantity="other">%1$d lieux sur 2 avec la formule gratuite</item>
+        <item quantity="one">%1$d lieu sur 3 avec la formule gratuite</item>
+        <item quantity="many">%1$d lieux sur 3 avec la formule gratuite</item>
+        <item quantity="other">%1$d lieux sur 3 avec la formule gratuite</item>
     </plurals>
     <!-- LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement -->
     <string name="permission_notifications_title">Te prévenir, seulement quand c\'est utile !</string>
@@ -882,6 +895,11 @@
     <string name="update_photo_close_a11y">Fermer la photo</string>
     <string name="update_photo_position">Position mesurée %1$s.</string>
     <string name="update_photo_see_where">Voir où c\'était</string>
+    <string name="feed_photo_download">Enregistrer la photo</string>
+    <string name="feed_photo_download_a11y">Enregistrer cette photo sur ton téléphone</string>
+    <string name="feed_photo_download_saving">Enregistrement…</string>
+    <string name="feed_photo_download_failed">On n\'a pas pu enregistrer la photo. Tu peux réessayer.</string>
+    <string name="feed_photo_download_done">Photo enregistrée.</string>
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a plus le droit de l\'utiliser. Tu peux la rallumer dans les réglages, puis réessayer.</string>
@@ -898,6 +916,34 @@
     <string name="review_feedback_write">Nous écrire</string>
     <string name="review_open_failed">Rien n\'a pu s\'ouvrir sur ton téléphone. Tu peux réessayer dans un instant.</string>
     <string name="review_feedback_later">Plus tard</string>
+    <!-- MODE VOYAGE (docs/tickets/mode-voyage.md) : cartes du Profil et du Feed, bulle. Memes cles sur iOS. -->
+    <string name="voyage_card_title">Mode voyage</string>
+    <string name="voyage_card_off_body">Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position.</string>
+    <string name="voyage_card_on_status">En voyage jusqu\'au %1$s</string>
+    <string name="voyage_card_end_label">Date de fin</string>
+    <string name="voyage_card_end_change_a11y">Changer la date de fin</string>
+    <string name="voyage_card_explain">Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu\'au %1$s » et n\'influence plus la couleur de la Miff. Miff n\'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin.</string>
+    <string name="voyage_card_state_on_a11y">Activé, jusqu\'au %1$s</string>
+    <string name="voyage_card_state_off_a11y">Désactivé</string>
+    <string name="voyage_confirm_title">Activer le mode voyage ?</string>
+    <string name="voyage_confirm_body">Ta carte deviendra grise avec « En voyage jusqu\'au %1$s » et n\'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l\'arrêter quand tu veux.</string>
+    <string name="voyage_confirm_action">Activer</string>
+    <string name="voyage_confirm_cancel">Annuler</string>
+    <string name="voyage_error_update_refused">Le mode voyage n\'a pas pu être mis à jour. Ta date de fin n\'a pas changé, tu peux réessayer plus tard.</string>
+    <string name="voyage_picker_validate">Valider</string>
+    <string name="voyage_picker_confirm">Continuer</string>
+    <string name="voyage_off_done">Ton statut reprend.</string>
+    <string name="voyage_offline_note">Tes proches verront ton voyage dès que tu seras en ligne.</string>
+    <string name="voyage_error_refused">Le mode voyage n\'a pas pu être activé. Tu peux réessayer plus tard.</string>
+    <string name="voyage_feed_label">En voyage jusqu\'au %1$s</string>
+    <string name="voyage_feed_label_ended">Voyage terminé</string>
+    <string name="voyage_feed_since">Depuis le %1$s</string>
+    <string name="voyage_feed_mine">Mode voyage jusqu\'au %1$s</string>
+    <string name="voyage_feed_mine_edit">Modifier</string>
+    <string name="voyage_feed_mine_edit_a11y">Modifier le mode voyage</string>
+    <string name="voyage_bubble_one">%1$s est en voyage jusqu\'au %2$s.</string>
+    <string name="voyage_bubble_many">%1$d proches sont en voyage.</string>
+    <string name="voyage_bubble_all">Tes proches sont en voyage.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
     <string name="android_diag_review_title">Fenêtre d\'avis (essai)</string>
     <string name="android_diag_review_force">Afficher la fenêtre au prochain retour dans l\'app</string>
@@ -979,4 +1025,7 @@
     <string name="notif_center_delete_a11y">Supprimer cette notification</string>
     <string name="notif_center_unread_a11y">non lu</string>
     <string name="notif_center_in_miff">Miff « %1$s »</string>
+
+    <!-- NOTIF-6A: centre verrouille (notifications refusees) -->
+    <string name="notif_center_enable_action">Activer les notifications</string>
 </resources>

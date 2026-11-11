@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusFact
 import com.tomessa.miff.domain.tracking.TrackingWrites
+import com.tomessa.miff.domain.travel.TravelPeriod
 import com.tomessa.miff.testsupport.DEVICE_A
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -30,6 +31,7 @@ class DeviceIdInEveryWriteTest {
     private val now = 1_800_000_000_000L
     private val arrival = StatusFact(PresenceValue.IN_TRUSTED, "home", now, setLastUpdate = true)
     private val departure = StatusFact(PresenceValue.OUT, "home", now, setLastUpdate = false)
+    private val trip = TravelPeriod(now + 86_400_000L, "2027-01-16")
 
     private fun isStatusOrPosition(write: DocWrite) = "/status/" in write.path || "/positions/" in write.path
 
@@ -45,13 +47,26 @@ class DeviceIdInEveryWriteTest {
                 // UPDATE-1: the status of a manual update, and of the clean-up of an expired photo.
                 TrackingWrites.photoStatus(miffId, uid, photoPublished = true, batteryPct = 80, deviceId = DEVICE_A),
                 TrackingWrites.photoStatus(miffId, uid, photoPublished = false, batteryPct = null, deviceId = DEVICE_A),
+                // MODE VOYAGE: the start of a trip, the move of its end, and the status that ends a trip.
+                TrackingWrites.travelStart(miffId, uid, trip, now, DEVICE_A),
+                TrackingWrites.travelDate(miffId, uid, trip, DEVICE_A),
+                TrackingWrites.statusUpdate(
+                    miffId,
+                    uid,
+                    arrival,
+                    now,
+                    80,
+                    LocationAccess.BACKGROUND,
+                    DEVICE_A,
+                    clearTravel = true,
+                ),
             ) +
                 MiffWrites.create(uid, miffId, code, "Chez nous", profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.join(uid, miffId, code, profile, "free", LocationAccess.UNKNOWN, DEVICE_A) +
                 MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, DEVICE_A)
         val statusAndPositionWrites = writes.filter { isStatusOrPosition(it) }
-        // 7 writes of tracking (the status update twice, the access, the battery, the position, the two of the Update) + the status of create, join and resume.
-        assertEquals(10, statusAndPositionWrites.size)
+        // 10 writes of tracking (the status update twice, the access, the battery, the position, the two of the Update, the two of a trip, the end of a trip) + the status of create, join and resume.
+        assertEquals(13, statusAndPositionWrites.size)
         statusAndPositionWrites.forEach { write ->
             val what = "${write.kind} of ${write.path.split("/")[2]}"
             assertTrue("$what is a set or a (partial) update", write.kind != WriteKind.DELETE)
@@ -93,6 +108,8 @@ class DeviceIdInEveryWriteTest {
                     { TrackingWrites.batteryUpdate(miffId, uid, 50, id) },
                     { TrackingWrites.position(miffId, uid, 48.8566, 2.3522, now, id) },
                     { TrackingWrites.photoStatus(miffId, uid, photoPublished = true, batteryPct = 50, deviceId = id) },
+                    { TrackingWrites.travelStart(miffId, uid, trip, now, id) },
+                    { TrackingWrites.travelDate(miffId, uid, trip, id) },
                     { MiffWrites.initialStatus(LocationAccess.UNKNOWN, id) },
                     { MiffWrites.resumeSharing(miffId, uid, LocationAccess.UNKNOWN, id) },
                 )
@@ -130,13 +147,13 @@ class DeviceIdInEveryWriteTest {
 
     @Test
     fun theTwoBuilderFiles_areNotExemptInBulk_theirWritesAreCounted() {
-        // 5 in TrackingWrites (status update, access update, battery update, the status of the Update, position) + 3 in MiffWrites (first status of create, join, resume).
+        // 7 in TrackingWrites (status update, access update, battery update, the status of the Update, position, the start of a trip, the move of its end) + 3 in MiffWrites (first status of create, join, resume).
         // A new write of a status or a position there forces this number, and the test of the builders above, to be updated on purpose.
         val counts =
             kotlinSources()
                 .filter { it.name == "TrackingWrites.kt" || it.name == "MiffWrites.kt" }
                 .associate { it.name to statusOrPositionWrite.findAll(it.readText()).count() }
-        assertEquals(mapOf("TrackingWrites.kt" to 5, "MiffWrites.kt" to 3), counts)
+        assertEquals(mapOf("TrackingWrites.kt" to 7, "MiffWrites.kt" to 3), counts)
     }
 
     @Test

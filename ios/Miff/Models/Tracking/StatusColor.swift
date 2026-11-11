@@ -20,10 +20,11 @@ enum StatusThresholds {
     static let orangeAfterMillis = 2 * 60 * 60 * 1000
     static let redAfterMillis = 4 * 60 * 60 * 1000
 
-    /// ZONE DE DANGER (décision du PM, confirmée le 2026-11-08) : une personne dans une zone de danger passe ROUGE quand sa dernière
-    /// update (le dernier signal « tout va bien » : update manuelle ou entrée en zone de confiance, `lastUpdateAt`) date de PLUS d'1 h, ou n'existe pas. Strictement « plus de » : à 1 h 00 pile elle n'est
-    /// pas encore rouge. Moins d'1 h depuis sa dernière update : pas de rouge forcé, la couleur suit la règle d'ancienneté habituelle.
-    /// Une zone de confiance l'emporte toujours (`StatusColor.level`). Mêmes nom et valeur sur Android (`DANGER_ZONE_RED_AFTER`).
+    /// ZONE DE DANGER (décision du PM du 2026-11-08, version finale) : dès qu'une personne ENTRE dans une zone de danger elle est ROUGE,
+    /// même si elle avait publié une update juste avant (une update antérieure à l'entrée ne compte pas). Si elle publie une update
+    /// POSTÉRIEURE à l'entrée, elle est VERTE pendant 1 h ; passé 1 h (strict : à 1 h 00 pile elle est encore verte) après CETTE update,
+    /// si elle est toujours dans la zone, elle repasse ROUGE ; une nouvelle update = vert 1 h de plus. Jamais orange en zone de danger.
+    /// Une zone de confiance l'emporte toujours (`StatusColor.level`). Mêmes nom et valeur sur Android (`DANGER_ZONE_RED_AFTER_MILLIS`).
     static let dangerZoneRedAfterMillis = 60 * 60 * 1000
 }
 
@@ -34,6 +35,8 @@ struct MemberStatusFacts: Equatable, CustomStringConvertible {
     let presence: PresenceValue?
     let presenceAtMillis: Int?
     let lastUpdateAtMillis: Int?
+    /// MODE VOYAGE : la fin du voyage quand `presence` est `travel` (la couleur n'en a pas besoin : un voyage est toujours neutre ; le Feed si).
+    var travelUntilMillis: Int?
 
     var description: String {
         "MemberStatusFacts(redacted)"
@@ -42,7 +45,7 @@ struct MemberStatusFacts: Equatable, CustomStringConvertible {
 
 enum StatusColor {
     /// L'ordre du ticket : partage arrêté ou statut absent = neutre ; zone de confiance = vert ; sinon zone de danger (voir
-    /// `dangerZoneLevel` : rouge si sa dernière update a plus d'1 h) ; `unknown` = neutre (une personne jamais passée en zone de confiance,
+    /// `dangerZoneLevel` : rouge dès l'entrée, vert 1 h après une update postérieure à l'entrée) ; `unknown` = neutre (une personne jamais passée en zone de confiance,
     /// décision N4) ; sinon l'ancienneté du repère = le plus récent du départ et de la dernière update (décision N2) : jusqu'à 2 h INCLUSE vert, au-delà et jusqu'à 4 h
     /// INCLUSE orange, plus de 4 h rouge. Un repère dans le futur (téléphone à l'heure fausse) compte comme « maintenant » : vert.
     static func level(_ facts: MemberStatusFacts?, nowMillis: Int) -> StatusLevel {
@@ -55,6 +58,10 @@ enum StatusColor {
         case .inRisk:
             return dangerZoneLevel(facts, nowMillis: nowMillis)
         case .unknown:
+            return .neutral
+        case .travel:
+            // MODE VOYAGE : un voyageur est ignoré dans la couleur de la Miff, avant ET après la fin du voyage (après, la carte dit « Voyage
+            // terminé » jusqu'à la première mesure : jamais une couleur tirée d'un état qui n'est plus vrai).
             return .neutral
         case .out:
             return levelByAge(facts, nowMillis: nowMillis)
@@ -75,14 +82,16 @@ enum StatusColor {
         return elapsed <= StatusThresholds.redAfterMillis ? .orange : .red
     }
 
-    /// La couleur d'une personne dans une zone de danger : rouge quand sa dernière update a plus d'1 h (`dangerZoneRedAfterMillis`) ou n'existe
-    /// pas (une ancienneté inconnue ne rassure pas à tort) ; sinon la règle d'ancienneté habituelle, qui donne alors vert (le repère,
-    /// la dernière update, a moins d'1 h). Un repère dans le futur (téléphone à l'heure fausse) compte comme « maintenant ».
+    /// La couleur d'une personne dans une zone de danger : VERT si elle a une update (`lastUpdateAt`) STRICTEMENT postérieure à son entrée
+    /// (`presenceAt`) et de 1 h au plus (`dangerZoneRedAfterMillis`) ; ROUGE sinon : entrée sans update, update antérieure à l'entrée ou
+    /// au même instant, update de plus d'1 h, ou heure d'entrée inconnue (on ne peut pas dire que l'update est postérieure : prudence,
+    /// jamais un vert qu'on ne peut pas justifier). Plusieurs entrées / sorties : `presenceAt` est toujours celle de l'entrée COURANTE.
+    /// Une update dans le futur (téléphone à l'heure fausse) compte comme « maintenant ». Jamais orange.
     static func dangerZoneLevel(_ facts: MemberStatusFacts, nowMillis: Int) -> StatusLevel {
-        guard let lastUpdate = facts.lastUpdateAtMillis,
-              nowMillis - lastUpdate <= StatusThresholds.dangerZoneRedAfterMillis else {
+        guard let entry = facts.presenceAtMillis, let update = facts.lastUpdateAtMillis, update > entry,
+              nowMillis - update <= StatusThresholds.dangerZoneRedAfterMillis else {
             return .red
         }
-        return levelByAge(facts, nowMillis: nowMillis)
+        return .green
     }
 }

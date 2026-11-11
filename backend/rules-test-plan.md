@@ -131,7 +131,7 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | # | Cas | Attendu |
 |---|---|---|
 | P1 | `alice` (gratuite) crée `places/p1` type `trusted` dans une Miff sans lieu | OK |
-| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1` et `p2`) | KO |
+| P2 | `alice` (gratuite) crée un lieu sous un identifiant automatique (hors `p1`, `p2` et `p3`) | KO |
 | P3 | `alice` (gratuite) crée `places/p1` alors qu'il existe (= update avec champs verrouillés) | KO si elle change `type` vers `risk`/`createdBy`/`createdAt` ; modifier nom/rayon/coordonnées : OK |
 | P4 | `alice` (gratuite) crée un lieu `type="risk"` (ID `p1`) | KO |
 | P5 | `dave` (premium) crée 3 lieux (ID auto) dont 1 `risk` | OK |
@@ -143,21 +143,25 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | P11 | `alice` modifie `createdBy` d'un lieu | KO |
 | P12 | Lieu avec `createdAt` client | KO |
 | P13 | `eve` lit `places` de M1 | KO |
-| P14 | `alice` (gratuite, `p1` existe) crée `p2` `trusted` ; puis `p3`, un ID auto, `P2` | OK ; KO ×3 (R-LIEU-5 : 2 lieux gratuits) |
+| P14 | `alice` (gratuite, `p1` existe) crée `p2` puis `p3` en `trusted` ; puis `p4`, `p5`, un ID auto, `P2`, `P3` | OK ; OK ; KO ×5 (R-LIEU-5 : **3 lieux gratuits depuis le 2026-11-10**, avant : 2) |
+| P14c | `alice` (gratuite) : `p3` en `risk` ; `p3` en `trusted` puis modifié (nom, rayon, catégorie) ; `p3` vers `risk` ; `p3` `risk` hérité vers `trusted` ; `createdBy` modifié ; `set` complet déguisé en `risk` ; suppression puis recréation de `p3` ; `p4` | KO ; OK ; KO ; OK ; KO ; KO ; OK ; OK ; KO |
+| P14d | `alice` (gratuite, Miff sans lieu) crée `p1`, `p2`, `p3` dans UN lot (3 × 2 = 6 lectures de règles sur 20) ; lot de `p2` recréé + `p4` | OK ; KO en bloc, `p2` non écrit |
+| P14e | `eve` (sans Miff) : lot « création de la Miff + `p1`, `p2`, `p3` » ; puis la Miff seule, puis les 3 lieux en un second lot ; puis `p4` | KO en entier (les règles de lieu lisent la Miff d'AVANT le lot) ; OK ; OK ; KO |
 | P14b | `alice` (gratuite) crée `p2` en `risk` ; crée `p2` en `trusted` ; supprime `p1` puis le recrée | KO ; OK ; OK ; OK |
 | P15 | Création sans `category`, ou avec `""`, `maison`, `Home`, `HOME`, ` home`, `home `, `danger`, `null`, `3`, liste, objet ; puis avec `home` (R-LIEU-2) | KO ×11 + sans clé ; OK |
 | P15b | `dave` (premium) crée un lieu pour chacune des 7 catégories (`home`, `work`, `school`, `sport`, `relative`, `leisure`, `other`) | OK ×7 |
 | P16 | `alice` change la `category` (valide), puis invalide (`maison`, `""`, `null`, `7`) ; un lieu sans `category` (hérité) : nom seul, puis nom + catégorie | OK ; KO ×4 ; KO ; OK |
 | P17 | `dave` (premium) : `trusted` vers `risk` (+ catégorie), `risk` vers `trusted`, `type="banane"` (R-LIEU-6) | OK ; OK ; KO |
 | P18 | `alice` (gratuite) : `trusted` vers `risk` (seul, ou avec catégorie et nom) ; nom + rayon + catégorie | KO ×2 ; OK |
-| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`, `p2` en `trusted` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; KO ; OK ; KO |
+| P19 | `frank` (abonnement expiré) : `p2` en `risk`, `p1` vers `risk`, lieu hors `p1`/`p2`/`p3`, `p2` puis `p3` en `trusted`, `p4` ; abonnement `active=false` : `p1` vers `risk` ; réactivé : OK ; `alice` (sans document d'abonnement) `p2` en `risk` | KO ×3 ; OK ; OK ; KO ; KO ; OK ; KO |
 | P20 | `dave` (premium, 5 Miffs) crée en UN lot 5 lieux de même identifiant, un par Miff | OK |
 | P20b | Même lot dont une Miff est celle d'`alice` | KO, rien n'est écrit dans les 4 autres |
+| P20d | `frank` (ancien premium, 2 Miffs) : lot `p3` dans sa Miff A + `p4` dans sa Miff B ; puis `p3` dans les 2 Miffs (même identifiant, un document par Miff) en UN lot ; puis suppression des 2 copies | KO en bloc, rien d'écrit ; OK ; OK |
 | P20c | Même lot avec une catégorie invalide dans une seule copie ; avec un identifiant invalide dans une seule copie | KO ; KO |
 | P21 | `dave` modifie (`type="risk"`, catégorie) puis supprime ce lieu dans 5 Miffs, un lot chacune | OK ; OK |
-| P22 | `bob` (membre) crée `p2`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×4 |
+| P22 | `bob` (membre) crée `p2`, crée `p3`, passe `p1` à `risk`, change sa catégorie, le supprime | KO ×5 |
 | P23 | `alice` modifie `createdBy` ou `createdAt` en même temps que le type ou la catégorie | KO ×2 |
-| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1` et `p2` dans CHACUNE ; un identifiant libre ou le passage à `risk` | OK ×4 (4 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO |
+| P24 | Revue de sécurité (M5) : `frank` (ancien premium), créateur de 2 Miffs, crée `p1`, `p2` et `p3` dans CHACUNE ; `p4`, un identifiant libre ou le passage à `risk` | OK ×6 (6 lieux gratuits pour 2 Miffs : limite connue, à traiter dans le ticket Premium) ; KO ; KO ; KO |
 | P25 | Échange de Miffs d'un lieu : 2 suppressions + 2 créations en UN lot ; même lot avec une Miff d'un autre créateur | OK ; KO, rien n'est écrit (au-delà de 4 + 4 le changement se fait en deux lots NON atomiques : budget figé dans `tests/unit/budgets.test.js`) |
 | P26 | Abonnement dont `expiresAt` ou `active` n'a pas le bon type | KO (traité comme absent) |
 | P27 | `alice` (gratuite) fait un `set` complet de `p1` existant avec `type="risk"` | KO |
@@ -583,3 +587,39 @@ Les applications rafraîchissent `batteryPct` avec un `update()` qui n'envoie qu
 | BP11 | Temps 2 : avec le bon `deviceId` sur un statut de plus de 24 h (base avec ou sans `deviceId`) ; horodatages et `locationAccess` inchangés | OK ; OK |
 | BP12 | Temps 2 : SANS `deviceId` quand la base n'en porte pas ou porte un identifiant périmé ; faux ou nul ; puis le bon | KO ×6 ; OK |
 | BP13 | Temps 2, **limite connue (SF9)** : sans `deviceId` dans la requête, le document résultant garde celui de la base ; il passe s'il est égal à la session (contrat : les clients l'envoient toujours) | OK |
+
+## 24. MODE VOYAGE (VOY-B, ticket `docs/tickets/mode-voyage.md` §4, décisions du PM du 2026-11-10) — PRÉPARÉ, NON DÉPLOYÉ
+
+Nouvelle valeur `presence = "travel"` du statut `miffs/{id}/status/{uid}` avec deux clés **facultatives** `travelUntil` (timestamp, fin du voyage) et `travelUntilDay` (texte `AAAA-MM-JJ`, jour affiché). **Disponible pour TOUS les comptes** (décision du PM du 2026-11-10, qui remplace la réserve Miff+ de la première version du ticket) : **aucune barrière premium, aucune lecture de règles de plus** (un statut de voyage coûte 2, comme un statut ordinaire). Règle `validTravel` (appelée par `validStatus`) : **hors voyage** = autre présence et clés de voyage absentes ou nulles (tous les statuts actuels) ; **en voyage** = `placeId`, `batteryPct` et `escalationDueAt` nuls, fin strictement future et **au plus 91 jours** après l'heure du serveur, jour bien formé (année 2020-2099, mois 01-12, jour 01-31). **Désactiver** (écrire une autre présence) est toujours possible. Comptes : `dave` (premium actif, Miff M3), `frank` (premium **expiré**, Miff M4), `bob` (gratuit, M1), `alice` (créatrice gratuite de M1) : **le résultat est le même pour tous**. Fichiers : `tests/rules/29-mode-voyage.test.js` (temps 1 de SESS-1, règles telles que livrées), `tests/rules/30-mode-voyage-temps2.test.js` (VY25) ; VY26 et VY27 sont dans le fichier `29` ; lectures de règles : `tests/rules/09-rule-reads.test.js` (`READS-voyage-*`, `READS-sess-status` borné à 2) et `tests/unit/budgets-voyage.test.js` ; mutations : `tests/tools/mutations-voyage.mjs`. Les bornes de dates sont testées avec une marge d'une minute côté refus (`Date.now()` du test précède toujours l'heure du serveur de quelques millisecondes).
+
+| ID | Cas | Attendu |
+|---|---|---|
+| VY1 | Tout compte (`bob`, `alice`, `dave`, `frank`) active le voyage sur un statut existant, puis sur un statut recréé après suppression ; document relu | OK ×8 ; clés `travelUntil`, `travelUntilDay` écrites, `placeId` / `batteryPct` / `escalationDueAt` nuls |
+| VY2 | Compte **gratuit** (aucun document `entitlements`) : activer par `set`, par `update` en lot, par création ; `alice` 90 jours ; mêmes limites que pour tous : 91 jours + 1 minute, fin passée, lieu renseigné | OK ×4 ; KO ×3 |
+| VY3 | Premium **expiré** (`frank`), `active:false`, droit échu il y a une minute, document `entitlements` supprimé : activer le voyage | OK ×5 (aucune dépendance au droit) |
+| VY4 | `presence = travel` sans `travelUntil`, sans `travelUntilDay`, sans aucune des deux, avec l'une nulle, l'autre nulle ; contrôle avec les deux | KO ×5 ; OK |
+| VY5 | Fenêtre de `travelUntil` : -1 jour, -1 minute, maintenant ; +1 minute, 90 jours, **91 jours** ; 91 jours + 1 minute, 1 an, 100 ans | KO ×3 ; OK ×3 ; KO ×3 |
+| VY6 | Types : `travelUntil` texte, nombre (millisecondes), booléen, tableau, objet, vide ; `travelUntilDay` nombre, booléen, tableau, objet, horodatage | KO partout |
+| VY7 | `travelUntilDay` : `2026-11-1`, `2026-1-15`, `26-11-15`, `15/11/2026`, `2026/11/15`, mois 13 et 00, jour 32 et 00, espace avant / après, lettre avant / après, `2026-11-15T00:00:00Z`, `20261115`, vide, `demain`, fin de ligne, 1000 caractères ; puis `2026-11-15` ; **limite connue** : un jour sans lien avec la fin (`2031-02-28`) | KO partout ; OK ; OK |
+| VY8 | En voyage : `placeId` renseigné (`p1`, `zz`), `batteryPct` 80, 0, 100, `escalationDueAt` futur ou passé, les trois ; puis tous nuls | KO ×8 ; OK |
+| VY9 | Clés de voyage avec chaque présence ordinaire (`in_trusted`, `out`, `in_risk`, `unknown`) : `travelUntil` seul, `travelUntilDay` seul, les deux ; clés nulles ; clés absentes ; un compte gratuit avec les deux | KO ×3 ; OK ×2 (pour chaque présence) ; KO |
+| VY10 | Présences voisines (`Travel`, `TRAVEL`, `traveling`, `travel ` avec espace, `voyage`, vide, nulle, booléen, nombre) ; clés inconnues (`travelFrom`, `travel`, `travelUntilAt`, `destination`, `lat`, `travelUntilDays`) | KO partout ; contrôle OK |
+| VY11 | Écrire **mon** voyage : `alice` (premium **et** créatrice de M1), `dave` (pas membre de M1), `carol`, `eve`, visiteur ; désactiver le voyage d'un autre | KO partout (statut de `bob` inchangé) |
+| VY12 | Partage arrêté, puis fiche de membre retirée (contrôle : OK avant) | OK ; KO ; KO |
+| VY13 | Voyage en cours, pour `dave`, `frank`, `bob` : date plus longue, plus courte, **jour seul** modifié, même date + texte, désactivation par `set` sans clés | OK ×5 pour chacun (clés de voyage retirées) |
+| VY14 | Désactivation par `set` sans clés, par clés nulles, par `update` avec `FieldValue.delete` : `frank` (expiré) et `bob` (gratuit) | OK ×3 pour chacun (clés supprimées) |
+| VY15 | Changer la date d'une minute (±), réactiver après une désactivation : `frank`, `bob` ; changement vers une date trop lointaine ou passée | OK ; OK ; KO ; KO ; OK (réactivation) |
+| VY16 | Aucune dépendance à `entitlements` : document absent, actif, expiré, désactivé : activer, changer, désactiver, réactiver ; lieu renseigné | OK ×4 ; KO |
+| VY17 | Voyage dont la fin est **passée** en base (app pas encore reprise) : update qui garde `travel` (même fin) ; désactivation | KO ; OK |
+| VY18 | **R-LIEU-1 compatible** : voyage de plusieurs jours (`presenceAt` vieux de 3 jours, `lastUpdateAt` de 2 jours) : update manuelle qui **conserve** `presenceAt` (et `lastUpdateAt` neuf, ou conservé) ; `presenceAt` modifié d'1 ms ; nouvelle valeur ancienne ; pour `dave` et `frank` | OK ; OK ; KO ; KO |
+| VY19 | Rafraîchissement **partiel** de la batterie en voyage (`{batteryPct, updatedAt, deviceId}`) : 55, 0 ; `null` ; update partielle de texte ; sans voyage (contrôle BP1) | KO ; KO ; OK ; OK ; OK |
+| VY20 | SESS-1 : voyage avec le `deviceId` de la session ; périmé, trop court, nul ; sans clé (temps 1) ; session passée à B : ancien refusé, nouveau accepté | OK ; KO ×3 ; OK ; KO ; OK |
+| VY21 | **Activation avec suppression de MA dernière position** dans le même lot (règle de suppression existante), compte premium puis gratuit ; lot dont le voyage est invalide (position conservée) ; un autre membre ne supprime pas ma position | OK ; OK ; KO en entier ; KO |
+| VY22 | Lot de **8 Miffs** (2 lectures de règles par statut = 16 sur 20) : 8 statuts de voyage avec `deviceId` ; puis 8 statuts de voyage + 8 suppressions de positions | OK ; OK |
+| VY23 | Lot de 8 dont un seul statut invalide (un lieu renseigné) | KO en entier, aucun voyage écrit |
+| VY24 | Régression : statuts ordinaires sans clés de voyage, avec clés nulles, `out`, `in_risk` ; `dave`, `frank`, `bob` ; batterie 101 et présence `banane` toujours refusées | OK ×6 ; KO ×2 |
+| VY25 | **Temps 2** de SESS-1 : voyage sans `deviceId`, avec un périmé, avec celui de la session ; désactivation sans la clé, avec la clé | KO ; KO ; OK ; KO ; OK |
+| VY26 | `update()` **partielle** de « travel » vers `unknown` / `out` **sans** supprimer `travelUntil` / `travelUntilDay` (ni l'une, ni l'autre seule) ; témoin : les deux supprimées | KO ×3 par présence ; OK |
+| VY27 | **Caractérisation** : pendant un voyage, écriture de ma position et de ma photo (consentement v3) : autorisée (« Miff arrête de suivre » repose sur le client, tests clients V2 bloquants) ; à changer en connaissance de cause si un resserrement futur les refuse | OK ×3 |
+
+**Lectures de règles** : statut de voyage = statut ordinaire = **2** (consentement + session), (comptage sans cache ; aucune lecture du premium) ; lots de statuts de voyage : **8 Miffs au plus** (16 sur 20, marge 4), avec suppression des positions : 16 aussi (la suppression de sa propre position ne lit rien). Mesures : `rules-test-report.md`.

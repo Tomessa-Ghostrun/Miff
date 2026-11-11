@@ -25,10 +25,17 @@ final class ChangeInstantsTests: XCTestCase {
             ("sorti, update plus ancienne", facts(.out, presenceAt: ref, update: ref - 5 * hour)),
             ("sorti, update seule", facts(.out, update: ref)),
             ("zone de danger, update récente", facts(.inRisk, presenceAt: ref - hour, update: ref)),
-            ("zone de danger, update ancienne", facts(.inRisk, presenceAt: ref, update: ref - 3 * hour)),
+            (
+                "zone de danger, update ancienne mais postérieure à l'entrée",
+                facts(.inRisk, presenceAt: ref - 5 * hour, update: ref - 3 * hour)
+            ),
+            ("zone de danger, update avant l'entrée", facts(.inRisk, presenceAt: ref, update: ref - 3 * hour)),
+            ("zone de danger, update à l'instant d'entrée", facts(.inRisk, presenceAt: ref, update: ref)),
+            ("zone de danger, entrée sans heure", facts(.inRisk, update: ref)),
             ("zone de danger, jamais d'update", facts(.inRisk, presenceAt: ref)),
             ("zone de confiance", facts(.inTrusted, presenceAt: ref, update: ref)),
             ("inconnu", facts(.unknown, presenceAt: ref)),
+            ("en voyage", facts(.travel, presenceAt: ref - 5 * hour, update: ref - 4 * hour)),
             ("partage arrêté", facts(.out, presenceAt: ref, sharing: false)),
             ("sans repère", facts(.out)),
             ("sans présence", facts(nil, presenceAt: ref)),
@@ -78,18 +85,27 @@ final class ChangeInstantsTests: XCTestCase {
         XCTAssertEqual(instants.first, ref + hour + StatusThresholds.orangeAfterMillis + 1)
     }
 
-    func testInADangerZoneItIsRedMoreThanAnHourAfterTheLastUpdateAndWithoutUpdateAlreadyRed() {
+    func testInADangerZoneItIsGreenOnlyAfterAnUpdateFollowingTheEntryAndRedMoreThanAnHourLater() {
+        let entered = ref - hour
         XCTAssertEqual(
-            StatusColor.changeInstants(facts(.inRisk, presenceAt: ref, update: ref)),
+            StatusColor.changeInstants(facts(.inRisk, presenceAt: entered, update: ref)),
             [ref + StatusThresholds.dangerZoneRedAfterMillis + 1]
         )
+        // Rouge depuis l'entrée, sans changement à attendre : pas d'update, update antérieure ou égale à l'entrée, entrée sans heure.
         XCTAssertEqual(StatusColor.changeInstants(facts(.inRisk, presenceAt: ref)), [])
+        XCTAssertEqual(StatusColor.changeInstants(facts(.inRisk, presenceAt: ref, update: ref)), [])
+        XCTAssertEqual(StatusColor.changeInstants(facts(.inRisk, presenceAt: ref, update: ref - hour)), [])
+        XCTAssertEqual(StatusColor.changeInstants(facts(.inRisk, update: ref)), [])
         XCTAssertEqual(StatusColor.level(facts(.inRisk, presenceAt: ref), nowMillis: ref), .red)
     }
 
     func testNothingChangesInATrustedZoneOrWithoutSharingOrStatus() {
         XCTAssertEqual(StatusColor.changeInstants(facts(.inTrusted, presenceAt: ref, update: ref)), [])
         XCTAssertEqual(StatusColor.changeInstants(facts(.unknown, presenceAt: ref)), [])
+        // Mode voyage : toujours neutre, quelle que soit l'ancienneté des repères (aucun instant, aucun rappel).
+        let traveller = facts(.travel, presenceAt: ref - 20 * hour, update: ref - 10 * hour)
+        XCTAssertEqual(StatusColor.changeInstants(traveller), [])
+        XCTAssertEqual(StatusColor.level(facts(.travel, presenceAt: ref - 20 * hour), nowMillis: ref), .neutral)
         XCTAssertEqual(StatusColor.changeInstants(facts(.out, presenceAt: ref, sharing: false)), [])
         XCTAssertEqual(StatusColor.changeInstants(nil), [])
     }

@@ -36,7 +36,11 @@
 ## Partie C — Centre de notifications (PR A) — 8 min
 
 - [ ] Dans le Feed, une **cloche** à droite de l'en-tête (aucune cloche sans Miff). Sans rien de nouveau : cloche **sans point**.
-- [ ] Touchez la cloche : écran « Notifications », **état vide** « Rien à signaler / Ici, tu retrouves tes rappels et les nouvelles de ta Miff. ». Si les notifications sont coupées ou jamais demandées : un **bandeau** calme avec un bouton (aide ou amorce).
+- [ ] Touchez la cloche **avec les notifications autorisées et rien de nouveau** : écran « Notifications », **état vide calme** « Rien à signaler / Ici, tu retrouves tes rappels et les nouvelles de ta Miff. ».
+- [ ] **Jamais demandées** (installation neuve, « Plus tard » choisi) : touchez la cloche. Le centre s'ouvre **flouté**, comme s'il y avait des notifications derrière (de simples **barres**, aucun texte lisible, aucun nom), avec une **carte calme** « Pas encore activées » et un seul bouton **« Activer les notifications »**. Le bouton ouvre **tout de suite la fenêtre du système** (pas d'écran « maison » avant). Autorisez : le flou disparaît et l'état vide « Rien à signaler » apparaît. Refusez : le centre reste flouté, **sans message culpabilisant**.
+- [ ] **Refusées** (Réglages iOS > Miff > Notifications coupées, ou refus à la fenêtre ci-dessus) : même centre flouté, carte « Les notifications sont coupées / Tu ne recevras pas de rappel. », même bouton. Le bouton **n'ouvre pas de fenêtre du système** (iOS ne la montre plus) : il ouvre la page calme « Notifications coupées » (trois étapes), dont le bouton « Ouvrir les réglages du téléphone » mène aux Réglages d'iOS. Réactivez-les là-bas puis **revenez dans l'app** : le centre n'est plus flouté.
+- [ ] Le centre flouté ne montre **jamais une vraie notification** (même s'il y en avait avant le refus), n'a **pas de menu ⋯**, et **rien n'est marqué comme lu** quand on le quitte (la pastille de la cloche reste).
+- [ ] **VoiceOver** sur le centre flouté : seule la carte est lue (titre, phrase, bouton « Activer les notifications ») ; les fausses barres sont ignorées.
 - [ ] (Quand les rappels existent, PR suivantes) la cloche porte **un point, jamais un chiffre** ; la liste est groupée **Aujourd'hui / Hier / Plus ancien**, l'heure est celle de l'iPhone, une entrée non lue a un point ; toucher une ligne la marque lue et ouvre **l'écran Update** (N1, N2) ou le **Feed** (N3, N4, N6), jamais une erreur.
 - [ ] Menu **⋯** : « Tout marquer comme lu » ; « Tout effacer » demande **confirmation**. Balayage vers la gauche ou appui long sur une ligne : « Supprimer ».
 - [ ] **VoiceOver** : la cloche est lue « Notifications » (« Notifications, 2 non lues » s'il y en a) ; une ligne est lue « {titre}, {heure}, non lu ».
@@ -50,6 +54,7 @@
 - [ ] **N2** : « **Tu es passé rouge** / Indique à ta Miff que tout va bien. » arrive 2 h après N1 (ou, avec l'astuce, à la minute prévue), toucher ouvre l'écran Update. **Une seule N1 et une seule N2 par épisode** : rien ne se répète.
 - [ ] **Annulation** : juste après avoir programmé N1 (avant son heure), **publiez une update** (ou rentrez dans un lieu de confiance). Au retour au premier plan, la notification ne part pas ; si elle était déjà affichée, elle **disparaît du tiroir** à l'ouverture de l'app.
 - [ ] **Zone de danger** : un compte dans une zone de danger (créée par un créateur Premium) ne reçoit **ni N1 ni N2**.
+- [ ] **Mode voyage** : activez le mode voyage sur l'iPhone (Profil), puis laissez passer l'heure prévue de N1 (ou utilisez l'astuce : `presence` = `out` ancien, puis activez le voyage) : **ni N1 ni N2** n'arrive, et un rappel déjà programmé est retiré au plus tard au prochain retour de l'app au premier plan (à noter si ce n'est pas le cas). Un voyageur est toujours neutre.
 - [ ] **Nuit calme** (22 h à 7 h) : N1 arrive **sans son ni vibration** (dans le tiroir, sans bannière) ; N2 garde son niveau normal. Pour l'essayer sans attendre la nuit, ajustez le `presenceAt` pour que l'heure prévue tombe la nuit.
 - [ ] **Réglages > Notifications** : éteindre « Quand je passe orange » annule N1 **immédiatement** (rien n'arrive) ; éteindre « Recevoir des notifications » annule tout **et retire** les notifications Miff du tiroir.
 - [ ] **Plafond** : pas plus de 2 par type et 6 au total par jour ; au-delà, rien n'est affiché mais le centre garde une entrée discrète.
@@ -68,6 +73,7 @@
 - [ ] **Si B donne de ses nouvelles avant l'heure** et que vous rouvrez l'app (ou qu'elle était ouverte) : la notification est **annulée** ; si elle était déjà affichée elle **disparaît du tiroir** à l'ouverture.
 - [ ] **Si B donne de ses nouvelles pendant que l'app est fermée** : N3 s'affiche quand même (limite iOS acceptée) ; à l'ouverture le Feed dit la vérité et la notification est retirée. **Notez chaque fausse alerte** : en bas de Réglages > Notifications (builds Debug et Internal) un compteur dit « x fausse(s) alerte(s) sur y ».
 - [ ] **Compte seul dans la Miff** : jamais de N3 ni N4. **Miff de deux personnes dont vous êtes la cause** : pas de N3 / N4 non plus (vous avez N1 / N2).
+- [ ] **Un proche en voyage** (mode voyage actif chez B, qui était `out` depuis longtemps) : **ni N3 ni N4** à cause de lui (un voyageur est ignoré dans la couleur de la Miff). Quand son voyage se termine, il ne déclenche rien de lui-même.
 - [ ] **Autre Miff active** (Premium) : changer de Miff active annule les rappels de l'ancienne.
 - [ ] Les mêmes vérifications que la partie D pour : nuit calme (N3 sans son, N4 normale), interrupteurs (« Quand ma Miff passe orange / rouge »), plafonds, centre, premier plan.
 

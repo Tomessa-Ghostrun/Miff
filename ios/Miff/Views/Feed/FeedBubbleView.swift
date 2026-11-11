@@ -3,7 +3,7 @@ import UIKit
 
 // La bulle de la Miff (maquettes 02 à 05) : UNE tache, de la couleur de la Miff, sous l'en-tête. Elle INFORME, elle n'alarme pas :
 // heures absolues pour l'orange et le rouge, aucun son, aucun défilement automatique, aucun point d'exclamation, jamais « en
-// sécurité ». Un pictogramme est toujours là (la couleur n'est jamais seule). Plusieurs alertes forment un carrousel (les rouges
+// sécurité ». Un pictogramme accompagne l'orange, le rouge et le neutre (la couleur n'est jamais seule), mais PAS le vert (décision du PM, 2026-11-08). Plusieurs alertes forment un carrousel (les rouges
 // d'abord), avec des pastilles seulement quand il y a plusieurs pages, et « Alerte précédente / suivante » pour VoiceOver.
 
 /// Une tache douce et organique (une courbe fermée lisse par dix points), comme la tache des maquettes du PM. Symétrique en
@@ -47,13 +47,17 @@ struct BubbleView: View {
     /// Le mouvement n'existe que si la bulle est à l'écran ET l'app au premier plan ET l'onglet en usage.
     let isActive: Bool
     let actions: BubbleActions
+    /// MODE VOYAGE : la ligne « {Prénom} est en voyage jusqu'au 15 nov. » sous la bulle habituelle (nil : aucune, ou la bulle le dit déjà).
+    var travelNote: TravelNote?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         content
             .onChange(of: announceKey) { _ in
                 // La bulle est une région annoncée SEULEMENT quand le niveau (ou l'ensemble des alertes) change, jamais à chaque minute.
-                UIAccessibility.post(notification: .announcement, argument: texts.announcement(bubble))
+                UIAccessibility.post(
+                    notification: .announcement, argument: texts.announcement(bubble, travelNote: travelNote)
+                )
             }
     }
 
@@ -61,37 +65,35 @@ struct BubbleView: View {
         BubbleMotion.enabled(reduceMotion: reduceMotion, active: isActive)
     }
 
+    /// MODE VOYAGE : l'avion est le symbole en filigrane de la bulle des voyageurs (la couleur n'est jamais seule).
+    private var travelSymbol: String? {
+        if case .travelers = bubble {
+            return "airplane"
+        }
+        return nil
+    }
+
     @ViewBuilder
     private var content: some View {
         if case .alerts(let pages, _) = bubble {
-            AlertCarousel(pages: pages, texts: texts, motion: motion, onMessage: actions.onMessage)
-        } else {
-            BubbleBlob(level: bubble.level, pictogram: BubblePictogram.of(bubble), motion: motion) {
-                CalmBubbleLines(bubble: bubble, texts: texts, onResumeSharing: actions.onResumeSharing)
+            VStack(spacing: Spacing.sm) {
+                AlertCarousel(pages: pages, texts: texts, motion: motion, onMessage: actions.onMessage)
+                // MODE VOYAGE : les autres membres en voyage, sous les alertes.
+                if let travelNote {
+                    Text(verbatim: texts.travelNote(travelNote))
+                        .miffTextStyle(textBodyRegular14)
+                        .foregroundColor(colorTextDescription.color)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                }
             }
-        }
-    }
-}
-
-/// Un pictogramme par couleur (la couleur n'est jamais seule) : l'étoile pour « tout va bien », une horloge, un « ! », un sablier.
-private enum BubblePictogram {
-    static func of(_ bubble: Bubble) -> String {
-        if case .allGood = bubble {
-            return "sparkle"
-        }
-        return of(level: bubble.level)
-    }
-
-    static func of(level: StatusLevel) -> String {
-        switch level {
-        case .orange:
-            return "clock"
-        case .red:
-            return "exclamationmark"
-        case .green:
-            return "sparkle"
-        case .neutral:
-            return "hourglass"
+        } else {
+            BubbleBlob(level: bubble.level, symbol: travelSymbol, motion: motion) {
+                CalmBubbleLines(
+                    bubble: bubble, texts: texts, travelNote: travelNote, onResumeSharing: actions.onResumeSharing
+                )
+            }
         }
     }
 }
@@ -100,9 +102,19 @@ private enum BubblePictogram {
 private struct CalmBubbleLines: View {
     let bubble: Bubble
     let texts: FeedTexts
+    var travelNote: TravelNote?
     let onResumeSharing: () -> Void
 
     var body: some View {
+        lines
+        // MODE VOYAGE : les autres membres en voyage, une ligne de plus sous le message habituel.
+        if let travelNote {
+            Line(text: texts.travelNote(travelNote))
+        }
+    }
+
+    @ViewBuilder
+    private var lines: some View {
         switch bubble {
         case .allGood(let latestNews, let answered, let total):
             Headline(key: "feed_bubble_all_good")
@@ -124,18 +136,21 @@ private struct CalmBubbleLines: View {
             Headline(key: "feed_bubble_sharing_stopped_title")
             Line(text: L10n.string("feed_bubble_sharing_stopped_body"))
             BubbleButton(key: "feed_bubble_resume_action", symbol: "mappin.and.ellipse", action: onResumeSharing)
+        case .travelers(let note):
+            Headline(text: texts.travelersHeadline(note))
         case .alerts:
             EmptyView()
         }
     }
 }
 
-/// La tache et son pictogramme (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
-/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le disque du
+/// La tache et son pictogramme en filigrane (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
+/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le symbole du
 /// pictogramme respire sur son propre cycle. Voir `BubbleMotion` (constantes nommées). Immobile avec « Réduire les animations ».
 private struct BubbleBlob<Content: View>: View {
     let level: StatusLevel
-    let pictogram: String
+    /// Le symbole en filigrane quand il ne vient pas de la couleur (l'avion de la bulle des voyageurs).
+    var symbol: String?
     let motion: Bool
     @ViewBuilder let content: () -> Content
 
@@ -164,28 +179,35 @@ private struct BubbleBlob<Content: View>: View {
                     .rotationEffect(.degrees(motion ? BubbleMotion.tilt(blob) : 0))
                     .accessibilityHidden(true)
             )
-            .overlay(alignment: .bottomTrailing) {
-                PictogramDisc(symbol: pictogram, level: level)
-                    .scaleEffect(motion ? BubbleMotion.starScale(star) : 1)
-                    .offset(y: motion ? BubbleMotion.starDrift(star) : 0)
-                    .padding(.trailing, BubbleLayout.discTrailing)
-                    .padding(.bottom, BubbleLayout.discBottom)
+            .background(alignment: .bottomTrailing) {
+                // Pas de pictogramme sur une bulle verte (décision du PM, 2026-11-08). Les autres : le symbole posé directement dans
+                // la tache, grand et en filigrane, derrière le texte (décision du PM, 2026-11-10 : plus de cercle, rien qui ressemble
+                // à un bouton).
+                if let symbol = symbol ?? BubbleLayout.pictogram(for: level) {
+                    BubbleWatermark(symbol: symbol, level: level)
+                        .scaleEffect(motion ? BubbleMotion.starScale(star) : 1)
+                        .offset(y: motion ? BubbleMotion.starDrift(star) : 0)
+                        .padding(.trailing, BubbleLayout.symbolTrailing)
+                        .padding(.bottom, BubbleLayout.symbolBottom)
+                }
             }
             .offset(y: motion ? BubbleMotion.drift(blob) : 0)
         }
     }
 }
 
-private struct PictogramDisc: View {
+/// Le pictogramme de la bulle : un symbole seul, sans cercle ni fond, de la teinte du niveau à faible opacité. Ni cliquable (aucun
+/// toucher ne lui est donné) ni lu par le lecteur d'écran (les mots disent la même chose).
+private struct BubbleWatermark: View {
     let symbol: String
     let level: StatusLevel
 
     var body: some View {
         Image(systemName: symbol)
-            .font(.system(size: 20, weight: .semibold))
+            .font(.system(size: BubbleLayout.symbolSize, weight: .regular))
             .foregroundColor(level == .neutral ? colorTextDescription.color : level.onTint)
-            .frame(width: BubbleLayout.discSize, height: BubbleLayout.discSize)
-            .background(Circle().fill(Color.white.opacity(0.7)))
+            .opacity(BubbleLayout.symbolOpacity)
+            .allowsHitTesting(false)
             .accessibilityHidden(true)
     }
 }
@@ -210,7 +232,7 @@ private struct AlertCarousel: View {
     var body: some View {
         let current = pages[min(index, pages.count - 1)]
         VStack(spacing: Spacing.sm) {
-            BubbleBlob(level: current.level, pictogram: BubblePictogram.of(level: current.level), motion: motion) {
+            BubbleBlob(level: current.level, motion: motion) {
                 AlertLines(page: current, texts: texts, onMessage: onMessage)
             }
             .id(current.member.uid)

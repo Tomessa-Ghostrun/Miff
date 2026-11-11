@@ -17,7 +17,7 @@
 Console Firebase > projet **Miff** (`miff-3d283`, jamais l'autre projet) > Firestore Database > `miffs/{id de la Miff}/status/{uid du compte}`. Modifiez **à la main** :
 - **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 2 h 10** (type « timestamp »).
 - **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 4 h 10**.
-- **Zone de danger** : `presence` = `in_risk`, `placeId` = l'identifiant d'un lieu de la Miff, `lastUpdateAt` = **il y a 1 h 10** (rouge) ou **il y a 20 min** (pas de rouge forcé : la carte reste verte).
+- **Zone de danger** : `presence` = `in_risk`, `placeId` = l'identifiant d'un lieu de la Miff, `presenceAt` = **il y a 3 h**. **Rouge** : `lastUpdateAt` absent, ou **avant** `presenceAt`, ou **il y a 1 h 10** ; **vert** : `lastUpdateAt` = **il y a 20 min** (donc après l'entrée).
 - **Retour au vert** : `presence` = `in_trusted`, `presenceAt` = maintenant.
 Les champs restent dans le schéma (ne rajoutez rien). Si un téléphone bouge ou rouvre l'app, il peut réécrire son vrai statut : refaites la modification.
 
@@ -117,7 +117,12 @@ Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectur
 
 - [ ] **Étiquettes** : dans un lieu **Maison** « À la maison », **Travail** « Au travail », **École** « À l'école », **Sport** « Au sport », **Chez un proche** « Chez un proche » ; **Loisir** et **Autre** : le **nom du lieu seul** (sans « À » devant). Un nom long (40 signes) tient sur deux lignes au plus. En anglais : At home / At work / At school / At the gym / At a loved one's.
 - [ ] **Bulle centrée** : dans les **3 couleurs** (vert, orange, rouge) et sur **toutes les pages** du carrousel d'alertes, le texte et le bouton sont **au milieu de la tache**, à gauche comme à droite et en haut comme en bas, **pendant que la tache bouge**. Refaites-le avec une **grande taille de texte** (Réglages > Accessibilité > Affichage et luminosité > Taille du texte) : le texte reste centré et ne touche pas le disque du pictogramme en bas à droite.
-- [ ] **Seuils** : sorti d'un lieu depuis moins de 2 h : **vert** ; au-delà de 2 h : **orange** ; au-delà de 4 h : **rouge**. Une update plus récente repart du vert. **Zone de danger** : dernière update il y a plus d'1 h (ou aucune) : **rouge** ; il y a moins d'1 h : **verte**, la carte garde son étiquette « Dans une zone de danger ».
+- [ ] **Heure sur les cartes** : une personne dans un lieu affiche « Depuis 13 h 36 » (l'heure où elle est arrivée), jamais « Depuis 12 min » ; une zone quittée depuis moins de 2 h affiche aussi « Depuis {heure du départ} » ; pas aujourd'hui : « Depuis hier à … » puis la date. Changez l'heure du téléphone en 12 h (EN : « Since 1:36 PM »). VoiceOver lit la carte avec cette heure.
+- [ ] **Symbole de la bulle** (orange, rouge) : plus de cercle ; le symbole est posé en grand et en filigrane doux en bas à droite, derrière le texte, rien qui ressemble à un bouton ; la bulle ne paraît ni vide ni chargée. (Proposition du dev : à ajuster selon votre œil : taille 76 pt, opacité 20 %, constantes `BubbleLayout.symbol*`.)
+- [ ] **Bulle verte sans symbole** : la bulle verte « Tout va bien » n'a **aucun pictogramme** (pas d'étoile) et son texte reste centré ; les bulles orange (horloge) et rouge (point d'exclamation) gardent le leur.
+- [ ] **Bulle d'incitation (Update)** en zone de danger : visible tant que vous êtes rouge, masquée pendant l'heure de vert qui suit une update, puis elle revient.
+- [ ] **Seuils** : sorti d'un lieu depuis moins de 2 h : **vert** ; au-delà de 2 h : **orange** ; au-delà de 4 h : **rouge**. Une update plus récente repart du vert. **Zone de danger** : **rouge dès l'entrée** (même avec une update faite juste avant) ; si vous publiez une update **après** l'entrée, la couleur passe **verte pendant 1 h** puis redevient rouge ; une nouvelle update redonne 1 h de vert. Jamais d'orange en zone de danger.
+- [ ] **Détail d'un lieu de danger** (Lieux > un lieu de danger) : le texte d'information dit « Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h. ».
 
 ## Points ouverts pour vous (à noter à la fin)
 

@@ -138,6 +138,8 @@ struct PlaceFormContent: View {
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
         .hidesInAppSwitcher()
+        // Pendant l'enregistrement ou la suppression du lieu, le balayage depuis le bord ne ramène pas en arrière.
+        .swipeBack(for: .placeForm(isBusy: state.busy))
     }
 
     @ViewBuilder

@@ -41,9 +41,11 @@ import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewals
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.FirestoreConsentRenewals
+import com.tomessa.miff.data.miff.FirestoreMemberFacesReader
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
 import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.MemberFacesReader
 import com.tomessa.miff.data.miff.MiffDeletion
 import com.tomessa.miff.data.miff.MiffDeletionCoordinator
 import com.tomessa.miff.data.miff.MiffDirectory
@@ -101,9 +103,11 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.data.subscription.FirestoreSubscriptionStore
 import com.tomessa.miff.data.subscription.SubscriptionRepository
+import com.tomessa.miff.data.tracking.AlarmManagerTravelAlarm
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
 import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
 import com.tomessa.miff.data.tracking.DetectionJournals
+import com.tomessa.miff.data.tracking.EngineTravelControl
 import com.tomessa.miff.data.tracking.FirestoreTrackingStore
 import com.tomessa.miff.data.tracking.FusedMovementUpdates
 import com.tomessa.miff.data.tracking.FusedPhotoPositionSource
@@ -113,6 +117,7 @@ import com.tomessa.miff.data.tracking.PlayGeofenceArming
 import com.tomessa.miff.data.tracking.SharedPreferencesTrackingLocalStore
 import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.data.tracking.TrackingEnvironment
+import com.tomessa.miff.data.tracking.TravelControl
 import com.tomessa.miff.data.update.FirestorePhotoStore
 import com.tomessa.miff.data.update.PhotoCleaner
 import com.tomessa.miff.data.update.PhotoStore
@@ -332,8 +337,24 @@ class AppContainer(
             // AUTH-5b: while the deletion of THIS account is under way (its marker is on the disk) nothing is armed, read or written, even by a receiver of the
             // system that wakes a cold process (the memory of the engine's stop is gone there).
             suspended = { accountDeletionMarker.read()?.uid?.let { it == authGateway.currentUid } == true },
+            // MODE VOYAGE: the alarm of the end of a trip (inexact, no special permission).
+            travelAlarm = AlarmManagerTravelAlarm(context),
         )
     }
+
+    /** MODE VOYAGE (VOY-2A): what the Profile asks of the tracking (begin, move the end, end a trip). Open to every account. */
+    val travelControl: TravelControl by lazy { EngineTravelControl(trackingEngine) }
+
+    /**
+     * MODE VOYAGE: a trip is on. The battery of a status is then null (nothing is written about the battery during a trip, the rules refuse a level next to a trip).
+     */
+    private fun travelOn(): Boolean {
+        // The local copy is read again at each use (a small private file): never a stale "no trip" after a new session, a restart of the process or an end by the alarm.
+        trackingEngine.reloadTravel()
+        return trackingEngine.travel.value != null
+    }
+
+    private fun batteryForStatus(): Int? = if (travelOn()) null else trackingEnvironment.batteryPct()
 
     // A failure of the detection never takes the app down (nothing is logged: it could hold a place).
     private val trackingScope by lazy {
@@ -367,6 +388,9 @@ class AppContainer(
 
     /** FEED: the statuses of the Miff shown (read only, one listener) and the single reading of a position behind "Localiser". Nothing is written. */
     val statusObserver: StatusObserver by lazy { FirestoreStatusObserver() }
+
+    /** The faces of the carousel of Miffs of the Profile tab: ONE reading of the members of a Miff, when its card appears (docs/dev/surveillance-quotas.md). */
+    val memberFacesReader: MemberFacesReader by lazy { FirestoreMemberFacesReader() }
 
     val positionReader: PositionReader by lazy { FirestorePositionReader() }
 
@@ -403,9 +427,10 @@ class AppContainer(
             photos = photoCache,
             currentUid = { authGateway.currentUid },
             miffIds = ::miffIds,
-            battery = { trackingEnvironment.batteryPct() },
+            battery = ::batteryForStatus,
             // The photo is only written where my own position is published (contract of the data model); none yet: the detection is asked to write it.
             published = LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)),
+            travelOn = ::travelOn,
             onPositionMissing = { trackingLooksAgain(TrackingEngine.Reason.OPENED) },
         )
     }
@@ -419,7 +444,7 @@ class AppContainer(
             photos = photoCache,
             currentUid = { authGateway.currentUid },
             miffIds = ::miffIds,
-            battery = { trackingEnvironment.batteryPct() },
+            battery = ::batteryForStatus,
             reader = photoReader,
         )
     }
