@@ -308,6 +308,8 @@ class AppContainer(
             device = deviceSession,
             cache = cachePurger,
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
+            // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
+            online = { networkMonitor.isOnline() },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore

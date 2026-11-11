@@ -392,6 +392,10 @@
     <string name="feed_create_action">Créer une Miff</string>
     <string name="feed_join_action">Rejoindre une Miff</string>
     <string name="feed_offline_note">Pas de connexion pour le moment. Ce que tu vois peut ne pas être à jour.</string>
+    <string name="feed_offline_popin_title">Pas de connexion</string>
+    <string name="feed_offline_popin_body">Vérifie ta connexion, on réessaie dans un instant.</string>
+    <string name="feed_offline_popin_retry">Réessayer</string>
+    <string name="feed_offline_popin_countdown">Nouvel essai dans %1$d s</string>
     <string name="feed_unavailable">On n\'arrive pas à lire tes Miffs pour le moment. Réessaie dans un instant.</string>
     <string name="feed_header_avatar_a11y">Ouvrir mon profil. Ton statut : %1$s</string>
     <string name="feed_header_avatar_plain_a11y">Ouvrir mon profil</string>
