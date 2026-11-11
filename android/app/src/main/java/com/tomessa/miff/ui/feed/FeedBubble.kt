@@ -320,9 +320,10 @@ private fun BubbleBlob(
 }
 
 /**
- * The MAIN sentence of the bubble ("Tout va bien"): bold, bigger, in the heaviest Baloo Thambi 2, the font closest to the word-mark "Miff" (decision of
- * the PM, 2026-11-10). Only this sentence has it, not the rest of the Feed. Size in sp (follows the font size of the phone); the lines are balanced
- * ([LineBreak.Heading]) and the bubble grows in height, so a small screen or a large text never pushes a word out of it.
+ * The MAIN sentence of the bubble ("Tout va bien"): the font and weight of display/headline (Baloo Thambi 2, like the other titles of the app) at 30 / 36,
+ * bigger than the 24 / 30 of a title (decision of the PM, 2026-11-11; the bold singular font tried before was dropped). Only this sentence is bigger. Size in
+ * sp (follows the font size of the phone); the lines are balanced ([LineBreak.Heading]) and the bubble grows in height, so a small screen or a large text
+ * never pushes a word out of it.
  */
 private val HEADLINE_STYLE = textDisplayBubble.copy(lineBreak = LineBreak.Heading)
 

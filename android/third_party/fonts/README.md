@@ -8,4 +8,4 @@
 
 The files are unmodified copies. The OFL allows embedding in an application; the fonts are not sold on their own.
 
-Graisses utilisées de Baloo Thambi 2 : 400 (styles `display/*`) et **800 (ExtraBold), uniquement pour la phrase principale de la bulle du Feed** (`textDisplayBubble`, décision du PM du 2026-11-10 : la plus proche du mot-symbole « Miff »). Même fichier pour les deux, aucune police ajoutée ; licence OFL 1.1 inchangée (`OFL-BalooThambi2.txt`).
+Graisse utilisée de Baloo Thambi 2 : 400 (Regular) pour tous les styles `display/*`, y compris la phrase principale de la bulle du Feed (`textDisplayBubble`, 30 / 36). Un essai en ExtraBold 800 (2026-11-10) a été abandonné par décision du PM (2026-11-11) ; l'axe 800 du fichier n'est plus utilisé.

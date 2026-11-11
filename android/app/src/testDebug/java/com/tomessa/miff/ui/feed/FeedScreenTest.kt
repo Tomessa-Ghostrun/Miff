@@ -1041,26 +1041,17 @@ class FeedScreenTest {
     }
 
     @Test
-    fun bubble_theMainSentence_isBold_bigger_andInTheHeaviestBaloo() {
+    fun bubble_theMainSentence_hasTheFontAndWeightOfDisplayHeadline_atThirtySp() {
         feed(ready(nominal))
         val style = bubbleStyle()
-        assertEquals(androidx.compose.ui.text.font.FontWeight.ExtraBold, style.fontWeight)
+        // Homogeneous with the other titles of the app (decision of the PM, 2026-11-11): same family and weight as display/headline, only bigger.
+        val headline = com.tomessa.miff.ui.theme.textDisplayHeadline
+        assertEquals(headline.fontFamily, style.fontFamily)
+        assertEquals(headline.fontWeight, style.fontWeight)
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Normal, style.fontWeight)
         assertEquals(30f, style.fontSize.value, 0f)
-        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > 24f)
-        assertEquals(com.tomessa.miff.ui.theme.FontFamilyBalooExtraBold, style.fontFamily)
-        // The rest of the Feed keeps its fonts: the first name of a card is still the regular Baloo, the time line Hanken Grotesk.
-        val name =
-            composeRule
-                .onAllNodesWithText("Thomas", useUnmergedTree = true)[0]
-                .fetchSemanticsNode()
-        val nameResults = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-        name.config[SemanticsActions.GetTextLayoutResult].action?.invoke(nameResults)
-        assertEquals(
-            com.tomessa.miff.ui.theme.FontFamilyBaloo,
-            nameResults
-                .first()
-                .layoutInput.style.fontFamily,
-        )
+        assertEquals(36f, style.lineHeight.value, 0f)
+        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > headline.fontSize.value)
     }
 
     @Test
