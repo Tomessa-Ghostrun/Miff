@@ -76,6 +76,18 @@ struct LocalMiff: Codable, Equatable, CustomStringConvertible {
     var batteryPct: Int?
     var batteryWrittenAtMillis: Int?
     var batteryTriedAtMillis: Int?
+    /// MODE VOYAGE : le statut de cette Miff porte encore les clés d'un voyage terminé ; la prochaine écriture du statut les efface (puis
+    /// ceci repasse à faux). Facultatif : une copie locale écrite avant ce chantier n'a pas la clé.
+    var clearTravelFlag: Bool?
+
+    var clearTravel: Bool {
+        get {
+            clearTravelFlag == true
+        }
+        set {
+            clearTravelFlag = newValue ? true : nil
+        }
+    }
 
     var batteryHistory: BatteryHistory {
         BatteryHistory(pct: batteryPct, writtenAtMillis: batteryWrittenAtMillis, triedAtMillis: batteryTriedAtMillis)
@@ -128,6 +140,36 @@ struct LocalMiff: Codable, Equatable, CustomStringConvertible {
     }
 }
 
+/// MODE VOYAGE (VOY-1I) : le voyage en cours sur ce téléphone. Tant qu'il existe, le suivi n'écrit AUCUN statut de présence ni batterie
+/// (il écraserait le voyage) ; la position, elle, continue d'être mesurée et écrite comme d'habitude. `startedIn` : les Miffs dont le statut dit
+/// `travel` sur le serveur (quelle que soit la fin) ; `upToDateIn` : celles dont la fin est la fin actuelle. Une Miff de la liste qui n'est pas
+/// dans `startedIn` doit encore être prévenue (hors connexion, partagée plus tard) ; une qui est dans `startedIn` sans être dans `upToDateIn`
+/// doit apprendre la nouvelle fin. `sinceMillis` : quand le voyage a commencé (« Depuis le… »). Ne porte aucune coordonnée.
+struct LocalTravel: Codable, Equatable, CustomStringConvertible {
+    var untilMillis: Int
+    var untilDay: String
+    let sinceMillis: Int
+    var startedIn: Set<String> = []
+    var upToDateIn: Set<String> = []
+
+    var period: TravelPeriod {
+        TravelPeriod(untilMillis: untilMillis, untilDay: untilDay)
+    }
+
+    /// La même histoire avec une autre fin : plus aucune Miff n'est à jour.
+    func moved(to period: TravelPeriod) -> LocalTravel {
+        var next = self
+        next.untilMillis = period.untilMillis
+        next.untilDay = period.untilDay
+        next.upToDateIn = []
+        return next
+    }
+
+    var description: String {
+        "LocalTravel(redacted)"
+    }
+}
+
 /// La copie locale entière. `uid` est le compte à qui elle appartient : la copie d'un autre compte n'est jamais utilisée.
 struct LocalState: Codable, Equatable, CustomStringConvertible {
     var uid: String
@@ -149,6 +191,9 @@ struct LocalState: Codable, Equatable, CustomStringConvertible {
     var statusCursor: String?
     var positionCursor: String?
     var batteryCursor: String?
+    /// MODE VOYAGE : le voyage en cours, ou nil. Gardé par chaque copie de cet état ; effacé avec lui (déconnexion, suppression du compte,
+    /// session perdue). Facultatif : une copie écrite avant ce chantier n'a pas la clé.
+    var travel: LocalTravel?
 
     var fix: Fix? {
         get {

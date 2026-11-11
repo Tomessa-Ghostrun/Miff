@@ -31,4 +31,8 @@ struct FirestoreTrackingStore: TrackingStore {
     func commit(_ writes: [DocWrite]) async throws {
         try await base.commit(writes)
     }
+
+    func ownTravel(miffId: String, uid: String) async throws -> TravelRead? {
+        try await base.readOwnTravel(miffId: miffId, uid: uid)
+    }
 }
