@@ -1,3 +1,5 @@
+// Les assertions citent des lignes entières de sources : elles dépassent la limite.
+// swiftlint:disable line_length
 import XCTest
 @testable import Miff
 

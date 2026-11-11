@@ -2,7 +2,7 @@ import XCTest
 @testable import Miff
 
 /// Le centre tel que l'app le tient en mémoire : lecture par compte, inscription sans doublon, conservation, purge (déconnexion,
-/// suppression du compte), et l'écran du centre (bandeau, lu / non lu, destinations).
+/// suppression du compte), et l'écran du centre (centre verrouillé, lu / non lu, destinations).
 @MainActor
 final class NotificationCenterServiceTests: XCTestCase {
     private var current = 1_800_000_000_000
