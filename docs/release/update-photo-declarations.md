@@ -482,7 +482,7 @@ Dans le **plein écran de la photo d'un proche** (Feed, **ce seul endroit** : ni
 | Plateforme | Comportement | Permission |
 |---|---|---|
 | **Android** (PR #156, fusionnée) | Android 10 et plus : la photo est ajoutée au dossier `Pictures/Miff` de la galerie (MediaStore) au toucher. Android 9 et moins : le sélecteur de documents du système (la personne choisit où). Fichier sans métadonnée, nom neutre | **Aucune** (la CI refuse toute permission de stockage ou de photothèque) |
-| **iPhone** (PR #158, **brouillon, non fusionnée à la date de rédaction : à revérifier à la fusion**) | Enregistrement **direct dans la galerie** au toucher, par une autorisation **« ajout seulement »** (`PHPhotoLibrary` `.addOnly`, demandée au premier toucher), JPEG ré-encodé depuis les pixels (ni EXIF ni lieu) | **`NSPhotoLibraryAddUsageDescription`** (nouvelle) ; **jamais** `NSPhotoLibraryUsageDescription` (lecture) |
+| **iPhone** (PR #158, **brouillon, non fusionnée à la date de rédaction : à relire à la fusion de #158**) | Enregistrement **direct dans la galerie** au toucher, par une autorisation **« ajout seulement »** (`PHPhotoLibrary` `.addOnly`, demandée au premier toucher), JPEG ré-encodé depuis les pixels (ni EXIF ni lieu) | **`NSPhotoLibraryAddUsageDescription`** (nouvelle) ; **jamais** `NSPhotoLibraryUsageDescription` (lecture) |
 
 Jamais « jamais enregistrée » : la formule exacte est **« seulement si tu choisis de l'enregistrer »**. Une copie enregistrée est un fichier du téléphone du membre, **hors de Miff** (les 24 heures et la suppression du compte ne s'y appliquent pas) ; l'image enregistrée ne contient ni EXIF ni lieu.
 

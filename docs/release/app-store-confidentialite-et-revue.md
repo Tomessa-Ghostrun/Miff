@@ -72,7 +72,7 @@ Ils remplacent les textes du ticket Lieux §11, **devenus faux** depuis la déci
 | Français | « Miff utilise ta position pour savoir quand tu arrives dans un lieu de confiance ou que tu le quittes, et pour que les membres de ta Miff qui partagent aussi voient ta dernière position connue, avec l'heure. » |
 | English | "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time." |
 
-**`NSPhotoLibraryAddUsageDescription`** (ajout seulement, « Enregistrer cette photo », décision du 2026-11-11 ; PR iOS #158, non fusionnée à la date de rédaction)
+**`NSPhotoLibraryAddUsageDescription`** (ajout seulement, « Enregistrer cette photo », décision du 2026-11-11 ; PR iOS #158, non fusionnée à la date de rédaction : **à relire à la fusion de #158**)
 
 | Langue | Texte |
 |---|---|

@@ -16,8 +16,8 @@ Préparé le 2026-11-11 par `release-manager` (PR `docs/aligner-decisions-public
 
 | Fichiers | Correction |
 |---|---|
-| `docs/legal/cgu.fr.md`, `cgu.en.md` | D1 : art. 5 et 9 (3 occurrences par langue). D2 : art. 8 (copie par capture ou par « Enregistrer cette photo »). D3 : art. 4 |
-| `docs/legal/politique-confidentialite.fr.md`, `.en.md` | D2 : point 7 du résumé, art. 3 (« Caméra et photo », « Ce que Miff ne collecte pas »), art. 4, 5, 7, 10, 11. D3 : art. 3 (« Profil »), art. 5, art. 6 (ligne « Serveurs d'images de Google », IP exposée). D4 : art. 3 (« Statut automatique »), art. 5. D5 : art. 3 (« Notifications » : rappels programmés par le téléphone, aucun push, aucun jeton) |
+| `docs/legal/cgu.fr.md`, `cgu.en.md` | D1 : art. 5 et 9 (3 occurrences par langue). D2 : art. 8 (mention factuelle de la copie par capture ou par « Enregistrer cette photo », sans règle de non-republication). D3 : art. 4. Art. 6 : « dernière position et, si tu publies une photo, l'endroit pendant 24 heures » |
+| `docs/legal/politique-confidentialite.fr.md`, `.en.md` | D2 : point 7 du résumé, art. 3 (« Caméra et photo », « Ce que Miff ne collecte pas »), art. 4, 5, 7, 10, 11. D3 : art. 3 (« Profil »), art. 5, art. 6 (ligne « Serveurs d'images de Google », IP exposée). D4 : art. 3 (« Statut automatique »), art. 5. D5 : art. 3 (« Notifications », **au futur** : les rappels locaux ne sont pas encore dans `main` ; aujourd'hui aucun push, aucun jeton) |
 | `docs/legal/README.md` | §8 (récapitulatif), risques J38 et J39, lignes « à aligner » marquées « fait » |
 | `docs/release/update-photo-declarations.md` | Nouveau §16 (modalités D2 et D3, liste des permissions Android et iOS, déclarations des stores) ; lignes 61, 74, 108, 130, 148 corrigées |
 | `docs/release/README.md` | Contrôles V22 (enregistrement), V23 (voyage), V24 (photo Google) ; ce document ajouté à la liste |
@@ -42,7 +42,7 @@ Préparé le 2026-11-11 par `release-manager` (PR `docs/aligner-decisions-public
 | P3 | Dire **« oui, déploie »** pour publier le site (Firebase Hosting, projet `miff-3d283` uniquement) : page d'accueil, CGU, politique, suppression de compte | `web/`, `scripts/web-predeploy-check.mjs` |
 | P4 | À la soumission seulement : remplir **Data safety**, **App Privacy**, la note de revue, la classification d'âge, avec les réponses identiques partout | `google-play-data-safety.md`, `app-store-confidentialite-et-revue.md`, `update-photo-declarations.md` §5, §6, §16 |
 | P5 | Vérifier dans Play Console et TestFlight si un testeur externe a accepté le consentement `2026-11-v03` d'origine (sinon plan v4) | `docs/legal/consentement-localisation-v3.md` §1 bis |
-| P6 | Décider de **la règle d'usage de l'art. 8 des CGU** (ne pas republier une photo enregistrée) : garder ou retirer | `docs/legal/cgu.fr.md`, `cgu.en.md` art. 8 |
+| P6 | Décider s'il faut une **règle d'usage** dans l'art. 8 des CGU (ne pas republier une photo enregistrée). **Elle n'est PAS écrite aujourd'hui** (jamais décidée) ; seule la mention factuelle de la copie y figure | `docs/legal/cgu.fr.md`, `cgu.en.md` art. 8 |
 | P7 | Décider de l'**illustration des pastilles** du paywall (2 pleines + 1 en pointillé aujourd'hui) pour 3 lieux | `design/screens/lieux/paywall-contextuel-lieux.md` |
 
 ### 3.2 Par les agents (avant de déclarer quoi que ce soit « prêt »)
@@ -64,10 +64,10 @@ Préparé le 2026-11-11 par `release-manager` (PR `docs/aligner-decisions-public
 
 ## 4. Points ambigus, non tranchés (jamais devinés)
 
-1. **CGU art. 8, règle de non-republication d'une photo enregistrée** : proposée par les documents du 2026-11-08, jamais décidée par le PM (P6 ci-dessus).
+1. **CGU art. 8, règle de non-republication d'une photo enregistrée** : proposée par les documents du 2026-11-08, jamais décidée par le PM : **retirée du texte** ; reste à décider (P6 ci-dessus).
 2. **Le texte de consentement v3 ne cite pas la copie d'une photo** : volontaire (changer sa version imposerait un re-consentement) ; à confirmer par le PM.
 3. **Mode voyage dans la politique** : ajouté parce que le statut « en voyage » et sa date de fin sont écrits dans le statut et visibles des proches ; aucune décision du PM ne dit s'il faut le citer dans les textes légaux.
-4. **Moment de l'autorisation iPhone** : « demandée au premier toucher » vient de la PR #158 (non fusionnée) ; à revérifier à la fusion.
+4. **Texte iPhone de l'ajout seul à la galerie** (politique art. 3, `NSPhotoLibraryAddUsageDescription`, « demandée au premier toucher ») : il dépend de la PR #158 (non fusionnée) ; **à relire à la fusion de #158**.
 5. **Android 9 et moins** : le sélecteur de documents remplace le dossier `Pictures/Miff` (décrit dans la politique, art. 3) ; minSdk est 26, donc ces versions existent.
 6. **Rien n'est dit du prix ni de l'essai de Miff+ dans les textes légaux** (affichés par les stores) : cohérent avec la décision du 2026-11-07, mais les CGU parlent d'« éventuelle période d'essai ».
 
