@@ -5,12 +5,17 @@ import com.tomessa.miff.domain.tracking.MemberStatusFacts
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
+import java.time.ZoneId
 
 /*
  * NOTIF-3A: the PLANNER of the notifications N1 to N4 (ticket docs/tickets/notifications.md, sections 20.2, 20.3, 20.8, 20.9). A pure function of the
  * facts the phone already knows: nothing is read, nothing is written, nothing is asked of a server. It says WHICH notifications must be waiting and at
  * which instant; the data layer (alarms) applies it, and the same function is called again at every event that can change it (reconcile). It never holds a
  * position, a place, an address or a name: only identifiers of a Miff and of members, and times (criterion N-P0-10).
+ *
+ * MODE VOYAGE (VOY-4A): while MY trip is on, the reminders and the news about the circle are cut (default value of the spec, question Q7: N1, N2, N3, N4 and N6 are empty) and the
+ * list is N7 alone, planned from the end of the trip (no Miff needed). A member of the circle who travels is neutral: [StatusColor] gives him no instant of change, and
+ * [FeedBuilder.miffLevel] ignores him, so no "plus de nouvelles" and no orange or red is ever planned about him.
  *
  * The colours come from [StatusColor] and nothing else: no hour count is written here (criterion STA9). Every duration below is a named constant.
  */
@@ -60,7 +65,13 @@ class PlanInput(
     /** Somebody is signed in on this phone with the session of this account (checked on the phone, no read). */
     val sessionValid: Boolean,
     val mode: ResponsibilityMode = NotificationPolicy.RESPONSIBILITY,
+    /** MODE VOYAGE: the end of MY trip on this phone (null: none). The trip is ON while this instant is in the future; N7 is planned from it. */
+    val myTravelUntilMillis: Long? = null,
+    val zone: ZoneId = ZoneId.systemDefault(),
 ) {
+    /** My trip is on: the reminders and the news are cut. */
+    fun myTripOn(): Boolean = myTravelUntilMillis?.let { it > nowMillis } == true
+
     override fun toString(): String = "PlanInput(redacted)"
 }
 
@@ -81,6 +92,29 @@ object NotificationPlanner {
      * stopped or my agreement waited for).
      */
     fun plan(input: PlanInput): List<PlannedNotification> {
+        val travelEnd = planTravelEnd(input)
+        // MODE VOYAGE, rule 1 of the ticket (9.2): while MY trip is on, N7 alone.
+        if (input.myTripOn()) return travelEnd
+        return (planCircleAndMine(input) + travelEnd).sortedWith(compareBy({ it.dueAtMillis }, { it.type.ordinal }))
+    }
+
+    /**
+     * N7 (MODE VOYAGE): at most one, `n7|uid|end`, at 08:00 local the day of the end of my trip. Needs a session, the permission and the switches, NOT a Miff. Still planned
+     * (caught up) for [TravelEndNotice.CATCH_UP_WINDOW_MILLIS] after its hour; none when no trip is known, when the trip is long over, or when a condition above is missing.
+     */
+    fun planTravelEnd(input: PlanInput): List<PlannedNotification> {
+        val until = input.myTravelUntilMillis ?: return emptyList()
+        if (!input.sessionValid || !input.permissionAllowed ||
+            !input.preferences.allows(NotificationType.N7)
+        ) {
+            return emptyList()
+        }
+        val due = TravelEndNotice.dueAt(until, input.zone)
+        if (input.nowMillis - due > TravelEndNotice.CATCH_UP_WINDOW_MILLIS) return emptyList()
+        return listOf(PlannedNotification(NotificationType.N7, TravelEndNotice.key(input.myUid, until), due, ""))
+    }
+
+    private fun planCircleAndMine(input: PlanInput): List<PlannedNotification> {
         val miffId = input.miffId ?: return emptyList()
         if (!input.sessionValid || !input.permissionAllowed || !input.preferences.enabled) return emptyList()
         val mine = input.members[input.myUid] ?: return emptyList()
@@ -89,7 +123,7 @@ object NotificationPlanner {
         val planned = mutableListOf<PlannedNotification>()
         planMine(input, miffId, mine, planned)
         planMiff(input, miffId, planned)
-        return planned.sortedWith(compareBy({ it.dueAtMillis }, { it.type.ordinal }))
+        return planned
     }
 
     // --- N1 and N2: me, hors zone de danger ---------------------------------------------------------------------------------------------
@@ -247,6 +281,13 @@ object NotificationPlanner {
         type: NotificationType,
         input: PlanInput,
     ): Boolean {
+        // N7: true while the trip it speaks of is the one known (the key was checked by the caller): no Miff and no level are needed.
+        if (type == NotificationType.N7) {
+            return input.myTravelUntilMillis != null && input.sessionValid && input.permissionAllowed &&
+                input.preferences.allows(type)
+        }
+        // MODE VOYAGE: while MY trip is on, nothing about the circle or about me is still true.
+        if (input.myTripOn()) return false
         if (input.miffId == null || !input.sessionValid || !input.permissionAllowed ||
             !input.preferences.allows(type)
         ) {
@@ -273,7 +314,7 @@ object NotificationPlanner {
                 miffLevelAt(input, now) == StatusLevel.RED && !responsibleAt(input, now)
             }
 
-            NotificationType.N6 -> {
+            NotificationType.N6, NotificationType.N7 -> {
                 false
             }
         }

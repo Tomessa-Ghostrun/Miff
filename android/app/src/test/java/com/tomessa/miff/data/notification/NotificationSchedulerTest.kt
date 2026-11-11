@@ -12,10 +12,12 @@ import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.notification.NotifiedKeys
 import com.tomessa.miff.domain.notification.PlanSnapshot
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.notification.TravelEndNotice
 import com.tomessa.miff.domain.tracking.PresenceValue
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,6 +49,20 @@ class NotificationSchedulerTest {
 
         override fun save(snapshot: PlanSnapshot) {
             value = snapshot
+        }
+
+        override fun clear() {
+            value = null
+        }
+    }
+
+    private class MemoryTravelEnds(
+        var value: TravelEndMemo? = null,
+    ) : TravelEndStore {
+        override fun load() = value
+
+        override fun save(memo: TravelEndMemo) {
+            value = memo
         }
 
         override fun clear() {
@@ -182,6 +198,7 @@ class NotificationSchedulerTest {
     private var permission = true
     private var session = true
     private val snapshots = MemorySnapshots()
+    private val travelEnds = MemoryTravelEnds()
     private val alarms = MemoryAlarms()
     private val ledger = MemoryLedger()
     private val presenter = MemoryPresenter()
@@ -194,6 +211,7 @@ class NotificationSchedulerTest {
     private val scheduler =
         NotificationScheduler(
             snapshots = snapshots,
+            travelEnds = travelEnds,
             settings = settings,
             permissionAllowed = { permission },
             sessionValid = { session && it == me },
@@ -865,6 +883,290 @@ class NotificationSchedulerTest {
         scheduler.onEnteredDanger(me, miff, zoneId, now)
         assertTrue(alarms.map.keys.none { it == NotificationType.N6 })
         assertTrue(NotificationScheduler.PLANNED_TYPES.none { it == NotificationType.N6 })
+    }
+
+    // --- MODE VOYAGE: N7 and the cut of the reminders (VOY-4A) -------------------------------------------------------------------------
+
+    /** A day of November 2026 (the day of the examples is the 8th). */
+    private fun day(
+        d: Int,
+        hour: Int,
+        minute: Int,
+        ms: Long = 0,
+    ) = ZonedDateTime.of(2026, 11, d, hour, minute, 0, 0, paris).toInstant().toEpochMilli() + ms
+
+    /** A trip whose last day is the 9th: it ends at 00:00 of the 10th, N7 is due at 08:00 of the 10th. */
+    private val tripEnd get() = day(10, 0, 0)
+
+    private val n7Due get() = day(10, 8, 0)
+
+    private fun n7Lines() = lines().filter { it.type == NotificationType.N7 }
+
+    private fun n7Shown() = presenter.shown.filter { it.type == NotificationType.N7 }
+
+    @Test
+    fun aTripBegins_n7IsAskedForEightTheMorningAfterTheLastDay_withTheKeyOfTheTrip() {
+        scheduler.onTravelSet(me, tripEnd)
+        val alarm = alarms.map.getValue(NotificationType.N7)
+        assertEquals(n7Due, alarm.dueAtMillis)
+        assertEquals(TravelEndNotice.key(me, tripEnd), alarm.key)
+        assertTrue(presenter.shown.isEmpty())
+    }
+
+    @Test
+    fun aTripNeedsNoMiff_n7IsPlannedWithoutAnySnapshot_andSurvivesARestart() {
+        assertNull(snapshots.value)
+        scheduler.onTravelSet(me, tripEnd)
+        assertEquals(n7Due, alarms.map.getValue(NotificationType.N7).dueAtMillis)
+        // The phone restarted: the system forgot the alarm, the memo of the trip is on the disk.
+        alarms.map.clear()
+        scheduler.reconcile(force = true)
+        assertEquals(n7Due, alarms.map.getValue(NotificationType.N7).dueAtMillis)
+    }
+
+    @Test
+    fun theSameTripAgain_doesNothingNew_noChurnOfAlarms() {
+        scheduler.onTravelSet(me, tripEnd)
+        val calls = alarms.scheduleCalls
+        scheduler.onTravelSet(me, tripEnd)
+        scheduler.onTravelSet(me, tripEnd)
+        scheduler.reconcile()
+        assertEquals(calls, alarms.scheduleCalls)
+    }
+
+    @Test
+    fun aTripBegins_theRemindersWaitingAreCancelledAtOnce_n1N2N3N4() {
+        feedSees(out(me, at(13, 40)), out("x", at(13, 0)), trusted("y"))
+        assertTrue(alarms.map.containsKey(NotificationType.N1))
+        assertTrue(alarms.map.containsKey(NotificationType.N2))
+        scheduler.onTravelSet(me, tripEnd)
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+    }
+
+    @Test
+    fun whileMyTripIsOn_theFeedSeeingMeOut_plansNoReminder() {
+        scheduler.onTravelSet(me, tripEnd)
+        feedSees(out(me, at(13, 40)), out("x", at(13, 0)), trusted("y"))
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+    }
+
+    @Test
+    fun whileMyTripIsOn_myDepartureNoticedByTheDetectionPlansNothing() {
+        feedSees(trusted(me), trusted("x"))
+        scheduler.onTravelSet(me, tripEnd)
+        scheduler.onMyPresence(miff, PresenceValue.OUT, at(14, 0), setLastUpdate = false)
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+    }
+
+    @Test
+    fun theTripIsTurnedOffEarly_n7IsCancelled_andTheRemindersResume() {
+        feedSees(out(me, at(13, 40)), trusted("x"))
+        scheduler.onTravelSet(me, tripEnd)
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+        scheduler.onTravelEnded(me, early = true)
+        assertNull(travelEnds.value)
+        assertEquals(setOf(NotificationType.N1, NotificationType.N2), alarms.map.keys)
+    }
+
+    @Test
+    fun theTripEndsByItself_n7StillWaitsForEight_theTripIsStillRemembered_theRemindersResume() {
+        feedSees(trusted(me), trusted("x"))
+        scheduler.onTravelSet(me, tripEnd)
+        now = tripEnd + 1
+        scheduler.onTravelEnded(me, early = false)
+        // The memo stays: the end is past, the trip is not on any more, N7 is still due this morning.
+        assertEquals(n7Due, alarms.map.getValue(NotificationType.N7).dueAtMillis)
+        assertNotNull(travelEnds.value)
+        // The plan is the normal one again: I leave a place, the reminders are planned next to N7.
+        scheduler.onMyPresence(miff, PresenceValue.OUT, day(10, 0, 30), setLastUpdate = false)
+        assertEquals(
+            setOf(NotificationType.N1, NotificationType.N2, NotificationType.N7),
+            alarms.map.keys,
+        )
+    }
+
+    @Test
+    fun anAlarmOfN7_showsItOnce_withItsOwnLineOfTheCentre_andForgetsTheTrip() {
+        scheduler.onTravelSet(me, tripEnd)
+        val key = TravelEndNotice.key(me, tripEnd)
+        now = n7Due + 3_000
+        scheduler.fire(NotificationType.N7, key)
+        assertEquals(1, n7Shown().size)
+        assertEquals(key, n7Shown().single().key)
+        assertFalse(n7Shown().single().quiet)
+        assertEquals(1, n7Lines().size)
+        assertEquals(ItemState.SHOWN, n7Lines().single().state)
+        assertNull("no Miff on the line", n7Lines().single().miffId)
+        assertNull(travelEnds.value)
+        // A second ring (a duplicate of the system), a restart, a change of the time: never twice.
+        scheduler.fire(NotificationType.N7, key)
+        scheduler.reconcile(force = true)
+        assertEquals(1, n7Shown().size)
+        assertEquals(1, n7Lines().size)
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun n7IsOutsideTheDailyCaps_shownEvenWhenTheSixOfTheDayAreUsed() {
+        ledger.counters =
+            DailyCounters(
+                "2026-11-10",
+                mapOf(NotificationType.N1 to 2, NotificationType.N2 to 2, NotificationType.N3 to 2),
+            )
+        scheduler.onTravelSet(me, tripEnd)
+        now = n7Due + 1_000
+        scheduler.fire(NotificationType.N7, TravelEndNotice.key(me, tripEnd))
+        assertEquals(1, n7Shown().size)
+    }
+
+    @Test
+    fun n7WhileTheAppIsInFront_isOnlyASilentLineOfTheCentre() {
+        scheduler.onTravelSet(me, tripEnd)
+        foreground = true
+        now = n7Due + 1_000
+        scheduler.fire(NotificationType.N7, TravelEndNotice.key(me, tripEnd))
+        assertTrue(n7Shown().isEmpty())
+        assertEquals(ItemState.SILENT, n7Lines().single().state)
+    }
+
+    @Test
+    fun n7WhenThePhoneWasOffAtEight_isCaughtUpAsASilentLine_notAnOldNotification() {
+        scheduler.onTravelSet(me, tripEnd)
+        alarms.map.clear()
+        now = day(10, 10, 30)
+        scheduler.reconcile(force = true)
+        assertTrue(n7Shown().isEmpty())
+        assertEquals(ItemState.SILENT, n7Lines().single().state)
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun n7AfterTheTripIsLongOver_isForgotten_nothingIsWritten() {
+        scheduler.onTravelSet(me, tripEnd)
+        alarms.map.clear()
+        now = day(12, 9, 0)
+        scheduler.reconcile(force = true)
+        assertTrue(lines().isEmpty())
+        assertNull(travelEnds.value)
+    }
+
+    @Test
+    fun theDateOfTheTripMoves_n7FollowsTheNewEnd_andTheOldAlarmShowsNothing() {
+        scheduler.onTravelSet(me, tripEnd)
+        val oldKey = TravelEndNotice.key(me, tripEnd)
+        val newEnd = day(12, 0, 0)
+        scheduler.onTravelSet(me, newEnd)
+        val alarm = alarms.map.getValue(NotificationType.N7)
+        assertEquals(day(12, 8, 0), alarm.dueAtMillis)
+        assertEquals(TravelEndNotice.key(me, newEnd), alarm.key)
+        // An alarm of the old date that rings anyway is stale: nothing is shown.
+        now = n7Due + 1_000
+        scheduler.fire(NotificationType.N7, oldKey)
+        assertTrue(n7Shown().isEmpty())
+        assertTrue(lines().isEmpty())
+    }
+
+    @Test
+    fun theSwitchOfN7_cancelsAtOnce_andTurnedBackOnPlansAgain_theOthersKeepTheirs() {
+        scheduler.onTravelSet(me, tripEnd)
+        settings.setType(NotificationType.N7, false)
+        scheduler.reconcile()
+        assertNull(alarms.map[NotificationType.N7])
+        settings.setType(NotificationType.N7, true)
+        scheduler.reconcile()
+        assertEquals(n7Due, alarms.map.getValue(NotificationType.N7).dueAtMillis)
+        // Without the switch of N7, a reminder switch does not matter to it.
+        settings.setType(NotificationType.N1, false)
+        scheduler.reconcile()
+        assertEquals(n7Due, alarms.map.getValue(NotificationType.N7).dueAtMillis)
+    }
+
+    @Test
+    fun withoutThePermission_orTheSession_n7IsNotPlanned_andTheTripEndsNormallyAnyway() {
+        permission = false
+        scheduler.onTravelSet(me, tripEnd)
+        assertTrue(alarms.map.isEmpty())
+        permission = true
+        scheduler.reconcile()
+        assertNotNull(alarms.map[NotificationType.N7])
+        session = false
+        scheduler.reconcile()
+        assertNull(alarms.map[NotificationType.N7])
+    }
+
+    @Test
+    fun aTripOfAnotherSessionIsNotKept_nothingForAnAccountThatIsNotSignedIn() {
+        session = false
+        scheduler.onTravelSet(me, tripEnd)
+        assertNull(travelEnds.value)
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun theSignOut_forgetsTheTripAndCancelsN7() {
+        scheduler.onTravelSet(me, tripEnd)
+        scheduler.clearAll()
+        assertNull(travelEnds.value)
+        assertTrue(alarms.map.isEmpty())
+        scheduler.reconcile()
+        assertTrue(alarms.map.isEmpty())
+    }
+
+    @Test
+    fun leavingTheMiff_cancelsItsRemindersButNotN7() {
+        // The trip ended at midnight (N7 waits for 08:00) and I left a place since: the reminders and N7 wait together.
+        now = day(10, 1, 0)
+        travelEnds.value = TravelEndMemo(me, tripEnd)
+        feedSees(out(me, day(10, 0, 30)), trusted("x"))
+        assertEquals(setOf(NotificationType.N1, NotificationType.N2, NotificationType.N7), alarms.map.keys)
+        scheduler.onMiffGone(miff)
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+        feedSees(out(me, day(10, 0, 30)), trusted("x"))
+        scheduler.onMiffsKnown(emptySet())
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+        feedSees(out(me, day(10, 0, 30)), trusted("x"))
+        scheduler.onActiveMiffChanged("another")
+        assertEquals(setOf(NotificationType.N7), alarms.map.keys)
+    }
+
+    @Test
+    fun whileMyTripIsOn_noN6_evenIfAnEntryInADangerZoneIsTold() {
+        scheduler.onTravelSet(me, tripEnd)
+        scheduler.onEnteredDanger(me, miff, "zone", now)
+        assertTrue(n6Shown().isEmpty())
+        assertTrue("not even a line of the centre", n6Lines().isEmpty())
+        // The trip is over: N6 is told again.
+        now = tripEnd + 1
+        scheduler.onTravelEnded(me, early = false)
+        scheduler.onEnteredDanger(me, miff, "zone", now)
+        assertEquals(1, n6Shown().size)
+    }
+
+    @Test
+    fun aMemberWhoTravels_isNeutral_nothingIsPlannedAboutHim_t17T18() {
+        // X is orange in 30 minutes: N3 and N4 are waiting; then X travels: they are cancelled by the snapshot the Feed brings.
+        feedSees(trusted(me), out("x", at(13, 40)), trusted("y"))
+        assertTrue(alarms.map.containsKey(NotificationType.N3))
+        feedSees(trusted(me), member("x", PresenceValue.TRAVEL, at(13, 50)), trusted("y"))
+        assertTrue(alarms.map.isEmpty())
+        // X travelled for days and his end is long past: still nothing.
+        now = day(20, 9, 0)
+        scheduler.reconcile(force = true)
+        assertTrue(alarms.map.isEmpty())
+        assertTrue(presenter.shown.isEmpty())
+    }
+
+    @Test
+    fun theTravellerIsNeverTheCauseOfAnN3_theMiffStaysAsTheOthersMakeIt() {
+        feedSees(trusted(me), member("x", PresenceValue.TRAVEL, at(13, 50)), out("y", at(13, 40)))
+        // Only Y counts: orange at 15:40, N3 at 16:10.
+        assertEquals(at(16, 10, 1), alarms.map.getValue(NotificationType.N3).dueAtMillis)
+    }
+
+    @Test
+    fun whatIsKeptForN7_holdsOnlyAnAccountAndAnInstant_andPrintsNothing() {
+        scheduler.onTravelSet(me, tripEnd)
+        assertEquals("TravelEndMemo(redacted)", travelEnds.value.toString())
     }
 
     // --- Privacy ---------------------------------------------------------------------------------------------------------------------------

@@ -40,7 +40,8 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                             { it.notificationScheduler.fireCircle(type, key) }
                         }
 
-                        NotificationType.N1, NotificationType.N2 -> {
+                        // N7 (end of my trip): decided locally, from the trip the phone knows; no server.
+                        NotificationType.N1, NotificationType.N2, NotificationType.N7 -> {
                             { it.notificationScheduler.fire(type, key) }
                         }
 

@@ -14,6 +14,7 @@ import com.tomessa.miff.domain.notification.PlanInput
 import com.tomessa.miff.domain.notification.PlanSnapshot
 import com.tomessa.miff.domain.notification.PlannedNotification
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.notification.TravelEndNotice
 import com.tomessa.miff.domain.tracking.PresenceValue
 import java.time.Instant
 import java.time.ZoneId
@@ -31,6 +32,8 @@ import java.time.ZoneId
  */
 class NotificationScheduler(
     private val snapshots: PlanSnapshotStore,
+    /** MODE VOYAGE: the end of my trip, for N7 and for the cut of the reminders while it lasts. */
+    private val travelEnds: TravelEndStore,
     private val settings: NotificationSettings,
     /** The phone lets Miff notify (the state of the permission is ALLOWED). */
     private val permissionAllowed: () -> Boolean,
@@ -102,7 +105,7 @@ class NotificationScheduler(
             val snapshot = snapshots.load() ?: return
             if (snapshot.miffId == miffId) return
             snapshots.clear()
-            alarms.cancelAll()
+            cancelMiffAlarms()
         }
     }
 
@@ -115,7 +118,7 @@ class NotificationScheduler(
             val snapshot = snapshots.load() ?: return
             if (snapshot.miffId in miffIds) return
             snapshots.clear()
-            alarms.cancelAll()
+            cancelMiffAlarms()
         }
     }
 
@@ -125,7 +128,7 @@ class NotificationScheduler(
             val snapshot = snapshots.load() ?: return
             if (snapshot.miffId != miffId) return
             snapshots.clear()
-            alarms.cancelAll()
+            cancelMiffAlarms()
         }
     }
 
@@ -134,9 +137,62 @@ class NotificationScheduler(
         synchronized(lock) {
             alarms.cancelAll()
             snapshots.clear()
+            travelEnds.clear()
             ledger.clear()
         }
     }
+
+    /** The reminders and the news of a Miff that is gone or changed: N7 (the end of my trip) does not depend on a Miff and stays. */
+    private fun cancelMiffAlarms() {
+        MIFF_TYPES.forEach(alarms::cancel)
+    }
+
+    // --- MODE VOYAGE: my trip (VOY-4A) ------------------------------------------------------------------------------------------------------------
+
+    /**
+     * A trip of MINE is on and ends at [untilMillis] (it began, its date moved, the phone adopted it, a wake-up found it again): the end is kept, N7 is planned for 08:00 the
+     * morning after, and the reminders N1 to N4 waiting are cancelled at once (the plan is empty while the trip lasts). Idempotent: the same trip again does nothing.
+     */
+    fun onTravelSet(
+        uid: String,
+        untilMillis: Long,
+    ) {
+        synchronized(lock) {
+            if (!sessionValid(uid)) return
+            val known = travelEnds.load()
+            if (known != null && known.uid == uid && known.untilMillis == untilMillis) return
+            travelEnds.save(TravelEndMemo(uid, untilMillis))
+            reconcile()
+        }
+    }
+
+    /**
+     * My trip is over. [early]: I turned it off before its end: N7 is cancelled (nothing to announce). Otherwise its end came: N7 still waits for 08:00 and the reminders
+     * resume (the plan is the normal one again).
+     */
+    fun onTravelEnded(
+        uid: String,
+        early: Boolean,
+    ) {
+        synchronized(lock) {
+            if (early) {
+                if (travelEnds.load()?.uid == uid) travelEnds.clear()
+                alarms.cancel(NotificationType.N7)
+            }
+            reconcile()
+        }
+    }
+
+    /** My trip is on right now (its end is in the future): the news and the reminders stay silent, N6 included (question Q7 of the ticket, default value). */
+    private fun myTripOn(
+        uid: String,
+        now: Long,
+    ): Boolean =
+        travelEnds
+            .load()
+            ?.takeIf { it.uid == uid }
+            ?.untilMillis
+            ?.let { it > now } == true
 
     // --- Reconcile ----------------------------------------------------------------------------------------------------------------------
 
@@ -152,7 +208,34 @@ class NotificationScheduler(
         preferences = settings.current(),
         permissionAllowed = permissionAllowed(),
         sessionValid = sessionValid(snapshot.myUid),
+        myTravelUntilMillis = travelEnds.load()?.takeIf { it.uid == snapshot.myUid }?.untilMillis,
+        zone = zone(),
     )
+
+    /**
+     * What the plan is made from now: the snapshot of the Miff (with my trip, when I have one), or my trip ALONE when no Miff is known (a trip needs no Miff: N7 is planned all the
+     * same). Null when there is nothing. A memo of a trip long over is forgotten here.
+     */
+    private fun currentInput(now: Long): PlanInput? {
+        val snapshot = snapshots.load()
+        if (snapshot != null) return inputOf(snapshot, now)
+        val memo = travelEnds.load() ?: return null
+        if (now - TravelEndNotice.dueAt(memo.untilMillis, zone()) > TravelEndNotice.CATCH_UP_WINDOW_MILLIS) {
+            travelEnds.clear()
+            return null
+        }
+        return PlanInput(
+            nowMillis = now,
+            miffId = null,
+            myUid = memo.uid,
+            members = emptyMap(),
+            preferences = settings.current(),
+            permissionAllowed = permissionAllowed(),
+            sessionValid = sessionValid(memo.uid),
+            myTravelUntilMillis = memo.untilMillis,
+            zone = zone(),
+        )
+    }
 
     /**
      * Brings the alarms in line with the plan. [force]: the system lost them (restart of the phone, update of the app, change of the time): they are all asked
@@ -160,13 +243,13 @@ class NotificationScheduler(
      */
     fun reconcile(force: Boolean = false) {
         synchronized(lock) {
-            val snapshot = snapshots.load()
-            if (snapshot == null) {
+            val now = nowMillis()
+            val input = currentInput(now)
+            if (input == null) {
                 alarms.cancelAll()
                 return
             }
-            val now = nowMillis()
-            val planned = NotificationPlanner.plan(inputOf(snapshot, now)).associateBy { it.type }
+            val planned = NotificationPlanner.plan(input).associateBy { it.type }
             val scheduled = if (force) emptyMap() else alarms.scheduled()
             val notified = ledger.keys(now)
             for (type in PLANNED_TYPES) {
@@ -227,6 +310,13 @@ class NotificationScheduler(
             NotificationType.N6 -> {
                 Unit
             }
+
+            // The end of my trip, whose 08:00 is past (the phone was off, the alarm late): the usual rule of lateness decides (a silent line of the centre after 15 minutes).
+            NotificationType.N7 -> {
+                alarms.cancel(p.type)
+                dueNow(p, now)
+                travelEnds.clear()
+            }
         }
     }
 
@@ -248,6 +338,8 @@ class NotificationScheduler(
         synchronized(lock) {
             if (!permissionAllowed() || !sessionValid(myUid)) return
             val now = nowMillis()
+            // MODE VOYAGE: while my trip is on, no N6 (even if a position in a danger zone were measured).
+            if (myTripOn(myUid, now)) return
             val key = "n6|$miffId|$placeId|$atMillis"
             val rearmKey = "n6rearm|$miffId|$placeId"
             val keys = ledger.keys(now)
@@ -302,12 +394,14 @@ class NotificationScheduler(
     ) {
         synchronized(lock) {
             alarms.consumed(type)
-            val snapshot = snapshots.load() ?: return
             val now = nowMillis()
-            val input = inputOf(snapshot, now)
-            // The alarm may be stale (an update was published, the switch was turned off, the level moved on): what is planned NOW decides, not what was asked.
+            val input = currentInput(now) ?: return
+            // The alarm may be stale (an update was published, the switch was turned off, the level moved on, the date of the trip moved): what is planned NOW decides, not what was asked.
             val p = NotificationPlanner.plan(input).firstOrNull { it.type == type && it.key == key }
-            if (p != null && NotificationPlanner.stillTrue(type, input)) dueNow(p, now)
+            if (p != null && NotificationPlanner.stillTrue(type, input)) {
+                dueNow(p, now)
+                if (type == NotificationType.N7) travelEnds.clear()
+            }
             reconcile()
         }
     }
@@ -453,14 +547,20 @@ class NotificationScheduler(
 
             Delivery.Silent -> {
                 center.add(
-                    NotificationItem(p.key, p.type, p.miffId, minOf(p.dueAtMillis, now), state = ItemState.SILENT),
+                    NotificationItem(
+                        p.key,
+                        p.type,
+                        p.miffId.ifEmpty { null },
+                        minOf(p.dueAtMillis, now),
+                        state = ItemState.SILENT,
+                    ),
                 )
                 ledger.remember(p.key, now)
             }
 
             is Delivery.Show -> {
                 // The line first: if the tray refuses (permission withdrawn a second ago), the centre still tells what happened.
-                center.add(NotificationItem(p.key, p.type, p.miffId, now, state = ItemState.SHOWN))
+                center.add(NotificationItem(p.key, p.type, p.miffId.ifEmpty { null }, now, state = ItemState.SHOWN))
                 presenter.show(p.type, p.key, decision.quiet)
                 ledger.remember(p.key, now)
                 ledger.saveCounters(counters.afterShown(p.type))
@@ -469,8 +569,12 @@ class NotificationScheduler(
     }
 
     companion object {
-        /** The types that wait for an hour. N6 is immediate, it has no alarm. */
-        val PLANNED_TYPES = listOf(NotificationType.N1, NotificationType.N2, NotificationType.N3, NotificationType.N4)
+        /** The types about a Miff that wait for an hour (what a change of Miff cancels). */
+        private val MIFF_TYPES =
+            listOf(NotificationType.N1, NotificationType.N2, NotificationType.N3, NotificationType.N4)
+
+        /** The types that wait for an hour. N6 is immediate, it has no alarm. N7 (the end of my trip) waits for 08:00. */
+        val PLANNED_TYPES = MIFF_TYPES + NotificationType.N7
 
         /** At most TWO readings of the server per episode of N3 / N4 (section 20.5). */
         const val MAX_VERIFICATIONS = 2

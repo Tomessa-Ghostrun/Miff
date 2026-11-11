@@ -83,6 +83,8 @@ fun NotificationSettingsScreen(
         SectionTitle(R.string.notif_settings_section_you)
         TypeRow(NotificationType.N1, state, actions)
         TypeRow(NotificationType.N2, state, actions)
+        // MODE VOYAGE: the end of my trip (local, once per trip).
+        TypeRow(NotificationType.N7, state, actions)
         ChannelBlockedNote(state.blocked(NotificationFamily.REMINDER), actions.onOpenPhoneSettings)
 
         SectionTitle(R.string.notif_settings_section_miff)

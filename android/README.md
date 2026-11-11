@@ -508,6 +508,13 @@ Ticket `docs/tickets/suppression-compte.md` (§3.2 A, §5.5 à §5.8, §5.13, §
 - **Tests** : `AccountMiffsTest`, `AccountDeletionMiffsTest` (bout en bout sur `AccountWorld`, un double du serveur avec les contraintes des règles : budgets, ordre, coupure réseau **avant chaque lot**, réponse **perdue après chaque lot**, impasse, annulation, Miff qui arrive), `AccountDeletionTest`, `AccountDeletionControllerTest`, `DeviceSessionPersistedClosedTest`, `TrackingEngineDeletionTest`, `DeleteAccountViewModelsTest`, `DeleteAccountScreensTest`.
 - **Autres téléphones du même compte** : ils voient la session disparaître **au tout début** de la suppression et se déconnectent aussitôt. La note affichée est celle de la PR séparée `android/session-compte-supprime` (« Ton compte est en cours de suppression sur un autre appareil. ») ; sans elle, c'est l'ancienne « utilisé sur un autre téléphone ».
 
+## Mode voyage : N7 et gardes du planificateur (VOY-4A)
+
+Tickets `docs/tickets/mode-voyage.md` §9 et `docs/tickets/notifications.md` §20.12bis, recette `docs/qa/checklists/notifs-android-recette-pm.md` (partie 7). Détail dans `CHANGELOG.md` (0.29.0). **Local, sans serveur, 0 lecture, 0 écriture, aucune permission nouvelle.**
+- **N7** « Ton mode voyage est terminé » : `TravelEndNotice.dueAt` (pur : 08:00 locale du jour de la fin du voyage, jamais avant la fin) et `key` (`n7|uid|fin`) ; `NotificationPlanner.planTravelEnd` ; alarme inexacte (`setAndAllowWhileIdle`) comme les autres ; hors plafonds ; toucher = Feed. La fin du voyage est gardée par `TravelEndStore` (un compte et un instant ; il survit à la fin naturelle jusqu'à 08:00).
+- **Gardes** : `PlanInput.myTravelUntilMillis` (mon voyage est en cours tant que cet instant est futur) coupe N1 à N4 et N6 ; un membre en voyage est neutre (`StatusColor`, `FeedBuilder.miffLevel`).
+- Le moteur prévient les notifications par `PresenceListener.onTravelSet` et `onTravelEnded(early)`.
+
 ## Notifications locales : autorisation, Réglages, centre (tickets NOTIF-1A, NOTIF-2A, NOTIF-6A ; NOTIF-P0 sans serveur)
 
 Ticket `docs/tickets/notifications.md` §20 (périmètre N1, N2, N3, N4, N6), recette `docs/qa/checklists/notifs-android-recette-pm.md`. Détail dans `CHANGELOG.md` (0.26.0). **Plan Spark, aucune Cloud Function** : tout se passe **sur le téléphone**, aucune lecture ni écriture Firestore pour cette partie (coûts : `docs/dev/surveillance-quotas.md`, §5 quinquies).
