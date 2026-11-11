@@ -147,7 +147,8 @@ struct ViewfinderView: View {
                     if camera.flash.isVisible {
                         RoundOverlayButton(
                             systemName: camera.flash.symbolName,
-                            labelKey: camera.flash.textKey,
+                            labelKey: "update_flash_a11y",
+                            stateKey: camera.flash.textKey,
                             onTap: toggleFlash
                         )
                     }

@@ -24,9 +24,9 @@ struct FlashState: Equatable {
         isOn && isAvailable
     }
 
-    /// Clé du texte (nom parlé et annonce) : l'état est dit en MOTS, jamais par la seule couleur.
+    /// Clé du texte de l'état (valeur parlée et annonce ; le nom parlé du bouton est « Flash », `update_flash_a11y`) : l'état est dit en MOTS, jamais par la seule couleur.
     var textKey: String {
-        isOn ? "update_flash_on_a11y" : "update_flash_off_a11y"
+        isOn ? "update_flash_state_on" : "update_flash_state_off"
     }
 
     /// Pictogramme du système : l'éclair, barré quand le flash est éteint (l'état se voit sans couleur).

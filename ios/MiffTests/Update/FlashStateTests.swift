@@ -67,12 +67,12 @@ final class FlashStateTests: XCTestCase {
     func testTheStateIsSaidInWordsAndInTheSymbolNotByColorAlone() throws {
         var state = FlashState()
         state.setAvailable(true)
-        XCTAssertEqual(state.textKey, "update_flash_off_a11y")
+        XCTAssertEqual(state.textKey, "update_flash_state_off")
         XCTAssertEqual(state.symbolName, "bolt.slash.fill")
         state.toggle()
-        XCTAssertEqual(state.textKey, "update_flash_on_a11y")
+        XCTAssertEqual(state.textKey, "update_flash_state_on")
         XCTAssertEqual(state.symbolName, "bolt.fill")
-        for key in ["update_flash_on_a11y", "update_flash_off_a11y"] {
+        for key in ["update_flash_state_on", "update_flash_state_off"] {
             for language in ["fr", "en"] {
                 let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"), language)
                 let bundle = try XCTUnwrap(Bundle(path: path))

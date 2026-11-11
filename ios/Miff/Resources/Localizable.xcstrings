@@ -14518,7 +14518,24 @@
         }
       }
     },
-    "update_flash_on_a11y": {
+    "update_flash_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        }
+      }
+    },
+    "update_flash_state_on": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -14535,7 +14552,7 @@
         }
       }
     },
-    "update_flash_off_a11y": {
+    "update_flash_state_off": {
       "extractionState": "manual",
       "localizations": {
         "en": {
