@@ -272,10 +272,10 @@ jobs:
           allowed='android.permission.ACCESS_FINE_LOCATION android.permission.ACCESS_COARSE_LOCATION android.permission.ACCESS_BACKGROUND_LOCATION android.permission.POST_NOTIFICATIONS android.permission.RECEIVE_BOOT_COMPLETED android.permission.CAMERA'
           check_manifest() {
             # xargs puts the sorted names on one line (no newline character to escape in this file).
-            found=$(grep -a -o -E 'android[.]permission[.](ACCESS_[A-Z_]*LOCATION[A-Z_]*|FOREGROUND_SERVICE[A-Z_]*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_[A-Z_]+|ACTIVITY_RECOGNITION|RECEIVE_BOOT_COMPLETED|CAMERA|RECORD_AUDIO|READ_MEDIA_[A-Z_]+|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)' | sort -u | xargs)
+            found=$(grep -a -o -E 'android[.]permission[.](ACCESS_[A-Z_]*LOCATION[A-Z_]*|FOREGROUND_SERVICE[A-Z_]*|POST_NOTIFICATIONS|ACCESS_WIFI_STATE|NEARBY_[A-Z_]+|ACTIVITY_RECOGNITION|RECEIVE_BOOT_COMPLETED|SCHEDULE_EXACT_ALARM|USE_EXACT_ALARM|CAMERA|RECORD_AUDIO|READ_MEDIA_[A-Z_]+|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)' | sort -u | xargs)
             expected=$(printf '%s ' $allowed | xargs -n1 | sort -u | xargs)
             if [ "$found" != "$expected" ]; then
-              echo "::error title=Permissions sensibles::$1 declare : [$found] au lieu de : [$expected]. Une bibliotheque a ajoute une permission (la retirer avec tools:node=\"remove\" dans AndroidManifest.xml), ou une permission des tickets LOC-2a (localisation) ou UPDATE-1 (CAMERA, rien d'autre : ni stockage, ni photos, ni micro) manque."
+              echo "::error title=Permissions sensibles::$1 declare : [$found] au lieu de : [$expected]. Une bibliotheque a ajoute une permission (la retirer avec tools:node=\"remove\" dans AndroidManifest.xml), (une alarme exacte, SCHEDULE_EXACT_ALARM ou USE_EXACT_ALARM, est interdite pour les rappels), ou une permission des tickets LOC-2a (localisation) ou UPDATE-1 (CAMERA, rien d'autre : ni stockage, ni photos, ni micro) manque."
               return 1
             fi
           }

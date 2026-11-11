@@ -6,10 +6,10 @@
 
 ## Ordre à respecter (important)
 
-1. Fusion de la PR backend VOY-B, puis **déploiement des règles par le PM** (« oui » explicite ; commande dans la PR et dans `docs/dev/deploiement-regles.md`). Un seul déploiement suffit : la PR `backend/lieux-gratuits-3` est déjà fusionnée.
+1. Fusion de la PR backend VOY-B, puis **déploiement des règles par le PM** : **fait le 2026-11-10** (information du PM, non vérifiable par l'agent ; tout redéploiement reste soumis à un « oui » explicite).
 2. Seulement ensuite : livraison des applications qui écrivent `presence = "travel"`.
 
-Tant que les règles ne sont pas déployées, la production **refuse** `presence = "travel"` (valeur inconnue). L'inverse est sans risque : une application actuelle continue d'écrire ses statuts ordinaires après le déploiement. Conséquence pour les clients (ticket §5.3) : **écrire le voyage d'abord, ne cesser d'écrire des statuts de présence ordinaires qu'après acceptation ou mise en attente hors connexion** ; un refus `permission-denied` ne doit rien changer au comportement du suivi.
+Avant ce déploiement, la production refusait `presence = "travel"` (valeur inconnue). L'inverse est sans risque : une application actuelle continue d'écrire ses statuts ordinaires après le déploiement. Conséquence pour les clients (ticket §5.3) : **écrire le voyage d'abord, ne cesser d'écrire des statuts de présence ordinaires qu'après acceptation ou mise en attente hors connexion** ; un refus `permission-denied` ne doit rien changer au comportement du suivi.
 
 ## Statut `miffs/{miffId}/status/{moi}` en voyage
 
