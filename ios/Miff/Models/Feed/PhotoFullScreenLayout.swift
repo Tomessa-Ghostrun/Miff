@@ -15,12 +15,21 @@ enum PhotoFullScreenLayout {
     /// Les espaces de la légende, SERRÉS pour qu'elle soit collée en bas, juste au-dessus de la zone sûre du bas (retour du PM sur le build 27 ;
     /// avant : 8 pt de marge basse et 8 pt entre la légende et le bouton). Le dégradé, lui, reste.
     static let captionTopPadding: CGFloat = 8
-    static let captionBottomPadding: CGFloat = 4
+    static let captionBottomPadding: CGFloat = 8
     static let captionSpacing: CGFloat = 4
     /// L'opacité du voile noir derrière le texte.
-    static let scrimAlpha: Double = 0.78
+    static let scrimAlpha: Double = 0.70
     /// Le contrat de lisibilité (WCAG AA, texte courant).
     static let minimumContrast: Double = 4.5
+
+    /// La hauteur du contenu de la légende en texte normal (titre, position, bouton de 44 pt, espaces), SANS la zone sûre du bas : volontairement
+    /// large. Elle grandit avec la taille du texte (`@ScaledMetric` côté écran) ; au-delà de 45 % de la hauteur, la légende défile.
+    static let footerEstimate: CGFloat = 170
+
+    /// La légende défile-t-elle ? Oui quand son contenu estimé (zone sûre du bas comprise) dépasse sa hauteur maximale (grand texte, paysage).
+    static func footerScrolls(estimate: CGFloat, screenHeight: CGFloat) -> Bool {
+        estimate > footerMaxHeight(screenHeight: screenHeight)
+    }
 
     /// La hauteur maximale de la zone de la légende : au plus 45 % de la hauteur de l'écran. Plus haut, elle défile.
     static func footerMaxHeight(screenHeight: CGFloat) -> CGFloat {

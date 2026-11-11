@@ -38,72 +38,76 @@ struct PhotoFullScreen: View {
     }
 
     var body: some View {
-        GeometryReader { screen in
+        // UN seul GeometryReader, à la racine, qui ignore les zones sûres : `size` est l'écran ENTIER, `insets` les vraies zones sûres. Pas de
+        // GeometryReader imbriqué, pas de Spacer vertical, pas de hauteur imposée : la photo est CENTRÉE dans l'écran, la croix et l'icône sont des
+        // surimpressions collées en haut, la légende une surimpression collée en bas (zone sûre basse + 8 pt).
+        GeometryReader { proxy in
+            let size = proxy.size
+            let insets = proxy.safeAreaInsets
             ZStack {
-                Color.black.ignoresSafeArea()
-                // VRAI plein écran : la photo (scaledToFit : entière, jamais recadrée, agrandie proprement par l'interpolation par défaut) occupe TOUT
-                // l'écran, zones sûres comprises, fond noir.
-                photo
-                // La légende, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS la photo, en bas, sur un voile sombre (texte blanc, contraste
-                // d'au moins 4,5:1 sur le pire cas), dans la zone sûre du bas ; bornées à 45 % de la hauteur (grand texte : elles défilent).
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    footerOverlay(screenHeight: screen.size.height)
-                }
-                // La croix et l'icône « Enregistrer cette photo » restent EN HAUT, face à face, dans la zone sûre du haut ; lues en premier par VoiceOver.
-                VStack(spacing: 0) {
-                    HStack {
-                        PhotoOverlayIconButton(glyph: .close, labelKey: "update_photo_close_a11y", onTap: onDismiss)
-                        Spacer()
-                        PhotoSaveButton(image: opened.image)
-                    }
-                    .padding(.horizontal, Spacing.sm)
-                    Spacer(minLength: 0)
-                }
-                .accessibilitySortPriority(1)
-                .zIndex(1)
+                Color.black
+                photo(size: size)
             }
-            .frame(width: screen.size.width, height: screen.size.height)
+            .frame(width: size.width, height: size.height)
+            .overlay(alignment: .top) {
+                topBar(insets: insets)
+            }
+            .overlay(alignment: .bottom) {
+                footerOverlay(size: size, insets: insets)
+            }
         }
+        .ignoresSafeArea()
         .preferredColorScheme(.dark)
         .accessibilityAction(.escape, onDismiss)
         .hidesInAppSwitcher()
     }
 
+    /// La croix (gauche) et l'icône « Enregistrer cette photo » (droite), face à face, SOUS la zone sûre du haut ; lues en premier par VoiceOver.
+    private func topBar(insets: EdgeInsets) -> some View {
+        HStack {
+            PhotoOverlayIconButton(glyph: .close, labelKey: "update_photo_close_a11y", onTap: onDismiss)
+            Spacer(minLength: 0)
+            PhotoSaveButton(image: opened.image)
+        }
+        .padding(.horizontal, Spacing.sm)
+        .padding(.leading, insets.leading)
+        .padding(.trailing, insets.trailing)
+        .padding(.top, insets.top)
+        .accessibilitySortPriority(1)
+    }
+
     // MARK: - La photo complète, zoomable
 
-    private var photo: some View {
-        GeometryReader { area in
-            Image(uiImage: opened.image)
-                .resizable()
-                .scaledToFit()
-                .scaleEffect(zoom)
-                .offset(offset)
-                .frame(width: area.size.width, height: area.size.height)
-                .clipped()
-                .contentShape(Rectangle())
-                .onAppear { photoArea = area.size }
-                .onChange(of: area.size) { photoArea = $0 }
-        }
-        // Tout l'écran, zones sûres comprises : la zone de la photo est l'écran entier.
-        .ignoresSafeArea()
-        .onTapGesture(count: 2) { toggleZoom() }
-        .gesture(pinch)
-        .gesture(drag)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: title))
-        .accessibilityAddTraits(.isImage)
-        // Le zoom a une alternative pour VoiceOver (le pincement n'existe pas avec lui).
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment:
-                setZoom(min(zoom * 2, Self.maxZoom))
-            case .decrement:
-                setZoom(max(zoom / 2, 1))
-            @unknown default:
-                break
+    /// La photo `scaledToFit` (entière, jamais recadrée, agrandie proprement par l'interpolation par défaut) dans un cadre de la taille de l'ÉCRAN
+    /// ENTIER : elle est CENTRÉE (verticalement aussi) et ne dépasse jamais l'écran.
+    private func photo(size: CGSize) -> some View {
+        Image(uiImage: opened.image)
+            .resizable()
+            .scaledToFit()
+            .scaleEffect(zoom)
+            .offset(offset)
+            .frame(width: size.width, height: size.height)
+            .clipped()
+            .contentShape(Rectangle())
+            .onAppear { photoArea = size }
+            .onChange(of: size) { photoArea = $0 }
+            .onTapGesture(count: 2) { toggleZoom() }
+            .gesture(pinch)
+            .gesture(drag)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: title))
+            .accessibilityAddTraits(.isImage)
+            // Le zoom a une alternative pour VoiceOver (le pincement n'existe pas avec lui).
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment:
+                    setZoom(min(zoom * 2, Self.maxZoom))
+                case .decrement:
+                    setZoom(max(zoom / 2, 1))
+                @unknown default:
+                    break
+                }
             }
-        }
     }
 
     /// `offset` ramené dans les bornes : la photo zoomée ne sort jamais de la zone (on ne peut pas la perdre).
@@ -183,27 +187,35 @@ struct PhotoFullScreen: View {
 
     // MARK: - Le pied : titre, lieu de la photo, « Voir où c'était »
 
-    /// La légende POSÉE PAR-DESSUS la photo, en bas : un dégradé qui fond la photo dans un voile sombre, puis le voile derrière le texte blanc (contraste
-    /// d'au moins 4,5:1 même sur une photo toute blanche), jusque sous la zone sûre du bas ; le texte, lui, reste dans la zone sûre. Toujours ENTIÈRE : à
-    /// sa hauteur naturelle quand elle tient dans `footerMaxHeight` (45 % de la hauteur), sinon (grand texte, paysage) elle DÉFILE dans cette hauteur.
-    private func footerOverlay(screenHeight: CGFloat) -> some View {
+    /// La légende POSÉE PAR-DESSUS la photo, COLLÉE EN BAS : un dégradé qui fond la photo dans un voile sombre, puis le voile derrière le texte blanc
+    /// (contraste d'au moins 4,5:1 même sur une photo toute blanche), jusqu'au bord bas de l'écran ; le texte reste au-dessus de la zone sûre du bas
+    /// (+ 8 pt). Toujours ENTIÈRE : à sa hauteur naturelle quand elle tient dans 45 % de la hauteur, sinon (grand texte, paysage) elle DÉFILE dans
+    /// cette hauteur, son contenu ancré EN BAS (jamais un vide noir sous le bouton).
+    private func footerOverlay(size: CGSize, insets: EdgeInsets) -> some View {
         let scrim = (reduceTransparency ? colorPhotoCaptionScrim.withAlpha(1) : colorPhotoCaptionScrim).color
+        let cap = PhotoFullScreenLayout.footerMaxHeight(screenHeight: size.height)
+        let scrolls = PhotoFullScreenLayout.footerScrolls(
+            estimate: footerEstimate + insets.bottom + PhotoFullScreenLayout.fadeHeight, screenHeight: size.height
+        )
         return VStack(spacing: 0) {
             LinearGradient(colors: [scrim.opacity(0), scrim], startPoint: .top, endPoint: .bottom)
                 .frame(height: PhotoFullScreenLayout.fadeHeight)
                 .accessibilityHidden(true)
-            ViewThatFits(in: .vertical) {
-                footer
+            if scrolls {
                 ScrollView {
-                    footer
+                    footer(insets: insets)
+                        .frame(minHeight: cap - PhotoFullScreenLayout.fadeHeight, alignment: .bottom)
                 }
+                .frame(maxHeight: cap - PhotoFullScreenLayout.fadeHeight)
+                .background(scrim)
+            } else {
+                footer(insets: insets)
+                    .background(scrim)
             }
-            .frame(maxHeight: PhotoFullScreenLayout.footerMaxHeight(screenHeight: screenHeight))
-            .background(scrim.ignoresSafeArea(edges: .bottom))
         }
     }
 
-    private var footer: some View {
+    private func footer(insets: EdgeInsets) -> some View {
         VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
             Text(verbatim: title)
                 .miffTextStyle(textTitleBold20)
@@ -215,8 +227,10 @@ struct PhotoFullScreen: View {
             }
         }
         .padding(.horizontal, Spacing.md)
+        .padding(.leading, insets.leading)
+        .padding(.trailing, insets.trailing)
         .padding(.top, PhotoFullScreenLayout.captionTopPadding)
-        .padding(.bottom, PhotoFullScreenLayout.captionBottomPadding)
+        .padding(.bottom, insets.bottom + PhotoFullScreenLayout.captionBottomPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
