@@ -2,6 +2,20 @@
 
 ## Non publié
 
+### Feed : l'en-tête qui se masque au défilement, la bulle jamais dessous (retour du PM sur le build 27)
+
+Branche `ios/feed-header-scroll` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Même comportement que l'en-tête d'Android (`CollapsingHeader.kt`, « enter always »).
+
+Modifié :
+- **Lecture directe du défilement** : l'en-tête suit désormais la distance défilée lue sur la vue de défilement elle-même (`ScrollDistanceReader`, `contentOffset` + marge ajustée), au lieu de deviner la position de repos du contenu ; c'est cette position de repos mal devinée qui pouvait laisser la première carte (la bulle) sous l'en-tête. L'ancienne lecture (position du contenu) reste en repli si aucune vue de défilement n'est trouvée.
+- **Règles pures** (`CollapsingHeaderState`) : l'en-tête suit le doigt point pour point dans les deux sens et revient dès qu'on remonte ; jamais plus caché que le défilement près du haut (seuil = sa hauteur, inclus) ; un déplacement de moins de 0,5 pt est ignoré (l'en-tête ne vibre pas) ; verrouillé (chargement, hors connexion, VoiceOver ou Contrôle de sélection, sélecteur ouvert) : il reste là.
+- **La bulle et le contenu ne passent jamais sous la barre d'état** : une bande fixe de la couleur du fond couvre la zone sûre du haut ; l'en-tête qui monte est coupé à la zone sûre (comme Android) et garde son ombre.
+- **Retour animé** (logo, verrouillage) : 0,2 s, immédiat avec « Réduire les animations ».
+
+Ajouté : `FeedHeaderScrollTests` (distance défilée, retour au premier mouvement vers le haut, seuil près du haut, hystérésis de 0,5 pt, verrouillage, repli, animation courte et « Réduire les animations »).
+
+Accessibilité : avec VoiceOver ou Contrôle de sélection l'en-tête ne se masque jamais (il est toujours dans l'arbre d'accessibilité, lu en premier).
+
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 
 Troisième des trois PR empilées (base : `ios/mode-voyage-profil`, VOY-2I). Ticket `docs/tickets/mode-voyage.md` §6 (décisions du PM du 2026-11-10 : ouvert à TOUS ; la position reste partagée ; le voyageur n'a **aucun impact** sur la couleur ni sur le « n sur m »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/voyage-ios-recette-pm.md`. Détail : `ios/README.md` (« Mode voyage »).
