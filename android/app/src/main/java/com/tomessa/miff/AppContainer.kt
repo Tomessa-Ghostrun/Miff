@@ -149,6 +149,7 @@ import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.tracking.DetectionJournal
+import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.startup.StartupTrace
 import com.tomessa.miff.ui.main.TabRequests
@@ -585,6 +586,15 @@ class AppContainer(
             it.id
         }
 
+    /**
+     * The Update measured my position at "Publier" and the detection has not published it yet: the detection publishes it ITSELF, with all its guarantees (criterion U8:
+     * the Update never writes `positions/{moi}`). Returns at the end of its pass.
+     */
+    private suspend fun handOverPosition(fix: Fix) {
+        cachePurger.purgeIfPending()
+        trackingEngine.refresh(TrackingEngine.Reason.SHARING_CHANGED, fix)
+    }
+
     val updatePublisher: UpdatePublisher by lazy {
         UpdatePublisher(
             store = photoStore,
@@ -599,7 +609,10 @@ class AppContainer(
             // The photo is only written where my own position is published (contract of the data model); none yet: the detection is asked to write it.
             published = LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)),
             travelOn = ::travelOn,
-            onPositionMissing = { trackingLooksAgain(TrackingEngine.Reason.OPENED) },
+            // Where it is not, the Update hands the measure taken at "Publier" to the detection, which publishes it ITSELF (criterion U8).
+            handOver = ::handOverPosition,
+            trackingAllowed = { devicePermissions.snapshot().locationComplete },
+            journal = detectionJournal,
             onUpdatePublished = {
                 miffIds,
                 at,

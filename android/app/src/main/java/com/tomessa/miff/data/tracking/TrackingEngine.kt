@@ -968,16 +968,26 @@ class TrackingEngine(
                 journal.record(JournalKind.BREAKER_POSITION)
                 continue
             }
-            if (!env.isOnline()) continue
+            if (!env.isOnline()) {
+                journal.record(JournalKind.POSITION_SKIPPED_OFFLINE)
+                continue
+            }
             // SESS-2: a position never leaves a phone that does not hold the session (it would tell the loved ones where the OLD phone is).
-            val deviceId = gate.deviceId() ?: continue
+            val deviceId = gate.deviceId()
+            if (deviceId == null) {
+                journal.record(JournalKind.POSITION_SKIPPED_SESSION)
+                continue
+            }
             if (gate.ended()) break
             served = miffId
             val outcome =
                 guardedCall(timeoutMillis) {
                     store.commit(listOf(TrackingWrites.position(miffId, uid, fix.lat, fix.lng, measuredAt, deviceId)))
                 }
-            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) {
+                journal.record(JournalKind.POSITION_REFUSED)
+                gate.refused()
+            }
             state =
                 when (outcome) {
                     is Guarded.Value -> {

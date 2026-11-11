@@ -236,6 +236,6 @@ class UpdatePrivacyRuleTest {
         val container = File(main, "AppContainer.kt").readText()
         val publisher = container.substringAfter("val updatePublisher").substringBefore("val photoCleaner")
         assertTrue(publisher.contains("published = LocalPublishedPositions("))
-        assertTrue(publisher.contains("onPositionMissing ="))
+        assertTrue(publisher.contains("handOver = ::handOverPosition"))
     }
 }

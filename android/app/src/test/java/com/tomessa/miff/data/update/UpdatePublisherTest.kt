@@ -12,6 +12,7 @@ import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.tracking.Fix
+import com.tomessa.miff.domain.tracking.JournalKind
 import com.tomessa.miff.domain.tracking.TrackingLimits
 import com.tomessa.miff.domain.update.PublishGuard
 import com.tomessa.miff.domain.update.SharedPhoto
@@ -21,6 +22,7 @@ import com.tomessa.miff.testsupport.DEVICE_A
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeNetwork
 import com.tomessa.miff.testsupport.MemoryPublishLedger
+import com.tomessa.miff.testsupport.RecordingJournal
 import com.tomessa.miff.testsupport.T0
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -103,7 +105,7 @@ class UpdatePublisherTest {
     private var myMiffs = listOf(miffIds[0])
     private val photo = UpdatePhoto(ByteArray(80_000) { it.toByte() }, 461, 1024, takenAtMillis = T0 - 20_000L)
 
-    private fun publisher() =
+    private fun publisher(slowDetection: Boolean = false) =
         UpdatePublisher(
             store = store,
             device = device,
@@ -118,13 +120,24 @@ class UpdatePublisherTest {
             zone = { zone },
             timeoutMillis = 1_000L,
             published = { published(it) },
-            onPositionMissing = { positionMissingCalls++ },
+            handOver = {
+                handedOver += it
+                if (slowDetection) delay(60_000L)
+                onHandOver(it)
+            },
+            trackingAllowed = { trackingAllowed },
+            journal = journal,
             travelOn = { traveling },
         )
 
     // Contract of backend/data-model.md: a photo is only written where my own position is published (by default it is, everywhere).
     private var published: (String) -> Boolean = { true }
-    private var positionMissingCalls = 0
+
+    // What the Update gave to the detection (the detection publishes ITSELF: the double below stands for its pass), and what that pass does.
+    private val handedOver = mutableListOf<Fix>()
+    private var onHandOver: (Fix) -> Unit = {}
+    private var trackingAllowed = true
+    private val journal = RecordingJournal()
 
     // MODE VOYAGE: a trip is on.
     private var traveling = false
@@ -146,7 +159,7 @@ class UpdatePublisherTest {
             // The position of the person keeps being published during a trip: the photo is written as outside a trip, with its own measure.
             val result = publisher().publish(photo)
             assertEquals(PublishResult.Published(1), result)
-            assertEquals(0, positionMissingCalls)
+            assertTrue(handedOver.isEmpty())
             val writes = store.commits.single().writes
             assertEquals(
                 listOf("miffs/${miffIds[0]}/photos/$uid", "miffs/${miffIds[0]}/status/$uid"),
@@ -162,11 +175,11 @@ class UpdatePublisherTest {
         }
 
     @Test
-    fun outsideATrip_aPhotoStillWaitsForAPublishedPosition_andCarriesTheBattery() =
+    fun outsideATrip_aPhotoStillWaitsForAPublishedPosition_whenTheDetectionDoesNotPublishIt() =
         runTest {
             published = { false }
             assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
-            assertEquals(1, positionMissingCalls)
+            assertEquals(1, handedOver.size)
             assertTrue(store.commits.isEmpty())
         }
 
@@ -544,13 +557,113 @@ class UpdatePublisherTest {
     // --- My own position must be published where the photo goes (contract of the data model, decision D27) ----------------------------------------
 
     @Test
-    fun whereMyPositionIsNotPublished_noPhotoIsWritten_nothingIsMeasured_andTheDetectionIsAskedToWriteIt() =
+    fun whereMyPositionIsNotPublished_andTheDetectionCannotPublishIt_noPhotoIsWritten_theMeasureWasHandedOver() =
         runTest {
             published = { false }
             assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
             assertNothingLeft()
-            assertEquals("nobody is located for a photo that cannot go anywhere", 0, position.calls)
-            assertEquals(1, positionMissingCalls)
+            assertEquals("one measure, taken at the press of Publier", 1, position.calls)
+            assertEquals(listOf(position.fix), handedOver)
+            assertTrue(JournalKind.UPDATE_POSITION_NOT_PUBLISHED in journal.kinds)
+            assertTrue(JournalKind.UPDATE_HAND_OVER_FAILED in journal.kinds)
+        }
+
+    @Test
+    fun whereMyPositionIsNotPublished_theMeasureIsHandedOver_andThePhotoLeavesInTheSameTry() =
+        runTest {
+            var done = false
+            published = { done }
+            onHandOver = { done = true }
+            assertEquals(PublishResult.Published(1), publisher().publish(photo))
+            assertEquals(1, position.calls)
+            assertEquals(listOf(position.fix), handedOver)
+            assertEquals(listOf("miffs/${miffIds[0]}/photos/$uid"), photoWrites().map { it.path })
+            assertTrue(JournalKind.UPDATE_HAND_OVER_WORKED in journal.kinds)
+        }
+
+    @Test
+    fun theUpdateNeverWritesMyPosition_itsOnlyWritesAreThePhotoAndTheStatus() =
+        runTest {
+            var done = false
+            published = { done }
+            onHandOver = { done = true }
+            publisher().publish(photo)
+            assertTrue(store.commits.flatMap { it.writes }.none { "/positions/" in it.path })
+        }
+
+    @Test
+    fun whenEveryPositionIsPublished_nothingIsHandedOver() =
+        runTest {
+            assertEquals(PublishResult.Published(1), publisher().publish(photo))
+            assertTrue(handedOver.isEmpty())
+            assertTrue(JournalKind.UPDATE_POSITION_NOT_PUBLISHED !in journal.kinds)
+        }
+
+    @Test
+    fun withoutAlwaysAndPrecise_theSentenceLeadsToTheSettings_andNothingIsMeasured() =
+        runTest {
+            published = { false }
+            trackingAllowed = false
+            assertEquals(PublishResult.LocationOff, publisher().publish(photo))
+            assertNothingLeft()
+            assertEquals(0, position.calls)
+            assertTrue(handedOver.isEmpty())
+            assertTrue(JournalKind.UPDATE_PERMISSION_BLOCKED in journal.kinds)
+        }
+
+    @Test
+    fun whereMyPositionIsNotPublished_aSlowSignal_isNotHandedOver_andTheSecondTryCanWork() =
+        runTest {
+            var done = false
+            published = { done }
+            onHandOver = { done = true }
+            position.fix = null
+            val publisher = publisher()
+            assertEquals(PublishResult.PositionNotFound, publisher.publish(photo))
+            assertTrue(handedOver.isEmpty())
+            assertTrue(JournalKind.UPDATE_MEASURE_FAILED in journal.kinds)
+            position.fix = Fix(1.0, 1.0, T0)
+            assertEquals(PublishResult.Published(1), publisher.publish(photo))
+            assertEquals(2, position.calls)
+        }
+
+    @Test
+    fun aMeasureOfMoreThan10Minutes_isNeverHandedOver() =
+        runTest {
+            published = { false }
+            position.fix = Fix(1.0, 1.0, T0 - TrackingLimits.FIX_MAX_AGE_MILLIS - 1)
+            assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
+            assertTrue(handedOver.isEmpty())
+        }
+
+    @Test
+    fun aDetectionThatFails_isNotAnError_thePhotoStaysAndTheSentenceIsTheCalmOne() =
+        runTest {
+            published = { false }
+            onHandOver = { throw IllegalStateException("the detection failed") }
+            assertEquals(PublishResult.PositionNotFound, publisher().publish(photo))
+            assertNothingLeft()
+        }
+
+    @Test
+    fun aDetectionThatDoesNotAnswerInTime_isGivenUpOn_theTryEndsCalmly() =
+        runTest {
+            published = { false }
+            assertEquals(PublishResult.PositionNotFound, publisher(slowDetection = true).publish(photo))
+            assertNothingLeft()
+        }
+
+    @Test
+    fun withTwoMiffs_theDetectionPublishesOnlyOne_thePhotoGoesThere_theOtherIsLeftForTheNextTry() =
+        runTest {
+            myMiffs = miffIds.take(2)
+            // The detection publishes in the first Miff only (e.g. the second one is not eligible for it).
+            var done = false
+            published = { id -> id == miffIds[0] && done }
+            onHandOver = { done = true }
+            val result = publisher().publish(photo)
+            assertEquals(PublishResult.Partial(1, 2, listOf(miffIds[1])), result)
+            assertEquals(listOf("miffs/${miffIds[0]}/photos/$uid"), photoWrites().map { it.path })
         }
 
     @Test
@@ -561,7 +674,7 @@ class UpdatePublisherTest {
             val result = publisher().publish(photo)
             assertEquals(PublishResult.Partial(1, 2, listOf(miffIds[1])), result)
             assertEquals(listOf("miffs/${miffIds[0]}/photos/$uid"), photoWrites().map { it.path })
-            assertEquals(0, positionMissingCalls)
+            assertEquals("the second Miff lacks my position: the measure is handed over once", 1, handedOver.size)
         }
 
     // --- The clean-up of my expired photo (criterion U7) ----------------------------------------------------------------------------------
