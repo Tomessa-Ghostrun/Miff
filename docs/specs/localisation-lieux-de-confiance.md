@@ -23,7 +23,7 @@ Les deux plateformes offrent un mécanisme dédié, économe en batterie, qui ne
 | Déclaration store | `NSLocationAlwaysAndWhenInUseUsageDescription` (texte de justification affiché à l'utilisateur) + review Apple stricte sur l'usage "Always" — doit démontrer un vrai besoin fonctionnel continu | Formulaire "Background Location" à remplir dans Play Console avant publication, avec justification et captures d'écran du parcours de consentement |
 | Fiabilité | Peut être retardé si Économie d'énergie actif ou après immobilité prolongée | Peut être retardé selon les optimisations batterie du fabricant (particulièrement agressif sur certains Android — Samsung, Xiaomi, etc.) |
 
-**Impact direct sur le modèle freemium** (2 lieux de confiance gratuits, illimités avec « Miff+ ») : au-delà de 20 lieux (iOS) / 100 lieux (Android) simultanément actifs, il faut une stratégie de priorisation dynamique — ex. ne monitorer que les N lieux les plus proches de la position actuelle, et ré-enregistrer les géofences au fur et à mesure des déplacements significatifs de l'utilisateur.
+**Impact direct sur le modèle freemium** (3 lieux de confiance gratuits, illimités avec « Miff+ » ; 2 avant le 2026-11-10) : au-delà de 20 lieux (iOS) / 100 lieux (Android) simultanément actifs, il faut une stratégie de priorisation dynamique — ex. ne monitorer que les N lieux les plus proches de la position actuelle, et ré-enregistrer les géofences au fur et à mesure des déplacements significatifs de l'utilisateur.
 
 ## Solution UX recommandée
 1. **Ne jamais demander "Always" au premier lancement.** Demander d'abord "Lors de l'utilisation" — nécessaire de toute façon pour positionner un lieu sur une carte.

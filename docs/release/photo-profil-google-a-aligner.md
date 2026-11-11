@@ -1,5 +1,7 @@
 # Photo de profil reprise du compte Google : textes à aligner
 
+> **État au 2026-11-11 (PR `docs/aligner-decisions-publication`)** : les points 1, 2 et 3 ci-dessous sont **faits dans le dépôt** (rien n'est publié) : politique de confidentialité FR/EN (art. 3, 5 et 6 : photo Google reprise, adresse IP exposée aux serveurs d'images de Google, photo publiée aux membres des Miffs), CGU art. 4, déclarations des stores (`google-play-data-safety.md`, `app-store-confidentialite-et-revue.md` : ligne « Photos » inchangée, justification de la revue ajoutée), message aux testeurs (`changements-testeurs-externes.md`, point 9). **Reste, à la publication** : relire ces textes avec le PM, mettre en ligne le site (« oui, déploie » du PM), et confirmer dans le code livré (V24 du `README.md`) que la photo est téléchargée une seule fois et qu'aucune copie n'est conservée après l'enregistrement du profil. Le détail est dans `alignement-decisions-2026-11-11.md`.
+
 Rédigé le 2026-11-08 (iOS, `ios/photo-google-geste-retour`). Android fait la même chose (`android/photo-google`). **Aucun texte légal n'est modifié par cette note** : elle liste ce qu'il faudra dire quand les textes seront relus pour la prochaine publication (décision du PM : textes rédigés par l'équipe, sous sa responsabilité, sans relecture juridique).
 
 ## Ce que font les apps

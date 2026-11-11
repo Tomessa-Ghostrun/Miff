@@ -9,6 +9,7 @@ import com.tomessa.miff.data.miff.MiffWriteResult
 import com.tomessa.miff.data.miff.RenewalMiff
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
+import com.tomessa.miff.domain.notification.SecondChanceRules
 import com.tomessa.miff.domain.permission.GateInput
 import com.tomessa.miff.domain.permission.GateScreen
 import com.tomessa.miff.domain.permission.LocationAttempt
@@ -140,9 +141,24 @@ class PermissionGateViewModel(
 
     /** The notification screen was answered (the system window came back, granted or not): it never comes back for this account. */
     fun onNotificationsAnswered() {
+        // From now on a refusal means "only the settings of the phone" (the system does not tell "never asked" from "refused for good").
+        asked.markSystemAsked()
         currentUid()?.let(asked::markShown)
         notificationsHandled = true
         snapshot = permissions.snapshot()
+        publish()
+    }
+
+    /**
+     * "Plus tard" on the pop-in (NOTIF-1A): the window of the system is NOT used up, the pop-in never comes back for this account, and ONE calm card is
+     * offered in the Feed after the first update (SecondChance). No notification setting is changed: if the person allows later, everything works.
+     */
+    fun onNotificationsPutOff() {
+        currentUid()?.let { uid ->
+            asked.markShown(uid)
+            asked.setSecondChance(uid, SecondChanceRules.afterLater(asked.secondChance(uid)))
+        }
+        notificationsHandled = true
         publish()
     }
 

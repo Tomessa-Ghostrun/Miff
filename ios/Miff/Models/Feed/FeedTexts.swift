@@ -8,7 +8,7 @@ import Foundation
 
 struct FeedTexts {
     private let lookup: (String) -> String
-    private let locale: Locale
+    let locale: Locale
     private let zone: TimeZone
     private let is24Hour: Bool
 
@@ -30,7 +30,7 @@ struct FeedTexts {
         return !pattern.contains("a")
     }
 
-    private func text(_ key: String, _ arguments: CVarArg...) -> String {
+    func text(_ key: String, _ arguments: CVarArg...) -> String {
         String(format: lookup(key), locale: locale, arguments: arguments)
     }
 
@@ -150,6 +150,10 @@ struct FeedTexts {
             return text("feed_label_news_hidden")
         case .waitingAgreement:
             return text("miff_waiting_title")
+        case .traveling(let day, let mine):
+            return travelLabel(day, mine: mine)
+        case .travelEnded:
+            return text("voyage_feed_label_ended")
         }
     }
 
@@ -189,6 +193,8 @@ struct FeedTexts {
             return text("feed_time_no_news_since", since(moment))
         case .inDangerSince(let moment):
             return text("feed_time_since", since(moment))
+        case .travelSince(let millis):
+            return travelSince(millis)
         }
     }
 
@@ -273,6 +279,8 @@ struct FeedTexts {
             return text("feed_bubble_alone")
         case .sharingStopped:
             return text("feed_bubble_sharing_stopped_title")
+        case .travelers(let note):
+            return travelersHeadline(note)
         case .alerts(let pages, _):
             return pages.map { page in
                 [alertTitle(page), alertDetail(page)].compactMap { $0 }.joined(separator: ", ")
