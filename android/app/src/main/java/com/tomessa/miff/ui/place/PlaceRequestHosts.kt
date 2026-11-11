@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tomessa.miff.R
@@ -42,6 +43,7 @@ fun PlaceRequestDetailHost(
     onPaywall: (PaywallReason) -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val view = state.views[route.miffId]
     val request = state.request(route.miffId, route.requestId)
@@ -74,7 +76,7 @@ fun PlaceRequestDetailHost(
                     Toast
                         .makeText(
                             context,
-                            context.getString(R.string.place_request_accepted_toast, event.placeName),
+                            resources.getString(R.string.place_request_accepted_toast, event.placeName),
                             Toast.LENGTH_SHORT,
                         ).show()
                     onClose()
@@ -110,7 +112,7 @@ fun PlaceRequestDetailHost(
     }
     val dateText =
         request?.createdAtMillis?.let {
-            context.getString(
+            resources.getString(
                 R.string.place_request_date,
                 DateUtils.formatDateTime(context, it, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH),
             )

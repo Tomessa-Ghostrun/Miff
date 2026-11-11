@@ -25,6 +25,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -1173,6 +1174,7 @@ private fun RequestsHost(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.watch(miffId) }
     }
     val context = LocalContext.current
+    val resources = LocalResources.current
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
@@ -1180,7 +1182,7 @@ private fun RequestsHost(
                     Toast
                         .makeText(
                             context,
-                            context.getString(R.string.place_request_accepted_toast, event.placeName),
+                            resources.getString(R.string.place_request_accepted_toast, event.placeName),
                             Toast.LENGTH_SHORT,
                         ).show()
                     // The new place is in the list at once (criterion C3).
