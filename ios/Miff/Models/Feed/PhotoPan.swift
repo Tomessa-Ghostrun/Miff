@@ -10,9 +10,9 @@ enum PhotoPan {
         guard imageSize.width > 0, imageSize.height > 0, area.width > 0, area.height > 0, zoom.isFinite, zoom > 0 else {
             return .zero
         }
-        let fit = min(area.width / imageSize.width, area.height / imageSize.height)
-        let shownWidth = imageSize.width * fit * zoom
-        let shownHeight = imageSize.height * fit * zoom
+        let shown = PhotoFullScreenLayout.fittedSize(imageSize: imageSize, in: area)
+        let shownWidth = shown.width * zoom
+        let shownHeight = shown.height * zoom
         return CGSize(
             width: max(0, (shownWidth - area.width) / 2),
             height: max(0, (shownHeight - area.height) / 2)

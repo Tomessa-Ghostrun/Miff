@@ -79,17 +79,20 @@ else
   fail "Info.plist : clés de localisation « ${location_keys} » au lieu des deux attendues (NSLocationAlwaysAndWhenInUseUsageDescription, NSLocationWhenInUseUsageDescription)."
 fi
 # UPDATE-3 : la caméra du viseur, EXACTEMENT une clé NSCamera* (NSCameraUsageDescription), et AUCUNE clé de photothèque : la photo est prise
-# en mémoire et n'est jamais écrite dans la photothèque.
+# en memoire (la prise de vue n'ecrit jamais dans la photothèque).
 camera_keys="$(plutil -p "$plist" | grep -o -E 'NSCamera[A-Za-z]*' | sort -u | tr '\n' ' ')"
 if [ "$camera_keys" = "NSCameraUsageDescription " ]; then
   report "Info.plist : exactement la clé de caméra NSCameraUsageDescription (OK)"
 else
   fail "Info.plist : clés de caméra « ${camera_keys} » au lieu de NSCameraUsageDescription seule."
 fi
-if plutil -p "$plist" | grep -q -E 'NSPhotoLibrary'; then
-  fail "Info.plist : une clé de photothèque (NSPhotoLibrary*) est déclarée : la photo n'est jamais écrite dans la photothèque."
+# FEED-8 : « Enregistrer cette photo » (plein ecran de la photo d'un proche) ecrit dans la galerie, au toucher, en AJOUT SEUL : EXACTEMENT la cle
+# NSPhotoLibraryAddUsageDescription, JAMAIS NSPhotoLibraryUsageDescription (qui permettrait de LIRE la galerie).
+photo_keys="$(plutil -p "$plist" | grep -o -E 'NSPhotoLibrary[A-Za-z]*' | sort -u | tr '\n' ' ')"
+if [ "$photo_keys" = "NSPhotoLibraryAddUsageDescription " ]; then
+  report "Info.plist : exactement la clé d'ajout à la galerie NSPhotoLibraryAddUsageDescription, aucune clé de lecture (OK)"
 else
-  report "Info.plist : aucune clé de photothèque (OK)"
+  fail "Info.plist : clés de photothèque « ${photo_keys} » au lieu de NSPhotoLibraryAddUsageDescription seule (jamais de clé de lecture)."
 fi
 if plutil -p "$plist" | grep -q -E 'UIBackgroundModes|NSAppTransportSecurity'; then
   fail "L'Info.plist du build contient un mode d'arrière-plan (UIBackgroundModes) ou une exception ATS."

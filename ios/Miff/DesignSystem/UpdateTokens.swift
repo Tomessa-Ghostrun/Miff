@@ -14,6 +14,9 @@ let colorUpdateStage = ColorToken(hex: 0x1D1F20)
 let colorUpdateScrim = ColorToken(hex: 0x000000, alpha: 0.45)
 /// Le voile posé sur la photo pendant la publication.
 let colorUpdateVeil = ColorToken(hex: 0x000000, alpha: 0.30)
+/// Le voile sombre derrière la légende de la photo en plein écran du Feed (texte blanc, contraste d'au moins 4,5:1 sur le pire cas : `PhotoFullScreenLayout`).
+/// « Réduire la transparence » le rend opaque.
+let colorPhotoCaptionScrim = ColorToken(hex: 0x000000, alpha: PhotoFullScreenLayout.scrimAlpha)
 /// La pastille sombre du message calme après une publication.
 let colorUpdateToast = ColorToken(hex: 0x222222, alpha: 0.92)
 /// Blanc des textes et des pictogrammes posés sur le viseur et sur l'aperçu.

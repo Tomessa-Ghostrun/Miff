@@ -60,6 +60,8 @@ struct RoundOverlayButton: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let systemName: String
     let labelKey: String
+    /// Clé du texte d'état lu après le nom (bouton à deux états, comme le flash) ; nil pour un bouton simple.
+    var stateKey: String?
     let onTap: () -> Void
 
     var body: some View {
@@ -79,6 +81,7 @@ struct RoundOverlayButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(verbatim: L10n.string(labelKey)))
+        .accessibilityValue(Text(verbatim: stateKey.map { L10n.string($0) } ?? ""))
     }
 }
 
