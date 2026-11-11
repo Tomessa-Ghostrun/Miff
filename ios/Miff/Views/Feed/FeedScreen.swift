@@ -22,6 +22,11 @@ struct FeedScreenActions {
     let onOpenSettings: () -> Void
 }
 
+/// La durée du retour animé de l'en-tête (un toucher sur le logo, un verrouillage) : courte.
+enum FeedHeaderMotion {
+    static let showSeconds: Double = 0.2
+}
+
 private struct HeaderHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
 
@@ -43,6 +48,7 @@ struct FeedScreen: View {
     /// FEED-8 : la photo ouverte en plein écran. Rien n'en est gardé une fois fermée, ni quand le Feed quitte l'écran.
     @State private var openedPhoto: OpenedPhoto?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilitySwitchControlEnabled) private var switchControl
 
     private var texts: FeedTexts {
@@ -96,6 +102,9 @@ struct FeedScreen: View {
     var body: some View {
         ZStack(alignment: .top) {
             stateContent
+            // Le contenu ne passe JAMAIS sous la barre d'état : une bande fixe de la couleur du fond couvre la zone sûre du haut, même quand
+            // l'en-tête est caché (comme Android, qui coupe le contenu à la zone sûre).
+            colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
             header
             if model.refreshing {
                 // Le geste est en haut de la liste, sous l'en-tête : l'indicateur de l'actualisation se montre sous lui.
@@ -113,7 +122,9 @@ struct FeedScreen: View {
             headerModel.measured(height)
         }
         .onAppear { headerModel.lock(headerLocked) }
-        .onChange(of: headerLocked) { locked in headerModel.lock(locked) }
+        // Verrouillé (chargement, hors connexion, VoiceOver, sélecteur ouvert) : l'en-tête revient avec une courte animation, immédiate avec
+        // « Réduire les animations ».
+        .onChange(of: headerLocked) { locked in withHeaderAnimation { headerModel.lock(locked) } }
         .onChange(of: isList) { _ in headerModel.resetBaseline() }
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
         // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
@@ -177,7 +188,8 @@ struct FeedScreen: View {
             agreementWaiting: ready.activeId.map { awaiting.waiting.contains($0) } ?? false,
             scrollToTop: scrollToTop,
             actions: listActions,
-            onContentMoved: { headerModel.contentMoved(to: $0) }
+            onContentMoved: { headerModel.contentMoved(to: $0) },
+            onScrolled: { headerModel.scrolled(to: $0) }
         )
     }
 
@@ -211,6 +223,15 @@ struct FeedScreen: View {
 
     // MARK: - L'en-tête
 
+    /// L'animation courte du retour de l'en-tête ; aucune avec « Réduire les animations ».
+    private func withHeaderAnimation(_ change: () -> Void) {
+        if reduceMotion {
+            change()
+        } else {
+            withAnimation(.easeOut(duration: FeedHeaderMotion.showSeconds), change)
+        }
+    }
+
     private var header: some View {
         FeedHeaderOverlay(
             model: headerModel,
@@ -221,7 +242,7 @@ struct FeedScreen: View {
                 pill: pillState,
                 onOpenProfile: actions.onOpenProfile,
                 onLogo: {
-                    headerModel.show()
+                    withHeaderAnimation { headerModel.show() }
                     scrollToTop += 1
                 },
                 onSelect: { model.onSelect($0) },
@@ -230,6 +251,9 @@ struct FeedScreen: View {
                 selectorOpen: $selectorOpen
             )
         )
+        // L'en-tête qui monte est COUPÉ à la zone sûre (il ne passe pas sur l'heure de la barre d'état) ; le masque descend un peu plus bas
+        // pour laisser voir son ombre.
+        .mask(alignment: .top) { Rectangle().padding(.bottom, -Spacing.md) }
         .accessibilitySortPriority(1)
     }
 

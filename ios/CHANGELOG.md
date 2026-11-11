@@ -35,6 +35,21 @@ Coût : aucun (AVFoundation, aucun service ni quota). Sécurité : aucune permis
 
 Écarts : aucun écran de maquette ne montre le flash (`design/exports/update/claude/03-viseur-et-apercu.png`) ; l'emplacement et le style suivent le bouton de bascule voisin ; pictogrammes du système faute d'export vectoriel du PM. Le bouton n'est pas grisé mais masqué quand il est impossible (choix calme : pas de bouton qui ne sert à rien). Limite à vérifier sur l'iPhone : l'apparition du bouton juste après le démarrage de la caméra (le matériel répond une fois la session lancée).
 
+### Feed : l'en-tête qui se masque au défilement, la bulle jamais dessous (retour du PM sur le build 27)
+
+Branche `ios/feed-header-scroll` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Même comportement que l'en-tête d'Android (`CollapsingHeader.kt`, « enter always »).
+
+Modifié :
+- **Lecture directe du défilement** : l'en-tête suit désormais la distance défilée lue sur la vue de défilement elle-même (`ScrollDistanceReader`, `contentOffset` + marge ajustée), au lieu de deviner la position de repos du contenu ; c'est cette position de repos mal devinée qui pouvait laisser la première carte (la bulle) sous l'en-tête. L'ancienne lecture (position du contenu) reste en repli si aucune vue de défilement n'est trouvée.
+- **Règles pures** (`CollapsingHeaderState`) : l'en-tête suit le doigt point pour point dans les deux sens et revient dès qu'on remonte ; jamais plus caché que le défilement près du haut (seuil = sa hauteur, inclus) ; un déplacement de moins de 0,5 pt est ignoré (l'en-tête ne vibre pas) ; verrouillé (chargement, hors connexion, VoiceOver ou Contrôle de sélection, sélecteur ouvert) : il reste là.
+- **La bulle et le contenu ne passent jamais sous la barre d'état** : une bande fixe de la couleur du fond couvre la zone sûre du haut ; l'en-tête qui monte est coupé à la zone sûre (comme Android) et garde son ombre.
+- **Retour animé** (logo, verrouillage) : 0,2 s, immédiat avec « Réduire les animations ».
+
+Ajouté : `FeedHeaderScrollTests` (distance défilée, retour au premier mouvement vers le haut, seuil près du haut, hystérésis de 0,5 pt, verrouillage, repli, animation courte et « Réduire les animations »).
+
+Accessibilité : avec VoiceOver ou Contrôle de sélection l'en-tête ne se masque jamais (il est toujours dans l'arbre d'accessibilité, lu en premier).
+
+
 ### Mes informations modifiable (ticket `docs/tickets/modifier-infos-perso.md`, décision du PM du 2026-11-11)
 
 Branche `ios/mes-informations-modifiables`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette : `docs/qa/checklists/myinfo-ios-recette-pm.md`. Détails, écarts avec Android et coût : section « Mes informations modifiable » de `ios/README.md`. **Aucune règle Firestore modifiée** (le diff de `backend/` est vide), aucun déploiement.
@@ -93,6 +108,7 @@ Changé :
 **Choix économiques** : aucune dépendance, aucun service, aucune permission ; **pas de coût fixe, mais un coût de lectures Firestore** : chaque remise déclenche un passage `sharingChanged` complet du suivi (lecture des appartenances, du consentement de chaque Miff et de ses lieux, plus 2 lectures de règles par lieu), puis une écriture de position par Miff. Il est **borné par un geste manuel** (« Publier » ou « Réessayer »), n'a lieu que si ma position manque dans au moins une Miff, au plus une fois par tentative, et le garde-fou de l'Update (20 publications par jour, 30 s entre deux) plafonne le total ; dès que la position est publiée, plus aucune remise. Pire cas : une vingtaine de passages par jour et par téléphone, de l'ordre de quelques dizaines de lectures chacun. **Signal de bascule** vers Blaze : lectures du jour > 40 000 de façon répétée dans la console (seuil de `docs/dev/surveillance-quotas.md`).
 
 **Limites connues** : « Pendant l'utilisation » seul reste bloquant pour publier une photo (le suivi, donc la position partagée, exige « Toujours ») et la phrase générique « localisation éteinte ou plus autorisée » s'applique alors ; une phrase dédiée « Choisis Toujours » est une décision de texte pour le PM. Android (`UpdateViewModel.kt`) n'est pas touché ici : à vérifier s'il a les mêmes causes.
+
 
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 
