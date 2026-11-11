@@ -5,7 +5,7 @@
 
 ## À savoir avant de commencer (important)
 
-- **Les règles de la photo localisée (R-PHOTO-LOC) doivent être déployées AVANT d'installer cette version** (sur votre « oui » explicite, `docs/dev/deploiement-regles.md`). Tant qu'elles ne le sont pas, **aucune photo ne peut partir** (le serveur refuse les trois clés de la position) : l'écran dit calmement « Ta photo n'est pas partie. Réessaie dans un instant. » à chaque essai. Ce n'est pas un défaut de l'application. Dites-le à l'assistant avant de commencer.
+- **Les règles de la photo localisée (R-PHOTO-LOC) devaient être déployées AVANT d'installer cette version : elles le sont** (déployées par le PM le 2026-11-06, fichier de `main` redéployé le 2026-11-10 ; information du PM, non vérifiable par l'agent ; `docs/dev/deploiement-regles.md`). Si elles ne l'étaient pas, **aucune photo ne peut partir** (le serveur refuse les trois clés de la position) : l'écran dit calmement « Ta photo n'est pas partie. Réessaie dans un instant. » à chaque essai. Ce n'est pas un défaut de l'application. Dites-le à l'assistant avant de commencer.
 - **Le texte de consentement de la position doit être celui de la version 3 ou plus** (c'est le cas de vos comptes de test s'ils ont accepté le texte v3). Le texte sera amendé pour citer la photo localisée par ailleurs : cette livraison **ne touche à aucun texte légal**.
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main. Désinstallez l'ancienne version d'abord.
 - **Aucune notification** n'est envoyée : la bulle d'incitation n'existe que **dans l'application ouverte**.

@@ -5,7 +5,7 @@
 
 ## À savoir avant de commencer
 
-- La partie **C (3 lieux gratuits)** ne fonctionne **qu'après le déploiement des règles Firestore** (PR `backend/lieux-gratuits-3`, il faut votre « oui » explicite : `docs/dev/deploiement-regles.md`). Avant, un compte gratuit qui enregistre son 3e lieu reçoit le message calme « Ça n'a pas fonctionné. Réessaie dans un instant. » : c'est attendu, rien n'est perdu. Les parties A et B ne dépendent d'aucun déploiement.
+- La partie **C (3 lieux gratuits)** ne fonctionne **qu'avec les règles Firestore à 3 lieux** (PR `backend/lieux-gratuits-3`, **déployées par le PM le 2026-11-10** : information du PM, non vérifiable par l'agent ; `docs/dev/deploiement-regles.md`). Avant ce déploiement, un compte gratuit qui enregistre son 3e lieu reçoit le message calme « Ça n'a pas fonctionné. Réessaie dans un instant. » : c'est attendu, rien n'est perdu. Les parties A et B ne dépendent d'aucun déploiement.
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 
 ## Partie A — Le carrousel « Mes Miffs » (Profil)
