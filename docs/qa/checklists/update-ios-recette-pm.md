@@ -6,7 +6,7 @@
 ## À savoir avant de commencer (important)
 
 - **Rien de cette version n'a pu être essayé sur un iPhone avant vous** (le poste de développement n'a pas de Mac, le simulateur n'a pas de caméra) : **le viseur, l'orientation de la photo, le reflet du selfie, le double toucher et le verre sombre sur le viseur sont à regarder de près**. Notez tout, avec une capture d'écran.
-- **Les règles de la photo localisée (R-PHOTO-LOC) doivent être déployées AVANT d'installer ce build** (sur votre « oui » explicite, `docs/dev/deploiement-regles.md`). Sinon **aucune photo ne peut partir** : l'écran dit calmement « Ta photo n'est pas partie. Réessaie dans un instant. » à chaque essai (ce n'est pas un défaut de l'application).
+- **Les règles de la photo localisée (R-PHOTO-LOC) devaient être déployées AVANT d'installer ce build : elles le sont** (déployées par le PM le 2026-11-06, fichier de `main` redéployé le 2026-11-10 ; information du PM, non vérifiable par l'agent ; `docs/dev/deploiement-regles.md`). Sinon **aucune photo ne peut partir** : l'écran dit calmement « Ta photo n'est pas partie. Réessaie dans un instant. » à chaque essai (ce n'est pas un défaut de l'application).
 - **Le texte de consentement de la position doit être celui de la version 3 ou plus** (comptes de test qui l'ont accepté). Cette livraison **ne touche à aucun texte légal**.
 - **Aucune notification** : la bulle n'existe que **dans l'application ouverte**.
 - **Votre position doit déjà être publiée dans la Miff** (le téléphone l'écrit à l'ouverture de l'application, après le consentement et « Toujours » donnés) : juste après une installation neuve, « Publier » peut dire « Position introuvable pour le moment, réessaie dans un instant. » ; réessayez après quelques secondes.

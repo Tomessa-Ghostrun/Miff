@@ -5,6 +5,7 @@ import com.tomessa.miff.data.feed.PositionReader
 import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
+import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.LostMiff
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MyMiffsLoad
@@ -985,6 +986,220 @@ class FeedViewModelTest {
             refresher.gate?.complete(Unit)
             runCurrent()
             assertTrue(vm.content().banners.none { it is FeedBanner.Offline })
+            job.cancel()
+        }
+
+    // --- Bug of 2026-11-10: "le Feed se charge à l'infini sans connexion" ------------------------------------------------
+
+    private fun readsOfTheMiffs() = repo.calls.count { it == "myMiffs" }
+
+    @Test
+    fun noNetworkAndNoCopyOfTheMiff_theSkeletonNeverEnds_theCauseOfTheBug_butThePopInSaysIt() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            // The listener of the Miff finds nothing in the cache and the server cannot be reached: it says "loading" and nothing else, for ever.
+            advanceTimeBy(10 * minute)
+            assertEquals(FeedUiState.Loading, vm.uiState.value)
+            assertTrue(vm.connection.value.popInVisible)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_theAutomaticAttemptEvery10Seconds_readsNothingWhileThereIsNoNetwork() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            val before = readsOfTheMiffs()
+            advanceTimeBy(2 * minute)
+            assertTrue(vm.connection.value.popInVisible)
+            // Twelve rounds of the timer with no network: not one reading more (no cost).
+            assertEquals(before, readsOfTheMiffs())
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_theNetworkComesBack_oneReadingAtOnce_andThePopInLeavesWhenTheContentArrives() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            advanceTimeBy(30_000)
+            assertTrue(vm.connection.value.popInVisible)
+            val before = readsOfTheMiffs()
+            network.online = true
+            runCurrent()
+            assertEquals(before + 1, readsOfTheMiffs())
+            // The pop-in left at once (the network is back); the content arrives from the server.
+            assertFalse(vm.connection.value.active)
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            assertTrue(vm.content().banners.isEmpty())
+            advanceTimeBy(60_000)
+            assertFalse(vm.connection.value.active)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_theDirectoryIsUnavailable_noNetwork_thenTheNetworkComesBack_oneReadingAtOnce_noMoreTapNeeded() =
+        runTest(dispatcher) {
+            // First installation (or data cleared), airplane mode: nothing to read, nothing in the cache: the directory says "unavailable".
+            repo.myMiffsResult = MyMiffsLoad.Unavailable
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            directory.refresh()
+            advanceTimeBy(10_000)
+            assertEquals(DirectoryState.Unavailable, directory.state.value)
+            assertTrue(vm.connection.value.popInVisible)
+            // The network comes back, the server answers: ONE reading starts by itself (review of PR #149: the pop-in used to leave without any reading).
+            repo.myMiffsResult =
+                MyMiffsLoad.Loaded(
+                    listOf(MiffSummary(MIFF_ID, "Chez nous")),
+                    emptyList(),
+                    premium = false,
+                    fromCache = false,
+                )
+            val before = readsOfTheMiffs()
+            network.online = true
+            runCurrent()
+            assertEquals(before + 1, readsOfTheMiffs())
+            assertFalse(vm.connection.value.active)
+            assertTrue(directory.state.value is DirectoryState.Ready)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_theDirectoryIsUnavailable_withANetworkAtTheStart_noPopIn_andNoReadingFromTheGate() =
+        runTest(dispatcher) {
+            repo.myMiffsResult = MyMiffsLoad.Unavailable
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            val before = readsOfTheMiffs()
+            advanceTimeBy(2 * minute)
+            // With a network the page has its own calm sentence and "Réessayer": no pop-in, no reading in a loop.
+            assertFalse(vm.connection.value.active)
+            assertEquals(before, readsOfTheMiffs())
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_réessayer_readsAgainAtOnce_andStartsTheCountdownAgain() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            advanceTimeBy(6_000)
+            assertTrue(vm.connection.value.secondsLeft!! < 10)
+            val before = readsOfTheMiffs()
+            vm.onConnectionRetry()
+            runCurrent()
+            assertEquals(before + 1, readsOfTheMiffs())
+            assertEquals(10, vm.connection.value.secondsLeft)
+            assertTrue(vm.connection.value.popInVisible)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_réessayer_tappedManyTimes_neverPilesUpReadings() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            val before = readsOfTheMiffs()
+            repeat(10) { vm.onConnectionRetry() }
+            runCurrent()
+            // The first tap reads; the others ask for ONE more at most after it.
+            assertTrue(readsOfTheMiffs() - before <= 2)
+            job.cancel()
+        }
+
+    @Test
+    fun withACopyOfTheCache_noPopIn_theBannerAndTheDateStayAsBefore() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
+            advanceTimeBy(5 * minute)
+            assertTrue(vm.content().banners.any { it is FeedBanner.Offline })
+            assertFalse(vm.connection.value.active)
+            job.cancel()
+        }
+
+    @Test
+    fun popIn_closedByTheBackGesture_thePageSaysItAndTheAttemptsGoOn() =
+        runTest(dispatcher) {
+            ready()
+            network.online = false
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            advanceTimeBy(5_000)
+            vm.onConnectionDismissed()
+            assertFalse(vm.connection.value.popInVisible)
+            assertTrue(vm.connection.value.inlineVisible)
+            val before = readsOfTheMiffs()
+            network.online = true
+            runCurrent()
+            assertEquals(before + 1, readsOfTheMiffs())
+            job.cancel()
+        }
+
+    @Test
+    fun leavingTheScreen_stopsThePopInAndTheAttempts() =
+        runTest(dispatcher) {
+            ready()
+            network.online = true
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            advanceTimeBy(9_000)
+            assertTrue(vm.connection.value.popInVisible)
+            job.cancel()
+            runCurrent()
+            val before = readsOfTheMiffs()
+            advanceTimeBy(5 * minute)
+            assertFalse(vm.connection.value.active)
+            assertEquals(before, readsOfTheMiffs())
+        }
+
+    @Test
+    fun aMiffWithNothingYet_andANetwork_thePopInOnlyComesAfterAShortDelay_withBoundedAttempts() =
+        runTest(dispatcher) {
+            ready()
+            network.online = true
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            advanceTimeBy(7_000)
+            assertFalse(vm.connection.value.active)
+            advanceTimeBy(2_000)
+            assertTrue(vm.connection.value.popInVisible)
+            val before = readsOfTheMiffs()
+            advanceTimeBy(10 * minute)
+            // Three automatic attempts at most for a network that answers nothing, then the button only.
+            assertEquals(before + 3, readsOfTheMiffs())
             job.cancel()
         }
 }

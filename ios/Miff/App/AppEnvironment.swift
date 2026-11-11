@@ -174,6 +174,9 @@ final class AppEnvironment {
     /// compte), lus à la demande et gardés seulement par l'écran qui les montre.
     lazy var profileReader: ProfileReading = FirestoreProfileReader()
     lazy var accountInfo: AccountInfoSource = FirebaseAccountInfo()
+    /// Mes informations (ticket `docs/tickets/modifier-infos-perso.md`) : l'enregistrement sur le profil et sur la fiche de chaque Miff, par le magasin des Miffs
+    /// (mêmes transactions, même garde d'écriture). Sans état : le SDK Firestore est résolu à chaque usage.
+    lazy var myProfileRepository: MyProfileRepository = StoreMyProfileRepository(store: FirestoreMiffStore())
 
     private let userProfiles: UserProfileRepository = FirestoreUserProfileRepository()
     /// Ce que la personne a saisi dans les étapes du profil : sur l'appareil seulement, effacé une fois le serveur ayant
@@ -290,6 +293,23 @@ final class AppEnvironment {
             deviceRegion: { Locale.current.region?.identifier },
             // La photo du compte Google, proposée comme photo de profil préremplie (téléchargée une fois, jamais bloquante).
             googlePhoto: GooglePhotoPrefill(source: GooglePhotoDownloader(), codec: avatarCodec)
+        )
+    }
+
+    /// L'écran « Mes informations » : un view model pour le profil lu, qui remet la version enregistrée dans l'en-tête du Profil (`current`).
+    func makeMyInfoViewModel(current: CurrentProfileHolding, profile: ProfileSummary) -> MyInfoViewModel {
+        let session = self.session
+        return MyInfoViewModel(
+            profile: profile,
+            dependencies: MyInfoDependencies(
+                repository: myProfileRepository,
+                current: current,
+                avatars: avatarCodec,
+                network: network,
+                phoneTools: phoneTools,
+                deviceRegion: { Locale.current.region?.identifier },
+                currentUid: { session.currentUid }
+            )
         )
     }
 
