@@ -131,7 +131,8 @@ struct FeedListView: View {
             announceKey: content.announceKey,
             texts: texts,
             isActive: isActive,
-            actions: actions.bubble
+            actions: actions.bubble,
+            travelNote: content.travelNote
         )
         ForEach(content.cards, id: \.member.uid) { card in
             MemberCardView(
