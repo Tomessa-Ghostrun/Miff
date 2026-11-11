@@ -9,6 +9,8 @@ import com.tomessa.miff.data.tracking.PositionSource
 import com.tomessa.miff.data.tracking.TrackingEnvironment
 import com.tomessa.miff.data.tracking.TrackingLocalStore
 import com.tomessa.miff.data.tracking.TrackingStore
+import com.tomessa.miff.data.tracking.TravelAlarm
+import com.tomessa.miff.data.tracking.TravelRead
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.permission.PermissionSnapshot
@@ -221,5 +223,36 @@ class FakeTrackingStore : TrackingStore {
         commits += writes
     }
 
+    /** MODE VOYAGE: what my own status says in a Miff (a trip), by Miff; [ownTravelFailure] makes the read fail (no network, a refusal). */
+    val ownTravels = mutableMapOf<String, TravelRead?>()
+    var ownTravelFailure: Exception? = null
+    var ownTravelReads = 0
+
+    override suspend fun ownTravel(
+        miffId: String,
+        uid: String,
+    ): TravelRead? {
+        ownTravelReads++
+        ownTravelFailure?.let { throw it }
+        return ownTravels[miffId]
+    }
+
     fun writesTo(fragment: String): List<DocWrite> = commits.flatten().filter { fragment in it.path }
+}
+
+/** MODE VOYAGE: the alarm of the end of a trip (the instant it is set for, null when none). */
+class FakeTravelAlarm : TravelAlarm {
+    var at: Long? = null
+    var scheduleCalls = 0
+    var cancelCalls = 0
+
+    override fun schedule(atMillis: Long) {
+        scheduleCalls++
+        at = atMillis
+    }
+
+    override fun cancel() {
+        cancelCalls++
+        at = null
+    }
 }

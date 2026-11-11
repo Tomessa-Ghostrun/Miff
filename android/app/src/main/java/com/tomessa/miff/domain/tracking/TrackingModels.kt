@@ -82,6 +82,9 @@ enum class PresenceValue(
     OUT("out"),
     IN_RISK("in_risk"),
     UNKNOWN("unknown"),
+
+    /** MODE VOYAGE: the person paused the tracking until a date (`travelUntil`). Always a neutral colour; an older application reads it as an unknown value (neutral too). */
+    TRAVEL("travel"),
     ;
 
     companion object {
