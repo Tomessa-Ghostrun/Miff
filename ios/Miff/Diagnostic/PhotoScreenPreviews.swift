@@ -53,7 +53,8 @@ struct PhotoScreenPreview: View {
         return UIGraphicsImageRenderer(size: size, format: format).image { context in
             let cg = context.cgContext
             let colors = [UIColor.systemBlue.cgColor, UIColor.systemOrange.cgColor] as CFArray
-            if let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) {
+            let space = CGColorSpaceCreateDeviceRGB()
+            if let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 1]) {
                 cg.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: size.height), options: [])
             }
             cg.setStrokeColor(UIColor.white.withAlphaComponent(0.5).cgColor)
@@ -70,7 +71,9 @@ struct PhotoScreenPreview: View {
             cg.setStrokeColor(UIColor.white.cgColor)
             cg.setLineWidth(16)
             cg.stroke(CGRect(origin: .zero, size: size).insetBy(dx: 8, dy: 8))
-            let attributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 64), .foregroundColor: UIColor.white]
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.boldSystemFont(ofSize: 64), .foregroundColor: UIColor.white
+            ]
             ("HAUT" as NSString).draw(at: CGPoint(x: 40, y: 40), withAttributes: attributes)
             ("BAS" as NSString).draw(at: CGPoint(x: 40, y: size.height - 120), withAttributes: attributes)
         }
