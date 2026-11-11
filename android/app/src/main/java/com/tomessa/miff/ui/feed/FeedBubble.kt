@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -27,12 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -43,6 +41,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -61,16 +60,16 @@ import com.tomessa.miff.ui.theme.colorBorderAction
 import com.tomessa.miff.ui.theme.colorStatusNeutral
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextPrimary
-import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
-import com.tomessa.miff.ui.theme.textDisplayHeadline
+import com.tomessa.miff.ui.theme.textDisplayBubble
 import kotlinx.coroutines.launch
 
 /*
  * The bubble of the Miff (maquettes 02 to 05): ONE blob, in the colour of the Miff, under the header. It INFORMS, it never alarms: absolute
- * times for orange and red, no animation, no sound, no automatic scrolling, no point of exclamation, and never "en sécurité". A pictogram
- * is always there (the colour is never alone). Several alerts are a carousel (reds first), with dots only when there are several pages and
+ * times for orange and red, no animation, no sound, no automatic scrolling, no point of exclamation, and never "en sécurité". No
+ * pictogram, whatever the colour (decision of the PM, 2026-11-11): the words say it. Several alerts are a carousel (reds first), with dots only when there are several pages and
  * "Alerte précédente / suivante" for the screen reader, so that every page is reachable without a swipe.
  */
 
@@ -158,16 +157,7 @@ private fun CalmBubble(
     onResumeSharing: () -> Unit,
     travelNote: TravelNote?,
 ) {
-    // MODE VOYAGE: the airplane is the pictogram of the bubble of the travellers (the colour is never alone).
-    val symbol =
-        if (bubble is Bubble.Travelers) {
-            Pictogram(R.drawable.ic_travel_plane) {
-                colorTextDescription
-            }
-        } else {
-            pictogram(bubble.level)
-        }
-    BubbleBlob(level = bubble.level, pictogram = symbol) {
+    BubbleBlob(level = bubble.level) {
         when (bubble) {
             is Bubble.AllGood -> {
                 Headline(stringResource(R.string.feed_bubble_all_good))
@@ -196,7 +186,6 @@ private fun CalmBubble(
                 Line(stringResource(R.string.feed_bubble_sharing_stopped_body))
                 BubbleButton(
                     text = stringResource(R.string.feed_bubble_resume_action),
-                    icon = R.drawable.ic_loc_pin,
                     onClick = onResumeSharing,
                 )
             }
@@ -285,7 +274,7 @@ private fun AlertPageBubble(
     texts: FeedTexts,
     onMessage: (String) -> Unit,
 ) {
-    BubbleBlob(level = page.level, pictogram = pictogram(page.level)) {
+    BubbleBlob(level = page.level) {
         Headline(texts.alertTitle(page))
         texts.alertDetail(page)?.let { Line(it) }
         texts.alertNote(page)?.let { Caption(it) }
@@ -294,8 +283,8 @@ private fun AlertPageBubble(
         if (page.canMessage && phone != null) {
             BubbleButton(
                 text = stringResource(R.string.feed_bubble_message_action),
-                icon = R.drawable.ic_feed_chat,
                 onClick = { onMessage(phone) },
+                description = stringResource(R.string.feed_bubble_contact_a11y, page.member.callName),
             )
         }
     }
@@ -307,7 +296,6 @@ private val LocalBubblePhases = compositionLocalOf<BubblePhases?> { null }
 @Composable
 private fun BubbleBlob(
     level: StatusLevel,
-    pictogram: Pictogram?,
     content: @Composable () -> Unit,
 ) {
     val phases = LocalBubblePhases.current
@@ -338,32 +326,10 @@ private fun BubbleBlob(
                     }.clip(BubbleShape)
                     .background(level.tint()),
         )
-        // The pictogram (orange, red, neutral; none for green) is a soft WATERMARK laid straight on the blob, behind the text: no disc, no frame, no
-        // shape that looks like a button (decision of the PM, 2026-11-10). Large and faint, in the corner, it fills the space without shouting and
-        // without a feeling of emptiness. It breathes on its own, slightly different cycle: out of phase with the blob.
-        if (pictogram != null) {
-            Icon(
-                painter = painterResource(pictogram.drawable),
-                contentDescription = null,
-                tint = pictogram.tint(level).copy(alpha = WATERMARK_ALPHA),
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 28.dp, bottom = 22.dp)
-                        .size(WATERMARK_SIZE)
-                        .graphicsLayer {
-                            if (phases != null) {
-                                val phase = phases.star.value
-                                val breath = BubbleMotion.starScale(phase)
-                                scaleX = breath
-                                scaleY = breath
-                                translationY = BubbleMotion.starDriftDp(phase) * density
-                            }
-                        },
-            )
-        }
+        // NO pictogram, whatever the colour (decision of the PM, 2026-11-11: the watermark of the clock, the "!" and the hourglass is removed; the
+        // words of the bubble say it). Not even a travel plane may be added here.
         // CENTRED in the blob (decision of the PM, 2026-11-08, TestFlight build 22): the same margin on both sides, text and button centred, the
-        // block centred vertically, in front of the watermark.
+        // block centred vertically.
         Column(
             modifier =
                 Modifier
@@ -378,31 +344,18 @@ private fun BubbleBlob(
     }
 }
 
-private val WATERMARK_SIZE = 96.dp
-private const val WATERMARK_ALPHA = 0.20f
-
-private class Pictogram(
-    val drawable: Int,
-    val tint: (StatusLevel) -> Color,
-)
-
 /**
- * One pictogram per colour for orange, red and neutral (the colour is never alone): a clock, a "!", an hourglass. NONE for green (decision of the PM,
- * 2026-11-08): the green bubble has no symbol, its words are enough.
+ * The MAIN sentence of the bubble ("Tout va bien"): bold, bigger, in the heaviest Baloo Thambi 2, the font closest to the word-mark "Miff" (decision of
+ * the PM, 2026-11-10). Only this sentence has it, not the rest of the Feed. Size in sp (follows the font size of the phone); the lines are balanced
+ * ([LineBreak.Heading]) and the bubble grows in height, so a small screen or a large text never pushes a word out of it.
  */
-private fun pictogram(level: StatusLevel): Pictogram? =
-    when {
-        level == StatusLevel.GREEN -> null
-        level == StatusLevel.ORANGE -> Pictogram(R.drawable.ic_feed_clock) { it.onTint() }
-        level == StatusLevel.RED -> Pictogram(R.drawable.ic_feed_alert) { it.onTint() }
-        else -> Pictogram(R.drawable.ic_feed_hourglass) { colorTextDescription }
-    }
+private val HEADLINE_STYLE = textDisplayBubble.copy(lineBreak = LineBreak.Heading)
 
 @Composable
 private fun Headline(text: String) {
     Text(
         text = text,
-        style = textDisplayHeadline,
+        style = HEADLINE_STYLE,
         color = colorTextPrimary,
         textAlign = TextAlign.Center,
         modifier = Modifier.semantics { heading() },
@@ -419,34 +372,41 @@ private fun Caption(text: String) {
     Text(text = text, style = textBodyCaption, color = colorTextDescription, textAlign = TextAlign.Center)
 }
 
-/** The soft action of a bubble: outlined, white inside, 48 dp high. Never a call, never a red button. */
+/**
+ * The soft action of a bubble ("Contacter", "Reprendre le partage"): outlined, white inside, WORDS ONLY (no symbol in the bubble, decision of the PM,
+ * 2026-11-11) and smaller than before (36 dp high, 14 sp bold). The touch area stays 48 dp high and wide: the invisible margin around the drawing
+ * is part of the button. Never a call, never a red button. [description] replaces what the screen reader says ("Contacter Thomas").
+ */
 @Composable
 private fun BubbleButton(
     text: String,
-    icon: Int,
     onClick: () -> Unit,
+    description: String? = null,
 ) {
-    Row(
+    Box(
         modifier =
             Modifier
-                .heightIn(min = Spacing.minTouchTarget)
-                .clip(ShapeMd)
-                .background(colorBgSurface)
-                .border(StrokeAccent, colorBorderAction, ShapeMd)
+                .defaultMinSize(minWidth = Spacing.minTouchTarget, minHeight = Spacing.minTouchTarget)
                 .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = Spacing.m),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-        verticalAlignment = Alignment.CenterVertically,
+                .semantics { description?.let { contentDescription = it } },
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            painter = painterResource(icon),
-            contentDescription = null,
-            tint = colorActionPrimary,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(text = text, style = textBodyBold16, color = colorActionPrimary, textAlign = TextAlign.Center)
+        Box(
+            modifier =
+                Modifier
+                    .heightIn(min = BUTTON_HEIGHT)
+                    .clip(ShapeMd)
+                    .background(colorBgSurface)
+                    .border(StrokeAccent, colorBorderAction, ShapeMd)
+                    .padding(horizontal = Spacing.m - Spacing.xs),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = text, style = textBodyBold14, color = colorActionPrimary, textAlign = TextAlign.Center)
+        }
     }
 }
+
+private val BUTTON_HEIGHT = 36.dp
 
 /** Only with several pages. The current page is a LONGER dot (a shape, not only a colour). */
 @Composable

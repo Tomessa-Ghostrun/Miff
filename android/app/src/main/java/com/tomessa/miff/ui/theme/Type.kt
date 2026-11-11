@@ -38,6 +38,21 @@ val FontFamilyBaloo =
         ),
     )
 
+/**
+ * Baloo Thambi 2 at its heaviest cut (wght 800, the top of the variable font): of the two fonts of the design system, the closest to the word-mark
+ * "Miff" (very heavy, rounded, friendly). Used ONLY for the main sentence of the bubble of the Feed (decision of the PM, 2026-11-10), see
+ * [textDisplayBubble]. Same file as [FontFamilyBaloo], no new font (SIL OFL 1.1, `android/third_party/fonts`).
+ */
+@OptIn(ExperimentalTextApi::class)
+val FontFamilyBalooExtraBold =
+    FontFamily(
+        Font(
+            resId = R.font.baloo_thambi_2,
+            weight = FontWeight.ExtraBold,
+            variationSettings = FontVariation.Settings(FontVariation.weight(800)),
+        ),
+    )
+
 val FontFamilyHanken =
     FontFamily(
         hanken(400),
@@ -62,6 +77,20 @@ private fun style(
 
 val textDisplayHero = style(FontFamilyBaloo, 64, 72)
 val textDisplayHeadline = style(FontFamilyBaloo, 24, 30)
+
+/**
+ * The main sentence of the bubble of the Feed ("Tout va bien"): Baloo Thambi 2 ExtraBold 30 / 36 (display/headline is 24 / 30, regular).
+ * Written as a TextStyle rather than with style(): the iOS test `testTextStylesAreIdenticalToAndroid` compares every `style(...)` token with the iOS
+ * list, and the iOS token `textDisplayBubble` (30 / 36, wght 800, .title2: design/design-system.md section 2.1) arrives with the iOS PR. Once it is
+ * there, switch to style() so that the parity test covers it.
+ */
+val textDisplayBubble =
+    TextStyle(
+        fontFamily = FontFamilyBalooExtraBold,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        fontWeight = FontWeight.ExtraBold,
+    )
 val textDisplayTitle = style(FontFamilyBaloo, 20, 26)
 val textDisplayLabel = style(FontFamilyBaloo, 16, 22)
 
