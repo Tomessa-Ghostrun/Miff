@@ -58,6 +58,8 @@ struct ProfileMiffCarousel: View {
     @State private var page: Int
     @GestureState private var track = DragTrack()
     @State private var prefetched: Int?
+    /// Le doigt a dépassé le seuil pendant le geste en cours (même s'il est revenu) : ce n'est pas un toucher.
+    @State private var exceededSlop = false
     @State private var opened = false
     @State private var cardHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -161,27 +163,48 @@ struct ProfileMiffCarousel: View {
 
     // MARK: - Le geste
 
-    /// Un glissement horizontal change de carte. `simultaneousGesture` : le défilement vertical de l'écran continue de marcher ; le
-    /// geste n'est suivi que s'il est d'abord horizontal (l'axe est décidé une fois, au début, dans `track`).
+    /// UN seul geste pour toucher ET glisser (`CarouselTouch`) : les cartes n'ont aucun bouton, donc un glissement ne peut jamais ouvrir une
+    /// carte. Sous le seuil de 10 pt, le relâchement est un toucher (ouvre la carte montrée) ; au-delà, c'est un glissement (horizontal : change
+    /// de carte) ou un défilement de la page (vertical : rien ici). `simultaneousGesture` : le défilement vertical de l'écran continue de marcher.
     private func dragGesture(pageWidth: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 12)
+        DragGesture(minimumDistance: 0)
             .updating($track) { value, state, _ in
                 if state.horizontal == nil {
-                    state.horizontal = abs(value.translation.width) > abs(value.translation.height)
+                    switch CarouselTouch.phase(translation: value.translation) {
+                    case .horizontal:
+                        state.horizontal = true
+                    case .vertical:
+                        state.horizontal = false
+                    case .undecided:
+                        break
+                    }
                 }
                 if state.horizontal == true {
                     state.translation = resisted(value.translation.width)
                 }
             }
             .onChanged { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else {
-                    return
+                // Premier événement d'un nouveau geste (le doigt vient de se poser) : un geste précédent annulé ne laisse rien derrière lui.
+                if value.translation == .zero {
+                    exceededSlop = false
                 }
-                prefetchNeighbour(translation: value.translation.width)
+                let phase = CarouselTouch.phase(translation: value.translation)
+                if phase != .undecided {
+                    exceededSlop = true
+                }
+                if phase == .horizontal {
+                    prefetchNeighbour(translation: value.translation.width)
+                }
             }
             .onEnded { value in
                 prefetched = nil
-                guard abs(value.translation.width) > abs(value.translation.height) else {
+                let moved = exceededSlop
+                exceededSlop = false
+                if CarouselTouch.isTap(translation: value.translation, exceededSlop: moved) {
+                    activateCurrentCard()
+                    return
+                }
+                guard CarouselTouch.phase(translation: value.translation) == .horizontal else {
                     return
                 }
                 let target = CarouselPaging.settle(
@@ -195,6 +218,15 @@ struct ProfileMiffCarousel: View {
                     page = target
                 }
             }
+    }
+
+    /// Le toucher : ouvre la carte montrée (la Miff, ou « Créer une Miff »).
+    private func activateCurrentCard() {
+        if current < miffs.count {
+            actions.onOpenMiff(miffs[current].id)
+        } else {
+            actions.onCreate()
+        }
     }
 
     /// Au bout du carrousel, la carte résiste (elle suit le doigt à moitié) au lieu de partir dans le vide.
@@ -321,29 +353,29 @@ private struct MiffPagerCard: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.md) {
-                CardTile(symbol: "person.2")
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text(verbatim: name)
-                        .miffTextStyle(textBodyBold16)
-                        .foregroundColor(colorTextForm.color)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                    subtitle
-                    MemberThumbsRow(members: members, maxVisible: maxVisible)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.forward")
-                    .foregroundColor(colorTextDescription.color)
-                    .accessibilityHidden(true)
+        // Aucun `Button` : le toucher est décidé par le geste unique du carrousel (voir `dragGesture`). VoiceOver ouvre la carte par
+        // l'action par défaut (double toucher).
+        HStack(spacing: Spacing.md) {
+            CardTile(symbol: "person.2")
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(verbatim: name)
+                    .miffTextStyle(textBodyBold16)
+                    .foregroundColor(colorTextForm.color)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                subtitle
+                MemberThumbsRow(members: members, maxVisible: maxVisible)
             }
-            .modifier(CardSurface())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "chevron.forward")
+                .foregroundColor(colorTextDescription.color)
+                .accessibilityHidden(true)
         }
-        .buttonStyle(.plain)
+        .modifier(CardSurface())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: spokenLabel))
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default, action)
     }
 
     /// « 4 membres » quand on le sait ; sinon (lecture en cours ou impossible) la courte aide d'avant : jamais un message d'erreur.
@@ -367,24 +399,23 @@ private struct CreateMiffCard: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.md) {
-                CardTile(symbol: "plus")
-                Text("profile_tab_miff_create")
-                    .miffTextStyle(textBodyBold16)
-                    .foregroundColor(colorTextForm.color)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.forward")
-                    .foregroundColor(colorTextDescription.color)
-                    .accessibilityHidden(true)
-            }
-            .modifier(CardSurface())
+        // Aucun `Button` (voir `MiffPagerCard`) : jamais d'ouverture au relâchement d'un glissement.
+        HStack(spacing: Spacing.md) {
+            CardTile(symbol: "plus")
+            Text("profile_tab_miff_create")
+                .miffTextStyle(textBodyBold16)
+                .foregroundColor(colorTextForm.color)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "chevron.forward")
+                .foregroundColor(colorTextDescription.color)
+                .accessibilityHidden(true)
         }
-        .buttonStyle(.plain)
+        .modifier(CardSurface())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(L10n.string("profile_tab_miff_create")), \(position)"))
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default, action)
     }
 }
 

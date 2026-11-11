@@ -132,6 +132,37 @@ enum CarouselPaging {
     }
 }
 
+/// Toucher ou glisser : UN seul geste décide, jamais les deux. Un doigt qui bouge de plus de `slop` points n'a PAS touché la carte : le
+/// toucher n'est valide que si le doigt est resté sur place (et n'a jamais dépassé le seuil pendant le geste, même s'il revient). Règles
+/// pures, sans écran : le carrousel n'a aucun bouton, c'est ce geste unique qui ouvre une carte (un bouton se déclenchait au relâchement
+/// d'un glissement, puisque la carte glisse avec le doigt et reste sous lui).
+enum CarouselTouch {
+    /// Le seuil de mouvement, en points, au-delà duquel ce n'est plus un toucher (la tolérance du système est de l'ordre de 10 pt).
+    static let slop: CGFloat = 10
+
+    enum Phase: Equatable {
+        /// Le doigt n'a pas (encore) quitté son point de départ : un toucher possible.
+        case undecided
+        case horizontal
+        case vertical
+    }
+
+    /// Où en est le geste : sous le seuil rien n'est décidé ; au-delà, l'axe dominant l'emporte (égalité : vertical, le défilement de la page).
+    static func phase(translation: CGSize) -> Phase {
+        let across = abs(translation.width)
+        let down = abs(translation.height)
+        guard max(across, down) > slop else {
+            return .undecided
+        }
+        return across > down ? .horizontal : .vertical
+    }
+
+    /// Le geste qui se termine est-il un TOUCHER ? Oui seulement si le doigt est resté sous le seuil à la fin ET pendant tout le geste.
+    static func isTap(translation: CGSize, exceededSlop: Bool) -> Bool {
+        !exceededSlop && phase(translation: translation) == .undecided
+    }
+}
+
 /// « Créer une Miff » au Profil : le même choix que le sélecteur du Feed (décision du PM, 2026-11-08), l'offre pour un compte gratuit
 /// qui a déjà une Miff, le parcours normal sinon (Miff+, formule inconnue, aucune Miff).
 enum ProfileCarouselRules {

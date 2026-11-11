@@ -17,6 +17,7 @@
 - [ ] **Ouverture** : le carrousel s'ouvre sur la Miff affichée dans le Feed (changez de Miff dans le Feed, revenez au Profil : c'est la nouvelle).
 - [ ] Avec **P** : l'onglet Profil montre « Mes Miffs » et **une carte par Miff**, avec le **nom**, « 4 membres » en bleu et les **petits ronds** des membres (photo, sinon initiales). Les petits points sous la carte indiquent **combien de cartes** (Miffs + « Créer une Miff »).
 - [ ] **Glissez** la carte vers la gauche : la carte suivante arrive avec un léger ressort ; la dernière est **« Créer une Miff »**. Glisser vers la droite revient. Au bout, la carte résiste et revient (rien ne part dans le vide).
+- [ ] **Glisser ne touche jamais une carte** : glissez lentement, vite, court (quelques points) ou long, jusqu'à « Créer une Miff » puis en sens inverse, doigt posé sur n'importe quelle carte : **rien ne s'ouvre** au relâchement, ni l'offre ni la création ni l'écran d'une Miff. Un **simple toucher** (doigt qui ne bouge pas) ouvre bien la carte touchée. Un glissement qui revient au point de départ n'ouvre rien non plus.
 - [ ] Glisser **vers le haut ou le bas** sur une carte fait toujours défiler la page (le carrousel ne gêne pas).
 - [ ] Une Miff de **plus de 5 membres** : 4 ronds puis « +N » dans le cinquième (N = nombre de membres restants).
 - [ ] Toucher une carte de Miff ouvre **l'écran de cette Miff** ; le retour revient au Profil, sur la même carte.
