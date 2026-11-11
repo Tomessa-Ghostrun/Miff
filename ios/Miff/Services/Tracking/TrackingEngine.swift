@@ -177,6 +177,39 @@ final class TrackingEngine {
         }
     }
 
+    // MARK: - Mode voyage (docs/tickets/mode-voyage.md)
+
+    /// Commence un voyage, ou en déplace la fin quand il y en a un : le voyage est ÉCRIT d'abord dans chaque Miff où la personne partage, le
+    /// statut de présence s'arrête ENSUITE (un refus du serveur ne laisse donc jamais le suivi coupé sans voyage). Ouvert à TOUS les comptes :
+    /// aucun abonnement n'est lu ni vérifié.
+    func setTravel(_ period: TravelPeriod) async -> TravelResult {
+        await gate.run { () async -> TravelResult in
+            if self.sessionEnded() {
+                return .unavailable
+            }
+            return await self.doSetTravel(period)
+        }
+    }
+
+    /// Met fin au voyage MAINTENANT (la personne l'a éteint) : les proches apprennent l'état neutre, le statut de présence reprend aussitôt.
+    /// Faux quand il n'y avait pas de voyage.
+    func endTravel() async -> Bool {
+        await gate.run { () async -> Bool in
+            if self.sessionEnded() {
+                return false
+            }
+            return await self.doEndTravel()
+        }
+    }
+
+    /// Le voyage en cours sur ce téléphone pour le compte connecté (lu sur la copie locale), ou nil.
+    func travelPeriod() -> TravelPeriod? {
+        guard let uid = env.uid(), let state = deps.local.load(), state.uid == uid else {
+            return nil
+        }
+        return state.travel?.period
+    }
+
     private func serialized(_ body: @escaping () async -> Void) async {
         await gate.run(body)
     }

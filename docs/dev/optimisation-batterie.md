@@ -4,7 +4,7 @@
 
 **Mise à jour du 2026-11-10** : par décision du PM, **BATT-2 et BATT-4 sont implémentés côté Android** (section 9, PR brouillon `android/batterie-gains-surs`). Le reste du document est inchangé et reste une analyse : rien n'y est mesuré.
 
-**État du code lu** : `origin/main` au commit `f612768c` pour le suivi, le Feed, l'Update et la caméra. Les **notifications locales** (NOTIF-P0) ne sont pas encore fusionnées : elles sont lues sur les branches `android/notifications-p0-c` et `ios/notifications-p0-c` (têtes du 2026-11-10) et peuvent encore changer.
+**État du code lu** : l'analyse (sections 1 à 8) a été rédigée le 2026-11-10 sur `origin/main` au commit `f612768c`. Depuis, les notifications locales (NOTIF-P0, PR A, B et C) ont été fusionnées dans `main` ; ce document n'a pas relu leur code final, ses passages sur les notifications restent ceux de l'analyse d'origine. Le code de BATT-2 et BATT-4 (section 9) a été mis à jour sur `main` du 2026-11-11 (fusion simple, aucun conflit de code).
 
 **Règle de lecture des chiffres** : aucun gain de batterie n'est chiffré ici. Il n'existe pas de mesure. Chaque affirmation porte une étiquette : **[Doc]** (page officielle, lien en section 7), **[Code]** (lu dans le dépôt), **[Hypothèse]** (raisonnement, à mesurer). Les estimations de volume (écritures par jour) viennent de `docs/dev/surveillance-quotas.md` et sont des estimations, pas des mesures.
 
@@ -118,6 +118,7 @@ Barème de coût de développement (estimation de l'auteur, pas un engagement) :
 - Gain : une ouverture suivie d'une sortie en moins de 2 min ne fait qu'une demande. Dépend de l'habitude d'usage (nombre d'ouvertures brèves).
 - Risque : la dernière position partagée « Localiser » peut dater de 2 min au lieu de quelques secondes ; la règle de 15 min / 250 m et le plancher de 2 min font déjà que la position n'est écrite qu'au mieux toutes les 2 min. Négligeable.
 - Coût : **S**. Réversibilité : totale (constante). Mesure : lignes `positionRead` par jour (journal Internal) avant / après.
+- **Statut : implémenté (BATT-3, iOS, décision du PM du 2026-11-10 ; PR « iOS : optimisation batterie sûre (BATT-3) », en brouillon, pas encore recettée sur l'iPhone).** Voir « Statut d'avancement » en section 6.
 
 **O3. Android : borner les relectures complètes au retour du réseau** — **BATT-4 : implémenté (2026-11-10), borne de 5 min seulement** ; la seconde moitié de la proposition (« ne pas relire quand le seul blocage est le disjoncteur du jour ») n'est **pas** faite (hors décision du PM du 2026-11-10). Voir la section 9.
 - Constat [Code] : `onNetworkBack` appelle `syncMiffs(…, NETWORK_BACK)` qui est **toujours due** (index + consentement + lieux, `Source.SERVER`). Tant qu'un statut attend (rappel de réseau actif) et que le disjoncteur de statuts est atteint, chaque réseau validé (par exemple un Wi-Fi qui saute) refait ces lectures. iOS a déjà une borne de 5 min pour son réarmement (`rearmMinIntervalMillis`).
@@ -276,7 +277,7 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
 | **BATT-1** | Instrumenter le journal (debug Android, Internal iOS) : réveils par type (zone, déplacement, réseau, redémarrage), ouverture, arrière-plan, zones enregistrées, relecture serveur, durée d'un passage, file en attente. Sans coordonnée ni nom ; build de publication muet (contrôle CI) | Android + iOS | S-M | rien |
 | **BATT-M** | Checklist de recette de mesure (`docs/qa/checklists/batterie-mesure-pm.md`) et modèle de relevé, avec les commandes `adb` | docs | S | BATT-1 |
 | **BATT-2** | O1 : entrée dans une zone déjà « dedans » ne relance pas la passe complète ; test unitaire | Android | S | rien (mieux après BATT-1) — **implémenté** (PR brouillon `android/batterie-gains-surs`, section 9) |
-| **BATT-3** | O2 : réutiliser la position système de moins de 2 min à l'ouverture / sortie (pas à l'entrée de zone) | iOS | S | rien |
+| **BATT-3** | O2 : réutiliser la position système de moins de 2 min à l'ouverture / sortie (pas à l'entrée de zone). **Statut : implémenté (iOS, PR en brouillon)** | iOS | S | rien |
 | **BATT-4** | O3 : borne de 5 min des relectures au retour du réseau ; pas de relecture si seul le disjoncteur bloque | Android | S | rien — **implémenté pour la borne de 5 min** (même PR, section 9) ; la partie « disjoncteur » n'est pas faite |
 | **BATT-5** | Variantes de mesure par constantes de compilation (distance de déplacement, réactivité des zones, délai de détachement de la session, rayon armé minimal en test) | Android (+ iOS pour 20 lieux) | M | BATT-1 |
 | **BATT-6** | O6 : détacher l'écouteur de session en arrière-plan prolongé (conditionnel à la mesure) | Android | M | BATT-5, décision PM Q5 |
@@ -288,6 +289,19 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
 | **BATT-12** | O14 : réveil à froid allégé, sans régresser le démarrage (conditionnel) | Android | S-M | BATT-1, mesure du démarrage |
 | **BATT-13** | O15 : MetricKit dans les builds Internal (conditionnel) | iOS | M | mesure manuelle insuffisante |
 | **BATT-14** | O11 / O12 : seuils d'écriture de la batterie, regroupement des positions Miff+ (conditionnel, faible priorité) | Android + iOS | S / M | mesure ; décision PM du 2026-11-07 |
+
+### Statut d'avancement
+
+**Décision du PM (2026-11-10) : seuls les trois gains « sûrs » de la section 3.1 sont engagés** (O1 / BATT-2 et O3 / BATT-4 sur Android, O2 / BATT-3 sur iOS). Rien d'autre de ce document n'est décidé : ni les régions (20), ni le changement significatif, ni les disjoncteurs, ni SESS-3, ni App Check, ni les points « à mesurer d'abord ».
+
+**BATT-3 (iOS) : implémenté** (PR « iOS : optimisation batterie sûre (BATT-3) », brouillon ; compilé et testé par la CI macOS seulement, jamais sur l'iPhone à ce jour).
+
+- **Ce qui change** : à l'**ouverture** de l'app et au **passage en arrière-plan**, si le système connaît déjà une position de **moins de 2 minutes** (constante `TrackingLimits.reusableFixMaxAgeMillis`) et assez précise (**100 m ou mieux**, constante `reusableFixMaxAccuracyMeters` : la précision demandée au système reste 100 m), elle est utilisée **sans nouvelle demande** (`requestLocation`). Sinon, comportement d'avant.
+- **Ce qui ne change pas** : l'**entrée dans une zone** (et le réarmement, le déplacement significatif, le changement de partage ou d'accès) lit toujours une position fraîche. La **photo de l'Update** garde sa mesure fraîche à « Publier » (les règles exigent une position de moins de 10 minutes). Les régions, le changement significatif, les disjoncteurs, SESS-3 et App Check ne sont pas touchés.
+- **Compte** : une position mesurée **avant la dernière déconnexion** (ou arrêt du partage) n'est jamais réutilisée (elle peut être celle d'un autre compte sur le même téléphone).
+- **Retour en arrière** : mettre `reusableFixMaxAgeMillis` à `0` redemande une position à chaque fois, comme avant.
+- **Effet sur la dernière position partagée (« Localiser »)** : elle peut dater de 2 minutes au lieu de quelques secondes à l'ouverture ou à la sortie. La règle d'écriture (15 min / 250 m, plancher de 2 min) n'en est pas modifiée.
+- **Mesure pour le PM (sans Mac)** : (1) **Réglages > Batterie** de l'iPhone sur 48 h, build avant puis après, comme au protocole de la section 5 (un gain n'est retenu que s'il dépasse l'écart entre deux mesures identiques) ; (2) dans le build **Internal** (TestFlight), la carte « journal de détection » de l'écran de diagnostic compte une ligne **`positionReused`** chaque fois qu'une demande de position a été évitée (aucune coordonnée dans le journal). Le nombre de lignes `positionReused` par jour, comparé aux ouvertures et sorties, dit combien de demandes ont été économisées ; une journée sans aucune ligne signifie que le système n'avait pas de position assez récente (ou assez précise) : rien n'est cassé, le gain est alors nul pour cet usage.
 
 ---
 
@@ -340,12 +354,18 @@ Process projet : ticket Notion, challenge `product-specs`, validation PM, dev An
   - *Accès retiré* : l'événement est toujours traité avant (zones retirées, copie effacée).
 - **Ce que la passe ignorée faisait en plus** et qui est maintenant fait au réveil suivant (ouverture, déplacement de 250 m, redémarrage, retour du réseau, entrée réelle) : écrire la position partagée « Localiser » à cette occasion (la règle 15 min / 250 m s'applique de toute façon), relire le serveur si la copie a plus d'une heure, réarmer une zone manquante. **Limite connue** : après une sortie manquée, la position de « Localiser » n'est pas rafraîchie à l'entrée qui suit ; elle l'est au premier déplacement de 250 m ou à la prochaine ouverture.
 
+- **Pendant un voyage, rien ne change** : `doTransition` retire les zones et s'arrête **avant** le code de BATT-2 ; la position reste partagée par les déplacements de 250 m. Test dédié.
+- **Remise de la position de l'Update (#173)** : elle passe par `refresh(SHARING_CHANGED, fix)`, pas par une entrée de zone ; aucune dépendance à une passe `ZONE_ENTERED`. Test dédié.
+- **Interrupteur** : **BATT-2 n'en a pas** (retour arrière = `git revert` du commit de BATT-2).
+
 ### 9.2 BATT-4 : ce qui change et ce qui ne change pas
 
 - **Avant** : chaque retour du réseau (réseau validé) tant qu'un statut attend relisait tout le serveur (index des Miffs, consentement, lieux ; de l'ordre de 9 lectures pour 1 Miff et 3 lieux).
 - **Après** : `TrackingEngine.onNetworkBack` ne relit **au plus qu'une fois par 5 minutes** (`TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS`, 5 min, borne **stricte** : à 4 min 59 s 999 on ne relit pas, à 5 min pile on relit). La référence est la date de la dernière relecture **complète** (`checkedAtMillis`), quelle que soit l'occasion qui l'a faite.
 - **Le statut en attente n'est pas retardé** : dans la fenêtre de 5 minutes, la dernière relecture complète est considérée comme à jour, le statut part **tout de suite**, la session SESS-2 est **revérifiée** avant l'écriture (inchangé), le retrait de l'accès « Toujours » est contrôlé avant tout (inchangé). Le consentement utilisé a au plus 5 minutes ; les règles Firestore le revérifient de toute façon à l'écriture.
 - **Une relecture incomplète (pas de réponse) ne compte pas** : le retour du réseau suivant réessaie aussitôt. Après un refus du serveur (`recheckSoon`), la relecture voulue n'est pas confondue avec une relecture récente. Une horloge reculée ne bloque jamais la relecture.
+- **Interrupteur** : mettre `TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS` à 0 désactive la borne (chaque retour du réseau relit tout, comme avant).
+- **Pendant un voyage**, un retour du réseau passe par `doTravelPass` (avant le code de BATT-4) : les Miffs sont relus à chaque fois, la borne n'y joue pas. Test dédié.
 - **Non fait** : « ne pas relire quand le seul blocage est le disjoncteur du jour » (deuxième moitié de O3), hors du périmètre décidé par le PM. La borne de 5 min limite déjà le pire cas à une relecture par 5 min.
 
 ### 9.3 Méthode de mesure avant / après pour le PM (gratuite, sans Mac)

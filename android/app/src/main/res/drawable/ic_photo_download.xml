@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arrow down onto a tray: "Enregistrer la photo" (full-screen photo of the Feed). 1.8 stroke, round ends, 24 grid. Colour given by the tint of the Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#222222"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12 4v11 M7.5 10.5L12 15l4.5-4.5 M5 19h14" />
+</vector>

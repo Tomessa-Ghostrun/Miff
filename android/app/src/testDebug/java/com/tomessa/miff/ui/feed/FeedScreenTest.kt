@@ -5,6 +5,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -52,6 +54,9 @@ import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.miff.AgreementUi
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.place.EmojiSupport
+import com.tomessa.miff.ui.place.LocalEmojiSupport
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -68,6 +73,9 @@ import java.io.File
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.TimeZone
+
+private const val LONG_LEISURE_NAME =
+    "Médiathèque municipale Jean-Jacques Rousseau du treizième arrondissement de Paris"
 
 /**
  * The Feed on the JVM (Robolectric, no phone), in French: what the header, the bubble, the cards and the sheet "Localiser" say and do, the
@@ -132,13 +140,18 @@ class FeedScreenTest {
         battery: Int? = 85,
         access: MemberLocationAccess = MemberLocationAccess.BACKGROUND,
         updatedAgo: Long = minute,
-    ) = MemberStatus(presence, placeId, now - ago, now - ago, false, battery, access, now - updatedAgo)
+        lastUpdateAgo: Long = ago,
+    ) = MemberStatus(presence, placeId, now - ago, now - lastUpdateAgo, false, battery, access, now - updatedAgo)
 
     private val places =
         listOf(
             testPlace("p1", "Chez nous", category = PlaceCategory.HOME),
             testPlace("p2", "Chez Léa", category = PlaceCategory.RELATIVE),
             testPlace("p3", "Zone chantier", type = PlaceType.RISK, category = PlaceCategory.OTHER),
+            testPlace("p4", LONG_LEISURE_NAME, category = PlaceCategory.LEISURE),
+            testPlace("p5", "Cinéma Gaumont", category = PlaceCategory.LEISURE),
+            testPlace("p6", "Chez le coiffeur", category = PlaceCategory.OTHER),
+            testPlace("p7", "Lieu ancien", category = null),
         )
 
     private fun content(
@@ -159,8 +172,16 @@ class FeedScreenTest {
     private val directory =
         DirectoryState.Ready(listOf(MiffSummary(miffId, "Famille Mfouka")), miffId, premium = false, fromCache = false)
 
-    private fun show(content: @Composable () -> Unit) {
-        composeRule.setContent { MiffTheme { Box(Modifier.fillMaxSize()) { content() } } }
+    /** The emoji of the categories are drawn as text by the font of the phone; here the font draws them all (a test below makes it fail). */
+    private fun show(
+        emojiSupport: EmojiSupport = EmojiSupport { true },
+        content: @Composable () -> Unit,
+    ) {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalEmojiSupport provides emojiSupport) {
+                MiffTheme { Box(Modifier.fillMaxSize()) { content() } }
+            }
+        }
     }
 
     private fun feed(
@@ -169,7 +190,9 @@ class FeedScreenTest {
         directoryState: DirectoryState = directory,
         agreement: AgreementUi = AgreementUi(),
         actions: FeedActions = FeedActions(),
-    ) = show {
+        emojiSupport: EmojiSupport = EmojiSupport { true },
+        notifications: FeedNotifications = FeedNotifications(),
+    ) = show(emojiSupport) {
         FeedScreen(
             state = directoryState,
             scrollToTopSignal = 0,
@@ -182,6 +205,7 @@ class FeedScreenTest {
             locate = locate,
             me = FeedMe("CM"),
             actions = actions,
+            notifications = notifications,
         )
     }
 
@@ -200,9 +224,14 @@ class FeedScreenTest {
     // --- header ---------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun header_hasMyAvatarWithMyStatus_theLogo_theName_andNoBell() {
+    fun header_hasMyAvatarWithMyStatus_theLogo_theName_andTheBellOfTheCentre() {
         var profile = 0
-        feed(ready(nominal), actions = FeedActions(onOpenProfile = { profile++ }))
+        var center = 0
+        feed(
+            ready(nominal),
+            actions = FeedActions(onOpenProfile = { profile++ }),
+            notifications = FeedNotifications(onOpenCenter = { center++ }),
+        )
         shoot("feed-nominal")
         composeRule
             .onNodeWithContentDescription(text(R.string.feed_header_avatar_a11y, "À la maison"))
@@ -211,12 +240,46 @@ class FeedScreenTest {
         assertEquals(1, profile)
         composeRule.onNodeWithContentDescription(text(R.string.home_logo_a11y)).assertIsDisplayed()
         composeRule.onNodeWithText("Famille Mfouka").assertIsDisplayed()
+        // NOTIF-6A: the bell is back (it revises the decision of 2026-10-30): 48 dp, without a dot when nothing is unread, and it opens the centre.
         composeRule
-            .onAllNodesWithContentDescription(
-                "notification",
-                substring = true,
-                ignoreCase = true,
-            ).assertCountEquals(0)
+            .onNodeWithContentDescription(text(R.string.notif_bell_a11y))
+            .assertWidthIsAtLeast(48.dp)
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, center)
+    }
+
+    @Test
+    fun header_theBellSaysHowManyAreUnread_withoutEverShowingANumber() {
+        feed(ready(nominal), notifications = FeedNotifications(unreadCount = 3))
+        composeRule.onNodeWithContentDescription("Notifications, 3 non lues").assertIsDisplayed()
+        composeRule.onAllNodesWithText("3").assertCountEquals(0)
+    }
+
+    @Test
+    fun theCardOfTheSecondChance_isInTheList_withTwoQuietAnswers_whenItIsDue() {
+        var enable = 0
+        var later = 0
+        feed(
+            ready(nominal),
+            notifications =
+                FeedNotifications(
+                    secondChanceVisible = true,
+                    onSecondChanceEnable = { enable++ },
+                    onSecondChanceLater = { later++ },
+                ),
+        )
+        composeRule.onNodeWithText(text(R.string.notif_second_chance_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_second_chance_later)).performClick()
+        composeRule.onNodeWithText(text(R.string.notif_second_chance_action)).performClick()
+        assertEquals(1, later)
+        assertEquals(1, enable)
+    }
+
+    @Test
+    fun theCardOfTheSecondChance_isAbsent_whenItIsNotDue() {
+        feed(ready(nominal))
+        composeRule.onAllNodesWithText(text(R.string.notif_second_chance_title)).assertCountEquals(0)
     }
 
     @Test
@@ -272,27 +335,96 @@ class FeedScreenTest {
         composeRule.onNodeWithText(text(R.string.feed_add_loved_one)).assertIsDisplayed()
     }
 
+    private fun centreOf(text: String): Float =
+        composeRule
+            .onNodeWithText(text)
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .boundsInRoot.center.x
+
+    @Test
+    fun bubble_textAndButton_areCentredInTheBlob_greenOrangeAndRed() {
+        // Decision of the PM, 2026-11-08 (TestFlight build 22): the text is centred in the coloured blob, whatever the colour (the blob fills the
+        // width of the screen with equal margins). Green first, then an orange page, then a red one with its button.
+        val rootCentre = {
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.center.x
+        }
+        feed(ready(nominal))
+        assertEquals(rootCentre(), centreOf("Tout va bien"), 6f)
+    }
+
+    @Test
+    fun bubble_orangeAndRedPages_areCentred_buttonIncluded() {
+        val both =
+            content(
+                trio,
+                mapOf(
+                    me to status(),
+                    "t" to status(PresenceValue.OUT, "p1", 150 * minute),
+                    "a" to status(PresenceValue.OUT, "p1", 5 * hour),
+                ),
+            )
+        feed(ready(both))
+        val rootCentre =
+            composeRule
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.center.x
+        // The red page (Amandine) is the first one.
+        assertEquals(rootCentre, centreOf("Pas de nouvelles de Amandine depuis 12 h 00".t()), 6f)
+        assertEquals(rootCentre, centreOf(text(R.string.feed_bubble_message_action)), 6f)
+    }
+
+    @Test
+    fun bubble_theButton_saysContacter_isNamedWithThePerson_andKeepsA48dpTouchArea() {
+        var sent: String? = null
+        val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))
+        feed(ready(orange), actions = FeedActions(onMessage = { sent = it }))
+        assertEquals("Contacter", text(R.string.feed_bubble_message_action))
+        composeRule.onAllNodesWithText("Envoyer un message").assertCountEquals(0)
+        // Spoken: "Contacter Thomas" (the person, not only the word); the touch area is at least 48 dp high and wide...
+        composeRule
+            .onNodeWithContentDescription(text(R.string.feed_bubble_contact_a11y, "Thomas"))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .assertWidthIsAtLeast(48.dp)
+        // ... while the drawn button is smaller than the 48 dp it used to be (36 dp at most around the word).
+        val word =
+            composeRule
+                .onNodeWithText("Contacter", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .size.height
+        val dp = context().resources.displayMetrics.density
+        assertTrue("the drawn word is small: ${word / dp} dp", word / dp < 36f)
+        composeRule.onNodeWithContentDescription(text(R.string.feed_bubble_contact_a11y, "Thomas")).performClick()
+        assertEquals("+33612345678", sent)
+    }
+
     @Test
     fun bubble_orange_isFactual_withAnAbsoluteTime_andOffersAMessage() {
         var sent: String? = null
-        val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 80 * minute)))
+        val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))
         feed(ready(orange), actions = FeedActions(onMessage = { sent = it }))
         shoot("feed-orange")
-        composeRule.onNodeWithText("Thomas a quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Thomas a quitté la maison à 14 h 30".t()).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_bubble_message_action)).performClick()
         assertEquals("+33612345678", sent)
     }
 
     @Test
     fun bubble_redOfAge_usesAnAbsoluteTime() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 3 * hour)))))
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 5 * hour)))))
         shoot("feed-red-age")
-        composeRule.onNodeWithText("Pas de nouvelles de Thomas depuis 14 h 00".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Pas de nouvelles de Thomas depuis 12 h 00".t()).assertIsDisplayed()
     }
 
     @Test
     fun bubble_dangerZone_isFactualForTheLovedOnes_andNeverSaysZoneARisque() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.IN_RISK, "p3", 20 * minute)))))
+        val stale = status(PresenceValue.IN_RISK, "p3", 20 * minute, lastUpdateAgo = 2 * hour)
+        feed(ready(content(trio, mapOf(me to status(), "t" to stale))))
         shoot("feed-danger")
         composeRule.onNodeWithText("Thomas est à Zone chantier").assertIsDisplayed()
         // In the bubble and on the card of Thomas.
@@ -303,7 +435,8 @@ class FeedScreenTest {
 
     @Test
     fun bubble_dangerZone_forMe_isTheSentenceOfThePm_andHasNoMessageButton() {
-        feed(ready(content(trio, mapOf(me to status(PresenceValue.IN_RISK, "p3", 20 * minute), "t" to status()))))
+        val stale = status(PresenceValue.IN_RISK, "p3", 20 * minute, lastUpdateAgo = 2 * hour)
+        feed(ready(content(trio, mapOf(me to stale, "t" to status()))))
         composeRule.onNodeWithText("Tu es dans une zone de danger de ta Miff").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.feed_bubble_me_danger_note)).assertIsDisplayed()
         composeRule.onAllNodesWithText(text(R.string.feed_bubble_message_action)).assertCountEquals(0)
@@ -311,8 +444,8 @@ class FeedScreenTest {
 
     @Test
     fun bubble_forMe_orangeAndRedOfAge_speakToMe() {
-        feed(ready(content(trio, mapOf(me to status(PresenceValue.OUT, "p1", 80 * minute), "t" to status()))))
-        composeRule.onNodeWithText("Tu as quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        feed(ready(content(trio, mapOf(me to status(PresenceValue.OUT, "p1", 150 * minute), "t" to status()))))
+        composeRule.onNodeWithText("Tu as quitté la maison à 14 h 30".t()).assertIsDisplayed()
     }
 
     @Test
@@ -322,14 +455,14 @@ class FeedScreenTest {
                 trio,
                 mapOf(
                     me to status(),
-                    "t" to status(PresenceValue.OUT, "p1", 80 * minute),
-                    "a" to status(PresenceValue.OUT, "p1", 3 * hour),
+                    "t" to status(PresenceValue.OUT, "p1", 150 * minute),
+                    "a" to status(PresenceValue.OUT, "p1", 5 * hour),
                 ),
             )
         feed(ready(two))
         shoot("feed-carousel")
         // The red one (Amandine) comes first.
-        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 14 h 00".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 12 h 00".t()).assertIsDisplayed()
         val carousel =
             composeRule.onNode(
                 androidx.compose.ui.test.SemanticsMatcher
@@ -351,12 +484,12 @@ class FeedScreenTest {
                 .action()
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Thomas a quitté la maison à 15 h 40".t()).assertIsDisplayed()
+        composeRule.onNodeWithText("Thomas a quitté la maison à 14 h 30".t()).assertIsDisplayed()
     }
 
     @Test
     fun bubble_oneAlert_hasNoDotsAndNoPageActions() {
-        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 80 * minute)))))
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))))
         composeRule
             .onAllNodes(
                 androidx.compose.ui.test.SemanticsMatcher
@@ -371,8 +504,8 @@ class FeedScreenTest {
         feed(ready(nominal))
         // Mine and Thomas's.
         composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
-        composeRule.onNodeWithText("Depuis 12 min").assertIsDisplayed()
-        composeRule.onNodeWithText("À Chez Léa").assertExists()
+        composeRule.onNodeWithText("Depuis 16 h 48".t()).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.feed_label_at_relative)).assertExists()
         // Mine, Thomas's and Amandine's.
         composeRule
             .onAllNodesWithText(text(R.string.feed_battery_a11y, 85), useUnmergedTree = true)
@@ -515,7 +648,7 @@ class FeedScreenTest {
                 .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
                 .first { it.contains("Thomas") && it.size > 1 }
         val label = merged.indexOf("À la maison")
-        val time = merged.indexOf("Depuis 12 min")
+        val time = merged.indexOf("Depuis 16 h 48".t())
         val battery = merged.indexOfFirst { it.startsWith("Batterie") }
         assertTrue("order of $merged", label in 1 until time && time < battery)
     }
@@ -563,7 +696,7 @@ class FeedScreenTest {
             ready(
                 content(
                     trio,
-                    mapOf(me to status(updatedAgo = 18 * minute), "t" to status(PresenceValue.OUT, "p1", 80 * minute)),
+                    mapOf(me to status(updatedAgo = 18 * minute), "t" to status(PresenceValue.OUT, "p1", 150 * minute)),
                     offline = true,
                 ),
             ),
@@ -609,6 +742,9 @@ class FeedScreenTest {
         composeRule.onAllNodesWithContentDescription("Localiser Thomas").assertCountEquals(0)
     }
 
+    // A taller screen: the selector pastille is now always 48 dp high (decision of the PM, 2026-11-08), which pushed my own card (the last one) just
+    // out of the 900 dp window, and a lazy list only composes what it shows.
+    @Config(qualifiers = "fr-w360dp-h1100dp-port-xxhdpi")
     @Test
     fun waitingForTheAgreement_keepsTheCard_andTheBubbleIsNeutral() {
         var reviews = 0
@@ -617,6 +753,8 @@ class FeedScreenTest {
             agreement = AgreementUi(setOf(miffId), onReview = { reviews++ }),
         )
         shoot("feed-awaiting")
+        // The bubble's big sentence takes two lines: my card, the last one, is below the fold and is only composed once scrolled to.
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(text(R.string.feed_card_you_sees)))
         // The card (its title) and my own label say the same truth: nothing is shared with that Miff.
         composeRule.onAllNodesWithText(text(R.string.miff_waiting_title)).assertCountEquals(2)
         composeRule.onNodeWithText(text(R.string.miff_waiting_feed_note)).assertIsDisplayed()
@@ -680,6 +818,271 @@ class FeedScreenTest {
         shoot("feed-large-font")
         composeRule.onNodeWithText("Tout va bien").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Localiser Thomas").assertWidthIsAtLeast(48.dp)
+    }
+
+    @Test
+    fun aLeisureOrOtherPlace_showsItsNameAlone_andALongNameStaysInsideTheCard_atTheLargestFont() {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MiffTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        FeedScreen(
+                            state = directory,
+                            scrollToTopSignal = 0,
+                            onRetry = {},
+                            onSelect = {},
+                            onCreate = {},
+                            onJoin = {},
+                            feed =
+                                ready(
+                                    content(
+                                        trio,
+                                        mapOf(
+                                            me to status(placeId = "p5"),
+                                            "t" to status(placeId = "p4"),
+                                            "a" to status(),
+                                        ),
+                                    ),
+                                ),
+                            me = FeedMe("CM"),
+                        )
+                    }
+                }
+            }
+        }
+        // The NAME alone (no "À" in front), whole for the screen reader, drawn on two lines at most with an ellipsis.
+        composeRule.onNodeWithText("Cinéma Gaumont").assertExists()
+        val node =
+            composeRule
+                .onNodeWithText(
+                    LONG_LEISURE_NAME,
+                    useUnmergedTree = true,
+                ).assertIsDisplayed()
+                .fetchSemanticsNode()
+
+        // Really two lines at most. The layout result of the text is not read (the card measures its content twice, which makes it unreliable in
+        // a test); the heights are: a line of the same style without padding ("Depuis 16 h 48") gives the height of ONE line L, the chip of
+        // "Cinéma Gaumont" (one line) gives the vertical padding P, and the long chip must then be exactly 2 lines: height = 2 L + P.
+        fun height(text: String) =
+            composeRule
+                .onAllNodesWithText(text, useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .size.height
+        val line = height("Depuis 16 h 48".t())
+        val padding = height("Cinéma Gaumont") - line
+        val lines = (node.size.height - padding).toFloat() / line
+        assertEquals("lines of the long label: ${node.size.height} = n x $line + $padding", 2f, lines, 0.1f)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val box = node.boundsInRoot
+        assertTrue("inside the screen: $box in $root", box.left >= 0f && box.right <= root.right)
+    }
+
+    // --- emoji of the label of a place and font of the bubble (decisions of the PM, 2026-11-10) -------------------------------------
+
+    private fun emojiNodes(emoji: String) = composeRule.onAllNodesWithText(emoji, useUnmergedTree = true)
+
+    @Test
+    fun cards_theLabelOfAPlace_hasTheEmojiOfItsCategory_beforeTheWords() {
+        feed(ready(nominal))
+        // Mine and Thomas's: Maison; Amandine's: Chez un proche.
+        emojiNodes(PlaceCategory.HOME.emoji).assertCountEquals(2)
+        emojiNodes(PlaceCategory.RELATIVE.emoji).assertCountEquals(1)
+        // The words are unchanged.
+        composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
+        val emojiLeft = emojiNodes(PlaceCategory.HOME.emoji)[0].fetchSemanticsNode().boundsInRoot.left
+        val wordsLeft =
+            composeRule
+                .onAllNodesWithText(
+                    "À la maison",
+                    useUnmergedTree = true,
+                )[0]
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        assertTrue("the emoji comes before the words: $emojiLeft < $wordsLeft", emojiLeft < wordsLeft)
+    }
+
+    @Test
+    fun cards_theEmoji_isDecorative_theScreenReaderReadsTheWordsOnly() {
+        feed(ready(content(trio, mapOf(me to status(), "t" to status(placeId = "p5")))))
+        // The merged block of each card holds the words, never the emoji.
+        val reads =
+            composeRule
+                .onAllNodes(hasText("Thomas"))
+                .fetchSemanticsNodes()
+                .map { it.config[SemanticsProperties.Text].map { part -> part.text } }
+        assertTrue(reads.isNotEmpty())
+        PlaceCategory.entries.forEach { category ->
+            reads.forEach { assertFalse("${category.emoji} read in $it", it.contains(category.emoji)) }
+            composeRule.onAllNodesWithText(category.emoji).assertCountEquals(0)
+        }
+        composeRule.onAllNodesWithText("Cinéma Gaumont").assertCountEquals(1)
+    }
+
+    @Test
+    fun cards_aLeisureOrOtherPlace_hasItsEmoji_andItsName() {
+        feed(ready(content(trio, mapOf(me to status(placeId = "p5"), "t" to status(placeId = "p6")))))
+        emojiNodes(PlaceCategory.LEISURE.emoji).assertCountEquals(1)
+        emojiNodes(PlaceCategory.OTHER.emoji).assertCountEquals(1)
+        composeRule.onNodeWithText("Cinéma Gaumont").assertIsDisplayed()
+        composeRule.onNodeWithText("Chez le coiffeur").assertIsDisplayed()
+    }
+
+    @Test
+    fun cards_noCategory_orNoPlace_orLeftAPlace_hasNoEmoji() {
+        feed(
+            ready(
+                content(
+                    trio,
+                    mapOf(
+                        me to status(placeId = "p7"),
+                        "t" to status(PresenceValue.OUT, "p1", ago = 30 * minute),
+                        "a" to status(placeId = "zzz"),
+                    ),
+                ),
+            ),
+        )
+        composeRule.onNodeWithText("Lieu ancien").assertIsDisplayed()
+        composeRule.onNodeWithText("Dans un lieu de confiance").assertExists()
+        PlaceCategory.entries.forEach { emojiNodes(it.emoji).assertCountEquals(0) }
+    }
+
+    @Test
+    fun cards_whenTheFontCannotDrawTheEmoji_theFirstLetterOfTheCategoryTakesItsPlace() {
+        feed(ready(nominal), emojiSupport = EmojiSupport { false })
+        emojiNodes(PlaceCategory.HOME.emoji).assertCountEquals(0)
+        emojiNodes(PlaceCategory.RELATIVE.emoji).assertCountEquals(0)
+        // "M" (Maison) on two cards, "C" (Chez un proche) on one; the words stay.
+        emojiNodes("M").assertCountEquals(2)
+        emojiNodes("C").assertCountEquals(1)
+        composeRule.onAllNodesWithText("À la maison").assertCountEquals(2)
+    }
+
+    private fun largestFontFeed(content: FeedContent) {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalEmojiSupport provides EmojiSupport { true },
+                LocalDensity provides Density(density.density, fontScale = 2f),
+            ) {
+                MiffTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        FeedScreen(
+                            state = directory,
+                            scrollToTopSignal = 0,
+                            onRetry = {},
+                            onSelect = {},
+                            onCreate = {},
+                            onJoin = {},
+                            feed = ready(content),
+                            me = FeedMe("CM"),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun cards_theChipWithAnEmoji_atTheLargestFont_keepsTheEmojiBeforeTheWords_insideTheScreen() {
+        largestFontFeed(nominal)
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val emoji = emojiNodes(PlaceCategory.HOME.emoji)[0].fetchSemanticsNode().boundsInRoot
+        val words =
+            composeRule
+                .onAllNodesWithText(
+                    "À la maison",
+                    useUnmergedTree = true,
+                )[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("the emoji is before the words: $emoji, $words", emoji.right <= words.left + 1f)
+        assertTrue("the chip is inside the screen: $words in $root", emoji.left >= 0f && words.right <= root.right)
+        // The emoji grows with the words (it is text of the size of the label, not a fixed box): about the height of a line of the label.
+        assertTrue(
+            "the emoji is as tall as the words: ${emoji.height} vs ${words.height}",
+            emoji.height >= words.height * 0.8f,
+        )
+    }
+
+    @Test
+    fun bubble_theBigSentence_atTheLargestFont_makesTheBubbleTaller_neverOverlapsTheCards() {
+        // Nobody else is known: "Pas encore de nouvelles", the longer sentence.
+        largestFontFeed(content(trio, mapOf(me to status())))
+        val title =
+            composeRule
+                .onAllNodesWithText("Pas encore de nouvelles", useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val body =
+            composeRule
+                .onNodeWithText(text(R.string.feed_bubble_no_news_body))
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        assertTrue("the sentence is inside the screen: $title in $root", title.left >= 0f && title.right <= root.right)
+        // It wraps on several lines (taller than a single line of 30 sp x 2 x 1.2), and the details stay under it, not over it.
+        val oneLine = 2f * 36f * context().resources.displayMetrics.density
+        assertTrue("wrapped on several lines: ${title.height}", title.height > oneLine)
+        assertTrue("the body is under the sentence: $title / $body", body.top >= title.bottom - 1f)
+        val firstCard =
+            composeRule
+                .onAllNodesWithText("Thomas", useUnmergedTree = true)[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("the bubble does not overlap the first card: $body / $firstCard", body.bottom <= firstCard.top)
+    }
+
+    private fun bubbleStyle(): androidx.compose.ui.text.TextStyle {
+        val node = composeRule.onNodeWithText("Tout va bien").assertIsDisplayed().fetchSemanticsNode()
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        return results.first().layoutInput.style
+    }
+
+    @Test
+    fun bubble_theMainSentence_hasTheFontAndWeightOfDisplayHeadline_atThirtySp() {
+        feed(ready(nominal))
+        val style = bubbleStyle()
+        // Homogeneous with the other titles of the app (decision of the PM, 2026-11-11): same family and weight as display/headline, only bigger.
+        val headline = com.tomessa.miff.ui.theme.textDisplayHeadline
+        assertEquals(headline.fontFamily, style.fontFamily)
+        assertEquals(headline.fontWeight, style.fontWeight)
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Normal, style.fontWeight)
+        assertEquals(30f, style.fontSize.value, 0f)
+        assertEquals(36f, style.lineHeight.value, 0f)
+        assertTrue("bigger than display/headline (24 sp)", style.fontSize.value > headline.fontSize.value)
+    }
+
+    @Test
+    fun bubble_theMainSentence_staysInsideTheScreen_onASmallScreen_atTheLargestFont() {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MiffTheme {
+                    Box(Modifier.width(320.dp).height(640.dp)) {
+                        FeedScreen(
+                            state = directory,
+                            scrollToTopSignal = 0,
+                            onRetry = {},
+                            onSelect = {},
+                            onCreate = {},
+                            onJoin = {},
+                            feed = ready(content(trio, mapOf(me to status(), "t" to status(), "a" to status()))),
+                            me = FeedMe("CM"),
+                        )
+                    }
+                }
+            }
+        }
+        val box =
+            composeRule
+                .onNodeWithText("Tout va bien")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        assertTrue("inside the screen: $box in $root", box.left >= 0f && box.right <= root.right)
     }
 
     // --- sheet "Localiser" -----------------------------------------------------------------------------------------------------

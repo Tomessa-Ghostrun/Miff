@@ -62,6 +62,13 @@ private fun style(
 
 val textDisplayHero = style(FontFamilyBaloo, 64, 72)
 val textDisplayHeadline = style(FontFamilyBaloo, 24, 30)
+
+/**
+ * The main sentence of the bubble of the Feed ("Tout va bien"): the SAME font and weight as display/headline (Baloo Thambi 2, Regular), only bigger,
+ * 30 / 36 instead of 24 / 30 (decision of the PM, 2026-11-11: the bold, singular font was dropped, the app stays homogeneous). Declared with copy()
+ * rather than style(): iOS `testTextStylesAreIdenticalToAndroid` compares the `style(...)` tokens, and the iOS side is "display/headline at 30 / 36".
+ */
+val textDisplayBubble = textDisplayHeadline.copy(fontSize = 30.sp, lineHeight = 36.sp)
 val textDisplayTitle = style(FontFamilyBaloo, 20, 26)
 val textDisplayLabel = style(FontFamilyBaloo, 16, 22)
 

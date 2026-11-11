@@ -42,7 +42,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.miff.MiffSelector
+import com.tomessa.miff.domain.miff.SelectorEntry
+import com.tomessa.miff.domain.miff.SelectorTap
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.NotificationBell
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShadowSubtle
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -57,7 +62,8 @@ import com.tomessa.miff.ui.theme.textBodyItalic
 
 /*
  * The FIXED header of the Feed (maquette 01): my avatar with the ring of MY status (it opens the Profile tab), the logo (it brings the feed
- * back to the top), and, under them, the pastille of the Miff. No bell: nothing is notified (plan gratuit), the right side stays empty.
+ * back to the top), the bell of the centre of notifications (NOTIF-6A: it comes back, decision of the PM of 2026-11-08, which revises Q15) and,
+ * under them, the pastille of the Miff.
  */
 
 /** Me, for the header: the initials and the photo of my profile. */
@@ -76,6 +82,7 @@ internal fun FeedHeader(
     onOpenProfile: () -> Unit,
     onLogo: () -> Unit,
     modifier: Modifier = Modifier,
+    notifications: FeedNotifications = FeedNotifications(),
     pill: @Composable () -> Unit,
 ) {
     val profileLabel =
@@ -95,8 +102,7 @@ internal fun FeedHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), contentAlignment = Alignment.Center) {
-            // The zone of touch is 48 dp (the disc is 46). The right end of the row is RESERVED (48 dp) for the future button of the notifications:
-            // nothing is drawn there today (no bell), and the logo stays centred.
+            // The zone of touch is 48 dp (the disc is 46). The right end of the row holds the bell (48 dp, like the avatar at the other end), and the logo stays centred.
             Box(
                 modifier =
                     Modifier
@@ -109,7 +115,11 @@ internal fun FeedHeader(
             ) {
                 FeedAvatar(jpeg = me.avatarJpeg, initials = me.initials, level = myLevel)
             }
-            Spacer(Modifier.align(Alignment.CenterEnd).size(Spacing.minTouchTarget))
+            NotificationBell(
+                unreadCount = notifications.unreadCount,
+                onClick = notifications.onOpenCenter,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
             val scrollLabel = stringResource(R.string.feed_header_logo_a11y)
             Image(
                 painter = painterResource(R.drawable.miff_wordmark_color),
@@ -126,19 +136,31 @@ internal fun FeedHeader(
     }
 }
 
-/** The name of the active Miff; a selector only for a Premium account (a free account has one Miff, decision Q2). */
+/**
+ * The name of the active Miff, and the selector it opens: for EVERY account, even with a single Miff (decision of the PM, 2026-11-08, which replaces
+ * Q2 / D12). The list shows the Miff(s) and the two entries "Rejoindre une Miff" and "Créer une Miff"; what a touch on an entry does is decided by
+ * [MiffSelector.onTap]: a free account that already has a Miff gets the offer ([onOffer]), the others go on to the screen of the entry.
+ */
 @Composable
 internal fun MiffPill(
     state: DirectoryState.Ready,
     onSelect: (String) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
+    /** Opens the offer (paywall) for a 2nd Miff: only a free account that already has a Miff gets here. */
+    onOffer: () -> Unit,
     /** Told each time the list of Miffs opens or closes: while it is open the header cannot hide. */
     onOpenChanged: (Boolean) -> Unit = {},
 ) {
     val name = state.active?.name ?: return
-    // An UNKNOWN plan (subscription not read, or answer from the cache) keeps the selector usable: never "free" on a doubt.
-    val selectable = state.premiumOrNull != false
+
+    fun onEntry(entry: SelectorEntry) {
+        when (MiffSelector.onTap(entry, state.premiumOrNull, state.miffs.size)) {
+            SelectorTap.OpenOffer -> onOffer()
+            SelectorTap.OpenJoin -> onJoin()
+            SelectorTap.OpenCreate -> onCreate()
+        }
+    }
     var open by remember { mutableStateOf(false) }
     LaunchedEffect(open) { onOpenChanged(open) }
     // A header that leaves the composition while the list is open must not keep the lock.
@@ -146,8 +168,8 @@ internal fun MiffPill(
     Box {
         Pill(
             text = name,
-            selectable = selectable,
-            contentLabel = if (selectable) stringResource(R.string.feed_selector_a11y, name) else null,
+            selectable = true,
+            contentLabel = stringResource(R.string.feed_selector_a11y, name),
             onClick = { open = true },
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
@@ -189,7 +211,7 @@ internal fun MiffPill(
                 },
                 onClick = {
                     open = false
-                    onJoin()
+                    onEntry(SelectorEntry.JOIN)
                 },
                 modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
             )
@@ -203,7 +225,7 @@ internal fun MiffPill(
                 },
                 onClick = {
                     open = false
-                    onCreate()
+                    onEntry(SelectorEntry.CREATE)
                 },
                 modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
             )
@@ -212,8 +234,8 @@ internal fun MiffPill(
 }
 
 /**
- * The pastille of the Miff. With ONE Miff it is flat, without shadow or arrow, announced as text (not a button): it does nothing, and it
- * must not look as if it did. With several (Premium) it has the shadow and the blue arrow of the mockup and opens the list.
+ * The pastille of the Miff. The selector of the Feed has the shadow and the blue arrow of the mockup and opens the list, for everyone. The flat
+ * form (no shadow, no arrow, announced as text, not a button) is only for "Pas encore de Miff", which has nothing to open.
  */
 @Composable
 internal fun Pill(

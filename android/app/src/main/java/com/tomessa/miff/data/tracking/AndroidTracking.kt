@@ -1,6 +1,7 @@
 package com.tomessa.miff.data.tracking
 
 import android.app.Activity
+import android.app.AlarmManager
 import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
@@ -43,9 +44,13 @@ internal object TrackingIntents {
     const val ACTION_MOVED = "com.tomessa.miff.tracking.MOVED"
     const val ACTION_NETWORK = "com.tomessa.miff.tracking.NETWORK"
 
+    /** MODE VOYAGE: the alarm of the end of a trip (also the shape of the "the clock or the time zone changed" wake-ups: the engine looks at the trip again). */
+    const val ACTION_TRAVEL_END = "com.tomessa.miff.tracking.TRAVEL_END"
+
     private const val REQUEST_GEOFENCE = 7101
     private const val REQUEST_MOVED = 7102
     private const val REQUEST_NETWORK = 7103
+    private const val REQUEST_TRAVEL_END = 7104
 
     private fun mutableFlag(): Int =
         if (Build.VERSION.SDK_INT >=
@@ -75,6 +80,15 @@ internal object TrackingIntents {
     fun moved(context: Context) = pending(context, ACTION_MOVED, REQUEST_MOVED)
 
     fun network(context: Context) = pending(context, ACTION_NETWORK, REQUEST_NETWORK)
+
+    /** Explicit, to our own receiver, IMMUTABLE (nothing is filled in by the system for an alarm). */
+    fun travelEnd(context: Context): PendingIntent =
+        PendingIntent.getBroadcast(
+            context.applicationContext,
+            REQUEST_TRAVEL_END,
+            Intent(context.applicationContext, TrackingReceiver::class.java).setAction(ACTION_TRAVEL_END),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 }
 
 class AndroidTrackingEnvironment(
@@ -269,6 +283,33 @@ class ConnectivityNetworkWake(
             manager?.unregisterNetworkCallback(TrackingIntents.network(context))
         } catch (e: Exception) {
             // Not registered.
+        }
+    }
+}
+
+/**
+ * MODE VOYAGE: the end of a trip while the app is closed. An INEXACT alarm that may fire while the phone is dozing (`setAndAllowWhileIdle`, `RTC_WAKEUP`): no permission
+ * (an exact alarm needs one that Google Play restricts), at most a few minutes of drift at the end of a trip that lasts days. It wakes our own receiver, which asks the engine
+ * to end the trip. Survives the closing of the app (not a forced stop or a cleaning by the maker: the engine looks again at every opening and restart, TrackingEngine).
+ */
+class AlarmManagerTravelAlarm(
+    private val context: Context,
+) : TravelAlarm {
+    private val manager by lazy { context.applicationContext.getSystemService(AlarmManager::class.java) }
+
+    override fun schedule(atMillis: Long) {
+        try {
+            manager?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMillis, TrackingIntents.travelEnd(context))
+        } catch (e: Exception) {
+            // The system refuses (too many alarms...): the filets (restart, opening of the app) end the trip anyway.
+        }
+    }
+
+    override fun cancel() {
+        try {
+            manager?.cancel(TrackingIntents.travelEnd(context))
+        } catch (e: Exception) {
+            // Nothing was scheduled.
         }
     }
 }

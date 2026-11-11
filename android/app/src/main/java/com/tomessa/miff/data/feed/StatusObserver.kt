@@ -97,5 +97,8 @@ private fun readStatus(doc: DocumentSnapshot): Pair<String, MemberStatus>? {
             locationAccess = doc.getString("locationAccess"),
             // A write still waiting for the server has no server time yet: the estimate is "now" (see getTimestamp's default).
             updatedAtMillis = doc.getTimestamp("updatedAt")?.toDate()?.time,
+            // MODE VOYAGE: the end of the trip and the day chosen; absent from every other status.
+            travelUntilMillis = doc.getTimestamp("travelUntil")?.toDate()?.time,
+            travelUntilDay = doc.getString("travelUntilDay"),
         )
 }

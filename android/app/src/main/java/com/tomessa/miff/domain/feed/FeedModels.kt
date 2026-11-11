@@ -1,6 +1,7 @@
 package com.tomessa.miff.domain.feed
 
 import com.tomessa.miff.domain.miff.MiffMember
+import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
 
@@ -13,8 +14,12 @@ import com.tomessa.miff.domain.update.PromptLevel
  * (a kind of place, a moment, a level), never a sentence: the sentences are texts `feed_*` (French and English, same keys on iOS).
  */
 
-/** The four categories whose NAME is replaced by the category in the sentences ("À la maison"): Maison, Travail, École, Sport (ticket 5.4). */
-enum class PlaceKind { HOME, WORK, SCHOOL, SPORT }
+/**
+ * The categories whose NAME is replaced by the category in the LABEL of a card ("À la maison"): Maison, Travail, École, Sport and Chez un proche
+ * (decision of the PM, 2026-11-08), also in the sentences ("A quitté le domicile d'un proche"). Loisir, Autre and a place with no category show the
+ * NAME of the place ([PlaceRef.Named]).
+ */
+enum class PlaceKind { HOME, WORK, SCHOOL, SPORT, RELATIVE }
 
 /** Where a status says somebody is, as far as this phone can tell (the list of places of THIS Miff is the only source). */
 sealed interface PlaceRef {
@@ -34,9 +39,13 @@ sealed interface PlaceRef {
 
 /** The label of a card: the state of a person in a few words (a pictogram goes with it; the colour is never alone). */
 sealed interface StateLabel {
-    /** In a trusted zone ("À la maison"). */
+    /**
+     * In a trusted zone ("À la maison"). [category] is the category of the place, for the EMOJI drawn before the words (decision of the PM, 2026-11-10;
+     * display only, the words stay the label); null for a place with no category or a place the list does not hold (no emoji then).
+     */
     data class At(
         val place: PlaceRef,
+        val category: PlaceCategory? = null,
     ) : StateLabel
 
     /** Left a trusted zone ("A quitté la maison"), in the colour of the level. */
@@ -63,14 +72,12 @@ sealed interface StateLabel {
 sealed interface TimeLine {
     data object None : TimeLine
 
-    /** "Depuis 12 min", "Depuis 3 h", "Depuis hier à 08 h 12", "Depuis le 3 nov. à 08 h 12". */
+    /**
+     * "Depuis 13 h 36", "Depuis hier à 13 h 36", "Depuis le 3 nov. à 13 h 36": the TIME of the arrival in the place (in a trusted or a danger zone) or of
+     * the departure (out, green), in the zone of the phone; never a duration (decision of the PM, 2026-11-10).
+     */
     data class Since(
-        val age: Age,
-    ) : TimeLine
-
-    /** "Départ il y a 12 min": green, a trusted zone left less than an hour ago (relative while it is green). */
-    data class DepartedAgo(
-        val age: Age,
+        val since: Moment,
     ) : TimeLine
 
     /** Orange: "Dernière nouvelle à 16 h 02" (an ABSOLUTE time from here on). */
@@ -80,11 +87,6 @@ sealed interface TimeLine {
 
     /** Red, no news for a long time: "Pas de nouvelles depuis 16 h 02". */
     data class NoNewsSince(
-        val since: Moment,
-    ) : TimeLine
-
-    /** Red, in a danger zone: "Depuis 16 h 02". */
-    data class InDangerSince(
         val since: Moment,
     ) : TimeLine
 }

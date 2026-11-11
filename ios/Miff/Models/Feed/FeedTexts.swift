@@ -8,7 +8,7 @@ import Foundation
 
 struct FeedTexts {
     private let lookup: (String) -> String
-    private let locale: Locale
+    let locale: Locale
     private let zone: TimeZone
     private let is24Hour: Bool
 
@@ -30,7 +30,7 @@ struct FeedTexts {
         return !pattern.contains("a")
     }
 
-    private func text(_ key: String, _ arguments: CVarArg...) -> String {
+    func text(_ key: String, _ arguments: CVarArg...) -> String {
         String(format: lookup(key), locale: locale, arguments: arguments)
     }
 
@@ -124,6 +124,8 @@ struct FeedTexts {
                 return text("feed_place_noun_school")
             case .sport:
                 return text("feed_place_noun_sport")
+            case .relative:
+                return text("feed_place_noun_relative")
             }
         case .named(let name):
             return name
@@ -148,6 +150,10 @@ struct FeedTexts {
             return text("feed_label_news_hidden")
         case .waitingAgreement:
             return text("miff_waiting_title")
+        case .traveling(let day, let mine):
+            return travelLabel(day, mine: mine)
+        case .travelEnded:
+            return text("voyage_feed_label_ended")
         }
     }
 
@@ -163,8 +169,11 @@ struct FeedTexts {
                 return text("feed_label_at_school")
             case .sport:
                 return text("feed_label_at_sport")
+            case .relative:
+                return text("feed_label_at_relative")
             }
         case .named(let name):
+            // Loisir, Autre : le NOM du lieu, tel quel (décision du PM) ; la valeur du catalogue est « %@ » seul.
             return text("feed_label_at_place", name)
         case .unknown:
             return text("feed_label_trusted_generic")
@@ -176,30 +185,16 @@ struct FeedTexts {
         switch time {
         case .nothing:
             return nil
-        case .since(let age):
-            switch age {
-            case .minutes(let minutes):
-                return text("feed_time_since_minutes", minutes)
-            case .hours(let hours):
-                return text("feed_time_since_hours", hours)
-            default:
-                return moment(of: age).map { text("feed_time_since", since($0)) }
-            }
-        case .departedAgo(let age):
-            switch age {
-            case .minutes(let minutes):
-                return text("feed_time_departed_minutes", minutes)
-            case .hours(let hours):
-                return text("feed_time_departed_hours", hours)
-            default:
-                return moment(of: age).map { text("feed_time_latest_news", at($0)) }
-            }
+        case .since(let moment):
+            return text("feed_time_since", since(moment))
         case .latestNews(let moment):
             return text("feed_time_latest_news", at(moment))
         case .noNewsSince(let moment):
             return text("feed_time_no_news_since", since(moment))
         case .inDangerSince(let moment):
             return text("feed_time_since", since(moment))
+        case .travelSince(let millis):
+            return travelSince(millis)
         }
     }
 
@@ -284,6 +279,8 @@ struct FeedTexts {
             return text("feed_bubble_alone")
         case .sharingStopped:
             return text("feed_bubble_sharing_stopped_title")
+        case .travelers(let note):
+            return travelersHeadline(note)
         case .alerts(let pages, _):
             return pages.map { page in
                 [alertTitle(page), alertDetail(page)].compactMap { $0 }.joined(separator: ", ")

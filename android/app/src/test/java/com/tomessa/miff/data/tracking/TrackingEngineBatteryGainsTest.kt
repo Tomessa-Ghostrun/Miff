@@ -5,11 +5,13 @@ import com.tomessa.miff.data.miff.SharingConsentRead
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.tracking.BreakerState
+import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.JournalKind
 import com.tomessa.miff.domain.tracking.PlaceFact
 import com.tomessa.miff.domain.tracking.TrackingLimits
 import com.tomessa.miff.domain.tracking.TransitionKind
 import com.tomessa.miff.domain.tracking.WriteBreaker
+import com.tomessa.miff.domain.travel.TravelPeriod
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeGeofences
 import com.tomessa.miff.testsupport.FakeLocal
@@ -448,5 +450,85 @@ class TrackingEngineBatteryGainsTest {
             assertTrue(geofences.armed.isEmpty())
             assertFalse(wake.watching)
             assertTrue(positionWrites().isEmpty())
+        }
+
+    // --- Mode voyage: BATT-2 and BATT-4 change nothing during a trip, and the Update hand-over does not depend on an entry ----------------------
+
+    private val day = 24 * hour
+
+    @Test
+    fun duringATrip_anEntryAlreadyInside_staysInert_asBefore_andThePositionStaysShared() =
+        runTest {
+            share(home)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
+            assertEquals(TravelResult.Done, engine.setTravel(TravelPeriod(env.now + 2 * day, "2027-01-17")))
+            // A zone the system still holds for this phone speaks again, and the copy says the person is "inside" (the strictest case for BATT-2).
+            local.state = local.state!!.copyWith(inside = mapOf(home.key to env.now))
+            env.now += 20 * minute
+            val reads = position.reads
+            val commits = store.commits.size
+            val removeAll = geofences.removeAllCalls
+            val statusesBefore = statusWrites().size
+
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
+
+            // Same behaviour as before BATT-2 (the trip returns first): zones removed, no status, no position read, no write.
+            assertTrue("the zones are removed", geofences.removeAllCalls > removeAll)
+            assertEquals(reads, position.reads)
+            assertEquals(commits, store.commits.size)
+            assertNotNull(local.state!!.travel)
+            // The position is still shared during the trip: a move report publishes it, nothing depends on the entry that was ignored.
+            val positionsBefore = positionWrites().size
+            engine.refresh(TrackingEngine.Reason.MOVED, Fix(lat + 0.01, lng, env.now))
+            assertEquals(
+                "the position keeps being published during the trip",
+                positionsBefore + 1,
+                positionWrites().size,
+            )
+            assertEquals("no presence is written during the trip", statusesBefore, statusWrites().size)
+        }
+
+    @Test
+    fun duringATrip_theReturnOfTheNetwork_goesThroughTheTripPass_andTheFiveMinutesBoundOfBatt4NeverPlays() =
+        runTest {
+            share(home)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            // The trip is accepted without network: the Miff has not been told yet; the last complete look is the opening.
+            env.online = false
+            assertEquals(TravelResult.DoneOffline, engine.setTravel(TravelPeriod(env.now + 2 * day, "2027-01-17")))
+            assertTrue(wake.watching)
+            store.commits.clear()
+            env.online = true
+            env.now += minute
+            val reads = store.readCalls
+
+            engine.onNetworkBack()
+
+            // One minute after the last look: outside a trip the bound would trust it; during a trip the Miffs are read again and the trip is told at once.
+            assertTrue("the trip pass reads the Miffs again", store.readCalls > reads)
+            assertEquals("travel", statusWrites().single().data["presence"])
+            assertFalse(wake.watching)
+            // And again, within the same 5 minutes: still read (the bound is not applied to the trip pass).
+            val readsAfter = store.readCalls
+            env.now += minute
+            engine.onNetworkBack()
+            assertTrue(store.readCalls > readsAfter)
+        }
+
+    @Test
+    fun theUpdateHandOver_refreshSharingChangedWithAFix_publishesThePosition_evenAfterAnEntryIgnoredByBatt2() =
+        runTest {
+            share(home)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
+            env.now += 20 * minute
+            // The system reports the entry again: BATT-2 ignores it, so no ZONE_ENTERED pass runs.
+            engine.onTransition(TransitionKind.ENTER, home.key, env.now)
+            val before = positionWrites().size
+            // The Update hands its measure over (AppContainer.handOverPosition): a pass of its own, which does not rely on any entry pass.
+            engine.refresh(TrackingEngine.Reason.SHARING_CHANGED, Fix(lat + 0.01, lng, env.now))
+            assertEquals("the supplied position is published", before + 1, positionWrites().size)
+            assertNotNull(local.state!!.fix())
         }
 }

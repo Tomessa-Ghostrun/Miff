@@ -13,6 +13,8 @@ struct UpdateServices {
     let myStatus: MyStatusStore
     let permission: CameraPermissionProviding
     let sharingStopped: () async -> Bool
+    /// FEED-8 : les photos lues par le Feed, EN MÉMOIRE seulement ; ma photo publiée y est posée à la publication (ma carte ne la relit pas).
+    let photoCache: PhotoCache
 
     static func make(
         gateway: AuthGateway,
@@ -30,12 +32,16 @@ struct UpdateServices {
             readPermissions: { await permissions.snapshot() },
             network: network
         )
+        let local = TrackingLocalFileStore()
         let environment = UpdateEnvironment(
             currentUid: { gateway.currentUid },
             miffIds: { Self.miffIds(of: directory.state) },
-            battery: { await system.batteryPct() }
+            // MODE VOYAGE : aucun niveau de batterie à côté d'un voyage (les règles refusent `travel` avec une batterie) ; la copie locale
+            // est relue à chaque usage (un petit fichier privé) : jamais un « pas de voyage » périmé après une fin ou une nouvelle session.
+            battery: {
+                TravelStatusRules.battery(await system.batteryPct(), local: local.load(), uid: gateway.currentUid)
+            }
         )
-        let local = TrackingLocalFileStore()
         let photoPosition = TrackingPhotoPositionSource(
             position: tracking.location, permissions: { await permissions.snapshot() }
         )
@@ -56,6 +62,8 @@ struct UpdateServices {
         }
         // Aucune Miff n'a encore ma position : la détection est invitée à l'écrire.
         publisherDependencies.onPositionMissing = tracking.sharingChanged
+        let photoCache = PhotoCache()
+        publisherDependencies.onPhotoPublished = { photoCache.putOwn($0) }
         var cleanerDependencies = PhotoCleanerDependencies(
             store: photoStore, device: device, network: network, ledger: ledger, environment: environment
         )
@@ -71,7 +79,8 @@ struct UpdateServices {
             cleaner: PhotoCleaner(cleanerDependencies),
             myStatus: myStatus,
             permission: SystemCameraPermission(),
-            sharingStopped: sharingStopped
+            sharingStopped: sharingStopped,
+            photoCache: photoCache
         )
     }
 
@@ -101,6 +110,8 @@ struct UpdateServices {
     func stop() {
         ledger.clear()
         myStatus.stop()
+        // Les photos lues (et la mienne) ne restent pas en mémoire pour la personne suivante.
+        photoCache.clear()
     }
 
     /// Suppression du compte `uid` (AUTH-5) : la date de la photo de CE compte est effacée avec lui. À appeler par la suppression de compte.

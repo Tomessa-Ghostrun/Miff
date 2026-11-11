@@ -35,6 +35,9 @@ class MemberStatus(
     val batteryPct: Int?,
     val locationAccess: MemberLocationAccess?,
     val updatedAtMillis: Long?,
+    /** MODE VOYAGE: the end of the trip (instant) and the day chosen (`AAAA-MM-JJ`, display only), when [presence] is `travel`. */
+    val travelUntilMillis: Long? = null,
+    val travelUntilDay: String? = null,
 ) {
     override fun toString(): String = "MemberStatus(redacted)"
 
@@ -57,9 +60,14 @@ class MemberStatus(
             batteryPct: Number?,
             locationAccess: String?,
             updatedAtMillis: Long?,
-        ): MemberStatus =
-            MemberStatus(
-                presence = PresenceValue.fromWire(presence),
+            travelUntilMillis: Long? = null,
+            travelUntilDay: String? = null,
+        ): MemberStatus {
+            val value = PresenceValue.fromWire(presence)
+            // Only a trip carries an end: whatever somebody else wrote next to another presence is dropped.
+            val isTravel = value == PresenceValue.TRAVEL
+            return MemberStatus(
+                presence = value,
                 placeId = placeId?.takeIf { PLACE_ID.matches(it) },
                 presenceAtMillis = presenceAtMillis,
                 lastUpdateAtMillis = lastUpdateAtMillis,
@@ -71,6 +79,9 @@ class MemberStatus(
                         ?.toInt(),
                 locationAccess = MemberLocationAccess.fromWire(locationAccess),
                 updatedAtMillis = updatedAtMillis,
+                travelUntilMillis = travelUntilMillis.takeIf { isTravel },
+                travelUntilDay = travelUntilDay.takeIf { isTravel },
             )
+        }
     }
 }
