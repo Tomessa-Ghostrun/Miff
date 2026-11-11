@@ -2909,19 +2909,36 @@
         }
       }
     },
+    "feed_bubble_contact_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacter %1$@"
+          }
+        }
+      }
+    },
     "feed_bubble_message_action": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send a message"
+            "value": "Contact"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envoyer un message"
+            "value": "Contacter"
           }
         }
       }
