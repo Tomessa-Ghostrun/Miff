@@ -14654,57 +14654,6 @@
         }
       }
     },
-    "update_flash_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash"
-          }
-        }
-      }
-    },
-    "update_flash_state_on": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash on"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash activé"
-          }
-        }
-      }
-    },
-    "update_flash_state_off": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash off"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Flash désactivé"
-          }
-        }
-      }
-    },
     "update_prepare_failed": {
       "extractionState": "manual",
       "localizations": {
