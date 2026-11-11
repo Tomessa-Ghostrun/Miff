@@ -20,8 +20,55 @@ struct MyInfoView: View {
     let onBack: () -> Void
     let onRetry: () -> Void
 
+    /// Le dernier profil lu : si l'état repasse à « chargement » ou « illisible » pendant la saisie, le formulaire (et ce qui y est tapé)
+    /// reste affiché au lieu d'être jeté.
+    @State private var kept: ProfileSummary?
+
+    init(
+        state: ProfileTabState,
+        tools: PhoneNumberTools,
+        makeViewModel: @escaping (ProfileSummary) -> MyInfoViewModel,
+        onBack: @escaping () -> Void,
+        onRetry: @escaping () -> Void
+    ) {
+        self.state = state
+        self.tools = tools
+        self.makeViewModel = makeViewModel
+        self.onBack = onBack
+        self.onRetry = onRetry
+    }
+
+    private var shown: ProfileSummary? {
+        if case .ready(let profile) = state {
+            return profile
+        }
+        return kept
+    }
+
     var body: some View {
+        content
+            .onAppear {
+                kept = shown
+            }
+            .onChange(of: state) { _ in
+                kept = shown
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let profile = shown {
+            MyInfoEditor(profile: profile, tools: tools, makeViewModel: makeViewModel, onBack: onBack)
+        } else {
+            placeholder
+        }
+    }
+
+    @ViewBuilder
+    private var placeholder: some View {
         switch state {
+        case .ready:
+            EmptyView()
         case .loading:
             MiffFrame(title: L10n.string("settings_my_info_title"), onBack: onBack, usesCanvas: true) {
                 LoadingIndicator()
@@ -34,8 +81,6 @@ struct MyInfoView: View {
                 }
                 .buttonStyle(.miffSecondaryFullWidth)
             }
-        case .ready(let profile):
-            MyInfoEditor(profile: profile, tools: tools, makeViewModel: makeViewModel, onBack: onBack)
         }
     }
 }
@@ -362,7 +407,7 @@ extension MyInfoEditor {
         case .saveFailed:
             MessageText(text: L10n.string("profile_save_failed"), isError: true)
         case .tryLater:
-            MessageText(text: L10n.string("profile_save_failed_later"), isError: true)
+            MessageText(text: L10n.string("ios_myinfo_save_failed_later"), isError: true)
         case .photoUnusable, .none:
             EmptyView()
         }

@@ -13940,6 +13940,23 @@
         }
       }
     },
+    "ios_myinfo_save_failed_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It still isn't going through. Your information stays here: try again a little later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ça ne passe toujours pas. Tes informations restent ici : réessaie un peu plus tard."
+          }
+        }
+      }
+    },
     "ios_account_apple": {
       "extractionState": "manual",
       "localizations": {

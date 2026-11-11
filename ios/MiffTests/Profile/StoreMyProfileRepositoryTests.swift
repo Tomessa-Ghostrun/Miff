@@ -97,6 +97,20 @@ final class StoreMyProfileRepositoryTests: XCTestCase {
         XCTAssertEqual(Set(copies).count, 31, "chaque Miff est écrite une fois, aucune n'est oubliée")
     }
 
+    /// Critère MI18 : le magasin sert d'espion ; le nombre d'écritures est 1 + N (N = Miffs), l'index est lu une seule fois.
+    func testTheWriteCountIsOnePlusN() async {
+        for count in [0, 1, 2, 5, 15, 16, 20, 31] {
+            let store = makeStore(miffs: count)
+
+            let result = await makeRepository(store).save(uid: uid, profile: alex)
+
+            XCTAssertEqual(result, .saved)
+            XCTAssertEqual(store.commitsAsLots.flatMap { $0 }.count, 1 + count, "\(count) Miffs")
+            XCTAssertEqual(store.calls.filter { $0 == "memberships:server" }.count, 1)
+            XCTAssertLessThanOrEqual(store.commitsAsLots.map { $0.count }.max() ?? 0, 16)
+        }
+    }
+
     func testTheIndexIsReadFromTheServerNeverFromTheCache() async {
         let store = makeStore(miffs: 2)
 

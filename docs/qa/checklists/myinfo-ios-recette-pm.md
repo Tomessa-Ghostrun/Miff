@@ -41,7 +41,7 @@
 | # | Action | Résultat attendu |
 |---|---|---|
 | C1 | Enregistrer un nouveau prénom, nom et numéro sur l'iPhone ; sur l'OPPO, l'écran de la Miff ouvert (ou le Feed, puis « Actualiser »). | Le nouveau nom, la nouvelle photo (ou les nouvelles initiales) et le nouveau numéro apparaissent sur la carte de l'iPhone et dans l'écran de la Miff, **dans chacune de vos Miffs** (vérifier au moins deux). Les boutons « Message » / « Appeler » utilisent le nouveau numéro. |
-| C2 | Sur l'iPhone, revenir au Profil. | L'en-tête (photo / initiales, « Prénom Nom ») montre **tout de suite** les nouvelles valeurs. Les initiales suivent le nouveau nom quand il n'y a pas de photo. Le Feed aussi (votre carte). |
+| C2 | Sur l'iPhone, revenir au Profil. | L'en-tête (photo / initiales, « Prénom Nom ») montre **tout de suite** les nouvelles valeurs. Les initiales suivent le nouveau nom quand il n'y a pas de photo. Votre carte du Feed change dès que la fiche écrite lui revient (quelques instants). |
 | C3 | Après l'enregistrement, votre statut, votre position et votre photo d'update | **Inchangés** (rien n'est touché). |
 | C4 | Si le carrousel « Mes Miffs » du Profil est présent (PR #145 fusionnée) : votre visage sur les cartes. | Il change tout de suite, sans attente (voir la PR). |
 

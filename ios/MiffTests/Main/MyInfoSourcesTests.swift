@@ -78,6 +78,14 @@ final class MyInfoSourcesTests: XCTestCase {
         XCTAssertTrue(text.contains("settings_my_info_discard_title"))
     }
 
+    func testTheRepeatedFailureSentenceDoesNotPromiseThatNothingIsLost() throws {
+        let screen = try code("Views/Settings/MyInfoView.swift")
+
+        // « Rien n'est perdu : tu peux fermer l'app » serait faux ici : les saisies ne sont qu'en mémoire.
+        XCTAssertTrue(screen.contains("ios_myinfo_save_failed_later"))
+        XCTAssertFalse(screen.contains("\"profile_save_failed_later\""))
+    }
+
     func testTheOldReadOnlySentenceIsGoneFromTheCatalog() throws {
         let catalog = appSources.appendingPathComponent("Resources/Localizable.xcstrings")
         guard FileManager.default.fileExists(atPath: catalog.path) else {

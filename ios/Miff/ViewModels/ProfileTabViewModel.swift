@@ -7,8 +7,9 @@ import Combine
 // la session, et ne sont ni journalisés ni envoyés dans un événement Analytics (l'onglet Profil n'en envoie aucun).
 
 /// Là où le profil de la personne connectée est gardé en mémoire pour la session : « Mes informations » y remet la nouvelle version dès
-/// que le serveur a confirmé l'enregistrement, pour que l'en-tête du Profil, la carte du Feed et mon visage dans le carrousel changent
-/// tout de suite, sans seconde lecture (comme `CurrentProfile` sur Android).
+/// que le serveur a confirmé l'enregistrement, pour que l'en-tête du Profil et mon visage dans le carrousel changent tout de suite, sans
+/// seconde lecture (comme `CurrentProfile` sur Android). La carte du Feed, elle, suit l'écoute des fiches des membres : elle change dès que
+/// la fiche écrite lui revient.
 @MainActor
 protocol CurrentProfileHolding: AnyObject {
     /// Un enregistrement de `uid` vient d'être confirmé : voici son profil. Ignoré si cette personne n'est plus connectée.
