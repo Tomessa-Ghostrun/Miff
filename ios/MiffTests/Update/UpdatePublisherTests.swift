@@ -130,15 +130,39 @@ final class UpdatePublisherTests: XCTestCase {
         XCTAssertEqual(rig.position.calls, 1)
     }
 
-    func testAPositionThatIsNotPublishedInAMiffGetsNoPhotoThereAndTheDetectionIsAsked() async {
+    func testAPositionNotPublishedBecauseOfAnApproximateLocationSaysSoAndDoesNotAskTheDetectionAgain() async {
         rig.published = { _ in false }
+        rig.position.blocker = .approximate
 
         let result = await rig.makePublisher().publish(UpdateFixtures.photo())
 
-        XCTAssertEqual(result, .positionNotFound)
+        XCTAssertEqual(result, .locationApproximate)
         XCTAssertTrue(rig.store.writes.isEmpty)
         XCTAssertEqual(rig.position.calls, 0, "rien n'est mesuré")
-        XCTAssertEqual(rig.positionMissingCalls, 1)
+        // Le suivi ne publie qu'avec « Toujours » : c'est ce qui est vérifié.
+        XCTAssertEqual(rig.position.blockerAsks, [true])
+        // « Réessaie dans un instant » serait faux : la détection n'y peut rien.
+        XCTAssertTrue(rig.handedOver.isEmpty)
+    }
+
+    func testAPositionNotPublishedBecauseTheLocationIsNotAllowedSendsToTheSettingsNotToAnEndlessRetry() async {
+        rig.published = { _ in false }
+        rig.position.blocker = .locationOff
+
+        let result = await rig.makePublisher().publish(UpdateFixtures.photo())
+
+        XCTAssertEqual(result, .locationOff)
+        XCTAssertTrue(rig.handedOver.isEmpty)
+    }
+
+    func testAnApproximateLocationWhenThePositionIsPublishedIsSaidAfterTheMeasureAndNothingIsWritten() async {
+        rig.position.result = .approximate
+
+        let result = await rig.makePublisher().publish(UpdateFixtures.photo())
+
+        XCTAssertEqual(result, .locationApproximate)
+        XCTAssertTrue(rig.store.writes.isEmpty)
+        XCTAssertNil(rig.ledger.photoSentMillis(uid: updateUid))
     }
 
     func testWithTwoMiffsThePhotoOnlyGoesWhereMyPositionIsPublishedTheOtherIsLeftForTheNextTry() async {

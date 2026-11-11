@@ -228,7 +228,8 @@ private fun NeedsPositionTile() {
             modifier = Modifier.size(20.dp),
         )
         Text(
-            text = stringResource(R.string.update_card_photo_needs_position),
+            text =
+                stringResource(R.string.update_card_photo_needs_position),
             style = textBodyRegular14,
             color = colorTextPrimary,
         )

@@ -503,6 +503,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             texts = texts,
             onMessage = actions.onMessage,
             onResumeSharing = { actions.onResumeSharing(content.miffId) },
+            travelNote = content.travelNote,
         )
     }
     items(content.cards, key = { it.member.uid }) { card ->
@@ -516,6 +517,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             miffId = content.miffId,
             nowMillis = System.currentTimeMillis(),
             onOpenPhoto = onOpenPhoto,
+            // MODE VOYAGE: the link "Modifier" of MY card opens the Profile, where the trip is set.
+            onEditTravel = actions.onOpenProfile,
         )
     }
     item(key = "add") {

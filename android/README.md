@@ -509,6 +509,13 @@ Ticket `docs/tickets/suppression-compte.md` (§3.2 A, §5.5 à §5.8, §5.13, §
 - **Tests** : `AccountMiffsTest`, `AccountDeletionMiffsTest` (bout en bout sur `AccountWorld`, un double du serveur avec les contraintes des règles : budgets, ordre, coupure réseau **avant chaque lot**, réponse **perdue après chaque lot**, impasse, annulation, Miff qui arrive), `AccountDeletionTest`, `AccountDeletionControllerTest`, `DeviceSessionPersistedClosedTest`, `TrackingEngineDeletionTest`, `DeleteAccountViewModelsTest`, `DeleteAccountScreensTest`.
 - **Autres téléphones du même compte** : ils voient la session disparaître **au tout début** de la suppression et se déconnectent aussitôt. La note affichée est celle de la PR séparée `android/session-compte-supprime` (« Ton compte est en cours de suppression sur un autre appareil. ») ; sans elle, c'est l'ancienne « utilisé sur un autre téléphone ».
 
+## Mode voyage : N7 et gardes du planificateur (VOY-4A)
+
+Tickets `docs/tickets/mode-voyage.md` §9 et `docs/tickets/notifications.md` §20.12bis, recette `docs/qa/checklists/notifs-android-recette-pm.md` (partie 7). Détail dans `CHANGELOG.md` (0.31.0). **Local, sans serveur, 0 lecture, 0 écriture, aucune permission nouvelle.**
+- **N7** « Ton mode voyage est terminé » : `TravelEndNotice.dueAt` (pur : 08:00 locale du jour de la fin du voyage, jamais avant la fin) et `key` (`n7|uid|fin`) ; `NotificationPlanner.planTravelEnd` ; alarme inexacte (`setAndAllowWhileIdle`) comme les autres ; hors plafonds ; toucher = Feed. La fin du voyage est gardée par `TravelEndStore` (un compte et un instant ; il survit à la fin naturelle jusqu'à 08:00).
+- **Gardes** : `PlanInput.myTravelUntilMillis` (mon voyage est en cours tant que cet instant est futur) coupe N1 à N4 et N6 ; un membre en voyage est neutre (`StatusColor`, `FeedBuilder.miffLevel`).
+- Le moteur prévient les notifications par `PresenceListener.onTravelSet` et `onTravelEnded(early)`.
+
 ## Notifications locales : autorisation, Réglages, centre (tickets NOTIF-1A, NOTIF-2A, NOTIF-6A ; NOTIF-P0 sans serveur)
 
 Ticket `docs/tickets/notifications.md` §20 (périmètre N1, N2, N3, N4, N6), recette `docs/qa/checklists/notifs-android-recette-pm.md`. Détail dans `CHANGELOG.md` (0.26.0). **Plan Spark, aucune Cloud Function** : tout se passe **sur le téléphone**, aucune lecture ni écriture Firestore pour cette partie (coûts : `docs/dev/surveillance-quotas.md`, §5 quinquies).
@@ -686,6 +693,16 @@ Avant tout lancement de Gradle, l'étape `gradle/actions/wrapper-validation` (é
 7. Dire à l'android-dev de passer à l'implémentation : étape de CI qui décode le secret (sans jamais l'afficher, sauté si le secret est absent), et ajout de `DEBUG_KEYSTORE_B64` à la liste fermée de `backend/tests/unit/workflows.test.js` (ce test impose qu'un nouveau secret soit une décision visible en revue). A la première installation, désinstaller une dernière fois l'ancienne version de l'application.
 
 **Signal de bascule vers C** : premiers testeurs hors équipe, ou besoin de tester l'abonnement via Google Play (la facturation Play exige un APK/AAB distribué par Play).
+
+## Mode voyage (tickets VOY-1A, VOY-2A, VOY-3A)
+
+Ticket `docs/tickets/mode-voyage.md`, **ouvert à tous les comptes** et **la position reste partagée** (décisions du PM du 2026-11-10). Fonctionnement et fichiers :
+
+- `domain/travel/TravelMode.kt` : règles pures (`TravelPlan` : bornes aujourd'hui à +89 jours, instant de fin = 00:00 local du lendemain ; `TravelView` : ce que voit un proche, calculé à l'affichage).
+- `data/tracking/TrackingEngine.kt` (section MODE VOYAGE) : `setTravel`, `endTravel`, passage de réveil pendant un voyage (`doTravelPass`, `publishPositionDuringTravel` : la position continue, aucun statut de zone, de batterie ni d'accès n'est écrit), fin, adoption par un nouvel appareil. `TravelAlarm` / `AlarmManagerTravelAlarm` : alarme inexacte de fin (action `TRAVEL_END` du `TrackingReceiver`, aussi sur `TIME_SET` / `TIMEZONE_CHANGED`).
+- `ui/profile/TravelCard.kt`, `TravelViewModel.kt` : la carte du Profil ; `ui/feed` : carte grise, bulle, lien « Modifier ».
+- Écritures : `TrackingWrites.travelStart` / `travelDate` et `statusUpdate(clearTravel = true)` (comptées par `DeviceIdInEveryWriteTest`). Les règles correspondantes sont dans `backend/firestore.rules` (PR #151) ; contrat des clients : `docs/dev/mode-voyage-clients.md`.
+- Recette : `docs/qa/checklists/voyage-android-recette-pm.md`.
 
 ## Surcouches constructeur (géofencing)
 
