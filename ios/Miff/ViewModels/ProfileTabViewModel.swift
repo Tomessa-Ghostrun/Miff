@@ -20,15 +20,10 @@ protocol CurrentProfileHolding: AnyObject {
 /// Un view model par compte et par session (l'hôte de la session est recréé à chaque connexion) : la personne suivante ne retrouve
 /// jamais le profil de la précédente.
 @MainActor
-<<<<<<< HEAD
 final class ProfileTabViewModel: ObservableObject, CurrentProfileHolding {
-    @Published private(set) var state: ProfileTabState = .loading
-=======
-final class ProfileTabViewModel: ObservableObject {
     @Published private(set) var state: ProfileTabState = .loading {
         didSet { updateOfflineNeed() }
     }
->>>>>>> origin/ios/feed-hors-connexion
 
     /// La pop-in « Pas de connexion » de l'onglet Profil tant que rien n'est lu (même composant que le Feed).
     let offlineRetry: OfflineRetryModel
@@ -64,14 +59,14 @@ final class ProfileTabViewModel: ObservableObject {
         load()
     }
 
-<<<<<<< HEAD
     func onSaved(uid: String, profile: ProfileSummary) {
         guard currentUid() == uid else {
             return
         }
         saves += 1
         state = .ready(profile)
-=======
+    }
+
     /// Suit le réseau pour la pop-in tant que l'onglet est à l'écran (annulé en le quittant ou en quittant l'app).
     func watchConnectivity() async {
         await offlineRetry.watch()
@@ -86,7 +81,6 @@ final class ProfileTabViewModel: ObservableObject {
         case .ready:
             offlineRetry.setNeed(.none)
         }
->>>>>>> origin/ios/feed-hors-connexion
     }
 
     private func load() {
