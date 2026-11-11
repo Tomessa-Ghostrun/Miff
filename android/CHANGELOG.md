@@ -2,16 +2,20 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.32.0] - 2026-11-11 : App Check, interrupteur de debug « sans App Check » (AC-4)
+## [0.32.0] - 2026-11-11 : App Check, interrupteur de debug « sans App Check » (AC-4) et message « appareil non reconnu »
 
-Plan `docs/dev/app-check.md` §5 (C1) et §8 (AC-4) ; branche `android/appcheck-ac4-et-erreurs`, PR brouillon. Numéro de version : `main` et plusieurs PR ouvertes portent déjà 0.31.0 ; celui-ci prend le prochain libre (à renuméroter au merge si l'ordre change). **Aucune commande Firebase, aucun accès à la console, rien modifié sur `miff-3d283` : App Check n'est toujours pas appliqué (action du PM).** Aucune donnée, aucune règle, aucune permission, aucun service payant.
+Plan `docs/dev/app-check.md` §5 (C1, C5) et §8 (AC-4) ; deux commits (A : interrupteur ; B : message) ; branche `android/appcheck-ac4-et-erreurs`, PR brouillon. Numéro de version : `main` et plusieurs PR ouvertes portent déjà 0.31.0 ; celui-ci prend le prochain libre (à renuméroter au merge si l'ordre change). **Aucune commande Firebase, aucun accès à la console, rien modifié sur `miff-3d283` : App Check n'est toujours pas appliqué (action du PM).** Aucune donnée, aucune règle, aucune permission, aucun service payant.
 
 ### Ajouté
 - **Interrupteur « Sans App Check (au prochain lancement) »** dans l'écran de diagnostic (carte App Check), **build debug seulement**. Activé, le lancement suivant installe un fournisseur qui ne donne **aucun jeton** (`DebugAppCheckNoTokenProviderFactory`) : une fois Firestore appliqué, le PM pourra prouver qu'une requête sans jeton est refusée (critère R18 du ticket de durcissement). Le réglage est mémorisé (un booléen) et lu **une seule fois au lancement** ; l'écran dit s'il est « enregistré, à relancer », « actif » ou « désactivé, à relancer ».
 - À l'activation, l'app **oublie le dernier jeton gardé par le SDK** (valable jusqu'à 1 h) avant de choisir le fournisseur, sinon la preuve serait fausse pendant une heure ; « Vérifier » redemande alors le jeton au fournisseur.
 - **Absent de tout build distribuable** : le code est dans `src/debug` seulement. Le contrôle de la CI qui cherchait `DebugAppCheck` dans le dex des builds `release` et `releaseLike` cherche **aussi** la chaîne `DEBUGAPPCHECKOFF` (clé du réglage), que la minification ne renomme pas.
 - Tests : `DebugAppCheckNoTokenProviderTest` (le fournisseur échoue toujours, sans donnée personnelle ; marqueurs de la CI), `DiagnosticViewModelTest` (réglage mémorisé sans changer le lancement en cours ; lancement démarré avec l'interrupteur).
-- Recette : `docs/qa/checklists/appcheck-ac4-android-recette-pm.md`.
+- Recette : `docs/qa/checklists/appcheck-ac4-android-recette-pm.md` (partie A : interrupteur ; partie B : message).
+- **Message distinct « appareil non reconnu » (lot B).** Avant : un refus d'App Check et un refus des règles donnaient la même phrase (« On ne trouve pas de Miff avec ce code » à « Rejoindre » après la confirmation ; « Ça n'a pas fonctionné » ailleurs). Maintenant, à **« Créer une Miff » et « Rejoindre une Miff »** (étapes de lecture et d'écriture), un refus du serveur **alors que l'appareil n'a aucun jeton App Check** affiche **« Cet appareil n'est pas reconnu pour le moment. Mets Miff à jour depuis le store, puis réessaie. »** (fr ; en : « This device isn't recognized for now. Update Miff from the store, then try again. »). Il ne compte pas comme un faux code (pas de pause d'une minute). **C'est une déduction** (refus + aucun jeton), pas une certitude : le serveur répond le même code dans les deux cas, et le texte de l'erreur d'App Check n'est pas documenté. Si le SDK ne répond pas en 5 secondes, ou avec un jeton en main, la phrase d'avant reste. Voir `docs/dev/app-check.md` §8 « Message distinct ».
+- `MiffFailure.DEVICE_NOT_RECOGNIZED` + `refineRefusal` (domaine, pur) ; `AppCheckProbe` (une question au SDK, posée **seulement après un refus**) ; `MiffRepository` ne raffine que sur la sortie vers les écrans Créer et Rejoindre : tout ce qui teste `MiffFailure.REFUSED` dans la logique (suivi de position, lieux, notifications, statut) ne voit jamais la nouvelle valeur.
+- **Clé de texte partagée avec iOS** (une seule, fr et en, ajoutée au catalogue iOS sans changement de logique iOS) : `miff_message_device_not_recognized`.
+- Tests : `MiffRepositoryAppCheckRefusalTest` (join écriture et lecture du code, create ; avec jeton, sans jeton, jeton invérifiable ; un problème réseau n'interroge même pas le SDK), `MiffViewModelsTest` (3 cas), `MiffWritesTest` (`refineRefusal`).
 
 ### Modifié
 - `AppCheckInstaller.install()` prend le contexte (les versions `debug` et `release` gardent la même signature ; la version `release` ne lit aucun réglage).
@@ -21,6 +25,9 @@ Plan `docs/dev/app-check.md` §5 (C1) et §8 (AC-4) ; branche `android/appcheck-
 
 ### À savoir
 - Ce test ne couvre que **Firestore** (Authentication, s'il est appliqué un jour, aura son propre test : AC-8). La preuve de refus elle-même reste à faire par le PM (AC-7), avec son accord explicite et daté.
+- **Limite du message** : avant l'application d'App Check, un appareil sans jeton (APK hors Play, build de test sans jeton enregistré) dont le refus vient en réalité des règles verra aussi « appareil non reconnu ». Calme et sans danger, mais peut égarer ; après l'application, c'est le cas normal.
+- **Non fait, à connaître** : la connexion et l'inscription (Authentication, non appliqué) n'ont pas ce message ; le plan C5 disait de ne pas créer de message App Check, le PM l'a demandé : le plan est corrigé. **Risque voisin à vérifier avant l'application** : le suivi d'une Miff (`MiffObserver`) lit tout `PERMISSION_DENIED` comme « accès perdu » ; sur un appareil sans jeton, une Miff déjà rejointe pourrait être présentée comme perdue. Non modifié ici ; à tester avec l'interrupteur, sur un compte de test.
+- **Côté iOS** : la clé est dans le catalogue, la logique (refus + aucun jeton App Attest → même phrase) reste à faire par `ios-dev`.
 
 ## [0.31.0] - 2026-11-11 : mode voyage, notifications : N7 « Ton mode voyage est terminé » et gardes du planificateur (VOY-4A)
 

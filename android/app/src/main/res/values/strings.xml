@@ -323,6 +323,7 @@
     <string name="common_cancel">Cancel</string>
     <string name="miff_message_offline">No connection right now. Try again once the network is back.</string>
     <string name="miff_message_generic">That didn\'t work. Please try again in a moment.</string>
+    <string name="miff_message_device_not_recognized">This device isn\'t recognized for now. Update Miff from the store, then try again.</string>
     <string name="miff_message_one_miff">For now, this account can be part of one Miff at a time.</string>
     <string name="miff_message_no_profile">Some details of your profile are still missing. We\'re taking you back to that step to complete them.</string>
     <string name="miff_dialog_working_a11y">Working</string>

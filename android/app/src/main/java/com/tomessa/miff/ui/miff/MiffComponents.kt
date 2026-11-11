@@ -214,6 +214,7 @@ fun actionMessageText(message: ActionMessage): String =
             ActionMessage.GENERIC -> R.string.miff_message_generic
             ActionMessage.ONE_MIFF -> R.string.miff_message_one_miff
             ActionMessage.NO_PROFILE -> R.string.miff_message_no_profile
+            ActionMessage.DEVICE_NOT_RECOGNIZED -> R.string.miff_message_device_not_recognized
         },
     )
 

@@ -1,5 +1,6 @@
 package com.tomessa.miff.data.miff
 
+import com.tomessa.miff.data.AppCheckProbe
 import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.session.ActiveDevice
 import com.tomessa.miff.data.session.Clearance
@@ -14,6 +15,7 @@ import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.miff.MiffWrites
 import com.tomessa.miff.domain.miff.interpretMiffError
 import com.tomessa.miff.domain.miff.isAccessLostError
+import com.tomessa.miff.domain.miff.refineRefusal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
@@ -245,6 +247,11 @@ class FirestoreMiffRepository(
      * detection (LOC-2b) looks at its Miffs again. Nothing about the Miff is passed (no name, no identifier).
      */
     private val onSharingChanged: () -> Unit = {},
+    /**
+     * AC-4: asked only after the server REFUSED a step of "Créer" or "Rejoindre", to tell "this device is not recognized" (no App Check token)
+     * from a refusal of the rules, see [refined]. The default knows nothing: nothing changes.
+     */
+    private val appCheck: AppCheckProbe = AppCheckProbe.None,
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -252,7 +259,7 @@ class FirestoreMiffRepository(
         val state =
             when (val loaded = readState(uid)) {
                 is StateRead.Value -> loaded.state
-                is StateRead.Failed -> return CreatePreparation.Failed(loaded.failure)
+                is StateRead.Failed -> return CreatePreparation.Failed(loaded.failure.refined())
             }
         // A stale index (removed, or Miff deleted) is cleaned BEFORE the write, or the rules would refuse it for nothing.
         cleanUpSilently(uid, state.lost)
@@ -275,7 +282,7 @@ class FirestoreMiffRepository(
         val code =
             when (val free = freeCode()) {
                 is CodeDraw.Free -> free.code
-                is CodeDraw.Failed -> return CreateResult.Failed(free.failure)
+                is CodeDraw.Failed -> return CreateResult.Failed(free.failure.refined())
             }
         val miffId = newMiffId()
         val access = location.current()
@@ -312,7 +319,7 @@ class FirestoreMiffRepository(
                     onSharingChanged()
                     CreateResult.Created(miffId, code, MiffName.stored(name), preparation.firstMiff)
                 } else {
-                    CreateResult.Failed(result.failure)
+                    CreateResult.Failed(result.failure.refined())
                 }
             }
         }
@@ -353,7 +360,7 @@ class FirestoreMiffRepository(
         val found =
             when (val read = guarded { store.readJoinCode(code) }) {
                 is Guarded.Value -> read.value
-                is Guarded.Failed -> return JoinPreparation.Failed(read.failure)
+                is Guarded.Failed -> return JoinPreparation.Failed(read.failure.refined())
             }
         val miffId = (found?.get("miffId") as? String)?.takeIf(FirestoreMiffStore::isMiffId)
         // The name was written by the holder of the code, before the reader consented to anything: cleaned like any name read
@@ -364,7 +371,7 @@ class FirestoreMiffRepository(
         val state =
             when (val loaded = readState(uid)) {
                 is StateRead.Value -> loaded.state
-                is StateRead.Failed -> return JoinPreparation.Failed(loaded.failure)
+                is StateRead.Failed -> return JoinPreparation.Failed(loaded.failure.refined())
             }
         cleanUpSilently(uid, state.lost)
         // Compared on the FIELD miffId of the indexes, never on the id of the document ("free").
@@ -423,9 +430,14 @@ class FirestoreMiffRepository(
                         JoinResult.Joined(preparation.miffId, preparation.firstMiff)
                     }
 
-                    // The rules said no: the code was renewed, or the Miff deleted, since it was read. Same message.
+                    // The rules said no: the code was renewed, or the Miff deleted, since it was read. Same message...
+                    // ...unless this phone holds no App Check token (AC-4): then "this device is not recognized", which says what is true.
                     result.failure == MiffFailure.REFUSED -> {
-                        JoinResult.NotFound
+                        if (result.failure.refined() == MiffFailure.DEVICE_NOT_RECOGNIZED) {
+                            JoinResult.Failed(MiffFailure.DEVICE_NOT_RECOGNIZED)
+                        } else {
+                            JoinResult.NotFound
+                        }
                     }
 
                     else -> {
@@ -773,6 +785,14 @@ class FirestoreMiffRepository(
         }
 
     private suspend fun <T> guarded(call: suspend () -> T): Guarded<T> = guardedCall(timeoutMillis, call)
+
+    /**
+     * AC-4: a REFUSAL (and only a refusal: the token is not even looked at for anything else) on a phone that holds no App Check token
+     * becomes [MiffFailure.DEVICE_NOT_RECOGNIZED]. Used only on the way OUT to the screens "Créer" and "Rejoindre": the logic of this class
+     * keeps testing [MiffFailure.REFUSED].
+     */
+    private suspend fun MiffFailure.refined(): MiffFailure =
+        if (this == MiffFailure.REFUSED) refineRefusal(this, appCheck.tokenIsMissing()) else this
 
     companion object {
         const val TIMEOUT_MS = 20_000L

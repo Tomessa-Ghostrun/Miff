@@ -299,6 +299,7 @@
     <string name="common_cancel">Annuler</string>
     <string name="miff_message_offline">Pas de connexion pour le moment. Réessaie dès que le réseau est revenu.</string>
     <string name="miff_message_generic">Ça n\'a pas fonctionné. Réessaie dans un instant.</string>
+    <string name="miff_message_device_not_recognized">Cet appareil n\'est pas reconnu pour le moment. Mets Miff à jour depuis le store, puis réessaie.</string>
     <string name="miff_message_one_miff">Pour l\'instant, ce compte peut faire partie d\'une seule Miff à la fois.</string>
     <string name="miff_message_no_profile">Il manque encore des informations sur ton profil. On te ramène à cette étape pour les compléter.</string>
     <string name="miff_dialog_working_a11y">En cours</string>
