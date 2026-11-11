@@ -9,7 +9,7 @@
 - **Le texte de consentement de la position doit être celui de la version 3 ou plus** (c'est le cas de vos comptes de test s'ils ont accepté le texte v3). Le texte sera amendé pour citer la photo localisée par ailleurs : cette livraison **ne touche à aucun texte légal**.
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main. Désinstallez l'ancienne version d'abord.
 - **Aucune notification** n'est envoyée : la bulle d'incitation n'existe que **dans l'application ouverte**.
-- **Votre position doit déjà être publiée dans la Miff** (le téléphone l'écrit à l'ouverture de l'application, une fois le consentement et la localisation « Toujours » donnés) : juste après une installation neuve, « Publier » peut dire « Position introuvable pour le moment, réessaie dans un instant. » le temps que ce soit fait ; réessayez après quelques secondes.
+- **Si votre position n'est pas encore publiée dans la Miff** (juste après une installation neuve, ou un GPS lent) : « Publier » **mesure votre position**, la confie à la détection qui la publie elle-même, puis la photo part dans le même geste (jusqu'à 10 s d'attente, le bouton reste occupé). Ancien comportement corrigé : « Position introuvable pour le moment » en boucle.
 - **Une photo est toujours publiée avec votre position** (décision du 2026-11-06) : il n'y a pas d'option « sans lieu » ni de « Je vais bien » sans photo.
 - **Le bouton central est une pastille de couleur** (vert, orange, rouge, gris quand rien n'est connu), **sans aucun dessin dedans**. La barre est celle d'aujourd'hui (le verre est le ticket TABBAR-GLASS).
 
@@ -120,3 +120,12 @@ Compte **B** : il doit avoir **publié sa propre position** (ouvrir l'applicatio
 - [ ] **Aucune photo** dans la galerie du téléphone après vos essais, et aucun fichier de photo (le gestionnaire de fichiers de l'OPPO ne montre rien de nouveau).
 - [ ] Les **applications récentes** (carré en bas) ne montrent ni le viseur ni la photo (écran masqué).
 - [ ] Aucun message qui accuse (« échec », « erreur », « tu aurais dû »).
+
+
+## Position pas encore publiée (correctif du 2026-11-11, miroir iOS)
+
+- [ ] Installez l'APK neuf (ou effacez les données de l'application), connectez-vous, **acceptez la position « Toujours » + précise**, **ne touchez pas** au Feed, ouvrez tout de suite l'Update, prenez une photo et touchez **Publier** : la photo **part** (au plus ~10 s), sans « Position introuvable ».
+- [ ] Refaites-le **à l'intérieur**, sans fenêtre : même résultat, ou, si le GPS ne répond vraiment pas, « Position introuvable… » **puis « Réessayer » qui finit par marcher** (plus de boucle).
+- [ ] Passez la position en **« Uniquement pendant l'utilisation »** ou **approximative** : « Publier » dit tout de suite que la position n'est pas accessible (**Ouvrir les réglages**), et non « réessaie dans un instant ».
+- [ ] Écran de diagnostic de l'APK debug > journal de détection : des lignes `UPDATE_*` et `POSITION_*` (codes seulement) ; **aucune coordonnée**.
+- [ ] Console Firebase : votre document `positions/{votre uid}` de la Miff est écrit **par la détection** (son heure = celle de la photo) ; l'Update n'a écrit que `photos` et `status`.
