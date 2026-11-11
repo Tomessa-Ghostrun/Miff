@@ -85,7 +85,9 @@ final class FlashStateTests: XCTestCase {
 
     private func support(_ outputSupportsOn: Bool, _ deviceHasFlash: Bool, _ deviceFlashAvailable: Bool) -> Bool {
         FlashSupport.isAvailable(
-            outputSupportsOn: outputSupportsOn, deviceHasFlash: deviceHasFlash, deviceFlashAvailable: deviceFlashAvailable
+            outputSupportsOn: outputSupportsOn,
+            deviceHasFlash: deviceHasFlash,
+            deviceFlashAvailable: deviceFlashAvailable
         )
     }
 
