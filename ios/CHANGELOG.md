@@ -63,6 +63,36 @@ Coût : aucun (AVFoundation, aucun service ni quota). Sécurité : aucune permis
 
 Écarts : aucun écran de maquette ne montre le flash (`design/exports/update/claude/03-viseur-et-apercu.png`) ; l'emplacement et le style suivent le bouton de bascule voisin ; pictogrammes du système faute d'export vectoriel du PM. Le bouton n'est pas grisé mais masqué quand il est impossible (choix calme : pas de bouton qui ne sert à rien). Limite à vérifier sur l'iPhone : l'apparition du bouton juste après le démarrage de la caméra (le matériel répond une fois la session lancée).
 
+### Mes informations modifiable (ticket `docs/tickets/modifier-infos-perso.md`, décision du PM du 2026-11-11)
+
+Branche `ios/mes-informations-modifiables`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette : `docs/qa/checklists/myinfo-ios-recette-pm.md`. Détails, écarts avec Android et coût : section « Mes informations modifiable » de `ios/README.md`. **Aucune règle Firestore modifiée** (le diff de `backend/` est vide), aucun déploiement.
+
+Ajouté :
+- **Réglages > Mes informations modifiable**, à l'identique d'Android (ONB-3a) : prénom et nom (1 à 50 unités UTF-16, mêmes filtres qu'à l'inscription, compteur à partir de 45, message « Écris au moins un caractère. » seulement après avoir touché le champ), photo (sélecteur du système, recadrage carré existant, 20 000 octets au plus, suppression possible), pays et numéro (obligatoire, jamais vidé, E.164, mention de visibilité), « Enregistrer » grisé tant que rien n'a changé ou qu'une valeur est invalide et pendant l'envoi, confirmation « Quitter sans enregistrer ? » (deux boutons de même poids) et geste de retour verrouillé tant que des changements ne sont pas enregistrés.
+- **Écriture** (`StoreMyProfileRepository`, protocole `MyProfileRepository`) : `users/{uid}` ET la fiche `members/{uid}` de chaque Miff, par les transactions du `MiffStore` existant : 1 lot (profil + 15 fiches au plus), au-delà le profil d'abord puis des groupes de 15, repli « profil seul puis fiche par fiche » si une Miff a disparu (la fiche refusée est ignorée), index des Miffs relu auprès du serveur, les quatre clés toujours réécrites (répare une copie en retard), clé `avatar` retirée sans photo (`FieldValueSpec.deleteField`), rien n'est écrit ni mis en file hors connexion, une fiche non atteinte donne « Tes informations sont enregistrées… » et « Enregistrer » finit le travail.
+- **En-tête du Profil mis à jour tout de suite** : `ProfileTabViewModel.onSaved` (protocole `CurrentProfileHolding`), sans seconde lecture (la carte du Feed suit l'écoute des fiches des membres) ; une lecture partie avant l'enregistrement ne remet pas l'ancien profil. Le branchement du carrousel (PR #145, `replaceFace`) est déjà fait de l'autre côté : il observe `profile.state`.
+- `SwipeBackScreen.myInfo(hasUnsavedWork:)`.
+- Tests : `StoreMyProfileRepositoryTests` (1, 2, 15, 16, 31 Miffs ; Miff disparue ; hors ligne ; réseau perdu entre deux groupes ; ancien compte refusé ; délai ; valeurs refusées avant tout envoi), `MyInfoViewModelTests` (validations, emoji coupés sans casser une paire, numéros, photo, un seul envoi à la fois, messages, 3 refus de suite, copie en attente, hors ligne), `CurrentProfileHoldingTests`, `MyInfoSourcesTests` (aucune trace dans un journal ou une analyse, aucune caméra, aucune écriture hors des deux documents), `SwipeBackPolicyTests`.
+
+Modifié :
+- `Views/Settings/SettingsScreens.swift` : `MyInfoView` en lecture seule déplacée et remplacée par `Views/Settings/MyInfoView.swift` ; `SettingsDestinationView` et `AppEnvironment` (`myProfileRepository`, `makeMyInfoViewModel`).
+- `FieldValueSpec` : un cas `deleteField` (mise à jour seulement), converti en `FieldValue.delete()` par les deux convertisseurs existants.
+
+Supprimé :
+- La clé `ios_myinfo_edit_soon` (« Tu pourras modifier tes informations dans une prochaine mise à jour ») et sa ligne dans `AccountAndSettingsTests`.
+
+Écarts avec Android (voulus) : pas de « Prendre une photo » (le texte d'usage de l'appareil photo ne couvre que « Donner des nouvelles » : décision du PM pour le changer), phrase de visibilité de la photo affichée, « OK » du clavier numérique qui range le clavier, pas d'attente fiche par fiche quand le réseau manque, noms comparés une fois normalisés.
+
+Coût : **1 + N écritures** par enregistrement (comptage vérifié par `StoreMyProfileRepositoryTests.testTheWriteCountIsOnePlusN`; les lectures sont estimées, **mesure à l'émulateur demandée**) (N = Miffs ; 2 en gratuit, 6 à 5 Miffs, 16 à 15), l'index des Miffs lu auprès du serveur coûte N lectures (le ticket écrit 1 : c'est N, facturé par document), 0 lecture de règles pour un nom ou une photo, N lectures de règles (15 au plus par requête) quand le numéro change ; aucune interrogation périodique. Estimé par lecture du code et des règles, non mesuré à l'émulateur. Signal de bascule : celui de `docs/dev/surveillance-quotas.md`.
+
+Sécurité : prénom, nom, numéro et photo n'existent qu'en mémoire (jamais sur le disque, jamais dans un journal, une analyse, un rapport de plantage ou un message d'erreur, aucun événement d'analyse ajouté) ; chaque erreur est réduite à un résultat sans message ; les chemins n'acceptent que des identifiants de la forme attendue ; aucune ré-authentification (donnée de profil) ; aucune permission ajoutée (`NSCameraUsageDescription` inchangée, aucune clé de photothèque).
+
+Message d'échec répété : clé dédiée `ios_myinfo_save_failed_later` (« Tes informations restent ici : réessaie un peu plus tard. »), car les saisies ne sont qu'en mémoire et « Rien n'est perdu : tu peux fermer l'app » serait faux ici. Si le profil repasse à « chargement » ou « illisible » pendant la saisie, le formulaire est gardé.
+
+Risque assumé (parité Android) : une fiche de Miff que le serveur refuse SEULE, pour une cause autre que le réseau, est comptée comme écrite (on suppose la Miff disparue) ; si la cause est autre (règle, App Check), cette Miff garde l'ancienne copie sans message.
+
+Limite connue : un ancien compte sans `termsVersion` voit toute modification refusée par les règles (« Ça n'a pas fonctionné cette fois… ») ; aucune règle n'est changée (ticket, Q11) ; à signaler au PM si un compte réel est concerné.
+
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 
 Troisième des trois PR empilées (base : `ios/mode-voyage-profil`, VOY-2I). Ticket `docs/tickets/mode-voyage.md` §6 (décisions du PM du 2026-11-10 : ouvert à TOUS ; la position reste partagée ; le voyageur n'a **aucun impact** sur la couleur ni sur le « n sur m »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/voyage-ios-recette-pm.md`. Détail : `ios/README.md` (« Mode voyage »).
