@@ -41,6 +41,7 @@ Pour n'avoir aucune copie : **Réglages Android > Applications > Miff > Stockage
 Après un « Effacer les données » + reconnexion (profil non encore lu), coupez le réseau avant d'ouvrir l'onglet **Profil**.
 
 - [ ] La même pop-in apparaît sur l'onglet Profil (si le profil ne peut pas être lu) ; au retour du réseau elle disparaît et le nom s'affiche.
+- [ ] Sur l'onglet Profil, faites **Retour** quand la pop-in est ouverte : la pop-in se ferme et la page affiche la même phrase calme avec le bouton « Réessayer » (comme le Feed). Aucun compte à rebours n'est affiché une fois fermée.
 - [ ] Onboarding (nouveau compte, étape Profil/Téléphone) en mode avion : pas de chargement sans fin ; à la validation, le message habituel « Pas de connexion » (inchangé).
 
 ## Partie F — Accessibilité (TalkBack, grand texte)
