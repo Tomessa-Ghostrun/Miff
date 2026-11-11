@@ -95,7 +95,8 @@ final class BubbleLayoutTests: XCTestCase {
         let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
         var words: [String] = []
         let keys = [
-            "feed_bubble_all_good", "feed_bubble_no_news_title", "feed_bubble_alone", "feed_bubble_sharing_stopped_title"
+            "feed_bubble_all_good", "feed_bubble_no_news_title",
+            "feed_bubble_alone", "feed_bubble_sharing_stopped_title"
         ]
         for key in keys {
             let localizations = try XCTUnwrap(strings[key]?["localizations"] as? [String: [String: Any]])
