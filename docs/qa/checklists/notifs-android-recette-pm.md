@@ -106,6 +106,27 @@ N3 et N4 concernent **la Miff vue par B** quand **c'est A qui est sorti**. Compt
 | 5.8 | Vérifiez dans la **console Firestore** (Utilisation) que N3 / N4 ont fait **quelques lectures** (7 pour une Miff de 4) et **aucune écriture**. | Cohérent avec `docs/dev/surveillance-quotas.md`, §5 quinquies. |
 | 5.9 | **À vérifier** : l'application **fermée**, la vérification de N3 obtient bien le jeton d'authentification et celui d'App Check en arrière-plan. | La notification de 5.1 arrive app fermée (sinon, signalez-le : c'est le point de la spec à confirmer sur appareil). |
 
+## Partie 6 : N6 « Tu es dans une zone de danger de ta Miff » (PR C)
+
+**Préparation** : le compte **créateur de la Miff** est **Premium accordé à la main** (`docs/dev/premium-manuel.md`) et a posé **une zone de danger** (Profil > lieux > « Zone de danger »). Le compte **A** (testé) est **membre** de cette Miff (un compte gratuit convient : la zone s'applique à tous les membres), a donné son accord de partage et la localisation « Toujours ». Il faut **marcher** (ou simuler une position avec les options de développement du téléphone) : rien ne se fabrique depuis la console pour cette partie.
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| 6.1 | A n'est dans aucune zone de confiance ; **A entre** dans la zone de danger (app fermée, écran verrouillé). | Quelques instants après la détection de l'entrée (**le délai est celui du système**, de quelques dizaines de secondes à quelques minutes) : « **Tu es dans une zone de danger de ta Miff** » / « **Pendant que tu y es, tes proches voient un état différent.** » sur le canal « Nouvelles de ta Miff ». **Aucun nom de lieu, aucune adresse.** |
+| 6.2 | Touchez-la. | Le **Feed** (carte « moi », bulle). **Pas** l'Update. La ligne est dans le centre. |
+| 6.3 | **Avant** l'entrée, A était en train de recevoir un rappel orange / rouge (partie 4). | Ces rappels **sont annulés** (aucun « Tu es passé orange / rouge » en zone de danger). |
+| 6.4 | A est **dans une zone de confiance qui recouvre la zone de danger** (confiance prioritaire). | **Pas de N6** (A reste « en sécurité » dans le Feed). Puis A **sort** de la zone de confiance en restant dans la zone de danger : **N6** arrive. |
+| 6.5 | **Redémarrez** le téléphone pendant que A est déjà dans la zone de danger (déjà signalée avant). | **Aucune** nouvelle N6. |
+| 6.6 | Même cas, mais A n'avait **pas** été signalé en zone de danger avant le redémarrage (la détection était coupée). | **Une** N6 (c'est vrai maintenant, et les proches voient A autrement). |
+| 6.7 | A **sort et rentre** dans la même zone en moins d'une heure. | **Une seule** N6 (réarmement de 60 minutes). |
+| 6.8 | Entrée entre **22 h et 7 h**. | N6 **sans son ni vibration**. |
+| 6.9 | Quatre entrées dans la journée (zones différentes ou après une heure). | Trois notifications du système ; la quatrième n'est qu'**une ligne silencieuse** du centre. |
+| 6.10 | Application **au premier plan** au moment de l'entrée. | Pas de notification du système ; une ligne silencieuse dans le centre. |
+| 6.11 | Coupez « Quand j'entre dans une zone de danger » (Réglages > Notifications). | **Aucune** notification, **mais ce que la Miff voit ne change pas** (A reste « Dans une zone de danger » dans le Feed des proches). Le texte de l'interrupteur le dit. |
+| 6.12 | Compte avec **plusieurs Miffs** (Premium accordé à la main) dont deux ont une zone de danger au même endroit. | Une notification **par Miff** ; le **nom de la Miff** apparaît sur la ligne du centre. |
+| 6.13 | **Mesure sur l'OPPO** : application balayée, économie d'énergie. | **Notez** le délai entre l'entrée réelle et N6 (**risque ColorOS**). |
+| 6.14 | Console Firestore (Utilisation). | **Aucune lecture ni écriture** de plus à cause de N6 (le statut `in_risk` de A est écrit comme avant, indépendamment de la notification). |
+
 ## Ce qui est volontairement absent (à ne pas signaler comme un défaut)
 
 - **Aucun build « délais raccourcis ÷ 60 »** : voir l'astuce de la console ci-dessus.

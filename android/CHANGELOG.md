@@ -2,6 +2,29 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.28.0] - 2026-11-08 : notifications, PR C : N6 « Tu es dans une zone de danger de ta Miff » (NOTIF-7A)
+
+Ticket `docs/tickets/notifications.md` §20.7 (N6) et vecteurs V1 à V10 (§20.9). Branche `android/notifications-p0-c` (PR brouillon, **troisième de trois**, empilée sur la PR B). Numéro : 0.22.0 est la PR B ; à renuméroter au merge si l'ordre change. Décisions du PM appliquées (valeurs par défaut de Q34) : **(a)** toutes mes Miffs dont une zone de danger me rend `in_risk`, avec le nom de la Miff **si j'en ai plusieurs** (dans le centre) ; **(b)** texte **variante A** ; **(c)** au toucher : le **Feed** ; **(d)** nuit silencieuse, plafond **3 par jour hors du total de 6**, réarmement **60 min** ; **(e)** interrupteur « Quand j'entre dans une zone de danger » **présent** (il coupe la notification, jamais ce que la Miff voit). **Aucun changement du modèle de données, des règles Firestore ni des fonctions ; aucune dépendance nouvelle ; aucune lecture ni écriture Firestore (critère N-P0-11).**
+
+### Ajouté
+- **N6, locale et immédiate** : quand le moteur de suivi **valide** que **j'entre** dans une zone de danger d'une Miff (une présence `in_risk` qui n'était pas déjà là), la notification est affichée **tout de suite, avant même l'écriture du statut** : elle ne dépend pas du réseau. « **Tu es dans une zone de danger de ta Miff** » / « **Pendant que tu y es, tes proches voient un état différent.** » (mot pour mot, variante A ; aucun nom de lieu, aucune adresse, aucune position). Elle part du récepteur de la géofence (déjà dans ses quelques secondes), **sans service de premier plan**.
+- **Quand N6 part, et quand elle ne part pas** (`TrackingEngine` + `PresenceListener.onEnteredDanger`, testé par `TrackingEngineDangerNotificationTest` : V1 à V4) : **oui** si je n'étais dans aucune zone de confiance et que j'entre dans une zone de danger (V1) ; **oui** si je **sors** d'une zone de confiance en restant dans une zone de danger (V2) ; **non** si j'entre dans une zone de danger **en étant dans une zone de confiance** (la confiance l'emporte, aucun changement de présence) ; **non** pour une présence **déjà** `in_risk` (redémarrage, ré-armement : V3) ; **oui, une fois** si, au ré-armement, la dernière présence n'était pas `in_risk` et que je suis dans la zone (« déjà dedans », V4) ; **non** pour un événement trop ancien pour les règles (plus de 24 h : ce n'est plus le présent).
+- **Décision d'affichage** (`NotificationScheduler.onEnteredDanger`, V5 à V10) : clé `n6|Miff|lieu|heure` **jamais notifiée deux fois** ; **réarmement de 60 minutes** par (Miff, lieu) : une sortie et une rentrée rapprochées (une géofence qui oscille) ne donnent **qu'une** notification ; **3 par jour**, **hors du plafond de 6** de N1 à N4, la quatrième n'est qu'une **ligne silencieuse** du centre ; **nuit** (22 h à 7 h) : **sans son ni vibration** ; **app au premier plan** : pas de notification du système, une ligne silencieuse ; interrupteur N6 ou général coupé, permission refusée, session invalide : **rien**, pas même une ligne (et un interrupteur coupé n'use pas le réarmement). Le plateau, le centre, les compteurs et les clés sont ceux des PR A et B.
+- **N6 annule mes rappels N1 / N2** : l'entrée en zone de danger est aussi un changement de MA présence (`onMyPresence`), qui annule ce qui attendait (plus aucun rappel « à toi » en zone de danger, décision Q27).
+- **Toutes mes Miffs** : une zone attachée à plusieurs Miffs donne une notification **par Miff** (une clé par Miff) ; le centre affiche alors le nom de la Miff sur la ligne.
+- Tests : `TrackingEngineDangerNotificationTest` (V1 à V4 + une zone de deux Miffs, un lieu d'une seule Miff, une notification qui échoue ne gêne jamais la détection, événement trop ancien), `NotificationSchedulerTest` (V1, V5 à V10, jamais de snapshot ni de lecture du serveur), `NotificationPlannerTest` / `NotificationDeliveryTest` (plafond et nuit de N6).
+
+### Modifié
+- `PresenceListener` devient une interface avec une méthode par défaut (`onEnteredDanger`), `TrackingEngine` appelle `tellDanger` (entouré : une panne côté notifications n'atteint jamais le suivi). `NotificationPolicy.N6_REARM_MILLIS` (60 min).
+
+### Choix « économiques »
+- **Aucun** : N6 ne lit ni n'écrit rien sur le serveur, ne coûte aucune lecture, aucune écriture, aucun service. Voir `docs/dev/surveillance-quotas.md` §5 quinquies.
+
+### À savoir
+- **Délai de détection** : celui du système (géofence : de quelques dizaines de secondes à quelques minutes, non garanti) ; **ColorOS peut le retarder** (mesure en recette, partie 6). Si la détection est en retard, N6 aussi : elle part quand l'entrée est **validée**.
+- **N5** (prévenir les AUTRES membres) reste abandonnée (phase 2, il faut un serveur) : ce que les autres voient est dans le Feed, app ouverte.
+- **Texte de consentement d'entrée dans une Miff** : mentionner les zones de danger (point (f) de Q34) reste une décision de texte légal, hors de cette PR (aucun texte légal n'est modifié ici).
+
 ## [0.27.0] - 2026-11-08 : notifications, PR B : planificateur pur, rappels N1 / N2 « à toi », N3 / N4 « ta Miff a changé de couleur » (NOTIF-3A, NOTIF-4A, NOTIF-5A)
 
 Ticket `docs/tickets/notifications.md` §20.2 à §20.9. Branche `android/notifications-p0-b` (PR brouillon, **deuxième de trois**, empilée sur la PR A : elle contient ses commits jusqu'à sa fusion). **Fusion simple** de `origin/android/feed-etiquettes-seuils` (seuils **2 h / 4 h**, règle de la zone de danger et bornes strictes « plus de », 0.20.0) : `StatusColor` n'est **pas** dupliqué. Numéro : 0.21.0 est la PR A, 0.20.0 la branche des seuils ; à renuméroter au merge si l'ordre change. Aucun changement du modèle de données, des règles Firestore ni des fonctions. **Aucune dépendance nouvelle.**

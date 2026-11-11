@@ -597,6 +597,8 @@ class TrackingEngine(
                 }
             if (fact != null) {
                 tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+                // "Already inside at the arming" (DET3): an arrival is what "already there" means; a presence that was already in_risk gives no fact, so no second N6.
+                tellDanger(state.uid, miffId, last, DerivedPresence(fact.presence, fact.placeId), fact.presenceAtMillis)
                 journal.record(
                     if (fact.presence ==
                         PresenceValue.UNKNOWN
@@ -628,6 +630,23 @@ class TrackingEngine(
             presenceListener.onMyPresence(miffId, presence, atMillis, setLastUpdate)
         } catch (e: Exception) {
             // A reminder that cannot be planned must never stop the detection of the arrivals and departures.
+        }
+    }
+
+    /** N6: told only for a REAL entry in a danger zone (the previous presence of this Miff was not in_risk). Swallowed like [tellPresence]. */
+    private fun tellDanger(
+        uid: String,
+        miffId: String,
+        previous: DerivedPresence?,
+        now: DerivedPresence,
+        atMillis: Long,
+    ) {
+        if (now.presence != PresenceValue.IN_RISK || previous?.presence == PresenceValue.IN_RISK) return
+        val placeId = now.placeId ?: return
+        try {
+            presenceListener.onEnteredDanger(uid, miffId, placeId, atMillis)
+        } catch (e: Exception) {
+            // A notification that cannot be shown must never stop the detection.
         }
     }
 
@@ -735,6 +754,10 @@ class TrackingEngine(
                     ?: continue
             val (derived, fact) = result
             tellPresence(miffId, derived.presence, at ?: now, fact.setLastUpdate)
+            // I ENTERED a danger zone (the previous presence of this Miff was not already in_risk): N6, once, before the status is even written. Entering a danger zone
+            // while in a trusted one gives no result here (the trusted zone wins); leaving the trusted one while staying in the danger one does.
+            // An event too old for the rules (no time to write) is not told: it is no longer the present.
+            if (at != null) tellDanger(uid, miffId, miff.derived(), derived, at)
             if (at == null) {
                 // Too old for the rules to accept: given up (no loop), but the local state moves on.
                 journal.record(JournalKind.STATUS_GIVEN_UP, derived.placeId)

@@ -7,6 +7,7 @@ import com.tomessa.miff.domain.notification.ItemState
 import com.tomessa.miff.domain.notification.NotificationDelivery
 import com.tomessa.miff.domain.notification.NotificationItem
 import com.tomessa.miff.domain.notification.NotificationPlanner
+import com.tomessa.miff.domain.notification.NotificationPolicy
 import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.notification.NotifiedKeys
 import com.tomessa.miff.domain.notification.PlanInput
@@ -225,6 +226,69 @@ class NotificationScheduler(
 
             NotificationType.N6 -> {
                 Unit
+            }
+        }
+    }
+
+    // --- N6: I entered a danger zone of my Miff (NOTIF-7A) ------------------------------------------------------------------------------------
+
+    /**
+     * The detection validated that I ENTERED a danger zone of [miffId] (a presence `in_risk` that was not already there: entering one while in a trusted zone, and a
+     * presence already `in_risk` before a restart, never come here). N6 is shown AT ONCE, before the status is even written: it does not wait for the network, and it
+     * reads and writes NOTHING on the server (criterion N-P0-11). Decision: the key `n6|Miff|place|time` is never notified twice; a zone that is left and entered again
+     * within 60 minutes (a geofence that oscillates) gives ONE notification; 3 a day, outside the total of 6 (decision Q30); the app in front, the night and the switches
+     * are those of [NotificationDelivery]. Without the permission or a valid session: nothing.
+     */
+    fun onEnteredDanger(
+        myUid: String,
+        miffId: String,
+        placeId: String,
+        atMillis: Long,
+    ) {
+        synchronized(lock) {
+            if (!permissionAllowed() || !sessionValid(myUid)) return
+            val now = nowMillis()
+            val key = "n6|$miffId|$placeId|$atMillis"
+            val rearmKey = "n6rearm|$miffId|$placeId"
+            val keys = ledger.keys(now)
+            val lastForThisZone = keys[rearmKey]
+            if (lastForThisZone != null && now - lastForThisZone < NotificationPolicy.N6_REARM_MILLIS) return
+            val zone = zone()
+            val day =
+                Instant
+                    .ofEpochMilli(now)
+                    .atZone(zone)
+                    .toLocalDate()
+                    .toString()
+            val counters = ledger.counters(day)
+            val decision =
+                NotificationDelivery.decide(
+                    type = NotificationType.N6,
+                    preferences = settings.current(),
+                    counters = counters,
+                    localHour = Instant.ofEpochMilli(now).atZone(zone).hour,
+                    appInForeground = appInForeground(),
+                    latenessMillis = 0L,
+                    alreadyNotified = key in keys,
+                )
+            when (decision) {
+                Delivery.Drop -> {
+                    Unit
+                }
+
+                Delivery.Silent -> {
+                    center.add(NotificationItem(key, NotificationType.N6, miffId, now, state = ItemState.SILENT))
+                    ledger.remember(key, now)
+                    ledger.remember(rearmKey, now)
+                }
+
+                is Delivery.Show -> {
+                    center.add(NotificationItem(key, NotificationType.N6, miffId, now, state = ItemState.SHOWN))
+                    presenter.show(NotificationType.N6, key, decision.quiet)
+                    ledger.remember(key, now)
+                    ledger.remember(rearmKey, now)
+                    ledger.saveCounters(counters.afterShown(NotificationType.N6))
+                }
             }
         }
     }
