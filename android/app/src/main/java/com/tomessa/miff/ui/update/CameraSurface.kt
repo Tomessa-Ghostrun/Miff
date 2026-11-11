@@ -41,7 +41,8 @@ import kotlin.coroutines.resumeWithException
  *   goes to the background or the screen locks (the lifecycle of the screen). Miff never opens the camera by itself and nothing can trigger it from afar
  *   (criterion P1);
  * - the photo is captured IN MEMORY ([ImageCapture.OnImageCapturedCallback]): no file is created, nothing goes to the gallery, no storage permission;
- * - no flash, no zoom, no filter, no timer: not asked for (V4). Nothing is logged here.
+ * - the flash only fires at the moment of the photo (never a continuous torch), is off by default and is never remembered ([FlashState]); no zoom, no filter,
+ *   no timer: not asked for (V4). Nothing is logged here.
  */
 
 enum class CameraLens { FRONT, BACK }
@@ -53,6 +54,10 @@ class CameraHandle {
 
     /** Both a front and a back camera exist: the button and the double tap switch (else the button is hidden). */
     var canSwitch by mutableStateOf(false)
+        internal set
+
+    /** The flash of the active camera: off by default, shown only when the camera has one (see [FlashState]). */
+    var flash by mutableStateOf(FlashState())
         internal set
 
     @Volatile
@@ -68,6 +73,22 @@ class CameraHandle {
         lens = if (lens == CameraLens.FRONT) CameraLens.BACK else CameraLens.FRONT
     }
 
+    fun toggleFlash() {
+        flash = flash.toggled()
+        applyFlash()
+    }
+
+    /** Back from the background: the flash is extinguished (the camera is rebound by the lifecycle with the same capture use case). */
+    fun resetFlash() {
+        flash = flash.reset()
+        applyFlash()
+    }
+
+    private fun applyFlash() {
+        // Never an error for the user: a refused flash mode simply leaves the photo without flash.
+        runCatching { capture?.flashMode = flash.flashMode }
+    }
+
     /**
      * Takes ONE photo (a second request while one is under way is ignored: two taps on the shutter give one photo, criterion V1). [onResult] is called on the
      * main thread with the upright-ready bitmap and the rotation the sensor asks for, or null bitmap when it failed.
@@ -79,6 +100,7 @@ class CameraHandle {
         val capture = capture ?: return false
         if (busy) return false
         busy = true
+        applyFlash()
         val main = Handler(Looper.getMainLooper())
         capture.takePicture(
             executor,
@@ -168,6 +190,8 @@ fun CameraSurface(
             val hasFront = provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)
             val hasBack = provider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)
             handle.canSwitch = hasFront && hasBack
+            // A new camera (or a first binding): flash off, and not available until the bound camera says it has one.
+            handle.flash = handle.flash.withCamera(false)
             // Selfie by default; without a front camera, the back one; without any, the calm "camera unavailable".
             val lens =
                 when {
@@ -225,8 +249,9 @@ fun CameraSurface(
                     CameraSelector.DEFAULT_BACK_CAMERA
                 }
             provider.unbindAll()
-            provider.bindToLifecycle(owner, selector, preview, capture)
+            val camera = provider.bindToLifecycle(owner, selector, preview, capture)
             handle.capture = capture
+            handle.flash = handle.flash.withCamera(camera.cameraInfo.hasFlashUnit())
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
