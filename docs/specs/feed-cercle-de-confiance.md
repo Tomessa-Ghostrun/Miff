@@ -16,7 +16,7 @@
 Avatar (anneau coloré selon statut), nom, % batterie du téléphone, badge de statut (ex. "À la maison", "Dans une zone de danger"), horodatage de dernière activité ("Arrivé il y a 12 min"), photo de la dernière update (optionnelle).
 
 ## Critères d'acceptation
-- Sélecteur de Miff active en haut de l'écran si l'utilisateur appartient à plusieurs Miffs (premium « Miff+ » uniquement, cf. modèle freemium).
+- Sélecteur de Miff active en haut de l'écran, **visible et cliquable pour tout le monde, même avec une seule Miff** (décision du PM, 2026-11-08, qui remplace « premium uniquement ») : il liste la ou les Miffs puis « Rejoindre une Miff » et « Créer une Miff » ; pour un compte gratuit déjà dans une Miff, toucher l'une des deux entrées ouvre le paywall (voir `docs/tickets/feed.md` D51).
 - Chaque membre du cercle affiché avec son statut le plus récent.
 - Rafraîchissement du statut en temps réel ou quasi temps réel dès qu'une update/un événement de geofencing arrive.
 

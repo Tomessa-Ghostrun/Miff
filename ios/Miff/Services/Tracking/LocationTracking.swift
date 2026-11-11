@@ -19,6 +19,9 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     /// avant la sortie et s'écrire comme une sortie manquée.
     private var requestedStates = Set<String>()
     private var knownAuthorization: AuthorizationState?
+    /// BATT-3 : une position du système mesurée avant ou à cet instant n'est jamais réutilisée. Avancé à chaque `disarmAll()`
+    /// (déconnexion, suppression du compte, plus de partage) : la dernière position du téléphone peut être celle d'un autre compte.
+    private var noReuseUpToMillis = Int.min
 
     init(
         manager: LocationManaging,
@@ -116,6 +119,26 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
         }
     }
 
+    func currentReusingRecent() async -> PositionReading {
+        if let recent = reusableSystemFix() {
+            return PositionReading(fix: recent, reused: true)
+        }
+        return PositionReading(fix: await current(), reused: false)
+    }
+
+    /// La dernière position du système si elle a MOINS de deux minutes, est assez précise (100 m, comme la demande) et a été mesurée
+    /// APRÈS la dernière déconnexion. Une position du futur (horloge) n'est pas réutilisée.
+    private func reusableSystemFix() -> Fix? {
+        guard let fix = manager.systemFix(maxAccuracyMeters: TrackingLimits.reusableFixMaxAccuracyMeters) else {
+            return nil
+        }
+        let age = clock() - fix.measuredAtMillis
+        guard age >= 0, age < TrackingLimits.reusableFixMaxAgeMillis, fix.measuredAtMillis > noReuseUpToMillis else {
+            return nil
+        }
+        return fix
+    }
+
     // MARK: - MovementUpdates
 
     func start() async -> Bool {
@@ -162,6 +185,7 @@ final class LocationTracking: PositionSource, GeofenceArming, MovementUpdates {
     }
 
     func disarmAll() async {
+        noReuseUpToMillis = clock()
         for key in manager.heldRegionKeys {
             manager.unwatch(key: key)
         }

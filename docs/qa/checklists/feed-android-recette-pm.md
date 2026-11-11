@@ -1,18 +1,18 @@
 # Recette Android du Feed (FEED-1 à FEED-3 : en-tête, bulle, cartes, statuts, Localiser) — parcours pour le PM
 
 **Pour qui** : vous, sur votre OPPO Find X5 Lite (Android 13), avec **deux comptes de test dans la même Miff** : le compte **A** (créateur) sur l'OPPO et le compte **B** (membre) sur l'iPhone 11 Pro si possible (TestFlight), à défaut sur un second téléphone ou un second compte Google/e-mail sur l'OPPO (on se déconnecte et on se reconnecte entre les deux).
-**Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 1 h et 2 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce plus bas). Une seule vraie sortie est facultative (partie G).
+**Durée** : environ 40 minutes, **sans sortir de chez vous** : pour voir l'orange et le rouge sans attendre 2 h et 4 h, on **modifie l'heure du statut dans la console Firebase** (voir l'astuce plus bas). Une seule vraie sortie est facultative (partie G).
 **À savoir avant de commencer** :
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main (la connexion Google ne marcherait pas). Désinstallez l'ancienne version d'abord.
-- **La photo d'update n'est pas dans cette livraison** (ticket FEED-4) : aucune carte n'a de photo, c'est normal.
+- **La photo d'update** s'affiche depuis FEED-4 ; le bouton « Enregistrer la photo » du plein écran (décision du 2026-11-08) se recette en **Partie J**.
 - **Aucune notification** n'est envoyée et il n'y a plus de cloche : c'est voulu (plan gratuit).
 - Avant de commencer, vérifiez avec l'assistant que les règles Firestore des **statuts** et de la **position** sont bien déployées (sinon « Localiser » dira toujours « pas de position connue » et les statuts ne seront pas lisibles).
 
 ## Astuce : fabriquer un orange, un rouge ou une zone de danger depuis la console
 
 Console Firebase > projet **Miff** (`miff-3d283`, jamais l'autre projet) > Firestore Database > `miffs/{id de la Miff}/status/{uid du compte}`. Modifiez **à la main** :
-- **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 1 h 10** (cliquez sur le champ, type « timestamp »).
-- **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 3 h**.
+- **Orange** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 2 h 10** (cliquez sur le champ, type « timestamp »).
+- **Rouge d'ancienneté** : `presence` = `out`, `presenceAt` et `lastUpdateAt` = **il y a 5 h**.
 - **Zone de danger** : `presence` = `in_risk`, `placeId` = l'identifiant d'un lieu de la Miff (le nom de ce lieu s'affichera chez les proches).
 - **Retour au vert** : `presence` = `in_trusted`, `presenceAt` = maintenant.
 Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du compte bouge ou si vous rouvrez son app, il peut réécrire son vrai statut : refaites la modification.
@@ -21,7 +21,7 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 - **Notez toute phrase qui vous semble trop dure ou anxiogène** (ticket FEED, risque R1) : « zone de danger » est un mot fort, les phrases sont à relire à voix haute.
-- Les heures sont **absolues** à partir de l'orange (« à 16 h 40 ») ; avant, elles sont relatives (« il y a 12 min »).
+- Les heures sont **absolues** à partir de l'orange (« à 16 h 40 ») ; avant, la ligne d'une carte dit déjà l'heure d'arrivée ou de sortie (« Depuis 16 h 48 »), jamais une durée (PM, 2026-11-10) ; seules les bulles disent encore « Dernière nouvelle il y a 2 min ».
 
 ## Préparation (5 min)
 
@@ -35,7 +35,8 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 - [ ] L'en-tête **se masque quand on fait défiler vers le bas** (il glisse vers le haut avec le fil, sans saut) **et réapparaît dès qu'on remonte**, même au milieu de la liste, sans attendre d'être tout en haut ; aucune carte n'est cachée dessous ni ne laisse de bande blanche. À gauche **votre photo (ou vos initiales)** avec un **anneau** (vert si vous êtes chez vous) : **la couleur seule, sans coche ni autre petit dessin** (décision du PM du 2026-11-06) ; au centre le logo ; **aucune cloche**, le côté droit est vide.
 - [ ] Touchez votre photo : l'onglet **Profil** s'ouvre. Revenez au Feed.
 - [ ] Défilez vers le bas puis touchez le **logo** : le fil remonte tout en haut.
-- [ ] Avec **une seule Miff** : le nom est dans une pastille **plate, sans flèche** (elle ne réagit pas au toucher). Avec **plusieurs Miffs** (compte Premium) : pastille avec flèche, liste avec **coche** sur la Miff affichée, « + Rejoindre / + Créer » (et seulement pour un Premium).
+- [ ] **Sélecteur de Miff (D51, 2026-11-08)** : pour **tout le monde**, même avec une seule Miff, la pastille a la flèche et l'ombre et s'ouvre ; la liste montre la ou les Miffs (coche sur celle affichée) puis « + Rejoindre une Miff » et « + Créer une Miff ». Un compte gratuit déjà dans une Miff arrive sur le paywall en les touchant : voir la **Partie I**.
+- [ ] **Icône de l'onglet Feed** (décision du 2026-11-08) : dans la barre du bas, le Feed est une **maison classique** (aucun cœur), **au trait** quand l'onglet n'est pas actif et **pleine** quand il l'est, comme sur l'iPhone.
 
 ## Partie A bis — Comportement de l'en-tête au défilement (4 min)
 
@@ -65,7 +66,8 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 ## Partie B — Cartes (5 min)
 
 - [ ] **Votre carte est la DERNIÈRE** (D43), **sans** mention « Toi » à côté de votre prénom (D42), avec votre état, la ligne « Ce que tes proches voient de toi » et **aucun** bouton.
-- [ ] La carte de B vient avant la vôtre : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (« Depuis 12 min »), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] La carte de B vient avant la vôtre : prénom, **pastille d'état** (ex. « À la maison », sans icône), ligne de temps (**l'heure d'arrivée**, « Depuis 16 h 48 », jamais « Depuis 12 min » ; hier : « Depuis hier à … », puis la date courte), **batterie** (« 85 % »), puis **trois boutons** : position, message, téléphone.
+- [ ] **Étiquette selon la catégorie du lieu** (décision du 2026-11-08) : B `in_trusted` dans un lieu de catégorie Maison : « À la maison » ; Travail : « Au travail » ; École : « À l'école » ; Sport : « Au sport » ; Chez un proche : « Chez un proche » ; Loisir ou Autre : **le nom du lieu seul** (un nom très long est coupé proprement par « … » sur deux lignes au plus, y compris en grande police). Le Feed n'envoie ce nom à aucune notification (voir NOTIF-P0, Q9 : les notifications afficheront le nom des lieux Loisir / Autre).
 - [ ] **Message** ouvre l'application SMS avec le numéro de B **préparé** (rien n'est envoyé) ; **Téléphone** ouvre le **composeur** avec le numéro (aucun appel lancé). Revenez avec « retour ».
 - [ ] Si un membre n'a pas de numéro (ancien compte) : seul le bouton position est visible.
 - [ ] Un membre qui vient d'entrer (pas encore de statut) : « Pas encore de nouvelles », pastille grise ; il a quand même un bouton position (voir la partie D : « n'a pas encore de position connue »).
@@ -78,13 +80,14 @@ Les champs restent dans le schéma (ne rajoutez rien). Si le téléphone du comp
 Pour chaque ligne, modifiez le statut de **B** puis regardez le Feed du compte **A** (il se met à jour tout seul).
 - [ ] **Vert** : B `in_trusted`. Bulle **verte** « Tout va bien » + « Dernière nouvelle il y a … » (l'heure de B, **jamais la vôtre**). Si un troisième membre n'a pas encore de statut : « 2 sur 3 ont donné des nouvelles ».
 - [ ] **Neutre** : supprimez le statut de B ou mettez `presence` = `unknown` : bulle **grise** « Pas encore de nouvelles » (jamais « Tout va bien »).
-- [ ] **Orange** : B `out` il y a 1 h 10. Bulle **orange** : « B a quitté la maison à 15 h 50 » (heure absolue), **sans** point d'exclamation, bouton « Envoyer un message » (ouvre le SMS). La carte de B : « A quitté la maison », « Dernière nouvelle à … ».
-- [ ] **Rouge d'ancienneté** : B `out` il y a 3 h. Bulle **rouge** : « Pas de nouvelles de B depuis 14 h 00 ». Aucune animation, aucun son.
-- [ ] **Zone de danger** : B `in_risk` : bulle rouge **« B est à {nom du lieu} »** + « Depuis … » + « Une zone définie par ta Miff ». La carte de B : « Dans une zone de danger ». **Nulle part** le mot « zone à risque ».
+- [ ] **Bulle centrée, sans étoile en vert** (D49, PM 2026-11-08) : dans les bulles verte, orange et rouge, le titre, les lignes et le bouton « Envoyer un message » sont **centrés** dans la tache (marges égales à gauche et à droite), avec une police normale puis la plus grande ; **la bulle verte n'a plus aucun pictogramme** (plus d'étoile) ; orange (horloge), rouge (point d'exclamation) et neutre (sablier) gardent le leur, mais **sans cercle autour** (rien qui ressemble à un bouton, PM 2026-11-10) : un grand symbole **en filigrane doux** posé dans le coin bas droit de la tache, derrière le texte, qui occupe l'espace sans être voyant. Faites défiler les pages d'un carrousel : toutes sont centrées. TalkBack lit le même texte qu'avant (le pictogramme n'était pas lu).
+- [ ] **Orange** : B `out` il y a 2 h 10. Bulle **orange** : « B a quitté la maison à 14 h 50 » (heure absolue), **sans** point d'exclamation, bouton « Envoyer un message » (ouvre le SMS). La carte de B : « A quitté la maison », « Dernière nouvelle à … ».
+- [ ] **Rouge d'ancienneté** : B `out` il y a 5 h. Bulle **rouge** : « Pas de nouvelles de B depuis 12 h 00 ». Aucune animation, aucun son.
+- [ ] **Zone de danger (règle du 2026-11-08)** : B `in_risk` avec `presenceAt` il y a 20 min : rouge **dès l'entrée**, même avec un `lastUpdateAt` récent mais **antérieur** à `presenceAt` (il ne compte pas). Mettez ensuite `lastUpdateAt` à il y a 5 min (postérieur à l'entrée) : la carte passe au vert (l'étiquette reste « Dans une zone de danger ») et la bulle rouge disparaît ; remettez-le à il y a 1 h 05 : rouge de nouveau. Votre propre statut en zone de danger : rouge jusqu'à ce que l'update soit acquittée par le serveur (indéfiniment tant que le téléphone est hors ligne). Rouge : bulle rouge **« B est à {nom du lieu} »** + « Depuis … » + « Une zone définie par ta Miff ». La carte de B : « Dans une zone de danger ». **Nulle part** le mot « zone à risque ».
 - [ ] **Vous seul(e) en orange ou en rouge** (modifiez votre propre statut, B reste vert) : la bulle vous parle : « Tu as quitté la maison à … », « Tes proches n'ont pas eu de tes nouvelles depuis … », « Tu es dans une zone de danger de ta Miff » (+ « Tes proches le voient aussi »). **Pas** de bouton « Envoyer un message » sur votre propre page.
 - [ ] **Plusieurs alertes** (B rouge et un troisième membre orange, ou deux comptes) : des **pastilles** apparaissent sous la bulle (la page courante est **allongée**), le **rouge d'abord**, on change de page en **glissant**, **rien ne défile tout seul**. Avec une seule alerte : pas de pastilles.
 - [ ] **Les cartes ne changent jamais d'ordre** selon l'urgence (les autres dans l'ordre d'arrivée, puis vous en dernier).
-- [ ] **Couleur qui avance seule** : mettez B `out` il y a **58 min** et **attendez 2 à 3 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
+- [ ] **Couleur qui avance seule** : mettez B `out` il y a **1 h 55** et **attendez 6 à 7 minutes sans toucher l'écran** : la carte passe de vert à orange **sans rien recharger** (le calcul se refait chaque minute).
 - [ ] Sur chaque couleur, **le texte est lisible** (teinte foncée sur fond clair). **Aucun pictogramme** (coche, horloge, « ! ») sur l'anneau de la photo ni dans la pastille d'état des cartes : la couleur est le seul signal, les mots de l'état restent dans la pastille, et la bulle garde son petit dessin décoratif (étoile, horloge, « ! », sablier) : points validés par le PM le 2026-11-06.
 
 ## Partie C bis — Mouvement très léger de la bulle (3 min)
@@ -135,6 +138,32 @@ Prérequis : B partage et a une position (console : `positions/{uid B}` existe) 
 
 Le Feed est le premier gros consommateur de lectures du plan gratuit (50 000 par jour pour tout le projet). Relevez dans la console Firebase > Firestore > Utilisation le nombre de **lectures** avant, puis **ouvrez le Feed une fois à froid** (app fermée puis ouverte), notez le nombre après (le graphique a un délai d'environ 4 minutes). Estimation de l'ouverture à froid pour 4 membres et 3 lieux : **environ 20 lectures** ; un rattachement à chaud : une dizaine ; « Localiser » : **6** (1 + 5 de règles). Reportez vos chiffres à l'assistant : ils servent à recalibrer `docs/dev/surveillance-quotas.md`.
 
+
+## Partie I — Sélecteur de Miff et paywall « 2e Miff » (5 min, retour du PM du 2026-11-08)
+
+Avec un compte **gratuit** (sans droit Miff+) déjà dans une Miff, puis, si possible, avec un compte **Miff+** (droit accordé à la main dans la console).
+- [ ] **Compte gratuit, une seule Miff** : la pastille du nom de la Miff **a une flèche bleue et une ombre** (elle n'est plus plate) et **s'ouvre** au toucher. La liste montre **votre Miff (avec la coche)**, puis **« + Rejoindre une Miff »** et **« + Créer une Miff »**.
+- [ ] Touchez **« + Rejoindre une Miff »** : l'écran **« Une seule Miff avec la formule gratuite »** s'ouvre (pas l'écran de saisie du code). Il dit qu'avec Miff+ on peut créer ou rejoindre autant de Miffs que l'on veut, **sans prix**, **sans le mot « Premium »**, sans bouton d'achat, avec « **Miff+ arrive bientôt** » et « Cette option n'est pas encore ouverte. Ta Miff actuelle reste en place. » **« Plus tard »** (ou la croix, ou le geste retour) vous ramène au Feed **sans rien avoir changé**.
+- [ ] Refaites avec **« + Créer une Miff »** : même écran, même retour.
+- [ ] **Compte Miff+** : « + Rejoindre une Miff » ouvre l'écran de saisie du code, « + Créer une Miff » ouvre l'écran de création, comme avant. Aucun paywall.
+- [ ] **Hors connexion** (mode avion) puis rouvrez l'app, ouvrez la liste et touchez « + Créer une Miff » : l'écran de **création** s'ouvre (on ne vous prend pas pour un compte gratuit sur un doute) ; il vous dit calmement ce qui ne va pas si l'envoi est impossible.
+- [ ] **Compte sans aucune Miff** : « Pas encore de Miff » (inchangé : deux boutons Créer / Rejoindre, aucun paywall).
+- [ ] **TalkBack** (facultatif) : la pastille s'annonce « Miff affichée : … Appuie pour changer de Miff ou en ajouter une » ; les deux entrées se lisent « Rejoindre une Miff » / « Créer une Miff ».
+- [ ] Le serveur reste la vraie barrière : même un client modifié ne peut pas ajouter une 2e Miff à un compte gratuit (règles Firestore, tests C8, C9, C11, J10, J11 de `backend/tests/rules`) ; rien à vérifier à la main.
+
+## Partie J — « Enregistrer la photo » dans le plein écran (5 min, retours du PM des 2026-11-08 et 2026-11-10)
+
+Il faut une carte avec une **photo d'update** (le compte B publie une photo depuis l'onglet Update).
+- [ ] **Sur la carte**, l'aperçu de la photo n'a **aucun bouton d'enregistrement**. Touchez la photo : le plein écran s'ouvre. **En haut à droite**, en face de la croix (en haut à gauche), une **icône « télécharger » seule** (flèche vers le bas, **aucun texte**) dans la même pastille grise semi-transparente que la croix, lisible sur une photo claire comme sur une photo sombre. **Plus aucun bouton « Enregistrer la photo » en bas**, sous « Voir où c'était ».
+- [ ] **Rien n'est enregistré avant le toucher** : ouvrez et fermez la photo plusieurs fois, puis regardez la galerie : aucune photo « Miff » n'est apparue.
+- [ ] Touchez l'icône : elle s'estompe un instant (« Enregistrement… » pour TalkBack), puis la note calme **« Photo enregistrée. »** apparaît en haut de la photo et **disparaît seule** après quelques secondes. Ouvrez la **Galerie / Google Photos** : un album **« Miff »** contient la photo, nommée **`Miff-AAAA-MM-JJ-HHMMSS.jpg`** (la date et l'heure de l'enregistrement : **ni prénom, ni lieu**). Dans les informations de la photo : **aucun lieu GPS**, aucun appareil, aucune date de prise de vue.
+- [ ] **Aucune demande d'autorisation** n'est apparue (ni stockage, ni photos). Dans les réglages Android > Applications > Miff > Autorisations : seulement Position, Appareil photo et Notifications, comme avant.
+- [ ] Touchez deux fois très vite : **un seul fichier** est créé pour ce toucher.
+- [ ] Mettez le téléphone en **mode avion** après avoir ouvert la photo : l'enregistrement marche encore (la photo est déjà sur le téléphone). Si le stockage est plein : la phrase calme **« On n'a pas pu enregistrer la photo. Tu peux réessayer. »** apparaît, sans alarme.
+- [ ] **Ailleurs : pas de bouton** : l'écran Update (aperçu avant publication) et l'aperçu de la carte n'ont pas de bouton d'enregistrement.
+- [ ] **TalkBack** (facultatif) : l'icône se lit « Enregistrer cette photo sur ton téléphone » (action « Enregistrer la photo ») ; pendant l'enregistrement elle est annoncée « Enregistrement… » et désactivée ; la note de confirmation est annoncée.
+- [ ] **Posture vie privée** (à lire, pas un test) : une photo enregistrée sort de Miff (les 24 heures ne s'appliquent plus à la copie). Les textes légaux doivent être alignés avant publication : `docs/release/update-photo-declarations.md` §15 et `docs/legal/README.md` §7.
+
 ## Ce que vous n'avez pas à vérifier (couvert par les tests)
 
-La couleur à 0 h 59 / 1 h 00 / 2 h 00 / 2 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.
+La couleur à 1 h 59 / 2 h 00 / 2 h 01 / 3 h 59 / 4 h 00 / 4 h 01, toutes les branches de la couleur de la Miff, les phrases FR et EN, les 6 réponses de « Localiser », l'absence d'écriture dans Firestore, l'absence de coordonnée dans un journal ou un message, les zones de 48 dp, la parité des textes avec iOS.

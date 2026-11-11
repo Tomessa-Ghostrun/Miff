@@ -69,9 +69,11 @@ struct MiffOnboardingHost: View {
                 onOpenSettings: { open(.settings(.settings)) }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .swipeBackEnabled()
             .navigationDestination(for: MiffRoute.self) { route in
                 destination(route)
                     .toolbar(.hidden, for: .navigationBar)
+                    .swipeBackEnabled()
             }
         }
     }
@@ -190,9 +192,11 @@ struct MiffHomeHost: View {
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
+                    .swipeBackEnabled()
                     .navigationDestination(for: MiffRoute.self) { route in
                         destination(route)
                             .toolbar(.hidden, for: .navigationBar)
+                            .swipeBackEnabled()
                     }
             }
             .accessibilityHidden(directory.notices.first != nil)
@@ -261,6 +265,8 @@ struct MiffHomeHost: View {
             actions: FeedTabActions(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
+                // Sélecteur du Feed, compte gratuit qui a déjà une Miff (décision du PM, 2026-11-08) : l'offre, sans achat.
+                onOpenOffer: { open(.placePaywall(.extraMiff)) },
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
                 onOpenSettings: { open(.settings(.settings)) },
