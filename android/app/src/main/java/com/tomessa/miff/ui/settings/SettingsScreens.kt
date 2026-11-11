@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -75,6 +76,8 @@ fun SettingsScaffold(
      * bottom (navigation bar, keyboard) together with the body, so that nothing is padded twice.
      */
     footer: (@Composable ColumnScope.() -> Unit)? = null,
+    /** A button at the END of the bar (the menu of the centre of notifications): 48 dp, aligned by the caller with [BoxScope.align]. */
+    endAction: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -114,6 +117,7 @@ fun SettingsScaffold(
                         .padding(horizontal = Spacing.minTouchTarget + Spacing.xs)
                         .semantics { heading() },
             )
+            endAction?.invoke(this)
         }
         // At the largest font sizes a pinned footer would eat the screen: it moves into the scrolling flow (mockup notes, criterion SC49).
         val footerInFlow = footer != null && LocalDensity.current.fontScale >= LARGE_FONT_SCALE
@@ -196,8 +200,8 @@ private fun SettingsRow(
 private val RowMinHeight = Spacing.minTouchTarget + Spacing.l
 
 /**
- * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language, Privacy (ONB-3b). Nothing else: no
- * Notifications line (nothing is sent yet), no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
+ * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language, Notifications (NOTIF-2A: it revises decision
+ * Q6, because reminders now exist), Privacy (ONB-3b). Nothing else: no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
  * compte" line (it lives INSIDE "Mon compte").
  *
  * RESTRICTED list (decision of the PM, 2026-11-07, for a person with no Miff yet): [onOpenMyInfo] and [onOpenLanguage] are null and their
@@ -214,6 +218,8 @@ fun SettingsScreen(
     onOpenAccount: () -> Unit,
     onOpenLanguage: (() -> Unit)?,
     onOpenPrivacy: () -> Unit,
+    /** NOTIF-2A: Settings > Notifications. Null in the RESTRICTED list of a person with no Miff (nothing to notify without a Miff): the row is not drawn. */
+    onOpenNotifications: (() -> Unit)? = null,
     onOpenSubscription: (() -> Unit)? = null,
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_title), onBack = onBack) {
@@ -237,6 +243,14 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_language_title),
                 subtitle = stringResource(R.string.settings_language_subtitle),
                 onClick = onOpenLanguage,
+            )
+        }
+        if (onOpenNotifications != null) {
+            SettingsRow(
+                icon = R.drawable.ic_bell,
+                title = stringResource(R.string.notif_settings_title),
+                subtitle = stringResource(R.string.notif_settings_subtitle),
+                onClick = onOpenNotifications,
             )
         }
         SettingsRow(
