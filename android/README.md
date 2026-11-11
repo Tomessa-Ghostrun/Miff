@@ -687,6 +687,16 @@ Avant tout lancement de Gradle, l'étape `gradle/actions/wrapper-validation` (é
 
 **Signal de bascule vers C** : premiers testeurs hors équipe, ou besoin de tester l'abonnement via Google Play (la facturation Play exige un APK/AAB distribué par Play).
 
+## Mode voyage (tickets VOY-1A, VOY-2A, VOY-3A)
+
+Ticket `docs/tickets/mode-voyage.md`, **ouvert à tous les comptes** et **la position reste partagée** (décisions du PM du 2026-11-10). Fonctionnement et fichiers :
+
+- `domain/travel/TravelMode.kt` : règles pures (`TravelPlan` : bornes aujourd'hui à +89 jours, instant de fin = 00:00 local du lendemain ; `TravelView` : ce que voit un proche, calculé à l'affichage).
+- `data/tracking/TrackingEngine.kt` (section MODE VOYAGE) : `setTravel`, `endTravel`, passage de réveil pendant un voyage (`doTravelPass`, `publishPositionDuringTravel` : la position continue, aucun statut de zone, de batterie ni d'accès n'est écrit), fin, adoption par un nouvel appareil. `TravelAlarm` / `AlarmManagerTravelAlarm` : alarme inexacte de fin (action `TRAVEL_END` du `TrackingReceiver`, aussi sur `TIME_SET` / `TIMEZONE_CHANGED`).
+- `ui/profile/TravelCard.kt`, `TravelViewModel.kt` : la carte du Profil ; `ui/feed` : carte grise, bulle, lien « Modifier ».
+- Écritures : `TrackingWrites.travelStart` / `travelDate` et `statusUpdate(clearTravel = true)` (comptées par `DeviceIdInEveryWriteTest`). Les règles correspondantes sont dans `backend/firestore.rules` (PR #151) ; contrat des clients : `docs/dev/mode-voyage-clients.md`.
+- Recette : `docs/qa/checklists/voyage-android-recette-pm.md`.
+
 ## Surcouches constructeur (géofencing)
 
 Les surcouches comme ColorOS (OPPO) ferment souvent les applications en arrière-plan pour économiser la batterie. Le géofencing existe depuis LOC-2b : la consigne de réglages à vérifier sur l'OPPO est dans la section « Détection des arrivées et des départs » ci-dessus, et une aide non bloquante est dans l'app (Réglages > Confidentialité). Décision du PM : pas de spike, on teste à pied puis on ajuste.

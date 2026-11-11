@@ -18,6 +18,9 @@ import com.tomessa.miff.domain.feed.PlaceKind
 import com.tomessa.miff.domain.feed.PlaceRef
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.feed.TimeLine
+import com.tomessa.miff.domain.feed.TravelNote
+import com.tomessa.miff.domain.travel.TravelDay
+import com.tomessa.miff.ui.profile.TravelDayFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -176,6 +179,42 @@ class FeedTexts(
             StateLabel.WaitingAgreement -> {
                 s(R.string.miff_waiting_title)
             }
+
+            is StateLabel.Traveling -> {
+                s(if (label.mine) R.string.voyage_feed_mine else R.string.voyage_feed_label, travelDay(label.until))
+            }
+
+            StateLabel.TravelEnded -> {
+                s(R.string.voyage_feed_label_ended)
+            }
+        }
+
+    /** "15 nov." ("15 nov. 2027" when it is not this year), by the formatter of the system. */
+    private fun travelDay(day: TravelDay): String = TravelDayFormat.short(day, locale)
+
+    /** MODE VOYAGE: the sentence about the OTHER members on a trip, under the usual bubble or as the bubble of the travellers. */
+    fun travelNote(note: TravelNote): String =
+        when (note) {
+            is TravelNote.One -> s(R.string.voyage_bubble_one, note.name, travelDay(note.until))
+            is TravelNote.Many -> s(R.string.voyage_bubble_many, note.count)
+        }
+
+    /** The headline of the neutral bubble when every other member who is known is on a trip. */
+    fun travelersHeadline(note: TravelNote): String =
+        when (note) {
+            is TravelNote.One -> {
+                travelNote(note)
+            }
+
+            is TravelNote.Many -> {
+                if (note.all) {
+                    s(
+                        R.string.voyage_bubble_all,
+                    )
+                } else {
+                    s(R.string.voyage_bubble_many, note.count)
+                }
+            }
         }
 
     /** The line under the label of a card; null when the card has none. */
@@ -195,6 +234,10 @@ class FeedTexts(
 
             is TimeLine.NoNewsSince -> {
                 s(R.string.feed_time_no_news_since, since(time.since))
+            }
+
+            is TimeLine.TravelSince -> {
+                s(R.string.voyage_feed_since, date(time.atMillis))
             }
         }
 
@@ -277,6 +320,10 @@ class FeedTexts(
 
             Bubble.AwaitingAgreement -> {
                 s(R.string.feed_bubble_no_news_title)
+            }
+
+            is Bubble.Travelers -> {
+                travelersHeadline(bubble.note)
             }
 
             is Bubble.Alerts -> {

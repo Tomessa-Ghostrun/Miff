@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +52,7 @@ import com.tomessa.miff.ui.theme.colorBorderDefault
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.miffShadow
+import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textCaptionBold12
@@ -75,6 +78,8 @@ fun MemberCardView(
     miffId: String = "",
     nowMillis: Long = 0L,
     onOpenPhoto: (OpenedPhoto) -> Unit = {},
+    /** MODE VOYAGE: the link "Modifier" of MY card while a trip is on. */
+    onEditTravel: () -> Unit = {},
 ) {
     Row(
         modifier =
@@ -153,6 +158,7 @@ fun MemberCardView(
                     Box(Modifier.size(0.dp).semantics { text = AnnotatedString(spoken) })
                 }
             }
+            if (card.isMe && card.label is StateLabel.Traveling) TravelEditLink(onEditTravel)
             CardActions(card, locating, onLocate, onMessage, onCall)
         }
     }
@@ -180,6 +186,18 @@ private fun BatteryChip(
             modifier = Modifier.size(14.dp),
         )
         Text(text = texts.battery(battery), style = textCaptionBold12, color = colorTextDescription)
+    }
+}
+
+/** MODE VOYAGE: "Modifier", under MY card while a trip is on (48 dp, named for the screen reader). */
+@Composable
+private fun TravelEditLink(onClick: () -> Unit) {
+    val spoken = stringResource(R.string.voyage_feed_mine_edit_a11y)
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = Spacing.minTouchTarget).semantics { contentDescription = spoken },
+    ) {
+        Text(text = stringResource(R.string.voyage_feed_mine_edit), style = textBodyBold16, color = colorActionPrimary)
     }
 }
 
@@ -213,6 +231,16 @@ private fun StateChip(
                     fallbackColor = card.level.onTint(),
                 )
             }
+        }
+        // MODE VOYAGE: the airplane goes with the words on the CARD of a traveller (the colour is never alone); it is decorative, the text says the state.
+        // The bubble of the Miff has no symbol at all (decision of the PM, 2026-11-11).
+        if (card.label is StateLabel.Traveling) {
+            Icon(
+                painter = painterResource(R.drawable.ic_travel_plane),
+                contentDescription = null,
+                tint = card.level.onTint(),
+                modifier = Modifier.size(16.dp),
+            )
         }
         Text(
             text = texts.label(card.label),
