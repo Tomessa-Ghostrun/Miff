@@ -26,6 +26,17 @@ struct TrackingServices {
         }
     }
 
+    /// La personne reprend le partage de cette Miff : sa détection est remise à zéro, puis les Miffs sont relues (voir
+    /// `TrackingEngine+Resume.swift`). Remplace `sharingChanged` dans ce cas.
+    var sharingResumed: (String) -> Void {
+        let runtime = self.runtime
+        return { miffId in
+            Task { @MainActor in
+                runtime.sharingResumed(miffId: miffId)
+            }
+        }
+    }
+
     /// L'arrêt du suivi pour la fin de session : zones retirées, position, lieux et statuts en attente effacés. Borné : une
     /// déconnexion n'attend jamais plus de quelques secondes un passage en cours (l'arrêt est déjà marqué, l'effacement suit à la
     /// fin du passage).

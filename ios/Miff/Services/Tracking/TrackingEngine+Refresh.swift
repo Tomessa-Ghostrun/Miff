@@ -67,6 +67,7 @@ extension TrackingEngine {
             await standDown(uid, state)
             return
         }
+        let resumed = takeResumed(&state)
         guard pass.snapshot.locationComplete else {
             // « Toujours » + la position exacte ne sont pas là : ni détection ni position (AUT7). Les Miffs sont prévenues, une fois,
             // que l'accès a changé.
@@ -75,7 +76,7 @@ extension TrackingEngine {
             deps.local.save(state)
             return
         }
-        await watch(state, pass: pass, reason: reason, supplied: supplied, now: now)
+        await watch(state, pass: pass, reason: reason, supplied: supplied, now: now, resumed: resumed)
     }
 
     /// Personne à prévenir : rien n'est surveillé, rien n'est gardé (la personne ne partage nulle part avec le consentement v3).
@@ -100,7 +101,14 @@ extension TrackingEngine {
     }
 
     /// Ce qui se fait quand tout est en règle : armer, lire la position, écrire ce qui attend.
-    private func watch(_ start: LocalState, pass: PassContext, reason: Reason, supplied: Fix?, now: Int) async {
+    private func watch(
+        _ start: LocalState,
+        pass: PassContext,
+        reason: Reason,
+        supplied: Fix?,
+        now: Int,
+        resumed: [String] = []
+    ) async {
         var state = start
         // Tout réenregistrer (et redemander l'état de chaque zone) est réservé aux cas où le système a pu perdre ou changer ses
         // régions : échec de la surveillance, autorisation changée. Aux autres occasions, seul ce qui manque est enregistré.
@@ -116,6 +124,9 @@ extension TrackingEngine {
             journal.record(.positionRead, batteryPct: pass.batteryPct)
         }
         state = reconcilePlaces(state, now: now)
+        if !resumed.isEmpty {
+            state = presenceAfterResume(state, miffIds: resumed, fix: fix, now: now)
+        }
         if reason == .opened {
             await recheckStates(state, fix: fix)
         }

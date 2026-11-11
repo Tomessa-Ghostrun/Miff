@@ -25,7 +25,8 @@ struct MiffServices {
         cache: CachePurger,
         network: NetworkMonitor,
         device: DeviceSession,
-        onSharingChanged: @escaping () -> Void
+        onSharingChanged: @escaping () -> Void,
+        onSharingResumed: ((String) -> Void)? = nil
     ) -> MiffServices {
         let store = FirestoreMiffStore()
         // SESS-3 : un statut n'est écrit qu'avec l'identifiant de la session CONFIRMÉE de cet appareil ; après un refus, la session
@@ -40,6 +41,7 @@ struct MiffServices {
         )
         // LOC-4b : un partage qui change (entrer, arrêter, reprendre, quitter, perdre l'accès) fait relire les Miffs au suivi des lieux.
         rules.onSharingChanged = onSharingChanged
+        rules.onSharingResumed = onSharingResumed
         let repository = FirestoreMiffRepository(
             store: store,
             observer: FirestoreMiffObserver(),
@@ -212,7 +214,8 @@ final class AppEnvironment {
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
-            onSharingChanged: trackingServices.sharingChanged
+            onSharingChanged: trackingServices.sharingChanged,
+            onSharingResumed: trackingServices.sharingResumed
         )
         let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
         let updateServices = UpdateServices.make(
