@@ -78,7 +78,7 @@ class PlaceRequestCreatorRepositoryTest {
         }
 
     @Test
-    fun accept_thePlaceCarriesWhatWasAsked_theCreatorAsAuthor_andTheNeutralCategory() =
+    fun accept_thePlaceCarriesWhatWasAsked_theCreatorAsAuthor_andTheCategoryChosen() =
         runTest {
             creatorContext(premium = true)
             val asked =
@@ -89,6 +89,7 @@ class PlaceRequestCreatorRepositoryTest {
                     type = PlaceType.RISK,
                     radiusM = 250,
                     createdAtMillis = now,
+                    category = PlaceCategory.RELATIVE,
                 )
             requests.all = listOf(asked)
             repo.accept(me, asked, knownCount = 1)
@@ -98,8 +99,8 @@ class PlaceRequestCreatorRepositoryTest {
             assertEquals(asked.address, doc["address"])
             assertEquals(250, doc["radiusM"])
             assertEquals(me, doc["createdBy"])
-            // A request carries no category: "other" (the neutral pin), changed later with the edit screen (decision D7).
-            assertEquals(PlaceCategory.OTHER.value, doc["category"])
+            // The category the requester chose is copied into the place.
+            assertEquals(PlaceCategory.RELATIVE.value, doc["category"])
             // The same keys as a place created by hand: the rules of the places do not change (ticket 5.4).
             val byHand =
                 PlaceWrites.createDocument(
@@ -107,6 +108,16 @@ class PlaceRequestCreatorRepositoryTest {
                     PlaceDraft("Chez Mamie", listOf(MIFF_ID), "x", 48.0, 2.0, 250, PlaceType.RISK, PlaceCategory.OTHER),
                 )
             assertEquals(byHand.keys, doc.keys)
+        }
+
+    @Test
+    fun accept_aDocumentWithNoCategory_getsTheNeutralOne() =
+        runTest {
+            creatorContext(premium = true)
+            val old = testRequest(uid = "u2", slot = 1, createdAtMillis = now, category = null)
+            requests.all = listOf(old)
+            repo.accept(me, old, knownCount = 1)
+            assertEquals(PlaceCategory.OTHER.value, requests.commits.single()[0].data["category"])
         }
 
     @Test

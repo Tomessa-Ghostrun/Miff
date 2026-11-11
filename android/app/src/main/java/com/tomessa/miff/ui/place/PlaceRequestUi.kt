@@ -98,8 +98,8 @@ fun PlaceRequestCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            // The pin of "a place that is not there yet": no category (a request has none) and no solid tile like the places of the Miff.
-            CategoryIcon(null, size = REQUEST_ICON)
+            // The category the person chose (the pin when a document has none); the dashed outline, not a solid tile, says it is not a place of the Miff yet.
+            CategoryIcon(request.category, size = REQUEST_ICON)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs / 2)) {
                 Text(text = request.name, style = textBodyBold16, color = colorTextForm)
                 if (request.type == PlaceType.RISK) PlaceTypeTag(PlaceType.RISK)

@@ -14,6 +14,7 @@ import com.tomessa.miff.data.place.RequesterRead
 import com.tomessa.miff.data.place.RequestsObservation
 import com.tomessa.miff.data.place.RequestsSnapshot
 import com.tomessa.miff.domain.miff.DocWrite
+import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.place.PlaceRequest
 import com.tomessa.miff.domain.place.PlaceRequestDraft
 import com.tomessa.miff.domain.place.PlaceType
@@ -30,6 +31,7 @@ fun testRequest(
     createdAtMillis: Long? = 1_000L,
     address: String? = "12 rue des Lilas, 75020 Paris, France",
     radiusM: Int = 100,
+    category: PlaceCategory? = PlaceCategory.HOME,
 ): PlaceRequest =
     PlaceRequest(
         id = "${uid}_$slot",
@@ -41,6 +43,7 @@ fun testRequest(
         lat = 48.8566,
         lng = 2.3522,
         radiusM = radiusM,
+        category = category,
         createdAtMillis = createdAtMillis,
     )
 
@@ -55,8 +58,10 @@ fun requestFields(
     radiusM: Any? = 100L,
     createdAtMillis: Long? = 1_000L,
     requestedBy: Any? = uid,
+    category: Any? = "home",
 ): Map<String, Any?> =
     mapOf(
+        "category" to category,
         "requestedBy" to requestedBy,
         "name" to name,
         "type" to type,
@@ -71,6 +76,7 @@ fun testRequestDraft(
     name: String = "Chez Mamie",
     type: PlaceType = PlaceType.TRUSTED,
     radiusM: Int = 100,
+    category: PlaceCategory = PlaceCategory.HOME,
 ) = PlaceRequestDraft(
     name = name,
     address = "12 rue des Lilas, 75020 Paris, France",
@@ -78,6 +84,7 @@ fun testRequestDraft(
     lng = 2.35222,
     radiusM = radiusM,
     type = type,
+    category = category,
 )
 
 /** What Firestore holds for the requests of a member, and what was written (the lots in order, the batches handed to the phone's queue). */
