@@ -55,6 +55,7 @@ Décision du PM du 2026-11-11 (sans maquette ni spec Notion) ; ticket `docs/tick
 - **Règles Firestore : aucun changement.** `match /places/{placeId}` autorise déjà `get, list` à `isMember(miffId) && miffAlive(miffId)` ; la création, la modification et la suppression restent au créateur (`isOwner`).
 - « Ajouter un lieu » ouvre le formulaire avec son choix de Miff habituel (dernière Miff rejointe créée par la personne), pas forcément la Miff du carrousel : inchangé, le formulaire permet de choisir.
 - Ce que cette PR ne fait pas : l'écran iOS (miroir à faire d'après le contrat).
+
 ## [0.31.0] - 2026-11-11 : la phrase principale de la bulle du Feed reprend exactement le titre `display/headline` (retour du PM)
 
 Dernier retour du PM sur la bulle (après la fusion de la PR #160) : la police validée reste, mais la **taille revient exactement à celle du titre `display/headline` des autres écrans (24 sp / 30)**. Branche `android/bulle-taille-headline`, PR brouillon. Numéro de version : plusieurs PR Android ouvertes se disputent 0.29.0 et 0.30.0 ; celle-ci prend 0.31.0, à renuméroter à la fusion si besoin.
