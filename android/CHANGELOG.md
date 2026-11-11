@@ -2,6 +2,26 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.32.0] - 2026-11-11 : App Check, interrupteur de debug « sans App Check » (AC-4)
+
+Plan `docs/dev/app-check.md` §5 (C1) et §8 (AC-4) ; branche `android/appcheck-ac4-et-erreurs`, PR brouillon. Numéro de version : `main` et plusieurs PR ouvertes portent déjà 0.31.0 ; celui-ci prend le prochain libre (à renuméroter au merge si l'ordre change). **Aucune commande Firebase, aucun accès à la console, rien modifié sur `miff-3d283` : App Check n'est toujours pas appliqué (action du PM).** Aucune donnée, aucune règle, aucune permission, aucun service payant.
+
+### Ajouté
+- **Interrupteur « Sans App Check (au prochain lancement) »** dans l'écran de diagnostic (carte App Check), **build debug seulement**. Activé, le lancement suivant installe un fournisseur qui ne donne **aucun jeton** (`DebugAppCheckNoTokenProviderFactory`) : une fois Firestore appliqué, le PM pourra prouver qu'une requête sans jeton est refusée (critère R18 du ticket de durcissement). Le réglage est mémorisé (un booléen) et lu **une seule fois au lancement** ; l'écran dit s'il est « enregistré, à relancer », « actif » ou « désactivé, à relancer ».
+- À l'activation, l'app **oublie le dernier jeton gardé par le SDK** (valable jusqu'à 1 h) avant de choisir le fournisseur, sinon la preuve serait fausse pendant une heure ; « Vérifier » redemande alors le jeton au fournisseur.
+- **Absent de tout build distribuable** : le code est dans `src/debug` seulement. Le contrôle de la CI qui cherchait `DebugAppCheck` dans le dex des builds `release` et `releaseLike` cherche **aussi** la chaîne `DEBUGAPPCHECKOFF` (clé du réglage), que la minification ne renomme pas.
+- Tests : `DebugAppCheckNoTokenProviderTest` (le fournisseur échoue toujours, sans donnée personnelle ; marqueurs de la CI), `DiagnosticViewModelTest` (réglage mémorisé sans changer le lancement en cours ; lancement démarré avec l'interrupteur).
+- Recette : `docs/qa/checklists/appcheck-ac4-android-recette-pm.md`.
+
+### Modifié
+- `AppCheckInstaller.install()` prend le contexte (les versions `debug` et `release` gardent la même signature ; la version `release` ne lit aucun réglage).
+
+### Choix « économiques »
+- **Aucun** : rien n'est facturé, rien n'est lu ni écrit côté serveur par cet interrupteur.
+
+### À savoir
+- Ce test ne couvre que **Firestore** (Authentication, s'il est appliqué un jour, aura son propre test : AC-8). La preuve de refus elle-même reste à faire par le PM (AC-7), avec son accord explicite et daté.
+
 ## [0.31.0] - 2026-11-11 : mode voyage, notifications : N7 « Ton mode voyage est terminé » et gardes du planificateur (VOY-4A)
 
 Tickets `docs/tickets/mode-voyage.md` §9 (notifications) et `docs/tickets/notifications.md` §20.12bis ; branche `android/mode-voyage-notifications`, PR brouillon. Le mode voyage de base (#152 / #153) et le NOTIF-P0 (#128, #131, #133) sont dans `main`. Numéro de version : `main` est à 0.30.0 (mode voyage, Feed), celui-ci prend 0.31.0 (à renuméroter au merge si l'ordre change). **Aucun changement du modèle de données, des règles Firestore ni des fonctions : aucune lecture ni écriture Firestore, aucun service payant, aucune permission nouvelle.**

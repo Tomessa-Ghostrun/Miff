@@ -69,6 +69,11 @@
     <string name="diag_appcheck_running">Vérification en cours…</string>
     <string name="diag_appcheck_ok">Jeton obtenu</string>
     <string name="diag_appcheck_none">Pas de jeton pour le moment. Sans conséquence, App Check n\'est pas encore exigé. Dans les versions de test, le jeton de débogage affiché dans Logcat peut être enregistré dans la console Firebase.</string>
+    <string name="android_diag_appcheck_off_description">Test de l\'application stricte (build de debug seulement) : avec cet interrupteur, le prochain lancement de l\'app n\'envoie aucun jeton App Check. Une fois App Check appliqué dans la console, le serveur doit alors refuser les requêtes.</string>
+    <string name="android_diag_appcheck_off_switch">Sans App Check (au prochain lancement)</string>
+    <string name="android_diag_appcheck_off_pending">Enregistré. Ferme complètement l\'app puis rouvre-la : elle n\'enverra alors aucun jeton.</string>
+    <string name="android_diag_appcheck_off_active">Actif : ce lancement n\'envoie aucun jeton App Check. Désactive l\'interrupteur puis relance l\'app pour revenir à la normale.</string>
+    <string name="android_diag_appcheck_off_ending">Désactivé. Ce lancement n\'envoie encore aucun jeton : ferme complètement l\'app puis rouvre-la.</string>
 
     <!-- Analytics et rapports de plantage -->
     <string name="diag_privacy_title">Analytics et rapports de plantage</string>
