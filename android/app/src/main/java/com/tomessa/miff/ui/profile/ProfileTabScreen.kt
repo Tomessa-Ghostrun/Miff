@@ -60,7 +60,7 @@ private val GearSize = Spacing.minTouchTarget
 /**
  * The Profile tab (mockup "profil", ticket ONB-3a, criterion A3): the photo (or the initials), "Prénom Nom", "C'est toi" and
  * the gear that opens Settings. A tap on the photo and the name opens "Mes informations". Under the header come
- * the carousel "Mes Miffs" ([MiffCarouselSection]) then the places of the Miff. [scrollToTopSignal] goes up when the person taps
+ * the carousel "Mes Miffs" ([MiffCarouselSection]), the places of the Miff, then (last) the card "Mode voyage". [scrollToTopSignal] goes up when the person taps
  * the tab they are already on.
  */
 @Composable
@@ -76,7 +76,7 @@ fun ProfileTabScreen(
     carousel: MiffCarouselHost = MiffCarouselHost(),
     /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
     placesContent: @Composable () -> Unit = {},
-    /** MODE VOYAGE (VOY-2A): the card "Mode voyage", under the header and before "Mes Miffs"; nothing until the host gives it. */
+    /** MODE VOYAGE (VOY-2A): the card "Mode voyage", the LAST block of the tab (after "Mes Miffs" and the places); nothing until the host gives it. */
     travelContent: @Composable () -> Unit = {},
 ) {
     RecentsPrivacy()
@@ -116,9 +116,10 @@ fun ProfileTabScreen(
         if (state.status == ProfileTabStatus.UNAVAILABLE) {
             Unavailable(onRetry)
         }
-        travelContent()
         MiffCarouselSection(miffs, carousel, onOpenMiff)
         placesContent()
+        // MODE VOYAGE: the card is the LAST block of the Profile (decision of the PM, 2026-11-11), after the carousel of Miffs and the places.
+        travelContent()
     }
 }
 
