@@ -29,11 +29,13 @@ data class DailyCounters(
 ) {
     fun count(type: NotificationType): Int = perType[type] ?: 0
 
-    /** N1 to N4 together; N6 has its own cap and is OUTSIDE the total (decision Q30). */
-    val total: Int get() = perType.filterKeys { it != NotificationType.N6 }.values.sum()
+    /** N1 to N4 together; N6 has its own cap and is OUTSIDE the total (decision Q30), N7 (once per trip, key `n7|uid|end`) has no cap at all (ticket mode voyage 9.1). */
+    val total: Int get() = perType.filterKeys { it != NotificationType.N6 && it != NotificationType.N7 }.values.sum()
 
     fun canShow(type: NotificationType): Boolean =
-        if (type == NotificationType.N6) {
+        if (type == NotificationType.N7) {
+            true
+        } else if (type == NotificationType.N6) {
             count(type) < NotificationPolicy.MAX_N6_PER_DAY
         } else {
             count(type) < NotificationPolicy.MAX_PER_TYPE_PER_DAY && total < NotificationPolicy.MAX_TOTAL_PER_DAY

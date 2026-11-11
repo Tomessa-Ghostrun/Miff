@@ -23,11 +23,12 @@ class NotificationModelsTest {
     // --- Types ---------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun thereAreFiveTypes_n5IsAbandonedAndAbsent() {
-        assertEquals(listOf("n1", "n2", "n3", "n4", "n6"), NotificationType.entries.map { it.code })
+    fun thereAreSixTypes_n5IsAbandonedAndAbsent_n7IsTheEndOfMyTrip() {
+        assertEquals(listOf("n1", "n2", "n3", "n4", "n6", "n7"), NotificationType.entries.map { it.code })
         assertNull(NotificationType.fromCode("n5"))
         assertNull(NotificationType.fromCode(null))
         assertEquals(NotificationType.N6, NotificationType.fromCode("n6"))
+        assertEquals(NotificationType.N7, NotificationType.fromCode("n7"))
     }
 
     @Test

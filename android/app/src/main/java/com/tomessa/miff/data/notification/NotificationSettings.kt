@@ -38,6 +38,7 @@ class SharedPreferencesNotificationPreferencesStore(
             n3 = prefs.getBoolean(NotificationType.N3.code, defaults.n3),
             n4 = prefs.getBoolean(NotificationType.N4.code, defaults.n4),
             n6 = prefs.getBoolean(NotificationType.N6.code, defaults.n6),
+            n7 = prefs.getBoolean(NotificationType.N7.code, defaults.n7),
             nightCalm = prefs.getBoolean(KEY_NIGHT, defaults.nightCalm),
         )
     }

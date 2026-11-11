@@ -17012,6 +17012,57 @@
           }
         }
       }
+    },
+    "notif_n7_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your travel mode has ended"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton mode voyage est terminé"
+          }
+        }
+      }
+    },
+    "notif_n7_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Miff so your card gets its usual colours back. Welcome back!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"
+          }
+        }
+      }
+    },
+    "notif_settings_n7": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When my travel mode ends"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand mon mode voyage se termine"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
