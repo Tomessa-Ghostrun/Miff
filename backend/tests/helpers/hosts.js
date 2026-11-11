@@ -33,4 +33,11 @@ export const H = {
   positionsUpdate: { match: 'match /positions/{uid} {', method: 'update' },
   positionsDelete: { match: 'match /positions/{uid} {', method: 'delete' },
   membersUpdate: { match: 'match /members/{uid} {', method: 'update' },
+  // LIEU-REQ-A : demandes d'ajout d'un lieu et compteur des demandes en attente.
+  requestsGet: { match: 'match /placeRequests/{reqId} {', method: 'get' },
+  requestsList: { match: 'match /placeRequests/{reqId} {', method: 'list' },
+  requestsCreate: { match: 'match /placeRequests/{reqId} {', method: 'create' },
+  requestsDelete: { match: 'match /placeRequests/{reqId} {', method: 'delete' },
+  requestCounterCreate: { match: 'match /meta/placeRequests {', method: 'create' },
+  requestCounterUpdate: { match: 'match /meta/placeRequests {', method: 'update' },
 };
