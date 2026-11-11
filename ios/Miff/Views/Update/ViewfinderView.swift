@@ -4,7 +4,7 @@ import UIKit
 
 // Le viseur (ticket Update §5.1 et §5.3, design/screens/update.md §5). PLEIN ÉCRAN, SOUS la barre d'onglets (qui reste visible, en verre
 // sombre) ; caméra frontale par défaut ; obturateur au centre bas, 48 pt au-dessus de la barre ; bascule de caméra visible en haut à
-// droite ; DEUX TOUCHERS rapides hors des boutons = bascule (et retour) ; l'astuce du double toucher jusqu'au premier double toucher qui
+// droite, avec le bouton du FLASH à sa gauche (éteint par défaut, jamais gardé, seulement s'il est possible) ; DEUX TOUCHERS rapides hors des boutons = bascule (et retour) ; l'astuce du double toucher jusqu'au premier double toucher qui
 // change la caméra (D38) ; la ligne d'aide « Un selfie, la vue, ton repas : comme tu veux. ».
 // La caméra n'est active que si l'écran est visible : elle s'arrête quand l'écran disparaît, que l'app passe en arrière-plan ou que
 // l'écran se verrouille (critère P1).
@@ -142,12 +142,22 @@ struct ViewfinderView: View {
                 } else {
                     Spacer(minLength: 0)
                 }
-                if camera.canSwitch {
-                    RoundOverlayButton(
-                        systemName: "arrow.triangle.2.circlepath.camera",
-                        labelKey: "update_flip_a11y",
-                        onTap: { camera.switchLens() }
-                    )
+                // Le flash à GAUCHE du bouton de bascule, même groupe, même pastille (48 pt de zone, au-dessus du minimum de 44 pt).
+                HStack(spacing: 0) {
+                    if camera.flash.isVisible {
+                        RoundOverlayButton(
+                            systemName: camera.flash.symbolName,
+                            labelKey: camera.flash.textKey,
+                            onTap: toggleFlash
+                        )
+                    }
+                    if camera.canSwitch {
+                        RoundOverlayButton(
+                            systemName: "arrow.triangle.2.circlepath.camera",
+                            labelKey: "update_flip_a11y",
+                            onTap: { camera.switchLens() }
+                        )
+                    }
                 }
             }
             .padding(.horizontal, Spacing.sm)
@@ -158,6 +168,12 @@ struct ViewfinderView: View {
             }
             .padding(.bottom, UpdateLayout.shutterAboveBar)
         }
+    }
+
+    /// Un toucher sur le flash : l'état est dit à VoiceOver en mots (« Flash activé » / « Flash désactivé »), sans son ni vibration.
+    private func toggleFlash() {
+        camera.toggleFlash()
+        UpdateAnnouncer.post(L10n.string(camera.flash.textKey))
     }
 
     /// L'action d'accessibilité « Changer de caméra » (seulement quand il y a deux caméras).
