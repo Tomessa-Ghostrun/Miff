@@ -209,7 +209,7 @@ Le minuteur local d'une minute du Feed réévalue `now ≥ travelUntil` (« En v
 
 ### 7.1 Placement
 
-Onglet **Profil**, sous l'en-tête et avant « Mes Miffs » : carte « Mode voyage », **visible et activable par tous**.
+Onglet **Profil**, **en dernière position de l'écran, après tous les autres blocs** (décision du PM après la recette iOS du build 26 ; la première version la plaçait avant « Mes Miffs ») : carte « Mode voyage », **visible et activable par tous**.
 
 ### 7.2 Maquette texte (à confirmer par le PM / design, §15)
 

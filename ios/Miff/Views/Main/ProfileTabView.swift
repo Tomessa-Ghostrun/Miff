@@ -15,7 +15,7 @@ struct ProfileTabActions {
 struct ProfileTabView: View {
     let state: ProfileTabState
     let miffs: DirectoryState
-    /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », sous l'en-tête et avant « Mes Miffs », ouverte à tous les comptes.
+    /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », en DERNIÈRE position de l'écran (après tous les autres blocs), ouverte à tous les comptes.
     @ObservedObject var travel: TravelViewModel
     let actions: ProfileTabActions
 
@@ -26,8 +26,9 @@ struct ProfileTabView: View {
                 if state == .unavailable {
                     unavailable
                 }
-                TravelCardView(model: travel)
                 miffCards
+                // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).
+                TravelCardView(model: travel)
             }
             .padding(.horizontal, Spacing.lg)
             .padding(.vertical, Spacing.md)
