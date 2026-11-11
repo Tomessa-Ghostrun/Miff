@@ -337,6 +337,31 @@ class FeedScreenTest {
     }
 
     @Test
+    fun bubble_theButton_saysContacter_isNamedWithThePerson_andKeepsA48dpTouchArea() {
+        var sent: String? = null
+        val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))
+        feed(ready(orange), actions = FeedActions(onMessage = { sent = it }))
+        assertEquals("Contacter", text(R.string.feed_bubble_message_action))
+        composeRule.onAllNodesWithText("Envoyer un message").assertCountEquals(0)
+        // Spoken: "Contacter Thomas" (the person, not only the word); the touch area is at least 48 dp high and wide...
+        composeRule
+            .onNodeWithContentDescription(text(R.string.feed_bubble_contact_a11y, "Thomas"))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .assertWidthIsAtLeast(48.dp)
+        // ... while the drawn button is smaller than the 48 dp it used to be (36 dp at most around the word).
+        val word =
+            composeRule
+                .onNodeWithText("Contacter", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .size.height
+        val dp = context().resources.displayMetrics.density
+        assertTrue("the drawn word is small: ${word / dp} dp", word / dp < 36f)
+        composeRule.onNodeWithContentDescription(text(R.string.feed_bubble_contact_a11y, "Thomas")).performClick()
+        assertEquals("+33612345678", sent)
+    }
+
+    @Test
     fun bubble_orange_isFactual_withAnAbsoluteTime_andOffersAMessage() {
         var sent: String? = null
         val orange = content(trio, mapOf(me to status(), "t" to status(PresenceValue.OUT, "p1", 150 * minute)))
