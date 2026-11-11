@@ -12,6 +12,11 @@ enum PhotoFullScreenLayout {
     static let footerMaxShare: CGFloat = 0.45
     /// Hauteur du dégradé qui fond la photo dans le voile, au-dessus du texte.
     static let fadeHeight: CGFloat = 40
+    /// Les espaces de la légende, SERRÉS pour qu'elle soit collée en bas, juste au-dessus de la zone sûre du bas (retour du PM sur le build 27 ;
+    /// avant : 8 pt de marge basse et 8 pt entre la légende et le bouton). Le dégradé, lui, reste.
+    static let captionTopPadding: CGFloat = 8
+    static let captionBottomPadding: CGFloat = 4
+    static let captionSpacing: CGFloat = 4
     /// L'opacité du voile noir derrière le texte.
     static let scrimAlpha: Double = 0.78
     /// Le contrat de lisibilité (WCAG AA, texte courant).

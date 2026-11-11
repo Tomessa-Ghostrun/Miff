@@ -53,7 +53,7 @@ struct PhotoFullScreen: View {
                 // La croix et l'icône « Enregistrer cette photo » restent EN HAUT, face à face, dans la zone sûre du haut ; lues en premier par VoiceOver.
                 VStack(spacing: 0) {
                     HStack {
-                        RoundOverlayButton(systemName: "xmark", labelKey: "update_photo_close_a11y", onTap: onDismiss)
+                        PhotoOverlayIconButton(glyph: .close, labelKey: "update_photo_close_a11y", onTap: onDismiss)
                         Spacer()
                         PhotoSaveButton(image: opened.image)
                     }
@@ -204,7 +204,7 @@ struct PhotoFullScreen: View {
     }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
             Text(verbatim: title)
                 .miffTextStyle(textTitleBold20)
                 .foregroundColor(colorUpdateOnPhoto.color)
@@ -215,7 +215,8 @@ struct PhotoFullScreen: View {
             }
         }
         .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
+        .padding(.top, PhotoFullScreenLayout.captionTopPadding)
+        .padding(.bottom, PhotoFullScreenLayout.captionBottomPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -246,7 +247,7 @@ struct PhotoFullScreen: View {
                     .miffTextStyle(textBodyBold14)
             }
             .foregroundColor(colorUpdateOnPhoto.color)
-            .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget + Spacing.xs)
+            .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
             .overlay(
                 RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
                     .stroke(colorUpdateOnPhoto.color, lineWidth: strokeHairline * 2)

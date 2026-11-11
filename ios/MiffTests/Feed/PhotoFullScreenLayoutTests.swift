@@ -136,5 +136,84 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(code.components(separatedBy: "colorUpdateOnPhoto.color").count - 1, 4, "titre, position, indisponible, bouton : tous en blanc")
         XCTAssertEqual(colorUpdateOnPhoto.hexString, "#FFFFFF")
     }
+
+    // MARK: - La légende collée en bas (retour du PM sur le build 27)
+
+    func testTheCaptionIsTightAndSitsRightAboveTheBottomSafeAreaLikeOnAndroid() throws {
+        // Avant : 8 pt de marge basse et 8 pt entre la légende et le bouton.
+        XCTAssertLessThanOrEqual(PhotoFullScreenLayout.captionBottomPadding, 4, "juste au-dessus de la zone sûre du bas")
+        XCTAssertLessThanOrEqual(PhotoFullScreenLayout.captionSpacing, 4, "légende et bouton serrés")
+        XCTAssertLessThan(PhotoFullScreenLayout.captionBottomPadding, Spacing.sm)
+        XCTAssertLessThan(PhotoFullScreenLayout.captionSpacing, Spacing.sm)
+        XCTAssertGreaterThan(PhotoFullScreenLayout.fadeHeight, 0, "le dégradé reste")
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Miff/Views/Feed/FeedPhotoFullScreen.swift")
+        let code = UpdatePrivacyTests.codeLines(try String(contentsOf: url, encoding: .utf8)).joined(separator: "\n")
+
+        XCTAssertTrue(code.contains("spacing: PhotoFullScreenLayout.captionSpacing"))
+        XCTAssertTrue(code.contains(".padding(.bottom, PhotoFullScreenLayout.captionBottomPadding)"))
+        XCTAssertFalse(code.contains("minHeight: Spacing.minTouchTarget + Spacing.xs"), "le bouton « Voir où c'était » ne gagne plus de hauteur : 44 pt")
+        XCTAssertTrue(code.contains("minHeight: Spacing.minTouchTarget)"))
+    }
+
+    // MARK: - Les pictogrammes sont centrés dans leur rond (retour du PM sur le build 27)
+
+    private func boundsCenter(_ glyph: PhotoOverlayGlyph) -> (CGPoint, CGRect) {
+        let box = CGRect(x: 0, y: 0, width: PhotoOverlayIconButton.glyphBox, height: PhotoOverlayIconButton.glyphBox)
+        let bounds = PhotoGlyphShape(glyph: glyph).path(in: box).boundingRect
+        return (CGPoint(x: bounds.midX, y: bounds.midY), box)
+    }
+
+    func testTheDownloadAndCloseGlyphsAreCenteredInTheirSquareSoCenteredInTheCircle() {
+        for glyph in [PhotoOverlayGlyph.download, .close] {
+            let (center, box) = boundsCenter(glyph)
+
+            XCTAssertEqual(center.x, box.midX, accuracy: 0.05, "\(glyph) : centré horizontalement")
+            XCTAssertEqual(center.y, box.midY, accuracy: 0.05, "\(glyph) : centré verticalement")
+        }
+    }
+
+    func testTheGlyphsStayInsideTheirSquareAndInsideTheDiscWithRoomForTheStroke() {
+        let disc = UpdateLayout.roundButtonDisc
+        for glyph in [PhotoOverlayGlyph.download, .close] {
+            let (_, box) = boundsCenter(glyph)
+            let bounds = PhotoGlyphShape(glyph: glyph).path(in: box).boundingRect
+
+            XCTAssertTrue(box.insetBy(dx: -0.001, dy: -0.001).contains(bounds), "\(glyph) reste dans son carré")
+            XCTAssertLessThan(PhotoOverlayIconButton.glyphBox + PhotoOverlayIconButton.lineWidth, disc, "le trait ne touche pas le bord du disque")
+            XCTAssertGreaterThan(bounds.width, box.width * 0.5, "\(glyph) assez grand pour se lire")
+        }
+    }
+
+    func testTheCenterIsTheSameWhateverTheSquareSize() {
+        for size: CGFloat in [10, 20, 33.3] {
+            let box = CGRect(x: 7, y: 11, width: size, height: size)
+            let bounds = PhotoGlyphShape(glyph: .download).path(in: box).boundingRect
+
+            XCTAssertEqual(bounds.midX, box.midX, accuracy: 0.001 * size)
+            XCTAssertEqual(bounds.midY, box.midY, accuracy: 0.001 * size)
+        }
+    }
+
+    func testTheFullScreenUsesTheDrawnGlyphsForTheCloseAndSaveIconsInsteadOfTypographicSymbols() throws {
+        let miff = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Miff/Views/Feed")
+        let screen = UpdatePrivacyTests.codeLines(try String(contentsOf: miff.appendingPathComponent("FeedPhotoFullScreen.swift"), encoding: .utf8)).joined(separator: "\n")
+        let save = UpdatePrivacyTests.codeLines(try String(contentsOf: miff.appendingPathComponent("PhotoSaveButton.swift"), encoding: .utf8)).joined(separator: "\n")
+        let button = UpdatePrivacyTests.codeLines(try String(contentsOf: miff.appendingPathComponent("PhotoOverlayIconButton.swift"), encoding: .utf8)).joined(separator: "\n")
+
+        XCTAssertTrue(screen.contains("PhotoOverlayIconButton(glyph: .close"))
+        XCTAssertFalse(screen.contains("RoundOverlayButton"))
+        XCTAssertFalse(save.contains("RoundOverlayButton"))
+        XCTAssertFalse(button.contains("Image(systemName"), "aucun symbole typographique : le pictogramme est un tracé centré")
+        XCTAssertTrue(button.contains("ZStack {"), "le rond et le tracé partagent le même centre")
+        XCTAssertGreaterThanOrEqual(UpdateLayout.roundButtonSize, 44, "zone de toucher de 44 pt au moins")
+    }
 }
 // swiftlint:enable line_length

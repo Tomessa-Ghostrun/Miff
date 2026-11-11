@@ -33,7 +33,7 @@ struct PhotoSaveButton: View {
     }
 
     var body: some View {
-        RoundOverlayButton(systemName: "square.and.arrow.down", labelKey: "feed_photo_download_a11y") {
+        PhotoOverlayIconButton(glyph: .download, labelKey: "feed_photo_download_a11y") {
             Task { await model.save() }
         }
         .overlay(alignment: .topTrailing) {

@@ -330,7 +330,7 @@ final class PhotoSaveTests: XCTestCase {
     func testTheButtonIsAnIconNamedForVoiceOverWithAComfortableTargetAndOneAnnouncement() throws {
         let button = try code("Miff/Views/Feed/PhotoSaveButton.swift")
 
-        XCTAssertTrue(button.contains("RoundOverlayButton(systemName: \"square.and.arrow.down\", labelKey: \"feed_photo_download_a11y\")"))
+        XCTAssertTrue(button.contains("PhotoOverlayIconButton(glyph: .download, labelKey: \"feed_photo_download_a11y\")"), "icône dessinée et centrée, nom parlé de la clé Android")
         XCTAssertGreaterThanOrEqual(UpdateLayout.roundButtonSize, 44, "zone de toucher d'au moins 44 pt, comme la croix")
         XCTAssertFalse(button.contains("accessibilityValue"), "une seule annonce VoiceOver, pas de valeur en plus")
         XCTAssertEqual(button.components(separatedBy: "UIAccessibility.post").count - 1, 1)
