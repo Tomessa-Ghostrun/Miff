@@ -67,6 +67,7 @@ import com.tomessa.miff.domain.profile.ProfileForm
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.rememberSystemCamera
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorBgSurface
@@ -326,6 +327,7 @@ internal fun PhotoSourceSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = colorBgSurface,
+        modifier = Modifier.holdForDiagnostic(),
     ) {
         Column(
             modifier = Modifier.miffBottomInsets().padding(horizontal = Spacing.l, vertical = Spacing.s),

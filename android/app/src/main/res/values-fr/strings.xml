@@ -11,8 +11,8 @@
 
     <!-- Écran de diagnostic : en-tête et identité du build -->
     <string name="diag_title">Diagnostic interne</string>
-    <string name="diag_subtitle">Écran interne, réservé aux versions de test. Rien de ceci n\'est visible du public.</string>
-    <string name="diag_open_home">Ouvrir l\'application</string>
+    <string name="diag_subtitle">Écran interne, réservé aux versions de test (Réglages > Diagnostic, ou appui de 10 s n\'importe où). Rien de ceci n\'est visible du public.</string>
+    <string name="diag_open_home">Retour à l\'application</string>
     <string name="diag_build_title">Version installée</string>
     <string name="diag_build_version">Version : %1$s (build %2$d)</string>
     <string name="diag_build_type">Configuration : %1$s</string>
@@ -1045,6 +1045,8 @@
     <string name="voyage_bubble_many">%1$d proches sont en voyage.</string>
     <string name="voyage_bubble_all">Tes proches sont en voyage.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
+    <string name="android_diag_settings_title">Diagnostic</string>
+    <string name="android_diag_settings_subtitle">Outils de test, réservés aux versions de test</string>
     <string name="android_diag_review_title">Fenêtre d\'avis (essai)</string>
     <string name="android_diag_review_force">Afficher la fenêtre au prochain retour dans l\'app</string>
     <string name="android_diag_review_force_armed">Prête : mets l\'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l\'Update).</string>

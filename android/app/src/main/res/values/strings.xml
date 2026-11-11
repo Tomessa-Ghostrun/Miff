@@ -33,8 +33,8 @@
 
     <!-- Diagnostic screen: header and build identity -->
     <string name="diag_title">Internal diagnostic</string>
-    <string name="diag_subtitle">Internal screen, test builds only. Nothing here is shown to the public.</string>
-    <string name="diag_open_home">Open the app</string>
+    <string name="diag_subtitle">Internal screen, test builds only (Settings > Diagnostic, or hold a finger down for 10 s anywhere). Nothing here is shown to the public.</string>
+    <string name="diag_open_home">Back to the app</string>
     <string name="diag_build_title">Build</string>
     <string name="diag_build_version">Version: %1$s (build %2$d)</string>
     <string name="diag_build_type">Configuration: %1$s</string>
@@ -1066,6 +1066,8 @@
     <string name="voyage_bubble_many">%1$d loved ones are traveling.</string>
     <string name="voyage_bubble_all">Your loved ones are traveling.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
+    <string name="android_diag_settings_title">Diagnostic</string>
+    <string name="android_diag_settings_subtitle">Test tools, for test builds only</string>
     <string name="android_diag_review_title">Review window (test)</string>
     <string name="android_diag_review_force">Show the window at the next return to the app</string>
     <string name="android_diag_review_force_armed">Ready: send the app to the background, then reopen it (the window never covers the Update).</string>

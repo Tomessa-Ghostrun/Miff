@@ -232,8 +232,8 @@ jobs:
             echo "::error::Aucun fichier dex dans le bundle release : verification impossible."
             exit 1
           fi
-          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DEBUGAPPCHECKOFF|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
-            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck, DEBUGAPPCHECKOFF (interrupteur « sans App Check », AC-4), DETECTIONJOURNAL ou REVIEWPROMPTPROBE : l'ecran de diagnostic, le fournisseur App Check de debug ou son interrupteur « sans App Check » (AC-4), le journal de detection (LOC-2b) ou la fenetre d'avis (docs/tickets/pop-ins-avis.md, AV2) a fuite dans le build release."
+          if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DEBUGAPPCHECKOFF|DETECTIONJOURNAL|REVIEWPROMPTPROBE|DIAGNOSTICHOLDGESTURE' | grep -q -v '^0$'; then
+            echo "::error title=Code de debug dans le release::Le bundle release contient DIAGNOSTICPROBE, DebugAppCheck, DEBUGAPPCHECKOFF (interrupteur « sans App Check », AC-4), DETECTIONJOURNAL, REVIEWPROMPTPROBE ou DIAGNOSTICHOLDGESTURE (geste secret d'appui de 10 s vers le diagnostic) : l'ecran de diagnostic, le fournisseur App Check de debug ou son interrupteur « sans App Check » (AC-4), le journal de detection (LOC-2b) ou la fenetre d'avis (docs/tickets/pop-ins-avis.md, AV2) a fuite dans le build release."
             exit 1
           fi
           echo "Bundle release : aucune trace du diagnostic ni du fournisseur App Check de debug ($dex_count fichier(s) dex inspecte(s))."
@@ -250,8 +250,8 @@ jobs:
           # releaseLike is built from the release sources: same proof for its APK.
           like=app/build/outputs/apk/releaseLike/app-releaseLike.apk
           test -f "$like" || { echo "::error::APK releaseLike introuvable : $like"; exit 1; }
-          if unzip -p "$like" 'classes*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DEBUGAPPCHECKOFF|DETECTIONJOURNAL|REVIEWPROMPTPROBE' | grep -q -v '^0$'; then
-            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug, l'interrupteur « sans App Check » (AC-4), le journal de detection ou la fenetre d'avis (REVIEWPROMPTPROBE)."
+          if unzip -p "$like" 'classes*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DEBUGAPPCHECKOFF|DETECTIONJOURNAL|REVIEWPROMPTPROBE|DIAGNOSTICHOLDGESTURE' | grep -q -v '^0$'; then
+            echo "::error title=Code de debug dans releaseLike::L'APK releaseLike contient le diagnostic, le fournisseur App Check de debug, l'interrupteur « sans App Check » (AC-4), le journal de detection ou la fenetre d'avis (REVIEWPROMPTPROBE) ou le geste secret d'appui de 10 s vers le diagnostic (DIAGNOSTICHOLDGESTURE)."
             exit 1
           fi
           echo "APK releaseLike : aucune trace du diagnostic ni du fournisseur App Check de debug."

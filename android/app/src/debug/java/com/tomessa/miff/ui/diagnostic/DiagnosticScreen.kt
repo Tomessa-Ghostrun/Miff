@@ -84,7 +84,7 @@ import java.util.Locale
 @Composable
 fun DiagnosticScreen(
     viewModel: DiagnosticViewModel,
-    onOpenHome: () -> Unit,
+    onBack: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // The e-mail survives rotation and process death; the password is deliberately NOT saved.
@@ -108,7 +108,7 @@ fun DiagnosticScreen(
             modifier = Modifier.semantics { heading() },
         )
         Text(stringResource(R.string.diag_subtitle), style = textBodyRegular14, color = colorTextDescription)
-        TextButton(onClick = onOpenHome) {
+        TextButton(onClick = onBack) {
             Text(stringResource(R.string.diag_open_home), style = textBodyBold14, color = colorActionPrimary)
         }
 

@@ -2,6 +2,33 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.36.0] - 2026-11-12 : l'app ne démarre plus sur le diagnostic ; accès par Réglages ou par un appui de 10 secondes
+
+Demande du PM du 2026-11-12 ; branche `android/debug-acces-reglages-appui-long`, PR brouillon. Pas de maquette (résultat direct demandé). Numéro de version : `main` est à 0.
+
+### Modifié
+- **Le démarrage est celui de la production, dans tous les builds** : splash, puis carrousel / connexion / Feed selon l'état. L'écran de diagnostic n'est plus la destination de départ des APK de debug (`MiffNavHost` démarre toujours sur `AppRoute`).
+- Le bouton de l'écran de diagnostic s'appelle « Retour à l'application » et **revient où l'on était** (le diagnostic s'ouvre par-dessus l'app, il ne la remplace plus) ; le geste retour fait de même.
+
+### Ajouté
+- **Porte 1 : Réglages > « Diagnostic »**, ligne en bas des Réglages (liste complète et liste réduite sans Miff). Build **debug seulement**.
+- **Porte 2 : appui continu de 10 secondes, n'importe où**, un seul doigt, immobile (tolérance 20 dp ; lever le doigt, bouger davantage ou poser un second doigt annule), avec un retour haptique bref à l'ouverture. Le détecteur (`Modifier.pointerInput`, phase **Initial**, ne consomme rien) est posé sur la **fenêtre entière** dans `MainActivity` (splash, carrousel, connexion, inscription, onboarding, permissions, Miff, Feed, Update) **et** sur la carte de chaque fenêtre ou feuille de l'app (une fenêtre est une fenêtre Android séparée : 13 emplacements, confirmations, sélecteurs, photo en plein écran, fenêtre d'avis). Build **debug seulement**.
+- Règles pures `HoldGestureTracker` / `HoldGestureRules` (10 s, 20 dp, annulations) ; canal `DiagnosticRequests` (sans rejeu : une ancienne demande n'ouvre jamais l'écran plus tard).
+- `InternalDestinations` (debug et release) expose `SettingsEntry`, `holdModifier` et `OpenOnRequest` ; la version **release est vide** (ni geste, ni ligne, ni route).
+- Tests : `HoldGestureTrackerTest` (durée, tolérance, annulations), `DiagnosticHoldDetectorTest` (Robolectric, écran d'exemple : ouverture à 10 s et pas avant, tremblement toléré, glissement et second doigt annulent, un toucher et un défilement normaux ne sont pas gênés), `DiagnosticAccessTest` (ligne de Réglages, navigation par-dessus l'app et retour, sans empilement double), `DiagnosticAccessGuardTest` (démarrage sur l'app, détecteur absent du code commun et release).
+- Documentation : `docs/dev/acces-diagnostic.md`, recette PM `docs/qa/checklists/diagnostic-acces-android-recette-pm.md` ; les recettes qui disaient « l'app démarre sur le diagnostic » sont corrigées.
+
+### Sécurité
+- **Absent de tout build distribuable** : le code est dans `src/debug` seulement. La CI cherche maintenant aussi le marqueur `DIAGNOSTICHOLDGESTURE` dans le dex du bundle release (`android/ci/check-release-bundle.sh` et `.github/workflows/android.yml`) et dans l'APK `releaseLike`. Le script du bundle cherche aussi désormais `DEBUGAPPCHECKOFF` (déjà cherché par `android.yml`, oublié dans le script : les deux sont de nouveau d'accord, gardés par `ReleaseSigningGuardTest`).
+- Aucune donnée personnelle dans l'écran ni dans le geste ; aucun événement d'analyse.
+
+### Choix « économiques »
+- **Aucun** : aucun service, aucune dépendance ajoutée.
+
+### À savoir
+- **`releaseLike` n'a ni la ligne ni le geste** (il est construit avec les sources release, c'est son but : mesurer la diffusion). Le diagnostic n'est donc dans que l'APK debug.
+- Limites du geste : les fenêtres du système (demande d'autorisation, sélecteur de fichiers) ne passent pas par l'app ; la zone sombre autour d'une fenêtre de l'app ne déclenche pas le geste (seule la carte le fait).
+
 ## [0.35.0] - 2026-11-11 : App Check, interrupteur de debug « sans App Check » (AC-4) et message « appareil non reconnu »
 
 Plan `docs/dev/app-check.md` §5 (C1, C5) et §8 (AC-4) ; deux commits (A : interrupteur ; B : message) ; branche `android/appcheck-ac4-et-erreurs`, PR brouillon. Numéro de version : `main` est à 0.32.0 et deux PR ouvertes prennent 0.33.0 et 0.34.0 (demande d'ajout d'un lieu, membre et créateur) ; celui-ci prend le prochain libre, 0.35.0 (à renuméroter au merge si l'ordre change). **Aucune commande Firebase, aucun accès à la console, rien modifié sur `miff-3d283` : App Check n'est toujours pas appliqué (action du PM).** Aucune donnée, aucune règle, aucune permission, aucun service payant.
