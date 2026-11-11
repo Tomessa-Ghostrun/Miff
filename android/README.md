@@ -400,6 +400,7 @@ Ticket `docs/tickets/update.md` (décisions D16 à D26), fiche `design/screens/u
 - **Ce que le téléphone ne fait jamais** : écrire un fichier de la photo **de lui-même** (cache, galerie, sauvegarde : le seul enregistrement est le bouton « Enregistrer la photo » du plein écran du Feed, sur un toucher, voir plus bas), la journaliser, l'envoyer à Analytics ou à Crashlytics, la mettre dans le presse-papier, supprimer une photo sur un refus des règles ; `UpdatePrivacyRuleTest` le vérifie sur les sources.
 - **« Enregistrer la photo » (Feed, plein écran uniquement, décision du PM du 2026-11-08, D52 du ticket Feed)** : `domain/feed/PhotoDownload.kt` (nom neutre `Miff-AAAA-MM-JJ-HHMMSS.jpg`, choix du chemin par version d'Android, contrôle JPEG, états), `data/media/PhotoSaver.kt` (le **seul** fichier qui écrit : MediaStore `Pictures/Miff` sur Android 10+, sélecteur de documents du système avant), `ui/feed/PhotoSaveController.kt`. **Aucune permission** ; rien n'est écrit sans toucher ; `PhotoDownloadRuleTest` le vérifie sur les sources. Changement de posture vie privée (la copie sort de Miff, hors des 24 h) : textes à aligner dans `docs/release/update-photo-declarations.md` §15 et `docs/legal/README.md` §7. Détail dans `CHANGELOG.md` (0.22.0).
 - **Sélecteur de Miff ouvert à tous (D51, 2026-11-08)** : `domain/miff/MiffSelector.kt` décide ce que fait un toucher sur « Rejoindre une Miff » / « Créer une Miff » ; un compte gratuit déjà dans une Miff arrive sur le paywall des lieux adapté (`PaywallReason.MIFF`, « Miff+ arrive bientôt », aucun achat) ; une formule inconnue n'est jamais prise pour « gratuit » ; la barrière réelle reste les règles Firestore.
+- **Flash du viseur** (`ui/update/FlashState.kt`, `CameraHandle.flash`, `FlashButton`) : règle pure (éteint par défaut, jamais conservé, visible seulement si `cameraInfo.hasFlashUnit()`, mode CameraX `FLASH_MODE_ON` seulement à la prise de photo) ; remise à zéro à chaque liaison de caméra (changement d'objectif) et à `ON_STOP`. Bouton en haut à gauche, 48 dp, état dit par l'icône et par TalkBack. Détail : `CHANGELOG.md` (0.29.0).
 - **Appareil photo du système** : depuis que l'application déclare `CAMERA`, Android refuse de le lancer sans la permission (`SecurityException`) ; la photo de profil passe par `ui/components/SystemCamera.kt`, qui demande la permission d'abord. Conséquence assumée pour l'Update : **pas de repli sur l'appareil photo du téléphone quand la caméra est refusée pour de bon** (voir la PR).
 
 ## Fenêtre d'avis « Que penses-tu de Miff ? » (décision du PM du 2026-11-07, risque assumé ; décisions du 2026-11-08)
@@ -685,6 +686,16 @@ Avant tout lancement de Gradle, l'étape `gradle/actions/wrapper-validation` (é
 7. Dire à l'android-dev de passer à l'implémentation : étape de CI qui décode le secret (sans jamais l'afficher, sauté si le secret est absent), et ajout de `DEBUG_KEYSTORE_B64` à la liste fermée de `backend/tests/unit/workflows.test.js` (ce test impose qu'un nouveau secret soit une décision visible en revue). A la première installation, désinstaller une dernière fois l'ancienne version de l'application.
 
 **Signal de bascule vers C** : premiers testeurs hors équipe, ou besoin de tester l'abonnement via Google Play (la facturation Play exige un APK/AAB distribué par Play).
+
+## Mode voyage (tickets VOY-1A, VOY-2A, VOY-3A)
+
+Ticket `docs/tickets/mode-voyage.md`, **ouvert à tous les comptes** et **la position reste partagée** (décisions du PM du 2026-11-10). Fonctionnement et fichiers :
+
+- `domain/travel/TravelMode.kt` : règles pures (`TravelPlan` : bornes aujourd'hui à +89 jours, instant de fin = 00:00 local du lendemain ; `TravelView` : ce que voit un proche, calculé à l'affichage).
+- `data/tracking/TrackingEngine.kt` (section MODE VOYAGE) : `setTravel`, `endTravel`, passage de réveil pendant un voyage (`doTravelPass`, `publishPositionDuringTravel` : la position continue, aucun statut de zone, de batterie ni d'accès n'est écrit), fin, adoption par un nouvel appareil. `TravelAlarm` / `AlarmManagerTravelAlarm` : alarme inexacte de fin (action `TRAVEL_END` du `TrackingReceiver`, aussi sur `TIME_SET` / `TIMEZONE_CHANGED`).
+- `ui/profile/TravelCard.kt`, `TravelViewModel.kt` : la carte du Profil ; `ui/feed` : carte grise, bulle, lien « Modifier ».
+- Écritures : `TrackingWrites.travelStart` / `travelDate` et `statusUpdate(clearTravel = true)` (comptées par `DeviceIdInEveryWriteTest`). Les règles correspondantes sont dans `backend/firestore.rules` (PR #151) ; contrat des clients : `docs/dev/mode-voyage-clients.md`.
+- Recette : `docs/qa/checklists/voyage-android-recette-pm.md`.
 
 ## Surcouches constructeur (géofencing)
 
