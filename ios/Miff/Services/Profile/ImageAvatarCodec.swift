@@ -39,9 +39,24 @@ final class ImageAvatarCodec: AvatarCodec {
     /// Côté de travail du recadrage : assez grand pour garder les détails d'un carré zoomé quatre fois.
     static let workingSide = 1280
 
+    // Photo venue d'un serveur distant (photo du compte Google) : un chemin plus strict que celui de la photothèque.
+    /// Les seuls formats acceptés : JPEG, PNG, HEIC, WebP (jamais GIF animé, TIFF, PDF...).
+    static let remoteTypes: Set<String> = ["public.jpeg", "public.png", "public.heic", "org.webmproject.webp"]
+    /// Plafond des dimensions DÉCLARÉES, lu avant tout décodage : 4 096 x 4 096 au plus, 16 millions de pixels au plus.
+    static let remoteMaxSide = 4_096
+    static let remoteMaxPixels = 16_000_000
+    /// Décodée en vignette de ce côté : une image énorme ne peut pas être décompressée en entier.
+    static let remoteThumbnailSide = 512
+
     func decode(_ source: Data) async -> (any DecodedPhoto)? {
         await Task.detached(priority: .userInitiated) { () -> (any DecodedPhoto)? in
             ImageAvatarCodec.decodeSynchronously(source)
+        }.value
+    }
+
+    func decodeRemote(_ source: Data) async -> (any DecodedPhoto)? {
+        await Task.detached(priority: .userInitiated) { () -> (any DecodedPhoto)? in
+            ImageAvatarCodec.decodeRemoteSynchronously(source)
         }.value
     }
 
@@ -66,7 +81,29 @@ final class ImageAvatarCodec: AvatarCodec {
             return nil
         }
         // Jamais plus grand que la photo elle-même (la vignette ne doit pas agrandir une petite image).
-        let longSide = min(max(width, height), workingSide)
+        return thumbnail(of: source, longSide: min(max(width, height), workingSide))
+    }
+
+    /// Une photo reçue du réseau : format dans la liste permise (lu par `CGImageSourceGetType`), dimensions déclarées sous le plafond
+    /// (lues AVANT le décodage), puis décodage en vignette seulement. Tout le reste donne nil.
+    static func decodeRemoteSynchronously(_ data: Data) -> (any DecodedPhoto)? {
+        let sourceOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions as CFDictionary),
+              let type = CGImageSourceGetType(source) as String?,
+              remoteTypes.contains(type),
+              CGImageSourceGetCount(source) > 0,
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int,
+              width > 0, height > 0,
+              width <= remoteMaxSide, height <= remoteMaxSide,
+              width * height <= remoteMaxPixels else {
+            return nil
+        }
+        return thumbnail(of: source, longSide: min(max(width, height), remoteThumbnailSide))
+    }
+
+    private static func thumbnail(of source: CGImageSource, longSide: Int) -> (any DecodedPhoto)? {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             // Redresse les pixels selon l'orientation de la source (puis l'orientation est abandonnée).

@@ -172,6 +172,8 @@ fun FeedScreen(
     onSelect: (String) -> Unit,
     onCreate: () -> Unit,
     onJoin: () -> Unit,
+    /** The selector of the Miffs sends a free account that already has a Miff to the offer (decision of the PM, 2026-11-08). */
+    onMiffOffer: () -> Unit = {},
     /** LOC-2b, design 23A: the Miffs that wait for the agreement of the person (nothing is shared or detected for them). */
     agreement: AgreementUi = AgreementUi(),
     feed: FeedUiState = FeedUiState.Loading,
@@ -308,7 +310,15 @@ fun FeedScreen(
                     }
 
                     else -> {
-                        MiffPill(ready, onSelect, onCreate, onJoin, onOpenChanged = { selectorOpen = it })
+                        val onSelectorOpen = { open: Boolean -> selectorOpen = open }
+                        MiffPill(
+                            ready,
+                            onSelect,
+                            onCreate,
+                            onJoin,
+                            onOffer = onMiffOffer,
+                            onOpenChanged = onSelectorOpen,
+                        )
                     }
                 }
             },

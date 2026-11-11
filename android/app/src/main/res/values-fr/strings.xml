@@ -895,7 +895,10 @@
     <string name="update_photo_close_a11y">Fermer la photo</string>
     <string name="update_photo_position">Position mesurée %1$s.</string>
     <string name="update_photo_see_where">Voir où c\'était</string>
-    <string name="feed_photo_download">Enregistrer cette photo</string>
+    <string name="feed_photo_download">Enregistrer la photo</string>
+    <string name="feed_photo_download_a11y">Enregistrer cette photo sur ton téléphone</string>
+    <string name="feed_photo_download_saving">Enregistrement…</string>
+    <string name="feed_photo_download_failed">On n\'a pas pu enregistrer la photo. Tu peux réessayer.</string>
     <string name="feed_photo_download_done">Photo enregistrée.</string>
     <string name="update_notice_unconfirmed">On n\'a pas pu confirmer. Regarde dans ton Feed : si ta photo y est, c\'est bien parti.</string>
     <string name="update_action_open_feed">Voir mon Feed</string>

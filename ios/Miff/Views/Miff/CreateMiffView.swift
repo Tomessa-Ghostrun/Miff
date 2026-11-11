@@ -88,7 +88,7 @@ struct CreateNameStep: View {
             }
         }
         // Pendant l'écriture, le balayage depuis le bord ne ramène pas en arrière (un appui = une opération).
-        .background(SwipeBackLock(isLocked: state.saving))
+        .swipeBack(for: .createMiffName(isSaving: state.saving))
         .onChange(of: state.limitReached) { reached in
             if reached {
                 Announcer.announce(L10n.string("miff_name_limit"))
@@ -142,7 +142,7 @@ struct CreateReadyStep: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .background(SwipeBackLock(isLocked: true))
+        .swipeBack(for: .createMiffReady)
         .hidesInAppSwitcher()
     }
 

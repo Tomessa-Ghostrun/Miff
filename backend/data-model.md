@@ -625,7 +625,7 @@ niveau(membre, statut, maintenant):
 | Sortie zone de confiance | `presence=out`, `placeId` (lieu quitté), `presenceAt=t`, `escalationDueAt=t+2h` |
 | Entrée zone de danger | `presence=in_risk`, `placeId`, `presenceAt=t` (alerte immédiate = notification, Blaze) |
 | Sortie zone de danger | `presence=out`, `presenceAt=t`, `escalationDueAt=t+2h` |
-Si un lieu de confiance et une zone de danger se chevauchent, la zone de danger prime **[Hypothèse]**.
+Si un lieu de confiance et une zone de danger se chevauchent, la **zone de confiance prime** (décision du 2026-11-01, ticket Lieux §6.9 ; le client écrit alors `in_trusted`).
 
 ---
 
