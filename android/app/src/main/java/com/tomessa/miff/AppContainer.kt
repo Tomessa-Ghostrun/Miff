@@ -157,6 +157,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
@@ -589,10 +590,15 @@ class AppContainer(
     /**
      * The Update measured my position at "Publier" and the detection has not published it yet: the detection publishes it ITSELF, with all its guarantees (criterion U8:
      * the Update never writes `positions/{moi}`). Returns at the end of its pass.
+     * The pass runs in [trackingScope], like every other look of the detection: if the Update gives up waiting (its own cap) or the screen is left, only the WAIT is cut, never
+     * the engine in the middle of a write (it always reaches its local save).
      */
     private suspend fun handOverPosition(fix: Fix) {
-        cachePurger.purgeIfPending()
-        trackingEngine.refresh(TrackingEngine.Reason.SHARING_CHANGED, fix)
+        trackingScope
+            .async {
+                cachePurger.purgeIfPending()
+                trackingEngine.refresh(TrackingEngine.Reason.SHARING_CHANGED, fix)
+            }.await()
     }
 
     val updatePublisher: UpdatePublisher by lazy {

@@ -116,9 +116,12 @@ class UpdatePublisher(
     private val published: PublishedPositions = PublishedPositions { true },
     /**
      * Where my position is not published yet: hands the measure taken at "Publier" (less than 10 minutes old) to the detection, which publishes it ITSELF (criterion U8:
-     * the Update never writes `positions/{moi}`) and returns when its pass is over (bounded here by [timeoutMillis]).
+     * the Update never writes `positions/{moi}`) and returns when its pass is over (the wait is bounded here by [handOverTimeoutMillis]; the pass itself is NOT cut by it:
+     * the implementation runs it outside the screen, so that the engine always finishes its write and its local copy).
      */
     private val handOver: suspend (Fix) -> Unit = {},
+    /** The wait for the pass of the detection (own cap, shorter than [timeoutMillis]: the person has already waited for the measure; a detection busy elsewhere is not waited for long). */
+    private val handOverTimeoutMillis: Long = HANDOVER_TIMEOUT_MS,
     /** Are the permissions the detection needs ("Toujours" + precise location) there? Read from the system, never a position. Without them it can never publish mine. */
     private val trackingAllowed: () -> Boolean = { true },
     /** The local journal of the debug build: CODES of cause, never a coordinate. */
@@ -167,12 +170,14 @@ class UpdatePublisher(
         // Before, this case ended in "position introuvable" without anything being measured, at every try, and the detection alone (3 s of waiting) could never fix it.
         val traveling = travelOn()
         val missing = targets.filter { !published.isPublished(it) }
+        // Without "Toujours" + the precise location the detection never publishes: "réessaie dans un instant" would be false and endless, the right sentence leads to the settings.
+        val canHandOver = missing.isEmpty() || trackingAllowed()
         if (missing.isNotEmpty()) {
             journal.record(JournalKind.UPDATE_POSITION_NOT_PUBLISHED)
-            // Without "Toujours" + the precise location the detection never publishes: "réessaie dans un instant" would be false and endless, the right sentence leads to the settings.
-            if (!trackingAllowed()) {
+            if (!canHandOver) {
                 journal.record(JournalKind.UPDATE_PERMISSION_BLOCKED)
-                return PublishResult.LocationOff
+                // Nowhere to go: the settings. In some Miffs only: the photo goes where my position is already published, the others are "Partielle" (nothing is handed over).
+                if (missing.size == targets.size) return PublishResult.LocationOff
             }
         }
         // ONE measure of the position, here and not before: nobody is located for a photo that is never published.
@@ -199,7 +204,7 @@ class UpdatePublisher(
                 }
             }
         var withPosition = targets.filter { it !in missing }
-        if (missing.isNotEmpty()) {
+        if (missing.isNotEmpty() && canHandOver) {
             handOverPosition(measuredFix)
             // The local copy of the detection now says where my position is published (read again, never assumed).
             withPosition = targets.filter { published.isPublished(it) }
@@ -231,7 +236,7 @@ class UpdatePublisher(
     private suspend fun handOverPosition(fix: Fix?) {
         if (fix == null) return
         try {
-            withTimeoutOrNull(timeoutMillis) { handOver(fix) }
+            withTimeoutOrNull(handOverTimeoutMillis) { handOver(fix) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -364,6 +369,9 @@ class UpdatePublisher(
         /** 5 Miffs a lot: 3 reads of the rules each = 15 of the 20 allowed (backend/data-model.md, section 8). */
         const val LOT_SIZE = 5
         const val TIMEOUT_MS = 20_000L
+
+        /** The wait for the detection's pass after a hand-over: about the time the measure itself may take (a pass is a few reads and one write). */
+        const val HANDOVER_TIMEOUT_MS = 10_000L
     }
 }
 

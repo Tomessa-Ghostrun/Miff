@@ -119,6 +119,7 @@ class UpdatePublisherTest {
             nowMillis = { now },
             zone = { zone },
             timeoutMillis = 1_000L,
+            handOverTimeoutMillis = 500L,
             published = { published(it) },
             handOver = {
                 handedOver += it
@@ -610,6 +611,25 @@ class UpdatePublisherTest {
             assertTrue(handedOver.isEmpty())
             assertTrue(JournalKind.UPDATE_PERMISSION_BLOCKED in journal.kinds)
         }
+
+    @Test
+    fun withTwoMiffs_oneWithoutPosition_andNoAlwaysAndPrecise_thePhotoGoesWhereItIsPublished_theOtherIsPartial() =
+        runTest {
+            myMiffs = miffIds.take(2)
+            published = { it == miffIds[0] }
+            trackingAllowed = false
+            val result = publisher().publish(photo)
+            assertEquals(PublishResult.Partial(1, 2, listOf(miffIds[1])), result)
+            assertEquals(listOf("miffs/${miffIds[0]}/photos/$uid"), photoWrites().map { it.path })
+            assertTrue("nothing can be published by the detection: nothing is handed over", handedOver.isEmpty())
+            assertTrue(JournalKind.UPDATE_PERMISSION_BLOCKED in journal.kinds)
+        }
+
+    @Test
+    fun theWaitForTheDetection_hasItsOwnShortCap_notTheOneOfTheServer() {
+        assertTrue(UpdatePublisher.HANDOVER_TIMEOUT_MS < UpdatePublisher.TIMEOUT_MS)
+        assertTrue(UpdatePublisher.HANDOVER_TIMEOUT_MS <= 10_000L)
+    }
 
     @Test
     fun whereMyPositionIsNotPublished_aSlowSignal_isNotHandedOver_andTheSecondTryCanWork() =
