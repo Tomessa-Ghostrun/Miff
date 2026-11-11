@@ -156,6 +156,8 @@ struct MiffHomeHost: View {
     @State private var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
+    /// MODE VOYAGE (VOY-2I) : la carte du Profil, créée pour la session ; le voyage est écrit par le moteur de suivi, nulle part ailleurs.
+    @StateObject private var travel: TravelViewModel
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
@@ -170,6 +172,8 @@ struct MiffHomeHost: View {
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
+        let engine = environment.tracking.engine
+        _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
     }
 
     var body: some View {
@@ -178,6 +182,7 @@ struct MiffHomeHost: View {
                 MainShellView(
                     miffs: directory.state,
                     profile: profile,
+                    travel: travel,
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
