@@ -14,7 +14,7 @@
 
 ## Partie 1 : activer (compte A, onglet Profil) (6 min)
 
-1. [ ] Profil : une carte **« Mode voyage »** (avion, « Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. », interrupteur éteint) sous votre nom, **avant** « Mes Miffs ». **Aucune mention de Miff+, de Premium ou d'offre**, même avec un compte gratuit.
+1. [ ] Profil : une carte **« Mode voyage »** (avion, « Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position. », interrupteur éteint) en **toute dernière position** de l'écran, **après** « Mes Miffs » et tous les autres blocs (ajustement demandé par le PM après la recette du build 26). **Aucune mention de Miff+, de Premium ou d'offre**, même avec un compte gratuit.
 2. [ ] Touchez l'interrupteur : une **feuille avec le calendrier du système** s'ouvre. Elle propose **aujourd'hui + 7 jours**, ne permet pas de choisir **avant aujourd'hui** ni **après aujourd'hui + 89 jours** (un voyage dure 90 jours au plus). Choisissez **demain**, touchez **Continuer**.
 3. [ ] (Seulement si les règles ne sont **pas** déployées) après la confirmation : message calme, interrupteur éteint, **rien ne change** chez B (votre carte garde sa couleur habituelle). Passez ensuite aux étapes 11 à 14 en attendant le déploiement.
 4. [ ] Une alerte **« Activer le mode voyage ? »** (elle apparaît **après** la fermeture de la feuille du calendrier) : « Ta carte deviendra grise avec « En voyage jusqu'au … » et n'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l'arrêter quand tu veux. », deux boutons de **même poids** : Activer / Annuler. **Annuler** : rien ne change.
