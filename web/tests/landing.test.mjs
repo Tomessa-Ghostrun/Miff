@@ -55,10 +55,10 @@ test('LANDING - /fr/ et /en/ ont les mêmes sections (ancres), une seule h1, les
 test('LANDING - promesse centrale, sections attendues et ton : les éléments clés du brief sont là, en FR et en EN', () => {
   const fr = visibleText(home.fr.html);
   const en = visibleText(home.en.html);
-  for (const pattern of [/Savoir que tes proches vont bien, sans les déranger/, /code secret/, /lieux? de confiance/, /sans conversation|Aucune conversation imposée/i, /Tu choisis ce que tu partages/, /Aucune publicité/, /ne vend pas tes données/, /En famille/, /Entre amis/, /En couple/, /2 lieux de confiance et 1 Miff/, /Miff\+/, /n’est pas un service d’urgence/, /Bientôt sur\s+l’App Store/, /Bientôt sur\s+Google Play/, /Être prévenu\(e\) du lancement/]) {
+  for (const pattern of [/Savoir que tes proches vont bien, sans les déranger/, /code secret/, /lieux? de confiance/, /sans conversation|Aucune conversation imposée/i, /Tu choisis ce que tu partages/, /Aucune publicité/, /ne vend pas tes données/, /En famille/, /Entre amis/, /En couple/, /3 lieux de confiance et 1 Miff/, /Miff\+/, /n’est pas un service d’urgence/, /Bientôt sur\s+l’App Store/, /Bientôt sur\s+Google Play/, /Être prévenu\(e\) du lancement/]) {
     assert.match(fr, pattern);
   }
-  for (const pattern of [/Know your loved ones are okay, without bothering them/, /secret code/, /trusted places?/, /No conversation forced/i, /You choose what you share/, /No ads/, /does not sell your data/, /As a family/, /Among friends/, /As a couple/, /2 trusted places and 1 Miff/, /Miff\+/, /is not an emergency service/, /Coming soon to\s+the App Store/, /Coming soon to\s+Google Play/, /Get notified at launch/]) {
+  for (const pattern of [/Know your loved ones are okay, without bothering them/, /secret code/, /trusted places?/, /No conversation forced/i, /You choose what you share/, /No ads/, /does not sell your data/, /As a family/, /Among friends/, /As a couple/, /3 trusted places and 1 Miff/, /Miff\+/, /is not an emergency service/, /Coming soon to\s+the App Store/, /Coming soon to\s+Google Play/, /Get notified at launch/]) {
     assert.match(en, pattern);
   }
 });

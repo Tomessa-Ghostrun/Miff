@@ -9,7 +9,7 @@
 - **Le texte de consentement de la position doit être celui de la version 3 ou plus** (c'est le cas de vos comptes de test s'ils ont accepté le texte v3). Le texte sera amendé pour citer la photo localisée par ailleurs : cette livraison **ne touche à aucun texte légal**.
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR), **pas** un APK compilé à la main. Désinstallez l'ancienne version d'abord.
 - **Aucune notification** n'est envoyée : la bulle d'incitation n'existe que **dans l'application ouverte**.
-- **Votre position doit déjà être publiée dans la Miff** (le téléphone l'écrit à l'ouverture de l'application, une fois le consentement et la localisation « Toujours » donnés) : juste après une installation neuve, « Publier » peut dire « Position introuvable pour le moment, réessaie dans un instant. » le temps que ce soit fait ; réessayez après quelques secondes.
+- **Si votre position n'est pas encore publiée dans la Miff** (juste après une installation neuve, ou un GPS lent) : « Publier » **mesure votre position**, la confie à la détection qui la publie elle-même, puis la photo part dans le même geste (jusqu'à 10 s d'attente, le bouton reste occupé). Ancien comportement corrigé : « Position introuvable pour le moment » en boucle.
 - **Une photo est toujours publiée avec votre position** (décision du 2026-11-06) : il n'y a pas d'option « sans lieu » ni de « Je vais bien » sans photo.
 - **Le bouton central est une pastille de couleur** (vert, orange, rouge, gris quand rien n'est connu), **sans aucun dessin dedans**. La barre est celle d'aujourd'hui (le verre est le ticket TABBAR-GLASS).
 
@@ -44,7 +44,9 @@ Première ouverture : réglages du téléphone > Applications > Miff > Autorisat
 - [ ] Le viseur est **plein cadre** (au-dessus de la barre, qui reste visible), en **selfie** ; **pas de croix**. Le bouton rond du milieu de la barre est **sélectionné**. Les icônes de la barre d'état sont blanches.
 - [ ] Une aide « Un selfie, la vue, ton repas : comme tu veux. » ; **tant que vous n'avez jamais basculé la caméra par un double toucher**, une astuce « Touche deux fois l'écran pour changer de caméra. » : elle revient à chaque ouverture, **disparaît pour toujours** après votre **premier double toucher** réussi (changement de caméra), **y compris après avoir fermé et rouvert l'application** ; le **bouton de bascule** reste. Réinstallez l'application pour la revoir.
 - [ ] **Bouton de bascule** en haut à droite : caméra arrière, puis selfie. **Deux touchers rapides** sur l'image : même effet. Deux touchers sur le **rond de prise de vue** : **une seule** photo.
-- [ ] **Pas de flash, de zoom, de filtre, de minuterie.**
+- [ ] **Pas de zoom, de filtre, de minuterie.**
+- [ ] **Flash (caméra arrière)** : un bouton **éclair barré** en haut **à gauche**, **éteint** à l'ouverture. Touchez-le : **éclair plein sur fond clair** (TalkBack : « Flash, activé »). Prenez la photo : le flash part **au moment du clic** (pas de lampe allumée avant). Retouchez : éclair barré (« Flash désactivé »), photo **sans** flash. En **selfie** (caméra frontale) : le bouton n'apparaît **pas** (l'OPPO n'a pas de flash devant), sans message.
+- [ ] **Flash toujours éteint par défaut** : activez-le, **changez de caméra** puis revenez à l'arrière : éteint. Activez-le, **mettez l'application en arrière-plan** et revenez : éteint. Activez-le, touchez **Profil** puis revenez à l'Update (ou **Recommencer**) : éteint.
 - [ ] Touchez le **rond** : l'**aperçu** apparaît, la photo est **un peu plus petite** que l'écran (marges, coins arrondis, fond sombre), **la croix** en haut à gauche, puis, dessous, « Tes proches verront cette photo pendant 24 h. », la ligne avec l'épingle « **Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l'as prise.** », le bouton rond **Recommencer** et le bouton bleu **Publier**.
 - [ ] **Selfie = reflet du viseur** : en caméra **frontale**, la photo de l'**aperçu** est **identique à ce que montrait le viseur** (comme un miroir : écrivez un mot sur une feuille, il apparaît **à l'envers** dans le viseur **et** sur l'aperçu, la photo publiée, la carte du Feed et le plein écran ; votre grain de beauté à gauche dans le viseur est à gauche sur la photo). En caméra **arrière**, la photo n'est **jamais** retournée (le mot se lit à l'endroit). Vérifiez que ni l'une ni l'autre n'est couchée ni la tête en bas (ColorOS).
 - [ ] **La croix** et **Recommencer** font **exactement la même chose** : retour au viseur, la photo est oubliée, **rien n'est publié, aucune question**.
@@ -118,3 +120,12 @@ Compte **B** : il doit avoir **publié sa propre position** (ouvrir l'applicatio
 - [ ] **Aucune photo** dans la galerie du téléphone après vos essais, et aucun fichier de photo (le gestionnaire de fichiers de l'OPPO ne montre rien de nouveau).
 - [ ] Les **applications récentes** (carré en bas) ne montrent ni le viseur ni la photo (écran masqué).
 - [ ] Aucun message qui accuse (« échec », « erreur », « tu aurais dû »).
+
+
+## Position pas encore publiée (correctif du 2026-11-11, miroir iOS)
+
+- [ ] Installez l'APK neuf (ou effacez les données de l'application), connectez-vous, **acceptez la position « Toujours » + précise**, **ne touchez pas** au Feed, ouvrez tout de suite l'Update, prenez une photo et touchez **Publier** : la photo **part** (au plus ~10 s), sans « Position introuvable ».
+- [ ] Refaites-le **à l'intérieur**, sans fenêtre : même résultat, ou, si le GPS ne répond vraiment pas, « Position introuvable… » **puis « Réessayer » qui finit par marcher** (plus de boucle).
+- [ ] Passez la position en **« Uniquement pendant l'utilisation »** ou **approximative** : « Publier » dit tout de suite que la position n'est pas accessible (**Ouvrir les réglages**), et non « réessaie dans un instant ».
+- [ ] Écran de diagnostic de l'APK debug > journal de détection : des lignes `UPDATE_*` et `POSITION_*` (codes seulement) ; **aucune coordonnée**.
+- [ ] Console Firebase : votre document `positions/{votre uid}` de la Miff est écrit **par la détection** (son heure = celle de la photo) ; l'Update n'a écrit que `photos` et `status`.

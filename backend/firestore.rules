@@ -65,11 +65,13 @@ rules_version = '2';
 //     Risques juridiques CONNUS et assumés par le PM (décision du 2026-10-23, aucune relecture juridique, aucune conformité affirmée) : RGPD
 //     (localisation = donnée sensible), mineurs, copie datée d'une position précise lisible jusqu'à 24 h (data-model.md §11).
 //
-// 12. Mode voyage (VOY-B, ticket docs/tickets/mode-voyage.md, décisions du PM du 2026-11-10) — PRÉPARÉ, NON DÉPLOYÉ : le statut accepte
+// 12. Mode voyage (VOY-B, ticket docs/tickets/mode-voyage.md, décisions du PM du 2026-11-10) — DÉPLOYÉ par le PM le 2026-11-10 : le statut accepte
 //     `presence = 'travel'` avec `travelUntil` (fin) et `travelUntilDay` (jour affiché), voir validTravel. DISPONIBLE POUR TOUS LES COMPTES
-//     (aucune barrière Miff+, aucune lecture de règles de plus). En voyage le statut ne porte ni lieu, ni batterie, ni échéance. LIMITE CONNUE :
-//     aucune règle n'interdit d'écrire une position ou un statut ordinaire pendant le voyage (la pause du suivi est un contrat du client,
-//     data-model.md) ; la dernière position serveur est supprimée par le client dans le lot d'activation (règle de suppression existante, inchangée).
+//     (aucune barrière Miff+, aucune lecture de règles de plus). En voyage le statut ne porte ni lieu, ni batterie, ni échéance. LA POSITION RESTE
+//     PARTAGÉE PENDANT LE VOYAGE (décision du PM du 2026-11-10) : positions/{uid} et photos/{uid} ne sont pas concernées par le voyage, aucune
+//     règle ne les interdit ni ne les supprime à l'activation (comportement voulu, pas une limite). Contrat du CLIENT : ne pas écrire de statut de
+//     présence ordinaire pendant le voyage (les règles l'acceptent, c'est le geste « désactiver », mais il mettrait fin au voyage côté proches ;
+//     data-model.md). Commentaire seul : aucune règle modifiée.
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
