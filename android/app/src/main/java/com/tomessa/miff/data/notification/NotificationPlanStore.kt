@@ -210,3 +210,60 @@ class SharedPreferencesNotificationLedger(
         const val KEY = "ledger"
     }
 }
+
+/**
+ * MODE VOYAGE (VOY-4A): the end of MY trip, as the notifications need it to wait for N7 (08:00 the morning after the last day). It is kept apart from the snapshot of the Miff
+ * (a trip needs no Miff) and survives the natural end of the trip: the trip is over at 00:00, N7 leaves at 08:00. Only an uid and an instant: NO position, NO place, NO name.
+ */
+class TravelEndMemo(
+    val uid: String,
+    val untilMillis: Long,
+) {
+    override fun toString(): String = "TravelEndMemo(redacted)"
+}
+
+/** Where the end of my trip is kept for N7 (a double in tests). */
+interface TravelEndStore {
+    fun load(): TravelEndMemo?
+
+    fun save(memo: TravelEndMemo)
+
+    /** The early end of the trip, the sign-out, the deletion of the account, N7 shown: nothing left on the disk. */
+    fun clear()
+}
+
+@Serializable
+private class StoredTravelEnd(
+    val uid: String,
+    val until: Long,
+)
+
+class SharedPreferencesTravelEndStore(
+    context: Context,
+) : TravelEndStore {
+    private val prefs =
+        context.applicationContext.getSharedPreferences(
+            "miff_notification_travel",
+            Context.MODE_PRIVATE,
+        )
+    private val json = Json { ignoreUnknownKeys = true }
+
+    override fun load(): TravelEndMemo? {
+        val raw = prefs.getString(KEY, null) ?: return null
+        val stored = runCatching { json.decodeFromString<StoredTravelEnd>(raw) }.getOrNull() ?: return null
+        return TravelEndMemo(stored.uid, stored.until)
+    }
+
+    // commit(): a receiver may wake a cold process a moment later (restart, alarm of the end of the trip).
+    override fun save(memo: TravelEndMemo) {
+        prefs.edit(commit = true) { putString(KEY, json.encodeToString(StoredTravelEnd(memo.uid, memo.untilMillis))) }
+    }
+
+    override fun clear() {
+        prefs.edit(commit = true) { clear() }
+    }
+
+    private companion object {
+        const val KEY = "travel_end"
+    }
+}

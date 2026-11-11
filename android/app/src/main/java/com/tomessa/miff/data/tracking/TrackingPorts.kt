@@ -195,6 +195,23 @@ interface PresenceListener {
         atMillis: Long,
     ) = Unit
 
+    /**
+     * MODE VOYAGE (VOY-4A): a trip of MINE is on and ends at [untilMillis] (it began, its date moved, the phone adopted it, or a wake-up found it again: idempotent). N7 and the
+     * cut of the reminders follow, locally.
+     */
+    fun onTravelSet(
+        uid: String,
+        untilMillis: Long,
+    ) = Unit
+
+    /**
+     * My trip is over. [early]: I turned it off before its end (N7 is cancelled); otherwise its end came (N7 still waits for 08:00, the whole point of "Bon retour !").
+     */
+    fun onTravelEnded(
+        uid: String,
+        early: Boolean,
+    ) = Unit
+
     companion object {
         val None =
             object : PresenceListener {

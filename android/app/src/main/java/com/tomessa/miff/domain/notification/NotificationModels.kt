@@ -16,7 +16,7 @@ enum class NotificationDestination { UPDATE, FEED }
  * phone settings turns off the whole family.
  */
 enum class NotificationFamily {
-    /** "Rappels pour toi": N1 and N2, about my own state. */
+    /** "Rappels pour toi": N1, N2 and N7, about my own state. */
     REMINDER,
 
     /** "Nouvelles de ta Miff": N3, N4 and N6, about the circle and the zones of the circle. */
@@ -24,7 +24,8 @@ enum class NotificationFamily {
 }
 
 /**
- * The five notifications of the perimeter (N5 is abandoned, phase 2, and has NO value here: nothing to switch, nothing to promise).
+ * The six notifications of the perimeter (N5 is abandoned, phase 2, and has NO value here: nothing to switch, nothing to promise). N7 (MODE VOYAGE, VOY-4A) is the end of
+ * my own trip: it needs no Miff and no server, it is planned from the end of the trip alone.
  *
  * [quietAtNight]: decision Q30 of the PM, "nuit calme" 22 h to 7 h: N1, N3 and N6 arrive without sound or vibration, N2 and N4 (the red ones) keep their
  * normal importance.
@@ -40,6 +41,9 @@ enum class NotificationType(
     N3("n3", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
     N4("n4", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = false),
     N6("n6", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
+
+    /** MODE VOYAGE: "Ton mode voyage est terminé", 08:00 local the day after the last day. Never at night, so it has no quiet version. */
+    N7("n7", NotificationFamily.REMINDER, NotificationDestination.FEED, quietAtNight = false),
     ;
 
     companion object {
@@ -58,6 +62,7 @@ data class NotificationPreferences(
     val n3: Boolean = true,
     val n4: Boolean = true,
     val n6: Boolean = true,
+    val n7: Boolean = true,
     val nightCalm: Boolean = true,
 ) {
     /** The switch of the type alone (what the screen draws, greyed when the general one is off). */
@@ -68,6 +73,7 @@ data class NotificationPreferences(
             NotificationType.N3 -> n3
             NotificationType.N4 -> n4
             NotificationType.N6 -> n6
+            NotificationType.N7 -> n7
         }
 
     /** The type may be produced: the general switch AND its own are on. */
@@ -83,6 +89,7 @@ data class NotificationPreferences(
             NotificationType.N3 -> copy(n3 = on)
             NotificationType.N4 -> copy(n4 = on)
             NotificationType.N6 -> copy(n6 = on)
+            NotificationType.N7 -> copy(n7 = on)
         }
 }
 

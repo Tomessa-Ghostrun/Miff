@@ -3,6 +3,7 @@ package com.tomessa.miff.domain.feed
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.travel.TravelDay
 import com.tomessa.miff.domain.update.PromptLevel
 
 /*
@@ -66,6 +67,18 @@ sealed interface StateLabel {
 
     /** My own card while the renewal of my agreement is waiting: nothing is shared with that Miff. */
     data object WaitingAgreement : StateLabel
+
+    /**
+     * MODE VOYAGE: "En voyage jusqu'au 15 nov." (grey, with an airplane); on MY card "Mode voyage jusqu'au 15 nov." ([mine]) and a link "Modifier".
+     * The colour is never the signal: the airplane and the words are.
+     */
+    data class Traveling(
+        val until: TravelDay,
+        val mine: Boolean,
+    ) : StateLabel
+
+    /** MODE VOYAGE: the end of the trip has passed and the person has not given news since: "Voyage terminé" (grey), never a false "en voyage". */
+    data object TravelEnded : StateLabel
 }
 
 /** The line under the label. ONE time reference per card (ticket A7). */
@@ -88,6 +101,11 @@ sealed interface TimeLine {
     /** Red, no news for a long time: "Pas de nouvelles depuis 16 h 02". */
     data class NoNewsSince(
         val since: Moment,
+    ) : TimeLine
+
+    /** MODE VOYAGE: "Depuis le 8 nov." (the DAY the trip began, in the zone of the reader). */
+    data class TravelSince(
+        val atMillis: Long,
     ) : TimeLine
 }
 
@@ -138,6 +156,8 @@ data class MemberCard(
     /** "Localiser": another member whose status is known, while I share too. */
     val canLocate: Boolean,
     val photo: PhotoSlot = PhotoSlot.None,
+    /** MODE VOYAGE: the trip of this person is on (not over): the card is out of the count "n sur m" and of the colour of the Miff. */
+    val traveling: Boolean = false,
 ) {
     override fun toString(): String = "MemberCard(redacted)"
 }
@@ -208,6 +228,16 @@ sealed interface Bubble {
         override val level: StatusLevel get() = StatusLevel.NEUTRAL
     }
 
+    /**
+     * MODE VOYAGE: every OTHER member is on a trip or without news, and at least one is on a trip: a neutral bubble that says so (never "Tout va bien", never
+     * "Pas encore de nouvelles").
+     */
+    data class Travelers(
+        val note: TravelNote,
+    ) : Bubble {
+        override val level: StatusLevel get() = StatusLevel.NEUTRAL
+    }
+
     /** Orange or red: one page per member concerned, reds first (never an automatic scroll). */
     data class Alerts(
         val pages: List<AlertPage>,
@@ -216,6 +246,22 @@ sealed interface Bubble {
     ) : Bubble {
         override fun toString(): String = "Alerts(redacted)"
     }
+}
+
+/** MODE VOYAGE: who is on a trip among the OTHER members: one person (by first name, with the day) or several (a count). */
+sealed interface TravelNote {
+    data class One(
+        val name: String,
+        val until: TravelDay,
+    ) : TravelNote {
+        override fun toString(): String = "One(redacted)"
+    }
+
+    /** [all]: EVERY other member is on a trip ("Tes proches sont en voyage."); otherwise only [count] of them ("2 proches sont en voyage."). */
+    data class Many(
+        val count: Int,
+        val all: Boolean = false,
+    ) : TravelNote
 }
 
 /** A mention above the bubble. */
@@ -251,6 +297,8 @@ data class FeedContent(
     val myPrompt: PromptLevel = PromptLevel.NONE,
     /** UPDATE-1: the facts about MY photo (null while my status is not read). */
     val myPhoto: MyPhotoFacts? = null,
+    /** MODE VOYAGE: the line added to the usual bubble when other members are on a trip (null: none, or the bubble already says it). */
+    val travelNote: TravelNote? = null,
 ) {
     override fun toString(): String = "FeedContent(redacted)"
 }
