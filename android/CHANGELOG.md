@@ -2,6 +2,35 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.30.0] - 2026-11-11 : pop-in « Pas de connexion » avec réessai automatique toutes les 10 s (bug remonté par le PM)
+
+Bug du PM (2026-11-10) : « Lorsque j'ouvre l'app sans connexion, le Feed se charge à l'infini. Quand il n'y a pas de connexion, il faut une pop-in pour prévenir l'utilisateur avec un CTA « Réessayer » et une tentative automatique de reconnexion au bout de 10 secondes. » Branche `android/feed-hors-connexion`, PR brouillon. Numéro de version : `main` est à 0.29.0 (des doublons existent plus bas, nettoyage prévu à part) ; à revérifier au merge. Aucun changement du modèle de données, des règles Firestore ni des textes légaux.
+
+### Cause trouvée
+- **Le Feed n'avait aucune sortie quand rien n'arrive.** Sans réseau et sans copie de la Miff dans le cache du téléphone, l'écouteur de la Miff ne dit que « chargement » (à juste titre : seul le serveur peut dire qu'une Miff n'existe pas, mode avion ≠ accès perdu) : le squelette restait affiché **sans fin**, sans phrase ni bouton. Test qui le reproduit : `FeedViewModelTest.noNetworkAndNoCopyOfTheMiff_theSkeletonNeverEnds_theCauseOfTheBug_butThePopInSaysIt`.
+- **La lecture de la liste des Miffs attendait 20 s par lecture, l'une après l'autre** (formule, puis liste, sur le serveur), donc plus d'une minute de squelette hors connexion avant la phrase « On n'arrive pas à lire tes Miffs ». Hors connexion, ces lectures renoncent maintenant après 4 s (`FirestoreMiffRepository.OFFLINE_READ_TIMEOUT_MS`) ; avec réseau, la limite de 20 s ne change pas. Test : `MiffRepositoryOfflineTest`.
+- **Rien ne relançait le chargement au retour du réseau** : il fallait toucher « Réessayer » (répertoire en erreur) ou quitter et revenir.
+
+### Ajouté
+- **Pop-in calme « Pas de connexion » / « Vérifie ta connexion, on réessaie dans un instant. »** (FR et EN, tutoiement, aucun ton d'alarme), avec le bouton **« Réessayer »** (relance immédiate) et un compte à rebours discret « Nouvel essai dans N s ». Clés `feed_offline_popin_title|body|retry|countdown`, ajoutées au catalogue iOS (`Localizable.xcstrings`, mêmes mots) ; parité vérifiée.
+- **Quand elle apparaît** : seulement si l'écran n'a **rien à montrer** (ni contenu, ni copie du cache) : hors connexion après 1,5 s (le temps que la copie du cache réponde), ou avec réseau mais sans réponse après 8 s. **S'il y a une copie du cache, rien ne change** : « Dernières informations de… » et le bandeau hors connexion, sans bloquer.
+- **Réessai automatique toutes les 10 s**, arrêté dès que le contenu arrive (la pop-in disparaît d'elle-même) ou que l'écran est quitté. Au retour du réseau : **une** relecture tout de suite, la pop-in part, et ne revient que si rien n'arrive au bout de 8 s.
+- **Fermer avec « Retour »** : la pop-in laisse la place à la même phrase et au même bouton dans la page (à la place du squelette) ; les essais continuent. Jamais deux pop-ins empilées (un seul état par écran ; retenue aussi tant que le message d'accès perdu est affiché).
+- **Même composant pour l'onglet Profil** (`ConnectionGate`, `ConnectionPopIn`) : identité du profil qui ne charge pas sans réseau. Onboarding du profil : aucune lecture au chargement (les enregistrements disent déjà « pas de connexion » sans attendre), rien à changer. Répertoire des Miffs : couvert par le Feed.
+- **Accessibilité** : la pop-in est une fenêtre (TalkBack l'annonce et met le focus sur son titre), le compte à rebours n'est pas une zone « live » (pas de lecture à chaque seconde), grand texte (la fenêtre défile).
+
+### Coût et limites (à surveiller)
+- **Aucune boucle de lecture** : sans réseau, la minuterie tourne et **ne lit rien** (0 lecture). Avec un réseau qui ne répond rien, **3 essais automatiques au plus** (puis seulement « Réessayer » ou le retour du réseau). Plusieurs touchers sur « Réessayer » ne s'empilent pas : une seule lecture de la liste des Miffs à la fois, une de plus au plus.
+- Un essai ré-attache les écouteurs de l'écran (quelques dizaines de lectures Firestore au plus par essai). Signal de bascule : si le quota de lectures du plan Spark approche (`docs/dev/surveillance-quotas.md`), baisser `MAX_ATTEMPTS_WHILE_ONLINE` d'abord.
+- Tests : `ConnectionGateTest` (apparition, minuterie 10 s à horloge de test, retour du réseau, « Réessayer », fermeture, sortie de l'écran, réseau lent), `FeedViewModelTest` (cause, aucune lecture hors connexion, retour du réseau, copie du cache, pas de pile de lectures), `ProfileTabConnectionTest`, `MiffRepositoryOfflineTest`. Recette PM : `docs/qa/checklists/feed-hors-connexion-android-recette-pm.md`.
+
+### Corrections de la revue indépendante
+- **Retour du réseau avec l'écran « indisponible »** (première installation ou données effacées, puis mode avion, puis retour du réseau) : la pop-in s'effaçait **sans aucune relecture**. `ConnectionGate` calcule maintenant « le réseau est revenu » avant la sortie « plus bloqué » et relance **une** lecture si l'écran charge ou est indisponible. Tests : `ConnectionGateTest` (écran indisponible, écran avec contenu), `FeedViewModelTest` (répertoire `Unavailable` : hors connexion, puis réseau, une lecture, la pop-in part).
+- **Jamais deux fenêtres à la fois** (`docs/tickets/pop-ins-avis.md` C5) : la pop-in attend le message d'accès perdu, la fenêtre d'avis ouverte, la feuille « Localiser », l'écran « En attente de ton accord » et les fenêtres de la carte « Mode voyage » (choix du jour, confirmation) ; en sens inverse, la fenêtre d'avis ne s'ouvre pas tant que la pop-in est à l'écran (`ReviewSituation.messageOpen`, test `ReviewPromptRulesTest`).
+- **Textes** : EN « we'll try again » (contraction, comme les autres textes) dans Android et iOS ; les 4 clés `feed_offline_popin_*` sont définies **une seule fois** dans chaque catalogue ; cette PR en est propriétaire, la PR iOS #148 s'alignera sur ces noms.
+- **Pop-in fermée** : le compte à rebours n'est plus publié (aucune recomposition inutile chaque seconde) ; la page Profil dit la même phrase avec « Réessayer » (`ConnectionInline`), comme le Feed.
+- Fusion de `main` (0.29.0) : tous les comportements récents conservés (cloche et carte de seconde chance du Feed, carte « Mode voyage », carrousel de Miffs). Entrée renumérotée 0.30.0 (les doublons de numéros plus bas ne sont pas touchés).
+
 ## [0.31.0] - 2026-11-11 : la phrase principale de la bulle du Feed reprend exactement le titre `display/headline` (retour du PM)
 
 Dernier retour du PM sur la bulle (après la fusion de la PR #160) : la police validée reste, mais la **taille revient exactement à celle du titre `display/headline` des autres écrans (24 sp / 30)**. Branche `android/bulle-taille-headline`, PR brouillon. Numéro de version : plusieurs PR Android ouvertes se disputent 0.29.0 et 0.30.0 ; celle-ci prend 0.31.0, à renuméroter à la fusion si besoin.
