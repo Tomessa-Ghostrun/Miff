@@ -39,7 +39,7 @@ s.tc('RQ1', 'S1 : un membre non créateur crée ses 3 emplacements {uid}_1 à _3
   await assertSucceeds(create(h, 'carol', 1));
   if ((await pending(h)) !== 4) throw new Error('compteur attendu à 4');
   const d = await read(h, reqPath(ID.M1, 'bob', 1));
-  if (d.requestedBy !== 'bob' || d.type !== 'trusted' || !(d.createdAt instanceof Timestamp) || Object.keys(d).length !== 8) throw new Error('demande mal relue');
+  if (d.requestedBy !== 'bob' || d.type !== 'trusted' || !(d.createdAt instanceof Timestamp) || Object.keys(d).length !== 9 || d.category !== 'relative') throw new Error('demande mal relue');
   const c = await read(h, counterPath());
   if (c.lastReqId !== 'carol_1' || !(c.updatedAt instanceof Timestamp)) throw new Error('compteur : lastReqId / updatedAt mal écrits');
 });
@@ -57,10 +57,11 @@ s.tc('RQ3', 'S1 : forme refusée (clé en trop dont `status`, clé manquante, no
     delete d[key];
     return go(h, 'bob', createRequestOps({ uid: 'bob', data: d }));
   };
-  for (const key of ['requestedBy', 'name', 'type', 'address', 'lat', 'lng', 'radiusM', 'createdAt']) await assertFails(missing(key));
+  for (const key of ['requestedBy', 'name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'createdAt']) await assertFails(missing(key));
   const bad = [
-    { status: 'pending' }, { message: 'coucou' }, { requestedByName: 'Bob' }, { category: 'home' }, { priority: null }, { createdBy: 'bob' }, { updatedAt: serverTs() },
+    { status: 'pending' }, { message: 'coucou' }, { requestedByName: 'Bob' }, { priority: null }, { createdBy: 'bob' }, { updatedAt: serverTs() },
     { name: '' }, { name: 'N'.repeat(61) }, { name: 42 }, { name: null }, { name: ['a'] },
+    { category: 'inconnue' }, { category: 'Home' }, { category: 'HOME' }, { category: '' }, { category: null }, { category: 1 }, { category: ['home'] }, { category: 'home ' },
     { type: 'danger' }, { type: 'Trusted' }, { type: null }, { type: 1 }, { type: ['trusted'] },
     { address: 'A'.repeat(201) }, { address: 42 }, { address: true },
     { lat: 90.0001 }, { lat: -90.1 }, { lat: NaN }, { lat: Infinity }, { lat: '45.7' }, { lat: null },
@@ -325,7 +326,7 @@ s.tc('RQ19', 'S8 : accepter (créatrice gratuite) : lot lieu + suppression + com
   await seedRequests(h, [['bob', 1], ['carol', 1]]); // alice a déjà p1
   await assertSucceeds(go(h, 'alice', acceptRequestOps({ from: 'bob', placeId: 'p2' })));
   const place = await read(h, `${M1}/places/p2`);
-  if (place.name !== 'Chez Mamie' || place.type !== 'trusted' || place.radiusM !== 150 || place.lat !== 45.764 || place.lng !== 4.8357 || place.createdBy !== 'alice') {
+  if (place.name !== 'Chez Mamie' || place.type !== 'trusted' || place.radiusM !== 150 || place.lat !== 45.764 || place.lng !== 4.8357 || place.createdBy !== 'alice' || place.category !== 'relative') {
     throw new Error('lieu mal relu');
   }
   if ((await read(h, reqPath(ID.M1, 'bob', 1))) !== null) throw new Error('la demande devait être supprimée');
@@ -451,4 +452,19 @@ s.tc('RQ26', 'Cas particuliers : emplacements d\'un autre uid ressemblant (`bob`
   await assertSucceeds(go(h, 'bob', withdrawRequestOps({ uid: 'bob', k: 1 })));
   await assertSucceeds(create(h, 'bob', 1)); // même lieu, même emplacement : redemander est permis (D3)
   if ((await pending(h)) !== 2) throw new Error('compteur attendu à 2');
+});
+
+s.tc('RQ27', 'catégorie : les 7 valeurs de R-LIEU-2 acceptées ; absente, inconnue, casse, espace, vide, nulle, nombre, tableau refusées ; l\'acceptation la copie dans le lieu', async (h) => {
+  for (const category of ['home', 'work', 'school', 'sport', 'relative', 'leisure', 'other']) {
+    await assertSucceeds(create(h, 'bob', 1, { category }));
+    await h.admin((f) => f.doc(reqPath(ID.M1, 'bob', 1)).delete());
+  }
+  for (const category of ['inconnue', 'Home', 'HOME', 'home ', ' home', '', null, 1, ['home'], { a: 1 }, true]) await assertFails(create(h, 'bob', 1, { category }));
+  const d = requestInput('bob');
+  delete d.category;
+  await assertFails(go(h, 'bob', createRequestOps({ uid: 'bob', data: d })));
+  await h.admin((f) => f.doc(counterPath()).set(counterSeed(0)));
+  await assertSucceeds(create(h, 'bob', 1, { category: 'school' }));
+  await assertSucceeds(go(h, 'alice', acceptRequestOps({ from: 'bob', placeId: 'p2', place: { category: 'school' }, left: 0 })));
+  if ((await read(h, `${M1}/places/p2`)).category !== 'school') throw new Error('la catégorie devait être copiée dans le lieu');
 });

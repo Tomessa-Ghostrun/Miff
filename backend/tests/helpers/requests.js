@@ -11,6 +11,7 @@ export const requestInput = (uid, over = {}) => ({
   requestedBy: uid,
   name: 'Chez Mamie',
   type: 'trusted',
+  category: 'relative',
   address: '12 rue des Lilas, 69003 Lyon',
   lat: 45.764,
   lng: 4.8357,
@@ -47,13 +48,13 @@ export function declineRequestOps({ from = 'bob', miffId = ID.M1, k = 1, left = 
 }
 
 /**
- * Lot « Accepter » du créateur : création du lieu (copie des champs de la demande ; `category` fournie par le client, la demande n'en porte pas ;
+ * Lot « Accepter » du créateur : création du lieu (copie des champs de la demande ; `category` copiée de la demande ;
  * `priority` nulle) + suppression de la demande + compteur (-1), 3 écritures.
  */
 export function acceptRequestOps({ owner = 'alice', from = 'bob', miffId = ID.M1, k = 1, placeId = 'p2', place = {}, left = null } = {}) {
   return {
     place: set(`miffs/${miffId}/places/${placeId}`, placeInput(owner, {
-      name: 'Chez Mamie', type: 'trusted', category: 'other', address: '12 rue des Lilas, 69003 Lyon', lat: 45.764, lng: 4.8357, radiusM: 150, ...place,
+      name: 'Chez Mamie', type: 'trusted', category: 'relative', address: '12 rue des Lilas, 69003 Lyon', lat: 45.764, lng: 4.8357, radiusM: 150, ...place,
     })),
     request: del(reqPath(miffId, from, k)),
     counter: setMerge(counterPath(miffId), counterOwner(left === null ? FieldValue.increment(-1) : left)),

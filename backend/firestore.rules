@@ -78,7 +78,7 @@ rules_version = '2';
 //
 // 13. Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11) — NON DÉPLOYÉ
 //     (le fichier déployé est celui du 2026-11-10 : en production, `placeRequests` et `meta` sont refusés par défaut). Un membre NON créateur dépose
-//     une demande miffs/{id}/placeRequests/{uid}_{1..3} (trois emplacements fixes par membre ; 8 clés exactes ; `requestedBy` = soi ; `createdAt` =
+//     une demande miffs/{id}/placeRequests/{uid}_{1..3} (trois emplacements fixes par membre ; 9 clés exactes dont la catégorie ; `requestedBy` = soi ; `createdAt` =
 //     heure serveur ; `risk` = demandeur Miff+) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
 //     (la règle de la demande exige `lastReqId` = cette demande et `updatedAt` = request.time ; la règle du compteur contrôle +1 / -1 et la borne).
 //     Lecture : le créateur lit toutes les demandes, le demandeur les siennes (requête filtrée), les autres membres rien. Aucune modification.
@@ -788,17 +788,23 @@ service cloud.firestore {
         && reqId in [request.auth.uid + '_1', request.auth.uid + '_2', request.auth.uid + '_3'];
     }
 
-    // Forme d'une demande : EXACTEMENT ces 8 clés (ni statut, ni message, ni nom du demandeur : minimisation). Mêmes bornes qu'un lieu pour les
-    // champs communs (nom, type, adresse, coordonnées, rayon). Pas de `category` ni de `priority` : le lieu créé à l'acceptation les reçoit du client
-    // (validPlaceShape les exige). createdAt et requestedBy sont contrôlés par la règle de création. Aucune lecture de règles.
+    // Forme d'une demande : EXACTEMENT ces 9 clés (ni statut, ni message, ni nom du demandeur : minimisation). Mêmes bornes qu'un lieu pour les
+    // champs communs (nom, type, catégorie, adresse, coordonnées, rayon). Pas de `priority` : le lieu créé à l'acceptation la reçoit du client
+    // (validPlaceShape l'exige ; `category` est copiée de la demande). createdAt et requestedBy sont contrôlés par la règle de création. Aucune lecture de règles.
     function validRequestShape(d) {
       return isStr(d.name, 1, 60)
-        && d.keys().hasOnly(['requestedBy', 'name', 'type', 'address', 'lat', 'lng', 'radiusM', 'createdAt'])
-        && d.keys().hasAll(['requestedBy', 'name', 'type', 'address', 'lat', 'lng', 'radiusM', 'createdAt'])
+        && d.keys().hasOnly(['requestedBy', 'name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'createdAt'])
+        && d.keys().hasAll(['requestedBy', 'name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'createdAt'])
         && (d.type == 'trusted' || d.type == 'risk')
+        && isRequestCategory(d.category)
         && (d.address == null || (d.address is string && d.address.size() <= 200))
         && isLatLng(d.lat, d.lng)
         && isPlaceRadius(d.radiusM);
+    }
+
+    // Catégorie de la demande : la MÊME liste fermée qu'un lieu (isPlaceCategory, R-LIEU-2), obligatoire ; l'acceptation la copie dans le lieu créé.
+    function isRequestCategory(v) {
+      return isPlaceCategory(v);
     }
 
     // Point géographique valide (mêmes bornes que les lieux) et rayon en mètres (mêmes bornes que les lieux : 50 à 2000, entier). Aucune lecture.
@@ -1084,7 +1090,7 @@ service cloud.firestore {
       // Un membre NON créateur dépose une demande ; seul le créateur la transforme en lieu (règles de `places` INCHANGÉES : limite gratuite et zone
       // de danger Miff+ s'appliquent à l'acceptation comme à une création directe). Lecture : le créateur lit TOUTES les demandes de sa Miff ; le demandeur
       // lit les SIENNES (requête filtrée sur requestedBy, encore membre, Miff existante) ; les autres membres : rien. Création : emplacement
-      // {uid}_{1..3} du demandeur, forme exacte, requestedBy = soi, createdAt = heure serveur, `risk` = demandeur Miff+, créateur et non-membre exclus,
+      // {uid}_{1..3} du demandeur, forme exacte (9 clés), requestedBy = soi, createdAt = heure serveur, `risk` = demandeur Miff+, créateur et non-membre exclus,
       // compteur +1 dans le même lot. Aucune modification (update interdit : on retire et on redemande). Suppression : le créateur (refuser, accepter,
       // nettoyer les demandes expirées ou d'un ex-membre : aucune contrainte sur le compteur, il est maître de sa Miff) ou le demandeur (retrait, compteur -1
       // dans le même lot ; sans condition d'appartenance : un ex-membre peut effacer sa propre demande). L'expiration à 30 jours n'est PAS contrôlée par

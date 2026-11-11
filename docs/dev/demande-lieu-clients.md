@@ -11,19 +11,20 @@
 | `miffs/{miffId}/placeRequests/{uid}_{k}` | Une demande. `{uid}` = uid du **demandeur**, `k` ∈ `1`, `2`, `3` : **trois emplacements fixes** par membre et par Miff. |
 | `miffs/{miffId}/meta/placeRequests` | Compteur des demandes en attente de la Miff (plafond de 10). **Lisible du créateur seul.** |
 
-### Document `placeRequests/{uid}_{k}` : exactement ces 8 clés
+### Document `placeRequests/{uid}_{k}` : exactement ces 9 clés
 
 | Clé | Type / valeur | Remarque |
 |---|---|---|
 | `requestedBy` | string = mon uid | |
 | `name` | string 1 à 60 | |
+| `category` | `"home"`, `"work"`, `"school"`, `"sport"`, `"relative"`, `"leisure"`, `"other"` | **Obligatoire**, la même liste fermée qu'un lieu (R-LIEU-2) : le formulaire de demande est celui de la création, qui la demande déjà. Copiée dans le lieu à l'acceptation. |
 | `type` | `"trusted"` ou `"risk"` | `risk` seulement si **le demandeur** est Miff+ (le client ne propose l'option que dans ce cas ; sinon paywall, comme la création d'un lieu). |
 | `address` | string ≤ 200 ou `null` | Sensible. Le client la rend obligatoire comme pour un lieu. |
 | `lat`, `lng` | nombres (5 décimales) | Sensible. |
 | `radiusM` | **entier** 50 à 2000 | Mêmes valeurs que la création d'un lieu (50 à 800 par pas de 50, défaut 100). |
 | `createdAt` | `serverTimestamp()` | **Jamais** une date du client (refusé). |
 
-**Aucune autre clé** (ni `status`, ni message, ni nom du demandeur, ni `category`, ni `priority`) : refus. **Aucune modification** après création (un `update` ou un `set` sur une demande existante est refusé) : pour changer, on retire et on redemande.
+**Aucune autre clé** (ni `status`, ni message, ni nom du demandeur, ni `priority`) : refus. **Aucune modification** après création (un `update` ou un `set` sur une demande existante est refusé) : pour changer, on retire et on redemande.
 
 ### Document compteur `meta/placeRequests`
 
@@ -37,7 +38,7 @@ Les compteurs s'écrivent avec un **`set` avec fusion** (`SetOptions.merge()` su
 
 1. Lire mes demandes : **1 requête** `placeRequests` avec `where('requestedBy', '==', moi)` (**le filtre est obligatoire** : sans lui, la requête est refusée). En déduire l'emplacement libre `{moi}_1`, `{moi}_2` ou `{moi}_3` : **un emplacement n'est libre que si son document n'existe pas** (une demande de plus de 30 jours est d'abord supprimée au passage, §2.6, ce qui libère son emplacement). Si les trois sont pris : message `place_request_limit_member`, **aucune écriture**.
 2. Lot :
-   - `set` `placeRequests/{moi}_{k}` avec les 8 clés ;
+   - `set` `placeRequests/{moi}_{k}` avec les 9 clés (`category` comprise) ;
    - `set` avec fusion `meta/placeRequests` = `{ pending: increment(+1), lastReqId: "{moi}_{k}", updatedAt: serverTimestamp() }`.
 
 **Les deux écritures sont indissociables** : la demande sans le compteur est refusée, le compteur sans la demande aussi. `lastReqId` doit être **exactement** l'identifiant de la demande du lot.
@@ -55,7 +56,7 @@ Jamais pour le **créateur** de la Miff (refusé par les règles : il ajoute dir
 
 1. Choisir l'identifiant du lieu **comme pour « Ajouter un lieu »** (premier de `p1`, `p2`, `p3` libre en gratuit ; identifiant automatique en Miff+) ; si le créateur n'est pas Miff+ et n'a plus d'emplacement libre, ou si la demande est une zone de danger et qu'il n'est pas Miff+ : **paywall sans écrire** (la demande reste en attente).
 2. Lot :
-   - `set` `places/{placeId}` : copie de `name`, `type`, `address`, `lat`, `lng`, `radiusM` ; **`category` = `"other"`** (valeur par défaut retenue : la demande n'a pas de catégorie, voir « Point ouvert » ci-dessous), `priority` = `null`, `createdBy` = moi, `createdAt` et `updatedAt` = `serverTimestamp()` ; **les règles de création d'un lieu s'appliquent telles quelles** ;
+   - `set` `places/{placeId}` : copie de `name`, `type`, `address`, `lat`, `lng`, `radiusM` ; **`category` = la catégorie de la demande**, `priority` = `null`, `createdBy` = moi, `createdAt` et `updatedAt` = `serverTimestamp()` ; **les règles de création d'un lieu s'appliquent telles quelles** ;
    - `delete` `placeRequests/{demandeur}_{k}` ;
    - `set` avec fusion `meta/placeRequests` = `{ pending: <nombre de demandes restantes>, lastReqId: null, updatedAt: serverTimestamp() }`.
 3. Si le lot est refusé par la règle du lieu (abonnement expiré entre-temps, limite atteinte), **tout est refusé** et la demande reste : rouvrir la liste, afficher le paywall (jamais d'erreur brute). Les géofences se programment comme pour un lieu créé par le créateur (data-model §7).
@@ -125,10 +126,10 @@ Cache local : les demandes (adresse, coordonnées) sont stockées dans le cache 
 
 App Check : à activer (les rafales de création / retrait ne sont pas limitables par les règles ; plafonds durs de 3 par membre et 10 par Miff).
 
-## 6. Point ouvert à trancher avant de livrer le formulaire de demande : la catégorie
+## 6. Catégorie (décision du PM du 2026-11-11)
 
-Le lieu exige une **catégorie** (R-LIEU-2, obligatoire) mais les 8 clés de la demande décidées le 2026-11-11 n'en comptent pas. **Valeur par défaut de cette PR** : pas de champ de plus (minimisation) ; le client du créateur écrit `"other"` à l'acceptation et le créateur la modifie ensuite avec l'écran existant (D7). **Alternative** si le PM veut que le choix du demandeur soit conservé : ajouter la clé `category` à la demande (une ligne de règle, un test, une mutation, un champ de schéma) **avant** le développement du formulaire.
+La demande porte `category` (obligatoire, liste fermée des lieux). Le client du créateur la **copie** dans le lieu à l'acceptation ; le créateur peut ensuite la modifier avec l'écran existant (D7). Une demande dont la catégorie manque ou est inconnue est refusée à la création (`permission-denied`) : le formulaire de demande doit donc **imposer le choix** comme le fait la création d'un lieu.
 
 ## 7. Tests de référence
 
-`backend/tests/rules/31-demande-lieu.test.js` (RQ1 à RQ26) rejoue exactement ces lots (`backend/tests/helpers/requests.js` : `createRequestOps`, `withdrawRequestOps`, `declineRequestOps`, `acceptRequestOps`). Les clients peuvent s'en servir comme exemples d'écriture ; les clés, les valeurs absolues et les `set` avec fusion y sont tels que les règles les attendent.
+`backend/tests/rules/31-demande-lieu.test.js` (RQ1 à RQ27) rejoue exactement ces lots (`backend/tests/helpers/requests.js` : `createRequestOps`, `withdrawRequestOps`, `declineRequestOps`, `acceptRequestOps`). Les clients peuvent s'en servir comme exemples d'écriture ; les clés, les valeurs absolues et les `set` avec fusion y sont tels que les règles les attendent.
