@@ -47,7 +47,19 @@ protocol AuthGateway {
     /// personne peut le changer : jamais conservé tel quel, jamais journalisé. nil pour un compte e-mail.
     func displayName() -> String?
 
+    /// L'adresse de la photo du compte Google, s'il y en a un (jamais pour un compte e-mail ou Apple). Ne sert qu'à proposer la photo
+    /// comme photo de profil PRÉREMPLIE à l'étape profil, où la personne peut la changer ou la retirer : l'adresse n'est ni conservée
+    /// ni journalisée. nil par défaut.
+    func providerPhotoURL() -> URL?
+
     func signOut()
+}
+
+extension AuthGateway {
+    /// Sans réponse particulière : pas de photo (jamais une photo devinée).
+    func providerPhotoURL() -> URL? {
+        nil
+    }
 }
 
 /// Demande à Firebase d'envoyer l'e-mail « réinitialise ton mot de passe ».

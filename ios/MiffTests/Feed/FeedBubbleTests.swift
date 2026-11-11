@@ -83,10 +83,10 @@ final class FeedBubbleTests: XCTestCase {
     func testRedsComeFirstThenOrangesAndTheOldestReferenceFirst() {
         let members = [feedMember("o1"), feedMember("r1"), feedMember("o2"), feedMember("r2"), feedMember("me")]
         let statuses = [
-            "o1": feedStatus(.out, departedAgo: feedMinutes(90)),
-            "o2": feedStatus(.out, departedAgo: feedMinutes(70)),
-            "r1": feedStatus(.out, departedAgo: feedHours(3)),
-            "r2": feedStatus(.out, departedAgo: feedHours(5))
+            "o1": feedStatus(.out, departedAgo: feedMinutes(150)),
+            "o2": feedStatus(.out, departedAgo: feedMinutes(130)),
+            "r1": feedStatus(.out, departedAgo: feedHours(5)),
+            "r2": feedStatus(.out, departedAgo: feedHours(7))
         ]
 
         let order = pages(bubble(members, statuses)).map { $0.member.uid }
@@ -96,8 +96,8 @@ final class FeedBubbleTests: XCTestCase {
 
     func testTheBubbleOfAnAlertTakesTheColourOfTheMiff() {
         let members = [feedMember("a"), feedMember("b"), feedMember("me")]
-        let orange = ["a": feedStatus(.out, departedAgo: feedMinutes(70)), "b": feedStatus()]
-        let red = ["a": feedStatus(.out, departedAgo: feedMinutes(70)), "b": feedStatus(.inRisk)]
+        let orange = ["a": feedStatus(.out, departedAgo: feedMinutes(130)), "b": feedStatus()]
+        let red = ["a": feedStatus(.out, departedAgo: feedMinutes(130)), "b": feedStatus(.inRisk)]
 
         XCTAssertEqual(bubble(members, orange).level, .orange)
         XCTAssertEqual(bubble(members, red).level, .red)
@@ -107,15 +107,15 @@ final class FeedBubbleTests: XCTestCase {
         let places = [feedPlace("p1", category: .home), feedPlace("p2", name: "Salle", category: .leisure)]
         let members = [feedMember("o"), feedMember("r"), feedMember("d"), feedMember("me")]
         let statuses = [
-            "o": feedStatus(.out, placeId: "p1", departedAgo: feedMinutes(70)),
-            "r": feedStatus(.out, placeId: "p1", departedAgo: feedHours(3)),
+            "o": feedStatus(.out, placeId: "p1", departedAgo: feedMinutes(130)),
+            "r": feedStatus(.out, placeId: "p1", departedAgo: feedHours(5)),
             "d": feedStatus(.inRisk, placeId: "p2", departedAgo: feedMinutes(20))
         ]
 
         let found = pages(bubble(members, statuses, places: places))
 
-        XCTAssertEqual(found.first { $0.member.uid == "o" }?.kind, .left(place: .category(.home), at: moment(70)))
-        XCTAssertEqual(found.first { $0.member.uid == "r" }?.kind, .noNewsSince(moment(180)))
+        XCTAssertEqual(found.first { $0.member.uid == "o" }?.kind, .left(place: .category(.home), at: moment(130)))
+        XCTAssertEqual(found.first { $0.member.uid == "r" }?.kind, .noNewsSince(moment(300)))
         XCTAssertEqual(found.first { $0.member.uid == "d" }?.kind, .danger(place: .named("Salle"), since: moment(20)))
     }
 
@@ -126,9 +126,9 @@ final class FeedBubbleTests: XCTestCase {
     func testIAmTheOnlyAlertAndMyPageHasNoMessageButOthersDo() {
         let members = [feedMember("a"), feedMember("b", phone: nil), feedMember("me")]
         let statuses = [
-            "a": feedStatus(.out, departedAgo: feedMinutes(70)),
-            "b": feedStatus(.out, departedAgo: feedMinutes(80)),
-            "me": feedStatus(.out, departedAgo: feedMinutes(90))
+            "a": feedStatus(.out, departedAgo: feedMinutes(130)),
+            "b": feedStatus(.out, departedAgo: feedMinutes(140)),
+            "me": feedStatus(.out, departedAgo: feedMinutes(150))
         ]
 
         let found = pages(bubble(members, statuses))
@@ -141,7 +141,7 @@ final class FeedBubbleTests: XCTestCase {
 
     func testAnAlertThatGoesAwayLeavesAnAllGoodBubbleAndAPageLess() {
         let members = [feedMember("a"), feedMember("b"), feedMember("me")]
-        let before = ["a": feedStatus(.out, departedAgo: feedMinutes(70)), "b": feedStatus(.out, departedAgo: feedHours(3))]
+        let before = ["a": feedStatus(.out, departedAgo: feedMinutes(130)), "b": feedStatus(.out, departedAgo: feedHours(5))]
         let after = ["a": feedStatus(.inTrusted, departedAgo: feedMinutes(1)), "b": before["b"] ?? feedStatus()]
 
         XCTAssertEqual(pages(bubble(members, before)).count, 2)
@@ -152,7 +152,7 @@ final class FeedBubbleTests: XCTestCase {
 
     func testOfflineOrACopyOfTheCacheIsDatedAndTheAlertsSayToReconnect() {
         let members = [feedMember("a"), feedMember("me")]
-        let statuses = ["a": feedStatus(.out, departedAgo: feedMinutes(70), writtenAgo: feedMinutes(30))]
+        let statuses = ["a": feedStatus(.out, departedAgo: feedMinutes(130), writtenAgo: feedMinutes(30))]
 
         let offline = buildFeed(feedInput(members: members, statuses: statuses, offline: true))
         let cached = buildFeed(feedInput(members: members, view: .loaded(byUid: statuses, fromCache: true)))
@@ -185,7 +185,7 @@ final class FeedBubbleTests: XCTestCase {
 
         let first = buildFeed(feedInput(members: members, statuses: green)).announceKey
         let later = buildFeed(feedInput(members: members, statuses: green), now: feedNow + feedMinutes(3)).announceKey
-        let orange = buildFeed(feedInput(members: members, statuses: out), now: feedNow + feedMinutes(70)).announceKey
+        let orange = buildFeed(feedInput(members: members, statuses: out), now: feedNow + feedMinutes(130)).announceKey
 
         XCTAssertEqual(first, later)
         XCTAssertNotEqual(first, orange)
@@ -194,7 +194,7 @@ final class FeedBubbleTests: XCTestCase {
     func testMyHeaderRingFollowsMyOwnStatus() {
         let members = [feedMember("a"), feedMember("me")]
 
-        let orange = buildFeed(feedInput(members: members, statuses: ["me": feedStatus(.out, departedAgo: feedMinutes(70))]))
+        let orange = buildFeed(feedInput(members: members, statuses: ["me": feedStatus(.out, departedAgo: feedMinutes(130))]))
         let none = buildFeed(feedInput(members: members))
 
         XCTAssertEqual(orange.myLevel, .orange)
