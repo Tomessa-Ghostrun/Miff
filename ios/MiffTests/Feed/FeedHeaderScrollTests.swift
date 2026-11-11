@@ -130,7 +130,7 @@ final class FeedHeaderScrollTests: XCTestCase {
             .deletingLastPathComponent() // Feed
             .deletingLastPathComponent() // MiffTests
             .deletingLastPathComponent() // ios
-            .appendingPathComponent("Miff/Views/Feed/FeedScreen.swift")
+            .appendingPathComponent("Miff/Views/Feed/FeedCollapsingLayout.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
 
         XCTAssertTrue(source.contains("accessibilityReduceMotion"), "« Réduire les animations » est lu")

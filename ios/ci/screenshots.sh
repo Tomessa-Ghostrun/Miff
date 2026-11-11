@@ -135,6 +135,12 @@ shot 38-fr-vrai-splash-1s 1 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowA
 shot 39-fr-vrai-splash-2s 2 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
 splash_args=(-MiffSkipSplash YES)
 
+# Le Feed (VRAIE mise en page : en-tête, bulle, cartes ; données de démonstration ; ligne rose = où la liste croit que l'en-tête s'arrête) :
+# la bulle doit commencer SOUS l'en-tête, jamais coupée.
+shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
+shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
+shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true
 shot 11-fr-systeme-sombre 3 -AppleLanguages "(fr)" -AppleLocale fr_FR
@@ -151,6 +157,7 @@ shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_F
 shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
 shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

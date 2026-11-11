@@ -52,6 +52,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
+        case _ where name.hasPrefix("feed-"):
+            // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
+            FeedScreenPreview(name: name)
         case _ where name.hasPrefix("miff-"):
             // Le flux Miff (créer, rejoindre, écran d'une Miff, accueil, perte d'accès) : voir `MiffScreenPreview`.
             MiffScreenPreview(name: name)

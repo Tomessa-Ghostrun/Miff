@@ -22,33 +22,16 @@ struct FeedScreenActions {
     let onOpenSettings: () -> Void
 }
 
-/// La durée du retour animé de l'en-tête (un toucher sur le logo, un verrouillage) : courte.
-enum FeedHeaderMotion {
-    static let showSeconds: Double = 0.2
-}
-
-private struct HeaderHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 struct FeedScreen: View {
     @ObservedObject var model: FeedViewModel
     @ObservedObject var awaiting: AwaitingAgreement
     let isActive: Bool
     let actions: FeedScreenActions
 
-    @State private var headerModel = FeedHeaderModel()
-    @State private var headerHeight: CGFloat = 0
     @State private var selectorOpen = false
-    @State private var scrollToTop = 0
     /// FEED-8 : la photo ouverte en plein écran. Rien n'en est gardé une fois fermée, ni quand le Feed quitte l'écran.
     @State private var openedPhoto: OpenedPhoto?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilitySwitchControlEnabled) private var switchControl
 
     private var texts: FeedTexts {
@@ -100,32 +83,15 @@ struct FeedScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            stateContent
-            // Le contenu ne passe JAMAIS sous la barre d'état : une bande fixe de la couleur du fond couvre la zone sûre du haut, même quand
-            // l'en-tête est caché (comme Android, qui coupe le contenu à la zone sûre).
-            colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
-            header
-            if model.refreshing {
-                // Le geste est en haut de la liste, sous l'en-tête : l'indicateur de l'actualisation se montre sous lui.
-                ProgressView()
-                    .tint(colorActionPrimary.color)
-                    .padding(.top, headerHeight + Spacing.sm)
-                    .accessibilityHidden(true)
-            }
-        }
-        .background(colorBgCanvas.color.ignoresSafeArea())
+        FeedCollapsingLayout(
+            locked: headerLocked,
+            isList: isList,
+            refreshing: model.refreshing,
+            header: { onLogo in headerContent(onLogo: onLogo) },
+            content: { layout in stateContent(layout) }
+        )
         // Sans Miff, la roue crantée des Réglages restreints (Réglages > Mon compte : déconnexion, suppression) est la seule sortie.
         .restrictedSettingsGear(visible: ready?.miffs.isEmpty == true, action: actions.onOpenSettings)
-        .onPreferenceChange(HeaderHeightKey.self) { height in
-            headerHeight = height
-            headerModel.measured(height)
-        }
-        .onAppear { headerModel.lock(headerLocked) }
-        // Verrouillé (chargement, hors connexion, VoiceOver, sélecteur ouvert) : l'en-tête revient avec une courte animation, immédiate avec
-        // « Réduire les animations ».
-        .onChange(of: headerLocked) { locked in withHeaderAnimation { headerModel.lock(locked) } }
-        .onChange(of: isList) { _ in headerModel.resetBaseline() }
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
         // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
         .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher() }
@@ -145,13 +111,13 @@ struct FeedScreen: View {
     // MARK: - Les états
 
     @ViewBuilder
-    private var stateContent: some View {
+    private func stateContent(_ layout: FeedLayoutContext) -> some View {
         switch model.directoryState {
         case .loading:
             ScrollView {
                 FeedSkeleton()
                     .padding(.horizontal, Spacing.md)
-                    .padding(.top, headerHeight + Spacing.md)
+                    .padding(.top, layout.headerHeight + Spacing.md)
             }
         case .unavailable:
             VStack(spacing: Spacing.sm) {
@@ -164,32 +130,32 @@ struct FeedScreen: View {
                 .buttonStyle(.miffSecondaryFullWidth)
             }
             .padding(Spacing.md)
-            .padding(.top, headerHeight)
+            .padding(.top, layout.headerHeight)
             .frame(maxHeight: .infinity, alignment: .top)
         case .ready(let ready):
             if ready.miffs.isEmpty {
                 FeedNoMiff(onCreate: actions.onCreate, onJoin: actions.onJoin, onSignOut: actions.onSignOut)
-                    .padding(.top, headerHeight)
+                    .padding(.top, layout.headerHeight)
                     .frame(maxHeight: .infinity, alignment: .top)
             } else {
-                list(ready)
+                list(ready, layout)
             }
         }
     }
 
-    private func list(_ ready: DirectoryReady) -> some View {
+    private func list(_ ready: DirectoryReady, _ layout: FeedLayoutContext) -> some View {
         FeedListView(
             feed: model.uiState,
             ready: ready,
             locate: model.locate,
             texts: texts,
-            topInset: headerHeight,
+            topInset: layout.headerHeight,
             isActive: isActive,
             agreementWaiting: ready.activeId.map { awaiting.waiting.contains($0) } ?? false,
-            scrollToTop: scrollToTop,
+            scrollToTop: layout.scrollToTop,
             actions: listActions,
-            onContentMoved: { headerModel.contentMoved(to: $0) },
-            onScrolled: { headerModel.scrolled(to: $0) }
+            onContentMoved: layout.onContentMoved,
+            onScrolled: layout.onScrolled
         )
     }
 
@@ -223,38 +189,19 @@ struct FeedScreen: View {
 
     // MARK: - L'en-tête
 
-    /// L'animation courte du retour de l'en-tête ; aucune avec « Réduire les animations ».
-    private func withHeaderAnimation(_ change: () -> Void) {
-        if reduceMotion {
-            change()
-        } else {
-            withAnimation(.easeOut(duration: FeedHeaderMotion.showSeconds), change)
-        }
-    }
-
-    private var header: some View {
-        FeedHeaderOverlay(
-            model: headerModel,
-            content: FeedHeaderContent(
-                me: model.me,
-                myLevel: content?.myLevel ?? .neutral,
-                myStatusDescription: content.map { texts.label($0.myLabel) },
-                pill: pillState,
-                onOpenProfile: actions.onOpenProfile,
-                onLogo: {
-                    withHeaderAnimation { headerModel.show() }
-                    scrollToTop += 1
-                },
-                onSelect: { model.onSelect($0) },
-                onCreate: { selectorEntryTapped(open: actions.onCreate) },
-                onJoin: { selectorEntryTapped(open: actions.onJoin) },
-                selectorOpen: $selectorOpen
-            )
+    private func headerContent(onLogo: @escaping () -> Void) -> FeedHeaderContent {
+        FeedHeaderContent(
+            me: model.me,
+            myLevel: content?.myLevel ?? .neutral,
+            myStatusDescription: content.map { texts.label($0.myLabel) },
+            pill: pillState,
+            onOpenProfile: actions.onOpenProfile,
+            onLogo: onLogo,
+            onSelect: { model.onSelect($0) },
+            onCreate: { selectorEntryTapped(open: actions.onCreate) },
+            onJoin: { selectorEntryTapped(open: actions.onJoin) },
+            selectorOpen: $selectorOpen
         )
-        // L'en-tête qui monte est COUPÉ à la zone sûre (il ne passe pas sur l'heure de la barre d'état) ; le masque descend un peu plus bas
-        // pour laisser voir son ombre.
-        .mask(alignment: .top) { Rectangle().padding(.bottom, -Spacing.md) }
-        .accessibilitySortPriority(1)
     }
 
     /// Le sélecteur s'ouvre pour tout le monde dès qu'il y a une Miff (décision du PM, 2026-11-08).
@@ -324,26 +271,5 @@ struct FeedScreen: View {
         } else if !offline {
             UIAccessibility.post(notification: .announcement, argument: L10n.string("feed_refresh_done_a11y"))
         }
-    }
-}
-
-/// L'en-tête par-dessus la liste : déplacé par une translation (aucune mise en page ne bouge), mesuré pour que la liste lui laisse sa place.
-private struct FeedHeaderOverlay: View {
-    @ObservedObject var model: FeedHeaderModel
-    let content: FeedHeaderContent
-
-    var body: some View {
-        content
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(key: HeaderHeightKey.self, value: proxy.size.height)
-                }
-            )
-            .background(
-                colorBgCanvas.color
-                    .ignoresSafeArea(edges: .top)
-                    .miffShadow(shadowSubtle)
-            )
-            .offset(y: model.state.offset)
     }
 }
