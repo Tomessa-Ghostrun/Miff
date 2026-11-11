@@ -1,6 +1,31 @@
 # Changelog iOS
 
 ## Non publié
+### Reprise du partage d'une Miff : la carte ne reste plus grise (recette TestFlight, 2026-11-11)
+
+Symptôme : un testeur arrête le partage de sa position pour une Miff, puis le reprend : sa carte au Feed reste **grise** au lieu de redevenir verte, orange ou rouge. **Rien n'est compilé en local (la CI fait foi).**
+
+**Cause (certitude : élevée sur le mécanisme, moyenne sur le scénario exact du testeur).** Arrêter le partage SUPPRIME le statut, la photo et la dernière position de la Miff sur le serveur (`MiffWrites.stopSharing`) ; le reprendre récrit un statut `unknown` (`MiffWrites.resumeSharing`, gris). Or le suivi n'écrit un statut que sur un **changement de présence** (`PresenceMachine.onTransition` rend nil si la présence déduite est celle qu'il garde) :
+- si le suivi gardait la présence d'avant l'arrêt (le passage qui devait la retirer n'a pas vu le partage coupé, ou autre Miff qui partage encore la même zone), elle n'est jamais récrite ;
+- si le suivi avait retrouvé la Miff « comme neuve », la personne déjà dans le lieu ne produit aucune arrivée (la zone est déjà connue du système) ;
+- dans les deux cas, plus rien ne récrit le statut avant la prochaine entrée ou sortie de zone, et la dernière position écrite restait aussi « publiée » dans la copie locale alors que le serveur l'avait supprimée.
+
+Corrigé :
+- **Signal de reprise** : `MiffRepository.setSharing(enabled: true)` prévient le suivi **quelle Miff** est reprise (`MiffRepositoryRules.onSharingResumed`, `TrackingRuntime.sharingResumed`) ; le drapeau (`LocalState.resumedMiffs`, facultatif, persistant) est posé dans l'ordre des travaux du suivi, puis les Miffs sont relues dans le même travail. Sans ce signal branché (tests, autres usages) le comportement est celui d'avant (`onSharingChanged`).
+- **Remise à zéro de la détection de cette Miff** (`LocalMiff.resetDetection` : présence, dernière position écrite, statut en attente, batterie) puis **présence recalculée** à partir de ce que le téléphone sait MAINTENANT (`TrackingEngine+Resume.swift`) : dans un lieu de confiance ou une zone de danger (zones où la copie locale croit la personne, ou position de ce passage de moins de 10 minutes qui les contient) : cette présence, à l'heure d'entrée connue ; hors de toutes les zones **avec** une position pour le dire : `out`, maintenant ; hors zone **sans** position : rien n'est inventé (le statut reste `unknown` jusqu'au prochain signal du système). Le statut est écrit par le passage habituel (`flushPending`) avec ses conditions : « Toujours » + position exacte, consentement v3, session SESS-3, disjoncteur.
+- La dernière position est de nouveau publiée (le serveur l'avait supprimée).
+- Journal local de diagnostic (Debug et Internal) : `statusAfterResume`.
+
+**Limite connue** : hors d'un lieu et sans position, le statut reste gris jusqu'à la prochaine entrée ou sortie de zone (on n'invente pas un « tout va bien »).
+
+**Tests** : `TrackingEngineResumeTests` (sans le signal, la présence n'est pas récrite = le bug ; avec : réécrite dans le lieu, après effacement complet du suivi, hors zone avec position, rien sans position, drapeau consommé une fois, position republiée, rien sans « Toujours » + précise), `TrackingWiringTests` (la reprise prévient le suivi de la Miff reprise ; l'arrêt non ; via le runtime la présence est récrite).
+
+**Erreur « Pas de connexion pour le moment » à la publication d'une photo après cette manip (certitude : faible sur la cause).** Le code de classement est correct sur le papier : un refus des règles (`permission-denied`, `unauthenticated`) donne `refused` (« réessaie dans un instant »), jamais « hors connexion » ; un partage coupé dans la Miff donne `sharingStopped` ; seuls un réseau absent selon le téléphone, une session non vérifiable, un identifiant de session absent, ou une erreur `unavailable` / `cancelled` / quota (critère H4) / réseau donnent « Pas de connexion ». Faute de journal on ne peut pas dire laquelle s'est produite. Ajouté : un **code de cause dans le journal local** (aucun message, chemin ni identifiant) : `updateOfflineNoNetwork`, `updateOfflineSessionUnverified`, `updateOfflineNoClearance`, `updateErrorUnavailable`, `updateErrorCancelled`, `updateErrorQuota`, `updateErrorTimedOut`, `updateErrorNetworkUrl`, `updateErrorRefused`, `updateErrorOther`. **À faire après l'essai** : le PM envoie la carte du journal après un essai raté. Tests : `UpdatePublisherDiagnosisTests`.
+
+**Choix économiques** : aucune dépendance ni service ; une reprise relit déjà les Miffs (même coût qu'avant), plus au plus UNE écriture de statut et UNE de position par Miff reprise (geste manuel).
+
+**Android (analyse seulement, rien modifié)** : `TrackingEngine.kt` a la même structure (statut écrit seulement sur un changement de présence ; `miff.derived()` gardé ; aucune notion de « reprise du partage » : `syncMiffs` ne compare ni `consentedAt` ni le statut). Le même défaut est probable si le passage d'arrêt n'a pas vu le partage coupé, ou si une zone déjà surveillée est partagée avec une autre Miff. À vérifier sur l'OPPO.
+
 
 ### Corrigé et changé : photo de proche en plein écran, enregistrement DIRECT dans la galerie, photo qui remplit la zone (retours du PM sur le build 25, 2026-11-11)
 
