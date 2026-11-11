@@ -45,6 +45,20 @@ final class TypographyTokensTests: XCTestCase {
         }
     }
 
+    /// Décision du PM (2026-11-10) : la phrase principale de la bulle du Feed, Baloo Thambi 2 ExtraBold 30 / 36, suit Dynamic Type (.title2).
+    func testTheBubbleStyleIsBalooExtraBold30Over36() throws {
+        XCTAssertEqual(textDisplayBubble.size, 30)
+        XCTAssertEqual(textDisplayBubble.lineHeight, 36)
+        XCTAssertEqual(textDisplayBubble.variationWeight, 800)
+        XCTAssertEqual(textDisplayBubble.face, .baloo)
+        XCTAssertEqual(textDisplayBubble.dynamicTypeStyle, .title2)
+        XCTAssertFalse(TextStyleTokens.all.contains { $0.name == "textDisplayBubble" }, "hors de la liste d'Android")
+        XCTAssertNil(textDisplayHeadline.variationWeight, "le reste du Feed ne change pas")
+        let font = textDisplayBubble.uiFont(size: 30)
+        XCTAssertEqual(font.familyName, "Baloo Thambi 2")
+        XCTAssertEqual(font.pointSize, 30)
+    }
+
     func testDisplayStylesUseBalooAndTextStylesUseHanken() {
         XCTAssertEqual(textDisplayHero.face, .baloo)
         XCTAssertEqual(textBodyRegular.face, .hankenRegular)

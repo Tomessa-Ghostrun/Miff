@@ -2915,13 +2915,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send a message"
+            "value": "Contact"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envoyer un message"
+            "value": "Contacter"
           }
         }
       }

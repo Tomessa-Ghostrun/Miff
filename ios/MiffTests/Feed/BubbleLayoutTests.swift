@@ -36,16 +36,6 @@ final class BubbleLayoutTests: XCTestCase {
         XCTAssertEqual(outer.height, BubbleLayout.minContentHeight + 2 * BubbleLayout.verticalInset, accuracy: 0.001)
     }
 
-    func testThePictogramIsASoftWatermarkNotACircleAndStaysInsideTheBubble() {
-        // Un filigrane : grand, très transparent (jamais voyant, jamais un bouton) ; il tient dans la plus petite bulle courante.
-        XCTAssertGreaterThanOrEqual(BubbleLayout.symbolSize, 56)
-        XCTAssertGreaterThan(BubbleLayout.symbolOpacity, 0.1)
-        XCTAssertLessThanOrEqual(BubbleLayout.symbolOpacity, 0.3)
-        let smallest = BubbleLayout.outerSize(content: CGSize(width: 190, height: 0))
-        XCTAssertLessThanOrEqual(BubbleLayout.symbolSize + BubbleLayout.symbolTrailing, smallest.width)
-        XCTAssertLessThanOrEqual(BubbleLayout.symbolSize + BubbleLayout.symbolBottom, smallest.height)
-    }
-
     func testTheBlobIsCentredOnItsBox() {
         let box = CGRect(x: 0, y: 0, width: 100, height: 100)
 
@@ -68,18 +58,29 @@ final class BubbleLayoutTests: XCTestCase {
         }
     }
 
-    func testNoPictogramOnAGreenBubbleTheOthersKeepTheirs() {
-        XCTAssertNil(BubbleLayout.pictogram(for: .green), "pas de symbole sur la bulle verte")
-        XCTAssertEqual(BubbleLayout.pictogram(for: .orange), "clock")
-        XCTAssertEqual(BubbleLayout.pictogram(for: .red), "exclamationmark")
-        XCTAssertEqual(BubbleLayout.pictogram(for: .neutral), "hourglass")
+    /// Décision du PM (2026-11-11) : AUCUN symbole dans la bulle, quelle que soit sa couleur (filigrane, avion, pictogramme de bouton).
+    func testTheBubbleHasNoSymbolAtAll() throws {
+        let source = try String(contentsOf: bubbleSource, encoding: .utf8)
+
+        XCTAssertFalse(source.contains("systemName:"), "un SF Symbol dans la bulle")
+        XCTAssertFalse(source.contains("Image("), "une image dans la bulle")
     }
 
-    func testEveryAllGoodBubbleIsGreenSoItHasNoPictogram() {
-        let allGood = Bubble.allGood(latestNews: nil, answered: nil, total: nil)
+    func testTheBubbleHeadlineUsesTheBubbleStyleAndTheButtonKeepsATouchTarget() throws {
+        let source = try String(contentsOf: bubbleSource, encoding: .utf8)
 
-        XCTAssertEqual(allGood.level, .green)
-        XCTAssertNil(BubbleLayout.pictogram(for: allGood.level))
+        XCTAssertTrue(source.contains(".miffTextStyle(textDisplayBubble)"))
+        XCTAssertFalse(source.contains(".miffTextStyle(textDisplayHeadline)"))
+        XCTAssertTrue(source.contains("minHeight: Spacing.minTouchTarget"), "zone de toucher d'au moins 44 pt")
+        XCTAssertGreaterThanOrEqual(Spacing.minTouchTarget, 44)
+    }
+
+    private var bubbleSource: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Feed
+            .deletingLastPathComponent() // MiffTests
+            .deletingLastPathComponent() // ios
+            .appendingPathComponent("Miff/Views/Feed/FeedBubbleView.swift")
     }
 
     func testWithReducedMotionNothingMoves() {

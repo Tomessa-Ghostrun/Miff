@@ -38,16 +38,22 @@ enum MiffFontFace: String, CaseIterable {
 }
 
 extension MiffFontFace {
-    /// Baloo Thambi 2 en gras (graisse 700 de la police variable), pour les titres des illustrations du carrousel (comme
-    /// sur Android). Si le système ne sait pas appliquer la variation, la police normale est rendue : jamais d'échec.
-    static func balooBoldFont(size: CGFloat) -> Font {
+    /// 0x77676874 est l'étiquette « wght » (graisse) des polices variables.
+    private static let weightAxis = 0x7767_6874
+
+    /// Baloo Thambi 2 à la graisse demandée (axe `wght` de la police variable). Si le système ne sait pas appliquer la variation, la
+    /// police normale (Regular) est rendue : jamais d'échec.
+    static func balooUIFont(weight: Int, size: CGFloat) -> UIFont {
         let base = MiffFontFace.baloo.uiFont(size: size)
-        // 0x77676874 est l'étiquette « wght » (graisse) des polices variables.
-        let weightAxis = 0x7767_6874
         let descriptor = base.fontDescriptor.addingAttributes([
-            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [weightAxis: 700]
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [weightAxis: weight]
         ])
-        return Font(UIFont(descriptor: descriptor, size: size) as CTFont)
+        return UIFont(descriptor: descriptor, size: size)
+    }
+
+    /// Baloo Thambi 2 en gras (graisse 700), pour les titres des illustrations du carrousel (comme sur Android).
+    static func balooBoldFont(size: CGFloat) -> Font {
+        Font(balooUIFont(weight: 700, size: size) as CTFont)
     }
 }
 
@@ -60,12 +66,27 @@ struct TextStyleToken {
     let lineHeight: CGFloat
     /// Style systeme dont on suit la courbe de Dynamic Type.
     let dynamicTypeStyle: Font.TextStyle
+    /// Graisse (axe `wght`) à appliquer à Baloo Thambi 2, pour un style plus gras que Regular ; nil = la police de `face` telle quelle.
+    var variationWeight: Int?
+
+    /// La police du style, à la taille donnée : Regular repli si la variation n'est pas appliquée.
+    func uiFont(size: CGFloat) -> UIFont {
+        guard let variationWeight, face == .baloo else {
+            return face.uiFont(size: size)
+        }
+        return MiffFontFace.balooUIFont(weight: variationWeight, size: size)
+    }
 }
 
 let textDisplayHero = TextStyleToken(
     name: "textDisplayHero", face: .baloo, size: 64, lineHeight: 72, dynamicTypeStyle: .largeTitle)
 let textDisplayHeadline = TextStyleToken(
     name: "textDisplayHeadline", face: .baloo, size: 24, lineHeight: 30, dynamicTypeStyle: .title2)
+/// La phrase principale de la bulle du Feed UNIQUEMENT (décision du PM, 2026-11-10 ; même style qu'Android `textDisplayBubble`) : Baloo
+/// Thambi 2 ExtraBold (axe `wght` 800), 30 / 36, qui suit Dynamic Type comme `textDisplayHeadline` (.title2). Volontairement PAS dans
+/// `TextStyleTokens.all` : Android le déclare en `TextStyle(...)` et non en `style(...)` (voir `testTheBubbleStyleMatchesAndroid`).
+let textDisplayBubble = TextStyleToken(
+    name: "textDisplayBubble", face: .baloo, size: 30, lineHeight: 36, dynamicTypeStyle: .title2, variationWeight: 800)
 let textDisplayTitle = TextStyleToken(
     name: "textDisplayTitle", face: .baloo, size: 20, lineHeight: 26, dynamicTypeStyle: .title3)
 let textDisplayLabel = TextStyleToken(
@@ -118,7 +139,7 @@ struct MiffTextStyleModifier: ViewModifier {
     }
 
     private var font: UIFont {
-        token.face.uiFont(size: scaledSize)
+        token.uiFont(size: scaledSize)
     }
 
     func body(content: Content) -> some View {

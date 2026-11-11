@@ -123,6 +123,21 @@ final class ColorTokensTests: XCTestCase {
         }
     }
 
+    /// `textDisplayBubble` est déclaré côté Android en `TextStyle(...)` (pas `style(...)`) : il n'est pas dans `TextStyleTokens.all`, donc
+    /// cette assertion dédiée lit son bloc. Tant que la PR Android qui l'ajoute n'est pas fusionnée, rien n'est comparé (le test ne saute pas).
+    func testTheBubbleStyleMatchesAndroid() throws {
+        let source = try androidThemeFile("Type.kt")
+        let blocks = try matches("val textDisplayBubble =\\s*TextStyle\\(([^)]*)\\)", in: source)
+        guard let block = blocks.first?.first else {
+            return
+        }
+        let size = try matches("fontSize = (\\d+)\\.sp", in: block).first?.first
+        let line = try matches("lineHeight = (\\d+)\\.sp", in: block).first?.first
+
+        XCTAssertEqual(size.flatMap(Double.init), Double(textDisplayBubble.size), "textDisplayBubble : taille")
+        XCTAssertEqual(line.flatMap(Double.init), Double(textDisplayBubble.lineHeight), "interligne")
+    }
+
     func testRadiiAndShadowsAreIdenticalToAndroid() {
         XCTAssertEqual(radiusMd, 10)
         XCTAssertEqual(radiusSm, 5)
