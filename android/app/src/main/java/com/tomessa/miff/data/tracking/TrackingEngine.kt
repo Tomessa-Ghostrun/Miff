@@ -328,6 +328,7 @@ class TrackingEngine(
                 val paused = pauseStatuses(adopted)
                 local.save(paused)
                 publishTravel(paused.travel?.period())
+                paused.travel?.let { tellTravelSet(uid, it.untilMillis) }
                 doTravelPass(uid, paused, reason, suppliedFix)
                 return
             }
@@ -650,6 +651,30 @@ class TrackingEngine(
         }
     }
 
+    /** MODE VOYAGE (VOY-4A): my trip is on and ends at [untilMillis] (N7 and the cut of the reminders follow). Swallowed like [tellPresence]. */
+    private fun tellTravelSet(
+        uid: String,
+        untilMillis: Long,
+    ) {
+        try {
+            presenceListener.onTravelSet(uid, untilMillis)
+        } catch (e: Exception) {
+            // A notification that cannot be planned must never stop the trip.
+        }
+    }
+
+    /** My trip is over: [early] = I turned it off before its end. Swallowed like [tellPresence]. */
+    private fun tellTravelEnded(
+        uid: String,
+        early: Boolean,
+    ) {
+        try {
+            presenceListener.onTravelEnded(uid, early)
+        } catch (e: Exception) {
+            // Same.
+        }
+    }
+
     // --- The 20 zones ---------------------------------------------------------------------------------------------------------------------
 
     /**
@@ -968,16 +993,26 @@ class TrackingEngine(
                 journal.record(JournalKind.BREAKER_POSITION)
                 continue
             }
-            if (!env.isOnline()) continue
+            if (!env.isOnline()) {
+                journal.record(JournalKind.POSITION_SKIPPED_OFFLINE)
+                continue
+            }
             // SESS-2: a position never leaves a phone that does not hold the session (it would tell the loved ones where the OLD phone is).
-            val deviceId = gate.deviceId() ?: continue
+            val deviceId = gate.deviceId()
+            if (deviceId == null) {
+                journal.record(JournalKind.POSITION_SKIPPED_SESSION)
+                continue
+            }
             if (gate.ended()) break
             served = miffId
             val outcome =
                 guardedCall(timeoutMillis) {
                     store.commit(listOf(TrackingWrites.position(miffId, uid, fix.lat, fix.lng, measuredAt, deviceId)))
                 }
-            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) {
+                journal.record(JournalKind.POSITION_REFUSED)
+                gate.refused()
+            }
             state =
                 when (outcome) {
                     is Guarded.Value -> {
@@ -1220,6 +1255,7 @@ class TrackingEngine(
         local.save(state)
         travelAlarm.schedule(travel.untilMillis)
         publishTravel(travel.period())
+        tellTravelSet(uid, travel.untilMillis)
         updateNetworkWake(state)
         return if (travelToTell(state)) TravelResult.DoneOffline else TravelResult.Done
     }
@@ -1283,6 +1319,9 @@ class TrackingEngine(
         val travel = start.travel ?: return
         val now = env.nowMillis()
         publishTravel(travel.period())
+        // A trip found again at a wake-up (begun before this version, or after a restart): the notifications know it (idempotent, nothing changes when they already did; a trip
+        // that is over is told too, so that N7 still waits for its 08:00 even if the notifications never heard of it).
+        tellTravelSet(uid, travel.untilMillis)
         if (travel.period().isOver(now)) {
             finishTravel(uid, start, now)
             return
@@ -1437,8 +1476,10 @@ class TrackingEngine(
         start: LocalState,
         now: Long,
     ) {
-        if (start.travel == null) return
+        val ended = start.travel ?: return
         travelAlarm.cancel()
+        // Told BEFORE the writes: N7 waits for 08:00 after a natural end (even if the network is down), and is cancelled after an early one.
+        tellTravelEnded(uid, early = !ended.period().isOver(now))
         val fact = PresenceMachine.unknown(now)
         var state =
             start.copyWith(

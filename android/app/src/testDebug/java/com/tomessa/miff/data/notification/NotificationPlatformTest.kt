@@ -90,9 +90,10 @@ class NotificationPlatformTest {
         NotificationType.entries.filter { it != NotificationType.N6 }.forEachIndexed { i, type ->
             alarms.schedule(type, ScheduledAlarm("k$i", "m", t0 + i))
         }
-        assertEquals(4, shadowOf(alarmManager).scheduledAlarms.size)
+        // N1, N2, N3, N4 and N7 (the end of a trip) wait for an hour: N6 is immediate.
+        assertEquals(5, shadowOf(alarmManager).scheduledAlarms.size)
         alarms.cancel(NotificationType.N3)
-        assertEquals(3, shadowOf(alarmManager).scheduledAlarms.size)
+        assertEquals(4, shadowOf(alarmManager).scheduledAlarms.size)
         assertNull(alarms.scheduled()[NotificationType.N3])
         alarms.consumed(NotificationType.N1)
         assertNull(alarms.scheduled()[NotificationType.N1])

@@ -246,6 +246,7 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 |---|---|---|---|
 | N1, N2 (rappels « à toi ») | **0** | **0** | décision locale à partir du dernier statut déjà connu du téléphone (l'instantané écrit par le Feed, qui lit déjà ces statuts) |
 | N6 (j'entre dans une zone de danger) | **0** | **0** | locale et immédiate, déclenchée par le suivi des lieux déjà livré |
+| N7 (mon mode voyage est terminé, VOY-4A) | **0** | **0** | locale, alarme inexacte à 08:00 ; la fin du voyage est connue du téléphone (aucune lecture) |
 | N3, N4 (ma Miff change d'état) | **N + 3 par vérification** (N = membres de la Miff), relevées **à l'heure prévue** seulement | **0** | UNE lecture du serveur (`miffs/{id}/status`, `Source.SERVER`) juste avant d'afficher ; **au plus 2 vérifications par épisode** (la seconde seulement si la première n'a pas pu joindre le serveur) ; aucune vérification si le type est coupé, si la session n'est pas valide ou si la clé a déjà été notifiée |
 
 **N3 / N4 en chiffres** (estimations, pas des mesures ; Miff de 4 membres : 4 lectures de statuts + 3 lectures de règles = **7 lectures** par vérification ; 15 membres : **18**). Un épisode (la Miff passe orange, puis rouge) coûte une vérification **par observateur et par couleur** : **7 à 14 lectures par jour et par utilisateur actif** (cas courant : 1 à 2 épisodes par jour, par exemple une journée de travail hors du seul lieu gratuit, le rouge ne venant que si personne ne donne de nouvelles). À comparer aux ~60 lectures par jour que le Feed coûte déjà.

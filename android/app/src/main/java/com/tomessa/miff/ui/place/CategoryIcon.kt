@@ -12,6 +12,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -63,7 +65,6 @@ fun CategoryIcon(
     size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val support = LocalEmojiSupport.current
     Box(
         modifier =
             modifier
@@ -82,28 +83,51 @@ fun CategoryIcon(
             )
             return@Box
         }
-        val drawable = remember(category, support) { support.canDraw(category.emoji) }
         // dp -> sp with the font scale taken out: the glyph stays the size of its box when the person enlarges the text.
         val glyph = with(LocalDensity.current) { (size * GLYPH_RATIO).toSp() }
-        val style =
-            TextStyle(
-                fontSize = glyph,
-                lineHeight = glyph * LINE_RATIO,
-                textAlign = TextAlign.Center,
-                platformStyle = PlatformTextStyle(includeFontPadding = false),
-                lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
-            )
-        if (drawable) {
-            Text(text = category.emoji, style = style, maxLines = 1, softWrap = false)
-        } else {
-            Text(
-                text = stringResource(category.labelRes).take(1).uppercase(),
-                style = textBodyBold16.merge(style),
-                color = colorActionPrimary,
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
+        CategoryGlyph(
+            category = category,
+            fontSize = glyph,
+            fallbackStyle = textBodyBold16,
+            fallbackColor = colorActionPrimary,
+        )
+    }
+}
+
+/**
+ * The emoji of a category as TEXT of the given size, alone (no box, no semantics: the caller makes it decorative). When the phone's font cannot draw
+ * it, the first letter of the name of the category takes its place (a text fallback, never an empty square). Shared by [CategoryIcon] and the label
+ * of a card of the Feed, so that both show the same table and the same fallback (`docs/contracts/place-categories.md`).
+ */
+@Composable
+fun CategoryGlyph(
+    category: PlaceCategory,
+    fontSize: TextUnit,
+    fallbackStyle: TextStyle,
+    fallbackColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val support = LocalEmojiSupport.current
+    val drawable = remember(category, support) { support.canDraw(category.emoji) }
+    val style =
+        TextStyle(
+            fontSize = fontSize,
+            lineHeight = fontSize * LINE_RATIO,
+            textAlign = TextAlign.Center,
+            platformStyle = PlatformTextStyle(includeFontPadding = false),
+            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
+        )
+    if (drawable) {
+        Text(text = category.emoji, style = style, maxLines = 1, softWrap = false, modifier = modifier)
+    } else {
+        Text(
+            text = stringResource(category.labelRes).take(1).uppercase(),
+            style = fallbackStyle.merge(style),
+            color = fallbackColor,
+            maxLines = 1,
+            softWrap = false,
+            modifier = modifier,
+        )
     }
 }
 

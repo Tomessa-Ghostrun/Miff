@@ -127,6 +127,28 @@ N3 et N4 concernent **la Miff vue par B** quand **c'est A qui est sorti**. Compt
 | 6.13 | **Mesure sur l'OPPO** : application balayée, économie d'énergie. | **Notez** le délai entre l'entrée réelle et N6 (**risque ColorOS**). |
 | 6.14 | Console Firestore (Utilisation). | **Aucune lecture ni écriture** de plus à cause de N6 (le statut `in_risk` de A est écrit comme avant, indépendamment de la notification). |
 
+## Partie 7 : mode voyage, N7 « Ton mode voyage est terminé » et rappels coupés pendant un voyage (VOY-4A)
+
+**Préparation** : le mode voyage (Profil > carte « Mode voyage ») est livré par ailleurs ; les notifications sont **autorisées** ; un compte A dans une Miff avec un second compte B. Pour ne pas attendre plusieurs jours : choisissez comme date de fin **aujourd'hui** (le voyage finit ce soir à minuit, N7 part à 8 h demain matin).
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| 7.1 | Réglages > Notifications > section **Pour toi**. | Une ligne **« Quand mon mode voyage se termine »**, **activée** par défaut. |
+| 7.2 | A active le mode voyage jusqu'à **aujourd'hui**. Fermez l'appli. | Rien n'apparaît. Le lendemain à **8 h** (ou un peu plus tard, l'alarme est « approximative » : jamais avant 8 h) : « **Ton mode voyage est terminé** » / « **Ta carte reprend ses couleurs chez tes proches. Bon retour !** » sur le canal « Rappels pour toi ». **Aucun mot sur la position.** |
+| 7.3 | Touchez-la. | Le **Feed** (pas l'Update). Une ligne dans le centre de notifications, **sans nom de Miff**. |
+| 7.4 | Avant minuit, A **désactive** le mode voyage à la main. | **Aucune** N7 le lendemain. |
+| 7.5 | A active le voyage jusqu'à après-demain, puis **change la date** pour demain. | N7 arrive à 8 h le lendemain **de la nouvelle date** (une seule fois, jamais deux). |
+| 7.6 | A active le voyage ; **redémarrez** le téléphone. | N7 arrive quand même à l'heure. |
+| 7.7 | Même chose, mais coupez « Quand mon mode voyage se termine ». | **Aucune** N7. Rallumé **avant** 8 h, elle revient. |
+| 7.8 | A ouvre l'appli à **8 h pile**, au premier plan. | Pas de notification du système, seulement **une ligne silencieuse** dans le centre. |
+| 7.9 | Téléphone éteint à 8 h, rallumé à 10 h. | Une ligne silencieuse dans le centre, **pas** de notification en retard. |
+| 7.10 | **Pendant** le voyage de A : B sort d'un lieu de confiance et ne donne pas de nouvelles pendant plus de 4 h ; A est lui-même sorti d'un lieu avant le voyage. | **Aucun** rappel pour A (« Tu es passé orange / rouge »), **aucune** « Ta Miff est passée en orange / rouge ». |
+| 7.11 | Pendant le voyage de A, B entre dans une zone de danger. | A ne reçoit rien de plus que d'habitude ; et si **A** entre dans une zone de danger pendant son voyage : **aucune** N6 (valeur par défaut, **question Q7 : dites-moi si vous préférez qu'elle reste active**). |
+| 7.12 | **B** active son mode voyage ; A reste vert, B n'a plus donné de nouvelles depuis plus de 4 h. | **Aucune** notification « Ta Miff est passée en orange / rouge » à cause de B (il est neutre, carte grise). Même plusieurs jours après la fin du voyage de B tant qu'il n'a pas redonné de nouvelles. |
+| 7.13 | La fin du voyage de A est passée : A sort d'un lieu et reste dehors plus de 2 h. | Les rappels **reprennent** normalement (« Tu es passé orange »). |
+| 7.14 | Déconnectez A pendant son voyage. | Aucune N7 sur le téléphone ensuite. |
+| 7.15 | Console Firestore (Utilisation). | **Aucune lecture ni écriture** de plus à cause de N7. |
+
 ## Ce qui est volontairement absent (à ne pas signaler comme un défaut)
 
 - **Aucun build « délais raccourcis ÷ 60 »** : voir l'astuce de la console ci-dessus.

@@ -29,7 +29,13 @@ private final class LocationBridge: NSObject, CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        handler?(.fixFailed)
+        // « Pas de position pour l'instant » (GPS à froid, intérieur) ou réseau momentanément absent (positionnement par Wi-Fi ou antennes)
+        // sont passagers : la demande est refaite tant que quelqu'un attend (le délai de chaque attente borne la relance).
+        if let failure = error as? CLError, failure.code == .locationUnknown || failure.code == .network {
+            handler?(.fixUnavailable)
+        } else {
+            handler?(.fixFailed)
+        }
     }
 
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
