@@ -1,6 +1,7 @@
 # Changelog iOS
 
 ## Non publié
+
 ### Reprise du partage d'une Miff : la carte ne reste plus grise (recette TestFlight, 2026-11-11)
 
 Symptôme : un testeur arrête le partage de sa position pour une Miff, puis le reprend : sa carte au Feed reste **grise** au lieu de redevenir verte, orange ou rouge. **Rien n'est compilé en local (la CI fait foi).**
