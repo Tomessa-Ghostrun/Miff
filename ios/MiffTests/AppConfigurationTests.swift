@@ -66,13 +66,17 @@ final class AppConfigurationTests: XCTestCase {
         }
     }
 
-    func testExactlyTheCameraUsageTextIsDeclaredAndNoPhotoLibraryKey() {
+    func testExactlyTheCameraUsageTextIsDeclaredAndOnlyTheAddOnlyPhotoLibraryKey() {
         // UPDATE-3 : la caméra du viseur de l'Update. La photo est prise en mémoire et n'est jamais écrite dans la photothèque.
         let cameraKeys = info.keys.filter { $0.hasPrefix("NSCamera") }
 
         XCTAssertEqual(Set(cameraKeys), ["NSCameraUsageDescription"], "Clés de caméra inattendues : \(cameraKeys)")
         XCTAssertFalse((info["NSCameraUsageDescription"] as? String ?? "").isEmpty, "texte d'usage de la caméra vide")
-        XCTAssertTrue(info.keys.filter { $0.hasPrefix("NSPhotoLibrary") }.isEmpty)
+        // FEED-8 : EXACTEMENT la clé d'AJOUT à la galerie (« Enregistrer cette photo », au toucher), jamais une clé de lecture.
+        XCTAssertEqual(Set(info.keys.filter { $0.hasPrefix("NSPhotoLibrary") }), ["NSPhotoLibraryAddUsageDescription"])
+        XCTAssertFalse(
+            (info["NSPhotoLibraryAddUsageDescription"] as? String ?? "").isEmpty, "texte d'usage de l'ajout à la galerie vide"
+        )
     }
 
     func testNoBackgroundModeIsDeclared() {

@@ -82,7 +82,7 @@ Les textes publics affirment les points suivants. **Chacun doit être vérifié 
 | V8 | Le document de session ne contient qu'un identifiant aléatoire d'installation, la plateforme et l'heure | `backend-data` |
 | V9 | Le lieu enregistré est visible des membres avec son adresse ; le créateur seul crée, modifie, supprime | règles + devs |
 | V10 | **Update** : le manifeste Android déclare `CAMERA` et aucune permission de stockage, de photothèque ni de micro ; `uses-feature` caméra à `required="false"` ; `PermissionPrivacyTest` et la CI mis à jour | `android-dev` |
-| V11 | **Update** : iOS, `NSCameraUsageDescription` en FR et EN, aucune clé `NSPhotoLibrary*` ni `NSMicrophone*` ; `check-binaries.sh` et `PrivacyInfo.xcprivacy` mis à jour | `ios-dev` |
+| V11 | **Update** : iOS, `NSCameraUsageDescription` en FR et EN, **EXACTEMENT** la clé `NSPhotoLibraryAddUsageDescription` (ajout seul, FEED-8, décision du 2026-11-11), jamais `NSPhotoLibraryUsageDescription` ni `NSMicrophone*` ; `check-binaries.sh` et `PrivacyInfo.xcprivacy` mis à jour | `ios-dev` |
 | V12 | **Update** : la photo publiée ne contient aucune métadonnée (test d'octets, dix photos) et pèse au plus 150 000 octets | devs |
 | V13 | **Update** : la caméra ne démarre que si l'écran Update est visible, s'arrête en arrière-plan, ne peut pas être déclenchée à distance | devs |
 | V14 | **Update** : aucune photo dans la galerie ni sur disque avec le viseur intégré ; le repli système utilise un fichier du cache privé supprimé aussitôt | devs |

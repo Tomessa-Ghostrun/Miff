@@ -2,104 +2,128 @@ import SwiftUI
 import UIKit
 
 // « Enregistrer cette photo », dans le plein écran de la photo d'un proche, À CET ENDROIT SEULEMENT (décision du PM : pas sur l'aperçu de la carte, pas dans
-// l'Update). CONFIDENTIALITÉ et SÉCURITÉ, pour ce fichier :
-// - la photo est CONFIÉE AU SYSTÈME par la feuille de partage (`UIActivityViewController`) : c'est le système qui propose « Enregistrer l'image »,
-//   « Copier », AirDrop, etc. et qui écrit, si la personne le choisit. AUCUNE permission, AUCUNE clé `NSPhotoLibrary*` (le contrôle du binaire
-//   les interdit toujours), AUCUN appel à `UIImageWriteToSavedPhotosAlbum` ni à `Photos` : l'app n'écrit JAMAIS la photo, ni dans un fichier ni dans
-//   la photothèque. Rien n'est journalisé ni envoyé.
-// - ce qui est donné à la feuille est un `UIImage` (des pixels) : aucune métadonnée, ni EXIF ni position, n'est jamais dans ce qui est enregistré
-//   (les octets reçus d'un autre téléphone n'ont d'ailleurs jamais servi de fichier). Le lieu de la photo n'y est pas non plus.
-// - la feuille est masquée dans la vignette du sélecteur d'applications comme le reste du Feed (`hidesInAppSwitcher`).
-// CHANGEMENT DE POSTURE (à aligner dans les textes légaux, voir `docs/release/update-photo-declarations.md`) : la photo peut désormais sortir de Miff
-// si la personne le choisit (c'était déjà possible par capture d'écran) ; elle n'est « jamais enregistrée sur le téléphone » QUE tant qu'on ne le demande pas.
+// l'Update). Une icône « télécharger » seule, en haut à droite, en face de la croix : le toucher enregistre la photo DIRECTEMENT dans la galerie
+// (autorisation d'AJOUT seul, demandée au premier toucher : `PhotoSaveViewModel`, `PhotosLibrarySaver`), sans feuille de partage.
+// CONFIDENTIALITÉ et SÉCURITÉ, pour ce fichier :
+// - rien n'est écrit sans ce toucher ; l'image enregistrée est ré-encodée depuis les pixels (aucun EXIF, aucun lieu) ; la galerie n'est jamais lue ;
+// - un refus se dit calmement, avec « Ouvrir les réglages », jamais de reproche ; aucun journal, aucun événement ;
+// - l'écran reste masqué dans la vignette du sélecteur d'applications (`hidesInAppSwitcher` du plein écran).
+// CHANGEMENT DE POSTURE (à aligner dans les textes légaux, voir `docs/release/update-photo-declarations.md`) : la photo peut sortir de Miff si la personne le
+// choisit (c'était déjà possible par capture d'écran), et une permission « ajout à la galerie » existe désormais.
 
-/// La feuille de partage du système, avec UNE image. Dit, à sa fermeture, si la personne a choisi « Enregistrer l'image ».
-struct PhotoShareSheet: UIViewControllerRepresentable {
-    let image: UIImage
-    let onFinish: (_ saved: Bool) -> Void
-
-    /// Vrai seulement quand une action s'est terminée ET que c'était « Enregistrer l'image » : seul cas où l'on confirme (jamais pour une annulation).
-    static func isSaved(completed: Bool, activityType: UIActivity.ActivityType?) -> Bool {
-        completed && activityType == .saveToCameraRoll
-    }
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-        let finish = onFinish
-        controller.completionWithItemsHandler = { activityType, completed, _, _ in
-            finish(PhotoShareSheet.isSaved(completed: completed, activityType: activityType))
-        }
-        return controller
-    }
-
-    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
-}
-
-/// Le bouton : UNE icône « télécharger », sans texte, en haut à droite du plein écran, en face de la croix (disque sombre translucide de 40 pt dans une
-/// zone de 48 pt, comme la croix ; « Réduire la transparence » le rend opaque). Nom parlé « Enregistrer cette photo », et sa confirmation calme
-/// « Photo enregistrée. » (3 s, sous l'icône, sans décaler la mise en page) est dite UNE fois à VoiceOver (une annonce, pas de valeur en plus).
+/// Le bouton : UNE icône sans texte (disque sombre translucide de 40 pt dans une zone de 48 pt, comme la croix ; « Réduire la transparence » le rend
+/// opaque). Nom parlé « Enregistrer cette photo sur ton téléphone ». Le résultat (enregistrée, refusée, impossible) est un message calme sous l'icône,
+/// sans décaler la mise en page, dit UNE fois à VoiceOver (une annonce).
 struct PhotoSaveButton: View {
-    let image: UIImage
-    @State private var sharing = false
-    @State private var saved = false
+    @StateObject private var model: PhotoSaveViewModel
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.openURL) private var openURL
 
-    private static let confirmationSeconds: UInt64 = 3
-    /// En grand texte, la confirmation passe sur plusieurs lignes dans cette largeur : elle ne sort jamais de l'écran.
+    /// Largeur d'un message sur plusieurs lignes (refus, impossible) : il ne sort jamais de l'écran, même d'un iPhone SE ; 220 en grand texte.
+    private static let wrappedWidth: CGFloat = 260
     private static let largeTextWidth: CGFloat = 220
 
+    private var wrapWidth: CGFloat {
+        textSize.isAccessibilitySize ? Self.largeTextWidth : Self.wrappedWidth
+    }
+
+    init(image: UIImage) {
+        _model = StateObject(wrappedValue: PhotoSaveViewModel(saver: PhotosLibrarySaver(), image: image))
+    }
+
     var body: some View {
-        RoundOverlayButton(systemName: "square.and.arrow.down", labelKey: "feed_photo_download") {
-            sharing = true
+        RoundOverlayButton(systemName: "square.and.arrow.down", labelKey: "feed_photo_download_a11y") {
+            Task { await model.save() }
         }
         .overlay(alignment: .topTrailing) {
-            if saved {
-                confirmation
+            if let message = PhotoSaveMessage(state: model.state) {
+                messageView(message)
             }
         }
-        .sheet(isPresented: $sharing) {
-            PhotoShareSheet(image: image) { savedNow in
-                sharing = false
-                saved = savedNow
-            }
-            .hidesInAppSwitcher()
-            .ignoresSafeArea()
-            .presentationDetents([.medium, .large])
-        }
-        .task(id: saved) {
-            guard saved else {
+        .task(id: model.state) {
+            guard let message = PhotoSaveMessage(state: model.state) else {
                 return
             }
-            // Calme : dit une fois au lecteur d'écran, puis disparaît seule.
-            UIAccessibility.post(notification: .announcement, argument: L10n.string("feed_photo_download_done"))
-            try? await Task.sleep(nanoseconds: Self.confirmationSeconds * 1_000_000_000)
-            saved = false
+            // Calme : dit une fois au lecteur d'écran, puis disparaît seul (plus longtemps quand il y a un bouton à atteindre).
+            UIAccessibility.post(notification: .announcement, argument: message.text)
+            try? await Task.sleep(nanoseconds: message.seconds * 1_000_000_000)
+            model.dismissMessage()
         }
     }
 
-    /// Posée sur la photo, sans rien décaler : le pied et la photo ne bougent pas. Texte normal : sa largeur naturelle ; grand texte : plusieurs lignes.
-    private var confirmation: some View {
-        let text = Text("feed_photo_download_done")
-            .miffTextStyle(textBodyRegular14)
-            .foregroundColor(colorUpdateOnPhoto.color)
-            .multilineTextAlignment(.trailing)
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.xs)
-            .background(
-                RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
-                    .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
-            )
+    /// Posé sur la photo, sans rien décaler. Texte normal : sa largeur naturelle ; grand texte : plusieurs lignes dans une largeur fixe (jamais hors écran).
+    private func messageView(_ message: PhotoSaveMessage) -> some View {
+        let content = VStack(alignment: .trailing, spacing: Spacing.xs) {
+            Text(verbatim: message.text)
+                .miffTextStyle(textBodyRegular14)
+                .foregroundColor(colorUpdateOnPhoto.color)
+                .multilineTextAlignment(.trailing)
+            if message.offersSettings {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                } label: {
+                    Text("update_action_open_settings")
+                        .miffTextStyle(textBodyBold14)
+                        .foregroundColor(colorUpdateOnPhoto.color)
+                        .underline()
+                        .frame(minHeight: Spacing.minTouchTarget)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.xs)
+        .background(
+            RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
+                .fill(updateScrimToken(reduceTransparency: reduceTransparency).color)
+        )
         return Group {
-            if textSize.isAccessibilitySize {
-                text
-                    .frame(width: Self.largeTextWidth, alignment: .trailing)
+            if textSize.isAccessibilitySize || message.wraps {
+                content
+                    .frame(width: wrapWidth, alignment: .trailing)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                text.fixedSize()
+                content.fixedSize()
             }
         }
         .offset(y: UpdateLayout.roundButtonSize)
-        .accessibilityHidden(true)
+    }
+}
+
+/// Ce que dit le message calme sous l'icône (jamais « erreur », jamais de reproche).
+struct PhotoSaveMessage: Equatable {
+    let text: String
+    /// « Ouvrir les réglages » : seulement pour un refus (une restriction de l'appareil ne se change pas).
+    let offersSettings: Bool
+    /// La durée d'affichage, en secondes.
+    let seconds: UInt64
+
+    /// Un message long (refus, impossible) passe sur plusieurs lignes dans une largeur fixe ; « Photo enregistrée. » reste sur une ligne.
+    var wraps: Bool {
+        offersSettings || seconds > 3
+    }
+
+    init?(state: PhotoSaveState) {
+        switch state {
+        case .idle, .saving:
+            return nil
+        case .saved:
+            self.init(key: "feed_photo_download_done", offersSettings: false, seconds: 3)
+        case .failed:
+            self.init(key: "feed_photo_download_failed", offersSettings: false, seconds: 4)
+        case .restricted:
+            self.init(key: "ios_feed_photo_download_restricted", offersSettings: false, seconds: 5)
+        case .denied:
+            self.init(key: "ios_feed_photo_download_denied", offersSettings: true, seconds: 8)
+        }
+    }
+
+    private init(key: String, offersSettings: Bool, seconds: UInt64) {
+        text = L10n.string(key)
+        self.offersSettings = offersSettings
+        self.seconds = seconds
     }
 }

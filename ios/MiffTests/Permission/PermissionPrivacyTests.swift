@@ -293,7 +293,7 @@ final class PermissionPrivacyTests: XCTestCase {
             Set(strings.keys),
             [
                 "NSLocationAlwaysAndWhenInUseUsageDescription", "NSLocationWhenInUseUsageDescription",
-                "NSCameraUsageDescription"
+                "NSCameraUsageDescription", "NSPhotoLibraryAddUsageDescription"
             ]
         )
         for key in strings.keys where key.hasPrefix("NSLocation") {

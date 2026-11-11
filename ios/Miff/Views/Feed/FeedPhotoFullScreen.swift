@@ -5,10 +5,10 @@ import UIKit
 // {heure} », le bouton de fermeture, le zoom au pincement (1x à 4x) et au double toucher, et « Voir où c'était » (le lieu de la photo, donné à Plans,
 // COORDONNÉES SEULES, sans nom) avec l'heure PROPRE à la mesure du lieu. Fermeture : le bouton, le geste d'échappement de VoiceOver, ou un glissement
 // vers le bas (iOS ne le donne pas à un plein écran : il est refait ici).
-// « Enregistrer cette photo » (icône en haut à droite, ici SEULEMENT, décision du PM) confie la photo à la feuille de partage du système, sans permission (`PhotoSaveButton`).
-// CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement, jamais
-// d'écriture directe dans Photos (aucun appel à `UIImageWriteToSavedPhotosAlbum`) ; l'écran est masqué dans la vignette du sélecteur d'applications
-// (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
+// « Enregistrer cette photo » (icône en haut à droite, ici SEULEMENT, décision du PM) enregistre la photo DIRECTEMENT dans la galerie, au toucher (`PhotoSaveButton`).
+// CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement ; la SEULE
+// écriture dans Photos est celle du toucher de l'icône (ajout seul, sans lieu, `PhotosLibrarySaver`) ; l'écran est masqué dans la vignette du
+// sélecteur d'applications (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
 
 struct PhotoFullScreen: View {
     let opened: OpenedPhoto
@@ -40,23 +40,26 @@ struct PhotoFullScreen: View {
         GeometryReader { screen in
             ZStack {
                 Color.black.ignoresSafeArea()
+                // La photo REMPLIT toute la largeur et toute la hauteur qui restent au-dessus du pied (scaledToFit : entière, jamais recadrée, jamais
+                // plus grande que cette zone, agrandie proprement par l'interpolation par défaut) ; la légende et « Voir où c'était » passent d'abord.
                 VStack(spacing: 0) {
-                    HStack {
-                        RoundOverlayButton(systemName: "xmark", labelKey: "update_photo_close_a11y", onTap: onDismiss)
-                        Spacer()
-                        // « Enregistrer cette photo » : une icône, en face de la croix (feuille de partage du système, sans permission).
-                        PhotoSaveButton(image: opened.image)
-                    }
-                    .padding(.horizontal, Spacing.sm)
-                    // Au-dessus de la photo : la confirmation « Photo enregistrée. » se pose sur elle.
-                    .zIndex(1)
-                    // La photo prend l'espace QUI RESTE sous la zone sûre ; la légende et les boutons passent d'abord (jamais poussés dehors).
                     photo
                         .frame(minHeight: PhotoFullScreenLayout.minPhotoHeight(screenHeight: screen.size.height))
                         .layoutPriority(0)
                     footerArea(screenHeight: screen.size.height)
                         .layoutPriority(1)
                 }
+                // La croix et l'icône « Enregistrer cette photo » sont POSÉES sur la photo (en haut, face à face) : elles ne lui prennent aucune hauteur.
+                VStack(spacing: 0) {
+                    HStack {
+                        RoundOverlayButton(systemName: "xmark", labelKey: "update_photo_close_a11y", onTap: onDismiss)
+                        Spacer()
+                        PhotoSaveButton(image: opened.image)
+                    }
+                    .padding(.horizontal, Spacing.sm)
+                    Spacer(minLength: 0)
+                }
+                .zIndex(1)
             }
             .frame(width: screen.size.width, height: screen.size.height)
         }
@@ -199,7 +202,8 @@ struct PhotoFullScreen: View {
                 placeSection(place)
             }
         }
-        .padding(Spacing.md)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
