@@ -12,7 +12,7 @@ import kotlinx.coroutines.tasks.await
  * rules NOT DEPLOYED until the PM says so); ticket docs/tickets/notification-update-membres.md, section 8.
  *
  * SECURITY / PRIVACY, for this file:
- * - The document holds the push token of THIS phone, its platform, the version of the app, the language, the time zone (for the quiet hours) and two booleans. The rules let
+ * - The document holds the push token of THIS phone, its platform, the version of the app, the time zone (for the quiet hours) and one boolean (the switch). The rules let
  *   only the owner read or write it; no other member ever reads a token. No position, no name, no e-mail, no advertising identifier, no identifier of a Miff.
  * - The identifier of the document is the identifier of the session of this phone (SESS), not a new identifier.
  * - Writes are TRANSACTIONS (a read, then a creation or an update), like every other write of the app: a plain write made without network would be queued and leave
@@ -28,16 +28,12 @@ class DeviceEntry(
     val timeZoneId: String,
     val notifyUpdates: Boolean,
     val appVersion: String,
-    val locale: String,
-    /** The system lets Miff notify AND the general switch is on: a document is only written in that case. */
-    val notificationsEnabled: Boolean = true,
     val platform: String = PLATFORM_ANDROID,
 ) {
     init {
         require(token.length in 1..DeviceEntryLimits.MAX_TOKEN_CHARS) { "token length" }
         require(timeZoneId.length in 1..DeviceEntryLimits.MAX_TIME_ZONE_CHARS) { "time zone length" }
         require(appVersion.length in 1..DeviceEntryLimits.MAX_APP_VERSION_CHARS) { "version length" }
-        require(locale == "fr" || locale == "en") { "locale" }
     }
 
     override fun toString(): String = "DeviceEntry(redacted)"
@@ -99,8 +95,6 @@ class FirestoreDeviceTokenRegistry(
                     mapOf(
                         "token" to entry.token,
                         "appVersion" to entry.appVersion,
-                        "locale" to entry.locale,
-                        "notificationsEnabled" to entry.notificationsEnabled,
                         "tz" to entry.timeZoneId,
                         "notify" to mapOf("updates" to entry.notifyUpdates),
                         "updatedAt" to FieldValue.serverTimestamp(),

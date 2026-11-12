@@ -22,7 +22,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  *   phone must not stay reachable), once per session.
  * - The switch "Quand un proche donne des nouvelles" is written as `notify.updates`; the general switch off, or the permission withdrawn, DELETES the document and
  *   invalidates the token.
- * - A document is written again only when something changed, or after a day (see [RegistrationRules]); a failed write waits 10 minutes before the next try.
+ * - A document is written again only when the token, the switch or (once a day at most) the time zone changed, or after 30 days (see [RegistrationRules]); a failed write waits 10 minutes before the next try.
  * - The sign-out and the deletion of the account call [forget]: the document is deleted when the account is still known to the server, the token is invalidated with
  *   Google, the memory of this phone is erased.
  *
@@ -45,8 +45,6 @@ class PushRegistrar(
     private val timeZoneId: () -> String,
     /** "1.2.3 (45)", 32 characters at most. */
     private val appVersion: () -> String,
-    /** "fr" or "en": the language of the app. */
-    private val locale: () -> String,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val mutex = Mutex()
@@ -83,8 +81,6 @@ class PushRegistrar(
                     tokenFingerprint = TokenFingerprint.of(token),
                     timeZoneId = timeZoneId(),
                     notifyUpdates = notifyUpdates(),
-                    appVersion = appVersion(),
-                    locale = locale(),
                 )
             val now = nowMillis()
             val action = RegistrationRules.decide(wish, record, now)
@@ -99,8 +95,7 @@ class PushRegistrar(
                         token = token,
                         timeZoneId = wish.timeZoneId,
                         notifyUpdates = wish.notifyUpdates,
-                        appVersion = wish.appVersion,
-                        locale = wish.locale,
+                        appVersion = appVersion(),
                     ),
                 )
                 local.saveRecord(
@@ -110,8 +105,6 @@ class PushRegistrar(
                         wish.tokenFingerprint,
                         wish.timeZoneId,
                         wish.notifyUpdates,
-                        wish.appVersion,
-                        wish.locale,
                         now,
                     ),
                 )

@@ -16,12 +16,12 @@
 
 ## 2. Le registre d'appareils
 
-Document `users/{uid}/devices/{deviceId}` (contrat du backend, 9 clés) : `token`, `platform = "android"`, `appVersion`, `locale` (fr ou en), `notificationsEnabled`, `tz` (fuseau), `notify = { updates: bool }`, `updatedAt`, `createdAt`. `deviceId` = identifiant de session SESS. Écrit par `PushRegistrar` (transaction), derrière `DeviceTokenRegistry`.
+Document `users/{uid}/devices/{deviceId}` (contrat final du backend, 7 clés) : `token`, `platform = "android"`, `appVersion`, `tz` (fuseau), `notify = { updates: bool }`, `updatedAt`, `createdAt`. `deviceId` = identifiant de session SESS. Écrit par `PushRegistrar` (transaction), derrière `DeviceTokenRegistry`.
 
-- **Quand** : jamais sans compte + session valide + consentement ; seulement si quelque chose a changé, ou 24 h après la dernière écriture, à l'ouverture. Nouvelle session : les autres documents du compte sont supprimés.
+- **Quand** : jamais sans compte + session valide + consentement ; seulement si quelque chose a changé, ou 30 jours après la dernière écriture, à l’ouverture (le fuseau : une fois par jour au plus). Nouvelle session : les autres documents du compte sont supprimés.
 - **Fin** : déconnexion, perte de session, suppression du compte, interrupteur général coupé, permission retirée : suppression du document + `FirebaseMessaging.deleteToken()` + démarrage automatique éteint + mémoire locale effacée.
 - **Démarrage automatique du jeton coupé** dans le manifeste (`firebase_messaging_auto_init_enabled=false`) : aucun jeton n'existe avant le consentement.
-- **Contrat et dépendance du backend** : `docs/dev/jetons-appareil-clients.md` (branche `backend/jetons-appareil`, **règles non déployées**, à déployer par le PM sur « oui » explicite). Le document a 9 clés exactement (`token`, `platform`, `appVersion`, `locale`, `notificationsEnabled`, `tz`, `notify.updates`, `updatedAt`, `createdAt`) ; les règles actuellement déployées n’acceptent encore que `token`, `platform`, `updatedAt` : tant que les nouvelles ne sont pas déployées, l’écriture est refusée et réessayée plus tard. Écriture en transaction « lire puis créer ou mettre à jour » ; une **nouvelle session** supprime les autres documents du compte, avec ou sans consentement (contrat 4.2). Seule `FirestoreDeviceTokenRegistry` connaît la forme du document.
+- **Contrat et dépendance du backend** : `docs/dev/jetons-appareil-clients.md` (branche `backend/jetons-appareil`, **règles non déployées**, à déployer par le PM sur « oui » explicite). Le document a 7 clés exactement (`token`, `platform`, `appVersion`, `tz`, `notify.updates`, `updatedAt`, `createdAt`) ; les règles actuellement déployées n’acceptent encore que `token`, `platform`, `updatedAt` : tant que les nouvelles ne sont pas déployées, l’écriture est refusée et réessayée plus tard. Écriture en transaction « lire puis créer ou mettre à jour » ; une **nouvelle session** supprime les autres documents du compte, avec ou sans consentement (contrat 4.2). Seule `FirestoreDeviceTokenRegistry` connaît la forme du document.
 
 ## 3. OPPO / ColorOS et autres surcouches : limites de livraison en arrière-plan
 
@@ -35,7 +35,7 @@ Document `users/{uid}/devices/{deviceId}` (contrat du backend, 9 clés) : `token
 
 ## 4. Coût
 
-Aucune lecture Firestore par message. Registre : une écriture par changement ou par jour et par utilisateur actif (`RegistrationRules.REFRESH_AFTER_MILLIS`, 24 h ; le ticket dit 30 jours : à allonger si les écritures du registre dépassent environ 15 000 par jour). FCM est gratuit.
+Aucune lecture Firestore par message. Registre : une écriture par changement ou tous les 30 jours et par utilisateur actif (`RegistrationRules.REFRESH_AFTER_MILLIS`, 30 jours comme le ticket). FCM est gratuit.
 
 ## 5. Sécurité
 

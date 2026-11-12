@@ -17,8 +17,6 @@ class PushRegistrationTest {
             tokenFingerprint = "fp1",
             timeZoneId = "Europe/Paris",
             notifyUpdates = true,
-            appVersion = "0.36.0 (36000)",
-            locale = "fr",
         )
 
     private fun recordOf(
@@ -30,8 +28,6 @@ class PushRegistrationTest {
         wish.tokenFingerprint,
         wish.timeZoneId,
         wish.notifyUpdates,
-        wish.appVersion,
-        wish.locale,
         at,
     )
 
@@ -48,11 +44,14 @@ class PushRegistrationTest {
     fun anUnchangedDocumentIsLeftAlone() {
         assertEquals(RegistrationAction.None, RegistrationRules.decide(wish, recordOf(wish, now - 1), now))
         assertEquals(RegistrationAction.None, RegistrationRules.decide(wish, recordOf(wish, now - 23 * hour), now))
+        // The version of the app alone never causes a write.
+        assertEquals(RegistrationAction.None, RegistrationRules.decide(wish, recordOf(wish, now - 2 * hour), now))
     }
 
     @Test
-    fun aDayLaterItIsRefreshedOnce() {
-        val action = RegistrationRules.decide(wish, recordOf(wish, now - 24 * hour), now)
+    fun thirtyDaysLaterItIsRefreshedOnce() {
+        assertEquals(RegistrationAction.None, RegistrationRules.decide(wish, recordOf(wish, now - 29 * 24 * hour), now))
+        val action = RegistrationRules.decide(wish, recordOf(wish, now - 30 * 24 * hour), now)
         assertEquals(RegistrationAction.Write(RegistrationAction.Reason.REFRESH), action)
     }
 
@@ -68,20 +67,17 @@ class PushRegistrationTest {
     }
 
     @Test
-    fun aNewTimeZoneSwitchLanguageOrVersionIsWrittenAtOnce() {
-        val changes =
-            listOf(
-                wish.copy(timeZoneId = "America/New_York"),
-                wish.copy(notifyUpdates = false),
-                wish.copy(locale = "en"),
-                wish.copy(appVersion = "0.37.0 (37000)"),
-            )
-        changes.forEach {
-            assertEquals(
-                RegistrationAction.Write(RegistrationAction.Reason.SETTINGS_CHANGED),
-                RegistrationRules.decide(it, recordOf(wish), now),
-            )
-        }
+    fun aNewSwitchIsWrittenAtOnce_aNewTimeZoneAtMostOnceADay() {
+        assertEquals(
+            RegistrationAction.Write(RegistrationAction.Reason.SETTINGS_CHANGED),
+            RegistrationRules.decide(wish.copy(notifyUpdates = false), recordOf(wish), now),
+        )
+        val zone = wish.copy(timeZoneId = "America/New_York")
+        assertEquals(RegistrationAction.None, RegistrationRules.decide(zone, recordOf(wish, now - 2 * hour), now))
+        assertEquals(
+            RegistrationAction.Write(RegistrationAction.Reason.SETTINGS_CHANGED),
+            RegistrationRules.decide(zone, recordOf(wish, now - 24 * hour), now),
+        )
     }
 
     @Test
@@ -113,18 +109,6 @@ class PushRegistrationTest {
         assertFalse(DeviceDocumentId.isValid(""))
         assertFalse(DeviceDocumentId.isValid("a/b"))
         assertFalse(DeviceDocumentId.isValid("x".repeat(65)))
-    }
-
-    @Test
-    fun theLanguageOfTheDocumentIsFrenchOrEnglishOnly_theChoiceOfSettingsFirst() {
-        assertEquals("fr", DeviceLocale.resolve("fr", "de"))
-        assertEquals("en", DeviceLocale.resolve("en", "fr"))
-        assertEquals("fr", DeviceLocale.resolve(null, "fr"))
-        assertEquals("fr", DeviceLocale.resolve(null, "FR"))
-        // Neither French nor English: English, the language of fallback of the app.
-        assertEquals("en", DeviceLocale.resolve(null, "de"))
-        assertEquals("en", DeviceLocale.resolve(null, null))
-        assertEquals("en", DeviceLocale.resolve(null, ""))
     }
 
     @Test

@@ -61,15 +61,13 @@ class PushPrivacyTest {
     }
 
     @Test
-    fun theDocumentOfTheRegistryHoldsTheNineKeysOfTheContractAndNothingElse() {
+    fun theDocumentOfTheRegistryHoldsTheSevenKeysOfTheContractAndNothingElse() {
         val code = codeLines(File(pushDir, "DeviceTokenRegistry.kt")).joinToString("\n")
         val written = Regex(""""([A-Za-z]+)" to """).findAll(code).map { it.groupValues[1] }.toSet()
         assertEquals(
             setOf(
                 "token",
                 "appVersion",
-                "locale",
-                "notificationsEnabled",
                 "tz",
                 "notify",
                 "updatedAt",

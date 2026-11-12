@@ -17,8 +17,6 @@ data class RegistrationRecord(
     val tokenFingerprint: String,
     val timeZoneId: String,
     val notifyUpdates: Boolean,
-    val appVersion: String,
-    val locale: String,
     val writtenAtMillis: Long,
 ) {
     override fun toString(): String = "RegistrationRecord(redacted)"
@@ -31,8 +29,6 @@ data class RegistrationWish(
     val tokenFingerprint: String,
     val timeZoneId: String,
     val notifyUpdates: Boolean,
-    val appVersion: String,
-    val locale: String,
 ) {
     override fun toString(): String = "RegistrationWish(redacted)"
 }
@@ -53,8 +49,11 @@ sealed interface RegistrationAction {
 }
 
 object RegistrationRules {
-    /** An unchanged document is written again once a day at most, when the app opens: it keeps the document alive and heals one the server removed. */
-    const val REFRESH_AFTER_MILLIS = 24L * 60L * 60L * 1000L
+    /** An unchanged document is written again after 30 days, when the app opens (ticket 9, contract 4.3): it keeps the document alive for the purge of the inactive ones. */
+    const val REFRESH_AFTER_MILLIS = 30L * 24L * 60L * 60L * 1000L
+
+    /** A change of time zone is written at most once a day (contract 4.3: one write a day at most; a new token and a new switch are immediate). */
+    const val MIN_SPACING_MILLIS = 24L * 60L * 60L * 1000L
 
     /** After a failed write the next try waits this long (the app coming to the front must not hammer a server that cannot be reached). */
     const val RETRY_AFTER_FAILURE_MILLIS = 10L * 60L * 1000L
@@ -76,11 +75,11 @@ object RegistrationRules {
         if (record.tokenFingerprint != wish.tokenFingerprint) {
             return RegistrationAction.Write(RegistrationAction.Reason.TOKEN_CHANGED)
         }
-        if (record.timeZoneId != wish.timeZoneId ||
-            record.notifyUpdates != wish.notifyUpdates ||
-            record.appVersion != wish.appVersion ||
-            record.locale != wish.locale
-        ) {
+        if (record.notifyUpdates != wish.notifyUpdates) {
+            return RegistrationAction.Write(RegistrationAction.Reason.SETTINGS_CHANGED)
+        }
+        // The version of the app alone never causes a write (it travels with the next one).
+        if (record.timeZoneId != wish.timeZoneId && nowMillis - record.writtenAtMillis >= MIN_SPACING_MILLIS) {
             return RegistrationAction.Write(RegistrationAction.Reason.SETTINGS_CHANGED)
         }
         if (nowMillis - record.writtenAtMillis >= REFRESH_AFTER_MILLIS) {
@@ -109,18 +108,6 @@ object DeviceEntryLimits {
     const val MAX_TOKEN_CHARS = 4096
     const val MAX_TIME_ZONE_CHARS = 64
     const val MAX_APP_VERSION_CHARS = 32
-}
-
-/** The language written in the document: "fr" or "en" only (the rule refuses anything else). */
-object DeviceLocale {
-    /** @param chosenTag the language chosen in Settings ("fr", "en") or null for the phone's; @param systemLanguage the phone's language ("fr", "de"...). */
-    fun resolve(
-        chosenTag: String?,
-        systemLanguage: String?,
-    ): String {
-        val language = (chosenTag ?: systemLanguage).orEmpty().lowercase()
-        return if (language == "fr") "fr" else "en"
-    }
 }
 
 /** The version written in the document: the name and the build number, cut to the 32 characters the rule accepts (never empty). */

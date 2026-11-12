@@ -157,7 +157,6 @@ import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.push.DeviceAppVersion
-import com.tomessa.miff.domain.push.DeviceLocale
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
@@ -408,13 +407,6 @@ class AppContainer(
                     .id
             },
             appVersion = { DeviceAppVersion.of(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE) },
-            locale = {
-                DeviceLocale.resolve(
-                    AndroidLanguageStore.read(context).tag,
-                    context.resources.configuration.locales[0]
-                        .language,
-                )
-            },
         )
     }
 

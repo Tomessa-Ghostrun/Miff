@@ -11,8 +11,8 @@ import java.security.MessageDigest
 
 /*
  * SECURITY / PRIVACY, for this file: the push token is a secret of the phone. It is NEVER written to the disk by us (Firebase keeps its own copy), never logged, never
- * sent as an event. What we keep to know whether to write again is a FINGERPRINT (SHA-256) of the token, the account, the identifier of the session, the time
- * zone, the language and the version: private preferences, outside every backup (backup_rules.xml and data_extraction_rules.xml exclude all preferences).
+ * sent as an event. What we keep to know whether to write again is a FINGERPRINT (SHA-256) of the token, the account, the identifier of the session and the time
+ * zone: private preferences, outside every backup (backup_rules.xml and data_extraction_rules.xml exclude all preferences).
  */
 
 /** What this phone remembers of its last registration (a double in tests). */
@@ -57,8 +57,6 @@ class SharedPreferencesPushLocalState(
             tokenFingerprint = fingerprint,
             timeZoneId = zone,
             notifyUpdates = prefs.getBoolean(KEY_NOTIFY, true),
-            appVersion = prefs.getString(KEY_VERSION, null) ?: return null,
-            locale = prefs.getString(KEY_LOCALE, null) ?: return null,
             writtenAtMillis = prefs.getLong(KEY_WRITTEN_AT, 0L),
         )
     }
@@ -71,8 +69,6 @@ class SharedPreferencesPushLocalState(
             putString(KEY_FINGERPRINT, record.tokenFingerprint)
             putString(KEY_ZONE, record.timeZoneId)
             putBoolean(KEY_NOTIFY, record.notifyUpdates)
-            putString(KEY_VERSION, record.appVersion)
-            putString(KEY_LOCALE, record.locale)
             putLong(KEY_WRITTEN_AT, record.writtenAtMillis)
         }
     }
@@ -94,8 +90,6 @@ class SharedPreferencesPushLocalState(
     }
 
     private companion object {
-        const val KEY_VERSION = "app_version"
-        const val KEY_LOCALE = "locale"
         const val KEY_CLEARED_FOR = "others_cleared_for"
         const val KEY_UID = "uid"
         const val KEY_DEVICE = "device"

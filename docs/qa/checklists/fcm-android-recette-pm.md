@@ -20,7 +20,7 @@
 | 0.1 | Compte neuf, onboarding jusqu'à l'amorce « Un rappel, seulement quand c'est utile ». | Le texte dit que Miff **prévient quand un proche donne des nouvelles** et **enregistre un identifiant du téléphone** pour cela. (À relire : proposition de rédaction.) |
 | 0.2 | Touchez **Plus tard**. Console Firebase > Firestore > `users/{uid}/devices`. | **Aucun document** `devices` pour ce compte. |
 | 0.3 | Réglages > Notifications. | L'interrupteur « Quand un proche donne des nouvelles » existe (section **Pour tes proches**), **activé**, mais l'autorisation du téléphone n'est pas donnée : rien n'est enregistré. |
-| 0.4 | Compte neuf : **Autoriser** sur l'amorce, puis **Autoriser** dans la fenêtre du système. | (Après les deux déploiements, ou règles seules) un document `users/{uid}/devices/{identifiant}` apparaît, avec exactement `token`, `platform = android`, `appVersion`, `locale` (fr ou en), `notificationsEnabled = true`, `tz` (votre fuseau), `notify.updates = true`, `updatedAt`, `createdAt` (rien d’autre : ni position, ni nom). **Le jeton est dans le document mais n'est lisible par aucun autre compte.** |
+| 0.4 | Compte neuf : **Autoriser** sur l'amorce, puis **Autoriser** dans la fenêtre du système. | (Après les deux déploiements, ou règles seules) un document `users/{uid}/devices/{identifiant}` apparaît, avec exactement `token`, `platform = android`, `appVersion`, `tz` (votre fuseau), `notify.updates = true`, `updatedAt`, `createdAt` (rien d’autre : ni position, ni nom). **Le jeton est dans le document mais n'est lisible par aucun autre compte.** |
 | 0.5 | Même compte, refus dans la fenêtre du système (autre compte neuf). | Aucun document `devices`. |
 
 ## Partie 1 : réglages

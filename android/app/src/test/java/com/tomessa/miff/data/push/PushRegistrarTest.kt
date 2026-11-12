@@ -111,7 +111,6 @@ class PushRegistrarTest {
     private var notify = true
     private var zone = "Europe/Paris"
     private var version = "0.36.0 (36000)"
-    private var language = "fr"
     private var now = 1_800_000_000_000L
 
     private val registrar =
@@ -126,7 +125,6 @@ class PushRegistrarTest {
             notifyUpdates = { notify },
             timeZoneId = { zone },
             appVersion = { version },
-            locale = { language },
             nowMillis = { now },
         )
 
@@ -178,12 +176,7 @@ class PushRegistrarTest {
             assertEquals("android", written.entry.platform)
             assertEquals("Europe/Paris", written.entry.timeZoneId)
             assertEquals("0.36.0 (36000)", written.entry.appVersion)
-            assertEquals("fr", written.entry.locale)
             assertTrue(written.entry.notifyUpdates)
-            assertTrue(
-                "the permission and the general switch are on, or nothing is written",
-                written.entry.notificationsEnabled,
-            )
             assertTrue(local.on)
             assertEquals("dev1", local.record!!.deviceId)
         }
@@ -200,19 +193,19 @@ class PushRegistrarTest {
         }
 
     @Test
-    fun theSecondSyncCostsNothing_untilADayHasPassed() =
+    fun theSecondSyncCostsNothing_untilThirtyDaysHavePassed() =
         runTest {
             registrar.sync()
             registry.calls.clear()
             now += 60_000L
             registrar.sync()
-            now += 22 * 3_600_000L
+            now += 29L * 24 * 3_600_000L
             registrar.sync()
             assertTrue(registry.calls.isEmpty())
-            now += 3 * 3_600_000L
+            now += 2L * 24 * 3_600_000L
             registrar.sync()
             assertEquals(
-                "a refresh after a day, without touching the other documents",
+                "a refresh after thirty days, without touching the other documents",
                 listOf("upsert"),
                 registry.kinds(),
             )
@@ -244,7 +237,7 @@ class PushRegistrarTest {
         }
 
     @Test
-    fun theSwitchTheTimeZoneTheLanguageAndTheVersionAreMirroredAsSoonAsTheyChange() =
+    fun theSwitchIsMirroredAtOnce_theTimeZoneOnceADay_theVersionTravelsWithTheNextWrite() =
         runTest {
             registrar.sync()
             registry.calls.clear()
@@ -258,34 +251,17 @@ class PushRegistrarTest {
             )
             registry.calls.clear()
             zone = "America/New_York"
+            now += 60_000L
             registrar.sync()
-            assertEquals(
-                "America/New_York",
-                registry.calls
-                    .single()
-                    .entry!!
-                    .timeZoneId,
-            )
-            registry.calls.clear()
-            language = "en"
-            registrar.sync()
-            assertEquals(
-                "en",
-                registry.calls
-                    .single()
-                    .entry!!
-                    .locale,
-            )
-            registry.calls.clear()
+            assertTrue("a time zone is written once a day at most", registry.calls.isEmpty())
             version = "0.37.0 (37000)"
             registrar.sync()
-            assertEquals(
-                "0.37.0 (37000)",
-                registry.calls
-                    .single()
-                    .entry!!
-                    .appVersion,
-            )
+            assertTrue("the version alone writes nothing", registry.calls.isEmpty())
+            now += 24 * 3_600_000L
+            registrar.sync()
+            val written = registry.calls.single().entry!!
+            assertEquals("America/New_York", written.timeZoneId)
+            assertEquals("0.37.0 (37000)", written.appVersion)
             registry.calls.clear()
             registrar.sync()
             assertTrue("nothing changed since", registry.calls.isEmpty())
@@ -392,13 +368,12 @@ class PushRegistrarTest {
 
     @Test
     fun theEntryRefusesValuesOutOfTheLimitsOfTheRules_andNeverPrintsItself() {
-        val ok = DeviceEntry("t", "Europe/Paris", true, "1 (1)", "fr")
+        val ok = DeviceEntry("t", "Europe/Paris", true, "1 (1)")
         assertEquals("DeviceEntry(redacted)", ok.toString())
-        assertTrue(runCatching { DeviceEntry("t".repeat(4097), "Europe/Paris", true, "1 (1)", "fr") }.isFailure)
-        assertTrue(runCatching { DeviceEntry("t".repeat(4096), "Europe/Paris", true, "1 (1)", "fr") }.isSuccess)
-        assertTrue(runCatching { DeviceEntry("", "Europe/Paris", true, "1 (1)", "fr") }.isFailure)
-        assertTrue(runCatching { DeviceEntry("t", "z".repeat(65), true, "1 (1)", "fr") }.isFailure)
-        assertTrue(runCatching { DeviceEntry("t", "Europe/Paris", true, "v".repeat(33), "fr") }.isFailure)
-        assertTrue(runCatching { DeviceEntry("t", "Europe/Paris", true, "1 (1)", "de") }.isFailure)
+        assertTrue(runCatching { DeviceEntry("t".repeat(4097), "Europe/Paris", true, "1 (1)") }.isFailure)
+        assertTrue(runCatching { DeviceEntry("t".repeat(4096), "Europe/Paris", true, "1 (1)") }.isSuccess)
+        assertTrue(runCatching { DeviceEntry("", "Europe/Paris", true, "1 (1)") }.isFailure)
+        assertTrue(runCatching { DeviceEntry("t", "z".repeat(65), true, "1 (1)") }.isFailure)
+        assertTrue(runCatching { DeviceEntry("t", "Europe/Paris", true, "v".repeat(33)) }.isFailure)
     }
 }
