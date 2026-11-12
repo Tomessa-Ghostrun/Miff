@@ -176,11 +176,19 @@ final class FakePlaceRequestRepository: PlaceRequestRepository {
     var mineResult = MineRead.loaded([])
     /// Tenue fermée : une opération « en route » (pour prouver qu'un second appui ne fait rien).
     var gate: TestGate?
+    /// Les appels arrivent de plusieurs tâches à la fois (deux lectures en même temps) : les journaux sont protégés par ce verrou.
+    private let lock = NSLock()
     private(set) var submitted: [PlaceRequestDraft] = []
     private(set) var submitOnline: [Bool] = []
     private(set) var withdrawn: [PlaceRequest] = []
     private(set) var readMineCalls: [String] = []
     private(set) var withdrawAllCalls: [String] = []
+
+    private func locked(_ body: () -> Void) {
+        lock.lock()
+        body()
+        lock.unlock()
+    }
 
     func prepare(uid: String, miffId: String) async -> RequestContextLoad {
         prepareResult
@@ -193,26 +201,28 @@ final class FakePlaceRequestRepository: PlaceRequestRepository {
         context: RequestContext,
         online: Bool
     ) async -> RequestSubmitResult {
-        submitted.append(draft)
-        submitOnline.append(online)
+        locked {
+            submitted.append(draft)
+            submitOnline.append(online)
+        }
         await gate?.wait()
         return submitResult
     }
 
     func withdraw(_ request: PlaceRequest) async -> RequestWithdrawResult {
-        withdrawn.append(request)
+        locked { withdrawn.append(request) }
         await gate?.wait()
         return withdrawResult
     }
 
     func readMine(uid: String, miffId: String) async -> MineRead {
-        readMineCalls.append(miffId)
+        locked { readMineCalls.append(miffId) }
         await gate?.wait()
         return mineResult
     }
 
     func withdrawAllMine(uid: String, miffId: String) async {
-        withdrawAllCalls.append(miffId)
+        locked { withdrawAllCalls.append(miffId) }
     }
 
     // MARK: - Le créateur
