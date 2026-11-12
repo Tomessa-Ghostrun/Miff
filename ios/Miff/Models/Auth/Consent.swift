@@ -47,6 +47,8 @@ enum FieldValueSpec: Equatable {
     /// Retire la clé du document (`FieldValue.delete()`) : seulement dans une MISE À JOUR (`.update`), jamais dans une création. Sert à retirer
     /// la photo de profil (« Supprimer la photo », Mes informations) : la clé disparaît, comme sur Android, au lieu de devenir « null ».
     case deleteField
+    /// Ajoute `delta` à un nombre du document (`FieldValue.increment`) : le compteur des demandes de lieu (LIEU-REQ), que les règles veulent voir bouger de +1 ou -1 dans le même lot qu'une demande.
+    case increment(Int)
     case map([String: FieldValueSpec])
 }
 

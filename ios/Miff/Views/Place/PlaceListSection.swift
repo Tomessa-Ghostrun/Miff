@@ -5,6 +5,10 @@ struct PlaceListActions {
     let onOpen: (Place) -> Void
     /// « Ajouter un lieu » : `atFreeLimit` dit que la formule gratuite est pleine, donc l'hôte ouvre l'offre plutôt que le formulaire.
     let onAdd: (_ atFreeLimit: Bool) -> Void
+    /// Un membre ouvre le détail d'une de ses demandes en attente (LIEU-REQ-B).
+    var onOpenRequest: (PlaceRequest) -> Void = { _ in }
+    /// « Demander l'ajout d'un lieu » : un membre qui n'est pas le créateur ouvre le formulaire d'une demande.
+    var onRequestPlace: () -> Void = {}
 
     static let none = PlaceListActions(onOpen: { _ in }, onAdd: { _ in })
 }
@@ -24,19 +28,33 @@ struct PlaceListContext {
 struct PlaceRows: View {
     let ui: PlaceListUi
     let actions: PlaceListActions
+    /// « Tu as déjà 3 demandes en attente », dit doucement au toucher du bouton (le formulaire ne s'ouvre pas).
+    @State private var limitShown = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             if let notice = ui.notice {
                 PlaceNoticeBar(notice: notice)
             }
+            if ui.offersRequests {
+                requestNotices
+            }
             if let caption {
                 Text(verbatim: caption)
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
             }
+            // Les demandes en attente d'un membre viennent AVANT les lieux (décision du PM, 2026-11-11) : ce qu'on vient de demander
+            // est ce qu'on cherche.
+            if ui.offersRequests && !ui.isCreator {
+                ForEach(ui.requests, id: \.id) { request in
+                    PlaceRequestCard(request: request) {
+                        actions.onOpenRequest(request)
+                    }
+                }
+            }
             if ui.places.isEmpty {
-                Text("miff_places_empty")
+                Text(ui.isCreator ? "miff_places_empty" : "place_list_empty_member")
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
                     .multilineTextAlignment(.center)
@@ -49,7 +67,41 @@ struct PlaceRows: View {
                 PlaceAddRow(showsPremiumPill: ui.atFreeLimit) {
                     actions.onAdd(ui.atFreeLimit)
                 }
+            } else if ui.offersRequests {
+                requestButton
             }
+        }
+    }
+
+    /// La confirmation d'une demande envoyée, et le message calme d'un geste sur une demande.
+    @ViewBuilder
+    private var requestNotices: some View {
+        if !ui.isCreator, let sent = ui.requestNotice {
+            RequestNoticeBar(text: L10n.string(sent.queued ? "place_request_sent_offline" : "place_request_sent"))
+        }
+        if let kind = ui.requestKind {
+            RequestNoticeBar(text: L10n.string(kind.textKey))
+        }
+    }
+
+    /// Un membre ne PROPOSE pas un lieu directement : il le DEMANDE au créateur (le même bouton, le même dessin, une autre phrase).
+    @ViewBuilder
+    private var requestButton: some View {
+        PlaceAddRow(showsPremiumPill: false, labelKey: "place_request_cta_member") {
+            if ui.atRequestLimit {
+                limitShown = true
+            } else {
+                actions.onRequestPlace()
+            }
+        }
+        if limitShown && ui.atRequestLimit {
+            Text("place_request_limit_member")
+                .miffTextStyle(textBodyRegular14)
+                .foregroundColor(colorTextDescription.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onAppear {
+                    MiffNoticeAnnouncements.announceOnce(L10n.string("place_request_limit_member"))
+                }
         }
     }
 
@@ -145,6 +197,8 @@ struct PlaceRow: View {
 /// ouvre l'offre (jamais masquée ni grisée).
 struct PlaceAddRow: View {
     let showsPremiumPill: Bool
+    /// « Ajouter un lieu » pour un créateur, « Demander l'ajout d'un lieu » pour un membre.
+    var labelKey = "place_list_add_action"
     let onAdd: () -> Void
 
     var body: some View {
@@ -153,7 +207,7 @@ struct PlaceAddRow: View {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .semibold))
                     .accessibilityHidden(true)
-                Text("place_list_add_action")
+                Text(LocalizedStringKey(labelKey))
                     .miffTextStyle(textBodyBold16)
                 if showsPremiumPill {
                     PlacePremiumPill()
@@ -168,7 +222,7 @@ struct PlaceAddRow: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            Text(verbatim: L10n.string(showsPremiumPill ? "place_list_add_premium_a11y" : "place_list_add_action"))
+            Text(verbatim: L10n.string(showsPremiumPill ? "place_list_add_premium_a11y" : labelKey))
         )
         .accessibilityAddTraits(.isButton)
     }
