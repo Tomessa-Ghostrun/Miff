@@ -4660,6 +4660,23 @@
         }
       }
     },
+    "ios_notif_debug_counters": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing: %1$lld false alert(s) out of %2$lld “your Miff has turned” reminder(s) judged. Counted on this phone, never sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recette : %1$lld fausse(s) alerte(s) sur %2$lld rappel(s) « ta Miff est passée » jugé(s). Compté sur ce téléphone, jamais envoyé."
+          }
+        }
+      }
+    },
     "feed_place_noun_school": {
       "extractionState": "manual",
       "localizations": {

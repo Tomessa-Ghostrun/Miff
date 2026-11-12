@@ -171,7 +171,13 @@ struct MiffHomeHost: View {
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
-        _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
+        let reconciler = environment.notifications.reconciler
+        // NOTIF-P0 : une update publiée annule N1 à N4 aussitôt (sans attendre le retour du Feed).
+        _updateModel = StateObject(
+            wrappedValue: environment.update.makeViewModel(onPublishedAt: { at in
+                Task { await reconciler.myUpdatePublished(atMillis: at) }
+            })
+        )
         let engine = environment.tracking.engine
         _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
     }
