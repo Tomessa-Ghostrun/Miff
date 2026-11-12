@@ -29,7 +29,7 @@ final class NotificationDangerZoneReconcilerTests: ReconcilerTestCase {
         XCTAssertEqual(request?.delaySeconds, 1)
         XCTAssertEqual(request?.threadIdentifier, miffId)
         XCTAssertEqual(request?.categoryIdentifier, "miff.notif.category.n6")
-        XCTAssertEqual(Set(request?.userInfo.keys.map { $0 } ?? []), ["type", "miffId", "key"], "aucun nom de lieu")
+        XCTAssertEqual(Set(request?.userInfo.keys.map { $0 } ?? []), ["type", "miffId"], "aucun nom de lieu")
         XCTAssertEqual(rig.center.history.items.map { $0.type }, [.n6])
         XCTAssertEqual(rig.center.history.items.first?.state, .shown)
     }
@@ -141,6 +141,62 @@ final class NotificationDangerZoneReconcilerTests: ReconcilerTestCase {
 
         XCTAssertTrue(rig.scheduler.added.isEmpty)
         XCTAssertTrue(rig.center.history.isEmpty)
+    }
+
+    // MARK: - Démarrage à froid : réveil par géofence, aucun écran n'a rien relu (revue indépendante, B1)
+
+    func testColdStartTheN6SwitchOffInTheStoreHoldsWhenAGeofenceWakesTheApp() async {
+        let rig = makeRig(now: at(14, 0))
+        rig.memory.preferences.save(NotificationPreferences().setting(.n6, to: false), uid: "me")
+
+        await rig.reconciler.dangerZoneEntered(miffId: miffId, placeId: "p-risk", enteredAtMillis: at(14, 0))
+
+        XCTAssertTrue(rig.scheduler.added.isEmpty, "N6 est coupée dans le magasin : jamais affichée")
+        XCTAssertTrue(rig.center.history.isEmpty)
+    }
+
+    func testColdStartTheGeneralSwitchOffHoldsToo() async {
+        let rig = makeRig(now: at(14, 0))
+        rig.memory.preferences.save(NotificationPreferences().settingGeneral(false), uid: "me")
+
+        await rig.reconciler.dangerZoneEntered(miffId: miffId, placeId: "p-risk", enteredAtMillis: at(14, 0))
+
+        XCTAssertTrue(rig.scheduler.added.isEmpty)
+    }
+
+    func testColdStartTheThreePerDayCapIsReadFromTheCentreFile() async {
+        let rig = makeRig(now: at(14, 0))
+        let shown = (0..<3).map {
+            NotificationFixtures.item("n6|old\($0)", type: .n6, at: at(9, $0))
+        }
+        rig.memory.center.seed(shown, uid: "me")
+
+        await rig.reconciler.dangerZoneEntered(miffId: miffId, placeId: "p-risk", enteredAtMillis: at(14, 0))
+
+        XCTAssertTrue(rig.scheduler.added.isEmpty, "trois N6 déjà affichées : une ligne du centre")
+        XCTAssertEqual(rig.center.history.items.filter { $0.state == .silent }.count, 1)
+    }
+
+    func testTheSessionEndingWhileN6IsBeingProgrammedRecordsAndWritesNothing() async {
+        let rig = makeRig(now: at(14, 0))
+        let state = rig.state
+        rig.scheduler.onAdd = { state.uid = nil }
+
+        await rig.reconciler.dangerZoneEntered(miffId: miffId, placeId: "p-risk", enteredAtMillis: at(14, 0))
+
+        XCTAssertTrue(rig.center.history.isEmpty, "aucune ligne du centre pour un compte parti")
+        XCTAssertTrue(rig.memory.plan.loadLedger(uid: "me").notified.isEmpty)
+    }
+
+    func testTouchingN6MarksItsCentreLineReadAndOpensTheFeed() async {
+        let rig = makeRig(now: at(14, 0))
+        await rig.reconciler.dangerZoneEntered(miffId: miffId, placeId: "p-risk", enteredAtMillis: at(14, 0))
+        XCTAssertTrue(rig.center.hasUnread)
+
+        let destination = rig.reconciler.notificationTapped(type: "n6", miffId: miffId)
+
+        XCTAssertEqual(destination, .feed)
+        XCTAssertFalse(rig.center.hasUnread)
     }
 
     // MARK: - Toutes mes Miffs, plafond hors de celui de N1 à N4

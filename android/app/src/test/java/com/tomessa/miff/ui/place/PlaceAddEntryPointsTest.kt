@@ -18,16 +18,17 @@ class PlaceAddEntryPointsTest {
     @Test
     fun profilePlacesSection_passesTheAddActionStraightToTheForm() {
         val code = source("ui/place/PlaceHosts.kt")
-        assertTrue(code.contains("onAdd = onAddPlace,"))
+        assertTrue(code.contains("onAdd = { onAddPlace(miff.id) },"))
         assertFalse("no offer from the list", code.contains("PaywallReason"))
         assertFalse("no decision on the plan from the list", code.contains("atFreeLimit"))
         assertFalse(code.contains("onOpenOffer"))
     }
 
     @Test
-    fun profileTab_opensTheForm_whateverThePlan() {
+    fun profileTab_opensTheFormOfTheMiffOfTheCarousel_whateverThePlan() {
         val code = source("ui/main/MainShell.kt")
-        assertTrue(code.contains("onAddPlace = { navController.open(PlaceFormRoute()) },"))
+        assertTrue(code.contains("navController.open(PlaceFormRoute(miffId = miffId))"))
+        assertTrue(code.contains("onAddPlace = {"))
         // The only offer opened from the shell is the 2nd Miff, asked from the selector of the Feed (decision of the PM, 2026-11-08); never for a place.
         // (The last card of the carousel of the Profile asks for the same offer through `miffOfferRoute()`, in ui/profile.) Zero or one such route here,
         // depending on whether the selector of the Feed already is in the shell: never anything else.
@@ -38,9 +39,11 @@ class PlaceAddEntryPointsTest {
     }
 
     @Test
-    fun miffScreenRoute_opensTheForm_whateverThePlan() {
+    fun miffScreenRoute_opensTheFormOfThatMiff_whateverThePlan() {
         val code = source("ui/miff/MiffNavigation.kt")
-        assertTrue(code.contains("onAddPlace = { navController.openMiffRoute(PlaceFormRoute()) },"))
+        assertTrue(
+            code.contains("onAddPlace = { navController.openMiffRoute(PlaceFormRoute(miffId = route.miffId)) },"),
+        )
         assertFalse(
             "the offer is only opened by the form itself",
             code.contains("PlacePaywallRoute.of(PaywallReason.LIMIT)"),

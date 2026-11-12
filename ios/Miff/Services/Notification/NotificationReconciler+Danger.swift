@@ -12,6 +12,9 @@ extension NotificationReconciler {
         guard let uid = deps.currentUid() else {
             return
         }
+        // Un réveil par géofence n'a ouvert aucun écran : les choix de la personne et le centre (plafond de 3 par jour) sont lus depuis
+        // l'appareil AVANT de décider, jamais les valeurs par défaut (tout actif).
+        loadFromDevice()
         let now = deps.nowMillis()
         let authorization = await deps.authorization.authorization()
         guard deps.currentUid() == uid else {
@@ -42,8 +45,12 @@ extension NotificationReconciler {
         let eventKey = NotificationDangerZone.key(miffId: miffId, placeId: placeId, enteredAtMillis: enteredAtMillis)
         var state = NotificationItemState.silent
         if case .show(let quiet) = decision {
-            await deps.scheduler.add(dangerRequest(miffId: miffId, key: eventKey, quiet: quiet))
+            await deps.scheduler.add(dangerRequest(miffId: miffId, quiet: quiet))
             state = .shown
+        }
+        // La session a pu finir pendant qu'on parlait au système : rien n'est inscrit ni écrit pour un compte parti.
+        guard deps.currentUid() == uid else {
+            return
         }
         deps.center.record(
             NotificationItem(
@@ -67,14 +74,15 @@ extension NotificationReconciler {
         }.count
     }
 
-    private func dangerRequest(miffId: String, key: String, quiet: Bool) -> LocalNotificationRequest {
+    private func dangerRequest(miffId: String, quiet: Bool) -> LocalNotificationRequest {
         LocalNotificationRequest(
             identifier: NotificationIdentifier.make(type: .n6, miffId: miffId),
             title: deps.text(NotificationType.n6.titleKey),
             body: deps.text(NotificationType.n6.bodyKey),
             threadIdentifier: miffId,
             categoryIdentifier: NotificationCategory.identifier(for: .n6),
-            userInfo: ["type": NotificationType.n6.rawValue, "miffId": miffId, "key": key],
+            // Type et Miff suffisent à ouvrir le Feed ; la clé (qui contient l'identifiant de la Miff et l'heure) reste dans le centre local.
+            userInfo: ["type": NotificationType.n6.rawValue, "miffId": miffId],
             delaySeconds: 1,
             quiet: quiet
         )

@@ -23,6 +23,7 @@ final class PresenceNotifyingLocalStore: TrackingLocalStore {
     private let lock = NSLock()
     private var lastSeen: [String: StatusFact] = [:]
     private var lastTravel: Int?
+    private var loadedOnce = false
 
     init(
         wrapping wrapped: TrackingLocalStore,
@@ -37,8 +38,15 @@ final class PresenceNotifyingLocalStore: TrackingLocalStore {
     func load() -> LocalState? {
         let state = wrapped.load()
         lock.lock()
+        let first = !loadedOnce
+        loadedOnce = true
         lastTravel = state?.travel?.untilMillis
         lock.unlock()
+        // Un voyage déjà actif quand l'app est mise à jour (ou relancée) est annoncé UNE fois, au premier chargement : N7 est programmée et
+        // les gardes des rappels s'appliquent sans attendre un changement. L'annonce est idempotente (même fin, même plan).
+        if first, let state, let until = state.travel?.untilMillis {
+            onTravel?(state.uid, until, nil)
+        }
         return state
     }
 
@@ -62,6 +70,7 @@ final class PresenceNotifyingLocalStore: TrackingLocalStore {
         lock.lock()
         lastSeen = [:]
         lastTravel = nil
+        loadedOnce = false
         lock.unlock()
     }
 
@@ -84,7 +93,7 @@ final class PresenceNotifyingLocalStore: TrackingLocalStore {
 /// faible).
 final class NotificationResponseDelegate: NSObject, UNUserNotificationCenterDelegate {
     var onForeground: ((String) -> Void)?
-    var onTap: ((String?, String?, String?) -> Void)?
+    var onTap: ((String?, String?) -> Void)?
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
@@ -102,7 +111,7 @@ final class NotificationResponseDelegate: NSObject, UNUserNotificationCenterDele
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let info = response.notification.request.content.userInfo
-        onTap?(info["type"] as? String, info["key"] as? String, info["miffId"] as? String)
+        onTap?(info["type"] as? String, info["miffId"] as? String)
         completionHandler()
     }
 }

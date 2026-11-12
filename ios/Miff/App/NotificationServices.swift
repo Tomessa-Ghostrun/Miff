@@ -46,9 +46,9 @@ struct NotificationServices {
         delegate.onForeground = { @Sendable identifier in
             Task { @MainActor in reconciler.foregroundDelivery(identifier: identifier) }
         }
-        delegate.onTap = { @Sendable type, key, miffId in
+        delegate.onTap = { @Sendable type, miffId in
             Task { @MainActor in
-                guard let destination = reconciler.notificationTapped(type: type, key: key, miffId: miffId) else {
+                guard let destination = reconciler.notificationTapped(type: type, miffId: miffId) else {
                     return
                 }
                 let showsUpdate = TabBarConfig.current.showsUpdateButton

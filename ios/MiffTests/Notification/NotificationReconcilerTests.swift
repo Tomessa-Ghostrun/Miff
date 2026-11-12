@@ -22,7 +22,7 @@ final class NotificationReconcilerTests: ReconcilerTestCase {
         XCTAssertEqual(first?.delaySeconds, Double(after(15, 40) - at(14, 0)) / 1000)
         XCTAssertEqual(first?.quiet, false)
         let userInfoKeys = Set(first?.userInfo.keys.map { $0 } ?? [])
-        XCTAssertEqual(userInfoKeys, ["type", "miffId", "key"], "ni nom, ni lieu, ni position")
+        XCTAssertEqual(userInfoKeys, ["type", "miffId"], "ni nom, ni lieu, ni position, ni identifiant de compte")
         XCTAssertLessThanOrEqual(rig.scheduler.pending.count, 4, "au plus 4 demandes en attente")
     }
 

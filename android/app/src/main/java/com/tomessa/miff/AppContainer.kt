@@ -47,6 +47,7 @@ import com.tomessa.miff.data.miff.FirestoreMemberFacesReader
 import com.tomessa.miff.data.miff.FirestoreMiffObserver
 import com.tomessa.miff.data.miff.FirestoreMiffRepository
 import com.tomessa.miff.data.miff.FirestoreMiffStore
+import com.tomessa.miff.data.miff.FirestorePlacesReader
 import com.tomessa.miff.data.miff.MemberFacesReader
 import com.tomessa.miff.data.miff.MiffDeletion
 import com.tomessa.miff.data.miff.MiffDeletionCoordinator
@@ -54,6 +55,7 @@ import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
+import com.tomessa.miff.data.miff.PlacesReader
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
 import com.tomessa.miff.data.notification.AndroidNotificationAlarms
@@ -83,12 +85,17 @@ import com.tomessa.miff.data.permission.SharedPreferencesNotificationAskStore
 import com.tomessa.miff.data.place.CachedAddressSearch
 import com.tomessa.miff.data.place.FallbackAddressSearch
 import com.tomessa.miff.data.place.FirestorePlaceRepository
+import com.tomessa.miff.data.place.FirestorePlaceRequestRepository
+import com.tomessa.miff.data.place.FirestorePlaceRequestStore
 import com.tomessa.miff.data.place.FirestorePlaceStore
 import com.tomessa.miff.data.place.GeoapifyAddressSearch
 import com.tomessa.miff.data.place.MapTileCachePurger
 import com.tomessa.miff.data.place.PhotonAddressSearch
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.data.place.PlaceRepository
+import com.tomessa.miff.data.place.PlaceRequestRepository
+import com.tomessa.miff.data.place.PlaceStore
+import com.tomessa.miff.data.place.RequesterDirectory
 import com.tomessa.miff.data.place.UrlConnectionFetcher
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
@@ -311,6 +318,8 @@ class AppContainer(
             appCheck = FirebaseAppCheckProbe(),
             // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
             online = { networkMonitor.isOnline() },
+            // LIEU-REQ: leaving a Miff takes back the pending requests to add a place that the person made there (before the lot, never blocking it).
+            beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -580,6 +589,9 @@ class AppContainer(
     /** The faces of the carousel of Miffs of the Profile tab: ONE reading of the members of a Miff, when its card appears (docs/dev/surveillance-quotas.md). */
     val memberFacesReader: MemberFacesReader by lazy { FirestoreMemberFacesReader() }
 
+    /** The places under the carousel of Miffs of the Profile tab (visible to every member): ONE reading of the places of a Miff, when its card appears. */
+    val placesReader: PlacesReader by lazy { FirestorePlacesReader() }
+
     val positionReader: PositionReader by lazy { FirestorePositionReader() }
 
     /**
@@ -700,21 +712,40 @@ class AppContainer(
      * The places (ticket LOC-1): create, edit, delete, in the Miffs the person created. Reads that decide a limit come from the
      * server; every write is a transaction (nothing is queued offline). Built on first use, like the rest of the Miff data.
      */
+    private val placeStore: PlaceStore by lazy { FirestorePlaceStore(miffStore) }
+
+    /** An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place. */
+    private val newPlaceId: () -> String = {
+        FirebaseFirestore
+            .getInstance()
+            .collection("miffs")
+            .document()
+            .collection("places")
+            .document()
+            .id
+    }
+
     val placeRepository: PlaceRepository by lazy {
-        FirestorePlaceRepository(
-            store = FirestorePlaceStore(miffStore),
-            // An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place.
-            newId = {
-                FirebaseFirestore
-                    .getInstance()
-                    .collection("miffs")
-                    .document()
-                    .collection("places")
-                    .document()
-                    .id
-            },
+        FirestorePlaceRepository(store = placeStore, newId = newPlaceId)
+    }
+
+    /**
+     * The requests to add a place (ticket LIEU-REQ): a member who is not the creator proposes a place, the creator accepts or not. Reads that decide a
+     * limit come from the server; writes are transactions (one batch handed to the phone only when the network drops after the address was chosen).
+     */
+    val placeRequestRepository: PlaceRequestRepository by lazy {
+        FirestorePlaceRequestRepository(
+            store = FirestorePlaceRequestStore(miffStore),
+            places = placeStore,
+            // The acceptance of a request applies the limits of a creation: the same reads of the plan, the Miffs and the places.
+            placeRepository = placeRepository,
+            newPlaceId = newPlaceId,
+            online = { networkMonitor.isOnline() },
         )
     }
+
+    /** Who asked for a place (first names by Miff and person), shared by the tabs and the centre of notifications: in memory, gone with the session. */
+    val requesterDirectory: RequesterDirectory by lazy { RequesterDirectory() }
 
     /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */
     val placeNotices: PlaceNotices by lazy { PlaceNotices() }
@@ -756,6 +787,8 @@ class AppContainer(
         StoreAccountMiffs(
             store = miffStore,
             deleter = MiffDeletion(store = miffStore, repository = miffRepository),
+            // RGPD (contract of the backend 2.7.3): the pending requests of the account (address, coordinates) are taken back BEFORE each "Quitter", best effort.
+            beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
         )
     }
 
@@ -825,6 +858,7 @@ class AppContainer(
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
                         placeNotices,
+                        requesterDirectory,
                         addressSearch,
                         mapTileCache,
                     ),

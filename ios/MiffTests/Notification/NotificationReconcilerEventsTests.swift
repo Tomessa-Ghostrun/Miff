@@ -129,22 +129,35 @@ final class NotificationReconcilerEventsTests: ReconcilerTestCase {
         let rig = makeRig(now: at(15, 0))
         seed(rig, [out("me", ref: at(13, 40)), green("x")])
         await rig.reconciler.reconcile()
-        let key = rig.memory.plan.ledgers["me"]?.scheduled[identifier(.n2)]?.key
-
-        let destination = rig.reconciler.notificationTapped(type: "n2", key: key, miffId: miffId)
+        let destination = rig.reconciler.notificationTapped(type: "n2", miffId: miffId)
 
         XCTAssertEqual(destination, .update)
-        XCTAssertFalse(rig.center.hasUnread, "lue au toucher")
-        XCTAssertEqual(rig.reconciler.notificationTapped(type: "n3", key: nil, miffId: nil), .feed)
-        XCTAssertNil(rig.reconciler.notificationTapped(type: "n5", key: nil, miffId: nil), "N5 n'existe pas")
-        XCTAssertNil(rig.reconciler.notificationTapped(type: nil, key: nil, miffId: nil))
+        XCTAssertFalse(rig.center.hasUnread, "lue au toucher (la clé vient du registre, pas de la demande)")
+        XCTAssertEqual(rig.reconciler.notificationTapped(type: "n3", miffId: nil), .feed)
+        XCTAssertNil(rig.reconciler.notificationTapped(type: "n5", miffId: nil), "N5 n'existe pas")
+        XCTAssertNil(rig.reconciler.notificationTapped(type: nil, miffId: nil))
+    }
+
+    func testTouchingANotificationAlreadyRecordedByAReconciliationMarksItsLineRead() async {
+        let rig = makeRig(now: at(15, 0))
+        seed(rig, [out("me", ref: at(13, 40)), green("x")])
+        await rig.reconciler.reconcile()
+        rig.scheduler.fire(identifier(.n2))
+        rig.state.now = at(18, 0)
+        await rig.reconciler.reconcile()
+        XCTAssertTrue(rig.center.hasUnread, "la réconciliation l'a inscrite comme affichée")
+
+        let destination = rig.reconciler.notificationTapped(type: "n2", miffId: miffId)
+
+        XCTAssertEqual(destination, .update)
+        XCTAssertTrue(rig.center.history.items.filter { $0.type == .n2 }.allSatisfy { !$0.isUnread })
     }
 
     func testTouchingANotificationWithoutASessionOpensNothing() {
         let rig = makeRig(now: at(15, 0))
         rig.state.uid = nil
 
-        XCTAssertNil(rig.reconciler.notificationTapped(type: "n1", key: "k", miffId: miffId))
+        XCTAssertNil(rig.reconciler.notificationTapped(type: "n1", miffId: miffId))
     }
 
     // MARK: - Le Feed donne les statuts du serveur

@@ -163,12 +163,21 @@ class FirestoreMiffObserver(
     private fun placesOf(
         miffId: String,
         snapshot: QuerySnapshot,
-    ): List<Place> =
-        snapshot.documents
-            // Cleaned like every text read from the server; a document that cannot be a place of this app is simply not shown.
-            .mapNotNull { doc -> Place.fromServer(doc.id, miffId, doc.data) }
-            .sortedBy { it.name.lowercase() }
+    ): List<Place> = placesFromSnapshot(miffId, snapshot)
 }
+
+/**
+ * The places of a Miff as `places` holds them, cleaned like every text read from the server, sorted by name. Shared by the listener of the Miff
+ * screen and the Feed, and by the one-shot reading of the Profile tab ([FirestorePlacesReader]): the same Miff is never drawn in two orders.
+ */
+internal fun placesFromSnapshot(
+    miffId: String,
+    snapshot: QuerySnapshot,
+): List<Place> =
+    snapshot.documents
+        // A document that cannot be a place of this app is simply not shown, never a crash.
+        .mapNotNull { doc -> Place.fromServer(doc.id, miffId, doc.data) }
+        .sortedBy { it.name.lowercase() }
 
 /**
  * The members of a Miff as `members` holds them, cleaned like every text read from the server, the creator first and then in the order of

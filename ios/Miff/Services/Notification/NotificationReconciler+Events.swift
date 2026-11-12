@@ -102,23 +102,32 @@ extension NotificationReconciler {
 
     /// La personne a touché une notification : elle est lue, et l'on dit où aller. nil quand personne n'est connecté (la personne arrive sur
     /// l'écran de connexion, jamais sur une erreur).
-    func notificationTapped(type rawType: String?, key: String?, miffId: String?) -> NotificationDestination? {
+    func notificationTapped(type rawType: String?, miffId: String?) -> NotificationDestination? {
         guard let uid = deps.currentUid(), let rawType, let type = NotificationType(rawValue: rawType) else {
             return nil
         }
-        if let key, let miffId {
+        if let miffId {
+            loadFromDevice()
             let now = deps.nowMillis()
             var ledger = deps.plans.loadLedger(uid: uid)
             let identifier = NotificationIdentifier.make(type: type, miffId: miffId)
-            let fireAt = ledger.scheduled[identifier]?.fireAtMillis ?? now
-            deps.center.record(
-                NotificationItem(
-                    id: key, type: type, miffId: miffId, createdAtMillis: fireAt, readAtMillis: now, state: .shown
+            if let entry = ledger.scheduled[identifier] {
+                // La demande est encore dans le registre : on connaît sa clé (qui n'est jamais dans la demande du système).
+                deps.center.record(
+                    NotificationItem(
+                        id: entry.key, type: type, miffId: miffId, createdAtMillis: entry.fireAtMillis,
+                        readAtMillis: now, state: .shown
+                    )
                 )
-            )
-            deps.center.markRead(id: key)
-            ledger = ledger.marking(key: key, atMillis: now).unscheduling([identifier])
-            deps.plans.saveLedger(ledger, uid: uid)
+                deps.center.markRead(id: entry.key)
+                ledger = ledger.marking(key: entry.key, atMillis: now).unscheduling([identifier])
+                deps.plans.saveLedger(ledger, uid: uid)
+            } else if let item = deps.center.history.items.first(where: {
+                $0.type == type && $0.miffId == miffId && $0.isUnread
+            }) {
+                // Déjà inscrite par une réconciliation : la ligne la plus récente de ce type et de cette Miff est lue.
+                deps.center.markRead(id: item.id)
+            }
         }
         return type.destination
     }

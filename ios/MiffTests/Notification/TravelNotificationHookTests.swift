@@ -65,17 +65,33 @@ final class TravelNotificationHookTests: XCTestCase {
         )
     }
 
-    func testATripFoundOnLoadIsNotAnnouncedAgainButItsEndIs() {
+    func testATripAlreadyActiveBeforeTheUpdateIsAnnouncedOnceAtTheFirstLoadThenOnlyItsChanges() {
         var heard: [Heard] = []
         let inner = MemoryTrackingStore()
         inner.state = state(travelUntil: 5_000)
         let store = makeStore(inner) { heard.append($0) }
 
         _ = store.load()
+        _ = store.load()
         store.save(state(travelUntil: 5_000))
         store.save(state(travelUntil: nil))
 
-        XCTAssertEqual(heard, [Heard(uid: "me", until: nil, previous: 5_000)])
+        XCTAssertEqual(
+            heard,
+            [Heard(uid: "me", until: 5_000, previous: nil), Heard(uid: "me", until: nil, previous: 5_000)],
+            "le voyage existant est annoncé UNE fois (N7 programmée, gardes appliquées), puis seulement ses changements"
+        )
+    }
+
+    func testNothingIsAnnouncedAtLoadWhenThereIsNoTrip() {
+        var heard: [Heard] = []
+        let inner = MemoryTrackingStore()
+        inner.state = state(travelUntil: nil)
+        let store = makeStore(inner) { heard.append($0) }
+
+        _ = store.load()
+
+        XCTAssertTrue(heard.isEmpty)
     }
 
     func testClearingForgetsWhatWasSeenAndEverythingElsePassesThrough() {
