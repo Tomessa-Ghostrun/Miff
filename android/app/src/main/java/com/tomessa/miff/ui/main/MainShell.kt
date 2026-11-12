@@ -94,11 +94,13 @@ import com.tomessa.miff.ui.notification.rememberNotificationPermissionState
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
 import com.tomessa.miff.ui.place.PlacePaywallRoute
+import com.tomessa.miff.ui.place.PlaceRequestDetailRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.MiffCarouselHost
 import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfilePlacesViewModel
+import com.tomessa.miff.ui.profile.ProfileRequestsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
@@ -106,6 +108,8 @@ import com.tomessa.miff.ui.profile.TravelActions
 import com.tomessa.miff.ui.profile.TravelCard
 import com.tomessa.miff.ui.profile.TravelViewModel
 import com.tomessa.miff.ui.profile.miffOfferRoute
+import com.tomessa.miff.ui.profile.profileRequestsFactory
+import com.tomessa.miff.ui.profile.profileRequestsKey
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
 import com.tomessa.miff.ui.review.ReviewStage
@@ -384,6 +388,10 @@ private fun MainNavigation(
                         },
                 )
             val profilePlaces by profilePlacesViewModel.state.collectAsStateWithLifecycle()
+            // The pending requests of a member who is not the creator (ticket LIEU-REQ-B): ONE reading of its own requests when the card of the Miff appears.
+            val profileRequestsViewModel: ProfileRequestsViewModel =
+                viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
+            val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
@@ -481,6 +489,15 @@ private fun MainNavigation(
                                 navController.open(PlaceFormRoute(miffId = miffId))
                             },
                             onRetry = profilePlacesViewModel::onRetry,
+                            requests = profileRequests,
+                            onOpenRequest = { miffId, requestId ->
+                                navController.open(PlaceRequestDetailRoute(miffId, requestId))
+                            },
+                            onRequestPlace = { miffId ->
+                                // Whatever happens in the form, the person's requests are read again when the list comes back.
+                                profileRequestsViewModel.onRequestsMayChange()
+                                navController.open(PlaceFormRoute(miffId = miffId, request = true))
+                            },
                         )
                     }
                 },
@@ -490,10 +507,20 @@ private fun MainNavigation(
                         onCardShown = { miffId ->
                             profileMiffsViewModel.onCardShown(miffId)
                             profilePlacesViewModel.onCardShown(miffId)
+                            val owner =
+                                (directoryState as? DirectoryState.Ready)
+                                    ?.miffs
+                                    ?.firstOrNull { it.id == miffId }
+                                    ?.ownerUid
+                            profileRequestsViewModel.onCardShown(
+                                miffId,
+                                creator = PlaceViewerRole.isCreator(owner, container.authGateway.currentUid),
+                            )
                         },
                         onMiffsKnown = { miffIds ->
                             profileMiffsViewModel.retainOnly(miffIds)
                             profilePlacesViewModel.retainOnly(miffIds)
+                            profileRequestsViewModel.retainOnly(miffIds)
                         },
                         onCreate = { navController.open(CreateMiffRoute) },
                         // Same rule and same offer as the selector of the Feed (decision of the PM, 2026-11-08): a free account that already has a Miff.
