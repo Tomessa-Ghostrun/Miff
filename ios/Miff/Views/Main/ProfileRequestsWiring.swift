@@ -1,0 +1,85 @@
+import SwiftUI
+
+// Le branchement des demandes d'ajout d'un lieu à l'onglet Profil et à l'hôte de navigation (`MiffHomeHost`), séparé des fichiers des lieux du
+// Profil pour une taille raisonnable. Rien ici ne lit ni n'écrit : l'hôte ouvre les écrans, le view model des demandes décide des lectures.
+
+/// Ce que la liste des lieux du Profil reçoit des demandes (ticket LIEU-REQ) : celles du membre (B), le message de la demande envoyée, le
+/// message calme du dernier geste.
+struct ProfileRequestsContent: Equatable, CustomStringConvertible {
+    /// Un membre : ses propres demandes en attente, la plus récente d'abord.
+    var requests: [PlaceRequest] = []
+    var sentNotice: RequestNotice?
+    var kind: RequestNoticeKind?
+    var busyRequestId: String?
+
+    static let none = ProfileRequestsContent()
+
+    var description: String {
+        "ProfileRequestsContent(redacted)"
+    }
+
+    /// Ce que la liste de `miffId` reçoit. Un créateur ne reçoit jamais « Demande envoyée… » (c'est celui du membre).
+    static func make(
+        state: ProfileRequestsState,
+        miffId: String,
+        isCreator: Bool,
+        sentNotice: RequestNotice?,
+        kind: RequestNoticeKind?
+    ) -> ProfileRequestsContent {
+        ProfileRequestsContent(
+            requests: isCreator ? [] : (state.views[miffId]?.requests ?? []),
+            sentNotice: isCreator ? nil : sentNotice,
+            kind: kind,
+            busyRequestId: state.busyRequestId
+        )
+    }
+}
+
+extension ProfilePlacesPresentation {
+    /// La liste des lieux pour `PlaceRows`, avec les demandes : l'onglet Profil les propose (un membre voit les siennes et « Demander l'ajout
+    /// d'un lieu »).
+    func listUi(
+        places: [Place],
+        premium: Bool?,
+        notice: PlaceNotice?,
+        requests: ProfileRequestsContent
+    ) -> PlaceListUi {
+        var ui = listUi(places: places, premium: premium, notice: notice)
+        ui.offersRequests = true
+        ui.requests = requests.requests
+        ui.requestNotice = requests.sentNotice
+        ui.requestKind = requests.kind
+        ui.busyRequestId = requests.busyRequestId
+        return ui
+    }
+}
+
+extension ProfilePlacesActions {
+    /// Les gestes de la section avec ceux des demandes : ouvrir une demande, « Demander l'ajout d'un lieu », et le départ de l'onglet qui
+    /// efface aussi le message calme d'un geste sur une demande.
+    @MainActor
+    func withRequests(
+        model: ProfileRequestsViewModel,
+        open: @escaping (MiffRoute) -> Void
+    ) -> ProfilePlacesActions {
+        let base = self
+        return ProfilePlacesActions(
+            onOpenPlace: base.onOpenPlace,
+            onAddPlace: base.onAddPlace,
+            onRetry: {
+                base.onRetry()
+                model.onRetry()
+            },
+            onLeave: {
+                base.onLeave()
+                model.consumeNotice()
+            },
+            onAppear: {
+                base.onAppear()
+                model.onProfileAppeared()
+            },
+            onOpenRequest: { miffId, requestId in open(.placeRequestDetail(miffId: miffId, requestId: requestId)) },
+            onRequestPlace: { miffId in open(.placeRequestForm(miffId: miffId)) }
+        )
+    }
+}

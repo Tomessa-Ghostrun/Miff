@@ -38,7 +38,11 @@ struct AccountDeletionServices {
             session: DeviceAccountSession(device: session.device, network: environment.network),
             miffs: StoreAccountMiffs(
                 store: miffStore,
-                deleter: MiffDeletion(store: miffStore, repository: environment.miffRepository)
+                deleter: MiffDeletion(store: miffStore, repository: environment.miffRepository),
+                // LIEU-REQ : les demandes d'ajout d'un lieu du compte sont reprises avant son départ de chaque Miff rejointe.
+                beforeLeave: { uid, miffId in
+                    await environment.placeRequestRepository.withdrawAllMine(uid: uid, miffId: miffId)
+                }
             )
         )
         let controller = AccountDeletionController(

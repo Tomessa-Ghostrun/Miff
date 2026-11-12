@@ -25,7 +25,8 @@ struct MiffServices {
         cache: CachePurger,
         network: NetworkMonitor,
         device: DeviceSession,
-        onSharingChanged: @escaping () -> Void
+        onSharingChanged: @escaping () -> Void,
+        beforeLeave: @escaping (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
     ) -> MiffServices {
         let store = FirestoreMiffStore()
         // SESS-3 : un statut n'est écrit qu'avec l'identifiant de la session CONFIRMÉE de cet appareil ; après un refus, la session
@@ -40,6 +41,8 @@ struct MiffServices {
         )
         // LOC-4b : un partage qui change (entrer, arrêter, reprendre, quitter, perdre l'accès) fait relire les Miffs au suivi des lieux.
         rules.onSharingChanged = onSharingChanged
+        // LIEU-REQ (critère L1) : « Quitter » reprend d'abord les demandes d'ajout d'un lieu de la personne dans cette Miff.
+        rules.beforeLeave = beforeLeave
         let repository = FirestoreMiffRepository(
             store: store,
             observer: FirestoreMiffObserver(),
@@ -100,17 +103,25 @@ struct PlaceServices {
     let search: AddressSearch
     /// Le message calme d'un lieu enregistré, en mémoire seulement.
     let notices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ) : un membre propose un lieu au créateur de la Miff.
+    let requests: PlaceRequestRepository
 
-    static func make(onChanged: @escaping () -> Void) -> PlaceServices {
+    static func make(network: NetworkMonitor, onChanged: @escaping () -> Void) -> PlaceServices {
         let repository = FirestorePlaceRepository(
             store: FirestorePlaceStore(base: FirestoreMiffStore()),
             newId: { FirestorePlaceRepository.newFirestoreId() }
+        )
+        let requests = FirestorePlaceRequestRepository(
+            store: FirestorePlaceRequestStore(base: FirestoreMiffStore()),
+            places: FirestorePlaceStore(base: FirestoreMiffStore()),
+            online: { network.isOnline() }
         )
         return PlaceServices(
             // LOC-4b : un lieu créé, modifié ou supprimé fait relire les lieux au suivi (le téléphone du créateur n'attend pas l'heure).
             repository: ChangeNotifyingPlaceRepository(repository, onChanged: onChanged),
             search: CachedAddressSearch(AppleAddressSearch()),
-            notices: PlaceNotices()
+            notices: PlaceNotices(),
+            requests: requests
         )
     }
 
@@ -146,6 +157,8 @@ final class AppEnvironment {
     let placeRepository: PlaceRepository
     let addressSearch: AddressSearch
     let placeNotices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ).
+    let placeRequestRepository: PlaceRequestRepository
     /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
     let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
@@ -213,12 +226,14 @@ final class AppEnvironment {
         let trackingServices = TrackingServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device
         )
+        let places = PlaceServices.make(network: networkMonitor, onChanged: trackingServices.sharingChanged)
+        let requests = places.requests
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
-            onSharingChanged: trackingServices.sharingChanged
+            onSharingChanged: trackingServices.sharingChanged,
+            beforeLeave: { uid, miffId in await requests.withdrawAllMine(uid: uid, miffId: miffId) }
         )
-        let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
@@ -253,6 +268,7 @@ final class AppEnvironment {
         placeRepository = places.repository
         addressSearch = places.search
         placeNotices = places.notices
+        placeRequestRepository = places.requests
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
         awaitingAgreement = miff.awaiting
@@ -361,7 +377,8 @@ final class AppEnvironment {
             search: addressSearch,
             network: network,
             currentUid: { session.currentUid },
-            notices: placeNotices
+            notices: placeNotices,
+            requests: placeRequestRepository
         )
     }
 

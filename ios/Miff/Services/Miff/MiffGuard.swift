@@ -39,4 +39,8 @@ struct MiffRepositoryRules {
     /// Le partage de la personne a changé (entrée dans une Miff, arrêt ou reprise du partage, départ, perte d'accès) : le suivi des lieux
     /// relit les Miffs et les lieux (LOC-4b). Appelé après une écriture CONFIRMÉE par le serveur, depuis n'importe quel fil.
     var onSharingChanged: () -> Void = {}
+    /// Appelé au début de « Quitter la Miff », avant le lot (LIEU-REQ, critère L1) : les demandes d'ajout d'un lieu en attente que la
+    /// personne a faites dans cette Miff sont reprises (elles portent une adresse et des coordonnées : elles ne restent pas orphelines). Ne
+    /// bloque JAMAIS le départ : un échec est son affaire.
+    var beforeLeave: (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
 }

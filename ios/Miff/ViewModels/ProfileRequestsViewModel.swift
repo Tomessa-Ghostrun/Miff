@@ -62,9 +62,9 @@ enum RequestNoticeKind: Equatable, CustomStringConvertible {
 /// une demande est reprise avec `onWithdraw`.
 @MainActor
 final class ProfileRequestsViewModel: ObservableObject {
-    @Published private(set) var state = ProfileRequestsState()
+    @Published var state = ProfileRequestsState()
     /// Le message calme du dernier geste, montré sur la liste jusqu'à ce que la personne la quitte ou fasse un autre geste.
-    @Published private(set) var notice: RequestNoticeKind?
+    @Published var notice: RequestNoticeKind?
 
     let repository: PlaceRequestRepository
     let network: NetworkMonitor
@@ -74,6 +74,8 @@ final class ProfileRequestsViewModel: ObservableObject {
     var creatorMiffs = Set<String>()
     /// Les Miffs dont la liste est dessinée : redessinées à chaque changement.
     var drawn = Set<String>()
+    /// Les Miffs que la personne a maintenant, une fois connues : une lecture qui finit après le départ d'une Miff est jetée.
+    private var knownMiffIds: Set<String>?
 
     init(
         repository: PlaceRequestRepository,
@@ -115,6 +117,9 @@ final class ProfileRequestsViewModel: ObservableObject {
     }
 
     private func readingEnded(miffId: String, answer: MineRead) {
+        if let known = knownMiffIds, !known.contains(miffId) {
+            return
+        }
         switch answer {
         case .loaded(let found):
             book.readingSucceeded(miffId: miffId, requests: found)
@@ -146,8 +151,16 @@ final class ProfileRequestsViewModel: ObservableObject {
         book.invalidateAll()
     }
 
+    /// Le Profil revient à l'écran (au retour d'un formulaire ou d'un détail) : la liste regardée est relue si elle est périmée.
+    func onProfileAppeared() {
+        if let selected = state.selectedMiffId {
+            onCardShown(miffId: selected, creator: creatorMiffs.contains(selected))
+        }
+    }
+
     /// Les Miffs de la personne maintenant : les demandes de toute autre sont oubliées.
     func retainOnly(miffIds: Set<String>) {
+        knownMiffIds = miffIds
         book.retainOnly(miffIds: miffIds)
         creatorMiffs = creatorMiffs.intersection(miffIds)
         drawn = drawn.intersection(miffIds)

@@ -13,6 +13,9 @@ struct ProfilePlacesActions {
     let onLeave: () -> Void
     /// Le Profil revient à l'écran (retour d'un lieu ou d'un formulaire) : la liste regardée est relue si elle est périmée.
     let onAppear: () -> Void
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ) : ouvrir le détail d'une demande, et « Demander l'ajout d'un lieu » (un membre).
+    var onOpenRequest: (_ miffId: String, _ requestId: String) -> Void = { _, _ in }
+    var onRequestPlace: (_ miffId: String) -> Void = { _ in }
 
     static let none = ProfilePlacesActions(
         onOpenPlace: { _, _ in }, onAddPlace: { _ in }, onRetry: {}, onLeave: {}, onAppear: {}
@@ -33,6 +36,8 @@ struct ProfilePlacesSection: View {
     let premium: Bool?
     let notice: PlaceNotice?
     let actions: ProfilePlacesActions
+    /// Les demandes d'ajout d'un lieu : celles du membre, les messages calmes.
+    var requests = ProfileRequestsContent.none
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -47,7 +52,7 @@ struct ProfilePlacesSection: View {
                 unavailable
             case .list(let places):
                 PlaceRows(
-                    ui: presentation.listUi(places: places, premium: premium, notice: notice),
+                    ui: presentation.listUi(places: places, premium: premium, notice: notice, requests: requests),
                     actions: rowActions
                 )
             }
@@ -62,7 +67,9 @@ struct ProfilePlacesSection: View {
             // Toujours le formulaire : il relit l'abonnement et les lieux auprès du SERVEUR et ne propose l'offre que si la limite est
             // vraiment atteinte. La liste ne connaît qu'une copie de la formule, inconnue ou périmée : elle ne ferme jamais la porte à
             // un créateur Miff+.
-            onAdd: { _ in actions.onAddPlace(miffId) }
+            onAdd: { _ in actions.onAddPlace(miffId) },
+            onOpenRequest: { request in actions.onOpenRequest(miffId, request.id) },
+            onRequestPlace: { actions.onRequestPlace(miffId) }
         )
     }
 

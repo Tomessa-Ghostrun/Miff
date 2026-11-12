@@ -2,6 +2,27 @@
 
 ## Non publié
 
+### Demande d'ajout d'un lieu par un membre (LIEU-REQ-B ; miroir d'Android PR #184, décisions du PM du 2026-11-11)
+
+Recette : `docs/qa/checklists/demande-lieu-ios-recette-pm.md`. Détail et écarts : `ios/README.md` (« Demande d'ajout d'un lieu »), ticket `docs/tickets/demande-ajout-lieu.md`, contrat des écritures `docs/dev/demande-lieu-clients.md`. Règles Firestore déployées le 2026-11-12. **Rien n'est compilé en local** (la CI fait foi). Cette PR contient aussi, tant qu'elles ne sont pas fusionnées dans `main`, les branches dont elle dépend : le carrousel du Profil (#145), « les lieux visibles par tous les membres » (`ios/profil-lieux-membres`) et la PR Android #184 (clés de texte partagées).
+
+Ajouté :
+- **« Demander l'ajout d'un lieu »** (membre non créateur, onglet Profil, liste des lieux de la Miff du carrousel) : le même bouton et le même dessin que « Ajouter un lieu », un seul exemplaire. Il ouvre le formulaire de création (titre « Proposer un lieu », une seule Miff, CTA « Soumettre la demande », ligne « Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non. »). Le formulaire est `PlaceFormViewModel` en mode `request` (`ViewModels/PlaceFormViewModel+Request.swift`).
+- **Ses demandes en attente en première position de sa liste** : carte à fond atténué et bord en pointillés, pastille « En attente », catégorie, adresse, « Zone de danger » en mots ; détail (carte, rayon, type) avec « En attente de réponse. » et **« Retirer ma demande »** (bouton blanc au trait bleu). Aucun rouge ni orange. VoiceOver : « Ta demande en attente : {lieu}, {adresse}, Zone de danger ».
+- **Plafonds** : 3 demandes par membre (le bouton le dit doucement, sans ouvrir le formulaire ; le formulaire aussi) et 10 par Miff (message calme du refus du serveur). **Zone de danger** : seulement si le demandeur est Miff+ (sinon l'offre, le choix reste « Zone de confiance »).
+- **Hors connexion** : une demande envoyée quand le réseau tombe est gardée par le téléphone (`FirestoreMiffStore.enqueue`) et part au retour du réseau (« Ta demande partira dès que tu seras connecté. ») ; deux demandes d'affilée ne prennent pas la même place.
+- **Un refus du créateur ne dit rien au demandeur** : la demande disparaît à sa prochaine lecture. **Expiration à 30 jours** : masquée par l'app, supprimée au passage par son auteur (à l'ouverture du formulaire).
+- **Quitter une Miff / supprimer son compte** : les demandes en attente de la personne sont reprises AVANT le lot « Quitter » (une minute au plus, sans jamais bloquer le départ).
+- `PlaceRequest`, `PlaceRequestDraft`, `PlaceRequestWrites`, `PlaceRequestBook`, `FirestorePlaceRequestRepository`, `FirestorePlaceRequestStore`, `ProfileRequestsViewModel`, `PlaceRequestCard`, `PlaceRequestDetailView`, `WriteKind.merge`, `FieldValueSpec.increment`, `MiffRoute.placeRequestForm` et `placeRequestDetail` (l'énumération des routes est dans `Views/Miff/MiffRoute.swift`, sortie de `MiffHosts.swift` pour tenir la limite de longueur de fichier). Aperçu de CI : `profile-carousel-2` montre une demande en attente (Miff B, membre).
+- Tests : modèles (lecture sans croire le réseau, expiration, ordre, emplacements, clés exactes des lots), registre (une lecture par Miff et par 5 minutes), dépôt (limites, file hors ligne, course sur l'emplacement, repli à 0, reprise au départ), formulaire (M3 à M8, M11), view model du Profil, navigation, départ.
+
+Changé :
+- `PlaceRows` : un membre dont la liste est vide lit « Aucun lieu de confiance pour l'instant. » (aussi dans la liste du Profil de `ios/profil-lieux-membres`).
+- `PlacePrivacyTests` lit désormais les routes dans `MiffRoute.swift`.
+- Correction d'un branchement venu de `ios/profil-lieux-membres` : le crochet « les listes de lieux du Profil sont relues » était posé dans `open` de l'hôte d'onboarding (qui n'a ni annuaire ni liste) au lieu de l'hôte de l'app ; il est déplacé dans `MiffHomeHost.open`.
+
+Choix « économiques » : aucun (une requête de 3 documents au plus par Miff et par 5 minutes ; aucun écouteur côté membre). Limite connue : une demande traitée par le créateur n'est vue du membre qu'à sa prochaine lecture (5 minutes au plus). Signal : le ratio de `docs/dev/surveillance-quotas.md` §2.
+
 ### Carrousel de Miffs au Profil, emoji des catégories de lieux, 3 lieux gratuits (retours du PM, 2026-11-10 ; miroir d'Android)
 
 Recette : `docs/qa/checklists/profil-carrousel-emoji-lieux3-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md` (« Catégories en emoji, carrousel de Miffs, 3 lieux gratuits »), contrat partagé `docs/contracts/place-categories.md`. **Rien n'est compilé en local** (la CI fait foi). **Les 3 lieux gratuits ne sont utilisables qu'après le déploiement des règles par le PM** (PR `backend/lieux-gratuits-3`).

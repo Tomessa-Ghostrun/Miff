@@ -61,10 +61,16 @@ struct PlaceFormView: View {
         miffId: String?,
         dependencies: PlaceFormDependencies,
         onBack: @escaping () -> Void,
-        exits: PlaceFormExits
+        exits: PlaceFormExits,
+        isRequest: Bool = false
     ) {
         _viewModel = StateObject(
-            wrappedValue: PlaceFormViewModel(placeId: placeId, miffId: miffId, dependencies: dependencies)
+            wrappedValue: PlaceFormViewModel(
+                placeId: placeId,
+                miffId: miffId,
+                dependencies: dependencies,
+                isRequest: isRequest
+            )
         )
         self.onBack = onBack
         self.exits = exits
