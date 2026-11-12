@@ -671,6 +671,10 @@
     <string name="place_list_title">The Miff\'s places</string>
     <string name="place_list_title_named">Places of %1$s</string>
     <string name="place_list_member_hint">Your Miff\'s places, set by its creator.</string>
+    <string name="place_list_empty_member">No trusted place yet.</string>
+    <string name="place_profile_title_named">Trusted places of %1$s</string>
+    <string name="place_profile_unavailable">The places aren\'t available right now.</string>
+    <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Add a place</string>
     <string name="place_list_add_premium_a11y">Add a place, part of Miff+</string>
     <string name="place_list_row_a11y">%1$s, category %2$s, %3$s</string>
