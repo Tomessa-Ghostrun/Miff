@@ -32,6 +32,15 @@ Supprimé : `PlaceCategory.symbol` (symboles du système des catégories).
 
 
 
+### Update : la bulle d'incitation (« Tu es passé en orange… ») compacte, comme sur Android (retour du PM sur iPhone)
+
+Branche `ios/bulle-incitation-compacte` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Corrigé :
+- La bulle d'incitation orange / rouge était **beaucoup trop grosse** (un grand rectangle arrondi avec une pointe). Elle a maintenant le design d'Android (`IncentiveBubble` d'`UpdateBubble.kt`) : compacte, **de la hauteur de son texte** (marges de 16 pt, texte italique 16 / 22, coins de 20 pt, pointe de 22 x 11 pt qui s'arrête 4 pt au-dessus de la barre, 16 pt des bords). Sa hauteur est **mesurée** (`IncentiveBubbleLayout`) au lieu d'être laissée à un conteneur (`ViewThatFits` + `ScrollView`) : jamais plus haute que 40 % de l'écran, le texte défilant à l'intérieur au-delà (grand texte). Aucun symbole, VoiceOver inchangé (texte annoncé une fois à l'apparition).
+
+Ajouté : `IncentiveBubbleLayoutTests` (règle pure, vrais textes FR et EN sur le plus petit iPhone : moins de 200 pt, au plus 40 % de l'écran).
+
 ### Corrigé et changé : photo de proche en plein écran, enregistrement DIRECT dans la galerie, photo qui remplit la zone (retours du PM sur le build 25, 2026-11-11)
 
 - **Enregistrement direct dans la galerie** (décision du PM, **remplace** « sans permission / feuille de partage » : la feuille ne proposait pas « Enregistrer l'image ») : le toucher de l'icône en haut à droite enregistre la photo dans Photos, **sans feuille de partage**. `PHPhotoLibrary` en autorisation **`.addOnly`** (jamais de lecture de la galerie), demandée **au premier toucher** (clé **`NSPhotoLibraryAddUsageDescription`**, FR + EN : « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. »), puis `PHAssetCreationRequest.forAsset()` avec un JPEG **ré-encodé depuis les pixels** (`PhotoExport` : aucun EXIF, aucun GPS, aucune donnée de lieu ; testé avec une source qui porte un GPS). **Aucune écriture automatique** : seulement au toucher. Refus : message calme + « Ouvrir les réglages » (jamais culpabilisant) ; appareil restreint et échec : messages calmes ; confirmation « Photo enregistrée. ». Voile des applications récentes conservé.
