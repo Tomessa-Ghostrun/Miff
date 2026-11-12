@@ -36,7 +36,8 @@ struct PlaceRows: View {
                     .foregroundColor(colorTextDescription.color)
             }
             if ui.places.isEmpty {
-                Text("miff_places_empty")
+                // Un membre n'a rien à ajouter : un « pas encore » calme (décision du PM, 2026-11-11) ; le créateur garde sa phrase.
+                Text(verbatim: L10n.string(ui.isCreator ? "miff_places_empty" : "place_list_empty_member"))
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
                     .multilineTextAlignment(.center)
@@ -91,17 +92,7 @@ struct PlaceRow: View {
     let onOpen: () -> Void
 
     private var spoken: String {
-        let address = place.address ?? ""
-        switch (place.category, address.isEmpty) {
-        case (.some(let category), false):
-            return L10n.format("place_list_row_a11y", place.name, category.label, address)
-        case (.some(let category), true):
-            return L10n.format("place_list_row_noaddress_a11y", place.name, category.label)
-        case (.none, false):
-            return L10n.format("place_list_row_nocategory_a11y", place.name, address)
-        case (.none, true):
-            return L10n.format("place_list_row_nocategory_noaddress_a11y", place.name)
-        }
+        PlaceRowSpeech.spoken(for: place)
     }
 
     var body: some View {

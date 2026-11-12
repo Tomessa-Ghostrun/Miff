@@ -132,7 +132,11 @@ final class PlaceFormViewModel: ObservableObject {
             }
             return
         }
-        let preselected = DefaultMiffChoice.of(owned: loaded.ownedMiffs, lastJoinedId: loaded.lastJoinedMiffId)
+        let preselected = DefaultMiffChoice.of(
+            owned: loaded.ownedMiffs,
+            lastJoinedId: loaded.lastJoinedMiffId,
+            openedFromId: miffId
+        )
         let selected = preselected.map { [$0] } ?? []
         update {
             $0.loading = false

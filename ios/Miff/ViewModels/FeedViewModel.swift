@@ -94,6 +94,9 @@ struct FeedDependencies {
     var onMyStatus: (MyStatusFacts?, Bool) -> Void = { _, _ in }
     /// Les membres de la Miff affichée, DÉJÀ lus par l'écoute : le Profil les réutilise pour les photos de sa carte (zéro lecture de plus).
     var onMembers: (String, [MiffMember]) -> Void = { _, _ in }
+    /// Les lieux de la Miff affichée, DÉJÀ lus par l'écoute : la liste des lieux du Profil les réutilise (zéro lecture de plus). Seulement
+    /// quand le serveur les a confirmés : une copie du téléphone encore vide n'est jamais donnée (le Profil lit alors la Miff une fois).
+    var onPlaces: (String, [Place]) -> Void = { _, _ in }
 }
 
 @MainActor
@@ -306,6 +309,9 @@ final class FeedViewModel: ObservableObject {
             lostReported = false
             piece = .data(miffId, snapshot)
             dependencies.onMembers(miffId, snapshot.members)
+            if !snapshot.fromCache {
+                dependencies.onPlaces(miffId, snapshot.places)
+            }
             updateMe(snapshot)
             reconsiderStatuses()
         case .accessLost:

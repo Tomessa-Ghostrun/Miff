@@ -118,6 +118,8 @@ struct MiffOnboardingHost: View {
 
     /// Deux touchers rapprochés ouvrent un seul écran, pas deux.
     private func open(_ route: MiffRoute) {
+        // Un créateur entre dans un lieu ou dans le formulaire d'un nouveau : les listes de lieux du Profil seront relues à leur retour.
+        profilePlaces.routeOpened(route) { isCreator(of: $0) }
         if path.last != route {
             path.append(route)
         }
@@ -127,6 +129,11 @@ struct MiffOnboardingHost: View {
         if !path.isEmpty {
             path.removeLast()
         }
+    }
+
+    /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non.)
+    private func isCreator(of miffId: String) -> Bool {
+        PlaceViewerRole.isCreator(ownerUid: directory.state.ownerUid(of: miffId), myUid: environment.session.currentUid)
     }
 
     private func signOut() {
@@ -151,6 +158,9 @@ struct MiffHomeHost: View {
     /// Les membres des cartes de Miff du Profil (photos, nombre) : ce que le Feed a lu pour la Miff affichée, plus une lecture ponctuelle
     /// des autres, une fois par ouverture du Profil. Créé avec la session de l'hôte, il disparaît avec elle.
     @StateObject private var memberPreviews: MiffMemberPreviews
+    /// Les lieux sous le carrousel du Profil, pour tous les membres de la Miff regardée (décision du PM, 2026-11-11) : la Miff du Feed
+    /// est reprise sans lecture, les autres sont lues UNE fois (cache de 5 minutes), jamais d'écouteur. Créé avec la session de l'hôte.
+    @StateObject private var profilePlaces: ProfilePlacesViewModel
     /// MODE VOYAGE (VOY-2I) : la carte du Profil, créée pour la session ; le voyage est écrit par le moteur de suivi, nulle part ailleurs.
     @StateObject private var travel: TravelViewModel
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
@@ -167,6 +177,7 @@ struct MiffHomeHost: View {
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
         _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
+        _profilePlaces = StateObject(wrappedValue: ProfilePlacesViewModel(reader: environment.placesReader))
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
         let engine = environment.tracking.engine
         _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
@@ -180,6 +191,14 @@ struct MiffHomeHost: View {
                     profile: profile,
                     memberPreviews: memberPreviews,
                     travel: travel,
+                    places: ProfilePlacesShell(
+                        model: profilePlaces,
+                        notices: placeNotices,
+                        context: ProfilePlacesContext(
+                            myUid: environment.session.currentUid,
+                            actions: .make(model: profilePlaces, notices: placeNotices, open: { open($0) })
+                        )
+                    ),
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
@@ -265,6 +284,7 @@ struct MiffHomeHost: View {
             environment: environment,
             context: context,
             memberPreviews: memberPreviews,
+            profilePlaces: profilePlaces,
             actions: FeedTabActions(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
@@ -379,7 +399,8 @@ struct MiffHomeHost: View {
                 onOpen: { place in open(.placeDetail(miffId: miffId, placeId: place.id)) },
                 // Toujours le formulaire : il relit l'abonnement et les lieux auprès du SERVEUR et ne propose l'offre que si la limite
                 // est vraiment atteinte (jamais une décision prise sur l'annuaire, qui peut ignorer un Miff+).
-                onAdd: { _ in open(.placeForm(placeId: nil, miffId: nil)) }
+                // Le formulaire coche d'abord CETTE Miff (celle dont la liste est regardée), pas la dernière rejointe.
+                onAdd: { _ in open(.placeForm(placeId: nil, miffId: miffId)) }
             ),
             onLeave: { notices.consume() }
         )

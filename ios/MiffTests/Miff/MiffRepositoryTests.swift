@@ -446,6 +446,16 @@ final class MiffRepositoryTests: XCTestCase {
         XCTAssertEqual(load?.lost.isEmpty, true)
     }
 
+    func testMyMiffsCarryTheCreatorOfEachMiffWithoutAnyExtraRead() async {
+        store.memberships = [MembershipRef(key: "free", miffId: testMiffId)]
+        store.miffs[testMiffId] = testMiffDetails(name: "Chez nous", owner: "uid-owner")
+
+        let load = loaded(await repo().myMiffs(uid: uid))
+
+        // Le créateur vient du document de la Miff, DÉJÀ lu pour le nom : la liste des lieux du Profil n'en lit pas un de plus.
+        XCTAssertEqual(load?.miffs.map { $0.ownerUid }, ["uid-owner"])
+    }
+
     // MARK: - La formule est-elle connue ? (LOC-3, revue I1)
 
     func testMyMiffsTheSubscriptionIsKnownWhenTheServerAnswered() async {
